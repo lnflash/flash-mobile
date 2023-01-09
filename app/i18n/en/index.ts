@@ -424,7 +424,7 @@ const en: BaseTranslation = {
   },
   GetStartedScreen: {
     getStarted: "Get Started",
-    headline: "Wallet powered by Galoy",
+    headline: "Powered by Galoy | IBEX | Strike API \n Product of Jamaica",
   },
   MapScreen: {
     locationPermissionMessage:
@@ -554,7 +554,7 @@ const en: BaseTranslation = {
   },
   SendBitcoinDestinationScreen: {
     usernameNowAddress: "{bankName: string} usernames are now {bankName: string} addresses.",
-    usernameNowAddressInfo: "When you enter a {bankName: string} username, we will add \"@{lnDomain: string}\" to it (e.g maria@{lnDomain: string}) to make it an address. Your username is now a {bankName: string} address too.\n\nGo to your {bankName: string} address page from your Settings to learn how to use it or to share it to receive payments.",
+    usernameNowAddressInfo: "When you enter a {bankName: string} username, we will add \"@{lnDomain: string}\" to it (e.g yanique@{lnDomain: string}) to make it an address. Your username is now a {bankName: string} address too.\n\nGo to your {bankName: string} address page from your Settings to learn how to use it or to share it to receive payments.",
     enterValidDestination: "Please enter a valid destination",
     destinationOptions: "You can send to a {bankName: string} address, LN address, LN invoice, or BTC address.",
     expiredInvoice: "This invoice has expired. Please generate a new invoice.",
