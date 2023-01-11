@@ -398,7 +398,7 @@ export const PrimaryNavigator = () => {
           ),
         }}
       />
-      {/* <Tab.Screen
+      <Tab.Screen
         name="Map"
         component={MapScreen}
         options={{
@@ -417,7 +417,7 @@ export const PrimaryNavigator = () => {
             <LearnIcon fill="currentColor" color={color} />
           ),
         }}
-      /> */}
+      />
     </Tab.Navigator>
   )
 }

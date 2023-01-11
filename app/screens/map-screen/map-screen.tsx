@@ -164,10 +164,11 @@ export const MapScreen: React.FC<Props> = ({ navigation }) => {
         style={styles.map}
         showsUserLocation={true}
         initialRegion={{
-          latitude: 13.496743,
-          longitude: -89.439462,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
+          // flash mod: modify the default coordinates to center on May Pen, the capital of Clarendon, Jamaica
+          latitude: 17.9646,
+          longitude: -77.2434,
+          latitudeDelta: 2,
+          longitudeDelta: 2,
         }}
       >
         {markers}
