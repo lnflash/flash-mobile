@@ -225,5 +225,9 @@
       "pattern": "**/*.stories.tsx",
       "outputFile": "./.storybook/storyLoader.ts"
     }
-  }
+  },
+  "main": "index.js",
+  "repository": "https://github.com/lnflash/flash-mobile.git",
+  "author": "islandbitcoin <dread@start9.com>",
+  "license": "MIT"
 }
