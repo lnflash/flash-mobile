@@ -13,7 +13,7 @@ export type GaloyInstanceName = (typeof possibleGaloyInstanceNames)[number]
 
 export type StandardInstance = {
   id: "Main" | "Staging" | "Local"
-}
+} 
 
 export type CustomInstance = {
   id: "Custom"
@@ -71,11 +71,11 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
   {
     id: "Staging",
     name: "Staging",
-    graphqlUri: "http://100.87.129.37:4002/ibex/graphql",
-    graphqlWsUri: "ws://100.87.129.37:4002/ibex/graphql",
-    posUrl: "https://100.87.129.37",
-    lnAddressHostname: "100.87.129.37",
-    blockExplorer: "https://mempool.space/signet/tx/",
+    graphqlUri: "http://development.lnflash.me:4002/ibex/graphql",
+    graphqlWsUri: "ws://development.lnflash.me:4002/ibex/graphql",
+    posUrl: "http://development.lnflash.me",
+    lnAddressHostname: "development.lnflash.me",
+    blockExplorer: "http://mempool.space/signet/tx/",
   },
   {
     id: "Local",
@@ -86,5 +86,5 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
     posUrl: `http://${scriptHostname()}:3000`,
     lnAddressHostname: `${scriptHostname()}:3000`,
     blockExplorer: "https://mempool.space/signet/tx/",
-  },
+  }
 ] as const
