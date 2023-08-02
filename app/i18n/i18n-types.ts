@@ -195,6 +195,31 @@ type RootTranslation = {
 		 */
 		title: RequiredParams<'username'>
 	}
+	ChatScreen: {
+		/**
+		 * N​o​ ​C​h​a​t​s​ ​F​o​u​n​d
+		 */
+		noChatsTitle: string
+		/**
+		 * E​n​t​e​r​ ​a​ ​F​l​a​s​h​ ​u​s​e​r​n​a​m​e​ ​o​r​ ​n​o​s​t​r​ ​p​u​b​l​i​c​ ​k​e​y​ ​t​o​ ​s​t​a​r​t​ ​a​ ​c​h​a​t
+		 */
+		noChatsYet: string
+		/**
+		 * N​o​ ​c​h​a​t​s​ ​m​a​t​c​h​i​n​g​ ​y​o​u​r​ ​s​e​a​r​c​h​ ​w​e​r​e​ ​f​o​u​n​d​.
+		 */
+		noMatchingChats: string
+		/**
+		 * C​h​a​t
+		 */
+		title: string
+	}
+	ChatDetailsScreen: {
+		/**
+		 * C​h​a​t​ ​w​i​t​h​ ​{​u​s​e​r​n​a​m​e​}
+		 * @param {string} username
+		 */
+		title: RequiredParams<'username'>
+	}
 	ConversionDetailsScreen: {
 		/**
 		 * C​o​n​v​e​r​t
@@ -1396,7 +1421,15 @@ type RootTranslation = {
 		 */
 		logInCreateAccount: string
 		/**
+<<<<<<< HEAD
+		 * S​t​a​r​t
+		 */
+		quickStart: string
+		/**
+		 * E​x​p​l​o​r​e​ ​w​a​l​l​e​t​ ​i​n​s​t​e​a​d
+=======
 		 * C​r​e​a​t​e​ ​n​e​w​ ​a​c​c​o​u​n​t
+>>>>>>> upstream/main
 		 */
 		createAccount: string
 		/**
@@ -1407,6 +1440,10 @@ type RootTranslation = {
 		 * L​o​g​ ​b​a​c​k​ ​i​n​ ​w​i​t​h
 		 */
 		logBackInWith: string
+		/**
+		 * S​e​t​u​p​ ​b​u​s​i​n​e​s​s​ ​a​c​c​o​u​n​t
+		 */
+		setupBusinessAccount: string
 		/**
 		 * W​a​l​l​e​t​ ​p​o​w​e​r​e​d​ ​b​y​ ​G​a​l​o​y
 		 */
@@ -1489,6 +1526,10 @@ type RootTranslation = {
 		 * S​e​n​d
 		 */
 		send: string
+		/**
+		 * P​a​y
+		 */
+		pay: string
 		/**
 		 * H​o​m​e
 		 */
@@ -3174,6 +3215,10 @@ type RootTranslation = {
 		 */
 		search: string
 		/**
+		 * u​s​e​r​n​a​m​e​ ​o​r​ ​n​o​s​t​r​ ​p​u​b​k​e​y
+		 */
+		chatSearch: string
+		/**
 		 * S​e​c​u​r​i​t​y
 		 */
 		security: string
@@ -3692,6 +3737,30 @@ export type TranslationFunctions = {
 	ContactDetailsScreen: {
 		/**
 		 * Transactions with {username}
+		 */
+		title: (arg: { username: string }) => LocalizedString
+	}
+	ChatScreen: {
+		/**
+		 * No Chats Found
+		 */
+		noChatsTitle: () => LocalizedString
+		/**
+		 * Enter a Flash username or nostr public key to start a chat
+		 */
+		noChatsYet: () => LocalizedString
+		/**
+		 * No chats matching your search were found.
+		 */
+		noMatchingChats: () => LocalizedString
+		/**
+		 * Chat
+		 */
+		title: () => LocalizedString
+	}
+	ChatDetailsScreen: {
+		/**
+		 * Chat with {username}
 		 */
 		title: (arg: { username: string }) => LocalizedString
 	}
@@ -4893,6 +4962,11 @@ export type TranslationFunctions = {
 		 */
 		logInCreateAccount: () => LocalizedString
 		/**
+		 * Start
+		 */
+		quickStart: () => LocalizedString
+		/**
+		 * Explore wallet instead
 		 * Create new account
 		 */
 		createAccount: () => LocalizedString
@@ -4904,6 +4978,10 @@ export type TranslationFunctions = {
 		 * Log back in with
 		 */
 		logBackInWith: () => LocalizedString
+		/**
+		 * Setup business account
+		 */
+		setupBusinessAccount: () => LocalizedString
 		/**
 		 * Wallet powered by Galoy
 		 */
@@ -4986,6 +5064,10 @@ export type TranslationFunctions = {
 		 * Send
 		 */
 		send: () => LocalizedString
+		/**
+		 * Pay
+		 */
+		pay: () => LocalizedString
 		/**
 		 * Home
 		 */
@@ -5941,7 +6023,7 @@ export type TranslationFunctions = {
 		 */
 		title: () => LocalizedString
 		/**
-		 * Pick your preferred theme for using Blink, or choose to keep it synced with your system settings.
+		 * Pick your preferred theme for using Flash, or choose to keep it synced with your system settings.
 		 */
 		info: () => LocalizedString
 		/**
@@ -6616,6 +6698,10 @@ export type TranslationFunctions = {
 		 * Search
 		 */
 		search: () => LocalizedString
+		/**
+		 * username or nostr pubkey
+		 */
+		chatSearch: () => LocalizedString
 		/**
 		 * Security
 		 */

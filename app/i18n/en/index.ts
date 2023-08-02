@@ -56,6 +56,16 @@ const en: BaseTranslation = {
   ContactDetailsScreen: {
     title: "Transactions with {username: string}",
   },
+  ChatScreen: {
+    noChatsTitle: "No Chats Found",
+    noChatsYet:
+      "Enter a Flash username or nostr public key to start a chat",
+    noMatchingChats: "No chats matching your search were found.",
+    title: "Chat",
+  },
+  ChatDetailsScreen: {
+    title: "Chat with {username: string}",
+  },
   ConversionDetailsScreen: {
     title: "Convert",
     percentageToConvert: "% to convert",
@@ -457,6 +467,9 @@ const en: BaseTranslation = {
   },
   GetStartedScreen: {
     logInCreateAccount: "Log in / create account",
+    quickStart: "Start",
+    exploreWalletInstead: "Explore wallet instead",
+    setupBusinessAccount: "Setup business account",
     createAccount: "Create new account",
     exploreWallet: "Explore wallet",
     logBackInWith: "Log back in with",
@@ -487,6 +500,7 @@ const en: BaseTranslation = {
   HomeScreen: {
     receive: "Receive",
     send: "Send",
+    pay: "Pay",
     title: "Home",
     scan: "Scan",
     updateAvailable: "An update is available.\nTap to update now",
@@ -780,8 +794,7 @@ const en: BaseTranslation = {
   },
   ThemeScreen: {
     title: "Theme",
-    info:
-      "Pick your preferred theme for using Blink, or choose to keep it synced with your system settings.",
+    info: "Pick your preferred theme for using Flash, or choose to keep it synced with your system settings.",
     system: "Use System setting",
     light: "Use Light Mode",
     dark: "Use Dark Mode",
@@ -993,6 +1006,7 @@ const en: BaseTranslation = {
     restart: "Restart",
     sats: "sats",
     search: "Search",
+    chatSearch: "username or nostr pubkey",
     security: "Security",
     send: "Send",
     setAnAmount: "set an amount",

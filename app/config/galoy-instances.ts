@@ -60,7 +60,7 @@ export const resolveGaloyInstanceOrDefault = (
 export const GALOY_INSTANCES: readonly GaloyInstance[] = [
   {
     id: "Main",
-    name: "Blink",
+    name: "Flash",
     graphqlUri: "https://api.blink.sv/graphql",
     graphqlWsUri: "wss://ws.blink.sv/graphql",
     authUrl: "https://api.blink.sv",
@@ -71,11 +71,10 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
   {
     id: "Staging",
     name: "Staging",
-    graphqlUri: "https://api.staging.galoy.io/graphql",
-    graphqlWsUri: "wss://ws.staging.galoy.io/graphql",
-    authUrl: "https://api.staging.galoy.io",
-    posUrl: "https://pay.staging.galoy.io",
-    lnAddressHostname: "pay.staging.galoy.io",
+    graphqlUri: "http:///development.lnflash.me:4002/ibex/graphql",
+    graphqlWsUri: "ws:///development.lnflash.me:4002/ibex/graphql",
+    posUrl: "http:///development.lnflash.me",
+    lnAddressHostname: "/development.lnflash.me",
     blockExplorer: "https://mempool.space/signet/tx/",
   },
   {

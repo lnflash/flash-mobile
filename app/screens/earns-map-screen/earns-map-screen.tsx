@@ -303,7 +303,7 @@ export const EarnMapScreen: React.FC = () => {
 
 const useStyles = makeStyles(({ colors }) => ({
   contentContainer: {
-    backgroundColor: colors._lightBlue,
+    backgroundColor: colors._gold,
     flexGrow: 1,
   },
 

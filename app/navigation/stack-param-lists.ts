@@ -88,6 +88,13 @@ export type RootStackParamList = {
   totpLoginValidate: { authToken: string }
 }
 
+export type ChatStackParamList = {
+  chatList: undefined
+  chatDetail: { chat: Chat }
+  sendBitcoinDestination: { username: string }
+  transactionDetail: { txid: string }
+}
+
 export type ContactStackParamList = {
   contactList: undefined
   contactDetail: { contact: Contact }
@@ -110,6 +117,7 @@ export type PhoneValidationStackParamList = {
 export type PrimaryStackParamList = {
   Home: undefined
   Contacts: undefined
+  Chat: undefined
   Map: undefined
   Earn: undefined
 }

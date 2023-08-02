@@ -95,9 +95,9 @@ android {
 
     compileSdkVersion rootProject.ext.compileSdkVersion
 
-    namespace "com.galoyapp"
+    namespace "com.lnflash"
     defaultConfig {
-        applicationId "com.galoyapp"
+        applicationId "com.lnflash"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 562
@@ -147,6 +147,10 @@ android {
             }
         }
     }
+
+    packagingOptions {
+        pickFirst '**/libjsc.so'
+    }
 }
 
 dependencies {
@@ -167,6 +171,12 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force "org.webkit:android-jsc:245459.0.0"
     }
 }
 

@@ -427,7 +427,9 @@
     },
     "GetStartedScreen": {
         "logInCreateAccount": "Se connecter / créer un compte",
+        "quickStart": "Démarrage",
         "exploreWalletInstead": "Explorer plutôt le portefeuille",
+        "setupBusinessAccount": "Configurer un compte professionnel",
         "headline": "Portefeuille développé par Galoy",
         "startTrialAccount": "Débuter avec un compte test",
         "iUnderstand": "Je comprends, continuer",
@@ -651,7 +653,7 @@
     },
     "ThemeScreen": {
         "title": "Thème",
-        "info": "Sélectionnez votre thème favori pour utiliser Blink, ou choisissez de le garder synchronisé avec vos Réglages système.",
+        "info": "Sélectionnez votre thème favori pour utiliser Flash, ou choisissez de le garder synchronisé avec vos Réglages système.",
         "system": "Utiliser les Réglages système",
         "light": "Utiliser le mode clair",
         "dark": "Utiliser le mode sombre"

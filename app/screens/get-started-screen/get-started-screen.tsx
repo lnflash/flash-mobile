@@ -96,8 +96,8 @@ export const GetStartedScreen: React.FC = () => {
       />
       <View style={styles.bottom}>
         <GaloyPrimaryButton
-          title={LL.GetStartedScreen.createAccount()}
-          onPress={handleCreateAccount}
+          title={LL.GetStartedScreen.quickStart()}
+          onPress={handleExploreWallet}
           containerStyle={styles.buttonContainer}
         />
         {appCheckToken ? (
@@ -107,8 +107,8 @@ export const GetStartedScreen: React.FC = () => {
           />
         ) : (
           <GaloySecondaryButton
-            title={LL.GetStartedScreen.exploreWallet()}
-            onPress={handleExploreWallet}
+            title={LL.GetStartedScreen.setupBusinessAccount()}
+            onPress={handleCreateAccount}
           />
         )}
         <View style={styles.loginFooterContainer}>

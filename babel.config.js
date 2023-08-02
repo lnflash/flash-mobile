@@ -2,9 +2,14 @@ module.exports = {
   presets: ["module:metro-react-native-babel-preset"],
   plugins: [
     [
-      "react-native-reanimated/plugin",
+      "module:react-native-dotenv",
       {
-        globals: ["__scanCodes"],
+        moduleName: "@env",
+        path: ".env",
+        blacklist: null,
+        whitelist: null,
+        safe: false,
+        allowUndefined: true,
       },
     ],
     [
@@ -14,6 +19,12 @@ module.exports = {
         alias: {
           "^@app/(.+)": "./app/\\1",
         },
+      },
+    ],
+    [
+      "react-native-reanimated/plugin",
+      {
+        globals: ["__scanCodes"],
       },
     ],
   ],
