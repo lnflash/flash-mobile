@@ -65,7 +65,7 @@ export const GetStartedScreen: React.FC = () => {
   const handleCreateDeviceAccount = async () => {
     logGetStartedAction({
       action: "create_device_account",
-      createDeviceAccountEnabled: Boolean(appCheckToken),
+      createDeviceAccountEnabled: Boolean(true),
     })
 
     openConfirmationModal()
@@ -94,18 +94,18 @@ export const GetStartedScreen: React.FC = () => {
         closeModal={closeConfirmationModal}
         appCheckToken={appCheckToken}
       />
+
       <View style={styles.bottom}>
         <GaloyPrimaryButton
           title={LL.GetStartedScreen.quickStart()}
-          onPress={handleExploreWallet}
+          onPress={handleCreateDeviceAccount}
           containerStyle={styles.buttonContainer}
         />
-        {appCheckToken ? (
-          <GaloySecondaryButton
-            title={LL.GetStartedScreen.startTrialAccount()}
-            onPress={handleCreateDeviceAccount}
-          />
-        ) : (
+        {appCheckToken ? null : (
+          // <GaloySecondaryButton
+          //   title={LL.GetStartedScreen.startTrialAccount()}
+          //   onPress={handleCreateDeviceAccount}
+          // />
           <GaloySecondaryButton
             title={LL.GetStartedScreen.setupBusinessAccount()}
             onPress={handleCreateAccount}
