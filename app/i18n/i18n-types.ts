@@ -1486,6 +1486,10 @@ type RootTranslation = {
 			 */
 			noOnchain: string
 		}
+		/**
+		 * Choose Account Type
+		 */
+		chooseAccountType: string		
 	}
 	MapScreen: {
 		/**
@@ -5027,6 +5031,10 @@ export type TranslationFunctions = {
 			 */
 			noOnchain: () => LocalizedString
 		}
+		/**
+		 * Trial account has limits
+		 */
+		chooseAccountType: () => LocalizedString
 	}
 	MapScreen: {
 		/**

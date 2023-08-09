@@ -486,6 +486,7 @@ const en: BaseTranslation = {
       sendingLimit: "Reduced daily sending limit",
       noOnchain: "No receiving bitcoin onchain",
     },
+    chooseAccountType:"Choose Account Type",
   },
   MapScreen: {
     locationPermissionMessage:

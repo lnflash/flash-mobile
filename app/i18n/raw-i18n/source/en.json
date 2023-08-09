@@ -456,7 +456,8 @@
             "noBackup": "No backup option",
             "sendingLimit": "Reduced daily sending limit",
             "noOnchain": "No receiving bitcoin onchain"
-        }
+        },
+        "chooseAccountType": "Choose Account Type"
     },
     "MapScreen": {
         "locationPermissionMessage": "Activate your location so you know where you are on the map",
