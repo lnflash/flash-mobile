@@ -62,7 +62,7 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
 
   const createDeviceAccountAndLogin = async () => {
     try {
-      console.log("createDeviceAccountAndLogin=====> 1")
+      console.log("createDeviceAccountAndLogin=====> 1 ")
 
       setLoading(true)
       const credentials = await Keychain.getInternetCredentials(
@@ -103,7 +103,7 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
         method: "POST",
         headers: {
           Authorization: `Basic ${auth}`,
-          Appcheck: true,
+          Appcheck: appCheckToken || "undefined",
         },
       })
 
