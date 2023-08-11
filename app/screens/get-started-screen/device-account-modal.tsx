@@ -277,7 +277,7 @@ const useStyles = makeStyles(({ colors }, props: UseStylesProps) => ({
     lineHeight: 32,
     maxWidth: "80%",
     textAlign: "center",
-    color: colors._black,
+    color: colors.black,
   },
   btnSelected: {
     // backgroundColor: colors.grey5,
