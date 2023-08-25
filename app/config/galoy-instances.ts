@@ -54,7 +54,7 @@ export const resolveGaloyInstanceOrDefault = (
     return GALOY_INSTANCES[0]
   }
 
-  return GALOY_INSTANCES[1]
+  return instance
 }
 
 export const GALOY_INSTANCES: readonly GaloyInstance[] = [
@@ -71,12 +71,11 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
   {
     id: "Staging",
     name: "Staging",
-    graphqlUri: "https://lnflash.me:4002/graphql",
-    graphqlWsUri: "ws://lnflash.me:4002/graphql",
-    authUrl: "https://ibex-plugin-islandbitcoin.replit.app/api/v1",
-    // authUrl: "https://lnflash.me",
-    posUrl: "https://lnflash.me",
-    lnAddressHostname: "lnflash.me",
+    graphqlUri: "https://api.staging.galoy.io/graphql",
+    graphqlWsUri: "wss://ws.staging.galoy.io/graphql",
+    authUrl: "https://api.staging.galoy.io",
+    posUrl: "https://pay.staging.galoy.io",
+    lnAddressHostname: "pay.staging.galoy.io",
     blockExplorer: "https://mempool.space/signet/tx/",
   },
   {
