@@ -137,7 +137,7 @@ export const useRequestPhoneCodeLogin = (): UseRequestPhoneCodeReturn => {
 
   useEffect(() => {
     const getCountryCodeFromIP = async () => {
-      let defaultCountryCode = "US" as CountryCode
+      let defaultCountryCode = "SV" as CountryCode
       try {
         const response = await axios({
           method: "get",
@@ -145,7 +145,6 @@ export const useRequestPhoneCodeLogin = (): UseRequestPhoneCodeReturn => {
           timeout: 5000,
         })
         const data = response.data
-        console.log("ipapi.co response", data)
 
         if (data && data.country_code) {
           const countryCode = data.country_code

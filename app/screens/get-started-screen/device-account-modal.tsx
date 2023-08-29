@@ -62,14 +62,11 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
 
   const createDeviceAccountAndLogin = async () => {
     try {
-      console.log("createDeviceAccountAndLogin=====> 1 ")
-
       setLoading(true)
       const credentials = await Keychain.getInternetCredentials(
         DEVICE_ACCOUNT_CREDENTIALS_KEY,
       )
 
-      console.log("createDeviceAccountAndLogin=====> 2")
       let username: string
       let password: string
 
@@ -89,26 +86,21 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
         }
       }
 
-      console.log("createDeviceAccountAndLogin=====> 3")
       logAttemptCreateDeviceAccount()
 
       const auth = Buffer.from(`${username}:${password}`, "utf8").toString("base64")
-
-      console.log("createDeviceAccountAndLogin=====> 4", appCheckToken)
-      console.log("usernme and password =====> ", username, password)
-      console.log("authUrl=====> ", authUrl)
-      console.log("DEVICE_ACCOUNT_CREDENTIALS_KEY=====> ", DEVICE_ACCOUNT_CREDENTIALS_KEY)
 
       const res = await fetch(authUrl + "/auth/create/device-account", {
         method: "POST",
         headers: {
           Authorization: `Basic ${auth}`,
-          Appcheck: appCheckToken || "undefined",
+          Appcheck: `${appCheckToken}` || "undefined",
         },
       })
-
-      console.log("auth=====> ", auth)
-      console.log("res=====> ", res)
+      if (!res.ok) {
+        console.error(`Error fetching from server: ${res.status} ${res.statusText}`)
+        return // Or handle this error appropriately
+      }
 
       const data: {
         result: string | undefined
@@ -126,13 +118,11 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
       navigation.replace("Primary")
       closeModal()
     } catch (error) {
-      console.log("createDeviceAccountAndLogin=====> error")
       setHasError(true)
       logCreateDeviceAccountFailure()
       if (error instanceof Error) {
         crashlytics().recordError(error)
       }
-      console.log("Error with device account: ", JSON.stringify(error))
     }
 
     setLoading(false)

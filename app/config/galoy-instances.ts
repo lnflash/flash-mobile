@@ -71,11 +71,11 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
   {
     id: "Staging",
     name: "Staging",
-    graphqlUri: "https://api.staging.galoy.io/graphql",
-    graphqlWsUri: "wss://ws.staging.galoy.io/graphql",
-    authUrl: "https://api.staging.galoy.io",
-    posUrl: "https://pay.staging.galoy.io",
-    lnAddressHostname: "pay.staging.galoy.io",
+    graphqlUri: "http://100.87.129.37:4002/graphql",
+    graphqlWsUri: "ws://100.87.129.37:4002/graphqlws",
+    authUrl: "http://100.87.129.37:4002",
+    posUrl: "http://100.87.129.37:3000",
+    lnAddressHostname: "100.87.129.37:3000",
     blockExplorer: "https://mempool.space/signet/tx/",
   },
   {
