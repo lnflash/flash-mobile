@@ -1411,6 +1411,10 @@
   version "0.1.2"
   resolved "https://github.com/breez/breez-sdk-react-native/releases/download/0.1.2/breeztech-react-native-breez-sdk-0.1.2.tgz#2c9c0d7cfbae501dfda145f04f1992b5abadc61e"
 
+"@breeztech/react-native-breez-sdk@https://github.com/breez/breez-sdk-react-native/releases/download/0.1.4/breeztech-react-native-breez-sdk-0.1.4.tgz":
+  version "0.1.4"
+  resolved "https://github.com/breez/breez-sdk-react-native/releases/download/0.1.4/breeztech-react-native-breez-sdk-0.1.4.tgz#8bf5ec2815b6b4d1ef2b4ab22445cf73dc746a1f"
+
 "@callstack/react-theme-provider@3.0.3":
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/@callstack/react-theme-provider/-/react-theme-provider-3.0.3.tgz#f964dda28cd6e731c3fbcf916b0579c6f9fb2db7"
