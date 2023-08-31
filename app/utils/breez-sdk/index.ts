@@ -6,6 +6,8 @@ import {
   mnemonicToSeed,
   NodeConfig,
   NodeConfigType,
+  receivePayment,
+  LnInvoice,
 } from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
@@ -108,4 +110,15 @@ export const initializeBreezSDK = async (): Promise<boolean> => {
   return breezSDKInitializing as Promise<boolean>
 }
 
-export default initializeBreezSDK
+export const receivePaymentBreezSDK = async (
+  paymentAmount: number,
+  description: string,
+): Promise<LnInvoice> => {
+  try {
+    const invoice = await receivePayment(paymentAmount, description)
+    return invoice
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
