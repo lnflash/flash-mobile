@@ -1,5 +1,5 @@
 import { Screen } from "@app/components/screen"
-import { WalletCurrency } from "@app/graphql/generated"
+import { Network, WalletCurrency } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { requestNotificationPermission } from "@app/utils/notifications"
@@ -26,7 +26,8 @@ import { GaloyCurrencyBubble } from "@app/components/atomic/galoy-currency-bubbl
 
 // Breez SDK
 import { receivePaymentBreezSDK } from "@app/utils/breez-sdk"
-import { LnInvoice } from "@breeztech/react-native-breez-sdk"
+import { LnInvoice, addEventListener } from "@breeztech/react-native-breez-sdk"
+import { getPaymentRequestFullUri } from "./payment/helpers"
 
 const ReceiveScreen = () => {
   const {
@@ -49,14 +50,8 @@ const ReceiveScreen = () => {
     const fetchBreezInvoice = async () => {
       if (isAuthed && isFocused) {
         try {
-          console.log("-------------------------------------------")
-          console.log("begin fetchBreezInvoice")
-          console.log("-------------------------------------------")
           const fetchedBreezInvoice = await receivePaymentBreezSDK(2501, "")
           populateFormattedBreezInvoice(fetchedBreezInvoice)
-          console.log("-------------------------------------------")
-          console.log("finished fetchBreezInvoice")
-          console.log("-------------------------------------------")
         } catch (error) {
           console.error("Error fetching breezInvoice:", error)
         }
@@ -66,9 +61,6 @@ const ReceiveScreen = () => {
   }, [isAuthed, isFocused])
 
   const populateFormattedBreezInvoice = (rawInvoiceData: LnInvoice) => {
-    console.log("-------------------------------------------")
-    console.log("begin populateFormattedBreezInvoice", rawInvoiceData)
-    console.log("-------------------------------------------")
     if (rawInvoiceData) {
       // Step 1: Format the breezInvoice to match the structure of request.info.data
       const formattedBreezInvoice: InvoiceData = {
@@ -82,51 +74,71 @@ const ReceiveScreen = () => {
           : "",
         // Converting the timestamp to a Date object
         expiresAt: new Date(Date.now() + rawInvoiceData.expiry * 1000),
-        __typename: "LnNoAmountInvoice",
+        __typename: "LnInvoice",
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        getFullUriFn: ({ uppercase = false, prefix = false }) => {
-          // You need to provide the logic here. This is a placeholder.
-          // Implement this function based on how you want to construct your URI.
-          const baseUri = request?.info?.data?.getFullUriFn.name || "" // replace this with your actual base URI logic
-          return uppercase ? baseUri.toUpperCase() : baseUri
-          // Use the prefix logic if necessary.
-        },
+        getFullUriFn: ({ uppercase, prefix }) =>
+          getPaymentRequestFullUri({
+            type: Invoice.Lightning,
+            input: rawInvoiceData.bolt11 || "",
+            amount: (rawInvoiceData.amountMsat || 2500001) / 1000,
+            memo: rawInvoiceData.description,
+            uppercase,
+            prefix,
+          }),
       }
       setFormattedBreezInvoiceState(formattedBreezInvoice)
     }
-    console.log("-------------------------------------------")
-    console.log("formattedBreezInvoice", formattedBreezInvoiceState)
-    console.log("-------------------------------------------")
   }
 
   useEffect(() => {
     // async function to update the request with the formatted breezInvoice
     const updateRequest = async (formattedInvoiceData: InvoiceData | null) => {
       if (request?.info?.data && request?.creationData && formattedInvoiceData) {
-        setUpdatedRequest({
+        const uri = formattedInvoiceData.getFullUriFn({})
+        const newRequest = {
           ...request,
           info: {
             ...request.info,
             data: formattedInvoiceData,
           },
-          network: "mainnet",
+          network: Network.Mainnet,
           creationData: {
             ...request.creationData,
-            network: "mainnet",
+            network: Network.Mainnet,
           },
           extraDetails: "Breez Invoice | Valid for 7 days",
-        })
-        console.log("-------------------------------------------")
-        console.log("Completed Population", updatedRequest?.info?.data)
-        console.log("-------------------------------------------")
+          readablePaymentRequest: `${uri.slice(0, 10)}..${uri.slice(-10)}`,
+        }
+        setUpdatedRequest(newRequest)
+        if (updatedRequest?.info?.data) {
+          console.log("-------------------------------------------")
+          console.log("Completed Fetching Breez Invoice and Request Object")
+          console.log("readablePaymentRequest:", updatedRequest.readablePaymentRequest)
+          console.log("-------------------------------------------")
+        }
       } else {
         // Handle the case when request.info is undefined
         console.log("request is still undefined")
       }
     }
     updateRequest(formattedBreezInvoiceState)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request?.info?.data, formattedBreezInvoiceState, updatedRequest?.info?.data])
 
+  // SDK events listener
+  useEffect(() => {
+    addEventListener((type) => {
+      if (type === "invoicePaid") {
+        // update the request state to paid on the updatedRequest object
+        setUpdatedRequest((prevState) => {
+          return {
+            ...prevState,
+            state: PaymentRequestState.Paid,
+          }
+        })
+      }
+    })
+  }, [])
   // notification permission
   useEffect(() => {
     let timeout: NodeJS.Timeout
@@ -154,11 +166,11 @@ const ReceiveScreen = () => {
   }, [request?.type, LL.ReceiveScreen, navigation])
 
   useEffect(() => {
-    if (request?.state === PaymentRequestState.Paid) {
+    if (updatedRequest?.state === PaymentRequestState.Paid) {
       const id = setTimeout(() => navigation.goBack(), 5000)
       return () => clearTimeout(id)
     }
-  }, [request?.state, navigation])
+  }, [updatedRequest?.state, navigation])
 
   if (!request) return <></>
 
@@ -217,14 +229,16 @@ const ReceiveScreen = () => {
 
         <QRView
           type={updatedRequest?.info?.data?.invoiceType || Invoice.OnChain}
-          getFullUri={request.info?.data?.getFullUriFn}
-          loading={request.state === PaymentRequestState.Loading}
-          completed={request.state === PaymentRequestState.Paid}
+          getFullUri={updatedRequest?.info?.data?.getFullUriFn}
+          loading={updatedRequest?.state === PaymentRequestState.Loading}
+          completed={updatedRequest?.state === PaymentRequestState.Paid}
           err={
-            request.state === PaymentRequestState.Error ? LL.ReceiveScreen.error() : ""
+            updatedRequest?.state === PaymentRequestState.Error
+              ? LL.ReceiveScreen.error()
+              : ""
           }
           style={styles.qrView}
-          expired={request.state === PaymentRequestState.Expired}
+          expired={updatedRequest?.state === PaymentRequestState.Expired}
           regenerateInvoiceFn={request.regenerateInvoice}
           copyToClipboard={request.copyToClipboard}
           isPayCode={request.type === Invoice.PayCode}
@@ -242,7 +256,7 @@ const ReceiveScreen = () => {
                 <View style={styles.copyInvoiceContainer}>
                   <TouchableOpacity
                     {...testProps(LL.ReceiveScreen.copyInvoice())}
-                    onPress={request.copyToClipboard}
+                    onPress={updatedRequest?.copyToClipboard}
                   >
                     <Text {...testProps("Copy Invoice")} color={colors.grey2}>
                       <Icon color={colors.grey2} name="copy-outline" />
@@ -252,7 +266,7 @@ const ReceiveScreen = () => {
                   </TouchableOpacity>
                 </View>
                 <View>
-                  <Text color={colors.grey2}>{request.extraDetails || ""}</Text>
+                  <Text color={colors.grey2}>{updatedRequest?.extraDetails || ""}</Text>
                 </View>
                 <View style={styles.shareInvoiceContainer}>
                   <TouchableOpacity
@@ -270,11 +284,11 @@ const ReceiveScreen = () => {
             )}
         </View>
 
-        <TouchableOpacity onPress={request.copyToClipboard}>
+        <TouchableOpacity onPress={updatedRequest?.copyToClipboard}>
           <View style={styles.extraDetails}>
-            {request.readablePaymentRequest && (
+            {updatedRequest?.readablePaymentRequest && (
               <Text {...testProps("readable-payment-request")}>
-                {request.readablePaymentRequest}
+                {updatedRequest.readablePaymentRequest}
               </Text>
             )}
           </View>

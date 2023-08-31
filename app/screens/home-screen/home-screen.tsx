@@ -36,6 +36,9 @@ import { isIos } from "@app/utils/helper"
 import { SetDefaultAccountModal } from "@app/components/set-default-account-modal"
 import { useAppConfig } from "@app/hooks"
 
+// Breez balance is refreshed on pulldown
+import useBreezBalance from "@app/hooks/useBreezBalance"
+
 const TransactionCountToTriggerSetDefaultAccountModal = 1
 
 gql`
@@ -141,6 +144,8 @@ export const HomeScreen: React.FC = () => {
       refetchRealtimePrice()
       refetchAuthed()
       refetchUnauthed()
+      setRefreshTriggered(true)
+      setTimeout(() => setRefreshTriggered(false), 1000)
     }
   }, [isAuthed, refetchAuthed, refetchRealtimePrice, refetchUnauthed])
 
@@ -150,6 +155,7 @@ export const HomeScreen: React.FC = () => {
   const [modalVisible, setModalVisible] = React.useState(false)
   const [isStablesatModalVisible, setIsStablesatModalVisible] = React.useState(false)
   const [isContentVisible, setIsContentVisible] = React.useState(false)
+  const [refreshTriggered, setRefreshTriggered] = React.useState(false)
 
   React.useEffect(() => {
     setIsContentVisible(isBalanceVisible)
@@ -327,6 +333,7 @@ export const HomeScreen: React.FC = () => {
         }
       >
         <WalletOverview
+          refreshTriggered={refreshTriggered}
           isContentVisible={isContentVisible}
           setIsContentVisible={setIsContentVisible}
           loading={loading}
