@@ -1,4 +1,4 @@
-import { WalletCurrency } from "@app/graphql/generated"
+import { LnNoAmountInvoiceCreateMutation, WalletCurrency } from "@app/graphql/generated"
 import {
   CreatePaymentRequestParams,
   GetFullUriFn,
@@ -12,6 +12,10 @@ import { BtcMoneyAmount } from "@app/types/amounts"
 import { getPaymentRequestFullUri, prToDateString } from "./helpers"
 import { bech32 } from "bech32"
 
+// Breez SDK
+import { receivePaymentBreezSDK } from "@app/utils/breez-sdk"
+import { LnInvoice } from "@breeztech/react-native-breez-sdk"
+
 export const createPaymentRequest = (
   params: CreatePaymentRequestParams,
 ): PaymentRequest => {
@@ -24,15 +28,55 @@ export const createPaymentRequest = (
     return createPaymentRequest({ ...params, state })
   }
 
+  const populateFormattedNoAmountBreezInvoice = (
+    rawInvoiceData: LnInvoice | undefined,
+  ): Promise<LnNoAmountInvoiceCreateMutation | null> => {
+    if (rawInvoiceData) {
+      const formattedBreezInvoice: LnNoAmountInvoiceCreateMutation = {
+        lnNoAmountInvoiceCreate: {
+          errors: [],
+          invoice: {
+            paymentHash: rawInvoiceData.paymentHash,
+            paymentRequest: rawInvoiceData.bolt11,
+            paymentSecret: rawInvoiceData.paymentSecret
+              ? Array.from(rawInvoiceData.paymentSecret)
+                  .map((byte) => byte.toString(16))
+                  .join("")
+              : "",
+            __typename: "LnNoAmountInvoice",
+          },
+          __typename: "LnNoAmountInvoicePayload",
+        },
+        __typename: "Mutation",
+      }
+      return Promise.resolve(formattedBreezInvoice)
+    }
+    return Promise.resolve(null)
+  }
+
+  const fetchBreezInvoice = async () => {
+    try {
+      const fetchedBreezInvoice = await receivePaymentBreezSDK(1, "")
+      const formattedInvoice = await populateFormattedNoAmountBreezInvoice(
+        fetchedBreezInvoice,
+      )
+      return formattedInvoice
+    } catch (error) {
+      console.error("Error fetching breezInvoice:", error)
+    }
+  }
+
   // The hook should setState(Loading) before calling this
   const generateQuote: () => Promise<PaymentRequest> = async () => {
     const { creationData, mutations } = params
     const pr = { ...creationData } // clone creation data object
 
+    const breezNoAmountInvoiceCreateData = await fetchBreezInvoice()
+
     let info: PaymentRequestInformation | undefined
 
     // Default memo
-    if (!pr.memo) pr.memo = "Pay to Blink Wallet User"
+    if (!pr.memo) pr.memo = "Flash Cash"
 
     // On Chain BTC
     if (pr.type === Invoice.OnChain) {
@@ -74,7 +118,7 @@ export const createPaymentRequest = (
       pr.type === Invoice.Lightning &&
       (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0)
     ) {
-      const { data, errors } = await mutations.lnNoAmountInvoiceCreate({
+      let { data, errors } = await mutations.lnNoAmountInvoiceCreate({
         variables: {
           input: {
             walletId: pr.receivingWalletDescriptor.id,
@@ -82,10 +126,14 @@ export const createPaymentRequest = (
           },
         },
       })
+      if (breezNoAmountInvoiceCreateData) {
+        data = breezNoAmountInvoiceCreateData
+        errors = []
+      }
 
       const dateString = prToDateString(
         data?.lnNoAmountInvoiceCreate.invoice?.paymentRequest ?? "",
-        pr.network,
+        "mainnet", // pr.network ,
       )
 
       const getFullUriFn: GetFullUriFn = ({ uppercase, prefix }) =>
@@ -129,7 +177,7 @@ export const createPaymentRequest = (
 
       const dateString = prToDateString(
         data?.lnInvoiceCreate.invoice?.paymentRequest ?? "",
-        pr.network,
+        "mainnet", // pr.network,
       )
 
       const getFullUriFn: GetFullUriFn = ({ uppercase, prefix }) =>
@@ -172,7 +220,7 @@ export const createPaymentRequest = (
 
       const dateString = prToDateString(
         data?.lnUsdInvoiceCreate.invoice?.paymentRequest ?? "",
-        pr.network,
+        "mainnet", // pr.network,
       )
 
       const getFullUriFn: GetFullUriFn = ({ uppercase, prefix }) =>

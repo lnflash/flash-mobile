@@ -20,6 +20,7 @@ import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 
 // import Breez SDK Wallet
 import useBreezBalance from "@app/hooks/useBreezBalance"
+import { useIsFocused } from "@react-navigation/native"
 
 const Loader = () => {
   const styles = useStyles()
@@ -60,6 +61,7 @@ type Props = {
   setIsContentVisible: React.Dispatch<React.SetStateAction<boolean>>
   setIsStablesatModalVisible: (value: boolean) => void
   navigation?: StackNavigationProp<RootStackParamList, "conversionDetails">
+  refreshTriggered: boolean
 }
 
 const WalletOverview: React.FC<Props> = ({
@@ -68,6 +70,7 @@ const WalletOverview: React.FC<Props> = ({
   setIsContentVisible,
   setIsStablesatModalVisible,
   navigation,
+  refreshTriggered,
 }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isGaloyWalletVisible, setIsGaloyWalletVisible] = React.useState(false)
@@ -81,8 +84,20 @@ const WalletOverview: React.FC<Props> = ({
 
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
     useDisplayCurrency()
+  const isFocused = useIsFocused()
+  React.useLayoutEffect(() => {
+    // refresh balance when screen is focused or refresh is triggered
+    if (refreshTriggered || isFocused) {
+      refreshBreezBalance()
+    }
+    // wait for 10 seconds and then refresh again
+    const _timeout = setTimeout(() => {
+      refreshBreezBalance()
+    }, 10000)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTriggered, isFocused])
 
-  const breezBalance = useBreezBalance()
+  const [breezBalance, refreshBreezBalance] = useBreezBalance()
   let btcInDisplayCurrencyFormatted: string | undefined = "$-0.01"
   let usdInDisplayCurrencyFormatted: string | undefined = "$-0.01"
   let extBtcInDisplayCurrencyFormatted: string | undefined = "$-0.01"
@@ -137,11 +152,6 @@ const WalletOverview: React.FC<Props> = ({
       extUsdInUnderlyingCurrency = formatMoneyAmount({ moneyAmount: extUsdWalletBalance })
     }
   }
-
-  React.useEffect(() => {
-    console.log("extBtcWalletBalance", extBtcInDisplayCurrencyFormatted)
-    console.log("extUsdWalletBalance", extUsdInDisplayCurrencyFormatted)
-  }, [extBtcInDisplayCurrencyFormatted, extUsdInDisplayCurrencyFormatted])
 
   const toggleIsContentVisible = () => {
     setIsContentVisible((prevState) => !prevState)
