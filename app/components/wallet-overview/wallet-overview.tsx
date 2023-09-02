@@ -20,6 +20,7 @@ import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 
 // import Breez SDK Wallet
 import useBreezBalance from "@app/hooks/useBreezBalance"
+import { useIsFocused } from "@react-navigation/native"
 
 const Loader = () => {
   const styles = useStyles()
@@ -83,15 +84,18 @@ const WalletOverview: React.FC<Props> = ({
 
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
     useDisplayCurrency()
-
+  const isFocused = useIsFocused()
   React.useLayoutEffect(() => {
-    if (refreshTriggered) {
+    // refresh balance when screen is focused or refresh is triggered
+    if (refreshTriggered || isFocused) {
       refreshBreezBalance()
     }
-    console.log("extBtcWalletBalance", extBtcInDisplayCurrencyFormatted)
-    console.log("extUsdWalletBalance", extUsdInDisplayCurrencyFormatted)
+    // wait for 10 seconds and then refresh again
+    const _timeout = setTimeout(() => {
+      refreshBreezBalance()
+    }, 10000)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshTriggered])
+  }, [refreshTriggered, isFocused])
 
   const [breezBalance, refreshBreezBalance] = useBreezBalance()
   let btcInDisplayCurrencyFormatted: string | undefined = "$-0.01"
