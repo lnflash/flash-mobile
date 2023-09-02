@@ -84,7 +84,7 @@ const WalletOverview: React.FC<Props> = ({
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
     useDisplayCurrency()
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (refreshTriggered) {
       refreshBreezBalance()
     }
