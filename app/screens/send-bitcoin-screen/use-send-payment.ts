@@ -10,11 +10,15 @@ import {
   useOnChainPaymentSendAllMutation,
   useOnChainUsdPaymentSendAsBtcDenominatedMutation,
   useOnChainUsdPaymentSendMutation,
+  GraphQlApplicationError,
 } from "@app/graphql/generated"
 import { useMemo, useState } from "react"
 import { SendPaymentMutation } from "./payment-details/index.types"
 import { gql } from "@apollo/client"
 import { getErrorMessages } from "@app/graphql/utils"
+
+// Breez SDK
+import { sendPaymentBreezSDK } from "@app/utils/breez-sdk"
 
 type UseSendPaymentResult = {
   loading: boolean
@@ -115,7 +119,9 @@ gql`
 
 export const useSendPayment = (
   sendPaymentMutation?: SendPaymentMutation | null,
+  paymentRequest?: string,
 ): UseSendPaymentResult => {
+  console.log("useSendPayment initiated")
   const [intraLedgerPaymentSend, { loading: intraLedgerPaymentSendLoading }] =
     useIntraLedgerPaymentSendMutation({ refetchQueries: [HomeAuthedDocument] })
 
@@ -163,20 +169,43 @@ export const useSendPayment = (
     onChainUsdPaymentSendAsBtcDenominatedLoading
 
   const sendPayment = useMemo(() => {
+    console.log("SendPayment initiated")
+    console.log("hasAttemptedSend:", hasAttemptedSend)
     return sendPaymentMutation && !hasAttemptedSend
       ? async () => {
           setHasAttemptedSend(true)
-          const { status, errors } = await sendPaymentMutation({
-            intraLedgerPaymentSend,
-            intraLedgerUsdPaymentSend,
-            lnInvoicePaymentSend,
-            lnNoAmountInvoicePaymentSend,
-            lnNoAmountUsdInvoicePaymentSend,
-            onChainPaymentSend,
-            onChainPaymentSendAll,
-            onChainUsdPaymentSend,
-            onChainUsdPaymentSendAsBtcDenominated,
-          })
+          let status: PaymentSendResult | null | undefined = null
+          let errors: readonly GraphQlApplicationError[] | undefined
+          // Try using Breez SDK for lnNoAmountInvoicePaymentSend
+          if (sendPaymentMutation?.name === "sendPaymentMutation" && paymentRequest) {
+            try {
+              console.log("Trying to send payment using Breez SDK...")
+              const payment = await sendPaymentBreezSDK(paymentRequest)
+              console.log("Payment sent using Breez SDK:", payment)
+              return {
+                status: payment.paymentTime
+                  ? PaymentSendResult.Success
+                  : PaymentSendResult.Failure,
+                errors: [],
+              }
+            } catch (err) {
+              console.error("Failed to send payment using Breez SDK:", err)
+            }
+          } else {
+            const response = await sendPaymentMutation({
+              intraLedgerPaymentSend,
+              intraLedgerUsdPaymentSend,
+              lnInvoicePaymentSend,
+              lnNoAmountInvoicePaymentSend,
+              lnNoAmountUsdInvoicePaymentSend,
+              onChainPaymentSend,
+              onChainPaymentSendAll,
+              onChainUsdPaymentSend,
+              onChainUsdPaymentSendAsBtcDenominated,
+            })
+            status = response.status
+            errors = response.errors
+          }
           let errorsMessage = undefined
           if (errors) {
             errorsMessage = getErrorMessages(errors)
@@ -188,8 +217,9 @@ export const useSendPayment = (
         }
       : undefined
   }, [
-    hasAttemptedSend,
     sendPaymentMutation,
+    hasAttemptedSend,
+    paymentRequest,
     intraLedgerPaymentSend,
     intraLedgerUsdPaymentSend,
     lnInvoicePaymentSend,

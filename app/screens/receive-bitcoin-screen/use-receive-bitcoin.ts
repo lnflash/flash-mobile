@@ -6,10 +6,10 @@ import {
   PaymentRequest,
   PaymentRequestState,
   PaymentRequestCreationData,
-  InvoiceData,
+  // InvoiceData,
 } from "./payment/index.types"
 import {
-  LnNoAmountInvoicePayload,
+  // LnNoAmountInvoicePayload,
   WalletCurrency,
   useLnInvoiceCreateMutation,
   useLnNoAmountInvoiceCreateMutation,

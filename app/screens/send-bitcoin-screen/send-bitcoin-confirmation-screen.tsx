@@ -35,6 +35,7 @@ import { useSendPayment } from "./use-send-payment"
 import { AmountInput } from "@app/components/amount-input"
 import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
+import useBreezBalance from "@app/hooks/useBreezBalance"
 
 gql`
   query sendBitcoinConfirmationScreen {
@@ -82,10 +83,14 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route }) => {
 
   const { data } = useSendBitcoinConfirmationScreenQuery({ skip: !useIsAuthed() })
 
+  // import and use breez balance
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [breezBalance, setBreezBalance] = useBreezBalance()
+
   const btcWallet = getBtcWallet(data?.me?.defaultAccount?.wallets)
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
-  const btcBalanceMoneyAmount = toBtcMoneyAmount(btcWallet?.balance)
+  const btcBalanceMoneyAmount = toBtcMoneyAmount(breezBalance || btcWallet?.balance)
 
   const usdBalanceMoneyAmount = toUsdMoneyAmount(usdWallet?.balance)
 
@@ -108,7 +113,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route }) => {
     loading: sendPaymentLoading,
     sendPayment,
     hasAttemptedSend,
-  } = useSendPayment(sendPaymentMutation)
+  } = useSendPayment(sendPaymentMutation, destination)
 
   let feeDisplayText = ""
   if (fee.amount) {
