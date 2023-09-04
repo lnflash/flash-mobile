@@ -10,6 +10,7 @@ import {
   LnInvoice,
   sendPayment,
   Payment,
+  parseInvoice,
 } from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
@@ -132,6 +133,18 @@ export const sendPaymentBreezSDK = async (
   try {
     const payment = await sendPayment(paymentRequest, paymentAmount)
     return payment
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const parseInvoiceBreezSDK = async (
+  paymentRequest: string,
+): Promise<LnInvoice> => {
+  try {
+    const invoice = await parseInvoice(paymentRequest)
+    return invoice
   } catch (error) {
     console.log(error)
     throw error

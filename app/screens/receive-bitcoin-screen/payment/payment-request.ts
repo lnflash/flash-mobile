@@ -28,38 +28,76 @@ export const createPaymentRequest = (
     return createPaymentRequest({ ...params, state })
   }
 
-  const populateFormattedNoAmountBreezInvoice = (
-    rawInvoiceData: LnInvoice | undefined,
-  ): Promise<LnNoAmountInvoiceCreateMutation | null> => {
-    if (rawInvoiceData) {
-      const formattedBreezInvoice: LnNoAmountInvoiceCreateMutation = {
-        lnNoAmountInvoiceCreate: {
-          errors: [],
-          invoice: {
-            paymentHash: rawInvoiceData.paymentHash,
-            paymentRequest: rawInvoiceData.bolt11,
-            paymentSecret: rawInvoiceData.paymentSecret
-              ? Array.from(rawInvoiceData.paymentSecret)
-                  .map((byte) => byte.toString(16))
-                  .join("")
-              : "",
-            __typename: "LnNoAmountInvoice",
-          },
-          __typename: "LnNoAmountInvoicePayload",
-        },
-        __typename: "Mutation",
-      }
-      return Promise.resolve(formattedBreezInvoice)
-    }
-    return Promise.resolve(null)
-  }
-
-  const fetchBreezInvoice = async () => {
+  const fetchBreezInvoice = async (
+    amount?: number | undefined,
+    memo?: string | undefined,
+  ) => {
     try {
-      const fetchedBreezInvoice = await receivePaymentBreezSDK(1, "")
-      const formattedInvoice = await populateFormattedNoAmountBreezInvoice(
-        fetchedBreezInvoice,
-      )
+      let breezInvoiceData
+      if (amount) {
+        const populateFormattedBreezInvoice = (
+          rawInvoiceData: LnInvoice | undefined,
+        ): Promise<LnInvoiceCreateMutation | null> => {
+          if (rawInvoiceData) {
+            const formattedBreezInvoice: LnInvoiceCreateMutation = {
+              lnInvoiceCreate: {
+                errors: [],
+                invoice: {
+                  paymentHash: rawInvoiceData.paymentHash,
+                  paymentRequest: rawInvoiceData.bolt11,
+                  paymentSecret: rawInvoiceData.paymentSecret
+                    ? Array.from(rawInvoiceData.paymentSecret)
+                        .map((byte) => byte.toString(16))
+                        .join("")
+                    : "",
+                  __typename: "LnInvoice",
+                },
+                __typename: "LnInvoicePayload",
+              },
+              __typename: "Mutation",
+            }
+            return Promise.resolve(formattedBreezInvoice)
+          }
+          return Promise.resolve(null)
+        }
+        breezInvoiceData = populateFormattedBreezInvoice
+      } else {
+        const populateFormattedNoAmountBreezInvoice = (
+          rawInvoiceData: LnInvoice | undefined,
+        ): Promise<LnNoAmountInvoiceCreateMutation | null> => {
+          if (rawInvoiceData) {
+            const formattedBreezInvoice: LnNoAmountInvoiceCreateMutation = {
+              lnNoAmountInvoiceCreate: {
+                errors: [],
+                invoice: {
+                  paymentHash: rawInvoiceData.paymentHash,
+                  paymentRequest: rawInvoiceData.bolt11,
+                  paymentSecret: rawInvoiceData.paymentSecret
+                    ? Array.from(rawInvoiceData.paymentSecret)
+                        .map((byte) => byte.toString(16))
+                        .join("")
+                    : "",
+                  __typename: "LnNoAmountInvoice",
+                },
+                __typename: "LnNoAmountInvoicePayload",
+              },
+              __typename: "Mutation",
+            }
+            return Promise.resolve(formattedBreezInvoice)
+          }
+          return Promise.resolve(null)
+        }
+        breezInvoiceData = populateFormattedNoAmountBreezInvoice
+      }
+      const amountSats = amount ? amount : 1
+      const memoDetail = memo ? memo : "Flash Cash"
+      const fetchedBreezInvoice = await receivePaymentBreezSDK(amountSats, memoDetail)
+      const formattedInvoice = await breezInvoiceData(fetchedBreezInvoice)
+      // debugging
+      console.log("----------------------------------------------")
+      console.log("formattedInvoice", fetchedBreezInvoice.bolt11)
+      console.log("----------------------------------------------")
+      console.log("Formatted Invoice", JSON.stringify(formattedInvoice, null, 2))
       return formattedInvoice
     } catch (error) {
       console.error("Error fetching breezInvoice:", error)
@@ -71,7 +109,10 @@ export const createPaymentRequest = (
     const { creationData, mutations } = params
     const pr = { ...creationData } // clone creation data object
 
-    const breezNoAmountInvoiceCreateData = await fetchBreezInvoice()
+    const breezNoAmountInvoiceCreateData = await fetchBreezInvoice(
+      pr.settlementAmount?.amount,
+      pr.memo,
+    )
 
     let info: PaymentRequestInformation | undefined
 
@@ -165,7 +206,7 @@ export const createPaymentRequest = (
       pr.settlementAmount &&
       pr.settlementAmount?.currency === WalletCurrency.Btc
     ) {
-      const { data, errors } = await mutations.lnInvoiceCreate({
+      let { data, errors } = await mutations.lnInvoiceCreate({
         variables: {
           input: {
             walletId: pr.receivingWalletDescriptor.id,
@@ -174,6 +215,10 @@ export const createPaymentRequest = (
           },
         },
       })
+      if (breezNoAmountInvoiceCreateData) {
+        data = breezNoAmountInvoiceCreateData
+        errors = []
+      }
 
       const dateString = prToDateString(
         data?.lnInvoiceCreate.invoice?.paymentRequest ?? "",
