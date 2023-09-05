@@ -13,6 +13,12 @@ import {
   parseInvoice,
   receiveOnchain,
   SwapInfo,
+  fetchReverseSwapFees,
+  sendOnchain,
+  ReverseSwapInfo,
+  ReverseSwapPairInfo,
+  recommendedFees,
+  RecommendedFees,
 } from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
@@ -39,6 +45,7 @@ const retry = <T>(fn: () => Promise<T>, ms = 5000, maxRetries = 3) =>
     tryFn()
   })
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getMnemonic = async (): Promise<string> => {
   try {
     const credentials = await Keychain.getGenericPassword({
@@ -157,6 +164,50 @@ export const receiveOnchainBreezSDK = async (): Promise<SwapInfo> => {
   try {
     const swapInfo = await receiveOnchain()
     return swapInfo
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const fetchReverseSwapFeesBreezSDK = async (
+  amount: number,
+): Promise<ReverseSwapPairInfo> => {
+  try {
+    console.log("Fetching reverse swap fees for amount: ", amount)
+    const fees = await fetchReverseSwapFees()
+    return fees
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const sendOnchainBreezSDK = async (
+  currentFees: ReverseSwapPairInfo,
+  destinationAddress: string,
+  satPerVbyte: number,
+): Promise<ReverseSwapInfo> => {
+  try {
+    console.log("Sending onchain payment to address: ", destinationAddress)
+    const reverseSwapInfo = await sendOnchain(
+      currentFees.min,
+      destinationAddress,
+      currentFees.feesHash,
+      satPerVbyte,
+    )
+    return reverseSwapInfo
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const recommendedFeesBreezSDK = async (): Promise<RecommendedFees> => {
+  try {
+    console.log("Fetching recommended fees")
+    const fees = await recommendedFees()
+    return fees
   } catch (error) {
     console.log(error)
     throw error

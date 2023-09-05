@@ -18,7 +18,14 @@ import { gql } from "@apollo/client"
 import { getErrorMessages } from "@app/graphql/utils"
 
 // Breez SDK
-import { sendPaymentBreezSDK, parseInvoiceBreezSDK } from "@app/utils/breez-sdk"
+import {
+  sendPaymentBreezSDK,
+  parseInvoiceBreezSDK,
+  sendOnchainBreezSDK,
+  recommendedFeesBreezSDK,
+  fetchReverseSwapFeesBreezSDK,
+} from "@app/utils/breez-sdk"
+import { LnInvoice } from "@breeztech/react-native-breez-sdk"
 
 type UseSendPaymentResult = {
   loading: boolean
@@ -121,6 +128,7 @@ export const useSendPayment = (
   sendPaymentMutation?: SendPaymentMutation | null,
   paymentRequest?: string,
   amountMsats?: number,
+  // eslint-disable-next-line max-params
 ): UseSendPaymentResult => {
   const [intraLedgerPaymentSend, { loading: intraLedgerPaymentSendLoading }] =
     useIntraLedgerPaymentSendMutation({ refetchQueries: [HomeAuthedDocument] })
@@ -169,19 +177,25 @@ export const useSendPayment = (
     onChainUsdPaymentSendAsBtcDenominatedLoading
 
   const sendPayment = useMemo(() => {
+    let invoice: LnInvoice
     console.log("hasAttemptedSend:", hasAttemptedSend)
     return sendPaymentMutation && !hasAttemptedSend
       ? async () => {
           setHasAttemptedSend(true)
-          const invoice = await parseInvoiceBreezSDK(paymentRequest || "")
+          const currentFees = await fetchReverseSwapFeesBreezSDK(amountMsats || 50000)
+          if (paymentRequest && paymentRequest?.length > 110) {
+            invoice = await parseInvoiceBreezSDK(paymentRequest || "")
+          }
           let status: PaymentSendResult | null | undefined = null
           let errors: readonly GraphQlApplicationError[] | undefined
           // Try using Breez SDK for lnNoAmountInvoicePaymentSend
           if (
             sendPaymentMutation?.name === "sendPaymentMutation" &&
             paymentRequest &&
+            paymentRequest.length > 110 &&
             invoice.amountMsat !== null
           ) {
+            console.log("Starting sendPaymentBreezSDK Option 1")
             try {
               const payment = await sendPaymentBreezSDK(paymentRequest)
               return {
@@ -196,9 +210,11 @@ export const useSendPayment = (
           } else if (
             sendPaymentMutation?.name === "sendPaymentMutation" &&
             paymentRequest &&
+            paymentRequest.length > 110 &&
             invoice.amountMsat === null &&
             amountMsats
           ) {
+            console.log("Starting sendPaymentBreezSDK Option 2")
             try {
               const payment = await sendPaymentBreezSDK(paymentRequest, amountMsats)
               return {
@@ -210,7 +226,38 @@ export const useSendPayment = (
             } catch (err) {
               console.error("Failed to send payment using Breez SDK:", err)
             }
+          } else if (
+            sendPaymentMutation?.name === "_sendPaymentMutation" &&
+            paymentRequest &&
+            paymentRequest.length < 64
+          ) {
+            console.log("Starting sendOnchainBreezSDK")
+            if (currentFees) {
+              try {
+                const recommendedFees = await recommendedFeesBreezSDK()
+                const reverseSwapInfo = await sendOnchainBreezSDK(
+                  currentFees,
+                  paymentRequest,
+                  recommendedFees.hourFee,
+                )
+                return {
+                  status: reverseSwapInfo.status
+                    ? PaymentSendResult.Success
+                    : PaymentSendResult.Failure,
+                  errors: [],
+                }
+              } catch (err) {
+                console.error("Failed to send On-Chain payment using Breez SDK:", err)
+              }
+            } else {
+              console.error("currentFees is null")
+              return {
+                status: PaymentSendResult.Failure,
+                errors: [],
+              }
+            }
           } else {
+            console.log("Starting Galoy Option")
             const response = await sendPaymentMutation({
               intraLedgerPaymentSend,
               intraLedgerUsdPaymentSend,

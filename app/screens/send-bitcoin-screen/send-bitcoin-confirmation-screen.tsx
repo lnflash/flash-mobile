@@ -26,16 +26,21 @@ import crashlytics from "@react-native-firebase/crashlytics"
 import { CommonActions, RouteProp, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { ActivityIndicator, View } from "react-native"
 import ReactNativeHapticFeedback from "react-native-haptic-feedback"
 import { testProps } from "../../utils/testProps"
-import useFee from "./use-fee"
+import useFee, { FeeType } from "./use-fee"
 import { useSendPayment } from "./use-send-payment"
 import { AmountInput } from "@app/components/amount-input"
 import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
+
+// Breez SDK
 import useBreezBalance from "@app/hooks/useBreezBalance"
+import { fetchReverseSwapFeesBreezSDK } from "@app/utils/breez-sdk"
+import { log } from "react-native-reanimated"
+import { ReverseSwapPairInfo } from "@breeztech/react-native-breez-sdk"
 
 gql`
   query sendBitcoinConfirmationScreen {
@@ -107,7 +112,27 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route }) => {
   const [paymentError, setPaymentError] = useState<string | undefined>(undefined)
   const { LL } = useI18nContext()
 
-  const fee = useFee(getFee)
+  const [fee, setFee] = useState<FeeType>({ status: "loading" })
+  const [currentFees, setCurrentFees] = useState<ReverseSwapPairInfo>()
+  // const fee = useFee(getFee)
+  // TODO: build in controls for minimum send amount of rawBreezFee.min and disable "confirm payment" button if amount is less than that
+
+  useEffect(() => {
+    const getBreezFee = async (): Promise<void> => {
+      const rawBreezFee = await fetchReverseSwapFeesBreezSDK(settlementAmount.amount)
+      setCurrentFees(rawBreezFee)
+      const formattedBreezFee: FeeType = {
+        amount: {
+          amount: rawBreezFee.feesClaim,
+          currency: "BTC",
+          currencyCode: "BTC",
+        },
+        status: "set",
+      }
+      setFee(formattedBreezFee)
+    }
+    getBreezFee()
+  }, [])
 
   const {
     loading: sendPaymentLoading,

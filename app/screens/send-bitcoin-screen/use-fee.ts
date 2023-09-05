@@ -14,7 +14,7 @@ import {
 import { gql } from "@apollo/client"
 import { GetFee } from "./payment-details/index.types"
 
-type FeeType =
+export type FeeType =
   | {
       status: "loading" | "error" | "unset"
       amount?: undefined | null
