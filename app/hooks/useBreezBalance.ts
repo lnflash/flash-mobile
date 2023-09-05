@@ -8,12 +8,12 @@ const useBreezBalance = (): [number | null, () => void] => {
 
   useEffect(() => {
     const initializeAndFetchBalance = async () => {
-      console.log("initializing breez balance hook")
       await initializeBreezSDK()
-      console.log("connected to breez sdk")
       const nodeState = await nodeInfo()
       const balance = nodeState.channelsBalanceMsat + nodeState.onchainBalanceMsat
-      console.log("getting balance", balance)
+      console.log("Total balance", balance)
+      console.log("On Chain Balance", nodeState.onchainBalanceMsat)
+      console.log("Channel Balance", nodeState.channelsBalanceMsat)
       setBalance(balance / 1000)
     }
 

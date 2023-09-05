@@ -1,4 +1,9 @@
-import { LnNoAmountInvoiceCreateMutation, WalletCurrency } from "@app/graphql/generated"
+import {
+  LnInvoiceCreateMutation,
+  LnNoAmountInvoiceCreateMutation,
+  OnChainAddressCurrentMutation,
+  WalletCurrency,
+} from "@app/graphql/generated"
 import {
   CreatePaymentRequestParams,
   GetFullUriFn,
@@ -13,8 +18,8 @@ import { getPaymentRequestFullUri, prToDateString } from "./helpers"
 import { bech32 } from "bech32"
 
 // Breez SDK
-import { receivePaymentBreezSDK } from "@app/utils/breez-sdk"
-import { LnInvoice } from "@breeztech/react-native-breez-sdk"
+import { receivePaymentBreezSDK, receiveOnchainBreezSDK } from "@app/utils/breez-sdk"
+import { LnInvoice, SwapInfo } from "@breeztech/react-native-breez-sdk"
 
 export const createPaymentRequest = (
   params: CreatePaymentRequestParams,
@@ -28,6 +33,34 @@ export const createPaymentRequest = (
     return createPaymentRequest({ ...params, state })
   }
 
+  // Breez SDK
+  const fetchBreezOnchain = async () => {
+    try {
+      const populateFormattedBreezOnChain = (
+        rawOnChainData: SwapInfo | undefined,
+      ): Promise<OnChainAddressCurrentMutation | null | undefined> => {
+        if (rawOnChainData) {
+          const formattedBreezOnChain: OnChainAddressCurrentMutation = {
+            onChainAddressCurrent: {
+              errors: [], // TODO: Add error handling
+              address: rawOnChainData.bitcoinAddress,
+              __typename: "OnChainAddressPayload",
+            },
+            __typename: "Mutation",
+          }
+          return Promise.resolve(formattedBreezOnChain)
+        }
+        return Promise.resolve(null)
+      }
+      const breezOnChainData = populateFormattedBreezOnChain
+      const fetchedBreezOnChain = await receiveOnchainBreezSDK()
+      const formattedOnChain = await breezOnChainData(fetchedBreezOnChain)
+      return formattedOnChain
+    } catch (error) {
+      console.error("Error fetching breezOnChain:", error)
+    }
+  }
+
   const fetchBreezInvoice = async (
     amount?: number | undefined,
     memo?: string | undefined,
@@ -37,7 +70,9 @@ export const createPaymentRequest = (
       if (amount) {
         const populateFormattedBreezInvoice = (
           rawInvoiceData: LnInvoice | undefined,
-        ): Promise<LnInvoiceCreateMutation | null> => {
+        ): Promise<
+          LnNoAmountInvoiceCreateMutation | LnInvoiceCreateMutation | null | undefined
+        > => {
           if (rawInvoiceData) {
             const formattedBreezInvoice: LnInvoiceCreateMutation = {
               lnInvoiceCreate: {
@@ -64,7 +99,9 @@ export const createPaymentRequest = (
       } else {
         const populateFormattedNoAmountBreezInvoice = (
           rawInvoiceData: LnInvoice | undefined,
-        ): Promise<LnNoAmountInvoiceCreateMutation | null> => {
+        ): Promise<
+          LnNoAmountInvoiceCreateMutation | LnInvoiceCreateMutation | null | undefined
+        > => {
           if (rawInvoiceData) {
             const formattedBreezInvoice: LnNoAmountInvoiceCreateMutation = {
               lnNoAmountInvoiceCreate: {
@@ -93,11 +130,6 @@ export const createPaymentRequest = (
       const memoDetail = memo ? memo : "Flash Cash"
       const fetchedBreezInvoice = await receivePaymentBreezSDK(amountSats, memoDetail)
       const formattedInvoice = await breezInvoiceData(fetchedBreezInvoice)
-      // debugging
-      console.log("----------------------------------------------")
-      console.log("formattedInvoice", fetchedBreezInvoice.bolt11)
-      console.log("----------------------------------------------")
-      console.log("Formatted Invoice", JSON.stringify(formattedInvoice, null, 2))
       return formattedInvoice
     } catch (error) {
       console.error("Error fetching breezInvoice:", error)
@@ -113,6 +145,7 @@ export const createPaymentRequest = (
       pr.settlementAmount?.amount,
       pr.memo,
     )
+    const breezOnChainAddressCurrentData = await fetchBreezOnchain()
 
     let info: PaymentRequestInformation | undefined
 
@@ -121,9 +154,13 @@ export const createPaymentRequest = (
 
     // On Chain BTC
     if (pr.type === Invoice.OnChain) {
-      const { data, errors } = await mutations.onChainAddressCurrent({
+      let { data, errors } = await mutations.onChainAddressCurrent({
         variables: { input: { walletId: pr.receivingWalletDescriptor.id } },
       })
+      if (breezOnChainAddressCurrentData) {
+        data = breezOnChainAddressCurrentData
+        errors = []
+      }
 
       if (pr.settlementAmount && pr.settlementAmount.currency !== WalletCurrency.Btc)
         throw new Error("Onchain invoices only support BTC")

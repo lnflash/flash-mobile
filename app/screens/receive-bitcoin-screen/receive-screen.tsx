@@ -182,7 +182,13 @@ const ReceiveScreen = () => {
                 </View>
                 <View>
                   <Text color={colors.grey2}>
-                    {"Breez Invoice | Valid for 7 days" || ""}
+                    {request.info?.data?.invoiceType === Invoice.OnChain
+                      ? "On-chain BTC Address"
+                      : request.info?.data?.invoiceType === Invoice.Lightning
+                      ? "Breez Invoice | Valid for 7 days"
+                      : request.info?.data?.invoiceType === Invoice.PayCode
+                      ? "Lightning Address"
+                      : "Invoice | Valid for 1 day"}
                   </Text>
                 </View>
                 <View style={styles.shareInvoiceContainer}>

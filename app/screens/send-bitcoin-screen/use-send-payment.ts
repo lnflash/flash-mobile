@@ -12,14 +12,13 @@ import {
   useOnChainUsdPaymentSendMutation,
   GraphQlApplicationError,
 } from "@app/graphql/generated"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { SendPaymentMutation } from "./payment-details/index.types"
 import { gql } from "@apollo/client"
 import { getErrorMessages } from "@app/graphql/utils"
 
 // Breez SDK
 import { sendPaymentBreezSDK, parseInvoiceBreezSDK } from "@app/utils/breez-sdk"
-import { LnInvoice } from "@breeztech/react-native-breez-sdk"
 
 type UseSendPaymentResult = {
   loading: boolean
@@ -123,17 +122,6 @@ export const useSendPayment = (
   paymentRequest?: string,
   amountMsats?: number,
 ): UseSendPaymentResult => {
-  const [parseInvoice, setParseInvoice] = useState<LnInvoice>({} as LnInvoice)
-  useEffect(() => {
-    const parseInvoice = async (paymentRequest?: string) => {
-      if (paymentRequest) {
-        const invoice = await parseInvoiceBreezSDK(paymentRequest)
-        setParseInvoice(invoice)
-      }
-    }
-    parseInvoice(paymentRequest)
-  }, [paymentRequest])
-
   const [intraLedgerPaymentSend, { loading: intraLedgerPaymentSendLoading }] =
     useIntraLedgerPaymentSendMutation({ refetchQueries: [HomeAuthedDocument] })
 
@@ -195,11 +183,6 @@ export const useSendPayment = (
             invoice.amountMsat !== null
           ) {
             try {
-              console.log("---------------------------")
-              console.log("Passed amountMsats:", amountMsats)
-              console.log("bolt11.amountMsat:", invoice.amountMsat)
-              console.log("Trying to send payment using Breez SDK with amount in bolt11")
-              console.log("---------------------------")
               const payment = await sendPaymentBreezSDK(paymentRequest)
               return {
                 status: payment.paymentTime
@@ -217,11 +200,6 @@ export const useSendPayment = (
             amountMsats
           ) {
             try {
-              console.log("---------------------------")
-              console.log("Passed amountMsats:", amountMsats)
-              console.log("bolt11.amountMsat:", invoice.amountMsat)
-              console.log("Trying to send payment using Breez SDK with amount passed")
-              console.log("---------------------------")
               const payment = await sendPaymentBreezSDK(paymentRequest, amountMsats)
               return {
                 status: payment.paymentTime

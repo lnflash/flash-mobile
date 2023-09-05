@@ -11,6 +11,8 @@ import {
   sendPayment,
   Payment,
   parseInvoice,
+  receiveOnchain,
+  SwapInfo,
 } from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
@@ -145,6 +147,16 @@ export const parseInvoiceBreezSDK = async (
   try {
     const invoice = await parseInvoice(paymentRequest)
     return invoice
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const receiveOnchainBreezSDK = async (): Promise<SwapInfo> => {
+  try {
+    const swapInfo = await receiveOnchain()
+    return swapInfo
   } catch (error) {
     console.log(error)
     throw error
