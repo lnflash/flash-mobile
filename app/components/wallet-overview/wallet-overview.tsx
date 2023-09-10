@@ -21,6 +21,7 @@ import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 // import Breez SDK Wallet
 import useBreezBalance from "@app/hooks/useBreezBalance"
 import { useIsFocused } from "@react-navigation/native"
+import { listRefundablesBreezSDK } from "@app/utils/breez-sdk"
 
 const Loader = () => {
   const styles = useStyles()
@@ -89,6 +90,16 @@ const WalletOverview: React.FC<Props> = ({
     // refresh balance when screen is focused or refresh is triggered
     if (refreshTriggered || isFocused) {
       refreshBreezBalance()
+      // create async function to get refundables
+      const getRefundables = async () => {
+        const refundables = await listRefundablesBreezSDK()
+        console.log("refundables", refundables)
+        if (refundables.length > 0) {
+          console.log("refundables", refundables.pop())
+        }
+      }
+      // call async function
+      getRefundables()
     }
     // wait for 10 seconds and then refresh again
     const _timeout = setTimeout(() => {

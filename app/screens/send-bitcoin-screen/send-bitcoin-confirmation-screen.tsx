@@ -39,8 +39,6 @@ import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 // Breez SDK
 import useBreezBalance from "@app/hooks/useBreezBalance"
 import { fetchReverseSwapFeesBreezSDK } from "@app/utils/breez-sdk"
-import { log } from "react-native-reanimated"
-import { ReverseSwapPairInfo } from "@breeztech/react-native-breez-sdk"
 
 gql`
   query sendBitcoinConfirmationScreen {
@@ -113,26 +111,34 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route }) => {
   const { LL } = useI18nContext()
 
   const [fee, setFee] = useState<FeeType>({ status: "loading" })
-  const [currentFees, setCurrentFees] = useState<ReverseSwapPairInfo>()
-  // const fee = useFee(getFee)
-  // TODO: build in controls for minimum send amount of rawBreezFee.min and disable "confirm payment" button if amount is less than that
-
+  const getLightningFee = useFee(getFee ? getFee : null)
+  // Moved this logic outside of the if-else statement to make sure hooks are not called conditionally
   useEffect(() => {
-    const getBreezFee = async (): Promise<void> => {
-      const rawBreezFee = await fetchReverseSwapFeesBreezSDK(settlementAmount.amount)
-      setCurrentFees(rawBreezFee)
-      const formattedBreezFee: FeeType = {
-        amount: {
-          amount: rawBreezFee.feesClaim,
-          currency: "BTC",
-          currencyCode: "BTC",
-        },
-        status: "set",
+    if (
+      paymentDetail.paymentType === "lightning" ||
+      paymentDetail.paymentType === "lnurl"
+    ) {
+      setFee(getLightningFee)
+    } else {
+      const getBreezFee = async (): Promise<void> => {
+        const rawBreezFee = await fetchReverseSwapFeesBreezSDK({
+          sendAmountSat: settlementAmount.amount,
+        })
+        const formattedBreezFee: FeeType = {
+          amount: {
+            amount: rawBreezFee.feesClaim,
+            currency: "BTC",
+            currencyCode: "BTC",
+          },
+          status: "set",
+        }
+        setFee(formattedBreezFee)
       }
-      setFee(formattedBreezFee)
+
+      // This ensures that getBreezFee is only called when the component mounts
+      getBreezFee()
     }
-    getBreezFee()
-  }, [])
+  }, [getLightningFee, paymentDetail.paymentType])
 
   const {
     loading: sendPaymentLoading,

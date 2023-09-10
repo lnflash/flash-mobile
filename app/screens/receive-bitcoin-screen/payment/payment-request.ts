@@ -53,7 +53,7 @@ export const createPaymentRequest = (
         return Promise.resolve(null)
       }
       const breezOnChainData = populateFormattedBreezOnChain
-      const fetchedBreezOnChain = await receiveOnchainBreezSDK()
+      const fetchedBreezOnChain = await receiveOnchainBreezSDK({})
       const formattedOnChain = await breezOnChainData(fetchedBreezOnChain)
       return formattedOnChain
     } catch (error) {
@@ -128,8 +128,11 @@ export const createPaymentRequest = (
       }
       const amountSats = amount ? amount : 1
       const memoDetail = memo ? memo : "Flash Cash"
-      const fetchedBreezInvoice = await receivePaymentBreezSDK(amountSats, memoDetail)
-      const formattedInvoice = await breezInvoiceData(fetchedBreezInvoice)
+      const fetchedBreezInvoice = await receivePaymentBreezSDK({
+        amountSats,
+        description: memoDetail,
+      })
+      const formattedInvoice = await breezInvoiceData(fetchedBreezInvoice.lnInvoice)
       return formattedInvoice
     } catch (error) {
       console.error("Error fetching breezInvoice:", error)

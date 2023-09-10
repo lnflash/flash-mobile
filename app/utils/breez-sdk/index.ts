@@ -19,6 +19,17 @@ import {
   ReverseSwapPairInfo,
   recommendedFees,
   RecommendedFees,
+  ReceivePaymentRequest,
+  ReceivePaymentResponse,
+  ReceiveOnchainRequest,
+  ReverseSwapFeesRequest,
+  parseInput,
+  payLnurl,
+  LnUrlPayResult,
+  InputType,
+  InputResponse,
+  LnUrlPayResultType,
+  listRefundables,
 } from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
@@ -123,11 +134,10 @@ export const initializeBreezSDK = async (): Promise<boolean> => {
 }
 
 export const receivePaymentBreezSDK = async (
-  paymentAmount: number,
-  description: string,
-): Promise<LnInvoice> => {
+  paymentRequest: ReceivePaymentRequest,
+): Promise<ReceivePaymentResponse> => {
   try {
-    const invoice = await receivePayment(paymentAmount, description)
+    const invoice = await receivePayment(paymentRequest)
     return invoice
   } catch (error) {
     console.log(error)
@@ -160,9 +170,11 @@ export const parseInvoiceBreezSDK = async (
   }
 }
 
-export const receiveOnchainBreezSDK = async (): Promise<SwapInfo> => {
+export const receiveOnchainBreezSDK = async (
+  onChainRequest: ReceiveOnchainRequest,
+): Promise<SwapInfo> => {
   try {
-    const swapInfo = await receiveOnchain()
+    const swapInfo = await receiveOnchain(onChainRequest)
     return swapInfo
   } catch (error) {
     console.log(error)
@@ -171,11 +183,10 @@ export const receiveOnchainBreezSDK = async (): Promise<SwapInfo> => {
 }
 
 export const fetchReverseSwapFeesBreezSDK = async (
-  amount: number,
+  reverseSwapfeeRequest: ReverseSwapFeesRequest,
 ): Promise<ReverseSwapPairInfo> => {
   try {
-    console.log("Fetching reverse swap fees for amount: ", amount)
-    const fees = await fetchReverseSwapFees()
+    const fees = await fetchReverseSwapFees(reverseSwapfeeRequest)
     return fees
   } catch (error) {
     console.log(error)
@@ -208,6 +219,41 @@ export const recommendedFeesBreezSDK = async (): Promise<RecommendedFees> => {
     console.log("Fetching recommended fees")
     const fees = await recommendedFees()
     return fees
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const payLnurlBreezSDK = async (
+  lnurl: string,
+  amount: number,
+): Promise<LnUrlPayResult> => {
+  try {
+    let output: LnUrlPayResult
+    const input: InputResponse = await parseInput(lnurl)
+    if (input.type === InputType.LNURL_PAY) {
+      const amountSats: number =
+        amount > input.data.minSendable ? amount : input.data.minSendable
+      const result = await payLnurl(input.data, amountSats, "Flash Cash LNURL Payment")
+      output = result
+    } else {
+      return {
+        type: LnUrlPayResultType.ENDPOINT_ERROR,
+        data: input.data.reason,
+      }
+    }
+    return output
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const listRefundablesBreezSDK = async (): Promise<SwapInfo[]> => {
+  try {
+    const refundables = await listRefundables()
+    return refundables
   } catch (error) {
     console.log(error)
     throw error
