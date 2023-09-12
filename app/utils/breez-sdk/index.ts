@@ -1,43 +1,12 @@
 import { INVITE_CODE, MNEMONIC_WORDS, API_KEY } from "@env"
-import {
-  defaultConfig,
-  EnvironmentType,
-  connect,
-  mnemonicToSeed,
-  NodeConfig,
-  NodeConfigType,
-  receivePayment,
-  LnInvoice,
-  sendPayment,
-  Payment,
-  parseInvoice,
-  receiveOnchain,
-  SwapInfo,
-  fetchReverseSwapFees,
-  sendOnchain,
-  ReverseSwapInfo,
-  ReverseSwapPairInfo,
-  recommendedFees,
-  RecommendedFees,
-  ReceivePaymentRequest,
-  ReceivePaymentResponse,
-  ReceiveOnchainRequest,
-  ReverseSwapFeesRequest,
-  parseInput,
-  payLnurl,
-  LnUrlPayResult,
-  InputType,
-  InputResponse,
-  LnUrlPayResultType,
-  listRefundables,
-} from "@breeztech/react-native-breez-sdk"
+import * as sdk from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
 
 const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 
 // Retry function
-const retry = <T>(fn: () => Promise<T>, ms = 5000, maxRetries = 3) =>
+const retry = <T>(fn: () => Promise<T>, ms = 15000, maxRetries = 3) =>
   new Promise<T>((resolve, reject) => {
     let attempts = 0
     const tryFn = async () => {
@@ -83,18 +52,22 @@ const connectToSDK = async () => {
   try {
     const mnemonic = MNEMONIC_WORDS // await getMnemonic()
     console.log("Mnemonic: ", mnemonic)
-    const seed = await mnemonicToSeed(mnemonic)
+    const seed = await sdk.mnemonicToSeed(mnemonic)
     const inviteCode = INVITE_CODE
-    const nodeConfig: NodeConfig = {
-      type: NodeConfigType.GREENLIGHT,
+    const nodeConfig: sdk.NodeConfig = {
+      type: sdk.NodeConfigType.GREENLIGHT,
       config: {
         inviteCode,
       },
     }
-    const config = await defaultConfig(EnvironmentType.PRODUCTION, API_KEY, nodeConfig)
+    const config = await sdk.defaultConfig(
+      sdk.EnvironmentType.PRODUCTION,
+      API_KEY,
+      nodeConfig,
+    )
 
     console.log("Starting connection to Breez SDK")
-    await connect(config, seed)
+    await sdk.connect(config, seed)
     console.log("Finished connection to Breez SDK")
   } catch (error) {
     console.error("Connect error: ", error)
@@ -134,10 +107,10 @@ export const initializeBreezSDK = async (): Promise<boolean> => {
 }
 
 export const receivePaymentBreezSDK = async (
-  paymentRequest: ReceivePaymentRequest,
-): Promise<ReceivePaymentResponse> => {
+  paymentRequest: sdk.ReceivePaymentRequest,
+): Promise<sdk.ReceivePaymentResponse> => {
   try {
-    const invoice = await receivePayment(paymentRequest)
+    const invoice = await sdk.receivePayment(paymentRequest)
     return invoice
   } catch (error) {
     console.log(error)
@@ -148,9 +121,9 @@ export const receivePaymentBreezSDK = async (
 export const sendPaymentBreezSDK = async (
   paymentRequest: string,
   paymentAmount?: number,
-): Promise<Payment> => {
+): Promise<sdk.Payment> => {
   try {
-    const payment = await sendPayment(paymentRequest, paymentAmount)
+    const payment = await sdk.sendPayment(paymentRequest, paymentAmount)
     return payment
   } catch (error) {
     console.log(error)
@@ -160,9 +133,9 @@ export const sendPaymentBreezSDK = async (
 
 export const parseInvoiceBreezSDK = async (
   paymentRequest: string,
-): Promise<LnInvoice> => {
+): Promise<sdk.LnInvoice> => {
   try {
-    const invoice = await parseInvoice(paymentRequest)
+    const invoice = await sdk.parseInvoice(paymentRequest)
     return invoice
   } catch (error) {
     console.log(error)
@@ -171,10 +144,10 @@ export const parseInvoiceBreezSDK = async (
 }
 
 export const receiveOnchainBreezSDK = async (
-  onChainRequest: ReceiveOnchainRequest,
-): Promise<SwapInfo> => {
+  onChainRequest: sdk.ReceiveOnchainRequest,
+): Promise<sdk.SwapInfo> => {
   try {
-    const swapInfo = await receiveOnchain(onChainRequest)
+    const swapInfo = await sdk.receiveOnchain(onChainRequest)
     return swapInfo
   } catch (error) {
     console.log(error)
@@ -183,10 +156,10 @@ export const receiveOnchainBreezSDK = async (
 }
 
 export const fetchReverseSwapFeesBreezSDK = async (
-  reverseSwapfeeRequest: ReverseSwapFeesRequest,
-): Promise<ReverseSwapPairInfo> => {
+  reverseSwapfeeRequest: sdk.ReverseSwapFeesRequest,
+): Promise<sdk.ReverseSwapPairInfo> => {
   try {
-    const fees = await fetchReverseSwapFees(reverseSwapfeeRequest)
+    const fees = await sdk.fetchReverseSwapFees(reverseSwapfeeRequest)
     return fees
   } catch (error) {
     console.log(error)
@@ -195,13 +168,13 @@ export const fetchReverseSwapFeesBreezSDK = async (
 }
 
 export const sendOnchainBreezSDK = async (
-  currentFees: ReverseSwapPairInfo,
+  currentFees: sdk.ReverseSwapPairInfo,
   destinationAddress: string,
   satPerVbyte: number,
-): Promise<ReverseSwapInfo> => {
+): Promise<sdk.ReverseSwapInfo> => {
   try {
     console.log("Sending onchain payment to address: ", destinationAddress)
-    const reverseSwapInfo = await sendOnchain(
+    const reverseSwapInfo = await sdk.sendOnchain(
       currentFees.min,
       destinationAddress,
       currentFees.feesHash,
@@ -214,10 +187,10 @@ export const sendOnchainBreezSDK = async (
   }
 }
 
-export const recommendedFeesBreezSDK = async (): Promise<RecommendedFees> => {
+export const recommendedFeesBreezSDK = async (): Promise<sdk.RecommendedFees> => {
   try {
     console.log("Fetching recommended fees")
-    const fees = await recommendedFees()
+    const fees = await sdk.recommendedFees()
     return fees
   } catch (error) {
     console.log(error)
@@ -228,18 +201,22 @@ export const recommendedFeesBreezSDK = async (): Promise<RecommendedFees> => {
 export const payLnurlBreezSDK = async (
   lnurl: string,
   amount: number,
-): Promise<LnUrlPayResult> => {
+): Promise<sdk.LnUrlPayResult> => {
   try {
-    let output: LnUrlPayResult
-    const input: InputResponse = await parseInput(lnurl)
-    if (input.type === InputType.LNURL_PAY) {
+    let output: sdk.LnUrlPayResult
+    const input: sdk.InputResponse = await sdk.parseInput(lnurl)
+    if (input.type === sdk.InputType.LNURL_PAY) {
       const amountSats: number =
         amount > input.data.minSendable ? amount : input.data.minSendable
-      const result = await payLnurl(input.data, amountSats, "Flash Cash LNURL Payment")
+      const result = await sdk.payLnurl(
+        input.data,
+        amountSats,
+        "Flash Cash LNURL Payment",
+      )
       output = result
     } else {
       return {
-        type: LnUrlPayResultType.ENDPOINT_ERROR,
+        type: sdk.LnUrlPayResultType.ENDPOINT_ERROR,
         data: input.data.reason,
       }
     }
@@ -250,10 +227,56 @@ export const payLnurlBreezSDK = async (
   }
 }
 
-export const listRefundablesBreezSDK = async (): Promise<SwapInfo[]> => {
+export const listRefundablesBreezSDK = async (): Promise<sdk.SwapInfo[]> => {
   try {
-    const refundables = await listRefundables()
+    const refundables = await sdk.listRefundables()
+    console.log("Refundables: ", JSON.stringify(refundables, null, 2))
     return refundables
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const nodeInfoBreezSDK = async (): Promise<sdk.NodeState> => {
+  try {
+    const info = await sdk.nodeInfo()
+    console.log("Node info: ", JSON.stringify(info, null, 2))
+    return info
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const listPaymentsBreezSDK = async (): Promise<sdk.Payment[]> => {
+  try {
+    const filter: sdk.PaymentTypeFilter = sdk.PaymentTypeFilter.ALL
+    const payments = await sdk.listPayments(filter)
+    // console.log("Payments: ", payments)
+    return payments
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const addLogListenerBreezSDK = async (): Promise<void> => {
+  try {
+    const listener: sdk.LogEntryFn = (l: sdk.LogEntry) => {
+      console.log("BreezSDK log: ", l)
+    }
+    await sdk.addLogListener(listener)
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const executeDevCommandBreezSDK = async (command: string): Promise<void> => {
+  try {
+    const res = await sdk.executeDevCommand(command)
+    console.log("Executed dev command: ", res)
   } catch (error) {
     console.log(error)
     throw error

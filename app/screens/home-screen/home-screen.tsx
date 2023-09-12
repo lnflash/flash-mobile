@@ -37,7 +37,15 @@ import { SetDefaultAccountModal } from "@app/components/set-default-account-moda
 import { useAppConfig } from "@app/hooks"
 
 // Breez balance is refreshed on pulldown
-import useBreezBalance from "@app/hooks/useBreezBalance"
+// import useBreezBalance from "@app/hooks/useBreezBalance"
+import { listPaymentsBreezSDK } from "@app/utils/breez-sdk"
+import { Payment } from "@breeztech/react-native-breez-sdk"
+import { useLayoutEffect } from "react"
+import {
+  BreezTransaction,
+  BreezTransactionItem,
+} from "../../components/transaction-item/breez-transaction-item"
+import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 
 const TransactionCountToTriggerSetDefaultAccountModal = 1
 
@@ -208,7 +216,18 @@ export const HomeScreen: React.FC = () => {
       }
     | undefined = undefined
 
-  const TRANSACTIONS_TO_SHOW = 2
+  const TRANSACTIONS_TO_SHOW = 4
+
+  // replace these transactions with the ones from breez using listPaymentsBreezSDK function
+  const [breezTransactions, setBreezTransactions] = React.useState<Payment[]>([])
+  useLayoutEffect(() => {
+    const listPaymentsBreez = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const payments = await listPaymentsBreezSDK()
+      setBreezTransactions(payments)
+    }
+    listPaymentsBreez()
+  }, [])
 
   if (isAuthed && transactionsEdges?.length) {
     recentTransactionsData = {
@@ -229,6 +248,28 @@ export const HomeScreen: React.FC = () => {
                   />
                 ),
             )}
+        </>
+      ),
+    }
+  }
+
+  if (isAuthed && breezTransactions?.length) {
+    const txs = breezTransactions
+      .slice(0, TRANSACTIONS_TO_SHOW)
+      .map((tx) => formatPaymentsBreezSDK(tx.id, breezTransactions))
+    recentTransactionsData = {
+      title: LL.TransactionScreen.title(),
+      details: (
+        <>
+          {breezTransactions.slice(0, TRANSACTIONS_TO_SHOW).map((tx, index, array) => (
+            <BreezTransactionItem
+              tx={txs[index]}
+              key={`transaction-${tx.id}`}
+              subtitle
+              isOnHomeScreen={true}
+              isLast={index === array.length - 1}
+            />
+          ))}
         </>
       ),
     }
