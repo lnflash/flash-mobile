@@ -51,7 +51,7 @@ const getMnemonic = async (): Promise<string> => {
 const connectToSDK = async () => {
   try {
     const mnemonic = MNEMONIC_WORDS // await getMnemonic()
-    console.log("Mnemonic: ", mnemonic)
+    // console.log("Mnemonic: ", mnemonic)
     const seed = await sdk.mnemonicToSeed(mnemonic)
     const inviteCode = INVITE_CODE
     const nodeConfig: sdk.NodeConfig = {

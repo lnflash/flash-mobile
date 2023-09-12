@@ -40,11 +40,7 @@ import { useAppConfig } from "@app/hooks"
 // import useBreezBalance from "@app/hooks/useBreezBalance"
 import { listPaymentsBreezSDK } from "@app/utils/breez-sdk"
 import { Payment } from "@breeztech/react-native-breez-sdk"
-import { useLayoutEffect } from "react"
-import {
-  BreezTransaction,
-  BreezTransactionItem,
-} from "../../components/transaction-item/breez-transaction-item"
+import { BreezTransactionItem } from "../../components/transaction-item/breez-transaction-item"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 
 const TransactionCountToTriggerSetDefaultAccountModal = 1
@@ -216,18 +212,27 @@ export const HomeScreen: React.FC = () => {
       }
     | undefined = undefined
 
-  const TRANSACTIONS_TO_SHOW = 4
+  const TRANSACTIONS_TO_SHOW = 3
 
   // replace these transactions with the ones from breez using listPaymentsBreezSDK function
   const [breezTransactions, setBreezTransactions] = React.useState<Payment[]>([])
-  useLayoutEffect(() => {
+  React.useEffect(() => {
     const listPaymentsBreez = async () => {
+      // eslint-disable-next-line no-promise-executor-return
       await new Promise((resolve) => setTimeout(resolve, 1000))
       const payments = await listPaymentsBreezSDK()
       setBreezTransactions(payments)
     }
     listPaymentsBreez()
-  }, [])
+  }, [breezTransactions.length, refetchAuthed])
+
+  const [btcInDisplay, setBtcInDisplay] = React.useState(0)
+  fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
+    .then((response) => response.json())
+    .then((data) => {
+      setBtcInDisplay(data.bitcoin.usd)
+    })
+    .catch((error) => console.error("Error fetching BTC price:", error))
 
   if (isAuthed && transactionsEdges?.length) {
     recentTransactionsData = {
@@ -256,7 +261,7 @@ export const HomeScreen: React.FC = () => {
   if (isAuthed && breezTransactions?.length) {
     const txs = breezTransactions
       .slice(0, TRANSACTIONS_TO_SHOW)
-      .map((tx) => formatPaymentsBreezSDK(tx.id, breezTransactions))
+      .map((tx) => formatPaymentsBreezSDK(tx.id, breezTransactions, btcInDisplay))
     recentTransactionsData = {
       title: LL.TransactionScreen.title(),
       details: (

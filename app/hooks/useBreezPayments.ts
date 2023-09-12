@@ -1,25 +1,29 @@
 import * as sdk from "@breeztech/react-native-breez-sdk"
 import { TransactionFragment } from "@app/graphql/generated"
-import { createToDisplayAmount } from "@app/types/amounts"
 
-export const formatPaymentsBreezSDK = (txid: unknown, payments: sdk.Payment[]) => {
+export const formatPaymentsBreezSDK = (
+  txid: unknown,
+  payments: sdk.Payment[],
+  btcInDisplayRate: number,
+) => {
+  const rate = btcInDisplayRate / 100000000
   const response: sdk.Payment[] = payments
   const responseTx = response.find((tx) => tx.id === txid)
   let tx: TransactionFragment | undefined
   if (responseTx) {
-    const moneyAmount = createToDisplayAmount("JMD")(
-      responseTx.amountMsat / 1000,
-    ).amount.toString() // TODO: placeholder, need to get dynamic price from API
+    const amountSat = responseTx.amountMsat / 1000
+    // round up to 2 decimal places
+    const moneyAmount = (Math.ceil(amountSat * rate * 100) / 100).toString()
     const transformedData: TransactionFragment = {
       // Map fields from response to fields of TransactionFragment, e.g.,
       id: responseTx.id,
       direction: responseTx.paymentType === "received" ? "RECEIVE" : "SEND",
       status: (responseTx.pending ? "PENDING" : "SUCCESS") || "FAILURE",
       memo: responseTx.description,
-      settlementAmount: responseTx.amountMsat / 1000,
+      settlementAmount: amountSat,
       settlementCurrency: "BTC",
-      settlementDisplayAmount: "0.00" || moneyAmount,
-      settlementDisplayCurrency: "JMD$",
+      settlementDisplayAmount: moneyAmount,
+      settlementDisplayCurrency: "USD",
       settlementVia: {
         __typename: "SettlementViaLn",
         paymentSecret:
@@ -27,11 +31,11 @@ export const formatPaymentsBreezSDK = (txid: unknown, payments: sdk.Payment[]) =
             ? responseTx.details.paymentPreimage
             : undefined,
       },
-      createdAt: Date.now(),
+      createdAt: responseTx.paymentTime,
       settlementFee: responseTx.feeMsat / 1000,
       settlementDisplayFee: "BTC",
       settlementPrice: {
-        base: responseTx.amountMsat / 1000,
+        base: amountSat,
         offset: 0,
         currencyUnit: "SAT",
         formattedAmount: "SAT",

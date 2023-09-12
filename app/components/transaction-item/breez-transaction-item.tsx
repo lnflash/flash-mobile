@@ -22,7 +22,6 @@ import HideableArea from "../hideable-area/hideable-area"
 import { IconTransaction } from "../icon-transactions"
 import { TransactionDate } from "../transaction-date"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { usePaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 
 // This should extend the Transaction directly from the cache
 export const useDescriptionDisplay = ({
@@ -138,11 +137,11 @@ export const BreezTransactionItem: React.FC<Props> = ({
 
   return (
     <ListItem
-      {...testProps("transaction-item")}
+      {...testProps("breez-transaction-item")}
       containerStyle={styles.container}
       onPress={() =>
-        navigation.navigate("transactionDetail", {
-          txid: tx.id,
+        navigation.navigate("breezTransactionDetail", {
+          tx,
         })
       }
     >
@@ -182,11 +181,6 @@ export const BreezTransactionItem: React.FC<Props> = ({
       </HideableArea>
     </ListItem>
   )
-}
-
-export const BreezTransaction = ({ txId, ...props }) => {
-  const tx = usePaymentsBreezSDK(txId)
-  return <BreezTransactionItem tx={tx} {...props} />
 }
 
 type UseStyleProps = {
