@@ -36,12 +36,10 @@ import { isIos } from "@app/utils/helper"
 import { SetDefaultAccountModal } from "@app/components/set-default-account-modal"
 import { useAppConfig } from "@app/hooks"
 
-// Breez balance is refreshed on pulldown
-// import useBreezBalance from "@app/hooks/useBreezBalance"
-import { listPaymentsBreezSDK } from "@app/utils/breez-sdk"
 import { Payment } from "@breeztech/react-native-breez-sdk"
 import { BreezTransactionItem } from "../../components/transaction-item/breez-transaction-item"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
+import { listPaymentsBreezSDK } from "@app/utils/breez-sdk"
 
 const TransactionCountToTriggerSetDefaultAccountModal = 1
 
@@ -219,7 +217,12 @@ export const HomeScreen: React.FC = () => {
   React.useEffect(() => {
     const listPaymentsBreez = async () => {
       // eslint-disable-next-line no-promise-executor-return
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+      // const res = await executeDevCommandBreezSDK("listchannels").catch((e) => {
+      //   console.log("Error listing peer channels:", e)
+      //   return []
+      // })
+      // console.log("Peer Channels:", res || [])
       const payments = await listPaymentsBreezSDK()
       setBreezTransactions(payments)
     }

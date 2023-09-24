@@ -22,6 +22,11 @@ import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 import useBreezBalance from "@app/hooks/useBreezBalance"
 import { useIsFocused } from "@react-navigation/native"
 import * as bsdk from "@app/utils/breez-sdk"
+import * as sdk from "@breeztech/react-native-breez-sdk"
+
+sdk.addEventListener((type, data) => {
+  console.log(`received event ${type}`)
+})
 
 const Loader = () => {
   const styles = useStyles()

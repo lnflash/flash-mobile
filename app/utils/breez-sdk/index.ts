@@ -28,19 +28,23 @@ const retry = <T>(fn: () => Promise<T>, ms = 15000, maxRetries = 3) =>
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getMnemonic = async (): Promise<string> => {
   try {
+    console.log("Looking for mnemonic in keychain")
     const credentials = await Keychain.getGenericPassword({
       service: KEYCHAIN_MNEMONIC_KEY,
     })
     if (credentials) {
+      console.log("Mnemonic found in keychain")
       return credentials.password
     }
 
     // Generate mnemonic and store it in the keychain
     // For development, we use a fixed mnemonic stored in .env
+    console.log("Mnemonic not found in keychain. Generating new one")
     const mnemonic = bip39.generateMnemonic(128)
     await Keychain.setGenericPassword(KEYCHAIN_MNEMONIC_KEY, mnemonic, {
       service: KEYCHAIN_MNEMONIC_KEY,
     })
+    // console.log("Mnemonic stored in keychain:", mnemonic)
     return mnemonic
   } catch (error) {
     console.error("Error in getMnemonic: ", error)
@@ -50,8 +54,8 @@ const getMnemonic = async (): Promise<string> => {
 
 const connectToSDK = async () => {
   try {
-    const mnemonic = MNEMONIC_WORDS // await getMnemonic()
-    // console.log("Mnemonic: ", mnemonic)
+    const mnemonic = await getMnemonic() // MNEMONIC_WORDS
+    // console.log("Connecting with mnemonic: ", mnemonic)
     const seed = await sdk.mnemonicToSeed(mnemonic)
     const inviteCode = INVITE_CODE
     const nodeConfig: sdk.NodeConfig = {
@@ -66,9 +70,9 @@ const connectToSDK = async () => {
       nodeConfig,
     )
 
-    console.log("Starting connection to Breez SDK")
+    // console.log("Starting connection to Breez SDK")
     await sdk.connect(config, seed)
-    console.log("Finished connection to Breez SDK")
+    // console.log("Finished connection to Breez SDK")
   } catch (error) {
     console.error("Connect error: ", error)
     throw error
@@ -127,6 +131,24 @@ export const sendPaymentBreezSDK = async (
     return payment
   } catch (error) {
     console.log(error)
+    throw error
+  }
+}
+
+export const sendNoAmountPaymentBreezSDK = async (
+  paymentRequest: string,
+): Promise<sdk.Payment> => {
+  console.log("Stepping into Sending payment with no amount function")
+  try {
+    console.log("Trying to send payment with no amount")
+    const payment = await sdk.sendPayment(paymentRequest)
+    if (payment.paymentType === null) {
+      console.log("Payment type is null, replacing with LN payment")
+      payment.paymentType = sdk.PaymentType.SEND
+    }
+    return payment
+  } catch (error) {
+    console.log(error.message, error.stack)
     throw error
   }
 }
@@ -282,3 +304,5 @@ export const executeDevCommandBreezSDK = async (command: string): Promise<void> 
     throw error
   }
 }
+
+export * from "./eventListener"
