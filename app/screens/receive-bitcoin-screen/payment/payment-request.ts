@@ -143,7 +143,6 @@ export const createPaymentRequest = (
   const generateQuote: () => Promise<PaymentRequest> = async () => {
     const { creationData, mutations } = params
     const pr = { ...creationData } // clone creation data object
-
     const breezNoAmountInvoiceCreateData = await fetchBreezInvoice(
       pr.settlementAmount?.amount,
       pr.memo,
@@ -197,7 +196,8 @@ export const createPaymentRequest = (
       // Lightning without Amount (or zero-amount)
     } else if (
       pr.type === Invoice.Lightning &&
-      (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0)
+      (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0) &&
+      pr.settlementAmount?.currency === WalletCurrency.Btc
     ) {
       let { data, errors } = await mutations.lnNoAmountInvoiceCreate({
         variables: {
@@ -293,6 +293,7 @@ export const createPaymentRequest = (
       pr.settlementAmount &&
       pr.settlementAmount?.currency === WalletCurrency.Usd
     ) {
+      console.log("Starting USD Invoice Creation")
       const { data, errors } = await mutations.lnUsdInvoiceCreate({
         variables: {
           input: {
@@ -302,6 +303,53 @@ export const createPaymentRequest = (
           },
         },
       })
+      console.log("USD Invoice Creation Complete")
+      console.log("data:", JSON.stringify(data, null, 2))
+
+      const dateString = prToDateString(
+        data?.lnUsdInvoiceCreate.invoice?.paymentRequest ?? "",
+        "mainnet", // pr.network,
+      )
+
+      const getFullUriFn: GetFullUriFn = ({ uppercase, prefix }) =>
+        getPaymentRequestFullUri({
+          type: Invoice.Lightning,
+          input: data?.lnUsdInvoiceCreate.invoice?.paymentRequest || "",
+          amount: pr.settlementAmount?.amount,
+          memo: pr.memo,
+          uppercase,
+          prefix,
+        })
+
+      info = {
+        data: data?.lnUsdInvoiceCreate.invoice
+          ? {
+              invoiceType: Invoice.Lightning,
+              ...data?.lnUsdInvoiceCreate.invoice,
+              expiresAt: dateString ? new Date(dateString) : undefined,
+              getFullUriFn,
+            }
+          : undefined,
+        applicationErrors: data?.lnUsdInvoiceCreate?.errors,
+        gqlErrors: errors,
+      }
+      // Lightning with USD without amount
+    } else if (
+      pr.type === Invoice.Lightning &&
+      (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0)
+    ) {
+      console.log("Starting USD Invoice creation with no amount")
+      const { data, errors } = await mutations.lnUsdInvoiceCreate({
+        variables: {
+          input: {
+            walletId: pr.receivingWalletDescriptor.id,
+            amount: 0,
+            memo: pr.memo,
+          },
+        },
+      })
+      console.log("USD Invoice with no amount creation complete")
+      console.log("data:", JSON.stringify(data, null, 2))
 
       const dateString = prToDateString(
         data?.lnUsdInvoiceCreate.invoice?.paymentRequest ?? "",

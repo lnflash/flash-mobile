@@ -184,8 +184,12 @@ const ReceiveScreen = () => {
                   <Text color={colors.grey2}>
                     {request.info?.data?.invoiceType === Invoice.OnChain
                       ? "On-chain BTC Address"
-                      : request.info?.data?.invoiceType === Invoice.Lightning
+                      : request.info?.data?.invoiceType === Invoice.Lightning &&
+                        request.receivingWalletDescriptor.currency === WalletCurrency.Btc
                       ? "Breez Invoice | Valid for 7 days"
+                      : request.info?.data?.invoiceType === Invoice.Lightning &&
+                        request.receivingWalletDescriptor.currency === WalletCurrency.Usd
+                      ? "Ibex Invoice | Valid for 7 days"
                       : request.info?.data?.invoiceType === Invoice.PayCode
                       ? "Lightning Address"
                       : "Invoice | Valid for 1 day"}

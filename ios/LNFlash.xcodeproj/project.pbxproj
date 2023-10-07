@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		017930D22ACB299D00536B3B /* AuthenticationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C61EE0AC23C530E30054100C /* AuthenticationServices.framework */; };
 		0D25368529E5EE4B00037874 /* BootSplash.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0D25368429E5EE4B00037874 /* BootSplash.storyboard */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
@@ -21,7 +22,6 @@
 		BD157A9851974C298EB06CB7 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
 		BFD1E05462E2DE8ADB6856A2 /* libPods-LNFlash.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7BF3F16B9970ED9E2ACFEC81 /* libPods-LNFlash.a */; };
 		C426C81D58C8450C878B6086 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
-		C61EE0AD23C530E30054100C /* AuthenticationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C61EE0AC23C530E30054100C /* AuthenticationServices.framework */; };
 		F1D71F3628CE5C9A00636277 /* AppDelegate.h in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FAF1A68108700A75B9A /* AppDelegate.h */; };
 /* End PBXBuildFile section */
 
@@ -55,7 +55,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C61EE0AD23C530E30054100C /* AuthenticationServices.framework in Frameworks */,
+				017930D22ACB299D00536B3B /* AuthenticationServices.framework in Frameworks */,
 				BFD1E05462E2DE8ADB6856A2 /* libPods-LNFlash.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -155,10 +155,10 @@
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
+				1530B4368395BA5AC71FF394 /* [CP-User] [RNFB] Core Configuration */,
 				C655A53423D256CE008ACDDA /* ShellScript */,
 				78418C574DC18CE95CF69F31 /* [CP] Embed Pods Frameworks */,
 				EADAB63B097F5332783D5E4B /* [CP] Copy Pods Resources */,
-				1530B4368395BA5AC71FF394 /* [CP-User] [RNFB] Core Configuration */,
 				F79B2CA3AF672BD515E79F1A /* [CP-User] [RNFB] Crashlytics Configuration */,
 			);
 			buildRules = (
@@ -445,9 +445,12 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash;
 				PRODUCT_NAME = Flash;
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "LNFlash-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.2;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -478,8 +481,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash;
 				PRODUCT_NAME = Flash;
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "LNFlash-Bridging-Header.h";
 				SWIFT_VERSION = 5.2;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
