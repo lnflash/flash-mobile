@@ -197,16 +197,12 @@ export const createPaymentRequest = (
     } else if (
       pr.type === Invoice.Lightning &&
       (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0) &&
-      pr.settlementAmount?.currency === WalletCurrency.Btc
+      pr.receivingWalletDescriptor.currency === WalletCurrency.Btc
     ) {
-      let { data, errors } = await mutations.lnNoAmountInvoiceCreate({
-        variables: {
-          input: {
-            walletId: pr.receivingWalletDescriptor.id,
-            memo: pr.memo,
-          },
-        },
-      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let data: any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let errors: any
       if (breezNoAmountInvoiceCreateData) {
         data = breezNoAmountInvoiceCreateData
         errors = []
@@ -246,15 +242,10 @@ export const createPaymentRequest = (
       pr.settlementAmount &&
       pr.settlementAmount?.currency === WalletCurrency.Btc
     ) {
-      let { data, errors } = await mutations.lnInvoiceCreate({
-        variables: {
-          input: {
-            walletId: pr.receivingWalletDescriptor.id,
-            amount: pr.settlementAmount.amount,
-            memo: pr.memo,
-          },
-        },
-      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let data: any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let errors: any
       if (breezNoAmountInvoiceCreateData) {
         data = breezNoAmountInvoiceCreateData
         errors = []
