@@ -230,12 +230,12 @@ export const HomeScreen: React.FC = () => {
   }, [breezTransactions.length, refetchAuthed])
 
   const [btcInDisplay, setBtcInDisplay] = React.useState(0)
-  fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
-    .then((response) => response.json())
-    .then((data) => {
-      setBtcInDisplay(data.bitcoin.usd)
-    })
-    .catch((error) => console.error("Error fetching BTC price:", error))
+  // fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
+  //   .then((response) => response.json())
+  //   .then((data) => {
+  //     setBtcInDisplay(data.bitcoin.usd)
+  //   })
+  //   .catch((error) => console.error("Error fetching BTC price:", error))
 
   if (isAuthed && transactionsEdges?.length) {
     recentTransactionsData = {

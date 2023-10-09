@@ -51,14 +51,14 @@ export const TransactionHistoryScreen: React.FC = () => {
   const [breezTransactions, setBreezTransactions] = React.useState<Payment[]>([])
   const [btcInDisplay, setBtcInDisplay] = React.useState(0)
 
-  React.useEffect(() => {
-    fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
-      .then((response) => response.json())
-      .then((data) => {
-        setBtcInDisplay(data.bitcoin.usd)
-      })
-      .catch((error) => console.error("Error fetching BTC price:", error))
-  }, [])
+  // React.useEffect(() => {
+  //   fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       setBtcInDisplay(data.bitcoin.usd)
+  //     })
+  //     .catch((error) => console.error("Error fetching BTC price:", error))
+  // }, [])
   React.useEffect(() => {
     const listPaymentsBreez = async () => {
       // eslint-disable-next-line no-promise-executor-return

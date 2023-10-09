@@ -329,7 +329,6 @@ export const createPaymentRequest = (
       pr.type === Invoice.Lightning &&
       (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0)
     ) {
-      console.log("Starting USD Invoice creation with no amount")
       const { data, errors } = await mutations.lnUsdInvoiceCreate({
         variables: {
           input: {
@@ -339,9 +338,6 @@ export const createPaymentRequest = (
           },
         },
       })
-      console.log("USD Invoice with no amount creation complete")
-      console.log("data:", JSON.stringify(data, null, 2))
-
       const dateString = prToDateString(
         data?.lnUsdInvoiceCreate.invoice?.paymentRequest ?? "",
         "mainnet", // pr.network,

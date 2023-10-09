@@ -180,8 +180,8 @@ const WalletOverview: React.FC<Props> = ({
       <View style={styles.displayTextView}>
         <View style={styles.currency}>
           <GaloyCurrencyBubble currency="USD" />
-          <Text type="p1">eCash (USD)</Text>
-          <Pressable
+          <Text type="p1">Cash (USD)</Text>
+          {/* <Pressable
             onPress={() => {
               if (navigation) {
                 navigation.navigate("conversionDetails")
@@ -194,7 +194,7 @@ const WalletOverview: React.FC<Props> = ({
             }}
           >
             <GaloyIcon color={colors.green} name="bank" size={18} />
-          </Pressable>
+          </Pressable> */}
         </View>
         {loading ? (
           <Loader />

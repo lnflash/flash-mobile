@@ -126,10 +126,10 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
           retryAttempts: 12,
           connectionParams: wsLinkConnectionParams,
           shouldRetry: (errOrCloseEvent) => {
-            console.warn(
-              { errOrCloseEvent },
-              "entering shouldRetry function for websocket",
-            )
+            // console.warn(
+            //   { errOrCloseEvent },
+            //   "entering shouldRetry function for websocket",
+            // )
             // TODO: understand how the backend is closing the connection
             // for instance during a new version rollout or k8s upgrade
             //

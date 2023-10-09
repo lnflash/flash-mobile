@@ -21,6 +21,7 @@ import { GaloyCurrencyBubble } from "@app/components/atomic/galoy-currency-bubbl
 
 // Breez SDK
 import { addEventListener } from "@breeztech/react-native-breez-sdk"
+import { decodeInvoiceString } from "@galoymoney/client"
 
 const ReceiveScreen = () => {
   const {
@@ -66,25 +67,31 @@ const ReceiveScreen = () => {
   >(undefined)
 
   useEffect(() => {
-    const handleEvent = (type: string) => {
+    const handleBreezEvent = (type: string) => {
       if (type === "invoicePaid" && request) {
         request.state = PaymentRequestState.Paid
-        console.log("invoice", request.state)
         if (request?.state === PaymentRequestState.Paid) {
           setUpdatedPaymentState(PaymentRequestState.Paid)
           const id = setTimeout(() => {
             if (navigation.canGoBack()) {
               navigation.goBack()
-            } else {
-              console.log("Cannot go back from this screen.")
             }
           }, 5000)
           return () => clearTimeout(id)
         }
       }
     }
-    addEventListener(handleEvent)
+    addEventListener(handleBreezEvent)
   }, [request?.state, navigation])
+
+  // FLASH FORK DEBUGGING -----------------------------
+  // console.log("request", request?.info?.data?.paymentRequest)
+  // const requestString: string = request?.info?.data?.paymentRequest
+  // if (requestString) {
+  //   const decodedInvoiceState = decodeInvoiceString(requestString, "mainnet")
+  //   console.log("decodedInvoiceState", JSON.stringify(decodedInvoiceState, null, 2))
+  // }
+  // --------------------------------------------------
 
   if (!request) return <></>
 

@@ -75,7 +75,7 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
     graphqlWsUri: "ws://api-development.flashapp.me:4002/graphqlws",
     authUrl: "http://api-development.flashapp.me:4002",
     posUrl: "http://api-development.flashapp.me:3000",
-    lnAddressHostname: "api-development.flashapp.me:3000",
+    lnAddressHostname: "api-development.flashapp.me",
     blockExplorer: "https://mempool.space/signet/tx/",
   },
   {
