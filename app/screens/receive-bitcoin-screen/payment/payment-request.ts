@@ -20,6 +20,7 @@ import { bech32 } from "bech32"
 // Breez SDK
 import { receivePaymentBreezSDK, receiveOnchainBreezSDK } from "@app/utils/breez-sdk"
 import { LnInvoice, SwapInfo } from "@breeztech/react-native-breez-sdk"
+import { GraphQLError } from "graphql/error/GraphQLError"
 
 export const createPaymentRequest = (
   params: CreatePaymentRequestParams,
@@ -143,7 +144,6 @@ export const createPaymentRequest = (
   const generateQuote: () => Promise<PaymentRequest> = async () => {
     const { creationData, mutations } = params
     const pr = { ...creationData } // clone creation data object
-
     const breezNoAmountInvoiceCreateData = await fetchBreezInvoice(
       pr.settlementAmount?.amount,
       pr.memo,
@@ -157,13 +157,32 @@ export const createPaymentRequest = (
 
     // On Chain BTC
     if (pr.type === Invoice.OnChain) {
-      let { data, errors } = await mutations.onChainAddressCurrent({
-        variables: { input: { walletId: pr.receivingWalletDescriptor.id } },
-      })
-      if (breezOnChainAddressCurrentData) {
+      console.log(
+        "Starting On Chain Invoice Creation... PR:",
+        JSON.stringify(pr, null, 2),
+      )
+      let data = null
+      let errors: readonly GraphQLError[] | undefined = []
+      if (
+        pr.receivingWalletDescriptor &&
+        pr.receivingWalletDescriptor.currency === WalletCurrency.Usd
+      ) {
+        console.log("Creating Ibex Bitcoin On Chain Invoice")
+        const result = await mutations.onChainAddressCurrent({
+          variables: { input: { walletId: pr.receivingWalletDescriptor.id } },
+        })
+        data = result.data
+        errors = result.errors || []
+      } else if (
+        pr.receivingWalletDescriptor &&
+        pr.receivingWalletDescriptor.currency === WalletCurrency.Btc &&
+        breezOnChainAddressCurrentData
+      ) {
+        console.log("Creating Breez BTC Bitcoin On Chain Invoice")
         data = breezOnChainAddressCurrentData
         errors = []
       }
+      console.log("data:", JSON.stringify(data, null, 2))
 
       if (pr.settlementAmount && pr.settlementAmount.currency !== WalletCurrency.Btc)
         throw new Error("Onchain invoices only support BTC")
@@ -197,16 +216,13 @@ export const createPaymentRequest = (
       // Lightning without Amount (or zero-amount)
     } else if (
       pr.type === Invoice.Lightning &&
-      (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0)
+      (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0) &&
+      pr.receivingWalletDescriptor.currency === WalletCurrency.Btc
     ) {
-      let { data, errors } = await mutations.lnNoAmountInvoiceCreate({
-        variables: {
-          input: {
-            walletId: pr.receivingWalletDescriptor.id,
-            memo: pr.memo,
-          },
-        },
-      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let data: any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let errors: any
       if (breezNoAmountInvoiceCreateData) {
         data = breezNoAmountInvoiceCreateData
         errors = []
@@ -246,15 +262,10 @@ export const createPaymentRequest = (
       pr.settlementAmount &&
       pr.settlementAmount?.currency === WalletCurrency.Btc
     ) {
-      let { data, errors } = await mutations.lnInvoiceCreate({
-        variables: {
-          input: {
-            walletId: pr.receivingWalletDescriptor.id,
-            amount: pr.settlementAmount.amount,
-            memo: pr.memo,
-          },
-        },
-      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let data: any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let errors: any
       if (breezNoAmountInvoiceCreateData) {
         data = breezNoAmountInvoiceCreateData
         errors = []
@@ -293,6 +304,7 @@ export const createPaymentRequest = (
       pr.settlementAmount &&
       pr.settlementAmount?.currency === WalletCurrency.Usd
     ) {
+      console.log("Starting USD Invoice Creation")
       const { data, errors } = await mutations.lnUsdInvoiceCreate({
         variables: {
           input: {
@@ -302,7 +314,50 @@ export const createPaymentRequest = (
           },
         },
       })
+      console.log("USD Invoice Creation Complete")
+      console.log("data:", JSON.stringify(data, null, 2))
 
+      const dateString = prToDateString(
+        data?.lnUsdInvoiceCreate.invoice?.paymentRequest ?? "",
+        "mainnet", // pr.network,
+      )
+
+      const getFullUriFn: GetFullUriFn = ({ uppercase, prefix }) =>
+        getPaymentRequestFullUri({
+          type: Invoice.Lightning,
+          input: data?.lnUsdInvoiceCreate.invoice?.paymentRequest || "",
+          amount: pr.settlementAmount?.amount,
+          memo: pr.memo,
+          uppercase,
+          prefix,
+        })
+
+      info = {
+        data: data?.lnUsdInvoiceCreate.invoice
+          ? {
+              invoiceType: Invoice.Lightning,
+              ...data?.lnUsdInvoiceCreate.invoice,
+              expiresAt: dateString ? new Date(dateString) : undefined,
+              getFullUriFn,
+            }
+          : undefined,
+        applicationErrors: data?.lnUsdInvoiceCreate?.errors,
+        gqlErrors: errors,
+      }
+      // Lightning with USD without amount
+    } else if (
+      pr.type === Invoice.Lightning &&
+      (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0)
+    ) {
+      const { data, errors } = await mutations.lnUsdInvoiceCreate({
+        variables: {
+          input: {
+            walletId: pr.receivingWalletDescriptor.id,
+            amount: 0,
+            memo: pr.memo,
+          },
+        },
+      })
       const dateString = prToDateString(
         data?.lnUsdInvoiceCreate.invoice?.paymentRequest ?? "",
         "mainnet", // pr.network,

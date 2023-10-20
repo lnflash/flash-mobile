@@ -66,25 +66,31 @@ const ReceiveScreen = () => {
   >(undefined)
 
   useEffect(() => {
-    const handleEvent = (type: string) => {
+    const handleBreezEvent = (type: string) => {
       if (type === "invoicePaid" && request) {
         request.state = PaymentRequestState.Paid
-        console.log("invoice", request.state)
         if (request?.state === PaymentRequestState.Paid) {
           setUpdatedPaymentState(PaymentRequestState.Paid)
           const id = setTimeout(() => {
             if (navigation.canGoBack()) {
               navigation.goBack()
-            } else {
-              console.log("Cannot go back from this screen.")
             }
           }, 5000)
           return () => clearTimeout(id)
         }
       }
     }
-    addEventListener(handleEvent)
+    addEventListener(handleBreezEvent)
   }, [request?.state, navigation])
+
+  // FLASH FORK DEBUGGING -----------------------------
+  // console.log("request", request?.info?.data?.paymentRequest)
+  // const requestString: string = request?.info?.data?.paymentRequest
+  // if (requestString) {
+  //   const decodedInvoiceState = decodeInvoiceString(requestString, "mainnet")
+  //   console.log("decodedInvoiceState", JSON.stringify(decodedInvoiceState, null, 2))
+  // }
+  // --------------------------------------------------
 
   if (!request) return <></>
 
@@ -182,10 +188,18 @@ const ReceiveScreen = () => {
                 </View>
                 <View>
                   <Text color={colors.grey2}>
-                    {request.info?.data?.invoiceType === Invoice.OnChain
-                      ? "On-chain BTC Address"
-                      : request.info?.data?.invoiceType === Invoice.Lightning
-                      ? "Breez Invoice | Valid for 7 days"
+                    {request.info?.data?.invoiceType === Invoice.OnChain &&
+                    request.receivingWalletDescriptor.currency === WalletCurrency.Btc
+                      ? "Bitcoin On-chain Address"
+                      : request.info?.data?.invoiceType === Invoice.OnChain &&
+                        request.receivingWalletDescriptor.currency === WalletCurrency.Usd
+                      ? "Cash On-chain Address"
+                      : request.info?.data?.invoiceType === Invoice.Lightning &&
+                        request.receivingWalletDescriptor.currency === WalletCurrency.Btc
+                      ? "Bitcoin Invoice | Valid for 7 days"
+                      : request.info?.data?.invoiceType === Invoice.Lightning &&
+                        request.receivingWalletDescriptor.currency === WalletCurrency.Usd
+                      ? "Cash Invoice | Valid for 7 days"
                       : request.info?.data?.invoiceType === Invoice.PayCode
                       ? "Lightning Address"
                       : "Invoice | Valid for 1 day"}

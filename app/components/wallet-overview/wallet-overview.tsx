@@ -1,6 +1,10 @@
 import React from "react"
 import ContentLoader, { Rect } from "react-content-loader/native"
-import { Pressable, View, Alert } from "react-native"
+import {
+  Pressable,
+  View,
+  // Alert
+} from "react-native"
 import { StackNavigationProp } from "@react-navigation/stack" // import this at the top
 
 import { gql } from "@apollo/client"
@@ -21,7 +25,11 @@ import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 // import Breez SDK Wallet
 import useBreezBalance from "@app/hooks/useBreezBalance"
 import { useIsFocused } from "@react-navigation/native"
-import * as bsdk from "@app/utils/breez-sdk"
+import * as sdk from "@breeztech/react-native-breez-sdk"
+
+sdk.addEventListener((type, data) => {
+  console.log(`received event ${type} with data: ${JSON.stringify(data)}`)
+})
 
 const Loader = () => {
   const styles = useStyles()
@@ -70,7 +78,7 @@ const WalletOverview: React.FC<Props> = ({
   isContentVisible,
   setIsContentVisible,
   setIsStablesatModalVisible,
-  navigation,
+  // navigation,
   refreshTriggered,
 }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -175,8 +183,8 @@ const WalletOverview: React.FC<Props> = ({
       <View style={styles.displayTextView}>
         <View style={styles.currency}>
           <GaloyCurrencyBubble currency="USD" />
-          <Text type="p1">eCash (USD)</Text>
-          <Pressable
+          <Text type="p1">Cash (USD)</Text>
+          {/* <Pressable
             onPress={() => {
               if (navigation) {
                 navigation.navigate("conversionDetails")
@@ -189,7 +197,7 @@ const WalletOverview: React.FC<Props> = ({
             }}
           >
             <GaloyIcon color={colors.green} name="bank" size={18} />
-          </Pressable>
+          </Pressable> */}
         </View>
         {loading ? (
           <Loader />
