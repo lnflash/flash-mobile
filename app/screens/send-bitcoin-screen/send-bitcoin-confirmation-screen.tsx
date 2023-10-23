@@ -144,7 +144,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route }) => {
     loading: sendPaymentLoading,
     sendPayment,
     hasAttemptedSend,
-  } = useSendPayment(sendPaymentMutation, destination, settlementAmount.amount)
+  } = useSendPayment(sendPaymentMutation, destination, settlementAmount)
 
   let feeDisplayText = ""
   if (fee.amount) {

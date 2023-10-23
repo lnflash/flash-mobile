@@ -304,7 +304,6 @@ export const createPaymentRequest = (
       pr.settlementAmount &&
       pr.settlementAmount?.currency === WalletCurrency.Usd
     ) {
-      console.log("Starting USD Invoice Creation")
       const { data, errors } = await mutations.lnUsdInvoiceCreate({
         variables: {
           input: {
@@ -314,8 +313,6 @@ export const createPaymentRequest = (
           },
         },
       })
-      console.log("USD Invoice Creation Complete")
-      console.log("data:", JSON.stringify(data, null, 2))
 
       const dateString = prToDateString(
         data?.lnUsdInvoiceCreate.invoice?.paymentRequest ?? "",

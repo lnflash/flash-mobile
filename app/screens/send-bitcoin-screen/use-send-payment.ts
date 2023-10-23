@@ -11,6 +11,7 @@ import {
   useOnChainUsdPaymentSendAsBtcDenominatedMutation,
   useOnChainUsdPaymentSendMutation,
   GraphQlApplicationError,
+  WalletCurrency,
 } from "@app/graphql/generated"
 import { useMemo, useState } from "react"
 import { SendPaymentMutation } from "./payment-details/index.types"
@@ -29,6 +30,7 @@ import {
 } from "@app/utils/breez-sdk"
 
 import * as sdk from "@breeztech/react-native-breez-sdk"
+import { WalletAmount } from "@app/types/amounts"
 
 let event: { type: string; data?: sdk.EventData | undefined }
 sdk.addEventListener((type, data) => {
@@ -135,7 +137,7 @@ gql`
 export const useSendPayment = (
   sendPaymentMutation?: SendPaymentMutation | null,
   paymentRequest?: string,
-  amountMsats?: number,
+  amountMsats?: WalletAmount<WalletCurrency>,
   // eslint-disable-next-line max-params
 ): UseSendPaymentResult => {
   const [intraLedgerPaymentSend, { loading: intraLedgerPaymentSendLoading }] =
@@ -194,7 +196,7 @@ export const useSendPayment = (
       ? async () => {
           console.log("paymentRequest Step 1")
           setHasAttemptedSend(true)
-          if (paymentRequest) {
+          if (paymentRequest && amountMsats?.currency === "BTC") {
             if (
               paymentRequest.length > 110 &&
               !paymentRequest.toLowerCase().startsWith("lnurl")
@@ -213,7 +215,7 @@ export const useSendPayment = (
               try {
                 console.log("Fetching reverse swap fees using Breez SDK")
                 currentFees = await fetchReverseSwapFeesBreezSDK({
-                  sendAmountSat: amountMsats || 50000,
+                  sendAmountSat: amountMsats?.amount || 50000,
                 })
               } catch (error) {
                 console.error("Error fetching reverse swap fees with Breez SDK:", error)
@@ -255,11 +257,14 @@ export const useSendPayment = (
               paymentRequest.length > 110 &&
               !paymentRequest.toLowerCase().startsWith("lnurl") &&
               invoice?.amountMsat === null &&
-              amountMsats
+              amountMsats?.amount
             ) {
               console.log("Starting sendPaymentBreezSDK using invoice without amount")
               try {
-                const payment = await sendPaymentBreezSDK(paymentRequest, amountMsats)
+                const payment = await sendPaymentBreezSDK(
+                  paymentRequest,
+                  amountMsats.amount,
+                )
                 console.log(
                   "sendPaymentBreezSDK using invoice without amount DEBUG:",
                   JSON.stringify(payment, null, 2),
@@ -282,12 +287,12 @@ export const useSendPayment = (
               try {
                 const payment = await payLnurlBreezSDK(
                   paymentRequest,
-                  amountMsats || 1000,
+                  amountMsats?.amount || 1000,
                 )
                 console.log("payment:", JSON.stringify(payment, null, 2))
                 return {
                   status:
-                    "reason" in (payment.data || {})
+                    payment.type === "endpointSuccess"
                       ? PaymentSendResult.Failure
                       : PaymentSendResult.Success,
                   errors: [],

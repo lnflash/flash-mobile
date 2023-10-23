@@ -28,7 +28,11 @@ import { useIsFocused } from "@react-navigation/native"
 import * as sdk from "@breeztech/react-native-breez-sdk"
 
 sdk.addEventListener((type, data) => {
-  console.log(`received event ${type} with data: ${JSON.stringify(data)}`)
+  if (data) {
+    console.log(`received event ${type} with data: ${JSON.stringify(data)}`)
+  } else {
+    console.log(`received event ${type}`)
+  }
 })
 
 const Loader = () => {
