@@ -684,6 +684,7 @@ const en: BaseTranslation = {
   },
   SendBitcoinScreen: {
     amount: "Amount",
+    MinOnChainLimit: "Minimum amount for this transaction is US$2.00",
     amountExceed: "Amount exceeds your balance of {balance: string}",
     amountExceedsLimit: "Amount exceeds your remaining daily limit of {limit: string}",
     upgradeAccountToIncreaseLimit: "Upgrade your account to increase your limit",
