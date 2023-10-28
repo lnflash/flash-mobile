@@ -32,9 +32,15 @@ import {
 import * as sdk from "@breeztech/react-native-breez-sdk"
 import { WalletAmount } from "@app/types/amounts"
 
-let event: { type: string; data?: sdk.EventData | undefined }
+// set default value for event that is not null
+let event: { type: string; data?: sdk.EventData | undefined } | null = {
+  type: "",
+  data: undefined,
+}
+
 sdk.addEventListener((type, data) => {
-  if (type === "invoicePaid") event = { type, data }
+  event = { type, data }
+  // console.log("event set to:", event)
 })
 
 type UseSendPaymentResult = {
@@ -194,7 +200,6 @@ export const useSendPayment = (
     console.log("hasAttemptedSend:", hasAttemptedSend)
     return sendPaymentMutation && !hasAttemptedSend
       ? async () => {
-          console.log("paymentRequest Step 1")
           setHasAttemptedSend(true)
           if (paymentRequest && amountMsats?.currency === "BTC") {
             if (
@@ -235,18 +240,10 @@ export const useSendPayment = (
               console.log("Starting sendPaymentBreezSDK using invoice with amount")
               try {
                 const payment = await sendNoAmountPaymentBreezSDK(paymentRequest)
-                if (payment) {
-                  console.log("payment made")
-                  return {
-                    status:
-                      event?.type === "invoicePaid"
-                        ? PaymentSendResult?.Success
-                        : PaymentSendResult?.Failure,
-                    errors: [],
-                  }
-                }
                 return {
-                  status: PaymentSendResult.Failure,
+                  status: payment.paymentTime
+                    ? PaymentSendResult.Success
+                    : PaymentSendResult.Failure,
                   errors: [],
                 }
               } catch (err) {
@@ -264,10 +261,6 @@ export const useSendPayment = (
                 const payment = await sendPaymentBreezSDK(
                   paymentRequest,
                   amountMsats.amount,
-                )
-                console.log(
-                  "sendPaymentBreezSDK using invoice without amount DEBUG:",
-                  JSON.stringify(payment, null, 2),
                 )
                 return {
                   status: payment.paymentTime
@@ -289,7 +282,6 @@ export const useSendPayment = (
                   paymentRequest,
                   amountMsats?.amount || 1000,
                 )
-                console.log("payment:", JSON.stringify(payment, null, 2))
                 return {
                   status:
                     payment.type === "endpointSuccess"

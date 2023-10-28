@@ -27,13 +27,13 @@ import useBreezBalance from "@app/hooks/useBreezBalance"
 import { useIsFocused } from "@react-navigation/native"
 import * as sdk from "@breeztech/react-native-breez-sdk"
 
-sdk.addEventListener((type, data) => {
-  if (data) {
-    console.log(`received event ${type} with data: ${JSON.stringify(data)}`)
-  } else {
-    console.log(`received event ${type}`)
-  }
-})
+// sdk.addEventListener((type, data) => {
+//   if (data) {
+//     console.log(`received event ${type} with data: ${JSON.stringify(data)}`)
+//   } else {
+//     console.log(`received event ${type}`)
+//   }
+// })
 
 const Loader = () => {
   const styles = useStyles()

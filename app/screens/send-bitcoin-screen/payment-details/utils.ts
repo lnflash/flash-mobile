@@ -77,6 +77,7 @@ export const isValidAmount = ({
 
   if (
     moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd) &&
+    paymentDetail.paymentType === PaymentType.Onchain &&
     lessThan({
       value: settlementAmount,
       lessThan: toUsdMoneyAmount(200),

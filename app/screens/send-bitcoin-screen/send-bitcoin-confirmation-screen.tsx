@@ -118,10 +118,8 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route }) => {
       paymentDetail.paymentType === "lightning" ||
       paymentDetail.paymentType === "lnurl"
     ) {
-      console.log("lightning")
       setFee(getLightningFee)
     } else if (paymentDetail.sendingWalletDescriptor.currency === WalletCurrency.Btc) {
-      console.log("not lightning")
       const getBreezFee = async (): Promise<void> => {
         const rawBreezFee = await fetchReverseSwapFeesBreezSDK({
           sendAmountSat: settlementAmount.amount,
@@ -143,7 +141,6 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route }) => {
       setFee(getLightningFee)
     }
   }, [getLightningFee, paymentDetail.paymentType])
-  console.log("fee", fee)
 
   const {
     loading: sendPaymentLoading,

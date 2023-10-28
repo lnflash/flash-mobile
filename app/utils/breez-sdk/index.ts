@@ -134,18 +134,15 @@ export const sendPaymentBreezSDK = async (
 export const sendNoAmountPaymentBreezSDK = async (
   paymentRequest: string,
 ): Promise<sdk.Payment> => {
-  console.log("Stepping into Sending payment with no amount function")
   try {
-    console.log("Trying to send payment with no amount")
     const payment = await sdk.sendPayment(paymentRequest)
     if (payment.paymentType === null) {
-      console.log("Payment type is null, replacing with LN payment")
       payment.paymentType = sdk.PaymentType.SEND
     }
     return payment
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.log(error.message, error.stack)
+    console.log("BreezSDK function error", error.message, error.stack)
     throw error
   }
 }
