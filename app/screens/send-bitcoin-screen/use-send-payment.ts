@@ -33,15 +33,15 @@ import * as sdk from "@breeztech/react-native-breez-sdk"
 import { WalletAmount } from "@app/types/amounts"
 
 // set default value for event that is not null
-let event: { type: string; data?: sdk.EventData | undefined } | null = {
-  type: "",
-  data: undefined,
-}
+// let event: { type: string; data?: sdk.EventData | undefined } | null = {
+//   type: "",
+//   data: undefined,
+// }
 
-sdk.addEventListener((type, data) => {
-  event = { type, data }
-  // console.log("event set to:", event)
-})
+// sdk.addEventListener((type, data) => {
+//   event = { type, data }
+//   // console.log("event set to:", event)
+// })
 
 type UseSendPaymentResult = {
   loading: boolean

@@ -1,9 +1,18 @@
-import { INVITE_CODE, MNEMONIC_WORDS, API_KEY } from "@env"
+import {
+  INVITE_CODE,
+  // MNEMONIC_WORDS,
+  API_KEY,
+} from "@env"
 import * as sdk from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
 
 const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
+
+// SDK events listener
+const onBreezEvent = (event: sdk.BreezEvent) => {
+  console.log(`received event ${event.type}`)
+}
 
 // Retry function
 const retry = <T>(fn: () => Promise<T>, ms = 15000, maxRetries = 3) =>
@@ -28,19 +37,23 @@ const retry = <T>(fn: () => Promise<T>, ms = 15000, maxRetries = 3) =>
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getMnemonic = async (): Promise<string> => {
   try {
+    console.log("Looking for mnemonic in keychain")
     const credentials = await Keychain.getGenericPassword({
       service: KEYCHAIN_MNEMONIC_KEY,
     })
     if (credentials) {
+      console.log("Mnemonic found in keychain")
       return credentials.password
     }
 
     // Generate mnemonic and store it in the keychain
     // For development, we use a fixed mnemonic stored in .env
+    console.log("Mnemonic not found in keychain. Generating new one")
     const mnemonic = bip39.generateMnemonic(128)
     await Keychain.setGenericPassword(KEYCHAIN_MNEMONIC_KEY, mnemonic, {
       service: KEYCHAIN_MNEMONIC_KEY,
     })
+    // console.log("Mnemonic stored in keychain:", mnemonic)
     return mnemonic
   } catch (error) {
     console.error("Error in getMnemonic: ", error)
@@ -50,12 +63,12 @@ const getMnemonic = async (): Promise<string> => {
 
 const connectToSDK = async () => {
   try {
-    const mnemonic = MNEMONIC_WORDS // await getMnemonic()
-    // console.log("Mnemonic: ", mnemonic)
+    const mnemonic = await getMnemonic() // MNEMONIC_WORDS
+    // console.log("Connecting with mnemonic: ", mnemonic)
     const seed = await sdk.mnemonicToSeed(mnemonic)
     const inviteCode = INVITE_CODE
     const nodeConfig: sdk.NodeConfig = {
-      type: sdk.NodeConfigType.GREENLIGHT,
+      type: sdk.NodeConfigVariant.GREENLIGHT,
       config: {
         inviteCode,
       },
@@ -66,9 +79,9 @@ const connectToSDK = async () => {
       nodeConfig,
     )
 
-    console.log("Starting connection to Breez SDK")
-    await sdk.connect(config, seed)
-    console.log("Finished connection to Breez SDK")
+    // console.log("Starting connection to Breez SDK")
+    await sdk.connect(config, seed, onBreezEvent)
+    // console.log("Finished connection to Breez SDK")
   } catch (error) {
     console.error("Connect error: ", error)
     throw error
@@ -80,7 +93,7 @@ let breezSDKInitializing: Promise<void | boolean> | null = null
 
 export const initializeBreezSDK = async (): Promise<boolean> => {
   if (breezSDKInitialized) {
-    console.log("BreezSDK already initialized")
+    // console.log("BreezSDK already initialized")
     return false
   }
 
@@ -134,15 +147,18 @@ export const sendPaymentBreezSDK = async (
 export const sendNoAmountPaymentBreezSDK = async (
   paymentRequest: string,
 ): Promise<sdk.Payment> => {
+  console.log("Stepping into Sending payment with no amount function")
   try {
+    console.log("Trying to send payment with no amount")
     const payment = await sdk.sendPayment(paymentRequest)
     if (payment.paymentType === null) {
-      payment.paymentType = sdk.PaymentType.SEND
+      console.log("Payment type is null, replacing with LN payment")
+      payment.paymentType = sdk.PaymentType.SENT
     }
     return payment
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.log("BreezSDK function error", error.message, error.stack)
+    console.log(error.message, error.stack)
     throw error
   }
 }
@@ -220,20 +236,16 @@ export const payLnurlBreezSDK = async (
 ): Promise<sdk.LnUrlPayResult> => {
   try {
     let output: sdk.LnUrlPayResult
-    const input: sdk.InputResponse = await sdk.parseInput(lnurl)
-    if (input.type === sdk.InputType.LNURL_PAY) {
+    const input: sdk.InputType = await sdk.parseInput(lnurl)
+    if (input.type === sdk.InputTypeVariant.LN_URL_PAY) {
       const amountSats: number =
-        amount > input.data.minSendable ? amount : input.data.minSendable
-      const result = await sdk.payLnurl(
-        input.data,
-        amountSats,
-        "Flash Cash LNURL Payment",
-      )
+        amount > input.data?.minSendable ? amount : input.data?.minSendable || 0
+      const result = await sdk.payLnurl(input, amountSats, "Flash Cash LNURL Payment")
       output = result
     } else {
       return {
-        type: sdk.LnUrlPayResultType.ENDPOINT_ERROR,
-        data: input.data.reason,
+        type: sdk.LnUrlPayResultVariant.ENDPOINT_ERROR,
+        data: (input as sdk.LnUrlPayInput).data?.reason,
       }
     }
     return output
@@ -268,7 +280,7 @@ export const nodeInfoBreezSDK = async (): Promise<sdk.NodeState> => {
 export const listPaymentsBreezSDK = async (): Promise<sdk.Payment[]> => {
   try {
     const filter: sdk.PaymentTypeFilter = sdk.PaymentTypeFilter.ALL
-    const payments = await sdk.listPayments(filter)
+    const payments = await sdk.listPayments({ filter })
     // console.log("Payments: ", payments)
     return payments
   } catch (error) {
@@ -277,17 +289,17 @@ export const listPaymentsBreezSDK = async (): Promise<sdk.Payment[]> => {
   }
 }
 
-export const addLogListenerBreezSDK = async (): Promise<void> => {
-  try {
-    const listener: sdk.LogEntryFn = (l: sdk.LogEntry) => {
-      console.log("BreezSDK log: ", l)
-    }
-    await sdk.addLogListener(listener)
-  } catch (error) {
-    console.log(error)
-    throw error
-  }
-}
+// export const addLogListenerBreezSDK = async (): Promise<void> => {
+//   try {
+//     const listener: sdk.LogEntry = (l: sdk.LogEntry) => {
+//       console.log("BreezSDK log: ", l)
+//     }
+//     await sdk.addLogListener(listener)
+//   } catch (error) {
+//     console.log(error)
+//     throw error
+//   }
+// }
 
 export const executeDevCommandBreezSDK = async (command: string): Promise<void> => {
   try {
@@ -298,3 +310,5 @@ export const executeDevCommandBreezSDK = async (command: string): Promise<void> 
     throw error
   }
 }
+
+// export * from "./eventListener"
