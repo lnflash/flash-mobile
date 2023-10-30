@@ -27,7 +27,7 @@ import {
   fetchReverseSwapFeesBreezSDK,
   payLnurlBreezSDK,
   sendNoAmountPaymentBreezSDK,
-  waitForPaymentSuccess,
+  paymentEvents,
 } from "@app/utils/breez-sdk"
 
 import * as sdk from "@breeztech/react-native-breez-sdk"
@@ -183,6 +183,14 @@ export const useSendPayment = (
     onChainUsdPaymentSendLoading ||
     onChainUsdPaymentSendAsBtcDenominatedLoading
 
+  const successPromise = new Promise<void>((resolve) => {
+    paymentEvents.once("paymentSuccess", resolve)
+  })
+
+  const failurePromise = new Promise<Error>((_, reject) => {
+    paymentEvents.once("paymentFailure", reject)
+  })
+
   const sendPayment = useMemo(() => {
     let invoice: sdk.LnInvoice | null = null
     let currentFees: sdk.ReverseSwapPairInfo
@@ -237,7 +245,7 @@ export const useSendPayment = (
                 const response = await sendNoAmountPaymentBreezSDK(paymentRequest)
                 console.log("BreezSDK LNInvoice response:", response)
                 // Wait for the payment success event
-                await waitForPaymentSuccess()
+                await Promise.race([successPromise, failurePromise])
                 return {
                   status: PaymentSendResult.Success,
                   errors: [],
@@ -264,7 +272,7 @@ export const useSendPayment = (
                 )
                 console.log("BreezSDK No Amount LNInvoice response:", response)
                 // Wait for the payment success event
-                await waitForPaymentSuccess()
+                await Promise.race([successPromise, failurePromise])
                 return {
                   status: PaymentSendResult.Success,
                   errors: [],
@@ -286,11 +294,11 @@ export const useSendPayment = (
                 const payment = await payLnurlBreezSDK(
                   paymentRequest,
                   amountSats?.amount,
-                  memo?.substring(0, 12) || "",
+                  memo?.substring(0, 13) || "",
                 )
                 console.log("LNURL payment response:", payment)
                 // Wait for the payment success event
-                await waitForPaymentSuccess()
+                await Promise.race([successPromise, failurePromise])
                 return {
                   status: PaymentSendResult.Success,
                   errors: [],
@@ -317,7 +325,7 @@ export const useSendPayment = (
                   )
                   console.log("BreezSDK onchain response:", response)
                   // Wait for the payment success event
-                  await waitForPaymentSuccess()
+                  await Promise.race([successPromise, failurePromise])
                   return {
                     status: PaymentSendResult.Success,
                     errors: [],

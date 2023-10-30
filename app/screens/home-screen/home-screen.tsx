@@ -12,6 +12,7 @@ import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 import { StableSatsModal } from "@app/components/stablesats-modal"
 import WalletOverview from "@app/components/wallet-overview/wallet-overview"
 import {
+  WalletCurrency,
   useHasPromptedSetDefaultAccountQuery,
   useHideBalanceQuery,
   useHomeAuthedQuery,
@@ -34,12 +35,13 @@ import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { isIos } from "@app/utils/helper"
 import { SetDefaultAccountModal } from "@app/components/set-default-account-modal"
-import { useAppConfig } from "@app/hooks"
+import { useAppConfig, usePriceConversion } from "@app/hooks"
 
 import { Payment } from "@breeztech/react-native-breez-sdk"
 import { BreezTransactionItem } from "../../components/transaction-item/breez-transaction-item"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 import { listPaymentsBreezSDK } from "@app/utils/breez-sdk"
+import { toBtcMoneyAmount } from "@app/types/amounts"
 
 const TransactionCountToTriggerSetDefaultAccountModal = 1
 
@@ -229,15 +231,6 @@ export const HomeScreen: React.FC = () => {
     listPaymentsBreez()
   }, [breezTransactions.length, refetchAuthed])
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [btcInDisplay, setBtcInDisplay] = React.useState(0)
-  // fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
-  //   .then((response) => response.json())
-  //   .then((data) => {
-  //     setBtcInDisplay(data.bitcoin.usd)
-  //   })
-  //   .catch((error) => console.error("Error fetching BTC price:", error))
-
   if (isAuthed && transactionsEdges?.length) {
     recentTransactionsData = {
       title: LL.TransactionScreen.title(),
@@ -262,10 +255,19 @@ export const HomeScreen: React.FC = () => {
     }
   }
 
-  if (isAuthed && breezTransactions?.length) {
+  const { convertMoneyAmount } = usePriceConversion()
+
+  if (isAuthed && breezTransactions?.length && convertMoneyAmount) {
     const txs = breezTransactions
       .slice(0, TRANSACTIONS_TO_SHOW)
-      .map((tx) => formatPaymentsBreezSDK(tx.id, breezTransactions, btcInDisplay))
+      .map((tx) =>
+        formatPaymentsBreezSDK(
+          tx.id,
+          breezTransactions,
+          convertMoneyAmount(toBtcMoneyAmount(tx.amountMsat / 1000), WalletCurrency.Usd)
+            .amount,
+        ),
+      )
     recentTransactionsData = {
       title: LL.TransactionScreen.title(),
       details: (

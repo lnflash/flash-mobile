@@ -20,7 +20,7 @@ import { SetLightningAddressModal } from "@app/components/set-lightning-address-
 import { GaloyCurrencyBubble } from "@app/components/atomic/galoy-currency-bubble"
 
 // Breez SDK
-import { addEventListener } from "@breeztech/react-native-breez-sdk"
+import { paymentEvents } from "@app/utils/breez-sdk"
 
 const ReceiveScreen = () => {
   const {
@@ -66,8 +66,8 @@ const ReceiveScreen = () => {
   >(undefined)
 
   useEffect(() => {
-    const handleBreezEvent = (type: string) => {
-      if (type === "invoicePaid" && request) {
+    const handleInvoicePaid = () => {
+      if (request) {
         request.state = PaymentRequestState.Paid
         if (request?.state === PaymentRequestState.Paid) {
           setUpdatedPaymentState(PaymentRequestState.Paid)
@@ -80,7 +80,13 @@ const ReceiveScreen = () => {
         }
       }
     }
-    addEventListener(handleBreezEvent)
+    // Subscribe to the "paymentSuccess" event.
+    paymentEvents.on("invoicePaid", handleInvoicePaid)
+
+    // Clean up: unsubscribe to prevent memory leaks.
+    return () => {
+      paymentEvents.off("invoicePaid", handleInvoicePaid)
+    }
   }, [request?.state, navigation])
 
   // FLASH FORK DEBUGGING -----------------------------
@@ -199,7 +205,7 @@ const ReceiveScreen = () => {
                       ? "Bitcoin Invoice | Valid for 7 days"
                       : request.info?.data?.invoiceType === Invoice.Lightning &&
                         request.receivingWalletDescriptor.currency === WalletCurrency.Usd
-                      ? "Cash Invoice | Valid for 7 days"
+                      ? "Cash Invoice | Valid for 5 minutes"
                       : request.info?.data?.invoiceType === Invoice.PayCode
                       ? "Lightning Address"
                       : "Invoice | Valid for 1 day"}

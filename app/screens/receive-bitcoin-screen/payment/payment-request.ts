@@ -129,8 +129,9 @@ export const createPaymentRequest = (
       }
       const amountSats = amount ? amount : 1
       const memoDetail = memo ? memo : "Flash Cash"
+      console.log("creating breez invoice")
       const fetchedBreezInvoice = await receivePaymentBreezSDK({
-        amountSats,
+        amountMsat: amountSats * 1000,
         description: memoDetail,
       })
       const formattedInvoice = await breezInvoiceData(fetchedBreezInvoice.lnInvoice)
@@ -144,11 +145,26 @@ export const createPaymentRequest = (
   const generateQuote: () => Promise<PaymentRequest> = async () => {
     const { creationData, mutations } = params
     const pr = { ...creationData } // clone creation data object
-    const breezNoAmountInvoiceCreateData = await fetchBreezInvoice(
-      pr.settlementAmount?.amount,
-      pr.memo,
-    )
-    const breezOnChainAddressCurrentData = await fetchBreezOnchain()
+    let breezNoAmountInvoiceCreateData:
+      | LnNoAmountInvoiceCreateMutation
+      | LnInvoiceCreateMutation
+      | null
+      | undefined
+    let breezOnChainAddressCurrentData: OnChainAddressCurrentMutation | null | undefined
+    if (
+      creationData.receivingWalletDescriptor.currency === WalletCurrency.Btc &&
+      pr.type === Invoice.Lightning
+    ) {
+      breezNoAmountInvoiceCreateData = await fetchBreezInvoice(
+        pr.settlementAmount?.amount,
+        pr.memo,
+      )
+    } else if (
+      creationData.receivingWalletDescriptor.currency === WalletCurrency.Btc &&
+      pr.type === Invoice.OnChain
+    ) {
+      breezOnChainAddressCurrentData = await fetchBreezOnchain()
+    }
 
     let info: PaymentRequestInformation | undefined
 
@@ -157,10 +173,6 @@ export const createPaymentRequest = (
 
     // On Chain BTC
     if (pr.type === Invoice.OnChain) {
-      console.log(
-        "Starting On Chain Invoice Creation... PR:",
-        JSON.stringify(pr, null, 2),
-      )
       let data = null
       let errors: readonly GraphQLError[] | undefined = []
       if (
@@ -182,7 +194,6 @@ export const createPaymentRequest = (
         data = breezOnChainAddressCurrentData
         errors = []
       }
-      console.log("data:", JSON.stringify(data, null, 2))
 
       if (pr.settlementAmount && pr.settlementAmount.currency !== WalletCurrency.Btc)
         throw new Error("Onchain invoices only support BTC")
@@ -346,6 +357,7 @@ export const createPaymentRequest = (
       pr.type === Invoice.Lightning &&
       (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0)
     ) {
+      console.log("Creating Ibex Lightning Invoice")
       const { data, errors } = await mutations.lnUsdInvoiceCreate({
         variables: {
           input: {

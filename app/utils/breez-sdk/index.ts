@@ -6,27 +6,21 @@ import {
 import * as sdk from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
+import { EventEmitter } from "events"
 
 const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 
 // SDK events listener
-let resolvePaymentSuccess: Function
-let rejectPaymentError: Function
-
-export const waitForPaymentSuccess = (): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    resolvePaymentSuccess = resolve
-    rejectPaymentError = reject
-  })
-}
+export const paymentEvents = new EventEmitter()
 
 export const onBreezEvent = (event: sdk.BreezEvent) => {
   console.log(`received event ${event.type}`)
   if (event.type === "paymentSucceed") {
-    resolvePaymentSuccess()
+    paymentEvents.emit("paymentSuccess")
+  } else if (event.type === "invoicePaid") {
+    paymentEvents.emit("invoicePaid")
   } else if (event.type === "paymentFailed") {
-    // Assuming there's an event for payment failure
-    rejectPaymentError(new Error("Payment failed"))
+    paymentEvents.emit("paymentFailure", new Error("Payment failed"))
   }
 }
 
@@ -215,6 +209,8 @@ export const fetchReverseSwapFeesBreezSDK = async (
 ): Promise<sdk.ReverseSwapPairInfo> => {
   try {
     const fees = await sdk.fetchReverseSwapFees(reverseSwapfeeRequest)
+    console.log("min amount: ", fees.min)
+    console.log("max amount: ", fees.max)
     return fees
   } catch (error) {
     console.log(error)
@@ -267,10 +263,6 @@ export const payLnurlBreezSDK = async (
         amountMsat: amountSat * 1000,
         comment: memo,
       }
-      console.log("amount: ", req.amountMsat)
-      console.log("minimum amount: ", req.data.minSendable)
-      console.log("comment: ", req.comment)
-      console.log("comment length: ", req.comment?.length || 0)
       const response = await sdk.payLnurl(req)
       return response
     }

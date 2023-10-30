@@ -13,6 +13,7 @@ import {
   lessThan,
   moneyAmountIsCurrencyType,
   toUsdMoneyAmount,
+  toBtcMoneyAmount,
 } from "@app/types/amounts"
 import { PaymentType } from "@galoymoney/client"
 
@@ -45,7 +46,6 @@ export const isValidAmount = ({
       invalidReason: AmountInvalidReason.NoAmount,
     } as const
   }
-
   const settlementAmount = paymentDetail.settlementAmount
   if (
     moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Btc) &&
@@ -86,6 +86,20 @@ export const isValidAmount = ({
     return {
       validAmount: false,
       invalidReason: AmountInvalidReason.MinOnChainLimit,
+    }
+  }
+
+  if (
+    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Btc) &&
+    paymentDetail.paymentType === PaymentType.Onchain &&
+    lessThan({
+      value: settlementAmount,
+      lessThan: toBtcMoneyAmount(5500),
+    })
+  ) {
+    return {
+      validAmount: false,
+      invalidReason: AmountInvalidReason.MinOnChainSatLimit,
     }
   }
 

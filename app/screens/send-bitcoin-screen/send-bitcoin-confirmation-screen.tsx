@@ -121,20 +121,23 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route }) => {
       setFee(getLightningFee)
     } else if (paymentDetail.sendingWalletDescriptor.currency === WalletCurrency.Btc) {
       const getBreezFee = async (): Promise<void> => {
-        const rawBreezFee = await fetchReverseSwapFeesBreezSDK({
-          sendAmountSat: settlementAmount.amount,
-        })
-        const formattedBreezFee: FeeType = {
-          amount: {
-            amount: rawBreezFee.feesClaim,
-            currency: "BTC",
-            currencyCode: "BTC",
-          },
-          status: "set",
+        try {
+          const rawBreezFee = await fetchReverseSwapFeesBreezSDK({
+            sendAmountSat: settlementAmount.amount * 100,
+          })
+          const formattedBreezFee: FeeType = {
+            amount: {
+              amount: rawBreezFee.feesClaim,
+              currency: "BTC",
+              currencyCode: "BTC",
+            },
+            status: "set",
+          }
+          setFee(formattedBreezFee)
+        } catch (err) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         }
-        setFee(formattedBreezFee)
       }
-
       // This ensures that getBreezFee is only called when the component mounts
       getBreezFee()
     } else {
