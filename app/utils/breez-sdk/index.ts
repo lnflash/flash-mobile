@@ -10,8 +10,24 @@ import * as Keychain from "react-native-keychain"
 const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 
 // SDK events listener
-const onBreezEvent = (event: sdk.BreezEvent) => {
+let resolvePaymentSuccess: Function
+let rejectPaymentError: Function
+
+export const waitForPaymentSuccess = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    resolvePaymentSuccess = resolve
+    rejectPaymentError = reject
+  })
+}
+
+export const onBreezEvent = (event: sdk.BreezEvent) => {
   console.log(`received event ${event.type}`)
+  if (event.type === "paymentSucceed") {
+    resolvePaymentSuccess()
+  } else if (event.type === "paymentFailed") {
+    // Assuming there's an event for payment failure
+    rejectPaymentError(new Error("Payment failed"))
+  }
 }
 
 // Retry function
@@ -133,11 +149,15 @@ export const receivePaymentBreezSDK = async (
 
 export const sendPaymentBreezSDK = async (
   paymentRequest: string,
-  paymentAmount?: number,
-): Promise<sdk.Payment> => {
+  amountMsat: number,
+): Promise<sdk.SendPaymentResponse> => {
   try {
-    const payment = await sdk.sendPayment(paymentRequest, paymentAmount)
-    return payment
+    const sendPaymentRequest: sdk.SendPaymentRequest = {
+      bolt11: paymentRequest,
+      amountMsat,
+    }
+    const response = await sdk.sendPayment(sendPaymentRequest)
+    return response
   } catch (error) {
     console.log(error)
     throw error
@@ -146,16 +166,19 @@ export const sendPaymentBreezSDK = async (
 
 export const sendNoAmountPaymentBreezSDK = async (
   paymentRequest: string,
-): Promise<sdk.Payment> => {
+): Promise<sdk.SendPaymentResponse> => {
   console.log("Stepping into Sending payment with no amount function")
   try {
     console.log("Trying to send payment with no amount")
-    const payment = await sdk.sendPayment(paymentRequest)
-    if (payment.paymentType === null) {
-      console.log("Payment type is null, replacing with LN payment")
-      payment.paymentType = sdk.PaymentType.SENT
+    const sendPaymentRequest: sdk.SendPaymentRequest = {
+      bolt11: paymentRequest,
     }
-    return payment
+    const response = await sdk.sendPayment(sendPaymentRequest)
+    if (response.payment.paymentType === null) {
+      console.log("Payment type is null, replacing with LN payment")
+      response.payment.paymentType = sdk.PaymentType.SENT
+    }
+    return response
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.log(error.message, error.stack)
@@ -203,16 +226,17 @@ export const sendOnchainBreezSDK = async (
   currentFees: sdk.ReverseSwapPairInfo,
   destinationAddress: string,
   satPerVbyte: number,
-): Promise<sdk.ReverseSwapInfo> => {
+): Promise<sdk.SendOnchainResponse> => {
   try {
-    console.log("Sending onchain payment to address: ", destinationAddress)
-    const reverseSwapInfo = await sdk.sendOnchain(
-      currentFees.min,
-      destinationAddress,
-      currentFees.feesHash,
+    const sendOnChainRequest: sdk.SendOnchainRequest = {
+      amountSat: currentFees.min,
+      onchainRecipientAddress: destinationAddress,
+      pairHash: currentFees.feesHash,
       satPerVbyte,
-    )
-    return reverseSwapInfo
+    }
+    console.log("Sending onchain payment to address: ", destinationAddress)
+    const response = await sdk.sendOnchain(sendOnChainRequest)
+    return response
   } catch (error) {
     console.log(error)
     throw error
@@ -232,23 +256,25 @@ export const recommendedFeesBreezSDK = async (): Promise<sdk.RecommendedFees> =>
 
 export const payLnurlBreezSDK = async (
   lnurl: string,
-  amount: number,
+  amountSat: number,
+  memo: string,
 ): Promise<sdk.LnUrlPayResult> => {
   try {
-    let output: sdk.LnUrlPayResult
     const input: sdk.InputType = await sdk.parseInput(lnurl)
     if (input.type === sdk.InputTypeVariant.LN_URL_PAY) {
-      const amountSats: number =
-        amount > input.data?.minSendable ? amount : input.data?.minSendable || 0
-      const result = await sdk.payLnurl(input, amountSats, "Flash Cash LNURL Payment")
-      output = result
-    } else {
-      return {
-        type: sdk.LnUrlPayResultVariant.ENDPOINT_ERROR,
-        data: (input as sdk.LnUrlPayInput).data?.reason,
+      const req: sdk.LnUrlPayRequest = {
+        data: input.data,
+        amountMsat: amountSat * 1000,
+        comment: memo,
       }
+      console.log("amount: ", req.amountMsat)
+      console.log("minimum amount: ", req.data.minSendable)
+      console.log("comment: ", req.comment)
+      console.log("comment length: ", req.comment?.length || 0)
+      const response = await sdk.payLnurl(req)
+      return response
     }
-    return output
+    throw new Error("Unsupported input type")
   } catch (error) {
     console.log(error)
     throw error

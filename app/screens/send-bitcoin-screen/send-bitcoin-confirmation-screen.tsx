@@ -140,13 +140,18 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route }) => {
     } else {
       setFee(getLightningFee)
     }
-  }, [getLightningFee, paymentDetail.paymentType])
+  }, [
+    getLightningFee,
+    paymentDetail.paymentType,
+    paymentDetail.sendingWalletDescriptor.currency,
+    settlementAmount.amount,
+  ])
 
   const {
     loading: sendPaymentLoading,
     sendPayment,
     hasAttemptedSend,
-  } = useSendPayment(sendPaymentMutation, destination, settlementAmount)
+  } = useSendPayment(sendPaymentMutation, destination, settlementAmount, note)
 
   let feeDisplayText = ""
   if (fee.amount) {

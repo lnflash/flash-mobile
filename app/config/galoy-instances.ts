@@ -61,11 +61,11 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
   {
     id: "Main",
     name: "Flash",
-    graphqlUri: "https://api.blink.sv/graphql",
-    graphqlWsUri: "wss://ws.blink.sv/graphql",
-    authUrl: "https://api.blink.sv",
-    posUrl: "https://pay.blink.sv",
-    lnAddressHostname: "blink.sv",
+    graphqlUri: "https://api.flashapp.me/graphql",
+    graphqlWsUri: "wss://ws.flashapp.me/graphql",
+    authUrl: "https://api.flashapp.me",
+    posUrl: "https://pay.flashapp.me",
+    lnAddressHostname: "flashapp.me",
     blockExplorer: "https://mempool.space/tx/",
   },
   {
