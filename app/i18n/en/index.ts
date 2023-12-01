@@ -499,6 +499,7 @@ const en: BaseTranslation = {
     title: "Map",
   },
   HomeScreen: {
+    cashout: "Cash Out",
     receive: "Receive",
     send: "Send",
     pay: "Pay",

@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.7.11",
-    "@breeztech/react-native-breez-sdk": "^0.2.7",
+    "@breeztech/react-native-breez-sdk": "0.2.10",
     "@flyerhq/react-native-chat-ui": "^1.4.3",
     "@flyerhq/react-native-link-preview": "^1.6.0",
     "@formatjs/intl-getcanonicallocales": "^2.2.1",

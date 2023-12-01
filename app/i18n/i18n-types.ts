@@ -1523,6 +1523,10 @@ type RootTranslation = {
 	}
 	HomeScreen: {
 		/**
+		 * Cashout
+		 */
+		cashout: string
+		/**
 		 * R​e​c​e​i​v​e
 		 */
 		receive: string
@@ -5075,6 +5079,10 @@ export type TranslationFunctions = {
 		title: () => LocalizedString
 	}
 	HomeScreen: {
+		/**
+		 * Cash Out
+		 */
+		cashout: () => LocalizedString
 		/**
 		 * Receive
 		 */
