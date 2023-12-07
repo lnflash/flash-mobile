@@ -55,6 +55,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.7.11",
+    "@bitcoinerlab/secp256k1": "^1.0.5",
     "@breeztech/react-native-breez-sdk": "0.2.10",
     "@flyerhq/react-native-chat-ui": "^1.4.3",
     "@flyerhq/react-native-link-preview": "^1.6.0",
@@ -139,7 +140,7 @@
     "react-native-quick-crypto": "^0.6.1",
     "react-native-randombytes": "^3.6.1",
     "react-native-rate": "^1.2.12",
-    "react-native-reanimated": "^2.14.4",
+    "react-native-reanimated": "^3.6.1",
     "react-native-reanimated-carousel": "^3.3.0",
     "react-native-root-siblings": "^4.1.1",
     "react-native-safe-area-context": "^4.5.0",
