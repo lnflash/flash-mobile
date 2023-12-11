@@ -244,9 +244,9 @@ const useStyles = makeStyles(({ colors }) => ({
   listContainer: { flexGrow: 1 },
 
   searchBarContainer: {
-    backgroundColor: colors._lightpurple,
-    borderBottomColor: colors._lightpurple,
-    borderTopColor: colors._lightpurple,
+    backgroundColor: colors.white,
+    borderBottomColor: colors.white,
+    borderTopColor: colors.white,
     marginHorizontal: 26,
     marginVertical: 8,
   },
@@ -268,9 +268,5 @@ const useStyles = makeStyles(({ colors }) => ({
 
   icon: {
     color: colors.black,
-  },
-
-  header: {
-    backgroundColor: colors._lightpurple,
   },
 }))

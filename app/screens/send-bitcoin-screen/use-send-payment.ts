@@ -28,6 +28,7 @@ import {
   payLnurlBreezSDK,
   sendNoAmountPaymentBreezSDK,
   paymentEvents,
+  breezHealthCheck,
 } from "@app/utils/breez-sdk"
 
 import * as sdk from "@breeztech/react-native-breez-sdk"
@@ -197,6 +198,8 @@ export const useSendPayment = (
     let status: PaymentSendResult | null | undefined = null
     let errors: readonly GraphQlApplicationError[] | undefined
     console.log("hasAttemptedSend:", hasAttemptedSend)
+    console.log("Health Check for Breez SDK...")
+    breezHealthCheck()
     return sendPaymentMutation && !hasAttemptedSend
       ? async () => {
           setHasAttemptedSend(true)
@@ -304,7 +307,6 @@ export const useSendPayment = (
                   errors: [],
                 }
               } catch (err) {
-                console.error("Failed to send lnurl payment using Breez SDK:", err)
                 return {
                   status: PaymentSendResult.Failure,
                   errors: [],

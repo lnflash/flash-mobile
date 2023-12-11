@@ -24,6 +24,11 @@ export const onBreezEvent = (event: sdk.BreezEvent) => {
   }
 }
 
+paymentEvents.on("paymentFailure", (error) => {
+  // Handle the payment failure error here
+  console.error("Payment failed with error:", error)
+})
+
 // Retry function
 const retry = <T>(fn: () => Promise<T>, ms = 15000, maxRetries = 3) =>
   new Promise<T>((resolve, reject) => {
@@ -68,6 +73,14 @@ const getMnemonic = async (): Promise<string> => {
   } catch (error) {
     console.error("Error in getMnemonic: ", error)
     throw error
+  }
+}
+
+export const breezHealthCheck = async (): Promise<void> => {
+  const healthCheck = await sdk.serviceHealthCheck()
+  console.log(`Current service status is: ${healthCheck.status}`)
+  if (!healthCheck.status) {
+    throw new Error("Breez service is not available")
   }
 }
 
@@ -264,6 +277,16 @@ export const payLnurlBreezSDK = async (
         comment: memo,
       }
       const response = await sdk.payLnurl(req)
+      if (response.type === sdk.LnUrlPayResultVariant.PAY_ERROR) {
+        console.log("Error paying lnurl: ", response.data.reason)
+        console.log("Reporting issue to Breez SDK")
+        const reportingResult = await sdk.reportIssue({
+          type: sdk.ReportIssueRequestVariant.PAYMENT_FAILURE,
+          data: { paymentHash: response.data.paymentHash },
+        })
+        console.log("Report issue result: ", reportingResult)
+        throw new Error(response.type)
+      }
       return response
     }
     throw new Error("Unsupported input type")

@@ -18,7 +18,11 @@ import { getPaymentRequestFullUri, prToDateString } from "./helpers"
 import { bech32 } from "bech32"
 
 // Breez SDK
-import { receivePaymentBreezSDK, receiveOnchainBreezSDK } from "@app/utils/breez-sdk"
+import {
+  receivePaymentBreezSDK,
+  receiveOnchainBreezSDK,
+  breezHealthCheck,
+} from "@app/utils/breez-sdk"
 import { LnInvoice, SwapInfo } from "@breeztech/react-native-breez-sdk"
 import { GraphQLError } from "graphql/error/GraphQLError"
 
@@ -358,6 +362,7 @@ export const createPaymentRequest = (
       (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0)
     ) {
       console.log("Creating Ibex Lightning Invoice")
+      breezHealthCheck()
       const { data, errors } = await mutations.lnUsdInvoiceCreate({
         variables: {
           input: {

@@ -59,7 +59,7 @@ const en: BaseTranslation = {
   ChatScreen: {
     noChatsTitle: "No Chats Found",
     noChatsYet:
-      "Enter a Flash username or nostr public key to start a chat",
+      "Enter a Flash username or \nnostr pubkey to start a chat",
     noMatchingChats: "No chats matching your search were found.",
     title: "Chat",
   },
