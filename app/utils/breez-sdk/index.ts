@@ -164,6 +164,19 @@ export const sendPaymentBreezSDK = async (
       amountMsat,
     }
     const response = await sdk.sendPayment(sendPaymentRequest)
+    if (response.payment.status === sdk.PaymentStatus.FAILED) {
+      console.log("Error paying Invoice: ", response.payment.details.data)
+      console.log("Reporting issue to Breez SDK")
+      const reportingResult = await sdk.reportIssue({
+        type: sdk.ReportIssueRequestVariant.PAYMENT_FAILURE,
+        data: {
+          paymentHash: (response.payment.details.data as sdk.LnPaymentDetails)
+            .paymentHash,
+        },
+      })
+      console.log("Report issue result: ", reportingResult)
+      throw new Error(response.payment.status)
+    }
     return response
   } catch (error) {
     console.log(error)
@@ -181,6 +194,20 @@ export const sendNoAmountPaymentBreezSDK = async (
       bolt11: paymentRequest,
     }
     const response = await sdk.sendPayment(sendPaymentRequest)
+    console.log("Payment status: ", response.payment.status)
+    if (response.payment.status === sdk.PaymentStatus.FAILED) {
+      console.log("Error paying Zero Amount Invoice: ", response.payment.details.data)
+      console.log("Reporting issue to Breez SDK")
+      const reportingResult = await sdk.reportIssue({
+        type: sdk.ReportIssueRequestVariant.PAYMENT_FAILURE,
+        data: {
+          paymentHash: (response.payment.details.data as sdk.LnPaymentDetails)
+            .paymentHash,
+        },
+      })
+      console.log("Report issue result: ", reportingResult)
+      throw new Error(response.payment.status)
+    }
     if (response.payment.paymentType === null) {
       console.log("Payment type is null, replacing with LN payment")
       response.payment.paymentType = sdk.PaymentType.SENT
@@ -245,6 +272,18 @@ export const sendOnchainBreezSDK = async (
     }
     console.log("Sending onchain payment to address: ", destinationAddress)
     const response = await sdk.sendOnchain(sendOnChainRequest)
+    if (response.reverseSwapInfo.status === sdk.ReverseSwapStatus.CANCELLED) {
+      console.log("Error paying to OnChain Address")
+      console.log("Reporting issue to Breez SDK")
+      const reportingResult = await sdk.reportIssue({
+        type: sdk.ReportIssueRequestVariant.PAYMENT_FAILURE,
+        data: {
+          paymentHash: response.reverseSwapInfo.id,
+        },
+      })
+      console.log("Report issue result: ", reportingResult)
+      throw new Error(response.reverseSwapInfo.status)
+    }
     return response
   } catch (error) {
     console.log(error)
@@ -280,9 +319,11 @@ export const payLnurlBreezSDK = async (
       if (response.type === sdk.LnUrlPayResultVariant.PAY_ERROR) {
         console.log("Error paying lnurl: ", response.data.reason)
         console.log("Reporting issue to Breez SDK")
+        console.log("Payment hash: ", response.data.paymentHash)
+        const paymentHash = response.data.paymentHash
         const reportingResult = await sdk.reportIssue({
           type: sdk.ReportIssueRequestVariant.PAYMENT_FAILURE,
-          data: { paymentHash: response.data.paymentHash },
+          data: { paymentHash },
         })
         console.log("Report issue result: ", reportingResult)
         throw new Error(response.type)

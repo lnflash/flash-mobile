@@ -201,6 +201,10 @@ export const ChatScreen: React.FC = () => {
 }
 
 const useStyles = makeStyles(({ colors }) => ({
+  header: {
+    backgroundColor: colors.white,
+  },
+
   activityIndicatorContainer: {
     alignItems: "center",
     flex: 1,

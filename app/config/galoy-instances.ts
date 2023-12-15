@@ -71,9 +71,9 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
   {
     id: "Staging",
     name: "Staging",
-    graphqlUri: "http://development.flashapp.me:4002/graphql",
-    graphqlWsUri: "ws://development.flashapp.me:4000/graphql",
-    authUrl: "http://development.flashapp.me:4002",
+    graphqlUri: "https://development.flashapp.me:8080/graphql",
+    graphqlWsUri: "wss://development.flashapp.me:4000/graphql",
+    authUrl: "https://development.flashapp.me:8080",
     posUrl: "http://development.flashapp.me:3000",
     lnAddressHostname: "development.flashapp.me:3000",
     blockExplorer: "https://mempool.space/signet/tx/",
