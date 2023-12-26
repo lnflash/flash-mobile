@@ -13,6 +13,8 @@ const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 // SDK events listener
 export const paymentEvents = new EventEmitter()
 
+paymentEvents.setMaxListeners(20) // Adjust the limit as needed
+
 export const onBreezEvent = (event: sdk.BreezEvent) => {
   console.log(`received event ${event.type}`)
   if (event.type === "paymentSucceed") {
@@ -24,7 +26,7 @@ export const onBreezEvent = (event: sdk.BreezEvent) => {
   }
 }
 
-paymentEvents.on("paymentFailure", (error) => {
+paymentEvents.once("paymentFailure", (error) => {
   // Handle the payment failure error here
   console.error("Payment failed with error:", error)
 })

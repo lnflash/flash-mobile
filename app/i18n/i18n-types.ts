@@ -5200,6 +5200,7 @@ export type TranslationFunctions = {
 		title: () => LocalizedString
 	}
 	ReceiveScreen: {
+    [x: string]: any
 		/**
 		 * Do you want to activate notifications to be notified when the payment has arrived?
 		 */
@@ -5435,41 +5436,64 @@ export type TranslationFunctions = {
 	}
 	ScanningQRCodeScreen: {
 		/**
-		 * We found:
-
-	{found}
-
-	This is not a valid Bitcoin address or Lightning invoice
+		 * W​e​ ​f​o​u​n​d​:​
+	​
+	​{​f​o​u​n​d​}​
+	​
+	​T​h​i​s​ ​i​s​ ​n​o​t​ ​a​ ​v​a​l​i​d​ ​B​i​t​c​o​i​n​ ​a​d​d​r​e​s​s​ ​o​r​ ​L​i​g​h​t​n​i​n​g​ ​i​n​v​o​i​c​e
+		 * @param {string} found
 		 */
-		invalidContent: (arg: { found: string }) => LocalizedString
+		invalidContent: RequiredParams<'found'>
 		/**
-		 * We found:
-
-	{found}
-
-	This invoice has expired
+		 * W​e​ ​f​o​u​n​d​:​
+	​
+	​{​f​o​u​n​d​}​
+	​
+	​T​h​i​s​ ​i​n​v​o​i​c​e​ ​h​a​s​ ​e​x​p​i​r​e​d
+		 * @param {string} found
 		 */
-		expiredContent: (arg: { found: string }) => LocalizedString
+		expiredContent: RequiredParams<'found'>
 		/**
-		 * Invalid QR Code
+		 * I​n​v​a​l​i​d​ ​Q​R​ ​C​o​d​e
 		 */
-		invalidTitle: () => LocalizedString
+		invalidTitle: string
 		/**
-		 * We could not find a QR code in the image
+		 * W​e​ ​c​o​u​l​d​ ​n​o​t​ ​f​i​n​d​ ​a​ ​Q​R​ ​c​o​d​e​ ​i​n​ ​t​h​e​ ​i​m​a​g​e
 		 */
-		noQrCode: () => LocalizedString
+		noQrCode: string
 		/**
-		 * Scan QR
+		 * S​c​a​n​ ​Q​R
 		 */
-		title: () => LocalizedString
+		title: string
 		/**
-		 * We found:
-
-	{found}
-
-	 is not currently supported
+		 * W​e​ ​n​e​e​d​ ​p​e​r​m​i​s​s​i​o​n​ ​t​o​ ​u​s​e​ ​y​o​u​r​ ​c​a​m​e​r​a
 		 */
-		invalidContentLnurl: (arg: { found: string }) => LocalizedString
+		permissionCamera: string
+		/**
+		 * N​o​ ​c​a​m​e​r​a​ ​f​o​u​n​d
+		 */
+		noCamera: string
+		/**
+		 * O​p​e​n​ ​S​e​t​t​i​n​g​s
+		 */
+		openSettings: string
+		/**
+		 * U​n​a​b​l​e​ ​t​o​ ​o​p​e​n​ ​s​e​t​t​i​n​g​s
+		 */
+		unableToOpenSettings: string
+		/**
+		 * W​e​ ​f​o​u​n​d​:​
+	​
+	​{​f​o​u​n​d​}​
+	​
+	​ ​i​s​ ​n​o​t​ ​c​u​r​r​e​n​t​l​y​ ​s​u​p​p​o​r​t​e​d
+		 * @param {string} found
+		 */
+		invalidContentLnurl: RequiredParams<'found'>
+		/**
+		 * W​e​ ​d​o​n​'​t​ ​h​a​v​e​ ​p​e​r​m​i​s​s​i​o​n​s​ ​t​o​ ​a​c​c​e​s​s​ ​t​h​e​ ​i​m​a​g​e​ ​l​i​b​r​a​r​y​.​ ​ ​P​l​e​a​s​e​ ​c​h​e​c​k​ ​a​p​p​ ​s​e​t​t​i​n​g​s​ ​f​o​r​ ​y​o​u​r​ ​p​l​a​t​f​o​r​m​.
+		 */
+		imageLibraryPermissionsNotGranted: string
 	}
 	SecurityScreen: {
 		/**

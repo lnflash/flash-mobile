@@ -243,9 +243,9 @@ const ReceiveScreen = () => {
             {
               id: Invoice.Lightning,
               text: LL.ReceiveScreen.lightning(),
-              icon: "md-flash",
+              icon: "flash",
             },
-            { id: Invoice.PayCode, text: LL.ReceiveScreen.paycode(), icon: "md-at" },
+            { id: Invoice.PayCode, text: LL.ReceiveScreen.paycode(), icon: "at" },
             {
               id: Invoice.OnChain,
               text: LL.ReceiveScreen.onchain(),
