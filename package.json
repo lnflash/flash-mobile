@@ -55,9 +55,8 @@
     "splash": "yarn react-native generate-bootsplash --background-color \"#000\" --logo-width 300 app/assets/logo/app-logo-dark.svg"
   },
   "dependencies": {
-    "@apollo/client": "3.9.0-alpha.5",
-    "@bitcoinerlab/secp256k1": "^1.0.5",
-    "@breeztech/react-native-breez-sdk": "^0.2.12",
+    "@apollo/client": "^3.7.11",
+    "@breeztech/react-native-breez-sdk": "https://github.com/breez/breez-sdk-react-native/releases/download/0.1.2/breeztech-react-native-breez-sdk-0.1.2.tgz",
     "@flyerhq/react-native-chat-ui": "^1.4.3",
     "@flyerhq/react-native-link-preview": "^1.6.0",
     "@formatjs/intl-getcanonicallocales": "^2.3.0",

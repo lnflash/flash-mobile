@@ -75,34 +75,6 @@ export const isValidAmount = ({
     }
   }
 
-  if (
-    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd) &&
-    paymentDetail.paymentType === PaymentType.Onchain &&
-    lessThan({
-      value: settlementAmount,
-      lessThan: toUsdMoneyAmount(200),
-    })
-  ) {
-    return {
-      validAmount: false,
-      invalidReason: AmountInvalidReason.MinOnChainLimit,
-    }
-  }
-
-  if (
-    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Btc) &&
-    paymentDetail.paymentType === PaymentType.Onchain &&
-    lessThan({
-      value: settlementAmount,
-      lessThan: toBtcMoneyAmount(5500),
-    })
-  ) {
-    return {
-      validAmount: false,
-      invalidReason: AmountInvalidReason.MinOnChainSatLimit,
-    }
-  }
-
   const usdAmount = paymentDetail.convertMoneyAmount(
     paymentDetail.unitOfAccountAmount,
     WalletCurrency.Usd,

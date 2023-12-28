@@ -43,6 +43,11 @@ import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 import { listPaymentsBreezSDK } from "@app/utils/breez-sdk"
 import { toBtcMoneyAmount } from "@app/types/amounts"
 
+import { Payment } from "@breeztech/react-native-breez-sdk"
+import { BreezTransactionItem } from "../../components/transaction-item/breez-transaction-item"
+import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
+import { listPaymentsBreezSDK } from "@app/utils/breez-sdk"
+
 const TransactionCountToTriggerSetDefaultAccountModal = 1
 
 gql`

@@ -202,6 +202,7 @@ export const useSendPayment = (
     breezHealthCheck()
     return sendPaymentMutation && !hasAttemptedSend
       ? async () => {
+          console.log("paymentRequest Step 1")
           setHasAttemptedSend(true)
           if (paymentRequest && amountSats?.currency === "BTC") {
             if (
