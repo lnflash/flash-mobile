@@ -87,7 +87,6 @@ const ReceiveScreen = () => {
     return () => {
       paymentEvents.off("invoicePaid", handleInvoicePaid)
     }
-    addEventListener(handleBreezEvent)
   }, [request?.state, navigation])
 
   // FLASH FORK DEBUGGING -----------------------------

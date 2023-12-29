@@ -23,7 +23,8 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 
 // import Breez SDK Wallet
-// import useBreezBalance from "@app/hooks/useBreezBalance"
+import useBreezBalance from "@app/hooks/useBreezBalance"
+import { useIsFocused } from "@react-navigation/native"
 
 const Loader = () => {
   const styles = useStyles()
