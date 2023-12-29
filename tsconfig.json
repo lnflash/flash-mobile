@@ -3,6 +3,7 @@
   "compilerOptions": {
     "target": "ES2017",
     "module": "Node16",
+    "moduleResolution": "Node16",
     "esModuleInterop": true,
     "allowJs": false,
     "sourceMap": true,
@@ -17,9 +18,16 @@
         "features": ["random"]
       }
     ],
-    "types": ["node", "react-native", "@wdio/globals/types", "@wdio/mocha-framework", "@wdio/devtools-service", "@types/jest"],
-    "jsx": "react-native",
+    "types": [
+      "node",
+      "react-native",
+      "@wdio/globals/types",
+      "@wdio/mocha-framework",
+      "@wdio/devtools-service",
+      "@types/jest"
+    ],
+    "jsx": "react-native"
   },
   "exclude": ["**/*.stories.tsx"],
-  "include": ["app", "e2e", "__tests__", ".storybook"],
+  "include": ["app", "e2e", "__tests__", ".storybook"]
 }

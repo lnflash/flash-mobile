@@ -1,5 +1,5 @@
 import {
-  INVITE_CODE,
+  // INVITE_CODE,
   // MNEMONIC_WORDS,
   API_KEY,
 } from "@env"
@@ -7,6 +7,10 @@ import * as sdk from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
 import { EventEmitter } from "events"
+interface GreenlightCredentials {
+  deviceKey: number[]
+  deviceCert: number[]
+}
 
 const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 
@@ -86,18 +90,11 @@ export const breezHealthCheck = async (): Promise<void> => {
   }
 }
 
-const connectToSDK = async () => {
+const connectToSDK = async (nodeConfig: sdk.NodeConfig) => {
   try {
     const mnemonic = await getMnemonic() // MNEMONIC_WORDS
     // console.log("Connecting with mnemonic: ", mnemonic)
     const seed = await sdk.mnemonicToSeed(mnemonic)
-    const inviteCode = INVITE_CODE
-    const nodeConfig: sdk.NodeConfig = {
-      type: sdk.NodeConfigVariant.GREENLIGHT,
-      config: {
-        inviteCode,
-      },
-    }
     const config = await sdk.defaultConfig(
       sdk.EnvironmentType.PRODUCTION,
       API_KEY,
@@ -116,20 +113,26 @@ const connectToSDK = async () => {
 let breezSDKInitialized = false
 let breezSDKInitializing: Promise<void | boolean> | null = null
 
-export const initializeBreezSDK = async (): Promise<boolean> => {
+export const initializeBreezSDK = async (
+  greenlightCredentials: GreenlightCredentials,
+): Promise<boolean> => {
   if (breezSDKInitialized) {
     // console.log("BreezSDK already initialized")
     return false
   }
-
   if (breezSDKInitializing !== null) {
     console.log("BreezSDK initialization in progress")
     return breezSDKInitializing as Promise<boolean>
   }
-
   breezSDKInitializing = (async () => {
     try {
-      await retry(connectToSDK, 5000, 3)
+      const nodeConfig: sdk.NodeConfig = {
+        type: sdk.NodeConfigVariant.GREENLIGHT,
+        config: {
+          partnerCredentials: greenlightCredentials,
+        },
+      }
+      await retry(() => connectToSDK(nodeConfig), 5000, 3)
       breezSDKInitialized = true
       return true
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

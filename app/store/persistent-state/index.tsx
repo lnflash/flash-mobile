@@ -7,6 +7,7 @@ import {
 } from "./state-migrations"
 import * as React from "react"
 import { initializeBreezSDK } from "@app/utils/breez-sdk/index"
+import { useFetchGreenlightCredentials } from "@app/utils/breez-sdk/fetchCreds"
 
 const PERSISTENT_STATE_KEY = "persistentState"
 
@@ -51,6 +52,7 @@ export const PersistentStateProvider: React.FC<PropsWithChildren> = ({ children 
 
       // Initialize BreezSDK if it hasn't been initialized yet
       if (loadedState && !loadedState.hasInitializedBreezSDK) {
+        // FLASH FORK: needs to be changed to use the new fetchCreds
         const wasSuccessful = await initializeBreezSDK()
         if (wasSuccessful) {
           setPersistentState({
