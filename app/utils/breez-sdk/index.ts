@@ -1,12 +1,17 @@
-import {
-  INVITE_CODE,
-  // MNEMONIC_WORDS,
-  API_KEY,
-} from "@env"
+import { API_KEY, GREENLIGHT_PARTNER_CERT, GREENLIGHT_PARTNER_KEY } from "@env"
 import * as sdk from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
 import { EventEmitter } from "events"
+import { base64ToBytes } from "../conversion"
+
+const _GREENLIGHT_PARTNER_CERT: number[] = Array.from(
+  base64ToBytes(GREENLIGHT_PARTNER_CERT),
+)
+
+const _GREENLIGHT_PARTNER_KEY: number[] = Array.from(
+  base64ToBytes(GREENLIGHT_PARTNER_KEY),
+)
 
 const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 
@@ -91,11 +96,13 @@ const connectToSDK = async () => {
     const mnemonic = await getMnemonic() // MNEMONIC_WORDS
     // console.log("Connecting with mnemonic: ", mnemonic)
     const seed = await sdk.mnemonicToSeed(mnemonic)
-    const inviteCode = INVITE_CODE
     const nodeConfig: sdk.NodeConfig = {
       type: sdk.NodeConfigVariant.GREENLIGHT,
       config: {
-        inviteCode,
+        partnerCredentials: {
+          deviceCert: _GREENLIGHT_PARTNER_CERT,
+          deviceKey: _GREENLIGHT_PARTNER_KEY,
+        },
       },
     }
     const config = await sdk.defaultConfig(
