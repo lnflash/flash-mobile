@@ -155,10 +155,11 @@ export const receivePaymentBreezSDK = async (
   paymentRequest: sdk.ReceivePaymentRequest,
 ): Promise<sdk.ReceivePaymentResponse> => {
   try {
+    console.log("Trying to receive payment with Breez SDK", sdk)
     const invoice = await sdk.receivePayment(paymentRequest)
     return invoice
   } catch (error) {
-    console.log(error)
+    console.log("Debugging the receive payment BREEZSDK", error)
     throw error
   }
 }
@@ -380,17 +381,17 @@ export const listPaymentsBreezSDK = async (): Promise<sdk.Payment[]> => {
   }
 }
 
-// export const addLogListenerBreezSDK = async (): Promise<void> => {
-//   try {
-//     const listener: sdk.LogEntry = (l: sdk.LogEntry) => {
-//       console.log("BreezSDK log: ", l)
-//     }
-//     await sdk.addLogListener(listener)
-//   } catch (error) {
-//     console.log(error)
-//     throw error
-//   }
-// }
+export const addLogListenerBreezSDK = async (): Promise<void> => {
+  try {
+    const listener: sdk.LogStream = (log) => {
+      console.log("Breez SDK Log: ", log)
+    }
+    await sdk.setLogStream(listener)
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
 
 export const executeDevCommandBreezSDK = async (command: string): Promise<void> => {
   try {

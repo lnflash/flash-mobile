@@ -256,7 +256,7 @@ export const SettingsScreen: React.FC = () => {
     },
     {
       category: LL.common.language(),
-      icon: "ios-language",
+      icon: "language",
       id: "language",
       subTitleText: language,
       action: () => navigation.navigate("language"),
@@ -265,7 +265,7 @@ export const SettingsScreen: React.FC = () => {
     },
     {
       category: `${LL.common.currency()}`,
-      icon: "ios-cash",
+      icon: "cash",
       id: "currency",
       action: () => navigation.navigate("currency"),
       subTitleText: displayCurrency,
@@ -291,7 +291,7 @@ export const SettingsScreen: React.FC = () => {
     },
     {
       category: LL.common.csvExport(),
-      icon: "ios-download",
+      icon: "download",
       id: "csv",
       action: fetchCsvTransactions,
       enabled: isAtLeastLevelZero && !loadingCsvTransactions,
