@@ -60,9 +60,7 @@ const retry = <T>(fn: () => Promise<T>, ms = 15000, maxRetries = 3) =>
 const getMnemonic = async (): Promise<string> => {
   try {
     console.log("Looking for mnemonic in keychain")
-    const credentials = await Keychain.getGenericPassword({
-      service: KEYCHAIN_MNEMONIC_KEY,
-    })
+    const credentials = await Keychain.getInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
     if (credentials) {
       console.log("Mnemonic found in keychain")
       return credentials.password
@@ -72,9 +70,11 @@ const getMnemonic = async (): Promise<string> => {
     // For development, we use a fixed mnemonic stored in .env
     console.log("Mnemonic not found in keychain. Generating new one")
     const mnemonic = bip39.generateMnemonic(128)
-    await Keychain.setGenericPassword(KEYCHAIN_MNEMONIC_KEY, mnemonic, {
-      service: KEYCHAIN_MNEMONIC_KEY,
-    })
+    await Keychain.setInternetCredentials(
+      KEYCHAIN_MNEMONIC_KEY,
+      KEYCHAIN_MNEMONIC_KEY,
+      mnemonic,
+    )
     // console.log("Mnemonic stored in keychain:", mnemonic)
     return mnemonic
   } catch (error) {
@@ -138,6 +138,7 @@ export const initializeBreezSDK = async (): Promise<boolean> => {
     try {
       await retry(connectToSDK, 5000, 3)
       breezSDKInitialized = true
+      console.log("BreezSDK initialized")
       return true
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
