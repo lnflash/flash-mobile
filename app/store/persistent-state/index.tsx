@@ -46,19 +46,11 @@ export const PersistentStateProvider: React.FC<PropsWithChildren> = ({ children 
 
   React.useEffect(() => {
     ;(async () => {
+      // Initialize BreezSDK if it hasn't been initialized yet
+      await initializeBreezSDK()
+
       const loadedState = await loadPersistentState()
       setPersistentState(loadedState)
-
-      // Initialize BreezSDK if it hasn't been initialized yet
-      if (loadedState && !loadedState.hasInitializedBreezSDK) {
-        const wasSuccessful = await initializeBreezSDK()
-        if (wasSuccessful) {
-          setPersistentState({
-            ...loadedState,
-            hasInitializedBreezSDK: true,
-          })
-        }
-      }
     })()
   }, [])
 
