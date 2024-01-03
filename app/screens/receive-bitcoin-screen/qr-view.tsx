@@ -69,7 +69,7 @@ export const QRView: React.FC<Props> = ({
   loading,
   completed,
   err,
-  size = 420,
+  size = 320,
   style,
   expired,
   regenerateInvoiceFn,
