@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { StackNavigationProp } from "@react-navigation/stack"
-import { Pressable, TouchableOpacity, View } from "react-native"
+import { Platform, Pressable, TouchableOpacity, View } from "react-native"
 import { Screen } from "../../components/screen"
 import { RootStackParamList } from "../../navigation/stack-param-lists"
 import AppLogoLightMode from "../../assets/logo/app-logo-light.svg"
@@ -51,7 +51,7 @@ export const GetStartedScreen: React.FC = () => {
   const handleCreateAccount = () => {
     logGetStartedAction({
       action: "log_in",
-      createDeviceAccountEnabled: Boolean(appCheckToken),
+      createDeviceAccountEnabled: Platform.OS === "ios" ? Boolean(appCheckToken) : true,
     })
     navigation.navigate("phoneFlow")
   }
@@ -59,7 +59,7 @@ export const GetStartedScreen: React.FC = () => {
   const handleExploreWallet = () => {
     logGetStartedAction({
       action: "explore_wallet",
-      createDeviceAccountEnabled: Boolean(appCheckToken),
+      createDeviceAccountEnabled: Platform.OS === "ios" ? Boolean(appCheckToken) : true,
     })
     navigation.navigate("Primary")
   }
@@ -76,7 +76,7 @@ export const GetStartedScreen: React.FC = () => {
   const handleLoginWithEmail = async () => {
     logGetStartedAction({
       action: "login_with_email",
-      createDeviceAccountEnabled: Boolean(appCheckToken),
+      createDeviceAccountEnabled: Platform.OS === "ios" ? Boolean(appCheckToken) : true,
     })
 
     navigation.navigate("emailLoginInitiate")
