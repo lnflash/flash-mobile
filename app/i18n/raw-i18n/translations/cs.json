@@ -537,7 +537,8 @@
         "yourBitcoinOnChainAddress": "Vaše Onchain Bitcoin adresa",
         "receiveViaInvoice": "Příjem přes Lightning",
         "receiveViaPaycode": "Příjem přes Paycode",
-        "receiveViaOnchain": "Příjem přes Onchain"
+        "receiveViaOnchain": "Příjem přes Onchain",
+        "initialDeposit": "* Initial deposit of 2501 sats (~$1) required for channel setup."
     },
     "RedeemBitcoinScreen": {
         "title": "Směnit Bitcoin",

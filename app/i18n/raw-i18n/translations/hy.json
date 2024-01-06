@@ -539,7 +539,8 @@
         "receiveViaInvoice": "Ստանալ Lightning-ի միջոցով",
         "receiveViaPaycode": "Ստանալ վճարման ծածկագրի միջոցով",
         "receiveViaOnchain": "Ստանալ Բլոկչեյնի միջոցով",
-        "payCodeOrLNURL": "Վճարման ծածկագիրը/LNURL"
+        "payCodeOrLNURL": "Վճարման ծածկագիրը/LNURL",
+        "initialDeposit": "* Initial deposit of 2501 sats (~$1) required for channel setup."
     },
     "RedeemBitcoinScreen": {
         "title": "Հետ գնել Բիթքոյն",

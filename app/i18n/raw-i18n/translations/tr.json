@@ -539,7 +539,8 @@
         "receiveViaInvoice": "Lightning aracılığı ile al",
         "receiveViaPaycode": "Ödeme Kodu ile al",
         "receiveViaOnchain": "Onchain ile al",
-        "payCodeOrLNURL": "Ödeme Kodu / LNURL"
+        "payCodeOrLNURL": "Ödeme Kodu / LNURL",
+        "initialDeposit": "* Initial deposit of 2501 sats (~$1) required for channel setup."
     },
     "RedeemBitcoinScreen": {
         "title": "Bitcoin olarak kullan",

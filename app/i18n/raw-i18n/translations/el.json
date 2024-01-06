@@ -539,7 +539,8 @@
         "receiveViaInvoice": "Λήψη μέσω Lightning",
         "receiveViaPaycode": "Λήψη μέσω Paycode",
         "receiveViaOnchain": "Λήψη μέσω On-chain",
-        "payCodeOrLNURL": "Paycode / LNURL"
+        "payCodeOrLNURL": "Paycode / LNURL",
+        "initialDeposit": "* Initial deposit of 2501 sats (~$1) required for channel setup."
     },
     "RedeemBitcoinScreen": {
         "title": "Εξαργύρωση Bitcoin",

@@ -539,7 +539,8 @@
         "receiveViaInvoice": "Ontvang met Lightning",
         "receiveViaPaycode": "Ontvang met LNURL",
         "receiveViaOnchain": "Ontvang opketting",
-        "payCodeOrLNURL": "Betaalkode / LNURL"
+        "payCodeOrLNURL": "Betaalkode / LNURL",
+        "initialDeposit": "* Initial deposit of 2501 sats (~$1) required for channel setup."
     },
     "RedeemBitcoinScreen": {
         "title": "Verkry Bitcoin",

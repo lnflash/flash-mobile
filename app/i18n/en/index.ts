@@ -587,7 +587,8 @@ const en: BaseTranslation = {
     receiveViaInvoice: "Receive via Lightning",
     receiveViaPaycode: "Receive via Paycode",
     receiveViaOnchain: "Receive via Onchain",
-    payCodeOrLNURL: "Paycode / LNURL"
+    payCodeOrLNURL: "Paycode / LNURL",
+    initialDeposit: "* Initial deposit of 2501 sats (~$1) required for channel setup."
   },
   RedeemBitcoinScreen: {
     title: "Redeem Bitcoin",
