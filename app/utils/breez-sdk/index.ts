@@ -2,7 +2,6 @@ import { API_KEY, GREENLIGHT_PARTNER_CERT, GREENLIGHT_PARTNER_KEY } from "@env"
 import * as sdk from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
-import { EventEmitter } from "events"
 import { base64ToBytes } from "../conversion"
 
 const _GREENLIGHT_PARTNER_CERT: number[] = Array.from(
@@ -15,26 +14,16 @@ const _GREENLIGHT_PARTNER_KEY: number[] = Array.from(
 
 const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 
-// SDK events listener
-export const paymentEvents = new EventEmitter()
-
-paymentEvents.setMaxListeners(20) // Adjust the limit as needed
-
 export const onBreezEvent = (event: sdk.BreezEvent) => {
   console.log(`received event ${event.type}`)
   if (event.type === "paymentSucceed") {
-    paymentEvents.emit("paymentSuccess")
+    console.error("onBreezEvent => Payment succeed:", event.details)
   } else if (event.type === "invoicePaid") {
-    paymentEvents.emit("invoicePaid")
+    console.error("onBreezEvent => Invoice paid:", event.details)
   } else if (event.type === "paymentFailed") {
-    paymentEvents.emit("paymentFailure", new Error("Payment failed"))
+    console.error("onBreezEvent => Payment failed:", event.details)
   }
 }
-
-paymentEvents.once("paymentFailure", (error) => {
-  // Handle the payment failure error here
-  console.error("Payment failed with error:", error)
-})
 
 // Retry function
 const retry = <T>(fn: () => Promise<T>, ms = 15000, maxRetries = 3) =>
