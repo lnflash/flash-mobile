@@ -198,13 +198,14 @@ export const useReceiveBitcoin = (isFirstTransaction: Boolean) => {
           convertMoneyAmount: _convertMoneyAmount,
           username: username || undefined,
           posUrl,
-          unitOfAccountAmount: isFirstTransaction
-            ? {
-                amount: 2501,
-                currency: "BTC",
-                currencyCode: "SAT",
-              }
-            : undefined,
+          unitOfAccountAmount:
+            defaultWallet.walletCurrency === "BTC" && isFirstTransaction
+              ? {
+                  amount: 2501,
+                  currency: "BTC",
+                  currencyCode: "SAT",
+                }
+              : undefined,
           network: data.globals?.network,
         }
       setPRCD(createPaymentRequestCreationData(initialPRParams))
