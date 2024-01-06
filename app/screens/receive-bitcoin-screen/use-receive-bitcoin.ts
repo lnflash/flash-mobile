@@ -114,7 +114,7 @@ gql`
   }
 `
 
-export const useReceiveBitcoin = () => {
+export const useReceiveBitcoin = (isFirstTransaction: Boolean) => {
   const [lnNoAmountInvoiceCreate] = useLnNoAmountInvoiceCreateMutation()
   const [lnUsdInvoiceCreate] = useLnUsdInvoiceCreateMutation()
   const [lnInvoiceCreate] = useLnInvoiceCreateMutation()
@@ -198,6 +198,13 @@ export const useReceiveBitcoin = () => {
           convertMoneyAmount: _convertMoneyAmount,
           username: username || undefined,
           posUrl,
+          unitOfAccountAmount: isFirstTransaction
+            ? {
+                amount: 2501,
+                currency: "BTC",
+                currencyCode: "SAT",
+              }
+            : undefined,
           network: data.globals?.network,
         }
       setPRCD(createPaymentRequestCreationData(initialPRParams))
