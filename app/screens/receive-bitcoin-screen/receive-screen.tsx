@@ -66,28 +66,31 @@ const ReceiveScreen = () => {
   >(undefined)
 
   useEffect(() => {
-    const handleInvoicePaid = () => {
-      if (request) {
-        request.state = PaymentRequestState.Paid
-        if (request?.state === PaymentRequestState.Paid) {
-          setUpdatedPaymentState(PaymentRequestState.Paid)
-          const id = setTimeout(() => {
-            if (navigation.canGoBack()) {
-              navigation.goBack()
-            }
-          }, 5000)
-          return () => clearTimeout(id)
-        }
+    if (request) {
+      // Subscribe to the "paymentSuccess" event.
+      paymentEvents.once("invoicePaid", handleInvoicePaid)
+
+      // Clean up: unsubscribe to prevent memory leaks.
+      return () => {
+        paymentEvents.off("invoicePaid", handleInvoicePaid)
       }
     }
-    // Subscribe to the "paymentSuccess" event.
-    paymentEvents.on("invoicePaid", handleInvoicePaid)
+  }, [request])
 
-    // Clean up: unsubscribe to prevent memory leaks.
-    return () => {
-      paymentEvents.off("invoicePaid", handleInvoicePaid)
+  const handleInvoicePaid = () => {
+    if (request) {
+      request.state = PaymentRequestState.Paid
+      if (request?.state === PaymentRequestState.Paid) {
+        setUpdatedPaymentState(PaymentRequestState.Paid)
+        const id = setTimeout(() => {
+          if (navigation.canGoBack()) {
+            navigation.goBack()
+          }
+        }, 5000)
+        return () => clearTimeout(id)
+      }
     }
-  }, [request?.state, navigation])
+  }
 
   // FLASH FORK DEBUGGING -----------------------------
   // console.log("request", request?.info?.data?.paymentRequest)
