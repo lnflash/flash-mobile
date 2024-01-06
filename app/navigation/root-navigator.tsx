@@ -516,7 +516,7 @@ export const PrimaryNavigator = () => {
           headerShown: false,
         }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Contacts"
         component={ContactNavigator}
         options={{
@@ -537,7 +537,7 @@ export const PrimaryNavigator = () => {
           title: LL.ChatScreen.title(),
           tabBarIcon: ({ color }) => <ChatIcon color={color} />,
         }}
-      />
+      /> */}
       <Tab.Screen
         name="Map"
         component={MapScreen}
