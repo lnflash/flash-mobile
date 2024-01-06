@@ -38,7 +38,8 @@ const ReceiveScreen = ({ route }: Props) => {
   const isAuthed = useIsAuthed()
   const isFocused = useIsFocused()
 
-  const request = useReceiveBitcoin(route.params.transactionLength === 0)
+  const isFirstTransaction = route.params.transactionLength === 0
+  const request = useReceiveBitcoin(isFirstTransaction)
 
   // notification permission
   useEffect(() => {
@@ -157,7 +158,9 @@ const ReceiveScreen = ({ route }: Props) => {
           style={styles.receivingWalletPicker}
           disabled={!request.canSetReceivingWalletDescriptor}
         />
-
+        {request.defaultWalletDescriptor.currency === "BTC" && isFirstTransaction && (
+          <Text style={styles.warning}>{LL.ReceiveScreen.initialDeposit()}</Text>
+        )}
         <QRView
           type={request.info?.data?.invoiceType || Invoice.OnChain}
           getFullUri={request.info?.data?.getFullUriFn}
@@ -363,6 +366,11 @@ const useStyles = makeStyles(({ colors }) => ({
     marginRight: 10,
   },
   onchainCharges: { marginTop: 10, alignItems: "center" },
+  warning: {
+    fontSize: 12,
+    color: colors.warning,
+    marginBottom: 10,
+  },
 }))
 
 export default withMyLnUpdateSub(ReceiveScreen)
