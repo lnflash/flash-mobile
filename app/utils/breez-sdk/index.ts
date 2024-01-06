@@ -377,6 +377,18 @@ export const listPaymentsBreezSDK = async (): Promise<sdk.Payment[]> => {
   }
 }
 
+export const addLogListenerBreezSDK = async (): Promise<void> => {
+  try {
+    const listener: sdk.LogStream = (log) => {
+      console.log("Breez SDK Log: ", log)
+    }
+    await sdk.setLogStream(listener)
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
 export const executeDevCommandBreezSDK = async (command: string): Promise<void> => {
   try {
     const res = await sdk.executeDevCommand(command)
