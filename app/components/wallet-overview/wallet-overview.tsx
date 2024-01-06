@@ -23,7 +23,6 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 
 // import Breez SDK Wallet
-import { addLogListenerBreezSDK } from "@app/utils/breez-sdk/index"
 import useBreezBalance from "@app/hooks/useBreezBalance"
 import { useIsFocused } from "@react-navigation/native"
 
@@ -95,7 +94,6 @@ const WalletOverview: React.FC<Props> = ({
     if (refreshTriggered || isFocused) {
       refreshBreezBalance()
       // bsdk.executeDevCommandBreezSDK("listfunds")
-      addLogListenerBreezSDK()
     }
     // wait for 10 seconds and then refresh again
     const _timeout = setTimeout(() => {
