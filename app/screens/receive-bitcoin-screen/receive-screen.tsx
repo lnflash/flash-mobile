@@ -3,7 +3,7 @@ import { WalletCurrency } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { requestNotificationPermission } from "@app/utils/notifications"
-import { useIsFocused, useNavigation } from "@react-navigation/native"
+import { RouteProp, useIsFocused, useNavigation } from "@react-navigation/native"
 import React, { useEffect } from "react"
 import { TouchableOpacity, View } from "react-native"
 import { testProps } from "../../utils/testProps"
@@ -21,8 +21,13 @@ import { GaloyCurrencyBubble } from "@app/components/atomic/galoy-currency-bubbl
 
 // Breez SDK
 import { paymentEvents } from "@app/utils/breez-sdk"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
-const ReceiveScreen = () => {
+type Props = {
+  route: RouteProp<RootStackParamList, "receiveBitcoin">
+}
+
+const ReceiveScreen = ({ route }: Props) => {
   const {
     theme: { colors },
   } = useTheme()
@@ -33,7 +38,7 @@ const ReceiveScreen = () => {
   const isAuthed = useIsAuthed()
   const isFocused = useIsFocused()
 
-  const request = useReceiveBitcoin()
+  const request = useReceiveBitcoin(route.params.transactionLength === 0)
 
   // notification permission
   useEffect(() => {
