@@ -13,7 +13,7 @@ import {
   GraphQlApplicationError,
   WalletCurrency,
 } from "@app/graphql/generated"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { SendPaymentMutation } from "./payment-details/index.types"
 import { gql } from "@apollo/client"
 import { getErrorMessages } from "@app/graphql/utils"
@@ -172,6 +172,13 @@ export const useSendPayment = (
   })
 
   const [hasAttemptedSend, setHasAttemptedSend] = useState(false)
+
+  useEffect(() => {
+    return () => {
+      paymentEvents.removeAllListeners("paymentSuccess")
+      paymentEvents.removeAllListeners("paymentFailure")
+    }
+  }, [])
 
   const loading =
     intraLedgerPaymentSendLoading ||
