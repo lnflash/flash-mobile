@@ -1119,7 +1119,7 @@ const en: BaseTranslation = {
     minAmountNotMet: "Amount must be at least {minAmount: string}.",
   },
   AmountInputButton: {
-    tapToSetAmount: "Tap to set amount (Default: 1 satoshi for invoices)",
+    tapToSetAmount: "Tap to set amount",
     tapToSetOnChainAmount: "Tap to set amount",
   },
   AppUpdate: {
