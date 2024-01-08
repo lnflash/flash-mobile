@@ -201,9 +201,9 @@ export const useReceiveBitcoin = (isFirstTransaction: Boolean) => {
           unitOfAccountAmount:
             defaultWallet.walletCurrency === "BTC" && isFirstTransaction
               ? {
-                  amount: 2501,
-                  currency: "BTC",
-                  currencyCode: "SAT",
+                  amount: 500,
+                  currency: "DisplayCurrency",
+                  currencyCode: "USD",
                 }
               : undefined,
           network: data.globals?.network,
