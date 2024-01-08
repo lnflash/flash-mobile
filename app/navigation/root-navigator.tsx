@@ -549,7 +549,7 @@ export const PrimaryNavigator = () => {
           tabBarIcon: ({ color }) => <MapIcon color={color} />,
         }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Earn"
         component={EarnMapScreen}
         options={{
@@ -559,7 +559,7 @@ export const PrimaryNavigator = () => {
           tabBarTestID: LL.EarnScreen.title(),
           tabBarIcon: ({ color }) => <LearnIcon {...testProps("Earn")} color={color} />,
         }}
-      />
+      /> */}
     </Tab.Navigator>
   )
 }

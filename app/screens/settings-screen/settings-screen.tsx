@@ -103,7 +103,7 @@ export const SettingsScreen: React.FC = () => {
   const btcWalletId = btcWallet?.id
   const usdWalletId = usdWallet?.id
   const defaultWalletId = data?.me?.defaultAccount?.defaultWalletId
-  const defaultWalletCurrency = defaultWalletId === btcWalletId ? "BTC" : "Stablesats USD"
+  const defaultWalletCurrency = defaultWalletId === btcWalletId ? "BTC" : "Cash (USD)"
 
   const lightningAddress = username
     ? getLightningAddress(appConfig.galoyInstance.lnAddressHostname, username)
