@@ -273,6 +273,15 @@ const ReceiveScreen = ({ route }: Props) => {
           convertMoneyAmount={request.convertMoneyAmount}
           walletCurrency={request.receivingWalletDescriptor.currency}
           showValuesIfDisabled={false}
+          minAmount={
+            isFirstTransaction
+              ? {
+                  amount: 2501,
+                  currency: "BTC",
+                  currencyCode: "SAT",
+                }
+              : undefined
+          }
           big={false}
         />
         <NoteInput
