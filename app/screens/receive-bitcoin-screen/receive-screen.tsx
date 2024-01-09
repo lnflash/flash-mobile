@@ -274,7 +274,7 @@ const ReceiveScreen = ({ route }: Props) => {
           walletCurrency={request.receivingWalletDescriptor.currency}
           showValuesIfDisabled={false}
           minAmount={
-            isFirstTransaction
+            request.defaultWalletDescriptor.currency === "BTC" && isFirstTransaction
               ? {
                   amount: 2501,
                   currency: "BTC",
