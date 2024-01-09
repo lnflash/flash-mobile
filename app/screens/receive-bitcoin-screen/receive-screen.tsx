@@ -41,6 +41,9 @@ const ReceiveScreen = ({ route }: Props) => {
   const isFirstTransaction = route.params.transactionLength === 0
   const request = useReceiveBitcoin(isFirstTransaction)
 
+  const [currentWallet, setCurrentWallet] = React.useState(
+    request?.receivingWalletDescriptor.currency,
+  )
   // notification permission
   useEffect(() => {
     let timeout: NodeJS.Timeout
@@ -82,6 +85,10 @@ const ReceiveScreen = ({ route }: Props) => {
       }
     }
   }, [request])
+
+  useEffect(() => {
+    setCurrentWallet(request?.receivingWalletDescriptor.currency)
+  }, [request?.receivingWalletDescriptor?.currency])
 
   const handleInvoicePaid = () => {
     if (request) {
@@ -161,7 +168,7 @@ const ReceiveScreen = ({ route }: Props) => {
           style={styles.receivingWalletPicker}
           disabled={!request.canSetReceivingWalletDescriptor}
         />
-        {request.defaultWalletDescriptor.currency === "BTC" && isFirstTransaction && (
+        {currentWallet === "BTC" && isFirstTransaction && (
           <Text style={styles.warning}>{LL.ReceiveScreen.initialDeposit()}</Text>
         )}
         <QRView
@@ -274,7 +281,7 @@ const ReceiveScreen = ({ route }: Props) => {
           walletCurrency={request.receivingWalletDescriptor.currency}
           showValuesIfDisabled={false}
           minAmount={
-            request.defaultWalletDescriptor.currency === "BTC" && isFirstTransaction
+            currentWallet === "BTC" && isFirstTransaction
               ? {
                   amount: 2501,
                   currency: "BTC",
