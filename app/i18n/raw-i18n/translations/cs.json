@@ -538,7 +538,7 @@
         "receiveViaInvoice": "Příjem přes Lightning",
         "receiveViaPaycode": "Příjem přes Paycode",
         "receiveViaOnchain": "Příjem přes Onchain",
-        "initialDeposit": "* Initial deposit of 2501 sats (~$1) required for channel setup."
+        "initialDeposit": "* Initial deposit of $5 required for channel setup. ~$1 will be paid as setup fee."
     },
     "RedeemBitcoinScreen": {
         "title": "Směnit Bitcoin",
