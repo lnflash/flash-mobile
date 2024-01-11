@@ -587,7 +587,8 @@ const en: BaseTranslation = {
     receiveViaInvoice: "Receive via Lightning",
     receiveViaPaycode: "Receive via Paycode",
     receiveViaOnchain: "Receive via Onchain",
-    payCodeOrLNURL: "Paycode / LNURL"
+    payCodeOrLNURL: "Paycode / LNURL",
+    initialDeposit: "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee."
   },
   RedeemBitcoinScreen: {
     title: "Redeem Bitcoin",
@@ -1118,7 +1119,7 @@ const en: BaseTranslation = {
     minAmountNotMet: "Amount must be at least {minAmount: string}.",
   },
   AmountInputButton: {
-    tapToSetAmount: "Tap to set amount (Default: 1 satoshi for invoices)",
+    tapToSetAmount: "Tap to set amount",
     tapToSetOnChainAmount: "Tap to set amount",
   },
   AppUpdate: {

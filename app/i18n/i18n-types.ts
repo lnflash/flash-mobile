@@ -5395,6 +5395,10 @@ export type TranslationFunctions = {
 		 * Paycode / LNURL
 		 */
 		payCodeOrLNURL: () => LocalizedString
+		/**
+		 * Initial Deposit Warning
+		 */
+		initialDeposit: () => LocalizedString
 	}
 	RedeemBitcoinScreen: {
 		/**

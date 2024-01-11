@@ -3,7 +3,7 @@ import { WalletCurrency } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { requestNotificationPermission } from "@app/utils/notifications"
-import { useIsFocused, useNavigation } from "@react-navigation/native"
+import { RouteProp, useIsFocused, useNavigation } from "@react-navigation/native"
 import React, { useEffect } from "react"
 import { TouchableOpacity, View } from "react-native"
 import { testProps } from "../../utils/testProps"
@@ -21,8 +21,13 @@ import { GaloyCurrencyBubble } from "@app/components/atomic/galoy-currency-bubbl
 
 // Breez SDK
 import { paymentEvents } from "@app/utils/breez-sdk"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
-const ReceiveScreen = () => {
+type Props = {
+  route: RouteProp<RootStackParamList, "receiveBitcoin">
+}
+
+const ReceiveScreen = ({ route }: Props) => {
   const {
     theme: { colors },
   } = useTheme()
@@ -33,8 +38,12 @@ const ReceiveScreen = () => {
   const isAuthed = useIsAuthed()
   const isFocused = useIsFocused()
 
-  const request = useReceiveBitcoin()
+  const isFirstTransaction = route.params.transactionLength === 0
+  const request = useReceiveBitcoin(isFirstTransaction)
 
+  const [currentWallet, setCurrentWallet] = React.useState(
+    request?.receivingWalletDescriptor.currency,
+  )
   // notification permission
   useEffect(() => {
     let timeout: NodeJS.Timeout
@@ -76,6 +85,10 @@ const ReceiveScreen = () => {
       }
     }
   }, [request])
+
+  useEffect(() => {
+    setCurrentWallet(request?.receivingWalletDescriptor.currency)
+  }, [request?.receivingWalletDescriptor?.currency])
 
   const handleInvoicePaid = () => {
     if (request) {
@@ -155,7 +168,9 @@ const ReceiveScreen = () => {
           style={styles.receivingWalletPicker}
           disabled={!request.canSetReceivingWalletDescriptor}
         />
-
+        {currentWallet === "BTC" && isFirstTransaction && (
+          <Text style={styles.warning}>{LL.ReceiveScreen.initialDeposit()}</Text>
+        )}
         <QRView
           type={request.info?.data?.invoiceType || Invoice.OnChain}
           getFullUri={request.info?.data?.getFullUriFn}
@@ -265,6 +280,15 @@ const ReceiveScreen = () => {
           convertMoneyAmount={request.convertMoneyAmount}
           walletCurrency={request.receivingWalletDescriptor.currency}
           showValuesIfDisabled={false}
+          minAmount={
+            currentWallet === "BTC" && isFirstTransaction
+              ? {
+                  amount: 2501,
+                  currency: "BTC",
+                  currencyCode: "SAT",
+                }
+              : undefined
+          }
           big={false}
         />
         <NoteInput
@@ -361,6 +385,11 @@ const useStyles = makeStyles(({ colors }) => ({
     marginRight: 10,
   },
   onchainCharges: { marginTop: 10, alignItems: "center" },
+  warning: {
+    fontSize: 12,
+    color: colors.warning,
+    marginBottom: 10,
+  },
 }))
 
 export default withMyLnUpdateSub(ReceiveScreen)

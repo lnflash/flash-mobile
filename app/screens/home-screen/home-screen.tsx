@@ -22,7 +22,7 @@ import {
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { getErrorMessages } from "@app/graphql/utils"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useNavigation } from "@react-navigation/native"
+import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 
@@ -181,7 +181,7 @@ export const HomeScreen: React.FC = () => {
     // we are using any because Typescript complain on the fact we are not passing any params
     // but there is no need for a params and the types should not necessitate it
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    navigation.navigate(target as any)
+    navigation.navigate(target as any, { transactionLength: breezTransactions.length })
 
     if (!isAuthed) {
       setModalVisible(true)
@@ -216,20 +216,22 @@ export const HomeScreen: React.FC = () => {
 
   // replace these transactions with the ones from breez using listPaymentsBreezSDK function
   const [breezTransactions, setBreezTransactions] = React.useState<Payment[]>([])
-  React.useEffect(() => {
-    const listPaymentsBreez = async () => {
-      // eslint-disable-next-line no-promise-executor-return
-      await new Promise((resolve) => setTimeout(resolve, 3000))
-      // const res = await executeDevCommandBreezSDK("listchannels").catch((e) => {
-      //   console.log("Error listing peer channels:", e)
-      //   return []
-      // })
-      // console.log("Peer Channels:", res || [])
-      const payments = await listPaymentsBreezSDK()
-      setBreezTransactions(payments)
-    }
-    listPaymentsBreez()
-  }, [breezTransactions.length, refetchAuthed])
+
+  useFocusEffect(
+    React.useCallback(() => {
+      listPaymentsBreez()
+    }, [refetchAuthed]),
+  )
+
+  const listPaymentsBreez = async () => {
+    // const res = await executeDevCommandBreezSDK("listchannels").catch((e) => {
+    //   console.log("Error listing peer channels:", e)
+    //   return []
+    // })
+    // console.log("Peer Channels:", res || [])
+    const payments = await listPaymentsBreezSDK()
+    setBreezTransactions(payments)
+  }
 
   if (isAuthed && transactionsEdges?.length) {
     recentTransactionsData = {
