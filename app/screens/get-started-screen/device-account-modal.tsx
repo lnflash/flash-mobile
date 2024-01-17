@@ -106,7 +106,7 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
       const data: {
         result: string | undefined
       } = await res.json()
-      alert("SUCCESS")
+      // alert("SUCCESS")
       const authToken = data.result
 
       if (!authToken) {
