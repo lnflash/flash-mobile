@@ -21,6 +21,7 @@ import analytics from "@react-native-firebase/analytics"
 import { v4 as uuidv4 } from "uuid"
 import { generateSecureRandom } from "react-native-securerandom"
 import crashlytics from "@react-native-firebase/crashlytics"
+import { initializeBreezSDK } from "@app/utils/breez-sdk"
 
 const generateSecureRandomUUID = async () => {
   const randomBytes = await generateSecureRandom(16) // Generate 16 random bytes
@@ -102,7 +103,7 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
         console.error(`Error fetching from server: ${res.status} ${res.statusText}`)
         return // Or handle this error appropriately
       }
-
+      await initializeBreezSDK()
       const data: {
         result: string | undefined
       } = await res.json()
