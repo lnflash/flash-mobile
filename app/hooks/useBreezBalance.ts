@@ -8,7 +8,7 @@ const useBreezBalance = (): [number | null, () => void] => {
 
   useEffect(() => {
     const initializeAndFetchBalance = async () => {
-      // await initializeBreezSDK()
+      await initializeBreezSDK()
       const nodeState = await nodeInfo()
       const balance = nodeState.channelsBalanceMsat + nodeState.onchainBalanceMsat
       // console.log("Total balance", balance)
