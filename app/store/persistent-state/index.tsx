@@ -6,7 +6,7 @@ import {
   PersistentState,
 } from "./state-migrations"
 import * as React from "react"
-import { initializeBreezSDK } from "@app/utils/breez-sdk/index"
+// import { initializeBreezSDK } from "@app/utils/breez-sdk/index"
 
 const PERSISTENT_STATE_KEY = "persistentState"
 
@@ -47,7 +47,7 @@ export const PersistentStateProvider: React.FC<PropsWithChildren> = ({ children 
   React.useEffect(() => {
     ;(async () => {
       // Initialize BreezSDK if it hasn't been initialized yet
-      await initializeBreezSDK()
+      // await initializeBreezSDK()
 
       const loadedState = await loadPersistentState()
       setPersistentState(loadedState)

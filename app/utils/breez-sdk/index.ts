@@ -120,7 +120,7 @@ let breezSDKInitializing: Promise<void | boolean> | null = null
 
 export const initializeBreezSDK = async (): Promise<boolean> => {
   if (breezSDKInitialized) {
-    // console.log("BreezSDK already initialized")
+    console.log("BreezSDK already initialized")
     return false
   }
 
