@@ -24,7 +24,6 @@ import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 
 // import Breez SDK Wallet
 // import { addLogListenerBreezSDK } from "@app/utils/breez-sdk/index"
-import useBreezBalance from "@app/hooks/useBreezBalance"
 import { useIsFocused } from "@react-navigation/native"
 
 const Loader = () => {
@@ -67,6 +66,8 @@ type Props = {
   setIsStablesatModalVisible: (value: boolean) => void
   navigation?: StackNavigationProp<RootStackParamList, "conversionDetails">
   refreshTriggered: boolean
+  breezBalance: number | null
+  refreshBreezBalance: () => void
 }
 
 const WalletOverview: React.FC<Props> = ({
@@ -76,6 +77,8 @@ const WalletOverview: React.FC<Props> = ({
   setIsStablesatModalVisible,
   // navigation,
   refreshTriggered,
+  breezBalance,
+  refreshBreezBalance,
 }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isGaloyWalletVisible, setIsGaloyWalletVisible] = React.useState(false)
@@ -104,7 +107,6 @@ const WalletOverview: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTriggered, isFocused])
 
-  const [breezBalance, refreshBreezBalance] = useBreezBalance()
   let btcInDisplayCurrencyFormatted: string | undefined = "$-0.01"
   let usdInDisplayCurrencyFormatted: string | undefined = "$-0.01"
   let extBtcInDisplayCurrencyFormatted: string | undefined = "$-0.01"
