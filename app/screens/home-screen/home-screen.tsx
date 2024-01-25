@@ -40,8 +40,9 @@ import { useAppConfig, usePriceConversion } from "@app/hooks"
 import { Payment } from "@breeztech/react-native-breez-sdk"
 import { BreezTransactionItem } from "../../components/transaction-item/breez-transaction-item"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
-import { listPaymentsBreezSDK } from "@app/utils/breez-sdk"
+import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk"
 import { toBtcMoneyAmount } from "@app/types/amounts"
+import useBreezBalance from "@app/hooks/useBreezBalance"
 
 const TransactionCountToTriggerSetDefaultAccountModal = 1
 
@@ -94,7 +95,7 @@ export const HomeScreen: React.FC = () => {
   const {
     theme: { colors },
   } = useTheme()
-
+  const [breezBalance, refreshBreezBalance] = useBreezBalance()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
   const { data: { hasPromptedSetDefaultAccount } = {} } =
@@ -219,8 +220,10 @@ export const HomeScreen: React.FC = () => {
 
   useFocusEffect(
     React.useCallback(() => {
-      listPaymentsBreez()
-    }, [refetchAuthed]),
+      if (breezSDKInitialized) {
+        listPaymentsBreez()
+      }
+    }, [breezSDKInitialized]),
   )
 
   const listPaymentsBreez = async () => {
@@ -368,6 +371,7 @@ export const HomeScreen: React.FC = () => {
           isContentVisible={isContentVisible}
           setIsContentVisible={setIsContentVisible}
           loading={loading}
+          breezBalance={breezBalance}
         />
         <GaloyIconButton
           onPress={() => navigation.navigate("settings")}
@@ -393,6 +397,8 @@ export const HomeScreen: React.FC = () => {
           setIsContentVisible={setIsContentVisible}
           loading={loading}
           setIsStablesatModalVisible={setIsStablesatModalVisible}
+          breezBalance={breezBalance}
+          refreshBreezBalance={refreshBreezBalance}
         />
         {error && (
           <View style={styles.marginButtonContainer}>
