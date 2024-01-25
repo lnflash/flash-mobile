@@ -3,7 +3,7 @@ import * as sdk from "@breeztech/react-native-breez-sdk"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
 import { EventEmitter } from "events"
-import { base64ToBytes } from "../conversion"
+import { base64ToBytes, toMilliSatoshi } from "../conversion"
 
 const _GREENLIGHT_PARTNER_CERT: number[] = Array.from(
   base64ToBytes(GREENLIGHT_PARTNER_CERT),
@@ -167,7 +167,7 @@ export const sendPaymentBreezSDK = async (
   try {
     const sendPaymentRequest: sdk.SendPaymentRequest = {
       bolt11: paymentRequest,
-      amountMsat,
+      amountMsat: amountMsat && toMilliSatoshi(amountMsat).toNumber(),
     }
     const response = await sdk.sendPayment(sendPaymentRequest)
     if (response.payment.status === sdk.PaymentStatus.FAILED) {
