@@ -247,6 +247,14 @@ export const SettingsScreen: React.FC = () => {
       greyed: !isAtLeastLevelZero || !lightningAddress,
     },
     {
+      category: LL.SettingsScreen.backup(),
+      icon: "apps-outline",
+      id: "backup",
+      action: () => navigation.navigate("BackupStart"),
+      enabled: isAtLeastLevelZero,
+      greyed: !isAtLeastLevelZero,
+    },
+    {
       category: `${LL.SettingsScreen.nfc()} - beta`,
       icon: "radio-outline",
       id: "nfc",
