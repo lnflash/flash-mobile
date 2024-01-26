@@ -80,6 +80,7 @@ import {
   PrimaryStackParamList,
   RootStackParamList,
 } from "./stack-param-lists"
+import { BackupStart } from "@app/screens"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -151,7 +152,7 @@ export const RootStack = () => {
         name="scanningQRCode"
         component={ScanningQRCodeScreen}
         options={{
-          title: LL.ScanningQRCodeScreen.title(),
+          title: LL.ScanningQRCodeScreen.title,
           headerShown: false,
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         }}
@@ -224,7 +225,7 @@ export const RootStack = () => {
         component={EarnSection}
         options={{
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-          headerStyle: { backgroundColor: colors._gold },
+          headerStyle: { backgroundColor: colors?._gold },
           headerTintColor: colors._black,
           headerTitleStyle: {
             fontWeight: "bold",
@@ -404,6 +405,13 @@ export const RootStack = () => {
         component={TotpLoginValidateScreen}
         options={{
           title: LL.TotpLoginValidateScreen.title(),
+        }}
+      />
+      <RootNavigator.Screen
+        name="BackupStart"
+        component={BackupStart}
+        options={{
+          title: LL.BackupStart.title(),
         }}
       />
     </RootNavigator.Navigator>
