@@ -5890,6 +5890,10 @@ export type TranslationFunctions = {
 		 * Log in or create account
 		 */
 		logInOrCreateAccount: () => LocalizedString
+		/**
+		 * Backup seed phrase
+		 */
+		backup: () => LocalizedString
 	}
 	AccountScreen: {
 		/**
@@ -6047,6 +6051,16 @@ export type TranslationFunctions = {
 		success: () => LocalizedString
 	}
 	TotpLoginValidateScreen: {
+		/**
+		 * Two-factor authentication
+		 */
+		title: () => LocalizedString
+		/**
+		 * Enter the 6-digit code from your authenticator app to log in. This code changes every 30 seconds.
+		 */
+		content: () => LocalizedString
+	}
+	BackupStart: {
 		/**
 		 * Two-factor authentication
 		 */
