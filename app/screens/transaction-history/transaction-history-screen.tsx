@@ -137,13 +137,13 @@ export const TransactionHistoryScreen: React.FC = () => {
         <SectionList
           showsVerticalScrollIndicator={false}
           renderItem={({ item, index, section }) => {
-            if (item.id.length > 24) {
+            if (item.settlementCurrency === "BTC") {
               return (
                 <BreezTransactionItem
                   tx={item}
                   key={`transaction-${item.id}`}
                   subtitle
-                  isOnHomeScreen={true}
+                  isFirst={index === 0}
                   isLast={index === section.data.length - 1}
                 />
               )
@@ -151,11 +151,11 @@ export const TransactionHistoryScreen: React.FC = () => {
             } else {
               return (
                 <TransactionItem
+                  tx={item}
                   key={`txn-${item.id}`}
+                  subtitle
                   isFirst={index === 0}
                   isLast={index === section.data.length - 1}
-                  txid={item.id}
-                  subtitle
                 />
               )
             }
