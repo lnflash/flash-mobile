@@ -1,102 +1,121 @@
-import { gql } from "@apollo/client"
+import * as React from "react"
+import crashlytics from "@react-native-firebase/crashlytics"
+import { ActivityIndicator, SectionList, Text, View } from "react-native"
+import { usePriceConversion } from "@app/hooks"
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { makeStyles, useTheme } from "@rneui/themed"
+
+// components
 import { Screen } from "@app/components/screen"
+import { TransactionItem } from "../../components/transaction-item"
+
+// graphql
 import {
   WalletCurrency,
   useTransactionListForDefaultAccountQuery,
 } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { groupTransactionsByDate } from "@app/graphql/transactions"
-import { useI18nContext } from "@app/i18n/i18n-react"
-import crashlytics from "@react-native-firebase/crashlytics"
-import { makeStyles, useTheme } from "@rneui/themed"
-import * as React from "react"
-import { ActivityIndicator, SectionList, Text, View } from "react-native"
-import { TransactionItem } from "../../components/transaction-item"
-import { toastShow } from "../../utils/toast"
+
 // Breez SDK
 import { listPaymentsBreezSDK } from "@app/utils/breez-sdk"
 import { Payment } from "@breeztech/react-native-breez-sdk"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 import { BreezTransactionItem } from "@app/components/transaction-item/breez-transaction-item"
-import { usePriceConversion } from "@app/hooks"
-import { toBtcMoneyAmount } from "@app/types/amounts"
 
-gql`
-  query transactionListForDefaultAccount(
-    $first: Int
-    $after: String
-    $last: Int
-    $before: String
-  ) {
-    me {
-      id
-      defaultAccount {
-        id
-        transactions(first: $first, after: $after, last: $last, before: $before) {
-          ...TransactionList
-        }
-      }
-    }
-  }
-`
+// utils
+import { toBtcMoneyAmount } from "@app/types/amounts"
+import { toastShow } from "../../utils/toast"
+
+// types
+import { SectionTransactions } from "./index.types"
 
 export const TransactionHistoryScreen: React.FC = () => {
   const {
     theme: { colors },
   } = useTheme()
   const styles = useStyles()
-
   const { LL } = useI18nContext()
+  const { convertMoneyAmount } = usePriceConversion()
   const { data, error, fetchMore, refetch, loading } =
     useTransactionListForDefaultAccountQuery({ skip: !useIsAuthed() })
-
-  const transactions = data?.me?.defaultAccount?.transactions
-
-  // Breez SDK transactions
-  const [breezTransactions, setBreezTransactions] = React.useState<Payment[]>([])
-
-  const { convertMoneyAmount } = usePriceConversion()
-
-  React.useEffect(() => {
-    const listPaymentsBreez = async () => {
-      // eslint-disable-next-line no-promise-executor-return
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      const payments = await listPaymentsBreezSDK()
-      setBreezTransactions(payments)
-    }
-    listPaymentsBreez()
-  }, [breezTransactions.length])
-
-  const sections = React.useMemo(
-    () =>
-      groupTransactionsByDate({
-        txs: transactions?.edges?.map((edge) => edge.node) ?? [],
-        common: LL.common,
-      }),
-    [transactions, LL],
+  const [breezLoading, setBreezLoading] = React.useState(false)
+  const [mergedSectionData, setMergedSectionData] = React.useState<SectionTransactions[]>(
+    [],
   )
 
-  const breezSections = React.useMemo(() => {
-    if (!convertMoneyAmount || !breezTransactions) {
+  React.useEffect(() => {
+    fetchPaymentsBreez()
+  }, [])
+
+  const fetchPaymentsBreez = async () => {
+    setBreezLoading(true)
+    const payments = await listPaymentsBreezSDK()
+    mergeTransactions(payments)
+  }
+
+  const mergeTransactions = async (breezTxs: Payment[]) => {
+    const mergedTransactions = []
+    const transactions = data?.me?.defaultAccount?.transactions?.edges || []
+    const formattedBreezTxs = await formatBreezTransactions(breezTxs)
+
+    let i = 0
+    let j = 0
+    while (transactions.length != i && formattedBreezTxs.length != j) {
+      if (transactions[i].node?.createdAt > formattedBreezTxs[j]?.createdAt) {
+        mergedTransactions.push(transactions[i].node)
+        i++
+      } else {
+        mergedTransactions.push(formattedBreezTxs[j])
+        j++
+      }
+    }
+
+    while (transactions.length !== i) {
+      mergedTransactions.push(transactions[i].node)
+      i++
+    }
+
+    while (formattedBreezTxs.length !== j) {
+      mergedTransactions.push(formattedBreezTxs[j])
+      j++
+    }
+
+    const transactionSections = groupTransactionsByDate({
+      txs: mergedTransactions ?? [],
+      common: LL.common,
+    })
+
+    setMergedSectionData(transactionSections)
+    setBreezLoading(false)
+  }
+
+  const formatBreezTransactions = async (txs: Payment[]) => {
+    if (!convertMoneyAmount || !txs) {
       return []
     }
-    const formattedTxs = breezTransactions?.map((edge) =>
+    const formattedTxs = txs?.map((edge) =>
       formatPaymentsBreezSDK(
         edge.id,
-        breezTransactions,
+        txs,
         convertMoneyAmount(toBtcMoneyAmount(edge.amountMsat / 1000), WalletCurrency.Usd)
           .amount,
       ),
     )
 
-    const validTxs = formattedTxs?.filter(Boolean) ?? []
+    return formattedTxs?.filter(Boolean) ?? []
+  }
 
-    return groupTransactionsByDate({
-      txs: validTxs,
-      common: LL.common,
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [breezTransactions, LL])
+  const fetchNextTransactionsPage = () => {
+    const pageInfo = data?.me?.defaultAccount?.transactions?.pageInfo
+    if (pageInfo?.hasNextPage) {
+      fetchMore({
+        variables: {
+          after: pageInfo.endCursor,
+        },
+      })
+    }
+  }
 
   if (error) {
     console.error(error)
@@ -106,80 +125,64 @@ export const TransactionHistoryScreen: React.FC = () => {
       currentTranslation: LL,
     })
     return <></>
-  }
-
-  if (!transactions) {
+  } else if (breezLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator color={colors.primary} size={"large"} />
       </View>
     )
-  }
-
-  const fetchNextTransactionsPage = () => {
-    const pageInfo = transactions?.pageInfo
-
-    if (pageInfo.hasNextPage) {
-      fetchMore({
-        variables: {
-          after: pageInfo.endCursor,
-        },
-      })
-    }
-  }
-
-  const combinedSections = [...sections, ...breezSections]
-
-  return (
-    <Screen>
-      <SectionList
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index, section }) => {
-          if (item.id.length > 24) {
-            return (
-              <BreezTransactionItem
-                tx={item}
-                key={`transaction-${item.id}`}
-                subtitle
-                isOnHomeScreen={true}
-                isLast={index === section.data.length - 1}
-              />
-            )
-            // eslint-disable-next-line no-else-return
-          } else {
-            return (
-              <TransactionItem
-                key={`txn-${item.id}`}
-                isFirst={index === 0}
-                isLast={index === section.data.length - 1}
-                txid={item.id}
-                subtitle
-              />
-            )
+  } else {
+    return (
+      <Screen>
+        <SectionList
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index, section }) => {
+            if (item.settlementCurrency === "BTC") {
+              return (
+                <BreezTransactionItem
+                  tx={item}
+                  key={`transaction-${item.id}`}
+                  subtitle
+                  isFirst={index === 0}
+                  isLast={index === section.data.length - 1}
+                />
+              )
+              // eslint-disable-next-line no-else-return
+            } else {
+              return (
+                <TransactionItem
+                  tx={item}
+                  key={`txn-${item.id}`}
+                  subtitle
+                  isFirst={index === 0}
+                  isLast={index === section.data.length - 1}
+                />
+              )
+            }
+          }}
+          initialNumToRender={20}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={styles.sectionHeaderContainer}>
+              <Text style={styles.sectionHeaderText}>{title}</Text>
+            </View>
+          )}
+          ListEmptyComponent={
+            <View style={styles.noTransactionView}>
+              <Text style={styles.noTransactionText}>
+                {LL.TransactionScreen.noTransaction()}
+              </Text>
+            </View>
           }
-        }}
-        initialNumToRender={20}
-        renderSectionHeader={({ section: { title } }) => (
-          <View style={styles.sectionHeaderContainer}>
-            <Text style={styles.sectionHeaderText}>{title}</Text>
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={styles.noTransactionView}>
-            <Text style={styles.noTransactionText}>
-              {LL.TransactionScreen.noTransaction()}
-            </Text>
-          </View>
-        }
-        sections={combinedSections}
-        keyExtractor={(item) => item.id}
-        onEndReached={fetchNextTransactionsPage}
-        onEndReachedThreshold={0.5}
-        onRefresh={refetch}
-        refreshing={loading}
-      />
-    </Screen>
-  )
+          sections={mergedSectionData}
+          keyExtractor={(item) => item.id}
+          onEndReached={fetchNextTransactionsPage}
+          onEndReachedThreshold={0.5}
+          onRefresh={refetch}
+          refreshing={loading}
+        />
+      </Screen>
+    )
+  }
 }
 
 const useStyles = makeStyles(({ colors }) => ({

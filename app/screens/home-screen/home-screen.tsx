@@ -1,17 +1,32 @@
-import * as React from "react"
+import React, { useCallback, useEffect, useState } from "react"
 import { RefreshControl, ScrollView, View } from "react-native"
 import { TouchableWithoutFeedback } from "react-native-gesture-handler"
 import Modal from "react-native-modal"
 import Icon from "react-native-vector-icons/Ionicons"
-import { LocalizedString } from "typesafe-i18n"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { Text, makeStyles, useTheme } from "@rneui/themed"
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { useFocusEffect, useNavigation } from "@react-navigation/native"
+import { useAppConfig, usePriceConversion } from "@app/hooks"
+import { RootStackParamList } from "../../navigation/stack-param-lists"
 
-import { gql } from "@apollo/client"
+// components
 import { AppUpdate } from "@app/components/app-update/app-update"
 import { icons } from "@app/components/atomic/galoy-icon"
 import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 import { StableSatsModal } from "@app/components/stablesats-modal"
 import WalletOverview from "@app/components/wallet-overview/wallet-overview"
+import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
+import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
+import { SetDefaultAccountModal } from "@app/components/set-default-account-modal"
+import { BalanceHeader } from "../../components/balance-header"
+import { Screen } from "../../components/screen"
+import { TransactionItem } from "../../components/transaction-item"
+import { BreezTransactionItem } from "../../components/transaction-item/breez-transaction-item"
+
+// queries
 import {
+  TransactionFragment,
   WalletCurrency,
   useHasPromptedSetDefaultAccountQuery,
   useHideBalanceQuery,
@@ -21,24 +36,13 @@ import {
 } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { getErrorMessages } from "@app/graphql/utils"
-import { useI18nContext } from "@app/i18n/i18n-react"
-import { useFocusEffect, useNavigation } from "@react-navigation/native"
-import { StackNavigationProp } from "@react-navigation/stack"
-import { Text, makeStyles, useTheme } from "@rneui/themed"
 
-import { BalanceHeader } from "../../components/balance-header"
-import { Screen } from "../../components/screen"
-import { TransactionItem } from "../../components/transaction-item"
-import { RootStackParamList } from "../../navigation/stack-param-lists"
+// utils
 import { testProps } from "../../utils/testProps"
-import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
-import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { isIos } from "@app/utils/helper"
-import { SetDefaultAccountModal } from "@app/components/set-default-account-modal"
-import { useAppConfig, usePriceConversion } from "@app/hooks"
 
+// breez
 import { Payment } from "@breeztech/react-native-breez-sdk"
-import { BreezTransactionItem } from "../../components/transaction-item/breez-transaction-item"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk"
 import { toBtcMoneyAmount } from "@app/types/amounts"
@@ -46,74 +50,26 @@ import useBreezBalance from "@app/hooks/useBreezBalance"
 
 const TransactionCountToTriggerSetDefaultAccountModal = 1
 
-gql`
-  query homeAuthed {
-    me {
-      id
-      language
-      username
-      phone
-      email {
-        address
-        verified
-      }
-
-      defaultAccount {
-        id
-        level
-        defaultWalletId
-
-        transactions(first: 20) {
-          ...TransactionList
-        }
-        wallets {
-          id
-          balance
-          walletCurrency
-        }
-      }
-    }
-  }
-
-  query homeUnauthed {
-    globals {
-      network
-    }
-
-    currencyList {
-      id
-      flag
-      name
-      symbol
-      fractionDigits
-    }
-  }
-`
-
 export const HomeScreen: React.FC = () => {
-  const styles = useStyles()
-  const {
-    theme: { colors },
-  } = useTheme()
-  const [breezBalance, refreshBreezBalance] = useBreezBalance()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const { data: { hideBalance } = {} } = useHideBalanceQuery()
-  const { data: { hasPromptedSetDefaultAccount } = {} } =
-    useHasPromptedSetDefaultAccountQuery()
-  const isBalanceVisible = hideBalance ?? false
-  const [setDefaultAccountModalVisible, setSetDefaultAccountModalVisible] =
-    React.useState(false)
-  const toggleSetDefaultAccountModal = () =>
-    setSetDefaultAccountModalVisible(!setDefaultAccountModalVisible)
-
-  const isAuthed = useIsAuthed()
-  const { LL } = useI18nContext()
   const {
     appConfig: {
       galoyInstance: { id: galoyInstanceId },
     },
   } = useAppConfig()
+  const {
+    theme: { colors },
+  } = useTheme()
+  const styles = useStyles()
+  const isAuthed = useIsAuthed()
+  const { LL } = useI18nContext()
+  const { convertMoneyAmount } = usePriceConversion()
+  const [breezBalance, refreshBreezBalance] = useBreezBalance()
 
+  // queries
+  const { data: { hideBalance } = {} } = useHideBalanceQuery()
+  const { data: { hasPromptedSetDefaultAccount } = {} } =
+    useHasPromptedSetDefaultAccountQuery()
   const {
     data: dataAuthed,
     loading: loadingAuthed,
@@ -123,28 +79,98 @@ export const HomeScreen: React.FC = () => {
     skip: !isAuthed,
     fetchPolicy: "network-only",
     errorPolicy: "all",
-
-    // this enables offline mode use-case
-    nextFetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
-
   const { loading: loadingPrice, refetch: refetchRealtimePrice } = useRealtimePriceQuery({
     skip: !isAuthed,
     fetchPolicy: "network-only",
-
-    // this enables offline mode use-case
-    nextFetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
-
   const {
     refetch: refetchUnauthed,
     loading: loadingUnauthed,
     data: dataUnauthed,
   } = useHomeUnauthedQuery()
 
-  const loading = loadingAuthed || loadingPrice || loadingUnauthed
+  const [defaultAccountModalVisible, setDefaultAccountModalVisible] = useState(false)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [isStablesatModalVisible, setIsStablesatModalVisible] = useState(false)
+  const [isContentVisible, setIsContentVisible] = useState(false)
+  const [refreshTriggered, setRefreshTriggered] = useState(false)
+  const [breezTransactions, setBreezTransactions] = useState<Payment[]>([])
+  const [mergedTransactions, setMergedTransactions] = useState<TransactionFragment[]>([])
 
-  const refetch = React.useCallback(() => {
+  const isBalanceVisible = hideBalance ?? false
+  const loading = loadingAuthed || loadingPrice || loadingUnauthed
+  const transactionsEdges = dataAuthed?.me?.defaultAccount?.transactions?.edges ?? []
+  const numberOfTxs = dataAuthed?.me?.defaultAccount?.transactions?.edges?.length ?? 0
+
+  useEffect(() => {
+    setIsContentVisible(isBalanceVisible)
+  }, [isBalanceVisible])
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (breezSDKInitialized) {
+        fetchPaymentsBreez()
+      }
+    }, [breezSDKInitialized, loadingAuthed]),
+  )
+
+  const fetchPaymentsBreez = async () => {
+    const payments = await listPaymentsBreezSDK()
+    mergeTransactions(payments)
+
+    setBreezTransactions(payments)
+  }
+
+  const mergeTransactions = async (breezTxs: Payment[]) => {
+    const mergedTransactions = []
+
+    const formattedBreezTxs = await formatBreezTransactions(breezTxs)
+
+    let i = 0
+    let j = 0
+    while (transactionsEdges.length != i && formattedBreezTxs.length != j) {
+      if (transactionsEdges[i].node?.createdAt > formattedBreezTxs[j]?.createdAt) {
+        mergedTransactions.push(transactionsEdges[i].node)
+        i++
+      } else {
+        mergedTransactions.push(formattedBreezTxs[j])
+        j++
+      }
+    }
+
+    while (transactionsEdges.length !== i) {
+      mergedTransactions.push(transactionsEdges[i].node)
+      i++
+    }
+
+    while (formattedBreezTxs.length !== j) {
+      mergedTransactions.push(formattedBreezTxs[j])
+      j++
+    }
+
+    setMergedTransactions(mergedTransactions.slice(0, 5))
+  }
+
+  const formatBreezTransactions = async (txs: Payment[]) => {
+    if (!convertMoneyAmount || !txs) {
+      return []
+    }
+    const formattedTxs = txs?.map((edge) =>
+      formatPaymentsBreezSDK(
+        edge.id,
+        txs,
+        convertMoneyAmount(toBtcMoneyAmount(edge.amountMsat / 1000), WalletCurrency.Usd)
+          .amount,
+      ),
+    )
+
+    return formattedTxs?.filter(Boolean) ?? []
+  }
+
+  const refetch = useCallback(() => {
     if (isAuthed) {
       refetchRealtimePrice()
       refetchAuthed()
@@ -154,20 +180,6 @@ export const HomeScreen: React.FC = () => {
     }
   }, [isAuthed, refetchAuthed, refetchRealtimePrice, refetchUnauthed])
 
-  const transactionsEdges =
-    dataAuthed?.me?.defaultAccount?.transactions?.edges ?? undefined
-
-  const [modalVisible, setModalVisible] = React.useState(false)
-  const [isStablesatModalVisible, setIsStablesatModalVisible] = React.useState(false)
-  const [isContentVisible, setIsContentVisible] = React.useState(false)
-  const [refreshTriggered, setRefreshTriggered] = React.useState(false)
-
-  React.useEffect(() => {
-    setIsContentVisible(isBalanceVisible)
-  }, [isBalanceVisible])
-
-  const numberOfTxs = dataAuthed?.me?.defaultAccount?.transactions?.edges?.length ?? 0
-
   const onMenuClick = (target: Target) => {
     if (
       target === "receiveBitcoin" &&
@@ -175,7 +187,7 @@ export const HomeScreen: React.FC = () => {
       numberOfTxs >= TransactionCountToTriggerSetDefaultAccountModal &&
       galoyInstanceId === "Main"
     ) {
-      toggleSetDefaultAccountModal()
+      setDefaultAccountModalVisible(!defaultAccountModalVisible)
       return
     }
 
@@ -193,102 +205,6 @@ export const HomeScreen: React.FC = () => {
     setModalVisible(false)
     // fixes a screen flash from closing the modal to opening the next screen
     setTimeout(() => navigation.navigate("phoneFlow"), 100)
-  }
-
-  // debug code. verify that we have 2 wallets. mobile doesn't work well with only one wallet
-  // TODO: add this code in a better place
-  React.useEffect(() => {
-    if (
-      dataAuthed?.me?.defaultAccount?.wallets?.length !== undefined &&
-      dataAuthed?.me?.defaultAccount?.wallets?.length !== 2
-    ) {
-      console.error("Wallets count is not 2")
-    }
-  }, [dataAuthed])
-
-  let recentTransactionsData:
-    | {
-        title: LocalizedString
-        details: React.ReactNode
-      }
-    | undefined = undefined
-
-  const TRANSACTIONS_TO_SHOW = 3
-
-  // replace these transactions with the ones from breez using listPaymentsBreezSDK function
-  const [breezTransactions, setBreezTransactions] = React.useState<Payment[]>([])
-
-  useFocusEffect(
-    React.useCallback(() => {
-      if (breezSDKInitialized) {
-        listPaymentsBreez()
-      }
-    }, [breezSDKInitialized]),
-  )
-
-  const listPaymentsBreez = async () => {
-    // const res = await executeDevCommandBreezSDK("listchannels").catch((e) => {
-    //   console.log("Error listing peer channels:", e)
-    //   return []
-    // })
-    // console.log("Peer Channels:", res || [])
-    const payments = await listPaymentsBreezSDK()
-    setBreezTransactions(payments)
-  }
-
-  if (isAuthed && transactionsEdges?.length) {
-    recentTransactionsData = {
-      title: LL.TransactionScreen.title(),
-      details: (
-        <>
-          {transactionsEdges
-            .slice(0, TRANSACTIONS_TO_SHOW)
-            .map(
-              ({ node }, index, array) =>
-                node && (
-                  <TransactionItem
-                    key={`transaction-${node.id}`}
-                    txid={node.id}
-                    subtitle
-                    isOnHomeScreen={true}
-                    isLast={index === array.length - 1}
-                  />
-                ),
-            )}
-        </>
-      ),
-    }
-  }
-
-  const { convertMoneyAmount } = usePriceConversion()
-
-  if (isAuthed && breezTransactions?.length && convertMoneyAmount) {
-    const txs = breezTransactions
-      .slice(0, TRANSACTIONS_TO_SHOW)
-      .map((tx) =>
-        formatPaymentsBreezSDK(
-          tx.id,
-          breezTransactions,
-          convertMoneyAmount(toBtcMoneyAmount(tx.amountMsat / 1000), WalletCurrency.Usd)
-            .amount,
-        ),
-      )
-    recentTransactionsData = {
-      title: LL.TransactionScreen.title(),
-      details: (
-        <>
-          {breezTransactions.slice(0, TRANSACTIONS_TO_SHOW).map((tx, index, array) => (
-            <BreezTransactionItem
-              tx={txs[index]}
-              key={`transaction-${tx.id}`}
-              subtitle
-              isOnHomeScreen={true}
-              isLast={index === array.length - 1}
-            />
-          ))}
-        </>
-      ),
-    }
   }
 
   type Target =
@@ -418,23 +334,48 @@ export const HomeScreen: React.FC = () => {
           ))}
         </View>
 
-        {recentTransactionsData ? (
+        {mergedTransactions.length > 0 && !loadingAuthed ? (
           <>
             <TouchableWithoutFeedback
               style={styles.recentTransaction}
               onPress={() => onMenuClick("transactionHistory")}
             >
-              <Text type="p1" bold {...testProps(recentTransactionsData.title)}>
-                {recentTransactionsData?.title}
+              <Text type="p1" bold {...testProps(LL.TransactionScreen.title())}>
+                {LL.TransactionScreen.title()}
               </Text>
             </TouchableWithoutFeedback>
-            {recentTransactionsData?.details}
+            {mergedTransactions.map((item, index) => {
+              if (item.settlementCurrency === "BTC") {
+                return (
+                  <BreezTransactionItem
+                    tx={item}
+                    key={`transaction-${item.id}`}
+                    subtitle
+                    isOnHomeScreen={true}
+                    isFirst={index === 0}
+                    isLast={index === 4}
+                  />
+                )
+                // eslint-disable-next-line no-else-return
+              } else {
+                return (
+                  <TransactionItem
+                    tx={item}
+                    key={`txn-${item.id}`}
+                    subtitle
+                    isOnHomeScreen={true}
+                    isFirst={index === 0}
+                    isLast={index === 4}
+                  />
+                )
+              }
+            })}
           </>
         ) : null}
         <AppUpdate />
         <SetDefaultAccountModal
-          isVisible={setDefaultAccountModalVisible}
-          toggleModal={toggleSetDefaultAccountModal}
+          isVisible={defaultAccountModalVisible}
+          toggleModal={() => setDefaultAccountModalVisible(!defaultAccountModalVisible)}
         />
       </ScrollView>
     </Screen>
