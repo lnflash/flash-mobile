@@ -345,13 +345,14 @@ export const HomeScreen: React.FC = () => {
               </Text>
             </TouchableWithoutFeedback>
             {mergedTransactions.map((item, index) => {
-              if (item.id.length > 24) {
+              if (item.settlementCurrency === "BTC") {
                 return (
                   <BreezTransactionItem
                     tx={item}
                     key={`transaction-${item.id}`}
                     subtitle
                     isOnHomeScreen={true}
+                    isFirst={index === 0}
                     isLast={index === 4}
                   />
                 )
@@ -359,10 +360,11 @@ export const HomeScreen: React.FC = () => {
               } else {
                 return (
                   <TransactionItem
+                    tx={item}
                     key={`txn-${item.id}`}
-                    isFirst={index === 0}
                     subtitle
-                    txid={item.id}
+                    isOnHomeScreen={true}
+                    isFirst={index === 0}
                     isLast={index === 4}
                   />
                 )
