@@ -132,7 +132,7 @@ export const createPaymentRequest = (
         breezInvoiceData = populateFormattedNoAmountBreezInvoice
       }
       const amountSats = amount ? amount : 1
-      const memoDetail = memo ? memo : "Flash Cash"
+      const memoDetail = memo ? memo : "Invoice to BTC wallet"
       console.log("creating breez invoice")
       const fetchedBreezInvoice = await receivePaymentBreezSDK({
         amountMsat: amountSats * 1000,
@@ -173,7 +173,7 @@ export const createPaymentRequest = (
     let info: PaymentRequestInformation | undefined
 
     // Default memo
-    if (!pr.memo) pr.memo = "Flash Cash"
+    if (!pr.memo) pr.memo = "Invoice to USD wallet"
 
     // On Chain BTC
     if (pr.type === Invoice.OnChain) {
