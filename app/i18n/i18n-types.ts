@@ -6061,14 +6061,16 @@ export type TranslationFunctions = {
 		content: () => LocalizedString
 	}
 	BackupStart: {
-		/**
-		 * Two-factor authentication
-		 */
 		title: () => LocalizedString
-		/**
-		 * Enter the 6-digit code from your authenticator app to log in. This code changes every 30 seconds.
-		 */
-		content: () => LocalizedString
+		description: () => LocalizedString
+		continue: () => LocalizedString
+	}
+	BackupSeedPhrase: {		
+		title: () => LocalizedString
+		description: () => LocalizedString
+		backupToICloud: () => LocalizedString
+		backupToGoogleDrive: () => LocalizedString
+		verify: () => LocalizedString
 	}
 	CopySecretComponent: {
 		/**

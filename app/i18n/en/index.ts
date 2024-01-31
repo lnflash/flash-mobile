@@ -795,8 +795,16 @@ const en: BaseTranslation = {
     content: "Enter the 6-digit code from your authenticator app to log in. This code changes every 30 seconds.",
   },
   BackupStart: {
-    title: "First, let's create your recovery phrase",
-    content: "A recovery phrase is a series of 12 words in a specific order. This word combination is unique to your wallet. Make sure to have pen and paper ready so you can write it down.",
+    title: "First, let's create your \nrecovery phrase",
+    description: "A recovery phrase is a series of 12 words in a specific order. This word combination is unique to your wallet. Make sure to have pen and paper ready so you can write it down.",
+    continue: "Continue"
+  },
+  BackupSeedPhrase: {
+    title: "This is your recovery phrase",
+    description: "Make sure to write it down as shown here. You have to verify this later.",
+    backupToICloud: "Backup to iCloud",
+    backupToGoogleDrive: "Backup to Google Drive",
+    verify: "Verify"
   },
   CopySecretComponent: {
     button: "Copy secret",
