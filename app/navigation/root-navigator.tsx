@@ -80,7 +80,7 @@ import {
   PrimaryStackParamList,
   RootStackParamList,
 } from "./stack-param-lists"
-import { BackupStart } from "@app/screens"
+import { BackupSeedPhrase, BackupStart } from "@app/screens"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -411,7 +411,16 @@ export const RootStack = () => {
         name="BackupStart"
         component={BackupStart}
         options={{
-          title: LL.BackupStart.title(),
+          title: "",
+          headerShadowVisible: false,
+        }}
+      />
+      <RootNavigator.Screen
+        name="BackupSeedPhrase"
+        component={BackupSeedPhrase}
+        options={{
+          title: "",
+          headerShadowVisible: false,
         }}
       />
     </RootNavigator.Navigator>
