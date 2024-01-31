@@ -1,3 +1,4 @@
 import BackupStart from "./BackupStart"
+import BackupSeedPhrase from "./BackupSeedPhrase"
 
-export { BackupStart }
+export { BackupStart, BackupSeedPhrase }
