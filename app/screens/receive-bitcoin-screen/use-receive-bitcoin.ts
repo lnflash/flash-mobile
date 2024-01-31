@@ -398,11 +398,13 @@ export const useReceiveBitcoin = (isFirstTransaction: Boolean) => {
     setPRCD((pr) => {
       if (pr && pr.setReceivingWalletDescriptor) {
         if (walletCurrency === WalletCurrency.Btc && bitcoinWallet) {
-          setAmount({
-            amount: 500,
-            currency: "DisplayCurrency",
-            currencyCode: "USD",
-          })
+          if (isFirstTransaction) {
+            setAmount({
+              amount: 500,
+              currency: "DisplayCurrency",
+              currencyCode: "USD",
+            })
+          }
           return pr.setReceivingWalletDescriptor({
             id: bitcoinWallet.id,
             currency: WalletCurrency.Btc,

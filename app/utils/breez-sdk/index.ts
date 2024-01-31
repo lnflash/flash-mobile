@@ -115,7 +115,7 @@ const connectToSDK = async () => {
   }
 }
 
-let breezSDKInitialized = false
+export let breezSDKInitialized = false
 let breezSDKInitializing: Promise<void | boolean> | null = null
 
 export const initializeBreezSDK = async (): Promise<boolean> => {
