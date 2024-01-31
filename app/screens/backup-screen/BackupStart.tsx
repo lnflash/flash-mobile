@@ -44,7 +44,7 @@ const Title = styled.Text`
   font-weight: 600;
   color: #000;
   text-align: center;
-  margin-vertical: 10px;
+  margin-bottom: 10px;
 `
 
 const Description = styled.Text`
