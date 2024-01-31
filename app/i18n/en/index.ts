@@ -806,6 +806,18 @@ const en: BaseTranslation = {
     backupToGoogleDrive: "Backup to Google Drive",
     verify: "Verify"
   },
+  BackupDoubleCheck: {
+		title: "Let's double-check",
+		description: "Well done. Now let’s verify that you've written down your recovery phrase correctly. Yes, it’s that important.",
+		continue: "Continue"
+	},
+  BackupVerify: {
+		title: "Tap the words in the \ncorrect order.",
+    correctTitle: "Perfect. Make sure to securely store your recovery phrase.",
+    wrongTitle: "Sorry, that’s not the correct third word. Give it another try.",
+		showAgain: "Show me again",
+		continue: "Continue"
+	},
   CopySecretComponent: {
     button: "Copy secret",
     toastMessage: "Secret copied to clipboard!"

@@ -6072,6 +6072,18 @@ export type TranslationFunctions = {
 		backupToGoogleDrive: () => LocalizedString
 		verify: () => LocalizedString
 	}
+	BackupDoubleCheck: {
+		title: () => LocalizedString
+		description: () => LocalizedString
+		continue: () => LocalizedString
+	}
+	BackupVerify: {		
+		title: () => LocalizedString
+		correctTitle: () => LocalizedString
+		wrongTitle: () => LocalizedString
+		showAgain: () => LocalizedString
+		continue: () => LocalizedString
+	}
 	CopySecretComponent: {
 		/**
 		 * Copy secret
