@@ -7,7 +7,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import * as Keychain from "react-native-keychain"
 
-type Props = StackScreenProps<RootStackParamList, "BackupStart">
+type Props = StackScreenProps<RootStackParamList, "BackupSeedPhrase">
 
 const BackupSeedPhrase: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
@@ -26,7 +26,7 @@ const BackupSeedPhrase: React.FC<Props> = ({ navigation }) => {
   }
 
   const onVerify = () => {
-    navigation.navigate("BackupSeedPhrase")
+    navigation.navigate("BackupDoubleCheck")
   }
 
   const renderItemHandler = ({ item, index }: { item: string; index: number }) => {
@@ -55,6 +55,8 @@ const BackupSeedPhrase: React.FC<Props> = ({ navigation }) => {
           scrollEnabled={false}
           style={{ marginVertical: 25 }}
         />
+      </Container>
+      <ButtonsWrapper>
         <Btn isOutline={true} bottom={15} onPress={() => {}}>
           <BtnTitle isOutline={true}>{LL.BackupSeedPhrase.backupToICloud()}</BtnTitle>
         </Btn>
@@ -63,10 +65,10 @@ const BackupSeedPhrase: React.FC<Props> = ({ navigation }) => {
             {LL.BackupSeedPhrase.backupToGoogleDrive()}
           </BtnTitle>
         </Btn>
-      </Container>
-      <Btn bottom={bottom} onPress={onVerify}>
-        <BtnTitle>{LL.BackupSeedPhrase.verify()}</BtnTitle>
-      </Btn>
+        <Btn bottom={bottom} onPress={onVerify}>
+          <BtnTitle>{LL.BackupSeedPhrase.verify()}</BtnTitle>
+        </Btn>
+      </ButtonsWrapper>
     </Wrapper>
   )
 }
@@ -87,7 +89,7 @@ const Title = styled.Text`
   font-weight: 600;
   color: #000;
   text-align: center;
-  margin-vertical: 10px;
+  margin-bottom: 10px;
 `
 
 const Description = styled.Text`
@@ -126,18 +128,14 @@ const Text = styled.Text`
   color: #000;
 `
 
-const Space = styled.View`
-  background-color: #fff;
-  width: 2px;
-  height: 100%;
-`
+const ButtonsWrapper = styled.View``
 
 const Btn = styled.TouchableOpacity<{ isOutline?: boolean; bottom: number }>`
   align-items: center;
   justify-content: center;
   border-radius: 5px;
   background-color: ${({ isOutline }) => (isOutline ? "#fff" : "#f7931a")};
-  border: ${(isOutline) => (isOutline ? 1 : 0)}px solid #bbb;
+  border: ${({ isOutline }) => (isOutline ? 1 : 0)}px solid #bbb;
   margin-bottom: ${({ bottom }) => bottom}px;
   padding-vertical: 14px;
 `
