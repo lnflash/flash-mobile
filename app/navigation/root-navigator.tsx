@@ -80,7 +80,12 @@ import {
   PrimaryStackParamList,
   RootStackParamList,
 } from "./stack-param-lists"
-import { BackupSeedPhrase, BackupStart } from "@app/screens"
+import {
+  BackupDoubleCheck,
+  BackupSeedPhrase,
+  BackupStart,
+  BackupVerify,
+} from "@app/screens"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -418,6 +423,22 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="BackupSeedPhrase"
         component={BackupSeedPhrase}
+        options={{
+          title: "",
+          headerShadowVisible: false,
+        }}
+      />
+      <RootNavigator.Screen
+        name="BackupDoubleCheck"
+        component={BackupDoubleCheck}
+        options={{
+          title: "",
+          headerShadowVisible: false,
+        }}
+      />
+      <RootNavigator.Screen
+        name="BackupVerify"
+        component={BackupVerify}
         options={{
           title: "",
           headerShadowVisible: false,
