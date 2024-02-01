@@ -81,6 +81,7 @@ import {
   RootStackParamList,
 } from "./stack-param-lists"
 import {
+  BackupComplete,
   BackupDoubleCheck,
   BackupSeedPhrase,
   BackupStart,
@@ -442,6 +443,15 @@ export const RootStack = () => {
         options={{
           title: "",
           headerShadowVisible: false,
+        }}
+      />
+      <RootNavigator.Screen
+        name="BackupComplete"
+        component={BackupComplete}
+        options={{
+          title: "",
+          headerShadowVisible: false,
+          headerLeft: () => <></>,
         }}
       />
     </RootNavigator.Navigator>
