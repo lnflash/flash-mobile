@@ -95,6 +95,7 @@ export type RootStackParamList = {
   BackupSeedPhrase: undefined
   BackupDoubleCheck: undefined
   BackupVerify: undefined
+  BackupComplete: undefined
 }
 
 export type ChatStackParamList = {

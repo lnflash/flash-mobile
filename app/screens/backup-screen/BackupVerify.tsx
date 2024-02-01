@@ -72,7 +72,7 @@ const BackupVerify: React.FC<Props> = ({ navigation }) => {
   }
 
   const onContinue = () => {
-    navigation.navigate("BackupDoubleCheck")
+    navigation.navigate("BackupComplete")
   }
 
   let wrongSelect = false
@@ -211,7 +211,7 @@ const Btn = styled.TouchableOpacity<{
   justify-content: center;
   border-radius: 5px;
   background-color: ${({ isOutline, disabled }) =>
-    isOutline ? "#fff" : disabled ? "#DEDEDE" : "#f7931a"};
+    isOutline ? "#fff" : disabled ? "#DEDEDE" : "#60aa55"};
   border: ${({ isOutline }) => (isOutline ? 1 : 0)}px solid #bbb;
   margin-bottom: ${({ bottom }) => bottom}px;
   padding-vertical: 14px;
