@@ -5,6 +5,9 @@ import { StackScreenProps } from "@react-navigation/stack"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
+// utils
+import { save } from "@app/utils/storage"
+
 // assets
 import CircleCheck from "@app/assets/icons/circleCheck.png"
 
@@ -15,6 +18,7 @@ const BackupComplete: React.FC<Props> = ({ navigation }) => {
   const bottom = useSafeAreaInsets().bottom
 
   const onContinue = () => {
+    save("backupCompleted", true)
     navigation.navigate("Primary")
   }
 
