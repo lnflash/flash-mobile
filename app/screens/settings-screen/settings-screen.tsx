@@ -37,6 +37,7 @@ import { SettingsRow } from "./settings-row"
 import { useShowWarningSecureAccount } from "./show-warning-secure-account"
 import { SetLightningAddressModal } from "@app/components/set-lightning-address-modal"
 import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
+import { loadJson } from "@app/utils/storage"
 
 gql`
   query walletCSVTransactions($walletIds: [WalletId!]!) {
@@ -81,7 +82,7 @@ export const SettingsScreen: React.FC = () => {
 
   const { isAtLeastLevelZero, currentLevel } = useLevel()
   const { LL } = useI18nContext()
-
+  const [backupIsCompleted, setBackupIsCompleted] = React.useState(false)
   const [hiddenContactMethods, setHiddenContactMethods] = React.useState<
     SupportChannelsToHide[]
   >([SupportChannels.Telegram, SupportChannels.Mattermost])
@@ -115,6 +116,15 @@ export const SettingsScreen: React.FC = () => {
     })
 
   const showWarningSecureAccount = useShowWarningSecureAccount()
+
+  React.useEffect(() => {
+    checkBackupCompleted()
+  }, [])
+
+  const checkBackupCompleted = async () => {
+    const res = await loadJson("backupCompleted")
+    setBackupIsCompleted(res)
+  }
 
   const fetchCsvTransactions = async () => {
     const walletIds: string[] = []
@@ -251,8 +261,8 @@ export const SettingsScreen: React.FC = () => {
       icon: "apps-outline",
       id: "backup",
       action: () => navigation.navigate("BackupStart"),
-      enabled: isAtLeastLevelZero,
-      greyed: !isAtLeastLevelZero,
+      enabled: backupIsCompleted ? false : true,
+      chevron: backupIsCompleted ? false : true,
     },
     {
       category: `${LL.SettingsScreen.nfc()} - beta`,
