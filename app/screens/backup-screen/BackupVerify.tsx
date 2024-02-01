@@ -97,7 +97,13 @@ const BackupVerify: React.FC<Props> = ({ navigation }) => {
         marginRight={index % 2 === 0}
       >
         <SeedPhraseNum selectedInOrder={item.selectedInOrder}>
-          <Text>{item.selectedInOrder !== undefined && selectOrder}</Text>
+          <Text>
+            {item.selectedInOrder !== undefined
+              ? item.selectedInOrder
+                ? item.order + 1
+                : selectOrder
+              : ""}
+          </Text>
         </SeedPhraseNum>
         <SeedPhraseText>
           <Text>{item.key}</Text>
