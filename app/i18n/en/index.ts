@@ -818,6 +818,11 @@ const en: BaseTranslation = {
 		showAgain: "Show me again",
 		continue: "Continue"
 	},
+  BackupComplete: {
+		title: "Your backup is complete",
+		description: "You should now have your recovery phrase and password written down for future reference.",
+		complete: "Complete"
+	},
   CopySecretComponent: {
     button: "Copy secret",
     toastMessage: "Secret copied to clipboard!"

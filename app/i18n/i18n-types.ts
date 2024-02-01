@@ -6084,6 +6084,11 @@ export type TranslationFunctions = {
 		showAgain: () => LocalizedString
 		continue: () => LocalizedString
 	}
+	BackupComplete: {		
+		title: () => LocalizedString
+		description: () => LocalizedString
+		complete: () => LocalizedString
+	}
 	CopySecretComponent: {
 		/**
 		 * Copy secret
