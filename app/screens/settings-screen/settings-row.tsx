@@ -2,6 +2,10 @@ import { CustomIcon } from "@app/components/custom-icon"
 import React from "react"
 import { Divider, Icon, ListItem, Text, makeStyles, useTheme } from "@rneui/themed"
 import { testProps } from "../../utils/testProps"
+import styled from "styled-components/native"
+
+// assets
+import CircleCheck from "@app/assets/icons/circleCheck.png"
 
 const useStyles = makeStyles(({ colors }) => ({
   container: {
@@ -67,6 +71,7 @@ export const SettingsRow: React.FC<{ setting: SettingRow }> = ({ setting }) => {
             type="ionicon"
           />
         )}
+        {setting.id === "backup" && !setting.chevron && <Image source={CircleCheck} />}
       </ListItem>
       {setting.styleDivider && (
         <Divider style={styles.styleDivider} color={colors.grey4} />
@@ -74,3 +79,9 @@ export const SettingsRow: React.FC<{ setting: SettingRow }> = ({ setting }) => {
     </React.Fragment>
   )
 }
+
+const Image = styled.Image`
+  width: 24px;
+  height: 24px;
+  margin-right: 15px;
+`
