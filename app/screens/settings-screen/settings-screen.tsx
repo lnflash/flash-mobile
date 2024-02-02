@@ -38,6 +38,8 @@ import { useShowWarningSecureAccount } from "./show-warning-secure-account"
 import { SetLightningAddressModal } from "@app/components/set-lightning-address-modal"
 import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 import { loadJson } from "@app/utils/storage"
+import BiometricWrapper from "@app/utils/biometricAuthentication"
+import { AuthenticationScreenPurpose, PinScreenPurpose } from "@app/utils/enum"
 
 gql`
   query walletCSVTransactions($walletIds: [WalletId!]!) {
@@ -188,6 +190,27 @@ export const SettingsScreen: React.FC = () => {
     })
   }
 
+  const onPressBackup = async () => {
+    if (!backupIsCompleted) {
+      navigation.navigate("BackupStart")
+    } else {
+      const isPinEnabled = await KeyStoreWrapper.getIsPinEnabled()
+      const isSensorAvailable = await BiometricWrapper.isSensorAvailable()
+      const getIsBiometricsEnabled = await KeyStoreWrapper.getIsBiometricsEnabled()
+
+      if (isSensorAvailable && getIsBiometricsEnabled) {
+        navigation.navigate("authentication", {
+          screenPurpose: AuthenticationScreenPurpose.ShowSeedPhrase,
+          isPinEnabled,
+        })
+      } else if (isPinEnabled) {
+        navigation.navigate("pin", { screenPurpose: PinScreenPurpose.ShowSeedPhrase })
+      } else {
+        navigation.navigate("BackupShowSeedPhrase")
+      }
+    }
+  }
+
   const contactMessageBody = LL.support.defaultSupportMessage({
     os: isIos ? "iOS" : "Android",
     version: getReadableVersion(),
@@ -257,12 +280,14 @@ export const SettingsScreen: React.FC = () => {
       greyed: !isAtLeastLevelZero || !lightningAddress,
     },
     {
-      category: LL.SettingsScreen.backup(),
+      category: backupIsCompleted
+        ? LL.SettingsScreen.showSeedPhrase()
+        : LL.SettingsScreen.backup(),
       icon: "apps-outline",
       id: "backup",
-      action: () => navigation.navigate("BackupStart"),
-      enabled: backupIsCompleted ? false : true,
-      chevron: backupIsCompleted ? false : true,
+      action: onPressBackup,
+      enabled: true,
+      chevron: true,
     },
     {
       category: `${LL.SettingsScreen.nfc()} - beta`,
