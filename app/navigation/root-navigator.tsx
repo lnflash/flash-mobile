@@ -84,6 +84,7 @@ import {
   BackupComplete,
   BackupDoubleCheck,
   BackupSeedPhrase,
+  BackupShowSeedPhrase,
   BackupStart,
   BackupVerify,
 } from "@app/screens"
@@ -413,47 +414,34 @@ export const RootStack = () => {
           title: LL.TotpLoginValidateScreen.title(),
         }}
       />
-      <RootNavigator.Screen
-        name="BackupStart"
-        component={BackupStart}
-        options={{
+      <RootNavigator.Group
+        screenOptions={{
           title: "",
           headerShadowVisible: false,
+          headerStyle: { backgroundColor: "#fff" },
+          headerBackTitleStyle: { color: "#000" },
+          headerTintColor: "#000",
         }}
-      />
-      <RootNavigator.Screen
-        name="BackupSeedPhrase"
-        component={BackupSeedPhrase}
-        options={{
-          title: "",
-          headerShadowVisible: false,
-        }}
-      />
-      <RootNavigator.Screen
-        name="BackupDoubleCheck"
-        component={BackupDoubleCheck}
-        options={{
-          title: "",
-          headerShadowVisible: false,
-        }}
-      />
-      <RootNavigator.Screen
-        name="BackupVerify"
-        component={BackupVerify}
-        options={{
-          title: "",
-          headerShadowVisible: false,
-        }}
-      />
-      <RootNavigator.Screen
-        name="BackupComplete"
-        component={BackupComplete}
-        options={{
-          title: "",
-          headerShadowVisible: false,
-          headerLeft: () => <></>,
-        }}
-      />
+      >
+        <RootNavigator.Screen name="BackupStart" component={BackupStart} />
+        <RootNavigator.Screen name="BackupSeedPhrase" component={BackupSeedPhrase} />
+        <RootNavigator.Screen name="BackupDoubleCheck" component={BackupDoubleCheck} />
+        <RootNavigator.Screen name="BackupVerify" component={BackupVerify} />
+        <RootNavigator.Screen
+          name="BackupComplete"
+          component={BackupComplete}
+          options={{
+            headerLeft: () => <></>,
+          }}
+        />
+        <RootNavigator.Screen
+          name="BackupShowSeedPhrase"
+          component={BackupShowSeedPhrase}
+          options={{
+            headerLeft: () => <></>,
+          }}
+        />
+      </RootNavigator.Group>
     </RootNavigator.Navigator>
   )
 }
