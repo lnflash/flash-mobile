@@ -62,8 +62,13 @@ export const AuthenticationScreen: React.FC<Props> = ({ route }) => {
     } else if (screenPurpose === AuthenticationScreenPurpose.TurnOnAuthentication) {
       KeyStoreWrapper.setIsBiometricsEnabled()
     }
-    setAppUnlocked()
-    navigation.replace("Primary")
+
+    if (screenPurpose === AuthenticationScreenPurpose.ShowSeedPhrase) {
+      navigation.replace("BackupShowSeedPhrase")
+    } else {
+      setAppUnlocked()
+      navigation.replace("Primary")
+    }
   }
 
   const handleAuthenticationFailure = () => {
