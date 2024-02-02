@@ -19,7 +19,8 @@ const BackupDoubleCheck: React.FC<Props> = ({ navigation }) => {
     <Wrapper>
       <Container>
         <Title>{LL.BackupDoubleCheck.title()}</Title>
-        <Description>{LL.BackupDoubleCheck.description()}</Description>
+        <Description>{LL.BackupDoubleCheck.description1()}</Description>
+        <Title>{LL.BackupDoubleCheck.description2()}</Title>
       </Container>
       <Btn bottom={bottom} onPress={onContinue}>
         <BtnTitle>{LL.BackupDoubleCheck.continue()}</BtnTitle>
@@ -52,6 +53,7 @@ const Description = styled.Text`
   font-weight: 400;
   color: #777;
   text-align: center;
+  margin-bottom: 10px;
 `
 
 const Btn = styled.TouchableOpacity<{ bottom: number }>`
