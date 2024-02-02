@@ -57,14 +57,14 @@ const BackupSeedPhrase: React.FC<Props> = ({ navigation }) => {
         />
       </Container>
       <ButtonsWrapper>
-        <Btn isOutline={true} bottom={15} onPress={() => {}}>
+        {/* <Btn isOutline={true} bottom={15} onPress={() => {}}>
           <BtnTitle isOutline={true}>{LL.BackupSeedPhrase.backupToICloud()}</BtnTitle>
         </Btn>
         <Btn isOutline={true} bottom={25} onPress={() => {}}>
           <BtnTitle isOutline={true}>
             {LL.BackupSeedPhrase.backupToGoogleDrive()}
           </BtnTitle>
-        </Btn>
+        </Btn> */}
         <Btn bottom={bottom} onPress={onVerify}>
           <BtnTitle>{LL.BackupSeedPhrase.verify()}</BtnTitle>
         </Btn>
