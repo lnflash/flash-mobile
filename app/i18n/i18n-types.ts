@@ -6074,7 +6074,8 @@ export type TranslationFunctions = {
 	}
 	BackupDoubleCheck: {
 		title: () => LocalizedString
-		description: () => LocalizedString
+		description1: () => LocalizedString
+		description2: () => LocalizedString
 		continue: () => LocalizedString
 	}
 	BackupVerify: {		
@@ -6088,6 +6089,11 @@ export type TranslationFunctions = {
 		title: () => LocalizedString
 		description: () => LocalizedString
 		complete: () => LocalizedString
+	}
+	BackupShowSeedPhrase: {		
+		title: () => LocalizedString
+		description: () => LocalizedString
+		done: () => LocalizedString
 	}
 	CopySecretComponent: {
 		/**

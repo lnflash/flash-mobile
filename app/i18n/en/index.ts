@@ -808,7 +808,8 @@ const en: BaseTranslation = {
   },
   BackupDoubleCheck: {
 		title: "Let's double-check",
-		description: "Well done. Now let’s verify that you've written down your recovery phrase correctly. Yes, it’s that important.",
+		description1: "Well done. Now let’s verify that you've written down your recovery phrase correctly.",
+		description2: "Yes, it’s that important.",
 		continue: "Continue"
 	},
   BackupVerify: {
@@ -823,6 +824,11 @@ const en: BaseTranslation = {
 		description: "You should now have your recovery phrase and password written down for future reference.",
 		complete: "Complete"
 	},
+  BackupShowSeedPhrase: {
+    title: "This is your recovery phrase",
+    description: "Make sure to write it down as shown here. You'll need to recover your wallet.",
+    done: "Done"
+  },
   CopySecretComponent: {
     button: "Copy secret",
     toastMessage: "Secret copied to clipboard!"
