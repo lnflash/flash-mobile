@@ -5894,6 +5894,7 @@ export type TranslationFunctions = {
 		 * Backup seed phrase
 		 */
 		backup: () => LocalizedString
+		showSeedPhrase: () => LocalizedString
 	}
 	AccountScreen: {
 		/**

@@ -746,7 +746,8 @@ const en: BaseTranslation = {
     nfcScanNow: "Scan NFC Now",
     nfcNotSupported: "NFC is not supported on this device",
     logInOrCreateAccount: "Log in or create account",
-    backup: "Backup"
+    backup: "Backup",
+    showSeedPhrase: "Reveal recovery phrase"
   },
   AccountScreen: {
     accountLevel: "Account Level",
