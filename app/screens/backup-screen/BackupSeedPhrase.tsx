@@ -79,10 +79,11 @@ const Wrapper = styled.View`
   flex: 1;
   background-color: #fff;
   justify-content: space-between;
-  padding-horizontal: 20px;
 `
 
-const Container = styled.View``
+const Container = styled.ScrollView`
+  padding-horizontal: 20px;
+`
 
 const Title = styled.Text`
   font-size: 21px;
@@ -128,7 +129,10 @@ const Text = styled.Text`
   color: #000;
 `
 
-const ButtonsWrapper = styled.View``
+const ButtonsWrapper = styled.View`
+  padding-top: 10px;
+  padding-horizontal: 20px;
+`
 
 const Btn = styled.TouchableOpacity<{ isOutline?: boolean; bottom: number }>`
   align-items: center;

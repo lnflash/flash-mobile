@@ -69,10 +69,11 @@ const Wrapper = styled.View`
   flex: 1;
   background-color: #fff;
   justify-content: space-between;
-  padding-horizontal: 20px;
 `
 
-const Container = styled.View``
+const Container = styled.ScrollView`
+  padding-horizontal: 20px;
+`
 
 const Title = styled.Text`
   font-size: 21px;
@@ -125,6 +126,8 @@ const Btn = styled.TouchableOpacity<{ isOutline?: boolean; bottom: number }>`
   background-color: ${({ isOutline }) => (isOutline ? "#fff" : "#60aa55")};
   border: ${({ isOutline }) => (isOutline ? 1 : 0)}px solid #bbb;
   margin-bottom: ${({ bottom }) => bottom}px;
+  margin-top: 10px;
+  margin-horizontal: 20px;
   padding-vertical: 14px;
 `
 
