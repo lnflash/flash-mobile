@@ -6083,7 +6083,7 @@ export type TranslationFunctions = {
 		title: () => LocalizedString
 		correctTitle: () => LocalizedString
 		wrongTitle: () => LocalizedString
-		showAgain: () => LocalizedString
+		tryAgain: () => LocalizedString
 		continue: () => LocalizedString
 	}
 	BackupComplete: {		

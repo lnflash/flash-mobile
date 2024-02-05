@@ -817,7 +817,7 @@ const en: BaseTranslation = {
 		title: "Tap the words in the \ncorrect order.",
     correctTitle: "Perfect. Make sure to securely store your recovery phrase.",
     wrongTitle: "Sorry, that’s not the correct third word. Give it another try.",
-		showAgain: "Show me again",
+		tryAgain: "Try again",
 		continue: "Continue"
 	},
   BackupComplete: {
