@@ -91,6 +91,12 @@ export type RootStackParamList = {
   totpRegistrationInitiate: undefined
   totpRegistrationValidate: { totpRegistrationId: string }
   totpLoginValidate: { authToken: string }
+  BackupStart: undefined
+  BackupSeedPhrase: undefined
+  BackupDoubleCheck: undefined
+  BackupVerify: undefined
+  BackupComplete: undefined
+  BackupShowSeedPhrase: undefined
 }
 
 export type ChatStackParamList = {

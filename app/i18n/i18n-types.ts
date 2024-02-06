@@ -5890,6 +5890,11 @@ export type TranslationFunctions = {
 		 * Log in or create account
 		 */
 		logInOrCreateAccount: () => LocalizedString
+		/**
+		 * Backup seed phrase
+		 */
+		backup: () => LocalizedString
+		showSeedPhrase: () => LocalizedString
 	}
 	AccountScreen: {
 		/**
@@ -6055,6 +6060,41 @@ export type TranslationFunctions = {
 		 * Enter the 6-digit code from your authenticator app to log in. This code changes every 30 seconds.
 		 */
 		content: () => LocalizedString
+	}
+	BackupStart: {
+		title: () => LocalizedString
+		description: () => LocalizedString
+		continue: () => LocalizedString
+	}
+	BackupSeedPhrase: {		
+		title: () => LocalizedString
+		description: () => LocalizedString
+		backupToICloud: () => LocalizedString
+		backupToGoogleDrive: () => LocalizedString
+		verify: () => LocalizedString
+	}
+	BackupDoubleCheck: {
+		title: () => LocalizedString
+		description1: () => LocalizedString
+		description2: () => LocalizedString
+		continue: () => LocalizedString
+	}
+	BackupVerify: {		
+		title: () => LocalizedString
+		correctTitle: () => LocalizedString
+		wrongTitle: () => LocalizedString
+		tryAgain: () => LocalizedString
+		continue: () => LocalizedString
+	}
+	BackupComplete: {		
+		title: () => LocalizedString
+		description: () => LocalizedString
+		complete: () => LocalizedString
+	}
+	BackupShowSeedPhrase: {		
+		title: () => LocalizedString
+		description: () => LocalizedString
+		done: () => LocalizedString
 	}
 	CopySecretComponent: {
 		/**

@@ -746,6 +746,8 @@ const en: BaseTranslation = {
     nfcScanNow: "Scan NFC Now",
     nfcNotSupported: "NFC is not supported on this device",
     logInOrCreateAccount: "Log in or create account",
+    backup: "Backup",
+    showSeedPhrase: "Reveal recovery phrase"
   },
   AccountScreen: {
     accountLevel: "Account Level",
@@ -792,6 +794,41 @@ const en: BaseTranslation = {
   TotpLoginValidateScreen: {
     title: "Two-factor authentication",
     content: "Enter the 6-digit code from your authenticator app to log in. This code changes every 30 seconds.",
+  },
+  BackupStart: {
+    title: "First, let's create your \nrecovery phrase",
+    description: "A recovery phrase is a series of 12 words in a specific order. This word combination is unique to your wallet. Make sure to have pen and paper ready so you can write it down.",
+    continue: "Continue"
+  },
+  BackupSeedPhrase: {
+    title: "This is your recovery phrase",
+    description: "Make sure to write it down as shown here. You have to verify this later.",
+    backupToICloud: "Backup to iCloud",
+    backupToGoogleDrive: "Backup to Google Drive",
+    verify: "Verify"
+  },
+  BackupDoubleCheck: {
+		title: "Let's double-check",
+		description1: "Well done. Now let’s verify that you've written down your recovery phrase correctly.",
+		description2: "Yes, it’s that important.",
+		continue: "Continue"
+	},
+  BackupVerify: {
+		title: "Tap the words in the \ncorrect order.",
+    correctTitle: "Perfect. Make sure to securely store your recovery phrase.",
+    wrongTitle: "Sorry, that’s not the correct third word. Give it another try.",
+		tryAgain: "Try again",
+		continue: "Continue"
+	},
+  BackupComplete: {
+		title: "Your backup is complete",
+		description: "You should now have your recovery phrase and password written down for future reference.",
+		complete: "Complete"
+	},
+  BackupShowSeedPhrase: {
+    title: "This is your recovery phrase",
+    description: "Make sure to write it down as shown here. You'll need to recover your wallet.",
+    done: "Done"
   },
   CopySecretComponent: {
     button: "Copy secret",
