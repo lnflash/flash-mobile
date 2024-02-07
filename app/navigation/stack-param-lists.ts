@@ -97,6 +97,7 @@ export type RootStackParamList = {
   BackupVerify: undefined
   BackupComplete: undefined
   BackupShowSeedPhrase: undefined
+  ImportWallet: undefined
 }
 
 export type ChatStackParamList = {
