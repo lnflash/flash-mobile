@@ -830,6 +830,11 @@ const en: BaseTranslation = {
     description: "Make sure to write it down as shown here. You'll need to recover your wallet.",
     done: "Done"
   },
+  ImportWallet: {		
+		title: "Sign in with a recovery phrase",
+		description: "This is a 12-word phrase you were given when you created your previous wallet.",
+		complete: "Complete",
+	},
   CopySecretComponent: {
     button: "Copy secret",
     toastMessage: "Secret copied to clipboard!"

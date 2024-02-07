@@ -6096,6 +6096,11 @@ export type TranslationFunctions = {
 		description: () => LocalizedString
 		done: () => LocalizedString
 	}
+	ImportWallet: {		
+		title: () => LocalizedString
+		description: () => LocalizedString
+		complete: () => LocalizedString
+	}
 	CopySecretComponent: {
 		/**
 		 * Copy secret
