@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import styled from "styled-components/native"
-import { Alert, FlatList } from "react-native"
+import { ActivityIndicator, Alert, FlatList } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -95,6 +95,11 @@ const ImportWallet: React.FC<Props> = ({ navigation }) => {
           <BtnTitle>{LL.ImportWallet.complete()}</BtnTitle>
         </Btn>
       </ButtonsWrapper>
+      {loading && (
+        <LoadingWrapper>
+          <ActivityIndicator size={"large"} color={"#60aa55"} />
+        </LoadingWrapper>
+      )}
     </Wrapper>
   )
 }
@@ -189,4 +194,14 @@ const BtnTitle = styled.Text<{ isOutline?: boolean }>`
   font-size: 18px;
   font-weight: 600;
   color: ${({ isOutline }) => (isOutline ? "#000" : "#fff")};
+`
+
+const LoadingWrapper = styled.View`
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  justify-content: center;
+  align-items: center;
 `
