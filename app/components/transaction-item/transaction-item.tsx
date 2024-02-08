@@ -48,7 +48,11 @@ export const useDescriptionDisplay = ({
     case "SettlementViaOnChain":
       return "OnChain Payment"
     case "SettlementViaLn":
-      return "Invoice to USD wallet"
+      if (isReceive) {
+        return "Receive to USD wallet"
+      } else {
+        return "Send from USD wallet"
+      }
     case "SettlementViaIntraLedger":
       return isReceive
         ? `${LL.common.from()} ${
@@ -139,11 +143,7 @@ export const TransactionItem: React.FC<Props> = ({
     <ListItem
       {...testProps("transaction-item")}
       containerStyle={styles.container}
-      onPress={() =>
-        navigation.navigate("transactionDetail", {
-          txid: tx.id,
-        })
-      }
+      onPress={() => navigation.navigate("transactionDetail", { tx })}
     >
       <IconTransaction
         onChain={tx.settlementVia.__typename === "SettlementViaOnChain"}
