@@ -78,7 +78,7 @@ export type RootStackParamList = {
   phoneFlow: undefined
   phoneRegistrationInitiate: undefined
   phoneRegistrationValidate: { phone: string; channel: PhoneCodeChannelType }
-  transactionDetail: { txid: string }
+  transactionDetail: { tx: TransactionFragment }
   breezTransactionDetail: { tx: TransactionFragment }
   transactionHistory?: undefined
   Earn: undefined
