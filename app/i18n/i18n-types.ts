@@ -4982,6 +4982,10 @@ export type TranslationFunctions = {
 		 */
 		quickStart: () => LocalizedString
 		/**
+		 * I already have a wallet
+		 */
+		alreadyHaveWallet: () => LocalizedString
+		/**
 		 * Explore wallet instead
 		 */
 		exploreWalletInstead: () => LocalizedString

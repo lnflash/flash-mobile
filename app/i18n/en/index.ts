@@ -468,6 +468,7 @@ const en: BaseTranslation = {
   GetStartedScreen: {
     logInCreateAccount: "Log in / create account",
     quickStart: "Start",
+    alreadyHaveWallet: "I already have a wallet",
     exploreWalletInstead: "Explore wallet instead",
     setupBusinessAccount: "Setup business account",
     createAccount: "Create new account",
