@@ -87,6 +87,7 @@ import {
   BackupShowSeedPhrase,
   BackupStart,
   BackupVerify,
+  ImportWallet,
 } from "@app/screens"
 
 const useStyles = makeStyles(({ colors }) => ({
@@ -441,6 +442,7 @@ export const RootStack = () => {
             headerLeft: () => <></>,
           }}
         />
+        <RootNavigator.Screen name="ImportWallet" component={ImportWallet} />
       </RootNavigator.Group>
     </RootNavigator.Navigator>
   )
