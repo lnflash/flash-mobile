@@ -103,6 +103,11 @@ export const GetStartedScreen: React.FC = () => {
           onPress={handleCreateDeviceAccount}
           containerStyle={styles.buttonContainer}
         />
+        <GaloyPrimaryButton
+          title={LL.GetStartedScreen.alreadyHaveWallet()}
+          onPress={() => navigation.navigate("ImportWallet")}
+          containerStyle={styles.buttonContainer}
+        />
         {/* {appCheckToken ? null : (
           // <GaloySecondaryButton
           //   title={LL.GetStartedScreen.startTrialAccount()}
