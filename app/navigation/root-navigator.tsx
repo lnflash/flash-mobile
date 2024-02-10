@@ -87,6 +87,7 @@ import {
   BackupShowSeedPhrase,
   BackupStart,
   BackupVerify,
+  ImportWalletOptions,
   ImportWallet,
 } from "@app/screens"
 
@@ -443,6 +444,10 @@ export const RootStack = () => {
           }}
         />
         <RootNavigator.Screen name="ImportWallet" component={ImportWallet} />
+        <RootNavigator.Screen
+          name="ImportWalletOptions"
+          component={ImportWalletOptions}
+        />
       </RootNavigator.Group>
     </RootNavigator.Navigator>
   )
