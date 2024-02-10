@@ -6100,7 +6100,7 @@ export type TranslationFunctions = {
 		description: () => LocalizedString
 		done: () => LocalizedString
 	}
-	ImportOptions: {		
+	ImportWalletOptions: {		
 		title: () => LocalizedString
 		importBTCWallet: () => LocalizedString
 		loginWith: () => LocalizedString

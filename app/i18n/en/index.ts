@@ -831,7 +831,7 @@ const en: BaseTranslation = {
     description: "Make sure to write it down as shown here. You'll need to recover your wallet.",
     done: "Done"
   },
-  ImportOptions: {		
+  ImportWalletOptions: {		
 		title: "Login options",
 		importBTCWallet: "Import Bitcoin Wallet",
     loginWith: "Login with ",
