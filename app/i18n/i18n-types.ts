@@ -4984,7 +4984,7 @@ export type TranslationFunctions = {
 		/**
 		 * I already have a wallet
 		 */
-		alreadyHaveWallet: () => LocalizedString
+		restoreWallet: () => LocalizedString
 		/**
 		 * Explore wallet instead
 		 */
@@ -6099,6 +6099,15 @@ export type TranslationFunctions = {
 		title: () => LocalizedString
 		description: () => LocalizedString
 		done: () => LocalizedString
+	}
+	ImportOptions: {		
+		title: () => LocalizedString
+		importBTCWallet: () => LocalizedString
+		loginWith: () => LocalizedString
+		phone: () => LocalizedString
+		or: () => LocalizedString
+		email: () => LocalizedString
+		login: () => LocalizedString
 	}
 	ImportWallet: {		
 		title: () => LocalizedString

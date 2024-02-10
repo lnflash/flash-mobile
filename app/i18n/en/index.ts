@@ -468,7 +468,7 @@ const en: BaseTranslation = {
   GetStartedScreen: {
     logInCreateAccount: "Log in / create account",
     quickStart: "Start",
-    alreadyHaveWallet: "I already have a wallet",
+    restoreWallet: "Restore Wallet",
     exploreWalletInstead: "Explore wallet instead",
     setupBusinessAccount: "Setup business account",
     createAccount: "Create new account",
@@ -831,6 +831,15 @@ const en: BaseTranslation = {
     description: "Make sure to write it down as shown here. You'll need to recover your wallet.",
     done: "Done"
   },
+  ImportOptions: {		
+		title: "Login options",
+		importBTCWallet: "Import Bitcoin Wallet",
+    loginWith: "Login with ",
+    phone: "Phone ",
+    or: "or ",
+    email: "Email",
+		login: "Login",
+	},
   ImportWallet: {		
 		title: "Sign in with a recovery phrase",
 		description: "This is a 12-word phrase you were given when you created your previous wallet.",
