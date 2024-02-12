@@ -19,7 +19,6 @@ import { useFeatureFlags } from "@app/config/feature-flags-context"
 const DEVICE_ACCOUNT_CREDENTIALS_KEY = "device-account"
 
 export const useCreateAccount = () => {
-  const { saveToken } = useAppConfig()
   const { deviceAccountEnabled } = useFeatureFlags()
   const [appCheckToken] = useAppCheckToken({ skip: !deviceAccountEnabled })
   const {
@@ -82,8 +81,7 @@ export const useCreateAccount = () => {
 
       logCreatedDeviceAccount()
       analytics().logLogin({ method: "device" })
-      saveToken(authToken)
-      return true
+      return authToken
     } catch (error) {
       logCreateDeviceAccountFailure()
       if (error instanceof Error) {
