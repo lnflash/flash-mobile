@@ -1,5 +1,9 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
-import { CardStyleInterpolators, createStackNavigator } from "@react-navigation/stack"
+import {
+  CardStyleInterpolators,
+  StackScreenProps,
+  createStackNavigator,
+} from "@react-navigation/stack"
 import * as React from "react"
 
 import {
@@ -499,8 +503,8 @@ export const ContactNavigator = () => {
   )
 }
 const StackPhoneValidation = createStackNavigator<PhoneValidationStackParamList>()
-
-export const PhoneLoginNavigator = () => {
+type Props = StackScreenProps<RootStackParamList, "phoneFlow">
+export const PhoneLoginNavigator: React.FC<Props> = ({ route }) => {
   const { LL } = useI18nContext()
   return (
     <StackPhoneValidation.Navigator>
@@ -510,6 +514,7 @@ export const PhoneLoginNavigator = () => {
           headerShown: false,
           title: LL.common.phoneNumber(),
         }}
+        initialParams={route.params}
         component={PhoneLoginInitiateScreen}
       />
       <StackPhoneValidation.Screen
