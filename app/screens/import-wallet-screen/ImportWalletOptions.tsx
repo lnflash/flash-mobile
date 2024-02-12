@@ -8,9 +8,14 @@ import { Icon } from "@rneui/themed"
 import { useCreateAccount } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useFeatureFlags } from "@app/config/feature-flags-context"
+import useAppCheckToken from "../get-started-screen/use-device-token"
 
 // types
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+
+// utils
+import { logGetStartedAction } from "@app/utils/analytics"
 
 type Props = StackScreenProps<RootStackParamList, "ImportWalletOptions">
 
@@ -18,6 +23,8 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation }) => {
   const bottom = useSafeAreaInsets().bottom
   const { LL } = useI18nContext()
   const { createDeviceAccountAndLogin } = useCreateAccount()
+  const { deviceAccountEnabled } = useFeatureFlags()
+  const [appCheckToken] = useAppCheckToken({ skip: !deviceAccountEnabled })
   const [BTCWalletImported, setBTCWalletImported] = useState(false)
   const [USDWalletImported, setUSDWalletImported] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -26,9 +33,22 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("ImportWallet", { onComplete: () => setBTCWalletImported(true) })
   }
 
-  const onLoginWithPhone = () => {}
+  const onLoginWithPhone = () => {
+    logGetStartedAction({
+      action: "log_in",
+      createDeviceAccountEnabled: Boolean(appCheckToken),
+    })
+    navigation.navigate("phoneFlow")
+  }
 
-  const onLoginWithEmail = () => {}
+  const onLoginWithEmail = () => {
+    logGetStartedAction({
+      action: "login_with_email",
+      createDeviceAccountEnabled: Boolean(appCheckToken),
+    })
+
+    navigation.navigate("emailLoginInitiate")
+  }
 
   const onLogin = async () => {
     setLoading(true)
