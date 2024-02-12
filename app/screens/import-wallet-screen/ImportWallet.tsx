@@ -7,7 +7,6 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import * as Keychain from "react-native-keychain"
 import * as bip39 from "bip39"
-import { useCreateAccount } from "@app/hooks"
 
 type Props = StackScreenProps<RootStackParamList, "ImportWallet">
 
@@ -19,11 +18,9 @@ type ShuffledPhraseType = {
 
 const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 
-const ImportWallet: React.FC<Props> = ({ navigation }) => {
+const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
-  const { createDeviceAccountAndLogin } = useCreateAccount()
   const bottom = useSafeAreaInsets().bottom
-  const [errorMessage, setErrorMessage] = useState("")
   const [inputSeedPhrase, setInputSeedPhrase] = useState(Array(12).fill(""))
   const [loading, setLoading] = useState(false)
 
@@ -37,8 +34,9 @@ const ImportWallet: React.FC<Props> = ({ navigation }) => {
         KEYCHAIN_MNEMONIC_KEY,
         mnemonicKey,
       )
-      await createDeviceAccountAndLogin()
-      navigation.navigate("Primary")
+
+      route.params.onComplete()
+      navigation.goBack()
     } else {
       Alert.alert("Invalid recovery phrase")
     }
