@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, FlatList, TextInput } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { useCreateAccount } from "@app/hooks"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import * as Keychain from "react-native-keychain"
 import * as bip39 from "bip39"
@@ -22,6 +23,7 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const bottom = useSafeAreaInsets().bottom
   const inputRef = useRef<TextInput[]>([])
+  const { createDeviceAccountAndLogin } = useCreateAccount()
   const [inputSeedPhrase, setInputSeedPhrase] = useState(Array(12).fill(""))
   const [loading, setLoading] = useState(false)
 
@@ -35,8 +37,10 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
         KEYCHAIN_MNEMONIC_KEY,
         mnemonicKey,
       )
-
-      route.params.onComplete()
+      const token: any = await createDeviceAccountAndLogin()
+      if (route.params?.onComplete) {
+        route.params?.onComplete(token)
+      }
       navigation.goBack()
     } else {
       Alert.alert("Invalid recovery phrase")
