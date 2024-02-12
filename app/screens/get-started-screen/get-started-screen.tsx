@@ -82,6 +82,10 @@ export const GetStartedScreen: React.FC = () => {
     navigation.navigate("emailLoginInitiate")
   }
 
+  const onRestoreWallet = () => {
+    navigation.navigate("ImportWalletOptions")
+  }
+
   return (
     <Screen>
       <Pressable
@@ -103,11 +107,6 @@ export const GetStartedScreen: React.FC = () => {
           onPress={handleCreateDeviceAccount}
           containerStyle={styles.buttonContainer}
         />
-        <GaloyPrimaryButton
-          title={LL.GetStartedScreen.alreadyHaveWallet()}
-          onPress={() => navigation.navigate("ImportWallet")}
-          containerStyle={styles.buttonContainer}
-        />
         {/* {appCheckToken ? null : (
           // <GaloySecondaryButton
           //   title={LL.GetStartedScreen.startTrialAccount()}
@@ -119,6 +118,13 @@ export const GetStartedScreen: React.FC = () => {
           />
         )} */}
         <View style={styles.loginFooterContainer}>
+          <TouchableOpacity activeOpacity={0.5} onPress={onRestoreWallet}>
+            <Text type="p2" style={styles.buttonText}>
+              {LL.GetStartedScreen.restoreWallet()}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {/* <View style={styles.loginFooterContainer}>
           <Text type="p2">{LL.GetStartedScreen.logBackInWith()} </Text>
           <TouchableOpacity activeOpacity={0.5} onPress={handleCreateAccount}>
             <Text type="p2" style={styles.buttonText}>
@@ -135,7 +141,7 @@ export const GetStartedScreen: React.FC = () => {
               {LL.common.email()}
             </Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
       </View>
     </Screen>
   )
