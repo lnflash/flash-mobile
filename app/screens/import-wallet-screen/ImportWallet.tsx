@@ -1,6 +1,6 @@
-import React, { useState } from "react"
+import React, { useRef, useState } from "react"
 import styled from "styled-components/native"
-import { ActivityIndicator, Alert, FlatList } from "react-native"
+import { ActivityIndicator, Alert, FlatList, TextInput } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -21,6 +21,7 @@ const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const bottom = useSafeAreaInsets().bottom
+  const inputRef = useRef<TextInput[]>([])
   const [inputSeedPhrase, setInputSeedPhrase] = useState(Array(12).fill(""))
   const [loading, setLoading] = useState(false)
 
@@ -57,13 +58,24 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
         </SeedPhraseNum>
         <SeedPhraseText>
           <Input
+            // @ts-ignore
+            ref={(el: TextInput) => (inputRef.current[index] = el)}
             value={inputSeedPhrase[index]}
             autoCapitalize="none"
+            blurOnSubmit={false}
             onChangeText={(text) => {
               const updatedInput = [...inputSeedPhrase]
               updatedInput[index] = text
               setInputSeedPhrase(updatedInput)
             }}
+            onSubmitEditing={() => {
+              if (index === 11) {
+                inputRef.current[index].blur()
+              } else {
+                inputRef.current[index + 1].focus()
+              }
+            }}
+            returnKeyType={index === 11 ? "done" : "next"}
           />
         </SeedPhraseText>
       </SeedPhrase>
