@@ -1,11 +1,11 @@
-import React, { useState } from "react"
-import { ActivityIndicator } from "react-native"
+import React, { useEffect, useState } from "react"
 import { StackScreenProps } from "@react-navigation/stack"
 import styled from "styled-components/native"
 import { Icon } from "@rneui/themed"
+import * as Keychain from "react-native-keychain"
 
 // hooks
-import { useCreateAccount } from "@app/hooks"
+import { useAppConfig } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useFeatureFlags } from "@app/config/feature-flags-context"
@@ -17,20 +17,35 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // utils
 import { logGetStartedAction } from "@app/utils/analytics"
 
+const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
+
 type Props = StackScreenProps<RootStackParamList, "ImportWalletOptions">
 
 const ImportWalletOptions: React.FC<Props> = ({ navigation }) => {
   const bottom = useSafeAreaInsets().bottom
   const { LL } = useI18nContext()
-  const { createDeviceAccountAndLogin } = useCreateAccount()
+  const { saveToken } = useAppConfig()
   const { deviceAccountEnabled } = useFeatureFlags()
   const [appCheckToken] = useAppCheckToken({ skip: !deviceAccountEnabled })
   const [BTCWalletImported, setBTCWalletImported] = useState(false)
   const [USDWalletImported, setUSDWalletImported] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [token, setToken] = useState<string | undefined>("")
+
+  useEffect(() => {
+    navigation.addListener("beforeRemove", (e: any) => {
+      if (e.data.action.type === "POP") {
+        Keychain.resetInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
+      }
+    })
+  }, [])
 
   const onImportBTCWallet = () => {
-    navigation.navigate("ImportWallet", { onComplete: () => setBTCWalletImported(true) })
+    navigation.navigate("ImportWallet", {
+      onComplete: (token) => {
+        setBTCWalletImported(true)
+        setToken(token)
+      },
+    })
   }
 
   const onLoginWithPhone = () => {
@@ -38,7 +53,12 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation }) => {
       action: "log_in",
       createDeviceAccountEnabled: Boolean(appCheckToken),
     })
-    navigation.navigate("phoneFlow")
+    navigation.navigate("phoneFlow", {
+      onComplete: (token) => {
+        setUSDWalletImported(true)
+        setToken(token)
+      },
+    })
   }
 
   const onLoginWithEmail = () => {
@@ -47,14 +67,21 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation }) => {
       createDeviceAccountEnabled: Boolean(appCheckToken),
     })
 
-    navigation.navigate("emailLoginInitiate")
+    navigation.navigate("emailLoginInitiate", {
+      onComplete: (token) => {
+        setUSDWalletImported(true)
+        setToken(token)
+      },
+    })
   }
 
   const onLogin = async () => {
-    setLoading(true)
-    await createDeviceAccountAndLogin()
-    setLoading(false)
-    navigation.navigate("Primary")
+    if (token) {
+      saveToken(token)
+      navigation.replace("Primary")
+    } else {
+      alert("Login failed. Please try again")
+    }
   }
 
   return (
@@ -77,13 +104,13 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation }) => {
         <OptionWrapper>
           <LoginWith>
             <Text disabled={USDWalletImported}>{LL.ImportWalletOptions.loginWith()}</Text>
-            <Btn onPress={onLoginWithPhone}>
+            <Btn onPress={onLoginWithPhone} disabled={USDWalletImported}>
               <BtnText disabled={USDWalletImported}>
                 {LL.ImportWalletOptions.phone()}
               </BtnText>
             </Btn>
             <Text disabled={USDWalletImported}>{LL.ImportWalletOptions.or()}</Text>
-            <Btn onPress={onLoginWithEmail}>
+            <Btn onPress={onLoginWithEmail} disabled={USDWalletImported}>
               <BtnText disabled={USDWalletImported}>
                 {LL.ImportWalletOptions.email()}
               </BtnText>
@@ -97,14 +124,13 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation }) => {
           />
         </OptionWrapper>
       </Container>
-      <MainBtn disabled={false} bottom={bottom} onPress={onLogin}>
+      <MainBtn
+        disabled={!BTCWalletImported && !USDWalletImported}
+        bottom={bottom}
+        onPress={onLogin}
+      >
         <MainBtnTitle>{LL.ImportWalletOptions.login()}</MainBtnTitle>
       </MainBtn>
-      {loading && (
-        <LoadingWrapper>
-          <ActivityIndicator size={"large"} color={"#60aa55"} />
-        </LoadingWrapper>
-      )}
     </Wrapper>
   )
 }
@@ -168,13 +194,4 @@ const MainBtnTitle = styled.Text`
   font-size: 18px;
   font-weight: 600;
   color: #fff;
-`
-const LoadingWrapper = styled.View`
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  justify-content: center;
-  align-items: center;
 `
