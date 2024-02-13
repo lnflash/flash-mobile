@@ -29,6 +29,8 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation }) => {
   const [appCheckToken] = useAppCheckToken({ skip: !deviceAccountEnabled })
   const [BTCWalletImported, setBTCWalletImported] = useState(false)
   const [USDWalletImported, setUSDWalletImported] = useState(false)
+  const [phoneVerified, setPhoneVerified] = useState(false)
+  const [emailVerified, setEmailVerified] = useState(false)
   const [token, setToken] = useState<string | undefined>("")
 
   useEffect(() => {
@@ -56,6 +58,7 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("phoneFlow", {
       onComplete: (token) => {
         setUSDWalletImported(true)
+        setPhoneVerified(true)
         setToken(token)
       },
     })
@@ -70,6 +73,7 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("emailLoginInitiate", {
       onComplete: (token) => {
         setUSDWalletImported(true)
+        setEmailVerified(true)
         setToken(token)
       },
     })
@@ -88,41 +92,60 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation }) => {
     <Wrapper>
       <Container>
         <Title>{LL.ImportWalletOptions.title()}</Title>
-        <OptionWrapper>
-          <Btn onPress={onImportBTCWallet} disabled={BTCWalletImported}>
-            <BtnText disabled={BTCWalletImported}>
-              {LL.ImportWalletOptions.importBTCWallet()}
-            </BtnText>
-          </Btn>
+
+        <Btn onPress={onImportBTCWallet} disabled={BTCWalletImported}>
           <Icon
             type="ionicon"
-            name={BTCWalletImported ? "checkbox" : "square-outline"}
-            color={BTCWalletImported ? "#60aa55" : "#bbb"}
-            size={30}
+            name={BTCWalletImported ? "checkmark-circle" : "checkmark-circle-outline"}
+            color={BTCWalletImported ? "#60aa55" : "#999"}
+            size={40}
           />
-        </OptionWrapper>
-        <OptionWrapper>
-          <LoginWith>
-            <Text disabled={USDWalletImported}>{LL.ImportWalletOptions.loginWith()}</Text>
-            <Btn onPress={onLoginWithPhone} disabled={USDWalletImported}>
-              <BtnText disabled={USDWalletImported}>
-                {LL.ImportWalletOptions.phone()}
-              </BtnText>
-            </Btn>
-            <Text disabled={USDWalletImported}>{LL.ImportWalletOptions.or()}</Text>
-            <Btn onPress={onLoginWithEmail} disabled={USDWalletImported}>
-              <BtnText disabled={USDWalletImported}>
-                {LL.ImportWalletOptions.email()}
-              </BtnText>
-            </Btn>
-          </LoginWith>
+          <BtnTextWrapper>
+            <BtnTitle>{LL.ImportWalletOptions.recoveryPhrase()}</BtnTitle>
+            <BtnDesc>{LL.ImportWalletOptions.importBTCWallet()}</BtnDesc>
+          </BtnTextWrapper>
+          {!BTCWalletImported && (
+            <Icon type="ionicon" name={"chevron-forward"} size={20} />
+          )}
+        </Btn>
+        <Btn onPress={onLoginWithPhone} disabled={USDWalletImported}>
           <Icon
             type="ionicon"
-            name={USDWalletImported ? "checkbox" : "square-outline"}
-            color={USDWalletImported ? "#60aa55" : "#bbb"}
-            size={30}
+            name={
+              USDWalletImported && phoneVerified
+                ? "checkmark-circle"
+                : "checkmark-circle-outline"
+            }
+            color={USDWalletImported && phoneVerified ? "#60aa55" : "#999"}
+            size={40}
           />
-        </OptionWrapper>
+          <BtnTextWrapper>
+            <BtnTitle>{LL.ImportWalletOptions.phone()}</BtnTitle>
+            <BtnDesc>{LL.ImportWalletOptions.importUsingPhone()}</BtnDesc>
+          </BtnTextWrapper>
+          {!USDWalletImported && (
+            <Icon type="ionicon" name={"chevron-forward"} size={20} />
+          )}
+        </Btn>
+        <Btn onPress={onLoginWithEmail} disabled={USDWalletImported}>
+          <Icon
+            type="ionicon"
+            name={
+              USDWalletImported && emailVerified
+                ? "checkmark-circle"
+                : "checkmark-circle-outline"
+            }
+            color={USDWalletImported && emailVerified ? "#60aa55" : "#999"}
+            size={40}
+          />
+          <BtnTextWrapper>
+            <BtnTitle>{LL.ImportWalletOptions.email()}</BtnTitle>
+            <BtnDesc>{LL.ImportWalletOptions.importUsingEmail()}</BtnDesc>
+          </BtnTextWrapper>
+          {!USDWalletImported && (
+            <Icon type="ionicon" name={"chevron-forward"} size={20} />
+          )}
+        </Btn>
       </Container>
       <MainBtn
         disabled={!BTCWalletImported && !USDWalletImported}
@@ -147,35 +170,36 @@ const Wrapper = styled.View`
 const Container = styled.View``
 
 const Title = styled.Text`
-  font-size: 25px;
+  font-size: 21px;
   font-weight: 600;
   color: #000;
   text-align: center;
   margin-bottom: 30px;
 `
 
-const OptionWrapper = styled.View`
+const Btn = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 20px;
+  border-radius: 10px;
+  border: 1px solid #dedede;
+  margin-bottom: 20px;
+  padding-vertical: 20px;
+  padding-horizontal: 20px;
 `
 
-const Btn = styled.TouchableOpacity``
-
-const BtnText = styled.Text<{ disabled: boolean }>`
-  font-size: 16px;
-  color: ${({ disabled }) => (disabled ? "#bbb" : "#000")};
-  text-decoration: ${({ disabled }) => (disabled ? "none" : "underline")};
+const BtnTextWrapper = styled.View`
+  flex: 1;
+  margin-horizontal: 15px;
 `
 
-const LoginWith = styled.View`
-  flex-direction: row;
+const BtnTitle = styled.Text`
+  font-size: 18px;
+  color: #000;
 `
 
-const Text = styled.Text`
-  font-size: 16px;
-  color: ${({ disabled }) => (disabled ? "#bbb" : "#000")};
+const BtnDesc = styled.Text`
+  font-size: 15px;
+  color: #777;
 `
 
 const MainBtn = styled.TouchableOpacity<{
