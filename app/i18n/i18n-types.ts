@@ -6102,11 +6102,12 @@ export type TranslationFunctions = {
 	}
 	ImportWalletOptions: {		
 		title: () => LocalizedString
+		recoveryPhrase: () => LocalizedString
 		importBTCWallet: () => LocalizedString
-		loginWith: () => LocalizedString
 		phone: () => LocalizedString
-		or: () => LocalizedString
+		importUsingPhone: () => LocalizedString
 		email: () => LocalizedString
+		importUsingEmail: () => LocalizedString
 		login: () => LocalizedString
 	}
 	ImportWallet: {		

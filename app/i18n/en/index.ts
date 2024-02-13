@@ -833,11 +833,12 @@ const en: BaseTranslation = {
   },
   ImportWalletOptions: {		
 		title: "Login options",
-		importBTCWallet: "Import Bitcoin Wallet",
-    loginWith: "Login with ",
-    phone: "Phone ",
-    or: "or ",
+    recoveryPhrase: "Recovery Phrase",
+    importBTCWallet: "Import Bitcoin Wallet using recovery phrase",
+    phone: "Phone",
+    importUsingPhone: "Import USD Wallet using phone number",
     email: "Email",
+    importUsingEmail: "Import USD Wallet using email address",
 		login: "Login",
 	},
   ImportWallet: {		
