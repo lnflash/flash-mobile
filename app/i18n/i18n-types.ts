@@ -6065,6 +6065,17 @@ export type TranslationFunctions = {
 		 */
 		content: () => LocalizedString
 	}
+	BackupOptions: {		
+		title: () => LocalizedString
+		recoveryPhrase: () => LocalizedString
+		recoveryPhraseDesc: () => LocalizedString
+		revealRecoveryPhrase: () => LocalizedString
+		revealRecoveryPhraseDesc: () => LocalizedString
+		phone: () => LocalizedString
+		phoneDesc: () => LocalizedString
+		usePhoneNumber: () => LocalizedString
+		done: () => LocalizedString
+	}
 	BackupStart: {
 		title: () => LocalizedString
 		description: () => LocalizedString

@@ -796,6 +796,17 @@ const en: BaseTranslation = {
     title: "Two-factor authentication",
     content: "Enter the 6-digit code from your authenticator app to log in. This code changes every 30 seconds.",
   },
+  BackupOptions: {		
+		title: "Backup options",
+    recoveryPhrase: "Recovery Phrase",
+    recoveryPhraseDesc: "Backup Bitcoin Wallet using recovery phrase",
+    revealRecoveryPhrase: "Reveal Recovery Phrase",
+    revealRecoveryPhraseDesc: "Use your recovery phrase to import Bitcoin Wallet",
+    phone: "Phone",
+    phoneDesc: "Backup USD Wallet using phone number",
+    usePhoneNumber: "Use yourNumber phone number to import USD Wallet",
+		done: "Done",
+	},
   BackupStart: {
     title: "First, let's create your \nrecovery phrase",
     description: "A recovery phrase is a series of 12 words in a specific order. This word combination is unique to your wallet. Make sure to have pen and paper ready so you can write it down.",
