@@ -75,7 +75,7 @@ export type RootStackParamList = {
     settlementAmount: MoneyAmount<typeof WalletCurrency.Btc>
     displayAmount: MoneyAmount<DisplayCurrency>
   }
-  phoneFlow: { onComplete?: (token?: string) => void }
+  phoneFlow: { onComplete?: (token?: string) => void } | undefined
   phoneRegistrationInitiate: { onComplete?: (token?: string) => void }
   phoneRegistrationValidate: {
     phone: string
@@ -95,6 +95,7 @@ export type RootStackParamList = {
   totpRegistrationInitiate: undefined
   totpRegistrationValidate: { totpRegistrationId: string }
   totpLoginValidate: { authToken: string }
+  BackupOptions: undefined
   BackupStart: undefined
   BackupSeedPhrase: undefined
   BackupDoubleCheck: undefined
