@@ -26,7 +26,7 @@ const useNostrProfile = () => {
         setNostrSecretKey(nostrSecret)
         return nostrSecret
       } catch (error) {
-        console.error("Error in getMnemonic: ", error)
+        console.error("Error in generating nostr secret: ", error)
         throw error
       }
     }
