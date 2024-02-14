@@ -26,7 +26,7 @@ const BackupShowSeedPhrase: React.FC<Props> = ({ navigation }) => {
   }
 
   const onDone = () => {
-    navigation.navigate("Primary")
+    navigation.navigate("BackupOptions")
   }
 
   const renderItemHandler = ({ item, index }: { item: string; index: number }) => {

@@ -19,7 +19,7 @@ const BackupComplete: React.FC<Props> = ({ navigation }) => {
 
   const onContinue = () => {
     save("backupCompleted", true)
-    navigation.navigate("Primary")
+    navigation.navigate("BackupOptions")
   }
 
   return (
