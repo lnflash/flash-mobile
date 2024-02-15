@@ -76,7 +76,7 @@ export type RootStackParamList = {
     displayAmount: MoneyAmount<DisplayCurrency>
   }
   phoneFlow: { onComplete?: (token?: string) => void } | undefined
-  phoneRegistrationInitiate: { onComplete?: (token?: string) => void }
+  phoneRegistrationInitiate: { onComplete?: (token?: string) => void } | undefined
   phoneRegistrationValidate: {
     phone: string
     channel: PhoneCodeChannelType
@@ -102,8 +102,8 @@ export type RootStackParamList = {
   BackupVerify: undefined
   BackupComplete: undefined
   BackupShowSeedPhrase: undefined
-  ImportWallet: { onComplete?: (token?: string) => void }
-  ImportWalletOptions: undefined
+  ImportWallet: { insideApp?: boolean; onComplete?: (token?: string) => void }
+  ImportWalletOptions: { insideApp?: boolean } | undefined
 }
 
 export type ChatStackParamList = {
