@@ -125,7 +125,7 @@ const Btn = styled.TouchableOpacity<{ isOutline?: boolean; bottom: number }>`
   border-radius: 5px;
   background-color: ${({ isOutline }) => (isOutline ? "#fff" : "#60aa55")};
   border: ${({ isOutline }) => (isOutline ? 1 : 0)}px solid #bbb;
-  margin-bottom: ${({ bottom }) => bottom}px;
+  margin-bottom: ${({ bottom }) => bottom || 10}px;
   margin-top: 10px;
   margin-horizontal: 20px;
   padding-vertical: 14px;
