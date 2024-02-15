@@ -5898,6 +5898,7 @@ export type TranslationFunctions = {
 		 * Backup seed phrase
 		 */
 		backup: () => LocalizedString
+		importWallet: () => LocalizedString
 		showSeedPhrase: () => LocalizedString
 	}
 	AccountScreen: {
@@ -6112,7 +6113,8 @@ export type TranslationFunctions = {
 		done: () => LocalizedString
 	}
 	ImportWalletOptions: {		
-		title: () => LocalizedString
+		loginOptions: () => LocalizedString
+		importOptions: () => LocalizedString
 		recoveryPhrase: () => LocalizedString
 		importBTCWallet: () => LocalizedString
 		phone: () => LocalizedString
@@ -6120,9 +6122,11 @@ export type TranslationFunctions = {
 		email: () => LocalizedString
 		importUsingEmail: () => LocalizedString
 		login: () => LocalizedString
+		done: () => LocalizedString
 	}
 	ImportWallet: {		
 		title: () => LocalizedString
+		importTitle: () => LocalizedString
 		description: () => LocalizedString
 		complete: () => LocalizedString
 	}

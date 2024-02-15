@@ -748,6 +748,7 @@ const en: BaseTranslation = {
     nfcNotSupported: "NFC is not supported on this device",
     logInOrCreateAccount: "Log in or create account",
     backup: "Backup",
+    importWallet: "Import Wallet",
     showSeedPhrase: "Reveal recovery phrase"
   },
   AccountScreen: {
@@ -843,7 +844,8 @@ const en: BaseTranslation = {
     done: "Done"
   },
   ImportWalletOptions: {		
-		title: "Login options",
+		loginOptions: "Login options",
+		importOptions: "Import wallet options",
     recoveryPhrase: "Recovery Phrase",
     importBTCWallet: "Import Bitcoin Wallet using recovery phrase",
     phone: "Phone",
@@ -851,9 +853,11 @@ const en: BaseTranslation = {
     email: "Email",
     importUsingEmail: "Import USD Wallet using email address",
 		login: "Login",
+    done: "Done",
 	},
   ImportWallet: {		
 		title: "Sign in with a recovery phrase",
+		importTitle: "Import your wallet with a recovery phrase",
 		description: "This is a 12-word phrase you were given when you created your previous wallet.",
 		complete: "Complete",
 	},
