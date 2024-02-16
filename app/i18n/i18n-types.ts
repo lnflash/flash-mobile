@@ -6330,7 +6330,7 @@ export type TranslationFunctions = {
 		 */
 		higherLimits: () => LocalizedString
 		/**
-		 * Receive bitcoin onchain
+		 * Earn rewards
 		 */
 		receiveOnchain: () => LocalizedString
 		/**
@@ -6342,7 +6342,7 @@ export type TranslationFunctions = {
 		 */
 		letsGo: () => LocalizedString
 		/**
-		 * Stay in trial mode
+		 * Maybe later
 		 */
 		stayInTrialMode: () => LocalizedString
 	}
