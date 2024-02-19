@@ -5022,11 +5022,11 @@ export type TranslationFunctions = {
 		 */
 		registerPhoneAccount: () => LocalizedString
 		/**
-		 * Trial account creation failed
+		 * Account creation temporarily unavailable
 		 */
 		trialAccountCreationFailed: () => LocalizedString
 		/**
-		 * Unfortunately, we were unable to create your trial account. Try again later or create an account with a phone number.
+		 * Unfortunately, we were unable to create your account. Try again later, please.
 		 */
 		trialAccountCreationFailedMessage: () => LocalizedString
 		/**
