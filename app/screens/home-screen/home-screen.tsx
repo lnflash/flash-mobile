@@ -204,7 +204,10 @@ export const HomeScreen: React.FC = () => {
   const activateWallet = () => {
     setModalVisible(false)
     // fixes a screen flash from closing the modal to opening the next screen
-    setTimeout(() => navigation.navigate("phoneFlow"), 100)
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "getStarted" }],
+    })
   }
 
   type Target =
@@ -260,7 +263,7 @@ export const HomeScreen: React.FC = () => {
         <Text type="h1">{LL.common.needWallet()}</Text>
         <View style={styles.openWalletContainer}>
           <GaloyPrimaryButton
-            title={LL.GetStartedScreen.logInCreateAccount()}
+            title={LL.GetStartedScreen.quickStart()}
             onPress={activateWallet}
           />
         </View>
