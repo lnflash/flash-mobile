@@ -101,7 +101,7 @@ export const HomeScreen: React.FC = () => {
   const [mergedTransactions, setMergedTransactions] = useState<TransactionFragment[]>([])
 
   const isBalanceVisible = hideBalance ?? false
-  const loading = loadingAuthed || loadingPrice || loadingUnauthed
+  const loading = (loadingAuthed || loadingPrice || loadingUnauthed) && isAuthed
   const transactionsEdges = dataAuthed?.me?.defaultAccount?.transactions?.edges ?? []
   const numberOfTxs = dataAuthed?.me?.defaultAccount?.transactions?.edges?.length ?? 0
 
@@ -181,23 +181,23 @@ export const HomeScreen: React.FC = () => {
   }, [isAuthed, refetchAuthed, refetchRealtimePrice, refetchUnauthed])
 
   const onMenuClick = (target: Target) => {
-    if (
-      target === "receiveBitcoin" &&
-      !hasPromptedSetDefaultAccount &&
-      numberOfTxs >= TransactionCountToTriggerSetDefaultAccountModal &&
-      galoyInstanceId === "Main"
-    ) {
-      setDefaultAccountModalVisible(!defaultAccountModalVisible)
-      return
-    }
-
-    // we are using any because Typescript complain on the fact we are not passing any params
-    // but there is no need for a params and the types should not necessitate it
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    navigation.navigate(target as any, { transactionLength: breezTransactions.length })
-
     if (!isAuthed) {
       setModalVisible(true)
+    } else {
+      if (
+        target === "receiveBitcoin" &&
+        !hasPromptedSetDefaultAccount &&
+        numberOfTxs >= TransactionCountToTriggerSetDefaultAccountModal &&
+        galoyInstanceId === "Main"
+      ) {
+        setDefaultAccountModalVisible(!defaultAccountModalVisible)
+        return
+      }
+
+      // we are using any because Typescript complain on the fact we are not passing any params
+      // but there is no need for a params and the types should not necessitate it
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      navigation.navigate(target as any, { transactionLength: breezTransactions.length })
     }
   }
 
