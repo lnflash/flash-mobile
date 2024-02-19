@@ -211,7 +211,7 @@ export const HomeScreen: React.FC = () => {
     | "scanningQRCode"
     | "sendBitcoinDestination"
     | "receiveBitcoin"
-    | "transactionHistory"
+    | "TransactionHistoryTabs"
   type IconNamesType = keyof typeof icons
 
   const buttons = [
@@ -338,7 +338,7 @@ export const HomeScreen: React.FC = () => {
           <>
             <TouchableWithoutFeedback
               style={styles.recentTransaction}
-              onPress={() => onMenuClick("transactionHistory")}
+              onPress={() => onMenuClick("TransactionHistoryTabs")}
             >
               <Text type="p1" bold {...testProps(LL.TransactionScreen.title())}>
                 {LL.TransactionScreen.title()}
