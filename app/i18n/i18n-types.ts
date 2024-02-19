@@ -6776,7 +6776,7 @@ export type TranslationFunctions = {
 		 */
 		errorAuthToken: () => LocalizedString
 		/**
-		 * Log in or create an account to access your wallet
+		 * Create an account to access your wallet
 		 */
 		needWallet: () => LocalizedString
 		/**

@@ -919,7 +919,7 @@
         "logout": "Log Out",
         "minutes": "minutes",
         "errorAuthToken": "Missing auth token",
-        "needWallet": "Log in or create an account to access your wallet",
+        "needWallet": "Create an account to access your wallet",
         "next": "Next",
         "No": "No",
         "note": "Note",
