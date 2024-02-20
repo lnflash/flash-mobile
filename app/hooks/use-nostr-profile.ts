@@ -12,12 +12,10 @@ const useNostrProfile = () => {
         console.log("Looking for nostr creds in keychain")
         const credentials = await Keychain.getInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
         if (credentials) {
-          console.log("nostr creds found in keychain", credentials)
           setNostrSecretKey(credentials.password)
           return
         }
         const nostrSecret = nip19.nsecEncode(generateSecretKey())
-        console.log("Generated new nostr secret:", nostrSecret)
         await Keychain.setInternetCredentials(
           KEYCHAIN_NOSTRCREDS_KEY,
           KEYCHAIN_NOSTRCREDS_KEY,
