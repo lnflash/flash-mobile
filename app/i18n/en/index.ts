@@ -478,9 +478,9 @@ const en: BaseTranslation = {
     startTrialAccount: "Start with a trial account",
     startWithTrialAccount: "Start with trial account",
     registerPhoneAccount: "Register phone account",
-    trialAccountCreationFailed: "Trial account creation failed",
+    trialAccountCreationFailed: "Account creation temporarily unavailable",
     trialAccountCreationFailedMessage:
-      "Unfortunately, we were unable to create your trial account. Try again later or create an account with a phone number.",
+      "Unfortunately, we were unable to create your account. Try again later, please.",
     trialAccountHasLimits: "Trial account has limits",
     trialAccountLimits: {
       noBackup: "No backup option",
@@ -749,7 +749,8 @@ const en: BaseTranslation = {
     logInOrCreateAccount: "Log in or create account",
     backup: "Backup",
     importWallet: "Import Wallet",
-    showSeedPhrase: "Reveal recovery phrase"
+    showSeedPhrase: "Reveal recovery phrase",
+    showNostrSecret: "Reveal Nostr secret",
   },
   AccountScreen: {
     accountLevel: "Account Level",
@@ -1073,7 +1074,7 @@ const en: BaseTranslation = {
     logout: "Log Out",
     minutes: "minutes",
     errorAuthToken: "Missing auth token",
-    needWallet: "Log in or create an account to access your wallet",
+    needWallet: "Create an account to access your wallet",
     next: "Next",
     No: "No",
     note: "Note",

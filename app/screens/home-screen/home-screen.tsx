@@ -47,6 +47,7 @@ import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk"
 import { toBtcMoneyAmount } from "@app/types/amounts"
 import useBreezBalance from "@app/hooks/useBreezBalance"
+import useNostrProfile from "@app/hooks/use-nostr-profile"
 
 const TransactionCountToTriggerSetDefaultAccountModal = 1
 
@@ -65,6 +66,7 @@ export const HomeScreen: React.FC = () => {
   const { LL } = useI18nContext()
   const { convertMoneyAmount } = usePriceConversion()
   const [breezBalance, refreshBreezBalance] = useBreezBalance()
+  const { nostrSecretKey } = useNostrProfile()
 
   // queries
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
@@ -101,7 +103,7 @@ export const HomeScreen: React.FC = () => {
   const [mergedTransactions, setMergedTransactions] = useState<TransactionFragment[]>([])
 
   const isBalanceVisible = hideBalance ?? false
-  const loading = loadingAuthed || loadingPrice || loadingUnauthed
+  const loading = (loadingAuthed || loadingPrice || loadingUnauthed) && isAuthed
   const transactionsEdges = dataAuthed?.me?.defaultAccount?.transactions?.edges ?? []
   const numberOfTxs = dataAuthed?.me?.defaultAccount?.transactions?.edges?.length ?? 0
 
@@ -181,30 +183,33 @@ export const HomeScreen: React.FC = () => {
   }, [isAuthed, refetchAuthed, refetchRealtimePrice, refetchUnauthed])
 
   const onMenuClick = (target: Target) => {
-    if (
-      target === "receiveBitcoin" &&
-      !hasPromptedSetDefaultAccount &&
-      numberOfTxs >= TransactionCountToTriggerSetDefaultAccountModal &&
-      galoyInstanceId === "Main"
-    ) {
-      setDefaultAccountModalVisible(!defaultAccountModalVisible)
-      return
-    }
-
-    // we are using any because Typescript complain on the fact we are not passing any params
-    // but there is no need for a params and the types should not necessitate it
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    navigation.navigate(target as any, { transactionLength: breezTransactions.length })
-
     if (!isAuthed) {
       setModalVisible(true)
+    } else {
+      if (
+        target === "receiveBitcoin" &&
+        !hasPromptedSetDefaultAccount &&
+        numberOfTxs >= TransactionCountToTriggerSetDefaultAccountModal &&
+        galoyInstanceId === "Main"
+      ) {
+        setDefaultAccountModalVisible(!defaultAccountModalVisible)
+        return
+      }
+
+      // we are using any because Typescript complain on the fact we are not passing any params
+      // but there is no need for a params and the types should not necessitate it
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      navigation.navigate(target as any, { transactionLength: breezTransactions.length })
     }
   }
 
   const activateWallet = () => {
     setModalVisible(false)
     // fixes a screen flash from closing the modal to opening the next screen
-    setTimeout(() => navigation.navigate("phoneFlow"), 100)
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "getStarted" }],
+    })
   }
 
   type Target =
@@ -260,7 +265,7 @@ export const HomeScreen: React.FC = () => {
         <Text type="h1">{LL.common.needWallet()}</Text>
         <View style={styles.openWalletContainer}>
           <GaloyPrimaryButton
-            title={LL.GetStartedScreen.logInCreateAccount()}
+            title={LL.GetStartedScreen.quickStart()}
             onPress={activateWallet}
           />
         </View>
