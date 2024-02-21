@@ -55,7 +55,7 @@ export const useDescriptionDisplay = ({
           userData.username ? ": " + userData.username : ""
         }`
       } else {
-        return "Send from USD wallet"
+        return "Send"
       }
     case "SettlementViaIntraLedger":
       return isReceive
