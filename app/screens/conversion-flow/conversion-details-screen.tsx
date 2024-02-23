@@ -186,7 +186,7 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
             unitOfAccountAmount={moneyAmount}
             walletCurrency={fromWalletCurrency}
             setAmount={setMoneyAmount}
-            convertMoneyAmount={convertMoneyAmount}
+            convertMoneyAmount={convertMoneyAmount as keyof typeof convertMoneyAmount}
           />
           {amountFieldError && (
             <View style={styles.errorContainer}>
