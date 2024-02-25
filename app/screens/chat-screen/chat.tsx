@@ -17,8 +17,7 @@ import { useContactsQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
-import { Event, SimplePool, nip19 } from "nostr-tools"
-import { Kind } from "graphql"
+import useNostrProfile from "@app/hooks/use-nostr-profile"
 
 gql`
   query contacts {
@@ -40,6 +39,7 @@ export const ChatScreen: React.FC = () => {
     theme: { colors },
   } = useTheme()
 
+  const { fetchNostrUser } = useNostrProfile()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
 
   const isAuthed = useIsAuthed()
@@ -62,33 +62,6 @@ export const ChatScreen: React.FC = () => {
     return data?.me?.contacts.slice() ?? []
   }, [data])
 
-  const fetchNostrUser = async (npub: `npub1${string}`) => {
-    const pool = new SimplePool()
-    const relays = [
-      "wss://relay.damus.io",
-      "wss://relay.primal.net",
-      "wss://relay.hllo.live",
-    ]
-    const nostrProfile = await pool.get(relays, {
-      kinds: [0],
-      authors: [nip19.decode(npub).data],
-    })
-    pool.close(relays)
-    console.log(
-      "kind0 is ",
-      nostrProfile,
-      "parsed",
-      JSON.parse(nostrProfile?.content || "{}"),
-    )
-    if (!nostrProfile?.content) {
-      return
-    }
-    setNostrProfiles([
-      ...nostrProfiles,
-      { ...JSON.parse(nostrProfile?.content), pubkey: npub },
-    ])
-  }
-
   const reset = useCallback(() => {
     setSearchText("")
     setMatchingContacts(contacts)
@@ -101,13 +74,16 @@ export const ChatScreen: React.FC = () => {
   // This implementation of search will cause a match if any word in the search text
   // matches the contacts name or prettyName.
   const updateSearchResults = useCallback(
-    (newSearchText: string) => {
+    async (newSearchText: string) => {
       setRefreshing(true)
       setSearchText(newSearchText)
-      console.log("NEWSEARCHTEXT Is")
       if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
-        console.log("INSIDE IFFFFF Is")
-        fetchNostrUser(newSearchText as `npub1${string}`)
+        try {
+          setNostrProfiles([await fetchNostrUser(newSearchText as `npub1${string}`)])
+        } catch (e) {
+          console.log("Error fetching nostr profile", e)
+          setNostrProfiles([])
+        }
         setRefreshing(false)
         return
       }
@@ -243,7 +219,7 @@ export const ChatScreen: React.FC = () => {
         ListEmptyComponent={ListEmptyContent}
         renderItem={({ item }) => (
           <ListItem
-            key={item.name}
+            key={item.id}
             style={styles.item}
             containerStyle={styles.itemContainer}
             onPress={() =>
@@ -252,15 +228,7 @@ export const ChatScreen: React.FC = () => {
               })
             }
           >
-            <Image
-              source={{ uri: item.picture || "" }}
-              style={{
-                width: 50,
-                height: 50,
-                borderRadius: 50,
-                backgroundColor: colors.black,
-              }}
-            />
+            <Image source={{ uri: item.picture || "" }} style={styles.profilePicture} />
             <ListItem.Content>
               <ListItem.Title style={styles.itemText}>{item.alias}</ListItem.Title>
             </ListItem.Content>
@@ -344,5 +312,11 @@ const useStyles = makeStyles(({ colors }) => ({
 
   icon: {
     color: colors.black,
+  },
+  profilePicture: {
+    width: 50,
+    height: 50,
+    borderRadius: 50,
+    backgroundColor: colors.black,
   },
 }))

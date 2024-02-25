@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react"
 import * as Keychain from "react-native-keychain"
-import { nip19, generateSecretKey } from "nostr-tools"
+import { nip19, generateSecretKey, getPublicKey, SimplePool } from "nostr-tools"
 
 const useNostrProfile = () => {
   const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
   const [nostrSecretKey, setNostrSecretKey] = useState<string>("")
+  const relays = [
+    "wss://relay.damus.io",
+    "wss://relay.primal.net",
+    "wss://relay.hllo.live",
+  ]
 
   useEffect(() => {
     const initializeNostrProfile = async () => {
@@ -32,7 +37,29 @@ const useNostrProfile = () => {
     initializeNostrProfile()
   }, [])
 
-  return { nostrSecretKey }
+  const fetchNostrUser = async (npub: `npub1${string}`) => {
+    const pool = new SimplePool()
+    const nostrProfile = await pool.get(relays, {
+      kinds: [0],
+      authors: [nip19.decode(npub).data],
+    })
+    pool.close(relays)
+    if (!nostrProfile?.content) {
+      return {}
+    }
+    try {
+      return JSON.parse(nostrProfile.content)
+    } catch (error) {
+      console.error("Error parsing nostr profile: ", error)
+      throw error
+    }
+  }
+
+  return {
+    nostrSecretKey,
+    nostrPubKey: getPublicKey(nip19.decode(nostrSecretKey).data as Uint8Array),
+    fetchNostrUser,
+  }
 }
 
 export default useNostrProfile

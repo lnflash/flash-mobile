@@ -46,18 +46,11 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
   const {
     theme: { colors },
   } = useTheme()
-  const { nostrSecretKey: senderSecretKey } = useNostrProfile()
-  let senderPubKey = ""
-  if (senderSecretKey) {
-    senderPubKey = getPublicKey(nip19.decode(senderSecretKey)?.data as Uint8Array)
-  }
   const styles = useStyles()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
   const { LL } = useI18nContext()
   const [messages, setMessages] = React.useState<MessageType.Any[]>([])
   const [userProfile, setUserProfile] = React.useState<NDKUser>()
-  const [senderPubkey, setSenderProfile] = React.useState<string | null>("")
-  const [senderNsec, setSenderNsec] = React.useState<string | null>("")
 
   React.useEffect(() => {
     let isMounted = true
@@ -69,6 +62,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
         "wss://nostr.mom",
       ],
     })
+
     const nostrRecipient = ndk.getUser({
       npub: "npub1067y35l9rfxczuvm0swkq87k74ds36pawv0zak384tx9g09urpqqkflash",
     })
@@ -80,8 +74,6 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
         await nostrRecipient.fetchProfile()
         if (isMounted) {
           setUserProfile(nostrRecipient)
-          setSenderProfile(senderPubKey)
-          setSenderNsec(senderSecretKey)
         }
       } catch (error) {
         console.log("Error connecting to NOSTR ", error)

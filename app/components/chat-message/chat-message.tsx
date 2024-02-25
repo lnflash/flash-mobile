@@ -37,8 +37,7 @@ const ndk = new NDK({
 })
 
 export const ChatMessage: React.FC<Props> = ({ recipient, message }) => {
-  const { nostrSecretKey: senderSecretKey } = useNostrProfile()
-  const senderPubKey = nip19.decode(senderSecretKey).data.toString()
+  const { nostrSecretKey: senderSecretKey, nostrPubKey: senderPubKey } = useNostrProfile()
   const styles = useStyles()
   const isMounted = useRef(false)
   const publishEvent = useCallback(async (recipient: secureKeyPair, text: string) => {

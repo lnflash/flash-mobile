@@ -1,7 +1,7 @@
 type Chat = {
   readonly id: string
   readonly name: string
-  readonly username: string | null
+  readonly username: string
   readonly alias?: string | null
   picture: string | null
   readonly transactionsCount: number | null
