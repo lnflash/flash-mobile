@@ -3,7 +3,7 @@ import { SearchBar } from "@rneui/base"
 import { ListItem, makeStyles, useTheme } from "@rneui/themed"
 import * as React from "react"
 import { useCallback, useMemo, useState } from "react"
-import { ActivityIndicator, Text, View } from "react-native"
+import { ActivityIndicator, Text, View, Image } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
@@ -17,6 +17,8 @@ import { useContactsQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
+import { Event, SimplePool, nip19 } from "nostr-tools"
+import { Kind } from "graphql"
 
 gql`
   query contacts {
@@ -43,7 +45,9 @@ export const ChatScreen: React.FC = () => {
   const isAuthed = useIsAuthed()
 
   const [matchingContacts, setMatchingContacts] = useState<Contact[]>([])
+  const [nostrProfiles, setNostrProfiles] = useState<NostrProfile[]>([])
   const [searchText, setSearchText] = useState("")
+  const [refreshing, setRefreshing] = useState(false)
   const { LL } = useI18nContext()
   const { loading, data, error } = useContactsQuery({
     skip: !isAuthed,
@@ -58,6 +62,33 @@ export const ChatScreen: React.FC = () => {
     return data?.me?.contacts.slice() ?? []
   }, [data])
 
+  const fetchNostrUser = async (npub: `npub1${string}`) => {
+    const pool = new SimplePool()
+    const relays = [
+      "wss://relay.damus.io",
+      "wss://relay.primal.net",
+      "wss://relay.hllo.live",
+    ]
+    const nostrProfile = await pool.get(relays, {
+      kinds: [0],
+      authors: [nip19.decode(npub).data],
+    })
+    pool.close(relays)
+    console.log(
+      "kind0 is ",
+      nostrProfile,
+      "parsed",
+      JSON.parse(nostrProfile?.content || "{}"),
+    )
+    if (!nostrProfile?.content) {
+      return
+    }
+    setNostrProfiles([
+      ...nostrProfiles,
+      { ...JSON.parse(nostrProfile?.content), pubkey: npub },
+    ])
+  }
+
   const reset = useCallback(() => {
     setSearchText("")
     setMatchingContacts(contacts)
@@ -69,24 +100,53 @@ export const ChatScreen: React.FC = () => {
 
   // This implementation of search will cause a match if any word in the search text
   // matches the contacts name or prettyName.
-  const updateMatchingContacts = useCallback(
+  const updateSearchResults = useCallback(
     (newSearchText: string) => {
+      setRefreshing(true)
       setSearchText(newSearchText)
-      if (newSearchText.length > 0) {
-        const searchWordArray = newSearchText
-          .split(" ")
-          .filter((text) => text.trim().length > 0)
-        const matchingContacts = contacts.filter((contact) =>
-          searchWordArray.some((word) => wordMatchesContact(word, contact)),
-        )
-        setMatchingContacts(matchingContacts)
-      } else {
-        setMatchingContacts(contacts)
+      console.log("NEWSEARCHTEXT Is")
+      if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
+        console.log("INSIDE IFFFFF Is")
+        fetchNostrUser(newSearchText as `npub1${string}`)
+        setRefreshing(false)
+        return
+      }
+      setMatchingContacts([])
+      setNostrProfiles([])
+      try {
+        console.log("REFRESHING ISSSS", refreshing)
+        if (newSearchText.length > 0) {
+          const searchWordArray = newSearchText
+            .split(" ")
+            .filter((text) => text.trim().length > 0)
+          const matchingContacts = contacts.filter((contact) =>
+            searchWordArray.some((word) => wordMatchesContact(word, contact)),
+          )
+          setMatchingContacts(matchingContacts)
+        } else {
+          setMatchingContacts(contacts)
+        }
+      } catch (e) {
+        console.log("Error is ", e)
+      } finally {
+        console.log("SETTING REFRESHING FALSE", refreshing)
+        setRefreshing(false)
       }
     },
     [contacts],
   )
 
+  const NostrProfilesToChat = () => {
+    return nostrProfiles.map((profile) => {
+      return {
+        id: profile.pubkey,
+        name: profile.name,
+        alias: profile.nip05,
+        username: profile.nip05,
+        picture: profile.picture,
+      }
+    })
+  }
   const wordMatchesContact = (searchWord: string, contact: Contact): boolean => {
     let contactPrettyNameMatchesSearchWord: boolean
 
@@ -114,10 +174,10 @@ export const ChatScreen: React.FC = () => {
         {...testProps(LL.common.chatSearch())}
         placeholder={LL.common.chatSearch()}
         value={searchText}
-        onChangeText={updateMatchingContacts}
+        onChangeText={updateSearchResults}
         platform="default"
         round
-        showLoading={false}
+        showLoading={refreshing}
         containerStyle={styles.searchBarContainer}
         inputContainerStyle={styles.searchBarInputContainerStyle}
         inputStyle={styles.searchBarText}
@@ -134,10 +194,10 @@ export const ChatScreen: React.FC = () => {
         {...testProps(LL.common.chatSearch())}
         placeholder={LL.common.chatSearch()}
         value={searchText}
-        onChangeText={updateMatchingContacts}
+        onChangeText={updateSearchResults}
         platform="default"
         round
-        showLoading={false}
+        showLoading={refreshing}
         containerStyle={styles.searchBarContainer}
         inputContainerStyle={styles.searchBarInputContainerStyle}
         inputStyle={styles.searchBarText}
@@ -179,22 +239,34 @@ export const ChatScreen: React.FC = () => {
       {SearchBarContent}
       <FlatList
         contentContainerStyle={styles.listContainer}
-        data={matchingContacts}
+        data={NostrProfilesToChat() as Chat[]}
         ListEmptyComponent={ListEmptyContent}
         renderItem={({ item }) => (
           <ListItem
-            key={item.username}
+            key={item.name}
             style={styles.item}
             containerStyle={styles.itemContainer}
-            onPress={() => navigation.navigate("chatDetail", { chat: item })}
+            onPress={() =>
+              navigation.navigate("chatDetail", {
+                chat: { ...item, transactionsCount: 0 },
+              })
+            }
           >
-            <Icon name={"ios-person-outline"} size={24} color={colors.primary} />
+            <Image
+              source={{ uri: item.picture || "" }}
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: 50,
+                backgroundColor: colors.black,
+              }}
+            />
             <ListItem.Content>
               <ListItem.Title style={styles.itemText}>{item.alias}</ListItem.Title>
             </ListItem.Content>
           </ListItem>
         )}
-        keyExtractor={(item) => item.username}
+        keyExtractor={(item) => item.id}
       />
     </Screen>
   )
