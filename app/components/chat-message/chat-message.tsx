@@ -12,8 +12,6 @@ import { nip19 } from "nostr-tools"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 
 type Props = {
-  // sender: NDKUser | undefined
-  // seckey: MyCryptoKey | undefined
   recipient: NDKUser | undefined
   message: MessageType.Text
   nextMessage: number

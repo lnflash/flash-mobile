@@ -27,7 +27,6 @@ type ChatDetailProps = {
 
 export const ChatDetailScreen: React.FC<ChatDetailProps> = ({ route }) => {
   const { chat } = route.params
-  chat.nsec = ""
   return <ChatDetailScreenJSX chat={chat} />
 }
 
@@ -70,14 +69,6 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
         "wss://nostr.mom",
       ],
     })
-    // const nostrSender = ndk.getUser({
-    //   npub: nip19.npubEncode(publicKey),
-    // })
-    // const nostrSenderNsec = {
-    //   extractable: false,
-    //   type: "raw",
-    //   key: nostrSecretKey,
-    // }
     const nostrRecipient = ndk.getUser({
       npub: "npub1067y35l9rfxczuvm0swkq87k74ds36pawv0zak384tx9g09urpqqkflash",
     })
