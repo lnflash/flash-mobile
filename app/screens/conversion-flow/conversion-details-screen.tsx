@@ -118,10 +118,14 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   const moveToNextScreen = () => {
-    navigation.navigate("conversionConfirmation", {
-      fromWalletCurrency: fromWalletCurrency,
-      moneyAmount,
-    })
+    if (_usdWallet && _btcWallet) {
+      navigation.navigate("conversionConfirmation", {
+        toWallet: fromWalletCurrency === "BTC" ? _usdWallet : _btcWallet,
+        fromWallet: fromWalletCurrency === "BTC" ? _btcWallet : _usdWallet,
+        moneyAmount:
+          fromWalletCurrency === "BTC" ? convertedBTCBalance : convertedUsdBalance,
+      })
+    }
   }
 
   return (
