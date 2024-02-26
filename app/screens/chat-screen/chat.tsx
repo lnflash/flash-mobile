@@ -77,12 +77,14 @@ export const ChatScreen: React.FC = () => {
     async (newSearchText: string) => {
       setRefreshing(true)
       setSearchText(newSearchText)
+      setNostrProfiles([])
+      setMatchingContacts([])
       if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
         try {
-          setNostrProfiles([await fetchNostrUser(newSearchText as `npub1${string}`)])
+          let nostrProfile = await fetchNostrUser(newSearchText as `npub1${string}`)
+          setNostrProfiles(nostrProfile ? [nostrProfile] : [])
         } catch (e) {
           console.log("Error fetching nostr profile", e)
-          setNostrProfiles([])
         }
         setRefreshing(false)
         return
@@ -90,7 +92,6 @@ export const ChatScreen: React.FC = () => {
       setMatchingContacts([])
       setNostrProfiles([])
       try {
-        console.log("REFRESHING ISSSS", refreshing)
         if (newSearchText.length > 0) {
           const searchWordArray = newSearchText
             .split(" ")
@@ -105,7 +106,6 @@ export const ChatScreen: React.FC = () => {
       } catch (e) {
         console.log("Error is ", e)
       } finally {
-        console.log("SETTING REFRESHING FALSE", refreshing)
         setRefreshing(false)
       }
     },

@@ -8,7 +8,9 @@ const useNostrProfile = () => {
   const relays = [
     "wss://relay.damus.io",
     "wss://relay.primal.net",
-    "wss://relay.hllo.live",
+    "wss://nostr.pleb.network",
+    "wss://purplepag.es",
+    "wss://relay.damus.io",
   ]
 
   useEffect(() => {
@@ -45,19 +47,29 @@ const useNostrProfile = () => {
     })
     pool.close(relays)
     if (!nostrProfile?.content) {
-      return {}
+      return null
     }
     try {
-      return JSON.parse(nostrProfile.content)
+      return {
+        ...JSON.parse(nostrProfile.content),
+        pubkey: nostrProfile.pubkey,
+      }
     } catch (error) {
       console.error("Error parsing nostr profile: ", error)
       throw error
     }
   }
 
+  const getPubkey = (nostrSecretKey: string) => {
+    if (!nostrSecretKey) {
+      return ""
+    }
+    return getPublicKey(nip19.decode(nostrSecretKey).data as Uint8Array)
+  }
+
   return {
     nostrSecretKey,
-    nostrPubKey: getPublicKey(nip19.decode(nostrSecretKey).data as Uint8Array),
+    nostrPubKey: getPubkey(nostrSecretKey),
     fetchNostrUser,
   }
 }
