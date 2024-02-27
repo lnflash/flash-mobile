@@ -122,8 +122,7 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
       navigation.navigate("conversionConfirmation", {
         toWallet: fromWalletCurrency === "BTC" ? _usdWallet : _btcWallet,
         fromWallet: fromWalletCurrency === "BTC" ? _btcWallet : _usdWallet,
-        moneyAmount:
-          fromWalletCurrency === "BTC" ? convertedBTCBalance : convertedUsdBalance,
+        moneyAmount: settlementSendAmount,
       })
     }
   }
