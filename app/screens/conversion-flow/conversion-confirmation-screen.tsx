@@ -1,5 +1,5 @@
 import { GraphQLError } from "graphql"
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { ScrollView, Text, View } from "react-native"
 
 import { Screen } from "@app/components/screen"
@@ -32,6 +32,7 @@ import { makeStyles } from "@rneui/themed"
 import ReactNativeHapticFeedback from "react-native-haptic-feedback"
 import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
+import { useReceiveBitcoin } from "../receive-bitcoin-screen/use-receive-bitcoin"
 
 type Props = {
   route: RouteProp<RootStackParamList, "conversionConfirmation">
@@ -45,7 +46,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ route }) => {
   const { formatMoneyAmount, displayCurrency } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
 
-  const { fromWalletCurrency, moneyAmount } = route.params
+  const { toWallet, fromWallet, moneyAmount } = route.params
   const [errorMessage, setErrorMessage] = useState<string | undefined>()
   const isAuthed = useIsAuthed()
 
@@ -56,9 +57,6 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ route }) => {
   const isLoading = intraLedgerPaymentSendLoading || intraLedgerUsdPaymentSendLoading
   const { LL } = useI18nContext()
 
-  let fromWallet: WalletDescriptor<WalletCurrency>
-  let toWallet: WalletDescriptor<WalletCurrency>
-
   const { data } = useConversionScreenQuery({
     fetchPolicy: "cache-first",
     skip: !isAuthed,
@@ -67,21 +65,32 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ route }) => {
   const btcWallet = getBtcWallet(data?.me?.defaultAccount?.wallets)
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
+  const initPRParams = {
+    defaultWalletDescriptor: {
+      currency: toWallet?.walletCurrency,
+      id: toWallet?.id,
+    },
+    unitOfAccountAmount: moneyAmount,
+  }
+
+  const request = useReceiveBitcoin(false, initPRParams)
+
+  useEffect(() => {
+    console.log("INVOICE STATE>>>>>>>>>>>>>>>>>>", request?.state)
+    if (request?.state === "Created")
+      console.log(
+        "INVOICE LN URL>>>>>>>>>>>>>>>>>>>",
+        request?.info?.data?.getFullUriFn({}),
+      )
+  }, [request?.state])
+
   if (!data?.me || !usdWallet || !btcWallet || !convertMoneyAmount) {
     // TODO: handle errors and or provide some loading state
     return null
   }
 
-  if (fromWalletCurrency === WalletCurrency.Btc) {
-    fromWallet = { id: btcWallet.id, currency: WalletCurrency.Btc }
-    toWallet = { id: usdWallet.id, currency: WalletCurrency.Usd }
-  } else {
-    fromWallet = { id: usdWallet.id, currency: WalletCurrency.Usd }
-    toWallet = { id: btcWallet.id, currency: WalletCurrency.Btc }
-  }
-
-  const fromAmount = convertMoneyAmount(moneyAmount, fromWallet.currency)
-  const toAmount = convertMoneyAmount(moneyAmount, toWallet.currency)
+  const fromAmount = convertMoneyAmount(moneyAmount, fromWallet.walletCurrency)
+  const toAmount = convertMoneyAmount(moneyAmount, toWallet.walletCurrency)
 
   const handlePaymentReturn = (
     status: PaymentSendResult,
@@ -120,11 +129,11 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ route }) => {
   }
 
   const payWallet = async () => {
-    if (fromWallet.currency === WalletCurrency.Btc) {
+    if (fromWallet.walletCurrency === WalletCurrency.Btc) {
       try {
         logConversionAttempt({
-          sendingWallet: fromWallet.currency,
-          receivingWallet: toWallet.currency,
+          sendingWallet: fromWallet.walletCurrency,
+          receivingWallet: toWallet.walletCurrency,
         })
         const { data, errors } = await intraLedgerPaymentSend({
           variables: {
@@ -144,8 +153,8 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ route }) => {
         }
 
         logConversionResult({
-          sendingWallet: fromWallet.currency,
-          receivingWallet: toWallet.currency,
+          sendingWallet: fromWallet.walletCurrency,
+          receivingWallet: toWallet.walletCurrency,
           paymentStatus: status,
         })
         handlePaymentReturn(
@@ -159,11 +168,11 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ route }) => {
         }
       }
     }
-    if (fromWallet.currency === WalletCurrency.Usd) {
+    if (fromWallet.walletCurrency === WalletCurrency.Usd) {
       try {
         logConversionAttempt({
-          sendingWallet: fromWallet.currency,
-          receivingWallet: toWallet.currency,
+          sendingWallet: fromWallet.walletCurrency,
+          receivingWallet: toWallet.walletCurrency,
         })
         const { data, errors } = await intraLedgerUsdPaymentSend({
           variables: {
@@ -183,8 +192,8 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ route }) => {
         }
 
         logConversionResult({
-          sendingWallet: fromWallet.currency,
-          receivingWallet: toWallet.currency,
+          sendingWallet: fromWallet.walletCurrency,
+          receivingWallet: toWallet.walletCurrency,
           paymentStatus: status,
         })
         handlePaymentReturn(
@@ -210,8 +219,8 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ route }) => {
             </Text>
             <Text style={styles.conversionInfoFieldValue}>
               {formatMoneyAmount({ moneyAmount: fromAmount })}
-              {displayCurrency !== fromWallet.currency &&
-              displayCurrency !== toWallet.currency
+              {displayCurrency !== fromWallet.walletCurrency &&
+              displayCurrency !== toWallet.walletCurrency
                 ? ` - ${formatMoneyAmount({
                     moneyAmount: convertMoneyAmount(moneyAmount, DisplayCurrency),
                   })}`
@@ -229,7 +238,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ route }) => {
               {LL.ConversionConfirmationScreen.receivingAccount()}
             </Text>
             <Text style={styles.conversionInfoFieldValue}>
-              {toWallet.currency === WalletCurrency.Btc
+              {toWallet.walletCurrency === WalletCurrency.Btc
                 ? LL.common.btcAccount()
                 : LL.common.usdAccount()}
             </Text>
