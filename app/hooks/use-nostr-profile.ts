@@ -5,13 +5,7 @@ import { nip19, generateSecretKey, getPublicKey, SimplePool } from "nostr-tools"
 const useNostrProfile = () => {
   const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
   const [nostrSecretKey, setNostrSecretKey] = useState<string>("")
-  const relays = [
-    "wss://relay.damus.io",
-    "wss://relay.primal.net",
-    "wss://nostr.pleb.network",
-    "wss://purplepag.es",
-    "wss://relay.damus.io",
-  ]
+  const relays = ["wss://relay.damus.io", "wss://relay.primal.net", "wss://purplepag.es"]
 
   useEffect(() => {
     const initializeNostrProfile = async () => {
