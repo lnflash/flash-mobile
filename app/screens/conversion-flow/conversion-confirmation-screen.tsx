@@ -45,7 +45,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
   const { LL } = useI18nContext()
   const { formatMoneyAmount, displayCurrency } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
-  const { loading: convertLoading, sendPayment, hasAttemptedSend } = useConvert()
+  const { sendPayment } = useConvert()
 
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | undefined>()
@@ -71,10 +71,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
 
   useEffect(() => {
     if (request) {
-      // Subscribe to the "paymentSuccess" event.
       paymentEvents.once("invoicePaid", handlePaymentSuccess)
-
-      // Clean up: unsubscribe to prevent memory leaks.
       return () => {
         paymentEvents.off("invoicePaid", handlePaymentSuccess)
       }
@@ -82,7 +79,6 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
   }, [request])
 
   useEffect(() => {
-    console.log(">>>>>>>>>>>>>>>>STATE", request?.state)
     if (request?.state === "Created" && request?.info?.data?.getFullUriFn({})) {
       preparePaymentDetail(request?.info?.data?.getFullUriFn({}))
     }
@@ -122,6 +118,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
   }
 
   const handlePaymentError = (error: Error) => {
+    setLoading(false)
     setErrorMessage(error.message)
     toastShow({ message: error.message })
     ReactNativeHapticFeedback.trigger("notificationError", {
@@ -130,6 +127,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
   }
 
   const handlePaymentSuccess = () => {
+    setLoading(false)
     navigation.dispatch((state) => {
       const routes = [{ name: "Primary" }, { name: "conversionSuccess" }]
       return CommonActions.reset({
@@ -158,13 +156,11 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
           paymentDetail?.settlementAmount,
           paymentDetail?.memo,
         )
-        setLoading(false)
         logConversionResult({
           sendingWallet: fromWallet.walletCurrency,
           receivingWallet: toWallet.walletCurrency,
           paymentStatus: status,
         })
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>", status)
         if (status === "SUCCESS") {
           handlePaymentSuccess()
         } else if (status === "PENDING") {
