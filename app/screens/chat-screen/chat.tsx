@@ -39,7 +39,7 @@ export const ChatScreen: React.FC = () => {
     theme: { colors },
   } = useTheme()
 
-  const { fetchNostrUser } = useNostrProfile()
+  const { fetchNostrUser, retrieveMessagedUsers } = useNostrProfile()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
 
   const isAuthed = useIsAuthed()
@@ -49,18 +49,20 @@ export const ChatScreen: React.FC = () => {
   const [searchText, setSearchText] = useState("")
   const [refreshing, setRefreshing] = useState(false)
   const { LL } = useI18nContext()
-  const { loading, data, error } = useContactsQuery({
-    skip: !isAuthed,
-    fetchPolicy: "cache-and-network",
-  })
+  // const { loading, data, error } = useContactsQuery({
+  //   skip: !isAuthed,
+  //   fetchPolicy: "cache-and-network",
+  // })
 
-  if (error) {
-    toastShow({ message: error.message })
-  }
+  // if (error) {
+  //   toastShow({ message: error.message })
+  // }
 
   const contacts: Contact[] = useMemo(() => {
-    return data?.me?.contacts.slice() ?? []
-  }, [data])
+    // return data?.me?.contacts.slice() ?? []
+    return []
+  }, [])
+  const loading = false
 
   const reset = useCallback(() => {
     setSearchText("")
@@ -68,7 +70,12 @@ export const ChatScreen: React.FC = () => {
   }, [contacts])
 
   React.useEffect(() => {
-    setMatchingContacts(contacts)
+    async function initialize() {
+      console.log("INSIDE INITIALIZE")
+      setMatchingContacts(contacts)
+      setNostrProfiles(await retrieveMessagedUsers())
+    }
+    initialize()
   }, [contacts])
 
   // This implementation of search will cause a match if any word in the search text
@@ -77,7 +84,6 @@ export const ChatScreen: React.FC = () => {
     async (newSearchText: string) => {
       setRefreshing(true)
       setSearchText(newSearchText)
-      setNostrProfiles([])
       setMatchingContacts([])
       if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
         try {
@@ -113,6 +119,7 @@ export const ChatScreen: React.FC = () => {
   )
 
   const NostrProfilesToChat = () => {
+    console.log("nostrProfiles are", nostrProfiles)
     return nostrProfiles.map((profile) => {
       return {
         id: profile.pubkey,
