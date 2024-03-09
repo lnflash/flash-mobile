@@ -44,7 +44,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
   const {
     theme: { colors },
   } = useTheme()
-  const { sendMessage } = useNostrProfile()
+  const { sendMessage, fetchMessagesWith } = useNostrProfile()
   const styles = useStyles()
   const { name, username, picture } = chat
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
@@ -53,6 +53,13 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
 
   React.useEffect(() => {
     let isMounted = true
+    async function initialize() {
+      console.log("FETCHHHHHH HISTGORYYYY")
+      let messages = await fetchMessagesWith(chat.id as `npub1${string}`)
+      console.log("messages", messages)
+      setMessages(messages as MessageType.Text[])
+    }
+    initialize()
 
     return () => {
       isMounted = false
@@ -101,6 +108,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
     message: MessageType.Text
     previewData: PreviewData
   }) => {
+    console.log("Get's called soon")
     setMessages(
       messages.map<MessageType.Any>((m) =>
         m.id === message.id ? { ...m, previewData } : m,

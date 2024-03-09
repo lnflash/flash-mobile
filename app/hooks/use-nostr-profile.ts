@@ -17,10 +17,12 @@ const useNostrProfile = () => {
   const relays = ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol"]
 
   const fetchSecretFromLocalStorage = async () => {
-    let credentials = (await Keychain.getInternetCredentials(
-      KEYCHAIN_NOSTRCREDS_KEY,
-    )) as Keychain.SharedWebCredentials
-    return credentials.password
+    let credentials = await Keychain.getInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
+    if (credentials) {
+      setNostrSecretKey(credentials.password)
+      return credentials.password
+    }
+    return false
   }
 
   useEffect(() => {
@@ -28,10 +30,7 @@ const useNostrProfile = () => {
       try {
         console.log("Looking for nostr creds in keychain")
         const credentials = await fetchSecretFromLocalStorage()
-        if (credentials) {
-          setNostrSecretKey(credentials)
-          return
-        }
+        if (credentials) return
         const nostrSecret = nip19.nsecEncode(generateSecretKey())
         await Keychain.setInternetCredentials(
           KEYCHAIN_NOSTRCREDS_KEY,
@@ -75,9 +74,12 @@ const useNostrProfile = () => {
     if (nostrPublicKey) return nostrPublicKey
     let privateKey = nostrSecretKey
     if (!privateKey) {
-      privateKey = await fetchSecretFromLocalStorage()
-      if (!privateKey) {
+      let localKey = await fetchSecretFromLocalStorage()
+      if (!localKey) {
         throw Error("No Nostr key present in the app")
+      } else {
+        privateKey = localKey
+        setNostrSecretKey(privateKey)
       }
     }
     const pubKey = getPublicKey(nip19.decode(privateKey).data as Uint8Array)
@@ -167,12 +169,46 @@ const useNostrProfile = () => {
     return profiles
   }
 
+  const decryptMessage = async (recipientId: string, encryptedMessage: string) => {
+    let privateKey = nostrSecretKey
+    if (!privateKey) {
+      let localKey = await fetchSecretFromLocalStorage()
+      if (localKey) privateKey = localKey
+      else throw Error("Keys not present in storage")
+    }
+    let hexKey = nip19.decode(privateKey).data as Uint8Array
+    return await nip04.decrypt(hexKey, recipientId, encryptedMessage)
+  }
+
+  const fetchMessagesWith = async (recipientId: string) => {
+    console.log("FETCHING MESSAGE HISTORY WITH", recipientId)
+    let userId = await getPubkey()
+    let filter = {
+      "authors": [recipientId, userId],
+      "#p": [recipientId, userId],
+      "kinds": [4],
+      "limit": 20,
+    }
+    const pool = new SimplePool()
+    let events = await pool.querySync(relays, filter)
+    pool.close(relays)
+    console.log("FETCHED EVENTS", events)
+    let messages = Promise.all(
+      events.map(async (event) => {
+        let text = await decryptMessage(recipientId, event.content)
+        return { text: text, author: { id: event.pubkey }, id: event.id, type: "text" }
+      }),
+    )
+    return messages
+  }
+
   return {
     nostrSecretKey,
     nostrPubKey: nostrPublicKey,
     fetchNostrUser,
     sendMessage,
     retrieveMessagedUsers,
+    fetchMessagesWith,
   }
 }
 

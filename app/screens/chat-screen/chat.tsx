@@ -237,7 +237,9 @@ export const ChatScreen: React.FC = () => {
           >
             <Image source={{ uri: item.picture || "" }} style={styles.profilePicture} />
             <ListItem.Content>
-              <ListItem.Title style={styles.itemText}>{item.alias}</ListItem.Title>
+              <ListItem.Title style={styles.itemText}>
+                {item.alias || item.username || item.name || item.id}
+              </ListItem.Title>
             </ListItem.Content>
           </ListItem>
         )}
