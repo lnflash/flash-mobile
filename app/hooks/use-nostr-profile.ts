@@ -153,6 +153,7 @@ const useNostrProfile = () => {
     })
     console.log("FOUND USERS", messagedUsers)
     let profileEvents = await fetchProfiles(Array.from(messagedUsers))
+    console.log("Profile events are", profileEvents)
     let profiles = profileEvents
       .filter((kind0) => {
         try {
@@ -183,22 +184,37 @@ const useNostrProfile = () => {
   const fetchMessagesWith = async (recipientId: string) => {
     console.log("FETCHING MESSAGE HISTORY WITH", recipientId)
     let userId = await getPubkey()
-    let filter = {
-      "authors": [recipientId, userId],
-      "#p": [recipientId, userId],
+    let filterSent = {
+      "authors": [userId],
+      "#p": [recipientId],
       "kinds": [4],
-      "limit": 20,
+    }
+    let filterReceived = {
+      "authors": [recipientId],
+      "#p": [userId],
+      "kinds": [4],
     }
     const pool = new SimplePool()
-    let events = await pool.querySync(relays, filter)
+    let eventsSent = await pool.querySync(relays, filterSent)
+    console.log("sent messages", eventsSent, recipientId, userId)
+    let eventsReceived = await pool.querySync(relays, filterReceived)
+    console.log("received messages", eventsReceived)
+    let events = [...eventsReceived, ...eventsSent]
     pool.close(relays)
     console.log("FETCHED EVENTS", events)
-    let messages = Promise.all(
+    let messages = await Promise.all(
       events.map(async (event) => {
         let text = await decryptMessage(recipientId, event.content)
-        return { text: text, author: { id: event.pubkey }, id: event.id, type: "text" }
+        return {
+          text: text,
+          author: { id: event.pubkey },
+          id: event.id,
+          type: "text",
+          created_at: event.created_at,
+        }
       }),
     )
+    messages.sort((a, b) => a.created_at - b.created_at)
     return messages
   }
 
