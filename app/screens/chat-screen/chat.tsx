@@ -48,21 +48,20 @@ export const ChatScreen: React.FC = () => {
   const [nostrProfiles, setNostrProfiles] = useState<NostrProfile[]>([])
   const [searchText, setSearchText] = useState("")
   const [refreshing, setRefreshing] = useState(false)
+  const [initialized, setInitialized] = useState(false)
   const { LL } = useI18nContext()
-  // const { loading, data, error } = useContactsQuery({
-  //   skip: !isAuthed,
-  //   fetchPolicy: "cache-and-network",
-  // })
+  const { loading, data, error } = useContactsQuery({
+    skip: !isAuthed,
+    fetchPolicy: "cache-and-network",
+  })
 
-  // if (error) {
-  //   toastShow({ message: error.message })
-  // }
+  if (error) {
+    toastShow({ message: error.message })
+  }
 
   const contacts: Contact[] = useMemo(() => {
-    // return data?.me?.contacts.slice() ?? []
-    return []
+    return data?.me?.contacts.slice() ?? []
   }, [])
-  const loading = false
 
   const reset = useCallback(() => {
     setSearchText("")
@@ -71,9 +70,9 @@ export const ChatScreen: React.FC = () => {
 
   React.useEffect(() => {
     async function initialize() {
-      console.log("INSIDE INITIALIZE")
       setMatchingContacts(contacts)
       setNostrProfiles(await retrieveMessagedUsers())
+      setInitialized(true)
     }
     initialize()
   }, [contacts])
@@ -200,7 +199,7 @@ export const ChatScreen: React.FC = () => {
         <Text style={styles.emptyListText}>{LL.ChatScreen.noChatsYet()}</Text>
       </View>
     )
-  } else if (loading) {
+  } else if (loading || !initialized) {
     ListEmptyContent = (
       <View style={styles.activityIndicatorContainer}>
         <ActivityIndicator size="large" color={colors.primary} />

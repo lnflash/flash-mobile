@@ -1,6 +1,6 @@
 import "react-native-get-random-values"
 import * as React from "react"
-import { Image, View } from "react-native"
+import { ActivityIndicator, Image, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RouteProp, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
@@ -50,14 +50,14 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
   const { LL } = useI18nContext()
   const [messages, setMessages] = React.useState<MessageType.Any[]>([])
+  const [initialized, setInitialized] = React.useState(false)
 
   React.useEffect(() => {
     let isMounted = true
     async function initialize() {
-      console.log("FETCHHHHHH HISTGORYYYY")
       let messages = await fetchMessagesWith(chat.id as `npub1${string}`)
-      console.log("messages", messages)
       setMessages(messages as MessageType.Text[])
+      setInitialized(true)
     }
     initialize()
 
@@ -108,7 +108,6 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
     message: MessageType.Text
     previewData: PreviewData
   }) => {
-    console.log("Get's called soon")
     setMessages(
       messages.map<MessageType.Any>((m) =>
         m.id === message.id ? { ...m, previewData } : m,
@@ -137,7 +136,24 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
           style={styles.backButton}
         />
         <Text type="p1">{name || username}</Text>
-        <Image source={{ uri: picture || "" }} style={styles.userPic} />
+        <View style={{ display: "flex", flexDirection: "row" }}>
+          <GaloyIconButton
+            name={"lightning"}
+            size="large"
+            //text={LL.HomeScreen.pay()}
+            style={{ marginRight: 5 }}
+            onPress={() =>
+              navigation.navigate(
+                "sendBitcoinDestination",
+                {},
+                // {
+                //   username: chat.name || null,
+                // }
+              )
+            }
+          />
+          <Image source={{ uri: picture || "" }} style={styles.userPic} />
+        </View>
       </View>
       <View style={styles.chatBodyContainer}>
         <View style={styles.chatView}>
@@ -146,6 +162,12 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
             onAttachmentPress={handleImageSelection}
             onPreviewDataFetched={handlePreviewDataFetched}
             onSendPress={handleSendPress}
+            l10nOverride={{
+              emptyChatPlaceholder: initialized
+                ? "No messages here yet"
+                : "Fetching Messages...",
+            }}
+            showUserAvatars={true}
             user={user}
             renderTextMessage={(message, nextMessage, prevMessage) => (
               <ChatMessage
@@ -171,22 +193,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
               },
             }}
           />
-        </View>
-        <View style={styles.actionsContainer}>
-          <GaloyIconButton
-            name={"dollar"}
-            size="large"
-            text={LL.HomeScreen.pay()}
-            onPress={() =>
-              navigation.navigate(
-                "sendBitcoinDestination",
-                {},
-                // {
-                //   username: chat.name || null,
-                // }
-              )
-            }
-          />
+          {!initialized && <ActivityIndicator />}
         </View>
       </View>
     </Screen>
@@ -223,7 +230,6 @@ const useStyles = makeStyles(({ colors }) => ({
     borderStyle: "solid",
     borderWidth: 1,
     borderColor: colors.green,
-    //marginTop: 10,
   },
   backButton: {
     fontSize: 26,

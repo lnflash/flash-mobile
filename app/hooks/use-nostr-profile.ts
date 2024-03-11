@@ -91,7 +91,6 @@ const useNostrProfile = () => {
     let privateKey = Buffer.from(
       nip19.decode(nostrSecretKey).data as Uint8Array,
     ).toString("hex")
-    console.log("Encrypting message", message, receiverPublicKey, privateKey)
     let ciphertext = await nip04.encrypt(privateKey, receiverPublicKey, message)
     return ciphertext
   }
@@ -119,14 +118,12 @@ const useNostrProfile = () => {
 
   const fetchMessagedEvents = async () => {
     let pubkey = await getPubkey()
-    console.log("pubkey issss", pubkey)
     let filter = {
       kinds: [4],
       authors: [pubkey],
     }
     const pool = new SimplePool()
     let messagedEvents = await pool.querySync(relays, filter)
-    console.log("messaged events are", messagedEvents)
     pool.close(relays)
     return messagedEvents
   }
@@ -138,22 +135,17 @@ const useNostrProfile = () => {
     }
     const pool = new SimplePool()
     let profiles = await pool.querySync(relays, filter)
-    console.log("FOUND PROFILLLLES", profiles, filter)
     pool.close(relays)
     return profiles
   }
 
   const retrieveMessagedUsers = async () => {
-    console.log("FETCHING MESSAGED USERS")
     const messagedEvents = await fetchMessagedEvents()
-    console.log("MESSAGED EVENTS", messagedEvents)
     let messagedUsers = new Set<string>()
     messagedEvents.forEach((event) => {
       messagedUsers.add(event.tags[0][1])
     })
-    console.log("FOUND USERS", messagedUsers)
     let profileEvents = await fetchProfiles(Array.from(messagedUsers))
-    console.log("Profile events are", profileEvents)
     let profiles = profileEvents
       .filter((kind0) => {
         try {
@@ -182,26 +174,15 @@ const useNostrProfile = () => {
   }
 
   const fetchMessagesWith = async (recipientId: string) => {
-    console.log("FETCHING MESSAGE HISTORY WITH", recipientId)
     let userId = await getPubkey()
     let filterSent = {
-      "authors": [userId],
-      "#p": [recipientId],
-      "kinds": [4],
-    }
-    let filterReceived = {
-      "authors": [recipientId],
-      "#p": [userId],
+      "authors": [userId, recipientId],
+      "#p": [recipientId, userId],
       "kinds": [4],
     }
     const pool = new SimplePool()
-    let eventsSent = await pool.querySync(relays, filterSent)
-    console.log("sent messages", eventsSent, recipientId, userId)
-    let eventsReceived = await pool.querySync(relays, filterReceived)
-    console.log("received messages", eventsReceived)
-    let events = [...eventsReceived, ...eventsSent]
+    let events = await pool.querySync(relays, filterSent)
     pool.close(relays)
-    console.log("FETCHED EVENTS", events)
     let messages = await Promise.all(
       events.map(async (event) => {
         let text = await decryptMessage(recipientId, event.content)
