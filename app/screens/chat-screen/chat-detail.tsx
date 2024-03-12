@@ -44,7 +44,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
   const {
     theme: { colors },
   } = useTheme()
-  const { sendMessage, fetchMessagesWith } = useNostrProfile()
+  const { sendMessage, fetchMessagesWith, nostrPubKey } = useNostrProfile()
   const styles = useStyles()
   const { name, username, picture } = chat
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
@@ -66,7 +66,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
     }
   }, [])
 
-  const user = { id: chat.id }
+  const user = { id: nostrPubKey }
 
   const addMessage = (message: MessageType.Any) => {
     setMessages([message, ...messages])

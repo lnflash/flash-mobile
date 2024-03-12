@@ -93,7 +93,7 @@ const useNostrProfile = () => {
       }
     }
     const pubKey = getPublicKey(nip19.decode(privateKey).data as Uint8Array)
-    setNostrPublicKey(pubKey)
+    setNostrPublicKey(nip19.npubEncode(pubKey))
     return pubKey
   }
 
@@ -198,14 +198,14 @@ const useNostrProfile = () => {
         let text = await decryptMessage(recipientId, event.content)
         return {
           text: text,
-          author: { id: event.pubkey },
+          author: { id: nip19.npubEncode(event.pubkey) },
           id: event.id,
           type: "text",
           created_at: event.created_at,
         }
       }),
     )
-    messages.sort((a, b) => a.created_at - b.created_at)
+    messages.sort((a, b) => b.created_at - a.created_at)
     return messages
   }
 
