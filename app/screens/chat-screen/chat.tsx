@@ -120,12 +120,14 @@ export const ChatScreen: React.FC = () => {
   const NostrProfilesToChat = () => {
     console.log("nostrProfiles are", nostrProfiles)
     return nostrProfiles.map((profile) => {
+      console.log("profile is", profile)
       return {
         id: profile.pubkey,
         name: profile.name,
         alias: profile.nip05,
         username: profile.nip05,
         picture: profile.picture,
+        lud16: profile.lud16,
       }
     })
   }

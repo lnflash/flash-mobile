@@ -199,6 +199,40 @@ const useNostrProfile = () => {
     return messages
   }
 
+  const updateNostrProfile = async ({
+    content,
+  }: {
+    content: {
+      name?: string
+      username?: string
+      nip05?: string
+      flash_username?: string
+      lud16?: string
+    }
+  }) => {
+    const pool = new SimplePool()
+    let pubKey = nostrPublicKey
+    if (!pubKey) {
+      pubKey = await getPubkey()
+    }
+    const kind0Event = {
+      kind: 0,
+      pubkey: pubKey,
+      content: JSON.stringify(content),
+      tags: [],
+      created_at: Math.floor(Date.now() / 1000),
+    }
+    let privateKey = nostrSecretKey
+    if (!privateKey) {
+      privateKey = (await fetchSecretFromLocalStorage()) as string
+      if (!privateKey) throw Error("No private key found")
+    }
+    let privateKeyHex = nip19.decode(privateKey).data as Uint8Array
+    const signedKind0Event = finalizeEvent(kind0Event, privateKeyHex)
+    await Promise.any(pool.publish(relays, signedKind0Event))
+    pool.close(relays)
+  }
+
   return {
     nostrSecretKey,
     nostrPubKey: nostrPublicKey,
@@ -206,6 +240,7 @@ const useNostrProfile = () => {
     sendMessage,
     retrieveMessagedUsers,
     fetchMessagesWith,
+    updateNostrProfile,
   }
 }
 

@@ -11,6 +11,7 @@ import {
   MyUserIdDocument,
   MyUserIdQuery,
 } from "../../graphql/generated"
+import useNostrProfile from "@app/hooks/use-nostr-profile"
 
 gql`
   mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
@@ -40,6 +41,7 @@ export const SetLightningAddressModal = ({
 }: SetLightningAddressModalProps) => {
   const [error, setError] = useState<SetAddressError | undefined>()
   const [lnAddress, setLnAddress] = useState("")
+  const { updateNostrProfile } = useNostrProfile()
 
   const onChangeLnAddress = (lightningAddress: string) => {
     setLnAddress(lightningAddress)
@@ -69,6 +71,9 @@ export const SetLightningAddressModal = ({
           })
         }
       }
+      updateNostrProfile({
+        content: { username: lnAddress, lud16: lnAddress, flash_username: lnAddress },
+      })
     },
   })
 

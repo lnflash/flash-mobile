@@ -143,13 +143,9 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
             //text={LL.HomeScreen.pay()}
             style={{ marginRight: 5 }}
             onPress={() =>
-              navigation.navigate(
-                "sendBitcoinDestination",
-                {},
-                // {
-                //   username: chat.name || null,
-                // }
-              )
+              navigation.navigate("sendBitcoinDestination", {
+                username: chat.lud16,
+              })
             }
           />
           <Image source={{ uri: picture || "" }} style={styles.userPic} />
