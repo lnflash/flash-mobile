@@ -72,9 +72,6 @@ export const ChatMessage: React.FC<Props> = ({ message }) => {
       <View style={styles.container}>
         <Text style={styles.content}>{message.text}</Text>
       </View>
-      <View style={styles.container}>
-        <Text style={styles.content}>Received Message: {decryptedMessage}</Text>
-      </View>
     </View>
   )
 }
