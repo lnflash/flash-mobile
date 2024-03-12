@@ -46,7 +46,11 @@ import { Invoice } from "../receive-bitcoin-screen/payment/index.types"
 // breez
 import { Payment, nodeInfo } from "@breeztech/react-native-breez-sdk"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
-import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk"
+import {
+  breezSDKInitialized,
+  listPaymentsBreezSDK,
+  prepareRedeem,
+} from "@app/utils/breez-sdk"
 import { toBtcMoneyAmount } from "@app/types/amounts"
 import useBreezBalance from "@app/hooks/useBreezBalance"
 import {
@@ -123,24 +127,35 @@ export const HomeScreen: React.FC = () => {
   const numberOfTxs = dataAuthed?.me?.defaultAccount?.transactions?.edges?.length ?? 0
 
   useEffect(() => {
-    const address = request?.info?.data?.getFullUriFn({})
-    if (breezSDKInitialized && address) {
-      checkClosedChannel(address)
+    if (
+      breezSDKInitialized &&
+      request?.info?.data?.getFullUriFn({}) &&
+      request?.receivingWalletDescriptor.currency === WalletCurrency.Btc
+    ) {
+      checkClosedChannel(request?.info?.data?.getFullUriFn({}))
+    } else if (
+      breezSDKInitialized &&
+      request?.receivingWalletDescriptor.currency === WalletCurrency.Usd
+    ) {
+      request.setReceivingWallet(WalletCurrency.Btc)
     }
-  }, [breezSDKInitialized, request?.info?.data?.getFullUriFn({})])
+  }, [
+    breezSDKInitialized,
+    request?.info?.data?.getFullUriFn({}),
+    request?.receivingWalletDescriptor.currency,
+  ])
 
   const checkClosedChannel = async (onChainAddress: string) => {
     const nodeState = await nodeInfo()
+
+    console.log("NODE INFO>>>>>>>>>>>>>>>", nodeState)
     if (nodeState.onchainBalanceMsat > 1000 && onChainAddress) {
       const parsedDestination: any = parsePaymentDestination({
         destination: onChainAddress,
         network: "mainnet" as NetworkGaloyClient, // hard coded to mainnet
         lnAddressDomains: LNURL_DOMAINS,
       })
-
-      console.log("NODE INFO>>>>>>>>>>>>>>>", nodeState)
-
-      // prepareRedeem(parsedDestination?.address)
+      prepareRedeem(parsedDestination?.address)
     }
   }
 
