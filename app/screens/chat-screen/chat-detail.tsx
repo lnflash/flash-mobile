@@ -44,7 +44,8 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
   const {
     theme: { colors },
   } = useTheme()
-  const { sendMessage, fetchMessagesWith, nostrPubKey } = useNostrProfile()
+  const { sendMessage, fetchMessagesWith, nostrPubKey, subscribeToMessages } =
+    useNostrProfile()
   const styles = useStyles()
   const { name, username, picture } = chat
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
@@ -55,9 +56,13 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
   React.useEffect(() => {
     let isMounted = true
     async function initialize() {
-      let messages = await fetchMessagesWith(chat.id as `npub1${string}`)
-      setMessages(messages as MessageType.Text[])
-      setInitialized(true)
+      if (!initialized) {
+        let messageHistory = await fetchMessagesWith(chat.id as `npub1${string}`)
+        console.log("messages", messages)
+        setMessages([...messageHistory, ...messages] as MessageType.Text[])
+        setInitialized(true)
+      }
+      //subscribeToMessages(chat.id as `npub1${string}`, addMessage)
     }
     initialize()
 
@@ -69,6 +74,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
   const user = { id: nostrPubKey }
 
   const addMessage = (message: MessageType.Any) => {
+    console.log("new meesssage", message, "old messages", messages)
     setMessages([message, ...messages])
   }
 
@@ -108,11 +114,11 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
     message: MessageType.Text
     previewData: PreviewData
   }) => {
-    setMessages(
-      messages.map<MessageType.Any>((m) =>
-        m.id === message.id ? { ...m, previewData } : m,
-      ),
-    )
+    // setMessages(
+    //   messages.map<MessageType.Any>((m) =>
+    //     m.id === message.id ? { ...m, previewData } : m,
+    //   ),
+    // )
   }
 
   const handleSendPress = async (message: MessageType.PartialText) => {
@@ -151,6 +157,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
           <Image source={{ uri: picture || "" }} style={styles.userPic} />
         </View>
       </View>
+      {!initialized && <ActivityIndicator />}
       <View style={styles.chatBodyContainer}>
         <View style={styles.chatView}>
           <Chat
@@ -160,8 +167,12 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
             onSendPress={handleSendPress}
             l10nOverride={{
               emptyChatPlaceholder: initialized
-                ? "No messages here yet"
-                : "Fetching Messages...",
+                ? isIos
+                  ? "No messages here yet"
+                  : "..."
+                : isIos
+                ? "Fetching Messages..."
+                : "...",
             }}
             showUserAvatars={true}
             user={user}
@@ -189,7 +200,6 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
               },
             }}
           />
-          {!initialized && <ActivityIndicator />}
         </View>
       </View>
     </Screen>

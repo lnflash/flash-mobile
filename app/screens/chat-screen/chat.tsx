@@ -72,7 +72,6 @@ export const ChatScreen: React.FC = () => {
     async function initialize() {
       setMatchingContacts(contacts)
       let messagedUsers = await retrieveMessagedUsers()
-      console.log("messagedUsers are", messagedUsers)
       setNostrProfiles(messagedUsers)
       setInitialized(true)
     }
