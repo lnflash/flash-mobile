@@ -71,7 +71,9 @@ export const ChatScreen: React.FC = () => {
   React.useEffect(() => {
     async function initialize() {
       setMatchingContacts(contacts)
-      setNostrProfiles(await retrieveMessagedUsers())
+      let messagedUsers = await retrieveMessagedUsers()
+      console.log("messagedUsers are", messagedUsers)
+      setNostrProfiles(messagedUsers)
       setInitialized(true)
     }
     initialize()
@@ -118,9 +120,7 @@ export const ChatScreen: React.FC = () => {
   )
 
   const NostrProfilesToChat = () => {
-    console.log("nostrProfiles are", nostrProfiles)
     return nostrProfiles.map((profile) => {
-      console.log("profile is", profile)
       return {
         id: profile.pubkey,
         name: profile.name,

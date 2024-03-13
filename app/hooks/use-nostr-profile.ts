@@ -156,6 +156,7 @@ const useNostrProfile = () => {
       messagedUsers.add(event.tags[0][1])
     })
     let profileEvents = await fetchProfiles(Array.from(messagedUsers))
+    let seen = new Set()
     let profiles = profileEvents
       .filter((kind0) => {
         try {
@@ -167,6 +168,13 @@ const useNostrProfile = () => {
       })
       .map((kind0) => {
         return { ...JSON.parse(kind0.content), pubkey: kind0.pubkey }
+      })
+      .filter((profile) => {
+        if (!seen.has(profile.pubkey)) {
+          seen.add(profile.pubkey)
+          return true
+        }
+        return false
       })
 
     return profiles
