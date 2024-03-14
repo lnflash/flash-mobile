@@ -233,7 +233,6 @@ const useStyles = makeStyles(({ colors }) => ({
     borderRadius: 50,
     height: 50,
     width: 50,
-    borderStyle: "solid",
     borderWidth: 1,
     borderColor: colors.green,
   },
