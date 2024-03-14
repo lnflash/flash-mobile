@@ -37,6 +37,63 @@ import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { Provider } from "react-redux"
 import { store } from "./store/redux"
 import PolyfillCrypto from "react-native-webview-crypto"
+class MessageChannel {
+  port1: MessagePort
+  port2: MessagePort
+  constructor() {
+    this.port1 = new MessagePort()
+    this.port2 = new MessagePort()
+    this.port1.setOtherPort(this.port2)
+    this.port2.setOtherPort(this.port1)
+  }
+}
+
+class MessagePort {
+  otherPort: MessagePort | null
+  listeners: Map<any, any>
+  constructor() {
+    this.otherPort = null
+    this.listeners = new Map()
+  }
+
+  setOtherPort(otherPort: MessagePort) {
+    this.otherPort = otherPort
+  }
+
+  addEventListener(event: any, listener: any) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, [])
+    }
+    this.listeners.get(event).push(listener)
+  }
+
+  removeEventListener(event: any, listener: any) {
+    const eventListeners = this.listeners.get(event)
+    if (eventListeners) {
+      const index = eventListeners.indexOf(listener)
+      if (index !== -1) {
+        eventListeners.splice(index, 1)
+      }
+    }
+  }
+
+  postMessage(data: any) {
+    this.otherPort!.dispatchEvent("message", { data })
+  }
+
+  start() {
+    // No-op in React Native
+  }
+
+  dispatchEvent(event: string, data: { data: any }) {
+    const eventListeners = this.listeners.get(event)
+    if (eventListeners) {
+      eventListeners.forEach((listener: (arg0: { data: any }) => any) => listener(data))
+    }
+  }
+}
+
+global.MessageChannel = MessageChannel
 
 // FIXME should we only load the currently used local?
 // this would help to make the app load faster
