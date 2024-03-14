@@ -40,14 +40,29 @@ import { getErrorMessages } from "@app/graphql/utils"
 // utils
 import { testProps } from "../../utils/testProps"
 import { isIos } from "@app/utils/helper"
+import { LNURL_DOMAINS } from "@app/config"
+import { Invoice } from "../receive-bitcoin-screen/payment/index.types"
 
 // breez
-import { Payment } from "@breeztech/react-native-breez-sdk"
+import { Payment, nodeInfo } from "@breeztech/react-native-breez-sdk"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
-import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk"
+import {
+  breezSDKInitialized,
+  listPaymentsBreezSDK,
+  prepareRedeem,
+} from "@app/utils/breez-sdk"
 import { toBtcMoneyAmount } from "@app/types/amounts"
 import useBreezBalance from "@app/hooks/useBreezBalance"
+import {
+  parsePaymentDestination,
+  Network as NetworkGaloyClient,
+} from "@galoymoney/client"
+
+// hooks
 import useNostrProfile from "@app/hooks/use-nostr-profile"
+import { useReceiveBitcoin } from "../receive-bitcoin-screen/use-receive-bitcoin"
+
+// store
 import { useAppDispatch } from "@app/store/redux"
 import { setUserData } from "@app/store/redux/slices/userSlice"
 
@@ -55,6 +70,7 @@ const TransactionCountToTriggerSetDefaultAccountModal = 1
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const dispatch = useAppDispatch()
   const {
     appConfig: {
       galoyInstance: { id: galoyInstanceId },
@@ -69,7 +85,7 @@ export const HomeScreen: React.FC = () => {
   const { convertMoneyAmount } = usePriceConversion()
   const [breezBalance, refreshBreezBalance] = useBreezBalance()
   const { nostrSecretKey } = useNostrProfile()
-  const dispatch = useAppDispatch()
+  const request = useReceiveBitcoin(false, { type: Invoice.OnChain })
 
   // queries
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
@@ -109,6 +125,39 @@ export const HomeScreen: React.FC = () => {
   const loading = (loadingAuthed || loadingPrice || loadingUnauthed) && isAuthed
   const transactionsEdges = dataAuthed?.me?.defaultAccount?.transactions?.edges ?? []
   const numberOfTxs = dataAuthed?.me?.defaultAccount?.transactions?.edges?.length ?? 0
+
+  useEffect(() => {
+    if (
+      breezSDKInitialized &&
+      request?.info?.data?.getFullUriFn({}) &&
+      request?.receivingWalletDescriptor.currency === WalletCurrency.Btc
+    ) {
+      checkClosedChannel(request?.info?.data?.getFullUriFn({}))
+    } else if (
+      breezSDKInitialized &&
+      request?.receivingWalletDescriptor.currency === WalletCurrency.Usd
+    ) {
+      request.setReceivingWallet(WalletCurrency.Btc)
+    }
+  }, [
+    breezSDKInitialized,
+    request?.info?.data?.getFullUriFn({}),
+    request?.receivingWalletDescriptor.currency,
+  ])
+
+  const checkClosedChannel = async (onChainAddress: string) => {
+    const nodeState = await nodeInfo()
+
+    console.log("NODE INFO>>>>>>>>>>>>>>>", nodeState)
+    if (nodeState.onchainBalanceMsat > 1000 && onChainAddress) {
+      const parsedDestination: any = parsePaymentDestination({
+        destination: onChainAddress,
+        network: "mainnet" as NetworkGaloyClient, // hard coded to mainnet
+        lnAddressDomains: LNURL_DOMAINS,
+      })
+      prepareRedeem(parsedDestination?.address)
+    }
+  }
 
   useEffect(() => {
     if (dataAuthed?.me) {
