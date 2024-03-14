@@ -94,9 +94,7 @@ const useNostrProfile = () => {
       }
     }
     const pubKeyHex = getPublicKey(nip19.decode(privateKey).data as Uint8Array)
-    console.log("pubkey hex", pubKeyHex)
     let pubKey = nip19.npubEncode(pubKeyHex)
-    console.log("pubkey", pubKey)
     setNostrPublicKey(pubKey)
     return pubKey
   }
@@ -117,7 +115,7 @@ const useNostrProfile = () => {
 
   const sendMessage = async (recipientId: string, message: string) => {
     let recipient = nip19.decode(recipientId).data as string
-    const ciphertext = await encryptMessage(message, recipientId)
+    const ciphertext = await encryptMessage(message, recipient)
     const baseKind4Event = {
       kind: 4,
       pubkey: nip19.decode(await getPubkey()).data as string,
@@ -125,7 +123,8 @@ const useNostrProfile = () => {
       content: ciphertext,
       created_at: Math.floor(Date.now() / 1000),
     }
-    const kind4Event = signEvent(baseKind4Event, nostrSecretKey)
+    let privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
+    const kind4Event = finalizeEvent(baseKind4Event, privateKey)
     const pool = new SimplePool()
     await Promise.any(pool.publish(relays, kind4Event))
     pool.close(relays)
@@ -203,7 +202,6 @@ const useNostrProfile = () => {
   ) => {
     let recipient = nip19.decode(recipientId).data as string
     let userId = nip19.decode(await getPubkey()).data as string
-    console.log("Subscribing to messages with: ", recipientId, " and ", userId)
     let filter = {
       "authors": [recipient, userId],
       "#p": [recipient, userId],
@@ -212,7 +210,6 @@ const useNostrProfile = () => {
     const pool = new SimplePool()
     let h = pool.subscribeMany(relays, [filter], {
       onevent: (event) => {
-        console.log("Received event!!!", event)
         decryptMessage(recipientId, event.content).then((message) => {
           callback({
             text: message,
@@ -231,10 +228,8 @@ const useNostrProfile = () => {
   }
 
   const fetchMessagesWith = async (recipientId: string) => {
-    console.log("inside fetch messages with recipient: ", recipientId)
     let userId = nip19.decode(await getPubkey()).data as string
     let recipient = nip19.decode(recipientId).data as string
-    console.log("ids are ", recipient, userId)
     let filterSent = {
       "authors": [recipient, userId],
       "#p": [recipient, userId],
@@ -251,7 +246,6 @@ const useNostrProfile = () => {
         } catch (e) {
           console.error("Error decrypting message: ", e)
         }
-        console.log("Message: ", text)
         return {
           text: text,
           author: { id: nip19.npubEncode(event.pubkey) },
