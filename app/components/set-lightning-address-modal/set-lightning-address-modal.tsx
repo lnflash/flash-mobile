@@ -11,6 +11,11 @@ import {
   MyUserIdDocument,
   MyUserIdQuery,
 } from "../../graphql/generated"
+import useNostrProfile from "@app/hooks/use-nostr-profile"
+
+// store
+import { useAppDispatch } from "@app/store/redux"
+import { updateUserData } from "@app/store/redux/slices/userSlice"
 
 gql`
   mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
@@ -38,8 +43,10 @@ export const SetLightningAddressModal = ({
   isVisible,
   toggleModal,
 }: SetLightningAddressModalProps) => {
+  const dispatch = useAppDispatch()
   const [error, setError] = useState<SetAddressError | undefined>()
   const [lnAddress, setLnAddress] = useState("")
+  const { updateNostrProfile } = useNostrProfile()
 
   const onChangeLnAddress = (lightningAddress: string) => {
     setLnAddress(lightningAddress)
@@ -69,6 +76,9 @@ export const SetLightningAddressModal = ({
           })
         }
       }
+      updateNostrProfile({
+        content: { username: lnAddress, lud16: lnAddress, flash_username: lnAddress },
+      })
     },
   })
 
@@ -96,6 +106,7 @@ export const SetLightningAddressModal = ({
       return
     }
 
+    dispatch(updateUserData({ username: lnAddress }))
     toggleModal()
   }
 
