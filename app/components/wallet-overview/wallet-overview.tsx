@@ -68,6 +68,7 @@ type Props = {
   refreshTriggered: boolean
   breezBalance: number | null
   refreshBreezBalance: () => void
+  pendingBalance: number | null
 }
 
 const WalletOverview: React.FC<Props> = ({
@@ -79,6 +80,7 @@ const WalletOverview: React.FC<Props> = ({
   refreshTriggered,
   breezBalance,
   refreshBreezBalance,
+  pendingBalance,
 }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isGaloyWalletVisible, setIsGaloyWalletVisible] = React.useState(false)
@@ -125,7 +127,9 @@ const WalletOverview: React.FC<Props> = ({
 
     const usdWalletBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
 
-    const extBtcWalletBalance = toBtcMoneyAmount(breezBalance ?? NaN)
+    const extBtcWalletBalance = toBtcMoneyAmount(
+      pendingBalance ? pendingBalance : breezBalance ?? NaN,
+    )
 
     const extUsdWalletBalance = toUsdMoneyAmount(extUsdWallet?.balance ?? NaN)
 
@@ -231,13 +235,14 @@ const WalletOverview: React.FC<Props> = ({
           <View style={styles.hideableArea}>
             <HideableArea isContentVisible={isContentVisible}>
               {extBtcInUnderlyingCurrency ? (
-                <Text type="p1" bold>
+                <Text type="p1" bold color={pendingBalance ? "orange" : undefined}>
                   {extBtcInUnderlyingCurrency}
                 </Text>
               ) : null}
               <Text
                 type={extBtcInUnderlyingCurrency ? "p3" : "p1"}
                 bold={!extBtcInUnderlyingCurrency}
+                color={pendingBalance ? "orange" : undefined}
               >
                 {extBtcInDisplayCurrencyFormatted}
               </Text>
