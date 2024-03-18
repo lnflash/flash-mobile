@@ -7,7 +7,6 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
-import { useAppConfig, usePriceConversion } from "@app/hooks"
 import { RootStackParamList } from "../../navigation/stack-param-lists"
 
 // components
@@ -40,27 +39,17 @@ import { getErrorMessages } from "@app/graphql/utils"
 // utils
 import { testProps } from "../../utils/testProps"
 import { isIos } from "@app/utils/helper"
-import { LNURL_DOMAINS } from "@app/config"
-import { Invoice } from "../receive-bitcoin-screen/payment/index.types"
 
 // breez
-import { Payment, nodeInfo } from "@breeztech/react-native-breez-sdk"
+import { Payment } from "@breeztech/react-native-breez-sdk"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
-import {
-  breezSDKInitialized,
-  listPaymentsBreezSDK,
-  prepareRedeem,
-} from "@app/utils/breez-sdk"
+import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk"
 import { toBtcMoneyAmount } from "@app/types/amounts"
 import useBreezBalance from "@app/hooks/useBreezBalance"
-import {
-  parsePaymentDestination,
-  Network as NetworkGaloyClient,
-} from "@galoymoney/client"
 
 // hooks
+import { useAppConfig, usePriceConversion, useRedeem } from "@app/hooks"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
-import { useReceiveBitcoin } from "../receive-bitcoin-screen/use-receive-bitcoin"
 
 // store
 import { useAppDispatch } from "@app/store/redux"
@@ -85,7 +74,7 @@ export const HomeScreen: React.FC = () => {
   const { convertMoneyAmount } = usePriceConversion()
   const [breezBalance, refreshBreezBalance] = useBreezBalance()
   const { nostrSecretKey } = useNostrProfile()
-  const request = useReceiveBitcoin(false, { type: Invoice.OnChain })
+  const { pendingSwap, checkInProgressSwap } = useRedeem()
 
   // queries
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
@@ -125,39 +114,6 @@ export const HomeScreen: React.FC = () => {
   const loading = (loadingAuthed || loadingPrice || loadingUnauthed) && isAuthed
   const transactionsEdges = dataAuthed?.me?.defaultAccount?.transactions?.edges ?? []
   const numberOfTxs = dataAuthed?.me?.defaultAccount?.transactions?.edges?.length ?? 0
-
-  useEffect(() => {
-    if (
-      breezSDKInitialized &&
-      request?.info?.data?.getFullUriFn({}) &&
-      request?.receivingWalletDescriptor.currency === WalletCurrency.Btc
-    ) {
-      checkClosedChannel(request?.info?.data?.getFullUriFn({}))
-    } else if (
-      breezSDKInitialized &&
-      request?.receivingWalletDescriptor.currency === WalletCurrency.Usd
-    ) {
-      request.setReceivingWallet(WalletCurrency.Btc)
-    }
-  }, [
-    breezSDKInitialized,
-    request?.info?.data?.getFullUriFn({}),
-    request?.receivingWalletDescriptor.currency,
-  ])
-
-  const checkClosedChannel = async (onChainAddress: string) => {
-    const nodeState = await nodeInfo()
-
-    console.log("NODE INFO>>>>>>>>>>>>>>>", nodeState)
-    if (nodeState.onchainBalanceMsat > 1000 && onChainAddress) {
-      const parsedDestination: any = parsePaymentDestination({
-        destination: onChainAddress,
-        network: "mainnet" as NetworkGaloyClient, // hard coded to mainnet
-        lnAddressDomains: LNURL_DOMAINS,
-      })
-      prepareRedeem(parsedDestination?.address)
-    }
-  }
 
   useEffect(() => {
     if (dataAuthed?.me) {
@@ -236,6 +192,8 @@ export const HomeScreen: React.FC = () => {
       refetchAuthed()
       refetchUnauthed()
       setRefreshTriggered(true)
+      fetchPaymentsBreez()
+      checkInProgressSwap()
       setTimeout(() => setRefreshTriggered(false), 1000)
     }
   }, [isAuthed, refetchAuthed, refetchRealtimePrice, refetchUnauthed])
@@ -377,6 +335,12 @@ export const HomeScreen: React.FC = () => {
           setIsStablesatModalVisible={setIsStablesatModalVisible}
           breezBalance={breezBalance}
           refreshBreezBalance={refreshBreezBalance}
+          pendingBalance={
+            pendingSwap && pendingSwap?.channelOpeningFees
+              ? pendingSwap?.unconfirmedSats -
+                pendingSwap?.channelOpeningFees?.minMsat / 1000
+              : null
+          }
         />
         {error && (
           <View style={styles.marginButtonContainer}>
