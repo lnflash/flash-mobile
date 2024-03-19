@@ -84,14 +84,11 @@ export const ChatScreen: React.FC = () => {
   // matches the contacts name or prettyName.
   const updateSearchResults = useCallback(
     async (newSearchText: string) => {
-      console.log("inside search with value", newSearchText)
       setRefreshing(true)
       setSearchText(newSearchText)
       setMatchingContacts([])
       let aliasPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
-      console.log("does pattern match?", newSearchText.match(aliasPattern))
       if (newSearchText.match(aliasPattern)) {
-        console.log("newSearchText", newSearchText, " has matched pattern")
         let nostrUser = await nip05.queryProfile(newSearchText)
         if (nostrUser) {
           let nostrUserProfile = await fetchNostrUser(nip19.npubEncode(nostrUser.pubkey))
