@@ -18,6 +18,8 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
+import { nip05 } from "nostr-tools"
+import { nip19 } from "nostr-tools"
 
 gql`
   query contacts {
@@ -82,9 +84,24 @@ export const ChatScreen: React.FC = () => {
   // matches the contacts name or prettyName.
   const updateSearchResults = useCallback(
     async (newSearchText: string) => {
+      console.log("inside search with value", newSearchText)
       setRefreshing(true)
       setSearchText(newSearchText)
       setMatchingContacts([])
+      let aliasPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
+      console.log("does pattern match?", newSearchText.match(aliasPattern))
+      if (newSearchText.match(aliasPattern)) {
+        console.log("newSearchText", newSearchText, " has matched pattern")
+        let nostrUser = await nip05.queryProfile(newSearchText)
+        if (nostrUser) {
+          let nostrUserProfile = await fetchNostrUser(nip19.npubEncode(nostrUser.pubkey))
+          if (nostrUserProfile) {
+            setNostrProfiles([nostrUserProfile])
+            setRefreshing(false)
+            return
+          }
+        }
+      }
       if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
         try {
           let nostrProfile = await fetchNostrUser(newSearchText as `npub1${string}`)
