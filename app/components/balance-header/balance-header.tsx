@@ -54,6 +54,7 @@ type Props = {
   isContentVisible: boolean
   setIsContentVisible: React.Dispatch<React.SetStateAction<boolean>>
   breezBalance: number | null
+  walletType?: "btc" | "usd"
 }
 
 export const BalanceHeader: React.FC<Props> = ({
@@ -61,6 +62,7 @@ export const BalanceHeader: React.FC<Props> = ({
   isContentVisible,
   setIsContentVisible,
   breezBalance,
+  walletType,
 }) => {
   const styles = useStyles()
 
@@ -97,8 +99,8 @@ export const BalanceHeader: React.FC<Props> = ({
     if (usdBalanceInDisplayCurrency && btcBalanceInDisplayCurrency) {
       balanceInDisplayCurrency = formatMoneyAmount({
         moneyAmount: addMoneyAmounts({
-          a: usdBalanceInDisplayCurrency,
-          b: btcBalanceInDisplayCurrency,
+          a: walletType === "btc" ? toUsdMoneyAmount(0) : usdBalanceInDisplayCurrency,
+          b: walletType === "usd" ? toBtcMoneyAmount(0) : btcBalanceInDisplayCurrency,
         }),
       })
     }

@@ -250,13 +250,13 @@ export const HomeScreen: React.FC = () => {
     },
   ]
 
-  if (!isIos || dataUnauthed?.globals?.network !== "mainnet") {
-    buttons.unshift({
-      title: LL.ConversionDetailsScreen.title(),
-      target: "conversionDetails" as Target,
-      icon: "transfer" as IconNamesType,
-    })
-  }
+  // if (!isIos || dataUnauthed?.globals?.network !== "mainnet") {
+  buttons.unshift({
+    title: LL.ConversionDetailsScreen.title(),
+    target: "conversionDetails" as Target,
+    icon: "transfer" as IconNamesType,
+  })
+  // }
 
   const AccountCreationNeededModal = (
     <Modal
