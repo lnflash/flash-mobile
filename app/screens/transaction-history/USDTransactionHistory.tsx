@@ -15,7 +15,6 @@ import { groupTransactionsByDate } from "@app/graphql/transactions"
 
 // utils
 import { toastShow } from "../../utils/toast"
-import { BalanceHeader } from "@app/components/balance-header"
 
 export const USDTransactionHistory: React.FC = () => {
   const {
@@ -23,8 +22,6 @@ export const USDTransactionHistory: React.FC = () => {
   } = useTheme()
   const styles = useStyles()
   const { LL } = useI18nContext()
-
-  const [isContentVisible, setIsContentVisible] = React.useState(false)
 
   const { data, error, fetchMore, refetch, loading } =
     useTransactionListForDefaultAccountQuery({ skip: !useIsAuthed() })
@@ -59,51 +56,43 @@ export const USDTransactionHistory: React.FC = () => {
         <ActivityIndicator color={colors.primary} size={"large"} />
       </View>
     )
-  }
-  return (
-    <Screen>
-      <View style={[styles.header, styles.container]}>
-        <BalanceHeader
-          isContentVisible={isContentVisible}
-          setIsContentVisible={setIsContentVisible}
-          loading={loading}
-          breezBalance={0}
-          walletType="usd"
+  } else {
+    return (
+      <Screen>
+        <SectionList
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index, section }) => (
+            <TransactionItem
+              tx={item}
+              key={`txn-${item.id}`}
+              subtitle
+              isFirst={index === 0}
+              isLast={index === section.data.length - 1}
+            />
+          )}
+          initialNumToRender={20}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={styles.sectionHeaderContainer}>
+              <Text style={styles.sectionHeaderText}>{title}</Text>
+            </View>
+          )}
+          ListEmptyComponent={
+            <View style={styles.noTransactionView}>
+              <Text style={styles.noTransactionText}>
+                {LL.TransactionScreen.noTransaction()}
+              </Text>
+            </View>
+          }
+          sections={transactionSections}
+          keyExtractor={(item) => item.id}
+          onEndReached={fetchNextTransactionsPage}
+          onEndReachedThreshold={0.5}
+          onRefresh={refetch}
+          refreshing={loading}
         />
-      </View>
-      <SectionList
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index, section }) => (
-          <TransactionItem
-            tx={item}
-            key={`txn-${item.id}`}
-            subtitle
-            isFirst={index === 0}
-            isLast={index === section.data.length - 1}
-          />
-        )}
-        initialNumToRender={20}
-        renderSectionHeader={({ section: { title } }) => (
-          <View style={styles.sectionHeaderContainer}>
-            <Text style={styles.sectionHeaderText}>{title}</Text>
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={styles.noTransactionView}>
-            <Text style={styles.noTransactionText}>
-              {LL.TransactionScreen.noTransaction()}
-            </Text>
-          </View>
-        }
-        sections={transactionSections}
-        keyExtractor={(item) => item.id}
-        onEndReached={fetchNextTransactionsPage}
-        onEndReachedThreshold={0.5}
-        onRefresh={refetch}
-        refreshing={loading}
-      />
-    </Screen>
-  )
+      </Screen>
+    )
+  }
 }
 
 const useStyles = makeStyles(({ colors }) => ({
@@ -128,17 +117,5 @@ const useStyles = makeStyles(({ colors }) => ({
   sectionHeaderText: {
     color: colors.black,
     fontSize: 18,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 120,
-  },
-  error: {
-    alignSelf: "center",
-    color: colors.error,
-  },
-  container: {
-    marginHorizontal: 20,
   },
 }))

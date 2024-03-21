@@ -16,12 +16,10 @@ import { groupTransactionsByDate } from "@app/graphql/transactions"
 import { listPaymentsBreezSDK } from "@app/utils/breez-sdk"
 import { Payment } from "@breeztech/react-native-breez-sdk"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
-import useBreezBalance from "@app/hooks/useBreezBalance"
 
 // types
 import { toBtcMoneyAmount } from "@app/types/amounts"
 import { SectionTransactions } from "./index.types"
-import { BalanceHeader } from "@app/components/balance-header"
 
 export const BTCTransactionHistory: React.FC = () => {
   const {
@@ -32,11 +30,6 @@ export const BTCTransactionHistory: React.FC = () => {
   const { convertMoneyAmount } = usePriceConversion()
   const [breezLoading, setBreezLoading] = React.useState(false)
   const [txsList, setTxsList] = React.useState<SectionTransactions[]>([])
-
-  // Adding in Balance Header
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [breezBalance, refreshBreezBalance] = useBreezBalance()
-  const [isContentVisible, setIsContentVisible] = React.useState(false)
 
   React.useEffect(() => {
     fetchPaymentsBreez()
@@ -78,47 +71,40 @@ export const BTCTransactionHistory: React.FC = () => {
         <ActivityIndicator color={colors.primary} size={"large"} />
       </View>
     )
-  }
-  return (
-    <Screen>
-      <View style={[styles.header, styles.container]}>
-        <BalanceHeader
-          isContentVisible={isContentVisible}
-          setIsContentVisible={setIsContentVisible}
-          breezBalance={breezBalance}
-          walletType="btc"
+  } else {
+    return (
+      <Screen>
+        <SectionList
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index, section }) => (
+            <BreezTransactionItem
+              tx={item}
+              key={`transaction-${item.id}`}
+              subtitle
+              isFirst={index === 0}
+              isLast={index === section.data.length - 1}
+            />
+          )}
+          initialNumToRender={20}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={styles.sectionHeaderContainer}>
+              <Text style={styles.sectionHeaderText}>{title}</Text>
+            </View>
+          )}
+          ListEmptyComponent={
+            <View style={styles.noTransactionView}>
+              <Text style={styles.noTransactionText}>
+                {LL.TransactionScreen.noTransaction()}
+              </Text>
+            </View>
+          }
+          sections={txsList}
+          keyExtractor={(item) => item.id}
+          onEndReachedThreshold={0.5}
         />
-      </View>
-      <SectionList
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index, section }) => (
-          <BreezTransactionItem
-            tx={item}
-            key={`transaction-${item.id}`}
-            subtitle
-            isFirst={index === 0}
-            isLast={index === section.data.length - 1}
-          />
-        )}
-        initialNumToRender={20}
-        renderSectionHeader={({ section: { title } }) => (
-          <View style={styles.sectionHeaderContainer}>
-            <Text style={styles.sectionHeaderText}>{title}</Text>
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={styles.noTransactionView}>
-            <Text style={styles.noTransactionText}>
-              {LL.TransactionScreen.noTransaction()}
-            </Text>
-          </View>
-        }
-        sections={txsList}
-        keyExtractor={(item) => item.id}
-        onEndReachedThreshold={0.5}
-      />
-    </Screen>
-  )
+      </Screen>
+    )
+  }
 }
 
 const useStyles = makeStyles(({ colors }) => ({
@@ -140,17 +126,5 @@ const useStyles = makeStyles(({ colors }) => ({
   sectionHeaderText: {
     color: colors.black,
     fontSize: 18,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 120,
-  },
-  error: {
-    alignSelf: "center",
-    color: colors.error,
-  },
-  container: {
-    marginHorizontal: 20,
   },
 }))
