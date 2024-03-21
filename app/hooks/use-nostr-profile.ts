@@ -231,13 +231,19 @@ const useNostrProfile = () => {
     let userId = nip19.decode(await getPubkey()).data as string
     let recipient = nip19.decode(recipientId).data as string
     let filterSent = {
-      "authors": [recipient, userId],
-      "#p": [recipient, userId],
+      "authors": [userId],
+      "#p": [recipient],
       "kinds": [4],
     }
-    console.log("fetchMessageEvent", filterSent)
+    let filterReceived = {
+      "authors": [recipient],
+      "#p": [userId],
+      "kinds": [4],
+    }
     const pool = new SimplePool()
-    let events = await pool.querySync(relays, filterSent)
+    const sentEvents = await pool.querySync(relays, filterSent)
+    const receivedEvents = await pool.querySync(relays, filterReceived)
+    const events = [...sentEvents, ...receivedEvents]
     pool.close(relays)
     let messages = await Promise.all(
       events.map(async (event) => {

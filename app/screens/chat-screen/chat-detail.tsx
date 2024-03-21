@@ -154,7 +154,14 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
               })
             }
           />
-          <Image source={{ uri: picture || "" }} style={styles.userPic} />
+          <Image
+            source={{
+              uri:
+                picture ||
+                "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
+            }}
+            style={styles.userPic}
+          />
         </View>
       </View>
       {!initialized && <ActivityIndicator />}
