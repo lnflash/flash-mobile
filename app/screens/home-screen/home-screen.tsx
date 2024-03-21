@@ -467,7 +467,7 @@ const useStyles = makeStyles(({ colors }) => ({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    height: 120,
+    marginVertical: 20,
   },
   error: {
     alignSelf: "center",

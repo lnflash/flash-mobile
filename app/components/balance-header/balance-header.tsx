@@ -26,7 +26,7 @@ type Props = {
   setIsContentVisible: React.Dispatch<React.SetStateAction<boolean>>
   breezBalance: number | null
   walletType?: "btc" | "usd"
-  isTransactionScreen?: boolean
+  smallText?: boolean
 }
 
 export const BalanceHeader: React.FC<Props> = ({
@@ -35,7 +35,7 @@ export const BalanceHeader: React.FC<Props> = ({
   setIsContentVisible,
   breezBalance,
   walletType,
-  isTransactionScreen,
+  smallText,
 }) => {
   const isAuthed = useIsAuthed()
   const { formatMoneyAmount } = useDisplayCurrency()
@@ -76,41 +76,39 @@ export const BalanceHeader: React.FC<Props> = ({
   if (!isContentVisible) {
     return (
       <Wrapper
-        isTransactionScreen={isTransactionScreen}
+        smallText={smallText}
         onPress={() => setIsContentVisible(!isContentVisible)}
         activeOpacity={0.5}
       >
         {loading ? (
           <Loader />
         ) : (
-          <Text isTransactionScreen={isTransactionScreen}>
-            {balanceInDisplayCurrency}
-          </Text>
+          <Text smallText={smallText}>{balanceInDisplayCurrency}</Text>
         )}
       </Wrapper>
     )
   } else {
     return (
       <Wrapper
-        isTransactionScreen={isTransactionScreen}
+        smallText={smallText}
         onPress={() => setIsContentVisible(!isContentVisible)}
         activeOpacity={0.5}
       >
-        <Text isTransactionScreen={isTransactionScreen}>****</Text>
+        <Text smallText={smallText}>****</Text>
       </Wrapper>
     )
   }
 }
 
-const Wrapper = styled.TouchableOpacity<{ isTransactionScreen?: boolean }>`
+const Wrapper = styled.TouchableOpacity<{ smallText?: boolean }>`
   flex: 1;
   align-items: center;
   justify-content: center;
-  margin-bottom: ${({ isTransactionScreen }) => (isTransactionScreen ? 0 : "4px")};
+  margin-bottom: ${({ smallText }) => (smallText ? 0 : "4px")};
 `
 
-const Text = styled.Text<{ isTransactionScreen?: boolean }>`
-  font-size: ${({ isTransactionScreen }) => (isTransactionScreen ? "22px" : "32px")};
+const Text = styled.Text<{ smallText?: boolean }>`
+  font-size: ${({ smallText }) => (smallText ? "22px" : "32px")};
   color: #000;
 `
 
