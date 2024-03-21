@@ -235,6 +235,7 @@ const useNostrProfile = () => {
       "#p": [recipient, userId],
       "kinds": [4],
     }
+    console.log("fetchMessageEvent", filterSent)
     const pool = new SimplePool()
     let events = await pool.querySync(relays, filterSent)
     pool.close(relays)
