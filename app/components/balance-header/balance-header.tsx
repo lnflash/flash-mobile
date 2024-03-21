@@ -1,53 +1,24 @@
 import * as React from "react"
+import styled from "styled-components/native"
 import ContentLoader, { Rect } from "react-content-loader/native"
-import { TouchableOpacity, View } from "react-native"
+import { makeStyles } from "@rneui/themed"
 
-import { gql } from "@apollo/client"
+// gql
 import { useBalanceHeaderQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { getUsdWallet } from "@app/graphql/wallets-utils"
+
+// hooks
 import { usePriceConversion } from "@app/hooks"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
-import { makeStyles, Text } from "@rneui/themed"
 
-import HideableArea from "../hideable-area/hideable-area"
+// utils
 import {
   DisplayCurrency,
   addMoneyAmounts,
   toBtcMoneyAmount,
   toUsdMoneyAmount,
 } from "@app/types/amounts"
-import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
-
-const Loader = () => {
-  const styles = useStyles()
-  return (
-    <ContentLoader
-      height={40}
-      width={100}
-      speed={1.2}
-      backgroundColor={styles.loaderBackground.color}
-      foregroundColor={styles.loaderForefound.color}
-    >
-      <Rect x="0" y="0" rx="4" ry="4" width="100" height="40" />
-    </ContentLoader>
-  )
-}
-
-gql`
-  query balanceHeader {
-    me {
-      id
-      defaultAccount {
-        id
-        wallets {
-          id
-          balance
-          walletCurrency
-        }
-      }
-    }
-  }
-`
 
 type Props = {
   loading?: boolean
@@ -55,6 +26,7 @@ type Props = {
   setIsContentVisible: React.Dispatch<React.SetStateAction<boolean>>
   breezBalance: number | null
   walletType?: "btc" | "usd"
+  isTransactionScreen?: boolean
 }
 
 export const BalanceHeader: React.FC<Props> = ({
@@ -63,9 +35,8 @@ export const BalanceHeader: React.FC<Props> = ({
   setIsContentVisible,
   breezBalance,
   walletType,
+  isTransactionScreen,
 }) => {
-  const styles = useStyles()
-
   const isAuthed = useIsAuthed()
   const { formatMoneyAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
@@ -81,13 +52,9 @@ export const BalanceHeader: React.FC<Props> = ({
   let balanceInDisplayCurrency = "$0.00"
 
   if (isAuthed) {
-    const btcWallet = getBtcWallet(data?.me?.defaultAccount?.wallets)
     const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
     const usdWalletBalance = toUsdMoneyAmount(usdWallet?.balance)
-
-    // const btcWalletBalance = toBtcMoneyAmount(btcWallet?.balance)
-    // add Breez SDK Balance
     const btcWalletBalance = toBtcMoneyAmount(breezBalance ?? NaN)
 
     const btcBalanceInDisplayCurrency =
@@ -106,74 +73,67 @@ export const BalanceHeader: React.FC<Props> = ({
     }
   }
 
-  const toggleIsContentVisible = () => {
-    setIsContentVisible((prevState) => !prevState)
-  }
-
-  return (
-    <View style={styles.balanceHeaderContainer}>
-      <HideableArea
-        isContentVisible={isContentVisible}
-        hiddenContent={
-          <TouchableOpacity
-            onPress={toggleIsContentVisible}
-            style={styles.hiddenBalanceTouchableOpacity}
-          >
-            <Text style={styles.balanceHiddenText}>****</Text>
-          </TouchableOpacity>
-        }
+  if (!isContentVisible) {
+    return (
+      <Wrapper
+        isTransactionScreen={isTransactionScreen}
+        onPress={() => setIsContentVisible(!isContentVisible)}
+        activeOpacity={0.5}
       >
-        <View style={styles.balancesContainer}>
-          <TouchableOpacity onPress={toggleIsContentVisible}>
-            <View style={styles.marginBottom}>
-              {loading ? (
-                <Loader />
-              ) : (
-                <Text style={styles.primaryBalanceText}>{balanceInDisplayCurrency}</Text>
-              )}
-            </View>
-          </TouchableOpacity>
-        </View>
-      </HideableArea>
-    </View>
+        {loading ? (
+          <Loader />
+        ) : (
+          <Text isTransactionScreen={isTransactionScreen}>
+            {balanceInDisplayCurrency}
+          </Text>
+        )}
+      </Wrapper>
+    )
+  } else {
+    return (
+      <Wrapper
+        isTransactionScreen={isTransactionScreen}
+        onPress={() => setIsContentVisible(!isContentVisible)}
+        activeOpacity={0.5}
+      >
+        <Text isTransactionScreen={isTransactionScreen}>****</Text>
+      </Wrapper>
+    )
+  }
+}
+
+const Wrapper = styled.TouchableOpacity<{ isTransactionScreen?: boolean }>`
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: ${({ isTransactionScreen }) => (isTransactionScreen ? 0 : "4px")};
+`
+
+const Text = styled.Text<{ isTransactionScreen?: boolean }>`
+  font-size: ${({ isTransactionScreen }) => (isTransactionScreen ? "22px" : "32px")};
+  color: #000;
+`
+
+const Loader = () => {
+  const styles = useStyles()
+  return (
+    <ContentLoader
+      height={40}
+      width={100}
+      speed={1.2}
+      backgroundColor={styles.loaderBackground.color}
+      foregroundColor={styles.loaderForefound.color}
+    >
+      <Rect x="0" y="0" rx="4" ry="4" width="100" height="40" />
+    </ContentLoader>
   )
 }
 
 const useStyles = makeStyles(({ colors }) => ({
-  balanceHeaderContainer: {
-    flex: 1,
-    flexDirection: "column",
-    alignItems: "center",
-  },
-  balancesContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  marginBottom: {
-    marginBottom: 4,
-  },
-  hiddenBalanceTouchableOpacity: {
-    alignItems: "center",
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-  primaryBalanceText: {
-    fontSize: 32,
-  },
   loaderBackground: {
     color: colors.loaderBackground,
   },
   loaderForefound: {
     color: colors.loaderForeground,
-  },
-  balanceHiddenText: {
-    fontSize: 32,
-    fontWeight: "bold",
   },
 }))
