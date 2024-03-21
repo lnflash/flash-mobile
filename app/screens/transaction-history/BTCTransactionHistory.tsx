@@ -9,12 +9,7 @@ import { Screen } from "@app/components/screen"
 import { BreezTransactionItem } from "@app/components/transaction-item/breez-transaction-item"
 
 // graphql
-import {
-  WalletCurrency,
-  useHomeAuthedQuery,
-  useHomeUnauthedQuery,
-  useRealtimePriceQuery,
-} from "@app/graphql/generated"
+import { WalletCurrency } from "@app/graphql/generated"
 import { groupTransactionsByDate } from "@app/graphql/transactions"
 
 // Breez SDK
@@ -27,35 +22,20 @@ import useBreezBalance from "@app/hooks/useBreezBalance"
 import { toBtcMoneyAmount } from "@app/types/amounts"
 import { SectionTransactions } from "./index.types"
 import { BalanceHeader } from "@app/components/balance-header"
-import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 export const BTCTransactionHistory: React.FC = () => {
   const {
     theme: { colors },
   } = useTheme()
   const styles = useStyles()
-  const isAuthed = useIsAuthed()
   const { LL } = useI18nContext()
   const { convertMoneyAmount } = usePriceConversion()
   const [breezLoading, setBreezLoading] = React.useState(false)
   const [txsList, setTxsList] = React.useState<SectionTransactions[]>([])
 
   // Adding in Balance Header
-  const { loading: loadingAuthed } = useHomeAuthedQuery({
-    skip: !isAuthed,
-    fetchPolicy: "network-only",
-    errorPolicy: "all",
-    nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
-  })
-  const { loading: loadingPrice } = useRealtimePriceQuery({
-    skip: !isAuthed,
-    fetchPolicy: "network-only",
-    nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
-  })
-  const { loading: loadingUnauthed } = useHomeUnauthedQuery()
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [breezBalance, refreshBreezBalance] = useBreezBalance()
-  const loading = (loadingAuthed || loadingPrice || loadingUnauthed) && isAuthed
   const [isContentVisible, setIsContentVisible] = React.useState(false)
 
   React.useEffect(() => {
@@ -105,7 +85,6 @@ export const BTCTransactionHistory: React.FC = () => {
         <BalanceHeader
           isContentVisible={isContentVisible}
           setIsContentVisible={setIsContentVisible}
-          loading={loading}
           breezBalance={breezBalance}
           walletType="btc"
         />

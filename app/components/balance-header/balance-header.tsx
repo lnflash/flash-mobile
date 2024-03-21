@@ -50,7 +50,7 @@ gql`
 `
 
 type Props = {
-  loading: boolean
+  loading?: boolean
   isContentVisible: boolean
   setIsContentVisible: React.Dispatch<React.SetStateAction<boolean>>
   breezBalance: number | null

@@ -17,9 +17,6 @@ import { groupTransactionsByDate } from "@app/graphql/transactions"
 import { toastShow } from "../../utils/toast"
 import { BalanceHeader } from "@app/components/balance-header"
 
-// Breez SDK
-import useBreezBalance from "@app/hooks/useBreezBalance"
-
 export const USDTransactionHistory: React.FC = () => {
   const {
     theme: { colors },
@@ -27,10 +24,6 @@ export const USDTransactionHistory: React.FC = () => {
   const styles = useStyles()
   const { LL } = useI18nContext()
 
-  // Adding in Balance Header
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [breezBalance, refreshBreezBalance] = useBreezBalance()
   const [isContentVisible, setIsContentVisible] = React.useState(false)
 
   const { data, error, fetchMore, refetch, loading } =
@@ -74,7 +67,7 @@ export const USDTransactionHistory: React.FC = () => {
           isContentVisible={isContentVisible}
           setIsContentVisible={setIsContentVisible}
           loading={loading}
-          breezBalance={breezBalance}
+          breezBalance={0}
           walletType="usd"
         />
       </View>
