@@ -95,6 +95,7 @@ import {
   BackupOptions,
   TransactionHistoryTabs,
 } from "@app/screens"
+import IntroScreen from "@app/components/intro-screen/intro-screen"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -131,8 +132,16 @@ export const RootStack = () => {
         headerBackTitleStyle: styles.title,
         headerTintColor: colors.black,
       }}
-      initialRouteName={isAuthed ? "authenticationCheck" : "getStarted"}
+      // initialRouteName={isAuthed ? "authenticationCheck" : "getStarted"}
+      // Set 'IntroScreen' as the initial route
+      initialRouteName="IntroScreen"
     >
+      {/* Intro Screen route */}
+      <RootNavigator.Screen
+        name="IntroScreen"
+        component={IntroScreen}
+        options={{ headerShown: false }}
+      />
       <RootNavigator.Screen
         name="getStarted"
         component={GetStartedScreen}
