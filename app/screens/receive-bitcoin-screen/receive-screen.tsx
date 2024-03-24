@@ -36,6 +36,15 @@ import { testProps } from "../../utils/testProps"
 // types
 import { Invoice, InvoiceType, PaymentRequestState } from "./payment/index.types"
 
+import Sound from "react-native-sound"
+
+// Load the sound file
+const paymentReceivedSound = new Sound("coins", Sound.MAIN_BUNDLE, (error) => {
+  if (error) {
+    console.log("Failed to load the sound", error)
+  }
+})
+
 type Props = {
   route: RouteProp<RootStackParamList, "receiveBitcoin">
 }
@@ -154,6 +163,14 @@ const ReceiveScreen = ({ route }: Props) => {
             navigation.goBack()
           }
         }, 5000)
+        // Play the sound
+        if (paymentReceivedSound) {
+          paymentReceivedSound.play((success) => {
+            if (!success) {
+              console.log("Failed to play the sound.")
+            }
+          })
+        }
         return () => clearTimeout(id)
       }
     }
