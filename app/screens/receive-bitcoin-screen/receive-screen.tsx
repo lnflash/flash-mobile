@@ -9,6 +9,7 @@ import { useReceiveBitcoin } from "./use-receive-bitcoin"
 import { useAppSelector } from "@app/store/redux"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import nfcManager from "react-native-nfc-manager"
+import Sound from "react-native-sound"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -35,8 +36,6 @@ import { testProps } from "../../utils/testProps"
 
 // types
 import { Invoice, InvoiceType, PaymentRequestState } from "./payment/index.types"
-
-import Sound from "react-native-sound"
 
 // Load the sound file
 const paymentReceivedSound = new Sound("coins", Sound.MAIN_BUNDLE, (error) => {
