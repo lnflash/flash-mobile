@@ -10,6 +10,7 @@ import { useAppSelector } from "@app/store/redux"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import nfcManager from "react-native-nfc-manager"
 import Sound from "react-native-sound"
+import { useAppConfig } from "@app/hooks"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -57,6 +58,7 @@ const ReceiveScreen = ({ route }: Props) => {
   const { LL } = useI18nContext()
   const navigation = useNavigation()
 
+  const { appConfig } = useAppConfig()
   const isAuthed = useIsAuthed()
   const isFocused = useIsFocused()
 
@@ -386,6 +388,15 @@ const ReceiveScreen = ({ route }: Props) => {
                   amount: 2501,
                   currency: "BTC",
                   currencyCode: "SAT",
+                }
+              : undefined
+          }
+          maxAmount={
+            appConfig.galoyInstance.name === "Staging"
+              ? {
+                  amount: 500,
+                  currency: "DisplayCurrency",
+                  currencyCode: "USD",
                 }
               : undefined
           }
