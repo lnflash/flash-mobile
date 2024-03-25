@@ -94,8 +94,8 @@ import {
   ImportWallet,
   BackupOptions,
   TransactionHistoryTabs,
+  IntroScreen,
 } from "@app/screens"
-import IntroScreen from "@app/components/intro-screen/intro-screen"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
