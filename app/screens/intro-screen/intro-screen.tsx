@@ -1,17 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// In IntroScreen.tsx
 import React, { useEffect, useState } from "react"
 import { View, StyleSheet } from "react-native"
 import Video from "react-native-video"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-
-type RootStackParamList = {
-  IntroScreen: undefined
-  getStarted: undefined
-  authenticationCheck: undefined
-}
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 type IntroScreenProps = {
   navigation: StackNavigationProp<RootStackParamList, "IntroScreen">
