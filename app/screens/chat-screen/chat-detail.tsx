@@ -61,7 +61,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
           let messageHistory = await fetchMessagesWith(chat.id as `npub1${string}`)
           console.log("messages", messages)
           setMessages([...messageHistory, ...messages] as MessageType.Text[])
-        }, 5000)
+        }, 10000)
         return () => clearInterval(interval)
       }
       setInitialized(true)
