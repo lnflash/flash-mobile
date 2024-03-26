@@ -2933,6 +2933,29 @@ export type SendBitcoinDestinationQuery = {
   } | null
 }
 
+export type MeQueryVariables = Exact<{
+  username: Scalars["Username"]
+}>
+
+export type MeQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly defaultAccount: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly defaultWalletId: string
+      readonly wallets: {
+        readonly id: string
+        readonly lnurlp: string
+        readonly walletCurrency: WalletCurrency
+        readonly balance: number
+      }
+    }
+  }
+}
+
 export type AccountDefaultWalletQueryVariables = Exact<{
   username: Scalars["Username"]
 }>
@@ -6576,6 +6599,23 @@ export type SendBitcoinDestinationQueryResult = Apollo.QueryResult<
   SendBitcoinDestinationQuery,
   SendBitcoinDestinationQueryVariables
 >
+export const MeDocument = gql`
+  query me {
+    me {
+      createdAt
+      defaultAccount {
+        id
+        defaultWalletId
+        wallets {
+          id
+          lnurlp
+          walletCurrency
+          balance
+        }
+      }
+    }
+  }
+`
 export const AccountDefaultWalletDocument = gql`
   query accountDefaultWallet($username: Username!) {
     accountDefaultWallet(username: $username) {
@@ -6602,6 +6642,12 @@ export const AccountDefaultWalletDocument = gql`
  *   },
  * });
  */
+export function useMeQuery(
+  baseOptions: Apollo.QueryHookOptions<MeQuery, MeQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<MeQuery, MeQueryVariables>(MeDocument, options)
+}
 export function useAccountDefaultWalletQuery(
   baseOptions: Apollo.QueryHookOptions<
     AccountDefaultWalletQuery,
