@@ -55,13 +55,13 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
 
   React.useEffect(() => {
     let isMounted = true
+    let interval: NodeJS.Timeout
     async function initialize() {
       if (!initialized) {
-        const interval = setInterval(async () => {
+        interval = setInterval(async () => {
           let messageHistory = await fetchMessagesWith(chat.id as `npub1${string}`)
-          console.log("messages", messages)
           if (messageHistory.length > messages.length) {
-            setMessages([...messageHistory, ...messages] as MessageType.Text[])
+            setMessages(messageHistory as MessageType.Text[])
           }
         }, 10000)
         setInitialized(true)
@@ -72,6 +72,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
 
     return () => {
       isMounted = false
+      clearInterval(interval)
     }
   }, [])
 
