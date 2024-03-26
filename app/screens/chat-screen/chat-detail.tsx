@@ -60,11 +60,13 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
         const interval = setInterval(async () => {
           let messageHistory = await fetchMessagesWith(chat.id as `npub1${string}`)
           console.log("messages", messages)
-          setMessages([...messageHistory, ...messages] as MessageType.Text[])
+          if (messageHistory.length > messages.length) {
+            setMessages([...messageHistory, ...messages] as MessageType.Text[])
+          }
         }, 10000)
+        setInitialized(true)
         return () => clearInterval(interval)
       }
-      setInitialized(true)
     }
     initialize()
 
