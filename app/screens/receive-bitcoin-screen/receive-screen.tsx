@@ -25,7 +25,7 @@ import { CustomIcon } from "@app/components/custom-icon"
 import { ModalNfc } from "@app/components/modal-nfc"
 
 // gql
-import { WalletCurrency, useMeQuery } from "@app/graphql/generated"
+import { WalletCurrency, useWalletsQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 // breez-sdk
@@ -71,9 +71,7 @@ const ReceiveScreen = ({ route }: Props) => {
   )
 
   // query
-  const { data, loading, error } = useMeQuery({
-    variables: { username: userData?.username },
-  })
+  const { data, loading, error } = useWalletsQuery()
   const wallets: any = data?.me?.defaultAccount.wallets
   const usdWallet = wallets?.find((el: any) => el.walletCurrency === WalletCurrency.Usd)
 
