@@ -1,13 +1,10 @@
 /* eslint-disable camelcase */
 /* eslint-disable react-hooks/exhaustive-deps */
 import "react-native-get-random-values"
-import React, { useEffect, useCallback, useRef } from "react"
+import React, { useEffect, useRef } from "react"
 import { View, Text } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { MessageType } from "@flyerhq/react-native-chat-ui"
-import useNostrProfile from "@app/hooks/use-nostr-profile"
-import { Colors } from "react-native/Libraries/NewAppScreen"
-import { color } from "@rneui/base"
 
 type Props = {
   recipientId: `npub1${string}`
@@ -32,7 +29,7 @@ export const ChatMessage: React.FC<Props> = ({ message, recipientId }) => {
       <Text
         style={{
           ...styles.content,
-          color: recipientId === message.author.id ? "#000000" : "#ffffff",
+          color: recipientId !== message.author.id ? "#ffffff" : "#000000",
         }}
       >
         {message.text}

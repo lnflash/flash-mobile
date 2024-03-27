@@ -112,25 +112,11 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
     )
   }
 
-  const handlePreviewDataFetched = ({
-    message,
-    previewData,
-  }: {
-    message: MessageType.Text
-    previewData: PreviewData
-  }) => {
-    // setMessages(
-    //   messages.map<MessageType.Any>((m) =>
-    //     m.id === message.id ? { ...m, previewData } : m,
-    //   ),
-    // )
-  }
-
   const handleSendPress = async (message: MessageType.PartialText) => {
     const textMessage: MessageType.Text = {
       author: user,
       createdAt: Date.now(),
-      id: uuidv4(),
+      id: user.id,
       text: message.text,
       type: "text",
     }
@@ -175,7 +161,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
           <Chat
             messages={messages}
             onAttachmentPress={handleImageSelection}
-            onPreviewDataFetched={handlePreviewDataFetched}
+            onPreviewDataFetched={() => {}}
             onSendPress={handleSendPress}
             l10nOverride={{
               emptyChatPlaceholder: initialized

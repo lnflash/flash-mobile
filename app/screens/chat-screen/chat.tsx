@@ -48,6 +48,7 @@ export const ChatScreen: React.FC = () => {
 
   const [matchingContacts, setMatchingContacts] = useState<Contact[]>([])
   const [nostrProfiles, setNostrProfiles] = useState<NostrProfile[]>([])
+  const [messagedUsers, setMessagedUsers] = useState<NostrProfile[]>([])
   const [searchText, setSearchText] = useState("")
   const [refreshing, setRefreshing] = useState(false)
   const [initialized, setInitialized] = useState(false)
@@ -68,17 +69,25 @@ export const ChatScreen: React.FC = () => {
   const reset = useCallback(() => {
     setSearchText("")
     setMatchingContacts(contacts)
+    setNostrProfiles(messagedUsers)
   }, [contacts])
 
   React.useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", async () => {
+      setInitialized(false)
+      initialize()
+    })
     async function initialize() {
+      console.log("Initializing chat screen use effect")
       setMatchingContacts(contacts)
       let messagedUsers = await retrieveMessagedUsers()
+      setMessagedUsers(messagedUsers)
       setNostrProfiles(messagedUsers)
       setInitialized(true)
     }
     initialize()
-  }, [contacts])
+    return unsubscribe
+  }, [])
 
   // This implementation of search will cause a match if any word in the search text
   // matches the contacts name or prettyName.
@@ -110,7 +119,7 @@ export const ChatScreen: React.FC = () => {
         return
       }
       setMatchingContacts([])
-      setNostrProfiles([])
+      setNostrProfiles(messagedUsers)
       try {
         if (newSearchText.length > 0) {
           const searchWordArray = newSearchText
@@ -259,7 +268,7 @@ export const ChatScreen: React.FC = () => {
             />
             <ListItem.Content>
               <ListItem.Title style={styles.itemText}>
-                {item.alias || item.username || item.name || item.id}
+                {item.alias || item.username || item.name || item.lud16 || item.id}
               </ListItem.Title>
             </ListItem.Content>
           </ListItem>
