@@ -208,7 +208,8 @@ const ReceiveScreen = ({ route }: Props) => {
   const useLnurlp =
     request.type === "PayCode" &&
     request.receivingWalletDescriptor.currency === "USD" &&
-    Boolean(lnurlp)
+    Boolean(lnurlp) &&
+    Boolean(userData.username)
 
   const handleCopy = () => {
     if (useLnurlp) {
