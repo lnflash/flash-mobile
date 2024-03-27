@@ -300,6 +300,10 @@ const useNostrProfile = () => {
     pool.close(relays)
   }
 
+  const fetchNostrPubKey = async () => {
+    return nip19.decode(await getPubkey()).data as string
+  }
+
   return {
     nostrSecretKey,
     nostrPubKey: nostrPublicKey,
@@ -309,6 +313,7 @@ const useNostrProfile = () => {
     fetchMessagesWith,
     updateNostrProfile,
     subscribeToMessages,
+    fetchNostrPubKey,
   }
 }
 

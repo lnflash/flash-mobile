@@ -44,13 +44,14 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
   const {
     theme: { colors },
   } = useTheme()
-  const { sendMessage, fetchMessagesWith, nostrPubKey, subscribeToMessages } =
+  const { sendMessage, fetchMessagesWith, nostrPubKey, fetchNostrPubKey } =
     useNostrProfile()
   const styles = useStyles()
   const { name, username, picture } = chat
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
   const { LL } = useI18nContext()
   const [messages, setMessages] = React.useState<MessageType.Any[]>([])
+  const [userId, setUserId] = React.useState<string>("")
   const [initialized, setInitialized] = React.useState(false)
 
   React.useEffect(() => {
@@ -64,6 +65,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
             setMessages(messageHistory as MessageType.Text[])
           }
         }, 10000)
+        setUserId(await fetchNostrPubKey())
         setInitialized(true)
         return () => clearInterval(interval)
       }
@@ -76,7 +78,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
     }
   }, [])
 
-  const user = { id: nostrPubKey }
+  const user = { id: nostrPubKey || userId }
 
   const addMessage = (message: MessageType.Any) => {
     console.log("new meesssage", message, "old messages", messages)
