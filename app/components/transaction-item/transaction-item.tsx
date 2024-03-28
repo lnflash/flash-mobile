@@ -51,11 +51,11 @@ export const useDescriptionDisplay = ({
       return "OnChain Payment"
     case "SettlementViaLn":
       if (isReceive) {
-        return `Pay to Flash Wallet User${
+        return `Received to Flash Wallet User${
           userData?.username ? ": " + userData?.username : ""
         }`
       } else {
-        return "Send"
+        return "Sent"
       }
     case "SettlementViaIntraLedger":
       return isReceive
