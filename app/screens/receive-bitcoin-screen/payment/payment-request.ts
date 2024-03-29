@@ -133,7 +133,7 @@ export const createPaymentRequest = (
         breezInvoiceData = populateFormattedNoAmountBreezInvoice
       }
 
-      const defaultMemo = `Paid to Flash Wallet User${username ? ": " + username : ""}`
+      const defaultMemo = `Pay to Flash Wallet User${username ? ": " + username : ""}`
       const amountSats = amount ? amount : 1
       const memoDetail = memo ? memo : defaultMemo
       console.log("creating breez invoice")
@@ -178,7 +178,7 @@ export const createPaymentRequest = (
 
     // Default memo
     if (!pr.memo) {
-      const defaultMemo = `Paid to Flash Wallet User${
+      const defaultMemo = `Pay to Flash Wallet User${
         pr.username ? ": " + pr.username : ""
       }`
       pr.memo = defaultMemo
