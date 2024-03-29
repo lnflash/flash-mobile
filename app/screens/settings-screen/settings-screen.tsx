@@ -330,7 +330,11 @@ export const SettingsScreen: React.FC = () => {
       icon: "help-circle",
       id: "contact-us",
       action: () => {
-        setHiddenContactMethods([SupportChannels.Telegram, SupportChannels.Mattermost])
+        setHiddenContactMethods([
+          SupportChannels.Telegram,
+          SupportChannels.Mattermost,
+          SupportChannels.StatusPage,
+        ])
         toggleIsContactModalVisible()
       },
       enabled: true,
@@ -346,6 +350,7 @@ export const SettingsScreen: React.FC = () => {
           SupportChannels.Email,
           SupportChannels.StatusPage,
           SupportChannels.WhatsApp,
+          SupportChannels.Mattermost,
         ])
 
         toggleIsContactModalVisible()
