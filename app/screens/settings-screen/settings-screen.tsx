@@ -323,7 +323,7 @@ export const SettingsScreen: React.FC = () => {
       action: () => navigation.navigate("theme"),
       enabled: true,
       greyed: false,
-      styleDivider: true,
+      // styleDivider: true,
     },
     {
       category: LL.support.contactUs(),
@@ -339,7 +339,7 @@ export const SettingsScreen: React.FC = () => {
       },
       enabled: true,
       greyed: false,
-      styleDivider: true,
+      // styleDivider: true,
     },
     {
       category: LL.support.joinTheCommunity(),
@@ -357,18 +357,18 @@ export const SettingsScreen: React.FC = () => {
       },
       enabled: true,
       greyed: false,
-      styleDivider: true,
+      // styleDivider: true,
     },
-    {
-      category: LL.SettingsScreen.rateUs({
-        storeName: isIos ? "App Store" : "Play Store",
-      }),
-      id: "leave-feedback",
-      icon: "star",
-      action: rateUs,
-      enabled: true,
-      greyed: false,
-    },
+    // {
+    //   category: LL.SettingsScreen.rateUs({
+    //     storeName: isIos ? "App Store" : "Play Store",
+    //   }),
+    //   id: "leave-feedback",
+    //   icon: "star",
+    //   action: rateUs,
+    //   enabled: true,
+    //   greyed: false,
+    // },
   ]
 
   return (
