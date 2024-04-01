@@ -39,6 +39,7 @@ import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 import { ShowNostrSecret } from "./show-nostr-secret"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { updateSettings } from "@app/store/redux/slices/settingsSlice"
+import { save } from "@app/utils/storage"
 
 gql`
   query walletCSVTransactions($walletIds: [WalletId!]!) {
@@ -264,6 +265,7 @@ export const SettingsScreen: React.FC = () => {
       id: "enableBtcWallet",
       action: () => {
         dispatch(updateSettings({ btcWalletEnabled: true }))
+        save("btcWalletEnabled", true)
       },
       enabled: btcWalletEnabled ? false : true,
       chevron: btcWalletEnabled ? false : true,
