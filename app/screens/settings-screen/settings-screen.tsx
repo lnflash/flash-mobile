@@ -37,7 +37,8 @@ import { useShowWarningSecureAccount } from "./show-warning-secure-account"
 import { SetLightningAddressModal } from "@app/components/set-lightning-address-modal"
 import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 import { ShowNostrSecret } from "./show-nostr-secret"
-import { useAppSelector } from "@app/store/redux"
+import { useAppDispatch, useAppSelector } from "@app/store/redux"
+import { updateSettings } from "@app/store/redux/slices/settingsSlice"
 
 gql`
   query walletCSVTransactions($walletIds: [WalletId!]!) {
@@ -71,7 +72,8 @@ gql`
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "settings">>()
-  const { revealBtcWallet } = useAppSelector((state) => state.settings)
+  const dispatch = useAppDispatch()
+  const { btcWalletEnabled } = useAppSelector((state) => state.settings)
   const {
     theme: { colors },
   } = useTheme()
@@ -257,6 +259,16 @@ export const SettingsScreen: React.FC = () => {
       chevron: true,
     },
     {
+      category: LL.SettingsScreen.enableBtcWallet(),
+      icon: "logo-bitcoin",
+      id: "enableBtcWallet",
+      action: () => {
+        dispatch(updateSettings({ btcWalletEnabled: true }))
+      },
+      enabled: true,
+      chevron: true,
+    },
+    {
       category: LL.SettingsScreen.backup(),
       icon: "apps-outline",
       id: "backup",
@@ -298,8 +310,8 @@ export const SettingsScreen: React.FC = () => {
       id: "default-wallet",
       action: () => navigation.navigate("defaultWallet"),
       subTitleText: defaultWalletCurrency,
-      enabled: revealBtcWallet ? isAtLeastLevelZero : false,
-      greyed: revealBtcWallet ? !isAtLeastLevelZero : true,
+      enabled: btcWalletEnabled ? isAtLeastLevelZero : false,
+      greyed: btcWalletEnabled ? !isAtLeastLevelZero : true,
     },
     {
       category: LL.common.security(),
