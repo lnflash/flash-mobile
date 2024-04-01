@@ -59,7 +59,7 @@ const TransactionCountToTriggerSetDefaultAccountModal = 1
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const dispatch = useAppDispatch()
-  const { revealBtcWallet } = useAppSelector((state) => state.settings)
+  const { btcWalletEnabled } = useAppSelector((state) => state.settings)
   const {
     appConfig: {
       galoyInstance: { id: galoyInstanceId },
@@ -254,7 +254,7 @@ export const HomeScreen: React.FC = () => {
     },
   ]
 
-  if (revealBtcWallet) {
+  if (btcWalletEnabled) {
     buttons.unshift({
       title: LL.ConversionDetailsScreen.title(),
       target: "conversionDetails" as Target,
@@ -262,7 +262,7 @@ export const HomeScreen: React.FC = () => {
     })
   }
 
-  const transactions = revealBtcWallet
+  const transactions = btcWalletEnabled
     ? mergedTransactions
     : transactionsEdges.map((el) => el.node).slice(0, 5)
 
@@ -397,7 +397,7 @@ export const HomeScreen: React.FC = () => {
           </>
         ) : (
           <ActivityIndicator
-            animating={revealBtcWallet ? transactionLoading : loadingAuthed}
+            animating={btcWalletEnabled ? transactionLoading : loadingAuthed}
             size="large"
             color={colors.primary}
           />

@@ -100,7 +100,7 @@ type Props = {
 }
 
 const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
-  const { revealBtcWallet } = useAppSelector((state) => state.settings)
+  const { btcWalletEnabled } = useAppSelector((state) => state.settings)
   const {
     theme: { colors },
   } = useTheme()
@@ -242,7 +242,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
   })
 
   const toggleModal = () => {
-    if (revealBtcWallet) setIsModalVisible(!isModalVisible)
+    if (btcWalletEnabled) setIsModalVisible(!isModalVisible)
   }
 
   const chooseWallet = (wallet: Pick<Wallet, "id" | "walletCurrency">) => {
@@ -499,7 +499,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
                 <View />
               </View>
 
-              {revealBtcWallet && (
+              {btcWalletEnabled && (
                 <View style={styles.pickWalletIcon}>
                   <Icon name={"chevron-down"} size={24} color={colors.black} />
                 </View>

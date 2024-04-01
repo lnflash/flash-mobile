@@ -29,7 +29,7 @@ type Props = StackScreenProps<RootStackParamList, "BackupOptions">
 
 const BackupOptions: React.FC<Props> = ({ navigation }) => {
   const bottom = useSafeAreaInsets().bottom
-  const { revealBtcWallet } = useAppSelector((state) => state.settings)
+  const { btcWalletEnabled } = useAppSelector((state) => state.settings)
   const { LL } = useI18nContext()
   const { isAtLeastLevelZero } = useLevel()
   const [backupIsCompleted, setBackupIsCompleted] = React.useState(false)
@@ -80,7 +80,7 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
     <Wrapper>
       <Container>
         <Title>{LL.BackupOptions.title()}</Title>
-        {revealBtcWallet && (
+        {btcWalletEnabled && (
           <Btn onPress={onBackupBTCWallet}>
             <Icon
               type="ionicon"

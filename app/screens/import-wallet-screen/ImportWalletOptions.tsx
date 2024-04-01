@@ -25,7 +25,7 @@ type Props = StackScreenProps<RootStackParamList, "ImportWalletOptions">
 const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
   const insideApp = route.params?.insideApp
   const bottom = useSafeAreaInsets().bottom
-  const { revealBtcWallet } = useAppSelector((state) => state.settings)
+  const { btcWalletEnabled } = useAppSelector((state) => state.settings)
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
   const { deviceAccountEnabled } = useFeatureFlags()
@@ -110,7 +110,7 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
             : LL.ImportWalletOptions.loginOptions()}
         </Title>
 
-        {revealBtcWallet && (
+        {btcWalletEnabled && (
           <Btn onPress={onImportBTCWallet} disabled={BTCWalletImported}>
             <Icon
               type="ionicon"

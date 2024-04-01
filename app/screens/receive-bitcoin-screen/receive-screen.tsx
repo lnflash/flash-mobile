@@ -50,7 +50,7 @@ type Props = {
 }
 
 const ReceiveScreen = ({ route }: Props) => {
-  const { revealBtcWallet } = useAppSelector((state) => state.settings)
+  const { btcWalletEnabled } = useAppSelector((state) => state.settings)
   const { userData } = useAppSelector((state) => state.user)
   const {
     theme: { colors },
@@ -243,7 +243,7 @@ const ReceiveScreen = ({ route }: Props) => {
     },
   ]
 
-  if (revealBtcWallet) {
+  if (btcWalletEnabled) {
     buttons.unshift({
       id: WalletCurrency.Btc,
       text: LL.ReceiveScreen.bitcoin(),

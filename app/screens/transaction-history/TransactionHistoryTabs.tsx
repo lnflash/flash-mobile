@@ -22,7 +22,7 @@ type Props = StackScreenProps<RootStackParamList, "TransactionHistoryTabs">
 
 export const TransactionHistoryTabs: React.FC<Props> = ({ navigation, route }) => {
   const initialRouteName = route.params?.initialRouteName
-  const { revealBtcWallet } = useAppSelector((state) => state.settings)
+  const { btcWalletEnabled } = useAppSelector((state) => state.settings)
   const { LL } = useI18nContext()
   const [breezBalance] = useBreezBalance()
   const [isContentVisible, setIsContentVisible] = React.useState(false)
@@ -38,7 +38,7 @@ export const TransactionHistoryTabs: React.FC<Props> = ({ navigation, route }) =
             isContentVisible={isContentVisible}
             setIsContentVisible={setIsContentVisible}
             breezBalance={breezBalance}
-            walletType={revealBtcWallet ? activeWallet : "usd"}
+            walletType={btcWalletEnabled ? activeWallet : "usd"}
             smallText
           />
         </HeaderRight>
@@ -54,7 +54,7 @@ export const TransactionHistoryTabs: React.FC<Props> = ({ navigation, route }) =
         tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
       }}
     >
-      {revealBtcWallet && (
+      {btcWalletEnabled && (
         <Tab.Screen
           name="BTCTransactionHistory"
           component={BTCTransactionHistory}

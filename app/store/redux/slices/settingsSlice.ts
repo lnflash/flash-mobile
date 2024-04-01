@@ -1,13 +1,13 @@
 import { createSlice } from "@reduxjs/toolkit"
 
 interface SettingsSlice {
-  revealBtcWallet: boolean
+  btcWalletEnabled: boolean
   loading: boolean
   error: string
 }
 
 const initialState: SettingsSlice = {
-  revealBtcWallet: false,
+  btcWalletEnabled: false,
   loading: false,
   error: "",
 }
