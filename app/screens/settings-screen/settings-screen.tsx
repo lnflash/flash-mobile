@@ -265,8 +265,9 @@ export const SettingsScreen: React.FC = () => {
       action: () => {
         dispatch(updateSettings({ btcWalletEnabled: true }))
       },
-      enabled: true,
-      chevron: true,
+      enabled: btcWalletEnabled ? false : true,
+      chevron: btcWalletEnabled ? false : true,
+      greyed: btcWalletEnabled ? true : false,
     },
     {
       category: LL.SettingsScreen.backup(),
