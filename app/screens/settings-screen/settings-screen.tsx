@@ -334,6 +334,7 @@ export const SettingsScreen: React.FC = () => {
           SupportChannels.Telegram,
           SupportChannels.Mattermost,
           SupportChannels.StatusPage,
+          SupportChannels.WhatsApp,
         ])
         toggleIsContactModalVisible()
       },
