@@ -1,4 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit"
+import { AppThunk } from ".."
+import { loadJson } from "@app/utils/storage"
 
 interface SettingsSlice {
   btcWalletEnabled: boolean
@@ -37,3 +39,8 @@ export const settingsSlice = createSlice({
 export const { updateSettings, setLoading, setError, resetSettingsSlice } =
   settingsSlice.actions
 export default settingsSlice.reducer
+
+export const getSettingsData = (): AppThunk => async (dispatch, getState) => {
+  const res = await loadJson("btcWalletEnabled")
+  dispatch(updateSettings({ btcWalletEnabled: res }))
+}
