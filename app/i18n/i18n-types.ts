@@ -7141,6 +7141,7 @@ export type TranslationFunctions = {
 		 * Bye!
 		 */
 		bye: () => LocalizedString
+		disableBtcWallet: () => LocalizedString
 	}
 	lnurl: {
 		/**
