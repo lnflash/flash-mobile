@@ -532,7 +532,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
               maxAmount={
                 appConfig.galoyInstance.name === "Staging"
                   ? {
-                      amount: 500,
+                      amount: 2500,
                       currency: "DisplayCurrency",
                       currencyCode: "USD",
                     }
