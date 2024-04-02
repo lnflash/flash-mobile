@@ -421,7 +421,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
   if (appConfig.galoyInstance.name === "Staging") {
     const maxAmountInPrimaryCurrency = convertMoneyAmount(
       {
-        amount: 500,
+        amount: 2500,
         currency: "DisplayCurrency",
         currencyCode: "USD",
       },
