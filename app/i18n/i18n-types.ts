@@ -5919,6 +5919,7 @@ export type TranslationFunctions = {
 		showSeedPhrase: () => LocalizedString
 		showNostrSecret: () => LocalizedString
 		enableBtcWallet: () => LocalizedString
+		disableBtcWallet: () => LocalizedString
 	}
 	AccountScreen: {
 		/**

@@ -755,6 +755,7 @@ const en: BaseTranslation = {
     showSeedPhrase: "Reveal recovery phrase",
     showNostrSecret: "Reveal Nostr secret",
     enableBtcWallet: "Enable Bitcoin wallet",
+    disableBtcWallet: "Disable Bitcoin wallet",
   },
   AccountScreen: {
     accountLevel: "Account Level",
