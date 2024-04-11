@@ -19,6 +19,8 @@ import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useAppSelector } from "@app/store/redux"
+import { loadJson, save } from "@app/utils/storage"
+import moment from "moment"
 
 const Loader = () => {
   const styles = useStyles()
@@ -38,6 +40,7 @@ const Loader = () => {
 }
 
 type Props = {
+  refreshTriggered: boolean
   loading: boolean
   isContentVisible: boolean
   setIsContentVisible: React.Dispatch<React.SetStateAction<boolean>>
@@ -46,6 +49,7 @@ type Props = {
 }
 
 const WalletOverview: React.FC<Props> = ({
+  refreshTriggered,
   loading,
   isContentVisible,
   setIsContentVisible,
@@ -62,7 +66,10 @@ const WalletOverview: React.FC<Props> = ({
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
     useDisplayCurrency()
 
-  const { data } = useWalletOverviewScreenQuery({ skip: !isAuthed })
+  const { data, error } = useWalletOverviewScreenQuery({
+    fetchPolicy: "network-only",
+    skip: !isAuthed,
+  })
 
   const [btcBalance, setBtcBalance] = useState<string | undefined>(
     persistentState?.btcBalance || "0",
@@ -76,6 +83,7 @@ const WalletOverview: React.FC<Props> = ({
   const [convertedUsdBalance, setConvertedUsdBalance] = useState<string | undefined>(
     persistentState?.convertedUsdBalance || undefined,
   )
+  const [lastUpdated, setLastUpdated] = useState<Date>()
 
   useEffect(() => {
     if (
@@ -101,6 +109,27 @@ const WalletOverview: React.FC<Props> = ({
   useEffect(() => {
     if (isAuthed) formatBalance()
   }, [isAuthed, data?.me?.defaultAccount?.wallets, pendingBalance, breezBalance])
+
+  useEffect(() => {
+    if (!error && data?.me?.defaultAccount.wallets) {
+      setLastUpdated(new Date())
+      save("lastUpdated", new Date())
+    } else {
+      getLastUpdated()
+    }
+  }, [
+    isAuthed,
+    data?.me?.defaultAccount?.wallets,
+    pendingBalance,
+    breezBalance,
+    error,
+    refreshTriggered,
+  ])
+
+  const getLastUpdated = async () => {
+    const res = await loadJson("lastUpdated")
+    setLastUpdated(res)
+  }
 
   const formatBalance = () => {
     const extUsdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
@@ -229,6 +258,9 @@ const WalletOverview: React.FC<Props> = ({
       )}
 
       {/* End of Breez SDK Wallet overview */}
+      <Text style={styles.lastUpdated}>
+        Last refreshed: {moment(lastUpdated).format("lll")}
+      </Text>
     </View>
   )
 }
@@ -288,5 +320,9 @@ const useStyles = makeStyles(({ colors }) => ({
     alignItems: "flex-end",
     height: 45,
     marginTop: 5,
+  },
+  lastUpdated: {
+    fontSize: 12,
+    color: "#fafafa",
   },
 }))
