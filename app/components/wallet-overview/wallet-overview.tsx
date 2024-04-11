@@ -325,6 +325,6 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   lastUpdated: {
     fontSize: 12,
-    color: "#fafafa",
+    color: colors.grey1,
   },
 }))
