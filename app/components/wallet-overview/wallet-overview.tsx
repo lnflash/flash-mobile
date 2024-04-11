@@ -132,23 +132,14 @@ const WalletOverview: React.FC<Props> = ({
   }
 
   const formatBalance = () => {
-    const extUsdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
     const extBtcWalletBalance = toBtcMoneyAmount(
       pendingBalance ? pendingBalance : breezBalance ?? NaN,
     )
-
-    const extUsdWalletBalance = toUsdMoneyAmount(extUsdWallet?.balance ?? NaN)
 
     setBtcBalance(
       moneyAmountToDisplayCurrencyString({
         moneyAmount: extBtcWalletBalance,
         isApproximate: true,
-      }),
-    )
-    setUsdBalance(
-      moneyAmountToDisplayCurrencyString({
-        moneyAmount: extUsdWalletBalance,
-        isApproximate: displayCurrency !== WalletCurrency.Usd,
       }),
     )
     setConvertedBtcBalance(
@@ -157,12 +148,23 @@ const WalletOverview: React.FC<Props> = ({
       }),
     )
 
-    if (displayCurrency !== WalletCurrency.Usd) {
-      setConvertedUsdBalance(
-        formatMoneyAmount({
+    if (data) {
+      const extUsdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+      const extUsdWalletBalance = toUsdMoneyAmount(extUsdWallet?.balance ?? NaN)
+
+      setUsdBalance(
+        moneyAmountToDisplayCurrencyString({
           moneyAmount: extUsdWalletBalance,
+          isApproximate: displayCurrency !== WalletCurrency.Usd,
         }),
       )
+      if (displayCurrency !== WalletCurrency.Usd) {
+        setConvertedUsdBalance(
+          formatMoneyAmount({
+            moneyAmount: extUsdWalletBalance,
+          }),
+        )
+      }
     }
   }
 
