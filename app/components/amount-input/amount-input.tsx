@@ -14,6 +14,7 @@ import { AmountInputModal } from "./amount-input-modal"
 import { AmountInputButton } from "./amount-input-button"
 
 export type AmountInputProps = {
+  request?: any
   unitOfAccountAmount?: MoneyAmount<WalletOrDisplayCurrency>
   walletCurrency: WalletCurrency
   convertMoneyAmount: ConvertMoneyAmount
@@ -27,6 +28,7 @@ export type AmountInputProps = {
 }
 
 export const AmountInput: React.FC<AmountInputProps> = ({
+  request,
   unitOfAccountAmount,
   walletCurrency,
   setAmount,
@@ -43,9 +45,39 @@ export const AmountInput: React.FC<AmountInputProps> = ({
     useDisplayCurrency()
   const { LL } = useI18nContext()
 
+  React.useEffect(() => {
+    if (
+      request?.receivingWalletDescriptor.currency === "BTC" &&
+      request.type === "Lightning" &&
+      !request?.settlementAmount?.amount
+    ) {
+      setIsSettingAmount(true)
+    }
+  }, [request?.type, request?.settlementAmount, request?.receivingWalletDescriptor])
+
   const onSetAmount = (amount: MoneyAmount<WalletOrDisplayCurrency>) => {
-    setAmount && setAmount(amount)
-    setIsSettingAmount(false)
+    if (
+      request?.receivingWalletDescriptor.currency === "BTC" &&
+      request.type === "Lightning" &&
+      amount.amount === 0
+    ) {
+      alert(LL.AmountInputButton.enterAmount())
+    } else {
+      setAmount && setAmount(amount)
+      setIsSettingAmount(false)
+    }
+  }
+
+  const closeHandler = () => {
+    if (
+      request?.receivingWalletDescriptor.currency === "BTC" &&
+      request.type === "Lightning" &&
+      !request?.settlementAmount?.amount
+    ) {
+      alert(LL.AmountInputButton.enterAmount())
+    } else {
+      setIsSettingAmount(false)
+    }
   }
 
   if (isSettingAmount) {
@@ -58,7 +90,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         onSetAmount={onSetAmount}
         maxAmount={maxAmount}
         minAmount={minAmount}
-        close={() => setIsSettingAmount(false)}
+        close={closeHandler}
       />
     )
   }
