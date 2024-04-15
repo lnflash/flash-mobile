@@ -12,6 +12,7 @@ import {
 import { testProps } from "@app/utils/testProps"
 import { AmountInputModal } from "./amount-input-modal"
 import { AmountInputButton } from "./amount-input-button"
+import { useNavigation } from "@react-navigation/native"
 
 export type AmountInputProps = {
   request?: any
@@ -40,6 +41,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   showValuesIfDisabled = true,
   big = true,
 }) => {
+  const navigation = useNavigation()
   const [isSettingAmount, setIsSettingAmount] = React.useState(false)
   const { formatMoneyAmount, getSecondaryAmountIfCurrencyIsDifferent } =
     useDisplayCurrency()
@@ -74,7 +76,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
       request.type === "Lightning" &&
       !request?.settlementAmount?.amount
     ) {
-      alert(LL.AmountInputButton.enterAmount())
+      navigation.goBack()
     } else {
       setIsSettingAmount(false)
     }
