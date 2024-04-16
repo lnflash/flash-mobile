@@ -64,7 +64,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
           if (messageHistory.length > messages.length) {
             setMessages(messageHistory as MessageType.Text[])
           }
-        }, 10000)
+        }, 2000)
         setUserId(await fetchNostrPubKey())
         setInitialized(true)
         return () => clearInterval(interval)

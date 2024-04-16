@@ -41,7 +41,7 @@ export const ChatScreen: React.FC = () => {
     theme: { colors },
   } = useTheme()
 
-  const { fetchNostrUser, retrieveMessagedUsers } = useNostrProfile()
+  const { fetchNostrUser, fetchNostrPubKey, retrieveMessagedUsers } = useNostrProfile()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
 
   const isAuthed = useIsAuthed()
@@ -57,6 +57,7 @@ export const ChatScreen: React.FC = () => {
     skip: !isAuthed,
     fetchPolicy: "cache-and-network",
   })
+  const ws = React.useRef(new WebSocket("ws://localhost:8801")).current
 
   if (error) {
     toastShow({ message: error.message })
@@ -77,6 +78,35 @@ export const ChatScreen: React.FC = () => {
       setInitialized(false)
       initialize()
     })
+    ws.onopen = () => {
+      console.log("Connection established")
+      ws.send(
+        JSON.stringify([
+          "REQ",
+          "p0xren2aasdsadasxa",
+          {
+            cache: [
+              "user_infos",
+              {
+                pubkeys: [
+                  "c21b1a6cdb247ccbd938dcb16b15a4fa382d00ffd7b12d5cbbad172a0cd4d170",
+                ],
+              },
+            ],
+          },
+        ]),
+      )
+    }
+    ws.onclose = (e) => {
+      console.log("Disconnected. Check internet or server.")
+    }
+    ws.onerror = (e) => {
+      console.log("error", e)
+    }
+    ws.onmessage = (m) => {
+      console.log("message received", m)
+    }
+
     async function initialize() {
       console.log("Initializing chat screen use effect")
       setMatchingContacts(contacts)
