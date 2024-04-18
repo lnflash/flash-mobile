@@ -140,7 +140,7 @@ export const QRView: React.FC<Props> = ({
     }
 
     const getQrSize = () => {
-      return width - 30
+      return width - 80
     }
 
     if (displayingQR && getFullUri) {
