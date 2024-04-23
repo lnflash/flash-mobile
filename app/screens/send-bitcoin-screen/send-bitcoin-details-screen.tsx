@@ -42,6 +42,7 @@ import { NoteInput } from "@app/components/note-input"
 // import Breez SDK Wallet
 import useBreezBalance from "@app/hooks/useBreezBalance"
 import { useAppSelector } from "@app/store/redux"
+import { HealthCheckStatus, serviceHealthCheck } from "@breeztech/react-native-breez-sdk"
 
 gql`
   query sendBitcoinDetailsScreen {
@@ -331,6 +332,14 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
     (paymentDetail.sendPaymentMutation ||
       (paymentDetail.paymentType === "lnurl" && paymentDetail.unitOfAccountAmount)) &&
     (async () => {
+      if (sendingWalletDescriptor.currency === "BTC") {
+        const res = await serviceHealthCheck()
+        if (res.status !== HealthCheckStatus.OPERATIONAL) {
+          alert("Something went wrong. Please try later.")
+          return
+        }
+      }
+
       let paymentDetailForConfirmation: PaymentDetail<WalletCurrency> = paymentDetail
 
       if (paymentDetail.paymentType === "lnurl") {
