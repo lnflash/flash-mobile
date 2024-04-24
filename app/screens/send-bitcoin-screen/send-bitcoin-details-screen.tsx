@@ -335,7 +335,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
       if (sendingWalletDescriptor.currency === "BTC") {
         const res = await serviceHealthCheck()
         if (res.status !== HealthCheckStatus.OPERATIONAL) {
-          alert("Something went wrong. Please try later.")
+          alert(LL.common.btcWalletOffline())
           return
         }
       }
