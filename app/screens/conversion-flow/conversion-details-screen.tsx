@@ -32,6 +32,7 @@ import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
 import useBreezBalance from "@app/hooks/useBreezBalance"
 import { StackScreenProps } from "@react-navigation/stack"
 import { usePriceConversion } from "@app/hooks"
+import { HealthCheckStatus, serviceHealthCheck } from "@breeztech/react-native-breez-sdk"
 
 type Props = StackScreenProps<RootStackParamList, "conversionDetails">
 
@@ -117,8 +118,14 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
     )
   }
 
-  const moveToNextScreen = () => {
+  const moveToNextScreen = async () => {
     if (_usdWallet && _btcWallet) {
+      const res = await serviceHealthCheck()
+      if (res.status !== HealthCheckStatus.OPERATIONAL) {
+        alert(LL.common.btcWalletOffline())
+        return
+      }
+
       navigation.navigate("conversionConfirmation", {
         toWallet: fromWalletCurrency === "BTC" ? _usdWallet : _btcWallet,
         fromWallet: fromWalletCurrency === "BTC" ? _btcWallet : _usdWallet,
