@@ -77,7 +77,7 @@ gql`
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "settings">>()
   const dispatch = useAppDispatch()
-  const { btcWalletEnabled } = useAppSelector((state) => state.settings)
+  const { isAdvanceMode } = useAppSelector((state) => state.settings)
   const { moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
   const [breezBalance] = useBreezBalance()
   const {
@@ -186,8 +186,8 @@ export const SettingsScreen: React.FC = () => {
     })
   }
 
-  const toggleBtcWallet = () => {
-    if (btcWalletEnabled) {
+  const toggleAdvanceMode = () => {
+    if (isAdvanceMode) {
       if (breezBalance && breezBalance > 0) {
         const btcWalletBalance = toBtcMoneyAmount(breezBalance || 0)
         const convertedBalance =
@@ -199,25 +199,25 @@ export const SettingsScreen: React.FC = () => {
           balance: convertedBalance,
         })
 
-        const fullMessage = btcBalanceWarning + "\n" + LL.support.disableBtcWallet()
+        const fullMessage = btcBalanceWarning + "\n" + LL.support.switchToBeginnerMode()
 
         Alert.alert(LL.common.warning(), fullMessage, [
           { text: LL.common.cancel(), onPress: () => {} },
           {
             text: LL.common.yes(),
             onPress: async () => {
-              dispatch(updateSettings({ btcWalletEnabled: false }))
-              save("btcWalletEnabled", false)
+              dispatch(updateSettings({ isAdvanceMode: false }))
+              save("isAdvanceMode", false)
             },
           },
         ])
       } else {
-        dispatch(updateSettings({ btcWalletEnabled: false }))
-        save("btcWalletEnabled", false)
+        dispatch(updateSettings({ isAdvanceMode: false }))
+        save("isAdvanceMode", false)
       }
     } else {
-      dispatch(updateSettings({ btcWalletEnabled: true }))
-      save("btcWalletEnabled", true)
+      dispatch(updateSettings({ isAdvanceMode: true }))
+      save("isAdvanceMode", true)
     }
   }
 
@@ -300,12 +300,12 @@ export const SettingsScreen: React.FC = () => {
       chevron: true,
     },
     {
-      category: btcWalletEnabled
-        ? LL.SettingsScreen.disableBtcWallet()
-        : LL.SettingsScreen.enableBtcWallet(),
-      icon: "logo-bitcoin",
+      category: isAdvanceMode
+        ? LL.SettingsScreen.beginnerMode()
+        : LL.SettingsScreen.advanceMode(),
+      icon: "invert-mode-outline",
       id: "enableBtcWallet",
-      action: toggleBtcWallet,
+      action: toggleAdvanceMode,
       enabled: true,
       chevron: true,
     },
@@ -351,8 +351,8 @@ export const SettingsScreen: React.FC = () => {
       id: "default-wallet",
       action: () => navigation.navigate("defaultWallet"),
       subTitleText: defaultWalletCurrency,
-      enabled: btcWalletEnabled ? isAtLeastLevelZero : false,
-      greyed: btcWalletEnabled ? !isAtLeastLevelZero : true,
+      enabled: isAdvanceMode ? isAtLeastLevelZero : false,
+      greyed: isAdvanceMode ? !isAtLeastLevelZero : true,
     },
     {
       category: LL.common.security(),

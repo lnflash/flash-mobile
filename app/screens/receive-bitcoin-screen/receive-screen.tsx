@@ -51,7 +51,7 @@ type Props = {
 }
 
 const ReceiveScreen = ({ route }: Props) => {
-  const { btcWalletEnabled } = useAppSelector((state) => state.settings)
+  const { isAdvanceMode } = useAppSelector((state) => state.settings)
   const { userData } = useAppSelector((state) => state.user)
   const {
     theme: { colors },
@@ -234,28 +234,6 @@ const ReceiveScreen = ({ route }: Props) => {
     }
   }
 
-  const buttons: any[] = [
-    {
-      id: WalletCurrency.Usd,
-      text: LL.ReceiveScreen.stablesats(),
-      icon: {
-        selected: <GaloyCurrencyBubble currency="USD" iconSize={16} />,
-        normal: <GaloyCurrencyBubble currency="USD" iconSize={16} highlighted={false} />,
-      },
-    },
-  ]
-
-  if (btcWalletEnabled) {
-    buttons.unshift({
-      id: WalletCurrency.Btc,
-      text: LL.ReceiveScreen.bitcoin(),
-      icon: {
-        selected: <GaloyCurrencyBubble currency="BTC" iconSize={16} />,
-        normal: <GaloyCurrencyBubble currency="BTC" iconSize={16} highlighted={false} />,
-      },
-    })
-  }
-
   return (
     <>
       <Screen
@@ -264,20 +242,22 @@ const ReceiveScreen = ({ route }: Props) => {
         keyboardShouldPersistTaps="handled"
         style={styles.screenStyle}
       >
-        <View style={{ flexDirection: "row", marginBottom: 10 }}>
-          <WalletDrawer
-            currency={request.receivingWalletDescriptor.currency}
-            disabled={request.state === PaymentRequestState.Loading}
-            onChange={onChangeWallet}
-          />
-          <View style={{ width: 10 }} />
-          <ReceiveTypeDrawer
-            currency={request.receivingWalletDescriptor.currency}
-            type={request.type}
-            disabled={request.state === PaymentRequestState.Loading}
-            onChange={(id) => isReady && request.setType(id as InvoiceType)}
-          />
-        </View>
+        {isAdvanceMode && (
+          <View style={{ flexDirection: "row", marginBottom: 10 }}>
+            <WalletDrawer
+              currency={request.receivingWalletDescriptor.currency}
+              disabled={request.state === PaymentRequestState.Loading}
+              onChange={onChangeWallet}
+            />
+            <View style={{ width: 10 }} />
+            <ReceiveTypeDrawer
+              currency={request.receivingWalletDescriptor.currency}
+              type={request.type}
+              disabled={request.state === PaymentRequestState.Loading}
+              onChange={(id) => isReady && request.setType(id as InvoiceType)}
+            />
+          </View>
+        )}
         {currentWallet === "BTC" && isFirstTransaction && (
           <Text style={styles.warning}>{LL.ReceiveScreen.initialDeposit()}</Text>
         )}

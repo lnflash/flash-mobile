@@ -57,7 +57,7 @@ const WalletOverview: React.FC<Props> = ({
   pendingBalance,
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const { btcWalletEnabled } = useAppSelector((state) => state.settings)
+  const { isAdvanceMode } = useAppSelector((state) => state.settings)
 
   const { LL } = useI18nContext()
   const isAuthed = useIsAuthed()
@@ -219,7 +219,7 @@ const WalletOverview: React.FC<Props> = ({
       </Pressable>
       {/* End of IBEX Wallet overview */}
       {/* Start of Breez SDK Wallet overview */}
-      {btcWalletEnabled && (
+      {isAdvanceMode && (
         <>
           <View style={styles.separator}></View>
           <Pressable
