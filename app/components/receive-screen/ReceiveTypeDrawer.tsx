@@ -1,6 +1,6 @@
 import React, { useState } from "react"
+import { Modal } from "react-native"
 import styled from "styled-components/native"
-import ReactNativeModal from "react-native-modal"
 import Icon from "react-native-vector-icons/Ionicons"
 import { ListItem } from "@rneui/base"
 import { useTheme } from "@rneui/themed"
@@ -57,35 +57,38 @@ const ReceiveTypeDrawer: React.FC<Props> = ({ currency, type, onChange }) => {
           type="ionicon"
         />
       </Btn>
-      <ReactNativeModal
-        isVisible={modalVisible}
-        backdropColor={theme.mode === "dark" ? colors.grey4 : colors.black}
-        backdropOpacity={0.7}
-        onBackButtonPress={() => setModalVisible(false)}
-        onBackdropPress={() => setModalVisible(false)}
-        style={{
-          justifyContent: "flex-end",
-          margin: 0,
-        }}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
       >
-        <Container pb={bottom} style={{ backgroundColor: colors.white }}>
-          {receivingTypes.map((el) => (
-            <Btn
-              style={{ backgroundColor: colors.grey4, marginBottom: 10 }}
-              onPress={() => onChangeType(el.key)}
-            >
-              <BtnText style={{ color: type === el.key ? colors.primary : colors.grey1 }}>
-                {el.title}
-              </BtnText>
-              <Icon
-                name={el.icon}
-                size={22}
-                color={type === el.key ? colors.primary : colors.grey1}
-              />
-            </Btn>
-          ))}
-        </Container>
-      </ReactNativeModal>
+        <Backdrop
+          onPress={() => setModalVisible(false)}
+          activeOpacity={1}
+          mode={theme.mode}
+        >
+          <Container pb={bottom} style={{ backgroundColor: colors.white }}>
+            {receivingTypes.map((el) => (
+              <Btn
+                style={{ backgroundColor: colors.grey4, marginBottom: 10 }}
+                onPress={() => onChangeType(el.key)}
+              >
+                <BtnText
+                  style={{ color: type === el.key ? colors.primary : colors.grey1 }}
+                >
+                  {el.title}
+                </BtnText>
+                <Icon
+                  name={el.icon}
+                  size={22}
+                  color={type === el.key ? colors.primary : colors.grey1}
+                />
+              </Btn>
+            ))}
+          </Container>
+        </Backdrop>
+      </Modal>
     </>
   )
 }
@@ -111,10 +114,17 @@ const BtnText = styled.Text`
   margin-left: 5px;
 `
 
+const Backdrop = styled.TouchableOpacity<{ mode: string }>`
+  flex: 1;
+  justify-content: flex-end;
+  background-color: ${({ mode }) =>
+    mode === "dark" ? "rgba(57,57,57,.7)" : "rgba(0,0,0,.5)"};
+`
+
 const Container = styled.View<{ pb: number }>`
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
-  padding-bottom: ${({ pb }) => pb + 20 || 20}px;
+  padding-bottom: ${({ pb }) => pb || 10}px;
   padding-top: 30px;
   padding-horizontal: 20px;
 `

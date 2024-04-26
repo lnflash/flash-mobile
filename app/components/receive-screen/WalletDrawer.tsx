@@ -1,6 +1,6 @@
 import React, { useState } from "react"
+import { Modal } from "react-native"
 import styled from "styled-components/native"
-import ReactNativeModal from "react-native-modal"
 import { GaloyCurrencyBubble } from "../atomic/galoy-currency-bubble"
 import { ListItem } from "@rneui/base"
 import { useTheme } from "@rneui/themed"
@@ -47,34 +47,35 @@ const WalletDrawer: React.FC<Props> = ({ currency, onChange }) => {
           type="ionicon"
         />
       </Btn>
-      <ReactNativeModal
-        isVisible={modalVisible}
-        backdropColor={theme.mode === "dark" ? colors.grey4 : colors.black}
-        backdropOpacity={0.7}
-        onBackButtonPress={() => setModalVisible(false)}
-        onBackdropPress={() => setModalVisible(false)}
-        style={{
-          justifyContent: "flex-end",
-          margin: 0,
-        }}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
       >
-        <Container pb={bottom} style={{ backgroundColor: colors.white }}>
-          {wallets.map((el) => (
-            <Btn
-              key={el.key}
-              onPress={() => onChangeCurrency(el.key)}
-              style={{ backgroundColor: colors.grey4, marginBottom: 10 }}
-            >
-              <BtnText
-                style={{ color: currency === el.key ? colors.primary : colors.grey1 }}
+        <Backdrop
+          onPress={() => setModalVisible(false)}
+          activeOpacity={1}
+          mode={theme.mode}
+        >
+          <Container pb={bottom} style={{ backgroundColor: colors.white }}>
+            {wallets.map((el) => (
+              <Btn
+                key={el.key}
+                onPress={() => onChangeCurrency(el.key)}
+                style={{ backgroundColor: colors.grey4, marginBottom: 10 }}
               >
-                {el.title}
-              </BtnText>
-              <GaloyCurrencyBubble currency={el.key as WalletCurrency} iconSize={16} />
-            </Btn>
-          ))}
-        </Container>
-      </ReactNativeModal>
+                <BtnText
+                  style={{ color: currency === el.key ? colors.primary : colors.grey1 }}
+                >
+                  {el.title}
+                </BtnText>
+                <GaloyCurrencyBubble currency={el.key as WalletCurrency} iconSize={16} />
+              </Btn>
+            ))}
+          </Container>
+        </Backdrop>
+      </Modal>
     </>
   )
 }
@@ -100,8 +101,14 @@ const BtnText = styled.Text`
   margin-left: 5px;
 `
 
+const Backdrop = styled.TouchableOpacity<{ mode: string }>`
+  flex: 1;
+  justify-content: flex-end;
+  background-color: ${({ mode }) =>
+    mode === "dark" ? "rgba(57,57,57,.7)" : "rgba(0,0,0,.5)"};
+`
+
 const Container = styled.View<{ pb: number }>`
-  background-color: #fff;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   padding-bottom: ${({ pb }) => pb || 10}px;
