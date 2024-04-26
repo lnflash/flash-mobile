@@ -1,0 +1,120 @@
+import React, { useState } from "react"
+import styled from "styled-components/native"
+import ReactNativeModal from "react-native-modal"
+import Icon from "react-native-vector-icons/Ionicons"
+import { ListItem } from "@rneui/base"
+import { useTheme } from "@rneui/themed"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { InvoiceType } from "@app/screens/receive-bitcoin-screen/payment/index.types"
+
+type Props = {
+  currency: CurrencyType
+  type: InvoiceType
+  onChange: (type: InvoiceType) => void
+}
+
+const ReceiveTypeDrawer: React.FC<Props> = ({ currency, type, onChange }) => {
+  const { theme } = useTheme()
+  const colors = theme.colors
+  const [modalVisible, setModalVisible] = useState(false)
+  const bottom = useSafeAreaInsets().bottom
+
+  const onChangeType = (type: string) => {
+    onChange(type as InvoiceType)
+    setModalVisible(false)
+  }
+
+  let receivingTypes = [
+    { key: "Lightning", title: "Lightning", icon: "flash" },
+    { key: "PayCode", title: "Paycode", icon: "at" },
+    { key: "OnChain", title: "Onchain ", icon: "logo-bitcoin" },
+  ]
+
+  if (currency === "BTC") {
+    receivingTypes = receivingTypes.filter((el) => el.key !== "PayCode")
+  }
+
+  return (
+    <>
+      <Btn
+        onPress={() => setModalVisible(true)}
+        style={{ backgroundColor: colors.grey5, flex: 1 }}
+      >
+        <Row>
+          <Icon
+            name={receivingTypes.find((el) => el.key === type)?.icon as string}
+            size={18}
+            color={colors.primary}
+          />
+          <BtnText style={{ color: colors.black }}>
+            {receivingTypes.find((el) => el.key === type)?.title}
+          </BtnText>
+        </Row>
+        <ListItem.Chevron
+          name={modalVisible ? "chevron-down" : "chevron-up"}
+          color={colors.grey0}
+          size={20}
+          type="ionicon"
+        />
+      </Btn>
+      <ReactNativeModal
+        isVisible={modalVisible}
+        backdropColor={theme.mode === "dark" ? colors.grey4 : colors.black}
+        backdropOpacity={0.7}
+        onBackButtonPress={() => setModalVisible(false)}
+        onBackdropPress={() => setModalVisible(false)}
+        style={{
+          justifyContent: "flex-end",
+          margin: 0,
+        }}
+      >
+        <Container pb={bottom} style={{ backgroundColor: colors.white }}>
+          {receivingTypes.map((el) => (
+            <Btn
+              style={{ backgroundColor: colors.grey4, marginBottom: 10 }}
+              onPress={() => onChangeType(el.key)}
+            >
+              <BtnText style={{ color: type === el.key ? colors.primary : colors.grey1 }}>
+                {el.title}
+              </BtnText>
+              <Icon
+                name={el.icon}
+                size={22}
+                color={type === el.key ? colors.primary : colors.grey1}
+              />
+            </Btn>
+          ))}
+        </Container>
+      </ReactNativeModal>
+    </>
+  )
+}
+
+export default ReceiveTypeDrawer
+
+const Btn = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 5px;
+  padding-vertical: 15px;
+  padding-horizontal: 10px;
+`
+
+const Row = styled.View`
+  flex-direction: row;
+  align-items: center;
+`
+
+const BtnText = styled.Text`
+  font-size: 17px;
+  margin-left: 5px;
+`
+
+const Container = styled.View<{ pb: number }>`
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding-bottom: ${({ pb }) => pb + 20 || 20}px;
+  padding-top: 30px;
+  padding-horizontal: 20px;
+`
