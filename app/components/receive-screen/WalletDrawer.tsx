@@ -14,10 +14,11 @@ const wallets = [
 
 type Props = {
   currency: WalletCurrency
+  disabled: boolean
   onChange: (currency: WalletCurrency) => void
 }
 
-const WalletDrawer: React.FC<Props> = ({ currency, onChange }) => {
+const WalletDrawer: React.FC<Props> = ({ currency, disabled, onChange }) => {
   const { theme } = useTheme()
   const colors = theme.colors
   const [modalVisible, setModalVisible] = useState(false)
@@ -33,6 +34,7 @@ const WalletDrawer: React.FC<Props> = ({ currency, onChange }) => {
       <Btn
         onPress={() => setModalVisible(true)}
         style={{ backgroundColor: colors.grey5, flex: 1 }}
+        disabled={disabled}
       >
         <Row>
           <GaloyCurrencyBubble currency={currency} iconSize={16} />

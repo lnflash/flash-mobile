@@ -10,10 +10,11 @@ import { InvoiceType } from "@app/screens/receive-bitcoin-screen/payment/index.t
 type Props = {
   currency: CurrencyType
   type: InvoiceType
+  disabled: boolean
   onChange: (type: InvoiceType) => void
 }
 
-const ReceiveTypeDrawer: React.FC<Props> = ({ currency, type, onChange }) => {
+const ReceiveTypeDrawer: React.FC<Props> = ({ currency, type, disabled, onChange }) => {
   const { theme } = useTheme()
   const colors = theme.colors
   const [modalVisible, setModalVisible] = useState(false)
@@ -39,6 +40,7 @@ const ReceiveTypeDrawer: React.FC<Props> = ({ currency, type, onChange }) => {
       <Btn
         onPress={() => setModalVisible(true)}
         style={{ backgroundColor: colors.grey5, flex: 1 }}
+        disabled={disabled}
       >
         <Row>
           <Icon

@@ -225,6 +225,15 @@ const ReceiveScreen = ({ route }: Props) => {
     }
   }
 
+  const onChangeWallet = (id: WalletCurrency) => {
+    if (isReady) {
+      if (id === "BTC" && request.type === "PayCode") {
+        request.setType("Lightning")
+      }
+      request.setReceivingWallet(id)
+    }
+  }
+
   const buttons: any[] = [
     {
       id: WalletCurrency.Usd,
@@ -258,12 +267,14 @@ const ReceiveScreen = ({ route }: Props) => {
         <View style={{ flexDirection: "row", marginBottom: 10 }}>
           <WalletDrawer
             currency={request.receivingWalletDescriptor.currency}
-            onChange={(id) => isReady && request.setReceivingWallet(id)}
+            disabled={request.state === PaymentRequestState.Loading}
+            onChange={onChangeWallet}
           />
           <View style={{ width: 10 }} />
           <ReceiveTypeDrawer
             currency={request.receivingWalletDescriptor.currency}
             type={request.type}
+            disabled={request.state === PaymentRequestState.Loading}
             onChange={(id) => isReady && request.setType(id as InvoiceType)}
           />
         </View>
@@ -317,42 +328,46 @@ const ReceiveScreen = ({ route }: Props) => {
               </TouchableOpacity>
             </View>
           )}
-        <AmountInput
-          request={request}
-          unitOfAccountAmount={request.unitOfAccountAmount}
-          setAmount={request.setAmount}
-          canSetAmount={request.canSetAmount}
-          convertMoneyAmount={request.convertMoneyAmount}
-          walletCurrency={request.receivingWalletDescriptor.currency}
-          showValuesIfDisabled={false}
-          minAmount={
-            currentWallet === "BTC" && isFirstTransaction
-              ? {
-                  amount: 2501,
-                  currency: "BTC",
-                  currencyCode: "SAT",
-                }
-              : undefined
-          }
-          maxAmount={
-            appConfig.galoyInstance.name === "Staging"
-              ? {
-                  amount: 2500,
-                  currency: "DisplayCurrency",
-                  currencyCode: "USD",
-                }
-              : undefined
-          }
-          big={false}
-        />
-        <NoteInput
-          onBlur={request.setMemo}
-          onChangeText={request.setMemoChangeText}
-          value={request.memoChangeText || ""}
-          editable={request.canSetMemo}
-          style={styles.note}
-          big={false}
-        />
+        {request.type !== "PayCode" && (
+          <>
+            <AmountInput
+              request={request}
+              unitOfAccountAmount={request.unitOfAccountAmount}
+              setAmount={request.setAmount}
+              canSetAmount={request.canSetAmount}
+              convertMoneyAmount={request.convertMoneyAmount}
+              walletCurrency={request.receivingWalletDescriptor.currency}
+              showValuesIfDisabled={false}
+              minAmount={
+                currentWallet === "BTC" && isFirstTransaction
+                  ? {
+                      amount: 2501,
+                      currency: "BTC",
+                      currencyCode: "SAT",
+                    }
+                  : undefined
+              }
+              maxAmount={
+                appConfig.galoyInstance.name === "Staging"
+                  ? {
+                      amount: 2500,
+                      currency: "DisplayCurrency",
+                      currencyCode: "USD",
+                    }
+                  : undefined
+              }
+              big={false}
+            />
+            <NoteInput
+              onBlur={request.setMemo}
+              onChangeText={request.setMemoChangeText}
+              value={request.memoChangeText || ""}
+              editable={request.canSetMemo}
+              style={styles.note}
+              big={false}
+            />
+          </>
+        )}
 
         {OnChainCharge}
 
