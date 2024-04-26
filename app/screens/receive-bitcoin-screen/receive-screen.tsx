@@ -16,7 +16,6 @@ import moment from "moment"
 // components
 import { Screen } from "@app/components/screen"
 import { QRView } from "./qr-view"
-import { ButtonGroup } from "@app/components/button-group"
 import { AmountInput } from "@app/components/amount-input"
 import { NoteInput } from "@app/components/note-input"
 import { SetLightningAddressModal } from "@app/components/set-lightning-address-modal"
@@ -24,6 +23,7 @@ import { GaloyCurrencyBubble } from "@app/components/atomic/galoy-currency-bubbl
 import { withMyLnUpdateSub } from "./my-ln-updates-sub"
 import { CustomIcon } from "@app/components/custom-icon"
 import { ModalNfc } from "@app/components/modal-nfc"
+import { ReceiveTypeDrawer, WalletDrawer } from "@app/components/receive-screen"
 
 // gql
 import { WalletCurrency, useWalletsQuery } from "@app/graphql/generated"
@@ -180,15 +180,6 @@ const ReceiveScreen = ({ route }: Props) => {
     }
   }
 
-  // FLASH FORK DEBUGGING -----------------------------
-  // console.log("request", request?.info?.data?.paymentRequest)
-  // const requestString: string = request?.info?.data?.paymentRequest
-  // if (requestString) {
-  //   const decodedInvoiceState = decodeInvoiceString(requestString, "mainnet")
-  //   console.log("decodedInvoiceState", JSON.stringify(decodedInvoiceState, null, 2))
-  // }
-  // --------------------------------------------------
-
   if (!request) return <></>
 
   const OnChainCharge =
@@ -264,13 +255,18 @@ const ReceiveScreen = ({ route }: Props) => {
         keyboardShouldPersistTaps="handled"
         style={styles.screenStyle}
       >
-        <ButtonGroup
-          selectedId={request.receivingWalletDescriptor.currency}
-          buttons={buttons}
-          onPress={(id) => isReady && request.setReceivingWallet(id as WalletCurrency)}
-          style={styles.receivingWalletPicker}
-          disabled={!request.canSetReceivingWalletDescriptor}
-        />
+        <View style={{ flexDirection: "row", marginBottom: 10 }}>
+          <WalletDrawer
+            currency={request.receivingWalletDescriptor.currency}
+            onChange={(id) => isReady && request.setReceivingWallet(id)}
+          />
+          <View style={{ width: 10 }} />
+          <ReceiveTypeDrawer
+            currency={request.receivingWalletDescriptor.currency}
+            type={request.type}
+            onChange={(id) => isReady && request.setType(id as InvoiceType)}
+          />
+        </View>
         {currentWallet === "BTC" && isFirstTransaction && (
           <Text style={styles.warning}>{LL.ReceiveScreen.initialDeposit()}</Text>
         )}
@@ -298,90 +294,29 @@ const ReceiveScreen = ({ route }: Props) => {
           }
         />
 
-        <View style={styles.invoiceActions}>
-          {request.state !== PaymentRequestState.Loading &&
-            (request.type !== Invoice.PayCode ||
-              (request.type === Invoice.PayCode && request.canUsePaycode)) && (
-              <>
-                <TouchableOpacity
-                  {...testProps(LL.ReceiveScreen.copyInvoice())}
-                  onPress={handleCopy}
-                  style={styles.copyInvoiceContainer}
-                >
-                  <Icon color={colors.grey2} name="copy-outline" />
-                  <Text {...testProps("Copy Invoice")} color={colors.grey2}>
-                    {` ${LL.ReceiveScreen.copyInvoice()}`}
-                  </Text>
-                </TouchableOpacity>
-                <View style={styles.invoiceDetails}>
-                  <Text color={colors.grey2}>
-                    {request.info?.data?.invoiceType === Invoice.OnChain &&
-                    request.receivingWalletDescriptor.currency === WalletCurrency.Btc
-                      ? "Bitcoin On-chain Address"
-                      : request.info?.data?.invoiceType === Invoice.OnChain &&
-                        request.receivingWalletDescriptor.currency === WalletCurrency.Usd
-                      ? "Cash On-chain Address"
-                      : request.info?.data?.invoiceType === Invoice.Lightning &&
-                        request.receivingWalletDescriptor.currency === WalletCurrency.Btc
-                      ? request.state === PaymentRequestState.Expired
-                        ? LL.ReceiveScreen.invoiceHasExpired()
-                        : `Bitcoin Invoice | Valid for ${moment(
-                            request.info.data.expiresAt,
-                          ).fromNow(true)}`
-                      : request.info?.data?.invoiceType === Invoice.Lightning &&
-                        request.receivingWalletDescriptor.currency === WalletCurrency.Usd
-                      ? request.state === PaymentRequestState.Expired
-                        ? LL.ReceiveScreen.invoiceHasExpired()
-                        : `Cash Invoice | Valid for ${moment(
-                            request.info.data.expiresAt,
-                          ).fromNow(true)}`
-                      : request.info?.data?.invoiceType === Invoice.PayCode
-                      ? "Lightning Address"
-                      : "Invoice | Valid for 1 day"}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  {...testProps(LL.ReceiveScreen.shareInvoice())}
-                  onPress={handleShare}
-                  style={styles.shareInvoiceContainer}
-                >
-                  <Icon color={colors.grey2} name="share-outline" />
-                  <Text {...testProps("Share Invoice")} color={colors.grey2}>
-                    {` ${LL.ReceiveScreen.shareInvoice()}`}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-        </View>
-
-        <TouchableOpacity onPress={handleCopy}>
-          <View style={styles.extraDetails}>
-            {request.readablePaymentRequest && (
-              <Text {...testProps("readable-payment-request")}>
-                {request.readablePaymentRequest}
+        {request.state !== PaymentRequestState.Loading &&
+          request.info?.data?.invoiceType === Invoice.Lightning && (
+            <View style={styles.invoiceDetails}>
+              <Text color={colors.grey2}>
+                {request.state === PaymentRequestState.Expired
+                  ? LL.ReceiveScreen.invoiceHasExpired()
+                  : `Valid for ${moment(request.info.data.expiresAt).fromNow(true)}`}
               </Text>
-            )}
-          </View>
-        </TouchableOpacity>
-
-        <ButtonGroup
-          selectedId={request.type}
-          buttons={[
-            {
-              id: Invoice.Lightning,
-              text: LL.ReceiveScreen.lightning(),
-              icon: "flash",
-            },
-            { id: Invoice.PayCode, text: LL.ReceiveScreen.paycode(), icon: "at" },
-            {
-              id: Invoice.OnChain,
-              text: LL.ReceiveScreen.onchain(),
-              icon: "logo-bitcoin",
-            },
-          ]}
-          onPress={(id) => isReady && request.setType(id as InvoiceType)}
-          style={styles.invoiceTypePicker}
-        />
+            </View>
+          )}
+        {request.state !== PaymentRequestState.Loading &&
+          request.readablePaymentRequest && (
+            <View style={styles.extraDetails}>
+              <TouchableOpacity onPress={handleCopy}>
+                <Text {...testProps("readable-payment-request")}>
+                  {request.readablePaymentRequest}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleShare} style={styles.shareInvoice}>
+                <Icon color={colors.grey2} name="share-outline" size={20} />
+              </TouchableOpacity>
+            </View>
+          )}
         <AmountInput
           request={request}
           unitOfAccountAmount={request.unitOfAccountAmount}
@@ -491,29 +426,14 @@ const useStyles = makeStyles(({ colors }) => ({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 15,
-    minHeight: 20,
-  },
-  invoiceActions: {
-    flexDirection: "row",
-    justifyContent: "center",
     marginBottom: 10,
-    minHeight: 20,
-  },
-  copyInvoiceContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
   },
   invoiceDetails: {
-    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    marginBottom: 10,
   },
-  shareInvoiceContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+  shareInvoice: {
+    marginLeft: 5,
   },
   onchainCharges: { marginTop: 10, alignItems: "center" },
   warning: {
