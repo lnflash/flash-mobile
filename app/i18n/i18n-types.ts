@@ -5919,8 +5919,8 @@ export type TranslationFunctions = {
 		importWallet: () => LocalizedString
 		showSeedPhrase: () => LocalizedString
 		showNostrSecret: () => LocalizedString
-		enableBtcWallet: () => LocalizedString
-		disableBtcWallet: () => LocalizedString
+		beginnerMode: () => LocalizedString
+		advanceMode: () => LocalizedString
 	}
 	AccountScreen: {
 		/**
@@ -7143,7 +7143,7 @@ export type TranslationFunctions = {
 		 * Bye!
 		 */
 		bye: () => LocalizedString
-		disableBtcWallet: () => LocalizedString
+		switchToBeginnerMode: () => LocalizedString
 	}
 	lnurl: {
 		/**

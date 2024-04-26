@@ -754,8 +754,8 @@ const en: BaseTranslation = {
     importWallet: "Import Wallet",
     showSeedPhrase: "Reveal recovery phrase",
     showNostrSecret: "Reveal Nostr secret",
-    enableBtcWallet: "Enable Bitcoin wallet",
-    disableBtcWallet: "Disable Bitcoin wallet",
+    beginnerMode: "Switch to Beginner Mode",
+    advanceMode: "Switch to Advance Mode",
   },
   AccountScreen: {
     accountLevel: "Account Level",
@@ -1180,7 +1180,7 @@ const en: BaseTranslation = {
     deleteAccountError:
       "Something went wrong. Contact {email: string} for further assistance.",
     bye: "Bye!",
-    disableBtcWallet: "By disabling your BTC wallet you will not lose access to your funds, but the wallet will be hidden. You can enable the BTC wallet again at any time. Are you sure you want to proceed?"
+    switchToBeginnerMode: "By switching to Beginner Mode you will not lose access to your BTC wallet funds, but the wallet will be hidden. You can switch to Advance Mode again at any time. Are you sure you want to proceed?"
   },
   lnurl: {
     overLimit: "You can't send more than max amount",
