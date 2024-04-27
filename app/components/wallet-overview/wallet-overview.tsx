@@ -172,6 +172,16 @@ const WalletOverview: React.FC<Props> = ({
     setIsContentVisible((prevState) => !prevState)
   }
 
+  const navigateHandler = (activeTab: string) => {
+    if (isAdvanceMode) {
+      navigation.navigate("TransactionHistoryTabs", {
+        initialRouteName: activeTab,
+      })
+    } else {
+      navigation.navigate(activeTab as any)
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.myAccounts}>
@@ -184,13 +194,7 @@ const WalletOverview: React.FC<Props> = ({
       </View>
       {/* Start of IBEX Wallet overview */}
       <View style={styles.separator}></View>
-      <Pressable
-        onPress={() =>
-          navigation.navigate("TransactionHistoryTabs", {
-            initialRouteName: "USDTransactionHistory",
-          })
-        }
-      >
+      <Pressable onPress={() => navigateHandler("USDTransactionHistory")}>
         <View style={styles.displayTextView}>
           <View style={styles.currency}>
             <GaloyCurrencyBubble currency="USD" />
@@ -222,13 +226,7 @@ const WalletOverview: React.FC<Props> = ({
       {isAdvanceMode && (
         <>
           <View style={styles.separator}></View>
-          <Pressable
-            onPress={() =>
-              navigation.navigate("TransactionHistoryTabs", {
-                initialRouteName: "BTCTransactionHistory",
-              })
-            }
-          >
+          <Pressable onPress={() => navigateHandler("BTCTransactionHistory")}>
             <View style={styles.displayTextView}>
               <View style={styles.currency}>
                 <GaloyCurrencyBubble currency="BTC" />

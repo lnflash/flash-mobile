@@ -237,6 +237,7 @@ export const HomeScreen: React.FC = () => {
     | "sendBitcoinDestination"
     | "receiveBitcoin"
     | "TransactionHistoryTabs"
+    | "USDTransactionHistory"
   type IconNamesType = keyof typeof icons
 
   const buttons = [
@@ -366,7 +367,11 @@ export const HomeScreen: React.FC = () => {
           <>
             <TouchableWithoutFeedback
               style={styles.recentTransaction}
-              onPress={() => onMenuClick("TransactionHistoryTabs")}
+              onPress={() =>
+                onMenuClick(
+                  isAdvanceMode ? "TransactionHistoryTabs" : "USDTransactionHistory",
+                )
+              }
             >
               <Text type="p1" bold {...testProps(LL.TransactionScreen.title())}>
                 {LL.TransactionScreen.title()}
