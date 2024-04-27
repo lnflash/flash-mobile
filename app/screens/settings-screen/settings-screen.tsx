@@ -16,6 +16,7 @@ import crashlytics from "@react-native-firebase/crashlytics"
 import { gql } from "@apollo/client"
 import { ratingOptions } from "@app/config"
 import {
+  useAccountUpdateDefaultWalletIdMutation,
   useSettingsScreenQuery,
   useWalletCsvTransactionsLazyQuery,
 } from "@app/graphql/generated"
@@ -99,6 +100,9 @@ export const SettingsScreen: React.FC = () => {
     returnPartialData: true,
     skip: !isAtLeastLevelZero,
   })
+
+  const [accountUpdateDefaultWallet, { loading }] =
+    useAccountUpdateDefaultWalletIdMutation()
 
   const { displayCurrency } = useDisplayCurrency()
 
@@ -186,6 +190,19 @@ export const SettingsScreen: React.FC = () => {
     })
   }
 
+  const handleSetDefaultWallet = async () => {
+    if (loading) return
+    if (usdWallet) {
+      await accountUpdateDefaultWallet({
+        variables: {
+          input: {
+            walletId: usdWallet?.id,
+          },
+        },
+      })
+    }
+  }
+
   const toggleAdvanceMode = () => {
     if (isAdvanceMode) {
       if (breezBalance && breezBalance > 0) {
@@ -208,12 +225,14 @@ export const SettingsScreen: React.FC = () => {
             onPress: async () => {
               dispatch(updateSettings({ isAdvanceMode: false }))
               save("isAdvanceMode", false)
+              handleSetDefaultWallet()
             },
           },
         ])
       } else {
         dispatch(updateSettings({ isAdvanceMode: false }))
         save("isAdvanceMode", false)
+        handleSetDefaultWallet()
       }
     } else {
       dispatch(updateSettings({ isAdvanceMode: true }))
@@ -303,7 +322,7 @@ export const SettingsScreen: React.FC = () => {
       category: isAdvanceMode
         ? LL.SettingsScreen.beginnerMode()
         : LL.SettingsScreen.advanceMode(),
-      icon: "invert-mode-outline",
+      icon: isAdvanceMode ? "invert-mode-outline" : "invert-mode",
       id: "enableBtcWallet",
       action: toggleAdvanceMode,
       enabled: true,
