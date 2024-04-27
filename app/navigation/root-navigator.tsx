@@ -95,6 +95,7 @@ import {
   BackupOptions,
   TransactionHistoryTabs,
   IntroScreen,
+  USDTransactionHistory,
 } from "@app/screens"
 
 const useStyles = makeStyles(({ colors }) => ({
@@ -456,6 +457,11 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="TransactionHistoryTabs"
         component={TransactionHistoryTabs}
+        options={{ title: LL.TransactionScreen.transactionHistoryTitle() }}
+      />
+      <RootNavigator.Screen
+        name="USDTransactionHistory"
+        component={USDTransactionHistory}
         options={{ title: LL.TransactionScreen.transactionHistoryTitle() }}
       />
     </RootNavigator.Navigator>
