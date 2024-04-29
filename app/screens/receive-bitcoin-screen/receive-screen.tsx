@@ -19,11 +19,10 @@ import { QRView } from "./qr-view"
 import { AmountInput } from "@app/components/amount-input"
 import { NoteInput } from "@app/components/note-input"
 import { SetLightningAddressModal } from "@app/components/set-lightning-address-modal"
-import { GaloyCurrencyBubble } from "@app/components/atomic/galoy-currency-bubble"
 import { withMyLnUpdateSub } from "./my-ln-updates-sub"
 import { CustomIcon } from "@app/components/custom-icon"
 import { ModalNfc } from "@app/components/modal-nfc"
-import { ReceiveTypeDrawer, WalletDrawer } from "@app/components/receive-screen"
+import { ReceiveTypeBottomSheet, WalletBottomSheet } from "@app/components/receive-screen"
 
 // gql
 import { WalletCurrency, useWalletsQuery } from "@app/graphql/generated"
@@ -248,13 +247,13 @@ const ReceiveScreen = ({ route }: Props) => {
       >
         {isAdvanceMode && (
           <View style={{ flexDirection: "row", marginBottom: 10 }}>
-            <WalletDrawer
+            <WalletBottomSheet
               currency={request.receivingWalletDescriptor.currency}
               disabled={request.state === PaymentRequestState.Loading}
               onChange={onChangeWallet}
             />
             <View style={{ width: 10 }} />
-            <ReceiveTypeDrawer
+            <ReceiveTypeBottomSheet
               currency={request.receivingWalletDescriptor.currency}
               type={request.type}
               disabled={request.state === PaymentRequestState.Loading}

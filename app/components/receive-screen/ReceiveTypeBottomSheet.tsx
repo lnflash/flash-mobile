@@ -3,9 +3,10 @@ import { Modal } from "react-native"
 import styled from "styled-components/native"
 import Icon from "react-native-vector-icons/Ionicons"
 import { ListItem } from "@rneui/base"
-import { useTheme } from "@rneui/themed"
+import { Text, useTheme } from "@rneui/themed"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { InvoiceType } from "@app/screens/receive-bitcoin-screen/payment/index.types"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 type Props = {
   currency: CurrencyType
@@ -14,7 +15,13 @@ type Props = {
   onChange: (type: InvoiceType) => void
 }
 
-const ReceiveTypeDrawer: React.FC<Props> = ({ currency, type, disabled, onChange }) => {
+const ReceiveTypeBottomSheet: React.FC<Props> = ({
+  currency,
+  type,
+  disabled,
+  onChange,
+}) => {
+  const { LL } = useI18nContext()
   const { theme } = useTheme()
   const colors = theme.colors
   const [modalVisible, setModalVisible] = useState(false)
@@ -53,7 +60,7 @@ const ReceiveTypeDrawer: React.FC<Props> = ({ currency, type, disabled, onChange
           </BtnText>
         </Row>
         <ListItem.Chevron
-          name={modalVisible ? "chevron-down" : "chevron-up"}
+          name={modalVisible ? "chevron-up" : "chevron-down"}
           color={colors.grey0}
           size={20}
           type="ionicon"
@@ -71,6 +78,13 @@ const ReceiveTypeDrawer: React.FC<Props> = ({ currency, type, disabled, onChange
           mode={theme.mode}
         >
           <Container pb={bottom} style={{ backgroundColor: colors.white }}>
+            <TitleWrapper>
+              <Title>{LL.ReceiveScreen.selectNetwork()}</Title>
+              <Close onPress={() => setModalVisible(false)}>
+                <Icon name={"close"} size={30} color={colors.black} />
+              </Close>
+            </TitleWrapper>
+
             {receivingTypes.map((el) => (
               <Btn
                 style={{ backgroundColor: colors.grey4, marginBottom: 10 }}
@@ -95,7 +109,7 @@ const ReceiveTypeDrawer: React.FC<Props> = ({ currency, type, disabled, onChange
   )
 }
 
-export default ReceiveTypeDrawer
+export default ReceiveTypeBottomSheet
 
 const Btn = styled.TouchableOpacity`
   flex-direction: row;
@@ -127,6 +141,21 @@ const Container = styled.View<{ pb: number }>`
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   padding-bottom: ${({ pb }) => pb || 10}px;
-  padding-top: 30px;
+  padding-top: 20px;
   padding-horizontal: 20px;
+`
+
+const TitleWrapper = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+`
+
+const Title = styled(Text)`
+  font-size: 20px;
+`
+
+const Close = styled.TouchableOpacity`
+  padding: 5px;
 `

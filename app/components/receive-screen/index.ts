@@ -1,4 +1,4 @@
-import WalletDrawer from "./WalletDrawer"
-import ReceiveTypeDrawer from "./ReceiveTypeDrawer"
+import WalletBottomSheet from "./WalletBottomSheet"
+import ReceiveTypeBottomSheet from "./ReceiveTypeBottomSheet"
 
-export { WalletDrawer, ReceiveTypeDrawer }
+export { WalletBottomSheet, ReceiveTypeBottomSheet }

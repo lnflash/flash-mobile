@@ -1,11 +1,13 @@
 import React, { useState } from "react"
-import { Modal } from "react-native"
 import styled from "styled-components/native"
+import Icon from "react-native-vector-icons/Ionicons"
+import { Modal } from "react-native"
 import { GaloyCurrencyBubble } from "../atomic/galoy-currency-bubble"
 import { ListItem } from "@rneui/base"
-import { useTheme } from "@rneui/themed"
+import { useTheme, Text } from "@rneui/themed"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { WalletCurrency } from "@app/graphql/generated"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 const wallets = [
   { title: "Cash", key: "USD" },
@@ -18,7 +20,8 @@ type Props = {
   onChange: (currency: WalletCurrency) => void
 }
 
-const WalletDrawer: React.FC<Props> = ({ currency, disabled, onChange }) => {
+const WalletBottomSheet: React.FC<Props> = ({ currency, disabled, onChange }) => {
+  const { LL } = useI18nContext()
   const { theme } = useTheme()
   const colors = theme.colors
   const [modalVisible, setModalVisible] = useState(false)
@@ -43,7 +46,7 @@ const WalletDrawer: React.FC<Props> = ({ currency, disabled, onChange }) => {
           </BtnText>
         </Row>
         <ListItem.Chevron
-          name={modalVisible ? "chevron-down" : "chevron-up"}
+          name={modalVisible ? "chevron-up" : "chevron-down"}
           color={colors.grey0}
           size={20}
           type="ionicon"
@@ -61,6 +64,12 @@ const WalletDrawer: React.FC<Props> = ({ currency, disabled, onChange }) => {
           mode={theme.mode}
         >
           <Container pb={bottom} style={{ backgroundColor: colors.white }}>
+            <TitleWrapper>
+              <Title>{LL.ReceiveScreen.selectWallet()}</Title>
+              <Close onPress={() => setModalVisible(false)}>
+                <Icon name={"close"} size={30} color={colors.black} />
+              </Close>
+            </TitleWrapper>
             {wallets.map((el) => (
               <Btn
                 key={el.key}
@@ -82,7 +91,7 @@ const WalletDrawer: React.FC<Props> = ({ currency, disabled, onChange }) => {
   )
 }
 
-export default WalletDrawer
+export default WalletBottomSheet
 
 const Btn = styled.TouchableOpacity`
   flex-direction: row;
@@ -114,6 +123,21 @@ const Container = styled.View<{ pb: number }>`
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   padding-bottom: ${({ pb }) => pb || 10}px;
-  padding-top: 30px;
+  padding-top: 20px;
   padding-horizontal: 20px;
+`
+
+const TitleWrapper = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+`
+
+const Title = styled(Text)`
+  font-size: 20px;
+`
+
+const Close = styled.TouchableOpacity`
+  padding: 5px;
 `
