@@ -757,7 +757,7 @@ const en: BaseTranslation = {
     showSeedPhrase: "Reveal recovery phrase",
     showNostrSecret: "Reveal Nostr secret",
     beginnerMode: "Switch to Beginner Mode",
-    advanceMode: "Switch to Advance Mode",
+    advanceMode: "Switch to Advanced Mode",
   },
   AccountScreen: {
     accountLevel: "Account Level",
@@ -1182,7 +1182,7 @@ const en: BaseTranslation = {
     deleteAccountError:
       "Something went wrong. Contact {email: string} for further assistance.",
     bye: "Bye!",
-    switchToBeginnerMode: "By switching to Beginner Mode you will not lose access to your BTC wallet funds, but the wallet will be hidden. You can switch to Advance Mode again at any time. Are you sure you want to proceed?"
+    switchToBeginnerMode: "By switching to Beginner Mode you will not lose access to your BTC wallet funds, but the wallet will be hidden. You can switch to Advanced Mode again at any time. Are you sure you want to proceed?"
   },
   lnurl: {
     overLimit: "You can't send more than max amount",

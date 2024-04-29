@@ -222,22 +222,24 @@ export const SettingsScreen: React.FC = () => {
           { text: LL.common.cancel(), onPress: () => {} },
           {
             text: LL.common.yes(),
-            onPress: async () => {
-              dispatch(updateSettings({ isAdvanceMode: false }))
-              save("isAdvanceMode", false)
-              handleSetDefaultWallet()
-            },
+            onPress: () => toggleAdvanceModeComplete(false),
           },
         ])
       } else {
-        dispatch(updateSettings({ isAdvanceMode: false }))
-        save("isAdvanceMode", false)
-        handleSetDefaultWallet()
+        toggleAdvanceModeComplete(false)
       }
     } else {
-      dispatch(updateSettings({ isAdvanceMode: true }))
-      save("isAdvanceMode", true)
+      toggleAdvanceModeComplete(true)
     }
+  }
+
+  const toggleAdvanceModeComplete = (isAdvanceMode: boolean) => {
+    if (!isAdvanceMode) {
+      handleSetDefaultWallet()
+    }
+    dispatch(updateSettings({ isAdvanceMode }))
+    save("isAdvanceMode", isAdvanceMode)
+    setTimeout(() => navigation.goBack(), 500)
   }
 
   const contactMessageBody = LL.support.defaultSupportMessage({
