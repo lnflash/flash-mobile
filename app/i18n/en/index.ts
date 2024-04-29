@@ -587,6 +587,7 @@ const en: BaseTranslation = {
     },
     invoiceHasBeenPaid: "Invoice has been paid",
     yourBitcoinOnChainAddress: "Your Bitcoin Onchain Address",
+    receive: "Receive",
     receiveViaInvoice: "Receive via Lightning",
     receiveViaPaycode: "Receive via Paycode",
     receiveViaOnchain: "Receive via Onchain",
@@ -718,6 +719,7 @@ const en: BaseTranslation = {
     max: "Max",
     maxAmount: "Max Amount",
     title: "Send Bitcoin",
+    send: "Send",
     failedToFetchLnurlInvoice: "Failed to fetch lnurl invoice",
     lnurlInvoiceIncorrectAmount:
       "The lnurl server responded with an invoice with an incorrect amount.",

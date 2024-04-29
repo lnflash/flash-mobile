@@ -1836,6 +1836,10 @@ type RootTranslation = {
 		 */
 		yourBitcoinOnChainAddress: string
 		/**
+		 * R​e​c​e​i​v​e​
+		 */
+		receive: string
+		/**
 		 * R​e​c​e​i​v​e​ ​v​i​a​ ​L​i​g​h​t​n​i​n​g
 		 */
 		receiveViaInvoice: string
@@ -2244,6 +2248,10 @@ type RootTranslation = {
 		 * S​e​n​d​ ​B​i​t​c​o​i​n
 		 */
 		title: string
+		/**
+		 * S​e​n​d​
+		 */
+		send: string
 		/**
 		 * F​a​i​l​e​d​ ​t​o​ ​f​e​t​c​h​ ​l​n​u​r​l​ ​i​n​v​o​i​c​e
 		 */
@@ -5401,6 +5409,10 @@ export type TranslationFunctions = {
 		 */
 		yourBitcoinOnChainAddress: () => LocalizedString
 		/**
+		 * Receive
+		 */
+		receive: () => LocalizedString
+		/**
 		 * Receive via Lightning
 		 */
 		receiveViaInvoice: () => LocalizedString
@@ -5810,6 +5822,10 @@ export type TranslationFunctions = {
 		 * Send Bitcoin
 		 */
 		title: () => LocalizedString
+		/**
+		 * Send
+		 */
+		send: () => LocalizedString
 		/**
 		 * Failed to fetch lnurl invoice
 		 */
