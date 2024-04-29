@@ -592,7 +592,9 @@ const en: BaseTranslation = {
     receiveViaPaycode: "Receive via Paycode",
     receiveViaOnchain: "Receive via Onchain",
     payCodeOrLNURL: "Paycode / LNURL",
-    initialDeposit: "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee."
+    initialDeposit: "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee.",
+    selectNetwork: "Select Network",
+    selectWallet: "Select Wallet"
   },
   RedeemBitcoinScreen: {
     title: "Redeem Bitcoin",

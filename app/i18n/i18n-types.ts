@@ -1855,6 +1855,14 @@ type RootTranslation = {
 		 * P​a​y​c​o​d​e​ ​/​ ​L​N​U​R​L
 		 */
 		payCodeOrLNURL: string
+		/**
+		 * Select Network
+		 */
+		selectNetwork: string
+		/**
+		 * Select Network
+		 */
+		selectWallet: string
 	}
 	RedeemBitcoinScreen: {
 		/**
@@ -5432,6 +5440,14 @@ export type TranslationFunctions = {
 		 * Initial Deposit Warning
 		 */
 		initialDeposit: () => LocalizedString
+		/**
+		 * Select Network
+		 */
+		selectNetwork: () => LocalizedString
+		/**
+		 * Select Wallet
+		 */
+		selectWallet: () => LocalizedString
 	}
 	RedeemBitcoinScreen: {
 		/**
