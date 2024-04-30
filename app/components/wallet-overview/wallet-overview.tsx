@@ -211,7 +211,7 @@ const WalletOverview: React.FC<Props> = ({
             <GaloyCurrencyBubble currency="USD" />
             <View>
               <Text type="p1">Cash (USD)</Text>
-              {!!userData?.username && (
+              {isAdvanceMode && !!userData?.username && (
                 <Text type="p4" color={colors.grey1}>
                   {getLightningAddress(
                     appConfig.galoyInstance.lnAddressHostname,
