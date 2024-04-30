@@ -108,7 +108,13 @@ const WalletOverview: React.FC<Props> = ({
 
   useEffect(() => {
     if (isAuthed) formatBalance()
-  }, [isAuthed, data?.me?.defaultAccount?.wallets, pendingBalance, breezBalance])
+  }, [
+    isAuthed,
+    data?.me?.defaultAccount?.wallets,
+    pendingBalance,
+    breezBalance,
+    displayCurrency,
+  ])
 
   useEffect(() => {
     if (!error && data?.me?.defaultAccount.wallets) {
@@ -158,13 +164,11 @@ const WalletOverview: React.FC<Props> = ({
           isApproximate: displayCurrency !== WalletCurrency.Usd,
         }),
       )
-      if (displayCurrency !== WalletCurrency.Usd) {
-        setConvertedUsdBalance(
-          formatMoneyAmount({
-            moneyAmount: extUsdWalletBalance,
-          }),
-        )
-      }
+      setConvertedUsdBalance(
+        formatMoneyAmount({
+          moneyAmount: extUsdWalletBalance,
+        }),
+      )
     }
   }
 
@@ -205,17 +209,12 @@ const WalletOverview: React.FC<Props> = ({
           ) : (
             <View style={styles.hideableArea}>
               <HideableArea isContentVisible={isContentVisible}>
-                {convertedUsdBalance ? (
-                  <Text type="p1" bold>
-                    {convertedUsdBalance}
-                  </Text>
-                ) : null}
-                <Text
-                  type={convertedUsdBalance ? "p3" : "p1"}
-                  bold={!convertedUsdBalance}
-                >
-                  {usdBalance}
+                <Text type="p1" bold>
+                  {convertedUsdBalance}
                 </Text>
+                {displayCurrency !== WalletCurrency.Usd && (
+                  <Text type={"p3"}>{usdBalance}</Text>
+                )}
               </HideableArea>
             </View>
           )}
