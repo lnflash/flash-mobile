@@ -6,7 +6,7 @@ import { useWalletOverviewScreenQuery, WalletCurrency } from "@app/graphql/gener
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
-import { makeStyles, Text } from "@rneui/themed"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { GaloyCurrencyBubble } from "../atomic/galoy-currency-bubble"
 import { GaloyIcon } from "../atomic/galoy-icon"
@@ -21,6 +21,8 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useAppSelector } from "@app/store/redux"
 import { loadJson, save } from "@app/utils/storage"
 import moment from "moment"
+import { useAppConfig } from "@app/hooks"
+import { getLightningAddress } from "@app/utils/pay-links"
 
 const Loader = () => {
   const styles = useStyles()
@@ -57,11 +59,16 @@ const WalletOverview: React.FC<Props> = ({
   pendingBalance,
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const { userData } = useAppSelector((state) => state.user)
   const { isAdvanceMode } = useAppSelector((state) => state.settings)
 
   const { LL } = useI18nContext()
+  const { appConfig } = useAppConfig()
+  const { theme } = useTheme()
   const isAuthed = useIsAuthed()
   const styles = useStyles()
+  const colors = theme.colors
+
   const { persistentState, updateState } = usePersistentStateContext()
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
     useDisplayCurrency()
@@ -202,7 +209,17 @@ const WalletOverview: React.FC<Props> = ({
         <View style={styles.displayTextView}>
           <View style={styles.currency}>
             <GaloyCurrencyBubble currency="USD" />
-            <Text type="p1">Cash (USD)</Text>
+            <View>
+              <Text type="p1">Cash (USD)</Text>
+              {!!userData?.username && (
+                <Text type="p4" color={colors.grey1}>
+                  {getLightningAddress(
+                    appConfig.galoyInstance.lnAddressHostname,
+                    userData.username,
+                  )}
+                </Text>
+              )}
+            </View>
           </View>
           {loading ? (
             <Loader />
