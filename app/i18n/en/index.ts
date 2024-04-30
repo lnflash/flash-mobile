@@ -593,7 +593,7 @@ const en: BaseTranslation = {
     receiveViaOnchain: "Receive via Onchain",
     payCodeOrLNURL: "Paycode / LNURL",
     initialDeposit: "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee.",
-    selectNetwork: "Select Network",
+    selectPaymentMethod: "Select Payment Method",
     selectWallet: "Select Wallet"
   },
   RedeemBitcoinScreen: {

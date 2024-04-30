@@ -79,7 +79,7 @@ const ReceiveTypeBottomSheet: React.FC<Props> = ({
         >
           <Container pb={bottom} style={{ backgroundColor: colors.white }}>
             <TitleWrapper>
-              <Title>{LL.ReceiveScreen.selectNetwork()}</Title>
+              <Title>{LL.ReceiveScreen.selectPaymentMethod()}</Title>
               <Close onPress={() => setModalVisible(false)}>
                 <Icon name={"close"} size={30} color={colors.black} />
               </Close>
@@ -87,6 +87,7 @@ const ReceiveTypeBottomSheet: React.FC<Props> = ({
 
             {receivingTypes.map((el) => (
               <Btn
+                key={el.key}
                 style={{ backgroundColor: colors.grey4, marginBottom: 10 }}
                 onPress={() => onChangeType(el.key)}
               >

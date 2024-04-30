@@ -1856,11 +1856,11 @@ type RootTranslation = {
 		 */
 		payCodeOrLNURL: string
 		/**
-		 * Select Network
+		 * Select Payment Method
 		 */
-		selectNetwork: string
+		selectPaymentMethod: string
 		/**
-		 * Select Network
+		 * Select Wallet
 		 */
 		selectWallet: string
 	}
@@ -5441,9 +5441,9 @@ export type TranslationFunctions = {
 		 */
 		initialDeposit: () => LocalizedString
 		/**
-		 * Select Network
+		 * Select Payment Method
 		 */
-		selectNetwork: () => LocalizedString
+		selectPaymentMethod: () => LocalizedString
 		/**
 		 * Select Wallet
 		 */
