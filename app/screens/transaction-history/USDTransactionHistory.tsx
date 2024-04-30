@@ -24,7 +24,11 @@ export const USDTransactionHistory: React.FC = () => {
   const { LL } = useI18nContext()
 
   const { data, error, fetchMore, refetch, loading } =
-    useTransactionListForDefaultAccountQuery({ skip: !useIsAuthed() })
+    useTransactionListForDefaultAccountQuery({
+      skip: !useIsAuthed(),
+      fetchPolicy: "network-only",
+      nextFetchPolicy: "cache-and-network",
+    })
 
   const transactionSections = groupTransactionsByDate({
     txs: data?.me?.defaultAccount?.transactions?.edges?.map((el) => el.node) ?? [],
