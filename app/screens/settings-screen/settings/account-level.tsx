@@ -11,6 +11,7 @@ export const AccountLevelSetting: React.FC = () => {
   const { currentLevel: level } = useLevel()
   const { LL } = useI18nContext()
   const { navigate } = useNavigation<StackNavigationProp<RootStackParamList>>()
+
   return (
     <SettingsRow
       title={LL.common.account()}
