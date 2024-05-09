@@ -64,7 +64,10 @@ const items = {
     CurrencySetting,
     ThemeSetting,
   ],
-  securityAndPrivacy: [TotpSetting, OnDeviceSecuritySetting],
+  securityAndPrivacy: [
+    // TotpSetting,
+    OnDeviceSecuritySetting,
+  ],
   advanced: [ExportCsvSetting, ApiAccessSetting],
   community: [NeedHelpSetting, JoinCommunitySetting],
 }
@@ -88,13 +91,13 @@ export const SettingsScreen: React.FC = () => {
           name={LL.SettingsScreen.addressScreen()}
           items={items.waysToGetPaid}
         />
-        <SettingsGroup name={"Wallet preferences"} items={items.wallet} />
+        <SettingsGroup name={LL.SettingsScreen.keysManagement()} items={items.wallet} />
         <SettingsGroup name={LL.common.preferences()} items={items.preferences} />
         <SettingsGroup
           name={LL.common.securityAndPrivacy()}
           items={items.securityAndPrivacy}
         />
-        <SettingsGroup name={LL.common.advanced()} items={items.advanced} />
+        {/* <SettingsGroup name={LL.common.advanced()} items={items.advanced} /> */}
         <SettingsGroup name={LL.common.community()} items={items.community} />
         <VersionComponent />
       </ScrollView>
