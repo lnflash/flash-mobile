@@ -694,7 +694,8 @@
         "nfcOnlyReceive": "Only receive from NFC is available for now",
         "nfcScanNow": "Scan NFC Now",
         "nfcNotSupported": "NFC is not supported on this device",
-        "logInOrCreateAccount": "Log in or create account"
+        "logInOrCreateAccount": "Log in or create account",
+        "keysManagement": "Keys management"
     },
     "AccountScreen": {
         "fundsMoreThan5Dollars": "Your account has more than $5",

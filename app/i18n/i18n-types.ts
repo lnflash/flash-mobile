@@ -2399,6 +2399,13 @@ type RootTranslation = {
 		 * L​o​g​ ​i​n​ ​o​r​ ​c​r​e​a​t​e​ ​a​c​c​o​u​n​t
 		 */
 		logInOrCreateAccount: string
+		backup: string
+		importWallet: string
+		showSeedPhrase: string
+		showNostrSecret: string
+		beginnerMode: string
+		advanceMode: string
+		keysManagement: string
 	}
 	AccountScreen: {
 		/**
@@ -6145,6 +6152,7 @@ export type TranslationFunctions = {
 		showNostrSecret: () => LocalizedString
 		beginnerMode: () => LocalizedString
 		advanceMode: () => LocalizedString
+		keysManagement: () => LocalizedString
 	}
 	AccountScreen: {
 		/**

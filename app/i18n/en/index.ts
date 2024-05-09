@@ -769,6 +769,7 @@ const en: BaseTranslation = {
     showNostrSecret: "Reveal Nostr secret",
     beginnerMode: "Switch to Beginner Mode",
     advanceMode: "Switch to Advanced Mode",
+    keysManagement: "Keys management"
   },
   AccountScreen: {
     fundsMoreThan5Dollars: "Your account has more than $5",
