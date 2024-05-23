@@ -61,10 +61,9 @@ const RedeemBitcoinResultScreen: React.FC<Prop> = ({ route }) => {
   const lastHash = useLnUpdateHashPaid()
 
   useEffect(() => {
-    // TODO: when USD is accepted:
-    // if (receivingWalletDescriptor.currency === WalletCurrency.Usd) {
-    //   navigation.setOptions({ title: LL.RedeemBitcoinScreen.usdTitle() })
-    // }
+    if (receivingWalletDescriptor.currency === WalletCurrency.Usd) {
+      navigation.setOptions({ title: LL.RedeemBitcoinScreen.usdTitle() })
+    }
 
     if (receivingWalletDescriptor.currency === WalletCurrency.Btc) {
       navigation.setOptions({ title: LL.RedeemBitcoinScreen.title() })
