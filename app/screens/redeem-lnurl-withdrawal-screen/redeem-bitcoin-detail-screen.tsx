@@ -68,14 +68,14 @@ const RedeemBitcoinDetailScreen: React.FC<Prop> = ({ route }) => {
   const usdWalletId = null // TODO: enable receiving USD when USD invoices support satoshi amounts
 
   useEffect(() => {
-    if (receiveCurrency === WalletCurrency.Usd) {
+    if (defaultWallet?.walletCurrency === WalletCurrency.Usd) {
       navigation.setOptions({ title: LL.RedeemBitcoinScreen.usdTitle() })
     }
 
-    if (receiveCurrency === WalletCurrency.Btc) {
+    if (defaultWallet?.walletCurrency === WalletCurrency.Btc) {
       navigation.setOptions({ title: LL.RedeemBitcoinScreen.title() })
     }
-  }, [receiveCurrency, navigation, LL])
+  }, [defaultWallet, navigation, LL])
 
   const [unitOfAccountAmount, setUnitOfAccountAmount] = useState<
     MoneyAmount<WalletOrDisplayCurrency>
@@ -146,7 +146,7 @@ const RedeemBitcoinDetailScreen: React.FC<Prop> = ({ route }) => {
         </Text>
         <View style={styles.currencyInputContainer}>
           <AmountInput
-            walletCurrency={receiveCurrency}
+            walletCurrency={defaultWallet?.walletCurrency || "BTC"}
             unitOfAccountAmount={unitOfAccountAmount}
             setAmount={setUnitOfAccountAmount}
             maxAmount={maxWithdrawableSatoshis}
