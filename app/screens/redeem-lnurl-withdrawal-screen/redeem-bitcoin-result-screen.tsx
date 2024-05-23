@@ -82,18 +82,28 @@ const RedeemBitcoinResultScreen: React.FC<Prop> = ({ route }) => {
   const invoicePaid = withdrawalInvoice?.paymentHash === lastHash
   const [lnUsdInvoiceCreate] = useLnUsdInvoiceCreateMutation()
 
+  useEffect(() => {
+    if (success || invoicePaid) {
+      const id = setTimeout(() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack()
+        }
+      }, 5000)
+      return () => clearTimeout(id)
+    }
+  }, [success, invoicePaid])
+
   const createWithdrawRequestInvoice = useCallback(
-    async (satAmount: number, memo: string) => {
+    async (amount: number, memo: string) => {
       setInvoice(null)
       try {
-        // logGeneratePaymentRequest({
-        //   paymentType: PaymentRequest.Lightning,
-        //   hasAmount: true,
-        //   receivingWallet: WalletCurrency.Btc,
-        // })
         const { data } = await lnUsdInvoiceCreate({
           variables: {
-            input: { walletId: receivingWalletDescriptor.id, amount: satAmount, memo },
+            input: {
+              walletId: receivingWalletDescriptor.id,
+              amount,
+              memo,
+            },
           },
         })
 
@@ -154,13 +164,13 @@ const RedeemBitcoinResultScreen: React.FC<Prop> = ({ route }) => {
       if (withdrawalInvoice) {
         submitLNURLWithdrawRequest(withdrawalInvoice)
       } else {
-        createWithdrawRequestInvoice(settlementAmount.amount, memo)
+        createWithdrawRequestInvoice(displayAmount.amount, memo)
       }
     }
   }, [
     withdrawalInvoice,
     memo,
-    settlementAmount,
+    displayAmount,
     createWithdrawRequestInvoice,
     submitLNURLWithdrawRequest,
     lnurl,
@@ -225,7 +235,7 @@ const RedeemBitcoinResultScreen: React.FC<Prop> = ({ route }) => {
   }, [err, lnServiceErrorReason, styles])
 
   const renderActivityStatusView = useMemo(() => {
-    if (err === "" && !invoicePaid) {
+    if (err === "" && !invoicePaid && !success) {
       return (
         <View style={styles.container}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -233,7 +243,7 @@ const RedeemBitcoinResultScreen: React.FC<Prop> = ({ route }) => {
       )
     }
     return null
-  }, [err, invoicePaid, styles, colors.primary])
+  }, [err, invoicePaid, success, styles, colors.primary])
 
   return (
     <Screen preset="scroll" style={styles.contentContainer}>
@@ -244,7 +254,7 @@ const RedeemBitcoinResultScreen: React.FC<Prop> = ({ route }) => {
           </Text>
         )}
         <View style={styles.currencyInputContainer}>
-          <Text>
+          <Text style={{ textAlign: "center" }}>
             {LL.RedeemBitcoinScreen.redeemAmountFrom({
               amountToRedeem: formatDisplayAndWalletAmount({
                 primaryAmount: unitOfAccountAmount,
