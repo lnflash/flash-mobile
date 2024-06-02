@@ -40,6 +40,8 @@ export const VersionComponent = () => {
     <Pressable onPress={() => setSecretMenuCounter(secretMenuCounter + 1)}>
       <Text {...testProps("Version Build Text")} style={styles.version}>
         {readableVersion}
+        {"\n"}
+        {LL.GetStartedScreen.headline()}
       </Text>
     </Pressable>
   )
