@@ -53,6 +53,7 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { setUserData } from "@app/store/redux/slices/userSlice"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 const TransactionCountToTriggerSetDefaultAccountModal = 1
 
@@ -102,11 +103,14 @@ export const HomeScreen: React.FC = () => {
     data: dataUnauthed,
   } = useHomeUnauthedQuery()
 
+  const { persistentState, updateState } = usePersistentStateContext()
   const [defaultAccountModalVisible, setDefaultAccountModalVisible] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [isContentVisible, setIsContentVisible] = useState(false)
   const [breezTransactions, setBreezTransactions] = useState<Payment[]>([])
-  const [mergedTransactions, setMergedTransactions] = useState<TransactionFragment[]>([])
+  const [mergedTransactions, setMergedTransactions] = useState<TransactionFragment[]>(
+    persistentState?.mergedTransactions || [],
+  )
   const [transactionLoading, setTransactionLoading] = useState(false)
   const [refreshTriggered, setRefreshTriggered] = useState(false)
 
@@ -143,7 +147,7 @@ export const HomeScreen: React.FC = () => {
   }
 
   const mergeTransactions = async (breezTxs: Payment[]) => {
-    const mergedTransactions = []
+    const mergedTransactions: TransactionFragment[] = []
 
     const formattedBreezTxs = await formatBreezTransactions(breezTxs)
 
@@ -170,6 +174,14 @@ export const HomeScreen: React.FC = () => {
     }
 
     setMergedTransactions(mergedTransactions.slice(0, 5))
+    updateState((state: any) => {
+      if (state)
+        return {
+          ...state,
+          mergedTransactions: mergedTransactions.slice(0, 5),
+        }
+      return undefined
+    })
     setTransactionLoading(false)
   }
 
@@ -363,7 +375,7 @@ export const HomeScreen: React.FC = () => {
           ))}
         </View>
 
-        {transactions.length > 0 && !loadingAuthed ? (
+        {transactions.length > 0 ? (
           <>
             <TouchableWithoutFeedback
               style={styles.recentTransaction}
