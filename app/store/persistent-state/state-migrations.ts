@@ -56,6 +56,8 @@ type PersistentState_7 = {
   galoyInstance: GaloyInstanceInput
   galoyAuthToken: string
   hasInitializedBreezSDK: boolean
+  breezBalance?: number
+  balance?: string
   btcBalance?: string
   usdBalance?: string
   convertedBtcBalance?: string
