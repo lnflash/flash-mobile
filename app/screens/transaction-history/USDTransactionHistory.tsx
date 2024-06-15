@@ -72,13 +72,26 @@ export const USDTransactionHistory: React.FC = () => {
   }
 
   if (error) {
+    if (error.message === "Network request failed") {
+      toastShow({
+        message: "Wallet is offline",
+        currentTranslation: LL,
+      })
+    } else {
+      toastShow({
+        message: (translations) => translations.common.transactionsError(),
+        currentTranslation: LL,
+      })
+    }
     console.error(error)
     crashlytics().recordError(error)
-    toastShow({
-      message: (translations) => translations.common.transactionsError(),
-      currentTranslation: LL,
-    })
-    return <></>
+    return (
+      <View style={styles.noTransactionView}>
+        <Text style={styles.noTransactionText}>
+          {LL.TransactionScreen.noTransaction()}
+        </Text>
+      </View>
+    )
   } else if (loading && transactions.length === 0) {
     return (
       <View style={styles.loadingContainer}>
