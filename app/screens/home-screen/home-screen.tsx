@@ -328,7 +328,7 @@ export const HomeScreen: React.FC = () => {
           isContentVisible={isContentVisible}
           setIsContentVisible={setIsContentVisible}
           loading={false}
-          breezBalance={breezBalance}
+          breezBalance={breezBalance ? breezBalance : 0}
         />
         <GaloyIconButton
           onPress={() => navigation.navigate("settings")}

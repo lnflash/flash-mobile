@@ -74,11 +74,7 @@ export const BalanceHeader: React.FC<Props> = ({
       const usdBalanceInDisplayCurrency =
         convertMoneyAmount && convertMoneyAmount(usdWalletBalance, DisplayCurrency)
 
-      if (
-        usdBalanceInDisplayCurrency &&
-        btcBalanceInDisplayCurrency &&
-        breezBalance !== null
-      ) {
+      if (usdBalanceInDisplayCurrency && btcBalanceInDisplayCurrency) {
         const formattedBalance = formatMoneyAmount({
           moneyAmount: addMoneyAmounts({
             a: walletType === "btc" ? toUsdMoneyAmount(0) : usdBalanceInDisplayCurrency,
