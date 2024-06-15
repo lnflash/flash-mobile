@@ -59,7 +59,7 @@ export const BalanceHeader: React.FC<Props> = ({
 
   React.useEffect(() => {
     formatBalance()
-  }, [isAuthed, data?.me?.defaultAccount?.wallets, breezBalance])
+  }, [isAuthed, data?.me?.defaultAccount?.wallets, breezBalance, walletType])
 
   const formatBalance = () => {
     if (isAuthed) {
