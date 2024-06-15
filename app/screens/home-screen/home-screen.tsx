@@ -131,12 +131,28 @@ export const HomeScreen: React.FC = () => {
 
   useFocusEffect(
     React.useCallback(() => {
-      if (breezSDKInitialized) {
+      if (isAdvanceMode && breezSDKInitialized) {
         fetchPaymentsBreez()
         refreshBreezBalance()
+      } else {
+        updateMergedTransactions(transactionsEdges?.map((el) => el.node))
       }
-    }, [breezSDKInitialized, loadingAuthed]),
+    }, [breezSDKInitialized, loadingAuthed, isAdvanceMode]),
   )
+
+  const updateMergedTransactions = (txs: TransactionFragment[]) => {
+    if (txs.length > 0) {
+      setMergedTransactions(txs.slice(0, 5))
+      updateState((state: any) => {
+        if (state)
+          return {
+            ...state,
+            mergedTransactions: txs.slice(0, 5),
+          }
+        return undefined
+      })
+    }
+  }
 
   const fetchPaymentsBreez = async () => {
     setTransactionLoading(true)
@@ -173,15 +189,7 @@ export const HomeScreen: React.FC = () => {
       j++
     }
 
-    setMergedTransactions(mergedTransactions.slice(0, 5))
-    updateState((state: any) => {
-      if (state)
-        return {
-          ...state,
-          mergedTransactions: mergedTransactions.slice(0, 5),
-        }
-      return undefined
-    })
+    updateMergedTransactions(mergedTransactions)
     setTransactionLoading(false)
   }
 
@@ -278,10 +286,6 @@ export const HomeScreen: React.FC = () => {
     })
   }
 
-  const transactions = isAdvanceMode
-    ? mergedTransactions
-    : transactionsEdges?.map((el) => el.node).slice(0, 5)
-
   const AccountCreationNeededModal = (
     <Modal
       style={styles.modal}
@@ -375,7 +379,7 @@ export const HomeScreen: React.FC = () => {
           ))}
         </View>
 
-        {transactions.length > 0 ? (
+        {mergedTransactions.length > 0 ? (
           <>
             <TouchableWithoutFeedback
               style={styles.recentTransaction}
@@ -389,7 +393,7 @@ export const HomeScreen: React.FC = () => {
                 {LL.TransactionScreen.title()}
               </Text>
             </TouchableWithoutFeedback>
-            {transactions.map((item, index) => {
+            {mergedTransactions.map((item, index) => {
               if (item.settlementCurrency === "BTC") {
                 return (
                   <BreezTransactionItem
@@ -398,7 +402,7 @@ export const HomeScreen: React.FC = () => {
                     subtitle
                     isOnHomeScreen={true}
                     isFirst={index === 0}
-                    isLast={index === transactions.length - 1}
+                    isLast={index === mergedTransactions.length - 1}
                   />
                 )
                 // eslint-disable-next-line no-else-return
@@ -410,7 +414,7 @@ export const HomeScreen: React.FC = () => {
                     subtitle
                     isOnHomeScreen={true}
                     isFirst={index === 0}
-                    isLast={index === transactions.length - 1}
+                    isLast={index === mergedTransactions.length - 1}
                   />
                 )
               }
