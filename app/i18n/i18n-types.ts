@@ -3537,6 +3537,7 @@ type RootTranslation = {
 		 * W​a​r​n​i​n​g
 		 */
 		warning: string
+		btcWalletOffline: string
 	}
 	errors: {
 		/**
@@ -7330,6 +7331,7 @@ export type TranslationFunctions = {
 		 * Warning
 		 */
 		warning: () => LocalizedString
+		btcWalletOffline: () => LocalizedString
 	}
 	errors: {
 		/**
