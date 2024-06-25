@@ -1,8 +1,5 @@
 import { gql } from "@apollo/client"
-import {
-  useAccountUpdateDefaultWalletIdMutation,
-  useSetDefaultWalletScreenQuery,
-} from "@app/graphql/generated"
+import { useSetDefaultWalletScreenQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { Text, makeStyles } from "@rneui/themed"
@@ -12,7 +9,9 @@ import { Screen } from "../../components/screen"
 import { testProps } from "../../utils/testProps"
 import { GaloyInfo } from "@app/components/atomic/galoy-info"
 import { MenuSelect, MenuSelectItem } from "@app/components/menu-select"
-import { getBtcWallet, getUsdWallet } from "@app/graphql/wallets-utils"
+import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { useBreez } from "@app/hooks"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 gql`
   mutation accountUpdateDefaultWalletId($input: AccountUpdateDefaultWalletIdInput!) {
@@ -47,7 +46,9 @@ export const DefaultWalletScreen: React.FC = () => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const isAuthed = useIsAuthed()
+  const { btcWallet } = useBreez()
 
+  const { persistentState, updateState } = usePersistentStateContext()
   const [newDefaultWalletId, setNewDefaultWalletId] = React.useState("")
 
   const { data } = useSetDefaultWalletScreenQuery({
@@ -55,33 +56,32 @@ export const DefaultWalletScreen: React.FC = () => {
     skip: !isAuthed,
   })
 
-  const btcWallet = getBtcWallet(data?.me?.defaultAccount?.wallets)
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
   const btcWalletId = btcWallet?.id
   const usdWalletId = usdWallet?.id
 
-  const defaultWalletId = data?.me?.defaultAccount?.defaultWalletId
-
-  const [accountUpdateDefaultWallet, { loading }] =
-    useAccountUpdateDefaultWalletIdMutation()
+  const defaultWalletId = persistentState.defaultWallet?.id || usdWalletId
 
   if (!usdWalletId || !btcWalletId) {
     return <Text>{"missing walletIds"}</Text>
   }
 
   const handleSetDefaultWallet = async (id: string) => {
-    if (loading) return
-    if (id !== defaultWalletId) {
-      await accountUpdateDefaultWallet({
-        variables: {
-          input: {
-            walletId: id,
-          },
-        },
-      })
-      setNewDefaultWalletId(id)
+    let defaultWallet = usdWallet
+
+    if (id === btcWalletId) {
+      defaultWallet = btcWallet
     }
+
+    updateState((state: any) => {
+      if (state)
+        return {
+          ...state,
+          defaultWallet,
+        }
+      return undefined
+    })
   }
 
   const Wallets = [
