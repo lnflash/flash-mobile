@@ -450,6 +450,7 @@ export const HomeScreen: React.FC = () => {
         <SetDefaultAccountModal
           isVisible={defaultAccountModalVisible}
           toggleModal={() => setDefaultAccountModalVisible(!defaultAccountModalVisible)}
+          transactionLength={breezTransactions.length}
         />
       </ScrollView>
     </Screen>

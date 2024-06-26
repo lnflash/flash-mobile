@@ -1147,7 +1147,7 @@ const en: BaseTranslation = {
     soon: "Coming soon!",
     submit: "Submit",
     success: "Success!",
-    stablesatsUsd: "USD Cash",
+    stablesatsUsd: "Cash (USD)",
     to: "To",
     total: "Total",
     transactions: "Transactions",
