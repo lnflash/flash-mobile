@@ -49,7 +49,6 @@ export const DefaultWalletScreen: React.FC = () => {
   const { btcWallet } = useBreez()
 
   const { persistentState, updateState } = usePersistentStateContext()
-  const [newDefaultWalletId, setNewDefaultWalletId] = React.useState("")
 
   const { data } = useSetDefaultWalletScreenQuery({
     fetchPolicy: "cache-first",
@@ -98,10 +97,7 @@ export const DefaultWalletScreen: React.FC = () => {
 
   return (
     <Screen preset="scroll">
-      <MenuSelect
-        value={newDefaultWalletId || defaultWalletId || ""}
-        onChange={handleSetDefaultWallet}
-      >
+      <MenuSelect value={defaultWalletId || ""} onChange={handleSetDefaultWallet}>
         {Wallets.map(({ name, id }) => (
           <MenuSelectItem key={id} value={id} {...testProps(name)}>
             {name}

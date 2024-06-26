@@ -136,9 +136,9 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
 
   const network = "mainnet" // data?.globals?.network
 
-  let wallets = data?.me?.defaultAccount?.wallets as any
+  let wallets = data?.me?.defaultAccount?.wallets as any[]
   if (isAdvanceMode && btcWallet) {
-    wallets = [...wallets, btcWallet]
+    wallets.push(btcWallet)
   }
 
   const { paymentDestination } = route.params
