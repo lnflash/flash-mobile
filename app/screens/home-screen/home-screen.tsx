@@ -156,7 +156,7 @@ export const HomeScreen: React.FC = () => {
 
   const fetchPaymentsBreez = async () => {
     setTransactionLoading(true)
-    const payments = await listPaymentsBreezSDK()
+    const payments = await listPaymentsBreezSDK(0, 5)
     mergeTransactions(payments)
 
     setBreezTransactions(payments)
