@@ -12,8 +12,9 @@ type BtcWallet = {
   balance: number
 }
 
-export const useBreez = (): { btcWallet: BtcWallet | undefined } => {
+export const useBreez = (): { btcWallet: BtcWallet | undefined; loading: boolean } => {
   const { isAdvanceMode } = useAppSelector((state) => state.settings)
+  const [loading, setLoading] = useState(false)
   const [btcWallet, setBtcWallet] = useState<BtcWallet>()
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export const useBreez = (): { btcWallet: BtcWallet | undefined } => {
   }, [isAdvanceMode])
 
   const getBreezInfo = async () => {
+    setLoading(true)
     await initializeBreezSDK()
     const nodeState = await nodeInfo()
 
@@ -29,7 +31,8 @@ export const useBreez = (): { btcWallet: BtcWallet | undefined } => {
       walletCurrency: WalletCurrency.Btc,
       balance: nodeState.channelsBalanceMsat / 1000,
     })
+    setLoading(false)
   }
 
-  return { btcWallet }
+  return { btcWallet, loading }
 }

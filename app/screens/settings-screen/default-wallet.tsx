@@ -4,7 +4,7 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { Text, makeStyles } from "@rneui/themed"
 import * as React from "react"
-import { View } from "react-native"
+import { ActivityIndicator, View } from "react-native"
 import { Screen } from "../../components/screen"
 import { testProps } from "../../utils/testProps"
 import { GaloyInfo } from "@app/components/atomic/galoy-info"
@@ -43,12 +43,11 @@ gql`
 `
 
 export const DefaultWalletScreen: React.FC = () => {
-  const { LL } = useI18nContext()
+  const { persistentState, updateState } = usePersistentStateContext()
   const styles = useStyles()
   const isAuthed = useIsAuthed()
-  const { btcWallet } = useBreez()
-
-  const { persistentState, updateState } = usePersistentStateContext()
+  const { LL } = useI18nContext()
+  const { btcWallet, loading } = useBreez()
 
   const { data } = useSetDefaultWalletScreenQuery({
     fetchPolicy: "cache-first",
@@ -61,10 +60,6 @@ export const DefaultWalletScreen: React.FC = () => {
   const usdWalletId = usdWallet?.id
 
   const defaultWalletId = persistentState.defaultWallet?.id || usdWalletId
-
-  if (!usdWalletId || !btcWalletId) {
-    return <Text>{"missing walletIds"}</Text>
-  }
 
   const handleSetDefaultWallet = async (id: string) => {
     let defaultWallet = usdWallet
@@ -85,34 +80,52 @@ export const DefaultWalletScreen: React.FC = () => {
 
   const Wallets = [
     {
-      // TODO: translation
       name: "Bitcoin",
-      id: btcWalletId,
+      id: btcWalletId || "",
     },
     {
       name: "Cash (USD)",
-      id: usdWalletId,
+      id: usdWalletId || "",
     },
   ] as const
 
-  return (
-    <Screen preset="scroll">
-      <MenuSelect value={defaultWalletId || ""} onChange={handleSetDefaultWallet}>
-        {Wallets.map(({ name, id }) => (
-          <MenuSelectItem key={id} value={id} {...testProps(name)}>
-            {name}
-          </MenuSelectItem>
-        ))}
-      </MenuSelect>
-      <View style={styles.containerInfo}>
-        <GaloyInfo>{LL.DefaultWalletScreen.info()}</GaloyInfo>
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size={"large"} color={"#60aa55"} />
       </View>
-    </Screen>
-  )
+    )
+  } else if (!usdWalletId || !btcWalletId) {
+    return (
+      <View style={styles.container}>
+        <Text>{"Missing Wallet Ids"}</Text>
+      </View>
+    )
+  } else {
+    return (
+      <Screen preset="scroll">
+        <MenuSelect value={defaultWalletId || ""} onChange={handleSetDefaultWallet}>
+          {Wallets.map(({ name, id }) => (
+            <MenuSelectItem key={id} value={id} {...testProps(name)}>
+              {name}
+            </MenuSelectItem>
+          ))}
+        </MenuSelect>
+        <View style={styles.containerInfo}>
+          <GaloyInfo>{LL.DefaultWalletScreen.info()}</GaloyInfo>
+        </View>
+      </Screen>
+    )
+  }
 }
 
 const useStyles = makeStyles(() => ({
   containerInfo: {
     margin: 20,
+  },
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
 }))
