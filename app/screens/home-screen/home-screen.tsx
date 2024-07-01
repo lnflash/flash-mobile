@@ -43,7 +43,11 @@ import { isIos } from "@app/utils/helper"
 // breez
 import { Payment } from "@breeztech/react-native-breez-sdk"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
-import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk"
+import {
+  breezSDKInitialized,
+  listPaymentsBreezSDK,
+  paymentEvents,
+} from "@app/utils/breez-sdk"
 import { toBtcMoneyAmount } from "@app/types/amounts"
 import useBreezBalance from "@app/hooks/useBreezBalance"
 
@@ -121,6 +125,21 @@ export const HomeScreen: React.FC = () => {
   const numberOfTxs = dataAuthed?.me?.defaultAccount?.transactions?.edges?.length ?? 0
 
   useEffect(() => {
+    if (breezSDKInitialized) {
+      fetchPaymentsBreez()
+      // Subscribe to the "paymentSuccess" event.
+      paymentEvents.once("invoicePaid", fetchPaymentsBreez)
+      paymentEvents.once("paymentSuccess", fetchPaymentsBreez)
+
+      // Clean up: unsubscribe to prevent memory leaks.
+      return () => {
+        paymentEvents.off("invoicePaid", fetchPaymentsBreez)
+        paymentEvents.off("paymentSuccess", fetchPaymentsBreez)
+      }
+    }
+  }, [breezSDKInitialized])
+
+  useEffect(() => {
     if (dataAuthed?.me) {
       dispatch(setUserData(dataAuthed.me))
       saveDefaultWallet()
@@ -134,7 +153,6 @@ export const HomeScreen: React.FC = () => {
   useFocusEffect(
     React.useCallback(() => {
       if (isAdvanceMode && breezSDKInitialized) {
-        fetchPaymentsBreez()
         refreshBreezBalance()
       } else {
         updateMergedTransactions(transactionsEdges?.map((el) => el.node))
@@ -161,12 +179,12 @@ export const HomeScreen: React.FC = () => {
 
   const updateMergedTransactions = (txs: TransactionFragment[]) => {
     if (txs.length > 0) {
-      setMergedTransactions(txs.slice(0, 5))
+      setMergedTransactions(txs.slice(0, 3))
       updateState((state: any) => {
         if (state)
           return {
             ...state,
-            mergedTransactions: txs.slice(0, 5),
+            mergedTransactions: txs.slice(0, 3),
           }
         return undefined
       })
@@ -175,7 +193,7 @@ export const HomeScreen: React.FC = () => {
 
   const fetchPaymentsBreez = async () => {
     setTransactionLoading(true)
-    const payments = await listPaymentsBreezSDK()
+    const payments = await listPaymentsBreezSDK(0, 3)
     mergeTransactions(payments)
 
     setBreezTransactions(payments)
