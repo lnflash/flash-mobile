@@ -38,7 +38,6 @@ import { getDefaultWallet } from "@app/graphql/wallets-utils"
 
 // utils
 import { testProps } from "../../utils/testProps"
-import { isIos } from "@app/utils/helper"
 
 // breez
 import { Payment } from "@breeztech/react-native-breez-sdk"
@@ -49,10 +48,9 @@ import {
   paymentEvents,
 } from "@app/utils/breez-sdk"
 import { toBtcMoneyAmount } from "@app/types/amounts"
-import useBreezBalance from "@app/hooks/useBreezBalance"
 
 // hooks
-import { useAppConfig, usePriceConversion, useRedeem } from "@app/hooks"
+import { useAppConfig, useBreez, usePriceConversion, useRedeem } from "@app/hooks"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 
 // store
@@ -78,7 +76,7 @@ export const HomeScreen: React.FC = () => {
   const isAuthed = useIsAuthed()
   const { LL } = useI18nContext()
   const { convertMoneyAmount } = usePriceConversion()
-  const [breezBalance, refreshBreezBalance] = useBreezBalance()
+  const { btcWallet, refreshBreez } = useBreez()
   const { nostrSecretKey } = useNostrProfile()
   const { pendingSwap, checkInProgressSwap } = useRedeem()
 
@@ -116,22 +114,19 @@ export const HomeScreen: React.FC = () => {
   const [mergedTransactions, setMergedTransactions] = useState<TransactionFragment[]>(
     persistentState?.mergedTransactions || [],
   )
-  const [transactionLoading, setTransactionLoading] = useState(false)
+  const [breezTxsLoading, setBreezTxsLoading] = useState(false)
   const [refreshTriggered, setRefreshTriggered] = useState(false)
 
   const isBalanceVisible = hideBalance ?? false
-  const loading = (loadingAuthed || loadingPrice || loadingUnauthed) && isAuthed
   const transactionsEdges = dataAuthed?.me?.defaultAccount?.transactions?.edges ?? []
   const numberOfTxs = dataAuthed?.me?.defaultAccount?.transactions?.edges?.length ?? 0
 
   useEffect(() => {
-    if (breezSDKInitialized) {
+    if (breezSDKInitialized && isAdvanceMode) {
       fetchPaymentsBreez()
-      // Subscribe to the "paymentSuccess" event.
       paymentEvents.once("invoicePaid", fetchPaymentsBreez)
       paymentEvents.once("paymentSuccess", fetchPaymentsBreez)
 
-      // Clean up: unsubscribe to prevent memory leaks.
       return () => {
         paymentEvents.off("invoicePaid", fetchPaymentsBreez)
         paymentEvents.off("paymentSuccess", fetchPaymentsBreez)
@@ -140,25 +135,26 @@ export const HomeScreen: React.FC = () => {
   }, [breezSDKInitialized])
 
   useEffect(() => {
+    if (!loadingAuthed && !breezTxsLoading) {
+      mergeTransactions(breezTransactions)
+    }
+  }, [
+    dataAuthed?.me?.defaultAccount?.transactions?.edges,
+    breezTransactions,
+    loadingAuthed,
+    breezTxsLoading,
+  ])
+
+  useEffect(() => {
     if (dataAuthed?.me) {
       dispatch(setUserData(dataAuthed.me))
       saveDefaultWallet()
     }
-  }, [dataAuthed?.me])
+  }, [dataAuthed?.me?.username])
 
   useEffect(() => {
     setIsContentVisible(isBalanceVisible)
   }, [isBalanceVisible])
-
-  useFocusEffect(
-    React.useCallback(() => {
-      if (isAdvanceMode && breezSDKInitialized) {
-        refreshBreezBalance()
-      } else {
-        updateMergedTransactions(transactionsEdges?.map((el) => el.node))
-      }
-    }, [breezSDKInitialized, loadingAuthed, isAdvanceMode]),
-  )
 
   const saveDefaultWallet = () => {
     if (!persistentState.defaultWallet) {
@@ -192,16 +188,15 @@ export const HomeScreen: React.FC = () => {
   }
 
   const fetchPaymentsBreez = async () => {
-    setTransactionLoading(true)
+    setBreezTxsLoading(true)
+    refreshBreez()
     const payments = await listPaymentsBreezSDK(0, 3)
-    mergeTransactions(payments)
-
     setBreezTransactions(payments)
+    setBreezTxsLoading(false)
   }
 
   const mergeTransactions = async (breezTxs: Payment[]) => {
     const mergedTransactions: TransactionFragment[] = []
-
     const formattedBreezTxs = await formatBreezTransactions(breezTxs)
 
     let i = 0
@@ -227,7 +222,6 @@ export const HomeScreen: React.FC = () => {
     }
 
     updateMergedTransactions(mergedTransactions)
-    setTransactionLoading(false)
   }
 
   const formatBreezTransactions = async (txs: Payment[]) => {
@@ -251,9 +245,12 @@ export const HomeScreen: React.FC = () => {
       refetchRealtimePrice()
       refetchAuthed()
       refetchUnauthed()
-      fetchPaymentsBreez()
-      checkInProgressSwap()
-      refreshBreezBalance()
+
+      if (isAdvanceMode && breezSDKInitialized) {
+        fetchPaymentsBreez()
+        checkInProgressSwap()
+      }
+
       setRefreshTriggered(true)
       setTimeout(() => setRefreshTriggered(false), 1000)
     }
@@ -365,7 +362,7 @@ export const HomeScreen: React.FC = () => {
           isContentVisible={isContentVisible}
           setIsContentVisible={setIsContentVisible}
           loading={false}
-          breezBalance={breezBalance ? breezBalance : 0}
+          breezBalance={btcWallet?.balance || 0}
         />
         <GaloyIconButton
           onPress={() => navigation.navigate("settings")}
@@ -378,7 +375,7 @@ export const HomeScreen: React.FC = () => {
         contentContainerStyle={[styles.scrollView, styles.container]}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
+            refreshing={refreshTriggered}
             onRefresh={refetch}
             colors={[colors.primary]} // Android refresh indicator colors
             tintColor={colors.primary} // iOS refresh indicator color
@@ -390,7 +387,7 @@ export const HomeScreen: React.FC = () => {
           isContentVisible={isContentVisible}
           setIsContentVisible={setIsContentVisible}
           loading={false}
-          breezBalance={breezBalance}
+          breezBalance={btcWallet?.balance || 0}
           pendingBalance={
             pendingSwap && pendingSwap?.channelOpeningFees
               ? pendingSwap?.unconfirmedSats -
@@ -459,7 +456,7 @@ export const HomeScreen: React.FC = () => {
           </>
         ) : (
           <ActivityIndicator
-            animating={isAdvanceMode ? transactionLoading : loadingAuthed}
+            animating={breezTxsLoading || loadingAuthed}
             size="large"
             color={colors.primary}
           />
