@@ -42,7 +42,15 @@ export const BreezProvider = ({ children }: Props) => {
   })
 
   useEffect(() => {
-    if (isAdvanceMode) getBreezInfo()
+    if (isAdvanceMode) {
+      getBreezInfo()
+    } else {
+      setBtcWallet({
+        id: "",
+        walletCurrency: "BTC",
+        balance: 0,
+      })
+    }
   }, [isAdvanceMode])
 
   const getBreezInfo = async () => {
