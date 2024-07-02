@@ -15,17 +15,7 @@ const useNostrProfile = () => {
   const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
   const [nostrSecretKey, setNostrSecretKey] = useState<string>("")
   const [nostrPublicKey, setNostrPublicKey] = useState<string>("")
-  const relays = [
-    "wss://relay.damus.io",
-    "wss://relay.primal.net",
-    "wss://nos.lol",
-    "wss://purplerelay.com/",
-    "wss://relay.snort.social/",
-    "wss://nostr.bitcoiner.social/",
-    "wss://nostr.oxtr.dev/",
-    "wss://relay.mostr.pub/",
-    "wss://purplerelay.com",
-  ]
+  const relays = ["wss://relay.staging.flashapp.me"]
 
   const fetchSecretFromLocalStorage = async () => {
     let credentials = await Keychain.getInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
