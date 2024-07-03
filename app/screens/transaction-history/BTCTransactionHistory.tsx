@@ -1,4 +1,4 @@
-import * as React from "react"
+import React, { useEffect, useState } from "react"
 import { ActivityIndicator, SectionList, Text, View } from "react-native"
 import { usePriceConversion } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -9,7 +9,7 @@ import { Screen } from "@app/components/screen"
 import { BreezTransactionItem } from "@app/components/transaction-item/breez-transaction-item"
 
 // graphql
-import { WalletCurrency } from "@app/graphql/generated"
+import { TransactionFragment, WalletCurrency } from "@app/graphql/generated"
 import { groupTransactionsByDate } from "@app/graphql/transactions"
 
 // Breez SDK
@@ -19,7 +19,6 @@ import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 
 // types
 import { toBtcMoneyAmount } from "@app/types/amounts"
-import { SectionTransactions } from "./index.types"
 
 // store
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -33,35 +32,39 @@ export const BTCTransactionHistory: React.FC = () => {
   const { convertMoneyAmount } = usePriceConversion()
 
   const { persistentState, updateState } = usePersistentStateContext()
-  const [breezLoading, setBreezLoading] = React.useState(false)
-  const [txsList, setTxsList] = React.useState<SectionTransactions[]>(
-    persistentState.btcTransactions || [],
-  )
 
-  React.useEffect(() => {
-    fetchPaymentsBreez()
+  const [refreshing, setRefreshing] = useState(false)
+  const [fetchingMore, setFetchingMore] = useState(false)
+  const [breezLoading, setBreezLoading] = useState(false)
+  const [txsList, setTxsList] = useState<TransactionFragment[]>([])
+
+  useEffect(() => {
+    fetchPaymentsBreez(0)
   }, [])
 
-  const fetchPaymentsBreez = async () => {
+  const fetchPaymentsBreez = async (offset: number) => {
     setBreezLoading(true)
 
-    const payments = await listPaymentsBreezSDK()
-    const formattedBreezTxs = await formatBreezTransactions(payments)
-    const transactionSections = groupTransactionsByDate({
-      txs: formattedBreezTxs ?? [],
-      common: LL.common,
-    })
+    const payments = await listPaymentsBreezSDK(offset, 5)
+    let formattedBreezTxs = await formatBreezTransactions(payments)
 
-    setTxsList(transactionSections)
+    if (offset === 0) {
+      setTxsList(formattedBreezTxs)
+      updateState((state: any) => {
+        if (state)
+          return {
+            ...state,
+            btcTransactions: formattedBreezTxs,
+          }
+        return undefined
+      })
+    } else {
+      setTxsList([...txsList, ...formattedBreezTxs])
+    }
+
     setBreezLoading(false)
-    updateState((state: any) => {
-      if (state)
-        return {
-          ...state,
-          btcTransactions: transactionSections,
-        }
-      return undefined
-    })
+    setRefreshing(false)
+    setFetchingMore(false)
   }
 
   const formatBreezTransactions = async (txs: Payment[]) => {
@@ -80,7 +83,26 @@ export const BTCTransactionHistory: React.FC = () => {
     return formattedTxs?.filter(Boolean) ?? []
   }
 
-  if (breezLoading && txsList.length === 0) {
+  const transactionSections = groupTransactionsByDate({
+    txs: txsList ?? [],
+    common: LL.common,
+  })
+
+  const onRefresh = () => {
+    if (!breezLoading) {
+      setRefreshing(true)
+      fetchPaymentsBreez(0)
+    }
+  }
+
+  const onEndReached = () => {
+    if (!breezLoading) {
+      setFetchingMore(true)
+      fetchPaymentsBreez(txsList.length)
+    }
+  }
+
+  if (breezLoading && transactionSections.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator color={colors.primary} size={"large"} />
@@ -113,9 +135,15 @@ export const BTCTransactionHistory: React.FC = () => {
               </Text>
             </View>
           }
-          sections={txsList}
-          keyExtractor={(item) => item.id}
+          ListFooterComponent={() =>
+            fetchingMore && <ActivityIndicator color={colors.primary} size={"large"} />
+          }
+          sections={transactionSections}
+          keyExtractor={(item, index) => item.id + index}
           onEndReachedThreshold={0.5}
+          onEndReached={onEndReached}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
         />
       </Screen>
     )
