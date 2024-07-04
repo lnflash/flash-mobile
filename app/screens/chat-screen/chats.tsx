@@ -17,8 +17,8 @@ import { useContactsQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
-import useNostrProfile from "@app/hooks/use-nostr-profile"
-import { nip05 } from "nostr-tools"
+import useNostrProfile, { ChatInfo } from "@app/hooks/use-nostr-profile"
+import { Event, nip05 } from "nostr-tools"
 import { nip19 } from "nostr-tools"
 
 gql`
@@ -41,14 +41,14 @@ export const ChatScreen: React.FC = () => {
     theme: { colors },
   } = useTheme()
 
-  const { fetchNostrUser, retrieveMessagedUsers } = useNostrProfile()
+  const { fetchNostrUser, retrieveMessagedUsers, fetchGiftWraps } = useNostrProfile()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
 
   const isAuthed = useIsAuthed()
 
   const [matchingContacts, setMatchingContacts] = useState<Contact[]>([])
-  const [nostrProfiles, setNostrProfiles] = useState<NostrProfile[]>([])
-  const [messagedUsers, setMessagedUsers] = useState<NostrProfile[]>([])
+  const [giftwrapEvents, setGiftWrapEvents] = useState<Event[] | undefined>()
+  const [chats, setChats] = useState<Set<ChatInfo>>(new Set())
   const [searchText, setSearchText] = useState("")
   const [refreshing, setRefreshing] = useState(false)
   const [initialized, setInitialized] = useState(false)
@@ -69,23 +69,36 @@ export const ChatScreen: React.FC = () => {
   const reset = useCallback(() => {
     setSearchText("")
     setMatchingContacts(contacts)
-    setNostrProfiles(messagedUsers)
+    setChats(chats)
   }, [contacts])
 
+  const giftwrapHandler = (event: Event) => {
+    console.log("RECEIVED A GIFT WRAP EVENT", event)
+    setGiftWrapEvents((prevEvents) => [...(prevEvents || []), event])
+  }
+
   React.useEffect(() => {
+    let sub: any
     const unsubscribe = navigation.addListener("focus", async () => {
       setInitialized(false)
       initialize()
+      if (sub) {
+        sub.close()
+      }
     })
     async function initialize() {
       console.log("Initializing chat screen use effect")
       setMatchingContacts(contacts)
-      let messagedUsers = await retrieveMessagedUsers()
-      setMessagedUsers(messagedUsers)
-      setNostrProfiles(messagedUsers)
+      let sub = fetchGiftWraps(giftwrapHandler)
+      let chats = await retrieveMessagedUsers(giftwrapEvents || [])
+      console.log("GOT CHATS AS ", chats)
+      setChats(chats)
       setInitialized(true)
+      return sub
     }
-    initialize()
+    initialize().then((value: any) => {
+      sub = value
+    })
     return unsubscribe
   }, [])
 
@@ -100,18 +113,28 @@ export const ChatScreen: React.FC = () => {
       if (newSearchText.match(aliasPattern)) {
         let nostrUser = await nip05.queryProfile(newSearchText.toLowerCase())
         if (nostrUser) {
-          let nostrUserProfile = await fetchNostrUser(nip19.npubEncode(nostrUser.pubkey))
-          if (nostrUserProfile) {
-            setNostrProfiles([nostrUserProfile])
+          let nostrUserProfile = (await fetchNostrUser(
+            nip19.npubEncode(nostrUser.pubkey),
+          )) as Event
+          if (chats.size !== 0) {
+            let newChats = new Set([...chats])
+            newChats.add({ pubkeys: [nostrUserProfile.pubkey] })
+            setChats(newChats)
             setRefreshing(false)
             return
+          } else {
+            setChats(new Set([{ pubkeys: [nostrUserProfile.pubkey] }]))
           }
         }
       }
       if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
         try {
           let nostrProfile = await fetchNostrUser(newSearchText as `npub1${string}`)
-          setNostrProfiles(nostrProfile ? [nostrProfile] : [])
+          setChats(
+            nostrProfile
+              ? new Set<ChatInfo>([{ pubkeys: [nostrProfile.pubkey] }])
+              : new Set(),
+          )
         } catch (e) {
           console.log("Error fetching nostr profile", e)
         }
@@ -119,7 +142,6 @@ export const ChatScreen: React.FC = () => {
         return
       }
       setMatchingContacts([])
-      setNostrProfiles(messagedUsers)
       try {
         if (newSearchText.length > 0) {
           const searchWordArray = newSearchText
@@ -142,14 +164,11 @@ export const ChatScreen: React.FC = () => {
   )
 
   const NostrProfilesToChat = () => {
-    return nostrProfiles.map((profile) => {
+    return Array.from(chats).map((chatInfo: ChatInfo) => {
       return {
-        id: profile.pubkey,
-        name: profile.name,
-        alias: profile.nip05,
-        username: profile.nip05,
-        picture: profile.picture,
-        lud16: profile.lud16,
+        id: chatInfo.pubkeys.join(","),
+        name: chatInfo.subject,
+        picture: null,
       }
     })
   }
