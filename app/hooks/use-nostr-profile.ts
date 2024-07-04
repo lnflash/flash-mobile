@@ -8,8 +8,20 @@ import {
   nip04,
   UnsignedEvent,
   finalizeEvent,
+  nip44,
+  Event,
 } from "nostr-tools"
-import { MessageType } from "@flyerhq/react-native-chat-ui"
+import {
+  createRumor,
+  createSeal,
+  createWrap,
+  decryptNip44Message,
+} from "@app/utils/nostr"
+
+export interface ChatInfo {
+  pubkeys: string[]
+  subject?: string
+}
 
 const useNostrProfile = () => {
   const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
@@ -24,6 +36,14 @@ const useNostrProfile = () => {
       return credentials.password
     }
     return false
+  }
+
+  async function encryptMessage(message: string, receiverPublicKey: string) {
+    let privateKey = Buffer.from(
+      nip19.decode(nostrSecretKey).data as Uint8Array,
+    ).toString("hex")
+    let ciphertext = await nip04.encrypt(privateKey, receiverPublicKey, message)
+    return ciphertext
   }
 
   useEffect(() => {
@@ -58,12 +78,12 @@ const useNostrProfile = () => {
     })
     pool.close(relays)
     if (!nostrProfile?.content) {
-      return null
+      return { pubkey: npub }
     }
     try {
       return {
         ...JSON.parse(nostrProfile.content),
-        pubkey: nip19.npubEncode(nostrProfile.pubkey),
+        pubkey: nostrProfile.pubkey,
       }
     } catch (error) {
       console.error("Error parsing nostr profile: ", error)
@@ -89,18 +109,23 @@ const useNostrProfile = () => {
     return pubKey
   }
 
-  async function encryptMessage(message: string, receiverPublicKey: string) {
-    let privateKey = Buffer.from(
-      nip19.decode(nostrSecretKey).data as Uint8Array,
-    ).toString("hex")
-    let ciphertext = await nip04.encrypt(privateKey, receiverPublicKey, message)
-    return ciphertext
-  }
+  async function sendNip17Message(recipientId: string, message: string) {
+    let recipient = nip19.decode(recipientId).data as string
+    let privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
+    let rumor = createRumor(
+      { content: message, kind: 14, tags: [["p", `${recipient}`]] },
+      privateKey,
+    )
+    let seal = createSeal(rumor, privateKey, recipient)
+    let wrap = createWrap(seal, recipient)
+    let selfWrap = createWrap(seal, getPublicKey(privateKey))
 
-  function signEvent(baseEvent: UnsignedEvent, userSecretKey: string) {
-    const privateKey = nip19.decode(userSecretKey).data as Uint8Array
-    const nostrEvent = finalizeEvent(baseEvent, privateKey)
-    return nostrEvent
+    console.warn("Final Wrap Is", wrap)
+    const pool = new SimplePool()
+    const messagesEvent1 = await Promise.allSettled(pool.publish(relays, wrap))
+    const messagesEvent2 = await Promise.allSettled(pool.publish(relays, selfWrap))
+    console.warn("Messages from relays", messagesEvent1, messagesEvent2)
+    pool.close(relays)
   }
 
   const sendMessage = async (recipientId: string, message: string) => {
@@ -120,58 +145,38 @@ const useNostrProfile = () => {
     pool.close(relays)
   }
 
-  const fetchMessagedEvents = async () => {
-    let pubkey = nip19.decode(await getPubkey()).data as string
-    let filter = {
-      kinds: [4],
-      authors: [pubkey],
-    }
+  const fetchGiftWraps = async (eventHandler: (event: Event) => void) => {
+    const privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
     const pool = new SimplePool()
-    let messagedEvents = await pool.querySync(relays, filter)
-    pool.close(relays)
-    return messagedEvents
-  }
-
-  const fetchProfiles = async (pubkeys: string[]) => {
-    let filter = {
-      kinds: [0],
-      authors: pubkeys,
+    let giftWrapFilters = {
+      "kinds": [1059],
+      "#p": [getPublicKey(privateKey)],
     }
-    const pool = new SimplePool()
-    let profiles = await pool.querySync(relays, filter)
-    pool.close(relays)
-    return profiles
-  }
-
-  const retrieveMessagedUsers = async () => {
-    const messagedEvents = await fetchMessagedEvents()
-    let messagedUsers = new Set<string>()
-    messagedEvents.forEach((event) => {
-      messagedUsers.add(event.tags[0][1])
+    let sub = pool.subscribeMany(relays, [giftWrapFilters], {
+      onevent: eventHandler,
     })
-    let profileEvents = await fetchProfiles(Array.from(messagedUsers))
-    let seen = new Set()
-    let profiles = profileEvents
-      .filter((kind0) => {
-        try {
-          JSON.parse(kind0.content)
-          return true
-        } catch (e) {
-          return false
-        }
-      })
-      .map((kind0) => {
-        return { ...JSON.parse(kind0.content), pubkey: nip19.npubEncode(kind0.pubkey) }
-      })
-      .filter((profile) => {
-        if (!seen.has(profile.pubkey)) {
-          seen.add(profile.pubkey)
-          return true
-        }
-        return false
-      })
+    return sub
+  }
 
-    return profiles
+  const retrieveMessagedUsers = async (giftwraps: Event[]) => {
+    let privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
+    let messagedUsers = new Set<ChatInfo>()
+    giftwraps.forEach((event) => {
+      console.log("DECRYPTING PLAINTEXT SEAL")
+      let sealString = decryptNip44Message(event.content, event.pubkey, privateKey)
+      console.log("GOT PLAINTEXT SEAL AS", sealString)
+      let seal = JSON.parse(sealString) as Event
+      let rumorString = decryptNip44Message(seal.content, seal.pubkey, privateKey)
+      console.log("GOT PLAINTEXT RUMOR AS", sealString)
+      let rumor = JSON.parse(rumorString)
+      console.log("GOT PARSED RUMOR AS", rumor)
+      let chatPubkeys = rumor
+        .filter((t: string[]) => t[0] === "p")
+        .map((t: string[]) => t[1])
+      let subject = rumor.tags.find((t: string[]) => t[0] === "subject")?.[1]
+      messagedUsers.add({ pubkeys: chatPubkeys, subject: subject })
+    })
+    return messagedUsers
   }
 
   const decryptMessage = async (recipientId: string, encryptedMessage: string) => {
@@ -184,37 +189,6 @@ const useNostrProfile = () => {
     }
     let hexKey = nip19.decode(privateKey).data as Uint8Array
     return await nip04.decrypt(hexKey, recipient, encryptedMessage)
-  }
-
-  const subscribeToMessages = async (
-    recipientId: string,
-    callback: (message: MessageType.Text) => void,
-  ) => {
-    let recipient = nip19.decode(recipientId).data as string
-    let userId = nip19.decode(await getPubkey()).data as string
-    let filter = {
-      "authors": [recipient, userId],
-      "#p": [recipient, userId],
-      "kinds": [4],
-    }
-    const pool = new SimplePool()
-    let h = pool.subscribeMany(relays, [filter], {
-      onevent: (event) => {
-        decryptMessage(recipientId, event.content).then((message) => {
-          callback({
-            text: message,
-            author: { id: nip19.npubEncode(event.pubkey) },
-            id: event.id,
-            type: "text",
-            createdAt: event.created_at,
-          })
-        })
-      },
-      oneose: () => {
-        console.log("closed!")
-        h.close()
-      },
-    })
   }
 
   const fetchMessagesWith = async (recipientId: string) => {
@@ -299,11 +273,12 @@ const useNostrProfile = () => {
     nostrPubKey: nostrPublicKey,
     fetchNostrUser,
     sendMessage,
+    sendNip17Message,
     retrieveMessagedUsers,
     fetchMessagesWith,
     updateNostrProfile,
-    subscribeToMessages,
     fetchNostrPubKey,
+    fetchGiftWraps,
   }
 }
 
