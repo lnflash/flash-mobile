@@ -44,7 +44,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
   const {
     theme: { colors },
   } = useTheme()
-  const { sendMessage, fetchMessagesWith, nostrPubKey, fetchNostrPubKey } =
+  const { sendNip17Message, fetchMessagesWith, nostrPubKey, fetchNostrPubKey } =
     useNostrProfile()
   const styles = useStyles()
   const { name, username, picture } = chat
@@ -122,7 +122,8 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
       text: message.text,
       type: "text",
     }
-    await sendMessage(chat.id, message.text)
+    console.warn("Chat pressed", chat)
+    await sendNip17Message(chat.id, message.text)
     addMessage(textMessage)
   }
 
