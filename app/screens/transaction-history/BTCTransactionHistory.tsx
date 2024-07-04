@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react"
-import { ActivityIndicator, SectionList, Text, View } from "react-native"
+import { ActivityIndicator, RefreshControl, SectionList, Text, View } from "react-native"
 import { usePriceConversion } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles, useTheme } from "@rneui/themed"
+import { BarIndicator } from "react-native-indicators"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -33,10 +34,13 @@ export const BTCTransactionHistory: React.FC = () => {
 
   const { persistentState, updateState } = usePersistentStateContext()
 
+  const [hasMore, setHasMore] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [fetchingMore, setFetchingMore] = useState(false)
   const [breezLoading, setBreezLoading] = useState(false)
-  const [txsList, setTxsList] = useState<TransactionFragment[]>([])
+  const [txsList, setTxsList] = useState<TransactionFragment[]>(
+    persistentState.btcTransactions || [],
+  )
 
   useEffect(() => {
     fetchPaymentsBreez(0)
@@ -45,23 +49,27 @@ export const BTCTransactionHistory: React.FC = () => {
   const fetchPaymentsBreez = async (offset: number) => {
     setBreezLoading(true)
 
-    const payments = await listPaymentsBreezSDK(offset, 5)
-    let formattedBreezTxs = await formatBreezTransactions(payments)
+    const payments = await listPaymentsBreezSDK(offset, 15)
 
-    if (offset === 0) {
-      setTxsList(formattedBreezTxs)
-      updateState((state: any) => {
-        if (state)
-          return {
-            ...state,
-            btcTransactions: formattedBreezTxs,
-          }
-        return undefined
-      })
+    if (payments.length === 0) {
+      setHasMore(false)
     } else {
-      setTxsList([...txsList, ...formattedBreezTxs])
-    }
+      let formattedBreezTxs = await formatBreezTransactions(payments)
 
+      if (offset === 0) {
+        setTxsList(formattedBreezTxs)
+        updateState((state: any) => {
+          if (state)
+            return {
+              ...state,
+              btcTransactions: formattedBreezTxs,
+            }
+          return undefined
+        })
+      } else {
+        setTxsList([...txsList, ...formattedBreezTxs])
+      }
+    }
     setBreezLoading(false)
     setRefreshing(false)
     setFetchingMore(false)
@@ -89,14 +97,14 @@ export const BTCTransactionHistory: React.FC = () => {
   })
 
   const onRefresh = () => {
-    if (!breezLoading) {
+    if (!breezLoading && hasMore) {
       setRefreshing(true)
       fetchPaymentsBreez(0)
     }
   }
 
   const onEndReached = () => {
-    if (!breezLoading) {
+    if (!breezLoading && hasMore) {
       setFetchingMore(true)
       fetchPaymentsBreez(txsList.length)
     }
@@ -136,14 +144,27 @@ export const BTCTransactionHistory: React.FC = () => {
             </View>
           }
           ListFooterComponent={() =>
-            fetchingMore && <ActivityIndicator color={colors.primary} size={"large"} />
+            fetchingMore && (
+              <BarIndicator
+                color={colors.primary}
+                count={5}
+                size={20}
+                style={{ marginVertical: 20 }}
+              />
+            )
           }
           sections={transactionSections}
           keyExtractor={(item, index) => item.id + index}
           onEndReachedThreshold={0.5}
           onEndReached={onEndReached}
-          onRefresh={onRefresh}
-          refreshing={refreshing}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
         />
       </Screen>
     )
