@@ -51,28 +51,30 @@ export const BTCTransactionHistory: React.FC = () => {
 
     const payments = await listPaymentsBreezSDK(offset, 15)
 
-    if (payments.length === 0) {
-      setHasMore(false)
-    } else {
-      let formattedBreezTxs = await formatBreezTransactions(payments)
+    let formattedBreezTxs = await formatBreezTransactions(payments)
 
-      if (offset === 0) {
-        setTxsList(formattedBreezTxs)
-        updateState((state: any) => {
-          if (state)
-            return {
-              ...state,
-              btcTransactions: formattedBreezTxs,
-            }
-          return undefined
-        })
-      } else {
-        setTxsList([...txsList, ...formattedBreezTxs])
-      }
+    if (offset === 0) {
+      setTxsList(formattedBreezTxs)
+      updateState((state: any) => {
+        if (state)
+          return {
+            ...state,
+            btcTransactions: formattedBreezTxs,
+          }
+        return undefined
+      })
+    } else {
+      setTxsList([...txsList, ...formattedBreezTxs])
     }
+
     setBreezLoading(false)
     setRefreshing(false)
     setFetchingMore(false)
+    if (payments.length < 15) {
+      setHasMore(false)
+    } else {
+      setHasMore(true)
+    }
   }
 
   const formatBreezTransactions = async (txs: Payment[]) => {
@@ -97,7 +99,7 @@ export const BTCTransactionHistory: React.FC = () => {
   })
 
   const onRefresh = () => {
-    if (!breezLoading && hasMore) {
+    if (!breezLoading) {
       setRefreshing(true)
       fetchPaymentsBreez(0)
     }
