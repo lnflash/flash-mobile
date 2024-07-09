@@ -82,3 +82,15 @@ export const decryptNip44Message = (
   let message = nip44.v2.decrypt(cipher, conversationKey)
   return message
 }
+
+export const getRumorFromWrap = (wrapEvent: Event, privateKey: Uint8Array) => {
+  let sealString = decryptNip44Message(wrapEvent.content, wrapEvent.pubkey, privateKey)
+  let seal = JSON.parse(sealString) as Event
+  let rumorString = decryptNip44Message(
+    seal.content,
+    getPublicKey(privateKey),
+    privateKey,
+  )
+  let rumor = JSON.parse(rumorString)
+  return rumor
+}
