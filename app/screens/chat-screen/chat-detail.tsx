@@ -18,18 +18,20 @@ import { launchImageLibrary } from "react-native-image-picker"
 import { ChatMessage } from "@app/components/chat-message"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import Icon from "react-native-vector-icons/Ionicons"
+import { Event } from "nostr-tools"
 
 type ChatDetailProps = {
   route: RouteProp<ChatStackParamList, "chatDetail">
 }
 
 export const ChatDetailScreen: React.FC<ChatDetailProps> = ({ route }) => {
-  const { chat } = route.params
-  return <ChatDetailScreenJSX chat={chat} />
+  const { chat, giftwraps } = route.params
+  return <ChatDetailScreenJSX chat={chat} giftwraps={giftwraps} />
 }
 
 type ChatDetailScreenProps = {
   chat: Chat
+  giftwraps: Event[]
 }
 
 const uuidv4 = () => {
@@ -40,11 +42,14 @@ const uuidv4 = () => {
   })
 }
 
-export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) => {
+export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({
+  chat,
+  giftwraps,
+}) => {
   const {
     theme: { colors },
   } = useTheme()
-  const { sendNip17Message, fetchMessagesWith, nostrPubKey, fetchNostrPubKey } =
+  const { sendNip17Message, retrieveMessagesWith, nostrPubKey, fetchNostrPubKey } =
     useNostrProfile()
   const styles = useStyles()
   const { name, username, picture } = chat
@@ -56,25 +61,19 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
 
   React.useEffect(() => {
     let isMounted = true
-    let interval: NodeJS.Timeout
     async function initialize() {
-      if (!initialized) {
-        interval = setInterval(async () => {
-          let messageHistory = await fetchMessagesWith(chat.id as `npub1${string}`)
-          if (messageHistory.length > messages.length) {
-            setMessages(messageHistory as MessageType.Text[])
-          }
-        }, 10000)
-        setUserId(await fetchNostrPubKey())
-        setInitialized(true)
-        return () => clearInterval(interval)
-      }
+      console.log("Going to fetch message History with", chat.id)
+      let messageHistory = retrieveMessagesWith(chat.id as `npub1${string}`, giftwraps)
+      console.log("message history is", messageHistory)
+      //let messageHistory = await fetchMessagesWith(chat.id as `npub1${string}`)
+      setMessages(messageHistory as MessageType.Text[])
+      setUserId(await fetchNostrPubKey())
+      setInitialized(true)
     }
-    initialize()
+    if (!initialized) initialize()
 
     return () => {
       isMounted = false
-      clearInterval(interval)
     }
   }, [])
 
