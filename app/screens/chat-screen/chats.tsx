@@ -78,27 +78,23 @@ export const ChatScreen: React.FC = () => {
   }
 
   React.useEffect(() => {
-    let sub: any
+    let subCloser: any
     const unsubscribe = navigation.addListener("focus", async () => {
       setInitialized(false)
       initialize()
-      if (sub) {
-        sub.close()
+      if (subCloser) {
+        subCloser.close()
       }
     })
     async function initialize() {
       console.log("Initializing chat screen use effect")
       setMatchingContacts(contacts)
-      let sub = fetchGiftWraps(giftwrapHandler)
-      let chats = await retrieveMessagedUsers(giftwrapEvents || [])
-      console.log("GOT CHATS AS ", chats)
-      setChats(chats)
+      fetchGiftWraps(giftwrapHandler).then((s) => {
+        subCloser = s
+      })
       setInitialized(true)
-      return sub
     }
-    initialize().then((value: any) => {
-      sub = value
-    })
+    initialize()
     return unsubscribe
   }, [])
 
@@ -118,12 +114,19 @@ export const ChatScreen: React.FC = () => {
           )) as Event
           if (chats.size !== 0) {
             let newChats = new Set([...chats])
-            newChats.add({ pubkeys: [nostrUserProfile.pubkey] })
+            newChats.add({
+              pubkeys: [nostrUserProfile.pubkey],
+              id: nostrUserProfile.pubkey,
+            })
             setChats(newChats)
             setRefreshing(false)
             return
           } else {
-            setChats(new Set([{ pubkeys: [nostrUserProfile.pubkey] }]))
+            setChats(
+              new Set([
+                { pubkeys: [nostrUserProfile.pubkey], id: nostrUserProfile.pubkey },
+              ]),
+            )
           }
         }
       }
@@ -131,9 +134,9 @@ export const ChatScreen: React.FC = () => {
         try {
           let nostrProfile = await fetchNostrUser(newSearchText as `npub1${string}`)
           setChats(
-            nostrProfile
-              ? new Set<ChatInfo>([{ pubkeys: [nostrProfile.pubkey] }])
-              : new Set(),
+            new Set<ChatInfo>([
+              { pubkeys: [nostrProfile.pubkey], id: nostrProfile.pubkey },
+            ]),
           )
         } catch (e) {
           console.log("Error fetching nostr profile", e)
@@ -163,10 +166,24 @@ export const ChatScreen: React.FC = () => {
     [contacts],
   )
 
-  const NostrProfilesToChat = () => {
+  const HistoricChats = () => {
+    console.log("Fetching Historic Chats")
+    return Array.from(retrieveMessagedUsers(giftwrapEvents || []) || chats).map(
+      (chatInfo: ChatInfo) => {
+        return {
+          id: chatInfo.id,
+          name: chatInfo.subject,
+          picture: null,
+        }
+      },
+    )
+  }
+
+  const SearchChats = () => {
+    console.log("Loading user")
     return Array.from(chats).map((chatInfo: ChatInfo) => {
       return {
-        id: chatInfo.pubkeys.join(","),
+        id: chatInfo.id,
         name: chatInfo.subject,
         picture: null,
       }
@@ -264,7 +281,7 @@ export const ChatScreen: React.FC = () => {
       {SearchBarContent}
       <FlatList
         contentContainerStyle={styles.listContainer}
-        data={NostrProfilesToChat() as Chat[]}
+        data={searchText ? (SearchChats() as Chat[]) : (HistoricChats() as Chat[])}
         ListEmptyComponent={ListEmptyContent}
         renderItem={({ item }) => (
           <ListItem
