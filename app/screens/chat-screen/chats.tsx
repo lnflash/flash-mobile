@@ -73,7 +73,6 @@ export const ChatScreen: React.FC = () => {
   }, [contacts])
 
   const giftwrapHandler = (event: Event) => {
-    console.log("RECEIVED A GIFT WRAP EVENT", event)
     setGiftWrapEvents((prevEvents) => [...(prevEvents || []), event])
   }
 
@@ -81,7 +80,6 @@ export const ChatScreen: React.FC = () => {
     let subCloser: any
     const unsubscribe = navigation.addListener("focus", async () => {
       setInitialized(false)
-      initialize()
       if (subCloser) {
         subCloser.close()
       }
@@ -94,7 +92,7 @@ export const ChatScreen: React.FC = () => {
       })
       setInitialized(true)
     }
-    initialize()
+    if (!initialized) initialize()
     return unsubscribe
   }, [])
 
@@ -291,6 +289,7 @@ export const ChatScreen: React.FC = () => {
             onPress={() =>
               navigation.navigate("chatDetail", {
                 chat: { ...item, transactionsCount: 0 },
+                giftwraps: giftwrapEvents || [],
               })
             }
           >
