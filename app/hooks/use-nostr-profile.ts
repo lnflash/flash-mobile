@@ -16,12 +16,21 @@ import {
   createSeal,
   createWrap,
   decryptNip44Message,
+  getRumorFromWrap,
 } from "@app/utils/nostr"
 
 export interface ChatInfo {
   pubkeys: string[]
   subject?: string
   id: string
+}
+
+export type MessageType = {
+  id: string
+  text: string
+  author: { id: string }
+  type: string
+  createdAt: number
 }
 
 const useNostrProfile = () => {
@@ -153,11 +162,68 @@ const useNostrProfile = () => {
     let giftWrapFilters = {
       "kinds": [1059],
       "#p": [getPublicKey(privateKey)],
+      "limit": 100,
     }
+    console.log("Start Subscription....")
     let subCloser = pool.subscribeMany(relays, [giftWrapFilters], {
       onevent: eventHandler,
     })
     return subCloser
+  }
+
+  const retrieveMessagesWith = (npub: string, giftwraps: Event[]) => {
+    let privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
+    let userPubKey = getPublicKey(privateKey)
+    let messages: MessageType[] = []
+    giftwraps.forEach((wrap: Event) => {
+      let rumor
+      try {
+        rumor = getRumorFromWrap(wrap, privateKey) as UnsignedEvent
+      } catch (e) {
+        console.log("Found error, moving on", e)
+        return
+      }
+      let pubKeytags = rumor.tags.filter((t) => t[0] === "p")
+      console.log(
+        rumor.content,
+        rumor.pubkey,
+        npub,
+        userPubKey,
+        pubKeytags,
+        "ALLL THE DETAILS HERE",
+      )
+      if (
+        rumor.pubkey === npub &&
+        pubKeytags.length === 1 &&
+        pubKeytags[0][1] === userPubKey
+      ) {
+        console.log("found candidate", rumor.content)
+        messages.push({
+          text: rumor.content,
+          author: { id: nip19.npubEncode(rumor.pubkey) },
+          id: wrap.id,
+          type: "text",
+          createdAt: rumor.created_at,
+        })
+      }
+      if (
+        rumor.pubkey === userPubKey &&
+        pubKeytags.length === 1 &&
+        pubKeytags[0][1] === npub
+      ) {
+        console.log("found candidate", rumor.content)
+        messages.push({
+          text: rumor.content,
+          author: { id: nip19.npubEncode(rumor.pubkey) },
+          id: wrap.id,
+          type: "text",
+          createdAt: rumor.created_at,
+        })
+      }
+    })
+    console.log("Final Messages", messages)
+    messages.sort((a, b) => b.createdAt - a.createdAt)
+    return messages
   }
 
   const retrieveMessagedUsers = (giftwraps: Event[]) => {
@@ -166,19 +232,7 @@ const useNostrProfile = () => {
     let messagedUsers: Map<string, ChatInfo> = new Map()
     giftwraps.forEach((event) => {
       try {
-        console.log("DECRYPTING PLAINTEXT SEAL")
-        let sealString = decryptNip44Message(event.content, event.pubkey, privateKey)
-        console.log("GOT PLAINTEXT SEAL AS", sealString)
-        let seal = JSON.parse(sealString) as Event
-        console.log("GOT PARSED SEAL AS", seal)
-        let rumorString = decryptNip44Message(
-          seal.content,
-          getPublicKey(privateKey),
-          privateKey,
-        )
-        console.log("GOT PLAINTEXT RUMOR AS", sealString)
-        let rumor = JSON.parse(rumorString)
-        console.log("GOT PARSED RUMOR AS", rumor)
+        let rumor = getRumorFromWrap(event, privateKey)
         let chatPubkeys = rumor.tags
           .filter((t: string[]) => t[0] === "p")
           .map((t: string[]) => t[1])
@@ -293,6 +347,7 @@ const useNostrProfile = () => {
     retrieveMessagedUsers,
     fetchMessagesWith,
     updateNostrProfile,
+    retrieveMessagesWith,
     fetchNostrPubKey,
     fetchGiftWraps,
   }
