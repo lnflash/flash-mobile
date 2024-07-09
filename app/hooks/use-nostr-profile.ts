@@ -21,6 +21,7 @@ import {
 export interface ChatInfo {
   pubkeys: string[]
   subject?: string
+  id: string
 }
 
 const useNostrProfile = () => {
@@ -116,13 +117,14 @@ const useNostrProfile = () => {
       { content: message, kind: 14, tags: [["p", `${recipient}`]] },
       privateKey,
     )
-    let seal = createSeal(rumor, privateKey, recipient)
-    let wrap = createWrap(seal, recipient)
-    let selfWrap = createWrap(seal, getPublicKey(privateKey))
+    let recipientSeal = createSeal(rumor, privateKey, recipient)
+    let senderSeal = createSeal(rumor, privateKey, getPublicKey(privateKey))
+    let recipientWrap = createWrap(recipientSeal, recipient)
+    let selfWrap = createWrap(senderSeal, getPublicKey(privateKey))
 
-    console.warn("Final Wrap Is", wrap)
+    console.warn("Final Wrap Is", recipientWrap)
     const pool = new SimplePool()
-    const messagesEvent1 = await Promise.allSettled(pool.publish(relays, wrap))
+    const messagesEvent1 = await Promise.allSettled(pool.publish(relays, recipientWrap))
     const messagesEvent2 = await Promise.allSettled(pool.publish(relays, selfWrap))
     console.warn("Messages from relays", messagesEvent1, messagesEvent2)
     pool.close(relays)
@@ -152,31 +154,45 @@ const useNostrProfile = () => {
       "kinds": [1059],
       "#p": [getPublicKey(privateKey)],
     }
-    let sub = pool.subscribeMany(relays, [giftWrapFilters], {
+    let subCloser = pool.subscribeMany(relays, [giftWrapFilters], {
       onevent: eventHandler,
     })
-    return sub
+    return subCloser
   }
 
-  const retrieveMessagedUsers = async (giftwraps: Event[]) => {
+  const retrieveMessagedUsers = (giftwraps: Event[]) => {
+    if (!nostrSecretKey) return []
     let privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
-    let messagedUsers = new Set<ChatInfo>()
+    let messagedUsers: Map<string, ChatInfo> = new Map()
     giftwraps.forEach((event) => {
-      console.log("DECRYPTING PLAINTEXT SEAL")
-      let sealString = decryptNip44Message(event.content, event.pubkey, privateKey)
-      console.log("GOT PLAINTEXT SEAL AS", sealString)
-      let seal = JSON.parse(sealString) as Event
-      let rumorString = decryptNip44Message(seal.content, seal.pubkey, privateKey)
-      console.log("GOT PLAINTEXT RUMOR AS", sealString)
-      let rumor = JSON.parse(rumorString)
-      console.log("GOT PARSED RUMOR AS", rumor)
-      let chatPubkeys = rumor
-        .filter((t: string[]) => t[0] === "p")
-        .map((t: string[]) => t[1])
-      let subject = rumor.tags.find((t: string[]) => t[0] === "subject")?.[1]
-      messagedUsers.add({ pubkeys: chatPubkeys, subject: subject })
+      try {
+        console.log("DECRYPTING PLAINTEXT SEAL")
+        let sealString = decryptNip44Message(event.content, event.pubkey, privateKey)
+        console.log("GOT PLAINTEXT SEAL AS", sealString)
+        let seal = JSON.parse(sealString) as Event
+        console.log("GOT PARSED SEAL AS", seal)
+        let rumorString = decryptNip44Message(
+          seal.content,
+          getPublicKey(privateKey),
+          privateKey,
+        )
+        console.log("GOT PLAINTEXT RUMOR AS", sealString)
+        let rumor = JSON.parse(rumorString)
+        console.log("GOT PARSED RUMOR AS", rumor)
+        let chatPubkeys = rumor.tags
+          .filter((t: string[]) => t[0] === "p")
+          .map((t: string[]) => t[1])
+        let subject = rumor.tags.find((t: string[]) => t[0] === "subject")?.[1]
+        messagedUsers.set(chatPubkeys.join(","), {
+          pubkeys: chatPubkeys,
+          subject: subject,
+          id: chatPubkeys.join(","),
+        })
+      } catch (e) {
+        console.log("Error decrypting", e)
+      }
     })
-    return messagedUsers
+    return messagedUsers.values()
   }
 
   const decryptMessage = async (recipientId: string, encryptedMessage: string) => {
