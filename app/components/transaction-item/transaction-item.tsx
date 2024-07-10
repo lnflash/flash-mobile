@@ -28,25 +28,27 @@ import { useAppSelector } from "@app/store/redux"
 export const useDescriptionDisplay = ({
   tx,
   bankName,
+  showMemo,
 }: {
   tx: TransactionFragment | undefined
   bankName: string
+  showMemo?: boolean
 }) => {
   const { LL } = useI18nContext()
-  const { userData } = useAppSelector((state) => state.user)
 
   if (!tx) {
     return ""
   }
 
   const { memo, direction, settlementVia } = tx
-  if (memo && !memo.includes("Pay to Flash Wallet User")) {
+
+  if (memo && (!memo.includes("Pay to Flash Wallet User") || showMemo)) {
     return memo
   }
 
   const isReceive = direction === "RECEIVE"
 
-  switch (settlementVia.__typename) {
+  switch (settlementVia?.__typename) {
     case "SettlementViaOnChain":
       return "OnChain Payment"
     case "SettlementViaLn":
@@ -58,9 +60,9 @@ export const useDescriptionDisplay = ({
     case "SettlementViaIntraLedger":
       return isReceive
         ? `${LL.common.from()} ${
-            settlementVia.counterPartyUsername || bankName + " User"
+            settlementVia?.counterPartyUsername || bankName + " User"
           }`
-        : `${LL.common.to()} ${settlementVia.counterPartyUsername || bankName + " User"}`
+        : `${LL.common.to()} ${settlementVia?.counterPartyUsername || bankName + " User"}`
   }
 }
 
@@ -148,7 +150,7 @@ export const TransactionItem: React.FC<Props> = ({
       onPress={() => navigation.navigate("transactionDetail", { tx })}
     >
       <IconTransaction
-        onChain={tx.settlementVia.__typename === "SettlementViaOnChain"}
+        onChain={tx.settlementVia?.__typename === "SettlementViaOnChain"}
         isReceive={isReceive}
         pending={isPending}
         walletCurrency={walletCurrency}

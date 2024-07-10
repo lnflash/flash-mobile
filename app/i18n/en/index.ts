@@ -476,7 +476,7 @@ const en: BaseTranslation = {
     createAccount: "Create new account",
     exploreWallet: "Explore wallet",
     logBackInWith: "Log back in with",
-    headline: "Wallet powered by Galoy",
+    headline: "Made in Jamaica",
     startTrialAccount: "Start with a trial account",
     startWithTrialAccount: "Start with trial account",
     registerPhoneAccount: "Register phone account",
@@ -737,7 +737,7 @@ const en: BaseTranslation = {
     apiAcess: "API Access",
     pos: "Point of Sale",
     posCopied: "Your point of sale link has been copied",
-    setYourLightningAddress: "Set Your Lightning Address",
+    setYourLightningAddress: "Set Your Username",
     activated: "Activated",
     addressScreen: "Ways to get paid",
     tapUserName: "Tap to set username",
@@ -910,7 +910,7 @@ const en: BaseTranslation = {
   DefaultWalletScreen: {
     title: "Default Account",
     info:
-      "Pick which account to set as default for receiving and sending. You can adjust the send and receive account for individual payments in the mobile app. Payments received through the cash register or your Lightning address will always go to the default account.\n\nTo avoid Bitcoin's volatility, choose Cash. This allows you to maintain a stable amount of money while still being able to send and receive payments.\n\nYou can change this setting at any time, and it won't affect your current balance.",
+      "Pick which account to set as default for receiving and sending. You can adjust the send and receive account for individual payments in the mobile app. Payments received through the cash register or your Lightning address will always go to the Cash (USD) account.\n\nTo avoid Bitcoin's volatility, choose Cash. This allows you to maintain a stable amount of money while still being able to send and receive payments.\n\nYou can change this setting at any time, and it won't affect your current balance.",
   },
   ThemeScreen: {
     title: "Theme",
@@ -1147,7 +1147,7 @@ const en: BaseTranslation = {
     soon: "Coming soon!",
     submit: "Submit",
     success: "Success!",
-    stablesatsUsd: "USD Cash",
+    stablesatsUsd: "Cash (USD)",
     to: "To",
     total: "Total",
     transactions: "Transactions",

@@ -1,9 +1,11 @@
 import jwtDecode from "jwt-decode"
 
 import { GALOY_INSTANCES, GaloyInstance, GaloyInstanceInput } from "@app/config"
-import { Network, TransactionFragment } from "@app/graphql/generated"
+import { Network, TransactionFragment, Wallet } from "@app/graphql/generated"
 import { loadString } from "@app/utils/storage"
 import { SectionTransactions } from "@app/screens/transaction-history/index.types"
+
+type WalletBalance = Pick<Wallet, "id" | "walletCurrency" | "balance">
 
 type PersistentState_0 = {
   schemaVersion: 0
@@ -64,7 +66,10 @@ type PersistentState_7 = {
   convertedUsdBalance?: string
   mergedTransactions?: TransactionFragment[]
   usdTransactions?: SectionTransactions[]
-  btcTransactions?: SectionTransactions[]
+  btcTransactions?: TransactionFragment[]
+  introVideoCount: number
+  defaultWallet?: WalletBalance
+  btcWalletImported?: boolean
 }
 
 type JwtPayload = {
@@ -92,6 +97,7 @@ const migrate6ToCurrent = (state: PersistentState_6): Promise<PersistentState> =
     ...state,
     schemaVersion: 7,
     hasInitializedBreezSDK: false,
+    introVideoCount: 0,
   })
 }
 
@@ -238,6 +244,7 @@ export const defaultPersistentState: PersistentState = {
   galoyInstance: { id: "Staging" },
   galoyAuthToken: "",
   hasInitializedBreezSDK: false,
+  introVideoCount: 0,
 }
 
 export const migrateAndGetPersistentState = async (

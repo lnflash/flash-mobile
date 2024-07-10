@@ -105,6 +105,7 @@ export const BreezTransactionDetailScreen: React.FC<Props> = ({ route }) => {
   const description = useDescriptionDisplay({
     tx,
     bankName: galoyInstance.name,
+    showMemo: true,
   })
 
   // FIXME doesn't work with storybook
@@ -150,11 +151,11 @@ export const BreezTransactionDetailScreen: React.FC<Props> = ({ route }) => {
   })
 
   const onChainTxBroadcasted =
-    settlementVia.__typename === "SettlementViaOnChain" &&
-    settlementVia.transactionHash !== null
+    settlementVia?.__typename === "SettlementViaOnChain" &&
+    settlementVia?.transactionHash !== null
   const onChainTxNotBroadcasted =
-    settlementVia.__typename === "SettlementViaOnChain" &&
-    settlementVia.transactionHash === null
+    settlementVia?.__typename === "SettlementViaOnChain" &&
+    settlementVia?.transactionHash === null
 
   // only show a secondary amount if it is in a different currency than the primary amount
   const formattedSecondaryFeeAmount =
@@ -224,26 +225,26 @@ export const BreezTransactionDetailScreen: React.FC<Props> = ({ route }) => {
         <Row entry={LL.common.date()} value={<TransactionDate {...tx} />} />
         {!isReceive && <Row entry={LL.common.fees()} value={formattedFeeText} />}
         <Row entry={LL.common.description()} value={description} />
-        {settlementVia.__typename === "SettlementViaIntraLedger" && (
+        {settlementVia?.__typename === "SettlementViaIntraLedger" && (
           <Row
             entry={LL.TransactionDetailScreen.paid()}
-            value={settlementVia.counterPartyUsername || galoyInstance.name}
+            value={settlementVia?.counterPartyUsername || galoyInstance.name}
           />
         )}
         <Row entry={LL.common.type()} value={typeDisplay(settlementVia)} />
-        {settlementVia.__typename === "SettlementViaLn" &&
+        {settlementVia?.__typename === "SettlementViaLn" &&
           initiationVia.__typename === "InitiationViaLn" && (
             <Row entry="Hash" value={initiationVia.paymentHash} />
           )}
         {onChainTxBroadcasted && (
           <TouchableWithoutFeedback
-            onPress={() => viewInExplorer(settlementVia.transactionHash || "")}
+            onPress={() => viewInExplorer(settlementVia?.transactionHash || "")}
           >
             <View>
               <Row
                 entry="Hash"
-                value={settlementVia.transactionHash || ""}
-                __typename={settlementVia.__typename}
+                value={settlementVia?.transactionHash || ""}
+                __typename={settlementVia?.__typename}
               />
             </View>
           </TouchableWithoutFeedback>
