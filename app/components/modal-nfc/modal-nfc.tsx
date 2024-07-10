@@ -36,7 +36,8 @@ export const ModalNfc: React.FC<{
   setIsActive: (arg: boolean) => void
   settlementAmount?: WalletAmount<WalletCurrency>
   receiveViaNFC: (destination: ReceiveDestination) => Promise<void>
-}> = ({ isActive, setIsActive, settlementAmount, receiveViaNFC }) => {
+  onPaid: () => void
+}> = ({ isActive, setIsActive, settlementAmount, receiveViaNFC, onPaid }) => {
   const { data } = useScanningQrCodeScreenQuery({ skip: !useIsAuthed() })
   const wallets = data?.me?.defaultAccount.wallets
   const bitcoinNetwork = data?.globals?.network
@@ -187,6 +188,7 @@ export const ModalNfc: React.FC<{
             console.log(lnUrlWithdrawResult)
             if (lnUrlWithdrawResult.type === "ok") {
               // setSuccess(true)
+              onPaid()
             } else if (lnUrlWithdrawResult.type === "errorStatus") {
               console.error(lnUrlWithdrawResult)
               alert(

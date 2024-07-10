@@ -363,6 +363,7 @@ const ReceiveScreen = ({ route }: Props) => {
           setIsActive={setDisplayReceiveNfc}
           settlementAmount={request.settlementAmount}
           receiveViaNFC={request.receiveViaNFC}
+          onPaid={() => setUpdatedPaymentState(PaymentRequestState.Paid)}
         />
       </Screen>
     </>
