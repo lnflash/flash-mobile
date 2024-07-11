@@ -3510,6 +3510,149 @@ export type UserUpdateLanguageMutation = {
   }
 }
 
+export type NotificationSettingsQueryVariables = Exact<{ [key: string]: never }>
+
+export type NotificationSettingsQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly defaultAccount: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly notificationSettings: {
+        readonly __typename: "NotificationSettings"
+        readonly push: {
+          readonly __typename: "NotificationChannelSettings"
+          readonly enabled: boolean
+          readonly disabledCategories: ReadonlyArray<string>
+        }
+      }
+    }
+  } | null
+}
+
+export type AccountEnableNotificationChannelMutationVariables = Exact<{
+  input: AccountEnableNotificationChannelInput
+}>
+
+export type AccountEnableNotificationChannelMutation = {
+  readonly __typename: "Mutation"
+  readonly accountEnableNotificationChannel: {
+    readonly __typename: "AccountUpdateNotificationSettingsPayload"
+    readonly errors: ReadonlyArray<{
+      readonly __typename: "GraphQLApplicationError"
+      readonly message: string
+    }>
+    readonly account?: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly notificationSettings: {
+        readonly __typename: "NotificationSettings"
+        readonly push: {
+          readonly __typename: "NotificationChannelSettings"
+          readonly enabled: boolean
+          readonly disabledCategories: ReadonlyArray<string>
+        }
+      }
+    } | null
+  }
+}
+
+export type AccountDisableNotificationChannelMutationVariables = Exact<{
+  input: AccountDisableNotificationChannelInput
+}>
+
+export type AccountDisableNotificationChannelMutation = {
+  readonly __typename: "Mutation"
+  readonly accountDisableNotificationChannel: {
+    readonly __typename: "AccountUpdateNotificationSettingsPayload"
+    readonly errors: ReadonlyArray<{
+      readonly __typename: "GraphQLApplicationError"
+      readonly message: string
+    }>
+    readonly account?: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly notificationSettings: {
+        readonly __typename: "NotificationSettings"
+        readonly push: {
+          readonly __typename: "NotificationChannelSettings"
+          readonly enabled: boolean
+          readonly disabledCategories: ReadonlyArray<string>
+        }
+      }
+    } | null
+  }
+}
+
+export type AccountEnableNotificationCategoryMutationVariables = Exact<{
+  input: AccountEnableNotificationCategoryInput
+}>
+
+export type AccountEnableNotificationCategoryMutation = {
+  readonly __typename: "Mutation"
+  readonly accountEnableNotificationCategory: {
+    readonly __typename: "AccountUpdateNotificationSettingsPayload"
+    readonly errors: ReadonlyArray<{
+      readonly __typename: "GraphQLApplicationError"
+      readonly message: string
+    }>
+    readonly account?: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly notificationSettings: {
+        readonly __typename: "NotificationSettings"
+        readonly push: {
+          readonly __typename: "NotificationChannelSettings"
+          readonly enabled: boolean
+          readonly disabledCategories: ReadonlyArray<string>
+        }
+      }
+    } | null
+  }
+}
+
+export type AccountDisableNotificationCategoryMutationVariables = Exact<{
+  input: AccountDisableNotificationCategoryInput
+}>
+
+export type AccountDisableNotificationCategoryMutation = {
+  readonly __typename: "Mutation"
+  readonly accountDisableNotificationCategory: {
+    readonly __typename: "AccountUpdateNotificationSettingsPayload"
+    readonly errors: ReadonlyArray<{
+      readonly __typename: "GraphQLApplicationError"
+      readonly message: string
+    }>
+    readonly account?: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly notificationSettings: {
+        readonly __typename: "NotificationSettings"
+        readonly push: {
+          readonly __typename: "NotificationChannelSettings"
+          readonly enabled: boolean
+          readonly disabledCategories: ReadonlyArray<string>
+        }
+      }
+    } | null
+  }
+}
+
+export type UnacknowledgedNotificationCountQueryVariables = Exact<{
+  [key: string]: never
+}>
+
+export type UnacknowledgedNotificationCountQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly unacknowledgedStatefulNotificationsWithoutBulletinEnabledCount: number
+  } | null
+}
+
 export type WalletCsvTransactionsQueryVariables = Exact<{
   walletIds: ReadonlyArray<Scalars["WalletId"]> | Scalars["WalletId"]
 }>
@@ -8346,6 +8489,414 @@ export type UserUpdateLanguageMutationOptions = Apollo.BaseMutationOptions<
   UserUpdateLanguageMutation,
   UserUpdateLanguageMutationVariables
 >
+export const NotificationSettingsDocument = gql`
+  query notificationSettings {
+    me {
+      id
+      defaultAccount {
+        id
+        notificationSettings {
+          push {
+            enabled
+            disabledCategories
+          }
+        }
+      }
+    }
+  }
+`
+
+/**
+ * __useNotificationSettingsQuery__
+ *
+ * To run a query within a React component, call `useNotificationSettingsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useNotificationSettingsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useNotificationSettingsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useNotificationSettingsQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    NotificationSettingsQuery,
+    NotificationSettingsQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<NotificationSettingsQuery, NotificationSettingsQueryVariables>(
+    NotificationSettingsDocument,
+    options,
+  )
+}
+export function useNotificationSettingsLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    NotificationSettingsQuery,
+    NotificationSettingsQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<
+    NotificationSettingsQuery,
+    NotificationSettingsQueryVariables
+  >(NotificationSettingsDocument, options)
+}
+export function useNotificationSettingsSuspenseQuery(
+  baseOptions?: Apollo.SuspenseQueryHookOptions<
+    NotificationSettingsQuery,
+    NotificationSettingsQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useSuspenseQuery<
+    NotificationSettingsQuery,
+    NotificationSettingsQueryVariables
+  >(NotificationSettingsDocument, options)
+}
+export type NotificationSettingsQueryHookResult = ReturnType<
+  typeof useNotificationSettingsQuery
+>
+export type NotificationSettingsLazyQueryHookResult = ReturnType<
+  typeof useNotificationSettingsLazyQuery
+>
+export type NotificationSettingsSuspenseQueryHookResult = ReturnType<
+  typeof useNotificationSettingsSuspenseQuery
+>
+export type NotificationSettingsQueryResult = Apollo.QueryResult<
+  NotificationSettingsQuery,
+  NotificationSettingsQueryVariables
+>
+export const AccountEnableNotificationChannelDocument = gql`
+  mutation accountEnableNotificationChannel(
+    $input: AccountEnableNotificationChannelInput!
+  ) {
+    accountEnableNotificationChannel(input: $input) {
+      errors {
+        message
+      }
+      account {
+        id
+        notificationSettings {
+          push {
+            enabled
+            disabledCategories
+          }
+        }
+      }
+    }
+  }
+`
+export type AccountEnableNotificationChannelMutationFn = Apollo.MutationFunction<
+  AccountEnableNotificationChannelMutation,
+  AccountEnableNotificationChannelMutationVariables
+>
+
+/**
+ * __useAccountEnableNotificationChannelMutation__
+ *
+ * To run a mutation, you first call `useAccountEnableNotificationChannelMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAccountEnableNotificationChannelMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [accountEnableNotificationChannelMutation, { data, loading, error }] = useAccountEnableNotificationChannelMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAccountEnableNotificationChannelMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    AccountEnableNotificationChannelMutation,
+    AccountEnableNotificationChannelMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useMutation<
+    AccountEnableNotificationChannelMutation,
+    AccountEnableNotificationChannelMutationVariables
+  >(AccountEnableNotificationChannelDocument, options)
+}
+export type AccountEnableNotificationChannelMutationHookResult = ReturnType<
+  typeof useAccountEnableNotificationChannelMutation
+>
+export type AccountEnableNotificationChannelMutationResult =
+  Apollo.MutationResult<AccountEnableNotificationChannelMutation>
+export type AccountEnableNotificationChannelMutationOptions = Apollo.BaseMutationOptions<
+  AccountEnableNotificationChannelMutation,
+  AccountEnableNotificationChannelMutationVariables
+>
+export const AccountDisableNotificationChannelDocument = gql`
+  mutation accountDisableNotificationChannel(
+    $input: AccountDisableNotificationChannelInput!
+  ) {
+    accountDisableNotificationChannel(input: $input) {
+      errors {
+        message
+      }
+      account {
+        id
+        notificationSettings {
+          push {
+            enabled
+            disabledCategories
+          }
+        }
+      }
+    }
+  }
+`
+export type AccountDisableNotificationChannelMutationFn = Apollo.MutationFunction<
+  AccountDisableNotificationChannelMutation,
+  AccountDisableNotificationChannelMutationVariables
+>
+
+/**
+ * __useAccountDisableNotificationChannelMutation__
+ *
+ * To run a mutation, you first call `useAccountDisableNotificationChannelMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAccountDisableNotificationChannelMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [accountDisableNotificationChannelMutation, { data, loading, error }] = useAccountDisableNotificationChannelMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAccountDisableNotificationChannelMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    AccountDisableNotificationChannelMutation,
+    AccountDisableNotificationChannelMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useMutation<
+    AccountDisableNotificationChannelMutation,
+    AccountDisableNotificationChannelMutationVariables
+  >(AccountDisableNotificationChannelDocument, options)
+}
+export type AccountDisableNotificationChannelMutationHookResult = ReturnType<
+  typeof useAccountDisableNotificationChannelMutation
+>
+export type AccountDisableNotificationChannelMutationResult =
+  Apollo.MutationResult<AccountDisableNotificationChannelMutation>
+export type AccountDisableNotificationChannelMutationOptions = Apollo.BaseMutationOptions<
+  AccountDisableNotificationChannelMutation,
+  AccountDisableNotificationChannelMutationVariables
+>
+export const AccountEnableNotificationCategoryDocument = gql`
+  mutation accountEnableNotificationCategory(
+    $input: AccountEnableNotificationCategoryInput!
+  ) {
+    accountEnableNotificationCategory(input: $input) {
+      errors {
+        message
+      }
+      account {
+        id
+        notificationSettings {
+          push {
+            enabled
+            disabledCategories
+          }
+        }
+      }
+    }
+  }
+`
+export type AccountEnableNotificationCategoryMutationFn = Apollo.MutationFunction<
+  AccountEnableNotificationCategoryMutation,
+  AccountEnableNotificationCategoryMutationVariables
+>
+
+/**
+ * __useAccountEnableNotificationCategoryMutation__
+ *
+ * To run a mutation, you first call `useAccountEnableNotificationCategoryMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAccountEnableNotificationCategoryMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [accountEnableNotificationCategoryMutation, { data, loading, error }] = useAccountEnableNotificationCategoryMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAccountEnableNotificationCategoryMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    AccountEnableNotificationCategoryMutation,
+    AccountEnableNotificationCategoryMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useMutation<
+    AccountEnableNotificationCategoryMutation,
+    AccountEnableNotificationCategoryMutationVariables
+  >(AccountEnableNotificationCategoryDocument, options)
+}
+export type AccountEnableNotificationCategoryMutationHookResult = ReturnType<
+  typeof useAccountEnableNotificationCategoryMutation
+>
+export type AccountEnableNotificationCategoryMutationResult =
+  Apollo.MutationResult<AccountEnableNotificationCategoryMutation>
+export type AccountEnableNotificationCategoryMutationOptions = Apollo.BaseMutationOptions<
+  AccountEnableNotificationCategoryMutation,
+  AccountEnableNotificationCategoryMutationVariables
+>
+export const AccountDisableNotificationCategoryDocument = gql`
+  mutation accountDisableNotificationCategory(
+    $input: AccountDisableNotificationCategoryInput!
+  ) {
+    accountDisableNotificationCategory(input: $input) {
+      errors {
+        message
+      }
+      account {
+        id
+        notificationSettings {
+          push {
+            enabled
+            disabledCategories
+          }
+        }
+      }
+    }
+  }
+`
+export type AccountDisableNotificationCategoryMutationFn = Apollo.MutationFunction<
+  AccountDisableNotificationCategoryMutation,
+  AccountDisableNotificationCategoryMutationVariables
+>
+
+/**
+ * __useAccountDisableNotificationCategoryMutation__
+ *
+ * To run a mutation, you first call `useAccountDisableNotificationCategoryMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAccountDisableNotificationCategoryMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [accountDisableNotificationCategoryMutation, { data, loading, error }] = useAccountDisableNotificationCategoryMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAccountDisableNotificationCategoryMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    AccountDisableNotificationCategoryMutation,
+    AccountDisableNotificationCategoryMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useMutation<
+    AccountDisableNotificationCategoryMutation,
+    AccountDisableNotificationCategoryMutationVariables
+  >(AccountDisableNotificationCategoryDocument, options)
+}
+export type AccountDisableNotificationCategoryMutationHookResult = ReturnType<
+  typeof useAccountDisableNotificationCategoryMutation
+>
+export type AccountDisableNotificationCategoryMutationResult =
+  Apollo.MutationResult<AccountDisableNotificationCategoryMutation>
+export type AccountDisableNotificationCategoryMutationOptions =
+  Apollo.BaseMutationOptions<
+    AccountDisableNotificationCategoryMutation,
+    AccountDisableNotificationCategoryMutationVariables
+  >
+export const UnacknowledgedNotificationCountDocument = gql`
+  query UnacknowledgedNotificationCount {
+    me {
+      id
+      unacknowledgedStatefulNotificationsWithoutBulletinEnabledCount
+    }
+  }
+`
+
+/**
+ * __useUnacknowledgedNotificationCountQuery__
+ *
+ * To run a query within a React component, call `useUnacknowledgedNotificationCountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useUnacknowledgedNotificationCountQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useUnacknowledgedNotificationCountQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useUnacknowledgedNotificationCountQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >(UnacknowledgedNotificationCountDocument, options)
+}
+export function useUnacknowledgedNotificationCountLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >(UnacknowledgedNotificationCountDocument, options)
+}
+export function useUnacknowledgedNotificationCountSuspenseQuery(
+  baseOptions?: Apollo.SuspenseQueryHookOptions<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useSuspenseQuery<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >(UnacknowledgedNotificationCountDocument, options)
+}
+export type UnacknowledgedNotificationCountQueryHookResult = ReturnType<
+  typeof useUnacknowledgedNotificationCountQuery
+>
+export type UnacknowledgedNotificationCountLazyQueryHookResult = ReturnType<
+  typeof useUnacknowledgedNotificationCountLazyQuery
+>
+export type UnacknowledgedNotificationCountSuspenseQueryHookResult = ReturnType<
+  typeof useUnacknowledgedNotificationCountSuspenseQuery
+>
+export type UnacknowledgedNotificationCountQueryResult = Apollo.QueryResult<
+  UnacknowledgedNotificationCountQuery,
+  UnacknowledgedNotificationCountQueryVariables
+>
+
 export const WalletCsvTransactionsDocument = gql`
   query walletCSVTransactions($walletIds: [WalletId!]!) {
     me {
