@@ -103,6 +103,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { ReconciliationReport } from "@app/screens/reports"
+import { Messages } from "@app/screens/nip17-chat/messages"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -528,15 +529,15 @@ export const ChatNavigator = () => {
     <StackChats.Navigator>
       <StackChats.Screen
         name="chatList"
-        component={ChatScreen}
+        component={NIP17Chat}
         options={{
           title: LL.ChatScreen.title(),
           headerShown: false,
         }}
       />
       <StackChats.Screen
-        name="chatDetail"
-        component={ChatDetailScreen}
+        name="messages"
+        component={Messages}
         options={{ headerShown: false }}
       />
     </StackChats.Navigator>
@@ -639,7 +640,7 @@ export const PrimaryNavigator = () => {
       /> */}
       <Tab.Screen
         name="Chat"
-        component={NIP17Chat}
+        component={ChatNavigator}
         options={{
           headerShown: false,
           title: LL.ChatScreen.title(),
