@@ -39,7 +39,6 @@ export const NIP17Chat: React.FC = () => {
   const {
     theme: { colors },
   } = useTheme()
-  const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   const [giftwrapEvents, setGiftWrapEvents] = useState<Event[] | undefined>()
   const [rumors, setRumors] = useState<Rumor[] | undefined>()
   const [searchText, setSearchText] = useState("")
@@ -174,7 +173,7 @@ export const NIP17Chat: React.FC = () => {
           data={Array.from(convertRumorsToGroups(rumors || []).values())}
           ListEmptyComponent={ListEmptyContent}
           renderItem={({ item }) => {
-            return <HistoryListItem item={item} />
+            return <HistoryListItem item={item} userPubKey={getPublicKey(privateKey!)} />
           }}
           keyExtractor={(item) => {
             let participants = item[0].tags.filter((t) => t[0] === "p").map((p) => p[1])
