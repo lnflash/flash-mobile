@@ -3,11 +3,15 @@ import { useStyles } from "./style"
 import { Image } from "react-native"
 import { UnsignedEvent, nip19 } from "nostr-tools"
 import { Rumor } from "@app/utils/nostr"
+import { useNavigation } from "@react-navigation/native"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 
 interface HistoryListItemProps {
   item: Rumor[]
+  userPubKey: string
 }
-export const HistoryListItem: React.FC<HistoryListItemProps> = ({ item }) => {
+export const HistoryListItem: React.FC<HistoryListItemProps> = ({ item, userPubKey }) => {
   const styles = useStyles()
   let participants = item[0].tags.filter((t) => t[0] === "p").map((p) => p[1])
   const participantsSet = new Set([...participants, item[0].pubkey])
@@ -20,17 +24,19 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({ item }) => {
   const {
     theme: { colors },
   } = useTheme()
+  const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   return (
     <ListItem
       key={id}
       style={styles.item}
       containerStyle={styles.itemContainer}
-      //   onPress={() =>
-      //     // navigation.navigate("chatDetail", {
-      //     //   chat: { ...item, transactionsCount: 0 },
-      //     //   giftwraps: giftwrapEvents || [],
-      //     // })
-      //   }
+      onPress={() =>
+        navigation.navigate("messages", {
+          userPubkey: userPubKey,
+          participants,
+          rumors: item,
+        })
+      }
     >
       {/* <Image
         source={{

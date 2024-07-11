@@ -13,11 +13,8 @@ import {
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
 import { ChatDetailScreen, ChatScreen } from "../screens/chat-screen"
-<<<<<<< HEAD
 import { CardScreen } from "../screens/card-screen"
-=======
 import { NIP17Chat } from "@app/screens/nip17-chat"
->>>>>>> d4de7d7f (Add A different NIP17 Component)
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
@@ -105,6 +102,7 @@ import {
 } from "@app/screens"
 import { useAppSelector } from "@app/store/redux"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { Messages } from "@app/screens/nip17-chat/messages"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -507,15 +505,15 @@ export const ChatNavigator = () => {
     <StackChats.Navigator>
       <StackChats.Screen
         name="chatList"
-        component={ChatScreen}
+        component={NIP17Chat}
         options={{
           title: LL.ChatScreen.title(),
           headerShown: false,
         }}
       />
       <StackChats.Screen
-        name="chatDetail"
-        component={ChatDetailScreen}
+        name="messages"
+        component={Messages}
         options={{ headerShown: false }}
       />
     </StackChats.Navigator>
@@ -621,7 +619,7 @@ export const PrimaryNavigator = () => {
       /> */}
       <Tab.Screen
         name="Chat"
-        component={NIP17Chat}
+        component={ChatNavigator}
         options={{
           headerShown: false,
           title: LL.ChatScreen.title(),
