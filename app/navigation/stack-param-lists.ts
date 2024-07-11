@@ -13,7 +13,9 @@ import {
   ReceiveDestination,
 } from "@app/screens/send-bitcoin-screen/payment-destination/index.types"
 import { WalletDescriptor } from "@app/types/wallets"
+import Map from "@app/assets/icons-redesign/map.svg"
 import { Event } from "nostr-tools"
+import { Rumor } from "@app/utils/nostr"
 
 export type RootStackParamList = {
   IntroScreen: undefined
@@ -127,6 +129,7 @@ export type ChatStackParamList = {
   chatDetail: { chat: Chat; giftwraps: Event[] }
   sendBitcoinDestination: { username: string }
   transactionDetail: { txid: string }
+  messages: { userPubkey: string; participants: string[]; rumors: Rumor[] }
 }
 
 export type ContactStackParamList = {
