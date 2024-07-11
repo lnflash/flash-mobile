@@ -16,6 +16,7 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { updateUserData } from "@app/store/redux/slices/userSlice"
+import { setPreferredRelay } from "@app/utils/nostr"
 
 gql`
   mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
@@ -43,6 +44,11 @@ export const SetLightningAddressModal = ({
   isVisible,
   toggleModal,
 }: SetLightningAddressModalProps) => {
+  const {
+    appConfig: {
+      galoyInstance: { lnAddressHostname: lnDomain },
+    },
+  } = useAppConfig()
   const dispatch = useAppDispatch()
   const [error, setError] = useState<SetAddressError | undefined>()
   const [lnAddress, setLnAddress] = useState("")
@@ -77,8 +83,13 @@ export const SetLightningAddressModal = ({
         }
       }
       updateNostrProfile({
-        content: { username: lnAddress, lud16: lnAddress, flash_username: lnAddress },
+        content: {
+          username: lnAddress,
+          lud16: `${lnAddress}@${lnDomain}`,
+          flash_username: lnAddress,
+        },
       })
+      setPreferredRelay()
     },
   })
 

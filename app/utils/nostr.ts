@@ -8,10 +8,18 @@ import {
   Event,
   nip19,
   nip44,
+  Relay,
+  SimplePool,
 } from "nostr-tools"
+import { Alert } from "react-native"
+
+import * as Keychain from "react-native-keychain"
+
+const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
 
 const now = () => Math.round(Date.now() / 1000)
-type Rumor = UnsignedEvent & { id: string }
+export type Rumor = UnsignedEvent & { id: string }
+export type Group = { subject: string; participants: string[] }
 
 export const createRumor = (event: Partial<UnsignedEvent>, privateKey: Uint8Array) => {
   const rumor = {
@@ -86,11 +94,88 @@ export const decryptNip44Message = (
 export const getRumorFromWrap = (wrapEvent: Event, privateKey: Uint8Array) => {
   let sealString = decryptNip44Message(wrapEvent.content, wrapEvent.pubkey, privateKey)
   let seal = JSON.parse(sealString) as Event
-  let rumorString = decryptNip44Message(
-    seal.content,
-    getPublicKey(privateKey),
-    privateKey,
-  )
+  let rumorString = decryptNip44Message(seal.content, seal.pubkey, privateKey)
   let rumor = JSON.parse(rumorString)
   return rumor
+}
+
+export const fetchSecretFromLocalStorage = async () => {
+  let credentials = await Keychain.getInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
+  return credentials ? credentials.password : null
+}
+
+export const fetchGiftWrapsForPublicKey = async (
+  pubkey: string,
+  eventHandler: (event: Event) => void,
+) => {
+  let relay = await Relay.connect("wss://relay.staging.flashapp.me")
+  relay.subscribe(
+    [
+      {
+        "kinds": [1059],
+        "#p": [pubkey],
+        "limit": 150,
+      },
+    ],
+    {
+      onevent: eventHandler,
+    },
+  )
+  return relay
+}
+
+export const convertRumorsToGroups = (rumors: Rumor[]) => {
+  let groups: Map<string, Rumor[]> = new Map()
+  rumors.forEach((rumor) => {
+    let participants = rumor.tags.filter((t) => t[0] === "p").map((p) => p[1])
+    let participantsSet = new Set([...participants, rumor.pubkey])
+    participants = Array.from(participantsSet)
+    participants.sort()
+    let id = participants.join(",")
+    groups.set(id, [...(groups.get(id) || []), rumor])
+  })
+  return groups
+}
+
+export const getSecretKey = async () => {
+  let secretKeyString = await fetchSecretFromLocalStorage()
+  if (!secretKeyString) {
+    return null
+  }
+  let secret = nip19.decode(secretKeyString).data as Uint8Array
+  return secret
+}
+
+export const setPreferredRelay = async () => {
+  let publicRelays = [
+    "wss://relay.damus.io",
+    "wss://relay.primal.net",
+    "wss://relay.staging.flashapp.me",
+    "wss://relay.snort.social",
+    "wss//nos.lol",
+  ]
+  console.log("inside setpreferredRelay")
+  const secret = await getSecretKey()
+  if (!secret) {
+    Alert.alert("Nostr Private Key Not Assigned")
+    return
+  }
+  const pubKey = getPublicKey(secret)
+  let relayEvent: UnsignedEvent = {
+    pubkey: pubKey,
+    tags: [["relay", "wss://relay.staging.flashapp.me"]],
+    created_at: now(),
+    kind: 10050,
+    content: "",
+  }
+  console.log("Prepared preferred relay event", relayEvent)
+  const finalEvent = finalizeEvent(relayEvent, secret)
+  let pool = new SimplePool()
+  console.log("preferred event finalized", finalEvent)
+  pool.publish(publicRelays, finalEvent).forEach((promise: Promise<any>) => {
+    promise.then((value) => console.log("Message from relay", value))
+  })
+  setTimeout(() => {
+    pool.close(publicRelays)
+  }, 5000)
 }
