@@ -18,7 +18,7 @@ import * as React from "react"
 import ErrorBoundary from "react-native-error-boundary"
 import { RootSiblingParent } from "react-native-root-siblings"
 import { GaloyToast } from "./components/galoy-toast"
-import { NotificationComponent } from "./components/notification"
+import { PushNotificationComponent } from "./components/push-notification"
 import { GaloyClient } from "./graphql/client"
 import TypesafeI18n from "./i18n/i18n-react"
 import { loadAllLocales } from "./i18n/i18n-util.sync"
@@ -66,7 +66,7 @@ export const App = () => (
                     <NavigationContainerWrapper>
                       <RootSiblingParent>
                         <AppStateWrapper />
-                        <NotificationComponent />
+                        <PushNotificationComponent />
                         <BreezProvider>
                           <RootStack />
                         </BreezProvider>
