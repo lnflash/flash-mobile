@@ -8,15 +8,14 @@ import {
   nip04,
   UnsignedEvent,
   finalizeEvent,
-  nip44,
   Event,
 } from "nostr-tools"
 import {
   createRumor,
   createSeal,
   createWrap,
-  decryptNip44Message,
   getRumorFromWrap,
+  getSecretKey,
 } from "@app/utils/nostr"
 
 export interface ChatInfo {
@@ -120,7 +119,12 @@ const useNostrProfile = () => {
   }
 
   async function sendNip17Message(recipientId: string, message: string) {
-    let recipient = nip19.decode(recipientId).data as string
+    let recipient
+    if (recipientId.startsWith("npub1")) {
+      recipient = nip19.decode(recipientId).data as string
+    } else {
+      recipient = recipientId
+    }
     let privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
     let rumor = createRumor(
       { content: message, kind: 14, tags: [["p", `${recipient}`]] },
@@ -157,6 +161,7 @@ const useNostrProfile = () => {
   }
 
   const fetchGiftWraps = async (eventHandler: (event: Event) => void) => {
+    console.log("Fetching Giftwraps")
     const privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
     const pool = new SimplePool()
     let giftWrapFilters = {
@@ -172,9 +177,14 @@ const useNostrProfile = () => {
   }
 
   const retrieveMessagesWith = (npub: string, giftwraps: Event[]) => {
+    console.log("retrieving messages with", npub)
+    console.log("priv key", nostrSecretKey)
     let privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
+    console.log("priv key", privateKey)
     let userPubKey = getPublicKey(privateKey)
+    console.log("user pubkey is")
     let messages: MessageType[] = []
+    console.log("going into gift wraps", npub)
     giftwraps.forEach((wrap: Event) => {
       let rumor
       try {
@@ -311,11 +321,19 @@ const useNostrProfile = () => {
       lud16?: string
     }
   }) => {
+    console.log("inside update Nostr Profile")
     const pool = new SimplePool()
-    let pubKey = nostrPublicKey
-    if (!pubKey) {
-      pubKey = nip19.decode(await getPubkey()).data as string
+    let publicRelays = [
+      ...relays,
+      "wss://relay.damus.io",
+      "wss://relay.primal.net",
+      "wss://nos.lol",
+    ]
+    let secret = await getSecretKey()
+    if (!secret) {
+      throw Error("Nostr secret not set")
     }
+    let pubKey = getPublicKey(secret)
     const kind0Event = {
       kind: 0,
       pubkey: pubKey,
@@ -323,15 +341,12 @@ const useNostrProfile = () => {
       tags: [],
       created_at: Math.floor(Date.now() / 1000),
     }
-    let privateKey = nostrSecretKey
-    if (!privateKey) {
-      privateKey = (await fetchSecretFromLocalStorage()) as string
-      if (!privateKey) throw Error("No private key found")
-    }
-    let privateKeyHex = nip19.decode(privateKey).data as Uint8Array
-    const signedKind0Event = finalizeEvent(kind0Event, privateKeyHex)
-    await Promise.any(pool.publish(relays, signedKind0Event))
-    pool.close(relays)
+    console.log("prepared Event is", kind0Event)
+    const signedKind0Event = finalizeEvent(kind0Event, secret)
+    console.log("profile event finalized")
+    let messages = await Promise.any(pool.publish(publicRelays, signedKind0Event))
+    console.log("Profile event published", messages)
+    pool.close(publicRelays)
   }
 
   const fetchNostrPubKey = async () => {

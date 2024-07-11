@@ -14,6 +14,7 @@ import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
 import { ChatDetailScreen, ChatScreen } from "../screens/chat-screen"
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
+import { NIP17Chat } from "@app/screens/nip17-chat"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
@@ -635,7 +636,7 @@ export const PrimaryNavigator = () => {
       /> */}
       <Tab.Screen
         name="Chat"
-        component={ChatNavigator}
+        component={NIP17Chat}
         options={{
           headerShown: false,
           title: LL.ChatScreen.title(),
