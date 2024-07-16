@@ -16,7 +16,8 @@ export const ModalNfcFlashcard: React.FC<{
   isActive: boolean
   setIsActive: (arg: boolean) => void
   onCardHtmlUpdate: (html: string) => void
-}> = ({ isActive, setIsActive, onCardHtmlUpdate }) => {
+  tagId: (tag: string) => void
+}> = ({ isActive, setIsActive, onCardHtmlUpdate, tagId }) => {
   const [nfcError, setNfcError] = React.useState<boolean>(false) // Added state to track NFC errors
   const styles = useStyles()
   const {
@@ -72,6 +73,11 @@ export const ModalNfcFlashcard: React.FC<{
         await NfcManager.requestTechnology(NfcTech.Ndef)
 
         const tag = await NfcManager.getTag()
+        if (tag && tag.id) {
+          tagId(tag.id)
+        } else {
+          console.log("No tag found")
+        }
         const ndefRecord = tag?.ndefMessage?.[0]
 
         if (!ndefRecord) {
@@ -109,7 +115,7 @@ export const ModalNfcFlashcard: React.FC<{
         setNfcRegistered(false)
       }
     }
-  }, [isActive, dismiss, nfcRegistered, handleSubmit])
+  }, [isActive, dismiss, nfcRegistered, handleSubmit, tagId])
 
   return (
     <Modal

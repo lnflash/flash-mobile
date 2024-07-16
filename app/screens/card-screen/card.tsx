@@ -42,6 +42,8 @@ type Props = {
   route: CardScreenRouteProp
 }
 
+const warningText = "DO NOT THROW AWAY THIS CARD."
+const warningDetails = "If card is lost, the funds will not be recoverable."
 const multiple = (currentUnit: string) => {
   switch (currentUnit) {
     case "USDCENT":
@@ -111,6 +113,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
 
   const loading = false // placeholder for query loading if we need to load card data in the future
   const [cardHtml, setCardHtml] = useState<string | null>(null)
+  const [cardTag, setCardTag] = useState<string | null>(null)
   const [refreshBalance, setRefreshBalance] = useState<string | null>("false")
   const [balance, setBalance] = useState<string>("$0.00")
   const [reloadLnurl, setReloadLnurl] = useState<PaymentDestination>()
@@ -123,6 +126,12 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
     fetchPolicy: "cache-only",
     variables: { range: "ONE_DAY" }, // Pass a valid range
   })
+
+  const handleTagId = (tag: string) => {
+    if (!cardTag) {
+      setCardTag(tag)
+    }
+  }
 
   const handleCardHtmlUpdate = (html: string) => {
     setCardHtml(html)
@@ -299,6 +308,9 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             ))}
           </View>
+          <Text style={styles.warningText}>{warningText}</Text>
+          <Text style={styles.warningDetails}>{warningDetails}</Text>
+          <Text style={styles.warningDetails}>ID:{cardTag}</Text>
           <Button
             style={styles.removeButton}
             title="Remove Flashcard"
@@ -326,6 +338,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
           isActive={displayReceiveNfc}
           setIsActive={setDisplayReceiveNfc}
           onCardHtmlUpdate={handleCardHtmlUpdate}
+          tagId={handleTagId}
         />
       )}
     </Screen>
@@ -385,6 +398,16 @@ const useStyles = makeStyles(({ colors }) => ({
     marginTop: 16,
     textAlign: "center",
   },
+  warningText: {
+    fontSize: 24,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  warningDetails: {
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: "center",
+  },
   listItemsContainer: {
     paddingHorizontal: 15,
     paddingVertical: 15,
@@ -405,7 +428,6 @@ const useStyles = makeStyles(({ colors }) => ({
   removeButton: {
     marginTop: 16,
     display: "flex",
-    paddingVertical: 96,
     borderRadius: 12,
   },
 }))
