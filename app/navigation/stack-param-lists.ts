@@ -13,6 +13,7 @@ import {
   ReceiveDestination,
 } from "@app/screens/send-bitcoin-screen/payment-destination/index.types"
 import { WalletDescriptor } from "@app/types/wallets"
+import Map from "@app/assets/icons-redesign/map.svg"
 
 export type RootStackParamList = {
   IntroScreen: undefined
@@ -96,6 +97,7 @@ export type RootStackParamList = {
   transactionHistory?: undefined
   Earn: undefined
   Card: undefined
+  Map: undefined
   accountScreen: undefined
   transactionLimitsScreen: undefined
   emailRegistrationInitiate: undefined

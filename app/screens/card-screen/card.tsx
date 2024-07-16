@@ -10,6 +10,7 @@ import {
   useScanningQrCodeScreenQuery,
 } from "@app/graphql/generated"
 import crashlytics from "@react-native-firebase/crashlytics"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 import { gql, useQuery } from "@apollo/client"
 import { Screen } from "@app/components/screen"
@@ -42,8 +43,8 @@ type Props = {
   route: CardScreenRouteProp
 }
 
-const warningText = "DO NOT THROW AWAY THIS CARD."
-const warningDetails = "If card is lost, the funds will not be recoverable."
+const warningText = "DO NOT THROW AWAY YOUR CARD!"
+const warningDetails = "If your card is lost, the funds are not recoverable."
 const multiple = (currentUnit: string) => {
   switch (currentUnit) {
     case "USDCENT":
@@ -86,6 +87,8 @@ gql`
     }
   }
 `
+const CARD_HTML_STORAGE_KEY = "CARD_HTML"
+const CARD_TAG_STORAGE_KEY = "CARD_TAG"
 
 export const CardScreen: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
@@ -127,14 +130,24 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
     variables: { range: "ONE_DAY" }, // Pass a valid range
   })
 
-  const handleTagId = (tag: string) => {
+  const handleTagId = async (tag: string) => {
+    await AsyncStorage.setItem(CARD_TAG_STORAGE_KEY, tag) // Save cardHtml to AsyncStorage
+    processCardTag(tag)
+  }
+
+  const processCardTag = (tag: string) => {
     if (!cardTag) {
       setCardTag(tag)
     }
   }
 
-  const handleCardHtmlUpdate = (html: string) => {
+  const handleCardHtmlUpdate = async (html: string) => {
     setCardHtml(html)
+    await AsyncStorage.setItem(CARD_HTML_STORAGE_KEY, html) // Save cardHtml to AsyncStorage
+    processCardHtml(html)
+  }
+
+  const processCardHtml = (html: string) => {
     if (priceData && !priceLoading && !priceError) {
       const currentPriceData =
         priceData.btcPriceList[priceData.btcPriceList.length - 1].price
@@ -192,8 +205,11 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
     }
   }
 
-  const resetCardHtml = () => {
+  const resetCardHtml = async () => {
     setCardHtml(null)
+    setCardTag(null)
+    await AsyncStorage.removeItem(CARD_HTML_STORAGE_KEY)
+    await AsyncStorage.removeItem(CARD_TAG_STORAGE_KEY)
   }
 
   let ListEmptyContent: React.ReactNode
@@ -248,10 +264,23 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
     // Initialize NFC on mount
     initializeNfc()
 
+    // Load cardHtml from AsyncStorage on mount
+    const loadCardHtmlFromStorage = async () => {
+      const storedCardHtml = await AsyncStorage.getItem(CARD_HTML_STORAGE_KEY)
+      const storedCardTag = await AsyncStorage.getItem(CARD_TAG_STORAGE_KEY)
+      if (storedCardHtml && storedCardTag) {
+        setCardHtml(storedCardHtml)
+        processCardHtml(storedCardHtml)
+        processCardTag(storedCardTag)
+      }
+    }
+
+    loadCardHtmlFromStorage()
+
     return () => {
       unsubscribeFocus()
     }
-  }, [navigation, isAuthed, cardHtml, refreshBalance, setDisplayReceiveNfc])
+  }, [])
 
   const onMenuClick = (target: Target) => {
     if (isAuthed) {
@@ -310,7 +339,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
           </View>
           <Text style={styles.warningText}>{warningText}</Text>
           <Text style={styles.warningDetails}>{warningDetails}</Text>
-          <Text style={styles.warningDetails}>ID:{cardTag}</Text>
+          <Text style={styles.tagId}>ID:{cardTag}</Text>
           <Button
             style={styles.removeButton}
             title="Remove Flashcard"
@@ -318,20 +347,28 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
           />
         </>
       ) : (
-        <FlatList
-          contentContainerStyle={styles.listContainer}
-          data={flashCards}
-          ListEmptyComponent={ListEmptyContent}
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          renderItem={({ item }) => {
-            return (
-              <View></View>
-              // return empty view as placeholer for now
-              // will be used for transaction history in the future
-            )
-          }}
-          keyExtractor={(item) => item.uuid}
-        />
+        <>
+          <FlatList
+            contentContainerStyle={styles.listContainer}
+            data={flashCards}
+            ListEmptyComponent={ListEmptyContent}
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            renderItem={({ item }) => {
+              return (
+                <View></View>
+                // return empty view as placeholer for now
+                // will be used for transaction history in the future
+              )
+            }}
+            keyExtractor={(item) => item.uuid}
+          />
+          <Text style={styles.warningDetails}>Want a Flashcard?</Text>
+          <Button
+            style={styles.removeButton}
+            title="Find a Flashpoint"
+            onPress={() => navigation.navigate("Map")}
+          />
+        </>
       )}
       {(!cardHtml || !refreshBalance) && (
         <ModalNfcFlashcard
@@ -399,13 +436,21 @@ const useStyles = makeStyles(({ colors }) => ({
     textAlign: "center",
   },
   warningText: {
-    fontSize: 24,
+    fontSize: 22,
     marginBottom: 8,
+    paddingTop: 21,
     textAlign: "center",
+    // make the font very bold
+    fontWeight: "900",
   },
   warningDetails: {
     fontSize: 16,
     marginBottom: 8,
+    textAlign: "center",
+  },
+  tagId: {
+    fontSize: 8,
+    marginTop: 9,
     textAlign: "center",
   },
   listItemsContainer: {
