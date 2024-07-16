@@ -17,7 +17,6 @@ export const ModalNfcFlashcard: React.FC<{
   setIsActive: (arg: boolean) => void
   onCardHtmlUpdate: (html: string) => void
 }> = ({ isActive, setIsActive, onCardHtmlUpdate }) => {
-  const [nfcData, setNfcData] = React.useState<string | null>(null)
   const [nfcError, setNfcError] = React.useState<boolean>(false) // Added state to track NFC errors
   const styles = useStyles()
   const {
@@ -83,7 +82,6 @@ export const ModalNfcFlashcard: React.FC<{
         }
 
         const payload = Ndef.text.decodePayload(new Uint8Array(ndefRecord.payload))
-        setNfcData(payload)
         setNfcError(false) // Clear error state if successful
 
         // Close the modal if the payload starts with "lnurlw"

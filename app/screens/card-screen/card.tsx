@@ -1,11 +1,9 @@
-// import { StackNavigationProp } from "@react-navigation/stack"
 import { Button, makeStyles, Text, useTheme } from "@rneui/themed"
 import * as React from "react"
 import { useState } from "react"
 import { ActivityIndicator, View, Pressable, Image, Alert } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
-// import NFCIcon from "@app/assets/icons/nfc.svg"
 import nfcManager from "react-native-nfc-manager"
 import {
   useAccountDefaultWalletLazyQuery,
@@ -52,16 +50,6 @@ const multiple = (currentUnit: string) => {
       return 1
   }
 }
-
-const GraphRange = {
-  ONE_DAY: "ONE_DAY",
-  ONE_WEEK: "ONE_WEEK",
-  ONE_MONTH: "ONE_MONTH",
-  ONE_YEAR: "ONE_YEAR",
-  FIVE_YEARS: "FIVE_YEARS",
-} as const
-
-type GraphRangeType = (typeof GraphRange)[keyof typeof GraphRange]
 
 const BTC_CURRENT_PRICE_QUERY = gql`
   query btcPriceList($range: PriceGraphRange!) {
@@ -112,17 +100,14 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
   })
 
   const isAuthed = useIsAuthed()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { formatMoneyAmount } = useDisplayCurrency()
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [flashCards, setFlashCards] = useState<FlashCards[]>([])
   const [displayReceiveNfc, setDisplayReceiveNfc] = useState(false)
   const [initialized, setInitialized] = useState(false)
-  const [modalVisible, setModalVisible] = useState(false)
 
   const { LL } = useI18nContext()
-  const [graphRange, setGraphRange] = React.useState<GraphRangeType>(GraphRange.ONE_DAY)
 
   const loading = false // placeholder for query loading if we need to load card data in the future
   const [cardHtml, setCardHtml] = useState<string | null>(null)
@@ -272,7 +257,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
         setDisplayReceiveNfc(true)
       }
     } else {
-      setModalVisible(true)
+      console.log("Reloading skipped")
     }
   }
 
@@ -328,7 +313,9 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           renderItem={({ item }) => {
             return (
-              <View></View> // return empty view as placeholer for now
+              <View></View>
+              // return empty view as placeholer for now
+              // will be used for transaction history in the future
             )
           }}
           keyExtractor={(item) => item.uuid}
@@ -352,10 +339,6 @@ const useStyles = makeStyles(({ colors }) => ({
     flexGrow: 1,
   },
 
-  header: {
-    backgroundColor: colors.white,
-  },
-
   activityIndicatorContainer: {
     alignItems: "center",
     flex: 1,
@@ -374,11 +357,6 @@ const useStyles = makeStyles(({ colors }) => ({
     paddingTop: 74,
   },
 
-  emptyListNoMatching: {
-    marginHorizontal: 26,
-    marginTop: 8,
-  },
-
   emptyListText: {
     fontSize: 18,
     marginTop: 30,
@@ -393,60 +371,8 @@ const useStyles = makeStyles(({ colors }) => ({
     textAlign: "center",
   },
 
-  item: {
-    marginHorizontal: 32,
-    marginVertical: 8,
-  },
-
-  itemContainer: {
-    borderRadius: 8,
-    backgroundColor: colors.grey5,
-  },
-
   listContainer: { flexGrow: 1 },
 
-  searchBarContainer: {
-    backgroundColor: colors.white,
-    borderBottomColor: colors.white,
-    borderTopColor: colors.white,
-    marginHorizontal: 26,
-    marginVertical: 8,
-  },
-
-  searchBarInputContainerStyle: {
-    backgroundColor: colors.grey5,
-  },
-
-  searchBarRightIconStyle: {
-    padding: 8,
-  },
-
-  searchBarText: {
-    color: colors.black,
-    textDecorationLine: "none",
-  },
-
-  itemText: { color: colors.black },
-
-  icon: {
-    color: colors.black,
-  },
-  profilePicture: {
-    width: 50,
-    height: 50,
-    borderRadius: 50,
-    backgroundColor: colors.black,
-  },
-  nfcIcon: {
-    marginTop: -1,
-    marginRight: 17,
-    padding: 8,
-    display: "flex",
-    flexDirection: "row",
-    columnGap: 4,
-    backgroundColor: colors.grey5,
-    borderRadius: 4,
-  },
   flashcardImage: {
     width: "100%", // Adjust the size as needed
     height: 200, // Adjust the size as needed
