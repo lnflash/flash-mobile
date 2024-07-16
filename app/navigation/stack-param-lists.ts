@@ -39,6 +39,9 @@ export type RootStackParamList = {
     payment?: string
     username?: string
   }
+  cardScreen: {
+    reloadlnurl?: string
+  }
   sendBitcoinDetails: {
     paymentDestination: PaymentDestination
   }
@@ -92,6 +95,7 @@ export type RootStackParamList = {
   USDTransactionHistory: undefined
   transactionHistory?: undefined
   Earn: undefined
+  Card: undefined
   accountScreen: undefined
   transactionLimitsScreen: undefined
   emailRegistrationInitiate: undefined
@@ -146,6 +150,7 @@ export type PrimaryStackParamList = {
   Home: undefined
   Contacts: undefined
   Chat: undefined
+  Card: undefined
   Map: undefined
   Earn: undefined
 }

@@ -85,6 +85,7 @@ const ReceiveScreen = ({ route }: Props) => {
         request?.state === "Created" &&
         (await nfcManager.isSupported())
       ) {
+        console.log("DEBUG:", request.receiveViaNFC)
         navigation.setOptions({
           headerRight: () => (
             <TouchableOpacity
