@@ -1,10 +1,14 @@
 import React, { useEffect } from "react"
+import { Linking } from "react-native"
+import notifee, { AndroidImportance } from "@notifee/react-native"
+import messaging, { FirebaseMessagingTypes } from "@react-native-firebase/messaging"
 
+// hooks
 import { useApolloClient } from "@apollo/client"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+
+// utils
 import { addDeviceToken, hasNotificationPermission } from "@app/utils/notifications"
-import messaging, { FirebaseMessagingTypes } from "@react-native-firebase/messaging"
-import { Linking } from "react-native"
 
 export const PushNotificationComponent = (): JSX.Element => {
   const client = useApolloClient()
@@ -38,7 +42,7 @@ export const PushNotificationComponent = (): JSX.Element => {
 
     const unsubscribeInApp = messaging().onMessage(async (remoteMessage) => {
       console.log("A new FCM message arrived!", remoteMessage)
-      // TODO: add notifee library to show local notifications
+      onDisplayNotification(remoteMessage)
     })
 
     // When the application is opened from a quit state.
@@ -70,6 +74,39 @@ export const PushNotificationComponent = (): JSX.Element => {
       }
     })()
   }, [client, isAuthed])
+
+  async function onDisplayNotification(
+    remoteMessage: FirebaseMessagingTypes.RemoteMessage,
+  ) {
+    // Request permissions (required for iOS)
+    await notifee.requestPermission()
+
+    // Create a channel (required for Android)
+    const channelId = await notifee.createChannel({
+      id: "default",
+      name: "Default Channel",
+      importance: AndroidImportance.HIGH,
+    })
+    try {
+      // Display a notification
+      await notifee.displayNotification({
+        title: remoteMessage.notification?.title,
+        body: remoteMessage.notification?.body,
+        android: {
+          channelId,
+          smallIcon: "ic_notification", // optional, defaults to 'ic_launcher'.
+          color: "#f7de4a",
+          // pressAction is needed if you want the notification to open the app when pressed
+          pressAction: {
+            id: "default",
+          },
+          importance: AndroidImportance.HIGH,
+        },
+      })
+    } catch (err) {
+      console.log("?????????????????????????", err)
+    }
+  }
 
   return <></>
 }
