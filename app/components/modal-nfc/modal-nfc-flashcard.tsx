@@ -32,7 +32,6 @@ export const ModalNfcFlashcard: React.FC<{
     if (nfcRegistered) {
       try {
         await NfcManager.cancelTechnologyRequest()
-        await NfcManager.cancelTechnologyRequest()
         await NfcManager.unregisterTagEvent()
         setNfcRegistered(false)
       } catch (error) {
@@ -117,6 +116,7 @@ export const ModalNfcFlashcard: React.FC<{
         setNfcRegistered(false)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, dismiss, nfcRegistered])
 
   return (

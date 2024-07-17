@@ -1,7 +1,7 @@
 import { Button, makeStyles, Text, useTheme } from "@rneui/themed"
 import * as React from "react"
 import { useState } from "react"
-import { ActivityIndicator, View, Pressable, Image, Alert } from "react-native"
+import { ActivityIndicator, View, Image, Alert } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 import nfcManager from "react-native-nfc-manager"
@@ -236,9 +236,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
         </Text>
         <Text style={styles.emptyListText}>{LL.CardScreen.noCardsYet()}</Text>
         <View style={styles.emptyListScanIcon}>
-          <Pressable onPress={() => setDisplayReceiveNfc(true)}>
-            <Icon name="card" size={96} color={colors.primary} />
-          </Pressable>
+          <Icon name="card" size={96} color={colors.primary} />
         </View>
       </View>
     )
@@ -290,6 +288,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
       unsubscribeFocus()
       cancelNfcRequest() // Ensure NFC request is cancelled on cleanup
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigation, isAuthed, cardHtml])
 
   const onMenuClick = (target: Target) => {
