@@ -12,7 +12,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
-
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    
     <!-- TODO android:roundIcon="@mipmap/ic_launcher_round" -->
     <application
       android:name=".MainApplication"
@@ -39,7 +40,11 @@
       <meta-data  
         android:name="com.google.firebase.messaging.default_notification_icon" 
         android:resource="@mipmap/ic_notification" />
-
+      <meta-data
+        android:name="com.google.firebase.messaging.default_notification_color"
+        android:resource="@color/notification_color"
+        tools:replace="android:resource" />
+      
 
       <!-- You will only need to add this meta-data tag, but make sure it's a child of application -->
       <meta-data
