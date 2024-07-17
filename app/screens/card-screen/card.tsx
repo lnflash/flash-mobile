@@ -126,7 +126,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
     loading: priceLoading,
     error: priceError,
   } = useQuery(BTC_CURRENT_PRICE_QUERY, {
-    fetchPolicy: "cache-only",
+    fetchPolicy: "cache-first",
     variables: { range: "ONE_DAY" }, // Pass a valid range
   })
 
@@ -138,6 +138,14 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
   const processCardTag = (tag: string) => {
     if (!cardTag) {
       setCardTag(tag)
+    }
+  }
+
+  const cancelNfcRequest = async () => {
+    try {
+      await nfcManager.cancelTechnologyRequest()
+    } catch (error) {
+      console.warn("No existing NFC request to cancel", error)
     }
   }
 
@@ -155,19 +163,19 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
         ((currentPriceData.base / 10 ** currentPriceData.offset) *
           multiple(currentPriceData.currencyUnit)) /
         1e5
+
       // Extract balance from the HTML
       const balanceMatch = html.match(/(\d{1,3}(?:,\d{3})*)\s*SATS<\/dt>/)
       if (balanceMatch) {
         const parsedBalance = balanceMatch[1].replace(/,/g, "") // Remove commas
         const satoshiAmount = parseInt(parsedBalance, 10)
+
         // Convert SATS to USD using the current BTC price
         const usdAmount = satoshiAmount * usdPerSat
         const formattedBalance = formatMoneyAmount({
           moneyAmount: toUsdMoneyAmount(usdAmount * 100),
         })
         setBalance(formattedBalance)
-      } else {
-        return
       }
       const lnurlMatch = html.match(/href="lightning:(lnurl\w+)"/)
       if (lnurlMatch) {
@@ -206,10 +214,10 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   const resetCardHtml = async () => {
-    setCardHtml(null)
-    setCardTag(null)
     await AsyncStorage.removeItem(CARD_HTML_STORAGE_KEY)
     await AsyncStorage.removeItem(CARD_TAG_STORAGE_KEY)
+    setCardHtml(null)
+    setCardTag(null)
   }
 
   let ListEmptyContent: React.ReactNode
@@ -240,6 +248,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
     const initializeNfc = async () => {
       if (await nfcManager.isSupported()) {
         await nfcManager.start()
+        await cancelNfcRequest() // Cancel any existing NFC requests
         if (!cardHtml) {
           setDisplayReceiveNfc(true)
         }
@@ -268,7 +277,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
     const loadCardHtmlFromStorage = async () => {
       const storedCardHtml = await AsyncStorage.getItem(CARD_HTML_STORAGE_KEY)
       const storedCardTag = await AsyncStorage.getItem(CARD_TAG_STORAGE_KEY)
-      if (storedCardHtml && storedCardTag) {
+      if (storedCardHtml && storedCardTag && storedCardHtml !== cardHtml) {
         setCardHtml(storedCardHtml)
         processCardHtml(storedCardHtml)
         processCardTag(storedCardTag)
@@ -279,8 +288,9 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
 
     return () => {
       unsubscribeFocus()
+      cancelNfcRequest() // Ensure NFC request is cancelled on cleanup
     }
-  }, [])
+  }, [navigation, isAuthed, cardHtml])
 
   const onMenuClick = (target: Target) => {
     if (isAuthed) {

@@ -32,6 +32,7 @@ export const ModalNfcFlashcard: React.FC<{
     if (nfcRegistered) {
       try {
         await NfcManager.cancelTechnologyRequest()
+        await NfcManager.cancelTechnologyRequest()
         await NfcManager.unregisterTagEvent()
         setNfcRegistered(false)
       } catch (error) {
@@ -111,11 +112,12 @@ export const ModalNfcFlashcard: React.FC<{
 
     return () => {
       if (nfcRegistered) {
+        NfcManager.cancelTechnologyRequest()
         NfcManager.unregisterTagEvent()
         setNfcRegistered(false)
       }
     }
-  }, [isActive, dismiss, nfcRegistered, handleSubmit, tagId])
+  }, [isActive, dismiss, nfcRegistered])
 
   return (
     <Modal
