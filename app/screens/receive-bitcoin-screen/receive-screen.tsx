@@ -9,7 +9,6 @@ import { useReceiveBitcoin } from "./use-receive-bitcoin"
 import { useAppSelector } from "@app/store/redux"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import nfcManager from "react-native-nfc-manager"
-import Sound from "react-native-sound"
 import { useAppConfig } from "@app/hooks"
 import moment from "moment"
 import messaging from "@react-native-firebase/messaging"
@@ -39,13 +38,6 @@ import { testProps } from "../../utils/testProps"
 
 // types
 import { Invoice, InvoiceType, PaymentRequestState } from "./payment/index.types"
-
-// Load the sound file
-const paymentReceivedSound = new Sound("coins", Sound.MAIN_BUNDLE, (error) => {
-  if (error) {
-    console.log("Failed to load the sound", error)
-  }
-})
 
 type Props = {
   route: RouteProp<RootStackParamList, "receiveBitcoin">
@@ -194,14 +186,6 @@ const ReceiveScreen = ({ route }: Props) => {
             navigation.goBack()
           }
         }, 5000)
-        // Play the sound
-        if (paymentReceivedSound) {
-          paymentReceivedSound.play((success) => {
-            if (!success) {
-              console.log("Failed to play the sound.")
-            }
-          })
-        }
         return () => clearTimeout(id)
       }
     }
