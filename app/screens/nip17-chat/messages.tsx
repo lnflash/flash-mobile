@@ -2,7 +2,7 @@ import "react-native-get-random-values"
 import * as React from "react"
 import { ActivityIndicator, Image, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { RouteProp, useNavigation } from "@react-navigation/native"
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Screen } from "../../components/screen"
 import type {
@@ -13,56 +13,68 @@ import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 import { isIos } from "@app/utils/helper"
 import { Chat, MessageType, defaultTheme } from "@flyerhq/react-native-chat-ui"
-import { launchImageLibrary } from "react-native-image-picker"
 import { ChatMessage } from "./chatMessage"
-import useNostrProfile from "@app/hooks/use-nostr-profile"
 import Icon from "react-native-vector-icons/Ionicons"
-import { Event } from "nostr-tools"
-import { Rumor } from "@app/utils/nostr"
+import { getPublicKey } from "nostr-tools"
+import {
+  Rumor,
+  convertRumorsToGroups,
+  getRumorFromWrap,
+  sendNip17Message,
+} from "@app/utils/nostr"
+import { useEffect, useState } from "react"
+import { useChatContext } from "./chatContext"
 
 type MessagesProps = {
   route: RouteProp<ChatStackParamList, "messages">
 }
 
 export const Messages: React.FC<MessagesProps> = ({ route }) => {
-  const { participants, rumors, userPubkey } = route.params
-  return (
-    <MessagesScreen userPubkey={userPubkey} participants={participants} rumors={rumors} />
-  )
+  let userPubkey = getPublicKey(route.params.userPrivateKey)
+
+  return <MessagesScreen userPubkey={userPubkey} groupId={route.params.groupId} />
 }
 
 type MessagesScreenProps = {
+  groupId: string
   userPubkey: string
-  participants: string[]
-  rumors: Rumor[]
 }
 
 export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   userPubkey,
-  participants,
-  rumors,
+  groupId,
 }) => {
   const {
     theme: { colors },
   } = useTheme()
+  let { rumors } = useChatContext()
+  let chatRumors = convertRumorsToGroups(rumors).get(groupId)
   const styles = useStyles()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
   const { LL } = useI18nContext()
   const [initialized, setInitialized] = React.useState(false)
 
+  const user = { id: userPubkey }
+  console.log("IN MESSAGES SCREEN", rumors)
+
   const convertRumorsToMessages = (rumors: Rumor[]): MessageType.Text[] => {
-    return rumors.map((r) => {
+    let chats = (chatRumors || []).map((r) => {
       return {
-        author: user,
+        author: { id: r.pubkey },
         createdAt: r.created_at,
         id: r.id,
         type: "text",
         text: r.content,
       }
     })
+    chats.sort((a, b) => {
+      return b.createdAt - a.createdAt
+    })
+    return chats as MessageType.Text[]
   }
 
   React.useEffect(() => {
+    console.log("NEW ITEMSSS IN MESSAGES SCREEEEN")
     let isMounted = true
     async function initialize() {
       setInitialized(true)
@@ -74,8 +86,6 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
     }
   }, [])
 
-  const user = { id: userPubkey }
-
   const handleSendPress = async (message: MessageType.PartialText) => {
     const textMessage: MessageType.Text = {
       author: user,
@@ -84,11 +94,11 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
       text: message.text,
       type: "text",
     }
-    //await sendNip17Message(chat.id, message.text)
+    await sendNip17Message(groupId.split(","), message.text)
   }
 
   return (
-    <Screen unsafe>
+    <Screen>
       <View style={styles.aliasView}>
         <Icon
           name="arrow-back-outline"
