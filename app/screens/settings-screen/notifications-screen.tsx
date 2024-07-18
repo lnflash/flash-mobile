@@ -115,7 +115,7 @@ gql`
 `
 
 const NotificationCategories = {
-  Circles: "Circles",
+  // Circles: "Circles",
   Payments: "Payments",
   Price: "Price",
   Marketing: "Marketing",
