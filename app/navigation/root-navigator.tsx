@@ -14,7 +14,7 @@ import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
 import { ChatDetailScreen, ChatScreen } from "../screens/chat-screen"
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
-import { NIP17Chat } from "@app/screens/nip17-chat"
+import { ChatList } from "@app/screens/nip17-chat"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
@@ -103,6 +103,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { Messages } from "@app/screens/nip17-chat/messages"
+import { ChatContextProvider } from "@app/screens/nip17-chat/chatContext"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -520,21 +521,23 @@ const StackChats = createStackNavigator<ChatStackParamList>()
 export const ChatNavigator = () => {
   const { LL } = useI18nContext()
   return (
-    <StackChats.Navigator>
-      <StackChats.Screen
-        name="chatList"
-        component={NIP17Chat}
-        options={{
-          title: LL.ChatScreen.title(),
-          headerShown: false,
-        }}
-      />
-      <StackChats.Screen
-        name="messages"
-        component={Messages}
-        options={{ headerShown: false }}
-      />
-    </StackChats.Navigator>
+    <ChatContextProvider>
+      <StackChats.Navigator>
+        <StackChats.Screen
+          name="chatList"
+          component={ChatList}
+          options={{
+            title: LL.ChatScreen.title(),
+            headerShown: false,
+          }}
+        />
+        <StackChats.Screen
+          name="messages"
+          component={Messages}
+          options={{ headerShown: false }}
+        />
+      </StackChats.Navigator>
+    </ChatContextProvider>
   )
 }
 

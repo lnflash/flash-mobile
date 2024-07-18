@@ -10,10 +10,19 @@ import {
   nip44,
   Relay,
   SimplePool,
+  Filter,
 } from "nostr-tools"
 import { Alert } from "react-native"
 
 import * as Keychain from "react-native-keychain"
+
+let publicRelays = [
+  "wss://relay.damus.io",
+  "wss://relay.primal.net",
+  "wss://relay.staging.flashapp.me",
+  "wss://relay.snort.social",
+  "wss//nos.lol",
+]
 
 const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
 
@@ -66,7 +75,6 @@ export const createSeal = (
 
 export const createWrap = (event: Event, recipientPublicKey: string) => {
   const randomKey = generateSecretKey()
-  console.log("Alias pubkey created is", recipientPublicKey)
   return finalizeEvent(
     {
       kind: 1059,
@@ -146,7 +154,7 @@ export const getSecretKey = async () => {
   return secret
 }
 
-export const setPreferredRelay = async () => {
+export const fetchNostrUsers = async (pubKeys: string[]) => {
   let publicRelays = [
     "wss://relay.damus.io",
     "wss://relay.primal.net",
@@ -154,6 +162,37 @@ export const setPreferredRelay = async () => {
     "wss://relay.snort.social",
     "wss//nos.lol",
   ]
+  const pool = new SimplePool()
+  const nostrProfiles = await pool.querySync(publicRelays, {
+    kinds: [0],
+    authors: pubKeys,
+  })
+  pool.close(publicRelays)
+  return nostrProfiles
+}
+
+export const fetchPreferredRelays = async (pubKeys: string[]) => {
+  let publicRelays = [
+    "wss://relay.damus.io",
+    "wss://relay.primal.net",
+    "wss://relay.staging.flashapp.me",
+    "wss://relay.snort.social",
+    "wss//nos.lol",
+  ]
+  const pool = new SimplePool()
+  let filter: Filter = {
+    kinds: [10050],
+    authors: pubKeys,
+  }
+  let relayEvents = await pool.querySync(publicRelays, filter)
+  let relayMap = new Map<string, Event>()
+  relayEvents.forEach((event) => {
+    relayMap.set(event.pubkey, event)
+  })
+  return relayMap
+}
+
+export const setPreferredRelay = async () => {
   console.log("inside setpreferredRelay")
   const secret = await getSecretKey()
   if (!secret) {
@@ -178,4 +217,38 @@ export const setPreferredRelay = async () => {
   setTimeout(() => {
     pool.close(publicRelays)
   }, 5000)
+}
+
+export async function sendNip17Message(recipients: string[], message: string) {
+  let privateKey = await getSecretKey()
+  if (!privateKey) {
+    throw Error("Couldnt find private key in local storage")
+  }
+  let preferredRelays = await fetchPreferredRelays(recipients)
+  let p_tags = recipients.map((recipientId: string) => ["p", recipientId])
+  let rumor = createRumor({ content: message, kind: 14, tags: p_tags }, privateKey)
+  recipients.forEach(async (recipientId: string) => {
+    console.log("recipient is", recipientId)
+    let recipientRelays = preferredRelays
+      .get(recipientId)
+      ?.tags.filter((t: string[]) => t[0] === "relay")
+      .map((t) => t[1])
+    recipientRelays = recipientRelays || publicRelays
+    console.log("Recipient relays are", recipientRelays)
+    let connections = await Promise.all(
+      recipientRelays.map(async (relay) => {
+        let connection = await Relay.connect(relay)
+        console.log("Connection to relay", connection)
+
+        return connection
+      }),
+    )
+    let seal = createSeal(rumor, privateKey, recipientId)
+    let wrap = createWrap(seal, recipientId)
+    console.warn("Final Wrap Is", wrap)
+    connections.forEach(async (connection) => {
+      await connection.publish(wrap)
+      connection.close()
+    })
+  })
 }
