@@ -142,7 +142,7 @@ export type ChatStackParamList = {
   chatDetail: { chat: Chat; giftwraps: Event[] }
   sendBitcoinDestination: { username: string }
   transactionDetail: { txid: string }
-  messages: { userPubkey: string; participants: string[]; rumors: Rumor[] }
+  messages: { userPrivateKey: Uint8Array; groupId: string }
 }
 
 export type ContactStackParamList = {
