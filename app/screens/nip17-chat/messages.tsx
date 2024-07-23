@@ -15,10 +15,11 @@ import { isIos } from "@app/utils/helper"
 import { Chat, MessageType, defaultTheme } from "@flyerhq/react-native-chat-ui"
 import { ChatMessage } from "./chatMessage"
 import Icon from "react-native-vector-icons/Ionicons"
-import { getPublicKey } from "nostr-tools"
+import { getPublicKey, Event, nip19 } from "nostr-tools"
 import {
   Rumor,
   convertRumorsToGroups,
+  fetchNostrUsers,
   getRumorFromWrap,
   sendNip17Message,
 } from "@app/utils/nostr"
@@ -31,18 +32,43 @@ type MessagesProps = {
 
 export const Messages: React.FC<MessagesProps> = ({ route }) => {
   let userPubkey = getPublicKey(route.params.userPrivateKey)
+  let groupId = route.params.groupId
+  const [profileMap, setProfileMap] = useState<Map<string, NostrProfile>>()
+  useEffect(() => {
+    fetchNostrUsers(groupId.split(",")).then((profiles: Event[]) => {
+      let profilesMap = new Map<string, Object>()
+      profiles.forEach((profile) => {
+        try {
+          let content = JSON.parse(profile.content)
+          profilesMap.set(profile.pubkey, content)
+        } catch (e) {
+          console.log("error parsing profile", profile.content)
+          return
+        }
+      })
+      setProfileMap(profilesMap)
+    })
+  }, [groupId])
 
-  return <MessagesScreen userPubkey={userPubkey} groupId={route.params.groupId} />
+  return (
+    <MessagesScreen
+      userPubkey={userPubkey}
+      groupId={route.params.groupId}
+      profileMap={profileMap}
+    />
+  )
 }
 
 type MessagesScreenProps = {
   groupId: string
   userPubkey: string
+  profileMap?: Map<string, NostrProfile>
 }
 
 export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   userPubkey,
   groupId,
+  profileMap,
 }) => {
   const {
     theme: { colors },
@@ -105,7 +131,12 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
           onPress={navigation.goBack}
           style={styles.backButton}
         />
-        <Text type="p1">{userPubkey}</Text>
+        <Text type="p1">
+          {profileMap?.get(userPubkey)?.name ||
+            profileMap?.get(userPubkey)?.username ||
+            profileMap?.get(userPubkey)?.lud16 ||
+            nip19.npubEncode(userPubkey).slice(0, 9) + ".."}
+        </Text>
         <View style={{ display: "flex", flexDirection: "row" }}>
           <GaloyIconButton
             name={"lightning"}

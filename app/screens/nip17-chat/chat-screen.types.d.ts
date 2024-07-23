@@ -15,9 +15,10 @@ type NIP17Chat = {
 }
 
 type NostrProfile = {
-  pubkey: string
-  name: string
-  nip05: string
-  picture: string
-  lud16: string
+  pubkey?: string
+  username?: string
+  name?: string
+  nip05?: string
+  picture?: string
+  lud16?: string
 }

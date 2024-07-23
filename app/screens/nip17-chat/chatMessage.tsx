@@ -29,8 +29,6 @@ export const ChatMessage: React.FC<Props> = ({ message, recipientId }) => {
       <Text
         style={{
           ...styles.content,
-          color: recipientId !== message.author.id ? "#ffffff" : "#000000",
-          backgroundColor: recipientId !== message.author.id ? "green" : "white",
         }}
       >
         {message.text}
