@@ -16,7 +16,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
   item,
   userPrivateKey,
 }) => {
-  const [profileMap, setProfileMap] = useState<Map<string, Object>>()
+  const [profileMap, setProfileMap] = useState<Map<string, NostrProfile>>()
   useEffect(() => {
     fetchNostrUsers(item.split(",")).then((profiles: Event[]) => {
       let profilesMap = new Map<string, Object>()
@@ -67,7 +67,10 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
             {item
               .split(",")
               .map((pubkey) => {
-                return (profileMap?.get(pubkey) as any)?.lud16 || pubkey
+                return (
+                  (profileMap?.get(pubkey) as any)?.lud16 ||
+                  nip19.npubEncode(pubkey).slice(0, 9) + ".."
+                )
               })
               .join(", ")}
           </>
