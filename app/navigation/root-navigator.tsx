@@ -12,7 +12,6 @@ import {
 } from "../screens/authentication-screen"
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
-import { ChatDetailScreen, ChatScreen } from "../screens/chat-screen"
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
 import { ChatList } from "@app/screens/nip17-chat"
 import { DeveloperScreen } from "../screens/developer-screen"
