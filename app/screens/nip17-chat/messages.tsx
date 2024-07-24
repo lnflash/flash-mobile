@@ -2,7 +2,7 @@ import "react-native-get-random-values"
 import * as React from "react"
 import { ActivityIndicator, Image, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { RouteProp, useNavigation } from "@react-navigation/native"
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Screen } from "../../components/screen"
 import type {
@@ -13,106 +13,104 @@ import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 import { isIos } from "@app/utils/helper"
 import { Chat, MessageType, defaultTheme } from "@flyerhq/react-native-chat-ui"
-import { PreviewData } from "@flyerhq/react-native-link-preview"
-import { launchImageLibrary } from "react-native-image-picker"
-import { ChatMessage } from "@app/components/chat-message"
-import useNostrProfile from "@app/hooks/use-nostr-profile"
+import { ChatMessage } from "./chatMessage"
 import Icon from "react-native-vector-icons/Ionicons"
+import { getPublicKey, Event, nip19 } from "nostr-tools"
+import {
+  Rumor,
+  convertRumorsToGroups,
+  fetchNostrUsers,
+  getRumorFromWrap,
+  sendNip17Message,
+} from "@app/utils/nostr"
+import { useEffect, useState } from "react"
+import { useChatContext } from "./chatContext"
 
-type ChatDetailProps = {
-  route: RouteProp<ChatStackParamList, "chatDetail">
+type MessagesProps = {
+  route: RouteProp<ChatStackParamList, "messages">
 }
 
-export const ChatDetailScreen: React.FC<ChatDetailProps> = ({ route }) => {
-  const { chat } = route.params
-  return <ChatDetailScreenJSX chat={chat} />
+export const Messages: React.FC<MessagesProps> = ({ route }) => {
+  let userPubkey = getPublicKey(route.params.userPrivateKey)
+  let groupId = route.params.groupId
+  const [profileMap, setProfileMap] = useState<Map<string, NostrProfile>>()
+  useEffect(() => {
+    fetchNostrUsers(groupId.split(",")).then((profiles: Event[]) => {
+      let profilesMap = new Map<string, Object>()
+      profiles.forEach((profile) => {
+        try {
+          let content = JSON.parse(profile.content)
+          profilesMap.set(profile.pubkey, content)
+        } catch (e) {
+          console.log("error parsing profile", profile.content)
+          return
+        }
+      })
+      setProfileMap(profilesMap)
+    })
+  }, [groupId])
+
+  return (
+    <MessagesScreen
+      userPubkey={userPubkey}
+      groupId={route.params.groupId}
+      profileMap={profileMap}
+    />
+  )
 }
 
-type ChatDetailScreenProps = {
-  chat: Chat
+type MessagesScreenProps = {
+  groupId: string
+  userPubkey: string
+  profileMap?: Map<string, NostrProfile>
 }
 
-const uuidv4 = () => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = Math.floor(Math.random() * 16)
-    const v = c === "x" ? r : (r % 4) + 8
-    return v.toString(16)
-  })
-}
-
-export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) => {
+export const MessagesScreen: React.FC<MessagesScreenProps> = ({
+  userPubkey,
+  groupId,
+  profileMap,
+}) => {
   const {
     theme: { colors },
   } = useTheme()
-  const { sendMessage, fetchMessagesWith, nostrPubKey, fetchNostrPubKey } =
-    useNostrProfile()
+  let { rumors } = useChatContext()
+  let chatRumors = convertRumorsToGroups(rumors).get(groupId)
   const styles = useStyles()
-  const { name, username, picture } = chat
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
   const { LL } = useI18nContext()
-  const [messages, setMessages] = React.useState<MessageType.Any[]>([])
-  const [userId, setUserId] = React.useState<string>("")
   const [initialized, setInitialized] = React.useState(false)
 
-  React.useEffect(() => {
-    let isMounted = true
-    let interval: NodeJS.Timeout
-    async function initialize() {
-      if (!initialized) {
-        interval = setInterval(async () => {
-          let messageHistory = await fetchMessagesWith(chat.id as `npub1${string}`)
-          if (messageHistory.length > messages.length) {
-            setMessages(messageHistory as MessageType.Text[])
-          }
-        }, 10000)
-        setUserId(await fetchNostrPubKey())
-        setInitialized(true)
-        return () => clearInterval(interval)
+  const user = { id: userPubkey }
+  console.log("IN MESSAGES SCREEN", rumors)
+
+  const convertRumorsToMessages = (rumors: Rumor[]): MessageType.Text[] => {
+    let chats = (chatRumors || []).map((r) => {
+      return {
+        author: { id: r.pubkey },
+        createdAt: r.created_at,
+        id: r.id,
+        type: "text",
+        text: r.content,
       }
+    })
+    chats.sort((a, b) => {
+      return b.createdAt - a.createdAt
+    })
+    return chats as MessageType.Text[]
+  }
+
+  React.useEffect(() => {
+    console.log("NEW ITEMSSS IN MESSAGES SCREEEEN")
+    let isMounted = true
+    async function initialize() {
+      setInitialized(true)
     }
-    initialize()
+    if (!initialized) initialize()
 
     return () => {
       isMounted = false
-      clearInterval(interval)
     }
   }, [])
-
-  const user = { id: nostrPubKey || userId }
-
-  const addMessage = (message: MessageType.Any) => {
-    console.log("new meesssage", message, "old messages", messages)
-    setMessages([message, ...messages])
-  }
-
-  const handleImageSelection = () => {
-    launchImageLibrary(
-      {
-        includeBase64: true,
-        maxWidth: 1440,
-        mediaType: "photo",
-        quality: 0.7,
-      },
-      ({ assets }) => {
-        const response = assets?.[0]
-
-        if (response?.base64) {
-          const imageMessage: MessageType.Image = {
-            author: user,
-            createdAt: Date.now(),
-            height: response.height,
-            id: uuidv4(),
-            name: response.fileName ?? response.uri?.split("/").pop() ?? "🖼",
-            size: response.fileSize ?? 0,
-            type: "image",
-            uri: `data:image/*;base64,${response.base64}`,
-            width: response.width,
-          }
-          addMessage(imageMessage)
-        }
-      },
-    )
-  }
 
   const handleSendPress = async (message: MessageType.PartialText) => {
     const textMessage: MessageType.Text = {
@@ -122,19 +120,23 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
       text: message.text,
       type: "text",
     }
-    await sendMessage(chat.id, message.text)
-    addMessage(textMessage)
+    await sendNip17Message(groupId.split(","), message.text)
   }
 
   return (
-    <Screen unsafe>
+    <Screen>
       <View style={styles.aliasView}>
         <Icon
           name="arrow-back-outline"
           onPress={navigation.goBack}
           style={styles.backButton}
         />
-        <Text type="p1">{name || username}</Text>
+        <Text type="p1">
+          {profileMap?.get(userPubkey)?.name ||
+            profileMap?.get(userPubkey)?.username ||
+            profileMap?.get(userPubkey)?.lud16 ||
+            nip19.npubEncode(userPubkey).slice(0, 9) + ".."}
+        </Text>
         <View style={{ display: "flex", flexDirection: "row" }}>
           <GaloyIconButton
             name={"lightning"}
@@ -143,15 +145,13 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
             style={{ marginRight: 5 }}
             onPress={() =>
               navigation.navigate("sendBitcoinDestination", {
-                username: chat.lud16,
+                //username: chat.lud16,
               })
             }
           />
           <Image
             source={{
-              uri:
-                picture ||
-                "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
+              uri: "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
             }}
             style={styles.userPic}
           />
@@ -161,8 +161,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
       <View style={styles.chatBodyContainer}>
         <View style={styles.chatView}>
           <Chat
-            messages={messages}
-            onAttachmentPress={handleImageSelection}
+            messages={convertRumorsToMessages(rumors)}
             onPreviewDataFetched={() => {}}
             onSendPress={handleSendPress}
             l10nOverride={{
@@ -179,7 +178,7 @@ export const ChatDetailScreenJSX: React.FC<ChatDetailScreenProps> = ({ chat }) =
             renderTextMessage={(message, nextMessage, prevMessage) => (
               <ChatMessage
                 message={message}
-                recipientId={chat.id as `npub1${string}`}
+                recipientId={userPubkey}
                 nextMessage={nextMessage}
                 prevMessage={prevMessage}
               />
