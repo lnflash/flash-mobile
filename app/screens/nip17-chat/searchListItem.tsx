@@ -1,26 +1,34 @@
 import { ListItem, useTheme } from "@rneui/themed"
 import { useStyles } from "./style"
 import { Image } from "react-native"
+import { useNavigation } from "@react-navigation/native"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 
 interface SearchListItemProps {
   item: Chat
+  userPrivateKey: Uint8Array
 }
-export const SearchListItem: React.FC<SearchListItemProps> = ({ item }) => {
+export const SearchListItem: React.FC<SearchListItemProps> = ({
+  item,
+  userPrivateKey,
+}) => {
   const styles = useStyles()
   const {
     theme: { colors },
   } = useTheme()
+  const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   return (
     <ListItem
       key={item.id}
       style={styles.item}
       containerStyle={styles.itemContainer}
-      //   onPress={() =>
-      //     // navigation.navigate("chatDetail", {
-      //     //   chat: { ...item, transactionsCount: 0 },
-      //     //   giftwraps: giftwrapEvents || [],
-      //     // })
-      //   }
+      onPress={() => {
+        navigation.navigate("messages", {
+          groupId: item.id,
+          userPrivateKey,
+        })
+      }}
     >
       <Image
         source={{
