@@ -25,6 +25,7 @@ import {
   Rumor,
   convertRumorsToGroups,
   fetchGiftWrapsForPublicKey,
+  fetchNostrUsers,
   fetchSecretFromLocalStorage,
   getRumorFromWrap,
 } from "@app/utils/nostr"
@@ -109,9 +110,11 @@ export const NIP17Chat: React.FC = () => {
       if (nostrUser) setSearchedUsers([{ id: nostrUser.pubkey }])
     }
     if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
-      setSearchedUsers([])
+      setSearchedUsers([{ id: nip19.decode(newSearchText).data as string }])
       try {
-        // let nostrProfile = await fetchNostrUser(newSearchText as `npub1${string}`)
+        let nostrProfileEvent = await fetchNostrUsers([newSearchText])
+        let nostrProfile = JSON.parse(nostrProfileEvent[0].content)
+        setSearchedUsers([{ ...nostrProfile, id: nostrProfileEvent[0].pubkey }])
       } catch (e) {
         console.log("Error fetching nostr profile", e)
       }
@@ -172,7 +175,9 @@ export const NIP17Chat: React.FC = () => {
           contentContainerStyle={styles.listContainer}
           data={searchedUsers}
           ListEmptyComponent={ListEmptyContent}
-          renderItem={({ item }) => <SearchListItem item={item} />}
+          renderItem={({ item }) => (
+            <SearchListItem item={item} userPrivateKey={privateKey!} />
+          )}
           keyExtractor={(item) => item.id}
         />
       ) : (
