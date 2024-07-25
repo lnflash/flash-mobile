@@ -147,23 +147,20 @@ const ReceiveScreen = ({ route }: Props) => {
   }, [request?.receivingWalletDescriptor?.currency])
 
   useEffect(() => {
-    if (request?.state === PaymentRequestState.Paid) {
+    if (
+      request?.state === PaymentRequestState.Paid ||
+      updatedPaymentState === PaymentRequestState.Paid
+    ) {
       const id = setTimeout(() => navigation.goBack(), 5000)
       return () => clearTimeout(id)
     }
-  }, [request?.state, navigation])
+  }, [request?.state, updatedPaymentState, navigation])
 
   const handleInvoicePaid = () => {
     if (request) {
       request.state = PaymentRequestState.Paid
       if (request?.state === PaymentRequestState.Paid) {
         setUpdatedPaymentState(PaymentRequestState.Paid)
-        const id = setTimeout(() => {
-          if (navigation.canGoBack()) {
-            navigation.goBack()
-          }
-        }, 5000)
-        return () => clearTimeout(id)
       }
     }
   }
