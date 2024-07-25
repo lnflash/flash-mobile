@@ -396,15 +396,15 @@ export const useReceiveBitcoin = (isFirstTransaction: Boolean, initPRParams = {}
       const url = urlObject.toString()
 
       const result = await fetch(url)
+      const lnurlResponse = await result.json()
+
       if (result.ok) {
-        const lnurlResponse = await result.json()
         if (lnurlResponse?.status?.toLowerCase() !== "ok") {
           console.error(lnurlResponse, "error with redeeming")
           Alert.alert(lnurlResponse.reason || LL.RedeemBitcoinScreen.redeemingError())
         }
       } else {
-        console.error(result.text(), "error with submitting withdrawalRequest")
-        Alert.alert(LL.RedeemBitcoinScreen.submissionError())
+        Alert.alert(lnurlResponse.reason || LL.RedeemBitcoinScreen.submissionError())
       }
     },
     [LL.RedeemBitcoinScreen, pr],
