@@ -4,6 +4,7 @@ import { Image } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
+import { nip19 } from "nostr-tools"
 
 interface SearchListItemProps {
   item: Chat
@@ -40,7 +41,11 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
       />
       <ListItem.Content>
         <ListItem.Title style={styles.itemText}>
-          {item.alias || item.username || item.name || item.lud16 || item.id}
+          {item.alias ||
+            item.username ||
+            item.name ||
+            item.lud16 ||
+            nip19.npubEncode(item.id)}
         </ListItem.Title>
       </ListItem.Content>
     </ListItem>
