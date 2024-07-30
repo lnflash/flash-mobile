@@ -110,9 +110,10 @@ export const NIP17Chat: React.FC = () => {
       if (nostrUser) setSearchedUsers([{ id: nostrUser.pubkey }])
     }
     if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
-      setSearchedUsers([{ id: nip19.decode(newSearchText).data as string }])
+      let hexPubkey = nip19.decode(newSearchText).data as string
+      setSearchedUsers([{ id: hexPubkey }])
       try {
-        let nostrProfileEvent = await fetchNostrUsers([newSearchText])
+        let nostrProfileEvent = await fetchNostrUsers([hexPubkey])
         let nostrProfile = JSON.parse(nostrProfileEvent[0].content)
         setSearchedUsers([{ ...nostrProfile, id: nostrProfileEvent[0].pubkey }])
       } catch (e) {
