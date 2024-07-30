@@ -192,6 +192,11 @@ export const fetchPreferredRelays = async (pubKeys: string[]) => {
   return relayMap
 }
 
+export const sendNIP4Message = async (message: string, recipient: string) => {
+  let privateKey = await getSecretKey()
+  let NIP4Messages = {}
+}
+
 export const setPreferredRelay = async () => {
   console.log("inside setpreferredRelay")
   const secret = await getSecretKey()
@@ -233,6 +238,7 @@ export async function sendNip17Message(recipients: string[], message: string) {
       .get(recipientId)
       ?.tags.filter((t: string[]) => t[0] === "relay")
       .map((t) => t[1])
+    if (!recipientRelays) sendNIP4Message(message, recipientId)
     recipientRelays = recipientRelays || publicRelays
     console.log("Recipient relays are", recipientRelays)
     let connections = await Promise.all(
