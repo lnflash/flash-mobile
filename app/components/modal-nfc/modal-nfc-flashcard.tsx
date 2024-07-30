@@ -44,7 +44,7 @@ export const ModalNfcFlashcard: React.FC<{
     async (payload: string) => {
       try {
         const payloadPart = payload.split("?")[1]
-        const url = `https://btcpay.getflash.money/boltcards/balance?${payloadPart}`
+        const url = `https://btcpay.flashapp.me/boltcards/balance?${payloadPart}`
 
         const response = await axios.get(url)
         onCardHtmlUpdate(response.data)
