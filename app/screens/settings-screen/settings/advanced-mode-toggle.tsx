@@ -21,6 +21,7 @@ export const AdvancedModeToggle: React.FC = () => {
   const { LL } = useI18nContext()
   const { isAtLeastLevelZero } = useLevel()
   const { goBack } = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { isAdvanceMode } = useAppSelector((state) => state.settings)
   const dispatch = useAppDispatch()
 
@@ -40,6 +41,7 @@ export const AdvancedModeToggle: React.FC = () => {
   const toggleAdvanceModeComplete = (isAdvanceMode: boolean) => {
     toggleActivityIndicator(true)
     if (!isAdvanceMode) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       updateState((state: any) => {
         if (state)
           return {
@@ -53,7 +55,11 @@ export const AdvancedModeToggle: React.FC = () => {
     save("isAdvanceMode", isAdvanceMode)
     setTimeout(() => {
       toggleActivityIndicator(false)
-      goBack()
+      if (isAdvanceMode) {
+        navigation.navigate("AdvancedModeScreen")
+      } else {
+        goBack()
+      }
     }, 500)
   }
 

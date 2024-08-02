@@ -17,6 +17,7 @@ import Map from "@app/assets/icons-redesign/map.svg"
 
 export type RootStackParamList = {
   IntroScreen: undefined
+  AdvancedModeScreen: undefined
   getStarted: undefined
   liteDeviceAccount: {
     appCheckToken: string
@@ -146,15 +147,16 @@ export type PhoneValidationStackParamList = {
   authentication: {
     screenPurpose: AuthenticationScreenPurpose
   }
-  Home: undefined
+  Home: { isAdvancedModeModalVisible?: boolean }
   totpLoginValidate: { authToken: string }
 }
 
 export type PrimaryStackParamList = {
-  Home: undefined
+  HomeScreen: { isAdvancedModeModalVisible?: boolean }
   Contacts: undefined
   Chat: undefined
   Card: undefined
   Map: undefined
   Earn: undefined
+  AdvancedModeScreen: undefined
 }
