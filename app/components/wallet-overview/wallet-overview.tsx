@@ -225,7 +225,7 @@ const WalletOverview: React.FC<Props> = ({
             <GaloyCurrencyBubble currency="USD" />
             <View>
               <Text type="p1">Cash (USD)</Text>
-              {isAdvanceMode && !!userData?.username && (
+              {isAdvanceMode && Boolean(userData?.username) && (
                 <Text type="p4" color={colors.grey1}>
                   {getLightningAddress(
                     appConfig.galoyInstance.lnAddressHostname,
@@ -263,7 +263,7 @@ const WalletOverview: React.FC<Props> = ({
                 <Text type="p1">Bitcoin</Text>
                 {!backupIsCompleted && (
                   <Pressable onPress={() => setIsUnverifiedSeedModalVisible(true)}>
-                    <GaloyIcon color={colors.grey1} name="warning" size={28} />
+                    <GaloyIcon color={colors.warning} name="warning" size={28} />
                   </Pressable>
                 )}
               </View>

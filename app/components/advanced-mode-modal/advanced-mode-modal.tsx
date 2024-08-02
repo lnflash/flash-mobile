@@ -49,8 +49,8 @@ const useStyles = makeStyles(({ colors }) => ({
   },
 }))
 
-const DOCS_LINK = "https://docs.getflash.io"
-const FLASH_TERMS_LINK = "https://getflash.io/terms.html"
+const DOCS_LINK = "https://docs.getflash.io" // TODO: Need to update link to be the correct documentation for non-custodial wallets.
+const FLASH_TERMS_LINK = "https://getflash.io/terms.html" // TODO: Need to update link to be the correct terms and conditions for Flash.
 
 type Props = {
   isVisible: boolean
