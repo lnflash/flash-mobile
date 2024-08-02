@@ -127,7 +127,7 @@ export const DisplayCurrencyScreen: React.FC = () => {
   }
 
   return (
-    <Screen preset="scroll" style={styles.container}>
+    <Screen style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         <SearchBar
           {...testProps(LL.common.search())}
