@@ -1,23 +1,24 @@
 import * as React from "react"
 import { Image, Linking, ScrollView, View } from "react-native"
 import Modal from "react-native-modal"
-
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles, useTheme, Text } from "@rneui/themed"
+import { useNavigation, NavigationProp } from "@react-navigation/native"
 
+// assets
 import StablesatsImage from "../../assets/images/unlocked.png"
+
+// components
 import { GaloyPrimaryButton } from "../atomic/galoy-primary-button"
 import { GaloySecondaryButton } from "../atomic/galoy-secondary-button"
-import { useNavigation, NavigationProp } from "@react-navigation/native"
+
+// utils
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 const useStyles = makeStyles(({ colors }) => ({
-  imageContainer: {
+  stableSatsImage: {
     height: 150,
     marginBottom: 16,
-  },
-  stableSatsImage: {
-    flex: 1,
   },
   scrollViewStyle: {
     paddingHorizontal: 12,
@@ -27,12 +28,11 @@ const useStyles = makeStyles(({ colors }) => ({
     borderRadius: 16,
     paddingVertical: 18,
   },
-  cardTitleContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
+  cardTitle: {
+    textAlign: "center",
     marginBottom: 16,
   },
-  cardBodyContainer: {
+  cardDescription: {
     marginBottom: 16,
   },
   termsAndConditionsText: {
@@ -80,19 +80,20 @@ export const UnVerifiedSeedModal: React.FC<Props> = ({ isVisible, setIsVisible }
     >
       <View style={styles.modalCard}>
         <ScrollView style={styles.scrollViewStyle}>
-          <View style={styles.imageContainer}>
-            <Image
-              source={StablesatsImage}
-              style={styles.stableSatsImage}
-              resizeMode="contain"
-            />
-          </View>
-          <View style={styles.cardTitleContainer}>
-            <Text type={"h2"}>{LL.UnVerifiedSeedModal.header()}</Text>
-          </View>
-          <View style={styles.cardBodyContainer}>
-            <Text type="p2">{LL.UnVerifiedSeedModal.body()} </Text>
-          </View>
+          <Image
+            source={StablesatsImage}
+            style={styles.stableSatsImage}
+            resizeMode="contain"
+          />
+
+          <Text style={styles.cardTitle} type={"h2"}>
+            {LL.UnVerifiedSeedModal.header()}
+          </Text>
+
+          <Text style={styles.cardDescription} type="p2">
+            {LL.UnVerifiedSeedModal.body()}{" "}
+          </Text>
+
           <View style={styles.cardActionsContainer}>
             <View style={styles.marginBottom}>
               <GaloyPrimaryButton
