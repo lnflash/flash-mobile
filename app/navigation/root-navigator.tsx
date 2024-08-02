@@ -97,7 +97,6 @@ import {
   BackupOptions,
   TransactionHistoryTabs,
   IntroScreen,
-  AdvancedModeScreen,
   USDTransactionHistory,
 } from "@app/screens"
 import { useAppSelector } from "@app/store/redux"
@@ -154,12 +153,6 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="IntroScreen"
         component={IntroScreen}
-        options={{ headerShown: false }}
-      />
-      {/* Advanced Mode Screen route */}
-      <RootNavigator.Screen
-        name="AdvancedModeScreen"
-        component={AdvancedModeScreen}
         options={{ headerShown: false }}
       />
       <RootNavigator.Screen

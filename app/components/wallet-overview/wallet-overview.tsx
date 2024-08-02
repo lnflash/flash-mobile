@@ -261,15 +261,9 @@ const WalletOverview: React.FC<Props> = ({
               <View style={styles.currency}>
                 <GaloyCurrencyBubble currency="BTC" />
                 <Text type="p1">Bitcoin</Text>
-                {backupIsCompleted ? (
-                  <></>
-                ) : (
+                {!backupIsCompleted && (
                   <Pressable onPress={() => setIsUnverifiedSeedModalVisible(true)}>
-                    <GaloyIcon
-                      color={colors.grey1}
-                      name="warning-with-background"
-                      size={32}
-                    />
+                    <GaloyIcon color={colors.grey1} name="warning" size={28} />
                   </Pressable>
                 )}
               </View>

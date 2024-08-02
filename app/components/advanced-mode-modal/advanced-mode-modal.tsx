@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Image, Linking, ScrollView, View } from "react-native"
-import { useNavigation, NavigationProp } from "@react-navigation/native"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { useNavigation } from "@react-navigation/native"
 import { makeStyles, useTheme, Text } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import Modal from "react-native-modal"
@@ -28,6 +29,7 @@ const useStyles = makeStyles(({ colors }) => ({
     backgroundColor: colors.white,
     borderRadius: 16,
     paddingVertical: 18,
+    marginVertical: 50,
   },
   cardTitle: {
     textAlign: "center",
@@ -60,10 +62,11 @@ export const AdvancedModeModal: React.FC<Props> = ({ isVisible, setIsVisible }) 
   const { colors } = useTheme().theme
   const styles = useStyles()
 
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
   const acknowledgeModal = () => {
     setIsVisible(false)
+    navigation.popToTop()
   }
 
   const goToBackupBTCWallet = () => {

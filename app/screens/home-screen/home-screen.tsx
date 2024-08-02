@@ -6,7 +6,7 @@ import Icon from "react-native-vector-icons/Ionicons"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native"
+import { useNavigation, useRoute } from "@react-navigation/native"
 import { RootStackParamList } from "../../navigation/stack-param-lists"
 
 // components
@@ -17,7 +17,6 @@ import WalletOverview from "@app/components/wallet-overview/wallet-overview"
 import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { SetDefaultAccountModal } from "@app/components/set-default-account-modal"
-import { AdvancedModeModal } from "@app/components/advanced-mode-modal"
 import { UnVerifiedSeedModal } from "@app/components/unverified-seed-modal"
 import { BalanceHeader } from "../../components/balance-header"
 import { Screen } from "../../components/screen"
@@ -63,7 +62,6 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 const TransactionCountToTriggerSetDefaultAccountModal = 1
 
 export const HomeScreen: React.FC = () => {
-  const route = useRoute()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const dispatch = useAppDispatch()
   const { isAdvanceMode } = useAppSelector((state) => state.settings)
@@ -119,20 +117,11 @@ export const HomeScreen: React.FC = () => {
   )
   const [breezTxsLoading, setBreezTxsLoading] = useState(false)
   const [refreshTriggered, setRefreshTriggered] = useState(false)
-  const [isAdvancedModeModalVisible, setIsAdvancedModeModalVisible] =
-    React.useState(false)
-  const [isUnverifiedSeedModalVisible, setIsUnverifiedSeedModalVisible] =
-    React.useState(false)
+  const [isUnverifiedSeedModalVisible, setIsUnverifiedSeedModalVisible] = useState(false)
 
   const isBalanceVisible = hideBalance ?? false
   const transactionsEdges = dataAuthed?.me?.defaultAccount?.transactions?.edges ?? []
   const numberOfTxs = dataAuthed?.me?.defaultAccount?.transactions?.edges?.length ?? 0
-
-  useEffect(() => {
-    if (route.params?.isAdvancedModeModalVisible) {
-      setIsAdvancedModeModalVisible(route.params.isAdvancedModeModalVisible)
-    }
-  }, [route.params?.isAdvancedModeModalVisible])
 
   useEffect(() => {
     if (breezSDKInitialized && isAdvanceMode) {
@@ -364,10 +353,6 @@ export const HomeScreen: React.FC = () => {
   return (
     <Screen>
       {AccountCreationNeededModal}
-      <AdvancedModeModal
-        isVisible={isAdvancedModeModalVisible}
-        setIsVisible={setIsAdvancedModeModalVisible}
-      />
       <UnVerifiedSeedModal
         isVisible={isUnverifiedSeedModalVisible}
         setIsVisible={setIsUnverifiedSeedModalVisible}
