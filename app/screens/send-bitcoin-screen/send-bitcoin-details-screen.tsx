@@ -555,7 +555,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
               }
               minAmount={
                 lnurlParams?.min
-                  ? toBtcMoneyAmount(lnurlParams.min)
+                  ? toUsdMoneyAmount(lnurlParams.min)
                   : {
                       amount: 1,
                       currency: "USD",
