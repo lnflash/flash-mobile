@@ -2216,6 +2216,11 @@ type RootTranslation = {
 		 * A​m​o​u​n​t​ ​e​x​c​e​e​d​s​ ​y​o​u​r​ ​b​a​l​a​n​c​e​ ​o​f​ ​{​b​a​l​a​n​c​e​}
 		 * @param {string} balance
 		 */
+		amountLess: RequiredParams<'balance'>
+		/**
+		 * A​m​o​u​n​t​ ​e​x​c​e​e​d​s​ ​y​o​u​r​ ​r​e​m​a​i​n​i​n​g​ ​d​a​i​l​y​ ​l​i​m​i​t​ ​o​f​ ​{​l​i​m​i​t​}
+		 * @param {string} limit
+		 */
 		amountExceed: RequiredParams<'balance'>
 		/**
 		 * A​m​o​u​n​t​ ​e​x​c​e​e​d​s​ ​y​o​u​r​ ​r​e​m​a​i​n​i​n​g​ ​d​a​i​l​y​ ​l​i​m​i​t​ ​o​f​ ​{​l​i​m​i​t​}
@@ -6091,6 +6096,10 @@ export type TranslationFunctions = {
 		MinOnChainSatLimit: () => LocalizedString
 		/**
 		 * Amount exceeds your balance of {balance}
+		 */
+		amountLess: (arg: { balance: string }) => LocalizedString
+		/**
+		 * Upgrade your account to increase your limit
 		 */
 		amountExceed: (arg: { balance: string }) => LocalizedString
 		/**

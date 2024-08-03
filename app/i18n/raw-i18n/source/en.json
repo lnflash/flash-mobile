@@ -647,6 +647,7 @@
         "amount": "Amount",
         "MinOnChainLimit": "Minimum amount for this transaction is US$2.00",
         "MinOnChainSatLimit": "Minimum amount for this transaction is 5,500 sats",
+        "amountLess": "Minimum amount for swap is {balance: string}",
         "amountExceed": "Amount exceeds your balance of {balance: string}",
         "amountExceedsLimit": "Amount exceeds your remaining daily limit of {limit: string}",
         "upgradeAccountToIncreaseLimit": "Upgrade your account to increase your limit",
