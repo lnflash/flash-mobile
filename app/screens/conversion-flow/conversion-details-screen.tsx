@@ -39,7 +39,7 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   } = useTheme()
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const { zeroDisplayAmount } = useDisplayCurrency()
+  const { zeroDisplayAmount, formatMoneyAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
   const { btcWallet } = useBreez()
@@ -95,6 +95,30 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   ) {
     amountFieldError = LL.SendBitcoinScreen.amountExceed({
       balance: fromWalletCurrency === "BTC" ? formattedBtcBalance : formattedUsdBalance,
+    })
+  }
+
+  if (
+    convertMoneyAmount &&
+    lessThan({
+      value:
+        fromWalletCurrency === WalletCurrency.Btc
+          ? convertMoneyAmount(btcBalance, "USD")
+          : convertedUsdBalance,
+      lessThan: { amount: 1, currency: "USD", currencyCode: "USD" },
+    })
+  ) {
+    amountFieldError = LL.SendBitcoinScreen.amountLess({
+      balance: formatMoneyAmount({
+        moneyAmount: convertMoneyAmount(
+          {
+            amount: 1,
+            currency: "USD",
+            currencyCode: "USD",
+          },
+          "DisplayCurrency",
+        ),
+      }),
     })
   }
 
