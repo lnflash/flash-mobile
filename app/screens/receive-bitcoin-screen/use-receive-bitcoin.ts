@@ -403,6 +403,11 @@ export const useReceiveBitcoin = (isFirstTransaction: Boolean, initPRParams = {}
           console.error(lnurlResponse, "error with redeeming")
           Alert.alert(lnurlResponse.reason || LL.RedeemBitcoinScreen.redeemingError())
         }
+      } else if (
+        (lnurlResponse.reason && lnurlResponse.reason.includes("not within bounds")) ||
+        lnurlResponse.reason.includes("Amount is bigger than the maximum")
+      ) {
+        Alert.alert("Payment Failed: Insufficient Funds")
       } else {
         Alert.alert(lnurlResponse.reason || LL.RedeemBitcoinScreen.submissionError())
       }
