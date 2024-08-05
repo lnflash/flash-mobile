@@ -253,7 +253,7 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.percentageField}
-                onPress={() => setAmountToBalancePercentage(100)}
+                onPress={() => setAmountToBalancePercentage(99)}
               >
                 <Text>100%</Text>
               </TouchableOpacity>
