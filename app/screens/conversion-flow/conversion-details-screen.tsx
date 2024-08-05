@@ -80,7 +80,14 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
 
   const isValidAmount =
     settlementSendAmount.amount > 0 &&
-    settlementSendAmount.amount <= fromWalletBalance.amount
+    settlementSendAmount.amount <= fromWalletBalance.amount &&
+    !lessThan({
+      value:
+        fromWalletCurrency === WalletCurrency.Btc // @ts-ignore: Unreachable code error
+          ? convertMoneyAmount(btcBalance, "USD")
+          : convertedUsdBalance,
+      lessThan: { amount: 1, currency: "USD", currencyCode: "USD" },
+    })
 
   const canToggleWallet =
     fromWalletCurrency === "BTC" ? usdBalance.amount > 0 : btcBalance.amount > 0
@@ -99,10 +106,9 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   if (
-    convertMoneyAmount &&
     lessThan({
       value:
-        fromWalletCurrency === WalletCurrency.Btc
+        fromWalletCurrency === WalletCurrency.Btc // @ts-ignore: Unreachable code error
           ? convertMoneyAmount(btcBalance, "USD")
           : convertedUsdBalance,
       lessThan: { amount: 1, currency: "USD", currencyCode: "USD" },
@@ -110,6 +116,7 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   ) {
     amountFieldError = LL.SendBitcoinScreen.amountLess({
       balance: formatMoneyAmount({
+        // @ts-ignore: Unreachable code error
         moneyAmount: convertMoneyAmount(
           {
             amount: 1,
