@@ -1,16 +1,12 @@
 /* eslint-disable react-native/no-color-literals */
 /* eslint-disable react-native/no-unused-styles */
-import { StackNavigationProp } from "@react-navigation/stack"
 import * as React from "react"
 import { Dimensions, TouchableOpacity, View } from "react-native"
-import Swiper from "react-native-swiper"
+import ReanimatedCarousel from "react-native-reanimated-carousel"
 import { Screen } from "../../components/screen"
-import type { RootStackParamList } from "../../navigation/stack-param-lists"
 import { makeStyles, Image } from "@rneui/themed"
-
-type Props = {
-  navigation: StackNavigationProp<RootStackParamList, "welcomeFirst">
-}
+import { Props } from "./index.types"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 const { width, height } = Dimensions.get("window")
 
@@ -19,11 +15,11 @@ const useStyles = makeStyles(({ colors }) => ({
     flex: 1,
   },
   cover: {
-    width: "100%",
-    height: "100%",
-    resizeMode: height < 560 ? "stretch" : "cover",
-    // if the height is less than 545, then compress the image
-    // if the height is greater than 545, then stretch the image
+    top: height < 560 ? "-25%" : 0,
+    left: height < 560 ? "-7.5%" : 0,
+    width: height < 560 ? "115%" : "100%",
+    height: height < 560 ? "115%" : "100%",
+    resizeMode: height < 560 ? "contain" : "cover",
   },
   button: {
     backgroundColor: colors.primary,
@@ -44,81 +40,76 @@ const useStyles = makeStyles(({ colors }) => ({
     position: "absolute",
     bottom: 0,
     width: "100%",
-    height: "12%", // Adjust the height as needed to define the interactive area
-    // borderColor: colors.red, // For debugging
-    // borderWidth: 1, // For debugging
+    height: "12%",
   },
   touchableAreaSkip: {
     position: "absolute",
     top: 0,
     right: 0,
     width: "25%",
-    height: "10%", // Adjust the height as needed to define the interactive area
-    // borderColor: colors.red, // For debugging
-    // borderWidth: 1, // For debugging
+    height: "10%",
   },
 }))
 
 export const WelcomeFirstScreen: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
-  const swiperRef = React.useRef<Swiper | null>(null)
+  const [currentIndex, setCurrentIndex] = React.useState(0)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const carouselRef = React.useRef<any>(null)
+  const isAuthed = useIsAuthed()
+  console.log("currentIndex: ", currentIndex)
 
   const handlePress = (index: number) => {
     if (index < 2) {
-      swiperRef.current?.scrollBy(1)
-    } else {
+      setCurrentIndex(index + 1)
+    } else if (isAuthed) {
       navigation.navigate("Primary")
+    } else {
+      navigation.navigate("getStarted")
     }
   }
 
+  React.useEffect(() => {
+    // Scroll to the updated index when currentIndex changes
+    carouselRef.current?.scrollTo({ index: currentIndex, animated: true })
+  }, [currentIndex])
+
+  const renderItem = ({ index }: { index: number }) => (
+    <Screen statusBar="light-content">
+      <View style={styles.container}>
+        <Image
+          source={
+            index === 0
+              ? require("@app/assets/images/welcome-1.png")
+              : index === 1
+              ? require("@app/assets/images/welcome-2.png")
+              : require("@app/assets/images/welcome-3.png")
+          }
+          style={styles.cover}
+        />
+        <TouchableOpacity
+          style={styles.touchableAreaSkip}
+          onPress={() => handlePress(2)}
+        />
+        <TouchableOpacity
+          style={styles.touchableArea}
+          onPress={() => handlePress(index)}
+        />
+      </View>
+    </Screen>
+  )
+
   return (
-    <Swiper
-      ref={swiperRef}
+    <ReanimatedCarousel
+      ref={carouselRef}
+      width={width}
+      height={height}
+      data={[0, 1, 2]}
+      renderItem={renderItem}
+      onSnapToItem={(index) => setCurrentIndex(index)}
+      pagingEnabled
+      autoPlay={false}
       loop={false}
-      showsPagination={false}
-      index={0}
-      autoplay={false}
-      scrollEnabled={true}
-    >
-      <Screen statusBar="light-content">
-        <View style={styles.container}>
-          <Image
-            source={require("@app/assets/images/welcome-1.png")}
-            style={styles.cover}
-          />
-          <TouchableOpacity
-            style={styles.touchableAreaSkip}
-            onPress={() => handlePress(2)}
-          />
-          <TouchableOpacity style={styles.touchableArea} onPress={() => handlePress(0)} />
-        </View>
-      </Screen>
-      <Screen>
-        <View style={styles.container}>
-          <Image
-            source={require("@app/assets/images/welcome-2.png")}
-            style={styles.cover}
-          />
-          <TouchableOpacity
-            style={styles.touchableAreaSkip}
-            onPress={() => handlePress(2)}
-          />
-          <TouchableOpacity style={styles.touchableArea} onPress={() => handlePress(1)} />
-        </View>
-      </Screen>
-      <Screen statusBar="light-content">
-        <View style={styles.container}>
-          <Image
-            source={require("@app/assets/images/welcome-3.png")}
-            style={styles.cover}
-          />
-          <TouchableOpacity
-            style={styles.touchableAreaSkip}
-            onPress={() => handlePress(2)}
-          />
-          <TouchableOpacity style={styles.touchableArea} onPress={() => handlePress(2)} />
-        </View>
-      </Screen>
-    </Swiper>
+    />
   )
 }
