@@ -348,7 +348,7 @@ const ReceiveScreen = ({ route }: Props) => {
             </TouchableOpacity>
           </View>
         )}
-        {lnurlp && (
+        {request.type === "PayCode" && lnurlp && (
           <View style={styles.extraDetails}>
             <Text style={styles.instructions}>
               {LL.ReceiveScreen.flashcardInstructions()}
