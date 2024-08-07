@@ -42,7 +42,4 @@ const useStyles = makeStyles(() => ({
     flexDirection: "column",
     rowGap: 12,
   },
-  button: {
-    marginTop: "25%",
-  },
 }))
