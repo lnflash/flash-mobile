@@ -119,7 +119,11 @@ gql`
   }
 `
 
-export const useReceiveBitcoin = (isFirstTransaction: Boolean, initPRParams = {}) => {
+export const useReceiveBitcoin = (
+  isFirstTransaction: boolean,
+  isFlashcard?: boolean,
+  initPRParams = {},
+) => {
   const [lnNoAmountInvoiceCreate] = useLnNoAmountInvoiceCreateMutation()
   const [lnUsdInvoiceCreate] = useLnUsdInvoiceCreateMutation()
   const [lnInvoiceCreate] = useLnInvoiceCreateMutation()
@@ -221,7 +225,7 @@ export const useReceiveBitcoin = (isFirstTransaction: Boolean, initPRParams = {}
 
   // Initialize Payment Request
   useLayoutEffect(() => {
-    if (prcd) {
+    if (prcd && !isFlashcard) {
       setPR(
         createPaymentRequest({
           mutations,

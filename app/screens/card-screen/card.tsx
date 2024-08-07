@@ -329,13 +329,20 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
         console.log("Reloading card")
         setRefreshBalance(null)
         setDisplayReceiveNfc(true)
+      } else if (target === "receiveBitcoin" && reloadLnurl) {
+        navigation.navigate("receiveBitcoin", {
+          transactionLength: 0,
+          receiveLnurl: {
+            validDestination: { lnurl: reloadLnurl.validDestination.lnurl },
+          }, // Only pass serializable values
+        })
       }
     } else {
       console.log("Reloading skipped")
     }
   }
 
-  type Target = "cardScreen" | "sendBitcoinDetails"
+  type Target = "cardScreen" | "sendBitcoinDetails" | "receiveBitcoin"
   type IconNamesType = keyof typeof icons
 
   const buttons = [
@@ -348,6 +355,11 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
       title: LL.HomeScreen.reload(),
       target: "sendBitcoinDetails" as Target,
       icon: "receive" as IconNamesType,
+    },
+    {
+      title: LL.HomeScreen.showQrCode(),
+      target: "receiveBitcoin" as Target,
+      icon: "qr-code" as IconNamesType,
     },
   ]
 
@@ -503,8 +515,8 @@ const useStyles = makeStyles(({ colors }) => ({
   button: {
     display: "flex",
     justifyContent: "space-between",
-    width: "100%",
-    maxWidth: 184,
+    width: "25%",
+    // maxWidth: 184,
   },
   removeButton: {
     marginTop: 16,
