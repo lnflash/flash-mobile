@@ -3891,6 +3891,12 @@ export type SettingsScreenQuery = {
     readonly id: string
     readonly phone?: string | null
     readonly username?: string | null
+    readonly totpEnabled: boolean
+    readonly email?: {
+      readonly __typename: "Email"
+      readonly address?: string | null
+      readonly verified?: boolean | null
+    } | null
     readonly language: string
     readonly defaultAccount: {
       readonly __typename: "ConsumerAccount"
