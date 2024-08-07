@@ -1,6 +1,6 @@
 import { Alert, View } from "react-native"
 
-import { gql, useQuery } from "@apollo/client"
+import { gql } from "@apollo/client"
 import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 import {
   useUserEmailDeleteMutation,
@@ -52,19 +52,6 @@ gql`
   }
 `
 
-const userSettings = gql`
-  query settingsScreen {
-    me {
-      id
-      email {
-        address
-        verified
-      }
-      phone
-    }
-  }
-`
-
 const title = (
   email: string | undefined,
   emailVerified: boolean,
@@ -79,9 +66,6 @@ const title = (
 
 export const EmailSetting: React.FC = () => {
   const styles = useStyles()
-  const { data } = useQuery(userSettings)
-  const checkEmail = data?.me?.email?.address
-  const checkEmailVerified = data?.me?.email?.verified
   const { LL } = useI18nContext()
   const { navigate } = useNavigation<StackNavigationProp<RootStackParamList>>()
 
@@ -182,15 +166,11 @@ export const EmailSetting: React.FC = () => {
     <SettingsRow
       loading={loading}
       spinner={emDelLoading || emRegLoading}
-      title={title(email || checkEmail, emailVerified || checkEmailVerified, LL)}
-      subtitle={
-        emailVerified || checkEmailVerified
-          ? email?.toString() || checkEmail.toString()
-          : email || checkEmail
-      }
+      title={title(email, emailVerified, LL)}
+      subtitle={emailVerified ? email?.toString() : email}
       leftIcon="mail-outline"
-      action={email || checkEmail ? null : () => navigate("emailRegistrationInitiate")}
-      rightIcon={email || checkEmail ? null : RightIcon}
+      action={email ? null : () => navigate("emailRegistrationInitiate")}
+      rightIcon={RightIcon}
     />
   )
 }

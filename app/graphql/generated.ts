@@ -9486,6 +9486,10 @@ export const SettingsScreenDocument = gql`
           walletCurrency
         }
       }
+      email {
+        address
+        verified
+      }
     }
   }
 `
