@@ -46,7 +46,7 @@ export const toBtcMoneyAmount = (amount: number | undefined): BtcMoneyAmount => 
     }
   }
   return {
-    amount,
+    amount: Math.floor(amount),
     currency: WalletCurrency.Btc,
     currencyCode: "BTC",
   }

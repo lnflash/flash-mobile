@@ -39,7 +39,7 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   } = useTheme()
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const { zeroDisplayAmount } = useDisplayCurrency()
+  const { zeroDisplayAmount, formatMoneyAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
   const { btcWallet } = useBreez()
@@ -80,7 +80,14 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
 
   const isValidAmount =
     settlementSendAmount.amount > 0 &&
-    settlementSendAmount.amount <= fromWalletBalance.amount
+    settlementSendAmount.amount <= fromWalletBalance.amount &&
+    !lessThan({
+      value:
+        fromWalletCurrency === WalletCurrency.Btc // @ts-ignore: Unreachable code error
+          ? convertMoneyAmount(btcBalance, "USD")
+          : convertedUsdBalance,
+      lessThan: { amount: 1, currency: "USD", currencyCode: "USD" },
+    })
 
   const canToggleWallet =
     fromWalletCurrency === "BTC" ? usdBalance.amount > 0 : btcBalance.amount > 0
@@ -95,6 +102,30 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   ) {
     amountFieldError = LL.SendBitcoinScreen.amountExceed({
       balance: fromWalletCurrency === "BTC" ? formattedBtcBalance : formattedUsdBalance,
+    })
+  }
+
+  if (
+    lessThan({
+      value:
+        fromWalletCurrency === WalletCurrency.Btc // @ts-ignore: Unreachable code error
+          ? convertMoneyAmount(btcBalance, "USD")
+          : convertedUsdBalance,
+      lessThan: { amount: 1, currency: "USD", currencyCode: "USD" },
+    })
+  ) {
+    amountFieldError = LL.SendBitcoinScreen.amountLess({
+      balance: formatMoneyAmount({
+        // @ts-ignore: Unreachable code error
+        moneyAmount: convertMoneyAmount(
+          {
+            amount: 1,
+            currency: "USD",
+            currencyCode: "USD",
+          },
+          "DisplayCurrency",
+        ),
+      }),
     })
   }
 
@@ -222,7 +253,7 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.percentageField}
-                onPress={() => setAmountToBalancePercentage(100)}
+                onPress={() => setAmountToBalancePercentage(99)}
               >
                 <Text>100%</Text>
               </TouchableOpacity>
