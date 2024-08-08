@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { View, TextInput } from "react-native"
 import CustomModal from "../custom-modal/custom-modal"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
@@ -16,7 +16,8 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { updateUserData } from "@app/store/redux/slices/userSlice"
-import { setPreferredRelay } from "@app/utils/nostr"
+import { getSecretKey, setPreferredRelay } from "@app/utils/nostr"
+import { getPublicKey } from "nostr-tools"
 
 gql`
   mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
@@ -27,6 +28,7 @@ gql`
       user {
         id
         username
+        npub
       }
     }
   }
@@ -52,7 +54,17 @@ export const SetLightningAddressModal = ({
   const dispatch = useAppDispatch()
   const [error, setError] = useState<SetAddressError | undefined>()
   const [lnAddress, setLnAddress] = useState("")
+  const [nostrPubkey, setNostrPubkey] = useState("")
   const { updateNostrProfile } = useNostrProfile()
+
+  useEffect(() => {
+    async function getNostrPubkey() {
+      let secretKey = await getSecretKey()
+      if (secretKey) setNostrPubkey(getPublicKey(secretKey))
+      else console.warn("NOSTR SECRET KEY NOT FOUND")
+    }
+    getNostrPubkey()
+  }, [])
 
   const onChangeLnAddress = (lightningAddress: string) => {
     setLnAddress(lightningAddress)
@@ -77,6 +89,9 @@ export const SetLightningAddressModal = ({
             fields: {
               username: () => {
                 return lnAddress
+              },
+              npub: () => {
+                return nostrPubkey
               },
             },
           })
@@ -104,6 +119,7 @@ export const SetLightningAddressModal = ({
       variables: {
         input: {
           username: lnAddress,
+          npub: nostrPubkey,
         },
       },
     })
