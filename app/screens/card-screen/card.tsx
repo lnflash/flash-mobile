@@ -329,9 +329,8 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
         console.log("Reloading card")
         setRefreshBalance(null)
         setDisplayReceiveNfc(true)
-      } else if (target === "receiveBitcoin" && reloadLnurl) {
-        navigation.navigate("receiveBitcoin", {
-          transactionLength: 0,
+      } else if (target === "receiveBitcoinFlashcard" && reloadLnurl) {
+        navigation.navigate("receiveBitcoinFlashcard", {
           receiveLnurl: {
             validDestination: { lnurl: reloadLnurl.validDestination.lnurl },
           }, // Only pass serializable values
@@ -342,7 +341,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
     }
   }
 
-  type Target = "cardScreen" | "sendBitcoinDetails" | "receiveBitcoin"
+  type Target = "cardScreen" | "sendBitcoinDetails" | "receiveBitcoinFlashcard"
   type IconNamesType = keyof typeof icons
 
   const buttons = [
@@ -358,7 +357,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
     },
     {
       title: LL.HomeScreen.showQrCode(),
-      target: "receiveBitcoin" as Target,
+      target: "receiveBitcoinFlashcard" as Target,
       icon: "qr-code" as IconNamesType,
     },
   ]

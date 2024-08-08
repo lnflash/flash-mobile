@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Share, TouchableOpacity, View } from "react-native"
 import { RouteProp, useIsFocused, useNavigation } from "@react-navigation/native"
 import Clipboard from "@react-native-clipboard/clipboard"
@@ -60,8 +60,7 @@ const ReceiveScreen = ({ route }: Props) => {
 
   const lnAddressHostname = appConfig.galoyInstance.lnAddressHostname
   const isFirstTransaction = route.params.transactionLength === 0
-  const flashcardReceiveLnurl = route.params.receiveLnurl?.validDestination.lnurl || ""
-  const request = useReceiveBitcoin(isFirstTransaction, Boolean(flashcardReceiveLnurl))
+  const request = useReceiveBitcoin(isFirstTransaction)
 
   const [displayReceiveNfc, setDisplayReceiveNfc] = useState(false)
   const [currentWallet, setCurrentWallet] = useState(
@@ -81,6 +80,7 @@ const ReceiveScreen = ({ route }: Props) => {
         request?.state === "Created" &&
         (await nfcManager.isSupported())
       ) {
+        console.log("DEBUG:", request.receiveViaNFC)
         navigation.setOptions({
           headerRight: () => (
             <TouchableOpacity
@@ -113,7 +113,7 @@ const ReceiveScreen = ({ route }: Props) => {
   }, [isAuthed, isFocused])
 
   useEffect(() => {
-    if (isAdvanceMode || flashcardReceiveLnurl) {
+    if (isAdvanceMode) {
       switch (request?.type) {
         case Invoice.OnChain:
           navigation.setOptions({ title: LL.ReceiveScreen.receiveViaOnchain() })
@@ -122,11 +122,7 @@ const ReceiveScreen = ({ route }: Props) => {
           navigation.setOptions({ title: LL.ReceiveScreen.receiveViaInvoice() })
           break
         case Invoice.PayCode:
-          if (flashcardReceiveLnurl) {
-            navigation.setOptions({ title: LL.ReceiveScreen.topupFlashcard() })
-          } else {
-            navigation.setOptions({ title: LL.ReceiveScreen.receiveViaPaycode() })
-          }
+          navigation.setOptions({ title: LL.ReceiveScreen.receiveViaPaycode() })
       }
     } else {
       navigation.setOptions({ title: LL.ReceiveScreen.receive() })
@@ -136,27 +132,6 @@ const ReceiveScreen = ({ route }: Props) => {
   const [updatedPaymentState, setUpdatedPaymentState] = React.useState<
     string | undefined
   >(undefined)
-  const [lnurlp, setLnurlp] = useState("")
-
-  const setInvoiceType = useCallback(() => {
-    if (request && flashcardReceiveLnurl && request.type !== Invoice.PayCode) {
-      request.setType(Invoice.PayCode) // Set type to PayCode directly
-    }
-  }, [request, flashcardReceiveLnurl])
-
-  useEffect(() => {
-    if (flashcardReceiveLnurl) {
-      setLnurlp(flashcardReceiveLnurl)
-    } else if (usdWallet?.lnurlp) {
-      setLnurlp(usdWallet.lnurlp)
-    }
-  }, [flashcardReceiveLnurl, usdWallet?.lnurlp])
-
-  useEffect(() => {
-    if (request && flashcardReceiveLnurl) {
-      setInvoiceType()
-    }
-  }, [request, flashcardReceiveLnurl, setInvoiceType])
 
   useEffect(() => {
     if (request) {
@@ -232,8 +207,7 @@ const ReceiveScreen = ({ route }: Props) => {
 
   const isReady = request.state !== PaymentRequestState.Loading
 
-  // const lnurlp = flashcardReceiveLnurl ? flashcardReceiveLnurl : usdWallet?.lnurlp || ""
-
+  const lnurlp = usdWallet?.lnurlp || ""
   const useLnurlp =
     request.type === "PayCode" &&
     request.receivingWalletDescriptor.currency === "USD" &&
@@ -241,10 +215,8 @@ const ReceiveScreen = ({ route }: Props) => {
     Boolean(userData.username)
 
   const handleCopy = () => {
-    if (request.type === "PayCode" && !flashcardReceiveLnurl) {
+    if (request.type === "PayCode") {
       Clipboard.setString(`${request.username}@${lnAddressHostname}`)
-    } else if (flashcardReceiveLnurl) {
-      Clipboard.setString(lnurlp)
     } else {
       if (request.copyToClipboard) {
         request.copyToClipboard()
@@ -265,7 +237,7 @@ const ReceiveScreen = ({ route }: Props) => {
   const onChangeWallet = (id: WalletCurrency) => {
     if (isReady) {
       if (id === "BTC" && request.type === "PayCode") {
-        request.setType("PayCode")
+        request.setType("Lightning")
       }
       request.setReceivingWallet(id)
     }
@@ -332,29 +304,19 @@ const ReceiveScreen = ({ route }: Props) => {
               </Text>
             </View>
           )}
-        {((request.state !== PaymentRequestState.Loading &&
-          request.readablePaymentRequest) ||
-          lnurlp) && (
-          <View style={styles.extraDetails}>
-            <TouchableOpacity onPress={handleCopy}>
-              <Text {...testProps("readable-payment-request")}>
-                {flashcardReceiveLnurl
-                  ? lnurlp.substring(0, 21) + "..."
-                  : request.readablePaymentRequest}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleShare} style={styles.shareInvoice}>
-              <Icon color={colors.grey2} name="share-outline" size={40} />
-            </TouchableOpacity>
-          </View>
-        )}
-        {request.type === "PayCode" && lnurlp && (
-          <View style={styles.extraDetails}>
-            <Text style={styles.instructions}>
-              {LL.ReceiveScreen.flashcardInstructions()}
-            </Text>
-          </View>
-        )}
+        {request.state !== PaymentRequestState.Loading &&
+          request.readablePaymentRequest && (
+            <View style={styles.extraDetails}>
+              <TouchableOpacity onPress={handleCopy}>
+                <Text {...testProps("readable-payment-request")}>
+                  {request.readablePaymentRequest}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleShare} style={styles.shareInvoice}>
+                <Icon color={colors.grey2} name="share-outline" size={20} />
+              </TouchableOpacity>
+            </View>
+          )}
         {request.type !== "PayCode" && (
           <>
             <AmountInput
@@ -483,12 +445,6 @@ const useStyles = makeStyles(({ colors }) => ({
     fontSize: 12,
     color: colors.warning,
     marginBottom: 10,
-  },
-  instructions: {
-    fontSize: 28,
-    color: colors.green,
-    marginBottom: 10,
-    textAlign: "center",
   },
   nfcIcon: {
     marginTop: -1,

@@ -52,6 +52,7 @@ import {
 import { PhoneRegistrationInitiateScreen } from "@app/screens/phone-auth-screen/phone-registration-input"
 import { PhoneRegistrationValidateScreen } from "@app/screens/phone-auth-screen/phone-registration-validation"
 import ReceiveScreen from "@app/screens/receive-bitcoin-screen/receive-screen"
+import ReceiveScreenFlashcard from "@app/screens/receive-bitcoin-screen/receive-screen-flashcard"
 import RedeemBitcoinDetailScreen from "@app/screens/redeem-lnurl-withdrawal-screen/redeem-bitcoin-detail-screen"
 import RedeemBitcoinResultScreen from "@app/screens/redeem-lnurl-withdrawal-screen/redeem-bitcoin-result-screen"
 import SendBitcoinConfirmationScreen from "@app/screens/send-bitcoin-screen/send-bitcoin-confirmation-screen"
@@ -238,6 +239,13 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="receiveBitcoin"
         component={ReceiveScreen}
+        options={{
+          title: LL.ReceiveScreen.title(),
+        }}
+      />
+      <RootNavigator.Screen
+        name="receiveBitcoinFlashcard"
+        component={ReceiveScreenFlashcard}
         options={{
           title: LL.ReceiveScreen.title(),
         }}
