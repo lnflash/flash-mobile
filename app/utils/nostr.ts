@@ -11,6 +11,7 @@ import {
   Relay,
   SimplePool,
   Filter,
+  SubCloser,
 } from "nostr-tools"
 import { Alert } from "react-native"
 
@@ -115,9 +116,10 @@ export const fetchSecretFromLocalStorage = async () => {
 export const fetchGiftWrapsForPublicKey = async (
   pubkey: string,
   eventHandler: (event: Event) => void,
+  pool: SimplePool,
 ) => {
-  let relay = await Relay.connect("wss://relay.staging.flashapp.me")
-  relay.subscribe(
+  let closer = pool.subscribeMany(
+    ["wss://relay.staging.flashapp.me"],
     [
       {
         "kinds": [1059],
@@ -129,7 +131,7 @@ export const fetchGiftWrapsForPublicKey = async (
       onevent: eventHandler,
     },
   )
-  return relay
+  return closer
 }
 
 export const convertRumorsToGroups = (rumors: Rumor[]) => {
@@ -154,24 +156,35 @@ export const getSecretKey = async () => {
   return secret
 }
 
-export const fetchNostrUsers = async (pubKeys: string[]) => {
-  let publicRelays = [
-    "wss://relay.damus.io",
-    "wss://relay.primal.net",
-    "wss://relay.staging.flashapp.me",
-    "wss://relay.snort.social",
-    "wss//nos.lol",
-  ]
-  const pool = new SimplePool()
-  const nostrProfiles = await pool.querySync(publicRelays, {
-    kinds: [0],
-    authors: pubKeys,
-  })
-  pool.close(publicRelays)
-  return nostrProfiles
+export const fetchNostrUsers = (
+  pubKeys: string[],
+  pool: SimplePool,
+  handleProfileEvent: (event: Event, closer: SubCloser) => void,
+) => {
+  const closer = pool.subscribeMany(
+    publicRelays,
+    [
+      {
+        kinds: [0],
+        authors: pubKeys,
+      },
+    ],
+    {
+      onevent: (event: Event) => {
+        handleProfileEvent(event, closer)
+      },
+      onclose: () => {
+        closer.close()
+      },
+      oneose: () => {
+        closer.close()
+      },
+    },
+  )
+  return closer
 }
 
-export const fetchPreferredRelays = async (pubKeys: string[]) => {
+export const fetchPreferredRelays = async (pubKeys: string[], pool: SimplePool) => {
   let publicRelays = [
     "wss://relay.damus.io",
     "wss://relay.primal.net",
@@ -179,7 +192,6 @@ export const fetchPreferredRelays = async (pubKeys: string[]) => {
     "wss://relay.snort.social",
     "wss//nos.lol",
   ]
-  const pool = new SimplePool()
   let filter: Filter = {
     kinds: [10050],
     authors: pubKeys,
@@ -224,12 +236,16 @@ export const setPreferredRelay = async () => {
   }, 5000)
 }
 
-export async function sendNip17Message(recipients: string[], message: string) {
+export async function sendNip17Message(
+  recipients: string[],
+  message: string,
+  pool: SimplePool,
+) {
   let privateKey = await getSecretKey()
   if (!privateKey) {
     throw Error("Couldnt find private key in local storage")
   }
-  let preferredRelays = await fetchPreferredRelays(recipients)
+  let preferredRelays = await fetchPreferredRelays(recipients, pool)
   let p_tags = recipients.map((recipientId: string) => ["p", recipientId])
   let rumor = createRumor({ content: message, kind: 14, tags: p_tags }, privateKey)
   recipients.forEach(async (recipientId: string) => {
