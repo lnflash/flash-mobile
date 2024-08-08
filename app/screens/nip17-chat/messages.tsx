@@ -96,20 +96,22 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   const [initialized, setInitialized] = React.useState(false)
 
   const user = { id: userPubkey }
-  console.log("IN MESSAGES SCREEN", rumors)
+  console.log("IN MESSAGES SCREEN", rumors.map((e) => e.id).length)
 
   const convertRumorsToMessages = (rumors: Rumor[]): MessageType.Text[] => {
-    let chats = (chatRumors || []).map((r) => {
-      return {
+    let chatSet: Map<string, MessageType.Text> = new Map<string, MessageType.Text>()
+    ;(chatRumors || []).forEach((r: Rumor) => {
+      chatSet.set(r.id, {
         author: { id: r.pubkey },
         createdAt: r.created_at,
         id: r.id,
         type: "text",
         text: r.content,
-      }
+      })
     })
+    let chats = Array.from(chatSet.values())
     chats.sort((a, b) => {
-      return b.createdAt - a.createdAt
+      return b.createdAt! - a.createdAt!
     })
     return chats as MessageType.Text[]
   }
@@ -152,29 +154,44 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
           style={styles.backButton}
         />
         <Text type="p1">
-          {profileMap?.get(userPubkey)?.name ||
-            profileMap?.get(userPubkey)?.username ||
-            profileMap?.get(userPubkey)?.lud16 ||
-            nip19.npubEncode(userPubkey).slice(0, 9) + ".."}
+          {groupId
+            .split(",")
+            .map((user) => {
+              return (
+                profileMap?.get(user)?.name ||
+                profileMap?.get(user)?.username ||
+                profileMap?.get(user)?.lud16 ||
+                nip19.npubEncode(user).slice(0, 9) + ".."
+              )
+            })
+            .join(", ")}
         </Text>
         <View style={{ display: "flex", flexDirection: "row" }}>
           <GaloyIconButton
             name={"lightning"}
-            size="large"
+            size="medium"
             //text={LL.HomeScreen.pay()}
-            style={{ marginRight: 5 }}
-            onPress={() =>
+            style={{ margin: 5 }}
+            onPress={() => {
+              let ids = groupId.split(",")
+              let recipientId = ids.filter((id) => id !== userPubkey)[0]
               navigation.navigate("sendBitcoinDestination", {
-                //username: chat.lud16,
+                username: profileMap?.get(recipientId)?.lud16,
               })
-            }
-          />
-          <Image
-            source={{
-              uri: "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
             }}
-            style={styles.userPic}
           />
+          {groupId.split(",").map((pubkey) => {
+            return (
+              <Image
+                source={{
+                  uri:
+                    profileMap?.get(pubkey)?.picture ||
+                    "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
+                }}
+                style={styles.userPic}
+              />
+            )
+          })}
         </View>
       </View>
       {!initialized && <ActivityIndicator />}
@@ -193,7 +210,6 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
                 ? "Fetching Messages..."
                 : "...",
             }}
-            showUserAvatars={true}
             user={user}
             renderTextMessage={(message, nextMessage, prevMessage) => (
               <ChatMessage
