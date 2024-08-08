@@ -108,7 +108,10 @@ export const NIP17Chat: React.FC = () => {
     if (newSearchText.match(aliasPattern)) {
       let nostrUser = await nip05.queryProfile(newSearchText.toLowerCase())
       console.log("found nostr user", nostrUser)
-      if (nostrUser) setSearchedUsers([{ id: nostrUser.pubkey }])
+      if (nostrUser) {
+        setSearchedUsers([{ id: nostrUser.pubkey }])
+        fetchNostrUsers([nostrUser.pubkey], poolRef!.current, searchedUsersHandler)
+      }
     }
     if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
       let hexPubkey = nip19.decode(newSearchText).data as string
