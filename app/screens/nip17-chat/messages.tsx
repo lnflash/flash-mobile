@@ -15,7 +15,7 @@ import { isIos } from "@app/utils/helper"
 import { Chat, MessageType, defaultTheme } from "@flyerhq/react-native-chat-ui"
 import { ChatMessage } from "./chatMessage"
 import Icon from "react-native-vector-icons/Ionicons"
-import { getPublicKey, Event, nip19 } from "nostr-tools"
+import { getPublicKey, Event, nip19, SubCloser } from "nostr-tools"
 import {
   Rumor,
   convertRumorsToGroups,
@@ -33,22 +33,26 @@ type MessagesProps = {
 export const Messages: React.FC<MessagesProps> = ({ route }) => {
   let userPubkey = getPublicKey(route.params.userPrivateKey)
   let groupId = route.params.groupId
+  const { poolRef } = useChatContext()
   const [profileMap, setProfileMap] = useState<Map<string, NostrProfile>>()
-  useEffect(() => {
-    fetchNostrUsers(groupId.split(",")).then((profiles: Event[]) => {
-      let profilesMap = new Map<string, Object>()
-      profiles.forEach((profile) => {
-        try {
-          let content = JSON.parse(profile.content)
-          profilesMap.set(profile.pubkey, content)
-        } catch (e) {
-          console.log("error parsing profile", profile.content)
-          return
-        }
-      })
-      setProfileMap(profilesMap)
+
+  function handleProfileEvent(event: Event) {
+    let profile = JSON.parse(event.content)
+    setProfileMap((profileMap) => {
+      let newProfileMap = profileMap || new Map<string, Object>()
+      newProfileMap.set(event.pubkey, profile)
+      return newProfileMap
     })
-  }, [groupId])
+  }
+
+  useEffect(() => {
+    let closer: SubCloser
+    if (poolRef)
+      closer = fetchNostrUsers(groupId.split(","), poolRef.current, handleProfileEvent)
+    return () => {
+      if (closer) closer.close()
+    }
+  }, [groupId, poolRef])
 
   return (
     <MessagesScreen
@@ -73,7 +77,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   const {
     theme: { colors },
   } = useTheme()
-  let { rumors } = useChatContext()
+  let { rumors, poolRef } = useChatContext()
   let chatRumors = convertRumorsToGroups(rumors).get(groupId)
   const styles = useStyles()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
@@ -103,14 +107,14 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
     console.log("NEW ITEMSSS IN MESSAGES SCREEEEN")
     let isMounted = true
     async function initialize() {
-      setInitialized(true)
+      if (poolRef) setInitialized(true)
     }
     if (!initialized) initialize()
 
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [poolRef])
 
   const handleSendPress = async (message: MessageType.PartialText) => {
     const textMessage: MessageType.Text = {
@@ -120,7 +124,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
       text: message.text,
       type: "text",
     }
-    await sendNip17Message(groupId.split(","), message.text)
+    await sendNip17Message(groupId.split(","), message.text, poolRef!.current)
   }
 
   return (
