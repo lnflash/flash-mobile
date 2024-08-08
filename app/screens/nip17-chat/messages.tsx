@@ -20,6 +20,7 @@ import {
   Rumor,
   convertRumorsToGroups,
   fetchNostrUsers,
+  fetchPreferredRelays,
   getRumorFromWrap,
   sendNip17Message,
 } from "@app/utils/nostr"
@@ -35,6 +36,7 @@ export const Messages: React.FC<MessagesProps> = ({ route }) => {
   let groupId = route.params.groupId
   const { poolRef } = useChatContext()
   const [profileMap, setProfileMap] = useState<Map<string, NostrProfile>>()
+  const [preferredRelaysMap, setPreferredRelaysMap] = useState<Map<string, string[]>>()
 
   function handleProfileEvent(event: Event) {
     let profile = JSON.parse(event.content)
@@ -47,8 +49,14 @@ export const Messages: React.FC<MessagesProps> = ({ route }) => {
 
   useEffect(() => {
     let closer: SubCloser
-    if (poolRef)
+    if (poolRef) {
       closer = fetchNostrUsers(groupId.split(","), poolRef.current, handleProfileEvent)
+      fetchPreferredRelays(groupId.split(","), poolRef.current).then(
+        (relayMap: Map<string, string[]>) => {
+          setPreferredRelaysMap(relayMap)
+        },
+      )
+    }
     return () => {
       if (closer) closer.close()
     }
@@ -59,6 +67,7 @@ export const Messages: React.FC<MessagesProps> = ({ route }) => {
       userPubkey={userPubkey}
       groupId={route.params.groupId}
       profileMap={profileMap}
+      preferredRelaysMap={preferredRelaysMap}
     />
   )
 }
@@ -67,12 +76,14 @@ type MessagesScreenProps = {
   groupId: string
   userPubkey: string
   profileMap?: Map<string, NostrProfile>
+  preferredRelaysMap?: Map<string, string[]>
 }
 
 export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   userPubkey,
   groupId,
   profileMap,
+  preferredRelaysMap,
 }) => {
   const {
     theme: { colors },
@@ -124,7 +135,12 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
       text: message.text,
       type: "text",
     }
-    await sendNip17Message(groupId.split(","), message.text, poolRef!.current)
+    await sendNip17Message(
+      groupId.split(","),
+      message.text,
+      poolRef!.current,
+      preferredRelaysMap || new Map<string, string[]>(),
+    )
   }
 
   return (
