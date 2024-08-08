@@ -185,21 +185,17 @@ export const fetchNostrUsers = (
 }
 
 export const fetchPreferredRelays = async (pubKeys: string[], pool: SimplePool) => {
-  let publicRelays = [
-    "wss://relay.damus.io",
-    "wss://relay.primal.net",
-    "wss://relay.staging.flashapp.me",
-    "wss://relay.snort.social",
-    "wss//nos.lol",
-  ]
   let filter: Filter = {
     kinds: [10050],
     authors: pubKeys,
   }
   let relayEvents = await pool.querySync(publicRelays, filter)
-  let relayMap = new Map<string, Event>()
+  let relayMap = new Map<string, string[]>()
   relayEvents.forEach((event) => {
-    relayMap.set(event.pubkey, event)
+    relayMap.set(
+      event.pubkey,
+      event.tags.filter((t) => t[0] === "relay").map((t) => t[1]),
+    )
   })
   return relayMap
 }
@@ -240,37 +236,22 @@ export async function sendNip17Message(
   recipients: string[],
   message: string,
   pool: SimplePool,
+  preferredRelaysMap: Map<string, string[]>,
 ) {
   let privateKey = await getSecretKey()
   if (!privateKey) {
     throw Error("Couldnt find private key in local storage")
   }
-  let preferredRelays = await fetchPreferredRelays(recipients, pool)
   let p_tags = recipients.map((recipientId: string) => ["p", recipientId])
   let rumor = createRumor({ content: message, kind: 14, tags: p_tags }, privateKey)
   recipients.forEach(async (recipientId: string) => {
-    console.log("recipient is", recipientId)
-    let recipientRelays = preferredRelays
-      .get(recipientId)
-      ?.tags.filter((t: string[]) => t[0] === "relay")
-      .map((t) => t[1])
+    let recipientRelays = preferredRelaysMap.get(recipientId)
     if (!recipientRelays) sendNIP4Message(message, recipientId)
     recipientRelays = recipientRelays || publicRelays
-    console.log("Recipient relays are", recipientRelays)
-    let connections = await Promise.all(
-      recipientRelays.map(async (relay) => {
-        let connection = await Relay.connect(relay)
-        console.log("Connection to relay", connection)
-
-        return connection
-      }),
-    )
     let seal = createSeal(rumor, privateKey, recipientId)
     let wrap = createWrap(seal, recipientId)
-    console.warn("Final Wrap Is", wrap)
-    connections.forEach(async (connection) => {
-      await connection.publish(wrap)
-      connection.close()
+    pool.publish(recipientRelays, wrap).map((promise: Promise<string>) => {
+      promise.then((res) => console.log("Message from relays", res))
     })
   })
 }
