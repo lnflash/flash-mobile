@@ -1,12 +1,13 @@
 import { ListItem, useTheme } from "@rneui/themed"
 import { useStyles } from "./style"
 import { Image } from "react-native"
-import { UnsignedEvent, nip19, Event } from "nostr-tools"
-import { fetchNostrUsers } from "@app/utils/nostr"
+import { UnsignedEvent, nip19, Event, SimplePool, SubCloser } from "nostr-tools"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 import { useEffect, useState } from "react"
+import { useChatContext } from "./chatContext"
+import { fetchNostrUsers } from "@app/utils/nostr"
 
 interface HistoryListItemProps {
   item: string
@@ -17,21 +18,29 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
   userPrivateKey,
 }) => {
   const [profileMap, setProfileMap] = useState<Map<string, NostrProfile>>()
-  useEffect(() => {
-    fetchNostrUsers(item.split(",")).then((profiles: Event[]) => {
-      let profilesMap = new Map<string, Object>()
-      profiles.forEach((profile) => {
-        try {
-          let content = JSON.parse(profile.content)
-          profilesMap.set(profile.pubkey, content)
-        } catch (e) {
-          console.log("error parsing profile", profile.content)
-          return
-        }
-      })
-      setProfileMap(profilesMap)
+  const { poolRef } = useChatContext()
+
+  function handleProfileEvent(event: Event) {
+    let profile = JSON.parse(event.content)
+    setProfileMap((profileMap) => {
+      let newProfileMap = profileMap || new Map<string, Object>()
+      newProfileMap.set(event.pubkey, profile)
+      return newProfileMap
     })
-  }, [item])
+  }
+
+  useEffect(() => {
+    let closer: SubCloser | null = null
+    if (poolRef?.current) {
+      closer = fetchNostrUsers(item.split(","), poolRef?.current, handleProfileEvent)
+    }
+
+    return () => {
+      if (closer) {
+        closer.close()
+      }
+    }
+  }, [item, poolRef])
   const styles = useStyles()
   const {
     theme: { colors },
