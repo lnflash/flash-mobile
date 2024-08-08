@@ -1,4 +1,3 @@
-import { StackNavigationProp } from "@react-navigation/stack"
 import { SearchBar } from "@rneui/base"
 import { useTheme } from "@rneui/themed"
 import * as React from "react"
@@ -12,15 +11,7 @@ import { testProps } from "../../utils/testProps"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
-import {
-  Event,
-  Relay,
-  Subscription,
-  UnsignedEvent,
-  getPublicKey,
-  nip05,
-  nip19,
-} from "nostr-tools"
+import { Event, SubCloser, getPublicKey, nip05, nip19 } from "nostr-tools"
 import {
   Rumor,
   convertRumorsToGroups,
@@ -29,7 +20,6 @@ import {
   fetchSecretFromLocalStorage,
   getRumorFromWrap,
 } from "@app/utils/nostr"
-import { errorCodes } from "@apollo/client/invariantErrorCodes"
 import { useStyles } from "./style"
 import { SearchListItem } from "./searchListItem"
 import { HistoryListItem } from "./historyListItem"
@@ -40,7 +30,7 @@ export const NIP17Chat: React.FC = () => {
   const {
     theme: { colors },
   } = useTheme()
-  const { giftwraps, rumors, setRumors, setGiftWraps } = useChatContext()
+  const { giftwraps, rumors, setRumors, setGiftWraps, poolRef } = useChatContext()
   const [searchText, setSearchText] = useState("")
   const [refreshing, setRefreshing] = useState(false)
   const [initialized, setInitialized] = useState(false)
@@ -72,13 +62,20 @@ export const NIP17Chat: React.FC = () => {
     }
   }
 
+  const searchedUsersHandler = (event: Event, closer: SubCloser) => {
+    let nostrProfile = JSON.parse(event.content)
+    setSearchedUsers([{ ...nostrProfile, id: event.pubkey }])
+    setRefreshing(false)
+    closer.close()
+  }
+
   React.useEffect(() => {
-    let relay: Relay
+    let closer: SubCloser
     const unsubscribe = () => {
-      console.log("unsubscribing", relay)
+      console.log("unsubscribing", closer)
       setInitialized(false)
-      if (relay) {
-        relay.close()
+      if (closer) {
+        closer.close()
       }
     }
     async function initialize() {
@@ -91,14 +88,18 @@ export const NIP17Chat: React.FC = () => {
       let secret = nip19.decode(secretKeyString).data as Uint8Array
       setPrivateKey(secret)
       const publicKey = getPublicKey(secret)
-      fetchGiftWrapsForPublicKey(publicKey, handleGiftWraps(secret)).then((r: Relay) => {
-        relay = r
+      fetchGiftWrapsForPublicKey(
+        publicKey,
+        handleGiftWraps(secret),
+        poolRef!.current,
+      ).then((c: SubCloser) => {
+        closer = c
       })
       setInitialized(true)
     }
-    if (!initialized) initialize()
+    if (!initialized && poolRef) initialize()
     return unsubscribe
-  }, [])
+  }, [poolRef])
 
   const updateSearchResults = useCallback(async (newSearchText: string) => {
     setRefreshing(true)
@@ -112,14 +113,7 @@ export const NIP17Chat: React.FC = () => {
     if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
       let hexPubkey = nip19.decode(newSearchText).data as string
       setSearchedUsers([{ id: hexPubkey }])
-      try {
-        let nostrProfileEvent = await fetchNostrUsers([hexPubkey])
-        let nostrProfile = JSON.parse(nostrProfileEvent[0].content)
-        setSearchedUsers([{ ...nostrProfile, id: nostrProfileEvent[0].pubkey }])
-      } catch (e) {
-        console.log("Error fetching nostr profile", e)
-      }
-      setRefreshing(false)
+      fetchNostrUsers([hexPubkey], poolRef!.current, searchedUsersHandler)
       return
     }
   }, [])
