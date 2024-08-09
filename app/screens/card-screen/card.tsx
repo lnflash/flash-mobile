@@ -329,11 +329,10 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
         console.log("Reloading card")
         setRefreshBalance(null)
         setDisplayReceiveNfc(true)
-      } else if (target === "receiveBitcoinFlashcard" && reloadLnurl) {
-        navigation.navigate("receiveBitcoinFlashcard", {
-          receiveLnurl: {
-            validDestination: { lnurl: reloadLnurl.validDestination.lnurl },
-          }, // Only pass serializable values
+      } else if (target === "topupFlashcard" && reloadLnurl) {
+        navigation.navigate("flashcardTopup", {
+          // @ts-ignore: Unreachable code error
+          flashcardLnurl: reloadLnurl.validDestination.lnurl,
         })
       }
     } else {
@@ -341,7 +340,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
     }
   }
 
-  type Target = "cardScreen" | "sendBitcoinDetails" | "receiveBitcoinFlashcard"
+  type Target = "cardScreen" | "sendBitcoinDetails" | "topupFlashcard"
   type IconNamesType = keyof typeof icons
 
   const buttons = [
@@ -357,7 +356,7 @@ export const CardScreen: React.FC<Props> = ({ navigation }) => {
     },
     {
       title: LL.HomeScreen.showQrCode(),
-      target: "receiveBitcoinFlashcard" as Target,
+      target: "topupFlashcard" as Target,
       icon: "qr-code" as IconNamesType,
     },
   ]

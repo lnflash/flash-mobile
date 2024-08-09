@@ -13,7 +13,7 @@ import {
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
 import { ChatDetailScreen, ChatScreen } from "../screens/chat-screen"
-import { CardScreen } from "../screens/card-screen"
+import { CardScreen, FlashcardTopup } from "../screens/card-screen"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
@@ -21,7 +21,6 @@ import { SectionCompleted } from "../screens/earns-screen/section-completed"
 import { GetStartedScreen } from "../screens/get-started-screen"
 import { HomeScreen } from "../screens/home-screen"
 import { MapScreen } from "../screens/map-screen/map-screen"
-
 import { PriceHistoryScreen } from "../screens/price/price-history-screen"
 import ChatIcon from "@app/assets/icons/chat.svg"
 import CardIcon from "@app/assets/icons/nfc.svg"
@@ -52,7 +51,6 @@ import {
 import { PhoneRegistrationInitiateScreen } from "@app/screens/phone-auth-screen/phone-registration-input"
 import { PhoneRegistrationValidateScreen } from "@app/screens/phone-auth-screen/phone-registration-validation"
 import ReceiveScreen from "@app/screens/receive-bitcoin-screen/receive-screen"
-import ReceiveScreenFlashcard from "@app/screens/receive-bitcoin-screen/receive-screen-flashcard"
 import RedeemBitcoinDetailScreen from "@app/screens/redeem-lnurl-withdrawal-screen/redeem-bitcoin-detail-screen"
 import RedeemBitcoinResultScreen from "@app/screens/redeem-lnurl-withdrawal-screen/redeem-bitcoin-result-screen"
 import SendBitcoinConfirmationScreen from "@app/screens/send-bitcoin-screen/send-bitcoin-confirmation-screen"
@@ -244,10 +242,10 @@ export const RootStack = () => {
         }}
       />
       <RootNavigator.Screen
-        name="receiveBitcoinFlashcard"
-        component={ReceiveScreenFlashcard}
+        name="flashcardTopup"
+        component={FlashcardTopup}
         options={{
-          title: LL.ReceiveScreen.title(),
+          title: LL.ReceiveScreen.topupFlashcard(),
         }}
       />
       <RootNavigator.Screen
