@@ -38,7 +38,7 @@ import { getUsdWallet } from "@app/graphql/wallets-utils"
 
 // Breez SDK
 import { useAppConfig, useBreez } from "@app/hooks"
-import { fetchReverseSwapFeesBreezSDK } from "@app/utils/breez-sdk"
+// import { fetchReverseSwapFeesBreezSDK } from "@app/utils/breez-sdk"
 import Video from "react-native-video"
 
 gql`
@@ -124,18 +124,18 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route }) => {
     } else if (paymentDetail.sendingWalletDescriptor.currency === WalletCurrency.Btc) {
       const getBreezFee = async (): Promise<void> => {
         try {
-          const rawBreezFee = await fetchReverseSwapFeesBreezSDK({
-            sendAmountSat: settlementAmount.amount * 100,
-          })
-          const formattedBreezFee: FeeType = {
-            amount: {
-              amount: rawBreezFee.feesClaim,
-              currency: "BTC",
-              currencyCode: "BTC",
-            },
-            status: "set",
-          }
-          setFee(formattedBreezFee)
+          // const rawBreezFee = await fetchReverseSwapFeesBreezSDK({
+          //   sendAmountSat: settlementAmount.amount * 100,
+          // })
+          // const formattedBreezFee: FeeType = {
+          //   amount: {
+          //     amount: rawBreezFee.feesClaim,
+          //     currency: "BTC",
+          //     currencyCode: "BTC",
+          //   },
+          //   status: "set",
+          // }
+          // setFee(formattedBreezFee)
         } catch (err) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         }

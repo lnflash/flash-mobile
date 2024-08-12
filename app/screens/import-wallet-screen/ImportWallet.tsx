@@ -14,7 +14,7 @@ import { useTheme, useThemeMode } from "@rneui/themed"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // utils
-import { disconnectToSDK, initializeBreezSDK } from "@app/utils/breez-sdk"
+import { disconnectToSDK, initializeBreezSDK } from "@app/utils/breez-sdk-liquid"
 
 type Props = StackScreenProps<RootStackParamList, "ImportWallet">
 

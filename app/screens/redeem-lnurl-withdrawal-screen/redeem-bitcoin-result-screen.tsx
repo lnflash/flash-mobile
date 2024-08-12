@@ -25,9 +25,10 @@ import { withMyLnUpdateSub } from "../receive-bitcoin-screen/my-ln-updates-sub"
 import { Screen } from "@app/components/screen"
 import {
   InputTypeVariant,
-  parseInput,
-  withdrawLnurl,
-} from "@breeztech/react-native-breez-sdk"
+  lnurlPay,
+  LnUrlPayResultVariant,
+  parse,
+} from "@breeztech/react-native-breez-sdk-liquid"
 
 type Prop = {
   route: RouteProp<RootStackParamList, "redeemBitcoinResult">
@@ -178,22 +179,28 @@ const RedeemBitcoinResultScreen: React.FC<Prop> = ({ route }) => {
 
   const redeemToBTCWallet = async () => {
     try {
-      const input = await parseInput(lnurl)
-      if (input.type === InputTypeVariant.LN_URL_WITHDRAW) {
-        const amountMsat = input.data.minWithdrawable
-        const lnUrlWithdrawResult = await withdrawLnurl({
+      const input = await parse(lnurl)
+      if (input.type === InputTypeVariant.LN_URL_PAY) {
+        const amountMsat = input.data.minSendable
+        const optionalComment = "<comment>"
+        const optionalPaymentLabel = "<label>"
+        const optionalValidateSuccessActionUrl = true
+        const lnUrlPayResult = await lnurlPay({
           data: input.data,
           amountMsat,
-          description: input.data.defaultDescription,
+          comment: optionalComment,
+          paymentLabel: optionalPaymentLabel,
+          validateSuccessActionUrl: optionalValidateSuccessActionUrl,
         })
-        console.log(lnUrlWithdrawResult)
-        if (lnUrlWithdrawResult.type === "ok") {
+
+        console.log(lnUrlPayResult)
+        if (lnUrlPayResult.type === LnUrlPayResultVariant.ENDPOINT_SUCCESS) {
           setSuccess(true)
-        } else if (lnUrlWithdrawResult.type === "errorStatus") {
-          setErr(
-            lnUrlWithdrawResult?.data?.reason || LL.RedeemBitcoinScreen.redeemingError(),
-          )
+        } else {
+          setErr(lnUrlPayResult?.data?.reason || LL.RedeemBitcoinScreen.redeemingError())
         }
+      } else if (input.type === InputTypeVariant.LN_URL_ERROR) {
+        setErr(input?.data?.reason || LL.RedeemBitcoinScreen.redeemingError())
       }
     } catch (err) {
       setErr(LL.RedeemBitcoinScreen.redeemingError())

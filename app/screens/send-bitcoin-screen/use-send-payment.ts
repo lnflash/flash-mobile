@@ -22,17 +22,17 @@ import { getErrorMessages } from "@app/graphql/utils"
 import {
   sendPaymentBreezSDK,
   parseInvoiceBreezSDK,
-  sendOnchainBreezSDK,
+  // sendOnchainBreezSDK,
   recommendedFeesBreezSDK,
-  fetchReverseSwapFeesBreezSDK,
+  // fetchReverseSwapFeesBreezSDK,
   payLnurlBreezSDK,
   sendNoAmountPaymentBreezSDK,
   paymentEvents,
   breezHealthCheck,
   addLogListenerBreezSDK,
-} from "@app/utils/breez-sdk"
+} from "@app/utils/breez-sdk-liquid"
 
-import * as sdk from "@breeztech/react-native-breez-sdk"
+import * as sdk from "@breeztech/react-native-breez-sdk-liquid"
 import { WalletAmount } from "@app/types/amounts"
 
 type UseSendPaymentResult = {
@@ -202,7 +202,7 @@ export const useSendPayment = (
 
   const sendPayment = useMemo(() => {
     let invoice: sdk.LnInvoice | null = null
-    let currentFees: sdk.ReverseSwapPairInfo
+    let currentFees: any
     let status: PaymentSendResult | null | undefined = null
     let errors: readonly GraphQlApplicationError[] | undefined
     console.log("hasAttemptedSend:", hasAttemptedSend)
@@ -233,9 +233,9 @@ export const useSendPayment = (
             ) {
               try {
                 console.log("Fetching reverse swap fees using Breez SDK")
-                currentFees = await fetchReverseSwapFeesBreezSDK({
-                  sendAmountSat: amountSats?.amount * 1000 || 50000,
-                })
+                // currentFees = await fetchReverseSwapFeesBreezSDK({
+                //   sendAmountSat: amountSats?.amount * 1000 || 50000,
+                // })
               } catch (error) {
                 console.error("Error fetching reverse swap fees with Breez SDK:", error)
                 return {
@@ -352,18 +352,18 @@ export const useSendPayment = (
               if (currentFees) {
                 try {
                   const recommendedFees = await recommendedFeesBreezSDK()
-                  const response = await sendOnchainBreezSDK(
-                    currentFees,
-                    paymentRequest,
-                    recommendedFees.hourFee,
-                  )
-                  console.log("BreezSDK onchain response:", response)
-                  // Wait for the payment success event
-                  await Promise.race([successPromise, failurePromise])
-                  return {
-                    status: PaymentSendResult.Success,
-                    errors: [],
-                  }
+                  // const response = await sendOnchainBreezSDK(
+                  //   currentFees,
+                  //   paymentRequest,
+                  //   recommendedFees.hourFee,
+                  // )
+                  // console.log("BreezSDK onchain response:", response)
+                  // // Wait for the payment success event
+                  // await Promise.race([successPromise, failurePromise])
+                  // return {
+                  //   status: PaymentSendResult.Success,
+                  //   errors: [],
+                  // }
                 } catch (err) {
                   console.error("Failed to send On-Chain payment using Breez SDK:", err)
                   return {

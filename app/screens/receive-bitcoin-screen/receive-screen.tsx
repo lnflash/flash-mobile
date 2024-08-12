@@ -31,7 +31,7 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useApolloClient } from "@apollo/client"
 
 // breez-sdk
-import { paymentEvents } from "@app/utils/breez-sdk"
+import { paymentEvents } from "@app/utils/breez-sdk-liquid"
 
 // utils
 import { addDeviceToken, requestNotificationPermission } from "@app/utils/notifications"

@@ -49,17 +49,17 @@ import { getDefaultWallet } from "@app/graphql/wallets-utils"
 import { testProps } from "../../utils/testProps"
 
 // breez
-import { Payment } from "@breeztech/react-native-breez-sdk"
+import { Payment } from "@breeztech/react-native-breez-sdk-liquid"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 import {
   breezSDKInitialized,
   listPaymentsBreezSDK,
   paymentEvents,
-} from "@app/utils/breez-sdk"
+} from "@app/utils/breez-sdk-liquid"
 import { toBtcMoneyAmount } from "@app/types/amounts"
 
 // hooks
-import { useAppConfig, useBreez, usePriceConversion, useRedeem } from "@app/hooks"
+import { useAppConfig, useBreez, usePriceConversion } from "@app/hooks"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 
 // store
@@ -87,7 +87,6 @@ export const HomeScreen: React.FC = () => {
   const { convertMoneyAmount } = usePriceConversion()
   const { btcWallet, refreshBreez } = useBreez()
   const { nostrSecretKey } = useNostrProfile()
-  const { pendingSwap, checkInProgressSwap } = useRedeem()
 
   // queries
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
@@ -279,10 +278,9 @@ export const HomeScreen: React.FC = () => {
     }
     const formattedTxs = txs?.map((edge) =>
       formatPaymentsBreezSDK(
-        edge.id,
+        edge.txId,
         txs,
-        convertMoneyAmount(toBtcMoneyAmount(edge.amountMsat / 1000), WalletCurrency.Usd)
-          .amount,
+        convertMoneyAmount(toBtcMoneyAmount(edge.amountSat), WalletCurrency.Usd).amount,
       ),
     )
 
@@ -297,7 +295,6 @@ export const HomeScreen: React.FC = () => {
 
       if (persistentState.isAdvanceMode && breezSDKInitialized) {
         fetchPaymentsBreez()
-        checkInProgressSwap()
       }
 
       setRefreshTriggered(true)
@@ -451,12 +448,7 @@ export const HomeScreen: React.FC = () => {
           setIsContentVisible={setIsContentVisible}
           loading={false}
           breezBalance={btcWallet?.balance || 0}
-          pendingBalance={
-            pendingSwap && pendingSwap?.channelOpeningFees
-              ? pendingSwap?.unconfirmedSats -
-                pendingSwap?.channelOpeningFees?.minMsat / 1000
-              : null
-          }
+          pendingBalance={null}
           setIsUnverifiedSeedModalVisible={setIsUnverifiedSeedModalVisible}
         />
         {error && (

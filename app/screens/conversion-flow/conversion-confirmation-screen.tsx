@@ -34,7 +34,7 @@ import { PaymentDetail } from "../send-bitcoin-screen/payment-details"
 import { useConvert } from "./use-convert"
 import { StackScreenProps } from "@react-navigation/stack"
 import { PaymentRequestState } from "../receive-bitcoin-screen/payment/index.types"
-import { paymentEvents } from "@app/utils/breez-sdk"
+import { paymentEvents } from "@app/utils/breez-sdk-liquid"
 
 type Props = StackScreenProps<RootStackParamList, "conversionConfirmation">
 

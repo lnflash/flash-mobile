@@ -21,11 +21,11 @@ import { getErrorMessages } from "@app/graphql/utils"
 // Breez SDK
 import {
   parseInvoiceBreezSDK,
-  sendNoAmountPaymentBreezSDK,
+  sendPaymentBreezSDK,
   paymentEvents,
   breezHealthCheck,
-} from "@app/utils/breez-sdk"
-import * as sdk from "@breeztech/react-native-breez-sdk"
+} from "@app/utils/breez-sdk-liquid"
+import * as sdk from "@breeztech/react-native-breez-sdk-liquid"
 
 import { SendPaymentMutation } from "../send-bitcoin-screen/payment-details"
 import { WalletAmount } from "@app/types/amounts"
@@ -108,7 +108,6 @@ export const useConvert = (): UseConvertResult => {
       return
     }
     let invoice: sdk.LnInvoice | null = null
-    let currentFees: sdk.ReverseSwapPairInfo
     let status: PaymentSendResult | null | undefined = null
     let errors: readonly GraphQlApplicationError[] | undefined
     console.log("hasAttemptedSend:", hasAttemptedSend)
@@ -143,7 +142,7 @@ export const useConvert = (): UseConvertResult => {
       ) {
         console.log("Starting sendPaymentBreezSDK using invoice with amount")
         try {
-          const response = await sendNoAmountPaymentBreezSDK(paymentRequest)
+          const response = await sendPaymentBreezSDK(paymentRequest)
           console.log("BreezSDK LNInvoice response:", response)
           // Wait for the payment success event
           await Promise.race([successPromise, failurePromise])

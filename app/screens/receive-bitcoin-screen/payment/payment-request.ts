@@ -22,8 +22,8 @@ import {
   receivePaymentBreezSDK,
   receiveOnchainBreezSDK,
   breezHealthCheck,
-} from "@app/utils/breez-sdk"
-import { LnInvoice, SwapInfo } from "@breeztech/react-native-breez-sdk"
+} from "@app/utils/breez-sdk-liquid"
+import { LnInvoice } from "@breeztech/react-native-breez-sdk-liquid"
 import { GraphQLError } from "graphql/error/GraphQLError"
 
 export const createPaymentRequest = (
@@ -42,7 +42,7 @@ export const createPaymentRequest = (
   const fetchBreezOnchain = async () => {
     try {
       const populateFormattedBreezOnChain = (
-        rawOnChainData: SwapInfo | undefined,
+        rawOnChainData: any | undefined,
       ): Promise<OnChainAddressCurrentMutation | null | undefined> => {
         if (rawOnChainData) {
           const formattedBreezOnChain: OnChainAddressCurrentMutation = {
@@ -137,12 +137,9 @@ export const createPaymentRequest = (
       const amountSats = amount ? amount : 1
       const memoDetail = memo ? memo : defaultMemo
       console.log("creating breez invoice")
-      const fetchedBreezInvoice = await receivePaymentBreezSDK({
-        amountMsat: amountSats * 1000,
-        description: memoDetail,
-      })
-      const formattedInvoice = await breezInvoiceData(fetchedBreezInvoice.lnInvoice)
-      return formattedInvoice
+      const fetchedBreezInvoice = await receivePaymentBreezSDK(amountSats, memoDetail)
+
+      return fetchedBreezInvoice.invoice
     } catch (error) {
       console.error("Error fetching breezInvoice:", error)
     }

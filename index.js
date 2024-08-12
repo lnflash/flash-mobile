@@ -10,7 +10,8 @@
 import "react-native-get-random-values"
 import { TextEncoder, TextDecoder } from "@sinonjs/text-encoding"
 import { AppRegistry, LogBox, TextInput, Text } from "react-native"
-import { App } from "./app/app.tsx"
+// import { App } from "./app/app.tsx"
+import AppTest from "./app/appTest.tsx"
 import * as React from "react"
 
 // Override Text scaling
@@ -106,13 +107,6 @@ const APP_NAME = "LNFlash"
 // ⚠️ Leave this as `false` when checking into git.
 const SHOW_STORYBOOK = false
 
-let RootComponent = () => <App />
-
-if (__DEV__ && SHOW_STORYBOOK) {
-  // Only include Storybook if we're in dev mode
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { StorybookUIRoot } = require("./.storybook/index.ts")
-  RootComponent = StorybookUIRoot
-}
+let RootComponent = () => <AppTest />
 
 AppRegistry.registerComponent(APP_NAME, () => RootComponent)

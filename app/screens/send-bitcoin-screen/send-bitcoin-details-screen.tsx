@@ -39,8 +39,6 @@ import { requestInvoice, utils } from "lnurl-pay"
 import { GaloyTertiaryButton } from "@app/components/atomic/galoy-tertiary-button"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { NoteInput } from "@app/components/note-input"
-// import Breez SDK Wallet
-import useBreezBalance from "@app/hooks/useBreezBalance"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
 gql`
@@ -128,8 +126,6 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
 
   const defaultWallet = persistentState.defaultWallet
 
-  const [breezBalance, setBreezBalance] = useBreezBalance()
-
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
   const network = "mainnet" // data?.globals?.network
@@ -206,7 +202,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
     defaultWallet,
     btcWallet,
     zeroDisplayAmount,
-    breezBalance,
+    btcWallet.balance,
   ])
 
   if (!paymentDetail) {
@@ -217,7 +213,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
   const lnurlParams =
     paymentDetail?.paymentType === "lnurl" ? paymentDetail?.lnurlParams : undefined
 
-  const btcBalanceMoneyAmount = toBtcMoneyAmount(breezBalance || btcWallet?.balance)
+  const btcBalanceMoneyAmount = toBtcMoneyAmount(btcWallet.balance || btcWallet?.balance)
 
   const usdBalanceMoneyAmount = toUsdMoneyAmount(usdWallet?.balance)
 
@@ -396,7 +392,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
 
     if (paymentDetail.sendingWalletDescriptor.currency === WalletCurrency.Btc) {
       moneyAmount = {
-        amount: breezBalance ?? 0,
+        amount: btcWallet.balance ?? 0,
         currency: WalletCurrency.Btc,
         currencyCode: "BTC",
       }
