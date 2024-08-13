@@ -23,7 +23,6 @@ import {
   receiveOnchainBreezSDK,
   breezHealthCheck,
 } from "@app/utils/breez-sdk-liquid"
-import { LnInvoice } from "@breeztech/react-native-breez-sdk-liquid"
 import { GraphQLError } from "graphql/error/GraphQLError"
 
 export const createPaymentRequest = (
@@ -41,26 +40,14 @@ export const createPaymentRequest = (
   // Breez SDK
   const fetchBreezOnchain = async () => {
     try {
-      const populateFormattedBreezOnChain = (
-        rawOnChainData: any | undefined,
-      ): Promise<OnChainAddressCurrentMutation | null | undefined> => {
-        if (rawOnChainData) {
-          const formattedBreezOnChain: OnChainAddressCurrentMutation = {
-            onChainAddressCurrent: {
-              errors: [], // TODO: Add error handling
-              address: rawOnChainData.bitcoinAddress,
-              __typename: "OnChainAddressPayload",
-            },
-            __typename: "Mutation",
-          }
-          return Promise.resolve(formattedBreezOnChain)
-        }
-        return Promise.resolve(null)
+      const fetchedBreezOnChain = await receiveOnchainBreezSDK()
+      const formattedBreezOnChain = {
+        onChainAddressCurrent: {
+          errors: [],
+          address: fetchedBreezOnChain.address,
+        },
       }
-      const breezOnChainData = populateFormattedBreezOnChain
-      const fetchedBreezOnChain = await receiveOnchainBreezSDK({})
-      const formattedOnChain = await breezOnChainData(fetchedBreezOnChain)
-      return formattedOnChain
+      return formattedBreezOnChain
     } catch (error) {
       console.error("Error fetching breezOnChain:", error)
     }
@@ -100,12 +87,8 @@ export const createPaymentRequest = (
   const generateQuote: () => Promise<PaymentRequest> = async () => {
     const { creationData, mutations } = params
     const pr = { ...creationData } // clone creation data object
-    let breezNoAmountInvoiceCreateData:
-      | LnNoAmountInvoiceCreateMutation
-      | LnInvoiceCreateMutation
-      | null
-      | undefined
-    let breezOnChainAddressCurrentData: OnChainAddressCurrentMutation | null | undefined
+    let breezNoAmountInvoiceCreateData: any
+    let breezOnChainAddressCurrentData: any
     if (
       creationData.receivingWalletDescriptor.currency === WalletCurrency.Btc &&
       pr.type === Invoice.Lightning
