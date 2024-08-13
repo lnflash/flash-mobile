@@ -1,38 +1,43 @@
-import { ListItem, useTheme } from "@rneui/themed"
+import { ListItem } from "@rneui/themed"
 import { useStyles } from "./style"
-import { Image } from "react-native"
-import { UnsignedEvent, nip19, Event, SimplePool, SubCloser } from "nostr-tools"
+import { Image, Text, View } from "react-native"
+import { nip19, Event, SubCloser, getPublicKey } from "nostr-tools"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useChatContext } from "./chatContext"
-import { fetchNostrUsers } from "@app/utils/nostr"
+import { Rumor, fetchNostrUsers } from "@app/utils/nostr"
 
 interface HistoryListItemProps {
   item: string
   userPrivateKey: Uint8Array
+  groups: Map<string, Rumor[]>
 }
 export const HistoryListItem: React.FC<HistoryListItemProps> = ({
   item,
   userPrivateKey,
+  groups,
 }) => {
-  const [profileMap, setProfileMap] = useState<Map<string, NostrProfile>>()
-  const { poolRef } = useChatContext()
+  const { poolRef, profileMap, addEventToProfiles } = useChatContext()
+
+  const userPublicKey = getPublicKey(userPrivateKey)
 
   function handleProfileEvent(event: Event) {
-    let profile = JSON.parse(event.content)
-    setProfileMap((profileMap) => {
-      let newProfileMap = profileMap || new Map<string, Object>()
-      newProfileMap.set(event.pubkey, profile)
-      return newProfileMap
-    })
+    addEventToProfiles(event)
   }
 
   useEffect(() => {
     let closer: SubCloser | null = null
-    if (poolRef?.current) {
-      closer = fetchNostrUsers(item.split(","), poolRef?.current, handleProfileEvent)
+    if (poolRef?.current && !closer) {
+      let fetchPubkeys: string[] = []
+      item.split(",").forEach((p) => {
+        if (!profileMap?.get(p)) {
+          fetchPubkeys.push(p)
+        }
+      })
+      if (fetchPubkeys.length !== 0)
+        closer = fetchNostrUsers(fetchPubkeys, poolRef?.current, handleProfileEvent)
     }
 
     return () => {
@@ -40,12 +45,12 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
         closer.close()
       }
     }
-  }, [item, poolRef])
+  }, [poolRef, profileMap])
   const styles = useStyles()
-  const {
-    theme: { colors },
-  } = useTheme()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
+  const lastMessage = (groups.get(item) || []).sort(
+    (a, b) => b.created_at - a.created_at,
+  )[0].content
   return (
     <ListItem
       key={item}
@@ -58,33 +63,44 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
         })
       }
     >
-      {Array.from(profileMap?.values() || []).map((profile: any) => {
-        return (
-          <Image
-            source={{
-              uri:
-                profile.picture ||
-                "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
-            }}
-            style={styles.profilePicture}
-          />
-        )
-      })}
-      <ListItem.Content>
-        <ListItem.Title style={styles.itemText}>
-          <>
+      {item
+        .split(",")
+        .filter((p) => p !== userPublicKey)
+        .map((p: any) => {
+          return (
+            <Image
+              source={{
+                uri:
+                  profileMap?.get(p)?.picture ||
+                  "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
+              }}
+              style={styles.profilePicture}
+              key={p}
+            />
+          )
+        })}
+      <View style={{ display: "flex", flexDirection: "column" }}>
+        <ListItem.Content key="heading">
+          <ListItem.Subtitle style={styles.itemText} key="subheading">
+            {" "}
             {item
               .split(",")
+              .filter((p) => p !== userPublicKey)
               .map((pubkey) => {
                 return (
-                  (profileMap?.get(pubkey) as any)?.lud16 ||
+                  (profileMap?.get(pubkey) as NostrProfile)?.nip05 ||
+                  (profileMap?.get(pubkey) as NostrProfile)?.name ||
+                  (profileMap?.get(pubkey) as NostrProfile)?.username ||
                   nip19.npubEncode(pubkey).slice(0, 9) + ".."
                 )
               })
               .join(", ")}
-          </>
-        </ListItem.Title>
-      </ListItem.Content>
+          </ListItem.Subtitle>
+        </ListItem.Content>
+        <ListItem.Content key="last message">
+          <Text>{lastMessage}</Text>
+        </ListItem.Content>
+      </View>
     </ListItem>
   )
 }

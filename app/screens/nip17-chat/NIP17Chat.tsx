@@ -10,10 +10,8 @@ import { Screen } from "../../components/screen"
 import { testProps } from "../../utils/testProps"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useNavigation } from "@react-navigation/native"
 import { Event, SubCloser, getPublicKey, nip05, nip19 } from "nostr-tools"
 import {
-  Rumor,
   convertRumorsToGroups,
   fetchGiftWrapsForPublicKey,
   fetchNostrUsers,
@@ -30,15 +28,14 @@ export const NIP17Chat: React.FC = () => {
   const {
     theme: { colors },
   } = useTheme()
-  const { giftwraps, rumors, setRumors, setGiftWraps, poolRef } = useChatContext()
+  const { rumors, setRumors, setGiftWraps, poolRef, addEventToProfiles, profileMap } =
+    useChatContext()
   const [searchText, setSearchText] = useState("")
   const [refreshing, setRefreshing] = useState(false)
   const [initialized, setInitialized] = useState(false)
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
   const { LL } = useI18nContext()
-
-  const navigation = useNavigation()
 
   const reset = useCallback(() => {
     setSearchText("")
@@ -64,6 +61,7 @@ export const NIP17Chat: React.FC = () => {
 
   const searchedUsersHandler = (event: Event, closer: SubCloser) => {
     let nostrProfile = JSON.parse(event.content)
+    addEventToProfiles(event)
     setSearchedUsers([{ ...nostrProfile, id: event.pubkey }])
     setRefreshing(false)
     closer.close()
@@ -109,8 +107,10 @@ export const NIP17Chat: React.FC = () => {
       let nostrUser = await nip05.queryProfile(newSearchText.toLowerCase())
       console.log("found nostr user", nostrUser)
       if (nostrUser) {
-        setSearchedUsers([{ id: nostrUser.pubkey }])
-        fetchNostrUsers([nostrUser.pubkey], poolRef!.current, searchedUsersHandler)
+        let nostrProfile = profileMap?.get(nostrUser.pubkey)
+        setSearchedUsers([{ id: nostrUser.pubkey, ...nostrProfile }])
+        if (!nostrProfile)
+          fetchNostrUsers([nostrUser.pubkey], poolRef!.current, searchedUsersHandler)
       }
     }
     if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
@@ -184,8 +184,11 @@ export const NIP17Chat: React.FC = () => {
           data={groupIds}
           ListEmptyComponent={ListEmptyContent}
           renderItem={({ item }) => {
-            return <HistoryListItem item={item} userPrivateKey={privateKey!} />
+            return (
+              <HistoryListItem item={item} userPrivateKey={privateKey!} groups={groups} />
+            )
           }}
+          keyExtractor={(item) => item}
         />
       )}
     </Screen>
