@@ -48,9 +48,9 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
   }, [poolRef, profileMap])
   const styles = useStyles()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
-  const lastMessage = (groups.get(item) || []).sort(
+  const lastRumor = (groups.get(item) || []).sort(
     (a, b) => b.created_at - a.created_at,
-  )[0].content
+  )[0]
   return (
     <ListItem
       key={item}
@@ -79,7 +79,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
             />
           )
         })}
-      <View style={{ display: "flex", flexDirection: "column" }}>
+      <View style={{ flexDirection: "column", maxWidth: "80%" }}>
         <ListItem.Content key="heading">
           <ListItem.Subtitle style={styles.itemText} key="subheading">
             {" "}
@@ -98,7 +98,20 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
           </ListItem.Subtitle>
         </ListItem.Content>
         <ListItem.Content key="last message">
-          <Text>{lastMessage}</Text>
+          <View
+            style={{
+              flexWrap: "wrap",
+              flexDirection: "row",
+            }}
+          >
+            <Text style={{ flexWrap: "wrap" }}>
+              {(profileMap?.get(lastRumor.pubkey) as NostrProfile)?.name ||
+                (profileMap?.get(lastRumor.pubkey) as NostrProfile)?.nip05 ||
+                (profileMap?.get(lastRumor.pubkey) as NostrProfile)?.username ||
+                nip19.npubEncode(lastRumor.pubkey).slice(0, 9) + ".."}
+              {": " + lastRumor.content}
+            </Text>
+          </View>
         </ListItem.Content>
       </View>
     </ListItem>
