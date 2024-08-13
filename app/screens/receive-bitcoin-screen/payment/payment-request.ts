@@ -72,74 +72,25 @@ export const createPaymentRequest = (
     username?: string | undefined,
   ) => {
     try {
-      let breezInvoiceData
-      if (amount) {
-        const populateFormattedBreezInvoice = (
-          rawInvoiceData: LnInvoice | undefined,
-        ): Promise<
-          LnNoAmountInvoiceCreateMutation | LnInvoiceCreateMutation | null | undefined
-        > => {
-          if (rawInvoiceData) {
-            const formattedBreezInvoice: LnInvoiceCreateMutation = {
-              lnInvoiceCreate: {
-                errors: [],
-                invoice: {
-                  paymentHash: rawInvoiceData.paymentHash,
-                  paymentRequest: rawInvoiceData.bolt11,
-                  paymentSecret: rawInvoiceData.paymentSecret
-                    ? Array.from(rawInvoiceData.paymentSecret)
-                        .map((byte) => byte.toString(16))
-                        .join("")
-                    : "",
-                  __typename: "LnInvoice",
-                },
-                __typename: "LnInvoicePayload",
-              },
-              __typename: "Mutation",
-            }
-            return Promise.resolve(formattedBreezInvoice)
-          }
-          return Promise.resolve(null)
-        }
-        breezInvoiceData = populateFormattedBreezInvoice
-      } else {
-        const populateFormattedNoAmountBreezInvoice = (
-          rawInvoiceData: LnInvoice | undefined,
-        ): Promise<
-          LnNoAmountInvoiceCreateMutation | LnInvoiceCreateMutation | null | undefined
-        > => {
-          if (rawInvoiceData) {
-            const formattedBreezInvoice: LnNoAmountInvoiceCreateMutation = {
-              lnNoAmountInvoiceCreate: {
-                errors: [],
-                invoice: {
-                  paymentHash: rawInvoiceData.paymentHash,
-                  paymentRequest: rawInvoiceData.bolt11,
-                  paymentSecret: rawInvoiceData.paymentSecret
-                    ? Array.from(rawInvoiceData.paymentSecret)
-                        .map((byte) => byte.toString(16))
-                        .join("")
-                    : "",
-                  __typename: "LnNoAmountInvoice",
-                },
-                __typename: "LnNoAmountInvoicePayload",
-              },
-              __typename: "Mutation",
-            }
-            return Promise.resolve(formattedBreezInvoice)
-          }
-          return Promise.resolve(null)
-        }
-        breezInvoiceData = populateFormattedNoAmountBreezInvoice
-      }
-
       const defaultMemo = `Pay to Flash Wallet User${username ? ": " + username : ""}`
-      const amountSats = amount ? amount : 1
+      const amountSats = amount ? amount : 1000
       const memoDetail = memo ? memo : defaultMemo
-      console.log("creating breez invoice")
       const fetchedBreezInvoice = await receivePaymentBreezSDK(amountSats, memoDetail)
-
-      return fetchedBreezInvoice.invoice
+      const formattedBreezInvoice = {
+        lnInvoiceCreate: {
+          errors: [],
+          invoice: {
+            paymentHash: fetchedBreezInvoice.paymentHash,
+            paymentRequest: fetchedBreezInvoice.bolt11,
+            paymentSecret: fetchedBreezInvoice.paymentSecret
+              ? Array.from(fetchedBreezInvoice.paymentSecret)
+                  .map((byte) => byte.toString(16))
+                  .join("")
+              : "",
+          },
+        },
+      }
+      return formattedBreezInvoice
     } catch (error) {
       console.error("Error fetching breezInvoice:", error)
     }
