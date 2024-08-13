@@ -1,4 +1,5 @@
 import { makeStyles } from "@rneui/themed"
+import { HistoryListItem } from "./historyListItem"
 
 export const useStyles = makeStyles(({ colors }) => ({
   header: {
@@ -37,7 +38,7 @@ export const useStyles = makeStyles(({ colors }) => ({
 
   item: {
     marginHorizontal: 32,
-    marginVertical: 8,
+    marginVertical: 2,
   },
 
   itemContainer: {

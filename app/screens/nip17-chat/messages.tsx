@@ -26,6 +26,7 @@ import {
 } from "@app/utils/nostr"
 import { useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
+import { SafeAreaProvider } from "react-native-safe-area-context"
 
 type MessagesProps = {
   route: RouteProp<ChatStackParamList, "messages">
@@ -197,44 +198,46 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
       {!initialized && <ActivityIndicator />}
       <View style={styles.chatBodyContainer}>
         <View style={styles.chatView}>
-          <Chat
-            messages={convertRumorsToMessages(rumors)}
-            onPreviewDataFetched={() => {}}
-            onSendPress={handleSendPress}
-            l10nOverride={{
-              emptyChatPlaceholder: initialized
-                ? isIos
-                  ? "No messages here yet"
-                  : "..."
-                : isIos
-                ? "Fetching Messages..."
-                : "...",
-            }}
-            user={user}
-            renderTextMessage={(message, nextMessage, prevMessage) => (
-              <ChatMessage
-                message={message}
-                recipientId={userPubkey}
-                nextMessage={nextMessage}
-                prevMessage={prevMessage}
-              />
-            )}
-            theme={{
-              ...defaultTheme,
-              colors: {
-                ...defaultTheme.colors,
-                inputBackground: colors._black,
-                background: colors._lightGrey,
-              },
-              fonts: {
-                ...defaultTheme.fonts,
-                sentMessageBodyTextStyle: {
-                  ...defaultTheme.fonts.sentMessageBodyTextStyle,
-                  fontSize: 12,
+          <SafeAreaProvider>
+            <Chat
+              messages={convertRumorsToMessages(rumors)}
+              onPreviewDataFetched={() => {}}
+              onSendPress={handleSendPress}
+              l10nOverride={{
+                emptyChatPlaceholder: initialized
+                  ? isIos
+                    ? "No messages here yet"
+                    : "..."
+                  : isIos
+                  ? "Fetching Messages..."
+                  : "...",
+              }}
+              user={user}
+              renderTextMessage={(message, nextMessage, prevMessage) => (
+                <ChatMessage
+                  message={message}
+                  recipientId={userPubkey}
+                  nextMessage={nextMessage}
+                  prevMessage={prevMessage}
+                />
+              )}
+              theme={{
+                ...defaultTheme,
+                colors: {
+                  ...defaultTheme.colors,
+                  inputBackground: colors._black,
+                  background: colors._lightGrey,
                 },
-              },
-            }}
-          />
+                fonts: {
+                  ...defaultTheme.fonts,
+                  sentMessageBodyTextStyle: {
+                    ...defaultTheme.fonts.sentMessageBodyTextStyle,
+                    fontSize: 12,
+                  },
+                },
+              }}
+            />
+          </SafeAreaProvider>
         </View>
       </View>
     </Screen>
