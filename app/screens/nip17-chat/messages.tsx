@@ -157,6 +157,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
         <Text type="p1">
           {groupId
             .split(",")
+            .filter((p) => p !== userPubkey)
             .map((user) => {
               return (
                 profileMap?.get(user)?.name ||
@@ -181,18 +182,21 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
               })
             }}
           />
-          {groupId.split(",").map((pubkey) => {
-            return (
-              <Image
-                source={{
-                  uri:
-                    profileMap?.get(pubkey)?.picture ||
-                    "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
-                }}
-                style={styles.userPic}
-              />
-            )
-          })}
+          {groupId
+            .split(",")
+            .filter((p) => p !== userPubkey)
+            .map((pubkey) => {
+              return (
+                <Image
+                  source={{
+                    uri:
+                      profileMap?.get(pubkey)?.picture ||
+                      "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
+                  }}
+                  style={styles.userPic}
+                />
+              )
+            })}
         </View>
       </View>
       {!initialized && <ActivityIndicator />}
@@ -215,6 +219,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
               user={user}
               renderTextMessage={(message, nextMessage, prevMessage) => (
                 <ChatMessage
+                  key={message.text}
                   message={message}
                   recipientId={userPubkey}
                   nextMessage={nextMessage}
