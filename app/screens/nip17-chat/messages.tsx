@@ -1,6 +1,6 @@
 import "react-native-get-random-values"
 import * as React from "react"
-import { ActivityIndicator, Image, View } from "react-native"
+import { ActivityIndicator, Image, Platform, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
@@ -228,6 +228,9 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
                   prevMessage={prevMessage}
                 />
               )}
+              flatListProps={{
+                contentContainerStyle: { paddingTop: Platform.OS == "ios" ? 50 : 0 },
+              }}
               theme={{
                 ...defaultTheme,
                 colors: {

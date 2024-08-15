@@ -18,6 +18,7 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
   const {
     theme: { colors },
   } = useTheme()
+  console.log("Item is", item)
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   return (
     <ListItem
@@ -26,7 +27,7 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
       containerStyle={styles.itemContainer}
       onPress={() => {
         navigation.navigate("messages", {
-          groupId: item.id,
+          groupId: item.groupId,
           userPrivateKey,
         })
       }}
