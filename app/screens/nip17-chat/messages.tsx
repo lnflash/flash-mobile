@@ -148,11 +148,12 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
 
   return (
     <Screen>
-      <View style={styles.aliasView}>
+      <View style={styles.aliasView} key="profileView">
         <Icon
           name="arrow-back-outline"
           onPress={navigation.goBack}
           style={styles.backButton}
+          key="backButton"
         />
         <Text type="p1">
           {groupId
@@ -168,7 +169,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
             })
             .join(", ")}
         </Text>
-        <View style={{ display: "flex", flexDirection: "row" }}>
+        <View style={{ display: "flex", flexDirection: "row" }} key="profileInfo">
           <GaloyIconButton
             name={"lightning"}
             size="medium"
@@ -200,11 +201,12 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
         </View>
       </View>
       {!initialized && <ActivityIndicator />}
-      <View style={styles.chatBodyContainer}>
-        <View style={styles.chatView}>
+      <View style={styles.chatBodyContainer} key="chatContainer">
+        <View style={styles.chatView} key="chatView">
           <SafeAreaProvider>
             <Chat
               messages={convertRumorsToMessages(rumors)}
+              key="messages"
               onPreviewDataFetched={() => {}}
               onSendPress={handleSendPress}
               l10nOverride={{
