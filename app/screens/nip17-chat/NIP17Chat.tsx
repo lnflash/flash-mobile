@@ -77,7 +77,6 @@ export const NIP17Chat: React.FC = () => {
     const aliasPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
     if (newSearchText.match(aliasPattern)) {
       let nostrUser = await nip05.queryProfile(newSearchText.toLowerCase())
-      console.log("found nostr user", nostrUser)
       if (nostrUser) {
         let nostrProfile = profileMap?.get(nostrUser.pubkey)
         let userPubkey = getPublicKey(privateKey!)

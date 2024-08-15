@@ -219,6 +219,20 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
                   : "...",
               }}
               user={user}
+              renderBubble={({ child, message, nextMessageInGroup }) => {
+                return (
+                  <View
+                    style={{
+                      backgroundColor:
+                        userPubkey === message.author.id ? "#8fbc8f" : "white",
+                      borderRadius: 15,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {child}
+                  </View>
+                )
+              }}
               renderTextMessage={(message, nextMessage, prevMessage) => (
                 <ChatMessage
                   key={message.text}
