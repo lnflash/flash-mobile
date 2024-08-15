@@ -13,10 +13,8 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { Event, SubCloser, getPublicKey, nip05, nip19 } from "nostr-tools"
 import {
   convertRumorsToGroups,
-  fetchGiftWrapsForPublicKey,
   fetchNostrUsers,
   fetchSecretFromLocalStorage,
-  getRumorFromWrap,
 } from "@app/utils/nostr"
 import { useStyles } from "./style"
 import { SearchListItem } from "./searchListItem"
@@ -28,8 +26,7 @@ export const NIP17Chat: React.FC = () => {
   const {
     theme: { colors },
   } = useTheme()
-  const { rumors, setRumors, setGiftWraps, poolRef, addEventToProfiles, profileMap } =
-    useChatContext()
+  const { rumors, poolRef, addEventToProfiles, profileMap } = useChatContext()
   const [searchText, setSearchText] = useState("")
   const [refreshing, setRefreshing] = useState(false)
   const [initialized, setInitialized] = useState(false)
@@ -41,40 +38,22 @@ export const NIP17Chat: React.FC = () => {
     setSearchText("")
   }, [])
 
-  const handleGiftWraps = (privateKey: Uint8Array) => {
-    return (event: Event) => {
-      setGiftWraps((prevEvents) => [...(prevEvents || []), event])
-      try {
-        let rumor = getRumorFromWrap(event, privateKey)
-        setRumors((prevRumors) => {
-          let previousRumors = prevRumors || []
-          if (!previousRumors.map((r) => r.id).includes(rumor)) {
-            return [...(prevRumors || []), rumor]
-          }
-          return prevRumors
-        })
-      } catch (e) {
-        console.log("Error in decrypting...", e)
-      }
-    }
-  }
-
   const searchedUsersHandler = (event: Event, closer: SubCloser) => {
     let nostrProfile = JSON.parse(event.content)
     addEventToProfiles(event)
-    setSearchedUsers([{ ...nostrProfile, id: event.pubkey }])
+    let userPubkey = getPublicKey(privateKey!)
+    let participants = [event.pubkey, userPubkey].sort()
+    setSearchedUsers([
+      { ...nostrProfile, id: event.pubkey, groupId: participants.join(",") },
+    ])
     setRefreshing(false)
     closer.close()
   }
 
   React.useEffect(() => {
-    let closer: SubCloser
     const unsubscribe = () => {
-      console.log("unsubscribing", closer)
+      console.log("unsubscribing")
       setInitialized(false)
-      if (closer) {
-        closer.close()
-      }
     }
     async function initialize() {
       console.log("Initializing nip17 screen use effect")
@@ -84,15 +63,8 @@ export const NIP17Chat: React.FC = () => {
         return
       }
       let secret = nip19.decode(secretKeyString).data as Uint8Array
+      console.log("got private key as", secret)
       setPrivateKey(secret)
-      const publicKey = getPublicKey(secret)
-      fetchGiftWrapsForPublicKey(
-        publicKey,
-        handleGiftWraps(secret),
-        poolRef!.current,
-      ).then((c: SubCloser) => {
-        closer = c
-      })
       setInitialized(true)
     }
     if (!initialized && poolRef) initialize()
@@ -108,14 +80,21 @@ export const NIP17Chat: React.FC = () => {
       console.log("found nostr user", nostrUser)
       if (nostrUser) {
         let nostrProfile = profileMap?.get(nostrUser.pubkey)
-        setSearchedUsers([{ id: nostrUser.pubkey, ...nostrProfile }])
+        let userPubkey = getPublicKey(privateKey!)
+        let participants = [nostrUser.pubkey, userPubkey].sort()
+        console.log("participants are", participants)
+        setSearchedUsers([
+          { id: nostrUser.pubkey, ...nostrProfile, groupId: participants.join(",") },
+        ])
         if (!nostrProfile)
           fetchNostrUsers([nostrUser.pubkey], poolRef!.current, searchedUsersHandler)
       }
     }
     if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
       let hexPubkey = nip19.decode(newSearchText).data as string
-      setSearchedUsers([{ id: hexPubkey }])
+      let userPubkey = getPublicKey(privateKey!)
+      let participants = [hexPubkey, userPubkey].sort()
+      setSearchedUsers([{ id: hexPubkey, groupId: participants.join(",") }])
       fetchNostrUsers([hexPubkey], poolRef!.current, searchedUsersHandler)
       return
     }

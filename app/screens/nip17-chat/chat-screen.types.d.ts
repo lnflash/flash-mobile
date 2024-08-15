@@ -6,6 +6,7 @@ type Chat = {
   lud16?: string
   picture?: string | null
   readonly transactionsCount?: number | null
+  groupId: string
 }
 
 type NIP17Chat = {
