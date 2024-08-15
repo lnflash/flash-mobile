@@ -109,6 +109,8 @@ import {
 } from "@app/screens/refund-flow"
 import { Messages } from "@app/screens/nip17-chat/messages"
 import { ChatContextProvider } from "@app/screens/nip17-chat/chatContext"
+import { View } from "react-native"
+import NotificationBadge from "./notification-badge"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -546,23 +548,21 @@ const StackChats = createStackNavigator<ChatStackParamList>()
 export const ChatNavigator = () => {
   const { LL } = useI18nContext()
   return (
-    <ChatContextProvider>
-      <StackChats.Navigator>
-        <StackChats.Screen
-          name="chatList"
-          component={ChatList}
-          options={{
-            title: LL.ChatScreen.title(),
-            headerShown: false,
-          }}
-        />
-        <StackChats.Screen
-          name="messages"
-          component={Messages}
-          options={{ headerShown: false }}
-        />
-      </StackChats.Navigator>
-    </ChatContextProvider>
+    <StackChats.Navigator>
+      <StackChats.Screen
+        name="chatList"
+        component={ChatList}
+        options={{
+          title: LL.ChatScreen.title(),
+          headerShown: false,
+        }}
+      />
+      <StackChats.Screen
+        name="messages"
+        component={Messages}
+        options={{ headerShown: false }}
+      />
+    </StackChats.Navigator>
   )
 }
 
@@ -666,7 +666,12 @@ export const PrimaryNavigator = () => {
         options={{
           headerShown: false,
           title: LL.ChatScreen.title(),
-          tabBarIcon: ({ color }) => <ChatIcon color={color} />,
+          tabBarIcon: ({ color }) => (
+            <View>
+              <ChatIcon color={color} />
+              <NotificationBadge count={3} />
+            </View>
+          ),
         }}
       />
       <Tab.Screen

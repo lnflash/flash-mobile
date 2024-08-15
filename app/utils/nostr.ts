@@ -251,7 +251,11 @@ export async function sendNip17Message(
     let seal = createSeal(rumor, privateKey, recipientId)
     let wrap = createWrap(seal, recipientId)
     pool.publish(recipientRelays, wrap).map((promise: Promise<string>) => {
-      promise.then((res) => console.log("Message from relays", res))
+      promise
+        .then((res) => console.log("Message from relays", res))
+        .catch((err) => {
+          console.log("promise errored because", err)
+        })
     })
   })
 }
