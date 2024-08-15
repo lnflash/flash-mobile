@@ -67,7 +67,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
     },
     unitOfAccountAmount: moneyAmount,
   }
-  const request = useReceiveBitcoin(false, initPRParams)
+  const request = useReceiveBitcoin(initPRParams)
 
   useEffect(() => {
     if (request) {
