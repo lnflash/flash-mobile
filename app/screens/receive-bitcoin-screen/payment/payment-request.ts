@@ -31,9 +31,9 @@ export const createPaymentRequest = (
   }
 
   // Breez SDK OnChain
-  const fetchBreezOnchain = async () => {
+  const fetchBreezOnchain = async (amount?: number) => {
     try {
-      const fetchedBreezOnChain = await receiveOnchainBreezSDK()
+      const fetchedBreezOnChain = await receiveOnchainBreezSDK(amount)
       return fetchedBreezOnChain
     } catch (error) {
       console.error("Error fetching breezOnChain:", error)
@@ -41,7 +41,7 @@ export const createPaymentRequest = (
   }
 
   // Breez SDK Lightning
-  const fetchBreezInvoice = async (amount: number, memo: string) => {
+  const fetchBreezInvoice = async (amount?: number, memo?: string) => {
     try {
       const fetchedBreezInvoice = await receivePaymentBreezSDK(amount, memo)
       const formattedBreezInvoice = {
@@ -142,12 +142,12 @@ export const createPaymentRequest = (
       // Handle BTC payment requests
       if (pr.type === Invoice.Lightning) {
         const fetchedBreezInvoice: any = await fetchBreezInvoice(
-          pr.settlementAmount?.amount || 1000,
+          pr.settlementAmount?.amount,
           pr.memo,
         )
         info = generateLightningInfo(fetchedBreezInvoice.lnInvoiceCreate.invoice, [], [])
       } else if (pr.type === Invoice.OnChain) {
-        const fetchedBreezOnchain = await fetchBreezOnchain()
+        const fetchedBreezOnchain = await fetchBreezOnchain(pr.settlementAmount?.amount)
         info = generateOnChainInfo(fetchedBreezOnchain?.address || "", [], [])
       }
     } else {

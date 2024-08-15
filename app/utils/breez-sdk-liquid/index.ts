@@ -161,10 +161,22 @@ export const initializeBreezSDK = async (): Promise<boolean> => {
   return breezSDKInitializing as Promise<boolean>
 }
 
+export const fetchBreezLightningLimits = async () => {
+  const lightningLimits = await fetchLightningLimits()
+  console.log(`LIGHTNING LIMITS:`, lightningLimits)
+  return lightningLimits
+}
+
+export const fetchBreezOnChainLimits = async () => {
+  const onChainLimits = await fetchOnchainLimits()
+  console.log(`ONCHAIN LIMITS: ${onChainLimits}`)
+  return onChainLimits
+}
+
 export const receivePaymentBreezSDK = async (
-  payerAmountSat: number,
-  description: string,
-): Promise<ReceivePaymentResponse> => {
+  payerAmountSat?: number,
+  description?: string,
+): Promise<LnInvoice> => {
   try {
     const currentLimits = await fetchLightningLimits()
     console.log(`Minimum amount, in sats: ${currentLimits.receive.minSat}`)
@@ -172,7 +184,7 @@ export const receivePaymentBreezSDK = async (
 
     // Set the amount you wish the payer to send, which should be within the above limits
     const prepareRes = await prepareReceivePayment({
-      payerAmountSat,
+      payerAmountSat: payerAmountSat || currentLimits.receive.minSat,
     })
 
     // If the fees are acceptable, continue to create the Receive Payment
@@ -184,7 +196,9 @@ export const receivePaymentBreezSDK = async (
       description,
     })
 
-    return res
+    const parsed = await parseInvoice(res.invoice)
+
+    return parsed
   } catch (error) {
     console.log("Debugging the receive payment BREEZSDK", error)
     throw error
@@ -229,7 +243,7 @@ export const parseInvoiceBreezSDK = async (
 }
 
 export const receiveOnchainBreezSDK = async (
-  payerAmountSat: number,
+  amount?: number,
 ): Promise<ReceiveOnchainResponse> => {
   try {
     // Fetch the Onchain Receive limits
@@ -239,11 +253,12 @@ export const receiveOnchainBreezSDK = async (
 
     // Set the amount you wish the payer to send, which should be within the above limits
     const prepareResponse = await prepareReceiveOnchain({
-      payerAmountSat,
+      payerAmountSat: amount || currentLimits.receive.minSat,
     })
 
     // If the fees are acceptable, continue to create the Onchain Receive Payment
     const receiveFeesSat = prepareResponse.feesSat
+    console.log("Receive fee in sats", receiveFeesSat)
 
     const receiveOnchainResponse = await receiveOnchain(prepareResponse)
 
