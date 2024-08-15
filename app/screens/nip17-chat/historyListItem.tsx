@@ -21,7 +21,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
 }) => {
   const { poolRef, profileMap, addEventToProfiles } = useChatContext()
 
-  const userPublicKey = getPublicKey(userPrivateKey)
+  const userPublicKey = userPrivateKey ? getPublicKey(userPrivateKey) : ""
 
   function handleProfileEvent(event: Event) {
     addEventToProfiles(event)
@@ -108,8 +108,10 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
               {(profileMap?.get(lastRumor.pubkey) as NostrProfile)?.name ||
                 (profileMap?.get(lastRumor.pubkey) as NostrProfile)?.nip05 ||
                 (profileMap?.get(lastRumor.pubkey) as NostrProfile)?.username ||
-                nip19.npubEncode(lastRumor.pubkey).slice(0, 9) + ".."}
-              {": " + lastRumor.content}
+                nip19.npubEncode(lastRumor.pubkey).slice(0, 9) + "..."}
+              {": "}
+              {lastRumor.content.slice(0, 55)}
+              {lastRumor.content.length > 45 ? "..." : ""}
             </Text>
           </View>
         </ListItem.Content>
