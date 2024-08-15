@@ -39,6 +39,7 @@ import { store } from "./store/redux"
 import PolyfillCrypto from "react-native-webview-crypto"
 import { ActivityIndicatorProvider } from "./contexts"
 import { BreezProvider } from "./contexts/BreezContext"
+import { ChatContextProvider } from "./screens/nip17-chat/chatContext"
 import { NotificationsProvider } from "./components/notification"
 
 // FIXME should we only load the currently used local?
@@ -66,15 +67,13 @@ export const App = () => (
                   <ErrorBoundary FallbackComponent={ErrorScreen}>
                     <NavigationContainerWrapper>
                       <RootSiblingParent>
-                        <NotificationsProvider>
-                          <AppStateWrapper />
-                          <PushNotificationComponent />
-                          <BreezProvider>
-                            <RootStack />
-                          </BreezProvider>
-                          <GaloyToast />
-                          <NetworkErrorComponent />
-                        </NotificationsProvider>
+                        <AppStateWrapper />
+                        <PushNotificationComponent />
+                        <BreezProvider>
+                          <RootStack />
+                        </BreezProvider>
+                        <GaloyToast />
+                        <NetworkErrorComponent />
                       </RootSiblingParent>
                     </NavigationContainerWrapper>
                   </ErrorBoundary>

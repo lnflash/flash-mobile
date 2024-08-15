@@ -1,6 +1,13 @@
-import { Rumor } from "@app/utils/nostr"
-import { Event, SimplePool, SubCloser } from "nostr-tools"
+import {
+  Rumor,
+  fetchGiftWrapsForPublicKey,
+  fetchSecretFromLocalStorage,
+  getRumorFromWrap,
+} from "@app/utils/nostr"
+import { Event, SimplePool, SubCloser, getPublicKey, nip19 } from "nostr-tools"
+import React from "react"
 import { PropsWithChildren, createContext, useContext, useRef, useState } from "react"
+import { Alert } from "react-native"
 
 type ChatContextType = {
   giftwraps: Event[]
@@ -35,18 +42,65 @@ export const useChatContext = () => useContext(ChatContext)
 export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [giftwraps, setGiftWraps] = useState<Event[]>([])
   const [rumors, setRumors] = useState<Rumor[]>([])
+  const [lastEvent, setLastEvent] = useState<Event>()
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
+  const poolRef = useRef(new SimplePool())
+
+  const handleGiftWraps = (privateKey: Uint8Array) => {
+    return (event: Event) => {
+      setGiftWraps((prevEvents) => [...(prevEvents || []), event])
+      try {
+        let rumor = getRumorFromWrap(event, privateKey)
+        setRumors((prevRumors) => {
+          let previousRumors = prevRumors || []
+          if (!previousRumors.map((r) => r.id).includes(rumor)) {
+            return [...(prevRumors || []), rumor]
+          }
+          return prevRumors
+        })
+      } catch (e) {
+        console.log("Error in decrypting...", e)
+      }
+    }
+  }
+
+  React.useEffect(() => {
+    let closer: SubCloser
+    const unsubscribe = () => {
+      console.log("unsubscribing", closer)
+      if (closer) {
+        closer.close()
+      }
+    }
+    async function initialize() {
+      console.log("Initializing nip17 screen use effect")
+      let secretKeyString = await fetchSecretFromLocalStorage()
+      if (!secretKeyString) {
+        return
+      }
+      let secret = nip19.decode(secretKeyString).data as Uint8Array
+      const publicKey = getPublicKey(secret)
+      fetchGiftWrapsForPublicKey(
+        publicKey,
+        handleGiftWraps(secret),
+        poolRef!.current,
+      ).then((c: SubCloser) => {
+        closer = c
+      })
+    }
+    if (poolRef) initialize()
+    return unsubscribe
+  }, [poolRef])
 
   const addEventToProfiles = (event: Event) => {
     try {
       let content = JSON.parse(event.content)
       profileMap.current.set(event.pubkey, content)
+      setLastEvent(event)
     } catch (e) {
       console.log("Couldn't parse the profile")
     }
   }
-
-  const poolRef = useRef(new SimplePool())
 
   return (
     <ChatContext.Provider
