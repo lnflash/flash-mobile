@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react"
 import { Share, TouchableOpacity, View } from "react-native"
-import { RouteProp, useIsFocused, useNavigation } from "@react-navigation/native"
+import { useIsFocused, useNavigation } from "@react-navigation/native"
 import Clipboard from "@react-native-clipboard/clipboard"
 import Icon from "react-native-vector-icons/Ionicons"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { useReceiveBitcoin } from "./use-receive-bitcoin"
 import { useAppSelector } from "@app/store/redux"
-import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import nfcManager from "react-native-nfc-manager"
 import { useAppConfig } from "@app/hooks"
 import moment from "moment"
@@ -23,7 +22,11 @@ import { SetLightningAddressModal } from "@app/components/set-lightning-address-
 import { withMyLnUpdateSub } from "./my-ln-updates-sub"
 import { CustomIcon } from "@app/components/custom-icon"
 import { ModalNfc } from "@app/components/modal-nfc"
-import { ReceiveTypeBottomSheet, WalletBottomSheet } from "@app/components/receive-screen"
+import {
+  AmountNote,
+  ReceiveTypeBottomSheet,
+  WalletBottomSheet,
+} from "@app/components/receive-screen"
 
 // gql
 import { WalletCurrency, useWalletsQuery } from "@app/graphql/generated"
@@ -40,15 +43,9 @@ import { testProps } from "../../utils/testProps"
 // types
 import { Invoice, InvoiceType, PaymentRequestState } from "./payment/index.types"
 
-type Props = {
-  route: RouteProp<RootStackParamList, "receiveBitcoin">
-}
-
-const ReceiveScreen = ({ route }: Props) => {
+const ReceiveScreen = () => {
   const { userData } = useAppSelector((state) => state.user)
-  const {
-    theme: { colors },
-  } = useTheme()
+  const { colors } = useTheme().theme
   const styles = useStyles()
   const { LL } = useI18nContext()
   const navigation = useNavigation()
@@ -59,14 +56,11 @@ const ReceiveScreen = ({ route }: Props) => {
   const isFocused = useIsFocused()
 
   const lnAddressHostname = appConfig.galoyInstance.lnAddressHostname
-  const isFirstTransaction = route.params.transactionLength === 0
-  const request = useReceiveBitcoin(isFirstTransaction)
+
+  const request = useReceiveBitcoin()
 
   const { persistentState } = usePersistentStateContext()
   const [displayReceiveNfc, setDisplayReceiveNfc] = useState(false)
-  const [currentWallet, setCurrentWallet] = useState(
-    request?.receivingWalletDescriptor.currency,
-  )
 
   // query
   const { data, loading, error } = useWalletsQuery()
@@ -145,10 +139,6 @@ const ReceiveScreen = ({ route }: Props) => {
       }
     }
   }, [request])
-
-  useEffect(() => {
-    setCurrentWallet(request?.receivingWalletDescriptor.currency)
-  }, [request?.receivingWalletDescriptor?.currency])
 
   useEffect(() => {
     if (
@@ -268,9 +258,6 @@ const ReceiveScreen = ({ route }: Props) => {
             />
           </View>
         )}
-        {currentWallet === "BTC" && isFirstTransaction && (
-          <Text style={styles.warning}>{LL.ReceiveScreen.initialDeposit()}</Text>
-        )}
         <QRView
           type={request.info?.data?.invoiceType || Invoice.OnChain}
           getFullUri={useLnurlp ? lnurlp : request.info?.data?.getFullUriFn}
@@ -318,47 +305,8 @@ const ReceiveScreen = ({ route }: Props) => {
               </TouchableOpacity>
             </View>
           )}
-        {request.type !== "PayCode" && (
-          <>
-            <AmountInput
-              request={request}
-              unitOfAccountAmount={request.unitOfAccountAmount}
-              setAmount={request.setAmount}
-              canSetAmount={request.canSetAmount}
-              convertMoneyAmount={request.convertMoneyAmount}
-              walletCurrency={request.receivingWalletDescriptor.currency}
-              showValuesIfDisabled={false}
-              minAmount={
-                currentWallet === "BTC" && isFirstTransaction
-                  ? {
-                      amount: 2501,
-                      currency: "BTC",
-                      currencyCode: "SAT",
-                    }
-                  : undefined
-              }
-              maxAmount={
-                appConfig.galoyInstance.name === "Staging"
-                  ? {
-                      amount: 2500,
-                      currency: "DisplayCurrency",
-                      currencyCode: "USD",
-                    }
-                  : undefined
-              }
-              big={false}
-            />
-            <NoteInput
-              onBlur={request.setMemo}
-              onChangeText={request.setMemoChangeText}
-              value={request.memoChangeText || ""}
-              editable={request.canSetMemo}
-              style={styles.note}
-              big={false}
-            />
-          </>
-        )}
 
+        <AmountNote request={request} />
         {OnChainCharge}
 
         <SetLightningAddressModal
@@ -425,9 +373,7 @@ const useStyles = makeStyles(({ colors }) => ({
   invoiceTypePicker: {
     marginBottom: 10,
   },
-  note: {
-    marginTop: 10,
-  },
+
   extraDetails: {
     flexDirection: "row",
     justifyContent: "center",
