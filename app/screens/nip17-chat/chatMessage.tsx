@@ -25,7 +25,11 @@ export const ChatMessage: React.FC<Props> = ({ message, recipientId }) => {
   }, [])
 
   return (
-    <View style={styles.container}>
+    <View
+      style={{
+        ...styles.container,
+      }}
+    >
       <Text
         style={{
           ...styles.content,
