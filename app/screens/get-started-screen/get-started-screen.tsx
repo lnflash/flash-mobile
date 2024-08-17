@@ -67,11 +67,21 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
     const token = await createDeviceAccountAndLogin()
     setLoading(false)
     if (token) {
+      onCompleteLogin(token)
+    } else {
+      navigation.replace("phoneFlow", {
+        onComplete: onCompleteLogin,
+      })
+    }
+  }
+
+  const onCompleteLogin = (token?: string) => {
+    if (token) {
       setError(false)
       saveToken(token)
       navigation.replace("Primary")
     } else {
-      navigation.replace("phoneFlow")
+      setError(true)
     }
   }
 
