@@ -41,75 +41,22 @@ import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { NoteInput } from "@app/components/note-input"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
-gql`
-  query sendBitcoinDetailsScreen {
-    globals {
-      network
-    }
-    me {
-      id
-      defaultAccount {
-        id
-        defaultWalletId
-        wallets {
-          id
-          walletCurrency
-          balance
-        }
-      }
-    }
-  }
-
-  query sendBitcoinWithdrawalLimits {
-    me {
-      id
-      defaultAccount {
-        id
-        limits {
-          withdrawal {
-            totalLimit
-            remainingLimit
-            interval
-          }
-        }
-      }
-    }
-  }
-
-  query sendBitcoinInternalLimits {
-    me {
-      id
-      defaultAccount {
-        id
-        limits {
-          internalSend {
-            totalLimit
-            remainingLimit
-            interval
-          }
-        }
-      }
-    }
-  }
-`
-
 type Props = {
   route: RouteProp<RootStackParamList, "sendBitcoinDetails">
 }
 
 const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
-  const { persistentState } = usePersistentStateContext()
-  const {
-    theme: { colors },
-  } = useTheme()
   const styles = useStyles()
+  const { persistentState } = usePersistentStateContext()
+  const { LL } = useI18nContext()
+  const { colors } = useTheme().theme
   const { btcWallet } = useBreez()
+  const { appConfig } = useAppConfig()
+  const { currentLevel } = useLevel()
+  const { formatDisplayAndWalletAmount } = useDisplayCurrency()
 
   const navigation =
     useNavigation<NavigationProp<RootStackParamList, "sendBitcoinDetails">>()
-
-  const { appConfig } = useAppConfig()
-  const { currentLevel } = useLevel()
 
   const { data } = useSendBitcoinDetailsScreenQuery({
     fetchPolicy: "cache-first",
@@ -117,8 +64,6 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
     skip: !useIsAuthed(),
   })
 
-  const { formatDisplayAndWalletAmount } = useDisplayCurrency()
-  const { LL } = useI18nContext()
   const [isLoadingLnurl, setIsLoadingLnurl] = useState(false)
 
   const { convertMoneyAmount: _convertMoneyAmount } = usePriceConversion()
