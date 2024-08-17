@@ -41,7 +41,7 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
-  const { createDeviceAccountAndLogin } = useCreateAccount()
+  const { createDeviceAccountAndLogin, appcheckTokenLoading } = useCreateAccount()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [secretMenuCounter, setSecretMenuCounter] = useState(0)
@@ -145,7 +145,7 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
-      {loading && (
+      {(loading || appcheckTokenLoading) && (
         <View style={styles.loading}>
           <ActivityIndicator size={"large"} color={"#60aa55"} />
         </View>
@@ -186,6 +186,7 @@ const useStyles = makeStyles(({ colors }) => ({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 1,
   },
   helpIconContainer: {
     flex: 1,
