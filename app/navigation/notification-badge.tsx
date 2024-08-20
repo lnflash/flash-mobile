@@ -1,11 +1,22 @@
-import React from "react"
+import { useChatContext } from "@app/screens/nip17-chat/chatContext"
+import { getUnreadChatsCount } from "@app/screens/nip17-chat/utils"
+import { convertRumorsToGroups } from "@app/utils/nostr"
+import React, { useEffect, useState } from "react"
 import { View, Text, StyleSheet } from "react-native"
 
-type BadgeProps = {
-  count: number
-}
+const NotificationBadge: React.FC = () => {
+  const { rumors } = useChatContext()
+  const [count, setCount] = useState(0)
+  //const [initalized, setInitialized] = useState(false)
+  useEffect(() => {
+    async function initialize() {
+      let fetchedCount = await getUnreadChatsCount(convertRumorsToGroups(rumors))
+      console.log("Fetched count is", count)
+      setCount(fetchedCount)
+    }
+    initialize()
+  })
 
-const NotificationBadge: React.FC<BadgeProps> = ({ count }) => {
   if (count <= 0) return null // Do not render if there are no notifications
 
   return (
