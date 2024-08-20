@@ -13,8 +13,6 @@ import {
   receiveOnchain,
   ReceiveOnchainResponse,
   receivePayment,
-  ReceivePaymentRequest,
-  ReceivePaymentResponse,
   sendPayment,
   SendPaymentResponse,
   disconnect,
@@ -31,6 +29,7 @@ import {
   InputTypeVariant,
   lnurlPay,
   LnUrlPayResultVariant,
+  payOnchain,
 } from "@breeztech/react-native-breez-sdk-liquid"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
@@ -287,43 +286,29 @@ export const receiveOnchainBreezSDK = async (
 //   }
 // }
 
-// export const sendOnchainBreezSDK = async (
-//   currentFees: sdk.ReverseSwapPairInfo,
-//   destinationAddress: string,
-//   satPerVbyte: number,
-// ): Promise<sdk.SendOnchainResponse> => {
-//   try {
-//     const prepareRes = await preparePayOnchain({
-//       receiverAmountSat: currentFees,
-//       satPerVbyte,
-//     })
+export const sendOnchainBreezSDK = async (
+  destinationAddress: string,
+  amountSat: number,
+): Promise<SendPaymentResponse> => {
+  try {
+    const prepareRes = await preparePayOnchain({
+      receiverAmountSat: amountSat,
+    })
 
-//     const sendOnChainRequest: sdk.SendOnchainRequest = {
-//       amountSat: currentFees.min,
-//       onchainRecipientAddress: destinationAddress,
-//       pairHash: currentFees.feesHash,
-//       satPerVbyte,
-//     }
-//     console.log("Sending onchain payment to address: ", destinationAddress)
-//     const response = await sdk.sendOnchain(sendOnChainRequest)
-//     if (response.reverseSwapInfo.status === sdk.ReverseSwapStatus.CANCELLED) {
-//       console.log("Error paying to OnChain Address")
-//       console.log("Reporting issue to Breez SDK")
-//       const reportingResult = await sdk.reportIssue({
-//         type: sdk.ReportIssueRequestVariant.PAYMENT_FAILURE,
-//         data: {
-//           paymentHash: response.reverseSwapInfo.id,
-//         },
-//       })
-//       console.log("Report issue result: ", reportingResult)
-//       throw new Error(response.reverseSwapInfo.status)
-//     }
-//     return response
-//   } catch (error) {
-//     console.log(error)
-//     throw error
-//   }
-// }
+    // Check if the fees are acceptable before proceeding
+    const totalFeesSat = prepareRes.totalFeesSat
+
+    const payOnchainRes = await payOnchain({
+      address: destinationAddress,
+      prepareRes,
+    })
+
+    return payOnchainRes
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
 
 export const recommendedFeesBreezSDK = async (): Promise<RecommendedFees> => {
   try {
@@ -343,37 +328,31 @@ export const payLnurlBreezSDK = async (
 ): Promise<LnUrlPayResult> => {
   try {
     const input = await parse(lnurl)
-
     if (input.type === InputTypeVariant.LN_URL_PAY) {
-      const amountMsat = input.data.minSendable
-      const optionalComment = memo || "<comment>"
-      const optionalPaymentLabel = "<label>"
-      const optionalValidateSuccessActionUrl = true
       const lnUrlPayResult = await lnurlPay({
         data: input.data,
-        amountMsat,
-        comment: optionalComment,
-        paymentLabel: optionalPaymentLabel,
-        validateSuccessActionUrl: optionalValidateSuccessActionUrl,
+        amountMsat: amountSat * 1000,
+        comment: memo,
+        paymentLabel: "<label>",
+        validateSuccessActionUrl: true,
       })
-
+      console.log("Payload: ", {
+        data: input.data,
+        amountMsat: 1000,
+        comment: memo,
+        paymentLabel: "<label>",
+        validateSuccessActionUrl: true,
+      })
       if (lnUrlPayResult.type === LnUrlPayResultVariant.PAY_ERROR) {
         console.log("Error paying lnurl: ", lnUrlPayResult.data.reason)
         console.log("Reporting issue to Breez SDK")
         console.log("Payment hash: ", lnUrlPayResult.data.paymentHash)
-        const paymentHash = lnUrlPayResult.data.paymentHash
-        // const reportingResult = await reportIssue({
-        //   type: sdk.ReportIssueRequestVariant.PAYMENT_FAILURE,
-        //   data: { paymentHash },
-        // })
-        // console.log("Report issue result: ", reportingResult)
-        throw new Error(lnUrlPayResult.type)
+        throw new Error(lnUrlPayResult.data.reason)
       }
       return lnUrlPayResult
     }
     throw new Error("Unsupported input type")
   } catch (error) {
-    console.log(error)
     throw error
   }
 }
