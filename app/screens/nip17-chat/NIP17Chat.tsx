@@ -36,6 +36,7 @@ export const NIP17Chat: React.FC = () => {
 
   const reset = useCallback(() => {
     setSearchText("")
+    setRefreshing(false)
   }, [])
 
   const searchedUsersHandler = (event: Event, closer: SubCloser) => {
@@ -157,17 +158,24 @@ export const NIP17Chat: React.FC = () => {
           keyExtractor={(item) => item.id}
         />
       ) : (
-        <FlatList
-          contentContainerStyle={styles.listContainer}
-          data={groupIds}
-          ListEmptyComponent={ListEmptyContent}
-          renderItem={({ item }) => {
-            return (
-              <HistoryListItem item={item} userPrivateKey={privateKey!} groups={groups} />
-            )
-          }}
-          keyExtractor={(item) => item}
-        />
+        <View>
+          <Text style={{ fontSize: 24, fontWeight: "bold", margin: 20 }}>Chats</Text>
+          <FlatList
+            contentContainerStyle={styles.listContainer}
+            data={groupIds}
+            ListEmptyComponent={ListEmptyContent}
+            renderItem={({ item }) => {
+              return (
+                <HistoryListItem
+                  item={item}
+                  userPrivateKey={privateKey!}
+                  groups={groups}
+                />
+              )
+            }}
+            keyExtractor={(item) => item}
+          />
+        </View>
       )}
     </Screen>
   )
