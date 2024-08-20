@@ -38,7 +38,7 @@ export const useStyles = makeStyles(({ colors }) => ({
 
   item: {
     marginHorizontal: 32,
-    marginVertical: 2,
+    marginVertical: 4,
   },
 
   itemContainer: {
