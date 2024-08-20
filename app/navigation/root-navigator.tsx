@@ -102,7 +102,6 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { Messages } from "@app/screens/nip17-chat/messages"
-import { ChatContextProvider } from "@app/screens/nip17-chat/chatContext"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
 

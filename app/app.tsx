@@ -67,13 +67,17 @@ export const App = () => (
                   <ErrorBoundary FallbackComponent={ErrorScreen}>
                     <NavigationContainerWrapper>
                       <RootSiblingParent>
-                        <AppStateWrapper />
-                        <PushNotificationComponent />
-                        <BreezProvider>
-                          <RootStack />
-                        </BreezProvider>
-                        <GaloyToast />
-                        <NetworkErrorComponent />
+                        <NotificationsProvider>
+                          <AppStateWrapper />
+                          <PushNotificationComponent />
+                          <BreezProvider>
+                            <ChatContextProvider>
+                              <RootStack />
+                            </ChatContextProvider>
+                          </BreezProvider>
+                          <GaloyToast />
+                          <NetworkErrorComponent />
+                        </NotificationsProvider>
                       </RootSiblingParent>
                     </NavigationContainerWrapper>
                   </ErrorBoundary>

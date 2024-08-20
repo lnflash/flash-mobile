@@ -81,7 +81,6 @@ export type Scalars = {
   Username: string
   /** Unique identifier of a wallet */
   WalletId: string
-  npub: string
 }
 
 export type Account = {
