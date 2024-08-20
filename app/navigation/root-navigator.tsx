@@ -108,7 +108,6 @@ import {
   RefundTransactionsList,
 } from "@app/screens/refund-flow"
 import { Messages } from "@app/screens/nip17-chat/messages"
-import { ChatContextProvider } from "@app/screens/nip17-chat/chatContext"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
 
