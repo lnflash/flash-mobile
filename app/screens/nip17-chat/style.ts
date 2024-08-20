@@ -41,6 +41,20 @@ export const useStyles = makeStyles(({ colors }) => ({
     marginVertical: 4,
   },
 
+  unreadItem: {
+    backgroundColor: "#f0f0f0", // or any color to indicate unread status
+  },
+
+  unreadIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "green", // or any color you prefer
+    position: "absolute",
+    top: 10,
+    right: 10,
+  },
+
   itemContainer: {
     borderRadius: 8,
     backgroundColor: colors.grey5,
