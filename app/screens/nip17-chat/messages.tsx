@@ -27,6 +27,7 @@ import {
 import { useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { SafeAreaProvider } from "react-native-safe-area-context"
+import { updateLastSeen } from "./utils"
 
 type MessagesProps = {
   route: RouteProp<ChatStackParamList, "messages">
@@ -125,10 +126,12 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
     }
     if (!initialized) initialize()
 
+    const lastRumor = (chatRumors || []).sort((a, b) => b.created_at - a.created_at)[0]
+    updateLastSeen(groupId, lastRumor.created_at)
     return () => {
       isMounted = false
     }
-  }, [poolRef])
+  }, [poolRef, rumors])
 
   const handleSendPress = async (message: MessageType.PartialText) => {
     const textMessage: MessageType.Text = {
