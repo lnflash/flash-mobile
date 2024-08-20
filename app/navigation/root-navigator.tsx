@@ -103,7 +103,6 @@ import { NotificationSettingsScreen } from "@app/screens/settings-screen/notific
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { ReconciliationReport } from "@app/screens/reports"
 import { Messages } from "@app/screens/nip17-chat/messages"
-import { ChatContextProvider } from "@app/screens/nip17-chat/chatContext"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
 
