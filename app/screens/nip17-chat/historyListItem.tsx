@@ -2,12 +2,13 @@ import { ListItem } from "@rneui/themed"
 import { useStyles } from "./style"
 import { Image, Text, View } from "react-native"
 import { nip19, Event, SubCloser, getPublicKey } from "nostr-tools"
-import { useNavigation } from "@react-navigation/native"
+import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { Rumor, fetchNostrUsers } from "@app/utils/nostr"
+import { getLastSeen } from "./utils"
 
 interface HistoryListItemProps {
   item: string
@@ -20,6 +21,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
   groups,
 }) => {
   const { poolRef, profileMap, addEventToProfiles } = useChatContext()
+  const [hasUnread, setHasUnread] = useState(false)
 
   const userPublicKey = userPrivateKey ? getPublicKey(userPrivateKey) : ""
 
@@ -46,6 +48,22 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
       }
     }
   }, [poolRef, profileMap])
+
+  useFocusEffect(() => {
+    const checkUnreadStatus = async () => {
+      const lastSeen = await getLastSeen(item)
+      const lastRumor = (groups.get(item) || []).sort(
+        (a, b) => b.created_at - a.created_at,
+      )[0]
+      if (lastRumor && (!lastSeen || lastSeen < lastRumor.created_at)) {
+        setHasUnread(true)
+      } else {
+        setHasUnread(false)
+      }
+    }
+    checkUnreadStatus()
+  })
+
   const styles = useStyles()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   const lastRumor = (groups.get(item) || []).sort(
@@ -116,6 +134,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
           </View>
         </ListItem.Content>
       </View>
+      {hasUnread && <View style={styles.unreadIndicator} />}
     </ListItem>
   )
 }
