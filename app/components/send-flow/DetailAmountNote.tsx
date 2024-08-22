@@ -1,8 +1,9 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useAppConfig, useBreez } from "@app/hooks"
+import { useBreez } from "@app/hooks"
+import { parse } from "@breeztech/react-native-breez-sdk-liquid"
 
 // components
 import { GaloyTertiaryButton } from "@app/components/atomic/galoy-tertiary-button"
@@ -12,37 +13,107 @@ import { NoteInput } from "@app/components/note-input"
 // types
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
 import { WalletCurrency } from "@app/graphql/generated"
-import {
-  MoneyAmount,
-  toBtcMoneyAmount,
-  toUsdMoneyAmount,
-  WalletOrDisplayCurrency,
-} from "@app/types/amounts"
+import { MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
 
 // utils
 import { testProps } from "../../utils/testProps"
+import {
+  fetchBreezLightningLimits,
+  fetchBreezOnChainLimits,
+} from "@app/utils/breez-sdk-liquid"
 
 type Props = {
   usdWallet: any
-
   paymentDetail: PaymentDetail<WalletCurrency>
   setPaymentDetail: (val: PaymentDetail<WalletCurrency>) => void
+  setAsyncErrorMessage: (val: string) => void
 }
 
 const DetailAmountNote: React.FC<Props> = ({
   usdWallet,
   paymentDetail,
   setPaymentDetail,
+  setAsyncErrorMessage,
 }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { btcWallet } = useBreez()
-  const { appConfig } = useAppConfig()
-
   const { sendingWalletDescriptor } = paymentDetail
 
-  const lnurlParams =
-    paymentDetail?.paymentType === "lnurl" ? paymentDetail?.lnurlParams : undefined
+  const [minAmount, setMinAmount] = useState<MoneyAmount<WalletOrDisplayCurrency>>()
+  const [maxAmount, setMaxAmount] = useState<MoneyAmount<WalletOrDisplayCurrency>>()
+
+  useEffect(() => {
+    if (paymentDetail?.sendingWalletDescriptor.currency === "BTC") {
+      if (paymentDetail.canSetAmount) {
+        setAsyncErrorMessage(LL.SendBitcoinScreen.noAmountInvoiceError())
+      } else if (minAmount && paymentDetail.settlementAmount.amount < minAmount?.amount) {
+        setAsyncErrorMessage(
+          LL.SendBitcoinScreen.minAmountInvoiceError({ amount: minAmount?.amount }),
+        )
+      } else if (maxAmount && paymentDetail.settlementAmount.amount > maxAmount?.amount) {
+        setAsyncErrorMessage(
+          LL.SendBitcoinScreen.maxAmountInvoiceError({ amount: maxAmount.amount }),
+        )
+      } else {
+        setAsyncErrorMessage("")
+      }
+    } else {
+      if (paymentDetail?.paymentType === "lnurl") {
+        if (paymentDetail.settlementAmount.amount < paymentDetail?.lnurlParams.min) {
+          setAsyncErrorMessage(
+            LL.SendBitcoinScreen.minAmountInvoiceError({
+              amount: paymentDetail?.lnurlParams.min,
+            }),
+          )
+        } else if (
+          paymentDetail.settlementAmount.amount > paymentDetail?.lnurlParams.max
+        ) {
+          setAsyncErrorMessage(
+            LL.SendBitcoinScreen.maxAmountInvoiceError({
+              amount: paymentDetail?.lnurlParams.max,
+            }),
+          )
+        } else {
+          setAsyncErrorMessage("")
+        }
+      } else {
+        setAsyncErrorMessage("")
+      }
+    }
+  }, [paymentDetail, minAmount, maxAmount])
+
+  useEffect(() => {
+    if (paymentDetail.sendingWalletDescriptor.currency === "BTC") fetchBtcMinMaxAmount()
+  }, [])
+
+  const fetchBtcMinMaxAmount = async () => {
+    let limits
+    if (paymentDetail.paymentType === "lightning") {
+      limits = await fetchBreezLightningLimits()
+    } else if (paymentDetail.paymentType === "onchain") {
+      limits = await fetchBreezOnChainLimits()
+    } else {
+      const invoice: any = await parse(paymentDetail.destination)
+      limits = {
+        send: {
+          minSat: invoice?.data?.minSendable,
+          maxSat: invoice?.data?.maxSendable,
+        },
+      }
+    }
+
+    setMinAmount({
+      amount: limits?.send.minSat || 0,
+      currency: "BTC",
+      currencyCode: "SAT",
+    })
+    setMaxAmount({
+      amount: limits?.send.maxSat || 0,
+      currency: "BTC",
+      currencyCode: "SAT",
+    })
+  }
 
   const sendAll = () => {
     let moneyAmount: MoneyAmount<WalletCurrency>
@@ -97,26 +168,8 @@ const DetailAmountNote: React.FC<Props> = ({
             walletCurrency={sendingWalletDescriptor.currency}
             canSetAmount={paymentDetail.canSetAmount}
             isSendingMax={paymentDetail.isSendingMax}
-            maxAmount={
-              appConfig.galoyInstance.name === "Staging"
-                ? {
-                    amount: 2500,
-                    currency: "DisplayCurrency",
-                    currencyCode: "USD",
-                  }
-                : lnurlParams?.max
-                ? toBtcMoneyAmount(lnurlParams.max)
-                : undefined
-            }
-            minAmount={
-              lnurlParams?.min
-                ? toUsdMoneyAmount(lnurlParams.min)
-                : {
-                    amount: 1,
-                    currency: "USD",
-                    currencyCode: "USD",
-                  }
-            }
+            maxAmount={maxAmount}
+            minAmount={minAmount}
           />
         </View>
       </View>

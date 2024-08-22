@@ -26,7 +26,7 @@ import { getUsdWallet } from "@app/graphql/wallets-utils"
 // hooks
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useLevel } from "@app/graphql/level-context"
-import { useAppConfig, useBreez, usePriceConversion } from "@app/hooks"
+import { useBreez, usePriceConversion } from "@app/hooks"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -52,7 +52,6 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
     useNavigation<NavigationProp<RootStackParamList, "sendBitcoinDetails">>()
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const { appConfig } = useAppConfig()
   const { currentLevel } = useLevel()
   const { btcWallet } = useBreez()
   const { persistentState } = usePersistentStateContext()
@@ -225,6 +224,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           usdWallet={usdWallet}
           paymentDetail={paymentDetail}
           setPaymentDetail={setPaymentDetail}
+          setAsyncErrorMessage={setAsyncErrorMessage}
         />
         <SendBitcoinDetailsExtraInfo
           errorMessage={asyncErrorMessage}
