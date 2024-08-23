@@ -118,27 +118,9 @@ export const useSendPayment = (
                 !paymentRequest.toLowerCase().startsWith("lnurl") &&
                 invoice?.amountMsat !== null
               ) {
-                console.log(
-                  "Starting sendPaymentBreezSDK using invoice with amount: WORKING",
-                )
+                console.log("Starting sendPaymentBreezSDK using invoice with amount")
                 const response = await sendPaymentBreezSDK(paymentRequest)
                 console.log("BreezSDK LNInvoice response:", response)
-                return {
-                  status: PaymentSendResult.Success,
-                  errorsMessage: undefined,
-                }
-              } else if (
-                sendPaymentMutation?.name === "sendPaymentMutation" &&
-                paymentRequest.length > 110 &&
-                !paymentRequest.toLowerCase().startsWith("lnurl") &&
-                invoice?.amountMsat === null &&
-                amountSats?.amount
-              ) {
-                console.log(
-                  "Starting sendPaymentBreezSDK using invoice without amount: NOT WORKING",
-                )
-                const response = await sendPaymentBreezSDK(paymentRequest)
-                console.log("BreezSDK No Amount LNInvoice response:", response)
                 return {
                   status: PaymentSendResult.Success,
                   errorsMessage: undefined,
@@ -148,15 +130,13 @@ export const useSendPayment = (
                 (paymentRequest.toLowerCase().startsWith("lnurl") ||
                   paymentRequest.includes("@"))
               ) {
-                console.log(
-                  "3 Starting payLnurlBreezSDK using lnurl or lightning address: WORKING",
-                )
-                const payment = await payLnurlBreezSDK(
+                console.log("Starting payLnurlBreezSDK using lnurl or lightning address")
+                const response = await payLnurlBreezSDK(
                   paymentRequest,
                   amountSats?.amount,
                   memo || "",
                 )
-                console.log("PAYMENT RES>>>>>>>>>>>>>>", payment)
+                console.log("BreezSDK LNURL response:", response)
                 return {
                   status: PaymentSendResult.Success,
                   errorsMessage: undefined,
@@ -165,7 +145,7 @@ export const useSendPayment = (
                 sendPaymentMutation?.name === "_sendPaymentMutation" &&
                 paymentRequest.length < 64
               ) {
-                console.log("4 Starting sendOnchainBreezSDK using destination address")
+                console.log("Starting sendOnchainBreezSDK using destination address")
                 const response = await sendOnchainBreezSDK(
                   paymentRequest,
                   amountSats.amount,
