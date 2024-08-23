@@ -36,6 +36,7 @@ import * as Keychain from "react-native-keychain"
 import { EventEmitter } from "events"
 import { base64ToBytes, toMilliSatoshi } from "../conversion"
 import RNFS from "react-native-fs"
+import { PaymentType } from "@galoymoney/client"
 
 const _GREENLIGHT_PARTNER_CERT: number[] = Array.from(
   base64ToBytes(GREENLIGHT_PARTNER_CERT),
@@ -170,6 +171,31 @@ export const fetchBreezOnChainLimits = async () => {
   const onChainLimits = await fetchOnchainLimits()
   console.log(`ONCHAIN LIMITS: ${onChainLimits}`)
   return onChainLimits
+}
+
+export const fetchBreezFee = async (
+  paymentType: PaymentType,
+  invoice?: string,
+  receiverAmountSat?: number,
+) => {
+  try {
+    if (paymentType === "lightning" && !!invoice) {
+      const response = await prepareSendPayment({
+        invoice,
+      })
+      return response.feesSat
+    } else if (paymentType === "onchain" && !!receiverAmountSat) {
+      const response = await preparePayOnchain({
+        receiverAmountSat,
+      })
+      return response.totalFeesSat
+    } else {
+      return null
+    }
+  } catch (err) {
+    console.log("FETCH BREEZ FEE>>>>>>>>>>>", err)
+    return null
+  }
 }
 
 export const receivePaymentBreezSDK = async (
