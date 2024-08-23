@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react"
 import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useBreez } from "@app/hooks"
+import { useAppConfig, useBreez } from "@app/hooks"
 import { parse } from "@breeztech/react-native-breez-sdk-liquid"
 
 // components
@@ -39,19 +39,28 @@ const DetailAmountNote: React.FC<Props> = ({
   const { LL } = useI18nContext()
   const { btcWallet } = useBreez()
   const { sendingWalletDescriptor } = paymentDetail
+  const { lnAddressHostname: lnDomain } = useAppConfig().appConfig.galoyInstance
 
   const [minAmount, setMinAmount] = useState<MoneyAmount<WalletOrDisplayCurrency>>()
   const [maxAmount, setMaxAmount] = useState<MoneyAmount<WalletOrDisplayCurrency>>()
 
   useEffect(() => {
     if (paymentDetail?.sendingWalletDescriptor.currency === "BTC") {
-      if (paymentDetail.canSetAmount) {
+      if (paymentDetail.paymentType === "lightning" && paymentDetail.canSetAmount) {
         setAsyncErrorMessage(LL.SendBitcoinScreen.noAmountInvoiceError())
-      } else if (minAmount && paymentDetail.settlementAmount.amount < minAmount?.amount) {
+      } else if (
+        minAmount &&
+        paymentDetail.settlementAmount.amount &&
+        paymentDetail.settlementAmount.amount < minAmount?.amount
+      ) {
         setAsyncErrorMessage(
           LL.SendBitcoinScreen.minAmountInvoiceError({ amount: minAmount?.amount }),
         )
-      } else if (maxAmount && paymentDetail.settlementAmount.amount > maxAmount?.amount) {
+      } else if (
+        maxAmount &&
+        paymentDetail.settlementAmount.amount &&
+        paymentDetail.settlementAmount.amount > maxAmount?.amount
+      ) {
         setAsyncErrorMessage(
           LL.SendBitcoinScreen.maxAmountInvoiceError({ amount: maxAmount.amount }),
         )
@@ -94,7 +103,11 @@ const DetailAmountNote: React.FC<Props> = ({
     } else if (paymentDetail.paymentType === "onchain") {
       limits = await fetchBreezOnChainLimits()
     } else {
-      const invoice: any = await parse(paymentDetail.destination)
+      const destination =
+        paymentDetail.paymentType === "lnurl"
+          ? paymentDetail.destination
+          : paymentDetail.destination + `@${lnDomain}`
+      const invoice: any = await parse(destination)
       limits = {
         send: {
           minSat: invoice?.data?.minSendable,
