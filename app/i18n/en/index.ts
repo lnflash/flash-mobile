@@ -507,6 +507,10 @@ const en: BaseTranslation = {
     locationPermissionTitle: "Locate yourself on the map",
     payBusiness: "pay this business",
     title: "Map",
+    addPin: "Click anywhere to add a pin",
+    selectedCoordinates: "Your Flashpoint Coordinates: \n",
+    viewInGoogleMaps: "View in Google Maps",
+    getDirections: "Get Directions",
   },
   HomeScreen: {
     cashout: "Cash Out",
@@ -972,6 +976,12 @@ const en: BaseTranslation = {
       "You can use it to send and receive larger amounts of money, denominated in Bitcoin. You can also use the SWAP button to instantly transfer value between your Bitcoin account and USD account. The dollar value in the Bitcoin account WILL fluctuate with the price of Bitcoin.\n\nIMPORTANT: Your Bitcoin account is a non-custodial account, so you may be charged a small fee to make your first transaction. Also, you are solely responsible for securing your recovery phrase in a safe place. \n\n\nDO NOT SHARE YOUR RECOVERY PHRASE WITH ANYONE.",
     termsAndConditions: "\nRead the Terms & Conditions.",
     learnMore: "What is a Non-Custodial Wallet?",
+  },
+  MerchantSuggestModal: {
+    header: "Add Flashpoint",
+    body: "You have selected a location for your business on the map. Flash users will be able to find you on the map, and send you payments by clicking on your map pin.",
+    termsAndConditions: "\nRead the Terms & Conditions.",
+    learnMore: "What is a Merchant?",
   },
   UnVerifiedSeedModal: {
     header: "YOUR BITCOIN IS NOT SECURE!",

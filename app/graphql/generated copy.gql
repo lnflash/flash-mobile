@@ -81,43 +81,6 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
-mutation MerchantMapSuggest($input: MerchantMapSuggestInput!) {
-  merchantMapSuggest(input: $input) {
-    errors {
-      code
-      message
-      path
-      __typename
-    }
-    merchant {
-      coordinates {
-        latitude
-        longitude
-        __typename
-      }
-      createdAt
-      id
-      title
-      username
-      validated
-      __typename
-    }
-    __typename
-  }
-}
-
-mutation UserLogout($input: UserLogoutInput!) {
-  userLogout(input: $input) {
-    success
-    errors {
-      code
-      message
-      __typename
-    }
-    __typename
-  }
-}
-
 mutation accountDelete {
   accountDelete {
     errors {
@@ -125,102 +88,6 @@ mutation accountDelete {
       __typename
     }
     success
-    __typename
-  }
-}
-
-mutation accountDisableNotificationCategory(
-  $input: AccountDisableNotificationCategoryInput!
-) {
-  accountDisableNotificationCategory(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-mutation accountDisableNotificationChannel(
-  $input: AccountDisableNotificationChannelInput!
-) {
-  accountDisableNotificationChannel(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-mutation accountEnableNotificationCategory(
-  $input: AccountEnableNotificationCategoryInput!
-) {
-  accountEnableNotificationCategory(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-mutation accountEnableNotificationChannel(
-  $input: AccountEnableNotificationChannelInput!
-) {
-  accountEnableNotificationChannel(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
     __typename
   }
 }
@@ -702,27 +569,6 @@ mutation userTotpDelete($input: UserTotpDeleteInput!) {
   }
 }
 
-mutation userTotpDeleteA($input: UserTotpDeleteInput!) {
-  userTotpDelete(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    me {
-      id
-      phone
-      totpEnabled
-      email {
-        address
-        verified
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
 mutation userTotpRegistrationInitiate($input: UserTotpRegistrationInitiateInput!) {
   userTotpRegistrationInitiate(input: $input) {
     errors {
@@ -779,18 +625,6 @@ mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
     user {
       id
       username
-      __typename
-    }
-    __typename
-  }
-}
-
-query ExportCsvSetting($walletIds: [WalletId!]!) {
-  me {
-    id
-    defaultAccount {
-      id
-      csvTransactions(walletIds: $walletIds)
       __typename
     }
     __typename
@@ -1114,25 +948,6 @@ query network {
   }
 }
 
-query notificationSettings {
-  me {
-    id
-    defaultAccount {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
 query onChainTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: SatAmount!) {
   onChainTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount
@@ -1412,12 +1227,6 @@ query settingsScreen {
       }
       __typename
     }
-    totpEnabled
-    email {
-      address
-      verified
-      __typename
-    }
     __typename
   }
 }
@@ -1517,7 +1326,6 @@ query wallets {
       wallets {
         walletCurrency
         id
-        lnurlp
         __typename
       }
       __typename

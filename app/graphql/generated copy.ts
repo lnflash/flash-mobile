@@ -11,93 +11,86 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & {
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & {
   [SubKey in K]: Maybe<T[SubKey]>
 }
-export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = {
-  [_ in K]?: never
-}
-export type Incremental<T> =
-  | T
-  | { [P in keyof T]?: P extends " $fragmentName" | "__typename" ? T[P] : never }
 const defaultOptions = {} as const
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: { input: string; output: string }
-  String: { input: string; output: string }
-  Boolean: { input: boolean; output: boolean }
-  Int: { input: number; output: number }
-  Float: { input: number; output: number }
+  ID: string
+  String: string
+  Boolean: boolean
+  Int: number
+  Float: number
   /** An Opaque Bearer token */
-  AuthToken: { input: string; output: string }
+  AuthToken: string
   /** (Positive) Cent amount (1/100 of a dollar) */
-  CentAmount: { input: number; output: number }
+  CentAmount: number
   /** An alias name that a user can set for a wallet (with which they have transactions) */
-  ContactAlias: { input: string; output: string }
+  ContactAlias: string
   /** A CCA2 country code (ex US, FR, etc) */
-  CountryCode: { input: string; output: string }
+  CountryCode: string
   /** Display currency of an account */
-  DisplayCurrency: { input: string; output: string }
+  DisplayCurrency: string
   /** Email address */
-  EmailAddress: { input: string; output: string }
+  EmailAddress: string
   /** An id to be passed between registrationInitiate and registrationValidate for confirming email */
-  EmailRegistrationId: { input: string; output: string }
-  EndpointId: { input: string; output: string }
+  EmailRegistrationId: string
+  EndpointId: string
   /** Url that will be fetched on events for the account */
-  EndpointUrl: { input: string; output: string }
+  EndpointUrl: string
   /** Feedback shared with our user */
-  Feedback: { input: string; output: string }
+  Feedback: string
   /** Hex-encoded string of 32 bytes */
-  Hex32Bytes: { input: string; output: string }
-  Language: { input: string; output: string }
-  LnPaymentPreImage: { input: string; output: string }
+  Hex32Bytes: string
+  Language: string
+  LeaderboardName: string
+  LnPaymentPreImage: string
   /** BOLT11 lightning invoice payment request with the amount included */
-  LnPaymentRequest: { input: string; output: string }
-  LnPaymentSecret: { input: string; output: string }
-  /** A bech32-encoded HTTPS/Onion URL that can be interacted with automatically by a WALLET in a standard way such that a SERVICE can provide extra services or a better experience for the user. Ref: https://github.com/lnurl/luds/blob/luds/01.md  */
-  Lnurl: { input: string; output: string }
+  LnPaymentRequest: string
+  LnPaymentSecret: string
   /** Text field in a lightning payment transaction */
-  Memo: { input: string; output: string }
+  Memo: string
   /** (Positive) amount of minutes */
-  Minutes: { input: string; output: string }
-  NotificationCategory: { input: string; output: string }
+  Minutes: string
+  NotificationCategory: string
   /** An address for an on-chain bitcoin destination */
-  OnChainAddress: { input: string; output: string }
-  OnChainTxHash: { input: string; output: string }
+  OnChainAddress: string
+  OnChainTxHash: string
   /** An authentication code valid for a single use */
-  OneTimeAuthCode: { input: string; output: string }
-  PaymentHash: { input: string; output: string }
+  OneTimeAuthCode: string
+  PaymentHash: string
   /** Phone number which includes country code */
-  Phone: { input: string; output: string }
+  Phone: string
   /** Non-fractional signed whole numeric value between -(2^53) + 1 and 2^53 - 1 */
-  SafeInt: { input: number; output: number }
+  SafeInt: number
   /** (Positive) Satoshi amount */
-  SatAmount: { input: number; output: number }
+  SatAmount: number
   /** (Positive) amount of seconds */
-  Seconds: { input: number; output: number }
+  Seconds: number
   /** An amount (of a currency) that can be negative (e.g. in a transaction) */
-  SignedAmount: { input: number; output: number }
+  SignedAmount: number
   /** A string amount (of a currency) that can be negative (e.g. in a transaction) */
-  SignedDisplayMajorAmount: { input: string; output: string }
+  SignedDisplayMajorAmount: string
   /** Timestamp field, serialized as Unix time (the number of seconds since the Unix epoch) */
-  Timestamp: { input: number; output: number }
+  Timestamp: number
   /** A time-based one-time password */
-  TotpCode: { input: string; output: string }
+  TotpCode: string
   /** An id to be passed between set and verify for confirming totp */
-  TotpRegistrationId: { input: string; output: string }
+  TotpRegistrationId: string
   /** A secret to generate time-based one-time password */
-  TotpSecret: { input: string; output: string }
+  TotpSecret: string
   /** Unique identifier of a user */
-  Username: { input: string; output: string }
+  Username: string
   /** Unique identifier of a wallet */
-  WalletId: { input: string; output: string }
+  WalletId: string
 }
 
 export type Account = {
   readonly btcWallet?: Maybe<BtcWallet>
   readonly callbackEndpoints: ReadonlyArray<CallbackEndpoint>
-  readonly csvTransactions: Scalars["String"]["output"]
+  readonly csvTransactions: Scalars["String"]
   readonly defaultWallet?: Maybe<Wallet>
-  readonly defaultWalletId: Scalars["WalletId"]["output"]
-  readonly displayCurrency: Scalars["DisplayCurrency"]["output"]
-  readonly id: Scalars["ID"]["output"]
+  readonly defaultWalletId: Scalars["WalletId"]
+  readonly displayCurrency: Scalars["DisplayCurrency"]
+  readonly id: Scalars["ID"]
   readonly level: AccountLevel
   readonly limits: AccountLimits
   readonly notificationSettings: NotificationSettings
@@ -108,25 +101,25 @@ export type Account = {
 }
 
 export type AccountCsvTransactionsArgs = {
-  walletIds: ReadonlyArray<Scalars["WalletId"]["input"]>
+  walletIds: ReadonlyArray<Scalars["WalletId"]>
 }
 
 export type AccountTransactionsArgs = {
-  after?: InputMaybe<Scalars["String"]["input"]>
-  before?: InputMaybe<Scalars["String"]["input"]>
-  first?: InputMaybe<Scalars["Int"]["input"]>
-  last?: InputMaybe<Scalars["Int"]["input"]>
-  walletIds?: InputMaybe<ReadonlyArray<InputMaybe<Scalars["WalletId"]["input"]>>>
+  after?: InputMaybe<Scalars["String"]>
+  before?: InputMaybe<Scalars["String"]>
+  first?: InputMaybe<Scalars["Int"]>
+  last?: InputMaybe<Scalars["Int"]>
+  walletIds?: InputMaybe<ReadonlyArray<InputMaybe<Scalars["WalletId"]>>>
 }
 
 export type AccountDeletePayload = {
   readonly __typename: "AccountDeletePayload"
   readonly errors: ReadonlyArray<Error>
-  readonly success: Scalars["Boolean"]["output"]
+  readonly success: Scalars["Boolean"]
 }
 
 export type AccountDisableNotificationCategoryInput = {
-  readonly category: Scalars["NotificationCategory"]["input"]
+  readonly category: Scalars["NotificationCategory"]
   readonly channel?: InputMaybe<NotificationChannel>
 }
 
@@ -135,7 +128,7 @@ export type AccountDisableNotificationChannelInput = {
 }
 
 export type AccountEnableNotificationCategoryInput = {
-  readonly category: Scalars["NotificationCategory"]["input"]
+  readonly category: Scalars["NotificationCategory"]
   readonly channel?: InputMaybe<NotificationChannel>
 }
 
@@ -152,11 +145,11 @@ export const AccountLevel = {
 export type AccountLevel = (typeof AccountLevel)[keyof typeof AccountLevel]
 export type AccountLimit = {
   /** The rolling time interval in seconds that the limits would apply for. */
-  readonly interval?: Maybe<Scalars["Seconds"]["output"]>
+  readonly interval?: Maybe<Scalars["Seconds"]>
   /** The amount of cents remaining below the limit for the current 24 hour period. */
-  readonly remainingLimit?: Maybe<Scalars["CentAmount"]["output"]>
+  readonly remainingLimit?: Maybe<Scalars["CentAmount"]>
   /** The current maximum limit for a given 24 hour period. */
-  readonly totalLimit: Scalars["CentAmount"]["output"]
+  readonly totalLimit: Scalars["CentAmount"]
 }
 
 export type AccountLimits = {
@@ -170,7 +163,7 @@ export type AccountLimits = {
 }
 
 export type AccountUpdateDefaultWalletIdInput = {
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type AccountUpdateDefaultWalletIdPayload = {
@@ -180,7 +173,7 @@ export type AccountUpdateDefaultWalletIdPayload = {
 }
 
 export type AccountUpdateDisplayCurrencyInput = {
-  readonly currency: Scalars["DisplayCurrency"]["input"]
+  readonly currency: Scalars["DisplayCurrency"]
 }
 
 export type AccountUpdateDisplayCurrencyPayload = {
@@ -197,21 +190,20 @@ export type AccountUpdateNotificationSettingsPayload = {
 
 export type AuthTokenPayload = {
   readonly __typename: "AuthTokenPayload"
-  readonly authToken?: Maybe<Scalars["AuthToken"]["output"]>
+  readonly authToken?: Maybe<Scalars["AuthToken"]>
   readonly errors: ReadonlyArray<Error>
-  readonly totpRequired?: Maybe<Scalars["Boolean"]["output"]>
+  readonly totpRequired?: Maybe<Scalars["Boolean"]>
 }
 
 /** A wallet belonging to an account which contains a BTC balance and a list of transactions. */
 export type BtcWallet = Wallet & {
   readonly __typename: "BTCWallet"
-  readonly accountId: Scalars["ID"]["output"]
+  readonly accountId: Scalars["ID"]
   /** A balance stored in BTC. */
-  readonly balance: Scalars["SignedAmount"]["output"]
-  readonly id: Scalars["ID"]["output"]
-  readonly lnurlp?: Maybe<Scalars["Lnurl"]["output"]>
+  readonly balance: Scalars["SignedAmount"]
+  readonly id: Scalars["ID"]
   /** An unconfirmed incoming onchain balance. */
-  readonly pendingIncomingBalance: Scalars["SignedAmount"]["output"]
+  readonly pendingIncomingBalance: Scalars["SignedAmount"]
   /** A list of BTC transactions associated with this wallet. */
   readonly transactions?: Maybe<TransactionConnection>
   readonly transactionsByAddress?: Maybe<TransactionConnection>
@@ -220,46 +212,46 @@ export type BtcWallet = Wallet & {
 
 /** A wallet belonging to an account which contains a BTC balance and a list of transactions. */
 export type BtcWalletTransactionsArgs = {
-  after?: InputMaybe<Scalars["String"]["input"]>
-  before?: InputMaybe<Scalars["String"]["input"]>
-  first?: InputMaybe<Scalars["Int"]["input"]>
-  last?: InputMaybe<Scalars["Int"]["input"]>
+  after?: InputMaybe<Scalars["String"]>
+  before?: InputMaybe<Scalars["String"]>
+  first?: InputMaybe<Scalars["Int"]>
+  last?: InputMaybe<Scalars["Int"]>
 }
 
 /** A wallet belonging to an account which contains a BTC balance and a list of transactions. */
 export type BtcWalletTransactionsByAddressArgs = {
-  address: Scalars["OnChainAddress"]["input"]
-  after?: InputMaybe<Scalars["String"]["input"]>
-  before?: InputMaybe<Scalars["String"]["input"]>
-  first?: InputMaybe<Scalars["Int"]["input"]>
-  last?: InputMaybe<Scalars["Int"]["input"]>
+  address: Scalars["OnChainAddress"]
+  after?: InputMaybe<Scalars["String"]>
+  before?: InputMaybe<Scalars["String"]>
+  first?: InputMaybe<Scalars["Int"]>
+  last?: InputMaybe<Scalars["Int"]>
 }
 
 export type BuildInformation = {
   readonly __typename: "BuildInformation"
-  readonly commitHash?: Maybe<Scalars["String"]["output"]>
-  readonly helmRevision?: Maybe<Scalars["Int"]["output"]>
+  readonly commitHash?: Maybe<Scalars["String"]>
+  readonly helmRevision?: Maybe<Scalars["Int"]>
 }
 
 export type CallbackEndpoint = {
   readonly __typename: "CallbackEndpoint"
-  readonly id: Scalars["EndpointId"]["output"]
-  readonly url: Scalars["EndpointUrl"]["output"]
+  readonly id: Scalars["EndpointId"]
+  readonly url: Scalars["EndpointUrl"]
 }
 
 export type CallbackEndpointAddInput = {
   /** callback endpoint to be called */
-  readonly url: Scalars["EndpointUrl"]["input"]
+  readonly url: Scalars["EndpointUrl"]
 }
 
 export type CallbackEndpointAddPayload = {
   readonly __typename: "CallbackEndpointAddPayload"
   readonly errors: ReadonlyArray<Error>
-  readonly id?: Maybe<Scalars["EndpointId"]["output"]>
+  readonly id?: Maybe<Scalars["EndpointId"]>
 }
 
 export type CallbackEndpointDeleteInput = {
-  readonly id: Scalars["EndpointId"]["input"]
+  readonly id: Scalars["EndpointId"]
 }
 
 export type CaptchaCreateChallengePayload = {
@@ -270,23 +262,23 @@ export type CaptchaCreateChallengePayload = {
 
 export type CaptchaCreateChallengeResult = {
   readonly __typename: "CaptchaCreateChallengeResult"
-  readonly challengeCode: Scalars["String"]["output"]
-  readonly failbackMode: Scalars["Boolean"]["output"]
-  readonly id: Scalars["String"]["output"]
-  readonly newCaptcha: Scalars["Boolean"]["output"]
+  readonly challengeCode: Scalars["String"]
+  readonly failbackMode: Scalars["Boolean"]
+  readonly id: Scalars["String"]
+  readonly newCaptcha: Scalars["Boolean"]
 }
 
 export type CaptchaRequestAuthCodeInput = {
-  readonly challengeCode: Scalars["String"]["input"]
+  readonly challengeCode: Scalars["String"]
   readonly channel?: InputMaybe<PhoneCodeChannelType>
-  readonly phone: Scalars["Phone"]["input"]
-  readonly secCode: Scalars["String"]["input"]
-  readonly validationCode: Scalars["String"]["input"]
+  readonly phone: Scalars["Phone"]
+  readonly secCode: Scalars["String"]
+  readonly validationCode: Scalars["String"]
 }
 
 export type CentAmountPayload = {
   readonly __typename: "CentAmountPayload"
-  readonly amount?: Maybe<Scalars["CentAmount"]["output"]>
+  readonly amount?: Maybe<Scalars["CentAmount"]>
   readonly errors: ReadonlyArray<Error>
 }
 
@@ -295,14 +287,15 @@ export type ConsumerAccount = Account & {
   readonly btcWallet?: Maybe<BtcWallet>
   readonly callbackEndpoints: ReadonlyArray<CallbackEndpoint>
   /** return CSV stream, base64 encoded, of the list of transactions in the wallet */
-  readonly csvTransactions: Scalars["String"]["output"]
+  readonly csvTransactions: Scalars["String"]
   readonly defaultWallet?: Maybe<Wallet>
-  readonly defaultWalletId: Scalars["WalletId"]["output"]
-  readonly displayCurrency: Scalars["DisplayCurrency"]["output"]
-  readonly id: Scalars["ID"]["output"]
+  readonly defaultWalletId: Scalars["WalletId"]
+  readonly displayCurrency: Scalars["DisplayCurrency"]
+  readonly id: Scalars["ID"]
   readonly level: AccountLevel
   readonly limits: AccountLimits
   readonly notificationSettings: NotificationSettings
+  readonly onboardingStatus?: Maybe<OnboardingStatus>
   /** List the quiz questions of the consumer account */
   readonly quiz: ReadonlyArray<Quiz>
   readonly realtimePrice: RealtimePrice
@@ -310,69 +303,70 @@ export type ConsumerAccount = Account & {
   readonly transactions?: Maybe<TransactionConnection>
   readonly usdWallet?: Maybe<UsdWallet>
   readonly wallets: ReadonlyArray<Wallet>
+  readonly welcomeProfile?: Maybe<WelcomeProfile>
 }
 
 export type ConsumerAccountCsvTransactionsArgs = {
-  walletIds: ReadonlyArray<Scalars["WalletId"]["input"]>
+  walletIds: ReadonlyArray<Scalars["WalletId"]>
 }
 
 export type ConsumerAccountTransactionsArgs = {
-  after?: InputMaybe<Scalars["String"]["input"]>
-  before?: InputMaybe<Scalars["String"]["input"]>
-  first?: InputMaybe<Scalars["Int"]["input"]>
-  last?: InputMaybe<Scalars["Int"]["input"]>
-  walletIds?: InputMaybe<ReadonlyArray<InputMaybe<Scalars["WalletId"]["input"]>>>
+  after?: InputMaybe<Scalars["String"]>
+  before?: InputMaybe<Scalars["String"]>
+  first?: InputMaybe<Scalars["Int"]>
+  last?: InputMaybe<Scalars["Int"]>
+  walletIds?: InputMaybe<ReadonlyArray<InputMaybe<Scalars["WalletId"]>>>
 }
 
 export type Contact = {
   readonly __typename: "Contact"
-  readonly prettyName: Scalars["String"]["output"]
+  readonly prettyName: Scalars["String"]
 }
 
 export type Coordinates = {
   readonly __typename: "Coordinates"
-  readonly latitude: Scalars["Float"]["output"]
-  readonly longitude: Scalars["Float"]["output"]
+  readonly latitude: Scalars["Float"]
+  readonly longitude: Scalars["Float"]
 }
 
 export type Country = {
   readonly __typename: "Country"
-  readonly id: Scalars["CountryCode"]["output"]
+  readonly id: Scalars["CountryCode"]
   readonly supportedAuthChannels: ReadonlyArray<PhoneCodeChannelType>
 }
 
 export type Currency = {
   readonly __typename: "Currency"
-  readonly flag: Scalars["String"]["output"]
-  readonly fractionDigits: Scalars["Int"]["output"]
-  readonly id: Scalars["ID"]["output"]
-  readonly name: Scalars["String"]["output"]
-  readonly symbol: Scalars["String"]["output"]
+  readonly flag: Scalars["String"]
+  readonly fractionDigits: Scalars["Int"]
+  readonly id: Scalars["ID"]
+  readonly name: Scalars["String"]
+  readonly symbol: Scalars["String"]
 }
 
 export type DepositFeesInformation = {
   readonly __typename: "DepositFeesInformation"
-  readonly minBankFee: Scalars["String"]["output"]
+  readonly minBankFee: Scalars["String"]
   /** below this amount minBankFee will be charged */
-  readonly minBankFeeThreshold: Scalars["String"]["output"]
+  readonly minBankFeeThreshold: Scalars["String"]
   /** ratio to charge as basis points above minBankFeeThreshold amount */
-  readonly ratio: Scalars["String"]["output"]
+  readonly ratio: Scalars["String"]
 }
 
 export type DeviceNotificationTokenCreateInput = {
-  readonly deviceToken: Scalars["String"]["input"]
+  readonly deviceToken: Scalars["String"]
 }
 
 export type Email = {
   readonly __typename: "Email"
-  readonly address?: Maybe<Scalars["EmailAddress"]["output"]>
-  readonly verified?: Maybe<Scalars["Boolean"]["output"]>
+  readonly address?: Maybe<Scalars["EmailAddress"]>
+  readonly verified?: Maybe<Scalars["Boolean"]>
 }
 
 export type Error = {
-  readonly code?: Maybe<Scalars["String"]["output"]>
-  readonly message: Scalars["String"]["output"]
-  readonly path?: Maybe<ReadonlyArray<Maybe<Scalars["String"]["output"]>>>
+  readonly code?: Maybe<Scalars["String"]>
+  readonly message: Scalars["String"]
+  readonly path?: Maybe<ReadonlyArray<Maybe<Scalars["String"]>>>
 }
 
 export const ExchangeCurrencyUnit = {
@@ -383,7 +377,7 @@ export const ExchangeCurrencyUnit = {
 export type ExchangeCurrencyUnit =
   (typeof ExchangeCurrencyUnit)[keyof typeof ExchangeCurrencyUnit]
 export type FeedbackSubmitInput = {
-  readonly feedback: Scalars["Feedback"]["input"]
+  readonly feedback: Scalars["Feedback"]
 }
 
 export type FeesInformation = {
@@ -397,25 +391,81 @@ export type Globals = {
   readonly buildInformation: BuildInformation
   readonly feesInformation: FeesInformation
   /** The domain name for lightning addresses accepted by this Galoy instance */
-  readonly lightningAddressDomain: Scalars["String"]["output"]
-  readonly lightningAddressDomainAliases: ReadonlyArray<Scalars["String"]["output"]>
+  readonly lightningAddressDomain: Scalars["String"]
+  readonly lightningAddressDomainAliases: ReadonlyArray<Scalars["String"]>
   /** Which network (mainnet, testnet, regtest, signet) this instance is running on. */
   readonly network: Network
   /**
    * A list of public keys for the running lightning nodes.
    * This can be used to know if an invoice belongs to one of our nodes.
    */
-  readonly nodesIds: ReadonlyArray<Scalars["String"]["output"]>
+  readonly nodesIds: ReadonlyArray<Scalars["String"]>
   /** A list of countries and their supported auth channels */
   readonly supportedCountries: ReadonlyArray<Country>
 }
 
 export type GraphQlApplicationError = Error & {
   readonly __typename: "GraphQLApplicationError"
-  readonly code?: Maybe<Scalars["String"]["output"]>
-  readonly message: Scalars["String"]["output"]
-  readonly path?: Maybe<ReadonlyArray<Maybe<Scalars["String"]["output"]>>>
+  readonly code?: Maybe<Scalars["String"]>
+  readonly message: Scalars["String"]
+  readonly path?: Maybe<ReadonlyArray<Maybe<Scalars["String"]>>>
 }
+
+export const Icon = {
+  ArrowLeft: "ARROW_LEFT",
+  ArrowRight: "ARROW_RIGHT",
+  BackSpace: "BACK_SPACE",
+  Bank: "BANK",
+  Bell: "BELL",
+  Bitcoin: "BITCOIN",
+  Book: "BOOK",
+  BtcBook: "BTC_BOOK",
+  CaretDown: "CARET_DOWN",
+  CaretLeft: "CARET_LEFT",
+  CaretRight: "CARET_RIGHT",
+  CaretUp: "CARET_UP",
+  Check: "CHECK",
+  CheckCircle: "CHECK_CIRCLE",
+  Close: "CLOSE",
+  CloseCrossWithBackground: "CLOSE_CROSS_WITH_BACKGROUND",
+  Coins: "COINS",
+  CopyPaste: "COPY_PASTE",
+  Dollar: "DOLLAR",
+  Eye: "EYE",
+  EyeSlash: "EYE_SLASH",
+  Filter: "FILTER",
+  Globe: "GLOBE",
+  Graph: "GRAPH",
+  Image: "IMAGE",
+  Info: "INFO",
+  Lightning: "LIGHTNING",
+  Link: "LINK",
+  Loading: "LOADING",
+  MagnifyingGlass: "MAGNIFYING_GLASS",
+  Map: "MAP",
+  Menu: "MENU",
+  Note: "NOTE",
+  PaymentError: "PAYMENT_ERROR",
+  PaymentPending: "PAYMENT_PENDING",
+  PaymentSuccess: "PAYMENT_SUCCESS",
+  Pencil: "PENCIL",
+  People: "PEOPLE",
+  QrCode: "QR_CODE",
+  Question: "QUESTION",
+  Rank: "RANK",
+  Receive: "RECEIVE",
+  Refresh: "REFRESH",
+  Send: "SEND",
+  Settings: "SETTINGS",
+  Share: "SHARE",
+  Transfer: "TRANSFER",
+  User: "USER",
+  Video: "VIDEO",
+  Warning: "WARNING",
+  WarningWithBackground: "WARNING_WITH_BACKGROUND",
+} as const
+
+export type Icon = (typeof Icon)[keyof typeof Icon]
 
 export type InitiationVia =
   | InitiationViaIntraLedger
@@ -424,48 +474,48 @@ export type InitiationVia =
 
 export type InitiationViaIntraLedger = {
   readonly __typename: "InitiationViaIntraLedger"
-  readonly counterPartyUsername?: Maybe<Scalars["Username"]["output"]>
-  readonly counterPartyWalletId?: Maybe<Scalars["WalletId"]["output"]>
+  readonly counterPartyUsername?: Maybe<Scalars["Username"]>
+  readonly counterPartyWalletId?: Maybe<Scalars["WalletId"]>
 }
 
 export type InitiationViaLn = {
   readonly __typename: "InitiationViaLn"
-  readonly paymentHash: Scalars["PaymentHash"]["output"]
+  readonly paymentHash: Scalars["PaymentHash"]
 }
 
 export type InitiationViaOnChain = {
   readonly __typename: "InitiationViaOnChain"
-  readonly address: Scalars["OnChainAddress"]["output"]
+  readonly address: Scalars["OnChainAddress"]
 }
 
 export type IntraLedgerPaymentSendInput = {
   /** Amount in satoshis. */
-  readonly amount: Scalars["SatAmount"]["input"]
+  readonly amount: Scalars["SatAmount"]
   /** Optional memo to be attached to the payment. */
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
-  readonly recipientWalletId: Scalars["WalletId"]["input"]
+  readonly memo?: InputMaybe<Scalars["Memo"]>
+  readonly recipientWalletId: Scalars["WalletId"]
   /** The wallet ID of the sender. */
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type IntraLedgerUpdate = {
   readonly __typename: "IntraLedgerUpdate"
-  readonly amount: Scalars["SatAmount"]["output"]
-  readonly displayCurrencyPerSat: Scalars["Float"]["output"]
+  readonly amount: Scalars["SatAmount"]
+  readonly displayCurrencyPerSat: Scalars["Float"]
   readonly txNotificationType: TxNotificationType
   /** @deprecated updated over displayCurrencyPerSat */
-  readonly usdPerSat: Scalars["Float"]["output"]
-  readonly walletId: Scalars["WalletId"]["output"]
+  readonly usdPerSat: Scalars["Float"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type IntraLedgerUsdPaymentSendInput = {
   /** Amount in cents. */
-  readonly amount: Scalars["CentAmount"]["input"]
+  readonly amount: Scalars["CentAmount"]
   /** Optional memo to be attached to the payment. */
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
-  readonly recipientWalletId: Scalars["WalletId"]["input"]
+  readonly memo?: InputMaybe<Scalars["Memo"]>
+  readonly recipientWalletId: Scalars["WalletId"]
   /** The wallet ID of the sender. */
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export const InvoicePaymentStatus = {
@@ -476,40 +526,53 @@ export const InvoicePaymentStatus = {
 
 export type InvoicePaymentStatus =
   (typeof InvoicePaymentStatus)[keyof typeof InvoicePaymentStatus]
+export type Leader = {
+  readonly __typename: "Leader"
+  readonly name?: Maybe<Scalars["LeaderboardName"]>
+  readonly points: Scalars["Int"]
+  readonly rank: Scalars["Int"]
+}
+
+export type Leaderboard = {
+  readonly __typename: "Leaderboard"
+  readonly leaders: ReadonlyArray<Leader>
+  readonly range: WelcomeRange
+}
+
 export type LnInvoice = {
   readonly __typename: "LnInvoice"
-  readonly paymentHash: Scalars["PaymentHash"]["output"]
-  readonly paymentRequest: Scalars["LnPaymentRequest"]["output"]
-  readonly paymentSecret: Scalars["LnPaymentSecret"]["output"]
-  readonly satoshis?: Maybe<Scalars["SatAmount"]["output"]>
+  readonly paymentHash: Scalars["PaymentHash"]
+  readonly paymentRequest: Scalars["LnPaymentRequest"]
+  readonly paymentSecret: Scalars["LnPaymentSecret"]
+  readonly satoshis?: Maybe<Scalars["SatAmount"]>
 }
 
 export type LnInvoiceCreateInput = {
   /** Amount in satoshis. */
-  readonly amount: Scalars["SatAmount"]["input"]
+  readonly amount: Scalars["SatAmount"]
   /** Optional invoice expiration time in minutes. */
-  readonly expiresIn?: InputMaybe<Scalars["Minutes"]["input"]>
+  readonly expiresIn?: InputMaybe<Scalars["Minutes"]>
   /** Optional memo for the lightning invoice. */
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   /** Wallet ID for a BTC wallet belonging to the current account. */
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type LnInvoiceCreateOnBehalfOfRecipientInput = {
   /** Amount in satoshis. */
-  readonly amount: Scalars["SatAmount"]["input"]
-  readonly descriptionHash?: InputMaybe<Scalars["Hex32Bytes"]["input"]>
+  readonly amount: Scalars["SatAmount"]
+  readonly descriptionHash?: InputMaybe<Scalars["Hex32Bytes"]>
   /** Optional invoice expiration time in minutes. */
-  readonly expiresIn?: InputMaybe<Scalars["Minutes"]["input"]>
+  readonly expiresIn?: InputMaybe<Scalars["Minutes"]>
   /** Optional memo for the lightning invoice. */
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   /** Wallet ID for a BTC wallet which belongs to any account. */
-  readonly recipientWalletId: Scalars["WalletId"]["input"]
+  readonly recipientWalletId: Scalars["WalletId"]
 }
 
 export type LnInvoiceFeeProbeInput = {
-  readonly paymentRequest: Scalars["LnPaymentRequest"]["input"]
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly paymentRequest: Scalars["LnPaymentRequest"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type LnInvoicePayload = {
@@ -520,15 +583,15 @@ export type LnInvoicePayload = {
 
 export type LnInvoicePaymentInput = {
   /** Optional memo to associate with the lightning invoice. */
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   /** Payment request representing the invoice which is being paid. */
-  readonly paymentRequest: Scalars["LnPaymentRequest"]["input"]
+  readonly paymentRequest: Scalars["LnPaymentRequest"]
   /** Wallet ID with sufficient balance to cover amount of invoice.  Must belong to the account of the current user. */
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type LnInvoicePaymentStatusInput = {
-  readonly paymentRequest: Scalars["LnPaymentRequest"]["input"]
+  readonly paymentRequest: Scalars["LnPaymentRequest"]
 }
 
 export type LnInvoicePaymentStatusPayload = {
@@ -539,33 +602,33 @@ export type LnInvoicePaymentStatusPayload = {
 
 export type LnNoAmountInvoice = {
   readonly __typename: "LnNoAmountInvoice"
-  readonly paymentHash: Scalars["PaymentHash"]["output"]
-  readonly paymentRequest: Scalars["LnPaymentRequest"]["output"]
-  readonly paymentSecret: Scalars["LnPaymentSecret"]["output"]
+  readonly paymentHash: Scalars["PaymentHash"]
+  readonly paymentRequest: Scalars["LnPaymentRequest"]
+  readonly paymentSecret: Scalars["LnPaymentSecret"]
 }
 
 export type LnNoAmountInvoiceCreateInput = {
   /** Optional invoice expiration time in minutes. */
-  readonly expiresIn?: InputMaybe<Scalars["Minutes"]["input"]>
+  readonly expiresIn?: InputMaybe<Scalars["Minutes"]>
   /** Optional memo for the lightning invoice. */
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   /** ID for either a USD or BTC wallet belonging to the account of the current user. */
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type LnNoAmountInvoiceCreateOnBehalfOfRecipientInput = {
   /** Optional invoice expiration time in minutes. */
-  readonly expiresIn?: InputMaybe<Scalars["Minutes"]["input"]>
+  readonly expiresIn?: InputMaybe<Scalars["Minutes"]>
   /** Optional memo for the lightning invoice. */
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   /** ID for either a USD or BTC wallet which belongs to the account of any user. */
-  readonly recipientWalletId: Scalars["WalletId"]["input"]
+  readonly recipientWalletId: Scalars["WalletId"]
 }
 
 export type LnNoAmountInvoiceFeeProbeInput = {
-  readonly amount: Scalars["SatAmount"]["input"]
-  readonly paymentRequest: Scalars["LnPaymentRequest"]["input"]
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly amount: Scalars["SatAmount"]
+  readonly paymentRequest: Scalars["LnPaymentRequest"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type LnNoAmountInvoicePayload = {
@@ -576,84 +639,96 @@ export type LnNoAmountInvoicePayload = {
 
 export type LnNoAmountInvoicePaymentInput = {
   /** Amount to pay in satoshis. */
-  readonly amount: Scalars["SatAmount"]["input"]
+  readonly amount: Scalars["SatAmount"]
   /** Optional memo to associate with the lightning invoice. */
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   /** Payment request representing the invoice which is being paid. */
-  readonly paymentRequest: Scalars["LnPaymentRequest"]["input"]
+  readonly paymentRequest: Scalars["LnPaymentRequest"]
   /** Wallet ID with sufficient balance to cover amount defined in mutation request.  Must belong to the account of the current user. */
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type LnNoAmountUsdInvoiceFeeProbeInput = {
-  readonly amount: Scalars["CentAmount"]["input"]
-  readonly paymentRequest: Scalars["LnPaymentRequest"]["input"]
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly amount: Scalars["CentAmount"]
+  readonly paymentRequest: Scalars["LnPaymentRequest"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type LnNoAmountUsdInvoicePaymentInput = {
   /** Amount to pay in USD cents. */
-  readonly amount: Scalars["CentAmount"]["input"]
+  readonly amount: Scalars["CentAmount"]
   /** Optional memo to associate with the lightning invoice. */
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   /** Payment request representing the invoice which is being paid. */
-  readonly paymentRequest: Scalars["LnPaymentRequest"]["input"]
+  readonly paymentRequest: Scalars["LnPaymentRequest"]
   /** Wallet ID with sufficient balance to cover amount defined in mutation request.  Must belong to the account of the current user. */
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type LnUpdate = {
   readonly __typename: "LnUpdate"
-  readonly paymentHash: Scalars["PaymentHash"]["output"]
+  readonly paymentHash: Scalars["PaymentHash"]
   readonly status: InvoicePaymentStatus
-  readonly walletId: Scalars["WalletId"]["output"]
+  readonly walletId: Scalars["WalletId"]
+}
+
+export type LnUsdInvoiceBtcDenominatedCreateOnBehalfOfRecipientInput = {
+  /** Amount in satoshis. */
+  readonly amount: Scalars["SatAmount"]
+  readonly descriptionHash?: InputMaybe<Scalars["Hex32Bytes"]>
+  /** Optional invoice expiration time in minutes. */
+  readonly expiresIn?: InputMaybe<Scalars["Minutes"]>
+  /** Optional memo for the lightning invoice. Acts as a note to the recipient. */
+  readonly memo?: InputMaybe<Scalars["Memo"]>
+  /** Wallet ID for a USD wallet which belongs to the account of any user. */
+  readonly recipientWalletId: Scalars["WalletId"]
 }
 
 export type LnUsdInvoiceCreateInput = {
   /** Amount in USD cents. */
-  readonly amount: Scalars["CentAmount"]["input"]
+  readonly amount: Scalars["CentAmount"]
   /** Optional invoice expiration time in minutes. */
-  readonly expiresIn?: InputMaybe<Scalars["Minutes"]["input"]>
+  readonly expiresIn?: InputMaybe<Scalars["Minutes"]>
   /** Optional memo for the lightning invoice. */
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   /** Wallet ID for a USD wallet belonging to the current user. */
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type LnUsdInvoiceCreateOnBehalfOfRecipientInput = {
   /** Amount in USD cents. */
-  readonly amount: Scalars["CentAmount"]["input"]
-  readonly descriptionHash?: InputMaybe<Scalars["Hex32Bytes"]["input"]>
+  readonly amount: Scalars["CentAmount"]
+  readonly descriptionHash?: InputMaybe<Scalars["Hex32Bytes"]>
   /** Optional invoice expiration time in minutes. */
-  readonly expiresIn?: InputMaybe<Scalars["Minutes"]["input"]>
+  readonly expiresIn?: InputMaybe<Scalars["Minutes"]>
   /** Optional memo for the lightning invoice. Acts as a note to the recipient. */
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   /** Wallet ID for a USD wallet which belongs to the account of any user. */
-  readonly recipientWalletId: Scalars["WalletId"]["input"]
+  readonly recipientWalletId: Scalars["WalletId"]
 }
 
 export type LnUsdInvoiceFeeProbeInput = {
-  readonly paymentRequest: Scalars["LnPaymentRequest"]["input"]
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly paymentRequest: Scalars["LnPaymentRequest"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type MapInfo = {
   readonly __typename: "MapInfo"
   readonly coordinates: Coordinates
-  readonly title: Scalars["String"]["output"]
+  readonly title: Scalars["String"]
 }
 
 export type MapMarker = {
   readonly __typename: "MapMarker"
   readonly mapInfo: MapInfo
-  readonly username?: Maybe<Scalars["Username"]["output"]>
+  readonly username?: Maybe<Scalars["Username"]>
 }
 
 export type MobileVersions = {
   readonly __typename: "MobileVersions"
-  readonly currentSupported: Scalars["Int"]["output"]
-  readonly minSupported: Scalars["Int"]["output"]
-  readonly platform: Scalars["String"]["output"]
+  readonly currentSupported: Scalars["Int"]
+  readonly minSupported: Scalars["Int"]
+  readonly platform: Scalars["String"]
 }
 
 export type Mutation = {
@@ -678,11 +753,9 @@ export type Mutation = {
    */
   readonly intraLedgerPaymentSend: PaymentSendPayload
   /**
-   * Galoy: Actions a payment which is internal to the ledger e.g. it does
+   * Actions a payment which is internal to the ledger e.g. it does
    * not use onchain/lightning. Returns payment status (success,
    * failed, pending, already_paid).
-   *
-   * Flash: We do not currently have an internal ledger. Consequently, intraledger payments have been updated to call Ibex instead.
    */
   readonly intraLedgerUsdPaymentSend: PaymentSendPayload
   /**
@@ -734,6 +807,13 @@ export type Mutation = {
    * Returns a lightning invoice denominated in satoshis for an associated wallet.
    * When invoice is paid the equivalent value at invoice creation will be credited to a USD wallet.
    * Expires after 'expiresIn' or 5 minutes (short expiry time because there is a USD/BTC exchange rate
+   *   associated with the amount).
+   */
+  readonly lnUsdInvoiceBtcDenominatedCreateOnBehalfOfRecipient: LnInvoicePayload
+  /**
+   * Returns a lightning invoice denominated in satoshis for an associated wallet.
+   * When invoice is paid the equivalent value at invoice creation will be credited to a USD wallet.
+   * Expires after 'expiresIn' or 5 minutes (short expiry time because there is a USD/BTC exchange rate
    * associated with the amount).
    */
   readonly lnUsdInvoiceCreate: LnInvoicePayload
@@ -745,13 +825,13 @@ export type Mutation = {
    */
   readonly lnUsdInvoiceCreateOnBehalfOfRecipient: LnInvoicePayload
   readonly lnUsdInvoiceFeeProbe: SatAmountPayload
-  readonly merchantMapSuggest: MerchantPayload
   readonly onChainAddressCreate: OnChainAddressPayload
   readonly onChainAddressCurrent: OnChainAddressPayload
   readonly onChainPaymentSend: PaymentSendPayload
   readonly onChainPaymentSendAll: PaymentSendPayload
   readonly onChainUsdPaymentSend: PaymentSendPayload
   readonly onChainUsdPaymentSendAsBtcDenominated: PaymentSendPayload
+  readonly onboardingFlowStart: OnboardingFlowStartResult
   readonly quizCompleted: QuizCompletedPayload
   /** @deprecated will be moved to AccountContact */
   readonly userContactUpdateAlias: UserContactUpdateAliasPayload
@@ -764,8 +844,6 @@ export type Mutation = {
   readonly userPhoneDelete: UserPhoneDeletePayload
   readonly userPhoneRegistrationInitiate: SuccessPayload
   readonly userPhoneRegistrationValidate: UserPhoneRegistrationValidatePayload
-  /** @deprecated Use QuizCompletedMutation instead */
-  readonly userQuizQuestionUpdateCompleted: UserQuizQuestionUpdateCompletedPayload
   readonly userTotpDelete: UserTotpDeletePayload
   readonly userTotpRegistrationInitiate: UserTotpRegistrationInitiatePayload
   readonly userTotpRegistrationValidate: UserTotpRegistrationValidatePayload
@@ -866,6 +944,10 @@ export type MutationLnNoAmountUsdInvoicePaymentSendArgs = {
   input: LnNoAmountUsdInvoicePaymentInput
 }
 
+export type MutationLnUsdInvoiceBtcDenominatedCreateOnBehalfOfRecipientArgs = {
+  input: LnUsdInvoiceBtcDenominatedCreateOnBehalfOfRecipientInput
+}
+
 export type MutationLnUsdInvoiceCreateArgs = {
   input: LnUsdInvoiceCreateInput
 }
@@ -876,10 +958,6 @@ export type MutationLnUsdInvoiceCreateOnBehalfOfRecipientArgs = {
 
 export type MutationLnUsdInvoiceFeeProbeArgs = {
   input: LnUsdInvoiceFeeProbeInput
-}
-
-export type MutationMerchantMapSuggestArgs = {
-  input: MerchantMapSuggestInput
 }
 
 export type MutationOnChainAddressCreateArgs = {
@@ -904,6 +982,10 @@ export type MutationOnChainUsdPaymentSendArgs = {
 
 export type MutationOnChainUsdPaymentSendAsBtcDenominatedArgs = {
   input: OnChainUsdPaymentSendAsBtcDenominatedInput
+}
+
+export type MutationOnboardingFlowStartArgs = {
+  input: OnboardingFlowStartInput
 }
 
 export type MutationQuizCompletedArgs = {
@@ -942,10 +1024,6 @@ export type MutationUserPhoneRegistrationValidateArgs = {
   input: UserPhoneRegistrationValidateInput
 }
 
-export type MutationUserQuizQuestionUpdateCompletedArgs = {
-  input: UserQuizQuestionUpdateCompletedInput
-}
-
 export type MutationUserTotpDeleteArgs = {
   input: UserTotpDeleteInput
 }
@@ -981,6 +1059,8 @@ export const Network = {
 } as const
 
 export type Network = (typeof Network)[keyof typeof Network]
+export type NotificationAction = OpenDeepLinkAction | OpenExternalLinkAction
+
 export const NotificationChannel = {
   Push: "PUSH",
 } as const
@@ -989,8 +1069,8 @@ export type NotificationChannel =
   (typeof NotificationChannel)[keyof typeof NotificationChannel]
 export type NotificationChannelSettings = {
   readonly __typename: "NotificationChannelSettings"
-  readonly disabledCategories: ReadonlyArray<Scalars["NotificationCategory"]["output"]>
-  readonly enabled: Scalars["Boolean"]["output"]
+  readonly disabledCategories: ReadonlyArray<Scalars["NotificationCategory"]>
+  readonly enabled: Scalars["Boolean"]
 }
 
 export type NotificationSettings = {
@@ -999,92 +1079,126 @@ export type NotificationSettings = {
 }
 
 export type OnChainAddressCreateInput = {
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type OnChainAddressCurrentInput = {
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type OnChainAddressPayload = {
   readonly __typename: "OnChainAddressPayload"
-  readonly address?: Maybe<Scalars["OnChainAddress"]["output"]>
+  readonly address?: Maybe<Scalars["OnChainAddress"]>
   readonly errors: ReadonlyArray<Error>
 }
 
 export type OnChainPaymentSendAllInput = {
-  readonly address: Scalars["OnChainAddress"]["input"]
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly address: Scalars["OnChainAddress"]
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   readonly speed?: InputMaybe<PayoutSpeed>
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type OnChainPaymentSendInput = {
-  readonly address: Scalars["OnChainAddress"]["input"]
-  readonly amount: Scalars["SatAmount"]["input"]
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly address: Scalars["OnChainAddress"]
+  readonly amount: Scalars["SatAmount"]
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   readonly speed?: InputMaybe<PayoutSpeed>
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type OnChainTxFee = {
   readonly __typename: "OnChainTxFee"
-  readonly amount: Scalars["SatAmount"]["output"]
+  readonly amount: Scalars["SatAmount"]
 }
 
 export type OnChainUpdate = {
   readonly __typename: "OnChainUpdate"
-  readonly amount: Scalars["SatAmount"]["output"]
-  readonly displayCurrencyPerSat: Scalars["Float"]["output"]
-  readonly txHash: Scalars["OnChainTxHash"]["output"]
+  readonly amount: Scalars["SatAmount"]
+  readonly displayCurrencyPerSat: Scalars["Float"]
+  readonly txHash: Scalars["OnChainTxHash"]
   readonly txNotificationType: TxNotificationType
   /** @deprecated updated over displayCurrencyPerSat */
-  readonly usdPerSat: Scalars["Float"]["output"]
-  readonly walletId: Scalars["WalletId"]["output"]
+  readonly usdPerSat: Scalars["Float"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type OnChainUsdPaymentSendAsBtcDenominatedInput = {
-  readonly address: Scalars["OnChainAddress"]["input"]
-  readonly amount: Scalars["SatAmount"]["input"]
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly address: Scalars["OnChainAddress"]
+  readonly amount: Scalars["SatAmount"]
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   readonly speed?: InputMaybe<PayoutSpeed>
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type OnChainUsdPaymentSendInput = {
-  readonly address: Scalars["OnChainAddress"]["input"]
-  readonly amount: Scalars["CentAmount"]["input"]
-  readonly memo?: InputMaybe<Scalars["Memo"]["input"]>
+  readonly address: Scalars["OnChainAddress"]
+  readonly amount: Scalars["CentAmount"]
+  readonly memo?: InputMaybe<Scalars["Memo"]>
   readonly speed?: InputMaybe<PayoutSpeed>
-  readonly walletId: Scalars["WalletId"]["input"]
+  readonly walletId: Scalars["WalletId"]
 }
 
 export type OnChainUsdTxFee = {
   readonly __typename: "OnChainUsdTxFee"
-  readonly amount: Scalars["CentAmount"]["output"]
+  readonly amount: Scalars["CentAmount"]
 }
 
+export type OnboardingFlowStartInput = {
+  readonly firstName: Scalars["String"]
+  readonly lastName: Scalars["String"]
+}
+
+export type OnboardingFlowStartResult = {
+  readonly __typename: "OnboardingFlowStartResult"
+  readonly tokenAndroid: Scalars["String"]
+  readonly tokenIos: Scalars["String"]
+  readonly workflowRunId: Scalars["String"]
+}
+
+export const OnboardingStatus = {
+  Abandoned: "ABANDONED",
+  Approved: "APPROVED",
+  AwaitingInput: "AWAITING_INPUT",
+  Declined: "DECLINED",
+  Error: "ERROR",
+  NotStarted: "NOT_STARTED",
+  Processing: "PROCESSING",
+  Review: "REVIEW",
+} as const
+
+export type OnboardingStatus = (typeof OnboardingStatus)[keyof typeof OnboardingStatus]
 export type OneDayAccountLimit = AccountLimit & {
   readonly __typename: "OneDayAccountLimit"
   /** The rolling time interval value in seconds for the current 24 hour period. */
-  readonly interval?: Maybe<Scalars["Seconds"]["output"]>
+  readonly interval?: Maybe<Scalars["Seconds"]>
   /** The amount of cents remaining below the limit for the current 24 hour period. */
-  readonly remainingLimit?: Maybe<Scalars["CentAmount"]["output"]>
+  readonly remainingLimit?: Maybe<Scalars["CentAmount"]>
   /** The current maximum limit for a given 24 hour period. */
-  readonly totalLimit: Scalars["CentAmount"]["output"]
+  readonly totalLimit: Scalars["CentAmount"]
+}
+
+export type OpenDeepLinkAction = {
+  readonly __typename: "OpenDeepLinkAction"
+  readonly deepLink: Scalars["String"]
+}
+
+export type OpenExternalLinkAction = {
+  readonly __typename: "OpenExternalLinkAction"
+  readonly url: Scalars["String"]
 }
 
 /** Information about pagination in a connection. */
 export type PageInfo = {
   readonly __typename: "PageInfo"
   /** When paginating forwards, the cursor to continue. */
-  readonly endCursor?: Maybe<Scalars["String"]["output"]>
+  readonly endCursor?: Maybe<Scalars["String"]>
   /** When paginating forwards, are there more items? */
-  readonly hasNextPage: Scalars["Boolean"]["output"]
+  readonly hasNextPage: Scalars["Boolean"]
   /** When paginating backwards, are there more items? */
-  readonly hasPreviousPage: Scalars["Boolean"]["output"]
+  readonly hasPreviousPage: Scalars["Boolean"]
   /** When paginating backwards, the cursor to continue. */
-  readonly startCursor?: Maybe<Scalars["String"]["output"]>
+  readonly startCursor?: Maybe<Scalars["String"]>
 }
 
 export type PaymentSendPayload = {
@@ -1116,10 +1230,10 @@ export type PhoneCodeChannelType =
 /** Price amount expressed in base/offset. To calculate, use: `base / 10^offset` */
 export type Price = {
   readonly __typename: "Price"
-  readonly base: Scalars["SafeInt"]["output"]
-  readonly currencyUnit: Scalars["String"]["output"]
-  readonly formattedAmount: Scalars["String"]["output"]
-  readonly offset: Scalars["Int"]["output"]
+  readonly base: Scalars["SafeInt"]
+  readonly currencyUnit: Scalars["String"]
+  readonly formattedAmount: Scalars["String"]
+  readonly offset: Scalars["Int"]
 }
 
 /** The range for the X axis in the BTC price graph */
@@ -1133,45 +1247,45 @@ export const PriceGraphRange = {
 
 export type PriceGraphRange = (typeof PriceGraphRange)[keyof typeof PriceGraphRange]
 export type PriceInput = {
-  readonly amount: Scalars["SatAmount"]["input"]
+  readonly amount: Scalars["SatAmount"]
   readonly amountCurrencyUnit: ExchangeCurrencyUnit
   readonly priceCurrencyUnit: ExchangeCurrencyUnit
 }
 
 export type PriceInterface = {
-  readonly base: Scalars["SafeInt"]["output"]
+  readonly base: Scalars["SafeInt"]
   /** @deprecated Deprecated due to type renaming */
-  readonly currencyUnit: Scalars["String"]["output"]
-  readonly offset: Scalars["Int"]["output"]
+  readonly currencyUnit: Scalars["String"]
+  readonly offset: Scalars["Int"]
 }
 
 /** Price of 1 sat in base/offset. To calculate, use: `base / 10^offset` */
 export type PriceOfOneSatInMinorUnit = PriceInterface & {
   readonly __typename: "PriceOfOneSatInMinorUnit"
-  readonly base: Scalars["SafeInt"]["output"]
+  readonly base: Scalars["SafeInt"]
   /** @deprecated Deprecated due to type renaming */
-  readonly currencyUnit: Scalars["String"]["output"]
-  readonly offset: Scalars["Int"]["output"]
+  readonly currencyUnit: Scalars["String"]
+  readonly offset: Scalars["Int"]
 }
 
 /** Price of 1 sat or 1 usd cent in base/offset. To calculate, use: `base / 10^offset` */
 export type PriceOfOneSettlementMinorUnitInDisplayMinorUnit = PriceInterface & {
   readonly __typename: "PriceOfOneSettlementMinorUnitInDisplayMinorUnit"
-  readonly base: Scalars["SafeInt"]["output"]
+  readonly base: Scalars["SafeInt"]
   /** @deprecated Deprecated due to type renaming */
-  readonly currencyUnit: Scalars["String"]["output"]
+  readonly currencyUnit: Scalars["String"]
   /** @deprecated Deprecated please use `base / 10^offset` */
-  readonly formattedAmount: Scalars["String"]["output"]
-  readonly offset: Scalars["Int"]["output"]
+  readonly formattedAmount: Scalars["String"]
+  readonly offset: Scalars["Int"]
 }
 
 /** Price of 1 usd cent in base/offset. To calculate, use: `base / 10^offset` */
 export type PriceOfOneUsdCentInMinorUnit = PriceInterface & {
   readonly __typename: "PriceOfOneUsdCentInMinorUnit"
-  readonly base: Scalars["SafeInt"]["output"]
+  readonly base: Scalars["SafeInt"]
   /** @deprecated Deprecated due to type renaming */
-  readonly currencyUnit: Scalars["String"]["output"]
-  readonly offset: Scalars["Int"]["output"]
+  readonly currencyUnit: Scalars["String"]
+  readonly offset: Scalars["Int"]
 }
 
 export type PricePayload = {
@@ -1184,56 +1298,49 @@ export type PricePoint = {
   readonly __typename: "PricePoint"
   readonly price: Price
   /** Unix timestamp (number of seconds elapsed since January 1, 1970 00:00:00 UTC) */
-  readonly timestamp: Scalars["Timestamp"]["output"]
+  readonly timestamp: Scalars["Timestamp"]
 }
 
 /** A public view of a generic wallet which stores value in one of our supported currencies. */
 export type PublicWallet = {
   readonly __typename: "PublicWallet"
-  readonly id: Scalars["ID"]["output"]
-  readonly lnurlp?: Maybe<Scalars["Lnurl"]["output"]>
+  readonly id: Scalars["ID"]
   readonly walletCurrency: WalletCurrency
 }
 
 export type Query = {
   readonly __typename: "Query"
   readonly accountDefaultWallet: PublicWallet
-  readonly beta: Scalars["Boolean"]["output"]
-  /** @deprecated Deprecated in favor of realtimePrice */
-  readonly btcPrice?: Maybe<Price>
+  readonly beta: Scalars["Boolean"]
   readonly btcPriceList?: Maybe<ReadonlyArray<Maybe<PricePoint>>>
   readonly businessMapMarkers?: Maybe<ReadonlyArray<Maybe<MapMarker>>>
-  readonly colorScheme: Scalars["String"]["output"]
+  readonly colorScheme: Scalars["String"]
   readonly currencyList: ReadonlyArray<Currency>
-  readonly feedbackModalShown: Scalars["Boolean"]["output"]
+  readonly feedbackModalShown: Scalars["Boolean"]
   readonly globals?: Maybe<Globals>
-  readonly hasPromptedSetDefaultAccount: Scalars["Boolean"]["output"]
-  readonly hiddenBalanceToolTip: Scalars["Boolean"]["output"]
-  readonly hideBalance: Scalars["Boolean"]["output"]
+  readonly hasPromptedSetDefaultAccount: Scalars["Boolean"]
+  readonly hiddenBalanceToolTip: Scalars["Boolean"]
+  readonly hideBalance: Scalars["Boolean"]
   readonly lnInvoicePaymentStatus: LnInvoicePaymentStatusPayload
   readonly me?: Maybe<User>
   readonly mobileVersions?: Maybe<ReadonlyArray<Maybe<MobileVersions>>>
   readonly onChainTxFee: OnChainTxFee
   readonly onChainUsdTxFee: OnChainUsdTxFee
   readonly onChainUsdTxFeeAsBtcDenominated: OnChainUsdTxFee
-  readonly price?: Maybe<Scalars["String"]["output"]>
+  readonly price?: Maybe<Scalars["String"]>
   /** @deprecated TODO: remove. we don't need a non authenticated version of this query. the users can only do the query while authenticated */
   readonly quizQuestions?: Maybe<ReadonlyArray<Maybe<QuizQuestion>>>
   /** Returns 1 Sat and 1 Usd Cent price for the given currency */
   readonly realtimePrice: RealtimePrice
-  readonly region?: Maybe<Region>
   /** @deprecated will be migrated to AccountDefaultWalletId */
-  readonly userDefaultWalletId: Scalars["WalletId"]["output"]
-  readonly usernameAvailable?: Maybe<Scalars["Boolean"]["output"]>
+  readonly userDefaultWalletId: Scalars["WalletId"]
+  readonly usernameAvailable?: Maybe<Scalars["Boolean"]>
+  readonly welcomeLeaderboard: Leaderboard
 }
 
 export type QueryAccountDefaultWalletArgs = {
-  username: Scalars["Username"]["input"]
+  username: Scalars["Username"]
   walletCurrency?: InputMaybe<WalletCurrency>
-}
-
-export type QueryBtcPriceArgs = {
-  currency?: Scalars["DisplayCurrency"]["input"]
 }
 
 export type QueryBtcPriceListArgs = {
@@ -1245,48 +1352,52 @@ export type QueryLnInvoicePaymentStatusArgs = {
 }
 
 export type QueryOnChainTxFeeArgs = {
-  address: Scalars["OnChainAddress"]["input"]
-  amount: Scalars["SatAmount"]["input"]
+  address: Scalars["OnChainAddress"]
+  amount: Scalars["SatAmount"]
   speed?: InputMaybe<PayoutSpeed>
-  walletId: Scalars["WalletId"]["input"]
+  walletId: Scalars["WalletId"]
 }
 
 export type QueryOnChainUsdTxFeeArgs = {
-  address: Scalars["OnChainAddress"]["input"]
-  amount: Scalars["CentAmount"]["input"]
+  address: Scalars["OnChainAddress"]
+  amount: Scalars["CentAmount"]
   speed?: InputMaybe<PayoutSpeed>
-  walletId: Scalars["WalletId"]["input"]
+  walletId: Scalars["WalletId"]
 }
 
 export type QueryOnChainUsdTxFeeAsBtcDenominatedArgs = {
-  address: Scalars["OnChainAddress"]["input"]
-  amount: Scalars["SatAmount"]["input"]
+  address: Scalars["OnChainAddress"]
+  amount: Scalars["SatAmount"]
   speed?: InputMaybe<PayoutSpeed>
-  walletId: Scalars["WalletId"]["input"]
+  walletId: Scalars["WalletId"]
 }
 
 export type QueryRealtimePriceArgs = {
-  currency?: InputMaybe<Scalars["DisplayCurrency"]["input"]>
+  currency?: InputMaybe<Scalars["DisplayCurrency"]>
 }
 
 export type QueryUserDefaultWalletIdArgs = {
-  username: Scalars["Username"]["input"]
+  username: Scalars["Username"]
 }
 
 export type QueryUsernameAvailableArgs = {
-  username: Scalars["Username"]["input"]
+  username: Scalars["Username"]
+}
+
+export type QueryWelcomeLeaderboardArgs = {
+  input: WelcomeLeaderboardInput
 }
 
 export type Quiz = {
   readonly __typename: "Quiz"
   /** The reward in Satoshis for the quiz question */
-  readonly amount: Scalars["SatAmount"]["output"]
-  readonly completed: Scalars["Boolean"]["output"]
-  readonly id: Scalars["ID"]["output"]
+  readonly amount: Scalars["SatAmount"]
+  readonly completed: Scalars["Boolean"]
+  readonly id: Scalars["ID"]
 }
 
 export type QuizCompletedInput = {
-  readonly id: Scalars["ID"]["input"]
+  readonly id: Scalars["ID"]
 }
 
 export type QuizCompletedPayload = {
@@ -1298,22 +1409,22 @@ export type QuizCompletedPayload = {
 export type QuizQuestion = {
   readonly __typename: "QuizQuestion"
   /** The earn reward in Satoshis for the quiz question */
-  readonly earnAmount: Scalars["SatAmount"]["output"]
-  readonly id: Scalars["ID"]["output"]
+  readonly earnAmount: Scalars["SatAmount"]
+  readonly id: Scalars["ID"]
 }
 
 export type RealtimePrice = {
   readonly __typename: "RealtimePrice"
   readonly btcSatPrice: PriceOfOneSatInMinorUnit
-  readonly denominatorCurrency: Scalars["DisplayCurrency"]["output"]
-  readonly id: Scalars["ID"]["output"]
+  readonly denominatorCurrency: Scalars["DisplayCurrency"]
+  readonly id: Scalars["ID"]
   /** Unix timestamp (number of seconds elapsed since January 1, 1970 00:00:00 UTC) */
-  readonly timestamp: Scalars["Timestamp"]["output"]
+  readonly timestamp: Scalars["Timestamp"]
   readonly usdCentPrice: PriceOfOneUsdCentInMinorUnit
 }
 
 export type RealtimePriceInput = {
-  readonly currency?: InputMaybe<Scalars["DisplayCurrency"]["input"]>
+  readonly currency?: InputMaybe<Scalars["DisplayCurrency"]>
 }
 
 export type RealtimePricePayload = {
@@ -1322,17 +1433,9 @@ export type RealtimePricePayload = {
   readonly realtimePrice?: Maybe<RealtimePrice>
 }
 
-export type Region = {
-  readonly __typename: "Region"
-  readonly latitude: Scalars["Float"]["output"]
-  readonly latitudeDelta: Scalars["Float"]["output"]
-  readonly longitude: Scalars["Float"]["output"]
-  readonly longitudeDelta: Scalars["Float"]["output"]
-}
-
 export type SatAmountPayload = {
   readonly __typename: "SatAmountPayload"
-  readonly amount?: Maybe<Scalars["SatAmount"]["output"]>
+  readonly amount?: Maybe<Scalars["SatAmount"]>
   readonly errors: ReadonlyArray<Error>
 }
 
@@ -1344,21 +1447,62 @@ export type SettlementVia =
 export type SettlementViaIntraLedger = {
   readonly __typename: "SettlementViaIntraLedger"
   /** Settlement destination: Could be null if the payee does not have a username */
-  readonly counterPartyUsername?: Maybe<Scalars["Username"]["output"]>
-  readonly counterPartyWalletId?: Maybe<Scalars["WalletId"]["output"]>
+  readonly counterPartyUsername?: Maybe<Scalars["Username"]>
+  readonly counterPartyWalletId?: Maybe<Scalars["WalletId"]>
 }
 
 export type SettlementViaLn = {
   readonly __typename: "SettlementViaLn"
   /** @deprecated Shifting property to 'preImage' to improve granularity of the LnPaymentSecret type */
-  readonly paymentSecret?: Maybe<Scalars["LnPaymentSecret"]["output"]>
-  readonly preImage?: Maybe<Scalars["LnPaymentPreImage"]["output"]>
+  readonly paymentSecret?: Maybe<Scalars["LnPaymentSecret"]>
+  readonly preImage?: Maybe<Scalars["LnPaymentPreImage"]>
 }
 
 export type SettlementViaOnChain = {
   readonly __typename: "SettlementViaOnChain"
-  readonly transactionHash?: Maybe<Scalars["OnChainTxHash"]["output"]>
-  readonly vout?: Maybe<Scalars["Int"]["output"]>
+  readonly transactionHash?: Maybe<Scalars["OnChainTxHash"]>
+  readonly vout?: Maybe<Scalars["Int"]>
+}
+
+export type StatefulNotification = {
+  readonly __typename: "StatefulNotification"
+  readonly acknowledgedAt?: Maybe<Scalars["Timestamp"]>
+  readonly action?: Maybe<NotificationAction>
+  readonly body: Scalars["String"]
+  readonly bulletinEnabled: Scalars["Boolean"]
+  readonly createdAt: Scalars["Timestamp"]
+  readonly deepLink?: Maybe<Scalars["String"]>
+  readonly icon?: Maybe<Icon>
+  readonly id: Scalars["ID"]
+  readonly title: Scalars["String"]
+}
+
+export type StatefulNotificationAcknowledgeInput = {
+  readonly notificationId: Scalars["ID"]
+}
+
+export type StatefulNotificationAcknowledgePayload = {
+  readonly __typename: "StatefulNotificationAcknowledgePayload"
+  readonly notification: StatefulNotification
+}
+
+export type StatefulNotificationConnection = {
+  readonly __typename: "StatefulNotificationConnection"
+  /** A list of edges. */
+  readonly edges: ReadonlyArray<StatefulNotificationEdge>
+  /** A list of nodes. */
+  readonly nodes: ReadonlyArray<StatefulNotification>
+  /** Information to aid in pagination. */
+  readonly pageInfo: PageInfo
+}
+
+/** An edge in a connection. */
+export type StatefulNotificationEdge = {
+  readonly __typename: "StatefulNotificationEdge"
+  /** A cursor for use in pagination */
+  readonly cursor: Scalars["String"]
+  /** The item at the end of the edge */
+  readonly node: StatefulNotification
 }
 
 export type Subscription = {
@@ -1385,7 +1529,7 @@ export type SubscriptionRealtimePriceArgs = {
 export type SuccessPayload = {
   readonly __typename: "SuccessPayload"
   readonly errors: ReadonlyArray<Error>
-  readonly success?: Maybe<Scalars["Boolean"]["output"]>
+  readonly success?: Maybe<Scalars["Boolean"]>
 }
 
 /**
@@ -1397,30 +1541,30 @@ export type SuccessPayload = {
  */
 export type Transaction = {
   readonly __typename: "Transaction"
-  readonly createdAt: Scalars["Timestamp"]["output"]
-  readonly date: Scalars["String"]["output"]
-  readonly date_format: Scalars["String"]["output"]
-  readonly date_nice_print: Scalars["String"]["output"]
+  readonly createdAt: Scalars["Timestamp"]
+  readonly date: Scalars["String"]
+  readonly date_format: Scalars["String"]
+  readonly date_nice_print: Scalars["String"]
   readonly direction: TxDirection
-  readonly id: Scalars["ID"]["output"]
+  readonly id: Scalars["ID"]
   /** From which protocol the payment has been initiated. */
   readonly initiationVia: InitiationVia
-  readonly isReceive: Scalars["Boolean"]["output"]
-  readonly memo?: Maybe<Scalars["Memo"]["output"]>
+  readonly isReceive: Scalars["Boolean"]
+  readonly memo?: Maybe<Scalars["Memo"]>
   /** Amount of the settlement currency sent or received. */
-  readonly settlementAmount: Scalars["SignedAmount"]["output"]
+  readonly settlementAmount: Scalars["SignedAmount"]
   /** Wallet currency for transaction. */
   readonly settlementCurrency: WalletCurrency
-  readonly settlementDisplayAmount: Scalars["SignedDisplayMajorAmount"]["output"]
-  readonly settlementDisplayCurrency: Scalars["DisplayCurrency"]["output"]
-  readonly settlementDisplayFee: Scalars["SignedDisplayMajorAmount"]["output"]
-  readonly settlementFee: Scalars["SignedAmount"]["output"]
+  readonly settlementDisplayAmount: Scalars["SignedDisplayMajorAmount"]
+  readonly settlementDisplayCurrency: Scalars["DisplayCurrency"]
+  readonly settlementDisplayFee: Scalars["SignedDisplayMajorAmount"]
+  readonly settlementFee: Scalars["SignedAmount"]
   /** Price in WALLETCURRENCY/SETTLEMENTUNIT at time of settlement. */
   readonly settlementPrice: PriceOfOneSettlementMinorUnitInDisplayMinorUnit
   /** To which protocol the payment has settled on. */
   readonly settlementVia: SettlementVia
   readonly status: TxStatus
-  readonly text: Scalars["String"]["output"]
+  readonly text: Scalars["String"]
 }
 
 /** A connection to a list of items. */
@@ -1436,7 +1580,7 @@ export type TransactionConnection = {
 export type TransactionEdge = {
   readonly __typename: "TransactionEdge"
   /** A cursor for use in pagination */
-  readonly cursor: Scalars["String"]["output"]
+  readonly cursor: Scalars["String"]
   /** The item at the end of the edge */
   readonly node: Transaction
 }
@@ -1467,20 +1611,19 @@ export const TxStatus = {
 export type TxStatus = (typeof TxStatus)[keyof typeof TxStatus]
 export type UpgradePayload = {
   readonly __typename: "UpgradePayload"
-  readonly authToken?: Maybe<Scalars["AuthToken"]["output"]>
+  readonly authToken?: Maybe<Scalars["AuthToken"]>
   readonly errors: ReadonlyArray<Error>
-  readonly success: Scalars["Boolean"]["output"]
+  readonly success: Scalars["Boolean"]
 }
 
 /** A wallet belonging to an account which contains a USD balance and a list of transactions. */
 export type UsdWallet = Wallet & {
   readonly __typename: "UsdWallet"
-  readonly accountId: Scalars["ID"]["output"]
-  readonly balance: Scalars["SignedAmount"]["output"]
-  readonly id: Scalars["ID"]["output"]
-  readonly lnurlp?: Maybe<Scalars["Lnurl"]["output"]>
+  readonly accountId: Scalars["ID"]
+  readonly balance: Scalars["SignedAmount"]
+  readonly id: Scalars["ID"]
   /** An unconfirmed incoming onchain balance. */
-  readonly pendingIncomingBalance: Scalars["SignedAmount"]["output"]
+  readonly pendingIncomingBalance: Scalars["SignedAmount"]
   readonly transactions?: Maybe<TransactionConnection>
   readonly transactionsByAddress?: Maybe<TransactionConnection>
   readonly walletCurrency: WalletCurrency
@@ -1488,19 +1631,19 @@ export type UsdWallet = Wallet & {
 
 /** A wallet belonging to an account which contains a USD balance and a list of transactions. */
 export type UsdWalletTransactionsArgs = {
-  after?: InputMaybe<Scalars["String"]["input"]>
-  before?: InputMaybe<Scalars["String"]["input"]>
-  first?: InputMaybe<Scalars["Int"]["input"]>
-  last?: InputMaybe<Scalars["Int"]["input"]>
+  after?: InputMaybe<Scalars["String"]>
+  before?: InputMaybe<Scalars["String"]>
+  first?: InputMaybe<Scalars["Int"]>
+  last?: InputMaybe<Scalars["Int"]>
 }
 
 /** A wallet belonging to an account which contains a USD balance and a list of transactions. */
 export type UsdWalletTransactionsByAddressArgs = {
-  address: Scalars["OnChainAddress"]["input"]
-  after?: InputMaybe<Scalars["String"]["input"]>
-  before?: InputMaybe<Scalars["String"]["input"]>
-  first?: InputMaybe<Scalars["Int"]["input"]>
-  last?: InputMaybe<Scalars["Int"]["input"]>
+  address: Scalars["OnChainAddress"]
+  after?: InputMaybe<Scalars["String"]>
+  before?: InputMaybe<Scalars["String"]>
+  first?: InputMaybe<Scalars["Int"]>
+  last?: InputMaybe<Scalars["Int"]>
 }
 
 export type User = {
@@ -1517,34 +1660,34 @@ export type User = {
    * @deprecated will be moved to account
    */
   readonly contacts: ReadonlyArray<UserContact>
-  readonly createdAt: Scalars["Timestamp"]["output"]
+  readonly createdAt: Scalars["Timestamp"]
   readonly defaultAccount: Account
   /** Email address */
   readonly email?: Maybe<Email>
-  readonly id: Scalars["ID"]["output"]
+  readonly id: Scalars["ID"]
   /**
    * Preferred language for user.
    * When value is 'default' the intent is to use preferred language from OS settings.
    */
-  readonly language: Scalars["Language"]["output"]
+  readonly language: Scalars["Language"]
   /** Phone number with international calling code. */
-  readonly phone?: Maybe<Scalars["Phone"]["output"]>
+  readonly phone?: Maybe<Scalars["Phone"]>
   /**
    * List the quiz questions the user may have completed.
    * @deprecated use Quiz from Account instead
    */
   readonly quizQuestions: ReadonlyArray<UserQuizQuestion>
   /** Whether TOTP is enabled for this user. */
-  readonly totpEnabled: Scalars["Boolean"]["output"]
+  readonly totpEnabled: Scalars["Boolean"]
   /**
    * Optional immutable user friendly identifier.
    * @deprecated will be moved to @Handle in Account and Wallet
    */
-  readonly username?: Maybe<Scalars["Username"]["output"]>
+  readonly username?: Maybe<Scalars["Username"]>
 }
 
 export type UserContactByUsernameArgs = {
-  username: Scalars["Username"]["input"]
+  username: Scalars["Username"]
 }
 
 export type UserContact = {
@@ -1553,25 +1696,25 @@ export type UserContact = {
    * Alias the user can set for this contact.
    * Only the user can see the alias attached to their contact.
    */
-  readonly alias?: Maybe<Scalars["ContactAlias"]["output"]>
-  readonly id: Scalars["Username"]["output"]
+  readonly alias?: Maybe<Scalars["ContactAlias"]>
+  readonly id: Scalars["Username"]
   /** Paginated list of transactions sent to/from this contact. */
   readonly transactions?: Maybe<TransactionConnection>
-  readonly transactionsCount: Scalars["Int"]["output"]
+  readonly transactionsCount: Scalars["Int"]
   /** Actual identifier of the contact. */
-  readonly username: Scalars["Username"]["output"]
+  readonly username: Scalars["Username"]
 }
 
 export type UserContactTransactionsArgs = {
-  after?: InputMaybe<Scalars["String"]["input"]>
-  before?: InputMaybe<Scalars["String"]["input"]>
-  first?: InputMaybe<Scalars["Int"]["input"]>
-  last?: InputMaybe<Scalars["Int"]["input"]>
+  after?: InputMaybe<Scalars["String"]>
+  before?: InputMaybe<Scalars["String"]>
+  first?: InputMaybe<Scalars["Int"]>
+  last?: InputMaybe<Scalars["Int"]>
 }
 
 export type UserContactUpdateAliasInput = {
-  readonly alias: Scalars["ContactAlias"]["input"]
-  readonly username: Scalars["Username"]["input"]
+  readonly alias: Scalars["ContactAlias"]
+  readonly username: Scalars["Username"]
 }
 
 export type UserContactUpdateAliasPayload = {
@@ -1587,19 +1730,19 @@ export type UserEmailDeletePayload = {
 }
 
 export type UserEmailRegistrationInitiateInput = {
-  readonly email: Scalars["EmailAddress"]["input"]
+  readonly email: Scalars["EmailAddress"]
 }
 
 export type UserEmailRegistrationInitiatePayload = {
   readonly __typename: "UserEmailRegistrationInitiatePayload"
-  readonly emailRegistrationId?: Maybe<Scalars["EmailRegistrationId"]["output"]>
+  readonly emailRegistrationId?: Maybe<Scalars["EmailRegistrationId"]>
   readonly errors: ReadonlyArray<Error>
   readonly me?: Maybe<User>
 }
 
 export type UserEmailRegistrationValidateInput = {
-  readonly code: Scalars["OneTimeAuthCode"]["input"]
-  readonly emailRegistrationId: Scalars["EmailRegistrationId"]["input"]
+  readonly code: Scalars["OneTimeAuthCode"]
+  readonly emailRegistrationId: Scalars["EmailRegistrationId"]
 }
 
 export type UserEmailRegistrationValidatePayload = {
@@ -1609,17 +1752,17 @@ export type UserEmailRegistrationValidatePayload = {
 }
 
 export type UserLoginInput = {
-  readonly code: Scalars["OneTimeAuthCode"]["input"]
-  readonly phone: Scalars["Phone"]["input"]
+  readonly code: Scalars["OneTimeAuthCode"]
+  readonly phone: Scalars["Phone"]
 }
 
 export type UserLoginUpgradeInput = {
-  readonly code: Scalars["OneTimeAuthCode"]["input"]
-  readonly phone: Scalars["Phone"]["input"]
+  readonly code: Scalars["OneTimeAuthCode"]
+  readonly phone: Scalars["Phone"]
 }
 
 export type UserLogoutInput = {
-  readonly deviceToken: Scalars["String"]["input"]
+  readonly deviceToken: Scalars["String"]
 }
 
 export type UserPhoneDeletePayload = {
@@ -1630,12 +1773,12 @@ export type UserPhoneDeletePayload = {
 
 export type UserPhoneRegistrationInitiateInput = {
   readonly channel?: InputMaybe<PhoneCodeChannelType>
-  readonly phone: Scalars["Phone"]["input"]
+  readonly phone: Scalars["Phone"]
 }
 
 export type UserPhoneRegistrationValidateInput = {
-  readonly code: Scalars["OneTimeAuthCode"]["input"]
-  readonly phone: Scalars["Phone"]["input"]
+  readonly code: Scalars["OneTimeAuthCode"]
+  readonly phone: Scalars["Phone"]
 }
 
 export type UserPhoneRegistrationValidatePayload = {
@@ -1646,22 +1789,12 @@ export type UserPhoneRegistrationValidatePayload = {
 
 export type UserQuizQuestion = {
   readonly __typename: "UserQuizQuestion"
-  readonly completed: Scalars["Boolean"]["output"]
+  readonly completed: Scalars["Boolean"]
   readonly question: QuizQuestion
 }
 
-export type UserQuizQuestionUpdateCompletedInput = {
-  readonly id: Scalars["ID"]["input"]
-}
-
-export type UserQuizQuestionUpdateCompletedPayload = {
-  readonly __typename: "UserQuizQuestionUpdateCompletedPayload"
-  readonly errors: ReadonlyArray<Error>
-  readonly userQuizQuestion?: Maybe<UserQuizQuestion>
-}
-
 export type UserTotpDeleteInput = {
-  readonly authToken: Scalars["AuthToken"]["input"]
+  readonly authToken: Scalars["AuthToken"]
 }
 
 export type UserTotpDeletePayload = {
@@ -1671,20 +1804,20 @@ export type UserTotpDeletePayload = {
 }
 
 export type UserTotpRegistrationInitiateInput = {
-  readonly authToken: Scalars["AuthToken"]["input"]
+  readonly authToken: Scalars["AuthToken"]
 }
 
 export type UserTotpRegistrationInitiatePayload = {
   readonly __typename: "UserTotpRegistrationInitiatePayload"
   readonly errors: ReadonlyArray<Error>
-  readonly totpRegistrationId?: Maybe<Scalars["TotpRegistrationId"]["output"]>
-  readonly totpSecret?: Maybe<Scalars["TotpSecret"]["output"]>
+  readonly totpRegistrationId?: Maybe<Scalars["TotpRegistrationId"]>
+  readonly totpSecret?: Maybe<Scalars["TotpSecret"]>
 }
 
 export type UserTotpRegistrationValidateInput = {
-  readonly authToken: Scalars["AuthToken"]["input"]
-  readonly totpCode: Scalars["TotpCode"]["input"]
-  readonly totpRegistrationId: Scalars["TotpRegistrationId"]["input"]
+  readonly authToken: Scalars["AuthToken"]
+  readonly totpCode: Scalars["TotpCode"]
+  readonly totpRegistrationId: Scalars["TotpRegistrationId"]
 }
 
 export type UserTotpRegistrationValidatePayload = {
@@ -1701,7 +1834,7 @@ export type UserUpdate =
   | RealtimePrice
 
 export type UserUpdateLanguageInput = {
-  readonly language: Scalars["Language"]["input"]
+  readonly language: Scalars["Language"]
 }
 
 export type UserUpdateLanguagePayload = {
@@ -1711,7 +1844,7 @@ export type UserUpdateLanguagePayload = {
 }
 
 export type UserUpdateUsernameInput = {
-  readonly username: Scalars["Username"]["input"]
+  readonly username: Scalars["Username"]
 }
 
 export type UserUpdateUsernamePayload = {
@@ -1722,11 +1855,10 @@ export type UserUpdateUsernamePayload = {
 
 /** A generic wallet which stores value in one of our supported currencies. */
 export type Wallet = {
-  readonly accountId: Scalars["ID"]["output"]
-  readonly balance: Scalars["SignedAmount"]["output"]
-  readonly id: Scalars["ID"]["output"]
-  readonly lnurlp?: Maybe<Scalars["Lnurl"]["output"]>
-  readonly pendingIncomingBalance: Scalars["SignedAmount"]["output"]
+  readonly accountId: Scalars["ID"]
+  readonly balance: Scalars["SignedAmount"]
+  readonly id: Scalars["ID"]
+  readonly pendingIncomingBalance: Scalars["SignedAmount"]
   /**
    * Transactions are ordered anti-chronologically,
    * ie: the newest transaction will be first
@@ -1742,19 +1874,19 @@ export type Wallet = {
 
 /** A generic wallet which stores value in one of our supported currencies. */
 export type WalletTransactionsArgs = {
-  after?: InputMaybe<Scalars["String"]["input"]>
-  before?: InputMaybe<Scalars["String"]["input"]>
-  first?: InputMaybe<Scalars["Int"]["input"]>
-  last?: InputMaybe<Scalars["Int"]["input"]>
+  after?: InputMaybe<Scalars["String"]>
+  before?: InputMaybe<Scalars["String"]>
+  first?: InputMaybe<Scalars["Int"]>
+  last?: InputMaybe<Scalars["Int"]>
 }
 
 /** A generic wallet which stores value in one of our supported currencies. */
 export type WalletTransactionsByAddressArgs = {
-  address: Scalars["OnChainAddress"]["input"]
-  after?: InputMaybe<Scalars["String"]["input"]>
-  before?: InputMaybe<Scalars["String"]["input"]>
-  first?: InputMaybe<Scalars["Int"]["input"]>
-  last?: InputMaybe<Scalars["Int"]["input"]>
+  address: Scalars["OnChainAddress"]
+  after?: InputMaybe<Scalars["String"]>
+  before?: InputMaybe<Scalars["String"]>
+  first?: InputMaybe<Scalars["Int"]>
+  last?: InputMaybe<Scalars["Int"]>
 }
 
 export const WalletCurrency = {
@@ -1763,6 +1895,29 @@ export const WalletCurrency = {
 } as const
 
 export type WalletCurrency = (typeof WalletCurrency)[keyof typeof WalletCurrency]
+export type WelcomeLeaderboardInput = {
+  readonly range: WelcomeRange
+}
+
+export type WelcomeProfile = {
+  readonly __typename: "WelcomeProfile"
+  readonly allTimePoints: Scalars["Int"]
+  readonly allTimeRank: Scalars["Int"]
+  readonly innerCircleAllTimeCount: Scalars["Int"]
+  readonly innerCircleThisMonthCount: Scalars["Int"]
+  readonly leaderboardName?: Maybe<Scalars["LeaderboardName"]>
+  readonly outerCircleAllTimeCount: Scalars["Int"]
+  readonly outerCircleThisMonthCount: Scalars["Int"]
+  readonly thisMonthPoints: Scalars["Int"]
+  readonly thisMonthRank: Scalars["Int"]
+}
+
+export const WelcomeRange = {
+  AllTime: "AllTime",
+  ThisMonth: "ThisMonth",
+} as const
+
+export type WelcomeRange = (typeof WelcomeRange)[keyof typeof WelcomeRange]
 export type MobileUpdateQueryVariables = Exact<{ [key: string]: never }>
 
 export type MobileUpdateQuery = {
@@ -1773,6 +1928,34 @@ export type MobileUpdateQuery = {
     readonly currentSupported: number
     readonly minSupported: number
   } | null> | null
+}
+
+export type BalanceHeaderQueryVariables = Exact<{ [key: string]: never }>
+
+export type BalanceHeaderQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly defaultAccount: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly wallets: ReadonlyArray<
+        | {
+            readonly __typename: "BTCWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+        | {
+            readonly __typename: "UsdWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+      >
+    }
+  } | null
 }
 
 export type BtcPriceListQueryVariables = Exact<{
@@ -1791,6 +1974,35 @@ export type BtcPriceListQuery = {
       readonly currencyUnit: string
     }
   } | null> | null
+}
+
+export type SetDefaultAccountModalQueryVariables = Exact<{ [key: string]: never }>
+
+export type SetDefaultAccountModalQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly defaultAccount: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly defaultWalletId: string
+      readonly wallets: ReadonlyArray<
+        | {
+            readonly __typename: "BTCWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+        | {
+            readonly __typename: "UsdWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+      >
+    }
+  } | null
 }
 
 export type UserUpdateUsernameMutationVariables = Exact<{
@@ -1818,6 +2030,34 @@ export type MyUserIdQueryVariables = Exact<{ [key: string]: never }>
 export type MyUserIdQuery = {
   readonly __typename: "Query"
   readonly me?: { readonly __typename: "User"; readonly id: string } | null
+}
+
+export type WalletOverviewScreenQueryVariables = Exact<{ [key: string]: never }>
+
+export type WalletOverviewScreenQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly defaultAccount: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly wallets: ReadonlyArray<
+        | {
+            readonly __typename: "BTCWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+        | {
+            readonly __typename: "UsdWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+      >
+    }
+  } | null
 }
 
 export type AnalyticsQueryVariables = Exact<{ [key: string]: never }>
@@ -2018,322 +2258,6 @@ export type TransactionListFragment = {
   }> | null
 }
 
-export type HomeAuthedQueryVariables = Exact<{ [key: string]: never }>
-
-export type HomeAuthedQuery = {
-  readonly __typename: "Query"
-  readonly me?: {
-    readonly __typename: "User"
-    readonly id: string
-    readonly language: string
-    readonly username?: string | null
-    readonly phone?: string | null
-    readonly email?: {
-      readonly __typename: "Email"
-      readonly address?: string | null
-      readonly verified?: boolean | null
-    } | null
-    readonly defaultAccount: {
-      readonly __typename: "ConsumerAccount"
-      readonly id: string
-      readonly level: AccountLevel
-      readonly defaultWalletId: string
-      readonly transactions?: {
-        readonly __typename: "TransactionConnection"
-        readonly pageInfo: {
-          readonly __typename: "PageInfo"
-          readonly hasNextPage: boolean
-          readonly hasPreviousPage: boolean
-          readonly startCursor?: string | null
-          readonly endCursor?: string | null
-        }
-        readonly edges?: ReadonlyArray<{
-          readonly __typename: "TransactionEdge"
-          readonly cursor: string
-          readonly node: {
-            readonly __typename: "Transaction"
-            readonly id: string
-            readonly status: TxStatus
-            readonly direction: TxDirection
-            readonly memo?: string | null
-            readonly createdAt: number
-            readonly settlementAmount: number
-            readonly settlementFee: number
-            readonly settlementDisplayFee: string
-            readonly settlementCurrency: WalletCurrency
-            readonly settlementDisplayAmount: string
-            readonly settlementDisplayCurrency: string
-            readonly settlementPrice: {
-              readonly __typename: "PriceOfOneSettlementMinorUnitInDisplayMinorUnit"
-              readonly base: number
-              readonly offset: number
-              readonly currencyUnit: string
-              readonly formattedAmount: string
-            }
-            readonly initiationVia:
-              | {
-                  readonly __typename: "InitiationViaIntraLedger"
-                  readonly counterPartyWalletId?: string | null
-                  readonly counterPartyUsername?: string | null
-                }
-              | { readonly __typename: "InitiationViaLn"; readonly paymentHash: string }
-              | { readonly __typename: "InitiationViaOnChain"; readonly address: string }
-            readonly settlementVia:
-              | {
-                  readonly __typename: "SettlementViaIntraLedger"
-                  readonly counterPartyWalletId?: string | null
-                  readonly counterPartyUsername?: string | null
-                }
-              | {
-                  readonly __typename: "SettlementViaLn"
-                  readonly paymentSecret?: string | null
-                }
-              | {
-                  readonly __typename: "SettlementViaOnChain"
-                  readonly transactionHash?: string | null
-                }
-          }
-        }> | null
-      } | null
-      readonly wallets: ReadonlyArray<
-        | {
-            readonly __typename: "BTCWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-        | {
-            readonly __typename: "UsdWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-      >
-    }
-  } | null
-}
-
-export type HomeUnauthedQueryVariables = Exact<{ [key: string]: never }>
-
-export type HomeUnauthedQuery = {
-  readonly __typename: "Query"
-  readonly globals?: { readonly __typename: "Globals"; readonly network: Network } | null
-  readonly currencyList: ReadonlyArray<{
-    readonly __typename: "Currency"
-    readonly id: string
-    readonly flag: string
-    readonly name: string
-    readonly symbol: string
-    readonly fractionDigits: number
-  }>
-}
-
-export type TransactionListForDefaultAccountQueryVariables = Exact<{
-  first?: InputMaybe<Scalars["Int"]["input"]>
-  after?: InputMaybe<Scalars["String"]["input"]>
-  last?: InputMaybe<Scalars["Int"]["input"]>
-  before?: InputMaybe<Scalars["String"]["input"]>
-}>
-
-export type TransactionListForDefaultAccountQuery = {
-  readonly __typename: "Query"
-  readonly me?: {
-    readonly __typename: "User"
-    readonly id: string
-    readonly defaultAccount: {
-      readonly __typename: "ConsumerAccount"
-      readonly id: string
-      readonly transactions?: {
-        readonly __typename: "TransactionConnection"
-        readonly pageInfo: {
-          readonly __typename: "PageInfo"
-          readonly hasNextPage: boolean
-          readonly hasPreviousPage: boolean
-          readonly startCursor?: string | null
-          readonly endCursor?: string | null
-        }
-        readonly edges?: ReadonlyArray<{
-          readonly __typename: "TransactionEdge"
-          readonly cursor: string
-          readonly node: {
-            readonly __typename: "Transaction"
-            readonly id: string
-            readonly status: TxStatus
-            readonly direction: TxDirection
-            readonly memo?: string | null
-            readonly createdAt: number
-            readonly settlementAmount: number
-            readonly settlementFee: number
-            readonly settlementDisplayFee: string
-            readonly settlementCurrency: WalletCurrency
-            readonly settlementDisplayAmount: string
-            readonly settlementDisplayCurrency: string
-            readonly settlementPrice: {
-              readonly __typename: "PriceOfOneSettlementMinorUnitInDisplayMinorUnit"
-              readonly base: number
-              readonly offset: number
-              readonly currencyUnit: string
-              readonly formattedAmount: string
-            }
-            readonly initiationVia:
-              | {
-                  readonly __typename: "InitiationViaIntraLedger"
-                  readonly counterPartyWalletId?: string | null
-                  readonly counterPartyUsername?: string | null
-                }
-              | { readonly __typename: "InitiationViaLn"; readonly paymentHash: string }
-              | { readonly __typename: "InitiationViaOnChain"; readonly address: string }
-            readonly settlementVia:
-              | {
-                  readonly __typename: "SettlementViaIntraLedger"
-                  readonly counterPartyWalletId?: string | null
-                  readonly counterPartyUsername?: string | null
-                }
-              | {
-                  readonly __typename: "SettlementViaLn"
-                  readonly paymentSecret?: string | null
-                }
-              | {
-                  readonly __typename: "SettlementViaOnChain"
-                  readonly transactionHash?: string | null
-                }
-          }
-        }> | null
-      } | null
-    }
-  } | null
-}
-
-export type BalanceHeaderQueryVariables = Exact<{ [key: string]: never }>
-
-export type BalanceHeaderQuery = {
-  readonly __typename: "Query"
-  readonly me?: {
-    readonly __typename: "User"
-    readonly id: string
-    readonly defaultAccount: {
-      readonly __typename: "ConsumerAccount"
-      readonly id: string
-      readonly wallets: ReadonlyArray<
-        | {
-            readonly __typename: "BTCWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-        | {
-            readonly __typename: "UsdWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-      >
-    }
-  } | null
-}
-
-export type SetDefaultAccountModalQueryVariables = Exact<{ [key: string]: never }>
-
-export type SetDefaultAccountModalQuery = {
-  readonly __typename: "Query"
-  readonly me?: {
-    readonly __typename: "User"
-    readonly id: string
-    readonly defaultAccount: {
-      readonly __typename: "ConsumerAccount"
-      readonly id: string
-      readonly defaultWalletId: string
-      readonly wallets: ReadonlyArray<
-        | {
-            readonly __typename: "BTCWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-        | {
-            readonly __typename: "UsdWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-      >
-    }
-  } | null
-}
-
-export type ConversionScreenQueryVariables = Exact<{ [key: string]: never }>
-
-export type ConversionScreenQuery = {
-  readonly __typename: "Query"
-  readonly me?: {
-    readonly __typename: "User"
-    readonly id: string
-    readonly defaultAccount: {
-      readonly __typename: "ConsumerAccount"
-      readonly id: string
-      readonly wallets: ReadonlyArray<
-        | {
-            readonly __typename: "BTCWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-        | {
-            readonly __typename: "UsdWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-      >
-    }
-  } | null
-}
-
-export type WalletCsvTransactionsQueryVariables = Exact<{
-  walletIds: ReadonlyArray<Scalars["WalletId"]["input"]> | Scalars["WalletId"]["input"]
-}>
-
-export type WalletCsvTransactionsQuery = {
-  readonly __typename: "Query"
-  readonly me?: {
-    readonly __typename: "User"
-    readonly id: string
-    readonly defaultAccount: {
-      readonly __typename: "ConsumerAccount"
-      readonly id: string
-      readonly csvTransactions: string
-    }
-  } | null
-}
-
-export type WalletOverviewScreenQueryVariables = Exact<{ [key: string]: never }>
-
-export type WalletOverviewScreenQuery = {
-  readonly __typename: "Query"
-  readonly me?: {
-    readonly __typename: "User"
-    readonly id: string
-    readonly defaultAccount: {
-      readonly __typename: "ConsumerAccount"
-      readonly id: string
-      readonly wallets: ReadonlyArray<
-        | {
-            readonly __typename: "BTCWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-        | {
-            readonly __typename: "UsdWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-      >
-    }
-  } | null
-}
-
 export type NetworkQueryVariables = Exact<{ [key: string]: never }>
 
 export type NetworkQuery = {
@@ -2354,36 +2278,6 @@ export type LevelQuery = {
       readonly level: AccountLevel
     }
   } | null
-}
-
-export type MerchantMapSuggestMutationVariables = Exact<{
-  input: MerchantMapSuggestInput
-}>
-
-export type MerchantMapSuggestMutation = {
-  readonly __typename: "Mutation"
-  readonly merchantMapSuggest: {
-    readonly __typename: "MerchantPayload"
-    readonly errors: ReadonlyArray<{
-      readonly __typename: "GraphQLApplicationError"
-      readonly code?: string | null
-      readonly message: string
-      readonly path?: ReadonlyArray<string | null> | null
-    }>
-    readonly merchant?: {
-      readonly __typename: "Merchant"
-      readonly createdAt: number
-      readonly id: string
-      readonly title: string
-      readonly username: string
-      readonly validated: boolean
-      readonly coordinates: {
-        readonly __typename: "Coordinates"
-        readonly latitude: number
-        readonly longitude: number
-      }
-    } | null
-  }
 }
 
 export type DisplayCurrencyQueryVariables = Exact<{ [key: string]: never }>
@@ -2435,36 +2329,12 @@ export type CaptchaCreateChallengeMutation = {
   }
 }
 
-export type ScanningQrCodeScreenQueryVariables = Exact<{ [key: string]: never }>
-
-export type ScanningQrCodeScreenQuery = {
-  readonly __typename: "Query"
-  readonly globals?: { readonly __typename: "Globals"; readonly network: Network } | null
-  readonly me?: {
-    readonly __typename: "User"
-    readonly id: string
-    readonly defaultAccount: {
-      readonly __typename: "ConsumerAccount"
-      readonly id: string
-      readonly wallets: ReadonlyArray<
-        | { readonly __typename: "BTCWallet"; readonly id: string }
-        | { readonly __typename: "UsdWallet"; readonly id: string }
-      >
-    }
-    readonly contacts: ReadonlyArray<{
-      readonly __typename: "UserContact"
-      readonly id: string
-      readonly username: string
-    }>
-  } | null
-}
-
 export type TransactionListForContactQueryVariables = Exact<{
-  username: Scalars["Username"]["input"]
-  first?: InputMaybe<Scalars["Int"]["input"]>
-  after?: InputMaybe<Scalars["String"]["input"]>
-  last?: InputMaybe<Scalars["Int"]["input"]>
-  before?: InputMaybe<Scalars["String"]["input"]>
+  username: Scalars["Username"]
+  first?: InputMaybe<Scalars["Int"]>
+  after?: InputMaybe<Scalars["String"]>
+  last?: InputMaybe<Scalars["Int"]>
+  before?: InputMaybe<Scalars["String"]>
 }>
 
 export type TransactionListForContactQuery = {
@@ -2570,6 +2440,46 @@ export type UserContactUpdateAliasMutation = {
       readonly id: string
     } | null
   }
+}
+
+export type UserLogoutMutationVariables = Exact<{
+  input: UserLogoutInput
+}>
+
+export type UserLogoutMutation = {
+  readonly __typename: "Mutation"
+  readonly userLogout: {
+    readonly __typename: "SuccessPayload"
+    readonly success?: boolean | null
+  }
+}
+
+export type ConversionScreenQueryVariables = Exact<{ [key: string]: never }>
+
+export type ConversionScreenQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly defaultAccount: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly wallets: ReadonlyArray<
+        | {
+            readonly __typename: "BTCWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+        | {
+            readonly __typename: "UsdWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+      >
+    }
+  } | null
 }
 
 export type QuizSatsQueryVariables = Exact<{ [key: string]: never }>
@@ -2683,11 +2593,162 @@ export type AddressScreenQuery = {
   } | null
 }
 
+export type HomeAuthedQueryVariables = Exact<{ [key: string]: never }>
+
+export type HomeAuthedQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly language: string
+    readonly username?: string | null
+    readonly phone?: string | null
+    readonly email?: {
+      readonly __typename: "Email"
+      readonly address?: string | null
+      readonly verified?: boolean | null
+    } | null
+    readonly defaultAccount: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly level: AccountLevel
+      readonly defaultWalletId: string
+      readonly transactions?: {
+        readonly __typename: "TransactionConnection"
+        readonly pageInfo: {
+          readonly __typename: "PageInfo"
+          readonly hasNextPage: boolean
+          readonly hasPreviousPage: boolean
+          readonly startCursor?: string | null
+          readonly endCursor?: string | null
+        }
+        readonly edges?: ReadonlyArray<{
+          readonly __typename: "TransactionEdge"
+          readonly cursor: string
+          readonly node: {
+            readonly __typename: "Transaction"
+            readonly id: string
+            readonly status: TxStatus
+            readonly direction: TxDirection
+            readonly memo?: string | null
+            readonly createdAt: number
+            readonly settlementAmount: number
+            readonly settlementFee: number
+            readonly settlementDisplayFee: string
+            readonly settlementCurrency: WalletCurrency
+            readonly settlementDisplayAmount: string
+            readonly settlementDisplayCurrency: string
+            readonly settlementPrice: {
+              readonly __typename: "PriceOfOneSettlementMinorUnitInDisplayMinorUnit"
+              readonly base: number
+              readonly offset: number
+              readonly currencyUnit: string
+              readonly formattedAmount: string
+            }
+            readonly initiationVia:
+              | {
+                  readonly __typename: "InitiationViaIntraLedger"
+                  readonly counterPartyWalletId?: string | null
+                  readonly counterPartyUsername?: string | null
+                }
+              | { readonly __typename: "InitiationViaLn"; readonly paymentHash: string }
+              | { readonly __typename: "InitiationViaOnChain"; readonly address: string }
+            readonly settlementVia:
+              | {
+                  readonly __typename: "SettlementViaIntraLedger"
+                  readonly counterPartyWalletId?: string | null
+                  readonly counterPartyUsername?: string | null
+                }
+              | {
+                  readonly __typename: "SettlementViaLn"
+                  readonly paymentSecret?: string | null
+                }
+              | {
+                  readonly __typename: "SettlementViaOnChain"
+                  readonly transactionHash?: string | null
+                }
+          }
+        }> | null
+      } | null
+      readonly wallets: ReadonlyArray<
+        | {
+            readonly __typename: "BTCWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+        | {
+            readonly __typename: "UsdWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+      >
+    }
+  } | null
+}
+
+export type HomeUnauthedQueryVariables = Exact<{ [key: string]: never }>
+
+export type HomeUnauthedQuery = {
+  readonly __typename: "Query"
+  readonly globals?: { readonly __typename: "Globals"; readonly network: Network } | null
+  readonly currencyList: ReadonlyArray<{
+    readonly __typename: "Currency"
+    readonly id: string
+    readonly flag: string
+    readonly name: string
+    readonly symbol: string
+    readonly fractionDigits: number
+  }>
+}
+
+export type BulletinsQueryVariables = Exact<{
+  first: Scalars["Int"]
+  after?: InputMaybe<Scalars["String"]>
+}>
+
+export type BulletinsQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly unacknowledgedStatefulNotificationsWithBulletinEnabled: {
+      readonly __typename: "StatefulNotificationConnection"
+      readonly pageInfo: {
+        readonly __typename: "PageInfo"
+        readonly endCursor?: string | null
+        readonly hasNextPage: boolean
+        readonly hasPreviousPage: boolean
+        readonly startCursor?: string | null
+      }
+      readonly edges: ReadonlyArray<{
+        readonly __typename: "StatefulNotificationEdge"
+        readonly cursor: string
+        readonly node: {
+          readonly __typename: "StatefulNotification"
+          readonly id: string
+          readonly title: string
+          readonly body: string
+          readonly createdAt: number
+          readonly acknowledgedAt?: number | null
+          readonly bulletinEnabled: boolean
+          readonly icon?: Icon | null
+          readonly action?:
+            | { readonly __typename: "OpenDeepLinkAction"; readonly deepLink: string }
+            | { readonly __typename: "OpenExternalLinkAction"; readonly url: string }
+            | null
+        }
+      }>
+    }
+  } | null
+}
+
 export type BusinessMapMarkersQueryVariables = Exact<{ [key: string]: never }>
 
 export type BusinessMapMarkersQuery = {
   readonly __typename: "Query"
-  readonly businessMapMarkers: ReadonlyArray<{
+  readonly businessMapMarkers?: ReadonlyArray<{
     readonly __typename: "MapMarker"
     readonly username?: string | null
     readonly mapInfo: {
@@ -2700,6 +2761,56 @@ export type BusinessMapMarkersQuery = {
       }
     }
   } | null> | null
+}
+
+export type StatefulNotificationsQueryVariables = Exact<{
+  after?: InputMaybe<Scalars["String"]>
+}>
+
+export type StatefulNotificationsQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly statefulNotificationsWithoutBulletinEnabled: {
+      readonly __typename: "StatefulNotificationConnection"
+      readonly nodes: ReadonlyArray<{
+        readonly __typename: "StatefulNotification"
+        readonly id: string
+        readonly title: string
+        readonly body: string
+        readonly createdAt: number
+        readonly acknowledgedAt?: number | null
+        readonly bulletinEnabled: boolean
+        readonly icon?: Icon | null
+        readonly action?:
+          | { readonly __typename: "OpenDeepLinkAction"; readonly deepLink: string }
+          | { readonly __typename: "OpenExternalLinkAction"; readonly url: string }
+          | null
+      }>
+      readonly pageInfo: {
+        readonly __typename: "PageInfo"
+        readonly endCursor?: string | null
+        readonly hasNextPage: boolean
+        readonly hasPreviousPage: boolean
+        readonly startCursor?: string | null
+      }
+    }
+  } | null
+}
+
+export type StatefulNotificationAcknowledgeMutationVariables = Exact<{
+  input: StatefulNotificationAcknowledgeInput
+}>
+
+export type StatefulNotificationAcknowledgeMutation = {
+  readonly __typename: "Mutation"
+  readonly statefulNotificationAcknowledge: {
+    readonly __typename: "StatefulNotificationAcknowledgePayload"
+    readonly notification: {
+      readonly __typename: "StatefulNotification"
+      readonly acknowledgedAt?: number | null
+    }
+  }
 }
 
 export type UserLoginMutationVariables = Exact<{
@@ -2958,6 +3069,30 @@ export type LnUsdInvoiceCreateMutation = {
   }
 }
 
+export type ScanningQrCodeScreenQueryVariables = Exact<{ [key: string]: never }>
+
+export type ScanningQrCodeScreenQuery = {
+  readonly __typename: "Query"
+  readonly globals?: { readonly __typename: "Globals"; readonly network: Network } | null
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly defaultAccount: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly wallets: ReadonlyArray<
+        | { readonly __typename: "BTCWallet"; readonly id: string }
+        | { readonly __typename: "UsdWallet"; readonly id: string }
+      >
+    }
+    readonly contacts: ReadonlyArray<{
+      readonly __typename: "UserContact"
+      readonly id: string
+      readonly username: string
+    }>
+  } | null
+}
+
 export type SendBitcoinConfirmationScreenQueryVariables = Exact<{ [key: string]: never }>
 
 export type SendBitcoinConfirmationScreenQuery = {
@@ -3011,7 +3146,7 @@ export type SendBitcoinDestinationQuery = {
 }
 
 export type AccountDefaultWalletQueryVariables = Exact<{
-  username: Scalars["Username"]["input"]
+  username: Scalars["Username"]
 }>
 
 export type AccountDefaultWalletQuery = {
@@ -3019,6 +3154,8 @@ export type AccountDefaultWalletQuery = {
   readonly accountDefaultWallet: {
     readonly __typename: "PublicWallet"
     readonly id: string
+    readonly walletCurrency: string
+    readonly lnurlp: string
   }
 }
 
@@ -3179,9 +3316,9 @@ export type LnNoAmountUsdInvoiceFeeProbeMutation = {
 }
 
 export type OnChainTxFeeQueryVariables = Exact<{
-  walletId: Scalars["WalletId"]["input"]
-  address: Scalars["OnChainAddress"]["input"]
-  amount: Scalars["SatAmount"]["input"]
+  walletId: Scalars["WalletId"]
+  address: Scalars["OnChainAddress"]
+  amount: Scalars["SatAmount"]
 }>
 
 export type OnChainTxFeeQuery = {
@@ -3190,9 +3327,9 @@ export type OnChainTxFeeQuery = {
 }
 
 export type OnChainUsdTxFeeQueryVariables = Exact<{
-  walletId: Scalars["WalletId"]["input"]
-  address: Scalars["OnChainAddress"]["input"]
-  amount: Scalars["CentAmount"]["input"]
+  walletId: Scalars["WalletId"]
+  address: Scalars["OnChainAddress"]
+  amount: Scalars["CentAmount"]
 }>
 
 export type OnChainUsdTxFeeQuery = {
@@ -3204,9 +3341,9 @@ export type OnChainUsdTxFeeQuery = {
 }
 
 export type OnChainUsdTxFeeAsBtcDenominatedQueryVariables = Exact<{
-  walletId: Scalars["WalletId"]["input"]
-  address: Scalars["OnChainAddress"]["input"]
-  amount: Scalars["SatAmount"]["input"]
+  walletId: Scalars["WalletId"]
+  address: Scalars["OnChainAddress"]
+  amount: Scalars["SatAmount"]
 }>
 
 export type OnChainUsdTxFeeAsBtcDenominatedQuery = {
@@ -3485,35 +3622,6 @@ export type UserTotpDeleteMutation = {
   }
 }
 
-export type WarningSecureAccountQueryVariables = Exact<{ [key: string]: never }>
-
-export type WarningSecureAccountQuery = {
-  readonly __typename: "Query"
-  readonly me?: {
-    readonly __typename: "User"
-    readonly id: string
-    readonly defaultAccount: {
-      readonly __typename: "ConsumerAccount"
-      readonly level: AccountLevel
-      readonly id: string
-      readonly wallets: ReadonlyArray<
-        | {
-            readonly __typename: "BTCWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-        | {
-            readonly __typename: "UsdWallet"
-            readonly id: string
-            readonly balance: number
-            readonly walletCurrency: WalletCurrency
-          }
-      >
-    }
-  } | null
-}
-
 export type AccountUpdateDefaultWalletIdMutationVariables = Exact<{
   input: AccountUpdateDefaultWalletIdInput
 }>
@@ -3744,6 +3852,36 @@ export type AccountDisableNotificationCategoryMutation = {
   }
 }
 
+export type UnacknowledgedNotificationCountQueryVariables = Exact<{
+  [key: string]: never
+}>
+
+export type UnacknowledgedNotificationCountQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly unacknowledgedStatefulNotificationsWithoutBulletinEnabledCount: number
+  } | null
+}
+
+export type WalletCsvTransactionsQueryVariables = Exact<{
+  walletIds: ReadonlyArray<Scalars["WalletId"]> | Scalars["WalletId"]
+}>
+
+export type WalletCsvTransactionsQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly defaultAccount: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly csvTransactions: string
+    }
+  } | null
+}
+
 export type SettingsScreenQueryVariables = Exact<{ [key: string]: never }>
 
 export type SettingsScreenQuery = {
@@ -3753,8 +3891,13 @@ export type SettingsScreenQuery = {
     readonly id: string
     readonly phone?: string | null
     readonly username?: string | null
-    readonly language: string
     readonly totpEnabled: boolean
+    readonly email?: {
+      readonly __typename: "Email"
+      readonly address?: string | null
+      readonly verified?: boolean | null
+    } | null
+    readonly language: string
     readonly defaultAccount: {
       readonly __typename: "ConsumerAccount"
       readonly id: string
@@ -3774,27 +3917,34 @@ export type SettingsScreenQuery = {
           }
       >
     }
-    readonly email?: {
-      readonly __typename: "Email"
-      readonly address?: string | null
-      readonly verified?: boolean | null
-    } | null
   } | null
 }
 
-export type ExportCsvSettingQueryVariables = Exact<{
-  walletIds: ReadonlyArray<Scalars["WalletId"]["input"]> | Scalars["WalletId"]["input"]
-}>
+export type WarningSecureAccountQueryVariables = Exact<{ [key: string]: never }>
 
-export type ExportCsvSettingQuery = {
+export type WarningSecureAccountQuery = {
   readonly __typename: "Query"
   readonly me?: {
     readonly __typename: "User"
     readonly id: string
     readonly defaultAccount: {
       readonly __typename: "ConsumerAccount"
+      readonly level: AccountLevel
       readonly id: string
-      readonly csvTransactions: string
+      readonly wallets: ReadonlyArray<
+        | {
+            readonly __typename: "BTCWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+        | {
+            readonly __typename: "UsdWallet"
+            readonly id: string
+            readonly balance: number
+            readonly walletCurrency: WalletCurrency
+          }
+      >
     }
   } | null
 }
@@ -3883,6 +4033,82 @@ export type UserTotpRegistrationValidateMutation = {
   }
 }
 
+export type TransactionListForDefaultAccountQueryVariables = Exact<{
+  first?: InputMaybe<Scalars["Int"]>
+  after?: InputMaybe<Scalars["String"]>
+  last?: InputMaybe<Scalars["Int"]>
+  before?: InputMaybe<Scalars["String"]>
+}>
+
+export type TransactionListForDefaultAccountQuery = {
+  readonly __typename: "Query"
+  readonly me?: {
+    readonly __typename: "User"
+    readonly id: string
+    readonly defaultAccount: {
+      readonly __typename: "ConsumerAccount"
+      readonly id: string
+      readonly transactions?: {
+        readonly __typename: "TransactionConnection"
+        readonly pageInfo: {
+          readonly __typename: "PageInfo"
+          readonly hasNextPage: boolean
+          readonly hasPreviousPage: boolean
+          readonly startCursor?: string | null
+          readonly endCursor?: string | null
+        }
+        readonly edges?: ReadonlyArray<{
+          readonly __typename: "TransactionEdge"
+          readonly cursor: string
+          readonly node: {
+            readonly __typename: "Transaction"
+            readonly id: string
+            readonly status: TxStatus
+            readonly direction: TxDirection
+            readonly memo?: string | null
+            readonly createdAt: number
+            readonly settlementAmount: number
+            readonly settlementFee: number
+            readonly settlementDisplayFee: string
+            readonly settlementCurrency: WalletCurrency
+            readonly settlementDisplayAmount: string
+            readonly settlementDisplayCurrency: string
+            readonly settlementPrice: {
+              readonly __typename: "PriceOfOneSettlementMinorUnitInDisplayMinorUnit"
+              readonly base: number
+              readonly offset: number
+              readonly currencyUnit: string
+              readonly formattedAmount: string
+            }
+            readonly initiationVia:
+              | {
+                  readonly __typename: "InitiationViaIntraLedger"
+                  readonly counterPartyWalletId?: string | null
+                  readonly counterPartyUsername?: string | null
+                }
+              | { readonly __typename: "InitiationViaLn"; readonly paymentHash: string }
+              | { readonly __typename: "InitiationViaOnChain"; readonly address: string }
+            readonly settlementVia:
+              | {
+                  readonly __typename: "SettlementViaIntraLedger"
+                  readonly counterPartyWalletId?: string | null
+                  readonly counterPartyUsername?: string | null
+                }
+              | {
+                  readonly __typename: "SettlementViaLn"
+                  readonly paymentSecret?: string | null
+                }
+              | {
+                  readonly __typename: "SettlementViaOnChain"
+                  readonly transactionHash?: string | null
+                }
+          }
+        }> | null
+      } | null
+    }
+  } | null
+}
+
 export type DeviceNotificationTokenCreateMutationVariables = Exact<{
   input: DeviceNotificationTokenCreateInput
 }>
@@ -3914,13 +4140,11 @@ export type WalletsQuery = {
             readonly __typename: "BTCWallet"
             readonly walletCurrency: WalletCurrency
             readonly id: string
-            readonly lnurlp?: string | null
           }
         | {
             readonly __typename: "UsdWallet"
             readonly walletCurrency: WalletCurrency
             readonly id: string
-            readonly lnurlp?: string | null
           }
       >
     }
@@ -4051,6 +4275,66 @@ export type MobileUpdateQueryResult = Apollo.QueryResult<
   MobileUpdateQuery,
   MobileUpdateQueryVariables
 >
+export const BalanceHeaderDocument = gql`
+  query balanceHeader {
+    me {
+      id
+      defaultAccount {
+        id
+        wallets {
+          id
+          balance
+          walletCurrency
+        }
+      }
+    }
+  }
+`
+
+/**
+ * __useBalanceHeaderQuery__
+ *
+ * To run a query within a React component, call `useBalanceHeaderQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBalanceHeaderQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBalanceHeaderQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useBalanceHeaderQuery(
+  baseOptions?: Apollo.QueryHookOptions<BalanceHeaderQuery, BalanceHeaderQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<BalanceHeaderQuery, BalanceHeaderQueryVariables>(
+    BalanceHeaderDocument,
+    options,
+  )
+}
+export function useBalanceHeaderLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    BalanceHeaderQuery,
+    BalanceHeaderQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<BalanceHeaderQuery, BalanceHeaderQueryVariables>(
+    BalanceHeaderDocument,
+    options,
+  )
+}
+export type BalanceHeaderQueryHookResult = ReturnType<typeof useBalanceHeaderQuery>
+export type BalanceHeaderLazyQueryHookResult = ReturnType<
+  typeof useBalanceHeaderLazyQuery
+>
+export type BalanceHeaderQueryResult = Apollo.QueryResult<
+  BalanceHeaderQuery,
+  BalanceHeaderQueryVariables
+>
 export const BtcPriceListDocument = gql`
   query btcPriceList($range: PriceGraphRange!) {
     btcPriceList(range: $range) {
@@ -4106,6 +4390,72 @@ export type BtcPriceListLazyQueryHookResult = ReturnType<typeof useBtcPriceListL
 export type BtcPriceListQueryResult = Apollo.QueryResult<
   BtcPriceListQuery,
   BtcPriceListQueryVariables
+>
+export const SetDefaultAccountModalDocument = gql`
+  query setDefaultAccountModal {
+    me {
+      id
+      defaultAccount {
+        id
+        defaultWalletId
+        wallets {
+          id
+          balance
+          walletCurrency
+        }
+      }
+    }
+  }
+`
+
+/**
+ * __useSetDefaultAccountModalQuery__
+ *
+ * To run a query within a React component, call `useSetDefaultAccountModalQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSetDefaultAccountModalQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSetDefaultAccountModalQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useSetDefaultAccountModalQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    SetDefaultAccountModalQuery,
+    SetDefaultAccountModalQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<
+    SetDefaultAccountModalQuery,
+    SetDefaultAccountModalQueryVariables
+  >(SetDefaultAccountModalDocument, options)
+}
+export function useSetDefaultAccountModalLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    SetDefaultAccountModalQuery,
+    SetDefaultAccountModalQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<
+    SetDefaultAccountModalQuery,
+    SetDefaultAccountModalQueryVariables
+  >(SetDefaultAccountModalDocument, options)
+}
+export type SetDefaultAccountModalQueryHookResult = ReturnType<
+  typeof useSetDefaultAccountModalQuery
+>
+export type SetDefaultAccountModalLazyQueryHookResult = ReturnType<
+  typeof useSetDefaultAccountModalLazyQuery
+>
+export type SetDefaultAccountModalQueryResult = Apollo.QueryResult<
+  SetDefaultAccountModalQuery,
+  SetDefaultAccountModalQueryVariables
 >
 export const UserUpdateUsernameDocument = gql`
   mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
@@ -4206,6 +4556,71 @@ export type MyUserIdLazyQueryHookResult = ReturnType<typeof useMyUserIdLazyQuery
 export type MyUserIdQueryResult = Apollo.QueryResult<
   MyUserIdQuery,
   MyUserIdQueryVariables
+>
+export const WalletOverviewScreenDocument = gql`
+  query walletOverviewScreen {
+    me {
+      id
+      defaultAccount {
+        id
+        wallets {
+          id
+          balance
+          walletCurrency
+        }
+      }
+    }
+  }
+`
+
+/**
+ * __useWalletOverviewScreenQuery__
+ *
+ * To run a query within a React component, call `useWalletOverviewScreenQuery` and pass it any options that fit your needs.
+ * When your component renders, `useWalletOverviewScreenQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWalletOverviewScreenQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWalletOverviewScreenQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    WalletOverviewScreenQuery,
+    WalletOverviewScreenQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<WalletOverviewScreenQuery, WalletOverviewScreenQueryVariables>(
+    WalletOverviewScreenDocument,
+    options,
+  )
+}
+export function useWalletOverviewScreenLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    WalletOverviewScreenQuery,
+    WalletOverviewScreenQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<
+    WalletOverviewScreenQuery,
+    WalletOverviewScreenQueryVariables
+  >(WalletOverviewScreenDocument, options)
+}
+export type WalletOverviewScreenQueryHookResult = ReturnType<
+  typeof useWalletOverviewScreenQuery
+>
+export type WalletOverviewScreenLazyQueryHookResult = ReturnType<
+  typeof useWalletOverviewScreenLazyQuery
+>
+export type WalletOverviewScreenQueryResult = Apollo.QueryResult<
+  WalletOverviewScreenQuery,
+  WalletOverviewScreenQueryVariables
 >
 export const AnalyticsDocument = gql`
   query analytics {
@@ -4617,520 +5032,6 @@ export type HasPromptedSetDefaultAccountQueryResult = Apollo.QueryResult<
   HasPromptedSetDefaultAccountQuery,
   HasPromptedSetDefaultAccountQueryVariables
 >
-export const HomeAuthedDocument = gql`
-  query homeAuthed {
-    me {
-      id
-      language
-      username
-      phone
-      email {
-        address
-        verified
-      }
-      defaultAccount {
-        id
-        level
-        defaultWalletId
-        transactions(first: 20) {
-          ...TransactionList
-        }
-        wallets {
-          id
-          balance
-          walletCurrency
-        }
-      }
-    }
-  }
-  ${TransactionListFragmentDoc}
-`
-
-/**
- * __useHomeAuthedQuery__
- *
- * To run a query within a React component, call `useHomeAuthedQuery` and pass it any options that fit your needs.
- * When your component renders, `useHomeAuthedQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useHomeAuthedQuery({
- *   variables: {
- *   },
- * });
- */
-export function useHomeAuthedQuery(
-  baseOptions?: Apollo.QueryHookOptions<HomeAuthedQuery, HomeAuthedQueryVariables>,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useQuery<HomeAuthedQuery, HomeAuthedQueryVariables>(
-    HomeAuthedDocument,
-    options,
-  )
-}
-export function useHomeAuthedLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<HomeAuthedQuery, HomeAuthedQueryVariables>,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useLazyQuery<HomeAuthedQuery, HomeAuthedQueryVariables>(
-    HomeAuthedDocument,
-    options,
-  )
-}
-export type HomeAuthedQueryHookResult = ReturnType<typeof useHomeAuthedQuery>
-export type HomeAuthedLazyQueryHookResult = ReturnType<typeof useHomeAuthedLazyQuery>
-export type HomeAuthedQueryResult = Apollo.QueryResult<
-  HomeAuthedQuery,
-  HomeAuthedQueryVariables
->
-export const HomeUnauthedDocument = gql`
-  query homeUnauthed {
-    globals {
-      network
-    }
-    currencyList {
-      id
-      flag
-      name
-      symbol
-      fractionDigits
-    }
-  }
-`
-
-/**
- * __useHomeUnauthedQuery__
- *
- * To run a query within a React component, call `useHomeUnauthedQuery` and pass it any options that fit your needs.
- * When your component renders, `useHomeUnauthedQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useHomeUnauthedQuery({
- *   variables: {
- *   },
- * });
- */
-export function useHomeUnauthedQuery(
-  baseOptions?: Apollo.QueryHookOptions<HomeUnauthedQuery, HomeUnauthedQueryVariables>,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useQuery<HomeUnauthedQuery, HomeUnauthedQueryVariables>(
-    HomeUnauthedDocument,
-    options,
-  )
-}
-export function useHomeUnauthedLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    HomeUnauthedQuery,
-    HomeUnauthedQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useLazyQuery<HomeUnauthedQuery, HomeUnauthedQueryVariables>(
-    HomeUnauthedDocument,
-    options,
-  )
-}
-export type HomeUnauthedQueryHookResult = ReturnType<typeof useHomeUnauthedQuery>
-export type HomeUnauthedLazyQueryHookResult = ReturnType<typeof useHomeUnauthedLazyQuery>
-export type HomeUnauthedQueryResult = Apollo.QueryResult<
-  HomeUnauthedQuery,
-  HomeUnauthedQueryVariables
->
-export const TransactionListForDefaultAccountDocument = gql`
-  query transactionListForDefaultAccount(
-    $first: Int
-    $after: String
-    $last: Int
-    $before: String
-  ) {
-    me {
-      id
-      defaultAccount {
-        id
-        transactions(first: $first, after: $after, last: $last, before: $before) {
-          ...TransactionList
-        }
-      }
-    }
-  }
-  ${TransactionListFragmentDoc}
-`
-
-/**
- * __useTransactionListForDefaultAccountQuery__
- *
- * To run a query within a React component, call `useTransactionListForDefaultAccountQuery` and pass it any options that fit your needs.
- * When your component renders, `useTransactionListForDefaultAccountQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useTransactionListForDefaultAccountQuery({
- *   variables: {
- *      first: // value for 'first'
- *      after: // value for 'after'
- *      last: // value for 'last'
- *      before: // value for 'before'
- *   },
- * });
- */
-export function useTransactionListForDefaultAccountQuery(
-  baseOptions?: Apollo.QueryHookOptions<
-    TransactionListForDefaultAccountQuery,
-    TransactionListForDefaultAccountQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useQuery<
-    TransactionListForDefaultAccountQuery,
-    TransactionListForDefaultAccountQueryVariables
-  >(TransactionListForDefaultAccountDocument, options)
-}
-export function useTransactionListForDefaultAccountLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    TransactionListForDefaultAccountQuery,
-    TransactionListForDefaultAccountQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useLazyQuery<
-    TransactionListForDefaultAccountQuery,
-    TransactionListForDefaultAccountQueryVariables
-  >(TransactionListForDefaultAccountDocument, options)
-}
-export type TransactionListForDefaultAccountQueryHookResult = ReturnType<
-  typeof useTransactionListForDefaultAccountQuery
->
-export type TransactionListForDefaultAccountLazyQueryHookResult = ReturnType<
-  typeof useTransactionListForDefaultAccountLazyQuery
->
-export type TransactionListForDefaultAccountQueryResult = Apollo.QueryResult<
-  TransactionListForDefaultAccountQuery,
-  TransactionListForDefaultAccountQueryVariables
->
-export const BalanceHeaderDocument = gql`
-  query balanceHeader {
-    me {
-      id
-      defaultAccount {
-        id
-        wallets {
-          id
-          balance
-          walletCurrency
-        }
-      }
-    }
-  }
-`
-
-/**
- * __useBalanceHeaderQuery__
- *
- * To run a query within a React component, call `useBalanceHeaderQuery` and pass it any options that fit your needs.
- * When your component renders, `useBalanceHeaderQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useBalanceHeaderQuery({
- *   variables: {
- *   },
- * });
- */
-export function useBalanceHeaderQuery(
-  baseOptions?: Apollo.QueryHookOptions<BalanceHeaderQuery, BalanceHeaderQueryVariables>,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useQuery<BalanceHeaderQuery, BalanceHeaderQueryVariables>(
-    BalanceHeaderDocument,
-    options,
-  )
-}
-export function useBalanceHeaderLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    BalanceHeaderQuery,
-    BalanceHeaderQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useLazyQuery<BalanceHeaderQuery, BalanceHeaderQueryVariables>(
-    BalanceHeaderDocument,
-    options,
-  )
-}
-export type BalanceHeaderQueryHookResult = ReturnType<typeof useBalanceHeaderQuery>
-export type BalanceHeaderLazyQueryHookResult = ReturnType<
-  typeof useBalanceHeaderLazyQuery
->
-export type BalanceHeaderQueryResult = Apollo.QueryResult<
-  BalanceHeaderQuery,
-  BalanceHeaderQueryVariables
->
-export const SetDefaultAccountModalDocument = gql`
-  query setDefaultAccountModal {
-    me {
-      id
-      defaultAccount {
-        id
-        defaultWalletId
-        wallets {
-          id
-          balance
-          walletCurrency
-        }
-      }
-    }
-  }
-`
-
-/**
- * __useSetDefaultAccountModalQuery__
- *
- * To run a query within a React component, call `useSetDefaultAccountModalQuery` and pass it any options that fit your needs.
- * When your component renders, `useSetDefaultAccountModalQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSetDefaultAccountModalQuery({
- *   variables: {
- *   },
- * });
- */
-export function useSetDefaultAccountModalQuery(
-  baseOptions?: Apollo.QueryHookOptions<
-    SetDefaultAccountModalQuery,
-    SetDefaultAccountModalQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useQuery<
-    SetDefaultAccountModalQuery,
-    SetDefaultAccountModalQueryVariables
-  >(SetDefaultAccountModalDocument, options)
-}
-export function useSetDefaultAccountModalLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    SetDefaultAccountModalQuery,
-    SetDefaultAccountModalQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useLazyQuery<
-    SetDefaultAccountModalQuery,
-    SetDefaultAccountModalQueryVariables
-  >(SetDefaultAccountModalDocument, options)
-}
-export type SetDefaultAccountModalQueryHookResult = ReturnType<
-  typeof useSetDefaultAccountModalQuery
->
-export type SetDefaultAccountModalLazyQueryHookResult = ReturnType<
-  typeof useSetDefaultAccountModalLazyQuery
->
-export type SetDefaultAccountModalQueryResult = Apollo.QueryResult<
-  SetDefaultAccountModalQuery,
-  SetDefaultAccountModalQueryVariables
->
-export const ConversionScreenDocument = gql`
-  query conversionScreen {
-    me {
-      id
-      defaultAccount {
-        id
-        wallets {
-          id
-          balance
-          walletCurrency
-        }
-      }
-    }
-  }
-`
-
-/**
- * __useConversionScreenQuery__
- *
- * To run a query within a React component, call `useConversionScreenQuery` and pass it any options that fit your needs.
- * When your component renders, `useConversionScreenQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useConversionScreenQuery({
- *   variables: {
- *   },
- * });
- */
-export function useConversionScreenQuery(
-  baseOptions?: Apollo.QueryHookOptions<
-    ConversionScreenQuery,
-    ConversionScreenQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useQuery<ConversionScreenQuery, ConversionScreenQueryVariables>(
-    ConversionScreenDocument,
-    options,
-  )
-}
-export function useConversionScreenLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    ConversionScreenQuery,
-    ConversionScreenQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useLazyQuery<ConversionScreenQuery, ConversionScreenQueryVariables>(
-    ConversionScreenDocument,
-    options,
-  )
-}
-export type ConversionScreenQueryHookResult = ReturnType<typeof useConversionScreenQuery>
-export type ConversionScreenLazyQueryHookResult = ReturnType<
-  typeof useConversionScreenLazyQuery
->
-export type ConversionScreenQueryResult = Apollo.QueryResult<
-  ConversionScreenQuery,
-  ConversionScreenQueryVariables
->
-export const WalletCsvTransactionsDocument = gql`
-  query walletCSVTransactions($walletIds: [WalletId!]!) {
-    me {
-      id
-      defaultAccount {
-        id
-        csvTransactions(walletIds: $walletIds)
-      }
-    }
-  }
-`
-
-/**
- * __useWalletCsvTransactionsQuery__
- *
- * To run a query within a React component, call `useWalletCsvTransactionsQuery` and pass it any options that fit your needs.
- * When your component renders, `useWalletCsvTransactionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useWalletCsvTransactionsQuery({
- *   variables: {
- *      walletIds: // value for 'walletIds'
- *   },
- * });
- */
-export function useWalletCsvTransactionsQuery(
-  baseOptions: Apollo.QueryHookOptions<
-    WalletCsvTransactionsQuery,
-    WalletCsvTransactionsQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useQuery<WalletCsvTransactionsQuery, WalletCsvTransactionsQueryVariables>(
-    WalletCsvTransactionsDocument,
-    options,
-  )
-}
-export function useWalletCsvTransactionsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    WalletCsvTransactionsQuery,
-    WalletCsvTransactionsQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useLazyQuery<
-    WalletCsvTransactionsQuery,
-    WalletCsvTransactionsQueryVariables
-  >(WalletCsvTransactionsDocument, options)
-}
-export type WalletCsvTransactionsQueryHookResult = ReturnType<
-  typeof useWalletCsvTransactionsQuery
->
-export type WalletCsvTransactionsLazyQueryHookResult = ReturnType<
-  typeof useWalletCsvTransactionsLazyQuery
->
-export type WalletCsvTransactionsQueryResult = Apollo.QueryResult<
-  WalletCsvTransactionsQuery,
-  WalletCsvTransactionsQueryVariables
->
-export const WalletOverviewScreenDocument = gql`
-  query walletOverviewScreen {
-    me {
-      id
-      defaultAccount {
-        id
-        wallets {
-          id
-          balance
-          walletCurrency
-        }
-      }
-    }
-  }
-`
-
-/**
- * __useWalletOverviewScreenQuery__
- *
- * To run a query within a React component, call `useWalletOverviewScreenQuery` and pass it any options that fit your needs.
- * When your component renders, `useWalletOverviewScreenQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useWalletOverviewScreenQuery({
- *   variables: {
- *   },
- * });
- */
-export function useWalletOverviewScreenQuery(
-  baseOptions?: Apollo.QueryHookOptions<
-    WalletOverviewScreenQuery,
-    WalletOverviewScreenQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useQuery<WalletOverviewScreenQuery, WalletOverviewScreenQueryVariables>(
-    WalletOverviewScreenDocument,
-    options,
-  )
-}
-export function useWalletOverviewScreenLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    WalletOverviewScreenQuery,
-    WalletOverviewScreenQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useLazyQuery<
-    WalletOverviewScreenQuery,
-    WalletOverviewScreenQueryVariables
-  >(WalletOverviewScreenDocument, options)
-}
-export type WalletOverviewScreenQueryHookResult = ReturnType<
-  typeof useWalletOverviewScreenQuery
->
-export type WalletOverviewScreenLazyQueryHookResult = ReturnType<
-  typeof useWalletOverviewScreenLazyQuery
->
-export type WalletOverviewScreenQueryResult = Apollo.QueryResult<
-  WalletOverviewScreenQuery,
-  WalletOverviewScreenQueryVariables
->
 export const NetworkDocument = gql`
   query network {
     globals {
@@ -5214,122 +5115,6 @@ export function useLevelLazyQuery(
 export type LevelQueryHookResult = ReturnType<typeof useLevelQuery>
 export type LevelLazyQueryHookResult = ReturnType<typeof useLevelLazyQuery>
 export type LevelQueryResult = Apollo.QueryResult<LevelQuery, LevelQueryVariables>
-export const MerchantMapSuggestDocument = gql`
-  mutation MerchantMapSuggest($input: MerchantMapSuggestInput!) {
-    merchantMapSuggest(input: $input) {
-      errors {
-        code
-        message
-        path
-      }
-      merchant {
-        coordinates {
-          latitude
-          longitude
-        }
-        createdAt
-        id
-        title
-        username
-        validated
-      }
-    }
-  }
-`
-export type MerchantMapSuggestMutationFn = Apollo.MutationFunction<
-  MerchantMapSuggestMutation,
-  MerchantMapSuggestMutationVariables
->
-
-/**
- * __useMerchantMapSuggestMutation__
- *
- * To run a mutation, you first call `useMerchantMapSuggestMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useMerchantMapSuggestMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [merchantMapSuggestMutation, { data, loading, error }] = useMerchantMapSuggestMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useMerchantMapSuggestMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    MerchantMapSuggestMutation,
-    MerchantMapSuggestMutationVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useMutation<
-    MerchantMapSuggestMutation,
-    MerchantMapSuggestMutationVariables
-  >(MerchantMapSuggestDocument, options)
-}
-export type MerchantMapSuggestMutationHookResult = ReturnType<
-  typeof useMerchantMapSuggestMutation
->
-export type MerchantMapSuggestMutationResult =
-  Apollo.MutationResult<MerchantMapSuggestMutation>
-export type MerchantMapSuggestMutationOptions = Apollo.BaseMutationOptions<
-  MerchantMapSuggestMutation,
-  MerchantMapSuggestMutationVariables
->
-export const UserLogoutDocument = gql`
-  mutation UserLogout($input: UserLogoutInput!) {
-    userLogout(input: $input) {
-      success
-      errors {
-        code
-        message
-      }
-    }
-  }
-`
-export type UserLogoutMutationFn = Apollo.MutationFunction<
-  UserLogoutMutation,
-  UserLogoutMutationVariables
->
-
-/**
- * __useUserLogoutMutation__
- *
- * To run a mutation, you first call `useUserLogoutMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useUserLogoutMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [userLogoutMutation, { data, loading, error }] = useUserLogoutMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useUserLogoutMutation(
-  baseOptions?: Apollo.MutationHookOptions<
-    UserLogoutMutation,
-    UserLogoutMutationVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useMutation<UserLogoutMutation, UserLogoutMutationVariables>(
-    UserLogoutDocument,
-    options,
-  )
-}
-export type UserLogoutMutationHookResult = ReturnType<typeof useUserLogoutMutation>
-export type UserLogoutMutationResult = Apollo.MutationResult<UserLogoutMutation>
-export type UserLogoutMutationOptions = Apollo.BaseMutationOptions<
-  UserLogoutMutation,
-  UserLogoutMutationVariables
->
 export const DisplayCurrencyDocument = gql`
   query displayCurrency {
     me {
@@ -5500,76 +5285,6 @@ export type CaptchaCreateChallengeMutationResult =
 export type CaptchaCreateChallengeMutationOptions = Apollo.BaseMutationOptions<
   CaptchaCreateChallengeMutation,
   CaptchaCreateChallengeMutationVariables
->
-export const ScanningQrCodeScreenDocument = gql`
-  query scanningQRCodeScreen {
-    globals {
-      network
-    }
-    me {
-      id
-      defaultAccount {
-        id
-        wallets {
-          id
-        }
-      }
-      contacts {
-        id
-        username
-      }
-    }
-  }
-`
-
-/**
- * __useScanningQrCodeScreenQuery__
- *
- * To run a query within a React component, call `useScanningQrCodeScreenQuery` and pass it any options that fit your needs.
- * When your component renders, `useScanningQrCodeScreenQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useScanningQrCodeScreenQuery({
- *   variables: {
- *   },
- * });
- */
-export function useScanningQrCodeScreenQuery(
-  baseOptions?: Apollo.QueryHookOptions<
-    ScanningQrCodeScreenQuery,
-    ScanningQrCodeScreenQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useQuery<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>(
-    ScanningQrCodeScreenDocument,
-    options,
-  )
-}
-export function useScanningQrCodeScreenLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    ScanningQrCodeScreenQuery,
-    ScanningQrCodeScreenQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useLazyQuery<
-    ScanningQrCodeScreenQuery,
-    ScanningQrCodeScreenQueryVariables
-  >(ScanningQrCodeScreenDocument, options)
-}
-export type ScanningQrCodeScreenQueryHookResult = ReturnType<
-  typeof useScanningQrCodeScreenQuery
->
-export type ScanningQrCodeScreenLazyQueryHookResult = ReturnType<
-  typeof useScanningQrCodeScreenLazyQuery
->
-export type ScanningQrCodeScreenQueryResult = Apollo.QueryResult<
-  ScanningQrCodeScreenQuery,
-  ScanningQrCodeScreenQueryVariables
 >
 export const TransactionListForContactDocument = gql`
   query transactionListForContact(
@@ -5750,6 +5465,116 @@ export type UserContactUpdateAliasMutationResult =
 export type UserContactUpdateAliasMutationOptions = Apollo.BaseMutationOptions<
   UserContactUpdateAliasMutation,
   UserContactUpdateAliasMutationVariables
+>
+export const UserLogoutDocument = gql`
+  mutation userLogout($input: UserLogoutInput!) {
+    userLogout(input: $input) {
+      success
+    }
+  }
+`
+export type UserLogoutMutationFn = Apollo.MutationFunction<
+  UserLogoutMutation,
+  UserLogoutMutationVariables
+>
+
+/**
+ * __useUserLogoutMutation__
+ *
+ * To run a mutation, you first call `useUserLogoutMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUserLogoutMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [userLogoutMutation, { data, loading, error }] = useUserLogoutMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUserLogoutMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    UserLogoutMutation,
+    UserLogoutMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useMutation<UserLogoutMutation, UserLogoutMutationVariables>(
+    UserLogoutDocument,
+    options,
+  )
+}
+export type UserLogoutMutationHookResult = ReturnType<typeof useUserLogoutMutation>
+export type UserLogoutMutationResult = Apollo.MutationResult<UserLogoutMutation>
+export type UserLogoutMutationOptions = Apollo.BaseMutationOptions<
+  UserLogoutMutation,
+  UserLogoutMutationVariables
+>
+export const ConversionScreenDocument = gql`
+  query conversionScreen {
+    me {
+      id
+      defaultAccount {
+        id
+        wallets {
+          id
+          balance
+          walletCurrency
+        }
+      }
+    }
+  }
+`
+
+/**
+ * __useConversionScreenQuery__
+ *
+ * To run a query within a React component, call `useConversionScreenQuery` and pass it any options that fit your needs.
+ * When your component renders, `useConversionScreenQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useConversionScreenQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useConversionScreenQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    ConversionScreenQuery,
+    ConversionScreenQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<ConversionScreenQuery, ConversionScreenQueryVariables>(
+    ConversionScreenDocument,
+    options,
+  )
+}
+export function useConversionScreenLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    ConversionScreenQuery,
+    ConversionScreenQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<ConversionScreenQuery, ConversionScreenQueryVariables>(
+    ConversionScreenDocument,
+    options,
+  )
+}
+export type ConversionScreenQueryHookResult = ReturnType<typeof useConversionScreenQuery>
+export type ConversionScreenLazyQueryHookResult = ReturnType<
+  typeof useConversionScreenLazyQuery
+>
+export type ConversionScreenQueryResult = Apollo.QueryResult<
+  ConversionScreenQuery,
+  ConversionScreenQueryVariables
 >
 export const QuizSatsDocument = gql`
   query quizSats {
@@ -6086,6 +5911,224 @@ export type AddressScreenQueryResult = Apollo.QueryResult<
   AddressScreenQuery,
   AddressScreenQueryVariables
 >
+export const HomeAuthedDocument = gql`
+  query homeAuthed {
+    me {
+      id
+      language
+      username
+      phone
+      email {
+        address
+        verified
+      }
+      defaultAccount {
+        id
+        level
+        defaultWalletId
+        transactions(first: 20) {
+          ...TransactionList
+        }
+        wallets {
+          id
+          balance
+          walletCurrency
+        }
+      }
+    }
+  }
+  ${TransactionListFragmentDoc}
+`
+
+/**
+ * __useHomeAuthedQuery__
+ *
+ * To run a query within a React component, call `useHomeAuthedQuery` and pass it any options that fit your needs.
+ * When your component renders, `useHomeAuthedQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useHomeAuthedQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useHomeAuthedQuery(
+  baseOptions?: Apollo.QueryHookOptions<HomeAuthedQuery, HomeAuthedQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<HomeAuthedQuery, HomeAuthedQueryVariables>(
+    HomeAuthedDocument,
+    options,
+  )
+}
+export function useHomeAuthedLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<HomeAuthedQuery, HomeAuthedQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<HomeAuthedQuery, HomeAuthedQueryVariables>(
+    HomeAuthedDocument,
+    options,
+  )
+}
+export type HomeAuthedQueryHookResult = ReturnType<typeof useHomeAuthedQuery>
+export type HomeAuthedLazyQueryHookResult = ReturnType<typeof useHomeAuthedLazyQuery>
+export type HomeAuthedQueryResult = Apollo.QueryResult<
+  HomeAuthedQuery,
+  HomeAuthedQueryVariables
+>
+export const HomeUnauthedDocument = gql`
+  query homeUnauthed {
+    globals {
+      network
+    }
+    currencyList {
+      id
+      flag
+      name
+      symbol
+      fractionDigits
+    }
+  }
+`
+
+/**
+ * __useHomeUnauthedQuery__
+ *
+ * To run a query within a React component, call `useHomeUnauthedQuery` and pass it any options that fit your needs.
+ * When your component renders, `useHomeUnauthedQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useHomeUnauthedQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useHomeUnauthedQuery(
+  baseOptions?: Apollo.QueryHookOptions<HomeUnauthedQuery, HomeUnauthedQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<HomeUnauthedQuery, HomeUnauthedQueryVariables>(
+    HomeUnauthedDocument,
+    options,
+  )
+}
+export function useHomeUnauthedLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    HomeUnauthedQuery,
+    HomeUnauthedQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<HomeUnauthedQuery, HomeUnauthedQueryVariables>(
+    HomeUnauthedDocument,
+    options,
+  )
+}
+export type HomeUnauthedQueryHookResult = ReturnType<typeof useHomeUnauthedQuery>
+export type HomeUnauthedLazyQueryHookResult = ReturnType<typeof useHomeUnauthedLazyQuery>
+export type HomeUnauthedQueryResult = Apollo.QueryResult<
+  HomeUnauthedQuery,
+  HomeUnauthedQueryVariables
+>
+export const BulletinsDocument = gql`
+  query Bulletins($first: Int!, $after: String) {
+    me {
+      id
+      unacknowledgedStatefulNotificationsWithBulletinEnabled(
+        first: $first
+        after: $after
+      ) {
+        pageInfo {
+          endCursor
+          hasNextPage
+          hasPreviousPage
+          startCursor
+        }
+        edges {
+          node {
+            id
+            title
+            body
+            createdAt
+            acknowledgedAt
+            bulletinEnabled
+            icon
+            action {
+              ... on OpenDeepLinkAction {
+                deepLink
+              }
+              ... on OpenExternalLinkAction {
+                url
+              }
+            }
+          }
+          cursor
+        }
+      }
+    }
+  }
+`
+
+/**
+ * __useBulletinsQuery__
+ *
+ * To run a query within a React component, call `useBulletinsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBulletinsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBulletinsQuery({
+ *   variables: {
+ *      first: // value for 'first'
+ *      after: // value for 'after'
+ *   },
+ * });
+ */
+export function useBulletinsQuery(
+  baseOptions: Apollo.QueryHookOptions<BulletinsQuery, BulletinsQueryVariables> &
+    ({ variables: BulletinsQueryVariables; skip?: boolean } | { skip: boolean }),
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<BulletinsQuery, BulletinsQueryVariables>(
+    BulletinsDocument,
+    options,
+  )
+}
+export function useBulletinsLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<BulletinsQuery, BulletinsQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<BulletinsQuery, BulletinsQueryVariables>(
+    BulletinsDocument,
+    options,
+  )
+}
+export function useBulletinsSuspenseQuery(
+  baseOptions?: Apollo.SuspenseQueryHookOptions<BulletinsQuery, BulletinsQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useSuspenseQuery<BulletinsQuery, BulletinsQueryVariables>(
+    BulletinsDocument,
+    options,
+  )
+}
+export type BulletinsQueryHookResult = ReturnType<typeof useBulletinsQuery>
+export type BulletinsLazyQueryHookResult = ReturnType<typeof useBulletinsLazyQuery>
+export type BulletinsSuspenseQueryHookResult = ReturnType<
+  typeof useBulletinsSuspenseQuery
+>
+export type BulletinsQueryResult = Apollo.QueryResult<
+  BulletinsQuery,
+  BulletinsQueryVariables
+>
 export const BusinessMapMarkersDocument = gql`
   query businessMapMarkers {
     businessMapMarkers {
@@ -6150,6 +6193,159 @@ export type BusinessMapMarkersQueryResult = Apollo.QueryResult<
   BusinessMapMarkersQuery,
   BusinessMapMarkersQueryVariables
 >
+
+export const StatefulNotificationsDocument = gql`
+  query StatefulNotifications($after: String) {
+    me {
+      statefulNotificationsWithoutBulletinEnabled(first: 20, after: $after) {
+        nodes {
+          id
+          title
+          body
+          createdAt
+          acknowledgedAt
+          bulletinEnabled
+          icon
+          action {
+            ... on OpenDeepLinkAction {
+              deepLink
+            }
+            ... on OpenExternalLinkAction {
+              url
+            }
+          }
+        }
+        pageInfo {
+          endCursor
+          hasNextPage
+          hasPreviousPage
+          startCursor
+        }
+      }
+    }
+  }
+`
+
+/**
+ * __useStatefulNotificationsQuery__
+ *
+ * To run a query within a React component, call `useStatefulNotificationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useStatefulNotificationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useStatefulNotificationsQuery({
+ *   variables: {
+ *      after: // value for 'after'
+ *   },
+ * });
+ */
+export function useStatefulNotificationsQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    StatefulNotificationsQuery,
+    StatefulNotificationsQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<StatefulNotificationsQuery, StatefulNotificationsQueryVariables>(
+    StatefulNotificationsDocument,
+    options,
+  )
+}
+export function useStatefulNotificationsLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    StatefulNotificationsQuery,
+    StatefulNotificationsQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<
+    StatefulNotificationsQuery,
+    StatefulNotificationsQueryVariables
+  >(StatefulNotificationsDocument, options)
+}
+export function useStatefulNotificationsSuspenseQuery(
+  baseOptions?: Apollo.SuspenseQueryHookOptions<
+    StatefulNotificationsQuery,
+    StatefulNotificationsQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useSuspenseQuery<
+    StatefulNotificationsQuery,
+    StatefulNotificationsQueryVariables
+  >(StatefulNotificationsDocument, options)
+}
+export type StatefulNotificationsQueryHookResult = ReturnType<
+  typeof useStatefulNotificationsQuery
+>
+export type StatefulNotificationsLazyQueryHookResult = ReturnType<
+  typeof useStatefulNotificationsLazyQuery
+>
+export type StatefulNotificationsSuspenseQueryHookResult = ReturnType<
+  typeof useStatefulNotificationsSuspenseQuery
+>
+export type StatefulNotificationsQueryResult = Apollo.QueryResult<
+  StatefulNotificationsQuery,
+  StatefulNotificationsQueryVariables
+>
+export const StatefulNotificationAcknowledgeDocument = gql`
+  mutation StatefulNotificationAcknowledge(
+    $input: StatefulNotificationAcknowledgeInput!
+  ) {
+    statefulNotificationAcknowledge(input: $input) {
+      notification {
+        acknowledgedAt
+      }
+    }
+  }
+`
+export type StatefulNotificationAcknowledgeMutationFn = Apollo.MutationFunction<
+  StatefulNotificationAcknowledgeMutation,
+  StatefulNotificationAcknowledgeMutationVariables
+>
+
+/**
+ * __useStatefulNotificationAcknowledgeMutation__
+ *
+ * To run a mutation, you first call `useStatefulNotificationAcknowledgeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useStatefulNotificationAcknowledgeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [statefulNotificationAcknowledgeMutation, { data, loading, error }] = useStatefulNotificationAcknowledgeMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useStatefulNotificationAcknowledgeMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    StatefulNotificationAcknowledgeMutation,
+    StatefulNotificationAcknowledgeMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useMutation<
+    StatefulNotificationAcknowledgeMutation,
+    StatefulNotificationAcknowledgeMutationVariables
+  >(StatefulNotificationAcknowledgeDocument, options)
+}
+export type StatefulNotificationAcknowledgeMutationHookResult = ReturnType<
+  typeof useStatefulNotificationAcknowledgeMutation
+>
+export type StatefulNotificationAcknowledgeMutationResult =
+  Apollo.MutationResult<StatefulNotificationAcknowledgeMutation>
+export type StatefulNotificationAcknowledgeMutationOptions = Apollo.BaseMutationOptions<
+  StatefulNotificationAcknowledgeMutation,
+  StatefulNotificationAcknowledgeMutationVariables
+>
+
 export const UserLoginDocument = gql`
   mutation userLogin($input: UserLoginInput!) {
     userLogin(input: $input) {
@@ -6829,6 +7025,76 @@ export type LnUsdInvoiceCreateMutationOptions = Apollo.BaseMutationOptions<
   LnUsdInvoiceCreateMutation,
   LnUsdInvoiceCreateMutationVariables
 >
+export const ScanningQrCodeScreenDocument = gql`
+  query scanningQRCodeScreen {
+    globals {
+      network
+    }
+    me {
+      id
+      defaultAccount {
+        id
+        wallets {
+          id
+        }
+      }
+      contacts {
+        id
+        username
+      }
+    }
+  }
+`
+
+/**
+ * __useScanningQrCodeScreenQuery__
+ *
+ * To run a query within a React component, call `useScanningQrCodeScreenQuery` and pass it any options that fit your needs.
+ * When your component renders, `useScanningQrCodeScreenQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useScanningQrCodeScreenQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useScanningQrCodeScreenQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    ScanningQrCodeScreenQuery,
+    ScanningQrCodeScreenQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>(
+    ScanningQrCodeScreenDocument,
+    options,
+  )
+}
+export function useScanningQrCodeScreenLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    ScanningQrCodeScreenQuery,
+    ScanningQrCodeScreenQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<
+    ScanningQrCodeScreenQuery,
+    ScanningQrCodeScreenQueryVariables
+  >(ScanningQrCodeScreenDocument, options)
+}
+export type ScanningQrCodeScreenQueryHookResult = ReturnType<
+  typeof useScanningQrCodeScreenQuery
+>
+export type ScanningQrCodeScreenLazyQueryHookResult = ReturnType<
+  typeof useScanningQrCodeScreenLazyQuery
+>
+export type ScanningQrCodeScreenQueryResult = Apollo.QueryResult<
+  ScanningQrCodeScreenQuery,
+  ScanningQrCodeScreenQueryVariables
+>
 export const SendBitcoinConfirmationScreenDocument = gql`
   query sendBitcoinConfirmationScreen {
     me {
@@ -6964,10 +7230,13 @@ export type SendBitcoinDestinationQueryResult = Apollo.QueryResult<
   SendBitcoinDestinationQuery,
   SendBitcoinDestinationQueryVariables
 >
+
 export const AccountDefaultWalletDocument = gql`
   query accountDefaultWallet($username: Username!) {
     accountDefaultWallet(username: $username) {
       id
+      walletCurrency
+      lnurlp
     }
   }
 `
@@ -8452,72 +8721,6 @@ export type UserTotpDeleteMutationOptions = Apollo.BaseMutationOptions<
   UserTotpDeleteMutation,
   UserTotpDeleteMutationVariables
 >
-export const WarningSecureAccountDocument = gql`
-  query warningSecureAccount {
-    me {
-      id
-      defaultAccount {
-        level
-        id
-        wallets {
-          id
-          balance
-          walletCurrency
-        }
-      }
-    }
-  }
-`
-
-/**
- * __useWarningSecureAccountQuery__
- *
- * To run a query within a React component, call `useWarningSecureAccountQuery` and pass it any options that fit your needs.
- * When your component renders, `useWarningSecureAccountQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useWarningSecureAccountQuery({
- *   variables: {
- *   },
- * });
- */
-export function useWarningSecureAccountQuery(
-  baseOptions?: Apollo.QueryHookOptions<
-    WarningSecureAccountQuery,
-    WarningSecureAccountQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useQuery<WarningSecureAccountQuery, WarningSecureAccountQueryVariables>(
-    WarningSecureAccountDocument,
-    options,
-  )
-}
-export function useWarningSecureAccountLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<
-    WarningSecureAccountQuery,
-    WarningSecureAccountQueryVariables
-  >,
-) {
-  const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useLazyQuery<
-    WarningSecureAccountQuery,
-    WarningSecureAccountQueryVariables
-  >(WarningSecureAccountDocument, options)
-}
-export type WarningSecureAccountQueryHookResult = ReturnType<
-  typeof useWarningSecureAccountQuery
->
-export type WarningSecureAccountLazyQueryHookResult = ReturnType<
-  typeof useWarningSecureAccountLazyQuery
->
-export type WarningSecureAccountQueryResult = Apollo.QueryResult<
-  WarningSecureAccountQuery,
-  WarningSecureAccountQueryVariables
->
 export const AccountUpdateDefaultWalletIdDocument = gql`
   mutation accountUpdateDefaultWalletId($input: AccountUpdateDefaultWalletIdInput!) {
     accountUpdateDefaultWalletId(input: $input) {
@@ -8853,11 +9056,26 @@ export function useNotificationSettingsLazyQuery(
     NotificationSettingsQueryVariables
   >(NotificationSettingsDocument, options)
 }
+export function useNotificationSettingsSuspenseQuery(
+  baseOptions?: Apollo.SuspenseQueryHookOptions<
+    NotificationSettingsQuery,
+    NotificationSettingsQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useSuspenseQuery<
+    NotificationSettingsQuery,
+    NotificationSettingsQueryVariables
+  >(NotificationSettingsDocument, options)
+}
 export type NotificationSettingsQueryHookResult = ReturnType<
   typeof useNotificationSettingsQuery
 >
 export type NotificationSettingsLazyQueryHookResult = ReturnType<
   typeof useNotificationSettingsLazyQuery
+>
+export type NotificationSettingsSuspenseQueryHookResult = ReturnType<
+  typeof useNotificationSettingsSuspenseQuery
 >
 export type NotificationSettingsQueryResult = Apollo.QueryResult<
   NotificationSettingsQuery,
@@ -9116,6 +9334,142 @@ export type AccountDisableNotificationCategoryMutationOptions =
     AccountDisableNotificationCategoryMutation,
     AccountDisableNotificationCategoryMutationVariables
   >
+export const UnacknowledgedNotificationCountDocument = gql`
+  query UnacknowledgedNotificationCount {
+    me {
+      id
+      unacknowledgedStatefulNotificationsWithoutBulletinEnabledCount
+    }
+  }
+`
+
+/**
+ * __useUnacknowledgedNotificationCountQuery__
+ *
+ * To run a query within a React component, call `useUnacknowledgedNotificationCountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useUnacknowledgedNotificationCountQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useUnacknowledgedNotificationCountQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useUnacknowledgedNotificationCountQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >(UnacknowledgedNotificationCountDocument, options)
+}
+export function useUnacknowledgedNotificationCountLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >(UnacknowledgedNotificationCountDocument, options)
+}
+export function useUnacknowledgedNotificationCountSuspenseQuery(
+  baseOptions?: Apollo.SuspenseQueryHookOptions<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useSuspenseQuery<
+    UnacknowledgedNotificationCountQuery,
+    UnacknowledgedNotificationCountQueryVariables
+  >(UnacknowledgedNotificationCountDocument, options)
+}
+export type UnacknowledgedNotificationCountQueryHookResult = ReturnType<
+  typeof useUnacknowledgedNotificationCountQuery
+>
+export type UnacknowledgedNotificationCountLazyQueryHookResult = ReturnType<
+  typeof useUnacknowledgedNotificationCountLazyQuery
+>
+export type UnacknowledgedNotificationCountSuspenseQueryHookResult = ReturnType<
+  typeof useUnacknowledgedNotificationCountSuspenseQuery
+>
+export type UnacknowledgedNotificationCountQueryResult = Apollo.QueryResult<
+  UnacknowledgedNotificationCountQuery,
+  UnacknowledgedNotificationCountQueryVariables
+>
+
+export const WalletCsvTransactionsDocument = gql`
+  query walletCSVTransactions($walletIds: [WalletId!]!) {
+    me {
+      id
+      defaultAccount {
+        id
+        csvTransactions(walletIds: $walletIds)
+      }
+    }
+  }
+`
+
+/**
+ * __useWalletCsvTransactionsQuery__
+ *
+ * To run a query within a React component, call `useWalletCsvTransactionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useWalletCsvTransactionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWalletCsvTransactionsQuery({
+ *   variables: {
+ *      walletIds: // value for 'walletIds'
+ *   },
+ * });
+ */
+export function useWalletCsvTransactionsQuery(
+  baseOptions: Apollo.QueryHookOptions<
+    WalletCsvTransactionsQuery,
+    WalletCsvTransactionsQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<WalletCsvTransactionsQuery, WalletCsvTransactionsQueryVariables>(
+    WalletCsvTransactionsDocument,
+    options,
+  )
+}
+export function useWalletCsvTransactionsLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    WalletCsvTransactionsQuery,
+    WalletCsvTransactionsQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<
+    WalletCsvTransactionsQuery,
+    WalletCsvTransactionsQueryVariables
+  >(WalletCsvTransactionsDocument, options)
+}
+export type WalletCsvTransactionsQueryHookResult = ReturnType<
+  typeof useWalletCsvTransactionsQuery
+>
+export type WalletCsvTransactionsLazyQueryHookResult = ReturnType<
+  typeof useWalletCsvTransactionsLazyQuery
+>
+export type WalletCsvTransactionsQueryResult = Apollo.QueryResult<
+  WalletCsvTransactionsQuery,
+  WalletCsvTransactionsQueryVariables
+>
 export const SettingsScreenDocument = gql`
   query settingsScreen {
     me {
@@ -9132,7 +9486,6 @@ export const SettingsScreenDocument = gql`
           walletCurrency
         }
       }
-      totpEnabled
       email {
         address
         verified
@@ -9188,65 +9541,71 @@ export type SettingsScreenQueryResult = Apollo.QueryResult<
   SettingsScreenQuery,
   SettingsScreenQueryVariables
 >
-export const ExportCsvSettingDocument = gql`
-  query ExportCsvSetting($walletIds: [WalletId!]!) {
+export const WarningSecureAccountDocument = gql`
+  query warningSecureAccount {
     me {
       id
       defaultAccount {
+        level
         id
-        csvTransactions(walletIds: $walletIds)
+        wallets {
+          id
+          balance
+          walletCurrency
+        }
       }
     }
   }
 `
 
 /**
- * __useExportCsvSettingQuery__
+ * __useWarningSecureAccountQuery__
  *
- * To run a query within a React component, call `useExportCsvSettingQuery` and pass it any options that fit your needs.
- * When your component renders, `useExportCsvSettingQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useWarningSecureAccountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useWarningSecureAccountQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useExportCsvSettingQuery({
+ * const { data, loading, error } = useWarningSecureAccountQuery({
  *   variables: {
- *      walletIds: // value for 'walletIds'
  *   },
  * });
  */
-export function useExportCsvSettingQuery(
-  baseOptions: Apollo.QueryHookOptions<
-    ExportCsvSettingQuery,
-    ExportCsvSettingQueryVariables
+export function useWarningSecureAccountQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    WarningSecureAccountQuery,
+    WarningSecureAccountQueryVariables
   >,
 ) {
   const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useQuery<ExportCsvSettingQuery, ExportCsvSettingQueryVariables>(
-    ExportCsvSettingDocument,
+  return Apollo.useQuery<WarningSecureAccountQuery, WarningSecureAccountQueryVariables>(
+    WarningSecureAccountDocument,
     options,
   )
 }
-export function useExportCsvSettingLazyQuery(
+export function useWarningSecureAccountLazyQuery(
   baseOptions?: Apollo.LazyQueryHookOptions<
-    ExportCsvSettingQuery,
-    ExportCsvSettingQueryVariables
+    WarningSecureAccountQuery,
+    WarningSecureAccountQueryVariables
   >,
 ) {
   const options = { ...defaultOptions, ...baseOptions }
-  return Apollo.useLazyQuery<ExportCsvSettingQuery, ExportCsvSettingQueryVariables>(
-    ExportCsvSettingDocument,
-    options,
-  )
+  return Apollo.useLazyQuery<
+    WarningSecureAccountQuery,
+    WarningSecureAccountQueryVariables
+  >(WarningSecureAccountDocument, options)
 }
-export type ExportCsvSettingQueryHookResult = ReturnType<typeof useExportCsvSettingQuery>
-export type ExportCsvSettingLazyQueryHookResult = ReturnType<
-  typeof useExportCsvSettingLazyQuery
+export type WarningSecureAccountQueryHookResult = ReturnType<
+  typeof useWarningSecureAccountQuery
 >
-export type ExportCsvSettingQueryResult = Apollo.QueryResult<
-  ExportCsvSettingQuery,
-  ExportCsvSettingQueryVariables
+export type WarningSecureAccountLazyQueryHookResult = ReturnType<
+  typeof useWarningSecureAccountLazyQuery
+>
+export type WarningSecureAccountQueryResult = Apollo.QueryResult<
+  WarningSecureAccountQuery,
+  WarningSecureAccountQueryVariables
 >
 export const AccountLimitsDocument = gql`
   query accountLimits {
@@ -9490,6 +9849,79 @@ export type UserTotpRegistrationValidateMutationResult =
 export type UserTotpRegistrationValidateMutationOptions = Apollo.BaseMutationOptions<
   UserTotpRegistrationValidateMutation,
   UserTotpRegistrationValidateMutationVariables
+>
+export const TransactionListForDefaultAccountDocument = gql`
+  query transactionListForDefaultAccount(
+    $first: Int
+    $after: String
+    $last: Int
+    $before: String
+  ) {
+    me {
+      id
+      defaultAccount {
+        id
+        transactions(first: $first, after: $after, last: $last, before: $before) {
+          ...TransactionList
+        }
+      }
+    }
+  }
+  ${TransactionListFragmentDoc}
+`
+
+/**
+ * __useTransactionListForDefaultAccountQuery__
+ *
+ * To run a query within a React component, call `useTransactionListForDefaultAccountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTransactionListForDefaultAccountQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTransactionListForDefaultAccountQuery({
+ *   variables: {
+ *      first: // value for 'first'
+ *      after: // value for 'after'
+ *      last: // value for 'last'
+ *      before: // value for 'before'
+ *   },
+ * });
+ */
+export function useTransactionListForDefaultAccountQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    TransactionListForDefaultAccountQuery,
+    TransactionListForDefaultAccountQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useQuery<
+    TransactionListForDefaultAccountQuery,
+    TransactionListForDefaultAccountQueryVariables
+  >(TransactionListForDefaultAccountDocument, options)
+}
+export function useTransactionListForDefaultAccountLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    TransactionListForDefaultAccountQuery,
+    TransactionListForDefaultAccountQueryVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions }
+  return Apollo.useLazyQuery<
+    TransactionListForDefaultAccountQuery,
+    TransactionListForDefaultAccountQueryVariables
+  >(TransactionListForDefaultAccountDocument, options)
+}
+export type TransactionListForDefaultAccountQueryHookResult = ReturnType<
+  typeof useTransactionListForDefaultAccountQuery
+>
+export type TransactionListForDefaultAccountLazyQueryHookResult = ReturnType<
+  typeof useTransactionListForDefaultAccountLazyQuery
+>
+export type TransactionListForDefaultAccountQueryResult = Apollo.QueryResult<
+  TransactionListForDefaultAccountQuery,
+  TransactionListForDefaultAccountQueryVariables
 >
 export const DeviceNotificationTokenCreateDocument = gql`
   mutation deviceNotificationTokenCreate($input: DeviceNotificationTokenCreateInput!) {
