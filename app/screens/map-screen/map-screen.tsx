@@ -1,11 +1,31 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { memo, useCallback, useEffect, useState } from "react"
+import { PermissionsAndroid, Platform } from "react-native"
+import MapView from "react-native-maps"
+import { makeStyles } from "@rneui/themed"
+import crashlytics from "@react-native-firebase/crashlytics"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
+// components
+import { Screen } from "../../components/screen"
+import {
+  AddButton,
+  AddPin,
+  CustomMarker,
+  MerchantSuggestModal,
+} from "@app/components/map-screen"
+
+// utils
+import { toastShow } from "../../utils/toast"
+
+// hooks
+import { useActivityIndicator } from "@app/hooks"
+
+// gql
 import {
   useBusinessMapMarkersQuery,
   useMerchantMapSuggestMutation,
   useSettingsScreenQuery,
 } from "@app/graphql/generated"
-import { useLevel } from "@app/graphql/level-context"
 import {
   ApolloClient,
   InMemoryCache,
@@ -13,36 +33,6 @@ import {
   gql,
   useQuery,
 } from "@apollo/client"
-import { useFocusEffect } from "@react-navigation/native"
-import { StackNavigationProp } from "@react-navigation/stack"
-import * as React from "react"
-import { useCallback } from "react"
-// eslint-disable-next-line react-native/split-platform-components
-import {
-  PermissionsAndroid,
-  Text,
-  View,
-  TouchableOpacity,
-  Platform,
-  Linking,
-} from "react-native"
-import { Button } from "@rneui/base"
-import MapView, {
-  Marker,
-  Callout,
-  // CalloutSubview,
-  MapMarkerProps,
-} from "react-native-maps"
-import { Screen } from "../../components/screen"
-import { RootStackParamList } from "../../navigation/stack-param-lists"
-import { isIos } from "../../utils/helper"
-import { toastShow } from "../../utils/toast"
-import { useI18nContext } from "@app/i18n/i18n-react"
-import crashlytics from "@react-native-firebase/crashlytics"
-import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { makeStyles, useTheme } from "@rneui/themed"
-import { MerchantSuggestModal } from "@app/components/merchant-suggest-modal"
-import { useActivityIndicator } from "@app/hooks"
 
 const httpLink = createHttpLink({
   uri: "https://api.blink.sv/graphql",
@@ -53,67 +43,6 @@ const blinkClient = new ApolloClient({
   link: httpLink,
   cache: new InMemoryCache(),
 })
-
-const useStyles = makeStyles(({ colors }) => ({
-  android: { marginTop: 18 },
-
-  customView: {
-    alignItems: "center",
-    margin: 12,
-  },
-
-  ios: { paddingTop: 12 },
-
-  map: {
-    height: "100%",
-    width: "100%",
-  },
-
-  title: { color: colors._darkGrey, fontSize: 18 },
-
-  addButton: {
-    position: "absolute",
-    bottom: 30,
-    right: 30,
-    backgroundColor: colors.green,
-    borderRadius: 50,
-    height: 60,
-    width: 60,
-    opacity: 0.8,
-  },
-
-  plusText: {
-    color: colors._white,
-    // center the text verticall and horizontally in the parent view
-    textAlign: "center",
-    textAlignVertical: "center",
-    lineHeight: 55,
-    fontSize: 48,
-  },
-
-  viewContainer: { flex: 1 },
-  overlayPadding: { padding: 20 },
-  marginTop: { marginTop: 20 },
-  addPinContainer: {
-    position: "absolute",
-    top: 90,
-    backgroundColor: colors.green,
-    height: 60,
-    width: "100%",
-    opacity: 0.8,
-    justifyContent: "center",
-    textAlignVertical: "center",
-    alignItems: "center",
-  },
-  addPinText: {
-    color: colors._white,
-    fontSize: 18,
-  },
-}))
-
-type Props = {
-  navigation: StackNavigationProp<RootStackParamList, "Primary">
-}
 
 const BUSINESS_MAP_MARKERS_QUERY = gql`
   query businessMapMarkers {
@@ -130,64 +59,57 @@ const BUSINESS_MAP_MARKERS_QUERY = gql`
   }
 `
 
-export const MapScreen: React.FC<Props> = ({ navigation }) => {
+export const MapScreen = memo(() => {
   const { toggleActivityIndicator } = useActivityIndicator()
-  const { colors } = useTheme().theme
   const styles = useStyles()
-  const isAuthed = useIsAuthed()
   const { LL } = useI18nContext()
   const { data } = useSettingsScreenQuery({ fetchPolicy: "cache-first" })
   const usernameTitle = data?.me?.username || LL.common.flashUser()
-  const { currentLevel: level } = useLevel()
 
-  const [isAddingPin, setIsAddingPin] = React.useState(false)
-  const [modalVisible, setModalVisible] = React.useState(false)
-  const [selectedLocation, setSelectedLocation] = React.useState<{
+  const [businessName, setBusinessName] = useState("")
+  const [isAddingPin, setIsAddingPin] = useState(false)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState<{
     latitude: number
     longitude: number
-  } | null>(null)
-  const [title, setTitle] = React.useState("")
+  }>()
+
   const [merchantMapSuggest] = useMerchantMapSuggestMutation()
-
-  const { data: blinkData, error: blinkError } = useQuery(BUSINESS_MAP_MARKERS_QUERY, {
+  const {
+    data: blinkData,
+    error: blinkError,
+    loading: blinkLoading,
+  } = useQuery(BUSINESS_MAP_MARKERS_QUERY, {
     client: blinkClient, // Use the custom Apollo client
-    fetchPolicy: "cache-and-network",
+    fetchPolicy: "cache-first",
   })
-
-  // Query using generated hook
   const {
     data: flashData,
     error: flashError,
     refetch,
+    loading: flashLoading,
   } = useBusinessMapMarkersQuery({
-    fetchPolicy: "cache-and-network",
+    fetchPolicy: "cache-first",
   })
 
-  useFocusEffect(
-    useCallback(() => {
-      refetch()
-    }, [refetch]),
-  )
-
-  // Handle errors from both queries
-  if (blinkError || flashError) {
+  useEffect(() => {
     const errorMessage = blinkError?.message || flashError?.message
-    if (errorMessage) {
-      toastShow({ message: errorMessage })
+    if (!!errorMessage) {
+      toastShow({ message: errorMessage, type: "error" })
     }
-  }
+  }, [blinkError, flashError])
 
-  // Merge data from both queries
-  const maps = [
-    ...(blinkData?.businessMapMarkers?.map((item: any) => ({
-      ...item,
-      source: "blink",
-    })) ?? []),
-    ...(flashData?.businessMapMarkers?.map((item: any) => ({
-      ...item,
-      source: "flash",
-    })) ?? []),
-  ]
+  useEffect(() => {
+    if (blinkLoading || flashLoading) {
+      toggleActivityIndicator(true)
+    } else {
+      toggleActivityIndicator(false)
+    }
+  }, [blinkLoading, flashLoading])
+
+  useEffect(() => {
+    requestLocationPermission()
+  }, [])
 
   const requestLocationPermission = useCallback(() => {
     if (Platform.OS === "android") {
@@ -217,80 +139,19 @@ export const MapScreen: React.FC<Props> = ({ navigation }) => {
       }
       asyncRequestLocationPermission()
     }
-    // disable eslint because we don't want to re-run this function when the language changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  useFocusEffect(requestLocationPermission)
-
-  const markers: ReturnType<React.FC<MapMarkerProps>>[] = []
-  maps.forEach((item: any, index) => {
-    if (item) {
-      // Function to open the location in Google Maps
-      const openInGoogleMaps = () => {
-        if (item.mapInfo.coordinates) {
-          const url = `https://www.google.com/maps/search/?api=1&query=${item.mapInfo.coordinates.latitude},${item.mapInfo.coordinates.longitude}`
-          Linking.openURL(url)
-        }
-      }
-      const key = item.username + item.mapInfo.title + index
-      const onPress = () => {
-        const domain = item.source === "blink" ? "@blink.sv" : "@flashapp.me"
-        const usernameWithDomain = `${item.username}${domain}`
-        if (isAuthed && item?.username) {
-          navigation.navigate("sendBitcoinDestination", { username: usernameWithDomain })
-        } else {
-          navigation.navigate("phoneFlow")
-        }
-      }
-
-      markers.push(
-        <Marker coordinate={item.mapInfo.coordinates} key={key} pinColor={colors._orange}>
-          <Callout
-            // alphaHitTest
-            // tooltip
-            onPress={() => (Boolean(item.username) && !isIos ? onPress() : null)}
-          >
-            <View style={styles.customView}>
-              <Text style={styles.title}>{item.mapInfo.title}</Text>
-              <Button
-                containerStyle={isIos ? styles.ios : styles.android}
-                title={LL.MapScreen.payBusiness()}
-                onPress={onPress}
-              />
-              <Button
-                containerStyle={isIos ? styles.ios : styles.android}
-                title={LL.MapScreen.getDirections()}
-                onPress={openInGoogleMaps}
-              />
-            </View>
-          </Callout>
-        </Marker>,
-      )
-    }
-  })
 
   const handleMapPress = (event: any) => {
     if (isAddingPin) {
       const { latitude, longitude } = event.nativeEvent.coordinate
       setSelectedLocation({ latitude, longitude })
       setModalVisible(true)
-
-      // Dismiss the toast and reset state
       setIsAddingPin(false)
     }
   }
 
-  const handleAddPin = () => {
-    setIsAddingPin(true)
-    toastShow({
-      message: "Press anywhere on the screen to select a location to add.",
-      type: "success",
-    })
-  }
-
   const handleSubmit = () => {
-    if (selectedLocation && title && usernameTitle) {
+    if (selectedLocation && businessName && usernameTitle) {
       setModalVisible(false)
       toggleActivityIndicator(true)
       const { latitude, longitude } = selectedLocation
@@ -299,13 +160,12 @@ export const MapScreen: React.FC<Props> = ({ navigation }) => {
           input: {
             latitude,
             longitude,
-            title,
+            title: businessName,
             username: usernameTitle,
           },
         },
       })
         .then(() => {
-          setIsAddingPin(false)
           toastShow({ message: "Pin added successfully!", type: "success" })
           refetch()
         })
@@ -319,7 +179,7 @@ export const MapScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <Screen>
+    <Screen style={{ alignItems: "center" }}>
       <MapView
         style={styles.map}
         showsUserLocation={true}
@@ -331,34 +191,25 @@ export const MapScreen: React.FC<Props> = ({ navigation }) => {
           longitudeDelta: 2.1,
         }}
       >
-        {markers}
+        <CustomMarker blinkData={blinkData} flashData={flashData} />
       </MapView>
-
-      {/* Add Text letting user know they can click on the screen to add a pin */}
-      {isAddingPin && (
-        <View style={styles.addPinContainer}>
-          <Text style={styles.addPinText}>{LL.MapScreen.addPin()}</Text>
-        </View>
-      )}
-
-      {/* Plus Icon Button */}
-      {level === "TWO" && (
-        <TouchableOpacity style={styles.addButton} onPress={handleAddPin}>
-          <Text style={styles.plusText}>+</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Modal for adding pin details */}
-      {selectedLocation && (
-        <MerchantSuggestModal
-          isVisible={modalVisible}
-          setIsVisible={setModalVisible}
-          title={title}
-          setTitle={setTitle}
-          onSubmit={handleSubmit}
-          selectedLocation={selectedLocation}
-        />
-      )}
+      <AddPin visible={isAddingPin} />
+      <AddButton handleOnPress={setIsAddingPin} />
+      <MerchantSuggestModal
+        isVisible={modalVisible}
+        setIsVisible={setModalVisible}
+        businessName={businessName}
+        setBusinessName={setBusinessName}
+        onSubmit={handleSubmit}
+        selectedLocation={selectedLocation}
+      />
     </Screen>
   )
-}
+})
+
+const useStyles = makeStyles(({ colors }) => ({
+  map: {
+    height: "100%",
+    width: "100%",
+  },
+}))
