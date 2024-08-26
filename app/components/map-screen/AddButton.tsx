@@ -26,7 +26,7 @@ export const AddButton: React.FC<Props> = ({ handleOnPress }) => {
     })
   }
 
-  if (level !== "TWO") {
+  if (level === "TWO") {
     return (
       <TouchableOpacity style={styles.addButton} onPress={handleAddPin}>
         <Icon name="add" size={50} color={colors.white} />
