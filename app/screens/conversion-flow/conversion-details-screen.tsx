@@ -1,14 +1,16 @@
 import React, { useState } from "react"
-import { View } from "react-native"
 import { ScrollView } from "react-native-gesture-handler"
-import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 // components
 import { Screen } from "@app/components/screen"
-import { AmountInput } from "@app/components/amount-input"
-import { PercentageAmount, SwapWallets } from "@app/components/swap-flow"
+import {
+  ConversionAmountError,
+  PercentageAmount,
+  SwapWallets,
+} from "@app/components/swap-flow"
 import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 
 // hooks
@@ -18,7 +20,6 @@ import { useBreez, usePriceConversion, useDisplayCurrency } from "@app/hooks"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import {
   DisplayCurrency,
-  lessThan,
   MoneyAmount,
   toBtcMoneyAmount,
   toUsdMoneyAmount,
@@ -39,7 +40,6 @@ type Props = StackScreenProps<RootStackParamList, "conversionDetails">
 export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const { colors } = useTheme().theme
   const { zeroDisplayAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
@@ -86,18 +86,6 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const canToggleWallet =
     fromWalletCurrency === "BTC" ? usdBalance.amount > 0 : btcBalance.amount > 0
 
-  let amountFieldError: string | undefined = undefined
-  if (
-    lessThan({
-      value: fromWalletCurrency === "BTC" ? btcBalance : usdBalance,
-      lessThan: settlementSendAmount,
-    })
-  ) {
-    amountFieldError = LL.SendBitcoinScreen.amountExceed({
-      balance: fromWalletCurrency === "BTC" ? formattedBtcBalance : formattedUsdBalance,
-    })
-  }
-
   const setAmountToBalancePercentage = (percentage: number) => {
     const fromBalance =
       fromWalletCurrency === WalletCurrency.Btc ? btcBalance.amount : usdBalance.amount
@@ -130,19 +118,16 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
           canToggleWallet={canToggleWallet}
           setFromWalletCurrency={setFromWalletCurrency}
         />
-        <View style={styles.fieldContainer}>
-          <AmountInput
-            unitOfAccountAmount={moneyAmount}
-            walletCurrency={fromWalletCurrency}
-            setAmount={setMoneyAmount}
-            convertMoneyAmount={convertMoneyAmount as keyof typeof convertMoneyAmount}
-          />
-          {amountFieldError && (
-            <View style={styles.errorContainer}>
-              <Text color={colors.error}>{amountFieldError}</Text>
-            </View>
-          )}
-        </View>
+        <ConversionAmountError
+          fromWalletCurrency={fromWalletCurrency}
+          formattedBtcBalance={formattedBtcBalance}
+          formattedUsdBalance={formattedUsdBalance}
+          btcBalance={btcBalance}
+          usdBalance={usdBalance}
+          settlementSendAmount={settlementSendAmount}
+          moneyAmount={moneyAmount}
+          setMoneyAmount={setMoneyAmount}
+        />
         <PercentageAmount setAmountToBalancePercentage={setAmountToBalancePercentage} />
       </ScrollView>
       <GaloyPrimaryButton
@@ -161,12 +146,5 @@ const useStyles = makeStyles(({ colors }) => ({
     flexDirection: "column",
     margin: 20,
   },
-  fieldContainer: {
-    marginBottom: 20,
-  },
   buttonContainer: { marginHorizontal: 20, marginBottom: 20 },
-  errorContainer: {
-    marginTop: 10,
-    alignItems: "center",
-  },
 }))
