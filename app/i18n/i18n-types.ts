@@ -2336,6 +2336,16 @@ type RootTranslation = {
 		 * @param {number} amount
 		 */
 		maxAmountInvoiceError: RequiredParams<'amount'>
+		/**
+		 * The conversion amount is less than minimum required amount
+		 * @param {number} amount
+		 */
+		minAmountConvertError: RequiredParams<'amount'>
+		/**
+		 * The conversion amount is greater than maximum amount
+		  * @param {number} amount
+		 */
+		maxAmountConvertError: RequiredParams<'amount'>
 	}
 	SettingsScreen: {
 		/**
@@ -6230,11 +6240,19 @@ export type TranslationFunctions = {
 		/**
 		 * The amount on the invoice is less than minimum amount
 		 */
-		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number  | string }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount
 		 */
-		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		/**
+		 * The conversion amount is less than minimum required amount
+		 */
+		minAmountConvertError: (arg: { amount: number  | string }) => LocalizedString
+		/**
+		 * The conversion amount is greater than maximum amount
+		 */
+		maxAmountConvertError: (arg: { amount: number | string }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**
