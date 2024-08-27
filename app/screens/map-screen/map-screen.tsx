@@ -12,6 +12,7 @@ import {
   AddPin,
   CustomMarker,
   MerchantSuggestModal,
+  RefreshButton,
 } from "@app/components/map-screen"
 
 // utils
@@ -193,6 +194,7 @@ export const MapScreen = memo(() => {
       >
         <CustomMarker blinkData={blinkData} flashData={flashData} />
       </MapView>
+      {!isAddingPin && <RefreshButton onRefresh={() => refetch()} />}
       <AddPin visible={isAddingPin} />
       <AddButton handleOnPress={setIsAddingPin} />
       <MerchantSuggestModal
