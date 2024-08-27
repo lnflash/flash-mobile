@@ -55,6 +55,9 @@ const ConversionAmountError: React.FC<Props> = ({
   const [minAmount, setMinAmount] = useState<MoneyAmount<WalletCurrency>>()
   const [maxAmount, setMaxAmount] = useState<MoneyAmount<WalletCurrency>>()
 
+  // @ts-ignore: Unreachable code error
+  const convertedSettlementSendAmount = convertMoneyAmount(settlementSendAmount, "BTC")
+
   useEffect(() => {
     fetchMinMaxAmount()
   }, [])
@@ -86,9 +89,9 @@ const ConversionAmountError: React.FC<Props> = ({
     })
   } else if (
     minAmount &&
-    isNonZeroMoneyAmount(settlementSendAmount) &&
+    isNonZeroMoneyAmount(convertedSettlementSendAmount) &&
     lessThan({
-      value: settlementSendAmount,
+      value: convertedSettlementSendAmount,
       lessThan: minAmount,
     }) &&
     convertMoneyAmount
@@ -102,9 +105,9 @@ const ConversionAmountError: React.FC<Props> = ({
     })
   } else if (
     maxAmount &&
-    isNonZeroMoneyAmount(settlementSendAmount) &&
+    isNonZeroMoneyAmount(convertedSettlementSendAmount) &&
     greaterThan({
-      value: settlementSendAmount,
+      value: convertedSettlementSendAmount,
       greaterThan: maxAmount,
     }) &&
     convertMoneyAmount
