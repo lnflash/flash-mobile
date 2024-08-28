@@ -1,3 +1,4 @@
+/* eslint-disable react/display-name */
 import React, { memo, useCallback, useEffect, useState } from "react"
 import { PermissionsAndroid, Platform } from "react-native"
 import MapView from "react-native-maps"
@@ -82,7 +83,7 @@ export const MapScreen = memo(() => {
     loading: blinkLoading,
   } = useQuery(BUSINESS_MAP_MARKERS_QUERY, {
     client: blinkClient, // Use the custom Apollo client
-    fetchPolicy: "cache-first",
+    fetchPolicy: "cache-only",
   })
   const {
     data: flashData,
