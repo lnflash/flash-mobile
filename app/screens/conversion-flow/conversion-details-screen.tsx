@@ -45,6 +45,7 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
   const { btcWallet } = useBreez()
 
+  const [hasError, setHasError] = useState(false)
   const [fromWalletCurrency, setFromWalletCurrency] = useState<WalletCurrency>("BTC")
   const [moneyAmount, setMoneyAmount] =
     useState<MoneyAmount<WalletOrDisplayCurrency>>(zeroDisplayAmount)
@@ -127,13 +128,14 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
           settlementSendAmount={settlementSendAmount}
           moneyAmount={moneyAmount}
           setMoneyAmount={setMoneyAmount}
+          setHasError={setHasError}
         />
         <PercentageAmount setAmountToBalancePercentage={setAmountToBalancePercentage} />
       </ScrollView>
       <GaloyPrimaryButton
         title={LL.common.next()}
         containerStyle={styles.buttonContainer}
-        disabled={!isValidAmount}
+        disabled={!isValidAmount || hasError}
         onPress={moveToNextScreen}
       />
     </Screen>

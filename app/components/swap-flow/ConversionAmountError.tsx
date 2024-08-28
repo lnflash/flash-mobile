@@ -34,6 +34,7 @@ type Props = {
   settlementSendAmount: MoneyAmount<WalletCurrency>
   moneyAmount: MoneyAmount<WalletOrDisplayCurrency>
   setMoneyAmount: (val: MoneyAmount<WalletOrDisplayCurrency>) => void
+  setHasError: (val: boolean) => void
 }
 
 const ConversionAmountError: React.FC<Props> = ({
@@ -45,6 +46,7 @@ const ConversionAmountError: React.FC<Props> = ({
   settlementSendAmount,
   moneyAmount,
   setMoneyAmount,
+  setHasError,
 }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
@@ -52,6 +54,7 @@ const ConversionAmountError: React.FC<Props> = ({
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
 
+  const [errorMessage, setErrorMessage] = useState<string>()
   const [minAmount, setMinAmount] = useState<MoneyAmount<WalletCurrency>>()
   const [maxAmount, setMaxAmount] = useState<MoneyAmount<WalletCurrency>>()
 
@@ -77,48 +80,62 @@ const ConversionAmountError: React.FC<Props> = ({
     })
   }
 
-  let amountFieldError: string | undefined = undefined
-  if (
-    lessThan({
-      value: fromWalletCurrency === "BTC" ? btcBalance : usdBalance,
-      lessThan: settlementSendAmount,
-    })
-  ) {
-    amountFieldError = LL.SendBitcoinScreen.amountExceed({
-      balance: fromWalletCurrency === "BTC" ? formattedBtcBalance : formattedUsdBalance,
-    })
-  } else if (
-    minAmount &&
-    isNonZeroMoneyAmount(convertedSettlementSendAmount) &&
-    lessThan({
-      value: convertedSettlementSendAmount,
-      lessThan: minAmount,
-    }) &&
-    convertMoneyAmount
-  ) {
-    const convertedBTCBalance = convertMoneyAmount(minAmount, DisplayCurrency)
-    amountFieldError = LL.SendBitcoinScreen.minAmountConvertError({
-      amount: formatDisplayAndWalletAmount({
-        displayAmount: convertedBTCBalance,
-        walletAmount: minAmount,
-      }),
-    })
-  } else if (
-    maxAmount &&
-    isNonZeroMoneyAmount(convertedSettlementSendAmount) &&
-    greaterThan({
-      value: convertedSettlementSendAmount,
-      greaterThan: maxAmount,
-    }) &&
-    convertMoneyAmount
-  ) {
-    const convertedBTCBalance = convertMoneyAmount(maxAmount, DisplayCurrency)
-    amountFieldError = LL.SendBitcoinScreen.maxAmountConvertError({
-      amount: formatDisplayAndWalletAmount({
-        displayAmount: convertedBTCBalance,
-        walletAmount: maxAmount,
-      }),
-    })
+  useEffect(() => {
+    checkErrorMessage()
+  }, [
+    fromWalletCurrency,
+    settlementSendAmount,
+    btcBalance,
+    usdBalance,
+    minAmount,
+    maxAmount,
+  ])
+
+  const checkErrorMessage = () => {
+    if (!convertMoneyAmount) return null
+    let amountFieldError: string | undefined = undefined
+    if (
+      lessThan({
+        value: fromWalletCurrency === "BTC" ? btcBalance : usdBalance,
+        lessThan: settlementSendAmount,
+      })
+    ) {
+      amountFieldError = LL.SendBitcoinScreen.amountExceed({
+        balance: fromWalletCurrency === "BTC" ? formattedBtcBalance : formattedUsdBalance,
+      })
+    } else if (
+      minAmount &&
+      isNonZeroMoneyAmount(convertedSettlementSendAmount) &&
+      lessThan({
+        value: convertedSettlementSendAmount,
+        lessThan: minAmount,
+      })
+    ) {
+      const convertedBTCBalance = convertMoneyAmount(minAmount, DisplayCurrency)
+      amountFieldError = LL.SendBitcoinScreen.minAmountConvertError({
+        amount: formatDisplayAndWalletAmount({
+          displayAmount: convertedBTCBalance,
+          walletAmount: minAmount,
+        }),
+      })
+    } else if (
+      maxAmount &&
+      isNonZeroMoneyAmount(convertedSettlementSendAmount) &&
+      greaterThan({
+        value: convertedSettlementSendAmount,
+        greaterThan: maxAmount,
+      })
+    ) {
+      const convertedBTCBalance = convertMoneyAmount(maxAmount, DisplayCurrency)
+      amountFieldError = LL.SendBitcoinScreen.maxAmountConvertError({
+        amount: formatDisplayAndWalletAmount({
+          displayAmount: convertedBTCBalance,
+          walletAmount: maxAmount,
+        }),
+      })
+    }
+    setErrorMessage(amountFieldError)
+    setHasError(!!amountFieldError)
   }
 
   return (
@@ -131,9 +148,9 @@ const ConversionAmountError: React.FC<Props> = ({
         minAmount={minAmount}
         maxAmount={maxAmount}
       />
-      {amountFieldError && (
+      {errorMessage && (
         <View style={styles.errorContainer}>
-          <Text color={colors.error}>{amountFieldError}</Text>
+          <Text color={colors.error}>{errorMessage}</Text>
         </View>
       )}
     </View>
