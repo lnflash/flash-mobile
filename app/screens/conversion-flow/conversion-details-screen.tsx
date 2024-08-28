@@ -130,7 +130,10 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
           setMoneyAmount={setMoneyAmount}
           setHasError={setHasError}
         />
-        <PercentageAmount setAmountToBalancePercentage={setAmountToBalancePercentage} />
+        <PercentageAmount
+          fromWalletCurrency={fromWalletCurrency}
+          setAmountToBalancePercentage={setAmountToBalancePercentage}
+        />
       </ScrollView>
       <GaloyPrimaryButton
         title={LL.common.next()}

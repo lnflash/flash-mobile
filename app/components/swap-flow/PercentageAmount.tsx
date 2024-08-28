@@ -3,11 +3,18 @@ import { TouchableOpacity, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles, Text } from "@rneui/themed"
 
+// types
+import { WalletCurrency } from "@app/graphql/generated"
+
 type Props = {
+  fromWalletCurrency: WalletCurrency
   setAmountToBalancePercentage: (val: number) => void
 }
 
-const PercentageAmount: React.FC<Props> = ({ setAmountToBalancePercentage }) => {
+const PercentageAmount: React.FC<Props> = ({
+  fromWalletCurrency,
+  setAmountToBalancePercentage,
+}) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
 
@@ -40,9 +47,11 @@ const PercentageAmount: React.FC<Props> = ({ setAmountToBalancePercentage }) => 
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.percentageField}
-            onPress={() => setAmountToBalancePercentage(99)}
+            onPress={() =>
+              setAmountToBalancePercentage(fromWalletCurrency === "BTC" ? 90 : 99)
+            }
           >
-            <Text>100%</Text>
+            <Text>{fromWalletCurrency === "BTC" ? "90%" : "100%"}</Text>
           </TouchableOpacity>
         </View>
       </View>
