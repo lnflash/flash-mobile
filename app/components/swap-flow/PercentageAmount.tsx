@@ -40,7 +40,7 @@ const PercentageAmount: React.FC<Props> = ({ setAmountToBalancePercentage }) => 
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.percentageField}
-            onPress={() => setAmountToBalancePercentage(100)}
+            onPress={() => setAmountToBalancePercentage(99)}
           >
             <Text>100%</Text>
           </TouchableOpacity>
