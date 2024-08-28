@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react/display-name */
 import React, { memo } from "react"
 import { Linking, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -99,8 +101,11 @@ export const CustomMarker: React.FC<Props> = memo(
 )
 
 const useStyles = makeStyles(({ colors }) => ({
-  android: { marginTop: 18 },
-  ios: { paddingTop: 12 },
+  android: {
+    marginTop: 18,
+    borderRadius: 8,
+  },
+  ios: { marginTop: 18, borderRadius: 8 },
   customView: {
     alignItems: "center",
     margin: 12,

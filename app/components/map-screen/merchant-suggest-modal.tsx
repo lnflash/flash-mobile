@@ -77,7 +77,7 @@ export const MerchantSuggestModal: React.FC<Props> = ({
 
               {/* Display the selected coordinates */}
               {selectedLocation && (
-                <View style={{ marginBottom: 16 }}>
+                <View style={styles.marginBottom}>
                   <Text style={styles.cardDescription}>
                     {LL.MapScreen.selectedCoordinates()}
                     {"Latitude: "}
@@ -101,11 +101,13 @@ export const MerchantSuggestModal: React.FC<Props> = ({
                 onChangeText={setBusinessName}
                 containerStyle={styles.marginBottom}
               />
-
+              <Text style={styles.cardDescription} type="p2">
+                {LL.MerchantSuggestModal.learnMore()}
+              </Text>
               <View style={styles.cardActionsContainer}>
                 <GaloyPrimaryButton
                   style={styles.marginBottom}
-                  title={LL.common.submit()}
+                  title={LL.common.request()}
                   onPress={onSubmit}
                 />
                 <GaloySecondaryButton title={LL.common.cancel()} onPress={closeModal} />

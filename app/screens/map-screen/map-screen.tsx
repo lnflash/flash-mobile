@@ -1,3 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-native/split-platform-components */
+/* eslint-disable no-extra-boolean-cast */
+/* eslint-disable no-implicit-coercion */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/display-name */
 import React, { memo, useCallback, useEffect, useState } from "react"
 import { PermissionsAndroid, Platform } from "react-native"
@@ -181,7 +186,7 @@ export const MapScreen = memo(() => {
   }
 
   return (
-    <Screen style={{ alignItems: "center" }}>
+    <Screen style={styles.center}>
       <MapView
         style={styles.map}
         showsUserLocation={true}
@@ -210,9 +215,12 @@ export const MapScreen = memo(() => {
   )
 })
 
-const useStyles = makeStyles(({ colors }) => ({
+const useStyles = makeStyles(() => ({
   map: {
     height: "100%",
     width: "100%",
+  },
+  center: {
+    alignItems: "center",
   },
 }))

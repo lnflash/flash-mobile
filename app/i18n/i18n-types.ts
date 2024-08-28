@@ -3856,6 +3856,10 @@ type RootTranslation = {
 		 */
 		reauth: string
 		/**
+		 * Request
+		 */
+		request: string
+		/**
 		 * R​e​s​t​a​r​t
 		 */
 		restart: string
@@ -7318,7 +7322,7 @@ export type TranslationFunctions = {
 		 */
 		termsAndConditions: () => LocalizedString
 		/**
-		 * What is a Non-Custodial Wallet?
+		 * Your pin request will be processed within 24 hours.
 		 */
 		learnMore: () => LocalizedString
 	}
@@ -8006,6 +8010,10 @@ export type TranslationFunctions = {
 		 * Your session has expired. Please log in again.
 		 */
 		reauth: () => LocalizedString
+		/**
+		 * Request
+		 */
+		request: () => LocalizedString
 		/**
 		 * Restart
 		 */
