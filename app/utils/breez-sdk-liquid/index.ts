@@ -30,6 +30,8 @@ import {
   lnurlPay,
   LnUrlPayResultVariant,
   payOnchain,
+  lnurlWithdraw,
+  LnUrlWithdrawResultVariant,
 } from "@breeztech/react-native-breez-sdk-liquid"
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
@@ -147,7 +149,7 @@ export const initializeBreezSDK = async (): Promise<boolean> => {
 
   breezSDKInitializing = (async () => {
     try {
-      await retry(connectToSDK, 5000, 3)
+      await retry(connectToSDK, 5000, 1)
       breezSDKInitialized = true
       return true
     } catch (error: any) {
@@ -189,6 +191,11 @@ export const fetchBreezFee = async (
         receiverAmountSat,
       })
       return response.totalFeesSat
+    } else if ((paymentType === "intraledger" || paymentType === "lnurl") && !!invoice) {
+      // const response = await parse(invoice)
+      // console.log(">>>>>>>>>>>.", response)
+
+      return null
     } else {
       return null
     }
@@ -418,3 +425,44 @@ export const addLogListenerBreezSDK = async (): Promise<void> => {
 //     throw error
 //   }
 // }
+
+export const onRedeem = async (lnurl: string, defaultDescription: string) => {
+  try {
+    const input = await parse(lnurl)
+    console.log(">>>>>>>>>>>", input)
+    if (input.type === InputTypeVariant.LN_URL_PAY) {
+      const lnUrlPayResult = await lnurlPay({
+        data: input.data,
+        amountMsat: input.data.minSendable / 1000,
+        paymentLabel: defaultDescription,
+        validateSuccessActionUrl: true,
+      })
+      console.log("LNURL PAY>>>>>>>>", lnUrlPayResult)
+      if (lnUrlPayResult.type === LnUrlPayResultVariant.ENDPOINT_SUCCESS) {
+        return { success: true, error: undefined }
+      } else {
+        return { success: false, error: lnUrlPayResult?.data?.reason }
+      }
+    } else if (input.type === InputTypeVariant.LN_URL_WITHDRAW) {
+      const lnUrlWithdrawResult = await lnurlWithdraw({
+        data: input.data,
+        amountMsat: input.data.minWithdrawable,
+        description: defaultDescription,
+      })
+      console.log("LNURL WITHDRAW>>>>>>>>", lnUrlWithdrawResult)
+      if (lnUrlWithdrawResult.type === LnUrlWithdrawResultVariant.OK) {
+        return { success: true, error: undefined }
+      } else if (lnUrlWithdrawResult.type === LnUrlWithdrawResultVariant.ERROR_STATUS) {
+        return { success: false, error: lnUrlWithdrawResult?.data?.reason }
+      } else {
+        return { success: false, error: undefined }
+      }
+    } else if (input.type === InputTypeVariant.LN_URL_ERROR) {
+      return { success: false, error: input?.data?.reason }
+    } else {
+      return { success: false, error: "Invalid invoice" }
+    }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+}
