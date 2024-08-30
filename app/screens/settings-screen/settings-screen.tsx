@@ -27,6 +27,7 @@ import { ImportWallet } from "./settings/import-wallet"
 import { AdvancedModeToggle } from "./settings/advanced-mode-toggle"
 import { ExportCsvSetting } from "./settings/advanced-export-csv"
 import { ApiAccessSetting } from "./settings/advanced-api-access"
+import { GenerateReportsSetting } from "./settings/generate-reports"
 import { SettingsGroup } from "./group"
 import { EmailSetting } from "./account/settings/email"
 import { TotpSetting } from "./totp"
@@ -73,6 +74,7 @@ const items = {
   ],
   advanced: [
     ExportCsvSetting,
+    GenerateReportsSetting,
     //  ApiAccessSetting
   ],
   community: [NeedHelpSetting, JoinCommunitySetting],

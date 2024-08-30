@@ -101,6 +101,12 @@ import {
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
+import {
+  ReconciliationReport,
+  AggregationReport,
+  TopRecipientReport,
+  TopSenderReport,
+} from "@app/components/reports"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -148,6 +154,11 @@ export const RootStack = () => {
       initialRouteName={initialRouteName}
     >
       {/* Intro Screen route */}
+      <RootNavigator.Screen
+        name="Reconciliation"
+        component={ReconciliationReport}
+        options={{ headerShown: true, title: LL.reports.reconciliation() }}
+      />
       <RootNavigator.Screen
         name="IntroScreen"
         component={IntroScreen}
