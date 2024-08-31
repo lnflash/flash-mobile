@@ -24,8 +24,8 @@ export type ReportsToHide = keyof typeof Reports
 interface Props {
   isVisible: boolean
   toggleModal: () => void
-  from: string
-  to: string
+  from: number
+  to: number
   reportsToHide?: ReportsToHide[]
 }
 
