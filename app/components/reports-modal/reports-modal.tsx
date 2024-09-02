@@ -84,30 +84,6 @@ const ReportModal: React.FC<Props> = ({
       },
       hidden: reportsToHide.includes("Reconciliation"),
     },
-    {
-      name: LL.reports.aggregation(),
-      action: () =>
-        Linking.openURL(
-          `https://reports.flashapp.me/aggregation?from=${selectedFrom.getTime()}&to=${selectedTo.getTime()}`,
-        ),
-      hidden: reportsToHide.includes("Aggregation"),
-    },
-    {
-      name: LL.reports.topRecipients(),
-      action: () =>
-        Linking.openURL(
-          `https://reports.flashapp.me/topRecipients?from=${selectedFrom.getTime()}&to=${selectedTo.getTime()}`,
-        ),
-      hidden: reportsToHide.includes("TopRecipients"),
-    },
-    {
-      name: LL.reports.topSenders(),
-      action: () =>
-        Linking.openURL(
-          `https://reports.flashapp.me/topSenders?from=${selectedFrom.getTime()}&to=${selectedTo.getTime()}`,
-        ),
-      hidden: reportsToHide.includes("TopSenders"),
-    },
   ]
 
   return (

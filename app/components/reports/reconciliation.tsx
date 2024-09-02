@@ -295,18 +295,18 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   dateText: {
     fontSize: 14,
-    color: colors.primary,
+    color: colors.black,
     flex: 1,
   },
   txDirectionText: {
     fontSize: 14,
-    color: colors.primary,
+    color: colors.black,
     textAlign: "center",
     flex: 1,
   },
   amountText: {
     fontSize: 14,
-    color: colors.primary,
+    color: colors.black,
     textAlign: "right",
     flex: 1,
   },

@@ -60,6 +60,7 @@ const items = {
   ],
   loginMethods: [EmailSetting, PhoneSetting],
   waysToGetPaid: [AccountLNAddress, AccountPOS, AccountStaticQR],
+  reports: [GenerateReportsSetting],
   wallet: [NostrSecret, BackupWallet, ImportWallet],
   preferences: [
     NotificationSetting,
@@ -74,7 +75,6 @@ const items = {
   ],
   advanced: [
     ExportCsvSetting,
-    GenerateReportsSetting,
     //  ApiAccessSetting
   ],
   community: [NeedHelpSetting, JoinCommunitySetting],
@@ -99,6 +99,7 @@ export const SettingsScreen: React.FC = () => {
           name={LL.SettingsScreen.addressScreen()}
           items={items.waysToGetPaid}
         />
+        <SettingsGroup name="Reports" items={items.reports} />
         <SettingsGroup name={LL.SettingsScreen.keysManagement()} items={items.wallet} />
         <SettingsGroup name={LL.common.preferences()} items={items.preferences} />
         <SettingsGroup
