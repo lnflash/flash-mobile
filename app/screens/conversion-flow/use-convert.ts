@@ -18,11 +18,7 @@ import {
 import { getErrorMessages } from "@app/graphql/utils"
 
 // Breez SDK
-import {
-  parseInvoiceBreezSDK,
-  sendPaymentBreezSDK,
-  paymentEvents,
-} from "@app/utils/breez-sdk-liquid"
+import { parseInvoiceBreezSDK, sendPaymentBreezSDK } from "@app/utils/breez-sdk-liquid"
 
 // types
 import { SendPaymentMutation } from "../send-bitcoin-screen/payment-details"
@@ -61,13 +57,6 @@ export const useConvert = (): UseConvertResult => {
   })
 
   const [hasAttemptedSend, setHasAttemptedSend] = useState(false)
-
-  useEffect(() => {
-    return () => {
-      paymentEvents.removeAllListeners("paymentSuccess")
-      paymentEvents.removeAllListeners("paymentFailure")
-    }
-  }, [])
 
   const loading =
     intraLedgerPaymentSendLoading ||

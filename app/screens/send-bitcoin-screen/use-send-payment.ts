@@ -30,7 +30,6 @@ import {
   parseInvoiceBreezSDK,
   sendOnchainBreezSDK,
   payLnurlBreezSDK,
-  paymentEvents,
 } from "@app/utils/breez-sdk-liquid"
 
 type UseSendPaymentResult = {
