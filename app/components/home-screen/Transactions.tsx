@@ -3,7 +3,6 @@ import { ActivityIndicator } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { TouchableWithoutFeedback } from "react-native-gesture-handler"
 import { StackNavigationProp } from "@react-navigation/stack"
-import { Payment } from "@breeztech/react-native-breez-sdk-liquid"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
@@ -29,11 +28,13 @@ import { testProps } from "@app/utils/testProps"
 import { toBtcMoneyAmount } from "@app/types/amounts"
 
 // breez
+import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk-liquid"
 import {
-  breezSDKInitialized,
-  listPaymentsBreezSDK,
-  paymentEvents,
-} from "@app/utils/breez-sdk-liquid"
+  addEventListener,
+  Payment,
+  removeEventListener,
+  SdkEvent,
+} from "@breeztech/react-native-breez-sdk-liquid"
 
 type Props = {
   loadingAuthed: boolean
@@ -54,6 +55,7 @@ const Transactions: React.FC<Props> = ({
   const { convertMoneyAmount } = usePriceConversion()
   const { refreshBreez } = useBreez()
 
+  const [breezListenerId, setBreezListenerId] = useState<string>()
   const [breezTxsLoading, setBreezTxsLoading] = useState(false)
   const [breezTransactions, setBreezTransactions] = useState<Payment[]>([])
   const [mergedTransactions, setMergedTransactions] = useState<TransactionFragment[]>(
@@ -61,29 +63,50 @@ const Transactions: React.FC<Props> = ({
   )
 
   useEffect(() => {
-    if (breezSDKInitialized && persistentState.isAdvanceMode) {
-      fetchPaymentsBreez()
-      paymentEvents.once("invoicePaid", fetchPaymentsBreez)
-      paymentEvents.once("paymentSuccess", fetchPaymentsBreez)
-
-      return () => {
-        paymentEvents.off("invoicePaid", fetchPaymentsBreez)
-        paymentEvents.off("paymentSuccess", fetchPaymentsBreez)
-      }
-    }
-  }, [breezSDKInitialized, persistentState.btcWalletImported])
-
-  useEffect(() => {
-    if (refreshTriggered && persistentState.isAdvanceMode && breezSDKInitialized) {
+    if (
+      refreshTriggered ||
+      (persistentState.isAdvanceMode && breezSDKInitialized) ||
+      persistentState.btcWalletImported
+    ) {
       fetchPaymentsBreez()
     }
-  }, [refreshTriggered, breezSDKInitialized, persistentState.btcWalletImported])
+  }, [
+    refreshTriggered,
+    breezSDKInitialized,
+    persistentState.isAdvanceMode,
+    persistentState.btcWalletImported,
+  ])
 
   useEffect(() => {
     if (!loadingAuthed && !breezTxsLoading) {
       mergeTransactions(breezTransactions)
     }
   }, [transactionsEdges, breezTransactions, loadingAuthed, breezTxsLoading])
+
+  useEffect(() => {
+    if (persistentState.isAdvanceMode && breezSDKInitialized && !breezListenerId) {
+      addBreezEventListener()
+    } else if (!persistentState.isAdvanceMode) {
+      setBreezTransactions([])
+      setBreezListenerId(undefined)
+    }
+    return removeBreezEventListener
+  }, [persistentState.isAdvanceMode, breezSDKInitialized, breezListenerId])
+
+  const addBreezEventListener = async () => {
+    const listenerId = await addEventListener((e: SdkEvent) => {
+      console.log(">>>>>>>>>>>>>>>>>>EVENT TYPE:", e.type + "; TIME: " + new Date())
+      fetchPaymentsBreez()
+    })
+    setBreezListenerId(listenerId)
+  }
+
+  const removeBreezEventListener = () => {
+    if (breezListenerId) {
+      removeEventListener(breezListenerId)
+      setBreezListenerId(undefined)
+    }
+  }
 
   const fetchPaymentsBreez = async () => {
     setBreezTxsLoading(true)
@@ -138,17 +161,15 @@ const Transactions: React.FC<Props> = ({
   }
 
   const updateMergedTransactions = (txs: TransactionFragment[]) => {
-    if (txs.length > 0) {
-      setMergedTransactions(txs.slice(0, 3))
-      updateState((state: any) => {
-        if (state)
-          return {
-            ...state,
-            mergedTransactions: txs.slice(0, 3),
-          }
-        return undefined
-      })
-    }
+    setMergedTransactions(txs.slice(0, 3))
+    updateState((state: any) => {
+      if (state)
+        return {
+          ...state,
+          mergedTransactions: txs.slice(0, 3),
+        }
+      return undefined
+    })
   }
 
   const navigateToTransactionHistory = () => {
