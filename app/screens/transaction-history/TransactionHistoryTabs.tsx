@@ -5,7 +5,6 @@ import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // screens
-import { USDTransactionHistory } from "./USDTransactionHistory"
 import { BTCTransactionHistory } from "./BTCTransactionHistory"
 
 // components
@@ -26,9 +25,7 @@ export const TransactionHistoryTabs: React.FC<Props> = ({ navigation, route }) =
   const [breezBalance] = useBreezBalance()
   const { persistentState } = usePersistentStateContext()
   const [isContentVisible, setIsContentVisible] = React.useState(false)
-  const [activeWallet, setActiveWallet] = useState<"btc" | "usd">(
-    initialRouteName === "USDTransactionHistory" ? "usd" : "btc",
-  )
+  const [activeWallet, setActiveWallet] = useState<"btc" | "usd">()
 
   useEffect(() => {
     navigation.setOptions({
@@ -69,20 +66,6 @@ export const TransactionHistoryTabs: React.FC<Props> = ({ navigation, route }) =
           })}
         />
       )}
-
-      <Tab.Screen
-        name="USDTransactionHistory"
-        component={USDTransactionHistory}
-        options={{ title: LL.TransactionHistoryTabs.titleUSD() }}
-        listeners={({ navigation }) => ({
-          swipeEnd: (e) => {
-            setActiveWallet("usd")
-          },
-          tabPress: (e) => {
-            setActiveWallet("usd")
-          },
-        })}
-      />
     </Tab.Navigator>
   )
 }

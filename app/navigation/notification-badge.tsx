@@ -11,7 +11,6 @@ const NotificationBadge: React.FC = () => {
   useEffect(() => {
     async function initialize() {
       let fetchedCount = await getUnreadChatsCount(convertRumorsToGroups(rumors))
-      console.log("Fetched count is", count)
       setCount(fetchedCount)
     }
     initialize()

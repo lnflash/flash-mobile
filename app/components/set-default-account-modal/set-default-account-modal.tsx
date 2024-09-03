@@ -10,7 +10,7 @@ import Modal from "react-native-modal"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { GaloyIcon } from "../atomic/galoy-icon"
 import { GaloyCurrencyBubble } from "../atomic/galoy-currency-bubble"
-import { WalletCurrency, useSetDefaultAccountModalQuery } from "@app/graphql/generated"
+import { WalletCurrency } from "@app/graphql/generated"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
@@ -39,11 +39,7 @@ export const SetDefaultAccountModal = ({
 
   const [loading, setLoading] = useState(false)
 
-  const { data } = useSetDefaultAccountModalQuery({
-    fetchPolicy: "cache-only",
-  })
-
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getUsdWallet(undefined)
 
   const onPressHandler = (currency: string) => {
     setLoading(true)

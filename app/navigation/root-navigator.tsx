@@ -96,7 +96,6 @@ import {
   BackupOptions,
   TransactionHistoryTabs,
   IntroScreen,
-  USDTransactionHistory,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -505,11 +504,6 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="TransactionHistoryTabs"
         component={TransactionHistoryTabs}
-        options={{ title: LL.TransactionScreen.transactionHistoryTitle() }}
-      />
-      <RootNavigator.Screen
-        name="USDTransactionHistory"
-        component={USDTransactionHistory}
         options={{ title: LL.TransactionScreen.transactionHistoryTitle() }}
       />
     </RootNavigator.Navigator>

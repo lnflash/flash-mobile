@@ -98,7 +98,6 @@ export type RootStackParamList = {
   transactionDetail: { tx: TransactionFragment }
   breezTransactionDetail: { tx: TransactionFragment }
   TransactionHistoryTabs?: { initialRouteName?: string } | undefined
-  USDTransactionHistory: undefined
   transactionHistory?: undefined
   Earn: undefined
   Card: undefined

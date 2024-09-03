@@ -39,9 +39,8 @@ import {
   WalletCurrency,
   useHasPromptedSetDefaultAccountQuery,
   useHideBalanceQuery,
-  useHomeAuthedQuery,
-  useHomeUnauthedQuery,
   useRealtimePriceQuery,
+  useUserUpdateNpubMutation,
 } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { getErrorMessages } from "@app/graphql/utils"
@@ -69,6 +68,8 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useAppDispatch } from "@app/store/redux"
 import { setUserData } from "@app/store/redux/slices/userSlice"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { getPublicKey, nip19 } from "nostr-tools"
+import { hexToBytes } from "@noble/curves/abstract/utils"
 
 const TransactionCountToTriggerSetDefaultAccountModal = 1
 
@@ -93,32 +94,17 @@ export const HomeScreen: React.FC = () => {
   const { btcWallet, refreshBreez } = useBreez()
   const { nostrSecretKey } = useNostrProfile()
   const { pendingSwap, checkInProgressSwap } = useRedeem()
+  const [updateNpub, { loading }] = useUserUpdateNpubMutation()
 
   // queries
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
   const { data: { hasPromptedSetDefaultAccount } = {} } =
     useHasPromptedSetDefaultAccountQuery()
-  const {
-    data: dataAuthed,
-    loading: loadingAuthed,
-    error,
-    refetch: refetchAuthed,
-  } = useHomeAuthedQuery({
-    skip: !isAuthed,
-    fetchPolicy: "network-only",
-    errorPolicy: "all",
-    nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
-  })
   const { loading: loadingPrice, refetch: refetchRealtimePrice } = useRealtimePriceQuery({
     skip: !isAuthed,
     fetchPolicy: "network-only",
     nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
-  const {
-    refetch: refetchUnauthed,
-    loading: loadingUnauthed,
-    data: dataUnauthed,
-  } = useHomeUnauthedQuery()
 
   const { persistentState, updateState } = usePersistentStateContext()
   const [defaultAccountModalVisible, setDefaultAccountModalVisible] = useState(false)
@@ -133,8 +119,6 @@ export const HomeScreen: React.FC = () => {
   const [isUnverifiedSeedModalVisible, setIsUnverifiedSeedModalVisible] = useState(false)
 
   const isBalanceVisible = hideBalance ?? false
-  const transactionsEdges = dataAuthed?.me?.defaultAccount?.transactions?.edges ?? []
-  const numberOfTxs = dataAuthed?.me?.defaultAccount?.transactions?.edges?.length ?? 0
 
   const pulseAnim = useRef(new Animated.Value(1)).current // Initial scale value
 
@@ -184,6 +168,15 @@ export const HomeScreen: React.FC = () => {
     pulse()
   }, [pulseAnim])
 
+  useEffect(() => {
+    async function updateAccountNpub() {
+      const pubkeyHex = getPublicKey(hexToBytes(nostrSecretKey))
+      const pubkey = nip19.npubEncode(pubkeyHex)
+      const { data } = await updateNpub({ variables: { input: { npub: pubkey } } })
+    }
+    updateAccountNpub()
+  }, [])
+
   const handleHelpPress = () => {
     updateState((state: any) => {
       if (state)
@@ -210,22 +203,8 @@ export const HomeScreen: React.FC = () => {
   }, [breezSDKInitialized, persistentState.btcWalletImported])
 
   useEffect(() => {
-    if (!loadingAuthed && !breezTxsLoading) {
-      mergeTransactions(breezTransactions)
-    }
-  }, [
-    dataAuthed?.me?.defaultAccount?.transactions?.edges,
-    breezTransactions,
-    loadingAuthed,
-    breezTxsLoading,
-  ])
-
-  useEffect(() => {
-    if (dataAuthed?.me) {
-      dispatch(setUserData(dataAuthed.me))
-      saveDefaultWallet()
-    }
-  }, [dataAuthed?.me?.username])
+    saveDefaultWallet()
+  }, [])
 
   useEffect(() => {
     setIsContentVisible(isBalanceVisible)
@@ -233,10 +212,7 @@ export const HomeScreen: React.FC = () => {
 
   const saveDefaultWallet = () => {
     if (!persistentState.defaultWallet) {
-      const defaultWallet = getDefaultWallet(
-        dataAuthed?.me?.defaultAccount?.wallets,
-        dataAuthed?.me?.defaultAccount?.defaultWalletId,
-      )
+      const defaultWallet = getDefaultWallet(undefined, undefined)
       updateState((state: any) => {
         if (state)
           return {
@@ -270,56 +246,9 @@ export const HomeScreen: React.FC = () => {
     setBreezTxsLoading(false)
   }
 
-  const mergeTransactions = async (breezTxs: Payment[]) => {
-    const mergedTransactions: TransactionFragment[] = []
-    const formattedBreezTxs = await formatBreezTransactions(breezTxs)
-
-    let i = 0
-    let j = 0
-    while (transactionsEdges.length != i && formattedBreezTxs.length != j) {
-      if (transactionsEdges[i].node?.createdAt > formattedBreezTxs[j]?.createdAt) {
-        mergedTransactions.push(transactionsEdges[i].node)
-        i++
-      } else {
-        mergedTransactions.push(formattedBreezTxs[j])
-        j++
-      }
-    }
-
-    while (transactionsEdges.length !== i) {
-      mergedTransactions.push(transactionsEdges[i].node)
-      i++
-    }
-
-    while (formattedBreezTxs.length !== j) {
-      mergedTransactions.push(formattedBreezTxs[j])
-      j++
-    }
-
-    updateMergedTransactions(mergedTransactions)
-  }
-
-  const formatBreezTransactions = async (txs: Payment[]) => {
-    if (!convertMoneyAmount || !txs) {
-      return []
-    }
-    const formattedTxs = txs?.map((edge) =>
-      formatPaymentsBreezSDK(
-        edge.id,
-        txs,
-        convertMoneyAmount(toBtcMoneyAmount(edge.amountMsat / 1000), WalletCurrency.Usd)
-          .amount,
-      ),
-    )
-
-    return formattedTxs?.filter(Boolean) ?? []
-  }
-
   const refetch = useCallback(() => {
     if (isAuthed) {
       refetchRealtimePrice()
-      refetchAuthed()
-      refetchUnauthed()
 
       if (persistentState.isAdvanceMode && breezSDKInitialized) {
         fetchPaymentsBreez()
@@ -329,7 +258,7 @@ export const HomeScreen: React.FC = () => {
       setRefreshTriggered(true)
       setTimeout(() => setRefreshTriggered(false), 1000)
     }
-  }, [isAuthed, refetchAuthed, refetchRealtimePrice, refetchUnauthed])
+  }, [isAuthed, refetchRealtimePrice])
 
   const onMenuClick = (target: Target) => {
     if (!isAuthed) {
@@ -365,7 +294,6 @@ export const HomeScreen: React.FC = () => {
     | "sendBitcoinDestination"
     | "receiveBitcoin"
     | "TransactionHistoryTabs"
-    | "USDTransactionHistory"
   type IconNamesType = keyof typeof icons
 
   const buttons = [
@@ -484,11 +412,6 @@ export const HomeScreen: React.FC = () => {
           }
           setIsUnverifiedSeedModalVisible={setIsUnverifiedSeedModalVisible}
         />
-        {error && (
-          <View style={styles.marginButtonContainer}>
-            <GaloyErrorBox errorMessage={getErrorMessages(error)} />
-          </View>
-        )}
         <View style={styles.listItemsContainer}>
           {buttons.map((item) => (
             <View key={item.icon} style={styles.button}>
@@ -504,16 +427,7 @@ export const HomeScreen: React.FC = () => {
 
         {mergedTransactions.length > 0 ? (
           <>
-            <TouchableWithoutFeedback
-              style={styles.recentTransaction}
-              onPress={() =>
-                onMenuClick(
-                  persistentState.isAdvanceMode
-                    ? "TransactionHistoryTabs"
-                    : "USDTransactionHistory",
-                )
-              }
-            >
+            <TouchableWithoutFeedback style={styles.recentTransaction}>
               <Text type="p1" bold {...testProps(LL.TransactionScreen.title())}>
                 {LL.TransactionScreen.title()}
               </Text>
@@ -547,7 +461,7 @@ export const HomeScreen: React.FC = () => {
           </>
         ) : (
           <ActivityIndicator
-            animating={breezTxsLoading || loadingAuthed}
+            animating={breezTxsLoading}
             size="large"
             color={colors.primary}
           />

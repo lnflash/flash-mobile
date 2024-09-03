@@ -92,6 +92,94 @@ mutation accountDelete {
   }
 }
 
+mutation accountDisableNotificationCategory($input: AccountDisableNotificationCategoryInput!) {
+  accountDisableNotificationCategory(input: $input) {
+    errors {
+      message
+      __typename
+    }
+    account {
+      id
+      notificationSettings {
+        push {
+          enabled
+          disabledCategories
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation accountDisableNotificationChannel($input: AccountDisableNotificationChannelInput!) {
+  accountDisableNotificationChannel(input: $input) {
+    errors {
+      message
+      __typename
+    }
+    account {
+      id
+      notificationSettings {
+        push {
+          enabled
+          disabledCategories
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation accountEnableNotificationCategory($input: AccountEnableNotificationCategoryInput!) {
+  accountEnableNotificationCategory(input: $input) {
+    errors {
+      message
+      __typename
+    }
+    account {
+      id
+      notificationSettings {
+        push {
+          enabled
+          disabledCategories
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation accountEnableNotificationChannel($input: AccountEnableNotificationChannelInput!) {
+  accountEnableNotificationChannel(input: $input) {
+    errors {
+      message
+      __typename
+    }
+    account {
+      id
+      notificationSettings {
+        push {
+          enabled
+          disabledCategories
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+
 mutation accountUpdateDefaultWalletId($input: AccountUpdateDefaultWalletIdInput!) {
   accountUpdateDefaultWalletId(input: $input) {
     errors {
@@ -614,6 +702,22 @@ mutation userUpdateLanguage($input: UserUpdateLanguageInput!) {
   }
 }
 
+mutation userUpdateNpub($input: UserUpdateNpubInput!) {
+  userUpdateNpub(input: $input) {
+    errors {
+      code
+      __typename
+    }
+    user {
+      id
+      username
+      npub
+      __typename
+    }
+    __typename
+  }
+}
+
 mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
   userUpdateUsername(input: $input) {
     errors {
@@ -623,6 +727,19 @@ mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
     user {
       id
       username
+      npub
+      __typename
+    }
+    __typename
+  }
+}
+
+query ExportCsvSetting($walletIds: [WalletId!]!) {
+  me {
+    id
+    defaultAccount {
+      id
+      csvTransactions(walletIds: $walletIds)
       __typename
     }
     __typename
@@ -713,23 +830,6 @@ query analytics {
   }
 }
 
-query balanceHeader {
-  me {
-    id
-    defaultAccount {
-      id
-      wallets {
-        id
-        balance
-        walletCurrency
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
 query beta {
   beta @client
 }
@@ -781,23 +881,6 @@ query contacts {
   }
 }
 
-query conversionScreen {
-  me {
-    id
-    defaultAccount {
-      id
-      wallets {
-        id
-        balance
-        walletCurrency
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
 query currencyList {
   currencyList {
     __typename
@@ -835,52 +918,6 @@ query hiddenBalanceToolTip {
 
 query hideBalance {
   hideBalance @client
-}
-
-query homeAuthed {
-  me {
-    id
-    language
-    username
-    phone
-    email {
-      address
-      verified
-      __typename
-    }
-    defaultAccount {
-      id
-      level
-      defaultWalletId
-      transactions(first: 20) {
-        ...TransactionList
-        __typename
-      }
-      wallets {
-        id
-        balance
-        walletCurrency
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-query homeUnauthed {
-  globals {
-    network
-    __typename
-  }
-  currencyList {
-    id
-    flag
-    name
-    symbol
-    fractionDigits
-    __typename
-  }
 }
 
 query language {
@@ -942,6 +979,25 @@ query myUserId {
 query network {
   globals {
     network
+    __typename
+  }
+}
+
+query notificationSettings {
+  me {
+    id
+    defaultAccount {
+      id
+      notificationSettings {
+        push {
+          enabled
+          disabledCategories
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
     __typename
   }
 }
@@ -1164,24 +1220,6 @@ query sendBitcoinWithdrawalLimits {
   }
 }
 
-query setDefaultAccountModal {
-  me {
-    id
-    defaultAccount {
-      id
-      defaultWalletId
-      wallets {
-        id
-        balance
-        walletCurrency
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
 query setDefaultWalletScreen {
   me {
     id
@@ -1245,50 +1283,6 @@ query transactionListForContact($username: Username!, $first: Int, $after: Strin
     contactByUsername(username: $username) {
       transactions(first: $first, after: $after, last: $last, before: $before) {
         ...TransactionList
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-query transactionListForDefaultAccount($first: Int, $after: String, $last: Int, $before: String) {
-  me {
-    id
-    defaultAccount {
-      id
-      transactions(first: $first, after: $after, last: $last, before: $before) {
-        ...TransactionList
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-query walletCSVTransactions($walletIds: [WalletId!]!) {
-  me {
-    id
-    defaultAccount {
-      id
-      csvTransactions(walletIds: $walletIds)
-      __typename
-    }
-    __typename
-  }
-}
-
-query walletOverviewScreen {
-  me {
-    id
-    defaultAccount {
-      id
-      wallets {
-        id
-        balance
-        walletCurrency
         __typename
       }
       __typename

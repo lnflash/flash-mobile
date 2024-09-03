@@ -42,6 +42,21 @@ gql`
   }
 `
 
+gql`
+  mutation userUpdateNpub($input: UserUpdateNpubInput!) {
+    userUpdateNpub(input: $input) {
+      errors {
+        code
+      }
+      user {
+        id
+        username
+        npub
+      }
+    }
+  }
+`
+
 export const SetLightningAddressModal = ({
   isVisible,
   toggleModal,
@@ -89,22 +104,11 @@ export const SetLightningAddressModal = ({
             fields: {
               username: () => {
                 return lnAddress
-              },
-              npub: () => {
-                return nostrPubkey
-              },
+              }
             },
           })
         }
       }
-      updateNostrProfile({
-        content: {
-          username: lnAddress,
-          lud16: `${lnAddress}@${lnDomain}`,
-          flash_username: lnAddress,
-        },
-      })
-      setPreferredRelay()
     },
   })
 
@@ -119,7 +123,6 @@ export const SetLightningAddressModal = ({
       variables: {
         input: {
           username: lnAddress,
-          npub: nostrPubkey,
         },
       },
     })
@@ -132,6 +135,15 @@ export const SetLightningAddressModal = ({
       }
       return
     }
+
+    updateNostrProfile({
+      content: {
+        username: lnAddress,
+        lud16: `${lnAddress}@${lnDomain}`,
+        flash_username: lnAddress,
+      },
+    })
+    setPreferredRelay()
 
     dispatch(updateUserData({ username: lnAddress }))
     toggleModal()

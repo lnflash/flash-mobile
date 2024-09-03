@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react"
 import ContentLoader, { Rect } from "react-content-loader/native"
 import { Pressable, View } from "react-native"
 
-import { useWalletOverviewScreenQuery, WalletCurrency } from "@app/graphql/generated"
+import { WalletCurrency } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
@@ -74,11 +74,6 @@ const WalletOverview: React.FC<Props> = ({
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
     useDisplayCurrency()
 
-  const { data, error } = useWalletOverviewScreenQuery({
-    fetchPolicy: "network-only",
-    skip: !isAuthed,
-  })
-
   const [btcBalance, setBtcBalance] = useState<string | undefined>(
     persistentState?.btcBalance || "0",
   )
@@ -117,29 +112,16 @@ const WalletOverview: React.FC<Props> = ({
 
   useEffect(() => {
     if (isAuthed) formatBalance()
-  }, [
-    isAuthed,
-    data?.me?.defaultAccount?.wallets,
-    pendingBalance,
-    breezBalance,
-    displayCurrency,
-  ])
+  }, [isAuthed, pendingBalance, breezBalance, displayCurrency])
 
   useEffect(() => {
-    if (!error && data?.me?.defaultAccount.wallets) {
-      setLastUpdated(new Date())
-      save("lastUpdated", new Date())
-    } else {
-      getLastUpdated()
-    }
-  }, [
-    isAuthed,
-    data?.me?.defaultAccount?.wallets,
-    pendingBalance,
-    breezBalance,
-    error,
-    refreshTriggered,
-  ])
+    // if (!error && data?.me?.defaultAccount.wallets) {
+    //   setLastUpdated(new Date())
+    //   save("lastUpdated", new Date())
+    // } else {
+    //   getLastUpdated()
+    // }
+  }, [isAuthed, pendingBalance, breezBalance, refreshTriggered])
 
   const getLastUpdated = async () => {
     const res = await loadJson("lastUpdated")
@@ -173,23 +155,6 @@ const WalletOverview: React.FC<Props> = ({
         moneyAmount: extBtcWalletBalance,
       }),
     )
-
-    if (data) {
-      const extUsdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
-      const extUsdWalletBalance = toUsdMoneyAmount(extUsdWallet?.balance ?? NaN)
-
-      setUsdBalance(
-        moneyAmountToDisplayCurrencyString({
-          moneyAmount: extUsdWalletBalance,
-          isApproximate: displayCurrency !== WalletCurrency.Usd,
-        }),
-      )
-      setConvertedUsdBalance(
-        formatMoneyAmount({
-          moneyAmount: extUsdWalletBalance,
-        }),
-      )
-    }
   }
 
   const toggleIsContentVisible = () => {
@@ -218,7 +183,7 @@ const WalletOverview: React.FC<Props> = ({
       </View>
       {/* Start of IBEX Wallet overview */}
       <View style={styles.separator}></View>
-      <Pressable onPress={() => navigateHandler("USDTransactionHistory")}>
+      <Pressable>
         <View style={styles.displayTextView}>
           <View style={styles.currency}>
             <GaloyCurrencyBubble currency="USD" />
