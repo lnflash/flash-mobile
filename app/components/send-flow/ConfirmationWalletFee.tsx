@@ -135,6 +135,9 @@ const ConfirmationWalletFee: React.FC<Props> = ({
           {fee.status === "error" && !fee.amount && (
             <Text>{LL.SendBitcoinConfirmationScreen.feeError()}</Text>
           )}
+          {fee.status === "unset" && !fee.amount && (
+            <Text>{LL.SendBitcoinConfirmationScreen.breezFeeText()}</Text>
+          )}
         </View>
         {fee.status === "error" && Boolean(fee.amount) && (
           <Text style={styles.maxFeeWarningText}>
