@@ -1,4 +1,7 @@
-import { API_KEY, GREENLIGHT_PARTNER_CERT, GREENLIGHT_PARTNER_KEY } from "@env"
+import * as bip39 from "bip39"
+import * as Keychain from "react-native-keychain"
+import RNFS from "react-native-fs"
+import { PaymentType } from "@galoymoney/client"
 import {
   connect,
   defaultConfig,
@@ -19,12 +22,7 @@ import {
   parseInvoice,
   LnInvoice,
   preparePayOnchain,
-  recommendedFees,
-  RecommendedFees,
-  LogEntry,
-  setLogger,
   LnUrlPayResult,
-  InputType,
   parse,
   InputTypeVariant,
   lnurlPay,
@@ -33,107 +31,8 @@ import {
   lnurlWithdraw,
   LnUrlWithdrawResultVariant,
 } from "@breeztech/react-native-breez-sdk-liquid"
-import * as bip39 from "bip39"
-import * as Keychain from "react-native-keychain"
-import { EventEmitter } from "events"
-import { base64ToBytes, toMilliSatoshi } from "../conversion"
-import RNFS from "react-native-fs"
-import { PaymentType } from "@galoymoney/client"
-
-const _GREENLIGHT_PARTNER_CERT: number[] = Array.from(
-  base64ToBytes(GREENLIGHT_PARTNER_CERT),
-)
-
-const _GREENLIGHT_PARTNER_KEY: number[] = Array.from(
-  base64ToBytes(GREENLIGHT_PARTNER_KEY),
-)
 
 const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
-
-// SDK events listener
-export const paymentEvents = new EventEmitter()
-
-paymentEvents.setMaxListeners(20) // Adjust the limit as needed
-
-// Retry function
-const retry = <T>(fn: () => Promise<T>, ms = 15000, maxRetries = 3) =>
-  new Promise<T>((resolve, reject) => {
-    let attempts = 0
-    const tryFn = async () => {
-      try {
-        const result = await fn()
-        resolve(result)
-      } catch (err) {
-        // eslint-disable-next-line no-plusplus
-        if (++attempts >= maxRetries) {
-          reject(err)
-        } else {
-          setTimeout(tryFn, ms)
-        }
-      }
-    }
-    tryFn()
-  })
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getMnemonic = async (): Promise<string> => {
-  try {
-    console.log("Looking for mnemonic in keychain")
-    const credentials = await Keychain.getInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
-    if (credentials) {
-      console.log("Mnemonic found in keychain")
-      return credentials.password
-    }
-
-    // Generate mnemonic and store it in the keychain
-    // For development, we use a fixed mnemonic stored in .env
-    console.log("Mnemonic not found in keychain. Generating new one")
-    const mnemonic = bip39.generateMnemonic(128)
-    await Keychain.setInternetCredentials(
-      KEYCHAIN_MNEMONIC_KEY,
-      KEYCHAIN_MNEMONIC_KEY,
-      mnemonic,
-    )
-    // console.log("Mnemonic stored in keychain:", mnemonic)
-    return mnemonic
-  } catch (error) {
-    console.error("Error in getMnemonic: ", error)
-    throw error
-  }
-}
-
-export const breezHealthCheck = async (): Promise<void> => {
-  //   const healthCheck = await sdk.serviceHealthCheck()
-  //   console.log(`Current service status is: ${healthCheck.status}`)
-  //   if (!healthCheck.status) {
-  //     throw new Error("Breez service is not available")
-  //   }
-}
-
-const connectToSDK = async () => {
-  try {
-    const mnemonic = await getMnemonic()
-    const config = await defaultConfig(LiquidNetwork.MAINNET)
-
-    await connect({ mnemonic, config })
-  } catch (error) {
-    console.error("Connect to Breez SDK - Liquid error: ", error)
-    throw error
-  }
-}
-
-export const disconnectToSDK = async () => {
-  try {
-    const config = await defaultConfig(LiquidNetwork.MAINNET)
-    await disconnect()
-    await RNFS.unlink(config.workingDir)
-    breezSDKInitialized = false
-    breezSDKInitializing = null
-  } catch (error) {
-    console.error("Disconnect error: ", error)
-    throw error
-  }
-}
 
 export let breezSDKInitialized = false
 let breezSDKInitializing: Promise<void | boolean> | null = null
@@ -161,6 +60,73 @@ export const initializeBreezSDK = async (): Promise<boolean> => {
   })()
 
   return breezSDKInitializing as Promise<boolean>
+}
+
+// Retry function
+const retry = <T>(fn: () => Promise<T>, ms = 15000, maxRetries = 3) =>
+  new Promise<T>((resolve, reject) => {
+    let attempts = 0
+    const tryFn = async () => {
+      try {
+        const result = await fn()
+        resolve(result)
+      } catch (err) {
+        if (++attempts >= maxRetries) {
+          reject(err)
+        } else {
+          setTimeout(tryFn, ms)
+        }
+      }
+    }
+    tryFn()
+  })
+
+const connectToSDK = async () => {
+  try {
+    const mnemonic = await getMnemonic()
+    const config = await defaultConfig(LiquidNetwork.MAINNET)
+
+    await connect({ mnemonic, config })
+  } catch (error) {
+    console.error("Connect to Breez SDK - Liquid error: ", error)
+    throw error
+  }
+}
+
+export const disconnectToSDK = async () => {
+  try {
+    const config = await defaultConfig(LiquidNetwork.MAINNET)
+    await disconnect()
+    await RNFS.unlink(config.workingDir)
+    breezSDKInitialized = false
+    breezSDKInitializing = null
+  } catch (error) {
+    console.error("Disconnect error: ", error)
+    throw error
+  }
+}
+
+const getMnemonic = async (): Promise<string> => {
+  try {
+    console.log("Looking for mnemonic in keychain")
+    const credentials = await Keychain.getInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
+    if (credentials) {
+      console.log("Mnemonic found in keychain")
+      return credentials.password
+    }
+
+    console.log("Mnemonic not found in keychain. Generating new one")
+    const mnemonic = bip39.generateMnemonic(128)
+    await Keychain.setInternetCredentials(
+      KEYCHAIN_MNEMONIC_KEY,
+      KEYCHAIN_MNEMONIC_KEY,
+      mnemonic,
+    )
+    return mnemonic
+  } catch (error) {
+    console.error("Error in getMnemonic: ", error)
+    throw error
+  }
 }
 
 export const fetchBreezLightningLimits = async () => {
@@ -237,6 +203,33 @@ export const receivePaymentBreezSDK = async (
   }
 }
 
+export const receiveOnchainBreezSDK = async (
+  amount?: number,
+): Promise<ReceiveOnchainResponse> => {
+  try {
+    // Fetch the Onchain Receive limits
+    const currentLimits = await fetchOnchainLimits()
+    console.log(`Minimum amount, in sats: ${currentLimits.receive.minSat}`)
+    console.log(`Maximum amount, in sats: ${currentLimits.receive.maxSat}`)
+
+    // Set the amount you wish the payer to send, which should be within the above limits
+    const prepareResponse = await prepareReceiveOnchain({
+      payerAmountSat: amount || currentLimits.receive.minSat,
+    })
+
+    // If the fees are acceptable, continue to create the Onchain Receive Payment
+    const receiveFeesSat = prepareResponse.feesSat
+    console.log("Receive fee in sats", receiveFeesSat)
+
+    const receiveOnchainResponse = await receiveOnchain(prepareResponse)
+
+    return receiveOnchainResponse
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
 export const sendPaymentBreezSDK = async (
   bolt11: string,
 ): Promise<SendPaymentResponse> => {
@@ -262,63 +255,6 @@ export const sendPaymentBreezSDK = async (
   }
 }
 
-export const parseInvoiceBreezSDK = async (
-  paymentRequest: string,
-): Promise<LnInvoice> => {
-  try {
-    const invoice = await parseInvoice(paymentRequest)
-    return invoice
-  } catch (error) {
-    console.log(error)
-    throw error
-  }
-}
-
-export const receiveOnchainBreezSDK = async (
-  amount?: number,
-): Promise<ReceiveOnchainResponse> => {
-  try {
-    // Fetch the Onchain Receive limits
-    const currentLimits = await fetchOnchainLimits()
-    console.log(`Minimum amount, in sats: ${currentLimits.receive.minSat}`)
-    console.log(`Maximum amount, in sats: ${currentLimits.receive.maxSat}`)
-
-    // Set the amount you wish the payer to send, which should be within the above limits
-    const prepareResponse = await prepareReceiveOnchain({
-      payerAmountSat: amount || currentLimits.receive.minSat,
-    })
-
-    // If the fees are acceptable, continue to create the Onchain Receive Payment
-    const receiveFeesSat = prepareResponse.feesSat
-    console.log("Receive fee in sats", receiveFeesSat)
-
-    const receiveOnchainResponse = await receiveOnchain(prepareResponse)
-
-    // Send your funds to the below bitcoin address
-    const address = receiveOnchainResponse.address
-    const bip21 = receiveOnchainResponse.bip21
-
-    return receiveOnchainResponse
-  } catch (error) {
-    console.log(error)
-    throw error
-  }
-}
-
-// export const fetchReverseSwapFeesBreezSDK = async (
-//   reverseSwapfeeRequest: sdk.ReverseSwapFeesRequest,
-// ): Promise<sdk.ReverseSwapPairInfo> => {
-//   try {
-//     const fees = await sdk.fetchReverseSwapFees(reverseSwapfeeRequest)
-//     console.log("min amount: ", fees.min)
-//     console.log("max amount: ", fees.max)
-//     return fees
-//   } catch (error) {
-//     console.log(error)
-//     throw error
-//   }
-// }
-
 export const sendOnchainBreezSDK = async (
   destinationAddress: string,
   amountSat: number,
@@ -337,17 +273,6 @@ export const sendOnchainBreezSDK = async (
     })
 
     return payOnchainRes
-  } catch (error) {
-    console.log(error)
-    throw error
-  }
-}
-
-export const recommendedFeesBreezSDK = async (): Promise<RecommendedFees> => {
-  try {
-    console.log("Fetching recommended fees")
-    const fees = await recommendedFees()
-    return fees
   } catch (error) {
     console.log(error)
     throw error
@@ -390,42 +315,6 @@ export const payLnurlBreezSDK = async (
   }
 }
 
-export const listPaymentsBreezSDK = async (
-  offset?: number,
-  limit?: number,
-): Promise<Payment[]> => {
-  try {
-    const payments = await listPayments({ offset, limit })
-    return payments
-  } catch (error) {
-    console.log(error)
-    throw error
-  }
-}
-
-export const addLogListenerBreezSDK = async (): Promise<void> => {
-  try {
-    const onLogEntry = (l: LogEntry) => {
-      console.log(`Received log [${l.level}]: ${l.line}`)
-    }
-
-    const subscription = await setLogger(onLogEntry)
-  } catch (error) {
-    console.log(error)
-    throw error
-  }
-}
-
-// export const executeDevCommandBreezSDK = async (command: string): Promise<void> => {
-//   try {
-//     const res = await executeDevCommand(command)
-//     console.log("Executed dev command: ", res)
-//   } catch (error) {
-//     console.log(error)
-//     throw error
-//   }
-// }
-
 export const onRedeem = async (lnurl: string, defaultDescription: string) => {
   try {
     const input = await parse(lnurl)
@@ -464,5 +353,30 @@ export const onRedeem = async (lnurl: string, defaultDescription: string) => {
     }
   } catch (err: any) {
     return { success: false, error: err.message }
+  }
+}
+
+export const parseInvoiceBreezSDK = async (
+  paymentRequest: string,
+): Promise<LnInvoice> => {
+  try {
+    const invoice = await parseInvoice(paymentRequest)
+    return invoice
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const listPaymentsBreezSDK = async (
+  offset?: number,
+  limit?: number,
+): Promise<Payment[]> => {
+  try {
+    const payments = await listPayments({ offset, limit })
+    return payments
+  } catch (error) {
+    console.log(error)
+    throw error
   }
 }
