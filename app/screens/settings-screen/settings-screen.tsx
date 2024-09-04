@@ -26,10 +26,10 @@ import { BackupWallet } from "./settings/backup-wallet"
 import { ImportWallet } from "./settings/import-wallet"
 import { AdvancedModeToggle } from "./settings/advanced-mode-toggle"
 import { ExportCsvSetting } from "./settings/advanced-export-csv"
-import { ApiAccessSetting } from "./settings/advanced-api-access"
+// import { ApiAccessSetting } from "./settings/advanced-api-access"
 import { SettingsGroup } from "./group"
 import { EmailSetting } from "./account/settings/email"
-import { TotpSetting } from "./totp"
+// import { TotpSetting } from "./totp"
 
 gql`
   query settingsScreen {
@@ -57,11 +57,7 @@ gql`
 `
 
 const items = {
-  account: [
-    AccountLevelSetting,
-    //  AdvancedModeToggle,
-    TxLimits,
-  ],
+  account: [AccountLevelSetting, AdvancedModeToggle, TxLimits],
   loginMethods: [EmailSetting, PhoneSetting],
   waysToGetPaid: [AccountLNAddress, AccountPOS, AccountStaticQR],
   wallet: [NostrSecret, BackupWallet, ImportWallet],
