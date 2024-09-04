@@ -2,7 +2,7 @@ import * as React from "react"
 import { gql } from "@apollo/client"
 import { makeStyles } from "@rneui/themed"
 import { ScrollView } from "react-native-gesture-handler"
-import { useLevel } from "@app/graphql/level-context"
+import { AccountLevel, useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 import { Screen } from "../../components/screen"
@@ -84,6 +84,7 @@ export const SettingsScreen: React.FC = () => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { isAtLeastLevelOne } = useLevel()
+  const { currentLevel } = useLevel()
 
   return (
     <Screen preset="scroll" keyboardShouldPersistTaps="handled">
@@ -99,7 +100,9 @@ export const SettingsScreen: React.FC = () => {
           name={LL.SettingsScreen.addressScreen()}
           items={items.waysToGetPaid}
         />
-        <SettingsGroup name="Reports" items={items.reports} />
+        {currentLevel === AccountLevel.Two && (
+          <SettingsGroup name="Reports" items={items.reports} />
+        )}
         <SettingsGroup name={LL.SettingsScreen.keysManagement()} items={items.wallet} />
         <SettingsGroup name={LL.common.preferences()} items={items.preferences} />
         <SettingsGroup

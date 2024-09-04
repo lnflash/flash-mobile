@@ -6,8 +6,8 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { ListItem, makeStyles, useTheme, Button } from "@rneui/themed"
 import { useNavigation } from "@react-navigation/native"
 
-import ReportsOutline from "./report.svg"
-import ReportOutlineDark from "./report-dark.svg"
+import ReportsOutline from "@app/assets/icons/report.svg"
+import ReportOutlineDark from "@app/assets/icons/report-dark.svg"
 
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"

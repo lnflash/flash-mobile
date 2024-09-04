@@ -16,6 +16,7 @@ import { DisplayCurrency, toUsdMoneyAmount } from "@app/types/amounts"
 import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details"
 
 import { exportTransactionsToHTML, exportTransactionsToPDF } from "../../utils/pdfExport"
+import { DateRangeDisplay } from "../date-range-display"
 
 export const TxDirection = {
   Receive: "RECEIVE",
@@ -241,26 +242,6 @@ const convertToDisplayCurrency = (
 ) =>
   convertMoneyAmount &&
   convertMoneyAmount(toUsdMoneyAmount(totalAmount * 100), DisplayCurrency)
-
-const formatDate = (date: string) => format(new Date(date), "dd-MMM-yyyy hh:mm a")
-
-const DateRangeDisplay: React.FC<{ from: string; to: string }> = ({ from, to }) => {
-  const styles = useStyles()
-  const { LL } = useI18nContext()
-
-  return (
-    <View style={styles.dateContainer}>
-      <View style={styles.dateColumn}>
-        <Text style={styles.dateLabel}>{LL.reports.fromDate()}</Text>
-        <Text style={styles.dateValue}>{formatDate(from)}</Text>
-      </View>
-      <View style={styles.dateColumn}>
-        <Text style={styles.dateLabel}>{LL.reports.toDate()}</Text>
-        <Text style={styles.dateValue}>{formatDate(to)}</Text>
-      </View>
-    </View>
-  )
-}
 
 const useStyles = makeStyles(({ colors }) => ({
   container: {
