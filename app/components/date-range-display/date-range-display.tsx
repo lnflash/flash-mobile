@@ -1,10 +1,8 @@
 import React from "react"
 import { View, Text } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { format } from "date-fns"
 import { makeStyles } from "@rneui/themed"
-
-const formatDate = (date: string) => format(new Date(date), "dd-MMM-yyyy hh:mm a")
+import { formatDate } from "@app/utils/transaction-filters"
 
 export const DateRangeDisplay: React.FC<{ from: string; to: string }> = ({
   from,

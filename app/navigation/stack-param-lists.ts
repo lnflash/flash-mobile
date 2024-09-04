@@ -16,7 +16,6 @@ import { WalletDescriptor } from "@app/types/wallets"
 import _Map from "@app/assets/icons-redesign/map.svg"
 
 export type RootStackParamList = {
-  reportsModal: undefined
   Reconciliation: { from: string; to: string }
   IntroScreen: undefined
   getStarted: undefined

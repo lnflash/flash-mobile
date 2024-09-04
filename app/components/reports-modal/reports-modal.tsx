@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Linking, View } from "react-native"
+import { View } from "react-native"
 import ReactNativeModal from "react-native-modal"
 import DatePicker from "react-native-date-picker"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -14,9 +14,6 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 export const Reports = {
   Reconciliation: "reconciliation",
-  Aggregation: "aggregation",
-  TopRecipients: "topRecipients",
-  TopSenders: "topSenders",
 } as const
 
 export type ReportsToHide = keyof typeof Reports
@@ -42,8 +39,7 @@ const ReportModal: React.FC<Props> = ({
     theme: { colors },
   } = useTheme()
 
-  const navigation =
-    useNavigation<StackNavigationProp<RootStackParamList, "reportsModal">>()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList, "settings">>()
 
   const [selectedFrom, setSelectedFrom] = useState<Date>(new Date(from))
   const [selectedTo, setSelectedTo] = useState<Date>(new Date(to))
@@ -76,7 +72,7 @@ const ReportModal: React.FC<Props> = ({
     {
       name: LL.reports.reconciliation(),
       action: () => {
-        toggleModal() // Close the modal before navigating
+        toggleModal()
         navigation.navigate("Reconciliation", {
           from: selectedFrom.toISOString(),
           to: selectedTo.toISOString(),

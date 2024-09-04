@@ -14,7 +14,12 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { DisplayCurrency, toUsdMoneyAmount } from "@app/types/amounts"
 import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details"
-
+import {
+  filterTransactionsByDate,
+  filterTransactionsByDirection,
+  calculateTotalAmount,
+  convertToDisplayCurrency,
+} from "@app/utils/transaction-filters"
 import { exportTransactionsToHTML, exportTransactionsToPDF } from "../../utils/pdfExport"
 import { DateRangeDisplay } from "../date-range-display"
 
@@ -135,14 +140,12 @@ export const ReconciliationReport: React.FC = () => {
     <Screen>
       <View style={styles.container}>
         <DateRangeDisplay from={from} to={to} />
-
         <Text style={styles.totalText}>
           {LL.reports.total()}:{"\nUSD"} {balance}{" "}
           {balanceInDisplayCurrency !== balance && (
             <Text>{`( ~${balanceInDisplayCurrency} )`}</Text>
           )}
         </Text>
-
         <View style={styles.filterContainer}>
           <Button
             title="All"
@@ -186,6 +189,7 @@ export const ReconciliationReport: React.FC = () => {
         >
           Export as HTML
         </Button>
+        <View style={styles.spacer} />
         <Button
           style={styles.button}
           onPress={() =>
@@ -205,43 +209,6 @@ export const ReconciliationReport: React.FC = () => {
     </Screen>
   )
 }
-
-const filterTransactionsByDate = (
-  transactions: TransactionFragment[],
-  from: string,
-  to: string,
-) => {
-  const selectedFrom = from ? new Date(from) : null
-  const selectedTo = to ? new Date(to) : null
-
-  return transactions.filter((tx) => {
-    const txDate = new Date(tx.createdAt * 1000) // Convert seconds to milliseconds
-    return (
-      (!selectedFrom || txDate >= selectedFrom) && (!selectedTo || txDate <= selectedTo)
-    )
-  })
-}
-
-const filterTransactionsByDirection = (
-  transactions: TransactionFragment[],
-  direction: TxDirection | null,
-) => {
-  if (!direction) return transactions
-  return transactions.filter((tx) => tx.direction === direction)
-}
-
-const calculateTotalAmount = (transactions: TransactionFragment[]) =>
-  transactions.reduce((sum, tx) => {
-    const displayAmount = tx.settlementAmount
-    return sum + (isNaN(displayAmount) ? 0 : displayAmount)
-  }, 0)
-
-const convertToDisplayCurrency = (
-  totalAmount: number,
-  convertMoneyAmount?: ConvertMoneyAmount,
-) =>
-  convertMoneyAmount &&
-  convertMoneyAmount(toUsdMoneyAmount(totalAmount * 100), DisplayCurrency)
 
 const useStyles = makeStyles(({ colors }) => ({
   container: {
@@ -322,9 +289,11 @@ const useStyles = makeStyles(({ colors }) => ({
     color: colors.black,
   },
   button: {
-    marginVertical: 10,
-    // center the button with space on the sides
+    marginVertical: "auto",
     marginHorizontal: "auto",
     paddingHorizontal: 40,
+  },
+  spacer: {
+    height: 3,
   },
 }))
