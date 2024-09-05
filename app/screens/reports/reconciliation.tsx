@@ -1,83 +1,49 @@
 import React, { useEffect, useState } from "react"
 import { View, Text, ScrollView } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useTheme, Button, makeStyles } from "@rneui/themed"
-import { format } from "date-fns"
-import { Screen } from "../screen"
+import { Button, makeStyles } from "@rneui/themed"
+import { StackScreenProps } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
+
+// components
+import { Screen } from "../../components/screen"
+import { DateRangeDisplay } from "../../components/date-range-display"
+
+// hooks
 import { usePriceConversion } from "@app/hooks"
-import {
-  useTransactionListForDefaultAccountQuery,
-  TransactionFragment,
-} from "@app/graphql/generated"
-import { RouteProp, useRoute } from "@react-navigation/native"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
-import { DisplayCurrency, toUsdMoneyAmount } from "@app/types/amounts"
-import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details"
+
+// gql
+import {
+  useTransactionListForDefaultAccountQuery,
+  TxDirection,
+} from "@app/graphql/generated"
+
+// types
+import { toUsdMoneyAmount } from "@app/types/amounts"
+
+// utils
 import {
   filterTransactionsByDate,
   filterTransactionsByDirection,
   calculateTotalAmount,
   convertToDisplayCurrency,
+  orderAndConvertTransactionsByDate,
 } from "@app/utils/transaction-filters"
 import { exportTransactionsToHTML, exportTransactionsToPDF } from "../../utils/pdfExport"
-import { DateRangeDisplay } from "../date-range-display"
 
-export const TxDirection = {
-  Receive: "RECEIVE",
-  Send: "SEND",
-} as const
+type Props = StackScreenProps<RootStackParamList, "Reconciliation">
 
-export type TxDirection = (typeof TxDirection)[keyof typeof TxDirection]
-
-// Define route params type
-type ReconciliationReportRouteParams = {
-  from: string
-  to: string
-}
-
-// Define the type of the route
-type ReconciliationReportRouteProp = RouteProp<
-  { Reconciliation: ReconciliationReportRouteParams },
-  "Reconciliation"
->
-
-const orderAndConvertTransactionsByDate = (
-  transactions: TransactionFragment[],
-  convertMoneyAmount?: ConvertMoneyAmount,
-) => {
-  // Sort the transactions by date (newest first)
-  const orderedTransactions = transactions.sort((a, b) => b.createdAt - a.createdAt)
-
-  // Map through the transactions and convert amounts, including the display date
-  return orderedTransactions.map((tx) => {
-    const displayAmount = tx.settlementAmount
-    const convertedAmount = convertMoneyAmount?.(
-      toUsdMoneyAmount(displayAmount * 100),
-      DisplayCurrency,
-    )
-
-    return {
-      ...tx,
-      displayDate: format(new Date(tx.createdAt * 1000), "dd-MMM-yyyy hh:mm a"),
-      settlementDisplayAmount:
-        convertedAmount && convertedAmount.currencyCode !== "USD"
-          ? (convertedAmount.amount / 100).toFixed(2)
-          : tx.settlementDisplayAmount,
-    }
-  })
-}
-
-export const ReconciliationReport: React.FC = () => {
+export const ReconciliationReport: React.FC<Props> = ({ route }) => {
+  const { from, to } = route.params
   const { LL } = useI18nContext()
   const isAuthed = useIsAuthed()
-  const { colors } = useTheme()
   const styles = useStyles()
-  const { from, to } = useRoute<ReconciliationReportRouteProp>().params
 
   const [balance, setBalance] = useState("$0.00")
   const [balanceInDisplayCurrency, setBalanceInDisplayCurrency] = useState("$0.00")
-  const [selectedDirection, setSelectedDirection] = useState<TxDirection | null>(null)
+  const [selectedDirection, setSelectedDirection] = useState<TxDirection>()
 
   const { formatMoneyAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
@@ -150,7 +116,7 @@ export const ReconciliationReport: React.FC = () => {
           <Button
             title="All"
             type={selectedDirection === null ? "solid" : "outline"}
-            onPress={() => setSelectedDirection(null)}
+            onPress={() => setSelectedDirection(undefined)}
           />
           <Button
             title="Received"
@@ -257,36 +223,6 @@ const useStyles = makeStyles(({ colors }) => ({
     color: colors.black,
     textAlign: "right",
     flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginVertical: 8,
-    color: colors.primary,
-  },
-  dateContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 30,
-  },
-  dateColumn: {
-    flex: 1,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: colors.grey4,
-    padding: 10,
-    borderRadius: 10,
-    marginHorizontal: 10,
-  },
-  dateLabel: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 4,
-    color: colors.black,
-  },
-  dateValue: {
-    fontSize: 12,
-    color: colors.black,
   },
   button: {
     marginVertical: "auto",

@@ -101,7 +101,7 @@ import {
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
-import { ReconciliationReport } from "@app/components/reports"
+import { ReconciliationReport } from "@app/screens/reports"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
