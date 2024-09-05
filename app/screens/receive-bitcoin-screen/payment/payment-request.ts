@@ -34,7 +34,7 @@ export const createPaymentRequest = (
   const fetchBreezOnchain = async (amount?: number) => {
     try {
       const fetchedBreezOnChain = await receiveOnchainBreezSDK(amount)
-      return fetchedBreezOnChain
+      return fetchedBreezOnChain.destination
     } catch (error) {
       console.error("Error fetching breezOnChain:", error)
     }
@@ -148,7 +148,7 @@ export const createPaymentRequest = (
         info = generateLightningInfo(fetchedBreezInvoice.lnInvoiceCreate.invoice, [], [])
       } else if (pr.type === Invoice.OnChain) {
         const fetchedBreezOnchain = await fetchBreezOnchain(pr.settlementAmount?.amount)
-        info = generateOnChainInfo(fetchedBreezOnchain?.address || "", [], [])
+        info = generateOnChainInfo(fetchedBreezOnchain || "", [], [])
       }
     } else {
       // Handle USD payment requests

@@ -10,11 +10,8 @@ import {
   LiquidNetwork,
   listPayments,
   Payment,
-  prepareReceiveOnchain,
   prepareReceivePayment,
   prepareSendPayment,
-  receiveOnchain,
-  ReceiveOnchainResponse,
   receivePayment,
   sendPayment,
   SendPaymentResponse,
@@ -30,6 +27,8 @@ import {
   payOnchain,
   lnurlWithdraw,
   LnUrlWithdrawResultVariant,
+  PaymentMethod,
+  ReceivePaymentResponse,
 } from "@breeztech/react-native-breez-sdk-liquid"
 
 const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
@@ -149,7 +148,8 @@ export const fetchBreezFee = async (
   try {
     if (paymentType === "lightning" && !!invoice) {
       const response = await prepareSendPayment({
-        invoice,
+        destination: invoice,
+        amountSat: receiverAmountSat,
       })
       return response.feesSat
     } else if (paymentType === "onchain" && !!receiverAmountSat) {
@@ -181,20 +181,20 @@ export const receivePaymentBreezSDK = async (
     console.log(`Maximum amount, in sats: ${currentLimits.receive.maxSat}`)
 
     // Set the amount you wish the payer to send, which should be within the above limits
-    const prepareRes = await prepareReceivePayment({
+    const prepareResponse = await prepareReceivePayment({
       payerAmountSat: payerAmountSat || currentLimits.receive.minSat,
+      paymentMethod: PaymentMethod.LIGHTNING,
     })
-
     // If the fees are acceptable, continue to create the Receive Payment
-    const receiveFeesSat = prepareRes.feesSat
+    const receiveFeesSat = prepareResponse.feesSat
     console.log("Receive fee in sats: ", receiveFeesSat)
 
     const res = await receivePayment({
-      prepareRes,
+      prepareResponse,
       description,
     })
 
-    const parsed = await parseInvoice(res.invoice)
+    const parsed = await parseInvoice(res.destination)
 
     return parsed
   } catch (error) {
@@ -205,7 +205,7 @@ export const receivePaymentBreezSDK = async (
 
 export const receiveOnchainBreezSDK = async (
   amount?: number,
-): Promise<ReceiveOnchainResponse> => {
+): Promise<ReceivePaymentResponse> => {
   try {
     // Fetch the Onchain Receive limits
     const currentLimits = await fetchOnchainLimits()
@@ -213,15 +213,16 @@ export const receiveOnchainBreezSDK = async (
     console.log(`Maximum amount, in sats: ${currentLimits.receive.maxSat}`)
 
     // Set the amount you wish the payer to send, which should be within the above limits
-    const prepareResponse = await prepareReceiveOnchain({
+    const prepareResponse = await prepareReceivePayment({
       payerAmountSat: amount || currentLimits.receive.minSat,
+      paymentMethod: PaymentMethod.BITCOIN_ADDRESS,
     })
 
     // If the fees are acceptable, continue to create the Onchain Receive Payment
     const receiveFeesSat = prepareResponse.feesSat
     console.log("Receive fee in sats", receiveFeesSat)
 
-    const receiveOnchainResponse = await receiveOnchain(prepareResponse)
+    const receiveOnchainResponse = await receivePayment({ prepareResponse })
 
     return receiveOnchainResponse
   } catch (error) {
@@ -234,15 +235,15 @@ export const sendPaymentBreezSDK = async (
   bolt11: string,
 ): Promise<SendPaymentResponse> => {
   try {
-    const prepareSendResponse = await prepareSendPayment({
-      invoice: bolt11,
+    const prepareResponse = await prepareSendPayment({
+      destination: bolt11,
     })
 
     // If the fees are acceptable, continue to create the Send Payment
-    const receiveFeesSat = prepareSendResponse.feesSat
+    const receiveFeesSat = prepareResponse.feesSat
     console.log("Receive fee in sats", receiveFeesSat)
 
-    const sendResponse = await sendPayment(prepareSendResponse)
+    const sendResponse = await sendPayment({ prepareResponse })
 
     if (sendResponse.payment.status === "failed") {
       console.log("Error paying Invoice: ", sendResponse)
@@ -260,16 +261,16 @@ export const sendOnchainBreezSDK = async (
   amountSat: number,
 ): Promise<SendPaymentResponse> => {
   try {
-    const prepareRes = await preparePayOnchain({
+    const prepareResponse = await preparePayOnchain({
       receiverAmountSat: amountSat,
     })
 
     // Check if the fees are acceptable before proceeding
-    const totalFeesSat = prepareRes.totalFeesSat
+    const totalFeesSat = prepareResponse.totalFeesSat
 
     const payOnchainRes = await payOnchain({
       address: destinationAddress,
-      prepareRes,
+      prepareResponse,
     })
 
     return payOnchainRes
