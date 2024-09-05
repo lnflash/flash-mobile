@@ -5,12 +5,12 @@ import DatePicker from "react-native-date-picker"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { ListItem, makeStyles, useTheme, Button } from "@rneui/themed"
 import { useNavigation } from "@react-navigation/native"
-
-import ReportsOutline from "@app/assets/icons/report.svg"
-import ReportOutlineDark from "@app/assets/icons/report-dark.svg"
-
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+
+// assets
+import ReportsOutline from "@app/assets/icons/report.svg"
+import ReportOutlineDark from "@app/assets/icons/report-dark.svg"
 
 export const Reports = {
   Reconciliation: "reconciliation",
@@ -152,6 +152,7 @@ const useStyles = makeStyles(({ colors }) => ({
     justifyContent: "flex-end",
     flexGrow: 1,
     marginHorizontal: 0,
+    marginVertical: 0,
   },
   modalContent: {
     backgroundColor: colors.white,
@@ -166,9 +167,7 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   datePickersContainer: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   listItemTitle: {
