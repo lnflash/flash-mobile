@@ -21,7 +21,7 @@ const filterTransactionsByDate = (
 
 const filterTransactionsByDirection = (
   transactions: TransactionFragment[],
-  direction: TxDirection | null,
+  direction?: TxDirection,
 ) => {
   if (!direction) return transactions
   return transactions.filter((tx) => tx.direction === direction)
@@ -42,10 +42,37 @@ const convertToDisplayCurrency = (
 
 const formatDate = (date: string) => format(new Date(date), "dd-MMM-yyyy hh:mm a")
 
+const orderAndConvertTransactionsByDate = (
+  transactions: TransactionFragment[],
+  convertMoneyAmount?: ConvertMoneyAmount,
+) => {
+  // Sort the transactions by date (newest first)
+  const orderedTransactions = transactions.sort((a, b) => b.createdAt - a.createdAt)
+
+  // Map through the transactions and convert amounts, including the display date
+  return orderedTransactions.map((tx) => {
+    const displayAmount = tx.settlementAmount
+    const convertedAmount = convertMoneyAmount?.(
+      toUsdMoneyAmount(displayAmount * 100),
+      DisplayCurrency,
+    )
+
+    return {
+      ...tx,
+      displayDate: format(new Date(tx.createdAt * 1000), "dd-MMM-yyyy hh:mm a"),
+      settlementDisplayAmount:
+        convertedAmount && convertedAmount.currencyCode !== "USD"
+          ? (convertedAmount.amount / 100).toFixed(2)
+          : tx.settlementDisplayAmount,
+    }
+  })
+}
+
 export {
   filterTransactionsByDate,
   filterTransactionsByDirection,
   calculateTotalAmount,
   convertToDisplayCurrency,
   formatDate,
+  orderAndConvertTransactionsByDate,
 }
