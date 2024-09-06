@@ -62,12 +62,15 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
           route.params?.onComplete(token)
         }
       }
-      updateStateHandler(true)
-      navigation.goBack()
+      setTimeout(() => {
+        updateStateHandler(true)
+        setLoading(false)
+        navigation.goBack()
+      }, 5000)
     } else {
+      setLoading(false)
       Alert.alert("Invalid recovery phrase")
     }
-    setLoading(false)
   }
 
   const updateStateHandler = (btcWalletImported: boolean) => {
