@@ -34,6 +34,7 @@ import {
   Payment,
   removeEventListener,
   SdkEvent,
+  SdkEventVariant,
 } from "@breeztech/react-native-breez-sdk-liquid"
 
 type Props = {
@@ -63,11 +64,7 @@ const Transactions: React.FC<Props> = ({
   )
 
   useEffect(() => {
-    if (
-      refreshTriggered ||
-      (persistentState.isAdvanceMode && breezSDKInitialized) ||
-      persistentState.btcWalletImported
-    ) {
+    if (refreshTriggered || (persistentState.isAdvanceMode && breezSDKInitialized)) {
       fetchPaymentsBreez()
     }
   }, [
@@ -95,8 +92,9 @@ const Transactions: React.FC<Props> = ({
 
   const addBreezEventListener = async () => {
     const listenerId = await addEventListener((e: SdkEvent) => {
-      console.log(">>>>>>>>>>>>>>>>>>EVENT TYPE:", e.type + "; TIME: " + new Date())
-      fetchPaymentsBreez()
+      if (e.type !== SdkEventVariant.SYNCED) {
+        fetchPaymentsBreez()
+      }
     })
     setBreezListenerId(listenerId)
   }
