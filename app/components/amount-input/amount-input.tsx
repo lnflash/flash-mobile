@@ -51,7 +51,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
     if (request?.receivingWalletDescriptor.currency === "BTC") {
       setIsSettingAmount(true)
     }
-  }, [request?.type, request?.receivingWalletDescriptor])
+  }, [request?.type, request?.receivingWalletDescriptor.currency])
 
   const onSetAmount = (amount: MoneyAmount<WalletOrDisplayCurrency>) => {
     if (
