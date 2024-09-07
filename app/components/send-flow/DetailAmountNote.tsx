@@ -181,8 +181,16 @@ const DetailAmountNote: React.FC<Props> = ({
             walletCurrency={sendingWalletDescriptor.currency}
             canSetAmount={paymentDetail.canSetAmount}
             isSendingMax={paymentDetail.isSendingMax}
-            maxAmount={maxAmount}
-            minAmount={minAmount}
+            maxAmount={
+              paymentDetail.sendingWalletDescriptor.currency === "BTC"
+                ? maxAmount
+                : undefined
+            }
+            minAmount={
+              paymentDetail.sendingWalletDescriptor.currency === "BTC"
+                ? minAmount
+                : undefined
+            }
           />
         </View>
       </View>
