@@ -102,6 +102,11 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { ReconciliationReport } from "@app/screens/reports"
+import {
+  CashoutConfirmationScreen,
+  CashoutDetailsScreen,
+  CashoutSuccessScreen,
+} from "@app/screens/cashout-screen"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -264,6 +269,28 @@ export const RootStack = () => {
         component={RedeemBitcoinResultScreen}
         options={{
           title: LL.RedeemBitcoinScreen.title(),
+        }}
+      />
+      <RootNavigator.Screen
+        name="cashoutDetails"
+        component={CashoutDetailsScreen}
+        options={{
+          title: LL.CashoutDetailsScreen.title(),
+        }}
+      />
+      <RootNavigator.Screen
+        name="cashoutConfirmation"
+        component={CashoutConfirmationScreen}
+        options={{
+          title: LL.ConversionConfirmationScreen.title(),
+        }}
+      />
+      <RootNavigator.Screen
+        name="cashoutSuccess"
+        component={CashoutSuccessScreen}
+        options={{
+          headerShown: false,
+          title: LL.ConversionSuccessScreen.title(),
         }}
       />
       <RootNavigator.Screen

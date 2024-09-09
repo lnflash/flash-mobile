@@ -14,6 +14,7 @@ import {
 } from "@app/screens/send-bitcoin-screen/payment-destination/index.types"
 import { WalletDescriptor } from "@app/types/wallets"
 import _Map from "@app/assets/icons-redesign/map.svg"
+import { CashoutConfirmationScreen } from "../screens/cashout-screen/cashout-confirmation-screen"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
@@ -52,6 +53,13 @@ export type RootStackParamList = {
   sendBitcoinConfirmation: {
     paymentDetail: PaymentDetail<WalletCurrency>
   }
+  cashoutDetails: undefined
+  cashoutConfirmation: {
+    toWallet: Pick<Wallet, "id" | "walletCurrency" | "balance">
+    fromWallet: Pick<Wallet, "id" | "walletCurrency" | "balance">
+    moneyAmount: MoneyAmount<WalletOrDisplayCurrency>
+  }
+  cashoutSuccess: undefined
   conversionDetails: undefined
   conversionConfirmation: {
     toWallet: Pick<Wallet, "id" | "walletCurrency" | "balance">

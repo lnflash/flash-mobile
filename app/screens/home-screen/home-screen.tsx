@@ -18,6 +18,7 @@ import { useIsFocused, useNavigation } from "@react-navigation/native"
 import { RootStackParamList } from "../../navigation/stack-param-lists"
 import { useApolloClient } from "@apollo/client"
 import messaging from "@react-native-firebase/messaging"
+import { useLevel, AccountLevel } from "@app/graphql/level-context"
 
 // components
 import { AppUpdate } from "@app/components/app-update/app-update"
@@ -93,6 +94,7 @@ export const HomeScreen: React.FC = () => {
   const { btcWallet, refreshBreez } = useBreez()
   const { nostrSecretKey } = useNostrProfile()
   const { pendingSwap, checkInProgressSwap } = useRedeem()
+  const { currentLevel } = useLevel()
 
   // queries
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
@@ -331,23 +333,27 @@ export const HomeScreen: React.FC = () => {
     }
   }, [isAuthed, refetchAuthed, refetchRealtimePrice, refetchUnauthed])
 
-  const onMenuClick = (target: Target) => {
+  const onMenuClick = (target: Target | CustomNavigation) => {
     if (!isAuthed) {
       setModalVisible(true)
-    } else {
-      if (
-        target === "receiveBitcoin" &&
-        !hasPromptedSetDefaultAccount &&
-        persistentState.isAdvanceMode
-      ) {
-        setDefaultAccountModalVisible(!defaultAccountModalVisible)
-        return
-      }
+      return
+    }
 
-      // we are using any because Typescript complain on the fact we are not passing any params
-      // but there is no need for a params and the types should not necessitate it
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (
+      target === "receiveBitcoin" &&
+      !hasPromptedSetDefaultAccount &&
+      persistentState.isAdvanceMode
+    ) {
+      setDefaultAccountModalVisible(!defaultAccountModalVisible)
+      return
+    }
+
+    if (typeof target === "string") {
+      // Handle regular Target types
       navigation.navigate(target as any, { transactionLength: breezTransactions.length })
+    } else {
+      // Handle our custom navigation object
+      navigation.navigate(target.screen, target.params)
     }
   }
 
@@ -366,6 +372,10 @@ export const HomeScreen: React.FC = () => {
     | "receiveBitcoin"
     | "TransactionHistoryTabs"
     | "USDTransactionHistory"
+    | "cashoutDetails"
+
+  type CustomNavigation = { screen: string; params: Record<string, unknown> }
+
   type IconNamesType = keyof typeof icons
 
   const buttons = [
@@ -380,9 +390,9 @@ export const HomeScreen: React.FC = () => {
       icon: "send" as IconNamesType,
     },
     {
-      title: LL.HomeScreen.scan(),
-      target: "scanningQRCode" as Target,
-      icon: "qr-code" as IconNamesType,
+      title: LL.CashoutDetailsScreen.title(),
+      target: "cashoutDetails" as Target,
+      icon: "dollar" as IconNamesType,
     },
   ]
 
@@ -391,6 +401,15 @@ export const HomeScreen: React.FC = () => {
       title: LL.ConversionDetailsScreen.title(),
       target: "conversionDetails" as Target,
       icon: "transfer" as IconNamesType,
+    })
+  }
+
+  if (currentLevel !== AccountLevel.Two) {
+    buttons.pop()
+    buttons.push({
+      title: LL.HomeScreen.scan(),
+      target: "scanningQRCode" as Target,
+      icon: "qr-code" as IconNamesType,
     })
   }
 
