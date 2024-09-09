@@ -218,14 +218,14 @@ export const TransactionLimitsScreen = () => {
 
       <View style={styles.divider}></View>
 
-      <View style={styles.limitWrapper}>
+      {/* <View style={styles.limitWrapper}>
         <Text adjustsFontSizeToFit style={styles.valueFieldType}>
           {LL.TransactionLimitsScreen.stablesatTransfers()}
         </Text>
         {data?.me?.defaultAccount.limits?.convert.map((data, index: number) => (
           <TransactionLimitsPeriod key={index} {...data} />
         ))}
-      </View>
+      </View> */}
       {currentLevel === AccountLevel.Zero ? (
         <GaloyPrimaryButton
           title={LL.TransactionLimitsScreen.increaseLimits()}
