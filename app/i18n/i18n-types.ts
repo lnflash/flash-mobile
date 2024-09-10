@@ -3312,11 +3312,11 @@ type RootTranslation = {
 		 */
 		increaseLimits: string
 		/**
-		 * Spending Limits
+		 * S​p​e​n​d​i​n​g​ ​L​i​m​i​t​s
 		 */
 		spendingLimits: string
 		/**
-		 * The spending limits shown on this page are denominated in USD. For your convenience, we convert these limits into your local currency based on current foreign exchange rates. Please note that the displayed local currency amount may fluctuate as exchange rates are updated in real-time.
+		 * T​h​e​ ​s​p​e​n​d​i​n​g​ ​l​i​m​i​t​s​ ​s​h​o​w​n​ ​o​n​ ​t​h​i​s​ ​p​a​g​e​ ​a​r​e​ ​d​e​n​o​m​i​n​a​t​e​d​ ​i​n​ ​U​S​D​.​ ​F​o​r​ ​y​o​u​r​ ​c​o​n​v​e​n​i​e​n​c​e​,​ ​w​e​ ​c​o​n​v​e​r​t​ ​t​h​e​s​e​ ​l​i​m​i​t​s​ ​i​n​t​o​ ​y​o​u​r​ ​l​o​c​a​l​ ​c​u​r​r​e​n​c​y​ ​b​a​s​e​d​ ​o​n​ ​c​u​r​r​e​n​t​ ​f​o​r​e​i​g​n​ ​e​x​c​h​a​n​g​e​ ​r​a​t​e​s​.​ ​P​l​e​a​s​e​ ​n​o​t​e​ ​t​h​a​t​ ​t​h​e​ ​d​i​s​p​l​a​y​e​d​ ​l​o​c​a​l​ ​c​u​r​r​e​n​c​y​ ​a​m​o​u​n​t​ ​m​a​y​ ​f​l​u​c​t​u​a​t​e​ ​a​s​ ​e​x​c​h​a​n​g​e​ ​r​a​t​e​s​ ​a​r​e​ ​u​p​d​a​t​e​d​ ​i​n​ ​r​e​a​l​-​t​i​m​e​.
 		 */
 		spendingLimitsDescription: string
 		/**
