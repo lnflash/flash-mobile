@@ -72,33 +72,41 @@ export const NIP17Chat: React.FC = () => {
     return unsubscribe
   }, [poolRef])
 
-  const updateSearchResults = useCallback(async (newSearchText: string) => {
-    setRefreshing(true)
-    setSearchText(newSearchText)
-    const aliasPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
-    if (newSearchText.match(aliasPattern)) {
-      let nostrUser = await nip05.queryProfile(newSearchText.toLowerCase())
-      if (nostrUser) {
-        let nostrProfile = profileMap?.get(nostrUser.pubkey)
-        let userPubkey = getPublicKey(privateKey!)
-        let participants = [nostrUser.pubkey, userPubkey].sort()
-        console.log("participants are", participants)
-        setSearchedUsers([
-          { id: nostrUser.pubkey, ...nostrProfile, groupId: participants.join(",") },
-        ])
-        if (!nostrProfile)
-          fetchNostrUsers([nostrUser.pubkey], poolRef!.current, searchedUsersHandler)
+  const updateSearchResults = useCallback(
+    async (newSearchText: string) => {
+      if (!privateKey) {
+        Alert.alert("User Profile not yet loaded")
+        return
       }
-    }
-    if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
-      let hexPubkey = nip19.decode(newSearchText).data as string
-      let userPubkey = getPublicKey(privateKey!)
-      let participants = [hexPubkey, userPubkey].sort()
-      setSearchedUsers([{ id: hexPubkey, groupId: participants.join(",") }])
-      fetchNostrUsers([hexPubkey], poolRef!.current, searchedUsersHandler)
-      return
-    }
-  }, [])
+      setRefreshing(true)
+      setSearchText(newSearchText)
+      const aliasPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
+      if (newSearchText.match(aliasPattern)) {
+        let nostrUser = await nip05.queryProfile(newSearchText.toLowerCase())
+        if (nostrUser) {
+          let nostrProfile = profileMap?.get(nostrUser.pubkey)
+          let userPubkey = getPublicKey(privateKey!)
+          let participants = [nostrUser.pubkey, userPubkey].sort()
+          console.log("participants are", participants)
+          setSearchedUsers([
+            { id: nostrUser.pubkey, ...nostrProfile, groupId: participants.join(",") },
+          ])
+          if (!nostrProfile)
+            fetchNostrUsers([nostrUser.pubkey], poolRef!.current, searchedUsersHandler)
+        }
+      }
+      if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
+        console.log("inside npub thing")
+        let hexPubkey = nip19.decode(newSearchText).data as string
+        let userPubkey = getPublicKey(privateKey)
+        let participants = [hexPubkey, userPubkey].sort()
+        setSearchedUsers([{ id: hexPubkey, groupId: participants.join(",") }])
+        fetchNostrUsers([hexPubkey], poolRef!.current, searchedUsersHandler)
+        return
+      }
+    },
+    [privateKey],
+  )
 
   let SearchBarContent: React.ReactNode
   let ListEmptyContent: React.ReactNode
@@ -145,37 +153,43 @@ export const NIP17Chat: React.FC = () => {
 
   return (
     <Screen style={styles.header}>
-      {SearchBarContent}
-
-      {searchText ? (
-        <FlatList
-          contentContainerStyle={styles.listContainer}
-          data={searchedUsers}
-          ListEmptyComponent={ListEmptyContent}
-          renderItem={({ item }) => (
-            <SearchListItem item={item} userPrivateKey={privateKey!} />
-          )}
-          keyExtractor={(item) => item.id}
-        />
-      ) : (
+      {privateKey ? (
         <View>
-          <Text style={{ fontSize: 24, fontWeight: "bold", margin: 20 }}>Chats</Text>
-          <FlatList
-            contentContainerStyle={styles.listContainer}
-            data={groupIds}
-            ListEmptyComponent={ListEmptyContent}
-            renderItem={({ item }) => {
-              return (
-                <HistoryListItem
-                  item={item}
-                  userPrivateKey={privateKey!}
-                  groups={groups}
-                />
-              )
-            }}
-            keyExtractor={(item) => item}
-          />
+          {SearchBarContent}
+
+          {searchText ? (
+            <FlatList
+              contentContainerStyle={styles.listContainer}
+              data={searchedUsers}
+              ListEmptyComponent={ListEmptyContent}
+              renderItem={({ item }) => (
+                <SearchListItem item={item} userPrivateKey={privateKey!} />
+              )}
+              keyExtractor={(item) => item.id}
+            />
+          ) : (
+            <View>
+              <Text style={{ fontSize: 24, fontWeight: "bold", margin: 20 }}>Chats</Text>
+              <FlatList
+                contentContainerStyle={styles.listContainer}
+                data={groupIds}
+                ListEmptyComponent={ListEmptyContent}
+                renderItem={({ item }) => {
+                  return (
+                    <HistoryListItem
+                      item={item}
+                      userPrivateKey={privateKey!}
+                      groups={groups}
+                    />
+                  )
+                }}
+                keyExtractor={(item) => item}
+              />
+            </View>
+          )}
         </View>
+      ) : (
+        <Text>Loading your nostr keys...</Text>
       )}
     </Screen>
   )
