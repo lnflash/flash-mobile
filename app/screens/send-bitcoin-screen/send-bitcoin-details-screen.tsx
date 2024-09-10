@@ -235,7 +235,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           <GaloyPrimaryButton
             onPress={goToNextScreen}
             loading={isLoadingLnurl}
-            disabled={!amountStatus.validAmount}
+            disabled={!amountStatus.validAmount || !!asyncErrorMessage}
             title={LL.common.next()}
           />
         </View>
