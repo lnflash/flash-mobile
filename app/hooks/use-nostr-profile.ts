@@ -68,9 +68,8 @@ const useNostrProfile = () => {
         console.log("Looking for nostr creds in keychain")
         const credentials = await fetchSecretFromLocalStorage()
         console.log("Credentials received are", credentials)
-        if (credentials) {
+        if (credentials && !loadingUpdateNpub) {
           let secret = nip19.decode(credentials).data
-          console.log("Got secret as ", secret)
           const result = await userUpdateNpubMutation({
             variables: {
               input: {
@@ -78,7 +77,7 @@ const useNostrProfile = () => {
               },
             },
           })
-          console.log("result of updation", result)
+          console.log("result of updation", result, data, updateNpubError)
           return
         }
         let secret = generateSecretKey()
