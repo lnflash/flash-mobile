@@ -98,7 +98,6 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   const [initialized, setInitialized] = React.useState(false)
 
   const user = { id: userPubkey }
-  console.log("IN MESSAGES SCREEN", rumors.map((e) => e.id).length)
 
   const convertRumorsToMessages = (rumors: Rumor[]): MessageType.Text[] => {
     let chatSet: Map<string, MessageType.Text> = new Map<string, MessageType.Text>()
@@ -119,7 +118,6 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   }
 
   React.useEffect(() => {
-    console.log("NEW ITEMSSS IN MESSAGES SCREEEEN")
     let isMounted = true
     async function initialize() {
       if (poolRef) setInitialized(true)
@@ -127,7 +125,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
     if (!initialized) initialize()
 
     const lastRumor = (chatRumors || []).sort((a, b) => b.created_at - a.created_at)[0]
-    updateLastSeen(groupId, lastRumor.created_at)
+    if (lastRumor) updateLastSeen(groupId, lastRumor.created_at)
     return () => {
       isMounted = false
     }
