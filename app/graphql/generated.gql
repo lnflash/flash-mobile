@@ -735,6 +735,21 @@ mutation userUpdateLanguage($input: UserUpdateLanguageInput!) {
   }
 }
 
+mutation userUpdateNpub($input: UserUpdateNpubInput!) {
+  userUpdateNpub(input: $input) {
+    errors {
+      code
+      __typename
+    }
+    user {
+      id
+      npub
+      __typename
+    }
+    __typename
+  }
+}
+
 mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
   userUpdateUsername(input: $input) {
     errors {

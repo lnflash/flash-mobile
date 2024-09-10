@@ -42,7 +42,6 @@ export const HomeScreen: React.FC = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { btcWallet, refreshBreez } = useBreez()
-  const { nostrSecretKey } = useNostrProfile()
 
   // queries
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
@@ -62,7 +61,7 @@ export const HomeScreen: React.FC = () => {
     fetchPolicy: "network-only",
     nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
-
+  const { nostrSecretKey } = useNostrProfile()
   const { persistentState, updateState } = usePersistentStateContext()
   const [defaultAccountModalVisible, setDefaultAccountModalVisible] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
