@@ -644,6 +644,32 @@ export type MapMarker = {
   readonly username?: Maybe<Scalars['Username']['output']>;
 };
 
+export type Merchant = {
+  readonly __typename: 'Merchant';
+  /** GPS coordinates for the merchant that can be used to place the related business on a map */
+  readonly coordinates: Coordinates;
+  readonly createdAt: Scalars['Timestamp']['output'];
+  readonly id: Scalars['ID']['output'];
+  readonly title: Scalars['String']['output'];
+  /** The username of the merchant */
+  readonly username: Scalars['Username']['output'];
+  /** Whether the merchant has been validated */
+  readonly validated: Scalars['Boolean']['output'];
+};
+
+export type MerchantMapSuggestInput = {
+  readonly latitude: Scalars['Float']['input'];
+  readonly longitude: Scalars['Float']['input'];
+  readonly title: Scalars['String']['input'];
+  readonly username: Scalars['Username']['input'];
+};
+
+export type MerchantPayload = {
+  readonly __typename: 'MerchantPayload';
+  readonly errors: ReadonlyArray<Error>;
+  readonly merchant?: Maybe<Merchant>;
+};
+
 export type MobileVersions = {
   readonly __typename: 'MobileVersions';
   readonly currentSupported: Scalars['Int']['output'];
@@ -740,6 +766,7 @@ export type Mutation = {
    */
   readonly lnUsdInvoiceCreateOnBehalfOfRecipient: LnInvoicePayload;
   readonly lnUsdInvoiceFeeProbe: SatAmountPayload;
+  readonly merchantMapSuggest: MerchantPayload;
   readonly onChainAddressCreate: OnChainAddressPayload;
   readonly onChainAddressCurrent: OnChainAddressPayload;
   readonly onChainPaymentSend: PaymentSendPayload;
@@ -897,6 +924,11 @@ export type MutationLnUsdInvoiceCreateOnBehalfOfRecipientArgs = {
 
 export type MutationLnUsdInvoiceFeeProbeArgs = {
   input: LnUsdInvoiceFeeProbeInput;
+};
+
+
+export type MutationMerchantMapSuggestArgs = {
+  input: MerchantMapSuggestInput;
 };
 
 
@@ -1243,7 +1275,7 @@ export type Query = {
   /** @deprecated Deprecated in favor of realtimePrice */
   readonly btcPrice?: Maybe<Price>;
   readonly btcPriceList?: Maybe<ReadonlyArray<Maybe<PricePoint>>>;
-  readonly businessMapMarkers?: Maybe<ReadonlyArray<Maybe<MapMarker>>>;
+  readonly businessMapMarkers: ReadonlyArray<MapMarker>;
   readonly colorScheme: Scalars['String']['output'];
   readonly currencyList: ReadonlyArray<Currency>;
   readonly feedbackModalShown: Scalars['Boolean']['output'];
@@ -1251,10 +1283,10 @@ export type Query = {
   readonly hasPromptedSetDefaultAccount: Scalars['Boolean']['output'];
   readonly hiddenBalanceToolTip: Scalars['Boolean']['output'];
   readonly hideBalance: Scalars['Boolean']['output'];
-  readonly isFlashNpub?: Maybe<Scalars['Boolean']['output']>;
   readonly lnInvoicePaymentStatus: LnInvoicePaymentStatusPayload;
   readonly me?: Maybe<User>;
   readonly mobileVersions?: Maybe<ReadonlyArray<Maybe<MobileVersions>>>;
+  readonly npubByUsername?: Maybe<NpubByUsername>;
   readonly onChainTxFee: OnChainTxFee;
   readonly onChainUsdTxFee: OnChainUsdTxFee;
   readonly onChainUsdTxFeeAsBtcDenominated: OnChainUsdTxFee;
@@ -1285,13 +1317,13 @@ export type QueryBtcPriceListArgs = {
 };
 
 
-export type QueryIsFlashNpubArgs = {
-  npub?: InputMaybe<Scalars['String']['input']>;
+export type QueryLnInvoicePaymentStatusArgs = {
+  input: LnInvoicePaymentStatusInput;
 };
 
 
-export type QueryLnInvoicePaymentStatusArgs = {
-  input: LnInvoicePaymentStatusInput;
+export type QueryNpubByUsernameArgs = {
+  username: Scalars['Username']['input'];
 };
 
 
@@ -1823,6 +1855,17 @@ export const WalletCurrency = {
 } as const;
 
 export type WalletCurrency = typeof WalletCurrency[keyof typeof WalletCurrency];
+export type NpubByUsername = {
+  readonly __typename: 'npubByUsername';
+  /** Nostr public key */
+  readonly npub?: Maybe<Scalars['npub']['output']>;
+  /**
+   * Optional immutable user friendly identifier.
+   * @deprecated will be moved to @Handle in Account and Wallet
+   */
+  readonly username?: Maybe<Scalars['Username']['output']>;
+};
+
 export type MobileUpdateQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2046,7 +2089,7 @@ export type AddressScreenQuery = { readonly __typename: 'Query', readonly me?: {
 export type BusinessMapMarkersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type BusinessMapMarkersQuery = { readonly __typename: 'Query', readonly businessMapMarkers?: ReadonlyArray<{ readonly __typename: 'MapMarker', readonly username?: string | null, readonly mapInfo: { readonly __typename: 'MapInfo', readonly title: string, readonly coordinates: { readonly __typename: 'Coordinates', readonly longitude: number, readonly latitude: number } } } | null> | null };
+export type BusinessMapMarkersQuery = { readonly __typename: 'Query', readonly businessMapMarkers: ReadonlyArray<{ readonly __typename: 'MapMarker', readonly username?: string | null, readonly mapInfo: { readonly __typename: 'MapInfo', readonly title: string, readonly coordinates: { readonly __typename: 'Coordinates', readonly longitude: number, readonly latitude: number } } }> };
 
 export type UserLoginMutationVariables = Exact<{
   input: UserLoginInput;
