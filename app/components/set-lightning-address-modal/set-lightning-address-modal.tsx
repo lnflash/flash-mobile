@@ -89,21 +89,10 @@ export const SetLightningAddressModal = ({
               username: () => {
                 return lnAddress
               },
-              npub: () => {
-                return nostrPubkey
-              },
             },
           })
         }
       }
-      updateNostrProfile({
-        content: {
-          username: lnAddress,
-          lud16: `${lnAddress}@${lnDomain}`,
-          flash_username: lnAddress,
-        },
-      })
-      setPreferredRelay()
     },
   })
 
@@ -118,13 +107,20 @@ export const SetLightningAddressModal = ({
       variables: {
         input: {
           username: lnAddress,
-          npub: nostrPubkey,
         },
       },
     })
 
     console.log("Mutation response:", { data, errors }) // Log full response for debugging
     console.log("User update errors:", data?.userUpdateUsername?.errors) // Log the errors array
+    updateNostrProfile({
+      content: {
+        name: lnAddress,
+        username: lnAddress,
+        lud16: `${lnAddress}@${lnDomain}`,
+      },
+    })
+    setPreferredRelay()
 
     if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
       if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
