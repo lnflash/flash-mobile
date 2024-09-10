@@ -19,6 +19,7 @@ import {
 } from "@app/utils/nostr"
 import { useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { hexToBytes } from "@noble/curves/abstract/utils"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 export interface ChatInfo {
   pubkeys: string[]
@@ -44,6 +45,7 @@ const useNostrProfile = () => {
     userUpdateNpubMutation,
     { data, loading: loadingUpdateNpub, error: updateNpubError },
   ] = useUserUpdateNpubMutation()
+  const isAuthed = useIsAuthed()
 
   const fetchSecretFromLocalStorage = async () => {
     let credentials = await Keychain.getInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
@@ -67,8 +69,7 @@ const useNostrProfile = () => {
       try {
         console.log("Looking for nostr creds in keychain")
         const credentials = await fetchSecretFromLocalStorage()
-        console.log("Credentials received are", credentials)
-        if (credentials && !loadingUpdateNpub) {
+        if (credentials && !loadingUpdateNpub && isAuthed) {
           let secret = nip19.decode(credentials).data
           const result = await userUpdateNpubMutation({
             variables: {
@@ -80,23 +81,26 @@ const useNostrProfile = () => {
           console.log("result of updation", result, data, updateNpubError)
           return
         }
-        let secret = generateSecretKey()
-        const nostrSecret = nip19.nsecEncode(secret)
-        await Keychain.setInternetCredentials(
-          KEYCHAIN_NOSTRCREDS_KEY,
-          KEYCHAIN_NOSTRCREDS_KEY,
-          nostrSecret,
-        )
-        setNostrSecretKey(nostrSecret)
-        await userUpdateNpubMutation({
-          variables: {
-            input: {
-              npub: nip19.npubEncode(getPublicKey(secret)),
+        if (!credentials) {
+          let secret = generateSecretKey()
+          const nostrSecret = nip19.nsecEncode(secret)
+          await Keychain.setInternetCredentials(
+            KEYCHAIN_NOSTRCREDS_KEY,
+            KEYCHAIN_NOSTRCREDS_KEY,
+            nostrSecret,
+          )
+          setNostrSecretKey(nostrSecret)
+          await userUpdateNpubMutation({
+            variables: {
+              input: {
+                npub: nip19.npubEncode(getPublicKey(secret)),
+              },
             },
-          },
-        })
-        await getPubkey()
-        return nostrSecret
+          })
+
+          await getPubkey()
+          return
+        }
       } catch (error) {
         console.error("Error in generating nostr secret: ", error)
         throw error
@@ -104,7 +108,7 @@ const useNostrProfile = () => {
     }
 
     initializeNostrProfile()
-  }, [])
+  }, [isAuthed])
 
   const fetchNostrUser = async (npub: `npub1${string}`) => {
     const pool = new SimplePool()
