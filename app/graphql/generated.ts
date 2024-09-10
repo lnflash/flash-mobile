@@ -80,6 +80,8 @@ export type Scalars = {
   Username: { input: string; output: string; }
   /** Unique identifier of a wallet */
   WalletId: { input: string; output: string; }
+  /** Nostr Identity public key */
+  npub: { input: string; output: string; }
 };
 
 export type Account = {
@@ -642,32 +644,6 @@ export type MapMarker = {
   readonly username?: Maybe<Scalars['Username']['output']>;
 };
 
-export type Merchant = {
-  readonly __typename: 'Merchant';
-  /** GPS coordinates for the merchant that can be used to place the related business on a map */
-  readonly coordinates: Coordinates;
-  readonly createdAt: Scalars['Timestamp']['output'];
-  readonly id: Scalars['ID']['output'];
-  readonly title: Scalars['String']['output'];
-  /** The username of the merchant */
-  readonly username: Scalars['Username']['output'];
-  /** Whether the merchant has been validated */
-  readonly validated: Scalars['Boolean']['output'];
-};
-
-export type MerchantMapSuggestInput = {
-  readonly latitude: Scalars['Float']['input'];
-  readonly longitude: Scalars['Float']['input'];
-  readonly title: Scalars['String']['input'];
-  readonly username: Scalars['Username']['input'];
-};
-
-export type MerchantPayload = {
-  readonly __typename: 'MerchantPayload';
-  readonly errors: ReadonlyArray<Error>;
-  readonly merchant?: Maybe<Merchant>;
-};
-
 export type MobileVersions = {
   readonly __typename: 'MobileVersions';
   readonly currentSupported: Scalars['Int']['output'];
@@ -764,7 +740,6 @@ export type Mutation = {
    */
   readonly lnUsdInvoiceCreateOnBehalfOfRecipient: LnInvoicePayload;
   readonly lnUsdInvoiceFeeProbe: SatAmountPayload;
-  readonly merchantMapSuggest: MerchantPayload;
   readonly onChainAddressCreate: OnChainAddressPayload;
   readonly onChainAddressCurrent: OnChainAddressPayload;
   readonly onChainPaymentSend: PaymentSendPayload;
@@ -789,6 +764,7 @@ export type Mutation = {
   readonly userTotpRegistrationInitiate: UserTotpRegistrationInitiatePayload;
   readonly userTotpRegistrationValidate: UserTotpRegistrationValidatePayload;
   readonly userUpdateLanguage: UserUpdateLanguagePayload;
+  readonly userUpdateNpub: UserUpdateNpubPayload;
   /** @deprecated Username will be moved to @Handle in Accounts. Also SetUsername naming should be used instead of UpdateUsername to reflect the idempotency of Handles */
   readonly userUpdateUsername: UserUpdateUsernamePayload;
 };
@@ -924,11 +900,6 @@ export type MutationLnUsdInvoiceFeeProbeArgs = {
 };
 
 
-export type MutationMerchantMapSuggestArgs = {
-  input: MerchantMapSuggestInput;
-};
-
-
 export type MutationOnChainAddressCreateArgs = {
   input: OnChainAddressCreateInput;
 };
@@ -1026,6 +997,11 @@ export type MutationUserTotpRegistrationValidateArgs = {
 
 export type MutationUserUpdateLanguageArgs = {
   input: UserUpdateLanguageInput;
+};
+
+
+export type MutationUserUpdateNpubArgs = {
+  input: UserUpdateNpubInput;
 };
 
 
@@ -1267,7 +1243,7 @@ export type Query = {
   /** @deprecated Deprecated in favor of realtimePrice */
   readonly btcPrice?: Maybe<Price>;
   readonly btcPriceList?: Maybe<ReadonlyArray<Maybe<PricePoint>>>;
-  readonly businessMapMarkers: ReadonlyArray<MapMarker>;
+  readonly businessMapMarkers?: Maybe<ReadonlyArray<Maybe<MapMarker>>>;
   readonly colorScheme: Scalars['String']['output'];
   readonly currencyList: ReadonlyArray<Currency>;
   readonly feedbackModalShown: Scalars['Boolean']['output'];
@@ -1275,6 +1251,7 @@ export type Query = {
   readonly hasPromptedSetDefaultAccount: Scalars['Boolean']['output'];
   readonly hiddenBalanceToolTip: Scalars['Boolean']['output'];
   readonly hideBalance: Scalars['Boolean']['output'];
+  readonly isFlashNpub?: Maybe<Scalars['Boolean']['output']>;
   readonly lnInvoicePaymentStatus: LnInvoicePaymentStatusPayload;
   readonly me?: Maybe<User>;
   readonly mobileVersions?: Maybe<ReadonlyArray<Maybe<MobileVersions>>>;
@@ -1305,6 +1282,11 @@ export type QueryBtcPriceArgs = {
 
 export type QueryBtcPriceListArgs = {
   range: PriceGraphRange;
+};
+
+
+export type QueryIsFlashNpubArgs = {
+  npub?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1594,6 +1576,8 @@ export type User = {
    * When value is 'default' the intent is to use preferred language from OS settings.
    */
   readonly language: Scalars['Language']['output'];
+  /** Nostr public key */
+  readonly npub?: Maybe<Scalars['npub']['output']>;
   /** Phone number with international calling code. */
   readonly phone?: Maybe<Scalars['Phone']['output']>;
   /**
@@ -1774,6 +1758,16 @@ export type UserUpdateLanguagePayload = {
   readonly user?: Maybe<User>;
 };
 
+export type UserUpdateNpubInput = {
+  readonly npub: Scalars['npub']['input'];
+};
+
+export type UserUpdateNpubPayload = {
+  readonly __typename: 'UserUpdateNpubPayload';
+  readonly errors: ReadonlyArray<Error>;
+  readonly user?: Maybe<User>;
+};
+
 export type UserUpdateUsernameInput = {
   readonly username: Scalars['Username']['input'];
 };
@@ -1905,6 +1899,13 @@ export type UserLogoutMutationVariables = Exact<{
 
 
 export type UserLogoutMutation = { readonly __typename: 'Mutation', readonly userLogout: { readonly __typename: 'SuccessPayload', readonly success?: boolean | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
+
+export type UserUpdateNpubMutationVariables = Exact<{
+  input: UserUpdateNpubInput;
+}>;
+
+
+export type UserUpdateNpubMutation = { readonly __typename: 'Mutation', readonly userUpdateNpub: { readonly __typename: 'UserUpdateNpubPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null }>, readonly user?: { readonly __typename: 'User', readonly id: string, readonly npub?: string | null } | null } };
 
 export type HomeAuthedQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2045,7 +2046,7 @@ export type AddressScreenQuery = { readonly __typename: 'Query', readonly me?: {
 export type BusinessMapMarkersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type BusinessMapMarkersQuery = { readonly __typename: 'Query', readonly businessMapMarkers: ReadonlyArray<{ readonly __typename: 'MapMarker', readonly username?: string | null, readonly mapInfo: { readonly __typename: 'MapInfo', readonly title: string, readonly coordinates: { readonly __typename: 'Coordinates', readonly longitude: number, readonly latitude: number } } }> };
+export type BusinessMapMarkersQuery = { readonly __typename: 'Query', readonly businessMapMarkers?: ReadonlyArray<{ readonly __typename: 'MapMarker', readonly username?: string | null, readonly mapInfo: { readonly __typename: 'MapInfo', readonly title: string, readonly coordinates: { readonly __typename: 'Coordinates', readonly longitude: number, readonly latitude: number } } } | null> | null };
 
 export type UserLoginMutationVariables = Exact<{
   input: UserLoginInput;
@@ -2972,6 +2973,45 @@ export function useUserLogoutMutation(baseOptions?: Apollo.MutationHookOptions<U
 export type UserLogoutMutationHookResult = ReturnType<typeof useUserLogoutMutation>;
 export type UserLogoutMutationResult = Apollo.MutationResult<UserLogoutMutation>;
 export type UserLogoutMutationOptions = Apollo.BaseMutationOptions<UserLogoutMutation, UserLogoutMutationVariables>;
+export const UserUpdateNpubDocument = gql`
+    mutation userUpdateNpub($input: UserUpdateNpubInput!) {
+  userUpdateNpub(input: $input) {
+    errors {
+      code
+    }
+    user {
+      id
+      npub
+    }
+  }
+}
+    `;
+export type UserUpdateNpubMutationFn = Apollo.MutationFunction<UserUpdateNpubMutation, UserUpdateNpubMutationVariables>;
+
+/**
+ * __useUserUpdateNpubMutation__
+ *
+ * To run a mutation, you first call `useUserUpdateNpubMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUserUpdateNpubMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [userUpdateNpubMutation, { data, loading, error }] = useUserUpdateNpubMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUserUpdateNpubMutation(baseOptions?: Apollo.MutationHookOptions<UserUpdateNpubMutation, UserUpdateNpubMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UserUpdateNpubMutation, UserUpdateNpubMutationVariables>(UserUpdateNpubDocument, options);
+      }
+export type UserUpdateNpubMutationHookResult = ReturnType<typeof useUserUpdateNpubMutation>;
+export type UserUpdateNpubMutationResult = Apollo.MutationResult<UserUpdateNpubMutation>;
+export type UserUpdateNpubMutationOptions = Apollo.BaseMutationOptions<UserUpdateNpubMutation, UserUpdateNpubMutationVariables>;
 export const HomeAuthedDocument = gql`
     query homeAuthed {
   me {
