@@ -17,6 +17,8 @@ import {
   getRumorFromWrap,
   getSecretKey,
 } from "@app/utils/nostr"
+import { useUserUpdateNpubMutation } from "@app/graphql/generated"
+import { hexToBytes } from "@noble/curves/abstract/utils"
 
 export interface ChatInfo {
   pubkeys: string[]
@@ -37,6 +39,11 @@ const useNostrProfile = () => {
   const [nostrSecretKey, setNostrSecretKey] = useState<string>("")
   const [nostrPublicKey, setNostrPublicKey] = useState<string>("")
   const relays = ["wss://relay.staging.flashapp.me"]
+
+  const [
+    userUpdateNpubMutation,
+    { data, loading: loadingUpdateNpub, error: updateNpubError },
+  ] = useUserUpdateNpubMutation()
 
   const fetchSecretFromLocalStorage = async () => {
     let credentials = await Keychain.getInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
@@ -60,14 +67,35 @@ const useNostrProfile = () => {
       try {
         console.log("Looking for nostr creds in keychain")
         const credentials = await fetchSecretFromLocalStorage()
-        if (credentials) return
-        const nostrSecret = nip19.nsecEncode(generateSecretKey())
+        console.log("Credentials received are", credentials)
+        if (credentials) {
+          let secret = nip19.decode(credentials).data
+          console.log("Got secret as ", secret)
+          const result = await userUpdateNpubMutation({
+            variables: {
+              input: {
+                npub: nip19.npubEncode(getPublicKey(secret as Uint8Array)),
+              },
+            },
+          })
+          console.log("result of updation", result)
+          return
+        }
+        let secret = generateSecretKey()
+        const nostrSecret = nip19.nsecEncode(secret)
         await Keychain.setInternetCredentials(
           KEYCHAIN_NOSTRCREDS_KEY,
           KEYCHAIN_NOSTRCREDS_KEY,
           nostrSecret,
         )
         setNostrSecretKey(nostrSecret)
+        await userUpdateNpubMutation({
+          variables: {
+            input: {
+              npub: nip19.npubEncode(getPublicKey(secret)),
+            },
+          },
+        })
         await getPubkey()
         return nostrSecret
       } catch (error) {
