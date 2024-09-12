@@ -16,6 +16,7 @@ import {
   createWrap,
   getRumorFromWrap,
   getSecretKey,
+  setPreferredRelay,
 } from "@app/utils/nostr"
 import { useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { hexToBytes } from "@noble/curves/abstract/utils"
@@ -97,8 +98,7 @@ const useNostrProfile = () => {
           //     },
           //   },
           // })
-
-          await getPubkey()
+          setPreferredRelay()
           return
         }
       } catch (error) {

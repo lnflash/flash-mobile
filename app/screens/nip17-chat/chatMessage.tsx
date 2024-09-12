@@ -48,6 +48,6 @@ const useStyles = makeStyles(({ colors }) => ({
     overflow: "hidden",
   },
   content: {
-    color: colors.black,
+    color: colors._black,
   },
 }))

@@ -120,7 +120,6 @@ export const SetLightningAddressModal = ({
         lud16: `${lnAddress}@${lnDomain}`,
       },
     })
-    setPreferredRelay()
 
     if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
       if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
