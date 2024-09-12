@@ -1,6 +1,4 @@
-import { darkColors, makeStyles } from "@rneui/themed"
-import { HistoryListItem } from "./historyListItem"
-import { dark } from "@app/rne-theme/colors"
+import { makeStyles } from "@rneui/themed"
 
 export const useStyles = makeStyles(({ colors }) => ({
   header: {
@@ -58,7 +56,7 @@ export const useStyles = makeStyles(({ colors }) => ({
 
   itemContainer: {
     borderRadius: 8,
-    backgroundColor: darkColors.grey5,
+    backgroundColor: colors.grey5,
   },
 
   listContainer: { flexGrow: 1 },
