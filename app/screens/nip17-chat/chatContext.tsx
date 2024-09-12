@@ -7,7 +7,6 @@ import {
 import { Event, SimplePool, SubCloser, getPublicKey, nip19 } from "nostr-tools"
 import React from "react"
 import { PropsWithChildren, createContext, useContext, useRef, useState } from "react"
-import { Alert } from "react-native"
 
 type ChatContextType = {
   giftwraps: Event[]
@@ -42,6 +41,7 @@ export const useChatContext = () => useContext(ChatContext)
 export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [giftwraps, setGiftWraps] = useState<Event[]>([])
   const [rumors, setRumors] = useState<Rumor[]>([])
+  const [_, setLastEvent] = useState<Event>()
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
   const poolRef = useRef(new SimplePool())
 
