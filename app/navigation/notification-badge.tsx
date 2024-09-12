@@ -7,17 +7,15 @@ import { View, Text, StyleSheet } from "react-native"
 const NotificationBadge: React.FC = () => {
   const { rumors } = useChatContext()
   const [count, setCount] = useState(0)
-  //const [initalized, setInitialized] = useState(false)
   useEffect(() => {
     async function initialize() {
       let fetchedCount = await getUnreadChatsCount(convertRumorsToGroups(rumors))
-      console.log("Fetched count is", count)
       setCount(fetchedCount)
     }
     initialize()
   })
 
-  if (count <= 0) return null // Do not render if there are no notifications
+  if (count <= 0) return null
 
   return (
     <View style={styles.container}>
