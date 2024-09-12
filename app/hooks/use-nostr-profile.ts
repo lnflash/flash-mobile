@@ -70,19 +70,7 @@ const useNostrProfile = () => {
       try {
         console.log("Looking for nostr creds in keychain")
         const credentials = await fetchSecretFromLocalStorage()
-        console.log("Got credentials as", credentials)
-        if (credentials && !loadingUpdateNpub && isAuthed) {
-          let secret = nip19.decode(credentials).data
-          // const result = await userUpdateNpubMutation({
-          //   variables: {
-          //     input: {
-          //       npub: nip19.npubEncode(getPublicKey(secret as Uint8Array)),
-          //     },
-          //   },
-          // })
-          return
-        }
-        if (!credentials) {
+        if (!credentials && isAuthed) {
           let secret = generateSecretKey()
           const nostrSecret = nip19.nsecEncode(secret)
           await Keychain.setInternetCredentials(
@@ -91,13 +79,13 @@ const useNostrProfile = () => {
             nostrSecret,
           )
           setNostrSecretKey(nostrSecret)
-          // await userUpdateNpubMutation({
-          //   variables: {
-          //     input: {
-          //       npub: nip19.npubEncode(getPublicKey(secret)),
-          //     },
-          //   },
-          // })
+          await userUpdateNpubMutation({
+            variables: {
+              input: {
+                npub: nip19.npubEncode(getPublicKey(secret)),
+              },
+            },
+          })
           setPreferredRelay()
           return
         }

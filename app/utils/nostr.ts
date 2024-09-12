@@ -206,6 +206,7 @@ export const sendNIP4Message = async (message: string, recipient: string) => {
 }
 
 export const setPreferredRelay = async () => {
+  let pool = new SimplePool()
   console.log("inside setpreferredRelay")
   const secret = await getSecretKey()
   if (!secret) {
@@ -222,7 +223,6 @@ export const setPreferredRelay = async () => {
   }
   console.log("Prepared preferred relay event", relayEvent)
   const finalEvent = finalizeEvent(relayEvent, secret)
-  let pool = new SimplePool()
   console.log("preferred event finalized", finalEvent)
   pool.publish(publicRelays, finalEvent).forEach((promise: Promise<any>) => {
     promise.then((value) => console.log("Message from relay", value))
