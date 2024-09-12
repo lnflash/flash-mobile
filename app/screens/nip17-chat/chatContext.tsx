@@ -42,7 +42,6 @@ export const useChatContext = () => useContext(ChatContext)
 export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [giftwraps, setGiftWraps] = useState<Event[]>([])
   const [rumors, setRumors] = useState<Rumor[]>([])
-  const [lastEvent, setLastEvent] = useState<Event>()
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
   const poolRef = useRef(new SimplePool())
 
@@ -73,13 +72,14 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       }
     }
     async function initialize() {
-      console.log("Initializing nip17 screen use effect")
       let secretKeyString = await fetchSecretFromLocalStorage()
       if (!secretKeyString) {
+        setTimeout(initialize, 5000) // Wait for secret key to load
         return
       }
       let secret = nip19.decode(secretKeyString).data as Uint8Array
       const publicKey = getPublicKey(secret)
+      console.log("Fetching giftwraps for", publicKey)
       fetchGiftWrapsForPublicKey(
         publicKey,
         handleGiftWraps(secret),
