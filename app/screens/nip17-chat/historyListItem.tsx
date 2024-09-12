@@ -122,7 +122,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
               flexDirection: "row",
             }}
           >
-            <Text style={{ flexWrap: "wrap" }}>
+            <Text style={{ flexWrap: "wrap", ...styles.itemText }}>
               {(profileMap?.get(lastRumor.pubkey) as NostrProfile)?.name ||
                 (profileMap?.get(lastRumor.pubkey) as NostrProfile)?.nip05 ||
                 (profileMap?.get(lastRumor.pubkey) as NostrProfile)?.username ||
