@@ -15,6 +15,7 @@ import {
   convertRumorsToGroups,
   fetchNostrUsers,
   fetchSecretFromLocalStorage,
+  getGroupId,
 } from "@app/utils/nostr"
 import { useStyles } from "./style"
 import { SearchListItem } from "./searchListItem"
@@ -36,6 +37,7 @@ export const NIP17Chat: React.FC = () => {
 
   const reset = useCallback(() => {
     setSearchText("")
+    setSearchedUsers([])
     setRefreshing(false)
   }, [])
 
@@ -43,11 +45,10 @@ export const NIP17Chat: React.FC = () => {
     let nostrProfile = JSON.parse(event.content)
     addEventToProfiles(event)
     let userPubkey = getPublicKey(privateKey!)
-    let participants = [event.pubkey, userPubkey].sort()
+    let participants = [event.pubkey, userPubkey]
     setSearchedUsers([
-      { ...nostrProfile, id: event.pubkey, groupId: participants.join(",") },
+      { ...nostrProfile, id: event.pubkey, groupId: getGroupId(participants) },
     ])
-    setRefreshing(false)
     closer.close()
   }
 
@@ -86,22 +87,22 @@ export const NIP17Chat: React.FC = () => {
         if (nostrUser) {
           let nostrProfile = profileMap?.get(nostrUser.pubkey)
           let userPubkey = getPublicKey(privateKey!)
-          let participants = [nostrUser.pubkey, userPubkey].sort()
-          console.log("participants are", participants)
+          let participants = [nostrUser.pubkey, userPubkey]
           setSearchedUsers([
-            { id: nostrUser.pubkey, ...nostrProfile, groupId: participants.join(",") },
+            { id: nostrUser.pubkey, ...nostrProfile, groupId: getGroupId(participants) },
           ])
           if (!nostrProfile)
             fetchNostrUsers([nostrUser.pubkey], poolRef!.current, searchedUsersHandler)
         }
+        setRefreshing(false)
       }
       if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
-        console.log("inside npub thing")
         let hexPubkey = nip19.decode(newSearchText).data as string
         let userPubkey = getPublicKey(privateKey)
-        let participants = [hexPubkey, userPubkey].sort()
-        setSearchedUsers([{ id: hexPubkey, groupId: participants.join(",") }])
+        let participants = [hexPubkey, userPubkey]
+        setSearchedUsers([{ id: hexPubkey, groupId: getGroupId(participants) }])
         fetchNostrUsers([hexPubkey], poolRef!.current, searchedUsersHandler)
+        setRefreshing(false)
         return
       }
     },
@@ -169,7 +170,15 @@ export const NIP17Chat: React.FC = () => {
             />
           ) : (
             <View>
-              <Text style={{ fontSize: 24, fontWeight: "bold", margin: 20 }}>Chats</Text>
+              <Text
+                style={{
+                  fontSize: 24,
+                  margin: 20,
+                  color: colors.primary3,
+                }}
+              >
+                Chats
+              </Text>
               <FlatList
                 contentContainerStyle={styles.listContainer}
                 data={groupIds}
