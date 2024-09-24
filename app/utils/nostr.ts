@@ -138,13 +138,18 @@ export const convertRumorsToGroups = (rumors: Rumor[]) => {
   let groups: Map<string, Rumor[]> = new Map()
   rumors.forEach((rumor) => {
     let participants = rumor.tags.filter((t) => t[0] === "p").map((p) => p[1])
-    let participantsSet = new Set([...participants, rumor.pubkey])
-    participants = Array.from(participantsSet)
-    participants.sort()
-    let id = participants.join(",")
+    let id = getGroupId([...participants, rumor.pubkey])
     groups.set(id, [...(groups.get(id) || []), rumor])
   })
   return groups
+}
+
+export const getGroupId = (participantsHex: string[]) => {
+  const participantsSet = new Set(participantsHex)
+  let participants = Array.from(participantsSet)
+  participants.sort()
+  let id = participants.join(",")
+  return id
 }
 
 export const getSecretKey = async () => {
