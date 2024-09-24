@@ -89,6 +89,16 @@ const useNostrProfile = () => {
           setPreferredRelay()
           return
         }
+        if (credentials && isAuthed) {
+          let secret = nip19.decode(credentials).data as Uint8Array
+          await userUpdateNpubMutation({
+            variables: {
+              input: {
+                npub: nip19.npubEncode(getPublicKey(secret)),
+              },
+            },
+          })
+        }
       } catch (error) {
         console.error("Error in generating nostr secret: ", error)
         throw error
