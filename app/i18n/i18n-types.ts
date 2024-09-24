@@ -2399,27 +2399,27 @@ type RootTranslation = {
 		 */
 		lnurlInvoiceIncorrectDescription: string
 		/**
-		 * No amount invoice is not supported in BTC wallet
+		 * N​o​ ​a​m​o​u​n​t​ ​i​n​v​o​i​c​e​ ​i​s​ ​n​o​t​ ​s​u​p​p​o​r​t​e​d​ ​i​n​ ​B​T​C​ ​w​a​l​l​e​t
 		 */
 		noAmountInvoiceError: string
 		/**
-		 * The amount on the invoice is less than minimum amount
+		 * T​h​e​ ​a​m​o​u​n​t​ ​o​n​ ​t​h​e​ ​i​n​v​o​i​c​e​ ​i​s​ ​l​e​s​s​ ​t​h​a​n​ ​m​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​{​a​m​o​u​n​t​}
 		 * @param {number} amount
 		 */
 		minAmountInvoiceError: RequiredParams<'amount'>
 		/**
-		 * The amount on the invoice is greater than maximum amount
+		 * T​h​e​ ​a​m​o​u​n​t​ ​o​n​ ​t​h​e​ ​i​n​v​o​i​c​e​ ​i​s​ ​g​r​e​a​t​e​r​ ​t​h​a​n​ ​m​a​x​i​m​u​m​ ​a​m​o​u​n​t​ ​{​a​m​o​u​n​t​}
 		 * @param {number} amount
 		 */
 		maxAmountInvoiceError: RequiredParams<'amount'>
 		/**
-		 * The conversion amount is less than minimum required amount
+		 * T​h​e​ ​c​o​n​v​e​r​s​i​o​n​ ​a​m​o​u​n​t​ ​i​s​ ​l​e​s​s​ ​t​h​a​n​ ​m​i​n​i​m​u​m​ ​r​e​q​u​i​r​e​d​ ​a​m​o​u​n​t​ ​{​a​m​o​u​n​t​}
 		 * @param {number} amount
 		 */
 		minAmountConvertError: RequiredParams<'amount'>
 		/**
-		 * The conversion amount is greater than maximum amount
-		  * @param {number} amount
+		 * T​h​e​ ​c​o​n​v​e​r​s​i​o​n​ ​a​m​o​u​n​t​ ​i​s​ ​g​r​e​a​t​e​r​ ​t​h​a​n​ ​m​a​x​i​m​u​m​ ​a​m​o​u​n​t​ ​{​a​m​o​u​n​t​}
+		 * @param {number} amount
 		 */
 		maxAmountConvertError: RequiredParams<'amount'>
 	}
@@ -3160,13 +3160,20 @@ type RootTranslation = {
 	}
 	AdvancedModeModal: {
 		/**
-		 * W​e​l​c​o​m​e​ ​t​o​ ​A​d​v​a​n​c​e​d​ ​M​o​d​e​.​ ​Y​o​u​ ​n​o​w​ ​h​a​v​e​ ​a​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​a​d​d​e​d​ ​t​o​ ​y​o​u​r​ ​w​a​l​l​e​t​!
+		 * W​e​l​c​o​m​e​ ​t​o​ ​A​d​v​a​n​c​e​d​ ​M​o​d​e​!​ ​Y​o​u​r​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​i​s​ ​n​o​w​ ​l​i​v​e​.
 		 */
 		header: string
 		/**
-		 * Y​o​u​ ​c​a​n​ ​u​s​e​ ​i​t​ ​t​o​ ​s​e​n​d​ ​a​n​d​ ​r​e​c​e​i​v​e​ ​l​a​r​g​e​r​ ​a​m​o​u​n​t​s​ ​o​f​ ​m​o​n​e​y​,​ ​d​e​n​o​m​i​n​a​t​e​d​ ​i​n​ ​B​i​t​c​o​i​n​.​ ​Y​o​u​ ​c​a​n​ ​a​l​s​o​ ​u​s​e​ ​t​h​e​ ​S​W​A​P​ ​b​u​t​t​o​n​ ​t​o​ ​i​n​s​t​a​n​t​l​y​ ​t​r​a​n​s​f​e​r​ ​v​a​l​u​e​ ​b​e​t​w​e​e​n​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​U​S​D​ ​a​c​c​o​u​n​t​.​ ​T​h​e​ ​d​o​l​l​a​r​ ​v​a​l​u​e​ ​i​n​ ​t​h​e​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​W​I​L​L​ ​f​l​u​c​t​u​a​t​e​ ​w​i​t​h​ ​t​h​e​ ​p​r​i​c​e​ ​o​f​ ​B​i​t​c​o​i​n​.​
+		 * Y​o​u​r​ ​B​i​t​c​o​i​n​ ​i​s​ ​s​t​o​r​e​d​ ​a​s​ ​L​B​T​C​ ​o​n​ ​t​h​e​ ​L​i​q​u​i​d​ ​N​e​t​w​o​r​k​,​ ​p​r​o​v​i​d​i​n​g​ ​f​a​s​t​e​r​ ​a​n​d​ ​s​e​c​u​r​e​ ​t​r​a​n​s​a​c​t​i​o​n​s​ ​w​i​t​h​ ​y​o​u​r​ ​f​e​d​e​r​a​t​e​d​ ​w​a​l​l​e​t​.​
 	​
-	​I​M​P​O​R​T​A​N​T​:​ ​Y​o​u​r​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​i​s​ ​a​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​a​c​c​o​u​n​t​,​ ​s​o​ ​y​o​u​ ​m​a​y​ ​b​e​ ​c​h​a​r​g​e​d​ ​a​ ​s​m​a​l​l​ ​f​e​e​ ​t​o​ ​m​a​k​e​ ​y​o​u​r​ ​f​i​r​s​t​ ​t​r​a​n​s​a​c​t​i​o​n​.​ ​A​l​s​o​,​ ​y​o​u​ ​a​r​e​ ​s​o​l​e​l​y​ ​r​e​s​p​o​n​s​i​b​l​e​ ​f​o​r​ ​s​e​c​u​r​i​n​g​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​i​n​ ​a​ ​s​a​f​e​ ​p​l​a​c​e​.​ ​
+	​S​E​N​D​ ​&​ ​R​E​C​E​I​V​E​:​
+	​ ​E​a​s​i​l​y​ ​t​r​a​n​s​f​e​r​ ​l​a​r​g​e​r​ ​a​m​o​u​n​t​s​ ​i​n​ ​B​i​t​c​o​i​n​.​
+	​S​W​A​P​ ​I​N​S​T​A​N​T​L​Y​:​
+	​ ​C​o​n​v​e​r​t​ ​b​e​t​w​e​e​n​ ​B​i​t​c​o​i​n​ ​a​n​d​ ​U​S​D​ ​s​e​a​m​l​e​s​s​l​y​.​
+	​T​R​A​N​S​A​C​T​I​O​N​ ​T​I​M​E​:​
+	​ ​T​r​a​n​s​a​c​t​i​o​n​s​ ​m​a​y​ ​t​a​k​e​ ​u​p​ ​t​o​ ​3​0​ ​s​e​c​o​n​d​s​ ​t​o​ ​c​o​n​f​i​r​m​ ​a​n​d​ ​w​i​l​l​ ​a​p​p​e​a​r​ ​a​s​ ​'​P​e​n​d​i​n​g​'​ ​u​n​t​i​l​ ​c​o​n​f​i​r​m​e​d​.​
+	​
+	​I​M​P​O​R​T​A​N​T​:​ ​T​h​i​s​ ​i​s​ ​a​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​a​c​c​o​u​n​t​,​ ​s​o​ ​s​m​a​l​l​ ​n​e​t​w​o​r​k​ ​f​e​e​s​ ​m​a​y​ ​a​p​p​l​y​.​ ​Y​o​u​ ​a​r​e​ ​s​o​l​e​l​y​ ​r​e​s​p​o​n​s​i​b​l​e​ ​f​o​r​ ​s​e​c​u​r​i​n​g​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​i​n​ ​a​ ​s​a​f​e​ ​p​l​a​c​e​.​ ​
 	​
 	​
 	​D​O​ ​N​O​T​ ​S​H​A​R​E​ ​Y​O​U​R​ ​R​E​C​O​V​E​R​Y​ ​P​H​R​A​S​E​ ​W​I​T​H​ ​A​N​Y​O​N​E​.
@@ -3328,7 +3335,7 @@ type RootTranslation = {
 		 */
 		spendingLimitsDescription: string
 		/**
-		 * Request Business Account
+		 * R​e​q​u​e​s​t​ ​B​u​s​i​n​e​s​s​ ​A​c​c​o​u​n​t
 		 */
 		requestBusiness: string
 	}
@@ -6740,21 +6747,21 @@ export type TranslationFunctions = {
 		 */
 		noAmountInvoiceError: () => LocalizedString
 		/**
-		 * The amount on the invoice is less than minimum amount
+		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number  | string }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
-		 * The amount on the invoice is greater than maximum amount
+		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
-		 * The conversion amount is less than minimum required amount
+		 * The conversion amount is less than minimum required amount {amount}
 		 */
-		minAmountConvertError: (arg: { amount: number  | string }) => LocalizedString
+		minAmountConvertError: (arg: { amount: number }) => LocalizedString
 		/**
-		 * The conversion amount is greater than maximum amount
+		 * The conversion amount is greater than maximum amount {amount}
 		 */
-		maxAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**
@@ -7485,13 +7492,20 @@ export type TranslationFunctions = {
 	}
 	AdvancedModeModal: {
 		/**
-		 * Welcome to Advanced Mode. You now have a non-custodial Bitcoin account added to your wallet!
+		 * Welcome to Advanced Mode! Your non-custodial Bitcoin account is now live.
 		 */
 		header: () => LocalizedString
 		/**
-		 * You can use it to send and receive larger amounts of money, denominated in Bitcoin. You can also use the SWAP button to instantly transfer value between your Bitcoin account and USD account. The dollar value in the Bitcoin account WILL fluctuate with the price of Bitcoin.
+		 * Your Bitcoin is stored as LBTC on the Liquid Network, providing faster and secure transactions with your federated wallet.
 
-	IMPORTANT: Your Bitcoin account is a non-custodial account, so you may be charged a small fee to make your first transaction. Also, you are solely responsible for securing your recovery phrase in a safe place. 
+	SEND & RECEIVE:
+	 Easily transfer larger amounts in Bitcoin.
+	SWAP INSTANTLY:
+	 Convert between Bitcoin and USD seamlessly.
+	TRANSACTION TIME:
+	 Transactions may take up to 30 seconds to confirm and will appear as 'Pending' until confirmed.
+
+	IMPORTANT: This is a non-custodial account, so small network fees may apply. You are solely responsible for securing your recovery phrase in a safe place. 
 
 
 	DO NOT SHARE YOUR RECOVERY PHRASE WITH ANYONE.
