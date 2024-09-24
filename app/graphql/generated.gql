@@ -81,6 +81,31 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
+mutation MerchantMapSuggest($input: MerchantMapSuggestInput!) {
+  merchantMapSuggest(input: $input) {
+    errors {
+      code
+      message
+      path
+      __typename
+    }
+    merchant {
+      coordinates {
+        latitude
+        longitude
+        __typename
+      }
+      createdAt
+      id
+      title
+      username
+      validated
+      __typename
+    }
+    __typename
+  }
+}
+
 mutation accountDelete {
   accountDelete {
     errors {
