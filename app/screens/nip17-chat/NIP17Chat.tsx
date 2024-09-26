@@ -36,15 +36,6 @@ export const NIP17Chat: React.FC = () => {
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
   const { LL } = useI18nContext()
 
-  const isFocused = useIsFocused()
-
-  React.useEffect(() => {
-    if (isFocused) {
-      setSearchText("")
-      setSearchedUsers([])
-    }
-  }, [isFocused])
-
   const reset = useCallback(() => {
     setSearchText("")
     setSearchedUsers([])
