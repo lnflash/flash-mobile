@@ -21,6 +21,7 @@ import { useStyles } from "./style"
 import { SearchListItem } from "./searchListItem"
 import { HistoryListItem } from "./historyListItem"
 import { useChatContext } from "./chatContext"
+import { useFocusEffect, useIsFocused } from "@react-navigation/native"
 
 export const NIP17Chat: React.FC = () => {
   const styles = useStyles()
@@ -34,6 +35,15 @@ export const NIP17Chat: React.FC = () => {
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
   const { LL } = useI18nContext()
+
+  const isFocused = useIsFocused()
+
+  React.useEffect(() => {
+    if (isFocused) {
+      setSearchText("")
+      setSearchedUsers([])
+    }
+  }, [isFocused])
 
   const reset = useCallback(() => {
     setSearchText("")
@@ -72,6 +82,13 @@ export const NIP17Chat: React.FC = () => {
     if (!initialized && poolRef) initialize()
     return unsubscribe
   }, [poolRef])
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setSearchText("")
+      setSearchedUsers([])
+    }, [setSearchText, setSearchedUsers]),
+  )
 
   const updateSearchResults = useCallback(
     async (newSearchText: string) => {

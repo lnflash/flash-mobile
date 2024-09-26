@@ -74,12 +74,11 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     async function initialize() {
       let secretKeyString = await fetchSecretFromLocalStorage()
       if (!secretKeyString) {
-        setTimeout(initialize, 5000) // Wait for secret key to load
+        setTimeout(initialize, 1000)
         return
       }
       let secret = nip19.decode(secretKeyString).data as Uint8Array
       const publicKey = getPublicKey(secret)
-      console.log("Fetching giftwraps for", publicKey)
       fetchGiftWrapsForPublicKey(
         publicKey,
         handleGiftWraps(secret),
