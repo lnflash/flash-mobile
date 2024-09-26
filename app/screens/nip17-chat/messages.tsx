@@ -301,5 +301,6 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   backButton: {
     fontSize: 26,
+    color: colors.primary3,
   },
 }))
