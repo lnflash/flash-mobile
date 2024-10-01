@@ -21,10 +21,12 @@ import { useStyles } from "./style"
 import { SearchListItem } from "./searchListItem"
 import { HistoryListItem } from "./historyListItem"
 import { useChatContext } from "./chatContext"
-import { useFocusEffect, useIsFocused } from "@react-navigation/native"
+import { useFocusEffect } from "@react-navigation/native"
+import { useAppConfig } from "@app/hooks"
 
 export const NIP17Chat: React.FC = () => {
   const styles = useStyles()
+  const { appConfig } = useAppConfig()
   const {
     theme: { colors },
   } = useTheme()
@@ -83,27 +85,37 @@ export const NIP17Chat: React.FC = () => {
 
   const updateSearchResults = useCallback(
     async (newSearchText: string) => {
-      if (!privateKey) {
-        Alert.alert("User Profile not yet loaded")
-        return
-      }
-      setRefreshing(true)
-      setSearchText(newSearchText)
-      const aliasPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
-      if (newSearchText.match(aliasPattern)) {
-        let nostrUser = await nip05.queryProfile(newSearchText.toLowerCase())
+      const nip05Matching = async (alias: string) => {
+        let nostrUser = await nip05.queryProfile(alias.toLocaleLowerCase())
+        console.log("nostr user for", alias, nostrUser)
         if (nostrUser) {
           let nostrProfile = profileMap?.get(nostrUser.pubkey)
           let userPubkey = getPublicKey(privateKey!)
           let participants = [nostrUser.pubkey, userPubkey]
           setSearchedUsers([
-            { id: nostrUser.pubkey, ...nostrProfile, groupId: getGroupId(participants) },
+            {
+              id: nostrUser.pubkey,
+              username: alias,
+              ...nostrProfile,
+              groupId: getGroupId(participants),
+            },
           ])
           if (!nostrProfile)
             fetchNostrUsers([nostrUser.pubkey], poolRef!.current, searchedUsersHandler)
+          return true
         }
+        return false
+      }
+      const aliasPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
+      if (!privateKey) {
+        Alert.alert("User Profile not yet loaded")
+        return
+      }
+      if (!newSearchText) {
         setRefreshing(false)
       }
+      setRefreshing(true)
+      setSearchText(newSearchText)
       if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
         let hexPubkey = nip19.decode(newSearchText).data as string
         let userPubkey = getPublicKey(privateKey)
@@ -112,6 +124,19 @@ export const NIP17Chat: React.FC = () => {
         fetchNostrUsers([hexPubkey], poolRef!.current, searchedUsersHandler)
         setRefreshing(false)
         return
+      } else if (newSearchText.match(aliasPattern)) {
+        if (await nip05Matching(newSearchText)) {
+          setRefreshing(false)
+          return
+        }
+      } else if (!newSearchText.includes("@")) {
+        let modifiedSearchText =
+          newSearchText + "@" + appConfig.galoyInstance.lnAddressHostname
+        console.log("Searching for", modifiedSearchText)
+        if (await nip05Matching(modifiedSearchText)) {
+          setRefreshing(false)
+          return
+        }
       }
     },
     [privateKey],
@@ -128,7 +153,7 @@ export const NIP17Chat: React.FC = () => {
       onChangeText={updateSearchResults}
       platform="default"
       round
-      showLoading={refreshing}
+      showLoading={refreshing && !!searchText}
       containerStyle={styles.searchBarContainer}
       inputContainerStyle={styles.searchBarInputContainerStyle}
       inputStyle={styles.searchBarText}
