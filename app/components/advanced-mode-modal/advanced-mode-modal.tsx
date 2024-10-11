@@ -55,32 +55,36 @@ const FLASH_TERMS_LINK = "https://getflash.io/terms.html" // TODO: Need to updat
 type Props = {
   isVisible: boolean
   setIsVisible: (isVisible: boolean) => void
+  enableAdvancedMode: () => void
 }
 
-export const AdvancedModeModal: React.FC<Props> = ({ isVisible, setIsVisible }) => {
+export const AdvancedModeModal: React.FC<Props> = ({
+  isVisible,
+  setIsVisible,
+  enableAdvancedMode,
+}) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const styles = useStyles()
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
-  const acknowledgeModal = () => {
+  const onCreateNewWallet = () => {
     setIsVisible(false)
-    navigation.popToTop()
+    enableAdvancedMode()
   }
 
-  const goToBackupBTCWallet = () => {
-    acknowledgeModal()
-    navigation.navigate("BackupStart")
+  const goToImportBTCWallet = () => {
+    setIsVisible(false)
+    navigation.navigate("ImportWallet", {
+      onComplete: () => {
+        enableAdvancedMode()
+      },
+    })
   }
 
   return (
-    <Modal
-      isVisible={isVisible}
-      backdropOpacity={0.3}
-      backdropColor={colors.grey3}
-      onBackdropPress={acknowledgeModal}
-    >
+    <Modal isVisible={isVisible} backdropOpacity={0.3} backdropColor={colors.grey3}>
       <View style={styles.modalCard}>
         <ScrollView style={styles.scrollViewStyle}>
           <Image
@@ -105,15 +109,15 @@ export const AdvancedModeModal: React.FC<Props> = ({ isVisible, setIsVisible }) 
           <View style={styles.cardActionsContainer}>
             <View style={styles.marginBottom}>
               <GaloyPrimaryButton
-                title={LL.common.revealSeed()}
-                onPress={goToBackupBTCWallet}
+                title={LL.AdvancedModeModal.importWallet()}
+                onPress={goToImportBTCWallet}
               />
             </View>
 
             <View style={styles.marginBottom}>
               <GaloyPrimaryButton
-                title={LL.common.backHome()}
-                onPress={acknowledgeModal}
+                title={LL.AdvancedModeModal.createWallet()}
+                onPress={onCreateNewWallet}
               />
             </View>
 
