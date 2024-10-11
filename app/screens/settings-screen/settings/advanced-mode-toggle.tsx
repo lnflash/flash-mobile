@@ -11,9 +11,13 @@ import { useSettingsScreenQuery } from "@app/graphql/generated"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { useLevel } from "@app/graphql/level-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { useActivityIndicator, useBreez } from "@app/hooks"
+import { useBreez } from "@app/hooks"
 import { useState } from "react"
 import { AdvancedModeModal } from "@app/components/advanced-mode-modal"
+import * as Keychain from "react-native-keychain"
+import { disconnectToSDK } from "@app/utils/breez-sdk-liquid"
+
+const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 
 export const AdvancedModeToggle: React.FC = () => {
   const { LL } = useI18nContext()
@@ -23,7 +27,6 @@ export const AdvancedModeToggle: React.FC = () => {
   const { persistentState, updateState } = usePersistentStateContext()
   const { btcWallet } = useBreez()
   const { moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
-  const { toggleActivityIndicator } = useActivityIndicator()
 
   const [animationVisible, setAnimationVisible] = useState(false)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
@@ -38,9 +41,7 @@ export const AdvancedModeToggle: React.FC = () => {
 
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
-  const toggleAdvanceModeComplete = (isAdvanceMode: boolean) => {
-    toggleActivityIndicator(true)
-
+  const onUpdateState = (isAdvanceMode: boolean) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateState((state: any) => {
       if (state)
@@ -52,20 +53,18 @@ export const AdvancedModeToggle: React.FC = () => {
       return undefined
     })
 
-    toggleActivityIndicator(false)
-
     if (isAdvanceMode) {
       setAnimationVisible(true)
       setTimeout(() => {
         setAnimationVisible(false)
-        setAdvanceModalVisible(true)
+        goBack()
       }, 5500)
     } else {
       goBack()
     }
   }
 
-  const toggleAdvanceMode = () => {
+  const toggleAdvanceMode = async () => {
     if (isAdvanceMode) {
       if (btcWallet.balance && btcWallet.balance > 0) {
         const btcWalletBalance = toBtcMoneyAmount(btcWallet.balance || 0)
@@ -84,16 +83,19 @@ export const AdvancedModeToggle: React.FC = () => {
           { text: LL.common.cancel(), onPress: () => {} },
           {
             text: LL.common.yes(),
-            onPress: () => toggleAdvanceModeComplete(false),
+            onPress: () => onUpdateState(false),
           },
         ])
       } else {
-        toggleAdvanceModeComplete(false)
+        onUpdateState(false)
       }
+      await Keychain.resetInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
+      await disconnectToSDK()
     } else {
-      toggleAdvanceModeComplete(true)
+      setAdvanceModalVisible(true)
     }
   }
+
   if (Platform.OS === "ios" && Number(Platform.Version) < 13) {
     return null
   } else {
@@ -118,6 +120,7 @@ export const AdvancedModeToggle: React.FC = () => {
         <AdvancedModeModal
           isVisible={advanceModalVisible}
           setIsVisible={setAdvanceModalVisible}
+          enableAdvancedMode={() => onUpdateState(true)}
         />
       </>
     )
