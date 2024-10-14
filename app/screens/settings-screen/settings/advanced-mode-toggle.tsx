@@ -12,12 +12,10 @@ import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { useLevel } from "@app/graphql/level-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useBreez } from "@app/hooks"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { AdvancedModeModal } from "@app/components/advanced-mode-modal"
 import * as Keychain from "react-native-keychain"
-import { disconnectToSDK } from "@app/utils/breez-sdk-liquid"
-
-const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
+import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
 
 export const AdvancedModeToggle: React.FC = () => {
   const { LL } = useI18nContext()
@@ -30,6 +28,7 @@ export const AdvancedModeToggle: React.FC = () => {
 
   const [animationVisible, setAnimationVisible] = useState(false)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
+  const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
 
   const isAdvanceMode = persistentState.isAdvanceMode
 
@@ -41,8 +40,18 @@ export const AdvancedModeToggle: React.FC = () => {
 
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
+  useEffect(() => {
+    checkRecoveryPhrase()
+  }, [])
+
+  const checkRecoveryPhrase = async () => {
+    const credentials = await Keychain.getInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
+    if (credentials) {
+      setHasRecoveryPhrase(true)
+    }
+  }
+
   const onUpdateState = (isAdvanceMode: boolean) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateState((state: any) => {
       if (state)
         return {
@@ -57,7 +66,11 @@ export const AdvancedModeToggle: React.FC = () => {
       setAnimationVisible(true)
       setTimeout(() => {
         setAnimationVisible(false)
-        goBack()
+        if (hasRecoveryPhrase) {
+          setAdvanceModalVisible(true)
+        } else {
+          goBack()
+        }
       }, 5500)
     } else {
       goBack()
@@ -89,10 +102,12 @@ export const AdvancedModeToggle: React.FC = () => {
       } else {
         onUpdateState(false)
       }
-      await Keychain.resetInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
-      await disconnectToSDK()
     } else {
-      setAdvanceModalVisible(true)
+      if (hasRecoveryPhrase) {
+        onUpdateState(true)
+      } else {
+        setAdvanceModalVisible(true)
+      }
     }
   }
 
@@ -118,6 +133,7 @@ export const AdvancedModeToggle: React.FC = () => {
           />
         </Modal>
         <AdvancedModeModal
+          hasRecoveryPhrase={hasRecoveryPhrase}
           isVisible={advanceModalVisible}
           setIsVisible={setAdvanceModalVisible}
           enableAdvancedMode={() => onUpdateState(true)}
