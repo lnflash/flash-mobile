@@ -86,7 +86,7 @@ const useNostrProfile = () => {
               },
             },
           })
-          setPreferredRelay()
+          setPreferredRelay(secret)
           return
         }
         if (credentials && isAuthed) {

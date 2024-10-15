@@ -210,13 +210,18 @@ export const sendNIP4Message = async (message: string, recipient: string) => {
   let NIP4Messages = {}
 }
 
-export const setPreferredRelay = async () => {
+export const setPreferredRelay = async (secretKey?: Uint8Array) => {
   let pool = new SimplePool()
   console.log("inside setpreferredRelay")
-  const secret = await getSecretKey()
-  if (!secret) {
-    Alert.alert("Nostr Private Key Not Assigned")
-    return
+  let secret: Uint8Array | null = null
+  if (!secretKey) {
+    secret = await getSecretKey()
+    if (!secret) {
+      Alert.alert("Nostr Private Key Not Assigned")
+      return
+    }
+  } else {
+    secret = secretKey
   }
   const pubKey = getPublicKey(secret)
   let relayEvent: UnsignedEvent = {
