@@ -16,7 +16,7 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { updateUserData } from "@app/store/redux/slices/userSlice"
-import { getSecretKey, setPreferredRelay } from "@app/utils/nostr"
+import { getSecretKey } from "@app/utils/nostr"
 import { getPublicKey } from "nostr-tools"
 
 gql`
