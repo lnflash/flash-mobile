@@ -7,6 +7,7 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { useLevel, AccountLevel } from "@app/graphql/level-context"
 
 import { GaloyCurrencyBubble } from "../atomic/galoy-currency-bubble"
 import { GaloyIcon } from "../atomic/galoy-icon"
@@ -69,6 +70,7 @@ const WalletOverview: React.FC<Props> = ({
   const isAuthed = useIsAuthed()
   const styles = useStyles()
   const colors = theme.colors
+  const { currentLevel } = useLevel()
 
   const { persistentState, updateState } = usePersistentStateContext()
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
@@ -210,7 +212,9 @@ const WalletOverview: React.FC<Props> = ({
     <View style={styles.container}>
       <View style={styles.myAccounts}>
         <Text type="p1" bold {...testProps(LL.HomeScreen.myAccounts())}>
-          {LL.HomeScreen.myAccounts()}
+          {currentLevel === AccountLevel.Two
+            ? LL.HomeScreen.myBusinessAccounts()
+            : LL.HomeScreen.myAccounts()}
         </Text>
         <Pressable onPress={toggleIsContentVisible}>
           <GaloyIcon name={isContentVisible ? "eye" : "eye-slash"} size={24} />
