@@ -247,6 +247,16 @@ type RootTranslation = {
 		 */
 		title: string
 	}
+	Cashout: {
+		/**
+		 * Swap
+		 */
+		title: string
+		/**
+		 * % to convert
+		 */
+		amountToCashout: string
+	}
 	ConversionDetailsScreen: {
 		/**
 		 * S​w​a​p
@@ -1622,6 +1632,10 @@ type RootTranslation = {
 		 * M​y​ ​A​c​c​o​u​n​t​s
 		 */
 		myAccounts: string
+		/**
+		 * M​y​ Business ​A​c​c​o​u​n​t​s
+		 */
+		myBusinessAccounts: string
 	}
 	PinScreen: {
 		/**
@@ -4546,6 +4560,17 @@ export type TranslationFunctions = {
 		 */
 		title: () => LocalizedString
 	}
+	
+	Cashout: {
+		/**
+		 * Swap
+		 */
+		title: () => LocalizedString
+		/**
+		 * % to convert
+		 */
+		amountToCashout: () => LocalizedString
+	}
 	ConversionDetailsScreen: {
 		/**
 		 * Swap
@@ -5918,6 +5943,10 @@ export type TranslationFunctions = {
 		 * My Accounts
 		 */
 		myAccounts: () => LocalizedString
+		/**
+		 * My Business Accounts
+		 */
+		myBusinessAccounts: () => LocalizedString
 	}
 	PinScreen: {
 		/**
