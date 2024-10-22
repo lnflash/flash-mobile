@@ -75,8 +75,8 @@ export const CardScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      if (!cardHtml) loadCardHtmlFromStorage()
-    }, [cardHtml]),
+      if (!cardHtml && convertMoneyAmount) loadCardHtmlFromStorage()
+    }, [cardHtml, convertMoneyAmount]),
   )
 
   const loadCardHtmlFromStorage = async () => {
