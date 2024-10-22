@@ -119,7 +119,7 @@ export const fetchGiftWrapsForPublicKey = async (
   pool: SimplePool,
 ) => {
   let closer = pool.subscribeMany(
-    ["wss://relay.staging.flashapp.me"],
+    ["wss://relay.staging.flashapp.me", "wss://relay.damus.io"],
     [
       {
         "kinds": [1059],
@@ -226,7 +226,10 @@ export const setPreferredRelay = async (secretKey?: Uint8Array) => {
   const pubKey = getPublicKey(secret)
   let relayEvent: UnsignedEvent = {
     pubkey: pubKey,
-    tags: [["relay", "wss://relay.staging.flashapp.me"]],
+    tags: [
+      ["relay", "wss://relay.staging.flashapp.me"],
+      ["relay", "wss://relay.damus.io"],
+    ],
     created_at: now(),
     kind: 10050,
     content: "",
