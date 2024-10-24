@@ -92,7 +92,7 @@ export const usePriceConversion = (fetchPolicy?: WatchQueryFetchPolicy) => {
         moneyAmount.amount * priceOfCurrencyInCurrency(moneyAmount.currency, toCurrency)
 
       if (toCurrency === "BTC") {
-        amount = Math.round(amount)
+        amount = Math.floor(amount)
       }
 
       if (
