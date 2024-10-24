@@ -75,6 +75,16 @@ const en: BaseTranslation = {
     noMatchingCards: "No Cards matching your search were found.",
     title: "Flashcard",
   },
+  Cashout: {
+    title: "Cashout",
+    amountToCashout: "% to cashout",
+    fee: "Fee",
+    total: "Total",
+    cashoutConfirmation: "Cashout Confirmation",
+    cashoutSuccess: "Cashout Success",
+    cashoutError: "Cashout Error",
+    cashoutErrorMessage: "Cashout failed - Please contact the administrator.",
+  },
   ConversionDetailsScreen: {
     title: "Swap",
     percentageToConvert: "% to convert",
@@ -526,6 +536,7 @@ const en: BaseTranslation = {
     updateAvailable: "An update is available.\nTap to update now",
     useLightning: "We use the Lightning Network.",
     myAccounts: "My Accounts",
+    myBusinessAccounts: "My Business Accounts",
   },
   PinScreen: {
     attemptsRemaining: "Incorrect PIN. {attemptsRemaining: number} attempts remaining.",
