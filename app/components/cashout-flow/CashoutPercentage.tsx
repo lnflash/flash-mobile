@@ -28,30 +28,16 @@ const CashoutPercentage: React.FC<Props> = ({
       <View style={styles.percentageContainer}>
         <View style={styles.percentageFieldContainer}>
           <TouchableOpacity
-            style={styles.percentageField}
-            onPress={() => setAmountToBalancePercentage(25)}
-          >
-            <Text>25%</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.percentageField}
+            style={{ ...styles.percentageField, marginRight: 20 }}
             onPress={() => setAmountToBalancePercentage(50)}
           >
             <Text>50%</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.percentageField}
-            onPress={() => setAmountToBalancePercentage(75)}
+            onPress={() => setAmountToBalancePercentage(100)}
           >
-            <Text>75%</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.percentageField}
-            onPress={() =>
-              setAmountToBalancePercentage(fromWalletCurrency === "BTC" ? 90 : 99)
-            }
-          >
-            <Text>{fromWalletCurrency === "BTC" ? "90%" : "100%"}</Text>
+            <Text>{"100%"}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -77,6 +63,7 @@ const useStyles = makeStyles(({ colors }) => ({
     flexWrap: "wrap",
   },
   percentageField: {
+    flex: 1,
     backgroundColor: colors.grey5,
     padding: 10,
     borderRadius: 10,
