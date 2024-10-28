@@ -1,6 +1,8 @@
 import React, { useState } from "react"
-import { makeStyles } from "@rneui/themed"
+import { makeStyles, Text } from "@rneui/themed"
 import { ScrollView } from "react-native-gesture-handler"
+import { StackScreenProps } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -10,8 +12,13 @@ import { CashoutFromWallet, CashoutPercentage } from "@app/components/cashout-fl
 
 // hooks
 import { useCashoutScreenQuery } from "@app/graphql/generated"
-import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import {
+  useActivityIndicator,
+  useCashout,
+  useDisplayCurrency,
+  usePriceConversion,
+} from "@app/hooks"
 
 // utils
 import {
@@ -23,12 +30,17 @@ import {
 } from "@app/types/amounts"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 
-const CashoutDetails = () => {
+type Props = StackScreenProps<RootStackParamList, "CashoutDetails">
+
+const CashoutDetails = ({ navigation }: Props) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { zeroDisplayAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
+  const { onCashout } = useCashout()
+  const { toggleActivityIndicator } = useActivityIndicator()
 
+  const [errorMsg, setErrorMsg] = useState<string>()
   const [moneyAmount, setMoneyAmount] =
     useState<MoneyAmount<WalletOrDisplayCurrency>>(zeroDisplayAmount)
 
@@ -46,7 +58,18 @@ const CashoutDetails = () => {
   const convertedUsdBalance = convertMoneyAmount(usdBalance, DisplayCurrency)
   const isValidAmount = moneyAmount.amount > 0 && moneyAmount.amount <= usdBalance.amount
 
-  const onConfirm = () => {}
+  const onConfirm = async () => {
+    if (usdWallet) {
+      toggleActivityIndicator(true)
+      const res = await onCashout(usdWallet?.id, moneyAmount.amount)
+      toggleActivityIndicator(false)
+      if (res?.status === "SUCCESS") {
+        navigation.navigate("sendBitcoinSuccess")
+      } else {
+        setErrorMsg(res?.errors[0].message)
+      }
+    }
+  }
 
   const setAmount = (amount: MoneyAmount<WalletOrDisplayCurrency>) => {
     setMoneyAmount(convertMoneyAmount(amount, "USD"))
@@ -80,6 +103,7 @@ const CashoutDetails = () => {
           fromWalletCurrency={"USD"}
           setAmountToBalancePercentage={setAmountToBalancePercentage}
         />
+        {!!errorMsg && <Text style={styles.errorMsg}>{errorMsg}</Text>}
       </ScrollView>
       <GaloyPrimaryButton
         title={LL.common.confirm()}
@@ -102,5 +126,9 @@ const useStyles = makeStyles(({ colors }) => ({
   buttonContainer: {
     marginHorizontal: 20,
     marginBottom: 20,
+  },
+  errorMsg: {
+    fontSize: 14,
+    color: colors.red,
   },
 }))
