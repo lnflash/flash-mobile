@@ -207,13 +207,9 @@ const useNostrProfile = () => {
 
   const retrieveMessagesWith = (npub: string, giftwraps: Event[]) => {
     console.log("retrieving messages with", npub)
-    console.log("priv key", nostrSecretKey)
     let privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
-    console.log("priv key", privateKey)
     let userPubKey = getPublicKey(privateKey)
-    console.log("user pubkey is")
     let messages: MessageType[] = []
-    console.log("going into gift wraps", npub)
     giftwraps.forEach((wrap: Event) => {
       let rumor
       try {
@@ -223,20 +219,11 @@ const useNostrProfile = () => {
         return
       }
       let pubKeytags = rumor.tags.filter((t) => t[0] === "p")
-      console.log(
-        rumor.content,
-        rumor.pubkey,
-        npub,
-        userPubKey,
-        pubKeytags,
-        "ALLL THE DETAILS HERE",
-      )
       if (
         rumor.pubkey === npub &&
         pubKeytags.length === 1 &&
         pubKeytags[0][1] === userPubKey
       ) {
-        console.log("found candidate", rumor.content)
         messages.push({
           text: rumor.content,
           author: { id: nip19.npubEncode(rumor.pubkey) },
@@ -250,7 +237,6 @@ const useNostrProfile = () => {
         pubKeytags.length === 1 &&
         pubKeytags[0][1] === npub
       ) {
-        console.log("found candidate", rumor.content)
         messages.push({
           text: rumor.content,
           author: { id: nip19.npubEncode(rumor.pubkey) },
@@ -260,7 +246,6 @@ const useNostrProfile = () => {
         })
       }
     })
-    console.log("Final Messages", messages)
     messages.sort((a, b) => b.createdAt - a.createdAt)
     return messages
   }
