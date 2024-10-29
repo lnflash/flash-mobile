@@ -21,6 +21,7 @@ import {
 import { useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { hexToBytes } from "@noble/curves/abstract/utils"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { useAppConfig } from "./use-app-config"
 
 export interface ChatInfo {
   pubkeys: string[]
@@ -40,7 +41,12 @@ const useNostrProfile = () => {
   const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
   const [nostrSecretKey, setNostrSecretKey] = useState<string>("")
   const [nostrPublicKey, setNostrPublicKey] = useState<string>("")
-  const relays = ["wss://relay.staging.flashapp.me"]
+  const {
+    appConfig: {
+      galoyInstance: { relayUrl },
+    },
+  } = useAppConfig()
+  const relays = [relayUrl, "wss://relay.damus.io"]
 
   const [
     userUpdateNpubMutation,
@@ -86,7 +92,7 @@ const useNostrProfile = () => {
               },
             },
           })
-          setPreferredRelay(secret)
+          setPreferredRelay(relayUrl, secret)
           return
         }
         if (credentials && isAuthed) {
@@ -355,9 +361,7 @@ const useNostrProfile = () => {
       tags: [],
       created_at: Math.floor(Date.now() / 1000),
     }
-    console.log("prepared Event is", kind0Event)
     const signedKind0Event = finalizeEvent(kind0Event, secret)
-    console.log("profile event finalized")
     let messages = await Promise.any(pool.publish(publicRelays, signedKind0Event))
     console.log("Profile event published", messages)
     pool.close(publicRelays)
