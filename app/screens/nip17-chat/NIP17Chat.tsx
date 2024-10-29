@@ -68,7 +68,6 @@ export const NIP17Chat: React.FC = () => {
         return
       }
       let secret = nip19.decode(secretKeyString).data as Uint8Array
-      console.log("got private key as", secret)
       setPrivateKey(secret)
       setInitialized(true)
     }
