@@ -1,3 +1,4 @@
+import { useAppConfig } from "@app/hooks"
 import {
   Rumor,
   fetchGiftWrapsForPublicKey,
@@ -44,6 +45,11 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const [_, setLastEvent] = useState<Event>()
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
   const poolRef = useRef(new SimplePool())
+  const {
+    appConfig: {
+      galoyInstance: { relayUrl },
+    },
+  } = useAppConfig()
 
   const handleGiftWraps = (privateKey: Uint8Array) => {
     return (event: Event) => {
@@ -83,6 +89,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         publicKey,
         handleGiftWraps(secret),
         poolRef!.current,
+        relayUrl,
       ).then((c: SubCloser) => {
         closer = c
       })

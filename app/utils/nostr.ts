@@ -1,3 +1,4 @@
+import { useAppConfig } from "@app/hooks"
 import { bytesToHex } from "@noble/curves/abstract/utils"
 import {
   UnsignedEvent,
@@ -20,7 +21,6 @@ import * as Keychain from "react-native-keychain"
 let publicRelays = [
   "wss://relay.damus.io",
   "wss://relay.primal.net",
-  "wss://relay.staging.flashapp.me",
   "wss://relay.snort.social",
   "wss//nos.lol",
 ]
@@ -117,9 +117,10 @@ export const fetchGiftWrapsForPublicKey = async (
   pubkey: string,
   eventHandler: (event: Event) => void,
   pool: SimplePool,
+  flashRelay: string,
 ) => {
   let closer = pool.subscribeMany(
-    ["wss://relay.staging.flashapp.me", "wss://relay.damus.io"],
+    [flashRelay, "wss://relay.damus.io"],
     [
       {
         "kinds": [1059],
@@ -210,7 +211,7 @@ export const sendNIP4Message = async (message: string, recipient: string) => {
   let NIP4Messages = {}
 }
 
-export const setPreferredRelay = async (secretKey?: Uint8Array) => {
+export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Array) => {
   let pool = new SimplePool()
   console.log("inside setpreferredRelay")
   let secret: Uint8Array | null = null
@@ -227,16 +228,14 @@ export const setPreferredRelay = async (secretKey?: Uint8Array) => {
   let relayEvent: UnsignedEvent = {
     pubkey: pubKey,
     tags: [
-      ["relay", "wss://relay.staging.flashapp.me"],
+      ["relay", flashRelay],
       ["relay", "wss://relay.damus.io"],
     ],
     created_at: now(),
     kind: 10050,
     content: "",
   }
-  console.log("Prepared preferred relay event", relayEvent)
   const finalEvent = finalizeEvent(relayEvent, secret)
-  console.log("preferred event finalized", finalEvent)
   pool.publish(publicRelays, finalEvent).forEach((promise: Promise<any>) => {
     promise.then((value) => console.log("Message from relay", value))
   })
