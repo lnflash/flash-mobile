@@ -56,12 +56,14 @@ const CashoutDetails = ({ navigation }: Props) => {
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
   const convertedUsdBalance = convertMoneyAmount(usdBalance, DisplayCurrency)
-  const isValidAmount = moneyAmount.amount > 0 && moneyAmount.amount <= usdBalance.amount
+  const settlementSendAmount = convertMoneyAmount(moneyAmount, "USD")
+  const isValidAmount =
+    settlementSendAmount.amount > 0 && settlementSendAmount.amount <= usdBalance.amount
 
   const onConfirm = async () => {
     if (usdWallet) {
       toggleActivityIndicator(true)
-      const res = await onCashout(usdWallet?.id, moneyAmount.amount)
+      const res = await onCashout(usdWallet?.id, settlementSendAmount.amount)
       toggleActivityIndicator(false)
       if (res?.status === "SUCCESS") {
         navigation.navigate("sendBitcoinSuccess")
@@ -69,10 +71,6 @@ const CashoutDetails = ({ navigation }: Props) => {
         setErrorMsg(res?.errors[0].message)
       }
     }
-  }
-
-  const setAmount = (amount: MoneyAmount<WalletOrDisplayCurrency>) => {
-    setMoneyAmount(convertMoneyAmount(amount, "USD"))
   }
 
   const setAmountToBalancePercentage = (percentage: number) => {
@@ -94,7 +92,7 @@ const CashoutDetails = ({ navigation }: Props) => {
         <AmountInput
           unitOfAccountAmount={moneyAmount}
           walletCurrency={"USD"}
-          setAmount={setAmount}
+          setAmount={setMoneyAmount}
           convertMoneyAmount={convertMoneyAmount}
           minAmount={{ amount: 1, currency: "USD", currencyCode: "USD" }}
           maxAmount={{ amount: usdBalance.amount, currency: "USD", currencyCode: "USD" }}
