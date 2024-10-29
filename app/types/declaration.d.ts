@@ -30,4 +30,5 @@ declare module "@env" {
   export const API_KEY: string
   export const GREENLIGHT_PARTNER_CERT: string
   export const GREENLIGHT_PARTNER_KEY: string
+  export const CASHOUT_ADDRESS: string
 }

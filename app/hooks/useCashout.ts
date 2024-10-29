@@ -25,7 +25,7 @@ export const useCashout = () => {
             walletId,
             recipientWalletId: data?.accountDefaultWallet.id,
             amount,
-            memo: "",
+            memo: "Cash out",
           },
         },
       })
