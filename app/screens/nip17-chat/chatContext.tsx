@@ -70,13 +70,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   }
 
   React.useEffect(() => {
-    let closer: SubCloser
-    const unsubscribe = () => {
-      console.log("unsubscribing", closer)
-      if (closer) {
-        closer.close()
-      }
-    }
+    let closer: SubCloser | undefined
     async function initialize() {
       let secretKeyString = await fetchSecretFromLocalStorage()
       if (!secretKeyString) {
@@ -85,17 +79,14 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       }
       let secret = nip19.decode(secretKeyString).data as Uint8Array
       const publicKey = getPublicKey(secret)
-      fetchGiftWrapsForPublicKey(
+      closer = fetchGiftWrapsForPublicKey(
         publicKey,
         handleGiftWraps(secret),
         poolRef!.current,
         relayUrl,
-      ).then((c: SubCloser) => {
-        closer = c
-      })
+      )
     }
-    if (poolRef) initialize()
-    return unsubscribe
+    if (poolRef && !closer) initialize()
   }, [poolRef])
 
   const addEventToProfiles = (event: Event) => {

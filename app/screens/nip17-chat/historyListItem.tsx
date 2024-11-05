@@ -9,6 +9,7 @@ import { useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { Rumor, fetchNostrUsers } from "@app/utils/nostr"
 import { getLastSeen } from "./utils"
+import { bytesToHex } from "@noble/hashes/utils"
 
 interface HistoryListItemProps {
   item: string
@@ -77,7 +78,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
       onPress={() =>
         navigation.navigate("messages", {
           groupId: item,
-          userPrivateKey,
+          userPrivateKey: bytesToHex(userPrivateKey),
         })
       }
     >
