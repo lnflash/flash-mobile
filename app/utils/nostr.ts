@@ -113,12 +113,13 @@ export const fetchSecretFromLocalStorage = async () => {
   return credentials ? credentials.password : null
 }
 
-export const fetchGiftWrapsForPublicKey = async (
+export const fetchGiftWrapsForPublicKey = (
   pubkey: string,
   eventHandler: (event: Event) => void,
   pool: SimplePool,
   flashRelay: string,
 ) => {
+  console.log("FETCHING MESSAGES")
   let closer = pool.subscribeMany(
     [flashRelay, "wss://relay.damus.io"],
     [
@@ -130,6 +131,10 @@ export const fetchGiftWrapsForPublicKey = async (
     ],
     {
       onevent: eventHandler,
+      onclose: () => {
+        closer.close()
+        closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool, flashRelay)
+      },
     },
   )
   return closer

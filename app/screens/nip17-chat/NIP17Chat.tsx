@@ -23,6 +23,7 @@ import { HistoryListItem } from "./historyListItem"
 import { useChatContext } from "./chatContext"
 import { useFocusEffect } from "@react-navigation/native"
 import { useAppConfig } from "@app/hooks"
+import { useAppSelector } from "@app/store/redux"
 
 export const NIP17Chat: React.FC = () => {
   const styles = useStyles()
@@ -37,6 +38,7 @@ export const NIP17Chat: React.FC = () => {
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
   const { LL } = useI18nContext()
+  const { userData } = useAppSelector((state) => state.user)
 
   const reset = useCallback(() => {
     setSearchText("")
@@ -205,11 +207,22 @@ export const NIP17Chat: React.FC = () => {
               <Text
                 style={{
                   fontSize: 24,
-                  margin: 20,
+                  marginTop: 20,
+                  marginLeft: 20,
                   color: colors.primary3,
                 }}
               >
                 Chats
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  margin: 10,
+                  marginLeft: 20,
+                  color: colors.primary3,
+                }}
+              >
+                user id: {userData?.username || getPublicKey(privateKey)}
               </Text>
               <FlatList
                 contentContainerStyle={styles.listContainer}
