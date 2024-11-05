@@ -28,13 +28,14 @@ import { useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { updateLastSeen } from "./utils"
+import { hexToBytes } from "@noble/hashes/utils"
 
 type MessagesProps = {
   route: RouteProp<ChatStackParamList, "messages">
 }
 
 export const Messages: React.FC<MessagesProps> = ({ route }) => {
-  let userPubkey = getPublicKey(route.params.userPrivateKey)
+  let userPubkey = getPublicKey(hexToBytes(route.params.userPrivateKey))
   let groupId = route.params.groupId
   const { poolRef } = useChatContext()
   const [profileMap, setProfileMap] = useState<Map<string, NostrProfile>>()
