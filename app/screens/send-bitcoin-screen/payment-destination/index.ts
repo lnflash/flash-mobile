@@ -3,6 +3,9 @@ import {
   PaymentType,
   Network as NetworkGaloyClient,
 } from "@flash/client"
+
+import { ParsedPaymentDestination } from "@galoymoney/client"
+
 import {
   InvalidDestinationReason,
   ParseDestinationParams,
@@ -57,7 +60,7 @@ export const parseDestination = async ({
       return {
         valid: false,
         invalidReason: InvalidDestinationReason.UnknownDestination,
-        invalidPaymentDestination: parsedDestination as any,
+        invalidPaymentDestination: parsedDestination as ParsedPaymentDestination,
       } as const
     }
   }
