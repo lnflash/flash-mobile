@@ -222,7 +222,7 @@ export const NIP17Chat: React.FC = () => {
                   color: colors.primary3,
                 }}
               >
-                user id: {userData?.username || getPublicKey(privateKey)}
+                signed in as: {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
               </Text>
               <FlatList
                 contentContainerStyle={styles.listContainer}
