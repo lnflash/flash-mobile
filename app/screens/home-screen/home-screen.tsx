@@ -36,6 +36,13 @@ import {
   Transactions,
 } from "@app/components/home-screen"
 
+// breez
+import {
+  listRefundables,
+  recommendedFees,
+  refund,
+} from "@breeztech/react-native-breez-sdk-liquid"
+
 export const HomeScreen: React.FC = () => {
   const dispatch = useAppDispatch()
   const isAuthed = useIsAuthed()
@@ -82,6 +89,33 @@ export const HomeScreen: React.FC = () => {
   useEffect(() => {
     setIsContentVisible(isBalanceVisible)
   }, [isBalanceVisible])
+
+  useEffect(() => {
+    if (persistentState.isAdvanceMode) {
+      onRefund()
+    }
+  }, [persistentState.isAdvanceMode])
+
+  const onRefund = async () => {
+    try {
+      const refundables = await listRefundables()
+      const fees = await recommendedFees()
+      console.log("REFUNDABLES:>>>>>>>>", refundables)
+      console.log("FEES:>>>>>>>>>", fees)
+      return
+      const destinationAddress = ""
+      const feeRateSatPerVbyte = fees.fastestFee
+
+      const refundResponse = await refund({
+        swapAddress: refundables[0].swapAddress,
+        refundAddress: destinationAddress,
+        satPerVbyte: feeRateSatPerVbyte,
+      })
+      console.log("RESPONSE>>>>>>>>>>>>", refundResponse)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   const saveDefaultWallet = () => {
     if (!persistentState.defaultWallet) {
