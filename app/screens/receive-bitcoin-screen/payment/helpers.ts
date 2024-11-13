@@ -21,9 +21,12 @@ export const getPaymentRequestFullUri = ({
   }
 
   const uriPrefix = prefix ? prefixByType[type] : ""
-  const uri = `${uriPrefix}${input}`
-  const params = new URLSearchParams()
+  let uri = `${uriPrefix}${input}`
+  if (type === "OnChain" && input.startsWith(prefixByType["OnChain"])) {
+    uri = input
+  }
 
+  const params = new URLSearchParams()
   if (amount) params.append("amount", `${satsToBTC(amount)}`)
 
   if (memo) {
