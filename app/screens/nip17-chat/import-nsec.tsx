@@ -1,17 +1,23 @@
 import React, { useState } from "react"
 import { useTheme, Text, Input, Button } from "@rneui/themed"
-import { View, StyleSheet, Alert } from "react-native"
+import { View, StyleSheet, Alert, Dimensions } from "react-native"
 import ReactNativeModal from "react-native-modal"
 import * as Keychain from "react-native-keychain"
+
+const { width: screenWidth } = Dimensions.get("window")
 
 interface ImportNsecModalProps {
   isActive: boolean
   onCancel: () => void
+  onSubmit: () => void
 }
+
+const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
 
 export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
   isActive,
   onCancel,
+  onSubmit,
 }) => {
   const {
     theme: { colors },
@@ -43,9 +49,14 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
 
     try {
       // Save the nsec key to the keychain
-      await Keychain.setGenericPassword("nsec", nsec)
+      await Keychain.setInternetCredentials(
+        KEYCHAIN_NOSTRCREDS_KEY,
+        KEYCHAIN_NOSTRCREDS_KEY,
+        nsec,
+      )
       Alert.alert("Success", "nsec imported successfully!")
       onCancel() // Close the modal after saving
+      onSubmit()
     } catch (error) {
       console.error("Failed to save nsec to keychain", error)
       setError("Failed to import nsec. Please try again.")
@@ -118,6 +129,9 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginBottom: 20,
+    width: 250,
+    borderColor: "red",
+    borderWidth: 1,
   },
   inputLabel: {
     fontSize: 14,
@@ -130,7 +144,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 10,
-    width: 200,
     backgroundColor: "#f9f9f9",
     height: 10,
   },

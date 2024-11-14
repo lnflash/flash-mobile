@@ -25,6 +25,8 @@ import { useFocusEffect } from "@react-navigation/native"
 import { useAppConfig } from "@app/hooks"
 import { useAppSelector } from "@app/store/redux"
 import { ImportNsecModal } from "./import-nsec"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { useHomeAuthedQuery } from "@app/graphql/generated"
 
 export const NIP17Chat: React.FC = () => {
   const styles = useStyles()
@@ -32,7 +34,15 @@ export const NIP17Chat: React.FC = () => {
   const {
     theme: { colors },
   } = useTheme()
-  const { rumors, poolRef, addEventToProfiles, profileMap } = useChatContext()
+  const isAuthed = useIsAuthed()
+
+  const { data: dataAuthed } = useHomeAuthedQuery({
+    skip: !isAuthed,
+    fetchPolicy: "network-only",
+    errorPolicy: "all",
+    nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
+  })
+  const { rumors, poolRef, addEventToProfiles, profileMap, resetChat } = useChatContext()
   const [searchText, setSearchText] = useState("")
   const [refreshing, setRefreshing] = useState(false)
   const [initialized, setInitialized] = useState(false)
@@ -73,11 +83,14 @@ export const NIP17Chat: React.FC = () => {
       }
       let secret = nip19.decode(secretKeyString).data as Uint8Array
       setPrivateKey(secret)
+      const accountNpub = dataAuthed?.me?.npub
+      const storedNpub = nip19.npubEncode(getPublicKey(secret))
+      if (accountNpub && storedNpub !== accountNpub) setShowImportModal(true)
       setInitialized(true)
     }
     if (!initialized && poolRef) initialize()
     return unsubscribe
-  }, [poolRef])
+  }, [poolRef, isAuthed])
 
   useFocusEffect(
     React.useCallback(() => {
@@ -87,11 +100,23 @@ export const NIP17Chat: React.FC = () => {
           setShowImportModal(true)
           return
         }
+        let secret = nip19.decode(secretKeyString).data as Uint8Array
+        const accountNpub = dataAuthed?.me?.npub
+        const storedNpub = nip19.npubEncode(getPublicKey(secret))
+        console.log(
+          "stored npub",
+          storedNpub,
+          "Account Npub",
+          accountNpub,
+          "account",
+          dataAuthed?.me,
+        )
+        if (accountNpub && storedNpub !== accountNpub) setShowImportModal(true)
       }
       setSearchText("")
       setSearchedUsers([])
       checkSecretKey()
-    }, [setSearchText, setSearchedUsers]),
+    }, [setSearchText, setSearchedUsers, dataAuthed, isAuthed]),
   )
 
   const updateSearchResults = useCallback(
@@ -263,6 +288,9 @@ export const NIP17Chat: React.FC = () => {
         isActive={showImportModal}
         onCancel={() => {
           setShowImportModal(false)
+        }}
+        onSubmit={() => {
+          resetChat()
         }}
       />
     </Screen>
