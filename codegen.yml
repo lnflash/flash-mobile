@@ -66,3 +66,4 @@ generates:
         NotificationCategory: "string"
         Lnurl: "string"
         npub: "string"
+        FractionalCentAmount: "number"

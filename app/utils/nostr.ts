@@ -119,24 +119,20 @@ export const fetchGiftWrapsForPublicKey = (
   pool: SimplePool,
   flashRelay: string,
 ) => {
-  console.log("FETCHING MESSAGES")
-  let closer = pool.subscribeMany(
-    [flashRelay, "wss://relay.damus.io"],
-    [
-      {
-        "kinds": [1059],
-        "#p": [pubkey],
-        "limit": 150,
-      },
-    ],
-    {
-      onevent: eventHandler,
-      onclose: () => {
-        closer.close()
-        closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool, flashRelay)
-      },
+  let filter = {
+    "kinds": [1059],
+    "#p": [pubkey],
+    "limit": 150,
+  }
+  console.log("FETCHING MESSAGES from", [flashRelay, "wss://relay.damus.io"], filter)
+  let closer = pool.subscribeMany([flashRelay, "wss://relay.damus.io"], [filter], {
+    onevent: eventHandler,
+    onclose: () => {
+      closer.close()
+      console.log("Re-establishing connection")
+      closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool, flashRelay)
     },
-  )
+  })
   return closer
 }
 
@@ -241,9 +237,8 @@ export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Arr
     content: "",
   }
   const finalEvent = finalizeEvent(relayEvent, secret)
-  pool.publish(publicRelays, finalEvent).forEach((promise: Promise<any>) => {
-    promise.then((value) => console.log("Message from relay", value))
-  })
+  let messages = await Promise.allSettled(pool.publish(publicRelays, finalEvent))
+  console.log("Message from relays", messages)
   setTimeout(() => {
     pool.close(publicRelays)
   }, 5000)
@@ -259,6 +254,7 @@ export async function sendNip17Message(
   if (!privateKey) {
     throw Error("Couldnt find private key in local storage")
   }
+  console.log("Preferred Relays map", preferredRelaysMap)
   let p_tags = recipients.map((recipientId: string) => ["p", recipientId])
   let rumor = createRumor({ content: message, kind: 14, tags: p_tags }, privateKey)
   recipients.forEach(async (recipientId: string) => {
@@ -267,12 +263,7 @@ export async function sendNip17Message(
     recipientRelays = recipientRelays || publicRelays
     let seal = createSeal(rumor, privateKey, recipientId)
     let wrap = createWrap(seal, recipientId)
-    pool.publish(recipientRelays, wrap).map((promise: Promise<string>) => {
-      promise
-        .then((res) => console.log("Message from relays", res))
-        .catch((err) => {
-          console.log("promise errored because", err)
-        })
-    })
+    let messages = await Promise.allSettled(pool.publish(recipientRelays, wrap))
+    console.log("message from relays", messages)
   })
 }

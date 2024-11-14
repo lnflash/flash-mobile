@@ -1021,6 +1021,7 @@ query homeAuthed {
       verified
       __typename
     }
+    npub
     defaultAccount {
       id
       level

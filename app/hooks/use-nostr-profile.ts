@@ -19,7 +19,6 @@ import {
   setPreferredRelay,
 } from "@app/utils/nostr"
 import { useHomeAuthedQuery, useUserUpdateNpubMutation } from "@app/graphql/generated"
-import { hexToBytes } from "@noble/curves/abstract/utils"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "./use-app-config"
 
@@ -48,12 +47,7 @@ const useNostrProfile = () => {
   } = useAppConfig()
   const isAuthed = useIsAuthed()
 
-  const {
-    data: dataAuthed,
-    loading: loadingAuthed,
-    error,
-    refetch: refetchAuthed,
-  } = useHomeAuthedQuery({
+  const { data: dataAuthed } = useHomeAuthedQuery({
     skip: !isAuthed,
     fetchPolicy: "network-only",
     errorPolicy: "all",
@@ -61,10 +55,7 @@ const useNostrProfile = () => {
   })
   const relays = [relayUrl, "wss://relay.damus.io"]
 
-  const [
-    userUpdateNpubMutation,
-    { data, loading: loadingUpdateNpub, error: updateNpubError },
-  ] = useUserUpdateNpubMutation()
+  const [userUpdateNpubMutation] = useUserUpdateNpubMutation()
 
   const fetchSecretFromLocalStorage = async () => {
     let credentials = await Keychain.getInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
@@ -86,9 +77,10 @@ const useNostrProfile = () => {
   useEffect(() => {
     const initializeNostrProfile = async () => {
       try {
-        console.log("Looking for nostr creds in keychain")
         const credentials = await fetchSecretFromLocalStorage()
-        if (!credentials && isAuthed && !dataAuthed?.me?.npub) {
+        let accountNpub = dataAuthed?.me?.npub
+        if (!credentials) {
+          if (accountNpub) return
           let secret = generateSecretKey()
           const nostrSecret = nip19.nsecEncode(secret)
           await Keychain.setInternetCredentials(
@@ -104,12 +96,12 @@ const useNostrProfile = () => {
               },
             },
           })
-          setPreferredRelay(relayUrl, secret)
+          await setPreferredRelay(relayUrl, secret)
           return
         }
-        if (credentials && isAuthed) {
+        if (credentials) {
           let secret = nip19.decode(credentials).data as Uint8Array
-        if (!dataAuthed?.me?.npub)
+          if (dataAuthed?.me && !accountNpub) {
             await userUpdateNpubMutation({
               variables: {
                 input: {
@@ -117,13 +109,7 @@ const useNostrProfile = () => {
                 },
               },
             })
-          else {
-            console.log("credentials", credentials, dataAuthed?.me?.npub)
-            Keychain.setInternetCredentials(
-              KEYCHAIN_NOSTRCREDS_KEY,
-              KEYCHAIN_NOSTRCREDS_KEY,
-              "",
-            )
+            await setPreferredRelay(relayUrl, secret)
           }
         }
       } catch (error) {

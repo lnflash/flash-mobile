@@ -36,6 +36,8 @@ export type Scalars = {
   EndpointUrl: { input: string; output: string; }
   /** Feedback shared with our user */
   Feedback: { input: string; output: string; }
+  /** (Positive) Cent amount (1/100 of a dollar) as a float */
+  FractionalCentAmount: { input: number; output: number; }
   /** Hex-encoded string of 32 bytes */
   Hex32Bytes: { input: string; output: string; }
   Language: { input: string; output: string; }
@@ -471,6 +473,16 @@ export const InvoicePaymentStatus = {
 } as const;
 
 export type InvoicePaymentStatus = typeof InvoicePaymentStatus[keyof typeof InvoicePaymentStatus];
+export type IsFlashNpubInput = {
+  readonly npub: Scalars['npub']['input'];
+};
+
+export type IsFlashNpubPayload = {
+  readonly __typename: 'IsFlashNpubPayload';
+  readonly errors: ReadonlyArray<Error>;
+  readonly isFlashNpub?: Maybe<Scalars['Boolean']['output']>;
+};
+
 export type LnInvoice = {
   readonly __typename: 'LnInvoice';
   readonly paymentHash: Scalars['PaymentHash']['output'];
@@ -606,7 +618,7 @@ export type LnUpdate = {
 
 export type LnUsdInvoiceCreateInput = {
   /** Amount in USD cents. */
-  readonly amount: Scalars['CentAmount']['input'];
+  readonly amount: Scalars['FractionalCentAmount']['input'];
   /** Optional invoice expiration time in minutes. */
   readonly expiresIn?: InputMaybe<Scalars['Minutes']['input']>;
   /** Optional memo for the lightning invoice. */
@@ -1283,6 +1295,7 @@ export type Query = {
   readonly hasPromptedSetDefaultAccount: Scalars['Boolean']['output'];
   readonly hiddenBalanceToolTip: Scalars['Boolean']['output'];
   readonly hideBalance: Scalars['Boolean']['output'];
+  readonly isFlashNpub?: Maybe<IsFlashNpubPayload>;
   readonly lnInvoicePaymentStatus: LnInvoicePaymentStatusPayload;
   readonly me?: Maybe<User>;
   readonly mobileVersions?: Maybe<ReadonlyArray<Maybe<MobileVersions>>>;
@@ -1314,6 +1327,11 @@ export type QueryBtcPriceArgs = {
 
 export type QueryBtcPriceListArgs = {
   range: PriceGraphRange;
+};
+
+
+export type QueryIsFlashNpubArgs = {
+  input: IsFlashNpubInput;
 };
 
 
@@ -1859,10 +1877,7 @@ export type NpubByUsername = {
   readonly __typename: 'npubByUsername';
   /** Nostr public key */
   readonly npub?: Maybe<Scalars['npub']['output']>;
-  /**
-   * Optional immutable user friendly identifier.
-   * @deprecated will be moved to @Handle in Account and Wallet
-   */
+  /** Optional immutable user friendly identifier. */
   readonly username?: Maybe<Scalars['Username']['output']>;
 };
 
@@ -2023,7 +2038,7 @@ export type UserUpdateNpubMutation = { readonly __typename: 'Mutation', readonly
 export type HomeAuthedQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type HomeAuthedQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly language: string, readonly username?: string | null, readonly phone?: string | null, readonly email?: { readonly __typename: 'Email', readonly address?: string | null, readonly verified?: boolean | null } | null, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly level: AccountLevel, readonly defaultWalletId: string, readonly transactions?: { readonly __typename: 'TransactionConnection', readonly pageInfo: { readonly __typename: 'PageInfo', readonly hasNextPage: boolean, readonly hasPreviousPage: boolean, readonly startCursor?: string | null, readonly endCursor?: string | null }, readonly edges?: ReadonlyArray<{ readonly __typename: 'TransactionEdge', readonly cursor: string, readonly node: { readonly __typename: 'Transaction', readonly id: string, readonly status: TxStatus, readonly direction: TxDirection, readonly memo?: string | null, readonly createdAt: number, readonly settlementAmount: number, readonly settlementFee: number, readonly settlementDisplayFee: string, readonly settlementCurrency: WalletCurrency, readonly settlementDisplayAmount: string, readonly settlementDisplayCurrency: string, readonly settlementPrice: { readonly __typename: 'PriceOfOneSettlementMinorUnitInDisplayMinorUnit', readonly base: number, readonly offset: number, readonly currencyUnit: string, readonly formattedAmount: string }, readonly initiationVia: { readonly __typename: 'InitiationViaIntraLedger', readonly counterPartyWalletId?: string | null, readonly counterPartyUsername?: string | null } | { readonly __typename: 'InitiationViaLn', readonly paymentHash: string } | { readonly __typename: 'InitiationViaOnChain', readonly address: string }, readonly settlementVia: { readonly __typename: 'SettlementViaIntraLedger', readonly counterPartyWalletId?: string | null, readonly counterPartyUsername?: string | null } | { readonly __typename: 'SettlementViaLn', readonly paymentSecret?: string | null } | { readonly __typename: 'SettlementViaOnChain', readonly transactionHash?: string | null } } }> | null } | null, readonly wallets: ReadonlyArray<{ readonly __typename: 'BTCWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency } | { readonly __typename: 'UsdWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency }> } } | null };
+export type HomeAuthedQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly language: string, readonly username?: string | null, readonly phone?: string | null, readonly npub?: string | null, readonly email?: { readonly __typename: 'Email', readonly address?: string | null, readonly verified?: boolean | null } | null, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly level: AccountLevel, readonly defaultWalletId: string, readonly transactions?: { readonly __typename: 'TransactionConnection', readonly pageInfo: { readonly __typename: 'PageInfo', readonly hasNextPage: boolean, readonly hasPreviousPage: boolean, readonly startCursor?: string | null, readonly endCursor?: string | null }, readonly edges?: ReadonlyArray<{ readonly __typename: 'TransactionEdge', readonly cursor: string, readonly node: { readonly __typename: 'Transaction', readonly id: string, readonly status: TxStatus, readonly direction: TxDirection, readonly memo?: string | null, readonly createdAt: number, readonly settlementAmount: number, readonly settlementFee: number, readonly settlementDisplayFee: string, readonly settlementCurrency: WalletCurrency, readonly settlementDisplayAmount: string, readonly settlementDisplayCurrency: string, readonly settlementPrice: { readonly __typename: 'PriceOfOneSettlementMinorUnitInDisplayMinorUnit', readonly base: number, readonly offset: number, readonly currencyUnit: string, readonly formattedAmount: string }, readonly initiationVia: { readonly __typename: 'InitiationViaIntraLedger', readonly counterPartyWalletId?: string | null, readonly counterPartyUsername?: string | null } | { readonly __typename: 'InitiationViaLn', readonly paymentHash: string } | { readonly __typename: 'InitiationViaOnChain', readonly address: string }, readonly settlementVia: { readonly __typename: 'SettlementViaIntraLedger', readonly counterPartyWalletId?: string | null, readonly counterPartyUsername?: string | null } | { readonly __typename: 'SettlementViaLn', readonly paymentSecret?: string | null } | { readonly __typename: 'SettlementViaOnChain', readonly transactionHash?: string | null } } }> | null } | null, readonly wallets: ReadonlyArray<{ readonly __typename: 'BTCWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency } | { readonly __typename: 'UsdWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency }> } } | null };
 
 export type HomeUnauthedQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2123,11 +2138,6 @@ export type CaptchaCreateChallengeMutationVariables = Exact<{ [key: string]: nev
 
 
 export type CaptchaCreateChallengeMutation = { readonly __typename: 'Mutation', readonly captchaCreateChallenge: { readonly __typename: 'CaptchaCreateChallengePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }>, readonly result?: { readonly __typename: 'CaptchaCreateChallengeResult', readonly id: string, readonly challengeCode: string, readonly newCaptcha: boolean, readonly failbackMode: boolean } | null } };
-
-export type ScanningQrCodeScreenQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ScanningQrCodeScreenQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly network: Network } | null, readonly me?: { readonly __typename: 'User', readonly id: string, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly wallets: ReadonlyArray<{ readonly __typename: 'BTCWallet', readonly id: string } | { readonly __typename: 'UsdWallet', readonly id: string }> }, readonly contacts: ReadonlyArray<{ readonly __typename: 'UserContact', readonly id: string, readonly username: string }> } | null };
 
 export type TransactionListForContactQueryVariables = Exact<{
   username: Scalars['Username']['input'];
@@ -2270,6 +2280,11 @@ export type LnUsdInvoiceCreateMutationVariables = Exact<{
 
 
 export type LnUsdInvoiceCreateMutation = { readonly __typename: 'Mutation', readonly lnUsdInvoiceCreate: { readonly __typename: 'LnInvoicePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }>, readonly invoice?: { readonly __typename: 'LnInvoice', readonly paymentHash: string, readonly paymentRequest: string, readonly paymentSecret: string, readonly satoshis?: number | null } | null } };
+
+export type ScanningQrCodeScreenQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ScanningQrCodeScreenQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly network: Network } | null, readonly me?: { readonly __typename: 'User', readonly id: string, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly wallets: ReadonlyArray<{ readonly __typename: 'BTCWallet', readonly id: string } | { readonly __typename: 'UsdWallet', readonly id: string }> }, readonly contacts: ReadonlyArray<{ readonly __typename: 'UserContact', readonly id: string, readonly username: string }> } | null };
 
 export type FeedbackSubmitMutationVariables = Exact<{
   input: FeedbackSubmitInput;
@@ -3445,6 +3460,7 @@ export const HomeAuthedDocument = gql`
       address
       verified
     }
+    npub
     defaultAccount {
       id
       level
@@ -4228,53 +4244,6 @@ export function useCaptchaCreateChallengeMutation(baseOptions?: Apollo.MutationH
 export type CaptchaCreateChallengeMutationHookResult = ReturnType<typeof useCaptchaCreateChallengeMutation>;
 export type CaptchaCreateChallengeMutationResult = Apollo.MutationResult<CaptchaCreateChallengeMutation>;
 export type CaptchaCreateChallengeMutationOptions = Apollo.BaseMutationOptions<CaptchaCreateChallengeMutation, CaptchaCreateChallengeMutationVariables>;
-export const ScanningQrCodeScreenDocument = gql`
-    query scanningQRCodeScreen {
-  globals {
-    network
-  }
-  me {
-    id
-    defaultAccount {
-      id
-      wallets {
-        id
-      }
-    }
-    contacts {
-      id
-      username
-    }
-  }
-}
-    `;
-
-/**
- * __useScanningQrCodeScreenQuery__
- *
- * To run a query within a React component, call `useScanningQrCodeScreenQuery` and pass it any options that fit your needs.
- * When your component renders, `useScanningQrCodeScreenQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useScanningQrCodeScreenQuery({
- *   variables: {
- *   },
- * });
- */
-export function useScanningQrCodeScreenQuery(baseOptions?: Apollo.QueryHookOptions<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>(ScanningQrCodeScreenDocument, options);
-      }
-export function useScanningQrCodeScreenLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>(ScanningQrCodeScreenDocument, options);
-        }
-export type ScanningQrCodeScreenQueryHookResult = ReturnType<typeof useScanningQrCodeScreenQuery>;
-export type ScanningQrCodeScreenLazyQueryHookResult = ReturnType<typeof useScanningQrCodeScreenLazyQuery>;
-export type ScanningQrCodeScreenQueryResult = Apollo.QueryResult<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>;
 export const TransactionListForContactDocument = gql`
     query transactionListForContact($username: Username!, $first: Int, $after: String, $last: Int, $before: String) {
   me {
@@ -5155,6 +5124,53 @@ export function useLnUsdInvoiceCreateMutation(baseOptions?: Apollo.MutationHookO
 export type LnUsdInvoiceCreateMutationHookResult = ReturnType<typeof useLnUsdInvoiceCreateMutation>;
 export type LnUsdInvoiceCreateMutationResult = Apollo.MutationResult<LnUsdInvoiceCreateMutation>;
 export type LnUsdInvoiceCreateMutationOptions = Apollo.BaseMutationOptions<LnUsdInvoiceCreateMutation, LnUsdInvoiceCreateMutationVariables>;
+export const ScanningQrCodeScreenDocument = gql`
+    query scanningQRCodeScreen {
+  globals {
+    network
+  }
+  me {
+    id
+    defaultAccount {
+      id
+      wallets {
+        id
+      }
+    }
+    contacts {
+      id
+      username
+    }
+  }
+}
+    `;
+
+/**
+ * __useScanningQrCodeScreenQuery__
+ *
+ * To run a query within a React component, call `useScanningQrCodeScreenQuery` and pass it any options that fit your needs.
+ * When your component renders, `useScanningQrCodeScreenQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useScanningQrCodeScreenQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useScanningQrCodeScreenQuery(baseOptions?: Apollo.QueryHookOptions<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>(ScanningQrCodeScreenDocument, options);
+      }
+export function useScanningQrCodeScreenLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>(ScanningQrCodeScreenDocument, options);
+        }
+export type ScanningQrCodeScreenQueryHookResult = ReturnType<typeof useScanningQrCodeScreenQuery>;
+export type ScanningQrCodeScreenLazyQueryHookResult = ReturnType<typeof useScanningQrCodeScreenLazyQuery>;
+export type ScanningQrCodeScreenQueryResult = Apollo.QueryResult<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>;
 export const FeedbackSubmitDocument = gql`
     mutation feedbackSubmit($input: FeedbackSubmitInput!) {
   feedbackSubmit(input: $input) {
