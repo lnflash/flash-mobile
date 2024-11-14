@@ -18,7 +18,7 @@ import {
   getSecretKey,
   setPreferredRelay,
 } from "@app/utils/nostr"
-import { useUserUpdateNpubMutation } from "@app/graphql/generated"
+import { useHomeAuthedQuery, useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { hexToBytes } from "@noble/curves/abstract/utils"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "./use-app-config"
@@ -46,13 +46,25 @@ const useNostrProfile = () => {
       galoyInstance: { relayUrl },
     },
   } = useAppConfig()
+  const isAuthed = useIsAuthed()
+
+  const {
+    data: dataAuthed,
+    loading: loadingAuthed,
+    error,
+    refetch: refetchAuthed,
+  } = useHomeAuthedQuery({
+    skip: !isAuthed,
+    fetchPolicy: "network-only",
+    errorPolicy: "all",
+    nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
+  })
   const relays = [relayUrl, "wss://relay.damus.io"]
 
   const [
     userUpdateNpubMutation,
     { data, loading: loadingUpdateNpub, error: updateNpubError },
   ] = useUserUpdateNpubMutation()
-  const isAuthed = useIsAuthed()
 
   const fetchSecretFromLocalStorage = async () => {
     let credentials = await Keychain.getInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
@@ -76,7 +88,7 @@ const useNostrProfile = () => {
       try {
         console.log("Looking for nostr creds in keychain")
         const credentials = await fetchSecretFromLocalStorage()
-        if (!credentials && isAuthed) {
+        if (!credentials && isAuthed && !dataAuthed?.me?.npub) {
           let secret = generateSecretKey()
           const nostrSecret = nip19.nsecEncode(secret)
           await Keychain.setInternetCredentials(
@@ -97,13 +109,22 @@ const useNostrProfile = () => {
         }
         if (credentials && isAuthed) {
           let secret = nip19.decode(credentials).data as Uint8Array
-          await userUpdateNpubMutation({
-            variables: {
-              input: {
-                npub: nip19.npubEncode(getPublicKey(secret)),
+        if (!dataAuthed?.me?.npub)
+            await userUpdateNpubMutation({
+              variables: {
+                input: {
+                  npub: nip19.npubEncode(getPublicKey(secret)),
+                },
               },
-            },
-          })
+            })
+          else {
+            console.log("credentials", credentials, dataAuthed?.me?.npub)
+            Keychain.setInternetCredentials(
+              KEYCHAIN_NOSTRCREDS_KEY,
+              KEYCHAIN_NOSTRCREDS_KEY,
+              "",
+            )
+          }
         }
       } catch (error) {
         console.error("Error in generating nostr secret: ", error)
