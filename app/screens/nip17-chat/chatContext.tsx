@@ -71,14 +71,16 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
 
   React.useEffect(() => {
     let closer: SubCloser | undefined
-    async function initialize() {
+    async function initialize(count = 0) {
       let secretKeyString = await fetchSecretFromLocalStorage()
       if (!secretKeyString) {
-        setTimeout(initialize, 1000)
+        if (count >= 3) return
+        setTimeout(() => initialize(count + 1), 1000)
         return
       }
       let secret = nip19.decode(secretKeyString).data as Uint8Array
       const publicKey = getPublicKey(secret)
+      console.log("Fetching giftwraps")
       closer = fetchGiftWrapsForPublicKey(
         publicKey,
         handleGiftWraps(secret),

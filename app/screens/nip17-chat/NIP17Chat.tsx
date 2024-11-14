@@ -2,7 +2,7 @@ import { SearchBar } from "@rneui/base"
 import { useTheme } from "@rneui/themed"
 import * as React from "react"
 import { useCallback, useState } from "react"
-import { ActivityIndicator, Text, View, Image, Alert } from "react-native"
+import { ActivityIndicator, Text, View, Alert } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
@@ -24,6 +24,7 @@ import { useChatContext } from "./chatContext"
 import { useFocusEffect } from "@react-navigation/native"
 import { useAppConfig } from "@app/hooks"
 import { useAppSelector } from "@app/store/redux"
+import { ImportNsecModal } from "./import-nsec"
 
 export const NIP17Chat: React.FC = () => {
   const styles = useStyles()
@@ -37,6 +38,7 @@ export const NIP17Chat: React.FC = () => {
   const [initialized, setInitialized] = useState(false)
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
+  const [showImportModal, setShowImportModal] = useState<boolean>(false)
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
 
@@ -66,7 +68,7 @@ export const NIP17Chat: React.FC = () => {
       console.log("Initializing nip17 screen use effect")
       let secretKeyString = await fetchSecretFromLocalStorage()
       if (!secretKeyString) {
-        Alert.alert("Secret Key Not Found in Storage")
+        setShowImportModal(true)
         return
       }
       let secret = nip19.decode(secretKeyString).data as Uint8Array
@@ -79,8 +81,16 @@ export const NIP17Chat: React.FC = () => {
 
   useFocusEffect(
     React.useCallback(() => {
+      async function checkSecretKey() {
+        let secretKeyString = await fetchSecretFromLocalStorage()
+        if (!secretKeyString) {
+          setShowImportModal(true)
+          return
+        }
+      }
       setSearchText("")
       setSearchedUsers([])
+      checkSecretKey()
     }, [setSearchText, setSearchedUsers]),
   )
 
@@ -187,9 +197,9 @@ export const NIP17Chat: React.FC = () => {
   let groupIds = Array.from(groups.keys())
 
   return (
-    <Screen style={styles.header}>
-      {privateKey ? (
-        <View>
+    <Screen style={{ ...styles.header, flex: 1 }}>
+      {privateKey && !showImportModal ? (
+        <View style={{ flex: 1 }}>
           {SearchBarContent}
 
           {searchText ? (
@@ -203,7 +213,7 @@ export const NIP17Chat: React.FC = () => {
               keyExtractor={(item) => item.id}
             />
           ) : (
-            <View>
+            <View style={{ flex: 1 }}>
               <Text
                 style={{
                   fontSize: 24,
@@ -223,7 +233,9 @@ export const NIP17Chat: React.FC = () => {
                 }}
               >
                 signed in as:{" "}
-                {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
+                <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                  {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
+                </Text>
               </Text>
               <FlatList
                 contentContainerStyle={styles.listContainer}
@@ -247,6 +259,12 @@ export const NIP17Chat: React.FC = () => {
       ) : (
         <Text>Loading your nostr keys...</Text>
       )}
+      <ImportNsecModal
+        isActive={showImportModal}
+        onCancel={() => {
+          setShowImportModal(false)
+        }}
+      />
     </Screen>
   )
 }
