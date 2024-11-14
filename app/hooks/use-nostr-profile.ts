@@ -101,7 +101,8 @@ const useNostrProfile = () => {
         }
         if (credentials) {
           let secret = nip19.decode(credentials).data as Uint8Array
-          if (dataAuthed?.me && !accountNpub) {
+          if (isAuthed && dataAuthed?.me && !accountNpub) {
+            console.log()
             await userUpdateNpubMutation({
               variables: {
                 input: {
@@ -201,68 +202,6 @@ const useNostrProfile = () => {
     await Promise.any(pool.publish(relays, kind4Event))
     pool.close(relays)
   }
-
-  const fetchGiftWraps = async (eventHandler: (event: Event) => void) => {
-    console.log("Fetching Giftwraps")
-    const privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
-    const pool = new SimplePool()
-    let giftWrapFilters = {
-      "kinds": [1059],
-      "#p": [getPublicKey(privateKey)],
-      "limit": 100,
-    }
-    console.log("Start Subscription....")
-    let subCloser = pool.subscribeMany(relays, [giftWrapFilters], {
-      onevent: eventHandler,
-    })
-    return subCloser
-  }
-
-  const retrieveMessagesWith = (npub: string, giftwraps: Event[]) => {
-    console.log("retrieving messages with", npub)
-    let privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
-    let userPubKey = getPublicKey(privateKey)
-    let messages: MessageType[] = []
-    giftwraps.forEach((wrap: Event) => {
-      let rumor
-      try {
-        rumor = getRumorFromWrap(wrap, privateKey) as UnsignedEvent
-      } catch (e) {
-        console.log("Found error, moving on", e)
-        return
-      }
-      let pubKeytags = rumor.tags.filter((t) => t[0] === "p")
-      if (
-        rumor.pubkey === npub &&
-        pubKeytags.length === 1 &&
-        pubKeytags[0][1] === userPubKey
-      ) {
-        messages.push({
-          text: rumor.content,
-          author: { id: nip19.npubEncode(rumor.pubkey) },
-          id: wrap.id,
-          type: "text",
-          createdAt: rumor.created_at,
-        })
-      }
-      if (
-        rumor.pubkey === userPubKey &&
-        pubKeytags.length === 1 &&
-        pubKeytags[0][1] === npub
-      ) {
-        messages.push({
-          text: rumor.content,
-          author: { id: nip19.npubEncode(rumor.pubkey) },
-          id: wrap.id,
-          type: "text",
-          createdAt: rumor.created_at,
-        })
-      }
-    })
-    messages.sort((a, b) => b.createdAt - a.createdAt)
-    return messages
-  }
-
   const retrieveMessagedUsers = (giftwraps: Event[]) => {
     if (!nostrSecretKey) return []
     let privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
@@ -387,9 +326,7 @@ const useNostrProfile = () => {
     retrieveMessagedUsers,
     fetchMessagesWith,
     updateNostrProfile,
-    retrieveMessagesWith,
     fetchNostrPubKey,
-    fetchGiftWraps,
   }
 }
 
