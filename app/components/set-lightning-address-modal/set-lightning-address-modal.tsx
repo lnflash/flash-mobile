@@ -16,7 +16,7 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { updateUserData } from "@app/store/redux/slices/userSlice"
-import { getSecretKey } from "@app/utils/nostr"
+import { getSecretKey, setPreferredRelay } from "@app/utils/nostr"
 import { getPublicKey } from "nostr-tools"
 
 gql`
@@ -47,7 +47,7 @@ export const SetLightningAddressModal = ({
 }: SetLightningAddressModalProps) => {
   const {
     appConfig: {
-      galoyInstance: { lnAddressHostname: lnDomain },
+      galoyInstance: { lnAddressHostname: lnDomain, relayUrl },
     },
   } = useAppConfig()
   const dispatch = useAppDispatch()
@@ -120,7 +120,7 @@ export const SetLightningAddressModal = ({
         lud16: `${lnAddress}@${lnDomain}`,
       },
     })
-
+    setPreferredRelay(relayUrl)
     if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
       if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
         setError(SetAddressError.ADDRESS_UNAVAILABLE)

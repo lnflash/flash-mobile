@@ -21,7 +21,6 @@ import {
   convertRumorsToGroups,
   fetchNostrUsers,
   fetchPreferredRelays,
-  getRumorFromWrap,
   sendNip17Message,
 } from "@app/utils/nostr"
 import { useEffect, useState } from "react"
@@ -171,7 +170,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
             })
             .join(", ")}
         </Text>
-        <View style={{ display: "flex", flexDirection: "row" }} key="profileInfo">
+        <View style={{ display: "flex", flexDirection: "row" }}>
           <GaloyIconButton
             name={"lightning"}
             size="medium"

@@ -247,15 +247,15 @@ type RootTranslation = {
 		 */
 		title: string
 		/**
-		 * This is not a proper flashcard. Please use the correct flashcard.
+		 * U​n​s​u​p​p​o​r​t​e​d​ ​N​F​C​ ​c​a​r​d​.​ ​P​l​e​a​s​e​ ​e​n​s​u​r​e​ ​y​o​u​ ​a​r​e​ ​u​s​i​n​g​ ​a​ ​f​l​a​s​h​c​a​r​d​.
 		 */
 		notFlashcard: string
 		/**
-		 * NDEF message not found.
+		 * N​D​E​F​ ​m​e​s​s​a​g​e​ ​n​o​t​ ​f​o​u​n​d​.​ ​P​l​e​a​s​e​ ​e​n​s​u​r​e​ ​y​o​u​ ​a​r​e​ ​u​s​i​n​g​ ​a​ ​f​l​a​s​h​c​a​r​d​.
 		 */
 		noNDEFMessage: string
 		/**
-		 * NFC is not supported on this device.
+		 * N​F​C​ ​i​s​ ​n​o​t​ ​s​u​p​p​o​r​t​e​d​ ​o​n​ ​t​h​i​s​ ​d​e​v​i​c​e​.
 		 */
 		notSupported: string
 		/**
@@ -1496,7 +1496,7 @@ type RootTranslation = {
 		 */
 		logBackInWith: string
 		/**
-		 * P​r​o​d​u​t​ ​o​f​ ​J​a​m​a​i​c​a
+		 * P​r​o​d​u​c​t​ ​o​f​ ​J​a​m​a​i​c​a
 		 */
 		headline: string
 		/**
@@ -2399,7 +2399,7 @@ type RootTranslation = {
 		 */
 		lnurlInvoiceIncorrectDescription: string
 		/**
-		 * N​o​ ​a​m​o​u​n​t​ ​i​n​v​o​i​c​e​ ​i​s​ ​n​o​t​ ​s​u​p​p​o​r​t​e​d​ ​i​n​ ​B​T​C​ ​w​a​l​l​e​t
+		 * N​o​ ​a​m​o​u​n​t​ ​i​n​v​o​i​c​e​ ​i​s​ ​n​o​t​ ​s​u​p​p​o​r​t​e​d​ ​i​n​ ​B​T​C​ ​w​a​l​l​e​t​.​ ​P​l​e​a​s​e​ ​g​o​ ​b​a​c​k​ ​a​n​d​ ​s​c​a​n​ ​o​r​ ​e​n​t​e​r​ ​a​n​ ​i​n​v​o​i​c​e​ ​w​i​t​h​ ​a​n​ ​a​m​o​u​n​t​ ​a​d​d​e​d​.
 		 */
 		noAmountInvoiceError: string
 		/**
@@ -3189,11 +3189,11 @@ type RootTranslation = {
 		 */
 		learnMore: string
 		/**
-		 * Import wallet
+		 * I​m​p​o​r​t​ ​W​a​l​l​e​t
 		 */
 		importWallet: string
 		/**
-		 * Create wallet
+		 * C​r​e​a​t​e​ ​W​a​l​l​e​t
 		 */
 		createWallet: string
 	}
@@ -3310,18 +3310,19 @@ type RootTranslation = {
 		 */
 		error: string
 		/**
-		 * H​i​,​ ​I​ ​w​i​l​l​ ​l​i​k​e​ ​t​o​ ​i​n​c​r​e​a​s​e​ ​t​h​e​ ​t​r​a​n​s​a​c​t​i​o​n​ ​l​i​m​i​t​s​ ​o​f​ ​m​y​ ​{​b​a​n​k​N​a​m​e​}​ ​a​c​c​o​u​n​t​.
+		 * H​i​,​ ​I​ ​w​o​u​l​d​ ​l​i​k​e​ ​t​o​ ​u​p​g​r​a​d​e​ ​m​y​ ​a​c​c​o​u​n​t​ ​t​o​ ​a​ ​{​b​a​n​k​N​a​m​e​}​ ​B​u​s​i​n​e​s​s​ ​a​c​c​o​u​n​t​.
 		 * @param {string} bankName
 		 */
 		contactUsMessageBody: RequiredParams<'bankName'>
 		/**
-		 * R​e​q​u​e​s​t​ ​T​o​ ​I​n​c​r​e​a​s​e​ ​T​r​a​n​s​a​c​t​i​o​n​ ​L​i​m​i​t​s
+		 * F​l​a​s​h​ ​B​u​s​i​n​e​s​s​ ​U​p​g​r​a​d​e​ ​R​e​q​u​e​s​t
 		 */
 		contactUsMessageSubject: string
 		/**
-		 * C​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​ ​t​o​ ​p​e​r​f​o​r​m​ ​m​a​n​u​a​l​ ​K​Y​C​ ​t​o​ ​i​n​c​r​e​a​s​e​ ​y​o​u​r​ ​l​i​m​i​t
+		 * C​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​ ​t​o​ ​p​e​r​f​o​r​m​ ​m​a​n​u​a​l​ ​K​Y​C​ ​a​n​d​ ​u​p​g​r​a​d​e​ ​t​o​ ​{​b​a​n​k​N​a​m​e​}​ ​B​u​s​i​n​e​s​s
+		 * @param {string} bankName
 		 */
-		contactSupportToPerformKyc: string
+		contactSupportToPerformKyc: RequiredParams<'bankName'>
 		/**
 		 * I​n​c​r​e​a​s​e​ ​y​o​u​r​ ​l​i​m​i​t​s
 		 */
@@ -4627,11 +4628,11 @@ export type TranslationFunctions = {
 		 */
 		title: () => LocalizedString
 		/**
-		 * This is not a proper flashcard. Please use the correct flashcard.
+		 * Unsupported NFC card. Please ensure you are using a flashcard.
 		 */
 		notFlashcard: () => LocalizedString
 		/**
-		 * NDEF message not found.
+		 * NDEF message not found. Please ensure you are using a flashcard.
 		 */
 		noNDEFMessage: () => LocalizedString
 		/**
@@ -5873,7 +5874,7 @@ export type TranslationFunctions = {
 		 */
 		logBackInWith: () => LocalizedString
 		/**
-		 * Produt of Jamaica
+		 * Product of Jamaica
 		 */
 		headline: () => LocalizedString
 		/**
@@ -6743,7 +6744,7 @@ export type TranslationFunctions = {
 		 */
 		lnurlInvoiceIncorrectDescription: () => LocalizedString
 		/**
-		 * No amount invoice is not supported in BTC wallet
+		 * No amount invoice is not supported in BTC wallet. Please go back and scan or enter an invoice with an amount added.
 		 */
 		noAmountInvoiceError: () => LocalizedString
 		/**
@@ -7521,11 +7522,11 @@ export type TranslationFunctions = {
 		 */
 		learnMore: () => LocalizedString
 		/**
-		 * Import wallet
+		 * Import Wallet
 		 */
 		importWallet: () => LocalizedString
 		/**
-		 * Create wallet
+		 * Create Wallet
 		 */
 		createWallet: () => LocalizedString
 	}
@@ -7641,17 +7642,17 @@ export type TranslationFunctions = {
 		 */
 		error: () => LocalizedString
 		/**
-		 * Hi, I will like to increase the transaction limits of my {bankName} account.
+		 * Hi, I would like to upgrade my account to a {bankName} Business account.
 		 */
 		contactUsMessageBody: (arg: { bankName: string }) => LocalizedString
 		/**
-		 * Request To Increase Transaction Limits
+		 * Flash Business Upgrade Request
 		 */
 		contactUsMessageSubject: () => LocalizedString
 		/**
-		 * Contact support to perform manual KYC to increase your limit
+		 * Contact support to perform manual KYC and upgrade to {bankName} Business
 		 */
-		contactSupportToPerformKyc: () => LocalizedString
+		contactSupportToPerformKyc: (arg: { bankName: string }) => LocalizedString
 		/**
 		 * Increase your limits
 		 */
