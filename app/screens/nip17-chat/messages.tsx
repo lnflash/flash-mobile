@@ -102,7 +102,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
 
   const convertRumorsToMessages = (rumors: Rumor[]): MessageType.Text[] => {
     let chatSet: Map<string, MessageType.Text> = new Map<string, MessageType.Text>()
-    ;(chatRumors || []).forEach((r: Rumor) => {
+    ;(rumors || []).forEach((r: Rumor) => {
       chatSet.set(r.id, {
         author: { id: r.pubkey },
         createdAt: r.created_at,
@@ -207,7 +207,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
         <View style={styles.chatView} key="chatView">
           <SafeAreaProvider>
             <Chat
-              messages={convertRumorsToMessages(rumors)}
+              messages={convertRumorsToMessages(chatRumors || [])}
               key="messages"
               onPreviewDataFetched={() => {}}
               onSendPress={handleSendPress}
@@ -237,7 +237,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
               }}
               renderTextMessage={(message, nextMessage, prevMessage) => (
                 <ChatMessage
-                  key={message.text}
+                  key={message.id}
                   message={message}
                   recipientId={userPubkey}
                   nextMessage={nextMessage}
