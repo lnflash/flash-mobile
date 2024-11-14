@@ -124,7 +124,7 @@ export const fetchGiftWrapsForPublicKey = (
     "#p": [pubkey],
     "limit": 150,
   }
-  console.log("FETCHING MESSAGES from", [flashRelay, "wss://relay.damus.io"], filter)
+  console.log("FETCHING MESSAGES from", filter)
   let closer = pool.subscribeMany([flashRelay, "wss://relay.damus.io"], [filter], {
     onevent: eventHandler,
     onclose: () => {
@@ -263,6 +263,7 @@ export async function sendNip17Message(
     recipientRelays = recipientRelays || publicRelays
     let seal = createSeal(rumor, privateKey, recipientId)
     let wrap = createWrap(seal, recipientId)
+    console.log("Send out giftwrap", wrap, "on relays", recipientRelays)
     let messages = await Promise.allSettled(pool.publish(recipientRelays, wrap))
     console.log("message from relays", messages)
   })

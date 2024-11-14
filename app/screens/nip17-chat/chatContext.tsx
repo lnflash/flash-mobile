@@ -17,6 +17,7 @@ type ChatContextType = {
   poolRef?: React.MutableRefObject<SimplePool>
   profileMap: Map<string, NostrProfile> | undefined
   addEventToProfiles: (event: Event) => void
+  resetChat: () => void
 }
 
 const publicRelays = [
@@ -35,6 +36,7 @@ const ChatContext = createContext<ChatContextType>({
   poolRef: undefined,
   profileMap: undefined,
   addEventToProfiles: (event: Event) => {},
+  resetChat: () => {},
 })
 
 export const useChatContext = () => useContext(ChatContext)
@@ -43,6 +45,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const [giftwraps, setGiftWraps] = useState<Event[]>([])
   const [rumors, setRumors] = useState<Rumor[]>([])
   const [_, setLastEvent] = useState<Event>()
+  const [closer, setCloser] = useState<SubCloser | null>(null)
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
   const poolRef = useRef(new SimplePool())
   const {
@@ -51,21 +54,20 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     },
   } = useAppConfig()
 
-  const handleGiftWraps = (privateKey: Uint8Array) => {
-    return (event: Event) => {
-      setGiftWraps((prevEvents) => [...(prevEvents || []), event])
-      try {
-        let rumor = getRumorFromWrap(event, privateKey)
-        setRumors((prevRumors) => {
-          let previousRumors = prevRumors || []
-          if (!previousRumors.map((r) => r.id).includes(rumor)) {
-            return [...(prevRumors || []), rumor]
-          }
-          return prevRumors
-        })
-      } catch (e) {
-        console.log("Error in decrypting...", e)
-      }
+  const handleGiftWraps = (event: Event, secret: Uint8Array) => {
+    console.log("GOT EVENT", event.id)
+    setGiftWraps((prevEvents) => [...(prevEvents || []), event])
+    try {
+      let rumor = getRumorFromWrap(event, secret)
+      setRumors((prevRumors) => {
+        let previousRumors = prevRumors || []
+        if (!previousRumors.map((r) => r.id).includes(rumor)) {
+          return [...(prevRumors || []), rumor]
+        }
+        return prevRumors
+      })
+    } catch (e) {
+      console.log("Error in decrypting...", e)
     }
   }
 
@@ -83,10 +85,11 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       console.log("Fetching giftwraps")
       closer = fetchGiftWrapsForPublicKey(
         publicKey,
-        handleGiftWraps(secret),
+        (event) => handleGiftWraps(event, secret),
         poolRef!.current,
         relayUrl,
       )
+      setCloser(closer)
     }
     if (poolRef && !closer) initialize()
   }, [poolRef])
@@ -101,6 +104,23 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     }
   }
 
+  const resetChat = async () => {
+    setGiftWraps([])
+    setRumors([])
+    closer?.close()
+    let secretKeyString = await fetchSecretFromLocalStorage()
+    if (!secretKeyString) return
+    let secret = nip19.decode(secretKeyString).data as Uint8Array
+    const publicKey = getPublicKey(secret)
+    let newCloser = fetchGiftWrapsForPublicKey(
+      publicKey,
+      (event) => handleGiftWraps(event, secret),
+      poolRef!.current,
+      relayUrl,
+    )
+    setCloser(newCloser)
+  }
+
   return (
     <ChatContext.Provider
       value={{
@@ -111,6 +131,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         poolRef,
         profileMap: profileMap.current,
         addEventToProfiles,
+        resetChat,
       }}
     >
       {children}

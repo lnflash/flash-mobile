@@ -16,6 +16,7 @@ type Props = {
 export const ChatMessage: React.FC<Props> = ({ message, recipientId }) => {
   const styles = useStyles()
   const isMounted = useRef(false)
+  console.log("Chat message ID", message.id)
 
   useEffect(() => {
     isMounted.current = true

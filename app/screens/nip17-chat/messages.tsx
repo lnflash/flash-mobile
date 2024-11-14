@@ -156,7 +156,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
           style={styles.backButton}
           key="backButton"
         />
-        <Text type="p1">
+        <Text type="p1" key="displayname">
           {groupId
             .split(",")
             .filter((p) => p !== userPubkey)
@@ -170,7 +170,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
             })
             .join(", ")}
         </Text>
-        <View style={{ display: "flex", flexDirection: "row" }}>
+        <View style={{ display: "flex", flexDirection: "row" }} key="header">
           <GaloyIconButton
             name={"lightning"}
             size="medium"
@@ -183,6 +183,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
                 username: profileMap?.get(recipientId)?.lud16,
               })
             }}
+            key="lightning-button"
           />
           {groupId
             .split(",")
@@ -196,6 +197,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
                       "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
                   }}
                   style={styles.userPic}
+                  key="profile-picture"
                 />
               )
             })}
