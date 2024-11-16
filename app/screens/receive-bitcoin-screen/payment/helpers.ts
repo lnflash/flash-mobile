@@ -1,6 +1,7 @@
 import { decodeInvoiceString, Network as NetworkLibGaloy } from "@galoymoney/client"
 import { Network } from "@app/graphql/generated"
 import { Invoice, GetFullUriInput } from "./index.types"
+import { toUsdMoneyAmount } from "@app/types/amounts"
 
 const prefixByType = {
   [Invoice.OnChain]: "bitcoin:",
@@ -15,26 +16,34 @@ export const getPaymentRequestFullUri = ({
   uppercase = false,
   prefix = true,
   type = Invoice.OnChain,
+  wallet,
+  convertMoneyAmount,
 }: GetFullUriInput): string => {
   if (type === Invoice.Lightning) {
     return uppercase ? input.toUpperCase() : input
+  } else {
+    if (wallet === "BTC") {
+      return input
+    } else {
+      const uriPrefix = prefix ? prefixByType[type] : ""
+      const uri = `${uriPrefix}${input}`
+
+      const params = new URLSearchParams()
+
+      if (amount && convertMoneyAmount)
+        params.append(
+          "amount",
+          `${satsToBTC(convertMoneyAmount(toUsdMoneyAmount(amount), "BTC").amount)}`,
+        )
+
+      if (memo) {
+        params.append("message", encodeURI(memo))
+        return `${uri}?${params.toString()}`
+      }
+
+      return uri + (params.toString() ? "?" + params.toString() : "")
+    }
   }
-
-  const uriPrefix = prefix ? prefixByType[type] : ""
-  let uri = `${uriPrefix}${input}`
-  if (type === "OnChain" && input.startsWith(prefixByType["OnChain"])) {
-    uri = input
-  }
-
-  const params = new URLSearchParams()
-  if (amount) params.append("amount", `${satsToBTC(amount)}`)
-
-  if (memo) {
-    params.append("message", encodeURI(memo))
-    return `${uri}?${params.toString()}`
-  }
-
-  return uri + (params.toString() ? "?" + params.toString() : "")
 }
 
 export const satsToBTC = (satsAmount: number): number => satsAmount / 10 ** 8
