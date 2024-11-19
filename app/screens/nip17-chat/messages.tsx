@@ -91,30 +91,26 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
     theme: { colors },
   } = useTheme()
   let { rumors, poolRef } = useChatContext()
-  let chatRumors = convertRumorsToGroups(rumors).get(groupId)
   const styles = useStyles()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
   const { LL } = useI18nContext()
   const [initialized, setInitialized] = React.useState(false)
+  const [messages, setMessages] = useState<Map<string, MessageType.Text>>(new Map())
 
   const user = { id: userPubkey }
 
-  const convertRumorsToMessages = (rumors: Rumor[]): MessageType.Text[] => {
+  const convertRumorsToMessages = (rumors: Rumor[]) => {
     let chatSet: Map<string, MessageType.Text> = new Map<string, MessageType.Text>()
     ;(rumors || []).forEach((r: Rumor) => {
       chatSet.set(r.id, {
         author: { id: r.pubkey },
-        createdAt: r.created_at,
+        createdAt: r.created_at * 1000,
         id: r.id,
         type: "text",
         text: r.content,
       })
     })
-    let chats = Array.from(chatSet.values())
-    chats.sort((a, b) => {
-      return b.createdAt! - a.createdAt!
-    })
-    return chats as MessageType.Text[]
+    return chatSet
   }
 
   React.useEffect(() => {
@@ -123,28 +119,42 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
       if (poolRef) setInitialized(true)
     }
     if (!initialized) initialize()
-
+    let chatRumors = convertRumorsToGroups(rumors).get(groupId)
     const lastRumor = (chatRumors || []).sort((a, b) => b.created_at - a.created_at)[0]
     if (lastRumor) updateLastSeen(groupId, lastRumor.created_at)
+    let newChatMap = new Map([...messages, ...convertRumorsToMessages(chatRumors || [])])
+    setMessages(newChatMap)
     return () => {
       isMounted = false
     }
   }, [poolRef, rumors])
 
   const handleSendPress = async (message: MessageType.PartialText) => {
-    const textMessage: MessageType.Text = {
+    let textMessage: MessageType.Text = {
       author: user,
       createdAt: Date.now(),
-      id: user.id,
       text: message.text,
       type: "text",
+      id: message.text,
     }
-    await sendNip17Message(
+    let result = await sendNip17Message(
       groupId.split(","),
       message.text,
-      poolRef!.current,
       preferredRelaysMap || new Map<string, string[]>(),
     )
+    console.log("Output is", result.outputs)
+    if (
+      result.outputs.filter((output) => output.acceptedRelays.length !== 0).length === 0
+    ) {
+      console.log("inside errored message")
+      textMessage.metadata = { errors: true }
+      textMessage.id = result.rumor.id + "error" + Math.random() * 1000
+      let newChatMap = new Map(messages)
+      newChatMap.set(textMessage.id, textMessage)
+      console.log("new chat map is", newChatMap)
+      setMessages(newChatMap)
+    }
+    console.log("setting message with metadata", textMessage)
   }
 
   return (
@@ -208,7 +218,9 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
         <View style={styles.chatView} key="chatView">
           <SafeAreaProvider>
             <Chat
-              messages={convertRumorsToMessages(chatRumors || [])}
+              messages={Array.from(messages.values()).sort((a, b) => {
+                return b.createdAt! - a.createdAt!
+              })}
               key="messages"
               onPreviewDataFetched={() => {}}
               onSendPress={handleSendPress}
