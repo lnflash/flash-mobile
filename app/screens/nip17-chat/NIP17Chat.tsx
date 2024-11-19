@@ -40,7 +40,6 @@ export const NIP17Chat: React.FC = () => {
     skip: !isAuthed,
     fetchPolicy: "network-only",
     errorPolicy: "all",
-    nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
   const { rumors, poolRef, addEventToProfiles, profileMap, resetChat } = useChatContext()
   const [searchText, setSearchText] = useState("")
@@ -49,6 +48,7 @@ export const NIP17Chat: React.FC = () => {
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
   const [showImportModal, setShowImportModal] = useState<boolean>(false)
+  const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
 
@@ -56,6 +56,7 @@ export const NIP17Chat: React.FC = () => {
     setSearchText("")
     setSearchedUsers([])
     setRefreshing(false)
+    setskipMismatchCheck(true)
   }, [])
 
   const searchedUsersHandler = (event: Event, closer: SubCloser) => {
@@ -78,6 +79,7 @@ export const NIP17Chat: React.FC = () => {
       console.log("Initializing nip17 screen use effect")
       let secretKeyString = await fetchSecretFromLocalStorage()
       if (!secretKeyString) {
+        console.log("Couldn't find secret key in local storage")
         setShowImportModal(true)
         return
       }
@@ -85,7 +87,10 @@ export const NIP17Chat: React.FC = () => {
       setPrivateKey(secret)
       const accountNpub = dataAuthed?.me?.npub
       const storedNpub = nip19.npubEncode(getPublicKey(secret))
-      if (accountNpub && storedNpub !== accountNpub) setShowImportModal(true)
+      if (!skipMismatchCheck && accountNpub && storedNpub !== accountNpub) {
+        console.log("Account Info mismatch", accountNpub, storedNpub)
+        setShowImportModal(true)
+      }
       setInitialized(true)
     }
     if (!initialized && poolRef) initialize()
@@ -97,26 +102,21 @@ export const NIP17Chat: React.FC = () => {
       async function checkSecretKey() {
         let secretKeyString = await fetchSecretFromLocalStorage()
         if (!secretKeyString) {
+          console.log("No secret on focus effect", secretKeyString)
           setShowImportModal(true)
           return
         }
         let secret = nip19.decode(secretKeyString).data as Uint8Array
         const accountNpub = dataAuthed?.me?.npub
         const storedNpub = nip19.npubEncode(getPublicKey(secret))
-        console.log(
-          "stored npub",
-          storedNpub,
-          "Account Npub",
-          accountNpub,
-          "account",
-          dataAuthed?.me,
-        )
-        if (accountNpub && storedNpub !== accountNpub) setShowImportModal(true)
+        if (!skipMismatchCheck && accountNpub && storedNpub !== accountNpub) {
+          setShowImportModal(true)
+        }
       }
       setSearchText("")
       setSearchedUsers([])
       checkSecretKey()
-    }, [setSearchText, setSearchedUsers, dataAuthed, isAuthed]),
+    }, [setSearchText, setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck]),
   )
 
   const updateSearchResults = useCallback(
