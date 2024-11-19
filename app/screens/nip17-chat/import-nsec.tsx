@@ -3,8 +3,8 @@ import { useTheme, Text, Input, Button } from "@rneui/themed"
 import { View, StyleSheet, Alert, Dimensions } from "react-native"
 import ReactNativeModal from "react-native-modal"
 import * as Keychain from "react-native-keychain"
-
-const { width: screenWidth } = Dimensions.get("window")
+import { useUserUpdateNpubMutation } from "@app/graphql/generated"
+import { getPublicKey, nip19 } from "nostr-tools"
 
 interface ImportNsecModalProps {
   isActive: boolean
@@ -25,6 +25,7 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
 
   const [nsec, setNsec] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
+  const [userUpdateNpubMutation] = useUserUpdateNpubMutation()
 
   const handleInputChange = (text: string) => {
     setNsec(text)
@@ -54,6 +55,14 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
         KEYCHAIN_NOSTRCREDS_KEY,
         nsec,
       )
+      await userUpdateNpubMutation({
+        variables: {
+          input: {
+            npub: nip19.npubEncode(getPublicKey(nip19.decode(nsec).data as Uint8Array)),
+          },
+        },
+      })
+
       Alert.alert("Success", "nsec imported successfully!")
       onCancel() // Close the modal after saving
       onSubmit()
@@ -130,8 +139,6 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: 20,
     width: 250,
-    borderColor: "red",
-    borderWidth: 1,
   },
   inputLabel: {
     fontSize: 14,

@@ -13,6 +13,7 @@ import {
   SimplePool,
   Filter,
   SubCloser,
+  AbstractRelay,
 } from "nostr-tools"
 import { Alert } from "react-native"
 
@@ -124,7 +125,7 @@ export const fetchGiftWrapsForPublicKey = (
     "#p": [pubkey],
     "limit": 150,
   }
-  console.log("FETCHING MESSAGES from", filter)
+  console.log("FETCHING MESSAGES for", filter)
   let closer = pool.subscribeMany([flashRelay, "wss://relay.damus.io"], [filter], {
     onevent: eventHandler,
     onclose: () => {
@@ -231,6 +232,7 @@ export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Arr
     tags: [
       ["relay", flashRelay],
       ["relay", "wss://relay.damus.io"],
+      ["relay", "wss://relay.primal.net"],
     ],
     created_at: now(),
     kind: 10050,
@@ -247,7 +249,6 @@ export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Arr
 export async function sendNip17Message(
   recipients: string[],
   message: string,
-  pool: SimplePool,
   preferredRelaysMap: Map<string, string[]>,
 ) {
   let privateKey = await getSecretKey()
@@ -257,14 +258,73 @@ export async function sendNip17Message(
   console.log("Preferred Relays map", preferredRelaysMap)
   let p_tags = recipients.map((recipientId: string) => ["p", recipientId])
   let rumor = createRumor({ content: message, kind: 14, tags: p_tags }, privateKey)
+  let outputs: { acceptedRelays: string[]; rejectedRelays: string[] }[] = []
   recipients.forEach(async (recipientId: string) => {
+    let acceptedRelays: string[] = []
     let recipientRelays = preferredRelaysMap.get(recipientId)
     if (!recipientRelays) sendNIP4Message(message, recipientId)
     recipientRelays = recipientRelays || publicRelays
     let seal = createSeal(rumor, privateKey, recipientId)
     let wrap = createWrap(seal, recipientId)
-    console.log("Send out giftwrap", wrap, "on relays", recipientRelays)
-    let messages = await Promise.allSettled(pool.publish(recipientRelays, wrap))
-    console.log("message from relays", messages)
+    let output = await customPublish(recipientRelays, wrap)
+    outputs.push(output)
+    console.log("Message Accepted On:", acceptedRelays)
   })
+  return { outputs, rumor }
+}
+
+export const ensureRelay = async (
+  url: string,
+  params?: { connectionTimeout?: number },
+): Promise<AbstractRelay> => {
+  url = normalizeURL(url)
+
+  let relay = new Relay(url)
+  if (params?.connectionTimeout) relay.connectionTimeout = params.connectionTimeout
+  await relay.connect()
+
+  return relay
+}
+
+export const customPublish = async (relays: string[], event: Event) => {
+  let acceptedRelays: string[] = []
+  let rejectedRelays: string[] = []
+  await Promise.allSettled(
+    relays.map(normalizeURL).map(async (url, i, arr) => {
+      if (arr.indexOf(url) !== i) {
+        // duplicate
+        return Promise.reject("duplicate url")
+      }
+
+      let r = await ensureRelay(url)
+      return r.publish(event).then(
+        (value) => {
+          console.log("accepted on", url)
+          acceptedRelays.push(url)
+          return value
+        },
+        (reason: string) => {
+          console.log("rejected on", url)
+          rejectedRelays.push(url)
+          return reason
+        },
+      )
+    }),
+  )
+  return { acceptedRelays, rejectedRelays }
+}
+
+function normalizeURL(url: string) {
+  if (url.indexOf("://") === -1) url = "wss://" + url
+  let p = new URL(url)
+  p.pathname = p.pathname.replace(/\/+/g, "/")
+  if (p.pathname.endsWith("/")) p.pathname = p.pathname.slice(0, -1)
+  if (
+    (p.port === "80" && p.protocol === "ws:") ||
+    (p.port === "443" && p.protocol === "wss:")
+  )
+    p.port = ""
+  p.searchParams.sort()
+  p.hash = ""
+  return p.toString()
 }

@@ -55,7 +55,6 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   } = useAppConfig()
 
   const handleGiftWraps = (event: Event, secret: Uint8Array) => {
-    console.log("GOT EVENT", event.id)
     setGiftWraps((prevEvents) => [...(prevEvents || []), event])
     try {
       let rumor = getRumorFromWrap(event, secret)

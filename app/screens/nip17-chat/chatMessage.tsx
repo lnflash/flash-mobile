@@ -3,7 +3,7 @@
 import "react-native-get-random-values"
 import React, { useEffect, useRef } from "react"
 import { View, Text } from "react-native"
-import { makeStyles } from "@rneui/themed"
+import { Icon, makeStyles } from "@rneui/themed"
 import { MessageType } from "@flyerhq/react-native-chat-ui"
 
 type Props = {
@@ -16,7 +16,6 @@ type Props = {
 export const ChatMessage: React.FC<Props> = ({ message, recipientId }) => {
   const styles = useStyles()
   const isMounted = useRef(false)
-  console.log("Chat message ID", message.id)
 
   useEffect(() => {
     isMounted.current = true
@@ -31,13 +30,19 @@ export const ChatMessage: React.FC<Props> = ({ message, recipientId }) => {
         ...styles.container,
       }}
     >
-      <Text
-        style={{
-          ...styles.content,
-        }}
-      >
-        {message.text}
-      </Text>
+      <View style={{ display: "flex", flexDirection: "row" }}>
+        {message.metadata?.errors ? (
+          <Icon name="error" size={20} color="red" style={styles.errorIcon} />
+        ) : null}
+
+        <Text
+          style={{
+            ...styles.content,
+          }}
+        >
+          {message.text}
+        </Text>
+      </View>
     </View>
   )
 }
@@ -50,5 +55,8 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   content: {
     color: colors._black,
+  },
+  errorIcon: {
+    marginRight: 10,
   },
 }))
