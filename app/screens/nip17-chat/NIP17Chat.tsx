@@ -113,9 +113,11 @@ export const NIP17Chat: React.FC = () => {
           setShowImportModal(true)
         }
       }
-      setSearchText("")
-      setSearchedUsers([])
-      checkSecretKey()
+      if (initialized) {
+        setSearchText("")
+        setSearchedUsers([])
+        checkSecretKey()
+      }
     }, [setSearchText, setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck]),
   )
 

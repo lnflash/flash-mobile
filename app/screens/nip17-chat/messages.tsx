@@ -142,17 +142,19 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
       message.text,
       preferredRelaysMap || new Map<string, string[]>(),
     )
-    console.log("Output is", result.outputs)
+    console.log("Output is", result)
     if (
       result.outputs.filter((output) => output.acceptedRelays.length !== 0).length === 0
     ) {
       console.log("inside errored message")
       textMessage.metadata = { errors: true }
-      textMessage.id = result.rumor.id + "error" + Math.random() * 1000
-      let newChatMap = new Map(messages)
-      newChatMap.set(textMessage.id, textMessage)
-      console.log("new chat map is", newChatMap)
-      setMessages(newChatMap)
+      textMessage.id = result.rumor.id
+
+      setMessages((prevChat) => {
+        let newChatMap = new Map(prevChat)
+        newChatMap.set(textMessage.id, textMessage)
+        return newChatMap
+      })
     }
     console.log("setting message with metadata", textMessage)
   }
