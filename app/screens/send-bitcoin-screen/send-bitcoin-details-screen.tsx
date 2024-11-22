@@ -57,7 +57,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
   const { currentLevel } = useLevel()
   const { btcWallet } = useBreez()
   const { persistentState } = usePersistentStateContext()
-  const { convertMoneyAmount: _convertMoneyAmount } = usePriceConversion()
+  const { convertMoneyAmount: _convertMoneyAmount } = usePriceConversion("network-only")
   const { zeroDisplayAmount, formatMoneyAmount } = useDisplayCurrency()
   const { toggleActivityIndicator } = useActivityIndicator()
 
