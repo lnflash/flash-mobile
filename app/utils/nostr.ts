@@ -255,21 +255,50 @@ export async function sendNip17Message(
   if (!privateKey) {
     throw Error("Couldnt find private key in local storage")
   }
-  console.log("Preferred Relays map", preferredRelaysMap)
   let p_tags = recipients.map((recipientId: string) => ["p", recipientId])
   let rumor = createRumor({ content: message, kind: 14, tags: p_tags }, privateKey)
   let outputs: { acceptedRelays: string[]; rejectedRelays: string[] }[] = []
-  recipients.forEach(async (recipientId: string) => {
-    let acceptedRelays: string[] = []
-    let recipientRelays = preferredRelaysMap.get(recipientId)
-    if (!recipientRelays) sendNIP4Message(message, recipientId)
-    recipientRelays = recipientRelays || publicRelays
-    let seal = createSeal(rumor, privateKey, recipientId)
-    let wrap = createWrap(seal, recipientId)
-    let output = await customPublish(recipientRelays, wrap)
-    outputs.push(output)
-    console.log("Message Accepted On:", acceptedRelays)
-  })
+  console.log("total recipients", recipients)
+  await Promise.allSettled(
+    recipients.map(async (recipientId: string) => {
+      console.log("sending rumor for recipient ", recipientId)
+      let recipientAcceptedRelays: string[] = []
+      let recipientRelays = preferredRelaysMap.get(recipientId)
+      if (!recipientRelays) sendNIP4Message(message, recipientId)
+      recipientRelays = recipientRelays || publicRelays
+      let seal = createSeal(rumor, privateKey, recipientId)
+      let wrap = createWrap(seal, recipientId)
+      console.log("wrap created")
+      try {
+        let response = await Promise.allSettled(
+          customPublish(
+            recipientRelays,
+            wrap,
+            (url: string) => {
+              console.log("Accepted relay callback triggered:", url)
+              recipientAcceptedRelays.push(url)
+            },
+            (url: string) => {
+              console.log("Rejected relay:", url)
+            },
+          ),
+        )
+        console.log(
+          "wrap sent, accepted relays for recipient ",
+          recipientId,
+          " ",
+          recipientAcceptedRelays,
+          " repose ",
+          response,
+        )
+      } catch (e) {
+        console.log("error in publishing", e)
+      }
+      outputs.push({ acceptedRelays: recipientAcceptedRelays, rejectedRelays: [] })
+      console.log("Invocation ended for recipient", recipientId, outputs)
+    }),
+  )
+  console.log("Final output is", outputs)
   return { outputs, rumor }
 }
 
@@ -286,32 +315,42 @@ export const ensureRelay = async (
   return relay
 }
 
-export const customPublish = async (relays: string[], event: Event) => {
-  let acceptedRelays: string[] = []
-  let rejectedRelays: string[] = []
-  await Promise.allSettled(
-    relays.map(normalizeURL).map(async (url, i, arr) => {
-      if (arr.indexOf(url) !== i) {
-        // duplicate
-        return Promise.reject("duplicate url")
-      }
+export const customPublish = (
+  relays: string[],
+  event: Event,
+  onAcceptedRelays?: (url: string) => void,
+  onRejectedRelays?: (url: string) => void,
+): Promise<string>[] => {
+  console.log("Custom publish invoked ")
+  const timeoutPromise = (url: string): Promise<string> =>
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(`Publish to ${url} timed out`)), 2000)
+    })
 
-      let r = await ensureRelay(url)
-      return r.publish(event).then(
-        (value) => {
-          console.log("accepted on", url)
-          acceptedRelays.push(url)
-          return value
-        },
-        (reason: string) => {
-          console.log("rejected on", url)
-          rejectedRelays.push(url)
-          return reason
-        },
-      )
-    }),
-  )
-  return { acceptedRelays, rejectedRelays }
+  return relays.map(normalizeURL).map(async (url, i, arr) => {
+    console.log("trying to publish to", url)
+    if (arr.indexOf(url) !== i) {
+      return Promise.reject("duplicate url")
+    }
+    return Promise.race([
+      (async () => {
+        let r = await ensureRelay(url)
+        return r.publish(event).then(
+          (value) => {
+            console.log("Accepted on", url)
+            onAcceptedRelays?.(url)
+            return value
+          },
+          (reason: string) => {
+            console.log("Rejected on", url)
+            onRejectedRelays?.(url)
+            return reason
+          },
+        )
+      })(),
+      timeoutPromise(url),
+    ])
+  })
 }
 
 function normalizeURL(url: string) {

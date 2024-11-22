@@ -161,31 +161,6 @@ const useNostrProfile = () => {
     return pubKey
   }
 
-  async function sendNip17Message(recipientId: string, message: string) {
-    let recipient
-    if (recipientId.startsWith("npub1")) {
-      recipient = nip19.decode(recipientId).data as string
-    } else {
-      recipient = recipientId
-    }
-    let privateKey = nip19.decode(nostrSecretKey).data as Uint8Array
-    let rumor = createRumor(
-      { content: message, kind: 14, tags: [["p", `${recipient}`]] },
-      privateKey,
-    )
-    let recipientSeal = createSeal(rumor, privateKey, recipient)
-    let senderSeal = createSeal(rumor, privateKey, getPublicKey(privateKey))
-    let recipientWrap = createWrap(recipientSeal, recipient)
-    let selfWrap = createWrap(senderSeal, getPublicKey(privateKey))
-
-    console.warn("Final Wrap Is", recipientWrap)
-    const pool = new SimplePool()
-    const messagesEvent1 = await Promise.allSettled(pool.publish(relays, recipientWrap))
-    const messagesEvent2 = await Promise.allSettled(pool.publish(relays, selfWrap))
-    console.warn("Messages from relays", messagesEvent1, messagesEvent2)
-    pool.close(relays)
-  }
-
   const sendMessage = async (recipientId: string, message: string) => {
     let recipient = nip19.decode(recipientId).data as string
     const ciphertext = await encryptMessage(message, recipient)
@@ -322,7 +297,6 @@ const useNostrProfile = () => {
     nostrPubKey: nostrPublicKey,
     fetchNostrUser,
     sendMessage,
-    sendNip17Message,
     retrieveMessagedUsers,
     fetchMessagesWith,
     updateNostrProfile,

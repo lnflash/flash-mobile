@@ -76,12 +76,11 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       let secretKeyString = await fetchSecretFromLocalStorage()
       if (!secretKeyString) {
         if (count >= 3) return
-        setTimeout(() => initialize(count + 1), 1000)
+        setTimeout(() => initialize(count + 1), 500)
         return
       }
       let secret = nip19.decode(secretKeyString).data as Uint8Array
       const publicKey = getPublicKey(secret)
-      console.log("Fetching giftwraps")
       closer = fetchGiftWrapsForPublicKey(
         publicKey,
         (event) => handleGiftWraps(event, secret),

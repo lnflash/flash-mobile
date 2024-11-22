@@ -5,6 +5,7 @@ import React, { useEffect, useRef } from "react"
 import { View, Text } from "react-native"
 import { Icon, makeStyles } from "@rneui/themed"
 import { MessageType } from "@flyerhq/react-native-chat-ui"
+import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 
 type Props = {
   recipientId: string
@@ -32,7 +33,7 @@ export const ChatMessage: React.FC<Props> = ({ message, recipientId }) => {
     >
       <View style={{ display: "flex", flexDirection: "row" }}>
         {message.metadata?.errors ? (
-          <Icon name="error" size={20} color="red" style={styles.errorIcon} />
+          <GaloyIcon name="warning" size={20} color="yellow" style={styles.errorIcon} />
         ) : null}
 
         <Text
