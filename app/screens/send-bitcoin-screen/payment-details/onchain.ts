@@ -417,22 +417,27 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
       amount: settlementAmount.amount,
     })
     sendPaymentMutation = async (paymentMutations) => {
-      const { data } = await paymentMutations.onChainUsdPaymentSend({
-        variables: {
-          input: {
-            walletId: sendingWalletDescriptor.id,
-            address,
-            amount: settlementAmount.amount,
+      try {
+        const { data } = await paymentMutations.onChainUsdPaymentSend({
+          variables: {
+            input: {
+              walletId: sendingWalletDescriptor.id,
+              address,
+              amount: settlementAmount.amount,
+            },
           },
-        },
-      })
+        })
 
-      console.log("RESPONSE ONCHAIN:", data)
+        console.log("RESPONSE ONCHAIN:", data)
 
-      return {
-        status: data?.onChainUsdPaymentSend.status,
-        errors: data?.onChainUsdPaymentSend.errors,
+        return {
+          status: data?.onChainUsdPaymentSend.status,
+          errors: data?.onChainUsdPaymentSend.errors,
+        }
+      } catch (err) {
+        console.error("ONCHAIN ERR", err)
       }
+      return { status: undefined, errors: undefined }
     }
 
     getFee = async (getFeeFns) => {
