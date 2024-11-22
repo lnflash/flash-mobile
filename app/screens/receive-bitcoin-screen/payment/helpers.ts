@@ -1,7 +1,7 @@
 import { decodeInvoiceString, Network as NetworkLibGaloy } from "@galoymoney/client"
 import { Network } from "@app/graphql/generated"
 import { Invoice, GetFullUriInput } from "./index.types"
-import { toUsdMoneyAmount } from "@app/types/amounts"
+import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 
 const prefixByType = {
   [Invoice.OnChain]: "bitcoin:",
@@ -30,11 +30,21 @@ export const getPaymentRequestFullUri = ({
 
       const params = new URLSearchParams()
 
-      if (amount && convertMoneyAmount)
+      if (amount && convertMoneyAmount) {
+        console.log(
+          "Receiver<<<<<<<<<<<<<<<<<<<< BTC",
+          convertMoneyAmount(toUsdMoneyAmount(amount), "BTC").amount,
+        )
+        const convertedAmount = convertMoneyAmount(toUsdMoneyAmount(amount), "BTC").amount
+        console.log(
+          "Receiver>>>>>>>>>>>>>>>>>>>> USD",
+          convertMoneyAmount(toBtcMoneyAmount(convertedAmount), "USD"),
+        )
         params.append(
           "amount",
           `${satsToBTC(convertMoneyAmount(toUsdMoneyAmount(amount), "BTC").amount)}`,
         )
+      }
 
       if (memo) {
         params.append("message", encodeURI(memo))
