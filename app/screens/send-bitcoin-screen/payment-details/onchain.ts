@@ -419,6 +419,14 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
           },
         },
       })
+      console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+      console.log("Destination Specified Amount", destinationSpecifiedAmount)
+      console.log("PARAMS:", {
+        walletId: sendingWalletDescriptor.id,
+        address,
+        amount: settlementAmount.amount,
+      })
+      console.log("RESPONSE ONCHAIN:", data)
 
       return {
         status: data?.onChainUsdPaymentSend.status,
