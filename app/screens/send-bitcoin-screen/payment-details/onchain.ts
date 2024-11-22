@@ -409,6 +409,13 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
     }
   } else {
     // sendingWalletDescriptor.currency === WalletCurrency.Usd
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    console.log("Destination Specified Amount", destinationSpecifiedAmount)
+    console.log("PARAMS:", {
+      walletId: sendingWalletDescriptor.id,
+      address,
+      amount: settlementAmount.amount,
+    })
     sendPaymentMutation = async (paymentMutations) => {
       const { data } = await paymentMutations.onChainUsdPaymentSend({
         variables: {
@@ -419,13 +426,7 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
           },
         },
       })
-      console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-      console.log("Destination Specified Amount", destinationSpecifiedAmount)
-      console.log("PARAMS:", {
-        walletId: sendingWalletDescriptor.id,
-        address,
-        amount: settlementAmount.amount,
-      })
+
       console.log("RESPONSE ONCHAIN:", data)
 
       return {
