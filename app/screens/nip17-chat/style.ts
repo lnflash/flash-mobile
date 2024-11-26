@@ -36,7 +36,7 @@ export const useStyles = makeStyles(({ colors }) => ({
   },
 
   item: {
-    marginHorizontal: 32,
+    marginHorizontal: 20,
     marginVertical: 4,
   },
 
@@ -82,7 +82,7 @@ export const useStyles = makeStyles(({ colors }) => ({
     textDecorationLine: "none",
   },
 
-  itemText: { color: colors.primary3 },
+  itemText: { color: colors.primary3, flexWrap: "wrap" },
 
   icon: {
     color: colors.primary3,
