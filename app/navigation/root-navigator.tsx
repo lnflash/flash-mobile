@@ -102,6 +102,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { ReconciliationReport } from "@app/screens/reports"
+import { RefundDestination, RefundTransactionsList } from "@app/screens/refund-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -197,7 +198,7 @@ export const RootStack = () => {
         name="scanningQRCode"
         component={ScanningQRCodeScreen}
         options={{
-          title: LL.ScanningQRCodeScreen.title,
+          title: LL.ScanningQRCodeScreen.title(),
           headerShown: false,
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         }}
@@ -515,6 +516,11 @@ export const RootStack = () => {
         component={USDTransactionHistory}
         options={{ title: LL.TransactionScreen.transactionHistoryTitle() }}
       />
+      <RootNavigator.Screen
+        name="RefundTransactionList"
+        component={RefundTransactionsList}
+      />
+      <RootNavigator.Screen name="RefundDestination" component={RefundDestination} />
     </RootNavigator.Navigator>
   )
 }
