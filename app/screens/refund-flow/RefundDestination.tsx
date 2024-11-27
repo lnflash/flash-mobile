@@ -3,6 +3,7 @@ import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { Network, parsePaymentDestination } from "@flash/client"
+import { StackScreenProps } from "@react-navigation/stack"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -11,9 +12,12 @@ import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 
 // utils
 import { LNURL_DOMAINS } from "@app/config"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
-const RefundDestination = () => {
-  const styles = usestyles()
+type Props = StackScreenProps<RootStackParamList, "RefundDestination">
+
+const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
+  const styles = useStyles()
   const { LL } = useI18nContext()
 
   const [selectedFee, setSelectedFee] = useState<number>()
@@ -36,6 +40,12 @@ const RefundDestination = () => {
       console.log("PARSED DESTINATION>>>>>>>>>>>>>", parsedDestination)
       if (parsedDestination.valid && parsedDestination.paymentType === "onchain") {
         setStatus("valid")
+        navigation.navigate("RefundConfirmation", {
+          swapAddress: route.params.swapAddress,
+          amount: route.params.amount,
+          destination,
+          fee: selectedFee,
+        })
       } else {
         setStatus("invalid")
         setError("Please, enter valid destination")
@@ -73,7 +83,7 @@ const RefundDestination = () => {
 
 export default RefundDestination
 
-const usestyles = makeStyles(({ colors }) => ({
+const useStyles = makeStyles(({ colors }) => ({
   screenStyle: {
     padding: 20,
     flexGrow: 1,
