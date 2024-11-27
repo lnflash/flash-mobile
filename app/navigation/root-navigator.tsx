@@ -102,7 +102,11 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { ReconciliationReport } from "@app/screens/reports"
-import { RefundDestination, RefundTransactionsList } from "@app/screens/refund-flow"
+import {
+  RefundConfirmation,
+  RefundDestination,
+  RefundTransactionsList,
+} from "@app/screens/refund-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -519,8 +523,18 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="RefundTransactionList"
         component={RefundTransactionsList}
+        options={{ title: LL.RefundFlow.refundListTitle() }}
       />
-      <RootNavigator.Screen name="RefundDestination" component={RefundDestination} />
+      <RootNavigator.Screen
+        name="RefundDestination"
+        component={RefundDestination}
+        options={{ title: LL.RefundFlow.destinationTitle() }}
+      />
+      <RootNavigator.Screen
+        name="RefundConfirmation"
+        component={RefundConfirmation}
+        options={{ title: LL.RefundFlow.confirmationTitle() }}
+      />
     </RootNavigator.Navigator>
   )
 }

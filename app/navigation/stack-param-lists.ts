@@ -123,7 +123,13 @@ export type RootStackParamList = {
   ImportWallet: { insideApp?: boolean; onComplete?: (token?: string) => void }
   ImportWalletOptions: { insideApp?: boolean } | undefined
   RefundTransactionList: undefined
-  RefundDestination: { swapAddress: string }
+  RefundDestination: { swapAddress: string; amount: number }
+  RefundConfirmation: {
+    swapAddress: string
+    amount: number
+    destination: string
+    fee: number
+  }
 }
 
 export type ChatStackParamList = {
