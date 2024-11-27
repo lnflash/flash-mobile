@@ -87,7 +87,7 @@ const Title = styled(Text)`
 
 const FeeSelect = styled.TouchableOpacity<{ colors: Colors; selected: boolean }>`
   width: 30%;
-  background-color: ${({ colors, selected }) => (selected ? colors.black : colors.grey4)};
+  background-color: ${({ colors, selected }) => (selected ? "#60aa55" : colors.grey4)};
   border-radius: 10px;
   align-items: center;
   padding-vertical: 5px;
