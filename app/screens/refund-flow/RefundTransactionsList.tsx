@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react"
-import moment from "moment"
-import { Text } from "@rneui/themed"
 import { FlatList } from "react-native"
 import styled from "styled-components/native"
+import { Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { listRefundables, RefundableSwap } from "@breeztech/react-native-breez-sdk-liquid"
+import moment from "moment"
+
+// hooks
+import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
 // utils
-import { satsToBTC } from "../receive-bitcoin-screen/payment/helpers"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 
 const data = [
   {
@@ -31,7 +34,13 @@ type RenderItemProps = {
 }
 
 const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
+  const { colors } = useTheme().theme
+  const { convertMoneyAmount } = usePriceConversion()
+  const { formatDisplayAndWalletAmount } = useDisplayCurrency()
+
   const [refundables, setRefundables] = useState<RefundableSwap[]>(data)
+
+  if (!convertMoneyAmount) return null
 
   useEffect(() => {
     fetchRefundables()
@@ -44,19 +53,29 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
 
   const renderItem = ({ item, index }: RenderItemProps) => {
     const pressHandler = () => {
-      navigation.navigate("RefundDestination", { swapAddress: item.swapAddress })
+      navigation.navigate("RefundDestination", {
+        swapAddress: item.swapAddress,
+        amount: item.amountSat,
+      })
     }
 
+    const formattedAmount = formatDisplayAndWalletAmount({
+      displayAmount: convertMoneyAmount(
+        toBtcMoneyAmount(item.amountSat),
+        DisplayCurrency,
+      ),
+      walletAmount: toBtcMoneyAmount(item.amountSat),
+    })
+
     return (
-      <Item onPress={pressHandler}>
-        <RowWrapper>
-          <SwapAddress>{`${item.swapAddress.substring(
-            0,
-            10,
-          )}...${item.swapAddress.substring(item.swapAddress.length - 10)}`}</SwapAddress>
-          <Amount>{satsToBTC(item.amountSat)}</Amount>
-        </RowWrapper>
-        <Time>{moment(item.timestamp).fromNow()}</Time>
+      <Item>
+        <ColumnWrapper>
+          <Amount>{formattedAmount}</Amount>
+          <Time color={colors.grey1}>{moment(item.timestamp).fromNow()}</Time>
+        </ColumnWrapper>
+        <BtnWrapper onPress={pressHandler}>
+          <BtnText>Refund</BtnText>
+        </BtnWrapper>
       </Item>
     )
   }
@@ -65,28 +84,32 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
 }
 export default RefundTransactionsList
 
-const Item = styled.TouchableOpacity`
+const Item = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
   background-color: #fff;
   margin-top: 2px;
   padding-horizontal: 20px;
   padding-vertical: 10px;
 `
-
-const RowWrapper = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 5px;
-`
-
-const SwapAddress = styled(Text)`
-  font-size: 17;
-`
+const ColumnWrapper = styled.View``
 
 const Amount = styled(Text)`
-  font-size: 15;
+  font-size: 15px;
+  margin-bottom: 5px;
+`
+const Time = styled(Text)`
+  font-size: 15px;
+`
+const BtnWrapper = styled.TouchableOpacity`
+  background-color: #60aa55;
+  border-radius: 10px;
+  padding-vertical: 5px;
+  padding-horizontal: 15px;
 `
 
-const Time = styled(Text)`
-  font-size: 15;
+const BtnText = styled(Text)`
+  font-size: 16px;
+  color: #fff;
 `
