@@ -4351,6 +4351,20 @@ type RootTranslation = {
 		 * C​o​n​t​a​c​t​ ​S​u​p​p​o​r​t
 		 */
 		contactSupport: string
+	},
+	RefundFlow: {
+		/**
+		 * Refundable transactions
+		 */
+		refundListTitle: string
+		/**
+		 * Destination
+		 */
+		destinationTitle: string
+		/**
+		 * Confirmation
+		 */
+		confirmationTitle: string
 	}
 }
 
@@ -8591,6 +8605,20 @@ export type TranslationFunctions = {
 		 * Contact Support
 		 */
 		contactSupport: () => LocalizedString
+	},
+	RefundFlow: {
+		/**
+		 * Refundable Transactions
+		 */
+		refundListTitle: () => LocalizedString
+		/**
+		 * Destination
+		 */
+		destinationTitle: () => LocalizedString
+		/**
+		 * Confirmation
+		 */
+		confirmationTitle: () => LocalizedString
 	}
 }
 

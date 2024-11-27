@@ -1345,6 +1345,11 @@ const en: BaseTranslation = {
     tapHereUpdate: "Tap here to update now",
     contactSupport: "Contact Support",
   },
+  RefundFlow: {
+    refundListTitle: "Refundable Transactions",
+		destinationTitle: "Destination",
+		confirmationTitle: "Confirmation"
+	}
 }
 
 export default en
