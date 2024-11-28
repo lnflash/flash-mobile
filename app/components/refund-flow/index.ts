@@ -1,4 +1,5 @@
 import DestinationField from "./DestinationField"
+import SuccessModal from "./SuccessModal"
 import Fees from "./Fees"
 
-export { DestinationField, Fees }
+export { DestinationField, SuccessModal, Fees }
