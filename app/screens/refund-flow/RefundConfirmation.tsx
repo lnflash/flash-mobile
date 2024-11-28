@@ -1,17 +1,27 @@
-import { AmountInput } from "@app/components/amount-input"
-import { Screen } from "@app/components/screen"
-import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
-import { useI18nContext } from "@app/i18n/i18n-react"
-import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
+import React, { useState } from "react"
+import { View } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
-import React from "react"
-import { View } from "react-native"
-import styled from "styled-components/native"
-import DestinationIcon from "@app/assets/icons/destination.svg"
+
+// hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
+
+// components
+import { Screen } from "@app/components/screen"
+import { SuccessModal } from "@app/components/refund-flow"
+import { AmountInput } from "@app/components/amount-input"
+import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { PaymentDestinationDisplay } from "@app/components/payment-destination-display"
+
+// assets
+import DestinationIcon from "@app/assets/icons/destination.svg"
+
+// utils
 import { testProps } from "@app/utils/testProps"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
+import { refund } from "@breeztech/react-native-breez-sdk-liquid"
 
 type Props = StackScreenProps<RootStackParamList, "RefundConfirmation">
 
@@ -22,7 +32,27 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
 
+  const [modalVisible, setModalVisible] = useState<boolean>(false)
+  const [errorMsg, setErrorMsg] = useState<string>()
+
   if (!convertMoneyAmount) return false
+
+  const onConfirm = async () => {
+    const refundResponse = await refund({
+      swapAddress: route.params.swapAddress,
+      refundAddress: route.params.destination,
+      satPerVbyte: route.params.fee,
+    })
+    console.log(">>>>>>>>????????????", refundResponse)
+    if (refundResponse.refundTxId) {
+      setModalVisible(true)
+      setTimeout(() => {
+        setModalVisible(false)
+      }, 3000)
+    } else {
+      setErrorMsg("Something went wrong. Please, try again.")
+    }
+  }
 
   return (
     <Screen
@@ -68,6 +98,11 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
           </Text>
         </View>
       </View>
+      {!!errorMsg && <Text style={styles.errorMsg}>{errorMsg}</Text>}
+      <View style={styles.buttonContainer}>
+        <GaloyPrimaryButton title={LL.common.confirm()} onPress={onConfirm} />
+      </View>
+      <SuccessModal isVisible={modalVisible} />
     </Screen>
   )
 }
