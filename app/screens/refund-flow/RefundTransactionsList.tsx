@@ -7,6 +7,7 @@ import { listRefundables, RefundableSwap } from "@breeztech/react-native-breez-s
 import moment from "moment"
 
 // hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
 // utils
@@ -34,6 +35,7 @@ type RenderItemProps = {
 }
 
 const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
+  const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
@@ -74,13 +76,28 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
           <Time color={colors.grey1}>{moment(item.timestamp).fromNow()}</Time>
         </ColumnWrapper>
         <BtnWrapper onPress={pressHandler}>
-          <BtnText>Refund</BtnText>
+          <BtnText>{LL.RefundFlow.refund()}</BtnText>
         </BtnWrapper>
       </Item>
     )
   }
 
-  return <FlatList data={refundables} renderItem={renderItem} style={{ flex: 1 }} />
+  const renderListEmptyComp = () => {
+    return (
+      <EmptyWrapper>
+        <EmptyText>{LL.RefundFlow.noRefundables()}</EmptyText>
+      </EmptyWrapper>
+    )
+  }
+
+  return (
+    <FlatList
+      data={refundables}
+      renderItem={renderItem}
+      ListEmptyComponent={renderListEmptyComp()}
+      contentContainerStyle={{ flex: 1 }}
+    />
+  )
 }
 export default RefundTransactionsList
 
@@ -112,4 +129,14 @@ const BtnWrapper = styled.TouchableOpacity`
 const BtnText = styled(Text)`
   font-size: 16px;
   color: #fff;
+`
+
+const EmptyWrapper = styled.View`
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+`
+
+const EmptyText = styled(Text)`
+  font-size: 20px;
 `
