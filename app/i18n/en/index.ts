@@ -1348,7 +1348,14 @@ const en: BaseTranslation = {
   RefundFlow: {
     refundListTitle: "Refundable Transactions",
 		destinationTitle: "Destination",
-		confirmationTitle: "Confirmation"
+		confirmationTitle: "Confirmation",
+    pendingTransactions: "Pending Transactions",
+    noRefundables: "No refundable transactions found",
+    refund: "Refund",
+    recommendedFees: "Recommended Fees",
+    fast: "Fast",
+    halfHour: "Half Hour",
+    hour: "Hour"
 	}
 }
 

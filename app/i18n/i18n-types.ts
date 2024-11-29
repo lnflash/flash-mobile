@@ -4365,6 +4365,34 @@ type RootTranslation = {
 		 * Confirmation
 		 */
 		confirmationTitle: string
+		/**
+		 * Pending Transactions
+		 */
+		pendingTransactions: string
+		/**
+		 * No refundable transactions found
+		 */
+		noRefundables: string
+		/**
+		 * Refund
+		 */
+		refund: string
+		/**
+		 * Recommended Fees
+		 */
+		recommendedFees: string
+		/**
+		 * Fast
+		 */
+		fast: string
+		/**
+		 * Half Hour
+		 */
+		halfHour: string
+		/**
+		 * Hour
+		 */
+		hour: string
 	}
 }
 
@@ -8619,6 +8647,34 @@ export type TranslationFunctions = {
 		 * Confirmation
 		 */
 		confirmationTitle: () => LocalizedString
+		/**
+		 * Pending Transactions
+		 */
+		pendingTransactions: () => LocalizedString
+		/**
+		 * No refundable transactions found
+		 */
+		noRefundables: () => LocalizedString
+		/**
+		 * Refund
+		 */
+		refund: () => LocalizedString
+		/**
+		 * Recommended Fees
+		 */
+		recommendedFees: () => LocalizedString
+		/**
+		 * Fast
+		 */
+		fast: () => LocalizedString
+		/**
+		 * Half Hour
+		 */
+		halfHour: () => LocalizedString
+		/**
+		 * Hour
+		 */
+		hour: () => LocalizedString
 	}
 }
 
