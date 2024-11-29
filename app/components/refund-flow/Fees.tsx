@@ -5,6 +5,7 @@ import {
   recommendedFees,
   RecommendedFees,
 } from "@breeztech/react-native-breez-sdk-liquid"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 type Props = {
   selectedFee?: number
@@ -12,6 +13,7 @@ type Props = {
 }
 
 const Fees: React.FC<Props> = ({ selectedFee, setFee }) => {
+  const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const [fees, setFees] = useState<RecommendedFees>({
     economyFee: 6,
@@ -32,7 +34,7 @@ const Fees: React.FC<Props> = ({ selectedFee, setFee }) => {
 
   return (
     <Wrapper>
-      <Title>Recommended fees</Title>
+      <Title>{LL.RefundFlow.recommendedFees()}</Title>
       <ButtonsWrapper>
         <FeeSelect
           colors={colors}
@@ -41,7 +43,7 @@ const Fees: React.FC<Props> = ({ selectedFee, setFee }) => {
           onPress={() => setFee(fees?.fastestFee)}
         >
           <FeeText colors={colors} selected={selectedFee === fees?.fastestFee}>
-            Fast
+            {LL.RefundFlow.fast()}
           </FeeText>
         </FeeSelect>
         <FeeSelect
@@ -51,7 +53,7 @@ const Fees: React.FC<Props> = ({ selectedFee, setFee }) => {
           onPress={() => setFee(fees?.halfHourFee)}
         >
           <FeeText colors={colors} selected={selectedFee === fees?.halfHourFee}>
-            Half Hour
+            {LL.RefundFlow.halfHour()}
           </FeeText>
         </FeeSelect>
         <FeeSelect
@@ -61,7 +63,7 @@ const Fees: React.FC<Props> = ({ selectedFee, setFee }) => {
           onPress={() => setFee(fees?.hourFee)}
         >
           <FeeText colors={colors} selected={selectedFee === fees?.hourFee}>
-            Hour
+            {LL.RefundFlow.hour()}
           </FeeText>
         </FeeSelect>
       </ButtonsWrapper>

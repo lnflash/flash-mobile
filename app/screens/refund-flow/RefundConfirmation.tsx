@@ -43,7 +43,7 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
       refundAddress: route.params.destination,
       satPerVbyte: route.params.fee,
     })
-    console.log(">>>>>>>>????????????", refundResponse)
+    console.log("Refund Response>>>>>>>>>>>>>>>", refundResponse)
     if (refundResponse.refundTxId) {
       setModalVisible(true)
       setTimeout(() => {
