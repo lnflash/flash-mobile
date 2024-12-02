@@ -1492,7 +1492,7 @@ type RootTranslation = {
 		 */
 		logBackInWith: string
 		/**
-		 * M​a​d​e​ ​i​n​ ​J​a​m​a​i​c​a
+		 * P​r​o​d​u​t​ ​o​f​ ​J​a​m​a​i​c​a
 		 */
 		headline: string
 		/**
@@ -1560,7 +1560,7 @@ type RootTranslation = {
 		 */
 		locationPermissionTitle: string
 		/**
-		 * p​a​y​ ​t​h​i​s​ ​b​u​s​i​n​e​s​s
+		 * P​a​y​ ​t​h​i​s​ ​B​u​s​i​n​e​s​s
 		 */
 		payBusiness: string
 		/**
@@ -1568,19 +1568,20 @@ type RootTranslation = {
 		 */
 		title: string
 		/**
-		 * Click anywhere to add a pin
+		 * C​l​i​c​k​ ​a​n​y​w​h​e​r​e​ ​t​o​ ​a​d​d​ ​a​ ​p​i​n
 		 */
 		addPin: string
 		/**
-		 * Your flashpoint coordinates
+		 * Y​o​u​r​ ​F​l​a​s​h​p​o​i​n​t​ ​C​o​o​r​d​i​n​a​t​e​s​:​ ​
+
 		 */
-		selectedCoordinates: { lat: number; lng: number }
+		selectedCoordinates: string
 		/**
-		 * View this location in Google Maps
+		 * V​i​e​w​ ​i​n​ ​G​o​o​g​l​e​ ​M​a​p​s
 		 */
 		viewInGoogleMaps: string
 		/**
-		 * View this location in Google Maps
+		 * G​e​t​ ​D​i​r​e​c​t​i​o​n​s
 		 */
 		getDirections: string
 	}
@@ -2390,27 +2391,27 @@ type RootTranslation = {
 		 */
 		lnurlInvoiceIncorrectDescription: string
 		/**
-		 * No amount invoice is not supported in BTC wallet
+		 * N​o​ ​a​m​o​u​n​t​ ​i​n​v​o​i​c​e​ ​i​s​ ​n​o​t​ ​s​u​p​p​o​r​t​e​d​ ​i​n​ ​B​T​C​ ​w​a​l​l​e​t
 		 */
 		noAmountInvoiceError: string
 		/**
-		 * The amount on the invoice is less than minimum amount
+		 * T​h​e​ ​a​m​o​u​n​t​ ​o​n​ ​t​h​e​ ​i​n​v​o​i​c​e​ ​i​s​ ​l​e​s​s​ ​t​h​a​n​ ​m​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​{​a​m​o​u​n​t​}
 		 * @param {number} amount
 		 */
 		minAmountInvoiceError: RequiredParams<'amount'>
 		/**
-		 * The amount on the invoice is greater than maximum amount
+		 * T​h​e​ ​a​m​o​u​n​t​ ​o​n​ ​t​h​e​ ​i​n​v​o​i​c​e​ ​i​s​ ​g​r​e​a​t​e​r​ ​t​h​a​n​ ​m​a​x​i​m​u​m​ ​a​m​o​u​n​t​ ​{​a​m​o​u​n​t​}
 		 * @param {number} amount
 		 */
 		maxAmountInvoiceError: RequiredParams<'amount'>
 		/**
-		 * The conversion amount is less than minimum required amount
+		 * T​h​e​ ​c​o​n​v​e​r​s​i​o​n​ ​a​m​o​u​n​t​ ​i​s​ ​l​e​s​s​ ​t​h​a​n​ ​m​i​n​i​m​u​m​ ​r​e​q​u​i​r​e​d​ ​a​m​o​u​n​t​ ​{​a​m​o​u​n​t​}
 		 * @param {number} amount
 		 */
 		minAmountConvertError: RequiredParams<'amount'>
 		/**
-		 * The conversion amount is greater than maximum amount
-		  * @param {number} amount
+		 * T​h​e​ ​c​o​n​v​e​r​s​i​o​n​ ​a​m​o​u​n​t​ ​i​s​ ​g​r​e​a​t​e​r​ ​t​h​a​n​ ​m​a​x​i​m​u​m​ ​a​m​o​u​n​t​ ​{​a​m​o​u​n​t​}
+		 * @param {number} amount
 		 */
 		maxAmountConvertError: RequiredParams<'amount'>
 	}
@@ -3151,13 +3152,20 @@ type RootTranslation = {
 	}
 	AdvancedModeModal: {
 		/**
-		 * W​e​l​c​o​m​e​ ​t​o​ ​A​d​v​a​n​c​e​d​ ​M​o​d​e​.​ ​Y​o​u​ ​n​o​w​ ​h​a​v​e​ ​a​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​a​d​d​e​d​ ​t​o​ ​y​o​u​r​ ​w​a​l​l​e​t​!
+		 * W​e​l​c​o​m​e​ ​t​o​ ​A​d​v​a​n​c​e​d​ ​M​o​d​e​!​ ​Y​o​u​r​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​i​s​ ​n​o​w​ ​l​i​v​e​.
 		 */
 		header: string
 		/**
-		 * Y​o​u​ ​c​a​n​ ​u​s​e​ ​i​t​ ​t​o​ ​s​e​n​d​ ​a​n​d​ ​r​e​c​e​i​v​e​ ​l​a​r​g​e​r​ ​a​m​o​u​n​t​s​ ​o​f​ ​m​o​n​e​y​,​ ​d​e​n​o​m​i​n​a​t​e​d​ ​i​n​ ​B​i​t​c​o​i​n​.​ ​Y​o​u​ ​c​a​n​ ​a​l​s​o​ ​u​s​e​ ​t​h​e​ ​S​W​A​P​ ​b​u​t​t​o​n​ ​t​o​ ​i​n​s​t​a​n​t​l​y​ ​t​r​a​n​s​f​e​r​ ​v​a​l​u​e​ ​b​e​t​w​e​e​n​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​U​S​D​ ​a​c​c​o​u​n​t​.​ ​T​h​e​ ​d​o​l​l​a​r​ ​v​a​l​u​e​ ​i​n​ ​t​h​e​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​W​I​L​L​ ​f​l​u​c​t​u​a​t​e​ ​w​i​t​h​ ​t​h​e​ ​p​r​i​c​e​ ​o​f​ ​B​i​t​c​o​i​n​.​
+		 * Y​o​u​r​ ​B​i​t​c​o​i​n​ ​i​s​ ​s​t​o​r​e​d​ ​a​s​ ​L​B​T​C​ ​o​n​ ​t​h​e​ ​L​i​q​u​i​d​ ​N​e​t​w​o​r​k​,​ ​p​r​o​v​i​d​i​n​g​ ​f​a​s​t​e​r​ ​a​n​d​ ​s​e​c​u​r​e​ ​t​r​a​n​s​a​c​t​i​o​n​s​ ​w​i​t​h​ ​y​o​u​r​ ​f​e​d​e​r​a​t​e​d​ ​w​a​l​l​e​t​.​
 	​
-	​I​M​P​O​R​T​A​N​T​:​ ​Y​o​u​r​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​i​s​ ​a​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​a​c​c​o​u​n​t​,​ ​s​o​ ​y​o​u​ ​m​a​y​ ​b​e​ ​c​h​a​r​g​e​d​ ​a​ ​s​m​a​l​l​ ​f​e​e​ ​t​o​ ​m​a​k​e​ ​y​o​u​r​ ​f​i​r​s​t​ ​t​r​a​n​s​a​c​t​i​o​n​.​ ​A​l​s​o​,​ ​y​o​u​ ​a​r​e​ ​s​o​l​e​l​y​ ​r​e​s​p​o​n​s​i​b​l​e​ ​f​o​r​ ​s​e​c​u​r​i​n​g​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​i​n​ ​a​ ​s​a​f​e​ ​p​l​a​c​e​.​ ​
+	​S​E​N​D​ ​&​ ​R​E​C​E​I​V​E​:​
+	​ ​E​a​s​i​l​y​ ​t​r​a​n​s​f​e​r​ ​l​a​r​g​e​r​ ​a​m​o​u​n​t​s​ ​i​n​ ​B​i​t​c​o​i​n​.​
+	​S​W​A​P​ ​I​N​S​T​A​N​T​L​Y​:​
+	​ ​C​o​n​v​e​r​t​ ​b​e​t​w​e​e​n​ ​B​i​t​c​o​i​n​ ​a​n​d​ ​U​S​D​ ​s​e​a​m​l​e​s​s​l​y​.​
+	​T​R​A​N​S​A​C​T​I​O​N​ ​T​I​M​E​:​
+	​ ​T​r​a​n​s​a​c​t​i​o​n​s​ ​m​a​y​ ​t​a​k​e​ ​u​p​ ​t​o​ ​3​0​ ​s​e​c​o​n​d​s​ ​t​o​ ​c​o​n​f​i​r​m​ ​a​n​d​ ​w​i​l​l​ ​a​p​p​e​a​r​ ​a​s​ ​'​P​e​n​d​i​n​g​'​ ​u​n​t​i​l​ ​c​o​n​f​i​r​m​e​d​.​
+	​
+	​I​M​P​O​R​T​A​N​T​:​ ​T​h​i​s​ ​i​s​ ​a​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​a​c​c​o​u​n​t​,​ ​s​o​ ​s​m​a​l​l​ ​n​e​t​w​o​r​k​ ​f​e​e​s​ ​m​a​y​ ​a​p​p​l​y​.​ ​Y​o​u​ ​a​r​e​ ​s​o​l​e​l​y​ ​r​e​s​p​o​n​s​i​b​l​e​ ​f​o​r​ ​s​e​c​u​r​i​n​g​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​i​n​ ​a​ ​s​a​f​e​ ​p​l​a​c​e​.​ ​
 	​
 	​
 	​D​O​ ​N​O​T​ ​S​H​A​R​E​ ​Y​O​U​R​ ​R​E​C​O​V​E​R​Y​ ​P​H​R​A​S​E​ ​W​I​T​H​ ​A​N​Y​O​N​E​.
@@ -3183,16 +3191,11 @@ type RootTranslation = {
 	}
 	MerchantSuggestModal: {
 		/**
-		 * W​e​l​c​o​m​e​ ​t​o​ ​A​d​v​a​n​c​e​d​ ​M​o​d​e​.​ ​Y​o​u​ ​n​o​w​ ​h​a​v​e​ ​a​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​a​d​d​e​d​ ​t​o​ ​y​o​u​r​ ​w​a​l​l​e​t​!
+		 * A​d​d​ ​F​l​a​s​h​p​o​i​n​t
 		 */
 		header: string
 		/**
-		 * Y​o​u​ ​c​a​n​ ​u​s​e​ ​i​t​ ​t​o​ ​s​e​n​d​ ​a​n​d​ ​r​e​c​e​i​v​e​ ​l​a​r​g​e​r​ ​a​m​o​u​n​t​s​ ​o​f​ ​m​o​n​e​y​,​ ​d​e​n​o​m​i​n​a​t​e​d​ ​i​n​ ​B​i​t​c​o​i​n​.​ ​Y​o​u​ ​c​a​n​ ​a​l​s​o​ ​u​s​e​ ​t​h​e​ ​S​W​A​P​ ​b​u​t​t​o​n​ ​t​o​ ​i​n​s​t​a​n​t​l​y​ ​t​r​a​n​s​f​e​r​ ​v​a​l​u​e​ ​b​e​t​w​e​e​n​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​U​S​D​ ​a​c​c​o​u​n​t​.​ ​T​h​e​ ​d​o​l​l​a​r​ ​v​a​l​u​e​ ​i​n​ ​t​h​e​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​W​I​L​L​ ​f​l​u​c​t​u​a​t​e​ ​w​i​t​h​ ​t​h​e​ ​p​r​i​c​e​ ​o​f​ ​B​i​t​c​o​i​n​.​
-	​
-	​I​M​P​O​R​T​A​N​T​:​ ​Y​o​u​r​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t​ ​i​s​ ​a​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​a​c​c​o​u​n​t​,​ ​s​o​ ​y​o​u​ ​m​a​y​ ​b​e​ ​c​h​a​r​g​e​d​ ​a​ ​s​m​a​l​l​ ​f​e​e​ ​t​o​ ​m​a​k​e​ ​y​o​u​r​ ​f​i​r​s​t​ ​t​r​a​n​s​a​c​t​i​o​n​.​ ​A​l​s​o​,​ ​y​o​u​ ​a​r​e​ ​s​o​l​e​l​y​ ​r​e​s​p​o​n​s​i​b​l​e​ ​f​o​r​ ​s​e​c​u​r​i​n​g​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​i​n​ ​a​ ​s​a​f​e​ ​p​l​a​c​e​.​ ​
-	​
-	​
-	​D​O​ ​N​O​T​ ​S​H​A​R​E​ ​Y​O​U​R​ ​R​E​C​O​V​E​R​Y​ ​P​H​R​A​S​E​ ​W​I​T​H​ ​A​N​Y​O​N​E​.
+		 * Y​o​u​ ​h​a​v​e​ ​s​e​l​e​c​t​e​d​ ​a​ ​l​o​c​a​t​i​o​n​ ​f​o​r​ ​y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​o​n​ ​t​h​e​ ​m​a​p​.​ ​F​l​a​s​h​ ​u​s​e​r​s​ ​w​i​l​l​ ​b​e​ ​a​b​l​e​ ​t​o​ ​f​i​n​d​ ​y​o​u​ ​o​n​ ​t​h​e​ ​m​a​p​,​ ​a​n​d​ ​s​e​n​d​ ​y​o​u​ ​p​a​y​m​e​n​t​s​ ​b​y​ ​c​l​i​c​k​i​n​g​ ​o​n​ ​y​o​u​r​ ​m​a​p​ ​p​i​n​.
 		 */
 		body: string
 		/**
@@ -3201,7 +3204,7 @@ type RootTranslation = {
 		 */
 		termsAndConditions: string
 		/**
-		 * W​h​a​t​ ​i​s​ ​a​ ​N​o​n​-​C​u​s​t​o​d​i​a​l​ ​W​a​l​l​e​t​?
+		 * Y​o​u​r​ ​p​i​n​ ​r​e​q​u​e​s​t​ ​w​i​l​l​ ​b​e​ ​p​r​o​c​e​s​s​e​d​ ​w​i​t​h​i​n​ ​2​4​ ​h​o​u​r​s​.
 		 */
 		learnMore: string
 	}
@@ -3316,15 +3319,15 @@ type RootTranslation = {
 		 */
 		increaseLimits: string
 		/**
-		 * Spending Limits
+		 * S​p​e​n​d​i​n​g​ ​L​i​m​i​t​s
 		 */
 		spendingLimits: string
 		/**
-		 * The spending limits shown on this page are denominated in USD. For your convenience, we convert these limits into your local currency based on current foreign exchange rates. Please note that the displayed local currency amount may fluctuate as exchange rates are updated in real-time.
+		 * T​h​e​ ​s​p​e​n​d​i​n​g​ ​l​i​m​i​t​s​ ​s​h​o​w​n​ ​o​n​ ​t​h​i​s​ ​p​a​g​e​ ​a​r​e​ ​d​e​n​o​m​i​n​a​t​e​d​ ​i​n​ ​U​S​D​.​ ​F​o​r​ ​y​o​u​r​ ​c​o​n​v​e​n​i​e​n​c​e​,​ ​w​e​ ​c​o​n​v​e​r​t​ ​t​h​e​s​e​ ​l​i​m​i​t​s​ ​i​n​t​o​ ​y​o​u​r​ ​l​o​c​a​l​ ​c​u​r​r​e​n​c​y​ ​b​a​s​e​d​ ​o​n​ ​c​u​r​r​e​n​t​ ​f​o​r​e​i​g​n​ ​e​x​c​h​a​n​g​e​ ​r​a​t​e​s​.​ ​P​l​e​a​s​e​ ​n​o​t​e​ ​t​h​a​t​ ​t​h​e​ ​d​i​s​p​l​a​y​e​d​ ​l​o​c​a​l​ ​c​u​r​r​e​n​c​y​ ​a​m​o​u​n​t​ ​m​a​y​ ​f​l​u​c​t​u​a​t​e​ ​a​s​ ​e​x​c​h​a​n​g​e​ ​r​a​t​e​s​ ​a​r​e​ ​u​p​d​a​t​e​d​ ​i​n​ ​r​e​a​l​-​t​i​m​e​.
 		 */
 		spendingLimitsDescription: string
 		/**
-		 * Request Business Account
+		 * R​e​q​u​e​s​t​ ​B​u​s​i​n​e​s​s​ ​A​c​c​o​u​n​t
 		 */
 		requestBusiness: string
 	}
@@ -3916,7 +3919,7 @@ type RootTranslation = {
 		 */
 		reauth: string
 		/**
-		 * Request
+		 * R​e​q​u​e​s​t​ ​P​i​n
 		 */
 		request: string
 		/**
@@ -4126,43 +4129,43 @@ type RootTranslation = {
 	}
 	reports: {
 		/**
-		 * Create a Report
+		 * G​e​n​e​r​a​t​e​ ​R​e​p​o​r​t​s
 		 */
 		title: string
 		/**
-		 * Reconciliation Report
+		 * R​e​c​o​n​c​i​l​i​a​t​i​o​n​ ​R​e​p​o​r​t
 		 */
 		reconciliation: string
 		/**
-		 * Aggregated Report
+		 * A​g​g​r​e​g​a​t​i​o​n​ ​R​e​p​o​r​t
 		 */
 		aggregation: string
 		/**
-		 * Top Recipients Report
+		 * T​o​p​ ​R​e​c​i​p​i​e​n​t​s​ ​R​e​p​o​r​t
 		 */
 		topRecipients: string
 		/**
-		 * Top Senders Report
+		 * T​o​p​ ​S​e​n​d​e​r​s​ ​R​e​p​o​r​t
 		 */
 		topSenders: string
 		/**
-		 * From Date
+		 * S​e​l​e​c​t​ ​F​r​o​m​ ​D​a​t​e
 		 */
 		selectFromDate: string
 		/**
-		 * To Date
+		 * S​e​l​e​c​t​ ​T​o​ ​D​a​t​e
 		 */
 		selectToDate: string
 		/**
-		 * From Date
+		 * F​r​o​m
 		 */
 		fromDate: string
 		/**
-		 * To Date
+		 * T​o
 		 */
 		toDate: string
 		/**
-		 * Total
+		 * T​o​t​a​l
 		 */
 		total: string
 	}
@@ -5804,7 +5807,7 @@ export type TranslationFunctions = {
 		 */
 		logBackInWith: () => LocalizedString
 		/**
-		 * Product of Jamaica
+		 * Produt of Jamaica
 		 */
 		headline: () => LocalizedString
 		/**
@@ -5872,7 +5875,7 @@ export type TranslationFunctions = {
 		 */
 		locationPermissionTitle: () => LocalizedString
 		/**
-		 * pay this business
+		 * Pay this Business
 		 */
 		payBusiness: () => LocalizedString
 		/**
@@ -5884,15 +5887,16 @@ export type TranslationFunctions = {
 		 */
 		addPin: () => LocalizedString
 		/**
-		 * Your flashpoint coordinates
+		 * Your Flashpoint Coordinates: 
+
 		 */
 		selectedCoordinates: () => LocalizedString
 		/**
-		 * View this location in Google Maps
+		 * View in Google Maps
 		 */
 		viewInGoogleMaps: () => LocalizedString
 		/**
-		 * View this location in Google Maps
+		 * Get Directions
 		 */
 		getDirections: () => LocalizedString
 	}
@@ -6673,21 +6677,21 @@ export type TranslationFunctions = {
 		 */
 		noAmountInvoiceError: () => LocalizedString
 		/**
-		 * The amount on the invoice is less than minimum amount
+		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number  | string }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
-		 * The amount on the invoice is greater than maximum amount
+		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
-		 * The conversion amount is less than minimum required amount
+		 * The conversion amount is less than minimum required amount {amount}
 		 */
-		minAmountConvertError: (arg: { amount: number  | string }) => LocalizedString
+		minAmountConvertError: (arg: { amount: number }) => LocalizedString
 		/**
-		 * The conversion amount is greater than maximum amount
+		 * The conversion amount is greater than maximum amount {amount}
 		 */
-		maxAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**
@@ -7418,13 +7422,20 @@ export type TranslationFunctions = {
 	}
 	AdvancedModeModal: {
 		/**
-		 * Welcome to Advanced Mode. You now have a non-custodial Bitcoin account added to your wallet!
+		 * Welcome to Advanced Mode! Your non-custodial Bitcoin account is now live.
 		 */
 		header: () => LocalizedString
 		/**
-		 * You can use it to send and receive larger amounts of money, denominated in Bitcoin. You can also use the SWAP button to instantly transfer value between your Bitcoin account and USD account. The dollar value in the Bitcoin account WILL fluctuate with the price of Bitcoin.
+		 * Your Bitcoin is stored as LBTC on the Liquid Network, providing faster and secure transactions with your federated wallet.
 
-	IMPORTANT: Your Bitcoin account is a non-custodial account, so you may be charged a small fee to make your first transaction. Also, you are solely responsible for securing your recovery phrase in a safe place. 
+	SEND & RECEIVE:
+	 Easily transfer larger amounts in Bitcoin.
+	SWAP INSTANTLY:
+	 Convert between Bitcoin and USD seamlessly.
+	TRANSACTION TIME:
+	 Transactions may take up to 30 seconds to confirm and will appear as 'Pending' until confirmed.
+
+	IMPORTANT: This is a non-custodial account, so small network fees may apply. You are solely responsible for securing your recovery phrase in a safe place. 
 
 
 	DO NOT SHARE YOUR RECOVERY PHRASE WITH ANYONE.
@@ -7450,16 +7461,11 @@ export type TranslationFunctions = {
 	}
 	MerchantSuggestModal: {
 		/**
-		 * Welcome to Advanced Mode. You now have a non-custodial Bitcoin account added to your wallet!
+		 * Add Flashpoint
 		 */
 		header: () => LocalizedString
 		/**
-		 * You can use it to send and receive larger amounts of money, denominated in Bitcoin. You can also use the SWAP button to instantly transfer value between your Bitcoin account and USD account. The dollar value in the Bitcoin account WILL fluctuate with the price of Bitcoin.
-
-	IMPORTANT: Your Bitcoin account is a non-custodial account, so you may be charged a small fee to make your first transaction. Also, you are solely responsible for securing your recovery phrase in a safe place. 
-
-
-	DO NOT SHARE YOUR RECOVERY PHRASE WITH ANYONE.
+		 * You have selected a location for your business on the map. Flash users will be able to find you on the map, and send you payments by clicking on your map pin.
 		 */
 		body: () => LocalizedString
 		/**
@@ -8169,7 +8175,7 @@ export type TranslationFunctions = {
 		 */
 		reauth: () => LocalizedString
 		/**
-		 * Request
+		 * Request Pin
 		 */
 		request: () => LocalizedString
 		/**
@@ -8378,7 +8384,7 @@ export type TranslationFunctions = {
 	}
 	reports: {
 		/**
-		 * Create a Report
+		 * Generate Reports
 		 */
 		title: () => LocalizedString
 		/**
@@ -8386,7 +8392,7 @@ export type TranslationFunctions = {
 		 */
 		reconciliation: () => LocalizedString
 		/**
-		 * Aggregated Report
+		 * Aggregation Report
 		 */
 		aggregation: () => LocalizedString
 		/**
@@ -8398,23 +8404,23 @@ export type TranslationFunctions = {
 		 */
 		topSenders: () => LocalizedString
 		/**
-		 * Report
+		 * Select From Date
 		 */
 		selectFromDate: () => LocalizedString
 		/**
-		 * Report
+		 * Select To Date
 		 */
 		selectToDate: () => LocalizedString
 		/**
-		 * Report
+		 * From
 		 */
 		fromDate: () => LocalizedString
 		/**
-		 * Report
+		 * To
 		 */
 		toDate: () => LocalizedString
 		/**
-		 * Generate Report
+		 * Total
 		 */
 		total: () => LocalizedString
 	}
