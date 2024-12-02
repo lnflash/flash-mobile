@@ -2,11 +2,8 @@ import React from "react"
 import { TextInput, TouchableWithoutFeedback, View } from "react-native"
 import { makeStyles, useTheme, Text } from "@rneui/themed"
 import Clipboard from "@react-native-clipboard/clipboard"
-import { useNavigation } from "@react-navigation/native"
 import Icon from "react-native-vector-icons/Ionicons"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { StackNavigationProp } from "@react-navigation/stack"
-import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // assets
 import ScanIcon from "@app/assets/icons/scan.svg"
@@ -20,6 +17,7 @@ type Props = {
   validateDestination: () => void
   handleChangeText: (val: string) => void
   setDestination: (val: string) => void
+  navigateToScanning: () => void
 }
 
 const DestinationField: React.FC<Props> = ({
@@ -28,15 +26,11 @@ const DestinationField: React.FC<Props> = ({
   validateDestination,
   handleChangeText,
   setDestination,
+  navigateToScanning,
 }) => {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = usestyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
-
-  const onNavigate = () => {
-    navigation.navigate("scanningQRCode")
-  }
 
   const onPaste = async () => {
     const clipboard = await Clipboard.getString()
@@ -77,7 +71,7 @@ const DestinationField: React.FC<Props> = ({
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <TouchableWithoutFeedback onPress={onNavigate}>
+        <TouchableWithoutFeedback onPress={navigateToScanning}>
           <View style={styles.iconContainer}>
             <ScanIcon fill={colors.primary} />
           </View>

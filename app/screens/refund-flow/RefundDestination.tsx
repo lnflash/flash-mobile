@@ -53,6 +53,18 @@ const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
     }
   }
 
+  const navigateToScanning = () => {
+    if (!!selectedFee) {
+      navigation.navigate("scanningQRCode", {
+        swapAddress: route.params.swapAddress,
+        amount: route.params.amount,
+        fee: selectedFee,
+      })
+    } else {
+      setError("Please, select fee to proceed")
+    }
+  }
+
   return (
     <Screen
       preset="scroll"
@@ -66,6 +78,7 @@ const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
         validateDestination={validateDestination}
         handleChangeText={setDestination}
         setDestination={setDestination}
+        navigateToScanning={navigateToScanning}
       />
       <Fees selectedFee={selectedFee} setFee={setSelectedFee} />
       <Text style={styles.errorMsg}>{error}</Text>
