@@ -34,13 +34,15 @@ type RenderItemProps = {
   index: number
 }
 
-const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
+const RefundTransactionsList: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
 
-  const [refundables, setRefundables] = useState<RefundableSwap[]>(data)
+  const [refundables, setRefundables] = useState<RefundableSwap[]>(
+    route?.params?.refundables || data,
+  )
 
   if (!convertMoneyAmount) return null
 
