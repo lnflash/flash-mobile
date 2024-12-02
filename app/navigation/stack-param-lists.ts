@@ -122,6 +122,7 @@ export type RootStackParamList = {
   BackupShowSeedPhrase: undefined
   ImportWallet: { insideApp?: boolean; onComplete?: (token?: string) => void }
   ImportWalletOptions: { insideApp?: boolean } | undefined
+  CashoutDetails: undefined
 }
 
 export type ChatStackParamList = {
