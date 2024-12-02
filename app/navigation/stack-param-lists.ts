@@ -14,6 +14,7 @@ import {
 } from "@app/screens/send-bitcoin-screen/payment-destination/index.types"
 import { WalletDescriptor } from "@app/types/wallets"
 import _Map from "@app/assets/icons-redesign/map.svg"
+import { RefundableSwap } from "@breeztech/react-native-breez-sdk-liquid"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
@@ -33,7 +34,7 @@ export type RootStackParamList = {
   Primary: undefined
   earnsSection: { section: EarnSectionType }
   earnsQuiz: { id: string }
-  scanningQRCode: undefined
+  scanningQRCode: { swapAddress?: string; amount?: number; fee?: number } | undefined
   settings: undefined
   addressScreen: undefined
   defaultWallet: undefined
@@ -122,7 +123,7 @@ export type RootStackParamList = {
   BackupShowSeedPhrase: undefined
   ImportWallet: { insideApp?: boolean; onComplete?: (token?: string) => void }
   ImportWalletOptions: { insideApp?: boolean } | undefined
-  RefundTransactionList: undefined
+  RefundTransactionList: { refundables: RefundableSwap[] }
   RefundDestination: { swapAddress: string; amount: number }
   RefundConfirmation: {
     swapAddress: string
