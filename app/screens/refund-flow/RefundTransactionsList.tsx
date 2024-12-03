@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useCallback, useState } from "react"
 import { FlatList } from "react-native"
 import styled from "styled-components/native"
 import { Text, useTheme } from "@rneui/themed"
@@ -8,24 +8,12 @@ import moment from "moment"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { useFocusEffect } from "@react-navigation/native"
 import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
 // utils
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
-
-const data = [
-  {
-    amountSat: 592027,
-    swapAddress: "bc1p87kqsyy9crn2zkkm9v3knt2djdlypv6gkwraz0j34r8n3pm7py8ql9a7df",
-    timestamp: 1731342507,
-  },
-  {
-    amountSat: 534920000,
-    swapAddress: "bc1p87kqsyy9crn2zkkm9v3knt2djdlypv6gkwraz0j34r8n3pm7py8ql9a7df",
-    timestamp: 1732526995527,
-  },
-]
 
 type Props = StackScreenProps<RootStackParamList, "RefundTransactionList">
 
@@ -41,14 +29,16 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation, route }) => {
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
 
   const [refundables, setRefundables] = useState<RefundableSwap[]>(
-    route?.params?.refundables || data,
+    route?.params?.refundables,
   )
 
   if (!convertMoneyAmount) return null
 
-  useEffect(() => {
-    fetchRefundables()
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      fetchRefundables()
+    }, []),
+  )
 
   const fetchRefundables = async () => {
     const refundables = await listRefundables()
