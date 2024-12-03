@@ -153,7 +153,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   return (
     <AmountInputButton
       placeholder={LL.AmountInputButton.tapToSetAmount()}
-      iconName="pencil"
+      iconName={undefined}
       value={formattedPrimaryAmount}
       secondaryValue={formattedSecondaryAmount}
       disabled={true}
