@@ -4374,9 +4374,17 @@ type RootTranslation = {
 		 */
 		noRefundables: string
 		/**
+		 * View
+		 */
+		view: string
+		/**
 		 * Refund
 		 */
 		refund: string
+		/**
+		 * Refund to USD wallet
+		 */
+		refundTo: string
 		/**
 		 * Recommended Fees
 		 */
@@ -4393,6 +4401,10 @@ type RootTranslation = {
 		 * Hour
 		 */
 		hour: string
+		/**
+		 * Transaction ID
+		 */
+		txId: string
 	}
 }
 
@@ -8660,6 +8672,14 @@ export type TranslationFunctions = {
 		 */
 		refund: () => LocalizedString
 		/**
+		 * View
+		 */
+		view: () => LocalizedString
+		/**
+		 * Refund to USD wallet
+		 */
+		refundTo: () => LocalizedString
+		/**
 		 * Recommended Fees
 		 */
 		recommendedFees: () => LocalizedString
@@ -8675,6 +8695,11 @@ export type TranslationFunctions = {
 		 * Hour
 		 */
 		hour: () => LocalizedString
+		/**
+		 * Transaction ID
+		 */
+		txId: () => LocalizedString
+		
 	}
 }
 
