@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { View } from "react-native"
+import { TouchableOpacity, View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { Network, parsePaymentDestination } from "@flash/client"
@@ -14,16 +14,33 @@ import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { LNURL_DOMAINS } from "@app/config"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
+// gql
+import {
+  useOnChainAddressCurrentMutation,
+  usePaymentRequestQuery,
+} from "@app/graphql/generated"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { getUsdWallet } from "@app/graphql/wallets-utils"
+
 type Props = StackScreenProps<RootStackParamList, "RefundDestination">
 
 const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
+  const isAuthed = useIsAuthed()
   const { LL } = useI18nContext()
 
   const [selectedFee, setSelectedFee] = useState<number>()
   const [destination, setDestination] = useState<string>()
   const [status, setStatus] = useState("entering")
   const [error, setError] = useState<string>()
+
+  const [onChainAddressCurrent] = useOnChainAddressCurrentMutation()
+  const { data } = usePaymentRequestQuery({
+    fetchPolicy: "cache-first",
+    skip: !isAuthed,
+  })
+
+  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
   const validateDestination = () => {
     if (!destination) {
@@ -65,6 +82,17 @@ const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
     }
   }
 
+  const generateOnChainInvoice = async () => {
+    if (!!usdWallet) {
+      const result = await onChainAddressCurrent({
+        variables: { input: { walletId: usdWallet?.id } },
+      })
+      if (result.data?.onChainAddressCurrent.address) {
+        setDestination(result.data?.onChainAddressCurrent.address)
+      }
+    }
+  }
+
   return (
     <Screen
       preset="scroll"
@@ -80,6 +108,11 @@ const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
         setDestination={setDestination}
         navigateToScanning={navigateToScanning}
       />
+      {!!usdWallet && (
+        <TouchableOpacity onPress={generateOnChainInvoice}>
+          <Text style={styles.text}>{LL.RefundFlow.refundTo()}</Text>
+        </TouchableOpacity>
+      )}
       <Fees selectedFee={selectedFee} setFee={setSelectedFee} />
       <Text style={styles.errorMsg}>{error}</Text>
       <View style={styles.buttonContainer}>
@@ -101,6 +134,8 @@ const useStyles = makeStyles(({ colors }) => ({
     padding: 20,
     flexGrow: 1,
   },
+
+  text: { color: "#60aa55" },
   buttonContainer: {
     flex: 1,
     justifyContent: "flex-end",

@@ -98,7 +98,7 @@ const usestyles = makeStyles(({ colors }) => ({
     justifyContent: "center",
     alignItems: "center",
     height: 60,
-    marginBottom: 10,
+    marginBottom: 5,
   },
   enteringInputContainer: {},
   errorInputContainer: {

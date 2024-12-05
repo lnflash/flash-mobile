@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { View } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
@@ -22,6 +22,7 @@ import { testProps } from "@app/utils/testProps"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 import { refund } from "@breeztech/react-native-breez-sdk-liquid"
+import { loadJson, remove, save } from "@app/utils/storage"
 
 type Props = StackScreenProps<RootStackParamList, "RefundConfirmation">
 
@@ -34,10 +35,15 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
 
   const [modalVisible, setModalVisible] = useState<boolean>(false)
   const [errorMsg, setErrorMsg] = useState<string>()
+  const [txId, setTxId] = useState<string>(
+    "401603e7ae84a6874d462ba73b57779a1724a4998ca4ef244c5bfb4750be970c",
+  )
 
   if (!convertMoneyAmount) return false
 
   const onConfirm = async () => {
+    setModalVisible(true)
+    return
     const refundResponse = await refund({
       swapAddress: route.params.swapAddress,
       refundAddress: route.params.destination,
@@ -45,10 +51,18 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
     })
     console.log("Refund Response>>>>>>>>>>>>>>>", refundResponse)
     if (refundResponse.refundTxId) {
+      setTxId(refundResponse.refundTxId)
       setModalVisible(true)
-      setTimeout(() => {
-        setModalVisible(false)
-      }, 3000)
+      const refundedTxs = await loadJson("refundedTxs")
+      save("refundedTxs", [
+        ...refundedTxs,
+        {
+          swapAddress: route.params.swapAddress,
+          amountSat: route.params.amount,
+          timestamp: new Date().getTime(),
+          txId: refundResponse.refundTxId,
+        },
+      ])
     } else {
       setErrorMsg("Something went wrong. Please, try again.")
     }
@@ -102,7 +116,7 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
       <View style={styles.buttonContainer}>
         <GaloyPrimaryButton title={LL.common.confirm()} onPress={onConfirm} />
       </View>
-      <SuccessModal isVisible={modalVisible} />
+      <SuccessModal txId={txId} isVisible={modalVisible} setIsVisible={setModalVisible} />
     </Screen>
   )
 }
