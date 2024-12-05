@@ -30,6 +30,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // store
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { loadJson } from "@app/utils/storage"
 
 type Props = StackScreenProps<RootStackParamList, "USDTransactionHistory">
 
@@ -57,11 +58,9 @@ export const BTCTransactionHistory: React.FC<Props> = ({ navigation }) => {
 
   const fetchRefundables = async () => {
     const refundables = await listRefundables()
-    setRefundables(refundables)
-  }
+    const refundedTxs = await loadJson("refundedTxs")
 
-  const navigateToRefundFlow = () => {
-    navigation.navigate("RefundTransactionList", { refundables })
+    setRefundables([...refundables, ...refundedTxs])
   }
 
   const fetchPaymentsBreez = async (offset: number) => {
@@ -191,7 +190,7 @@ export const BTCTransactionHistory: React.FC<Props> = ({ navigation }) => {
             <View style={styles.floatingButton}>
               <GaloyPrimaryButton
                 title={LL.RefundFlow.pendingTransactions()}
-                onPress={navigateToRefundFlow}
+                onPress={() => navigation.navigate("RefundTransactionList")}
               />
             </View>
           </View>
