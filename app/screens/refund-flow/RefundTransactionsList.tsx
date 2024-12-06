@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react"
-import { FlatList } from "react-native"
+import { ActivityIndicator, FlatList, Linking } from "react-native"
 import styled from "styled-components/native"
 import { Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -9,28 +9,30 @@ import moment from "moment"
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useFocusEffect } from "@react-navigation/native"
-import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
+import { useAppConfig, useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
 // utils
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
+import { loadJson } from "@app/utils/storage"
+import { mergeByTimestamp } from "@app/utils/utility"
 
 type Props = StackScreenProps<RootStackParamList, "RefundTransactionList">
 
 type RenderItemProps = {
-  item: { amountSat: number; swapAddress: string; timestamp: number }
+  item: { amountSat: number; swapAddress: string; timestamp: number; txId?: string }
   index: number
 }
 
-const RefundTransactionsList: React.FC<Props> = ({ navigation, route }) => {
+const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
+  const { galoyInstance } = useAppConfig().appConfig
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
 
-  const [refundables, setRefundables] = useState<RefundableSwap[]>(
-    route?.params?.refundables,
-  )
+  const [loading, setLoading] = useState<boolean>(false)
+  const [refundables, setRefundables] = useState<RefundableSwap[]>()
 
   if (!convertMoneyAmount) return null
 
@@ -41,16 +43,24 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation, route }) => {
   )
 
   const fetchRefundables = async () => {
+    setLoading(true)
     const refundables = await listRefundables()
-    setRefundables(refundables)
+    const refundedTxs = await loadJson("refundedTxs")
+    const merged = mergeByTimestamp(refundables, refundedTxs)
+    setRefundables(merged)
+    setLoading(false)
   }
 
-  const renderItem = ({ item, index }: RenderItemProps) => {
+  const renderItem = ({ item }: RenderItemProps) => {
     const pressHandler = () => {
-      navigation.navigate("RefundDestination", {
-        swapAddress: item.swapAddress,
-        amount: item.amountSat,
-      })
+      if (!!item.txId) {
+        Linking.openURL(galoyInstance.blockExplorer + item.txId)
+      } else {
+        navigation.navigate("RefundDestination", {
+          swapAddress: item.swapAddress,
+          amount: item.amountSat,
+        })
+      }
     }
 
     const formattedAmount = formatDisplayAndWalletAmount({
@@ -67,8 +77,10 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation, route }) => {
           <Amount>{formattedAmount}</Amount>
           <Time color={colors.grey1}>{moment(item.timestamp).fromNow()}</Time>
         </ColumnWrapper>
-        <BtnWrapper onPress={pressHandler}>
-          <BtnText>{LL.RefundFlow.refund()}</BtnText>
+        <BtnWrapper onPress={pressHandler} isRefunded={!!item?.txId}>
+          <BtnText>
+            {!!item?.txId ? LL.RefundFlow.view() : LL.RefundFlow.refund()}
+          </BtnText>
         </BtnWrapper>
       </Item>
     )
@@ -81,17 +93,30 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation, route }) => {
       </EmptyWrapper>
     )
   }
-
-  return (
-    <FlatList
-      data={refundables}
-      renderItem={renderItem}
-      ListEmptyComponent={renderListEmptyComp()}
-      contentContainerStyle={{ flex: 1 }}
-    />
-  )
+  if (loading) {
+    return (
+      <LoadingWrapper>
+        <ActivityIndicator color={"#60aa55"} size={"large"} />
+      </LoadingWrapper>
+    )
+  } else {
+    return (
+      <FlatList
+        data={refundables}
+        renderItem={renderItem}
+        ListEmptyComponent={renderListEmptyComp()}
+        contentContainerStyle={{ flex: 1 }}
+      />
+    )
+  }
 }
 export default RefundTransactionsList
+
+const LoadingWrapper = styled.View`
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+`
 
 const Item = styled.View`
   flex-direction: row;
@@ -111,8 +136,8 @@ const Amount = styled(Text)`
 const Time = styled(Text)`
   font-size: 15px;
 `
-const BtnWrapper = styled.TouchableOpacity`
-  background-color: #60aa55;
+const BtnWrapper = styled.TouchableOpacity<{ isRefunded?: boolean }>`
+  background-color: ${({ isRefunded }) => (isRefunded ? "#fe990d" : "#60aa55")};
   border-radius: 10px;
   padding-vertical: 5px;
   padding-horizontal: 15px;
