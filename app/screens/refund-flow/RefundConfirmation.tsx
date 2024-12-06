@@ -35,15 +35,11 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
 
   const [modalVisible, setModalVisible] = useState<boolean>(false)
   const [errorMsg, setErrorMsg] = useState<string>()
-  const [txId, setTxId] = useState<string>(
-    "401603e7ae84a6874d462ba73b57779a1724a4998ca4ef244c5bfb4750be970c",
-  )
+  const [txId, setTxId] = useState<string>()
 
   if (!convertMoneyAmount) return false
 
   const onConfirm = async () => {
-    setModalVisible(true)
-    return
     const refundResponse = await refund({
       swapAddress: route.params.swapAddress,
       refundAddress: route.params.destination,
