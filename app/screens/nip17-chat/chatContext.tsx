@@ -97,10 +97,17 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
 
   const fetchNewGiftwraps = async (cachedGiftwraps: Event[], publicKey: string) => {
     const lastCachedEvent = cachedGiftwraps[cachedGiftwraps.length - 1]
-    console.log("FETCH NEW GIFT WRAPS Called", cachedGiftwraps.length)
-    return fetchGiftWrapsForPublicKey(
+    console.log("INITIALIZING FETCH NEW GIFT WRAPS", relayUrl)
+    let secretKeyString = await fetchSecretFromLocalStorage()
+    if (!secretKeyString) {
+      console.log("SECRET KEY NOT FOUND")
+      return null
+    }
+    let secret = nip19.decode(secretKeyString).data as Uint8Array
+    let closer = fetchGiftWrapsForPublicKey(
       publicKey,
       (event) => {
+        console.log("RECEIVVVVED MESSAGE", event)
         if (!processedEventIds.current.has(event.id)) {
           processedEventIds.current.add(event.id)
           setGiftWraps((prev) => {
@@ -108,12 +115,21 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
             saveGiftwrapsToStorage(updatedGiftwraps)
             return updatedGiftwraps
           })
+          let rumor = getRumorFromWrap(event, secret)
+          setRumors((prevRumors) => {
+            let previousRumors = prevRumors || []
+            if (!previousRumors.map((r) => r.id).includes(rumor)) {
+              return [...(prevRumors || []), rumor]
+            }
+            return prevRumors
+          })
         }
       },
       poolRef.current,
       relayUrl,
       lastCachedEvent.created_at,
     )
+    return closer
   }
 
   const mergeGiftwraps = (cachedGiftwraps: Event[], fetchedGiftwraps: Event[]) => {
