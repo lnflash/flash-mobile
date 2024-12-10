@@ -59,34 +59,34 @@ export const App = () => (
     <PolyfillCrypto />
     <Provider store={store}>
       <PersistentStateProvider>
-        <ActivityIndicatorProvider>
-          <TypesafeI18n locale={detectDefaultLocale()}>
-            <ThemeProvider theme={theme}>
-              <GaloyClient>
-                <FeatureFlagContextProvider>
-                  <ErrorBoundary FallbackComponent={ErrorScreen}>
-                    <NavigationContainerWrapper>
-                      <RootSiblingParent>
-                        <NotificationsProvider>
-                          <AppStateWrapper />
-                          <PushNotificationComponent />
-                          <BreezProvider>
-                            <ChatContextProvider>
+        <ChatContextProvider>
+          <ActivityIndicatorProvider>
+            <TypesafeI18n locale={detectDefaultLocale()}>
+              <ThemeProvider theme={theme}>
+                <GaloyClient>
+                  <FeatureFlagContextProvider>
+                    <ErrorBoundary FallbackComponent={ErrorScreen}>
+                      <NavigationContainerWrapper>
+                        <RootSiblingParent>
+                          <NotificationsProvider>
+                            <AppStateWrapper />
+                            <PushNotificationComponent />
+                            <BreezProvider>
                               <RootStack />
-                            </ChatContextProvider>
-                          </BreezProvider>
-                          <GaloyToast />
-                          <NetworkErrorComponent />
-                        </NotificationsProvider>
-                      </RootSiblingParent>
-                    </NavigationContainerWrapper>
-                  </ErrorBoundary>
-                  <ThemeSyncGraphql />
-                </FeatureFlagContextProvider>
-              </GaloyClient>
-            </ThemeProvider>
-          </TypesafeI18n>
-        </ActivityIndicatorProvider>
+                            </BreezProvider>
+                            <GaloyToast />
+                            <NetworkErrorComponent />
+                          </NotificationsProvider>
+                        </RootSiblingParent>
+                      </NavigationContainerWrapper>
+                    </ErrorBoundary>
+                    <ThemeSyncGraphql />
+                  </FeatureFlagContextProvider>
+                </GaloyClient>
+              </ThemeProvider>
+            </TypesafeI18n>
+          </ActivityIndicatorProvider>
+        </ChatContextProvider>
       </PersistentStateProvider>
     </Provider>
   </GestureHandlerRootView>
