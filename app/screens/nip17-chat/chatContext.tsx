@@ -4,6 +4,8 @@ import {
   fetchGiftWrapsForPublicKey,
   fetchSecretFromLocalStorage,
   getRumorFromWrap,
+  loadGiftwrapsFromStorage,
+  saveGiftwrapsToStorage,
 } from "@app/utils/nostr"
 import { Event, SimplePool, SubCloser, getPublicKey, nip19 } from "nostr-tools"
 import React from "react"
@@ -48,6 +50,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const [closer, setCloser] = useState<SubCloser | null>(null)
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
   const poolRef = useRef(new SimplePool())
+  const processedEventIds = useRef(new Set())
   const {
     appConfig: {
       galoyInstance: { relayUrl },
@@ -81,16 +84,43 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       }
       let secret = nip19.decode(secretKeyString).data as Uint8Array
       const publicKey = getPublicKey(secret)
-      closer = fetchGiftWrapsForPublicKey(
-        publicKey,
-        (event) => handleGiftWraps(event, secret),
-        poolRef!.current,
-        relayUrl,
-      )
+      const cachedGiftwraps = await loadGiftwrapsFromStorage()
+      setGiftWraps(cachedGiftwraps)
+
+      let cachedRumors = cachedGiftwraps.map((wrap) => getRumorFromWrap(wrap, secret))
+      setRumors(cachedRumors)
+      let closer = await fetchNewGiftwraps(cachedGiftwraps, publicKey)
       setCloser(closer)
     }
     if (poolRef && !closer) initialize()
   }, [poolRef])
+
+  const fetchNewGiftwraps = async (cachedGiftwraps: Event[], publicKey: string) => {
+    const lastCachedEvent = cachedGiftwraps[cachedGiftwraps.length - 1]
+    console.log("FETCH NEW GIFT WRAPS Called", cachedGiftwraps.length)
+    return fetchGiftWrapsForPublicKey(
+      publicKey,
+      (event) => {
+        if (!processedEventIds.current.has(event.id)) {
+          processedEventIds.current.add(event.id)
+          setGiftWraps((prev) => {
+            const updatedGiftwraps = mergeGiftwraps(prev, [event])
+            saveGiftwrapsToStorage(updatedGiftwraps)
+            return updatedGiftwraps
+          })
+        }
+      },
+      poolRef.current,
+      relayUrl,
+      lastCachedEvent.created_at,
+    )
+  }
+
+  const mergeGiftwraps = (cachedGiftwraps: Event[], fetchedGiftwraps: Event[]) => {
+    const existingIds = new Set(cachedGiftwraps.map((wrap) => wrap.id))
+    const newGiftwraps = fetchedGiftwraps.filter((wrap) => !existingIds.has(wrap.id))
+    return [...cachedGiftwraps, ...newGiftwraps]
+  }
 
   const addEventToProfiles = (event: Event) => {
     try {

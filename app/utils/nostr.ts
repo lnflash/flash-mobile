@@ -1,5 +1,6 @@
 import { useAppConfig } from "@app/hooks"
 import { bytesToHex } from "@noble/curves/abstract/utils"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
   UnsignedEvent,
   finalizeEvent,
@@ -119,13 +120,15 @@ export const fetchGiftWrapsForPublicKey = (
   eventHandler: (event: Event) => void,
   pool: SimplePool,
   flashRelay: string,
+  since?: number,
 ) => {
-  let filter = {
+  let filter: Filter = {
     "kinds": [1059],
     "#p": [pubkey],
     "limit": 150,
   }
-  console.log("FETCHING MESSAGES for", filter)
+  if (since) filter.since = since
+  console.log("FETCHING MESSAGES for", filter, flashRelay)
   let closer = pool.subscribeMany([flashRelay, "wss://relay.damus.io"], [filter], {
     onevent: eventHandler,
     onclose: () => {
@@ -366,4 +369,22 @@ function normalizeURL(url: string) {
   p.searchParams.sort()
   p.hash = ""
   return p.toString()
+}
+
+export const loadGiftwrapsFromStorage = async () => {
+  try {
+    const savedGiftwraps = await AsyncStorage.getItem("giftwraps")
+    return savedGiftwraps ? (JSON.parse(savedGiftwraps) as Event[]) : []
+  } catch (e) {
+    console.error("Error loading giftwraps from storage:", e)
+    return []
+  }
+}
+
+export const saveGiftwrapsToStorage = async (giftwraps: Event[]) => {
+  try {
+    await AsyncStorage.setItem("giftwraps", JSON.stringify(giftwraps))
+  } catch (e) {
+    console.error("Error saving giftwraps to storage:", e)
+  }
 }

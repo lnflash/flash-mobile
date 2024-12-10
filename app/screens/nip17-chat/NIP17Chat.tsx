@@ -221,7 +221,13 @@ export const NIP17Chat: React.FC = () => {
   }
 
   let groups = convertRumorsToGroups(rumors || [])
-  let groupIds = Array.from(groups.keys())
+  let groupIds = Array.from(groups.keys()).sort((a, b) => {
+    let groupARumors = groups.get(a) || []
+    let groupBRumors = groups.get(b) || []
+    let lastARumor = groupARumors[groupARumors.length ? groupARumors.length - 1 : 0]
+    let lastBRumor = groupBRumors[groupBRumors.length ? groupBRumors.length - 1 : 0]
+    return (lastBRumor?.created_at || 0) - (lastARumor?.created_at || 0)
+  })
 
   return (
     <Screen style={{ ...styles.header, flex: 1 }}>
