@@ -64,7 +64,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   }, [
     request?.type,
     request?.receivingWalletDescriptor.currency,
-    request.settlementAmount,
+    request?.settlementAmount,
     minAmount,
     maxAmount,
   ])

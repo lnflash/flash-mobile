@@ -29,7 +29,10 @@ import {
   LnUrlWithdrawResultVariant,
   PaymentMethod,
   ReceivePaymentResponse,
+  prepareLnurlPay,
+  PayAmountVariant,
 } from "@breeztech/react-native-breez-sdk-liquid"
+import { API_KEY } from "@env"
 
 export const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 
@@ -83,7 +86,7 @@ const retry = <T>(fn: () => Promise<T>, ms = 15000, maxRetries = 3) =>
 const connectToSDK = async () => {
   try {
     const mnemonic = await getMnemonic()
-    const config = await defaultConfig(LiquidNetwork.MAINNET)
+    const config = await defaultConfig(LiquidNetwork.MAINNET, API_KEY)
 
     await connect({ mnemonic, config })
   } catch (error) {
@@ -147,22 +150,31 @@ export const fetchBreezFee = async (
   invoice?: string,
   receiverAmountSat?: number,
 ) => {
+  console.log(">>>>>>>>???????????", receiverAmountSat)
   try {
     if (paymentType === "lightning" && !!invoice) {
       const response = await prepareSendPayment({
         destination: invoice,
-        amountSat: receiverAmountSat,
       })
       return response.feesSat
     } else if (paymentType === "onchain" && !!receiverAmountSat) {
       const response = await preparePayOnchain({
-        receiverAmountSat,
+        amount: { type: PayAmountVariant.RECEIVER, amountSat: receiverAmountSat },
       })
       return response.totalFeesSat
-    } else if ((paymentType === "intraledger" || paymentType === "lnurl") && !!invoice) {
-      // const response = await parse(invoice)
-      // console.log(">>>>>>>>>>>.", response)
-
+    } else if (
+      (paymentType === "intraledger" || paymentType === "lnurl") &&
+      !!invoice &&
+      !!receiverAmountSat
+    ) {
+      const input = await parse(invoice)
+      if (input.type === InputTypeVariant.LN_URL_PAY) {
+        const prepareResponse = await prepareLnurlPay({
+          data: input.data,
+          amountMsat: receiverAmountSat * 1000,
+        })
+        return prepareResponse.feesSat
+      }
       return null
     } else {
       return null
@@ -264,7 +276,10 @@ export const sendOnchainBreezSDK = async (
 ): Promise<SendPaymentResponse> => {
   try {
     const prepareResponse = await preparePayOnchain({
-      receiverAmountSat: amountSat,
+      amount: {
+        type: PayAmountVariant.RECEIVER,
+        amountSat,
+      },
     })
 
     // Check if the fees are acceptable before proceeding
@@ -290,10 +305,14 @@ export const payLnurlBreezSDK = async (
   try {
     const input = await parse(lnurl)
     if (input.type === InputTypeVariant.LN_URL_PAY) {
-      const lnUrlPayResult = await lnurlPay({
+      const prepareResponse = await prepareLnurlPay({
         data: input.data,
         amountMsat: amountSat * 1000,
         validateSuccessActionUrl: true,
+      })
+
+      const lnUrlPayResult = await lnurlPay({
+        prepareResponse,
       })
 
       if (lnUrlPayResult.type === LnUrlPayResultVariant.PAY_ERROR) {
@@ -315,11 +334,13 @@ export const onRedeem = async (lnurl: string, defaultDescription: string) => {
     const input = await parse(lnurl)
 
     if (input.type === InputTypeVariant.LN_URL_PAY) {
-      const lnUrlPayResult = await lnurlPay({
+      const prepareResponse = await prepareLnurlPay({
         data: input.data,
         amountMsat: input.data.minSendable,
         validateSuccessActionUrl: true,
       })
+      const lnUrlPayResult = await lnurlPay({ prepareResponse })
+
       console.log("LNURL PAY>>>>>>>>", lnUrlPayResult)
       if (lnUrlPayResult.type === LnUrlPayResultVariant.ENDPOINT_SUCCESS) {
         return { success: true, error: undefined }
