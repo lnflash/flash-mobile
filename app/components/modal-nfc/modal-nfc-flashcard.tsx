@@ -44,33 +44,41 @@ export const ModalNfcFlashcard: React.FC<Props> = ({
   }, [isActive])
 
   const readNfc = async () => {
-    try {
-      const isSupported = await nfcManager.isSupported()
-      if (!isSupported) {
-        showToastMessage(LL.CardScreen.notSupported())
-      } else {
-        await nfcManager.start()
-        await nfcManager.requestTechnology(NfcTech.Ndef)
-        const tag = await nfcManager.getTag()
+    const isSupported = await nfcManager.isSupported()
+    if (!isSupported) {
+      showToastMessage(LL.CardScreen.notSupported())
+    } else {
+      await nfcManager.start()
+      await nfcManager.requestTechnology(NfcTech.Ndef)
 
-        if (tag && tag.id) {
-          setTagId(tag.id)
-          const ndefRecord = tag?.ndefMessage?.[0]
-          if (!ndefRecord) {
-            showToastMessage(LL.CardScreen.noNDEFMessage())
-          } else {
-            const payload = Ndef.text.decodePayload(new Uint8Array(ndefRecord.payload))
-            if (payload.startsWith("lnurlw")) {
-              await handleSubmit(payload)
-              await nfcManager.cancelTechnologyRequest()
+      let errMsg = ""
+      let i = 0
+      while (i < 3) {
+        try {
+          i++
+          const tag = await nfcManager.getTag()
+
+          if (tag && tag.id) {
+            setTagId(tag.id)
+            const ndefRecord = tag?.ndefMessage?.[0]
+            if (!ndefRecord) {
+              errMsg = LL.CardScreen.noNDEFMessage()
+            } else {
+              const payload = Ndef.text.decodePayload(new Uint8Array(ndefRecord.payload))
+              if (payload.startsWith("lnurlw")) {
+                await handleSubmit(payload)
+                await nfcManager.cancelTechnologyRequest()
+              }
             }
+          } else {
+            errMsg = LL.CardScreen.noTag()
           }
-        } else {
-          showToastMessage(LL.CardScreen.noTag())
+        } catch (error: any) {
+          errMsg = LL.CardScreen.notFlashcard()
         }
       }
-    } catch (error: any) {
-      showToastMessage(LL.CardScreen.notFlashcard())
+      console.log("Failed after after 3 attempts")
+      showToastMessage(errMsg)
     }
   }
 
