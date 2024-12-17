@@ -137,10 +137,25 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
       type: "text",
       id: message.text,
     }
+    let sent = false
+    let onSent = (rumor: Rumor) => {
+      console.log("OnSent")
+      if (!sent) {
+        console.log("On sent setting")
+        textMessage.id = rumor.id
+        setMessages((prevChat) => {
+          let newChatMap = new Map(prevChat)
+          newChatMap.set(textMessage.id, textMessage)
+          return newChatMap
+        })
+        sent = true
+      }
+    }
     let result = await sendNip17Message(
       groupId.split(","),
       message.text,
       preferredRelaysMap || new Map<string, string[]>(),
+      onSent,
     )
     console.log("Output is", result)
     if (
