@@ -96,9 +96,10 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   }, [poolRef])
 
   const fetchNewGiftwraps = async (cachedGiftwraps: Event[], publicKey: string) => {
+    cachedGiftwraps = cachedGiftwraps.sort((a, b) => a.created_at - b.created_at)
     const lastCachedEvent = cachedGiftwraps[cachedGiftwraps.length - 1]
-    console.log("INITIALIZING FETCH NEW GIFT WRAPS", relayUrl)
     let secretKeyString = await fetchSecretFromLocalStorage()
+    console.log("INITIALIZING FETCH NEW GIFT WRAPS", relayUrl)
     if (!secretKeyString) {
       console.log("SECRET KEY NOT FOUND")
       return null
@@ -107,7 +108,6 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     let closer = fetchGiftWrapsForPublicKey(
       publicKey,
       (event) => {
-        console.log("RECEIVVVVED MESSAGE", event)
         if (!processedEventIds.current.has(event.id)) {
           processedEventIds.current.add(event.id)
           setGiftWraps((prev) => {
@@ -127,7 +127,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       },
       poolRef.current,
       relayUrl,
-      lastCachedEvent.created_at - 20 * 60,
+      lastCachedEvent?.created_at - 20 * 60,
     )
     return closer
   }

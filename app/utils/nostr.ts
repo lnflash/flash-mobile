@@ -257,6 +257,7 @@ export async function sendNip17Message(
   recipients: string[],
   message: string,
   preferredRelaysMap: Map<string, string[]>,
+  onSent?: (rumor: Rumor) => void,
 ) {
   let privateKey = await getSecretKey()
   if (!privateKey) {
@@ -287,6 +288,7 @@ export async function sendNip17Message(
             wrap,
             (url: string) => {
               console.log("Accepted relay callback triggered:", url)
+              onSent?.(rumor)
               recipientAcceptedRelays.push(url)
             },
             (url: string) => {
