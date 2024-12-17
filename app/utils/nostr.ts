@@ -129,14 +129,18 @@ export const fetchGiftWrapsForPublicKey = (
   }
   if (since) filter.since = since
   console.log("FETCHING MESSAGES for", filter, flashRelay)
-  let closer = pool.subscribeMany([flashRelay, "wss://relay.damus.io"], [filter], {
-    onevent: eventHandler,
-    onclose: () => {
-      closer.close()
-      console.log("Re-establishing connection")
-      closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool, flashRelay)
+  let closer = pool.subscribeMany(
+    [flashRelay, "wss://relay.damus.io", "wss://nostr.oxtr.dev"],
+    [filter],
+    {
+      onevent: eventHandler,
+      onclose: () => {
+        closer.close()
+        console.log("Re-establishing connection")
+        closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool, flashRelay)
+      },
     },
-  })
+  )
   return closer
 }
 
@@ -268,7 +272,11 @@ export async function sendNip17Message(
       let recipientAcceptedRelays: string[] = []
       let recipientRelays = preferredRelaysMap.get(recipientId)
       if (!recipientRelays) sendNIP4Message(message, recipientId)
-      recipientRelays = recipientRelays || publicRelays
+      recipientRelays = [
+        ...(recipientRelays || publicRelays),
+        "wss://relay.damus.io",
+        "wss://nostr.oxtr.dev",
+      ]
       let seal = createSeal(rumor, privateKey, recipientId)
       let wrap = createWrap(seal, recipientId)
       console.log("wrap created")
@@ -286,19 +294,10 @@ export async function sendNip17Message(
             },
           ),
         )
-        console.log(
-          "wrap sent, accepted relays for recipient ",
-          recipientId,
-          " ",
-          recipientAcceptedRelays,
-          " repose ",
-          response,
-        )
       } catch (e) {
         console.log("error in publishing", e)
       }
       outputs.push({ acceptedRelays: recipientAcceptedRelays, rejectedRelays: [] })
-      console.log("Invocation ended for recipient", recipientId, outputs)
     }),
   )
   console.log("Final output is", outputs)
