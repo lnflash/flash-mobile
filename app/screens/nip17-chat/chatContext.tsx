@@ -127,7 +127,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       },
       poolRef.current,
       relayUrl,
-      lastCachedEvent.created_at,
+      lastCachedEvent.created_at - 20 * 60,
     )
     return closer
   }
