@@ -66,8 +66,9 @@ export const ModalNfcFlashcard: React.FC<Props> = ({
             } else {
               const payload = Ndef.text.decodePayload(new Uint8Array(ndefRecord.payload))
               if (payload.startsWith("lnurlw")) {
-                await handleSubmit(payload)
+                const res = await handleSubmit(payload)
                 await nfcManager.cancelTechnologyRequest()
+                if (res) break
               }
             }
           } else {
@@ -77,8 +78,10 @@ export const ModalNfcFlashcard: React.FC<Props> = ({
           errMsg = LL.CardScreen.notFlashcard()
         }
       }
-      console.log("Failed after after 3 attempts")
-      showToastMessage(errMsg)
+      if (!!errMsg) {
+        showToastMessage(errMsg)
+        console.log("Failed after after 3 attempts")
+      }
     }
   }
 
@@ -103,8 +106,10 @@ export const ModalNfcFlashcard: React.FC<Props> = ({
         const response = await axios.get(url)
         onCardHtmlUpdate(response.data)
         await dismiss()
+        return true
       } catch (error) {
         showToastMessage(LL.CardScreen.notFlashcard())
+        return false
       }
     },
     [dismiss, onCardHtmlUpdate],
