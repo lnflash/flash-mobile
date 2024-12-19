@@ -59,7 +59,10 @@ export const BTCTransactionHistory: React.FC<Props> = ({ navigation }) => {
   const fetchRefundables = async () => {
     const refundables = await listRefundables()
     const refundedTxs = await loadJson("refundedTxs")
-
+    console.log("Refundable and Refunded Transactions>>>>>>>>>>", [
+      ...refundables,
+      ...refundedTxs,
+    ])
     setRefundables([...refundables, ...refundedTxs])
   }
 
