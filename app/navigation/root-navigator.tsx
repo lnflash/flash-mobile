@@ -599,6 +599,7 @@ export const PrimaryNavigator = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
+  const { persistentState } = usePersistentStateContext()
   // The cacheId is updated after every mutation that affects current user data (balanace, contacts, ...)
   // It's used to re-mount this component and thus reset what's cached in Apollo (and React)
 
@@ -639,20 +640,22 @@ export const PrimaryNavigator = () => {
           ),
         }}
       /> */}
-      <Tab.Screen
-        name="Chat"
-        component={ChatNavigator}
-        options={{
-          headerShown: false,
-          title: LL.ChatScreen.title(),
-          tabBarIcon: ({ color }) => (
-            <View>
-              <ChatIcon color={color} />
-              <NotificationBadge count={3} />
-            </View>
-          ),
-        }}
-      />
+      {persistentState.chatEnabled ? (
+        <Tab.Screen
+          name="Chat"
+          component={ChatNavigator}
+          options={{
+            headerShown: false,
+            title: LL.ChatScreen.title(),
+            tabBarIcon: ({ color }) => (
+              <View>
+                <ChatIcon color={color} />
+                <NotificationBadge />
+              </View>
+            ),
+          }}
+        />
+      ) : null}
       <Tab.Screen
         name="Card"
         component={CardScreen}
