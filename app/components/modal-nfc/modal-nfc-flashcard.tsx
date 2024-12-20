@@ -44,44 +44,37 @@ export const ModalNfcFlashcard: React.FC<Props> = ({
   }, [isActive])
 
   const readNfc = async () => {
-    const isSupported = await nfcManager.isSupported()
-    if (!isSupported) {
-      showToastMessage(LL.CardScreen.notSupported())
-    } else {
-      await nfcManager.start()
-      await nfcManager.requestTechnology(NfcTech.Ndef)
+    try {
+      const isSupported = await nfcManager.isSupported()
+      if (!isSupported) {
+        showToastMessage(LL.CardScreen.notSupported())
+      } else {
+        while (true) {
+          await nfcManager.start()
+          await nfcManager.requestTechnology(NfcTech.Ndef)
 
-      let errMsg = ""
-      let i = 0
-      while (i < 3) {
-        try {
-          i++
           const tag = await nfcManager.getTag()
 
           if (tag && tag.id) {
             setTagId(tag.id)
             const ndefRecord = tag?.ndefMessage?.[0]
             if (!ndefRecord) {
-              errMsg = LL.CardScreen.noNDEFMessage()
+              showToastMessage(LL.CardScreen.noNDEFMessage())
             } else {
               const payload = Ndef.text.decodePayload(new Uint8Array(ndefRecord.payload))
               if (payload.startsWith("lnurlw")) {
-                const res = await handleSubmit(payload)
-                await nfcManager.cancelTechnologyRequest()
-                if (res) break
+                await handleSubmit(payload)
               }
             }
           } else {
-            errMsg = LL.CardScreen.noTag()
+            showToastMessage(LL.CardScreen.noTag())
           }
-        } catch (error: any) {
-          errMsg = LL.CardScreen.notFlashcard()
+          await nfcManager.cancelTechnologyRequest()
+          await nfcManager.unregisterTagEvent()
         }
       }
-      if (!!errMsg) {
-        showToastMessage(errMsg)
-        console.log("Failed after after 3 attempts")
-      }
+    } catch (error: any) {
+      showToastMessage(LL.CardScreen.notFlashcard())
     }
   }
 
@@ -106,17 +99,14 @@ export const ModalNfcFlashcard: React.FC<Props> = ({
         const response = await axios.get(url)
         onCardHtmlUpdate(response.data)
         await dismiss()
-        return true
       } catch (error) {
         showToastMessage(LL.CardScreen.notFlashcard())
-        return false
       }
     },
     [dismiss, onCardHtmlUpdate],
   )
 
   const showToastMessage = async (message: string) => {
-    await dismiss()
     toastShow({
       message,
       type: "error",
