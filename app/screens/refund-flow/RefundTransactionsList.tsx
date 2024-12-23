@@ -44,8 +44,8 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
 
   const fetchRefundables = async () => {
     setLoading(true)
-    const refundables = await listRefundables()
-    const refundedTxs = await loadJson("refundedTxs")
+    const refundables = (await listRefundables()) || []
+    const refundedTxs = (await loadJson("refundedTxs")) || []
     const merged = mergeByTimestamp(refundables, refundedTxs)
     setRefundables(merged)
     setLoading(false)
