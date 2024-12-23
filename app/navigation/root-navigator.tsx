@@ -12,8 +12,8 @@ import {
 } from "../screens/authentication-screen"
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
-import { ChatDetailScreen, ChatScreen } from "../screens/chat-screen"
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
+import { ChatList } from "@app/screens/nip17-chat"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
@@ -102,6 +102,9 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { ReconciliationReport } from "@app/screens/reports"
+import { Messages } from "@app/screens/nip17-chat/messages"
+import { View } from "react-native"
+import NotificationBadge from "./notification-badge"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -527,15 +530,15 @@ export const ChatNavigator = () => {
     <StackChats.Navigator>
       <StackChats.Screen
         name="chatList"
-        component={ChatScreen}
+        component={ChatList}
         options={{
           title: LL.ChatScreen.title(),
           headerShown: false,
         }}
       />
       <StackChats.Screen
-        name="chatDetail"
-        component={ChatDetailScreen}
+        name="messages"
+        component={Messages}
         options={{ headerShown: false }}
       />
     </StackChats.Navigator>
@@ -596,6 +599,7 @@ export const PrimaryNavigator = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
+  const { persistentState } = usePersistentStateContext()
   // The cacheId is updated after every mutation that affects current user data (balanace, contacts, ...)
   // It's used to re-mount this component and thus reset what's cached in Apollo (and React)
 
@@ -636,15 +640,22 @@ export const PrimaryNavigator = () => {
           ),
         }}
       /> */}
-      {/* <Tab.Screen
-        name="Chat"
-        component={ChatNavigator}
-        options={{
-          headerShown: false,
-          title: LL.ChatScreen.title(),
-          tabBarIcon: ({ color }) => <ChatIcon color={color} />,
-        }}
-      /> */}
+      {persistentState.chatEnabled ? (
+        <Tab.Screen
+          name="Chat"
+          component={ChatNavigator}
+          options={{
+            headerShown: false,
+            title: LL.ChatScreen.title(),
+            tabBarIcon: ({ color }) => (
+              <View>
+                <ChatIcon color={color} />
+                <NotificationBadge />
+              </View>
+            ),
+          }}
+        />
+      ) : null}
       <Tab.Screen
         name="Card"
         component={CardScreen}
