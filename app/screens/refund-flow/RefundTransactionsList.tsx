@@ -16,6 +16,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 import { loadJson } from "@app/utils/storage"
 import { mergeByTimestamp } from "@app/utils/utility"
+import { outputRelativeDate } from "@app/components/transaction-date"
 
 type Props = StackScreenProps<RootStackParamList, "RefundTransactionList">
 
@@ -25,7 +26,7 @@ type RenderItemProps = {
 }
 
 const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
-  const { LL } = useI18nContext()
+  const { LL, locale } = useI18nContext()
   const { colors } = useTheme().theme
   const { galoyInstance } = useAppConfig().appConfig
   const { convertMoneyAmount } = usePriceConversion()
@@ -75,7 +76,7 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
       <Item>
         <ColumnWrapper>
           <Amount>{formattedAmount}</Amount>
-          <Time color={colors.grey1}>{moment(item.timestamp).fromNow()}</Time>
+          <Time color={colors.grey1}>{outputRelativeDate(item.timestamp, locale)}</Time>
         </ColumnWrapper>
         <BtnWrapper onPress={pressHandler} isRefunded={!!item?.txId}>
           <BtnText>
