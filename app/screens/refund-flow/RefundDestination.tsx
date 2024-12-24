@@ -113,7 +113,7 @@ const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
           <Text style={styles.text}>{LL.RefundFlow.refundTo()}</Text>
         </TouchableOpacity>
       )}
-      <Fees selectedFee={selectedFee} setFee={setSelectedFee} />
+      <Fees setSelectedFee={setSelectedFee} />
       <Text style={styles.errorMsg}>{error}</Text>
       <View style={styles.buttonContainer}>
         <GaloyPrimaryButton
