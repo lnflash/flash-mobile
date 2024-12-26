@@ -130,6 +130,7 @@ export type RootStackParamList = {
     amount: number
     destination: string
     fee: number
+    feeType: string
   }
 }
 

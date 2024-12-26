@@ -38,7 +38,7 @@ const SuccessModal: React.FC<Props> = ({ txId, isVisible, setIsVisible }) => {
       backdropColor={colors.black}
       animationIn={"bounceIn"}
       animationOut={"fadeOut"}
-      onModalHide={() => navigation.pop(2)}
+      onModalHide={() => navigation.popToTop()}
     >
       <View style={styles.container}>
         <TouchableOpacity style={styles.close} onPress={() => setIsVisible(false)}>

@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { View } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
+import { usePriceConversion } from "@app/hooks"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -20,9 +20,9 @@ import DestinationIcon from "@app/assets/icons/destination.svg"
 // utils
 import { testProps } from "@app/utils/testProps"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
+import { toBtcMoneyAmount } from "@app/types/amounts"
 import { refund } from "@breeztech/react-native-breez-sdk-liquid"
-import { loadJson, remove, save } from "@app/utils/storage"
+import { loadJson, save } from "@app/utils/storage"
 
 type Props = StackScreenProps<RootStackParamList, "RefundConfirmation">
 
@@ -31,7 +31,6 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { convertMoneyAmount } = usePriceConversion()
-  const { formatDisplayAndWalletAmount } = useDisplayCurrency()
 
   const [modalVisible, setModalVisible] = useState<boolean>(false)
   const [errorMsg, setErrorMsg] = useState<string>()
@@ -40,27 +39,31 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
   if (!convertMoneyAmount) return false
 
   const onConfirm = async () => {
-    const refundResponse = await refund({
-      swapAddress: route.params.swapAddress,
-      refundAddress: route.params.destination,
-      satPerVbyte: route.params.fee,
-    })
-    console.log("Refund Response>>>>>>>>>>>>>>>", refundResponse)
-    if (refundResponse.refundTxId) {
-      setTxId(refundResponse.refundTxId)
-      setModalVisible(true)
-      const refundedTxs = await loadJson("refundedTxs")
-      save("refundedTxs", [
-        ...refundedTxs,
-        {
-          swapAddress: route.params.swapAddress,
-          amountSat: route.params.amount,
-          timestamp: new Date().getTime(),
-          txId: refundResponse.refundTxId,
-        },
-      ])
-    } else {
-      setErrorMsg("Something went wrong. Please, try again.")
+    try {
+      const refundResponse = await refund({
+        swapAddress: route.params.swapAddress,
+        refundAddress: route.params.destination,
+        satPerVbyte: route.params.fee,
+      })
+      console.log("Refund Response>>>>>>>>>>>>>>>", refundResponse)
+      if (refundResponse.refundTxId) {
+        setTxId(refundResponse.refundTxId)
+        setModalVisible(true)
+        const refundedTxs = await loadJson("refundedTxs")
+        save("refundedTxs", [
+          ...refundedTxs,
+          {
+            swapAddress: route.params.swapAddress,
+            amountSat: route.params.amount,
+            timestamp: new Date().getTime(),
+            txId: refundResponse.refundTxId,
+          },
+        ])
+      } else {
+        setErrorMsg("Something went wrong. Please, try again.")
+      }
+    } catch (err) {
+      console.log("Refund Error:", err)
     }
   }
 
@@ -98,13 +101,7 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
         </Text>
         <View style={styles.fieldBackground}>
           <Text {...testProps("Successful Fee")}>
-            {formatDisplayAndWalletAmount({
-              displayAmount: convertMoneyAmount(
-                toBtcMoneyAmount(route.params.fee),
-                DisplayCurrency,
-              ),
-              walletAmount: toBtcMoneyAmount(route.params.fee),
-            })}
+            {`${route.params.feeType} (${route.params.fee} sats/vbyte)`}
           </Text>
         </View>
       </View>

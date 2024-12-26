@@ -30,6 +30,7 @@ const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
 
   const [selectedFee, setSelectedFee] = useState<number>()
+  const [selectedFeeType, setSelectedFeeType] = useState<string>()
   const [destination, setDestination] = useState<string>()
   const [status, setStatus] = useState("entering")
   const [error, setError] = useState<string>()
@@ -45,7 +46,7 @@ const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
   const validateDestination = () => {
     if (!destination) {
       setError("Please, enter destination to proceed")
-    } else if (!selectedFee) {
+    } else if (!selectedFee || !selectedFeeType) {
       setError("Please, select fee to proceed")
     } else {
       setStatus("validating")
@@ -62,6 +63,7 @@ const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
           amount: route.params.amount,
           destination,
           fee: selectedFee,
+          feeType: selectedFeeType,
         })
       } else {
         setStatus("invalid")
@@ -93,6 +95,11 @@ const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
     }
   }
 
+  const onSelectFee = (type: string, value?: number) => {
+    setSelectedFeeType(type)
+    setSelectedFee(value)
+  }
+
   return (
     <Screen
       preset="scroll"
@@ -113,7 +120,7 @@ const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
           <Text style={styles.text}>{LL.RefundFlow.refundTo()}</Text>
         </TouchableOpacity>
       )}
-      <Fees setSelectedFee={setSelectedFee} />
+      <Fees selectedFeeType={selectedFeeType} onSelectFee={onSelectFee} />
       <Text style={styles.errorMsg}>{error}</Text>
       <View style={styles.buttonContainer}>
         <GaloyPrimaryButton

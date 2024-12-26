@@ -11,16 +11,16 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useActivityIndicator } from "@app/hooks"
 
 type Props = {
-  setSelectedFee: (val?: number) => void
+  selectedFeeType?: string
+  onSelectFee: (type: string, value?: number) => void
 }
 
-const Fees: React.FC<Props> = ({ setSelectedFee }) => {
+const Fees: React.FC<Props> = ({ selectedFeeType, onSelectFee }) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const { toggleActivityIndicator } = useActivityIndicator()
 
   const [fees, setFees] = useState<RecommendedFees>()
-  const [selectedFeeType, setSelectedFeeType] = useState<string>()
 
   useEffect(() => {
     fetchFees()
@@ -34,11 +34,6 @@ const Fees: React.FC<Props> = ({ setSelectedFee }) => {
     toggleActivityIndicator(false)
   }
 
-  const onSelectFee = (type: string, value?: number) => {
-    setSelectedFeeType(type)
-    setSelectedFee(value)
-  }
-
   return (
     <Wrapper>
       <Title>{LL.RefundFlow.recommendedFees()}</Title>
@@ -46,30 +41,30 @@ const Fees: React.FC<Props> = ({ setSelectedFee }) => {
         <FeeSelect
           colors={colors}
           activeOpacity={0.5}
-          selected={selectedFeeType === "fast"}
-          onPress={() => onSelectFee("fast", fees?.fastestFee)}
+          selected={selectedFeeType === "Fast"}
+          onPress={() => onSelectFee("Fast", fees?.fastestFee)}
         >
-          <FeeText colors={colors} selected={selectedFeeType === "fast"}>
+          <FeeText colors={colors} selected={selectedFeeType === "Fast"}>
             {LL.RefundFlow.fast()}
           </FeeText>
         </FeeSelect>
         <FeeSelect
           colors={colors}
           activeOpacity={0.5}
-          selected={selectedFeeType === "halfHour"}
-          onPress={() => onSelectFee("halfHour", fees?.halfHourFee)}
+          selected={selectedFeeType === "Half Hour"}
+          onPress={() => onSelectFee("Half Hour", fees?.halfHourFee)}
         >
-          <FeeText colors={colors} selected={selectedFeeType === "halfHour"}>
+          <FeeText colors={colors} selected={selectedFeeType === "Half Hour"}>
             {LL.RefundFlow.halfHour()}
           </FeeText>
         </FeeSelect>
         <FeeSelect
           colors={colors}
           activeOpacity={0.5}
-          selected={selectedFeeType === "hour"}
-          onPress={() => onSelectFee("hour", fees?.hourFee)}
+          selected={selectedFeeType === "Hour"}
+          onPress={() => onSelectFee("Hour", fees?.hourFee)}
         >
-          <FeeText colors={colors} selected={selectedFeeType === "hour"}>
+          <FeeText colors={colors} selected={selectedFeeType === "Hour"}>
             {LL.RefundFlow.hour()}
           </FeeText>
         </FeeSelect>
