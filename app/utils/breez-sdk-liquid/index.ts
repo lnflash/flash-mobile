@@ -150,13 +150,12 @@ export const fetchBreezFee = async (
   invoice?: string,
   receiverAmountSat?: number,
 ) => {
-  console.log(">>>>>>>>???????????", receiverAmountSat)
   try {
     if (paymentType === "lightning" && !!invoice) {
       const response = await prepareSendPayment({
         destination: invoice,
       })
-      return response.feesSat
+      return { fee: response.feesSat, err: null }
     } else if (paymentType === "onchain" && !!receiverAmountSat) {
       const response = await preparePayOnchain({
         amount: { type: PayAmountVariant.RECEIVER, amountSat: receiverAmountSat },
@@ -177,11 +176,10 @@ export const fetchBreezFee = async (
       }
       return null
     } else {
-      return null
+      return { fee: null, err: "Wrong payment type" }
     }
   } catch (err) {
-    console.log("FETCH BREEZ FEE>>>>>>>>>>>", err)
-    return null
+    return { fee: null, err: err }
   }
 }
 
