@@ -31,6 +31,7 @@ import {
   ReceivePaymentResponse,
   prepareLnurlPay,
   PayAmountVariant,
+  recommendedFees,
 } from "@breeztech/react-native-breez-sdk-liquid"
 import { API_KEY } from "@env"
 
@@ -133,6 +134,17 @@ const getMnemonic = async (): Promise<string> => {
   }
 }
 
+export const fetchRecommendedFees = async () => {
+  const fees = await recommendedFees()
+  console.log("Recommended fees:", fees)
+  const updatedFees = {
+    ...fees,
+    fastestFee: fees.fastestFee + 3,
+    halfHourFee: fees.halfHourFee + 1,
+  }
+  return updatedFees
+}
+
 export const fetchBreezLightningLimits = async () => {
   const lightningLimits = await fetchLightningLimits()
   console.log(`LIGHTNING LIMITS:`, lightningLimits)
@@ -157,8 +169,10 @@ export const fetchBreezFee = async (
       })
       return { fee: response.feesSat, err: null }
     } else if (paymentType === "onchain" && !!receiverAmountSat) {
+      const recommendedFees = await fetchRecommendedFees()
       const response = await preparePayOnchain({
         amount: { type: PayAmountVariant.RECEIVER, amountSat: receiverAmountSat },
+        feeRateSatPerVbyte: recommendedFees.fastestFee,
       })
       return { fee: response.totalFeesSat, err: null }
     } else if (
@@ -273,11 +287,10 @@ export const sendOnchainBreezSDK = async (
   amountSat: number,
 ): Promise<SendPaymentResponse> => {
   try {
+    const recommendedFees = await fetchRecommendedFees()
     const prepareResponse = await preparePayOnchain({
-      amount: {
-        type: PayAmountVariant.RECEIVER,
-        amountSat,
-      },
+      amount: { type: PayAmountVariant.RECEIVER, amountSat },
+      feeRateSatPerVbyte: recommendedFees.fastestFee,
     })
 
     // Check if the fees are acceptable before proceeding
