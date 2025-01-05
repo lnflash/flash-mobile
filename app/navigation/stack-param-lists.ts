@@ -15,9 +15,7 @@ import {
 import { WalletDescriptor } from "@app/types/wallets"
 import _Map from "@app/assets/icons-redesign/map.svg"
 import { RefundableSwap } from "@breeztech/react-native-breez-sdk-liquid"
-import Map from "@app/assets/icons-redesign/map.svg"
 import { Event } from "nostr-tools"
-import { Rumor } from "@app/utils/nostr"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
