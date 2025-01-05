@@ -10,10 +10,6 @@ import { disconnectToSDK } from "@app/utils/breez-sdk-liquid"
 import { useAppDispatch } from "@app/store/redux"
 import { resetUserSlice } from "@app/store/redux/slices/userSlice"
 import messaging from "@react-native-firebase/messaging"
-import * as Keychain from "react-native-keychain"
-
-const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
-const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
 
 const useLogout = () => {
   const dispatch = useAppDispatch()
@@ -31,8 +27,6 @@ const useLogout = () => {
         await KeyStoreWrapper.removeIsBiometricsEnabled()
         await KeyStoreWrapper.removePin()
         await KeyStoreWrapper.removePinAttempts()
-        await Keychain.resetInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
-        await Keychain.resetInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
         await disconnectToSDK()
         dispatch(resetUserSlice())
 
