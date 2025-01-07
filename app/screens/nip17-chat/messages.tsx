@@ -275,7 +275,9 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
                 />
               )}
               flatListProps={{
-                contentContainerStyle: { paddingTop: Platform.OS == "ios" ? 50 : 0 },
+                contentContainerStyle: {
+                  paddingTop: messages.size ? (Platform.OS == "ios" ? 50 : 0) : 100,
+                },
               }}
               theme={{
                 ...defaultTheme,
