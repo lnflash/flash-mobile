@@ -129,7 +129,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
                 (profileMap?.get(lastRumor.pubkey) as NostrProfile)?.username ||
                 nip19.npubEncode(lastRumor.pubkey).slice(0, 9) + "..."}
               {": "}
-              {lastRumor.content.slice(0, 55)}
+              {lastRumor.content.replace(/\s+/g, " ").slice(0, 55)}
               {lastRumor.content.length > 45 ? "..." : ""}
             </Text>
           </View>
