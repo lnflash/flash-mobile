@@ -252,11 +252,9 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
   const isDisabled =
     !amountStatus.validAmount ||
     !!asyncErrorMessage ||
-    !(
-      paymentDetail?.sendingWalletDescriptor.currency === "BTC" &&
+    (paymentDetail?.sendingWalletDescriptor.currency === "BTC" &&
       paymentDetail.paymentType === "onchain" &&
-      !!selectedFee
-    )
+      !selectedFee)
 
   if (paymentDetail) {
     return (
