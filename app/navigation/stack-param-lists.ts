@@ -52,6 +52,7 @@ export type RootStackParamList = {
   }
   sendBitcoinConfirmation: {
     paymentDetail: PaymentDetail<WalletCurrency>
+    flashUserAddress?: string
   }
   conversionDetails: undefined
   conversionConfirmation: {
