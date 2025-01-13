@@ -14,7 +14,6 @@ import {
 } from "@app/screens/send-bitcoin-screen/payment-destination/index.types"
 import { WalletDescriptor } from "@app/types/wallets"
 import _Map from "@app/assets/icons-redesign/map.svg"
-import { RefundableSwap } from "@breeztech/react-native-breez-sdk-liquid"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
