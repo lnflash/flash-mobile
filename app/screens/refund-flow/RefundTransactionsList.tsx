@@ -4,7 +4,7 @@ import styled from "styled-components/native"
 import { Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { listRefundables, RefundableSwap } from "@breeztech/react-native-breez-sdk-liquid"
-import { Colors } from "@rneui/base"
+import moment from "moment"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -73,7 +73,7 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
     })
 
     return (
-      <Item colors={colors}>
+      <Item>
         <ColumnWrapper>
           <Amount>{formattedAmount}</Amount>
           <Time color={colors.grey1}>{outputRelativeDate(item.timestamp, locale)}</Time>
@@ -119,13 +119,12 @@ const LoadingWrapper = styled.View`
   justify-content: center;
 `
 
-const Item = styled.View<{ colors: Colors }>`
+const Item = styled.View`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
+  background-color: #fff;
   margin-top: 2px;
-  border-bottom-width: 1px;
-  border-bottom-color: ${({ colors }) => colors.grey4};
   padding-horizontal: 20px;
   padding-vertical: 10px;
 `

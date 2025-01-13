@@ -99,5 +99,5 @@ const FeeSelect = styled.TouchableOpacity<{ colors: Colors; selected: boolean }>
 
 const FeeText = styled.Text<{ colors: Colors; selected: boolean }>`
   font-size: 15px;
-  color: ${({ colors, selected }) => (selected ? "#fff" : colors.black)};
+  color: ${({ colors, selected }) => (selected ? colors.white : colors.black)};
 `
