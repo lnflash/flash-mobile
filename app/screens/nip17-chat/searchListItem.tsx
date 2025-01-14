@@ -7,6 +7,7 @@ import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 import { nip19 } from "nostr-tools"
 import { bytesToHex } from "@noble/hashes/utils"
 import { useChatContext } from "./chatContext"
+import { addToContactList } from "@app/utils/nostr"
 
 interface SearchListItemProps {
   item: Chat
