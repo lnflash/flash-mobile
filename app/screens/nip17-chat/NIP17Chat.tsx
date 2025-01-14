@@ -7,6 +7,7 @@ import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
 import { Screen } from "../../components/screen"
+import { bytesToHex } from "@noble/hashes/utils"
 import { testProps } from "../../utils/testProps"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -27,6 +28,10 @@ import { useAppSelector } from "@app/store/redux"
 import { ImportNsecModal } from "../../components/import-nsec/import-nsec-modal"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
+import Contacts from "./contacts"
+
+const Tab = createMaterialTopTabNavigator()
 
 export const NIP17Chat: React.FC = () => {
   const styles = useStyles()
@@ -238,63 +243,81 @@ export const NIP17Chat: React.FC = () => {
   return (
     <Screen style={{ ...styles.header, flex: 1 }}>
       {privateKey && !showImportModal ? (
-        <View style={{ flex: 1 }}>
-          {SearchBarContent}
+        <Tab.Navigator
+          screenOptions={{
+            tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
+            tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+          }}
+        >
+          <Tab.Screen name="Chats">
+            {() => (
+              <View style={{ flex: 1 }}>
+                {SearchBarContent}
 
-          {searchText ? (
-            <FlatList
-              contentContainerStyle={styles.listContainer}
-              data={searchedUsers}
-              ListEmptyComponent={ListEmptyContent}
-              renderItem={({ item }) => (
-                <SearchListItem item={item} userPrivateKey={privateKey!} />
-              )}
-              keyExtractor={(item) => item.id}
-            />
-          ) : (
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 24,
-                  marginTop: 20,
-                  marginLeft: 20,
-                  color: colors.primary3,
-                }}
-              >
-                Chats
-              </Text>
-              <Text
-                style={{
-                  fontSize: 16,
-                  margin: 10,
-                  marginLeft: 20,
-                  color: colors.primary3,
-                }}
-              >
-                signed in as:{" "}
-                <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-                  {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
-                </Text>
-              </Text>
-              <FlatList
-                contentContainerStyle={styles.listContainer}
-                data={groupIds}
-                ListEmptyComponent={ListEmptyContent}
-                scrollEnabled={true}
-                renderItem={({ item }) => {
-                  return (
-                    <HistoryListItem
-                      item={item}
-                      userPrivateKey={privateKey!}
-                      groups={groups}
+                {searchText ? (
+                  <FlatList
+                    contentContainerStyle={styles.listContainer}
+                    data={searchedUsers}
+                    ListEmptyComponent={ListEmptyContent}
+                    renderItem={({ item }) => (
+                      <SearchListItem item={item} userPrivateKey={privateKey!} />
+                    )}
+                    keyExtractor={(item) => item.id}
+                  />
+                ) : (
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 24,
+                        marginTop: 20,
+                        marginLeft: 20,
+                        color: colors.primary3,
+                      }}
+                    >
+                      Chats
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        margin: 10,
+                        marginLeft: 20,
+                        color: colors.primary3,
+                      }}
+                    >
+                      signed in as:{" "}
+                      <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                        {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
+                      </Text>
+                    </Text>
+                    <FlatList
+                      contentContainerStyle={styles.listContainer}
+                      data={groupIds}
+                      ListEmptyComponent={ListEmptyContent}
+                      scrollEnabled={true}
+                      renderItem={({ item }) => {
+                        return (
+                          <HistoryListItem
+                            item={item}
+                            userPrivateKey={privateKey!}
+                            groups={groups}
+                          />
+                        )
+                      }}
+                      keyExtractor={(item) => item}
                     />
-                  )
-                }}
-                keyExtractor={(item) => item}
-              />
-            </View>
-          )}
-        </View>
+                  </View>
+                )}
+              </View>
+            )}
+          </Tab.Screen>
+          <Tab.Screen name="Contacts">
+            {() => (
+              <View>
+                <Contacts userPrivateKey={bytesToHex(privateKey)} />
+              </View>
+            )}
+          </Tab.Screen>
+        </Tab.Navigator>
       ) : (
         <Text>Loading your nostr keys...</Text>
       )}
