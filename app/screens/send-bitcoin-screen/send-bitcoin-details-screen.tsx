@@ -7,6 +7,7 @@ import crashlytics from "@react-native-firebase/crashlytics"
 import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { SendBitcoinDetailsExtraInfo } from "./send-bitcoin-details-extra-info"
 import { Screen } from "@app/components/screen"
+import { Fees } from "@app/components/refund-flow"
 import {
   ChooseWallet,
   DetailAmountNote,
@@ -72,6 +73,8 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
   const [isLoadingLnurl, setIsLoadingLnurl] = useState(false)
   const [paymentDetail, setPaymentDetail] = useState<PaymentDetail<WalletCurrency>>()
   const [asyncErrorMessage, setAsyncErrorMessage] = useState("")
+  const [selectedFee, setSelectedFee] = useState<number>()
+  const [selectedFeeType, setSelectedFeeType] = useState<string>()
 
   const { data } = useSendBitcoinDetailsScreenQuery({
     fetchPolicy: "cache-first",
@@ -145,6 +148,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           pd?.paymentType,
           !!flashUserAddress ? flashUserAddress : pd?.destination,
           pd?.settlementAmount.amount,
+          selectedFee, // feeRateSatPerVbyte
         )
         if (fee === null && err) {
           setAsyncErrorMessage(`${err?.message} (amount + fee)` || "")
@@ -236,9 +240,15 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
         navigation.navigate("sendBitcoinConfirmation", {
           paymentDetail: paymentDetailForConfirmation,
           flashUserAddress,
+          feeRateSatPerVbyte: selectedFee,
         })
       }
     })
+
+  const onSelectFee = (type: string, value?: number) => {
+    setSelectedFeeType(type)
+    setSelectedFee(value)
+  }
 
   const amountStatus = isValidAmount({
     paymentDetail,
@@ -247,6 +257,13 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
     intraledgerLimits: intraledgerLimitsData?.me?.defaultAccount?.limits?.internalSend,
     withdrawalLimits: withdrawalLimitsData?.me?.defaultAccount?.limits?.withdrawal,
   })
+
+  const isDisabled =
+    !amountStatus.validAmount ||
+    !!asyncErrorMessage ||
+    (paymentDetail?.sendingWalletDescriptor.currency === "BTC" &&
+      paymentDetail.paymentType === "onchain" &&
+      !selectedFee)
 
   if (paymentDetail) {
     return (
@@ -272,6 +289,14 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           setPaymentDetail={setPaymentDetail}
           setAsyncErrorMessage={setAsyncErrorMessage}
         />
+        {paymentDetail.sendingWalletDescriptor.currency === "BTC" &&
+          paymentDetail.paymentType === "onchain" && (
+            <Fees
+              wrapperStyle={{ marginTop: 0 }}
+              selectedFeeType={selectedFeeType}
+              onSelectFee={onSelectFee}
+            />
+          )}
         <SendBitcoinDetailsExtraInfo
           errorMessage={asyncErrorMessage}
           amountStatus={amountStatus}
@@ -281,7 +306,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           <GaloyPrimaryButton
             onPress={goToNextScreen || undefined}
             loading={isLoadingLnurl}
-            disabled={!amountStatus.validAmount || !!asyncErrorMessage}
+            disabled={isDisabled}
             title={LL.common.next()}
           />
         </View>

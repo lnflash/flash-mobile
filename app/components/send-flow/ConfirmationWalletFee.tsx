@@ -21,6 +21,7 @@ type Props = {
   paymentDetail: PaymentDetail<WalletCurrency>
   btcWalletText: string
   usdWalletText: string
+  feeRateSatPerVbyte?: number
   fee: FeeType
   setFee: (fee: FeeType) => void
   setPaymentError: (val: string) => void
@@ -31,6 +32,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
   paymentDetail,
   btcWalletText,
   usdWalletText,
+  feeRateSatPerVbyte,
   fee,
   setFee,
   setPaymentError,
@@ -48,6 +50,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
     paymentType,
     sendingWalletDescriptor.currency,
     settlementAmount.amount,
+    feeRateSatPerVbyte,
   ])
 
   const getSendingFee = async () => {
@@ -59,6 +62,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
         paymentType,
         !!flashUserAddress ? flashUserAddress : paymentDetail.destination,
         settlementAmount.amount,
+        feeRateSatPerVbyte,
       )
       if (fee !== null) {
         setFee({
