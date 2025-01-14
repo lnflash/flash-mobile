@@ -213,7 +213,22 @@ export const fetchPreferredRelays = async (pubKeys: string[], pool: SimplePool) 
   return relayMap
 }
 
-export const setPreferredRelay = async (secretKey?: Uint8Array) => {
+export const sendNIP4Message = async (message: string, recipient: string) => {
+  let privateKey = await getSecretKey()
+  let NIP4Messages = {}
+}
+
+export const fetchContactList = async (userPubkey: string, pool: SimplePool) => {
+  let filter = {
+    kinds: [3],
+    authors: [userPubkey],
+    limit: 1,
+  }
+  let contactListEvent = await pool.querySync(["wss://relay.damus.io"], filter)
+  return contactListEvent[0]
+}
+
+export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Array) => {
   let pool = new SimplePool()
   let secret: Uint8Array | null = null
   if (!secretKey) {
