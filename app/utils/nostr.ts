@@ -220,6 +220,16 @@ export const sendNIP4Message = async (message: string, recipient: string) => {
   let NIP4Messages = {}
 }
 
+export const fetchContactList = async (userPubkey: string, pool: SimplePool) => {
+  let filter = {
+    kinds: [3],
+    authors: [userPubkey],
+    limit: 1,
+  }
+  let contactListEvent = await pool.querySync(["wss://relay.damus.io"], filter)
+  return contactListEvent[0]
+}
+
 export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Array) => {
   let pool = new SimplePool()
   console.log("inside setpreferredRelay")
