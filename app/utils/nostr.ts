@@ -260,6 +260,31 @@ export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Arr
   }, 5000)
 }
 
+export const addToContactList = async (
+  userPrivateKey: Uint8Array,
+  pubKeyToAdd: string,
+  pool: SimplePool,
+) => {
+  console.log("adding contact")
+  const userPubkey = getPublicKey(userPrivateKey)
+  let contactListEvent = await fetchContactList(userPubkey, pool)
+  let tags = contactListEvent?.tags || []
+  console.log("existing event? ", contactListEvent)
+  if (tags.map((t) => t[1]).includes(pubKeyToAdd)) return
+  tags.push(["p", pubKeyToAdd])
+  let newEvent: UnsignedEvent = {
+    kind: 3,
+    pubkey: userPubkey,
+    content: contactListEvent?.content || "",
+    created_at: Math.floor(Date.now() / 1000),
+    tags: tags,
+  }
+  const finalNewEvent = finalizeEvent(newEvent, userPrivateKey)
+  console.log("final contact event is", finalNewEvent)
+  pool.publish(["wss://relay.damus.io"], finalNewEvent)
+  console.log("List Published!!")
+}
+
 export async function sendNip17Message(
   recipients: string[],
   message: string,
