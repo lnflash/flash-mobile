@@ -127,14 +127,23 @@ const DetailAmountNote: React.FC<Props> = ({
         paymentDetail.settlementAmount.amount < minAmount?.amount
       ) {
         const convertedBTCAmount = convertMoneyAmount(minAmount, "DisplayCurrency")
-        setAsyncErrorMessage(
-          LL.SendBitcoinScreen.minAmountInvoiceError({
-            amount: formatDisplayAndWalletAmount({
-              displayAmount: convertedBTCAmount,
-              walletAmount: minAmount,
+        const formattedBTCAmount = formatDisplayAndWalletAmount({
+          displayAmount: convertedBTCAmount,
+          walletAmount: minAmount,
+        })
+        if (paymentDetail.paymentType === "onchain") {
+          setAsyncErrorMessage(
+            LL.SendBitcoinScreen.onchainMinAmountInvoiceError({
+              amount: formattedBTCAmount,
             }),
-          }),
-        )
+          )
+        } else {
+          setAsyncErrorMessage(
+            LL.SendBitcoinScreen.minAmountInvoiceError({
+              amount: formattedBTCAmount,
+            }),
+          )
+        }
       } else if (
         maxAmount &&
         paymentDetail.settlementAmount.amount &&
