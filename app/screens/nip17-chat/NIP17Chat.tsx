@@ -245,7 +245,7 @@ export const NIP17Chat: React.FC = () => {
         >
           <Tab.Screen name="Chats">
             {() => (
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, ...styles.header }}>
                 {SearchBarContent}
 
                 {searchText ? (
@@ -306,7 +306,7 @@ export const NIP17Chat: React.FC = () => {
           </Tab.Screen>
           <Tab.Screen name="Contacts">
             {() => (
-              <View>
+              <View style={{ ...styles.header, height: "100%" }}>
                 <Contacts userPrivateKey={bytesToHex(privateKey)} />
               </View>
             )}
