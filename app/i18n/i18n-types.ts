@@ -1642,6 +1642,10 @@ type RootTranslation = {
 		 * M​y​ ​A​c​c​o​u​n​t​s
 		 */
 		myAccounts: string
+		/**
+		 * Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.
+		 */
+		refundableWarning: string
 	}
 	PinScreen: {
 		/**
@@ -6020,6 +6024,10 @@ export type TranslationFunctions = {
 		 * My Accounts
 		 */
 		myAccounts: () => LocalizedString
+		/**
+		 * Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.
+		 */
+		refundableWarning: () => LocalizedString
 	}
 	PinScreen: {
 		/**
