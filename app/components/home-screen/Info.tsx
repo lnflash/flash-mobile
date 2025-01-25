@@ -1,17 +1,24 @@
 import React, { useEffect, useState } from "react"
 import { View } from "react-native"
-import { makeStyles } from "@rneui/themed"
 import { ApolloError } from "@apollo/client"
-import { useI18nContext } from "@app/i18n/i18n-react"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { listRefundables, RefundableSwap } from "@breeztech/react-native-breez-sdk-liquid"
 
+// hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { useNavigation } from "@react-navigation/native"
+
 // components
+import { GaloyIcon } from "../atomic/galoy-icon"
 import { GaloyErrorBox } from "../atomic/galoy-error-box"
+import { GaloyTertiaryButton } from "../atomic/galoy-tertiary-button"
 
 // gql
-import { getErrorMessages } from "@app/graphql/utils"
 import { GraphQLError } from "graphql"
 import { GraphQlApplicationError } from "@app/graphql/generated"
+import { getErrorMessages } from "@app/graphql/utils"
 
 type ErrorInput =
   | readonly GraphQLError[]
@@ -23,10 +30,14 @@ type Props = {
 }
 
 const Info: React.FC<Props> = ({ error }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
+  const { colors, mode } = useTheme().theme
   const { LL } = useI18nContext()
 
   const [refundables, setRefundables] = useState<RefundableSwap[]>([])
+
+  const color = mode === "light" ? colors.warning : colors.black
 
   useEffect(() => {
     fetchRefundables()
@@ -45,11 +56,20 @@ const Info: React.FC<Props> = ({ error }) => {
     return (
       <View style={styles.marginButtonContainer}>
         {refundables.length > 0 && (
-          <GaloyErrorBox
-            isWarning
-            errorMessage={LL.HomeScreen.refundableWarning()}
-            style={{ marginBottom: 5 }}
-          />
+          <View
+            style={error ? { ...styles.container, marginBottom: 5 } : styles.container}
+          >
+            <GaloyIcon name="warning" size={14} color={color} />
+            <Text style={styles.textContainer} type={"p3"} color={color}>
+              {`${LL.HomeScreen.refundableWarning()} `}
+              <GaloyTertiaryButton
+                clear
+                title={LL.HomeScreen.refundables()}
+                onPress={() => navigation.navigate("RefundTransactionList")}
+                containerStyle={{ marginTop: -4 }}
+              />
+            </Text>
+          </View>
         )}
         {error && <GaloyErrorBox errorMessage={getErrorMessages(error)} />}
       </View>
@@ -64,5 +84,19 @@ export default Info
 const useStyles = makeStyles(({ colors }) => ({
   marginButtonContainer: {
     marginBottom: 20,
+  },
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: colors.warning9,
+  },
+  textContainer: {
+    overflow: "hidden",
+    marginLeft: 4,
+    flex: 1,
   },
 }))
