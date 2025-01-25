@@ -1,29 +1,23 @@
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import React from "react"
-import { View, ViewStyle } from "react-native"
+import { View } from "react-native"
 import { GaloyIcon } from "../galoy-icon"
 
 type GaloyErrorBoxProps = {
   errorMessage: string
   noIcon?: boolean
-  isWarning?: boolean
-  style?: ViewStyle
 }
 
-export const GaloyErrorBox: React.FC<GaloyErrorBoxProps> = ({
-  errorMessage,
-  noIcon,
-  isWarning,
-  style,
-}) => {
-  const { colors, mode } = useTheme().theme
+export const GaloyErrorBox: React.FC<GaloyErrorBoxProps> = ({ errorMessage, noIcon }) => {
+  const {
+    theme: { colors, mode },
+  } = useTheme()
   const styles = useStyles()
 
-  const color =
-    mode === "light" ? (isWarning ? colors.warning : colors.error) : colors.black
+  const color = mode === "light" ? colors.error : colors.black
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={styles.container}>
       {!noIcon && <GaloyIcon name="warning" size={14} color={color} />}
       <Text style={styles.textContainer} type={"p3"} color={color}>
         {errorMessage}
