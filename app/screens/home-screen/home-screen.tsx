@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react"
-import { RefreshControl, ScrollView } from "react-native"
-import { makeStyles, useTheme } from "@rneui/themed"
+import { RefreshControl, ScrollView, View } from "react-native"
+import { makeStyles, useTheme, Text, Input, Button } from "@rneui/themed"
 
 // components
 import { AppUpdate } from "@app/components/app-update/app-update"
@@ -34,6 +34,8 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useAppDispatch } from "@app/store/redux"
 import { setUserData } from "@app/store/redux/slices/userSlice"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { UsernameModal } from "./username-modal"
+import WelcomeUserScreen from "./welcome-user-screen"
 
 export const HomeScreen: React.FC = () => {
   const dispatch = useAppDispatch()
@@ -41,7 +43,6 @@ export const HomeScreen: React.FC = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { btcWallet } = useBreez()
-  const { nostrSecretKey } = useNostrProfile()
 
   // queries
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
@@ -67,6 +68,8 @@ export const HomeScreen: React.FC = () => {
   const [isContentVisible, setIsContentVisible] = useState(false)
   const [refreshTriggered, setRefreshTriggered] = useState(false)
   const [isUnverifiedSeedModalVisible, setIsUnverifiedSeedModalVisible] = useState(false)
+  const [usernameModal, setUsernameModal] = useState(false)
+  const [showSplash, setShowSplash] = useState(true)
 
   const isBalanceVisible = hideBalance ?? false
 
@@ -74,7 +77,9 @@ export const HomeScreen: React.FC = () => {
     if (dataAuthed?.me) {
       dispatch(setUserData(dataAuthed.me))
       saveDefaultWallet()
+      if (!dataAuthed?.me?.username) setUsernameModal(true)
     }
+    console.log("Data authed is ", dataAuthed?.me?.username)
   }, [dataAuthed?.me?.username])
 
   useEffect(() => {
@@ -109,6 +114,18 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <Screen>
+      <UsernameModal
+        isVisible={usernameModal}
+        toggleModal={() => setUsernameModal(false)}
+      />
+      {showSplash && dataAuthed?.me?.username ? (
+        <WelcomeUserScreen
+          username={dataAuthed.me.username}
+          onComplete={() => {
+            setShowSplash(false)
+          }}
+        />
+      ) : null}
       <AccountCreateModal modalVisible={modalVisible} setModalVisible={setModalVisible} />
       <UnVerifiedSeedModal
         isVisible={isUnverifiedSeedModalVisible}
