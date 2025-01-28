@@ -116,11 +116,15 @@ export const HomeScreen: React.FC = () => {
     <Screen>
       <UsernameModal
         isVisible={usernameModal}
-        toggleModal={() => setUsernameModal(false)}
+        closeModal={() => {
+          setUsernameModal(false)
+          setShowSplash(true)
+        }}
       />
-      {showSplash && dataAuthed?.me?.username ? (
+      {dataAuthed?.me?.username ? (
         <WelcomeUserScreen
           username={dataAuthed.me.username}
+          visible={showSplash}
           onComplete={() => {
             setShowSplash(false)
           }}
