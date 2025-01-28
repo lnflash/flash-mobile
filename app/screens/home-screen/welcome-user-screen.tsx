@@ -18,17 +18,16 @@ const WelcomeUserScreen: React.FC<WelcomeUserScreenProps> = ({
 
   useEffect(() => {
     if (visible) {
-      // Start animations when modal is visible
       Animated.loop(
         Animated.sequence([
           Animated.spring(translateY, {
-            toValue: -20, // Move up by 20 units
+            toValue: -20,
             friction: 2,
             tension: 100,
             useNativeDriver: true,
           }),
           Animated.spring(translateY, {
-            toValue: 0, // Return to original position
+            toValue: 0,
             friction: 2,
             tension: 100,
             useNativeDriver: true,
@@ -36,19 +35,17 @@ const WelcomeUserScreen: React.FC<WelcomeUserScreenProps> = ({
         ]),
       ).start()
 
-      // Fade-in animation for text
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 1500,
         useNativeDriver: true,
       }).start()
 
-      // Auto-dismiss modal after a delay
       const timeout = setTimeout(() => {
-        onComplete() // Notify the parent component to hide the modal
+        onComplete()
       }, 3000)
 
-      return () => clearTimeout(timeout) // Cleanup timeout
+      return () => clearTimeout(timeout)
     }
   }, [visible, translateY, fadeAnim, onComplete])
 
@@ -85,7 +82,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
-    elevation: 5, // Shadow for Android
+    elevation: 5,
   },
   title: {
     fontSize: 36,

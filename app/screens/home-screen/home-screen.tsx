@@ -79,7 +79,6 @@ export const HomeScreen: React.FC = () => {
       saveDefaultWallet()
       if (!dataAuthed?.me?.username) setUsernameModal(true)
     }
-    console.log("Data authed is ", dataAuthed?.me?.username)
   }, [dataAuthed?.me?.username])
 
   useEffect(() => {

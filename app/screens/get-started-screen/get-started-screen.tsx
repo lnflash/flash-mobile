@@ -77,7 +77,6 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   const onCompleteLogin = (token?: string) => {
-    console.log("On Complete Login did get triggered, nice")
     if (token) {
       setError(false)
       saveToken(token)

@@ -2,7 +2,7 @@ import { useTheme, Text, Input, Button } from "@rneui/themed"
 import { View } from "react-native"
 import Modal from "react-native-modal"
 import { SafeAreaProvider } from "react-native-safe-area-context"
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { TextInput } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { useAppConfig } from "@app/hooks"
@@ -18,8 +18,7 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { updateUserData } from "@app/store/redux/slices/userSlice"
-import { getSecretKey, setPreferredRelay } from "@app/utils/nostr"
-import { getPublicKey } from "nostr-tools"
+import { setPreferredRelay } from "@app/utils/nostr"
 import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 
 interface UsernameModalProps {
@@ -41,15 +40,6 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
   const [nostrPubkey, setNostrPubkey] = useState("")
 
   const { updateNostrProfile } = useNostrProfile()
-
-  useEffect(() => {
-    async function getNostrPubkey() {
-      let secretKey = await getSecretKey()
-      if (secretKey) setNostrPubkey(getPublicKey(secretKey))
-      else console.warn("NOSTR SECRET KEY NOT FOUND")
-    }
-    getNostrPubkey()
-  }, [])
 
   const onChangeLnAddress = (lightningAddress: string) => {
     setLnAddress(lightningAddress)
@@ -167,11 +157,9 @@ export type SetLightningAddressModalUIProps = {
 
 export const SetLightningAddressModalUI = ({
   isVisible,
-  toggleModal,
   onSetLightningAddress,
   lnAddress,
   setLnAddress,
-  loading,
   error,
 }: SetLightningAddressModalUIProps) => {
   const {
