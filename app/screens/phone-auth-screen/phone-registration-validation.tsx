@@ -128,6 +128,7 @@ export const PhoneRegistrationValidateScreen: React.FC<
       }
 
       try {
+        console.log("THIS IS THE SEND BUTTON")
         setStatus(ValidatePhoneCodeStatus.LoadingAuthResult)
         logAddPhoneAttempt()
         const { data } = await phoneValidate({
@@ -150,6 +151,12 @@ export const PhoneRegistrationValidateScreen: React.FC<
           setStatus(ValidatePhoneCodeStatus.ReadyToRegenerate)
         } else {
           setStatus(ValidatePhoneCodeStatus.Success)
+          console.log(
+            "VALIDATED",
+            navigation.getId(),
+            navigation.getParent(),
+            navigation.getState(),
+          )
           Alert.alert(LL.PhoneRegistrationValidateScreen.successTitle(), undefined, [
             {
               text: LL.common.ok(),

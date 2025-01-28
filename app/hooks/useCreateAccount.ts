@@ -36,6 +36,8 @@ export const useCreateAccount = () => {
       let username: string
       let password: string
 
+      console.log("DO I HAVE CREDENTIALS?", credentials)
+
       if (credentials) {
         username = credentials.username
         password = credentials.password
@@ -63,6 +65,7 @@ export const useCreateAccount = () => {
           Appcheck: `${appCheckToken}` || "undefined",
         },
       })
+      console.log("RESULT FROM AUTHENTICATION", res)
       if (!res.ok) {
         console.error(`Error fetching from server: ${res.status} ${res.statusText}`)
         return // Or handle this error appropriately
