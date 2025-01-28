@@ -24,11 +24,11 @@ import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 
 interface UsernameModalProps {
   isVisible: boolean
-  toggleModal: () => void
+  closeModal: () => void
 }
 export const UsernameModal: React.FC<UsernameModalProps> = ({
   isVisible,
-  toggleModal,
+  closeModal,
 }) => {
   const {
     appConfig: {
@@ -98,11 +98,6 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
     })
 
     console.log("Mutation response:", { data, errors })
-    console.log(
-      "Mutation response user",
-      data?.userUpdateUsername.user,
-      data?.userUpdateUsername.errors,
-    )
     console.log("User update errors:", data?.userUpdateUsername?.errors) // Log the errors array
     updateNostrProfile({
       content: {
@@ -122,13 +117,13 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
     }
 
     dispatch(updateUserData({ username: lnAddress }))
-    toggleModal()
+    closeModal()
   }
 
   return (
     <SetLightningAddressModalUI
       isVisible={isVisible}
-      toggleModal={toggleModal}
+      toggleModal={closeModal}
       error={error}
       lnAddress={lnAddress}
       loading={loading}

@@ -1,56 +1,73 @@
 import React, { useEffect, useRef } from "react"
-import { View, Text, StyleSheet, Animated } from "react-native"
+import { View, Text, StyleSheet, Animated, Modal } from "react-native"
+import LinearGradient from "react-native-linear-gradient" // Install with `npm install react-native-linear-gradient`
 
 interface WelcomeUserScreenProps {
   username: string
+  visible: boolean
   onComplete: () => void
 }
 
 const WelcomeUserScreen: React.FC<WelcomeUserScreenProps> = ({
   username,
+  visible,
   onComplete,
 }) => {
-  const translateY = useRef(new Animated.Value(0)).current // Initial vertical position
+  const translateY = useRef(new Animated.Value(0)).current
+  const fadeAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
-    // Create jumping animation
-    const jumping = Animated.loop(
-      Animated.sequence([
-        Animated.timing(translateY, {
-          toValue: -20, // Move up by 20 units
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0, // Move back to the original position
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]),
-    )
+    if (visible) {
+      // Start animations when modal is visible
+      Animated.loop(
+        Animated.sequence([
+          Animated.spring(translateY, {
+            toValue: -20, // Move up by 20 units
+            friction: 2,
+            tension: 100,
+            useNativeDriver: true,
+          }),
+          Animated.spring(translateY, {
+            toValue: 0, // Return to original position
+            friction: 2,
+            tension: 100,
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start()
 
-    // Start the animation
-    jumping.start()
+      // Fade-in animation for text
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1500,
+        useNativeDriver: true,
+      }).start()
 
-    // Automatically navigate after a timeout (e.g., 3 seconds)
-    const timeout = setTimeout(() => {
-      onComplete() // Trigger navigation or complete callback
-    }, 3000)
+      // Auto-dismiss modal after a delay
+      const timeout = setTimeout(() => {
+        onComplete() // Notify the parent component to hide the modal
+      }, 3000)
 
-    // Cleanup timeout and stop animation
-    return () => {
-      clearTimeout(timeout)
-      jumping.stop()
+      return () => clearTimeout(timeout) // Cleanup timeout
     }
-  }, [translateY, onComplete])
+  }, [visible, translateY, fadeAnim, onComplete])
 
   return (
-    <View style={styles.container}>
-      <Animated.Text style={[styles.title, { transform: [{ translateY }] }]}>
-        Welcome, {username}!
-      </Animated.Text>
-      <Text style={styles.subtitle}>We're excited to have you here 🚀</Text>
-    </View>
+    <Modal visible={visible} animationType="fade" transparent={false}>
+      <LinearGradient colors={["#6A11CB", "#2575FC"]} style={styles.container}>
+        <Animated.View
+          style={[
+            styles.bouncingText,
+            { transform: [{ translateY }], opacity: fadeAnim },
+          ]}
+        >
+          <Text style={styles.title}>Welcome, {username}!</Text>
+        </Animated.View>
+        <Animated.Text style={[styles.subtitle, { opacity: fadeAnim }]}>
+          Let’s get started 🚀
+        </Animated.Text>
+      </LinearGradient>
+    </Modal>
   )
 }
 
@@ -61,16 +78,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#4CAF50", // Splash screen background color
+    backgroundColor: "#4CAF50",
+  },
+  bouncingText: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5, // Shadow for Android
   },
   title: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: "bold",
     color: "#fff",
-    marginBottom: 10,
+    textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 10,
   },
   subtitle: {
     fontSize: 18,
     color: "#fff",
+    marginTop: 20,
+    opacity: 0.8,
   },
 })
