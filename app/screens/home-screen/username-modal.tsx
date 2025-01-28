@@ -1,5 +1,5 @@
 import { useTheme, Text, Input, Button } from "@rneui/themed"
-import { View } from "react-native"
+import { KeyboardAvoidingView, View } from "react-native"
 import Modal from "react-native-modal"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import React, { useState } from "react"
@@ -207,7 +207,7 @@ export const SetLightningAddressModalUI = ({
         // borderColor: "red", borderWidth: 1
       }}
     >
-      <SafeAreaProvider>
+      <KeyboardAvoidingView>
         <View style={styles.bodyStyle}>
           <Text style={styles.textStyle}>
             {"Hello new user, what do you want us to call you?"}
@@ -234,7 +234,7 @@ export const SetLightningAddressModalUI = ({
             Submit
           </Button>
         </View>
-      </SafeAreaProvider>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }

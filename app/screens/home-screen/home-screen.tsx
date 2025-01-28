@@ -69,7 +69,7 @@ export const HomeScreen: React.FC = () => {
   const [refreshTriggered, setRefreshTriggered] = useState(false)
   const [isUnverifiedSeedModalVisible, setIsUnverifiedSeedModalVisible] = useState(false)
   const [usernameModal, setUsernameModal] = useState(false)
-  const [showSplash, setShowSplash] = useState(true)
+  const [showSplash, setShowSplash] = useState(false)
 
   const isBalanceVisible = hideBalance ?? false
 
