@@ -28,7 +28,6 @@ import { getDefaultWallet } from "@app/graphql/wallets-utils"
 
 // hooks
 import { useBreez } from "@app/hooks"
-import useNostrProfile from "@app/hooks/use-nostr-profile"
 
 // store
 import { useAppDispatch } from "@app/store/redux"
@@ -110,25 +109,22 @@ export const HomeScreen: React.FC = () => {
       setTimeout(() => setRefreshTriggered(false), 1000)
     }
   }, [isAuthed, refetchAuthed, refetchRealtimePrice])
-
   return (
     <Screen>
       <UsernameModal
         isVisible={usernameModal}
         closeModal={() => {
           setUsernameModal(false)
-          setShowSplash(true)
+          setTimeout(() => setShowSplash(true), 1000)
         }}
       />
-      {dataAuthed?.me?.username ? (
-        <WelcomeUserScreen
-          username={dataAuthed.me.username}
-          visible={showSplash}
-          onComplete={() => {
-            setShowSplash(false)
-          }}
-        />
-      ) : null}
+      <WelcomeUserScreen
+        username={dataAuthed?.me?.username || "New User"}
+        visible={showSplash}
+        onComplete={() => {
+          setShowSplash(false)
+        }}
+      />
       <AccountCreateModal modalVisible={modalVisible} setModalVisible={setModalVisible} />
       <UnVerifiedSeedModal
         isVisible={isUnverifiedSeedModalVisible}

@@ -158,6 +158,7 @@ export type SetLightningAddressModalUIProps = {
 export const SetLightningAddressModalUI = ({
   isVisible,
   onSetLightningAddress,
+  toggleModal,
   lnAddress,
   setLnAddress,
   error,
@@ -204,14 +205,34 @@ export const SetLightningAddressModalUI = ({
       backdropColor={colors.background}
       style={{
         maxHeight: "100%",
-        // borderColor: "red", borderWidth: 1
       }}
     >
-      <KeyboardAvoidingView>
-        <View style={styles.bodyStyle}>
-          <Text style={styles.textStyle}>
-            {"Hello new user, what do you want us to call you?"}
+      <KeyboardAvoidingView behavior="position" enabled>
+        <View
+          style={{
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <Text
+            style={{
+              ...styles.hello,
+            }}
+          >
+            {"Hello!"}
           </Text>
+        </View>
+        <View style={styles.bodyStyle}>
+          <Text
+            style={{
+              ...styles.textStyle,
+              height: 50,
+              width: "100%",
+            }}
+          >
+            {"what do you want us to call you?"}
+          </Text>
+
           <View style={styles.textInputContainerStyle}>
             <TextInput
               autoCorrect={false}
@@ -296,12 +317,13 @@ const useStyles = makeStyles(({ colors }) => ({
     marginTop: 50,
     flexDirection: "column",
     justifyContent: "space-between",
+    alignContent: "center",
   },
   textStyle: {
     color: colors.primary,
     fontSize: 18,
     fontWeight: "bold",
-    marginTop: 50,
+    marginTop: 20,
   },
   textInputContainerStyle: {
     display: "flex",
@@ -322,5 +344,9 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   centerAlign: {
     textAlign: "center",
+  },
+  hello: {
+    fontSize: 48,
+    color: colors.primary,
   },
 }))

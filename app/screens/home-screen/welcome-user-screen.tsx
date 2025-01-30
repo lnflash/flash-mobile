@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react"
-import { View, Text, StyleSheet, Animated, Modal, Image } from "react-native"
+import { View, Text, Animated, Modal, Image } from "react-native"
 import LinearGradient from "react-native-linear-gradient"
 import { Button, makeStyles, useTheme } from "@rneui/themed"
 import AppLogo from "../../assets/logo/blink-logo-icon.png"
@@ -46,30 +46,32 @@ const WelcomeUserScreen: React.FC<WelcomeUserScreenProps> = ({
         useNativeDriver: true,
       }).start()
     }
-  }, [visible, translateY, fadeAnim, onComplete])
+  }, [visible])
 
   return (
-    <Modal visible={visible} animationType="fade" transparent={false}>
-      <LinearGradient
-        colors={[theme.colors.background, theme.colors.primary5]}
-        style={styles.container}
-      >
-        <Image source={AppLogo} style={styles.logo} />
-        <Animated.View
-          style={[
-            styles.bouncingText,
-            { transform: [{ translateY }], opacity: fadeAnim },
-          ]}
+    <View>
+      <Modal visible={visible} animationType="fade" transparent={false}>
+        <LinearGradient
+          colors={[theme.colors.background, theme.colors.primary5]}
+          style={styles.container}
         >
-          <Text style={styles.title}>Welcome {username}!</Text>
-        </Animated.View>
-        <Animated.Text style={[styles.subtitle, { opacity: fadeAnim }]}>
-          <Button color={theme.colors.primary} onPress={onComplete}>
-            Let’s get started 🚀
-          </Button>
-        </Animated.Text>
-      </LinearGradient>
-    </Modal>
+          <Image source={AppLogo} style={styles.logo} />
+          <Animated.View
+            style={[
+              styles.bouncingText,
+              { transform: [{ translateY }], opacity: fadeAnim },
+            ]}
+          >
+            <Text style={styles.title}>Welcome {username}!</Text>
+          </Animated.View>
+          <Animated.Text style={[styles.subtitle, { opacity: fadeAnim }]}>
+            <Button color={theme.colors.primary} onPress={onComplete}>
+              <Text style={{ color: theme.colors.primary3 }}>Let’s get started 🚀</Text>
+            </Button>
+          </Animated.Text>
+        </LinearGradient>
+      </Modal>
+    </View>
   )
 }
 
@@ -100,7 +102,7 @@ const useStyles = makeStyles((theme) => ({
   },
   subtitle: {
     fontSize: 18,
-    color: theme.colors.grey3,
+    color: theme.colors.primary3,
     marginTop: 20,
   },
   logo: {
@@ -110,6 +112,5 @@ const useStyles = makeStyles((theme) => ({
     shadowOffset: { width: 0, height: 5 }, // Shadow position
     shadowOpacity: 0.3, // Shadow transparency
     shadowRadius: 8, // Shadow blur
-    elevation: 10, // Android shadow
   },
 }))
