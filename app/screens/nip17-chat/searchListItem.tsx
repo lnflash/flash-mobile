@@ -1,13 +1,14 @@
-import { Icon, ListItem, useTheme } from "@rneui/themed"
+import { ListItem, useTheme } from "@rneui/themed"
 import { useStyles } from "./style"
 import { Image } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import { nip19 } from "nostr-tools"
+import { getPublicKey, nip19 } from "nostr-tools"
 import { bytesToHex } from "@noble/hashes/utils"
 import { useChatContext } from "./chatContext"
 import { addToContactList } from "@app/utils/nostr"
+import Icon from "react-native-vector-icons/Ionicons"
 
 interface SearchListItemProps {
   item: Chat
@@ -17,12 +18,28 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
   item,
   userPrivateKey,
 }) => {
-  const { poolRef } = useChatContext()
+  const { poolRef, contacts } = useChatContext()
   const styles = useStyles()
   const {
     theme: { colors },
   } = useTheme()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
+  const tabNavigation = useNavigation()
+
+  const getIcon = () => {
+    let itemPubkey = item.groupId
+      .split(",")
+      .filter((p) => p !== getPublicKey(userPrivateKey))[0]
+    console.log(
+      "item pubkey is",
+      itemPubkey,
+      contacts.filter((c) => c.pubkey! === itemPubkey).length,
+      contacts,
+    )
+    return contacts.filter((c) => c.pubkey! === itemPubkey).length === 0
+      ? "person-add"
+      : "checkmark-outline"
+  }
   return (
     <ListItem
       key={item.id}
@@ -53,13 +70,14 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
         </ListItem.Title>
       </ListItem.Content>
       <Icon
-        name="person-add"
+        name={getIcon()}
         size={24}
         color={colors.primary}
         onPress={() => {
           if (!poolRef) return
           addToContactList(userPrivateKey, item.id, poolRef.current)
           console.log("Add contact pressed for", item)
+          setTimeout(() => tabNavigation.navigate("Contacts"), 500)
         }}
       />
     </ListItem>

@@ -30,6 +30,7 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
 import Contacts from "./contacts"
+import { UserSearchBar } from "./UserSearchBar"
 
 const Tab = createMaterialTopTabNavigator()
 
@@ -66,9 +67,7 @@ export const NIP17Chat: React.FC = () => {
   const { userData } = useAppSelector((state) => state.user)
 
   const reset = useCallback(() => {
-    setSearchText("")
     setSearchedUsers([])
-    setRefreshing(false)
     setskipMismatchCheck(true)
   }, [])
 
@@ -127,7 +126,6 @@ export const NIP17Chat: React.FC = () => {
         }
       }
       if (initialized) {
-        setSearchText("")
         setSearchedUsers([])
         checkSecretKey()
       }
@@ -188,30 +186,33 @@ export const NIP17Chat: React.FC = () => {
         }
       }
     },
-    [privateKey],
+    [setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck, privateKey],
   )
 
   let SearchBarContent: React.ReactNode
   let ListEmptyContent: React.ReactNode
 
   SearchBarContent = (
-    <SearchBar
-      {...testProps(LL.common.chatSearch())}
-      placeholder={LL.common.chatSearch()}
-      value={searchText}
-      onChangeText={updateSearchResults}
-      platform="default"
-      round
-      showLoading={refreshing && !!searchText}
-      containerStyle={styles.searchBarContainer}
-      inputContainerStyle={styles.searchBarInputContainerStyle}
-      inputStyle={styles.searchBarText}
-      rightIconContainerStyle={styles.searchBarRightIconStyle}
-      searchIcon={<Icon name="search" size={24} color={styles.icon.color} />}
-      clearIcon={
-        <Icon name="close" size={24} onPress={reset} color={styles.icon.color} />
-      }
-    />
+    <>
+      {/* <SearchBar
+        {...testProps(LL.common.chatSearch())}
+        placeholder={LL.common.chatSearch()}
+        value={searchText}
+        onChangeText={updateSearchResults}
+        platform="default"
+        round
+        showLoading={refreshing && !!searchText}
+        containerStyle={styles.searchBarContainer}
+        inputContainerStyle={styles.searchBarInputContainerStyle}
+        inputStyle={styles.searchBarText}
+        rightIconContainerStyle={styles.searchBarRightIconStyle}
+        searchIcon={<Icon name="search" size={24} color={styles.icon.color} />}
+        clearIcon={
+          <Icon name="close" size={24} onPress={reset} color={styles.icon.color} />
+        }
+      /> */}
+      <UserSearchBar setSearchedUsers={setSearchedUsers} />
+    </>
   )
 
   if (!initialized) {
@@ -254,7 +255,7 @@ export const NIP17Chat: React.FC = () => {
               <View style={{ flex: 1, ...styles.header }}>
                 {SearchBarContent}
 
-                {searchText ? (
+                {searchedUsers.length !== 0 ? (
                   <FlatList
                     contentContainerStyle={styles.listContainer}
                     data={searchedUsers}
@@ -266,7 +267,7 @@ export const NIP17Chat: React.FC = () => {
                   />
                 ) : (
                   <View style={{ flex: 1 }}>
-                    <Text
+                    {/* <Text
                       style={{
                         fontSize: 24,
                         marginTop: 20,
@@ -275,7 +276,7 @@ export const NIP17Chat: React.FC = () => {
                       }}
                     >
                       Chats
-                    </Text>
+                    </Text> */}
                     <Text
                       style={{
                         fontSize: 16,

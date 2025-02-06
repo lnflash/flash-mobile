@@ -27,6 +27,8 @@ type ChatContextType = {
   userProfileEvent: Event | null
   userPublicKey: string | null
   refreshUserProfile: () => Promise<void>
+  contacts: NostrProfile[]
+  setContacts: (c: NostrProfile[]) => void
 }
 
 const publicRelays = [
@@ -51,6 +53,8 @@ const ChatContext = createContext<ChatContextType>({
   userProfileEvent: null,
   userPublicKey: null,
   refreshUserProfile: async () => {},
+  contacts: [],
+  setContacts: (contacts) => [],
 })
 
 export const useChatContext = () => useContext(ChatContext)
@@ -65,6 +69,12 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
   const poolRef = useRef(new SimplePool())
   const processedEventIds = useRef(new Set())
+  const [contacts, setContacts] = useState<NostrProfile[]>([])
+  const {
+    appConfig: {
+      galoyInstance: { relayUrl },
+    },
+  } = useAppConfig()
 
   const handleGiftWraps = (event: Event, secret: Uint8Array) => {
     setGiftWraps((prevEvents) => [...(prevEvents || []), event])
@@ -234,6 +244,8 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         userProfileEvent,
         userPublicKey,
         refreshUserProfile,
+        contacts,
+        setContacts,
       }}
     >
       {children}
