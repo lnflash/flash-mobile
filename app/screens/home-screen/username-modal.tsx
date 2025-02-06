@@ -210,8 +210,8 @@ export const SetLightningAddressModalUI = ({
       <KeyboardAvoidingView behavior="position" enabled>
         <View
           style={{
-            display: "flex",
-            alignItems: "center",
+            alignSelf: "center",
+            top: -70,
           }}
         >
           <Text
@@ -318,11 +318,11 @@ const useStyles = makeStyles(({ colors }) => ({
     flexDirection: "column",
     justifyContent: "space-between",
     alignContent: "center",
+    alignSelf: "center",
   },
   textStyle: {
     color: colors.primary,
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 24,
     marginTop: 20,
   },
   textInputContainerStyle: {
@@ -346,7 +346,7 @@ const useStyles = makeStyles(({ colors }) => ({
     textAlign: "center",
   },
   hello: {
-    fontSize: 48,
+    fontSize: 96,
     color: colors.primary,
   },
 }))

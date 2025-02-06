@@ -65,7 +65,16 @@ const WelcomeUserScreen: React.FC<WelcomeUserScreenProps> = ({
             <Text style={styles.title}>Welcome {username}!</Text>
           </Animated.View>
           <Animated.Text style={[styles.subtitle, { opacity: fadeAnim }]}>
-            <Button color={theme.colors.primary} onPress={onComplete}>
+            <Button
+              color={theme.colors.primary}
+              onPress={onComplete}
+              style={{
+                elevation: 10,
+                shadowRadius: 2,
+                shadowColor: "black",
+                shadowOpacity: 20,
+              }}
+            >
               <Text style={{ color: theme.colors.primary3 }}>Let’s get started 🚀</Text>
             </Button>
           </Animated.Text>
@@ -93,10 +102,9 @@ const useStyles = makeStyles((theme) => ({
   },
   title: {
     fontSize: 36,
-    fontWeight: "bold",
     color: theme.colors.primary3,
     textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowColor: "rgba(40, 110, 12, 0.3)",
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 10,
   },
