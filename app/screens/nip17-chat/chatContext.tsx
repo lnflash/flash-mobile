@@ -20,6 +20,8 @@ type ChatContextType = {
   profileMap: Map<string, NostrProfile> | undefined
   addEventToProfiles: (event: Event) => void
   resetChat: () => void
+  contacts: NostrProfile[]
+  setContacts: (c: NostrProfile[]) => void
 }
 
 const publicRelays = [
@@ -39,6 +41,8 @@ const ChatContext = createContext<ChatContextType>({
   profileMap: undefined,
   addEventToProfiles: (event: Event) => {},
   resetChat: () => {},
+  contacts: [],
+  setContacts: (contacts) => [],
 })
 
 export const useChatContext = () => useContext(ChatContext)
@@ -51,6 +55,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
   const poolRef = useRef(new SimplePool())
   const processedEventIds = useRef(new Set())
+  const [contacts, setContacts] = useState<NostrProfile[]>([])
   const {
     appConfig: {
       galoyInstance: { relayUrl },
@@ -176,6 +181,8 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         profileMap: profileMap.current,
         addEventToProfiles,
         resetChat,
+        contacts,
+        setContacts,
       }}
     >
       {children}
