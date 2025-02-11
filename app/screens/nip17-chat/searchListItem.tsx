@@ -9,6 +9,8 @@ import { bytesToHex } from "@noble/hashes/utils"
 import { useChatContext } from "./chatContext"
 import { addToContactList } from "@app/utils/nostr"
 import Icon from "react-native-vector-icons/Ionicons"
+import { getContactsFromEvent } from "./utils"
+import { useEffect } from "react"
 
 interface SearchListItemProps {
   item: Chat
@@ -18,7 +20,14 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
   item,
   userPrivateKey,
 }) => {
-  const { poolRef, contacts } = useChatContext()
+  const { poolRef, contactsEvent } = useChatContext()
+
+  const isUserAdded = () => {
+    if (!contactsEvent) return false
+    let existingContacts = getContactsFromEvent(contactsEvent)
+    return existingContacts.map((p: NostrProfile) => p.pubkey).includes(item.id)
+  }
+
   const styles = useStyles()
   const {
     theme: { colors },
@@ -30,13 +39,9 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
     let itemPubkey = item.groupId
       .split(",")
       .filter((p) => p !== getPublicKey(userPrivateKey))[0]
-    console.log(
-      "item pubkey is",
-      itemPubkey,
-      contacts.filter((c) => c.pubkey! === itemPubkey).length,
-      contacts,
-    )
-    return contacts.filter((c) => c.pubkey! === itemPubkey).length === 0
+    if (!contactsEvent) return "alert-circle-outline"
+    return getContactsFromEvent(contactsEvent).filter((c) => c.pubkey! === itemPubkey)
+      .length === 0
       ? "person-add"
       : "checkmark-outline"
   }
@@ -69,17 +74,24 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
             nip19.npubEncode(item.id)}
         </ListItem.Title>
       </ListItem.Content>
-      <Icon
-        name={getIcon()}
-        size={24}
-        color={colors.primary}
-        onPress={() => {
-          if (!poolRef) return
-          addToContactList(userPrivateKey, item.id, poolRef.current)
-          console.log("Add contact pressed for", item)
-          setTimeout(() => tabNavigation.navigate("Contacts"), 500)
-        }}
-      />
+      {contactsEvent ? (
+        <Icon
+          name={getIcon()!}
+          size={24}
+          color={colors.primary}
+          disabled={isUserAdded()}
+          onPress={async () => {
+            if (!isUserAdded()) return false
+            if (!poolRef) return
+            await addToContactList(
+              userPrivateKey,
+              item.id,
+              contactsEvent,
+              poolRef.current,
+            )
+          }}
+        />
+      ) : null}
     </ListItem>
   )
 }

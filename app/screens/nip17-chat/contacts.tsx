@@ -1,11 +1,10 @@
 // Contacts.tsx
 import React, { useState } from "react"
-import { Alert, FlatList, Text, View, Image, ActivityIndicator } from "react-native"
+import { FlatList, Text, View, Image, ActivityIndicator } from "react-native"
 import { useStyles } from "./style" // Adjust the path as needed
-import { fetchContactList, fetchSecretFromLocalStorage } from "@app/utils/nostr"
 import { useChatContext } from "./chatContext"
-import { getPublicKey, nip19 } from "nostr-tools"
-import { useFocusEffect, useNavigation } from "@react-navigation/native"
+import { nip19 } from "nostr-tools"
+import { useNavigation } from "@react-navigation/native"
 import { ListItem, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
@@ -14,6 +13,7 @@ import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 import { UserSearchBar } from "./UserSearchBar"
 import { SearchListItem } from "./searchListItem"
 import { hexToBytes } from "@noble/curves/abstract/utils"
+import { getContactsFromEvent } from "./utils"
 
 interface ContactsProps {
   userPrivateKey: string
@@ -22,34 +22,11 @@ interface ContactsProps {
 const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
   const styles = useStyles()
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
-  const { poolRef, profileMap, contacts, setContacts } = useChatContext()
+  const { poolRef, profileMap, contactsEvent } = useChatContext()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   const { theme } = useTheme()
   const colors = theme.colors
-  useFocusEffect(
-    React.useCallback(() => {
-      async function initialize() {
-        console.log("Initializing contacts")
-        let secretKeyString = await fetchSecretFromLocalStorage()
-        if (!secretKeyString) {
-          Alert.alert("Secret Key Not Found in Storage")
-          return
-        }
-        let secret = nip19.decode(secretKeyString).data as Uint8Array
-        let newContacts =
-          (await fetchContactList(getPublicKey(secret), poolRef!.current))?.tags
-            .filter((t: string[]) => t[0] === "p")
-            .map((t: string[]) => {
-              return { pubkey: t[1] }
-            }) || []
-        console.log("contacts are", newContacts)
-        setContacts(newContacts)
-      }
-      if (poolRef) {
-        initialize()
-      }
-    }, []),
-  )
+
   const getContactMetadata = (contact: NostrProfile) => {
     let profile = profileMap?.get(contact.pubkey || "")
     return (
@@ -80,10 +57,10 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
           )}
           keyExtractor={(item) => item.id}
         />
-      ) : (
+      ) : contactsEvent ? (
         <FlatList
           contentContainerStyle={styles.listContainer}
-          data={contacts}
+          data={getContactsFromEvent(contactsEvent)}
           ListEmptyComponent={<Text>No Contacts Available</Text>}
           renderItem={({ item }) => (
             <ListItem style={styles.item} containerStyle={styles.itemContainer}>
@@ -139,6 +116,8 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
           )}
           keyExtractor={(item) => item.pubkey!}
         />
+      ) : (
+        <Text>Loading...</Text>
       )}
     </View>
   )
