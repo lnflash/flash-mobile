@@ -4,8 +4,13 @@ import { Image } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import { nip19 } from "nostr-tools"
+import { getPublicKey, nip19 } from "nostr-tools"
 import { bytesToHex } from "@noble/hashes/utils"
+import { useChatContext } from "./chatContext"
+import { addToContactList } from "@app/utils/nostr"
+import Icon from "react-native-vector-icons/Ionicons"
+import { getContactsFromEvent } from "./utils"
+import { useEffect } from "react"
 
 interface SearchListItemProps {
   item: Chat
@@ -15,11 +20,31 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
   item,
   userPrivateKey,
 }) => {
+  const { poolRef, contactsEvent } = useChatContext()
+
+  const isUserAdded = () => {
+    if (!contactsEvent) return false
+    let existingContacts = getContactsFromEvent(contactsEvent)
+    return existingContacts.map((p: NostrProfile) => p.pubkey).includes(item.id)
+  }
+
   const styles = useStyles()
   const {
     theme: { colors },
   } = useTheme()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
+  const tabNavigation = useNavigation()
+
+  const getIcon = () => {
+    let itemPubkey = item.groupId
+      .split(",")
+      .filter((p) => p !== getPublicKey(userPrivateKey))[0]
+    if (!contactsEvent) return "alert-circle-outline"
+    return getContactsFromEvent(contactsEvent).filter((c) => c.pubkey! === itemPubkey)
+      .length === 0
+      ? "person-add"
+      : "checkmark-outline"
+  }
   return (
     <ListItem
       key={item.id}
@@ -49,6 +74,24 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
             nip19.npubEncode(item.id)}
         </ListItem.Title>
       </ListItem.Content>
+      {contactsEvent ? (
+        <Icon
+          name={getIcon()!}
+          size={24}
+          color={colors.primary}
+          disabled={isUserAdded()}
+          onPress={async () => {
+            if (!isUserAdded()) return false
+            if (!poolRef) return
+            await addToContactList(
+              userPrivateKey,
+              item.id,
+              contactsEvent,
+              poolRef.current,
+            )
+          }}
+        />
+      ) : null}
     </ListItem>
   )
 }
