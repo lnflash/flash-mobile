@@ -230,7 +230,7 @@ export const SetLightningAddressModalUI = ({
               width: "100%",
             }}
           >
-            {"what do you want us to call you?"}
+            {"What do you want us to call you?"}
           </Text>
 
           <View style={styles.textInputContainerStyle}>
