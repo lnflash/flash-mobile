@@ -39,8 +39,7 @@ const Info: React.FC<Props> = ({ error }) => {
   const { colors, mode } = useTheme().theme
   const { LL } = useI18nContext()
 
-  const { persistentState } = usePersistentStateContext()
-  const [refundables, setRefundables] = useState<RefundableSwap[]>([])
+  const { persistentState, updateState } = usePersistentStateContext()
 
   const color = mode === "light" ? colors.warning : colors.black
 
@@ -48,21 +47,28 @@ const Info: React.FC<Props> = ({ error }) => {
     if (persistentState.isAdvanceMode && breezSDKInitialized) {
       fetchRefundables()
     }
-  }, [])
+  }, [persistentState.isAdvanceMode, breezSDKInitialized])
 
   const fetchRefundables = async () => {
     try {
       const refundables = (await listRefundables()) || []
-      setRefundables(refundables)
+      updateState((state: any) => {
+        if (state)
+          return {
+            ...state,
+            numOfRefundables: refundables.length,
+          }
+        return undefined
+      })
     } catch (err) {
       console.log("List Refundables Err: ", err)
     }
   }
 
-  if (error || refundables.length > 0) {
+  if (error || persistentState?.numOfRefundables > 0) {
     return (
       <View style={styles.marginButtonContainer}>
-        {refundables.length > 0 && (
+        {persistentState?.numOfRefundables > 0 && (
           <View
             style={error ? { ...styles.container, marginBottom: 5 } : styles.container}
           >
