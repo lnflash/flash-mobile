@@ -1,4 +1,5 @@
 import { useAppConfig } from "@app/hooks"
+import { getContactsFromEvent } from "@app/screens/nip17-chat/utils"
 import { bytesToHex } from "@noble/curves/abstract/utils"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
@@ -16,6 +17,7 @@ import {
   SubCloser,
   AbstractRelay,
 } from "nostr-tools"
+import { VoidFunctionComponent } from "react"
 import { Alert } from "react-native"
 
 import * as Keychain from "react-native-keychain"
@@ -218,14 +220,18 @@ export const sendNIP4Message = async (message: string, recipient: string) => {
   let NIP4Messages = {}
 }
 
-export const fetchContactList = async (userPubkey: string, pool: SimplePool) => {
+export const fetchContactList = async (
+  userPubkey: string,
+  pool: SimplePool,
+  onEvent: (event: Event) => void,
+) => {
   let filter = {
     kinds: [3],
     authors: [userPubkey],
-    limit: 1,
   }
-  let contactListEvent = await pool.querySync(["wss://relay.damus.io"], filter)
-  return contactListEvent[0]
+  pool.subscribeMany(["wss://relay.damus.io"], [filter], {
+    onevent: onEvent,
+  })
 }
 
 export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Array) => {
@@ -263,26 +269,23 @@ export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Arr
 export const addToContactList = async (
   userPrivateKey: Uint8Array,
   pubKeyToAdd: string,
+  contactsEvent: Event,
   pool: SimplePool,
 ) => {
-  console.log("adding contact")
   const userPubkey = getPublicKey(userPrivateKey)
-  let contactListEvent = await fetchContactList(userPubkey, pool)
-  let tags = contactListEvent?.tags || []
-  console.log("existing event? ", contactListEvent)
-  if (tags.map((t) => t[1]).includes(pubKeyToAdd)) return
+  let existingContacts = getContactsFromEvent(contactsEvent)
+  let tags = contactsEvent.tags
+  if (existingContacts.map((p: NostrProfile) => p.pubkey).includes(pubKeyToAdd)) return
   tags.push(["p", pubKeyToAdd])
   let newEvent: UnsignedEvent = {
     kind: 3,
     pubkey: userPubkey,
-    content: contactListEvent?.content || "",
+    content: contactsEvent.content || "",
     created_at: Math.floor(Date.now() / 1000),
     tags: tags,
   }
   const finalNewEvent = finalizeEvent(newEvent, userPrivateKey)
-  console.log("final contact event is", finalNewEvent)
   pool.publish(["wss://relay.damus.io"], finalNewEvent)
-  console.log("List Published!!")
 }
 
 export async function sendNip17Message(

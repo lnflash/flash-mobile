@@ -21,7 +21,7 @@ interface UserSearchBarProps {
 
 export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }) => {
   const [searchText, setSearchText] = useState("")
-  const { rumors, poolRef, addEventToProfiles, profileMap, resetChat } = useChatContext()
+  const { rumors, poolRef, addEventToProfiles, profileMap } = useChatContext()
   const [refreshing, setRefreshing] = useState(false)
   const [privateKey, setPrivateKey] = useState<Uint8Array | null>(null)
   const styles = useStyles()
@@ -56,6 +56,7 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
 
   const updateSearchResults = useCallback(
     async (newSearchText: string) => {
+      if (newSearchText === "") reset()
       const nip05Matching = async (alias: string) => {
         let nostrUser = await nip05.queryProfile(alias.toLocaleLowerCase())
         console.log("nostr user for", alias, nostrUser)
