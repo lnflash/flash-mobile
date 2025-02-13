@@ -30,10 +30,11 @@ type ErrorInput =
   | ApolloError
 
 type Props = {
+  refreshTriggered: boolean
   error?: ErrorInput
 }
 
-const Info: React.FC<Props> = ({ error }) => {
+const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
   const { colors, mode } = useTheme().theme
@@ -47,7 +48,7 @@ const Info: React.FC<Props> = ({ error }) => {
     if (persistentState.isAdvanceMode && breezSDKInitialized) {
       fetchRefundables()
     }
-  }, [persistentState.isAdvanceMode, breezSDKInitialized])
+  }, [refreshTriggered, breezSDKInitialized, persistentState.isAdvanceMode])
 
   const fetchRefundables = async () => {
     try {
