@@ -6,8 +6,22 @@ import Toast, {
 } from "react-native-toast-message"
 
 const toastConfig = {
-  success: (props: BaseToastProps) => <SuccessToast {...props} text2NumberOfLines={2} />,
-  error: (props: BaseToastProps) => <ErrorToast {...props} text2NumberOfLines={2} />,
+  success: (props: BaseToastProps) => (
+    <SuccessToast
+      {...props}
+      text2NumberOfLines={2}
+      text1Style={{ fontSize: 16 }}
+      text2Style={{ fontSize: 14, color: "#2a2a2a" }}
+    />
+  ),
+  error: (props: BaseToastProps) => (
+    <ErrorToast
+      {...props}
+      text2NumberOfLines={2}
+      text1Style={{ fontSize: 16 }}
+      text2Style={{ fontSize: 14, color: "#2a2a2a" }}
+    />
+  ),
 }
 
 export const GaloyToast = () => {
