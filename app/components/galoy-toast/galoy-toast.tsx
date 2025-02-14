@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Toast, {
   SuccessToast,
   ErrorToast,
@@ -25,5 +26,7 @@ const toastConfig = {
 }
 
 export const GaloyToast = () => {
-  return <Toast config={toastConfig} />
+  const { top, bottom } = useSafeAreaInsets()
+
+  return <Toast config={toastConfig} topOffset={top + 10} bottomOffset={bottom + 50} />
 }

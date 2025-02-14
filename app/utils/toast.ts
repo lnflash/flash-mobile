@@ -41,8 +41,6 @@ export const toastShow = ({
     text1: type === "error" ? translations.common.error() : translations.common.success(),
     text2: translatedMessage,
     position,
-    bottomOffset: 90,
-    topOffset: 70,
     onHide,
     visibilityTime: 10000,
     autoHide,
