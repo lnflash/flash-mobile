@@ -131,3 +131,25 @@ gql`
     }
   }
 `
+
+gql`
+  mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
+    userUpdateUsername(input: $input) {
+      errors {
+        code
+      }
+      user {
+        id
+        username
+      }
+    }
+  }
+`
+
+gql`
+  query myUserId {
+    me {
+      id
+    }
+  }
+`

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react"
-import { RefreshControl, ScrollView, View } from "react-native"
-import { makeStyles, useTheme, Text, Input, Button } from "@rneui/themed"
+import { RefreshControl, ScrollView } from "react-native"
+import { makeStyles, useTheme } from "@rneui/themed"
 
 // components
 import { AppUpdate } from "@app/components/app-update/app-update"

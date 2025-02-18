@@ -22,29 +22,35 @@ const WelcomeUserScreen: React.FC<WelcomeUserScreenProps> = ({
 
   useEffect(() => {
     if (visible) {
-      // Start animations when modal is visible
-      Animated.loop(
+      const bounceAnimation = Animated.loop(
         Animated.sequence([
           Animated.spring(translateY, {
-            toValue: -20, // Move up by 20 units
+            toValue: -20,
             friction: 2,
             tension: 100,
             useNativeDriver: true,
           }),
           Animated.spring(translateY, {
-            toValue: 0, // Return to original position
+            toValue: 0,
             friction: 2,
             tension: 100,
             useNativeDriver: true,
           }),
         ]),
-      ).start()
-
-      Animated.timing(fadeAnim, {
+      )
+      const fadeAnimation = Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 1500,
         useNativeDriver: true,
-      }).start()
+      })
+
+      bounceAnimation.start()
+      fadeAnimation.start()
+
+      return () => {
+        bounceAnimation.stop()
+        fadeAnim.setValue(0)
+      }
     }
   }, [visible])
 
