@@ -269,18 +269,20 @@ export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Arr
 export const addToContactList = async (
   userPrivateKey: Uint8Array,
   pubKeyToAdd: string,
-  contactsEvent: Event,
   pool: SimplePool,
+  contactsEvent?: Event,
 ) => {
   const userPubkey = getPublicKey(userPrivateKey)
-  let existingContacts = getContactsFromEvent(contactsEvent)
-  let tags = contactsEvent.tags
+  let existingContacts: NostrProfile[]
+  if (contactsEvent) existingContacts = getContactsFromEvent(contactsEvent)
+  else existingContacts = []
+  let tags = contactsEvent?.tags || []
   if (existingContacts.map((p: NostrProfile) => p.pubkey).includes(pubKeyToAdd)) return
   tags.push(["p", pubKeyToAdd])
   let newEvent: UnsignedEvent = {
     kind: 3,
     pubkey: userPubkey,
-    content: contactsEvent.content || "",
+    content: contactsEvent?.content || "",
     created_at: Math.floor(Date.now() / 1000),
     tags: tags,
   }

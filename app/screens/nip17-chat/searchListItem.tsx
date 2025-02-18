@@ -10,7 +10,6 @@ import { useChatContext } from "./chatContext"
 import { addToContactList } from "@app/utils/nostr"
 import Icon from "react-native-vector-icons/Ionicons"
 import { getContactsFromEvent } from "./utils"
-import { useEffect } from "react"
 
 interface SearchListItemProps {
   item: Chat
@@ -33,17 +32,17 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
     theme: { colors },
   } = useTheme()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
-  const tabNavigation = useNavigation()
 
   const getIcon = () => {
     let itemPubkey = item.groupId
       .split(",")
       .filter((p) => p !== getPublicKey(userPrivateKey))[0]
-    if (!contactsEvent) return "alert-circle-outline"
-    return getContactsFromEvent(contactsEvent).filter((c) => c.pubkey! === itemPubkey)
-      .length === 0
-      ? "person-add"
-      : "checkmark-outline"
+    if (contactsEvent)
+      return getContactsFromEvent(contactsEvent).filter((c) => c.pubkey! === itemPubkey)
+        .length === 0
+        ? "person-add"
+        : "checkmark-outline"
+    else return "person-add"
   }
   return (
     <ListItem
@@ -74,24 +73,20 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
             nip19.npubEncode(item.id)}
         </ListItem.Title>
       </ListItem.Content>
-      {contactsEvent ? (
-        <Icon
-          name={getIcon()!}
-          size={24}
-          color={colors.primary}
-          disabled={isUserAdded()}
-          onPress={async () => {
-            if (!isUserAdded()) return false
-            if (!poolRef) return
-            await addToContactList(
-              userPrivateKey,
-              item.id,
-              contactsEvent,
-              poolRef.current,
-            )
-          }}
-        />
-      ) : null}
+
+      <Icon
+        name={getIcon()!}
+        size={24}
+        color={colors.primary}
+        disabled={isUserAdded()}
+        onPress={async () => {
+          console.log("Trying to add user to contact list")
+          if (isUserAdded()) return false
+          if (!poolRef) return
+          await addToContactList(userPrivateKey, item.id, poolRef.current, contactsEvent)
+          console.log("probably added user to contact list")
+        }}
+      />
     </ListItem>
   )
 }
