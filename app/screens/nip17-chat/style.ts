@@ -65,7 +65,7 @@ export const useStyles = makeStyles(({ colors }) => ({
     backgroundColor: colors.white,
     borderBottomColor: colors.white,
     borderTopColor: colors.white,
-    marginHorizontal: 26,
+    marginHorizontal: 12,
     marginVertical: 8,
   },
 
