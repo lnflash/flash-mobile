@@ -65,28 +65,23 @@ export const useDescriptionDisplay = ({
   }
 }
 
-const AmountDisplayStyle = ({
-  isReceive,
-  isPending,
-}: {
-  isReceive: boolean
-  isPending: boolean
-}) => {
-  const styles = useStyles()
-
-  if (isPending) {
-    return styles.pending
-  }
-
-  return isReceive ? styles.receive : styles.send
-}
-
 type Props = {
   tx: TransactionFragment | undefined
   subtitle?: boolean
   isFirst?: boolean
   isLast?: boolean
   isOnHomeScreen?: boolean
+}
+
+const getAmountStyle = (
+  styles: ReturnType<typeof useStyles>,
+  isReceive: boolean,
+  isPending: boolean,
+) => {
+  if (isPending) {
+    return styles.pending
+  }
+  return isReceive ? styles.receive : styles.send
 }
 
 export const TransactionItem: React.FC<Props> = ({
@@ -107,7 +102,8 @@ export const TransactionItem: React.FC<Props> = ({
   const {
     appConfig: { galoyInstance },
   } = useAppConfig()
-  const { formatMoneyAmount, formatCurrency } = useDisplayCurrency()
+  const { formatMoneyAmount, formatCurrency, moneyAmountToDisplayCurrencyString } =
+    useDisplayCurrency()
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
   const isBalanceVisible = hideBalance ?? false
 
@@ -125,11 +121,10 @@ export const TransactionItem: React.FC<Props> = ({
 
   const walletCurrency = tx.settlementCurrency as WalletCurrency
 
-  const formattedSettlementAmount = formatMoneyAmount({
-    moneyAmount: toWalletAmount({
-      amount: tx.settlementAmount,
-      currency: tx.settlementCurrency,
-    }),
+  // Now we compare the actual formatted amounts directly
+  const formattedSettlementAmount = formatCurrency({
+    amountInMajorUnits: tx.settlementDisplayAmount,
+    currency: tx.settlementDisplayCurrency,
   })
 
   const formattedDisplayAmount = formatCurrency({
@@ -137,10 +132,21 @@ export const TransactionItem: React.FC<Props> = ({
     currency: tx.settlementDisplayCurrency,
   })
 
-  const formattedSecondaryAmount =
-    tx.settlementDisplayCurrency === tx.settlementCurrency
-      ? undefined
-      : formattedSettlementAmount
+  const convertedAmount = moneyAmountToDisplayCurrencyString({
+    moneyAmount: toWalletAmount({
+      amount: tx.settlementAmount * 100,
+      currency: tx.settlementCurrency,
+    }),
+    isApproximate: false,
+  })
+
+  // Add display currency amount
+  const displayCurrencyAmount =
+    convertedAmount === "0.00" || convertedAmount === "≈$0.00"
+      ? formattedSettlementAmount
+      : convertedAmount !== formattedSettlementAmount
+      ? convertedAmount
+      : undefined
 
   return (
     <ListItem
@@ -172,14 +178,18 @@ export const TransactionItem: React.FC<Props> = ({
         hiddenContent={<Icon style={styles.hiddenBalanceContainer} name="eye" />}
       >
         <View>
-          <Text style={AmountDisplayStyle({ isReceive, isPending })}>
+          {convertedAmount !== formattedDisplayAmount && (
+            <Text
+              style={[getAmountStyle(styles, isReceive, isPending), styles.primaryAmount]}
+            >
+              {convertedAmount}
+            </Text>
+          )}
+          <Text
+            style={[getAmountStyle(styles, isReceive, isPending), styles.secondaryAmount]}
+          >
             {formattedDisplayAmount}
           </Text>
-          {formattedSecondaryAmount ? (
-            <Text style={AmountDisplayStyle({ isReceive, isPending })}>
-              {formattedSecondaryAmount}
-            </Text>
-          ) : null}
         </View>
       </HideableArea>
     </ListItem>
@@ -221,5 +231,12 @@ const useStyles = makeStyles(({ colors }, props: UseStyleProps) => ({
     color: colors.grey0,
     textAlign: "right",
     flexWrap: "wrap",
+  },
+  secondaryAmount: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  primaryAmount: {
+    fontSize: 18,
   },
 }))
