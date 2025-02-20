@@ -1,6 +1,7 @@
 import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 import { useAppConfig } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { SetAddressError } from "@app/types/errors"
 import { Button, makeStyles, useTheme } from "@rneui/themed"
 import { KeyboardAvoidingView, View, Text, TextInput } from "react-native"
 import Modal from "react-native-modal"
@@ -118,16 +119,6 @@ export const SetUserNameUI = ({
     </Modal>
   )
 }
-
-const SetAddressError = {
-  TOO_SHORT: "TOO_SHORT",
-  TOO_LONG: "TOO_LONG",
-  INVALID_CHARACTER: "INVALID_CHARACTER",
-  ADDRESS_UNAVAILABLE: "ADDRESS_UNAVAILABLE",
-  UNKNOWN_ERROR: "UNKNOWN_ERROR",
-} as const
-
-type SetAddressError = (typeof SetAddressError)[keyof typeof SetAddressError]
 
 const useStyles = makeStyles(({ colors }) => ({
   bodyStyle: {

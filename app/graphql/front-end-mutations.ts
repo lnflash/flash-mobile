@@ -145,11 +145,3 @@ gql`
     }
   }
 `
-
-gql`
-  query myUserId {
-    me {
-      id
-    }
-  }
-`

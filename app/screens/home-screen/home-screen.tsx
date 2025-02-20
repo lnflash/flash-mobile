@@ -33,8 +33,8 @@ import { useBreez } from "@app/hooks"
 import { useAppDispatch } from "@app/store/redux"
 import { setUserData } from "@app/store/redux/slices/userSlice"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { UsernameModal } from "./username-modal"
-import WelcomeUserScreen from "./welcome-user-screen"
+import { UsernameModal } from "../../components/home-screen/username-modal"
+import WelcomeUserScreen from "../../components/home-screen/welcome-user-screen"
 
 export const HomeScreen: React.FC = () => {
   const dispatch = useAppDispatch()
