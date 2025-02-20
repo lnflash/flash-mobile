@@ -101,6 +101,7 @@ export const CardScreen = () => {
   }
 
   const saveCard = async () => {
+    setSaveCardVisible(false)
     if (cardTag && cardHtml) {
       await AsyncStorage.setItem(CARD_TAG_STORAGE_KEY, cardTag) // Save cardTag to AsyncStorage
       await AsyncStorage.setItem(CARD_HTML_STORAGE_KEY, cardHtml) // Save cardHtml to AsyncStorage
@@ -111,12 +112,8 @@ export const CardScreen = () => {
     setCardTag(tag)
   }
 
-  const handleCardHtmlUpdate = async (html: string) => {
-    processCardHtml(html)
-    setSaveCardVisible(true)
-  }
-
   const processCardHtml = (html: string) => {
+    setSaveCardVisible(true)
     setCardHtml(html)
     const balanceMatch = html.match(/(\d{1,3}(?:,\d{3})*)\s*SATS<\/dt>/)
     if (balanceMatch) {
@@ -287,7 +284,7 @@ export const CardScreen = () => {
         <ModalNfcFlashcard
           isActive={displayReceiveNfc}
           setIsActive={setDisplayReceiveNfc}
-          onCardHtmlUpdate={handleCardHtmlUpdate}
+          onCardHtmlUpdate={processCardHtml}
           setTagId={setTagId}
         />
         <SaveCardModal
