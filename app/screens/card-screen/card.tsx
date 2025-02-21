@@ -112,8 +112,12 @@ export const CardScreen = () => {
     setCardTag(tag)
   }
 
+  const handleCardHtmlUpdate = async (html: string) => {
+    processCardHtml(html)
+    if (!cardHtml) setSaveCardVisible(true)
+  }
+
   const processCardHtml = (html: string) => {
-    setSaveCardVisible(true)
     setCardHtml(html)
     const balanceMatch = html.match(/(\d{1,3}(?:,\d{3})*)\s*SATS<\/dt>/)
     if (balanceMatch) {
@@ -284,7 +288,7 @@ export const CardScreen = () => {
         <ModalNfcFlashcard
           isActive={displayReceiveNfc}
           setIsActive={setDisplayReceiveNfc}
-          onCardHtmlUpdate={processCardHtml}
+          onCardHtmlUpdate={handleCardHtmlUpdate}
           setTagId={setTagId}
         />
         <SaveCardModal
