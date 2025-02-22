@@ -188,6 +188,7 @@ export const TransactionItem: React.FC<Props> = ({
           <Text
             style={[getAmountStyle(styles, isReceive, isPending), styles.secondaryAmount]}
           >
+            {convertedAmount === formattedDisplayAmount ? null : "US"}
             {formattedDisplayAmount}
           </Text>
         </View>
