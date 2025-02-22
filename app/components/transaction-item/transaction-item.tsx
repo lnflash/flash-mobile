@@ -1,11 +1,9 @@
 import React from "react"
 import { View } from "react-native"
-import Icon from "react-native-vector-icons/Ionicons"
 
 // eslint-disable-next-line camelcase
 import {
   TransactionFragment,
-  TransactionFragmentDoc,
   WalletCurrency,
   useHideBalanceQuery,
 } from "@app/graphql/generated"
@@ -17,7 +15,7 @@ import { StackNavigationProp } from "@react-navigation/stack"
 
 import { useAppConfig } from "@app/hooks"
 import { toWalletAmount } from "@app/types/amounts"
-import { Text, makeStyles, ListItem } from "@rneui/themed"
+import { Text, makeStyles, ListItem, Icon } from "@rneui/themed"
 import HideableArea from "../hideable-area/hideable-area"
 import { IconTransaction } from "../icon-transactions"
 import { TransactionDate } from "../transaction-date"
@@ -53,9 +51,9 @@ export const useDescriptionDisplay = ({
     case "SettlementViaLn":
       if (isReceive) {
         return `Received`
-      } else {
-        return "Sent"
       }
+      return "Sent"
+
     case "SettlementViaIntraLedger":
       return isReceive
         ? `${LL.common.from()} ${
@@ -102,8 +100,7 @@ export const TransactionItem: React.FC<Props> = ({
   const {
     appConfig: { galoyInstance },
   } = useAppConfig()
-  const { formatMoneyAmount, formatCurrency, moneyAmountToDisplayCurrencyString } =
-    useDisplayCurrency()
+  const { formatCurrency, moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
   const isBalanceVisible = hideBalance ?? false
 
@@ -121,12 +118,6 @@ export const TransactionItem: React.FC<Props> = ({
 
   const walletCurrency = tx.settlementCurrency as WalletCurrency
 
-  // Now we compare the actual formatted amounts directly
-  const formattedSettlementAmount = formatCurrency({
-    amountInMajorUnits: tx.settlementDisplayAmount,
-    currency: tx.settlementDisplayCurrency,
-  })
-
   const formattedDisplayAmount = formatCurrency({
     amountInMajorUnits: tx.settlementDisplayAmount,
     currency: tx.settlementDisplayCurrency,
@@ -139,14 +130,6 @@ export const TransactionItem: React.FC<Props> = ({
     }),
     isApproximate: false,
   })
-
-  // Add display currency amount
-  const displayCurrencyAmount =
-    convertedAmount === "0.00" || convertedAmount === "≈$0.00"
-      ? formattedSettlementAmount
-      : convertedAmount !== formattedSettlementAmount
-      ? convertedAmount
-      : undefined
 
   return (
     <ListItem
@@ -178,7 +161,13 @@ export const TransactionItem: React.FC<Props> = ({
         hiddenContent={<Icon style={styles.hiddenBalanceContainer} name="eye" />}
       >
         <View>
-          {convertedAmount !== formattedDisplayAmount && (
+          {convertedAmount.replace("-", "") === formattedDisplayAmount ? (
+            <Text
+              style={[getAmountStyle(styles, isReceive, isPending), styles.primaryAmount]}
+            >
+              {formattedDisplayAmount}
+            </Text>
+          ) : (
             <Text
               style={[getAmountStyle(styles, isReceive, isPending), styles.primaryAmount]}
             >
@@ -188,8 +177,9 @@ export const TransactionItem: React.FC<Props> = ({
           <Text
             style={[getAmountStyle(styles, isReceive, isPending), styles.secondaryAmount]}
           >
-            {convertedAmount === formattedDisplayAmount ? null : "US"}
-            {formattedDisplayAmount}
+            {convertedAmount.replace("-", "") === formattedDisplayAmount
+              ? null
+              : `US${formattedDisplayAmount}`}
           </Text>
         </View>
       </HideableArea>

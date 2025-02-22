@@ -1,5 +1,4 @@
 import { View } from "react-native"
-import Icon from "react-native-vector-icons/Ionicons"
 
 // eslint-disable-next-line camelcase
 // import { useFragment_experimental } from "@apollo/client"
@@ -17,7 +16,7 @@ import { StackNavigationProp } from "@react-navigation/stack"
 
 import { useAppConfig } from "@app/hooks"
 import { toWalletAmount } from "@app/types/amounts"
-import { Text, makeStyles, ListItem } from "@rneui/themed"
+import { Text, makeStyles, ListItem, Icon } from "@rneui/themed"
 import HideableArea from "../hideable-area/hideable-area"
 import { IconTransaction } from "../icon-transactions"
 import { TransactionDate } from "../transaction-date"
@@ -52,9 +51,9 @@ export const useDescriptionDisplay = ({
     case "SettlementViaLn":
       if (isReceive) {
         return `Received`
-      } else {
-        return "Sent"
       }
+      return "Sent"
+
     case "SettlementViaIntraLedger":
       return isReceive
         ? `${LL.common.from()} ${
@@ -121,10 +120,12 @@ export const BreezTransactionItem: React.FC<Props> = ({
 
   const walletCurrency = tx.settlementCurrency as WalletCurrency
 
-  // Now we compare the actual formatted amounts directly
-  const formattedSettlementAmount = formatCurrency({
-    amountInMajorUnits: tx.settlementDisplayAmount,
-    currency: tx.settlementDisplayCurrency,
+  // set amount in sats for breez wallet as secondarqy amount
+  const formattedSettlementSecondaryAmount = formatMoneyAmount({
+    moneyAmount: toWalletAmount({
+      amount: tx.settlementAmount,
+      currency: tx.settlementCurrency,
+    }),
   })
 
   const formattedDisplayAmount = formatCurrency({
@@ -139,13 +140,6 @@ export const BreezTransactionItem: React.FC<Props> = ({
     }),
     isApproximate: false,
   })
-
-  const displayCurrencyAmount =
-    convertedAmount === "0.00" || convertedAmount === "≈0.00"
-      ? formattedSettlementAmount
-      : convertedAmount !== formattedSettlementAmount
-      ? convertedAmount
-      : undefined
 
   return (
     <ListItem
@@ -181,17 +175,16 @@ export const BreezTransactionItem: React.FC<Props> = ({
         hiddenContent={<Icon style={styles.hiddenBalanceContainer} name="eye" />}
       >
         <View>
-          {convertedAmount !== formattedDisplayAmount && (
-            <Text
-              style={[getAmountStyle(styles, isReceive, isPending), styles.primaryAmount]}
-            >
-              {convertedAmount}
-            </Text>
-          )}
+          <Text
+            style={[getAmountStyle(styles, isReceive, isPending), styles.primaryAmount]}
+          >
+            {convertedAmount}
+          </Text>
+
           <Text
             style={[getAmountStyle(styles, isReceive, isPending), styles.secondaryAmount]}
           >
-            {formattedDisplayAmount}
+            {formattedSettlementSecondaryAmount}
           </Text>
         </View>
       </HideableArea>
