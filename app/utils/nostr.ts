@@ -17,12 +17,11 @@ import {
   SubCloser,
   AbstractRelay,
 } from "nostr-tools"
-import { VoidFunctionComponent } from "react"
 import { Alert } from "react-native"
 
 import * as Keychain from "react-native-keychain"
 
-let publicRelays = [
+export const publicRelays = [
   "wss://relay.damus.io",
   "wss://relay.primal.net",
   "wss://relay.snort.social",
