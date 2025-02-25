@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react"
 import { FlatList, Text, View, Image, ActivityIndicator } from "react-native"
 import { useStyles } from "./style" // Adjust the path as needed
 import { useChatContext } from "./chatContext"
-import { nip19, Event } from "nostr-tools"
+import { nip19, Event, finalizeEvent } from "nostr-tools"
 import { useNavigation } from "@react-navigation/native"
 import { ListItem, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
@@ -16,7 +16,7 @@ import { hexToBytes } from "@noble/curves/abstract/utils"
 import { getContactsFromEvent } from "./utils"
 import ContactCard from "./contactCard"
 import { Swipeable } from "react-native-gesture-handler"
-import { fetchNostrUsers, publicRelays } from "@app/utils/nostr"
+import { customPublish, fetchNostrUsers, publicRelays } from "@app/utils/nostr"
 import Icon from "react-native-vector-icons/Ionicons"
 import { bytesToHex } from "@noble/hashes/utils"
 
@@ -45,20 +45,26 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
   const handleUnfollow = (contactPubkey: string) => {
     if (!poolRef || !contactsEvent) return
     console.log("unfollowing pubkey", contactPubkey)
-    let profiles = contactsEvent.tags.filter((p) => p[0] === "p").map((p) => p[1])
-    let tagsWithoutProfiles = contactsEvent.tags.filter((p) => p[0] !== "p")
-    let newProfiles = profiles.filter((p) => p[1] !== contactPubkey)
+    let tagsWithoutProfile = contactsEvent.tags.filter(
+      (p) => p[0] === "p" && p[1] !== contactPubkey,
+    )
+    let newCreatedAt = Math.floor(new Date().getTime() / 1000)
     let newContactsEvent: Event = {
       ...contactsEvent,
-      tags: [...tagsWithoutProfiles, newProfiles],
+      id: "",
+      sig: "",
+      created_at: newCreatedAt,
+      tags: [...tagsWithoutProfile],
     }
+    let finalEvent = finalizeEvent(newContactsEvent, hexToBytes(userPrivateKey))
     console.log(
       "Old Contacts event vs NewContacts Event",
       contactPubkey,
       contactsEvent,
       newContactsEvent,
     )
-    poolRef.current.publish(publicRelays, newContactsEvent)
+    customPublish(publicRelays, finalEvent)
+    console.log("Published!")
   }
 
   useEffect(() => {

@@ -21,6 +21,15 @@ export const getLastSeen = async (groupId: string) => {
 }
 
 export const getContactsFromEvent = (event: Event) => {
+  console.log("CALLED GET CONTACTS ON", event)
+  console.log(
+    "Contacts ARE",
+    event.tags
+      .filter((t) => t[0] === "p")
+      .map((t) => {
+        return { pubkey: t[1] }
+      }),
+  )
   return event.tags
     .filter((t) => t[0] === "p")
     .map((t) => {

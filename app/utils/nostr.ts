@@ -385,7 +385,7 @@ export const customPublish = (
             return value
           },
           (reason: string) => {
-            console.log("Rejected on", url)
+            console.log("Rejected on", url, reason)
             onRejectedRelays?.(url)
             return reason
           },
