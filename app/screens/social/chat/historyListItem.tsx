@@ -1,5 +1,5 @@
 import { ListItem } from "@rneui/themed"
-import { useStyles } from "./style"
+import { useStyles } from "../style"
 import { Image, Text, View } from "react-native"
 import { nip19, Event, SubCloser, getPublicKey } from "nostr-tools"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
@@ -8,7 +8,7 @@ import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 import { useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { Rumor, fetchNostrUsers } from "@app/utils/nostr"
-import { getLastSeen } from "./utils"
+import { getLastSeen } from "../utils"
 import { bytesToHex } from "@noble/hashes/utils"
 
 interface HistoryListItemProps {

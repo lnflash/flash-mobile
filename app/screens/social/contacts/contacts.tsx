@@ -1,8 +1,8 @@
 // Contacts.tsx
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { FlatList, Text, View, Image, ActivityIndicator } from "react-native"
-import { useStyles } from "./style" // Adjust the path as needed
-import { useChatContext } from "./chatContext"
+import { useStyles } from "../style" // Adjust the path as needed
+import { useChatContext } from "../chat/chatContext"
 import { nip19, Event, finalizeEvent } from "nostr-tools"
 import { useNavigation } from "@react-navigation/native"
 import { ListItem, useTheme } from "@rneui/themed"
@@ -10,10 +10,10 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 import ChatIcon from "@app/assets/icons/chat.svg"
 import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
-import { UserSearchBar } from "./UserSearchBar"
-import { SearchListItem } from "./searchListItem"
+import { UserSearchBar } from "../search-bar/UserSearchBar"
+import { SearchListItem } from "../search-bar/searchListItem"
 import { hexToBytes } from "@noble/curves/abstract/utils"
-import { getContactsFromEvent } from "./utils"
+import { getContactsFromEvent } from "../utils"
 import ContactCard from "./contactCard"
 import { Swipeable } from "react-native-gesture-handler"
 import { customPublish, fetchNostrUsers, publicRelays } from "@app/utils/nostr"
@@ -31,16 +31,6 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   const { theme } = useTheme()
   const colors = theme.colors
-
-  const getContactMetadata = (contact: NostrProfile) => {
-    let profile = profileMap?.get(contact.pubkey || "")
-    return (
-      profile?.nip05 ||
-      profile?.name ||
-      profile?.username ||
-      nip19.npubEncode(contact.pubkey!).slice(0, 9) + ".."
-    )
-  }
 
   const handleUnfollow = (contactPubkey: string) => {
     if (!poolRef || !contactsEvent) return
@@ -65,6 +55,17 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
     )
     customPublish(publicRelays, finalEvent)
     console.log("Published!")
+  }
+
+  const swipeableRefs = useRef<Map<string, React.RefObject<Swipeable>>>(new Map())
+
+  // Handle ellipses press (trigger swipe action)
+  const handleEllipsesPress = (pubkey: string) => {
+    const swipeable = swipeableRefs.current.get(pubkey)
+    console.log("GOT SWIPEABLE", swipeable, pubkey)
+    if (swipeable) {
+      swipeable.current?.openRight() // Trigger the swipe to reveal actions
+    }
   }
 
   useEffect(() => {
@@ -146,19 +147,27 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
           contentContainerStyle={{ ...styles.listContainer, margin: 20 }}
           data={getContactsFromEvent(contactsEvent)}
           ListEmptyComponent={<Text>No Contacts Available</Text>}
-          renderItem={({ item }) => (
-            <Swipeable
-              renderRightActions={() => renderRightActions(item)}
-              containerStyle={styles.itemContainer}
-            >
-              <ContactCard
-                item={item}
-                profileMap={profileMap}
+          renderItem={({ item }) => {
+            if (!swipeableRefs.current.has(item.pubkey)) {
+              swipeableRefs.current.set(item.pubkey, React.createRef())
+            }
+
+            return (
+              <Swipeable
+                renderRightActions={() => renderRightActions(item)}
                 containerStyle={styles.itemContainer}
-                style={styles.item}
-              />
-            </Swipeable>
-          )}
+                ref={swipeableRefs.current.get(item.pubkey)!}
+              >
+                <ContactCard
+                  item={item}
+                  profileMap={profileMap}
+                  containerStyle={styles.itemContainer}
+                  style={styles.item}
+                  onEllipsesPress={() => handleEllipsesPress(item.pubkey!)} // Trigger swipe on ellipses click
+                />
+              </Swipeable>
+            )
+          }}
           keyExtractor={(item) => item.pubkey!}
         />
       ) : (

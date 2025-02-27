@@ -39,7 +39,7 @@ import { store } from "./store/redux"
 import PolyfillCrypto from "react-native-webview-crypto"
 import { ActivityIndicatorProvider } from "./contexts"
 import { BreezProvider } from "./contexts/BreezContext"
-import { ChatContextProvider } from "./screens/nip17-chat/chatContext"
+import { ChatContextProvider } from "./screens/social/chat/chatContext"
 import { NotificationsProvider } from "./components/notification"
 
 // FIXME should we only load the currently used local?

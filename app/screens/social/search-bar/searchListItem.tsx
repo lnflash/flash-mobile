@@ -1,15 +1,15 @@
 import { ListItem, useTheme } from "@rneui/themed"
-import { useStyles } from "./style"
+import { useStyles } from "../style"
 import { Image } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 import { getPublicKey, nip19 } from "nostr-tools"
 import { bytesToHex } from "@noble/hashes/utils"
-import { useChatContext } from "./chatContext"
+import { useChatContext } from "../chat/chatContext"
 import { addToContactList } from "@app/utils/nostr"
 import Icon from "react-native-vector-icons/Ionicons"
-import { getContactsFromEvent } from "./utils"
+import { getContactsFromEvent } from "../utils"
 
 interface SearchListItemProps {
   item: Chat

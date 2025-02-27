@@ -4,15 +4,14 @@ import { Image, Text, View } from "react-native"
 import { ListItem } from "@rneui/themed"
 import { useTheme } from "@rneui/themed"
 import { nip19 } from "nostr-tools"
-import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
-import ChatIcon from "@app/assets/icons/chat.svg"
-import { hexToBytes } from "@noble/curves/abstract/utils"
+import Icon from "react-native-vector-icons/Ionicons"
 
 interface ContactCardProps {
   item: any
   profileMap?: Map<string, NostrProfile>
   style?: Object
   containerStyle?: Object
+  onEllipsesPress: () => void
 }
 
 const ContactCard: React.FC<ContactCardProps> = ({
@@ -20,6 +19,7 @@ const ContactCard: React.FC<ContactCardProps> = ({
   profileMap,
   style,
   containerStyle,
+  onEllipsesPress,
 }) => {
   const { theme } = useTheme()
   const colors = theme.colors
@@ -52,6 +52,9 @@ const ContactCard: React.FC<ContactCardProps> = ({
       >
         <ListItem.Subtitle style={{ fontSize: 16, marginTop: 5, marginBottom: 5 }}>
           <Text style={{ color: colors.primary3 }}>{getContactMetadata(item)}</Text>
+        </ListItem.Subtitle>
+        <ListItem.Subtitle style={{ marginTop: 10 }}>
+          <Icon name="ellipsis-vertical-outline" onPress={onEllipsesPress} />
         </ListItem.Subtitle>
       </ListItem.Content>
     </ListItem>

@@ -2,14 +2,14 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { SearchBar } from "@rneui/themed"
 import { Event, getPublicKey, nip05, nip19, SubCloser } from "nostr-tools"
 import { useCallback, useEffect, useState } from "react"
-import { useChatContext } from "./chatContext"
+import { useChatContext } from "../chat/chatContext"
 import {
   fetchNostrUsers,
   fetchSecretFromLocalStorage,
   getGroupId,
 } from "@app/utils/nostr"
 import { hexToBytes } from "@noble/curves/abstract/utils"
-import { useStyles } from "./style"
+import { useStyles } from "../style"
 import { Alert } from "react-native"
 import { useAppConfig } from "@app/hooks"
 import { testProps } from "@app/utils/testProps"

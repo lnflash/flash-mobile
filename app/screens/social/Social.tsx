@@ -17,22 +17,22 @@ import {
   fetchSecretFromLocalStorage,
 } from "@app/utils/nostr"
 import { useStyles } from "./style"
-import { SearchListItem } from "./searchListItem"
-import { HistoryListItem } from "./historyListItem"
-import { useChatContext } from "./chatContext"
+import { SearchListItem } from "./search-bar/searchListItem"
+import { HistoryListItem } from "./chat/historyListItem"
+import { useChatContext } from "./chat/chatContext"
 import { useFocusEffect } from "@react-navigation/native"
 import { useAppConfig } from "@app/hooks"
 import { useAppSelector } from "@app/store/redux"
-import { ImportNsecModal } from "./import-nsec"
+import { ImportNsecModal } from "./import-nsec/import-nsec"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
-import Contacts from "./contacts"
-import { UserSearchBar } from "./UserSearchBar"
+import Contacts from "./contacts/contacts"
+import { UserSearchBar } from "./search-bar/UserSearchBar"
 
 const Tab = createMaterialTopTabNavigator()
 
-export const NIP17Chat: React.FC = () => {
+export const Social: React.FC = () => {
   const styles = useStyles()
   const {
     theme: { colors },
