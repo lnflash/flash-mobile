@@ -8,9 +8,7 @@ import {
   fetchSecretFromLocalStorage,
   getGroupId,
 } from "@app/utils/nostr"
-import { hexToBytes } from "@noble/curves/abstract/utils"
 import { useStyles } from "../style"
-import { Alert } from "react-native"
 import { useAppConfig } from "@app/hooks"
 import { testProps } from "@app/utils/testProps"
 import Icon from "react-native-vector-icons/Ionicons"
