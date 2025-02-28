@@ -25,7 +25,7 @@ export const useRealTimePrice = () => {
   const { loading } = useSubscription(RealtimePriceSubscription, {
     variables: { currency: displayCurrency },
     onData({ data }) {
-      if (data.data.realtimePrice.realtimePrice.btcSatPrice) {
+      if (data?.data?.realtimePrice?.realtimePrice?.btcSatPrice) {
         const { base, offset } = data.data.realtimePrice.realtimePrice.btcSatPrice
         priceRef.current = base / 10 ** offset
       }
