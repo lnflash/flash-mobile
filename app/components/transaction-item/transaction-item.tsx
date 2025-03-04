@@ -21,6 +21,34 @@ import { IconTransaction } from "../icon-transactions"
 import { TransactionDate } from "../transaction-date"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
+/**
+ * Compares two amount strings and considers them equal if they
+ * differ by the threshold amount or less (default 0.01)
+ *
+ * @param amount1 First amount string (can contain currency symbols, commas, etc.)
+ * @param amount2 Second amount string (can contain currency symbols, commas, etc.)
+ * @param threshold Maximum difference allowed between amounts (default: 0.01)
+ * @returns true if amounts are approximately equal within threshold
+ */
+export const areAmountsApproximatelyEqual = (
+  amount1: string,
+  amount2: string,
+  threshold = 0.02,
+): boolean => {
+  // Parse amounts to numbers, handling formatting
+  const parseAmountString = (str: string): number => {
+    // Remove currency symbols, commas, etc. but handle decimal separators
+    const cleaned = str.replace(/[^\d.,]/g, "").replace(/,/g, ".")
+    return parseFloat(cleaned)
+  }
+
+  const num1 = parseAmountString(amount1.replace("-", ""))
+  const num2 = parseAmountString(amount2)
+
+  // Check if the difference is within threshold
+  return !isNaN(num1) && !isNaN(num2) && Math.abs(num1 - num2) <= threshold
+}
+
 // This should extend the Transaction directly from the cache
 export const useDescriptionDisplay = ({
   tx,
@@ -161,7 +189,8 @@ export const TransactionItem: React.FC<Props> = ({
         hiddenContent={<Icon style={styles.hiddenBalanceContainer} name="eye" />}
       >
         <View>
-          {convertedAmount.replace("-", "") === formattedDisplayAmount ? (
+          {convertedAmount &&
+          areAmountsApproximatelyEqual(convertedAmount, formattedDisplayAmount) ? (
             <Text
               style={[getAmountStyle(styles, isReceive, isPending), styles.primaryAmount]}
             >
@@ -177,7 +206,8 @@ export const TransactionItem: React.FC<Props> = ({
           <Text
             style={[getAmountStyle(styles, isReceive, isPending), styles.secondaryAmount]}
           >
-            {convertedAmount.replace("-", "") === formattedDisplayAmount
+            {convertedAmount &&
+            convertedAmount.replace("-", "") === formattedDisplayAmount
               ? null
               : `US${formattedDisplayAmount}`}
           </Text>
