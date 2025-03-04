@@ -80,17 +80,6 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
       },
     })
 
-    console.log("Mutation response:", { data, errors })
-    console.log("User update errors:", data?.userUpdateUsername?.errors) // Log the errors array
-    updateNostrProfile({
-      content: {
-        name: lnAddress,
-        username: lnAddress,
-        lud16: `${lnAddress}@${lnDomain}`,
-        nip05: `${lnAddress}@${lnDomain}`,
-      },
-    })
-    setPreferredRelay(relayUrl)
     if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
       if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
         setError(SetAddressError.ADDRESS_UNAVAILABLE)
@@ -100,6 +89,15 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
       return
     }
 
+    await updateNostrProfile({
+      content: {
+        name: lnAddress,
+        username: lnAddress,
+        lud16: `${lnAddress}@${lnDomain}`,
+        nip05: `${lnAddress}@${lnDomain}`,
+      },
+    })
+    await setPreferredRelay(relayUrl)
     dispatch(updateUserData({ username: lnAddress }))
     closeModal()
   }
