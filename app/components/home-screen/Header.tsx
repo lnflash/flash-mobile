@@ -106,8 +106,8 @@ const Header: React.FC<Props> = ({ isContentVisible, setIsContentVisible }) => {
         loading={false}
         breezBalance={btcWallet?.balance || 0}
       />
-      {/* Help Icon */}
-      {!helpTriggered && (
+      {/* Help Icon - TEMPORARILY HIDING BUTTON UNTIL FULL PRODUCT LAUNCH*/}
+      {/* {!helpTriggered && (
         <View style={styles.helpIconContainer}>
           <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
             <TouchableOpacity onPress={handleHelpPress}>
@@ -115,7 +115,7 @@ const Header: React.FC<Props> = ({ isContentVisible, setIsContentVisible }) => {
             </TouchableOpacity>
           </Animated.View>
         </View>
-      )}
+      )} */}
       <GaloyIconButton
         onPress={() => navigation.navigate("settings")}
         size={"medium"}
