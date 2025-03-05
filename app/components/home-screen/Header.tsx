@@ -119,7 +119,7 @@ const Header: React.FC<Props> = ({ isContentVisible, setIsContentVisible }) => {
       <GaloyIconButton
         onPress={() => navigation.navigate("settings")}
         size={"medium"}
-        name="menu"
+        name="gear"
         iconOnly={true}
       />
     </View>
