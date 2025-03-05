@@ -139,7 +139,8 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.helpIconContainer}>
           <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
             <TouchableOpacity onPress={handleHelpPress}>
-              <Icon name="help-circle-outline" size={40} color={colors.primary} />
+              {/* Help Icon - TEMPORARILY HIDING BUTTON UNTIL FULL PRODUCT LAUNCH*/}
+              {/* <Icon name="help-circle-outline" size={40} color={colors.primary} /> */}
             </TouchableOpacity>
           </Animated.View>
         </View>
