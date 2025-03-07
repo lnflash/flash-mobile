@@ -11,7 +11,8 @@ import Icon from "react-native-vector-icons/Ionicons"
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { useRealTimePrice } from "@app/hooks"
+import { useDisplayCurrency } from "@app/hooks/use-display-currency"
+import { usePriceConversion } from "@app/hooks"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // gql
@@ -35,6 +36,7 @@ import {
 } from "@app/screens/send-bitcoin-screen/payment-destination/index.types"
 import { parseDestination } from "@app/screens/send-bitcoin-screen/payment-destination"
 import { testProps } from "../../utils/testProps"
+import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 import { LNURL_DOMAINS } from "@app/config"
 
 // assets
@@ -55,7 +57,8 @@ export const CardScreen = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
-  const { satsToCurrency, loading: realTimePriceLoading } = useRealTimePrice()
+  const { formatMoneyAmount } = useDisplayCurrency()
+  const { convertMoneyAmount } = usePriceConversion("network-only")
   const { updateState } = usePersistentStateContext()
 
   const [saveCardVisible, setSaveCardVisible] = useState(false)
@@ -75,8 +78,8 @@ export const CardScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      if (!cardHtml && !realTimePriceLoading) loadCardHtmlFromStorage()
-    }, [cardHtml, realTimePriceLoading, satsToCurrency]),
+      if (!cardHtml && convertMoneyAmount) loadCardHtmlFromStorage()
+    }, [cardHtml, convertMoneyAmount]),
   )
 
   const loadCardHtmlFromStorage = async () => {
@@ -120,17 +123,26 @@ export const CardScreen = () => {
     if (balanceMatch) {
       const parsedBalance = balanceMatch[1].replace(/,/g, "") // Remove commas
       const satoshiAmount = parseInt(parsedBalance, 10)
-      const { formattedCurrency } = satsToCurrency(Number(satoshiAmount))
 
-      setBalance(formattedCurrency)
-      updateState((state: any) => {
-        if (state)
-          return {
-            ...state,
-            balance: formattedCurrency,
-          }
-        return undefined
-      })
+      const convertedBalance =
+        convertMoneyAmount &&
+        convertMoneyAmount(toBtcMoneyAmount(satoshiAmount), DisplayCurrency)
+
+      if (convertedBalance) {
+        const formattedBalance = formatMoneyAmount({
+          moneyAmount: convertedBalance,
+          noSymbol: false,
+        })
+        setBalance(formattedBalance)
+        updateState((state: any) => {
+          if (state)
+            return {
+              ...state,
+              balance: formattedBalance,
+            }
+          return undefined
+        })
+      }
     }
 
     const lnurlMatch = html.match(/href="lightning:(lnurl\w+)"/)

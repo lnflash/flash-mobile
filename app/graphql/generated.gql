@@ -1548,3 +1548,28 @@ subscription myLnUpdates {
     __typename
   }
 }
+
+subscription realtimePriceWs($currency: DisplayCurrency!) {
+  realtimePrice(input: {currency: $currency}) {
+    errors {
+      message
+      __typename
+    }
+    realtimePrice {
+      timestamp
+      btcSatPrice {
+        base
+        offset
+        __typename
+      }
+      usdCentPrice {
+        base
+        offset
+        __typename
+      }
+      denominatorCurrency
+      __typename
+    }
+    __typename
+  }
+}

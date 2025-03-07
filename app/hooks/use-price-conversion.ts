@@ -1,4 +1,8 @@
-import { useRealtimePriceQuery, WalletCurrency } from "@app/graphql/generated"
+import {
+  useRealtimePriceQuery,
+  useRealtimePriceWsSubscription,
+  WalletCurrency,
+} from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import {
   createToDisplayAmount,
@@ -23,6 +27,7 @@ const defaultDisplayCurrency = usdDisplayCurrency
 
 export const usePriceConversion = (fetchPolicy?: WatchQueryFetchPolicy) => {
   const isAuthed = useIsAuthed()
+
   const { data } = useRealtimePriceQuery({
     fetchPolicy: fetchPolicy || "cache-and-network",
     skip: !isAuthed,
@@ -38,9 +43,23 @@ export const usePriceConversion = (fetchPolicy?: WatchQueryFetchPolicy) => {
 
   if (realtimePrice) {
     displayCurrencyPerSat =
-      realtimePrice.btcSatPrice.base / 10 ** (realtimePrice.btcSatPrice.offset * 1.0002)
+      realtimePrice.btcSatPrice.base / 10 ** realtimePrice.btcSatPrice.offset
     displayCurrencyPerCent =
       realtimePrice.usdCentPrice.base / 10 ** realtimePrice.usdCentPrice.offset
+  }
+
+  const { data: subData } = useRealtimePriceWsSubscription({
+    variables: { currency: displayCurrency },
+    skip: !realtimePrice?.denominatorCurrency,
+  })
+
+  const subRealtimePrice = subData?.realtimePrice.realtimePrice
+
+  if (subRealtimePrice) {
+    displayCurrencyPerSat =
+      subRealtimePrice.btcSatPrice.base / 10 ** subRealtimePrice.btcSatPrice.offset
+    displayCurrencyPerCent =
+      subRealtimePrice.usdCentPrice.base / 10 ** subRealtimePrice.usdCentPrice.offset
   }
 
   const priceOfCurrencyInCurrency = useMemo(() => {
