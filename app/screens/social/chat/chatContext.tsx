@@ -1,6 +1,7 @@
 import { useAppConfig } from "@app/hooks"
 import {
   Rumor,
+  fetchContactList,
   fetchGiftWrapsForPublicKey,
   fetchSecretFromLocalStorage,
   getRumorFromWrap,
@@ -20,6 +21,8 @@ type ChatContextType = {
   profileMap: Map<string, NostrProfile> | undefined
   addEventToProfiles: (event: Event) => void
   resetChat: () => void
+  contactsEvent: Event | undefined
+  setContactsEvent: (e: Event) => void
 }
 
 const publicRelays = [
@@ -39,6 +42,8 @@ const ChatContext = createContext<ChatContextType>({
   profileMap: undefined,
   addEventToProfiles: (event: Event) => {},
   resetChat: () => {},
+  contactsEvent: undefined,
+  setContactsEvent: (event: Event) => {},
 })
 
 export const useChatContext = () => useContext(ChatContext)
@@ -51,6 +56,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
   const poolRef = useRef(new SimplePool())
   const processedEventIds = useRef(new Set())
+  const [contactsEvent, setContactsEvent] = useState<Event>()
   const {
     appConfig: {
       galoyInstance: { relayUrl },
@@ -90,6 +96,11 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       let cachedRumors = cachedGiftwraps.map((wrap) => getRumorFromWrap(wrap, secret))
       setRumors(cachedRumors)
       let closer = await fetchNewGiftwraps(cachedGiftwraps, publicKey)
+
+      fetchContactList(getPublicKey(secret), poolRef!.current, (event: Event) => {
+        console.log("NEW CONTACTS EVENT IS", event)
+        setContactsEvent(event)
+      })
       setCloser(closer)
     }
     if (poolRef && !closer) initialize()
@@ -176,6 +187,8 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         profileMap: profileMap.current,
         addEventToProfiles,
         resetChat,
+        contactsEvent,
+        setContactsEvent,
       }}
     >
       {children}

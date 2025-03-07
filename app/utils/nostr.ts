@@ -1,4 +1,5 @@
 import { useAppConfig } from "@app/hooks"
+import { getContactsFromEvent } from "@app/screens/social/utils"
 import { bytesToHex } from "@noble/curves/abstract/utils"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
@@ -20,7 +21,7 @@ import { Alert } from "react-native"
 
 import * as Keychain from "react-native-keychain"
 
-let publicRelays = [
+export const publicRelays = [
   "wss://relay.damus.io",
   "wss://relay.primal.net",
   "wss://relay.snort.social",
@@ -220,6 +221,20 @@ export const sendNIP4Message = async (message: string, recipient: string) => {
   let NIP4Messages = {}
 }
 
+export const fetchContactList = async (
+  userPubkey: string,
+  pool: SimplePool,
+  onEvent: (event: Event) => void,
+) => {
+  let filter = {
+    kinds: [3],
+    authors: [userPubkey],
+  }
+  pool.subscribeMany(["wss://relay.damus.io"], [filter], {
+    onevent: onEvent,
+  })
+}
+
 export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Array) => {
   let pool = new SimplePool()
   console.log("inside setpreferredRelay")
@@ -251,6 +266,30 @@ export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Arr
   setTimeout(() => {
     pool.close(publicRelays)
   }, 5000)
+}
+
+export const addToContactList = async (
+  userPrivateKey: Uint8Array,
+  pubKeyToAdd: string,
+  pool: SimplePool,
+  contactsEvent?: Event,
+) => {
+  const userPubkey = getPublicKey(userPrivateKey)
+  let existingContacts: NostrProfile[]
+  if (contactsEvent) existingContacts = getContactsFromEvent(contactsEvent)
+  else existingContacts = []
+  let tags = contactsEvent?.tags || []
+  if (existingContacts.map((p: NostrProfile) => p.pubkey).includes(pubKeyToAdd)) return
+  tags.push(["p", pubKeyToAdd])
+  let newEvent: UnsignedEvent = {
+    kind: 3,
+    pubkey: userPubkey,
+    content: contactsEvent?.content || "",
+    created_at: Math.floor(Date.now() / 1000),
+    tags: tags,
+  }
+  const finalNewEvent = finalizeEvent(newEvent, userPrivateKey)
+  pool.publish(["wss://relay.damus.io"], finalNewEvent)
 }
 
 export async function sendNip17Message(
@@ -346,7 +385,7 @@ export const customPublish = (
             return value
           },
           (reason: string) => {
-            console.log("Rejected on", url)
+            console.log("Rejected on", url, reason)
             onRejectedRelays?.(url)
             return reason
           },
