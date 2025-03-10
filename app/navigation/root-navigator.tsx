@@ -108,6 +108,7 @@ import {
 import { Messages } from "@app/screens/nip17-chat/messages"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
+import EditNostrProfileScreen from "@app/screens/edit-nostr-profile/edit-nostr-profile"
 
 import HomeActive from "@app/assets/icons/home-active.svg"
 import HomeInactive from "@app/assets/icons/home-inactive.svg"
@@ -556,6 +557,11 @@ export const RootStack = () => {
         name="Card"
         component={CardScreen}
         options={{ title: "", headerStyle: { backgroundColor: colors.background } }}
+      />
+      <RootNavigator.Screen
+        name="EditNostrProfile"
+        component={EditNostrProfileScreen}
+        options={{ headerShown: true, title: LL.Nostr.editProfile() }}
       />
     </RootNavigator.Navigator>
   )
