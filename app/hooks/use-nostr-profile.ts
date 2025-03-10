@@ -1,18 +1,15 @@
-import { useState, useEffect } from "react"
 import * as Keychain from "react-native-keychain"
 import {
   nip19,
   generateSecretKey,
   getPublicKey,
   SimplePool,
-  nip04,
   finalizeEvent,
 } from "nostr-tools"
 import { getSecretKey, setPreferredRelay } from "@app/utils/nostr"
 import { useHomeAuthedQuery, useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "./use-app-config"
-import { save } from "@app/utils/storage"
 
 export interface ChatInfo {
   pubkeys: string[]
@@ -30,7 +27,6 @@ export type MessageType = {
 
 const useNostrProfile = () => {
   const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
-  const [nostrSecretKey, setNostrSecretKey] = useState<string>("")
 
   const {
     appConfig: {
@@ -53,27 +49,20 @@ const useNostrProfile = () => {
     await Keychain.resetInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
   }
 
-  const fetchSecretFromLocalStorage = async () => {
-    let credentials = await Keychain.getInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
-    if (credentials) {
-      setNostrSecretKey(credentials.password)
-      return credentials.password
-    }
-    return false
-  }
-
   const saveNewNostrKey = async () => {
     let secretKey = generateSecretKey()
     const nostrSecret = nip19.nsecEncode(secretKey)
-    console.log("Updating account npub")
-    const { data, errors } = await userUpdateNpubMutation({
+    let newNpub = nip19.npubEncode(getPublicKey(secretKey))
+    const { data } = await userUpdateNpubMutation({
       variables: {
         input: {
-          npub: nip19.npubEncode(getPublicKey(secretKey)),
+          npub: newNpub,
         },
       },
     })
-    console.log("Updating account npub results", data, errors)
+    if (!data?.userUpdateNpub.user?.npub) {
+      throw Error("Npub not updated")
+    }
 
     await Keychain.setInternetCredentials(
       KEYCHAIN_NOSTRCREDS_KEY,
@@ -83,34 +72,6 @@ const useNostrProfile = () => {
     await setPreferredRelay(relayUrl, secretKey)
     return secretKey
   }
-
-  useEffect(() => {
-    const initializeNostrProfile = async () => {
-      try {
-        const credentials = await fetchSecretFromLocalStorage()
-        let accountNpub = dataAuthed?.me?.npub
-        if (credentials) {
-          let secret = nip19.decode(credentials).data as Uint8Array
-          if (isAuthed && dataAuthed?.me && !accountNpub) {
-            console.log("Updating New Nostr Profile")
-            await userUpdateNpubMutation({
-              variables: {
-                input: {
-                  npub: nip19.npubEncode(getPublicKey(secret)),
-                },
-              },
-            })
-            await setPreferredRelay(relayUrl, secret)
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching nostr secret: ", error)
-        throw error
-      }
-    }
-
-    initializeNostrProfile()
-  }, [isAuthed])
 
   const fetchNostrUser = async (npub: `npub1${string}`) => {
     const pool = new SimplePool()

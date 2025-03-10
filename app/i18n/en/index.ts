@@ -1399,7 +1399,10 @@ const en: BaseTranslation = {
     halfHour: "Half Hour",
     hour: "Hour",
     txId: "Transaction ID"
-	}
+	},
+  Nostr: {
+    editProfile: "Edit Profile"
+  }
 }
 
 export default en
