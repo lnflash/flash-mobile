@@ -8,6 +8,7 @@ import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 import { getSecretKey } from "@app/utils/nostr"
 import { Button } from "@rneui/themed"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
+import { useNavigation } from "@react-navigation/native"
 
 interface ShowNostrSecretProps {
   isActive: boolean
@@ -22,7 +23,6 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
 
   useEffect(() => {
     const initialize = async () => {
-      console.log("Show Nostr Secret initializing with", secretKey)
       if (!secretKey) {
         let secret = await getSecretKey()
         setSecretKey(secret)
@@ -42,6 +42,7 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
   const [copiedNsec, setCopiedNsec] = useState(false)
   const [copiedNpub, setCopiedNpub] = useState(false)
   const [hideSecret, setHideSecret] = useState(true)
+
   const styles = {
     modalStyle: {},
     modalBody: {
@@ -68,82 +69,94 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
     }, 1000)
   }
 
-  return (
-    <ReactNativeModal
-      isVisible={isActive}
-      backdropColor={colors.grey5}
-      backdropOpacity={0.7}
-      onBackButtonPress={onCancel}
-      onBackdropPress={onCancel}
-      style={styles.modalStyle}
-    >
-      {!!secretKey ? (
-        <View style={styles.modalBody as ViewStyle}>
-          <Text type="h2">Your nostr address is</Text>
-          <View
-            style={styles.idContainer as ViewStyle}
-            onTouchStart={() => copyToClipboard(nostrPubKey, setCopiedNpub)}
-          >
-            <Text onPress={() => copyToClipboard(nostrPubKey, setCopiedNpub)}>
-              {nostrPubKey} {"\n"}
-            </Text>
-            <GaloyIconButton
-              name={copiedNpub ? "check" : "copy-paste"}
-              size={"small"}
-              onPress={() => copyToClipboard(nostrPubKey, setCopiedNpub)}
-            />
-          </View>
+  const navigation = useNavigation() // Access navigation
 
-          <Text type="h2">Your nostr secret is</Text>
-          <View style={styles.idContainer as ViewStyle}>
-            <Text
-              onPress={() => copyToClipboard(nip19.nsecEncode(secretKey), setCopiedNsec)}
+  const handleEditProfile = () => {
+    onCancel()
+    navigation.navigate("EditNostrProfile")
+  }
+
+  return (
+    <View>
+      <ReactNativeModal
+        isVisible={isActive}
+        backdropColor={colors.grey5}
+        backdropOpacity={0.7}
+        onBackButtonPress={onCancel}
+        onBackdropPress={onCancel}
+        style={styles.modalStyle}
+      >
+        {!!secretKey ? (
+          <View style={styles.modalBody as ViewStyle}>
+            <Text type="h2">Your nostr address is</Text>
+            <View
+              style={styles.idContainer as ViewStyle}
+              onTouchStart={() => copyToClipboard(nostrPubKey, setCopiedNpub)}
             >
-              {hideSecret
-                ? "************************************************************************"
-                : secretKey}{" "}
-              {"\n"}
-            </Text>
-            <View style={{ flexDirection: "row" }}>
+              <Text onPress={() => copyToClipboard(nostrPubKey, setCopiedNpub)}>
+                {nostrPubKey} {"\n"}
+              </Text>
               <GaloyIconButton
-                name={hideSecret ? "eye" : "eye-slash"}
+                name={copiedNpub ? "check" : "copy-paste"}
                 size={"small"}
-                onPress={() => setHideSecret(!hideSecret)}
-                style={{ marginRight: 10 }}
+                onPress={() => copyToClipboard(nostrPubKey, setCopiedNpub)}
               />
-              <GaloyIconButton
-                name={copiedNsec ? "check" : "copy-paste"}
-                size={"small"}
+            </View>
+
+            <Text type="h2">Your nostr secret is</Text>
+            <View style={styles.idContainer as ViewStyle}>
+              <Text
                 onPress={() =>
                   copyToClipboard(nip19.nsecEncode(secretKey), setCopiedNsec)
                 }
-              />
+              >
+                {hideSecret
+                  ? "************************************************************************"
+                  : secretKey}{" "}
+                {"\n"}
+              </Text>
+              <View style={{ flexDirection: "row" }}>
+                <GaloyIconButton
+                  name={hideSecret ? "eye" : "eye-slash"}
+                  size={"small"}
+                  onPress={() => setHideSecret(!hideSecret)}
+                  style={{ marginRight: 10 }}
+                />
+                <GaloyIconButton
+                  name={copiedNsec ? "check" : "copy-paste"}
+                  size={"small"}
+                  onPress={() =>
+                    copyToClipboard(nip19.nsecEncode(secretKey), setCopiedNsec)
+                  }
+                />
+              </View>
             </View>
+            <Button
+              onPress={() => {
+                deleteNostrKeys()
+                setSecretKey(null)
+              }}
+            >
+              Delete
+            </Button>
+
+            <Button onPress={handleEditProfile}>Edit Profile</Button>
           </View>
-          <Button
-            onPress={() => {
-              deleteNostrKeys()
-              setSecretKey(null)
-            }}
-          >
-            Delete
-          </Button>
-        </View>
-      ) : (
-        <View style={styles.modalBody as ViewStyle}>
-          <Text style={{ margin: 20 }}> No Nostr Keys Found </Text>
-          <Button
-            onPress={async () => {
-              let newSecret = await saveNewNostrKey()
-              console.log("New Nostr Key", newSecret)
-              setSecretKey(newSecret)
-            }}
-            style={{ margin: 20 }}
-          >
-            Generate Nostr Keys
-          </Button>
-        </View>
-      )}
-    </ReactNativeModal>
+        ) : (
+          <View style={styles.modalBody as ViewStyle}>
+            <Text style={{ margin: 20 }}> No Nostr Keys Found </Text>
+            <Button
+              onPress={async () => {
+                let newSecret = await saveNewNostrKey()
+                setSecretKey(newSecret)
+              }}
+              style={{ margin: 20 }}
+            >
+              Generate Nostr Keys
+            </Button>
+          </View>
+        )}
+      </ReactNativeModal>
+    </View>
   )
 }
