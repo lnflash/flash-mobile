@@ -2,32 +2,36 @@
   "migIndex": 1,
   "data": [
     {
-      "path": "app/assets/fonts/DMSans-Bold.ttf",
-      "sha1": "ba828d9137dac8d986a3ea97ca56e390897a0b14"
+      "path": "app/assets/fonts/Sora-Bold.ttf",
+      "sha1": "a90703d8b7152c8635b15caade8cd3b987850092"
     },
     {
-      "path": "app/assets/fonts/SourceSansPro-Bold.ttf",
-      "sha1": "167ac25366e252f07c090a8113910337f3d5255b"
+      "path": "app/assets/fonts/Sora-ExtraBold.ttf",
+      "sha1": "5f63f44b7e797cae1247acf22010e7e4e05ef87f"
     },
     {
-      "path": "app/assets/fonts/SourceSansPro-BoldItalic.ttf",
-      "sha1": "c320303ae126e23bd566d412916f68cc347d573f"
+      "path": "app/assets/fonts/Sora-ExtraLight.ttf",
+      "sha1": "e3a46cbb5914ee8d2376d4c15e3e3d679bb94ead"
     },
     {
-      "path": "app/assets/fonts/SourceSansPro-Italic.ttf",
-      "sha1": "1c774bad0dad64ee30d7f2e71e89891870a2d304"
+      "path": "app/assets/fonts/Sora-Light.ttf",
+      "sha1": "14c294c81c53cecc5122aa97f48d95c193643479"
     },
     {
-      "path": "app/assets/fonts/SourceSansPro-Regular.ttf",
-      "sha1": "48d6928e08ba5e2ca1e15d754c146580b1c8febd"
+      "path": "app/assets/fonts/Sora-Medium.ttf",
+      "sha1": "faa8a98d604ca71c41aa4ffbbd2bd74bf645abe6"
     },
     {
-      "path": "app/assets/fonts/SourceSansPro-SemiBold.ttf",
-      "sha1": "3eeb4bae47e308c768d8c65a89480159d4e0e7c2"
+      "path": "app/assets/fonts/Sora-Regular.ttf",
+      "sha1": "3b4ed53d52716224736d762d55e9a74d34a980c9"
     },
     {
-      "path": "app/assets/fonts/SourceSansPro-SemiBoldItalic.ttf",
-      "sha1": "ddbf657592d067296ef891b03f17f452907c8a7b"
+      "path": "app/assets/fonts/Sora-SemiBold.ttf",
+      "sha1": "ed7c3980e8ec4a284ddd71276ae50177b54ee0f6"
+    },
+    {
+      "path": "app/assets/fonts/Sora-Thin.ttf",
+      "sha1": "30f93d8cf40119c65358699b62ebed569aee1d93"
     }
   ]
 }
