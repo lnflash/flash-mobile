@@ -1,5 +1,7 @@
 import useNostrProfile from "@app/hooks/use-nostr-profile"
-import { Event } from "nostr-tools"
+import theme from "@app/rne-theme/theme"
+import { Colors, useTheme, makeStyles } from "@rneui/themed"
+import { Event, nip19 } from "nostr-tools"
 import React, { useState, useEffect } from "react"
 import {
   View,
@@ -10,6 +12,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Clipboard,
+  ScrollView,
   StyleSheet,
 } from "react-native"
 
@@ -27,7 +30,8 @@ interface EditProfileUIProps {
 }
 
 export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) => {
-  // State to hold form data
+  const styles = useStyles()
+  const { theme } = useTheme()
   const [formData, setFormData] = useState<NostrProfile>({
     username: "",
     name: "",
@@ -37,14 +41,10 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
   })
 
   let { updateNostrProfile } = useNostrProfile()
-  // State to track loading state
   const [isLoading, setIsLoading] = useState(true)
-
-  // State to track whether to show the form after confirmation
   const [isFormVisible, setIsFormVisible] = useState(false)
   const [updating, setUpdating] = useState(false)
 
-  // Prefill the form if profileEvent is present
   useEffect(() => {
     if (profileEvent?.content) {
       try {
@@ -56,22 +56,19 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
           picture: parsedContent.picture ?? "",
           lud16: parsedContent.lud16 ?? "",
         })
-        setIsFormVisible(true) // Show form if profileEvent is present
+        setIsFormVisible(true)
       } catch (error) {
         console.error("Error parsing content:", error)
       }
     }
 
-    // Simulate loading for 10 seconds
     const timeoutId = setTimeout(() => {
       setIsLoading(false)
-    }, 10000) // 10 seconds
+    }, 10000)
 
-    // Clean up timeout on unmount
     return () => clearTimeout(timeoutId)
   }, [profileEvent])
 
-  // Handle input changes
   const handleInputChange = (field: keyof NostrProfile, value: string) => {
     setFormData({
       ...formData,
@@ -79,7 +76,6 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
     })
   }
 
-  // Handle the "Create Profile" button click
   const handleCreateProfileClick = () => {
     const pubkeyMessage = profileEvent
       ? `Profile data will be overwritten.`
@@ -96,7 +92,6 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
         {
           text: "OK",
           onPress: () => {
-            // Clear the form data to start fresh
             setFormData({
               username: "",
               name: "",
@@ -104,14 +99,13 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
               picture: "",
               lud16: "",
             })
-            setIsFormVisible(true) // Show the form after confirmation
+            setIsFormVisible(true)
           },
         },
       ],
     )
   }
 
-  // Function to copy the pubkey to the clipboard
   const copyToClipboard = async () => {
     if (profileEvent?.pubkey) {
       await Clipboard.setString(profileEvent.pubkey)
@@ -120,100 +114,159 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       {isLoading ? (
-        // Show loading spinner for 10 seconds if profileEvent is null
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       ) : isFormVisible ? (
-        // Show form (either prefilled or empty) after the user confirms creating a profile
         <>
           <Text style={styles.title}>Profile Information</Text>
 
-          {/* Touchable pubkey */}
           {profileEvent?.pubkey && (
             <TouchableOpacity onPress={copyToClipboard}>
-              <Text style={styles.pubkeyText}>{profileEvent.pubkey}</Text>
+              <View style={styles.pubkeyContainer}>
+                <Text style={styles.pubkeyText}>
+                  {profileEvent?.pubkey ? nip19.npubEncode(profileEvent.pubkey) : null}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
 
-          <TextInput
-            style={styles.input}
-            placeholder="Username"
-            value={formData.username}
-            onChangeText={(text) => handleInputChange("username", text)}
+          <ProfileForm
+            formData={formData}
+            handleInputChange={handleInputChange}
+            updating={updating}
+            onSubmit={async () => {
+              setUpdating(true)
+              await updateNostrProfile({ content: formData })
+              setUpdating(false)
+            }}
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Name"
-            value={formData.name}
-            onChangeText={(text) => handleInputChange("name", text)}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="NIP-05"
-            value={formData.nip05}
-            onChangeText={(text) => handleInputChange("nip05", text)}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Picture URL"
-            value={formData.picture}
-            onChangeText={(text) => handleInputChange("picture", text)}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="LUD-16"
-            value={formData.lud16}
-            onChangeText={(text) => handleInputChange("lud16", text)}
-          />
-
-          {updating ? (
-            // Show loading spinner when updating
-            <ActivityIndicator size="large" color="#0000ff" />
-          ) : (
-            // Show "Save Changes" button when not updating
-            <Button
-              title="Save Changes"
-              onPress={async () => {
-                setUpdating(true)
-                await updateNostrProfile({ content: formData })
-                setUpdating(false)
-              }}
-            />
-          )}
         </>
       ) : (
-        // Show "Create Profile" button if profileEvent is null after loading
         <Button title="Create Profile" onPress={handleCreateProfileClick} />
+      )}
+    </ScrollView>
+  )
+}
+
+interface ProfileFormProps {
+  formData: NostrProfile
+  handleInputChange: (field: keyof NostrProfile, value: string) => void
+  updating: boolean
+  onSubmit: () => void
+}
+
+const ProfileForm: React.FC<ProfileFormProps> = ({
+  formData,
+  handleInputChange,
+  updating,
+  onSubmit,
+}) => {
+  const styles = useStyles()
+  const { theme } = useTheme()
+
+  return (
+    <View style={styles.formContainer}>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Username</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Username"
+          value={formData.username}
+          onChangeText={(text) => handleInputChange("username", text)}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Name</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Name"
+          value={formData.name}
+          onChangeText={(text) => handleInputChange("name", text)}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>NIP-05</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="NIP-05"
+          value={formData.nip05}
+          onChangeText={(text) => handleInputChange("nip05", text)}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Picture URL</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Picture URL"
+          value={formData.picture}
+          onChangeText={(text) => handleInputChange("picture", text)}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>LUD-16</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="LUD-16"
+          value={formData.lud16}
+          onChangeText={(text) => handleInputChange("lud16", text)}
+        />
+      </View>
+
+      {updating ? (
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      ) : (
+        <Button title="Save Changes" onPress={onSubmit} color={theme.colors.primary} />
       )}
     </View>
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
+    paddingTop: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
   },
+  pubkeyContainer: {
+    backgroundColor: colors.grey4,
+    borderRadius: 10,
+    marginBottom: 20,
+    padding: 10,
+    justifyContent: "center",
+  },
+  pubkeyText: {
+    fontSize: 16,
+    color: colors.primary3,
+  },
+  formContainer: {
+    width: "100%",
+  },
+  inputGroup: {
+    marginBottom: 15,
+    width: "100%",
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 5,
+  },
   input: {
     width: "100%",
     padding: 10,
-    marginBottom: 15,
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 5,
   },
-  pubkeyText: {
-    fontSize: 16,
-    color: "#3498db",
-    marginBottom: 20,
-    textDecorationLine: "underline",
-  },
-})
+}))
