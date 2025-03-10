@@ -134,6 +134,7 @@ export type RootStackParamList = {
     fee: number
     feeType: string
   }
+  EditNostrProfile: undefined
 }
 
 export type ChatStackParamList = {
