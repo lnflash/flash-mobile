@@ -110,6 +110,7 @@ import {
 import { Messages } from "@app/screens/nip17-chat/messages"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
+import EditNostrProfileScreen from "@app/screens/edit-nostr-profile/edit-nostr-profile"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -537,6 +538,11 @@ export const RootStack = () => {
         name="RefundConfirmation"
         component={RefundConfirmation}
         options={{ title: LL.RefundFlow.confirmationTitle() }}
+      />
+      <RootNavigator.Screen
+        name="EditNostrProfile"
+        component={EditNostrProfileScreen}
+        options={{ headerShown: true, title: LL.Nostr.editProfile() }}
       />
     </RootNavigator.Navigator>
   )
