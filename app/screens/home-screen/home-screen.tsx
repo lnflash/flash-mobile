@@ -76,9 +76,9 @@ export const HomeScreen: React.FC = () => {
     if (dataAuthed?.me) {
       dispatch(setUserData(dataAuthed.me))
       saveDefaultWallet()
-      if (!dataAuthed?.me?.username) setUsernameModal(true)
+      if (dataAuthed && dataAuthed.me && !dataAuthed.me.username) setUsernameModal(true)
     }
-  }, [dataAuthed?.me?.username])
+  }, [dataAuthed])
 
   useEffect(() => {
     setIsContentVisible(isBalanceVisible)
