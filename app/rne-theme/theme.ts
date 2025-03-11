@@ -20,9 +20,7 @@ const theme = createTheme({
     Text: (props, { colors }) => {
       const universalStyle = {
         color: props.color || colors.black,
-        // FIXME: is it automatically selecting the right font?
-        // because there is only one?
-        // fontFamily: "SourceSansPro",
+        fontFamily: "Sora",
       }
 
       const sizeStyle = props.type
@@ -55,6 +53,51 @@ const theme = createTheme({
             p4: {
               fontSize: 12,
               lineHeight: 18,
+              fontWeight: props.bold ? "600" : "400",
+            },
+            caption: {
+              fontSize: 13,
+              lineHeight: 16.38,
+              fontWeight: props.bold ? "600" : "400",
+            },
+            bm: {
+              fontSize: 14,
+              lineHeight: 17.64,
+              fontWeight: props.bold ? "600" : "400",
+            },
+            bl: {
+              fontSize: 16,
+              lineHeight: 20.16,
+              fontWeight: props.bold ? "600" : "400",
+            },
+            h01: {
+              fontSize: 20,
+              lineHeight: 25.2,
+              fontWeight: props.bold ? "600" : "400",
+            },
+            h02: {
+              fontSize: 24,
+              lineHeight: 30.24,
+              fontWeight: props.bold ? "600" : "400",
+            },
+            h03: {
+              fontSize: 40,
+              lineHeight: 50.4,
+              fontWeight: props.bold ? "600" : "400",
+            },
+            h04: {
+              fontSize: 56,
+              lineHeight: 70.56,
+              fontWeight: props.bold ? "600" : "400",
+            },
+            h05: {
+              fontSize: 72,
+              lineHeight: 90.72,
+              fontWeight: props.bold ? "600" : "400",
+            },
+            h06: {
+              fontSize: 90,
+              lineHeight: 113.4,
               fontWeight: props.bold ? "600" : "400",
             },
           }[props.type]

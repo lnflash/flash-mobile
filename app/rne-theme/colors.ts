@@ -48,6 +48,15 @@ const light = {
 
   warning: "#F59E0B",
   warning9: "#fff1d8",
+
+  accent01: "#E8D315",
+  accent02: "#007856",
+  border01: "#DDE3E1",
+  border02: "#002118",
+  background: "#F1F1F1",
+  layer: "#FFFFFF",
+  text01: "#212121",
+  text02: "#939998",
 }
 
 const dark = {
@@ -99,7 +108,16 @@ const dark = {
   red: "#DC2626",
 
   warning: "#F59E0B",
-  warning9: "#7d591a",
+  warning9: "#fff1d8",
+
+  accent01: "#E8D315",
+  accent02: "#002118",
+  border01: "#DDE3E1",
+  border02: "#002118",
+  background: "#F1F1F1",
+  layer: "#FFFFFF",
+  text01: "#212121",
+  text02: "#939998",
 }
 
 export { light, dark }
