@@ -1,12 +1,11 @@
 import ReactNativeModal from "react-native-modal"
 import Clipboard from "@react-native-clipboard/clipboard"
-import { View, ViewStyle } from "react-native"
+import { View, ViewStyle, Alert } from "react-native"
 import { Text, useTheme } from "@rneui/themed"
 import { useEffect, useState } from "react"
 import { getPublicKey, nip19 } from "nostr-tools"
-import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
+import Ionicons from "react-native-vector-icons/Ionicons"
 import { getSecretKey } from "@app/utils/nostr"
-import { Button } from "@rneui/themed"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useNavigation } from "@react-navigation/native"
 
@@ -31,11 +30,13 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
     }
     initialize()
   }, [secretKey])
+
   const { saveNewNostrKey, deleteNostrKeys } = useNostrProfile()
   let nostrPubKey = ""
   if (secretKey) {
     nostrPubKey = nip19.npubEncode(getPublicKey(secretKey as Uint8Array))
   }
+
   const {
     theme: { colors },
   } = useTheme()
@@ -58,6 +59,7 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
       borderRadius: 5,
       padding: 10,
       margin: 10,
+      width: "100%",
     },
   }
 
@@ -69,11 +71,29 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
     }, 1000)
   }
 
-  const navigation = useNavigation() // Access navigation
+  const navigation = useNavigation()
 
   const handleEditProfile = () => {
     onCancel()
     navigation.navigate("EditNostrProfile")
+  }
+
+  const handleDeleteKeys = () => {
+    Alert.alert(
+      "Warning",
+      "If you have not backed up these keys, you will lose access to this Nostr account forever. Are you sure you want to delete them?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deleteNostrKeys()
+            setSecretKey(null)
+          },
+        },
+      ],
+    )
   }
 
   return (
@@ -96,9 +116,9 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
               <Text onPress={() => copyToClipboard(nostrPubKey, setCopiedNpub)}>
                 {nostrPubKey} {"\n"}
               </Text>
-              <GaloyIconButton
-                name={copiedNpub ? "check" : "copy-paste"}
-                size={"small"}
+              <Ionicons
+                name={copiedNpub ? "checkmark" : "copy-outline"}
+                size={24}
                 onPress={() => copyToClipboard(nostrPubKey, setCopiedNpub)}
               />
             </View>
@@ -110,50 +130,48 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
                   copyToClipboard(nip19.nsecEncode(secretKey), setCopiedNsec)
                 }
               >
-                {hideSecret
-                  ? "************************************************************************"
-                  : secretKey}{" "}
-                {"\n"}
+                {hideSecret ? "***************" : nip19.nsecEncode(secretKey)} {"\n"}
               </Text>
               <View style={{ flexDirection: "row" }}>
-                <GaloyIconButton
-                  name={hideSecret ? "eye" : "eye-slash"}
-                  size={"small"}
+                <Ionicons
+                  name={hideSecret ? "eye" : "eye-off"}
+                  size={24}
                   onPress={() => setHideSecret(!hideSecret)}
                   style={{ marginRight: 10 }}
                 />
-                <GaloyIconButton
-                  name={copiedNsec ? "check" : "copy-paste"}
-                  size={"small"}
+                <Ionicons
+                  name={copiedNsec ? "checkmark" : "copy-outline"}
+                  size={24}
                   onPress={() =>
                     copyToClipboard(nip19.nsecEncode(secretKey), setCopiedNsec)
                   }
                 />
               </View>
             </View>
-            <Button
-              onPress={() => {
-                deleteNostrKeys()
-                setSecretKey(null)
+
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                width: "100%",
+                margin: 10,
               }}
             >
-              Delete
-            </Button>
-
-            <Button onPress={handleEditProfile}>Edit Profile</Button>
+              <Ionicons name="trash" size={20} color="red" onPress={handleDeleteKeys} />
+              <Ionicons name="pencil" size={20} onPress={handleEditProfile} />
+            </View>
           </View>
         ) : (
           <View style={styles.modalBody as ViewStyle}>
             <Text style={{ margin: 20 }}> No Nostr Keys Found </Text>
-            <Button
+            <Ionicons
+              name="key"
+              size={30}
               onPress={async () => {
                 let newSecret = await saveNewNostrKey()
                 setSecretKey(newSecret)
               }}
-              style={{ margin: 20 }}
-            >
-              Generate Nostr Keys
-            </Button>
+            />
           </View>
         )}
       </ReactNativeModal>
