@@ -266,7 +266,7 @@ const useStyles = makeStyles(({ colors }) => ({
     width: "100%",
     padding: 10,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: colors._lightGrey,
     borderRadius: 5,
   },
 }))
