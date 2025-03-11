@@ -8,6 +8,8 @@ import Ionicons from "react-native-vector-icons/Ionicons"
 import { getSecretKey } from "@app/utils/nostr"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useNavigation } from "@react-navigation/native"
+import { useHomeAuthedQuery } from "@app/graphql/generated"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 interface ShowNostrSecretProps {
   isActive: boolean
@@ -19,17 +21,39 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
   onCancel,
 }) => {
   const [secretKey, setSecretKey] = useState<Uint8Array | null>(null)
+  const [linked, setLinked] = useState<boolean | null>(null)
+  const isAuthed = useIsAuthed()
+  const { data: dataAuthed } = useHomeAuthedQuery({
+    skip: !isAuthed,
+    fetchPolicy: "network-only",
+    errorPolicy: "all",
+    nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
+  })
 
   useEffect(() => {
     const initialize = async () => {
       if (!secretKey) {
         let secret = await getSecretKey()
         setSecretKey(secret)
-        console.log("New secret Key", secret)
+        console.log(
+          "DIfferent ids are",
+          dataAuthed?.me?.npub,
+          nip19.npubEncode(getPublicKey(secret)),
+        )
+        if (
+          secret &&
+          dataAuthed &&
+          dataAuthed.me &&
+          dataAuthed.me.npub === nip19.npubEncode(getPublicKey(secret))
+        ) {
+          setLinked(true)
+        } else {
+          setLinked(false)
+        }
       }
     }
     initialize()
-  }, [secretKey])
+  }, [secretKey, dataAuthed])
 
   const { saveNewNostrKey, deleteNostrKeys } = useNostrProfile()
   let nostrPubKey = ""
@@ -106,74 +130,86 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
         onBackdropPress={onCancel}
         style={styles.modalStyle}
       >
-        {!!secretKey ? (
-          <View style={styles.modalBody as ViewStyle}>
-            <Text type="h2">Your nostr address is</Text>
-            <View
-              style={styles.idContainer as ViewStyle}
-              onTouchStart={() => copyToClipboard(nostrPubKey, setCopiedNpub)}
-            >
-              <Text onPress={() => copyToClipboard(nostrPubKey, setCopiedNpub)}>
-                {nostrPubKey} {"\n"}
-              </Text>
+        <View>
+          {!!secretKey ? (
+            <View style={styles.modalBody as ViewStyle}>
               <Ionicons
-                name={copiedNpub ? "checkmark" : "copy-outline"}
+                name={linked ? "link-outline" : "unlink-outline"}
                 size={24}
-                onPress={() => copyToClipboard(nostrPubKey, setCopiedNpub)}
+                color={linked ? "green" : "red"}
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  right: 10,
+                }}
               />
-            </View>
-
-            <Text type="h2">Your nostr secret is</Text>
-            <View style={styles.idContainer as ViewStyle}>
-              <Text
-                onPress={() =>
-                  copyToClipboard(nip19.nsecEncode(secretKey), setCopiedNsec)
-                }
+              <Text type="h2">Your nostr address is</Text>
+              <View
+                style={styles.idContainer as ViewStyle}
+                onTouchStart={() => copyToClipboard(nostrPubKey, setCopiedNpub)}
               >
-                {hideSecret ? "***************" : nip19.nsecEncode(secretKey)} {"\n"}
-              </Text>
-              <View style={{ flexDirection: "row" }}>
+                <Text onPress={() => copyToClipboard(nostrPubKey, setCopiedNpub)}>
+                  {nostrPubKey} {"\n"}
+                </Text>
                 <Ionicons
-                  name={hideSecret ? "eye" : "eye-off"}
+                  name={copiedNpub ? "checkmark" : "copy-outline"}
                   size={24}
-                  onPress={() => setHideSecret(!hideSecret)}
-                  style={{ marginRight: 10 }}
+                  onPress={() => copyToClipboard(nostrPubKey, setCopiedNpub)}
                 />
-                <Ionicons
-                  name={copiedNsec ? "checkmark" : "copy-outline"}
-                  size={24}
+              </View>
+
+              <Text type="h2">Your nostr secret is</Text>
+              <View style={styles.idContainer as ViewStyle}>
+                <Text
                   onPress={() =>
                     copyToClipboard(nip19.nsecEncode(secretKey), setCopiedNsec)
                   }
-                />
+                >
+                  {hideSecret ? "***************" : nip19.nsecEncode(secretKey)} {"\n"}
+                </Text>
+                <View style={{ flexDirection: "row" }}>
+                  <Ionicons
+                    name={hideSecret ? "eye" : "eye-off"}
+                    size={24}
+                    onPress={() => setHideSecret(!hideSecret)}
+                    style={{ marginRight: 10 }}
+                  />
+                  <Ionicons
+                    name={copiedNsec ? "checkmark" : "copy-outline"}
+                    size={24}
+                    onPress={() =>
+                      copyToClipboard(nip19.nsecEncode(secretKey), setCopiedNsec)
+                    }
+                  />
+                </View>
+              </View>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  width: "100%",
+                  margin: 10,
+                }}
+              >
+                <Ionicons name="trash" size={20} color="red" onPress={handleDeleteKeys} />
+                <Ionicons name="pencil" size={20} onPress={handleEditProfile} />
               </View>
             </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                width: "100%",
-                margin: 10,
-              }}
-            >
-              <Ionicons name="trash" size={20} color="red" onPress={handleDeleteKeys} />
-              <Ionicons name="pencil" size={20} onPress={handleEditProfile} />
+          ) : (
+            <View style={styles.modalBody as ViewStyle}>
+              <Text style={{ margin: 20 }}> No Nostr Keys Found </Text>
+              <Ionicons
+                name="key"
+                size={30}
+                onPress={async () => {
+                  let newSecret = await saveNewNostrKey()
+                  setSecretKey(newSecret)
+                }}
+              />
             </View>
-          </View>
-        ) : (
-          <View style={styles.modalBody as ViewStyle}>
-            <Text style={{ margin: 20 }}> No Nostr Keys Found </Text>
-            <Ionicons
-              name="key"
-              size={30}
-              onPress={async () => {
-                let newSecret = await saveNewNostrKey()
-                setSecretKey(newSecret)
-              }}
-            />
-          </View>
-        )}
+          )}
+        </View>
       </ReactNativeModal>
     </View>
   )
