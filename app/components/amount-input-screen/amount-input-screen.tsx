@@ -238,6 +238,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
 
   return (
     <AmountInputScreenUI
+      walletCurrency={walletCurrency}
       primaryCurrencyCode={primaryCurrencyInfo.currencyCode}
       primaryCurrencyFormattedAmount={formatNumberPadNumber(
         numberPadState.numberPadNumber,
