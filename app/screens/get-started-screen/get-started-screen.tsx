@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
-import { Pressable } from "react-native"
+import { Dimensions, Pressable, TouchableOpacity } from "react-native"
 import styled from "styled-components/native"
-import { Text, useTheme } from "@rneui/themed"
+import { useTheme } from "@rneui/themed"
 import * as Animatable from "react-native-animatable"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "../../navigation/stack-param-lists"
@@ -20,13 +20,17 @@ import { useCreateAccount } from "@app/hooks/useCreateAccount"
 import { logGetStartedAction } from "@app/utils/analytics"
 
 // assets
-import Question from "@app/assets/icons/question.svg"
-import Card from "@app/assets/icons/card.svg"
+import AppLogoLightMode from "../../assets/logo/app-logo-light.png"
+import AppLogoDarkMode from "../../assets/logo/app-logo-dark.png"
+import Help from "@app/assets/icons/help.png"
+import Nfc from "@app/assets/icons/nfc.png"
+
+const width = Dimensions.get("screen").width
 
 type Props = StackScreenProps<RootStackParamList, "getStarted">
 
 export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
-  const { colors } = useTheme().theme
+  const { mode, colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
   const { toggleActivityIndicator } = useActivityIndicator()
@@ -35,6 +39,8 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [secretMenuCounter, setSecretMenuCounter] = useState(0)
+
+  const AppLogo = mode === "dark" ? AppLogoDarkMode : AppLogoLightMode
 
   useEffect(() => {
     toggleActivityIndicator(loading || appcheckTokenLoading)
@@ -96,25 +102,40 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
   const onPressCard = () => {}
 
   return (
-    <Screen backgroundColor={colors.accent01}>
+    <Screen>
       <LogoWrapper>
         <Pressable onPress={onPressLogo}>
-          <Text type="h05" bold>
-            flash
-          </Text>
+          <Image source={AppLogo} />
         </Pressable>
       </LogoWrapper>
       <IconsWrapper>
-        <Pressable onPress={onPressHelp} style={{ marginRight: 40 }}>
-          <Animatable.View animation="pulse" easing="ease-out" iterationCount="infinite">
-            <Question />
-          </Animatable.View>
-        </Pressable>
-        <Pressable onPress={onPressCard}>
-          <Animatable.View animation="pulse" easing="ease-out" iterationCount="infinite">
-            <Card />
-          </Animatable.View>
-        </Pressable>
+        <TouchableOpacity
+          onPress={onPressHelp}
+          style={{ padding: 20 }}
+          activeOpacity={0.5}
+        >
+          <Icon
+            source={Help}
+            animation="pulse"
+            easing="ease-out"
+            iterationCount="infinite"
+            color={colors.icon01}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onPressCard}
+          style={{ padding: 20 }}
+          activeOpacity={0.5}
+        >
+          <Icon
+            source={Nfc}
+            animation="pulse"
+            easing="ease-out"
+            iterationCount="infinite"
+            size={60}
+            color={colors.icon01}
+          />
+        </TouchableOpacity>
       </IconsWrapper>
       <BtnsWrapper>
         <PrimaryBtn
@@ -139,16 +160,25 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
 
 const LogoWrapper = styled.View`
   flex: 1;
-  align-items: center;
   justify-content: center;
-  margin-top: 40px;
+`
+
+const Image = styled.Image`
+  width: ${width}px;
+  height: 250px;
+  resize-mode: contain;
 `
 
 const IconsWrapper = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  margin-bottom: 30px;
+`
+
+const Icon = styled(Animatable.Image)<{ size?: number; color: string }>`
+  width: ${({ size }) => size || 50}px;
+  height: ${({ size }) => size || 50}px;
+  tint-color: ${({ color }) => color};
 `
 
 const BtnsWrapper = styled.View`

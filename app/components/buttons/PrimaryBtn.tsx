@@ -1,38 +1,65 @@
 import React from "react"
-import { ViewStyle } from "react-native"
-import styled from "styled-components/native"
+import { TextStyle, TouchableOpacity, ViewStyle } from "react-native"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 
 type Props = {
   type?: "solid" | "outline" | "clear"
   label: string
+  disabled?: boolean
   btnStyle?: ViewStyle
+  txtStyle?: TextStyle
   onPress: () => void
 }
 
-const PrimaryBtn: React.FC<Props> = ({ type = "solid", label, onPress, btnStyle }) => {
+const PrimaryBtn: React.FC<Props> = ({
+  type = "solid",
+  label,
+  disabled = false,
+  btnStyle = {},
+  txtStyle = {},
+  onPress,
+}) => {
+  const styles = useStyles()
+  const { colors } = useTheme().theme
+
   return (
-    <Wrapper type={type} style={btnStyle} onPress={onPress}>
-      <Label type={type}>{label}</Label>
-    </Wrapper>
+    <TouchableOpacity
+      style={[styles.base, styles[type], btnStyle]}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.5}
+    >
+      <Text
+        type={"bl"}
+        bold
+        color={type === "solid" ? colors.textInverse : colors.text01}
+        style={txtStyle}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
   )
 }
 
 export default PrimaryBtn
 
-const Wrapper = styled.TouchableOpacity<{ type: "solid" | "outline" | "clear" }>`
-  height: 56px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 100px;
-  border-color: #002118;
-  border-width: ${({ type }) => (type === "outline" ? 1 : 0)}px;
-  background-color: ${({ type }) =>
-    type === "solid" ? "#002118" : type === "clear" ? "#E3E3E3" : "transparent"};
-`
+const useStyles = makeStyles(({ colors }) => ({
+  base: {
+    height: 56,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 100,
+  },
 
-const Label = styled.Text<{ type: "solid" | "outline" | "clear" }>`
-  font-size: 16px;
-  font-weight: 600;
-  font-family: "Sora-Bold";
-  color: ${({ type }) => (type === "solid" ? "#fff" : "#212121")};
-`
+  solid: {
+    backgroundColor: colors.button01,
+  },
+  outline: {
+    height: 55,
+    borderColor: colors.button01,
+    borderWidth: 1,
+  },
+  clear: {
+    backgroundColor: colors.button02,
+  },
+}))
