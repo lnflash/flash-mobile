@@ -1,46 +1,35 @@
-import React, { useEffect, useRef } from "react"
-import { Animated, Easing, TouchableOpacity, View } from "react-native"
+import React, { useEffect } from "react"
+import { Image } from "react-native"
+import { useTheme } from "@rneui/themed"
+import styled from "styled-components/native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { StackNavigationProp } from "@react-navigation/stack"
-import Icon from "react-native-vector-icons/Ionicons"
 import messaging from "@react-native-firebase/messaging"
 
 // hooks
-import { usePersistentStateContext } from "@app/store/persistent-state"
-import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useIsFocused, useNavigation } from "@react-navigation/native"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useApolloClient } from "@apollo/client"
-import { useBreez } from "@app/hooks"
 
-// components
-import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
-import { BalanceHeader } from "../../components/balance-header"
-import { makeStyles, useTheme } from "@rneui/themed"
+// utils
 import { addDeviceToken, requestNotificationPermission } from "@app/utils/notifications"
 
-type Props = {
-  isContentVisible: boolean
-  setIsContentVisible: React.Dispatch<React.SetStateAction<boolean>>
-}
+// assets
+import Chart from "@app/assets/icons/chart.png"
+import Menu from "@app/assets/icons/menu.png"
 
-const Header: React.FC<Props> = ({ isContentVisible, setIsContentVisible }) => {
+const Header = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const isAuthed = useIsAuthed()
   const isFocused = useIsFocused()
   const client = useApolloClient()
-  const styles = useStyles()
-  const { colors } = useTheme().theme
-  const { btcWallet } = useBreez()
-  const { persistentState, updateState } = usePersistentStateContext()
-  const pulseAnim = useRef(new Animated.Value(1)).current // Initial scale value
 
-  const helpTriggered = persistentState?.helpTriggered ?? false
+  const { colors, mode } = useTheme().theme
 
   // notification permission
   useEffect(() => {
     let timeout: NodeJS.Timeout
     if (isAuthed && isFocused && client) {
-      const WAIT_TIME_TO_PROMPT_USER = 5000
       timeout = setTimeout(
         async () => {
           const result = await requestNotificationPermission()
@@ -51,93 +40,39 @@ const Header: React.FC<Props> = ({ isContentVisible, setIsContentVisible }) => {
             await addDeviceToken(client)
           }
         }, // no op if already requested
-        WAIT_TIME_TO_PROMPT_USER,
+        5000,
       )
     }
     return () => timeout && clearTimeout(timeout)
   }, [isAuthed, isFocused, client])
 
   useEffect(() => {
-    const pulse = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.1, // Scale up
-            duration: 400,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1, // Scale down
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]),
-      ).start()
-    }
-
-    pulse()
-  }, [pulseAnim])
-
-  const handleHelpPress = () => {
-    updateState((state: any) => {
-      if (state)
-        return {
-          ...state,
-          helpTriggered: true,
-        }
-      return undefined
+    navigation.setOptions({
+      headerLeft: renderHeaderLeft,
+      headerRight: renderHeaderRight,
     })
-    navigation.navigate("welcomeFirst")
-  }
+  }, [mode])
 
-  return (
-    <View style={[styles.header, styles.container]}>
-      <GaloyIconButton
-        onPress={() => navigation.navigate("priceHistory")}
-        size={"medium"}
-        name="graph"
-        iconOnly={true}
-      />
-      <BalanceHeader
-        isContentVisible={isContentVisible}
-        setIsContentVisible={setIsContentVisible}
-        loading={false}
-        breezBalance={btcWallet?.balance || 0}
-      />
-      {/* Help Icon - TEMPORARILY HIDING BUTTON UNTIL FULL PRODUCT LAUNCH*/}
-      {/* {!helpTriggered && (
-        <View style={styles.helpIconContainer}>
-          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-            <TouchableOpacity onPress={handleHelpPress}>
-              <Icon name="help-circle-outline" size={30} color={colors.primary} />
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      )} */}
-      <GaloyIconButton
-        onPress={() => navigation.navigate("settings")}
-        size={"medium"}
-        name="gear"
-        iconOnly={true}
-      />
-    </View>
+  const renderHeaderLeft = () => (
+    <IconWrapper onPress={() => navigation.navigate("priceHistory")} activeOpacity={0.5}>
+      <Image source={Chart} tintColor={colors.icon01} />
+    </IconWrapper>
   )
+
+  const renderHeaderRight = () => (
+    <IconWrapper onPress={() => navigation.navigate("settings")} activeOpacity={0.5}>
+      <Image source={Menu} tintColor={colors.icon01} />
+    </IconWrapper>
+  )
+
+  return null
 }
 
 export default Header
 
-const useStyles = makeStyles(({ colors }) => ({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 20,
-  },
-  container: {
-    marginHorizontal: 20,
-  },
-  helpIconContainer: {
-    marginRight: 15,
-  },
-}))
+const IconWrapper = styled.TouchableOpacity`
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding-horizontal: 20px;
+`

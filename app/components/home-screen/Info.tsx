@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect } from "react"
 import { View } from "react-native"
 import { ApolloError } from "@apollo/client"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { listRefundables, RefundableSwap } from "@breeztech/react-native-breez-sdk-liquid"
+import { listRefundables } from "@breeztech/react-native-breez-sdk-liquid"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -68,14 +68,12 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
 
   if (error || persistentState?.numOfRefundables > 0) {
     return (
-      <View style={styles.marginButtonContainer}>
+      <View>
         {persistentState?.numOfRefundables > 0 && (
-          <View
-            style={error ? { ...styles.container, marginBottom: 5 } : styles.container}
-          >
+          <View style={styles.container}>
             <GaloyIcon name="warning" size={14} color={color} />
             <Text style={styles.textContainer} type={"p3"} color={color}>
-              {`${LL.HomeScreen.refundableWarning()} `}
+              {`${LL.HomeScreen.refundableWarning()}`}
               <GaloyTertiaryButton
                 clear
                 title={LL.HomeScreen.refundables()}
@@ -85,6 +83,7 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
             </Text>
           </View>
         )}
+        {error && persistentState?.numOfRefundables > 0 && <View style={{ height: 5 }} />}
         {error && <GaloyErrorBox errorMessage={getErrorMessages(error)} />}
       </View>
     )
@@ -96,16 +95,13 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
 export default Info
 
 const useStyles = makeStyles(({ colors }) => ({
-  marginButtonContainer: {
-    marginBottom: 20,
-  },
   container: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 20,
     backgroundColor: colors.warning9,
   },
   textContainer: {
