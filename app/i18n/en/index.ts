@@ -1045,7 +1045,7 @@ const en: BaseTranslation = {
   },
   TransactionScreen: {
     noTransaction: "No transaction to show",
-    title: "Transactions",
+    title: "Recent activity",
     recentTransactions: "Recent transactions",
     transactionHistoryTitle: "Transaction History",
   },

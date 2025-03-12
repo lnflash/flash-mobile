@@ -638,13 +638,15 @@ export const PrimaryNavigator = () => {
         name="Home"
         component={HomeScreen}
         options={{
+          headerTitle: "",
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colors.background },
           title: LL.HomeScreen.title(),
           tabBarAccessibilityLabel: LL.HomeScreen.title(),
           tabBarTestID: LL.HomeScreen.title(),
           tabBarIcon: ({ color }) => (
             <HomeIcon {...testProps("Home")} fill={color} color={color} />
           ),
-          headerShown: false,
         }}
       />
       {/* <Tab.Screen

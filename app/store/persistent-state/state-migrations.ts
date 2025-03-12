@@ -61,9 +61,9 @@ type PersistentState_7 = {
   breezBalance?: number
   balance?: string
   btcBalance?: string
-  usdBalance?: string
-  convertedBtcBalance?: string
-  convertedUsdBalance?: string
+  cashBalance?: string
+  btcDisplayBalance?: string
+  cashDisplayBalance?: string
   mergedTransactions?: TransactionFragment[]
   usdTransactions?: SectionTransactions[]
   btcTransactions?: TransactionFragment[]

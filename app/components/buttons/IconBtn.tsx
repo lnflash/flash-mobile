@@ -65,7 +65,7 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   outline: {
     borderWidth: 1,
-    borderColor: colors.button01,
+    borderColor: colors.border02,
   },
   clear: {
     backgroundColor: colors.button02,
