@@ -1,6 +1,6 @@
 import React from "react"
-import { Text } from "@rneui/themed"
-import styled from "styled-components/native"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { TouchableOpacity, View } from "react-native"
 
 // assets
 import ArrowUp from "@app/assets/icons/arrow-up.svg"
@@ -23,38 +23,51 @@ type Props = {
 }
 
 const IconBtn: React.FC<Props> = ({ type = "solid", icon, label, onPress }) => {
+  const { colors } = useTheme().theme
+  const styles = useStyles()
   const Icon = icons[icon]
 
   return (
-    <Wrapper>
-      <Btn type={type} onPress={onPress}>
-        <Icon color={"#000000"} />
-      </Btn>
+    <View style={styles.container}>
+      <TouchableOpacity
+        style={[styles.base, styles[type]]}
+        onPress={onPress}
+        activeOpacity={0.5}
+      >
+        <Icon color={colors.icon01} />
+      </TouchableOpacity>
       <Text type="bm" bold>
         {label}
       </Text>
-    </Wrapper>
+    </View>
   )
 }
 
 export default IconBtn
 
-const Wrapper = styled.View`
-  align-items: center;
-  justify-content: center;
-  padding-horizontal: 8px;
-  margin-horizontal: 8px;
-`
-
-const Btn = styled.TouchableOpacity<{ type: "solid" | "outline" | "clear" }>`
-  height: 64px;
-  width: 64px;
-  align-items: center;
-  justify-content: center;
-  border-color: #002118;
-  border-radius: 100px;
-  border-width: ${({ type }) => (type === "outline" ? 1 : 0)};
-  background-color: ${({ type }) =>
-    type === "solid" ? "#002118" : type === "clear" ? "#E3E3E3" : "transparent"};
-  margin-bottom: 5px;
-`
+const useStyles = makeStyles(({ colors }) => ({
+  container: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    marginHorizontal: 8,
+  },
+  base: {
+    height: 64,
+    width: 64,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 100,
+    marginBottom: 5,
+  },
+  solid: {
+    backgroundColor: colors.button01,
+  },
+  outline: {
+    borderWidth: 1,
+    borderColor: colors.button01,
+  },
+  clear: {
+    backgroundColor: colors.button02,
+  },
+}))
