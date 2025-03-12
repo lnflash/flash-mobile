@@ -15,8 +15,8 @@ import { useApolloClient } from "@apollo/client"
 import { addDeviceToken, requestNotificationPermission } from "@app/utils/notifications"
 
 // assets
-import Chart from "@app/assets/icons/chart.png"
-import Menu from "@app/assets/icons/menu.png"
+import Chart from "@app/assets/icons/chart.svg"
+import Menu from "@app/assets/icons/menu.svg"
 
 const Header = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -55,13 +55,13 @@ const Header = () => {
 
   const renderHeaderLeft = () => (
     <IconWrapper onPress={() => navigation.navigate("priceHistory")} activeOpacity={0.5}>
-      <Image source={Chart} tintColor={colors.icon01} />
+      <Chart color={colors.icon01} />
     </IconWrapper>
   )
 
   const renderHeaderRight = () => (
     <IconWrapper onPress={() => navigation.navigate("settings")} activeOpacity={0.5}>
-      <Image source={Menu} tintColor={colors.icon01} />
+      <Menu color={colors.icon01} />
     </IconWrapper>
   )
 
