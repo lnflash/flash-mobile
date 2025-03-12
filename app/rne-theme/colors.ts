@@ -57,6 +57,14 @@ const light = {
   layer: "#FFFFFF",
   text01: "#212121",
   text02: "#939998",
+  textInverse: "#FFFFFF",
+  textPlaceholder: "#939998",
+  icon01: "#212121",
+  icon02: "#939998",
+  iconInverse: "#FFFFFF",
+  button01: "#002118",
+  button02: "#E3E3E3",
+  buttonInverse: "#FFFFFF",
 }
 
 const dark = {
@@ -108,16 +116,24 @@ const dark = {
   red: "#DC2626",
 
   warning: "#F59E0B",
-  warning9: "#fff1d8",
+  warning9: "#ab6d02",
 
   accent01: "#E8D315",
-  accent02: "#002118",
-  border01: "#DDE3E1",
+  accent02: "#02c48d",
+  border01: "#212121",
   border02: "#002118",
-  background: "#F1F1F1",
-  layer: "#FFFFFF",
-  text01: "#212121",
+  background: "#000000",
+  layer: "#212121",
+  text01: "#FFFFFF",
   text02: "#939998",
+  textInverse: "#212121",
+  textPlaceholder: "#939998",
+  icon01: "#FFFFFF",
+  icon02: "#939998",
+  iconInverse: "#FFFFFF",
+  button01: "#FFFFFF",
+  button02: "#212121",
+  buttonInverse: "#002118",
 }
 
 export { light, dark }

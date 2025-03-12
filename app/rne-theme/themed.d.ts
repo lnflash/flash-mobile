@@ -44,6 +44,14 @@ declare module "@rneui/themed" {
     layer: string
     text01: string
     text02: string
+    textInverse: string
+    textPlaceholder: string
+    icon01: string
+    icon02: string
+    iconInverse: string
+    button01: string
+    button02: string
+    buttonInverse: string
   }
 
   export interface TextProps {
