@@ -183,7 +183,7 @@ const Transactions: React.FC<Props> = ({
           </Text>
         </RecentActivity>
         {mergedTransactions.map((item, index) => (
-          <TxItem tx={item} />
+          <TxItem key={item.id} tx={item} />
         ))}
       </Wrapper>
     )
