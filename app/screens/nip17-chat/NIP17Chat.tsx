@@ -24,7 +24,7 @@ import { useChatContext } from "./chatContext"
 import { useFocusEffect } from "@react-navigation/native"
 import { useAppConfig } from "@app/hooks"
 import { useAppSelector } from "@app/store/redux"
-import { ImportNsecModal } from "./import-nsec"
+import { ImportNsecModal } from "../../components/import-nsec/import-nsec-modal"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
 
