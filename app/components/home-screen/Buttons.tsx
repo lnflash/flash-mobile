@@ -67,6 +67,7 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
     <Wrapper>
       {buttons.map((item) => (
         <IconBtn
+          key={item.title}
           type="clear"
           icon={item.icon as any}
           label={item.title}
