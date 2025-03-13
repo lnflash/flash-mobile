@@ -153,6 +153,7 @@ export const RootStack = () => {
         headerTitleStyle: styles.title,
         headerBackTitleStyle: styles.title,
         headerTintColor: colors.black,
+        headerShadowVisible: false,
       }}
       initialRouteName={initialRouteName}
     >

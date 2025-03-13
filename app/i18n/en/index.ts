@@ -38,7 +38,7 @@ const en: BaseTranslation = {
     bitcoinTag: "Choose this to be on a Bitcoin standard.",
   },
   NoteInput: {
-    addNote: "Add note",
+    addNote: "Add note...",
   },
   AuthenticationScreen: {
     authenticationDescription: "Authenticate to continue",

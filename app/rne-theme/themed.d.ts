@@ -46,6 +46,7 @@ declare module "@rneui/themed" {
     text02: string
     textInverse: string
     textPlaceholder: string
+    placeholder: string
     icon01: string
     icon02: string
     iconInverse: string
