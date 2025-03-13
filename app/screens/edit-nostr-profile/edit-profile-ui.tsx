@@ -15,6 +15,7 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native"
+import { Image } from "react-native"
 
 type NostrProfile = {
   pubkey?: string
@@ -167,6 +168,15 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
 
   return (
     <View style={styles.formContainer}>
+      <Image
+        source={{
+          uri:
+            formData.picture ||
+            "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
+        }}
+        style={styles.profileImage}
+        resizeMode="cover"
+      />
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Username</Text>
         <TextInput
@@ -227,6 +237,13 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
 }
 
 const useStyles = makeStyles(({ colors }) => ({
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignSelf: "center",
+    marginBottom: 15,
+  },
   container: {
     flexGrow: 1,
     justifyContent: "center",
