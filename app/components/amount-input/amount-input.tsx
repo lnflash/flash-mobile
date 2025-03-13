@@ -26,6 +26,7 @@ export type AmountInputProps = {
   isSendingMax?: boolean
   showValuesIfDisabled?: boolean
   big?: boolean
+  newDesign?: boolean
 }
 
 export const AmountInput: React.FC<AmountInputProps> = ({
@@ -40,6 +41,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   isSendingMax = false,
   showValuesIfDisabled = true,
   big = true,
+  newDesign = false,
 }) => {
   const navigation = useNavigation()
   const [isSettingAmount, setIsSettingAmount] = React.useState(false)
@@ -94,21 +96,6 @@ export const AmountInput: React.FC<AmountInputProps> = ({
     }
   }
 
-  if (isSettingAmount) {
-    return (
-      <AmountInputModal
-        moneyAmount={unitOfAccountAmount}
-        isOpen={true}
-        walletCurrency={walletCurrency}
-        convertMoneyAmount={convertMoneyAmount}
-        onSetAmount={onSetAmount}
-        maxAmount={maxAmount}
-        minAmount={minAmount}
-        close={closeHandler}
-      />
-    )
-  }
-
   let formattedPrimaryAmount = undefined
   let formattedSecondaryAmount = undefined
 
@@ -151,32 +138,31 @@ export const AmountInput: React.FC<AmountInputProps> = ({
     setIsSettingAmount(true)
   }
 
-  if (canSetAmount) {
-    return (
+  return (
+    <>
       <AmountInputButton
         placeholder={LL.AmountInputButton.tapToSetAmount()}
         onPress={onPressInputButton}
         value={formattedPrimaryAmount}
         iconName="pencil"
         secondaryValue={formattedSecondaryAmount}
+        disabled={!canSetAmount}
         primaryTextTestProps={"Amount Input Button Amount"}
+        showValuesIfDisabled={showValuesIfDisabled}
         big={big}
+        newDesign={newDesign}
         {...testProps("Amount Input Button")}
       />
-    )
-  }
-
-  return (
-    <AmountInputButton
-      placeholder={LL.AmountInputButton.tapToSetAmount()}
-      iconName={undefined}
-      value={formattedPrimaryAmount}
-      secondaryValue={formattedSecondaryAmount}
-      disabled={true}
-      primaryTextTestProps={"Amount Input Button Amount"}
-      showValuesIfDisabled={showValuesIfDisabled}
-      big={big}
-      {...testProps("Amount Input Button")}
-    />
+      <AmountInputModal
+        moneyAmount={unitOfAccountAmount}
+        isOpen={isSettingAmount}
+        walletCurrency={walletCurrency}
+        convertMoneyAmount={convertMoneyAmount}
+        onSetAmount={onSetAmount}
+        maxAmount={maxAmount}
+        minAmount={minAmount}
+        close={closeHandler}
+      />
+    </>
   )
 }
