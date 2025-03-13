@@ -65,7 +65,7 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
     if (token) {
       onCompleteLogin(token)
     } else {
-      navigation.replace("phoneFlow", {
+      navigation.navigate("phoneFlow", {
         onComplete: onCompleteLogin,
       })
     }
