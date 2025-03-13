@@ -2,17 +2,16 @@ import React, { useState } from "react"
 import { useTheme, Text, Input, Button } from "@rneui/themed"
 import { View, StyleSheet, Alert, Dimensions } from "react-native"
 import ReactNativeModal from "react-native-modal"
-import * as Keychain from "react-native-keychain"
 import { useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { getPublicKey, nip19 } from "nostr-tools"
+import { importNsec } from "./utils"
+import { NsecInputForm } from "./import-nsec-form"
 
 interface ImportNsecModalProps {
   isActive: boolean
   onCancel: () => void
   onSubmit: () => void
 }
-
-const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
 
 export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
   isActive,
@@ -22,55 +21,6 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
   const {
     theme: { colors },
   } = useTheme()
-
-  const [nsec, setNsec] = useState<string>("")
-  const [error, setError] = useState<string | null>(null)
-  const [userUpdateNpubMutation] = useUserUpdateNpubMutation()
-
-  const handleInputChange = (text: string) => {
-    setNsec(text)
-    setError(null)
-  }
-
-  const validateNsec = (nsec: string) => {
-    const bech32Pattern = /^nsec1[a-z0-9]{58}$/ // Bech32 encoding with 'nsec1' prefix and 39 characters
-    return bech32Pattern.test(nsec)
-  }
-
-  const handleSubmit = async () => {
-    if (!nsec) {
-      setError("nsec cannot be empty")
-      return
-    }
-
-    if (!validateNsec(nsec)) {
-      setError("Invalid nsec format. Please check the key and try again.")
-      return
-    }
-
-    try {
-      // Save the nsec key to the keychain
-      await Keychain.setInternetCredentials(
-        KEYCHAIN_NOSTRCREDS_KEY,
-        KEYCHAIN_NOSTRCREDS_KEY,
-        nsec,
-      )
-      await userUpdateNpubMutation({
-        variables: {
-          input: {
-            npub: nip19.npubEncode(getPublicKey(nip19.decode(nsec).data as Uint8Array)),
-          },
-        },
-      })
-
-      Alert.alert("Success", "nsec imported successfully!")
-      onCancel() // Close the modal after saving
-      onSubmit()
-    } catch (error) {
-      console.error("Failed to save nsec to keychain", error)
-      setError("Failed to import nsec. Please try again.")
-    }
-  }
 
   return (
     <ReactNativeModal
@@ -88,24 +38,13 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
           device to continue using the chat feature.
         </Text>
 
-        <Input
-          label="nsec Key"
-          value={nsec}
-          onChangeText={handleInputChange}
-          placeholder="Enter your nsec key"
-          errorMessage={error || ""}
-          containerStyle={styles.inputContainer}
-          inputStyle={styles.input}
-          labelStyle={styles.inputLabel}
-          errorStyle={styles.errorText}
-        />
-
-        <Button
-          title="Submit"
-          onPress={handleSubmit}
-          disabled={!nsec || error !== null}
-          buttonStyle={styles.submitButton}
-          titleStyle={styles.submitButtonText}
+        <NsecInputForm
+          onSubmit={(nsec, success: boolean) => {
+            if (success) {
+              onSubmit()
+              onCancel()
+            }
+          }}
         />
       </View>
     </ReactNativeModal>

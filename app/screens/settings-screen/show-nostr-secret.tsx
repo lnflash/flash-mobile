@@ -10,6 +10,9 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useNavigation } from "@react-navigation/native"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { ImportNsecModal } from "@app/components/import-nsec/import-nsec-modal"
+import { NsecInputForm } from "@app/components/import-nsec/import-nsec-form"
+import { useChatContext } from "../nip17-chat/chatContext"
 
 interface ShowNostrSecretProps {
   isActive: boolean
@@ -67,6 +70,9 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
   const [copiedNsec, setCopiedNsec] = useState(false)
   const [copiedNpub, setCopiedNpub] = useState(false)
   const [hideSecret, setHideSecret] = useState(true)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [showImportNsec, setShowImportNsec] = useState(false)
+  const { resetChat } = useChatContext()
 
   const styles = {
     modalStyle: {},
@@ -100,6 +106,10 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
   const handleEditProfile = () => {
     onCancel()
     navigation.navigate("EditNostrProfile")
+  }
+
+  const handleImportNsec = () => {
+    setShowImportNsec(true)
   }
 
   const handleDeleteKeys = () => {
@@ -183,7 +193,18 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
                   />
                 </View>
               </View>
-
+              <View style={{ width: "100%" }}>
+                {showImportNsec ? (
+                  <NsecInputForm
+                    onSubmit={(nsec, success) => {
+                      if (success) {
+                        resetChat()
+                        setSecretKey(nip19.decode(nsec).data as Uint8Array)
+                      }
+                    }}
+                  />
+                ) : null}
+              </View>
               <View
                 style={{
                   flexDirection: "row",
@@ -192,8 +213,13 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
                   margin: 10,
                 }}
               >
-                <Ionicons name="trash" size={20} color="red" onPress={handleDeleteKeys} />
-                <Ionicons name="pencil" size={20} onPress={handleEditProfile} />
+                <Ionicons
+                  name="arrow-up-circle-outline"
+                  size={20}
+                  onPress={handleImportNsec}
+                />
+                <Ionicons name="trash" size={20} onPress={handleDeleteKeys} />
+                <Ionicons name="person-outline" size={20} onPress={handleEditProfile} />
               </View>
             </View>
           ) : (
@@ -201,12 +227,17 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
               <Text style={{ margin: 20 }}> No Nostr Keys Found </Text>
               <Ionicons
                 name="key"
-                size={30}
+                size={10}
                 onPress={async () => {
+                  if (isGenerating) return
+                  setIsGenerating(true)
                   let newSecret = await saveNewNostrKey()
                   setSecretKey(newSecret)
+                  setIsGenerating(false)
                 }}
+                style={{ opacity: isGenerating ? 0.5 : 1 }}
               />
+              <Text>Generate Nostr Keys</Text>
             </View>
           )}
         </View>
