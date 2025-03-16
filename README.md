@@ -1,4 +1,4 @@
-ƒgaloy# Flash Mobile
+# Flash Mobile
 
 <img src=".readme/flash-logo-transparent.png" alt="Flash Logo" width="300">
 
