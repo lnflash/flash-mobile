@@ -1,6 +1,6 @@
 # Flash Mobile
 
-<img src=".readme/flash-logo.jpg" alt="Flash Logo" width="300">
+<img src=".readme/flashlogotransparent.png" alt="Flash Logo" width="300">
 
 ## Overview
 
