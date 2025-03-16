@@ -1,4 +1,4 @@
-# Flash Mobile
+ƒgaloy# Flash Mobile
 
 <img src=".readme/flash-logo-transparent.png" alt="Flash Logo" width="300">
 
@@ -94,7 +94,7 @@ The app is built and pushed to the App Store and Play Store on demand with Circl
 
 ### Development with Backend
 
-To run the app fully locally, you'll need to set up the backend by following the instructions at https://github.com/GaloyMoney/galoy.
+To run the app fully locally, you'll need to set up the backend by following the instructions at https://github.com/LNFlash/flash.
 
 ## Notes for Running on M1 Mac
 
