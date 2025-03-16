@@ -4,11 +4,11 @@ import { ActivityIndicator, Image, Platform, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
-import { Screen } from "../../components/screen"
+import { Screen } from "../../../components/screen"
 import type {
   ChatStackParamList,
   RootStackParamList,
-} from "../../navigation/stack-param-lists"
+} from "../../../navigation/stack-param-lists"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 import { isIos } from "@app/utils/helper"
@@ -26,7 +26,7 @@ import {
 import { useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { SafeAreaProvider } from "react-native-safe-area-context"
-import { updateLastSeen } from "./utils"
+import { updateLastSeen } from "../utils"
 import { hexToBytes } from "@noble/hashes/utils"
 
 type MessagesProps = {
