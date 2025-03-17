@@ -37,11 +37,12 @@ import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { Provider } from "react-redux"
 import { store } from "./store/redux"
 import PolyfillCrypto from "react-native-webview-crypto"
-import { ActivityIndicatorProvider } from "./contexts"
+import { ActivityIndicatorProvider } from "./contexts/ActivityIndicatorContext"
 import { BreezProvider } from "./contexts/BreezContext"
 import { ChatContextProvider } from "./screens/nip17-chat/chatContext"
 import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
+import { FlashcardProvider } from "./contexts/Flashcard"
 
 // FIXME should we only load the currently used local?
 // this would help to make the app load faster
@@ -74,7 +75,9 @@ export const App = () => (
                               <AppStateWrapper />
                               <PushNotificationComponent />
                               <BreezProvider>
-                                <RootStack />
+                                <FlashcardProvider>
+                                  <RootStack />
+                                </FlashcardProvider>
                               </BreezProvider>
                               <GaloyToast />
                               <NetworkErrorComponent />
