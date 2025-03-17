@@ -24,14 +24,16 @@ export const ActivityIndicatorProvider = ({ children }: Props) => {
       value={{ loadableVisible: visible, toggleActivityIndicator }}
     >
       {children}
-      {visible && (
-        <Backdrop>
-          <ActivityIndicator color={"#60aa55"} size={"large"} />
-        </Backdrop>
-      )}
+      {visible && <Loading />}
     </ActivityIndicatorContext.Provider>
   )
 }
+
+export const Loading = () => (
+  <Backdrop>
+    <ActivityIndicator color={"#60aa55"} size={"large"} />
+  </Backdrop>
+)
 
 const Backdrop = styled.View`
   position: absolute;
