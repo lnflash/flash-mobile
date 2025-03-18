@@ -1,13 +1,26 @@
-import QRCode from "react-native-qrcode-svg"
+import { View, StyleSheet } from "react-native"
+import { ZoomableQRCode } from "@app/components/zoomable-qr-code"
 
 export const QrCodeComponent = ({ otpauth }: { otpauth: string }) => {
   return (
-    <QRCode
-      value={otpauth}
-      size={200}
-      //   logo={require("./path/to/your/logo.png")} // Optional: If you want to include a logo within the QR code.
-      //   logoSize={30}
-      //   logoBackgroundColor="transparent"
-    />
+    <View style={styles.container}>
+      <ZoomableQRCode
+        value={otpauth}
+        size={200}
+        style={styles.qrCode}
+      />
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 999,
+    elevation: 999,
+  },
+  qrCode: {
+    marginVertical: 16,
+  }
+})

@@ -4,14 +4,12 @@ import {
   ActivityIndicator,
   useWindowDimensions,
   View,
-  Platform,
   StyleProp,
   ViewStyle,
   Pressable,
   Animated,
   Easing,
 } from "react-native"
-import QRCode from "react-native-qrcode-svg"
 
 import Logo from "@app/assets/logo/blink-logo-icon.png"
 
@@ -23,7 +21,7 @@ import { SuccessIconAnimation } from "@app/components/success-animation"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { GaloyTertiaryButton } from "@app/components/atomic/galoy-tertiary-button"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry"
+import { ZoomableQRCode } from "@app/components/zoomable-qr-code"
 
 const configByType = {
   [Invoice.Lightning]: {
@@ -78,10 +76,6 @@ export const QRView: React.FC<Props> = ({
   canUsePayCode,
   toggleIsSetLightningAddressModalVisible,
 }) => {
-  // if (getFullUri) {
-  //   console.log("getFullUri", getFullUri({ uppercase: true }))
-  //   console.log("isPayCode", isPayCode)
-  // }
   const { width } = useWindowDimensions()
   const {
     theme: { colors },
@@ -109,7 +103,6 @@ export const QRView: React.FC<Props> = ({
   }
 
   const breatheOut = () => {
-    if (!expired && copyToClipboard) copyToClipboard()
     Animated.timing(scaleAnim, {
       toValue: 1,
       duration: 100,
@@ -151,10 +144,10 @@ export const QRView: React.FC<Props> = ({
         uri = getFullUri({ uppercase: true })
       }
       return (
-        <View style={[styles.container, style]}>
-          <QRCode
-            size={getQrSize()}
+        <View style={[styles.container, style, styles.qrContainer]}>
+          <ZoomableQRCode
             value={uri}
+            size={getQrSize()}
             logoBackgroundColor="white"
             ecl={type && configByType[type].ecl}
             logo={getQrLogo() || undefined}
@@ -225,16 +218,11 @@ export const QRView: React.FC<Props> = ({
 
   return (
     <View style={styles.qr}>
-      <Pressable
-        onPressIn={displayingQR ? breatheIn : () => {}}
-        onPressOut={displayingQR ? breatheOut : () => {}}
-      >
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-          {renderSuccessView}
-          {renderQRCode}
-          {renderStatusView}
-        </Animated.View>
-      </Pressable>
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        {renderSuccessView}
+        {renderQRCode}
+        {renderStatusView}
+      </Animated.View>
     </View>
   )
 }
@@ -262,6 +250,10 @@ const useStyles = makeStyles(({ colors }) => ({
   error: { color: colors.error, alignSelf: "center" },
   qr: {
     alignItems: "center",
+  },
+  qrContainer: {
+    zIndex: 999,
+    elevation: 999,
   },
   expiredInvoice: {
     marginBottom: 10,
