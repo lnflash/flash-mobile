@@ -50,7 +50,7 @@ const useStyles = makeStyles(({ colors }) => ({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 10,
   },
   top: {
     flex: 1,
