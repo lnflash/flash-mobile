@@ -8,6 +8,8 @@ import ArrowDown from "@app/assets/icons/arrow-down.svg"
 import Swap from "@app/assets/icons/swap.svg"
 import QR from "@app/assets/icons/qr-code-new.svg"
 import Setting from "@app/assets/icons/setting.svg"
+import DeleteCardLight from "@app/assets/icons/delete-card.svg"
+import DeleteCardDark from "@app/assets/icons/delete-card-dark.svg"
 
 const icons = {
   up: ArrowUp,
@@ -15,6 +17,8 @@ const icons = {
   swap: Swap,
   qr: QR,
   setting: Setting,
+  removeDark: DeleteCardDark,
+  removeLight: DeleteCardLight,
 }
 
 type IconNamesType = keyof typeof icons
@@ -38,7 +42,7 @@ const IconBtn: React.FC<Props> = ({ type = "solid", icon, label, onPress }) => {
         onPress={onPress}
         activeOpacity={0.5}
       >
-        <Icon color={colors.icon01} />
+        <Icon color={colors.icon01} width={30} height={30} />
       </TouchableOpacity>
       <Text type="bm" bold style={styles.label}>
         {label}
