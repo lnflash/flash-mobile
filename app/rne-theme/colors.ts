@@ -60,7 +60,7 @@ const light = {
   textInverse: "#FFFFFF",
   textPlaceholder: "#939998",
   placeholder: "#829993",
-  icon01: "#212121",
+  icon01: "#000000",
   icon02: "#939998",
   iconInverse: "#FFFFFF",
   button01: "#002118",
