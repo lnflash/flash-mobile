@@ -6,11 +6,15 @@ import { TouchableOpacity, View } from "react-native"
 import ArrowUp from "@app/assets/icons/arrow-up.svg"
 import ArrowDown from "@app/assets/icons/arrow-down.svg"
 import Swap from "@app/assets/icons/swap.svg"
+import QR from "@app/assets/icons/qr-code-new.svg"
+import Setting from "@app/assets/icons/setting.svg"
 
 const icons = {
   up: ArrowUp,
   down: ArrowDown,
   swap: Swap,
+  qr: QR,
+  setting: Setting,
 }
 
 type IconNamesType = keyof typeof icons
@@ -36,7 +40,7 @@ const IconBtn: React.FC<Props> = ({ type = "solid", icon, label, onPress }) => {
       >
         <Icon color={colors.icon01} />
       </TouchableOpacity>
-      <Text type="bm" bold>
+      <Text type="bm" bold style={styles.label}>
         {label}
       </Text>
     </View>
@@ -69,5 +73,8 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   clear: {
     backgroundColor: colors.button02,
+  },
+  label: {
+    textAlign: "center",
   },
 }))
