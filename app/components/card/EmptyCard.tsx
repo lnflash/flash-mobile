@@ -28,15 +28,15 @@ const EmptyCard = () => {
   return (
     <View style={styles.container}>
       <View style={styles.top}>
-        <Text type="h02" bold>
+        <Text type="h03" bold>
           {LL.CardScreen.noCardsTitle()}
         </Text>
-        <Text type="bl">{LL.CardScreen.noCardsYet()}</Text>
-        <EmptyFlashcard height={width / 1.3} width={width / 1.3} style={styles.card} />
+        <Text type="h01">{LL.CardScreen.noCardsYet()}</Text>
+        <EmptyFlashcard height={width / 1.2} width={width / 1.2} style={styles.card} />
       </View>
       <PrimaryBtn
         label="Read NFC card"
-        onPress={readFlashcard}
+        onPress={() => readFlashcard(false)}
         btnStyle={{ marginBottom: 10 }}
       />
       <PrimaryBtn type="outline" label="Find a Flashpoint" onPress={findFlashpoint} />
