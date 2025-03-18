@@ -1,6 +1,7 @@
 import * as React from "react"
 import { TouchableOpacity, View } from "react-native"
 import { Text, Icon, makeStyles, useTheme } from "@rneui/themed"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { WalletCurrency } from "@app/graphql/generated"
 
@@ -45,12 +46,15 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
   setAmountDisabled,
   goBack,
 }) => {
+  const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const styles = useStyles()
 
   return (
-    <View style={styles.amountInputScreenContainer}>
+    <View
+      style={[styles.amountInputScreenContainer, { marginBottom: !bottom ? 20 : 10 }]}
+    >
       <View style={styles.topContainer}>
         <View style={styles.header}>
           <Text type={"h01"} style={styles.headerTxt}>
@@ -67,12 +71,14 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
           {`${primaryCurrencySymbol}${primaryCurrencyFormattedAmount || 0}`}
           {!primaryCurrencySymbol && <Text>{` ${primaryCurrencyCode}`}</Text>}
         </Text>
-        <TouchableOpacity style={styles.secondaryAmount} onPress={onToggleCurrency}>
-          <Text>{`${secondaryCurrencySymbol}${secondaryCurrencyFormattedAmount} ${
-            secondaryCurrencySymbol ? "" : secondaryCurrencyCode
-          }`}</Text>
-          <Sync color={colors.icon01} />
-        </TouchableOpacity>
+        {!!secondaryCurrencySymbol && (
+          <TouchableOpacity style={styles.secondaryAmount} onPress={onToggleCurrency}>
+            <Text>{`${secondaryCurrencySymbol}${secondaryCurrencyFormattedAmount} ${
+              secondaryCurrencySymbol ? "" : secondaryCurrencyCode
+            }`}</Text>
+            <Sync color={colors.icon01} />
+          </TouchableOpacity>
+        )}
       </View>
       <View style={styles.bottomContainer}>
         <View style={styles.infoContainer}>
@@ -90,7 +96,7 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
   )
 }
 
-const useStyles = makeStyles(({ colors }) => ({
+const useStyles = makeStyles(() => ({
   amountInputScreenContainer: {
     flex: 1,
   },
