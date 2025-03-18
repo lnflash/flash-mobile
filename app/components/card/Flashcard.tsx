@@ -1,6 +1,6 @@
 import React from "react"
-import { ScrollView, View } from "react-native"
-import { makeStyles, Text } from "@rneui/themed"
+import { ScrollView, TouchableOpacity, View } from "react-native"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 
 // components
 import { IconBtn } from "../buttons"
@@ -12,6 +12,7 @@ import { useDisplayCurrency, useFlashcard, usePriceConversion } from "@app/hooks
 
 // assets
 import FlashcardImage from "@app/assets/images/flashcard.svg"
+import Sync from "@app/assets/icons/sync.svg"
 
 // utils
 import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
@@ -23,7 +24,8 @@ type Props = {
 
 const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
   const styles = useStyles()
-  const { balanceInSats, transactions, resetFlashcard } = useFlashcard()
+  const { colors, mode } = useTheme().theme
+  const { balanceInSats, transactions, readFlashcard, resetFlashcard } = useFlashcard()
   const { formatMoneyAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion("network-only")
 
@@ -45,15 +47,18 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
     <ScrollView>
       <FlashcardImage style={styles.flashcard} width={"100%"} />
       <View style={styles.top} />
-      <Text type="h03" style={styles.balance}>
-        {formattedBalance}
-      </Text>
+      <View style={styles.balanceWrapper}>
+        <Text type="h03">{formattedBalance}</Text>
+        <TouchableOpacity style={styles.sync} onPress={() => readFlashcard(false)}>
+          <Sync color={colors.icon02} width={32} height={32} />
+        </TouchableOpacity>
+      </View>
       <View style={styles.btns}>
         <IconBtn type="clear" icon="down" label={`Reload\nCard`} onPress={onReload} />
         <IconBtn type="clear" icon="qr" label={`Topup via\nQR`} onPress={onTopup} />
         <IconBtn
           type="clear"
-          icon="setting"
+          icon={mode === "dark" ? "removeLight" : "removeDark"}
           label={`Remove\nCard`}
           onPress={resetFlashcard}
         />
@@ -82,9 +87,15 @@ const useStyles = makeStyles(({ colors }) => ({
     position: "absolute",
     top: 10,
   },
-  balance: {
-    textAlign: "center",
+  balanceWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 30,
+  },
+  sync: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
   },
   btns: {
     flexDirection: "row",

@@ -36,7 +36,7 @@ const RecentActivity: React.FC<Props> = ({ transactions, convertMoneyAmount }) =
     })
 
     return (
-      <View style={styles.row}>
+      <View style={styles.row} key={item.date}>
         <Icon
           name={sats < 0 ? "arrow-up" : "arrow-down"}
           size={20}
