@@ -175,6 +175,7 @@ const useStyles = makeStyles(({ colors }) => ({
   screenStyle: {
     flexGrow: 1,
     padding: 20,
+    paddingTop: 0,
   },
 }))
 
