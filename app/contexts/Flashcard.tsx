@@ -1,4 +1,4 @@
-import React, { createContext, useState } from "react"
+import React, { createContext, useEffect, useState } from "react"
 import { Dimensions, Modal, Platform, TouchableOpacity, View } from "react-native"
 import NfcManager, { Ndef, TagEvent, NfcTech } from "react-native-nfc-manager"
 import * as Animatable from "react-native-animatable"
@@ -11,10 +11,10 @@ import { PrimaryBtn } from "@app/components/buttons"
 
 // utils
 import { toastShow } from "../utils/toast"
+import { loadJson, remove, save } from "@app/utils/storage"
 
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
-import { save } from "@app/utils/storage"
 
 const width = Dimensions.get("screen").width
 
@@ -67,6 +67,21 @@ export const FlashcardProvider = ({ children }: Props) => {
   const [loading, setLoading] = useState<boolean>()
   const [error, setError] = useState<string>()
 
+  useEffect(() => {
+    loadFlashcard()
+  }, [])
+
+  const loadFlashcard = async () => {
+    const tag = await loadJson("CARD_TAG")
+    const html = await loadJson("CARD_HTML")
+    if (tag && html) {
+      setTag(tag)
+      getLnurl(html)
+      getBalance(html)
+      getTransactions(html)
+    }
+  }
+
   const readFlashcard = async (isPayment?: boolean) => {
     const isSupported = await NfcManager.isSupported()
     const isEnabled = await NfcManager.isEnabled()
@@ -94,7 +109,6 @@ export const FlashcardProvider = ({ children }: Props) => {
       await NfcManager.requestTechnology(NfcTech.Ndef)
       const tag = await NfcManager.getTag()
       if (tag && tag.id) {
-        save("CARD_TAG", tag.id) // save tag id to async storage
         const ndefRecord = tag?.ndefMessage?.[0]
         if (!ndefRecord) {
           toastShow({
@@ -107,6 +121,7 @@ export const FlashcardProvider = ({ children }: Props) => {
           const payload = Ndef.text.decodePayload(new Uint8Array(ndefRecord.payload))
           if (payload.startsWith("lnurlw")) {
             setTag(tag)
+            save("CARD_TAG", tag.id) // save tag id to async storage
             if (isPayment) {
               await getPayDetails(payload)
             } else {
@@ -216,7 +231,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     NfcManager.cancelTechnologyRequest()
   }
 
-  const resetFlashcard = () => {
+  const resetFlashcard = async () => {
     setTag(undefined)
     setK1(undefined)
     setCallback(undefined)
@@ -225,6 +240,8 @@ export const FlashcardProvider = ({ children }: Props) => {
     setTransactions(undefined)
     setLoading(undefined)
     setError(undefined)
+    await remove("CARD_TAG")
+    await remove("CARD_HTML")
   }
 
   return (
