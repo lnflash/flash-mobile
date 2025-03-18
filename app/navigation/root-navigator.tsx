@@ -684,7 +684,7 @@ export const PrimaryNavigator = () => {
         component={CardScreen}
         options={{
           title: LL.CardScreen.title(),
-          headerShown: true,
+          headerShown: false,
           headerStyle: { backgroundColor: colors.white },
           tabBarTestID: LL.CardScreen.title(),
           tabBarIcon: ({ color }) => <CardIcon color={color} />,
