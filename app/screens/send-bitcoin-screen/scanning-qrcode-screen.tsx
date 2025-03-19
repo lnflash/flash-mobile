@@ -97,9 +97,12 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
 
   // Handler for pinch gesture to control zoom
   const pinchHandler = useAnimatedGestureHandler({
-    onActive: (event) => {
+    onStart: (_, ctx: any) => {
+      ctx.startZoom = zoom.value;
+    },
+    onActive: (event: any, ctx: any) => {
       // Clamp zoom between 1 and 8 (adjust max as needed)
-      zoom.value = Math.max(1, Math.min(8, event.scale))
+      zoom.value = Math.max(1, Math.min(8, ctx.startZoom * event.scale));
     },
   })
 
