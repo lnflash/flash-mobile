@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Alert, Dimensions, Linking, Pressable, StyleSheet, View } from "react-native"
+import { Alert, Dimensions, Linking, Pressable, StyleSheet, View, Platform } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -100,21 +100,31 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   // Create the pinch gesture handler with proper scaling
   // Handler for updating zoom (runs on JS thread)
   const updateZoom = React.useCallback((scale: number) => {
-    console.log("JS thread handling zoom with scale:", scale)
+    console.log("JS thread handling zoom with scale:", scale, "on platform:", Platform.OS)
     
     // Simple direct approach
     let newZoom
     if (scale > 1) {
-      // Zoom in
-      newZoom = Math.min(1, zoom + 0.05)
+      // Zoom in - more gradual for Android
+      const increment = Platform.OS === 'android' ? 0.02 : 0.05
+      newZoom = Math.min(1, zoom + increment)
     } else {
-      // Zoom out
-      newZoom = Math.max(0, zoom - 0.05)
+      // Zoom out - more gradual for Android
+      const decrement = Platform.OS === 'android' ? 0.02 : 0.05
+      newZoom = Math.max(0, zoom - decrement)
     }
     
-    // Only update state - rely on the camera's zoom prop to update the camera
-    // This avoids trying to directly modify camera.zoom which causes issues on Android
+    // Set zoom state for the camera prop
     setZoom(newZoom)
+    
+    // On iOS, we can also update directly for better responsiveness
+    if (Platform.OS === 'ios' && cameraRef.current) {
+      try {
+        cameraRef.current.zoom = newZoom * 10
+      } catch (e) {
+        console.error("iOS direct zoom error:", e)
+      }
+    }
   }, [zoom])
   
   // Simplest possible implementation using worklets
@@ -329,7 +339,7 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
           isActive={isFocused}
           onError={onError}
           codeScanner={codeScanner}
-          zoom={zoom * 10}
+          zoom={Platform.OS === 'android' ? zoom * 5 : zoom * 10}
           enableZoomGesture={false}
         />
       </GestureDetector>
