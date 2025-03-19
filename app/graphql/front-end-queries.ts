@@ -216,9 +216,29 @@ gql`
       }
     }
   }
+
   query myUserId {
     me {
       id
+    }
+  }
+
+  query scanningQRCodeScreen {
+    globals {
+      network
+    }
+    me {
+      id
+      defaultAccount {
+        id
+        wallets {
+          id
+        }
+      }
+      contacts {
+        id
+        username
+      }
     }
   }
 `
