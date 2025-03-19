@@ -146,10 +146,18 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
     })
     .onUpdate((e) => {
       'worklet';
-      console.log("Pinch scale:", e.scale)
+      
+      // Add bounds check directly in the worklet to prevent extreme scales
+      // This prevents even calling updateZoom with extreme values that could crash the camera
+      const scale = e.scale
+      const safeScale = Platform.OS === 'android' ? 
+        Math.max(0.5, Math.min(2.0, scale)) : // Limit Android scale range
+        scale // No limit for iOS
+        
+      console.log("Pinch scale:", scale, "Safe scale:", safeScale)
       
       // Must use runOnJS for React state updates or camera ref access
-      runOnJS(updateZoom)(e.scale)
+      runOnJS(updateZoom)(safeScale)
     })
 
   // const requestCameraPermission = React.useCallback(async () => {
