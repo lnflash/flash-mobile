@@ -24,7 +24,7 @@ type Props = {
 
 const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
   const styles = useStyles()
-  const { colors, mode } = useTheme().theme
+  const { colors } = useTheme().theme
   const { balanceInSats, transactions, readFlashcard, resetFlashcard } = useFlashcard()
   const { formatMoneyAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion("network-only")
@@ -58,7 +58,7 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
         <IconBtn type="clear" icon="qr" label={`Topup via\nQR`} onPress={onTopup} />
         <IconBtn
           type="clear"
-          icon={mode === "dark" ? "removeLight" : "removeDark"}
+          icon={"cardRemove"}
           label={`Remove\nCard`}
           onPress={resetFlashcard}
         />
@@ -92,6 +92,7 @@ const useStyles = makeStyles(({ colors }) => ({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 30,
+    marginLeft: 30,
   },
   sync: {
     paddingVertical: 5,

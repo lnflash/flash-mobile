@@ -8,8 +8,7 @@ import ArrowDown from "@app/assets/icons/arrow-down.svg"
 import Swap from "@app/assets/icons/swap.svg"
 import QR from "@app/assets/icons/qr-code-new.svg"
 import Setting from "@app/assets/icons/setting.svg"
-import DeleteCardLight from "@app/assets/icons/delete-card.svg"
-import DeleteCardDark from "@app/assets/icons/delete-card-dark.svg"
+import CardRemove from "@app/assets/icons/card-remove.svg"
 
 const icons = {
   up: ArrowUp,
@@ -17,8 +16,7 @@ const icons = {
   swap: Swap,
   qr: QR,
   setting: Setting,
-  removeDark: DeleteCardDark,
-  removeLight: DeleteCardLight,
+  cardRemove: CardRemove,
 }
 
 type IconNamesType = keyof typeof icons
