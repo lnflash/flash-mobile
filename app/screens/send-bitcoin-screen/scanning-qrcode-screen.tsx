@@ -16,8 +16,7 @@ import {
   useCameraPermission,
   useCodeScanner,
 } from "react-native-vision-camera"
-import { PinchGestureHandler } from "react-native-gesture-handler"
-import Reanimated, { useAnimatedGestureHandler, useAnimatedProps, useSharedValue } from "react-native-reanimated"
+import { GestureDetector, Gesture } from "react-native-gesture-handler"
 
 // utils
 import { toastShow } from "@app/utils/toast"
@@ -92,29 +91,8 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
 
   const isFocused = useIsFocused()
   
-  // Create shared value for zoom level
-  const zoom = useSharedValue(1)
-
-  // Handler for pinch gesture to control zoom
-  const pinchHandler = useAnimatedGestureHandler({
-    onStart: (_, ctx: any) => {
-      ctx.startZoom = zoom.value;
-    },
-    onActive: (event: any, ctx: any) => {
-      // Clamp zoom between 1 and 8 (adjust max as needed)
-      zoom.value = Math.max(1, Math.min(8, ctx.startZoom * event.scale));
-    },
-  })
-
-  // Create ReanimatedCamera component with animated props
-  const ReanimatedCamera = Reanimated.createAnimatedComponent(Camera)
-  
-  // Animated props for the camera
-  const cameraAnimatedProps = useAnimatedProps(() => {
-    return {
-      zoom: zoom.value,
-    }
-  })
+  // Create camera ref
+  const cameraRef = React.useRef<Camera>(null)
 
   // const requestCameraPermission = React.useCallback(async () => {
   //   const permission = await Camera.requestCameraPermission()
@@ -307,14 +285,13 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   return (
     <Screen unsafe>
       <View style={StyleSheet.absoluteFill}>
-        {/* Using the native pinchToZoom prop instead of a custom gesture handler */}
         <Camera
+          ref={cameraRef}
           style={StyleSheet.absoluteFill}
           device={device}
           isActive={isFocused}
           onError={onError}
           codeScanner={codeScanner}
-          zoom={zoom.value}
           enableZoomGesture={true}
         />
         <View style={styles.rectangleContainer}>
