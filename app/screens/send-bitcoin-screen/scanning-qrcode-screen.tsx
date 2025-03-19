@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Alert, Dimensions, Linking, Pressable, StyleSheet, View, Platform } from "react-native"
+import { Alert, Dimensions, Linking, Pressable, StyleSheet, View } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -16,7 +16,7 @@ import {
   useCameraPermission,
   useCodeScanner,
 } from "react-native-vision-camera"
-import { GestureDetector, Gesture, PinchGestureHandler, State } from "react-native-gesture-handler"
+import { GestureDetector, Gesture } from "react-native-gesture-handler"
 
 // utils
 import { toastShow } from "@app/utils/toast"
@@ -91,51 +91,42 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
 
   const isFocused = useIsFocused()
   
-  // Create camera ref
+  // Camera refs and state
   const cameraRef = React.useRef<Camera>(null)
+  const [zoom, setZoom] = React.useState(0)
+  const [initialZoom, setInitialZoom] = React.useState(0)
   
-  // Initialize state
-  const cameraInitialZoom = 0
-  const [zoom, setZoom] = React.useState(cameraInitialZoom)
-
-  // Handle pinch gesture with specific scale factors
-  const onPinchEvent = (e: any) => {
-    // Get the scale value from the event
-    const scale = e.nativeEvent.scale;
-    
-    // Debug output to console
-    console.log("Pinch event received with scale:", scale);
-    
-    // Use a more sensitive adjustment factor
-    const sensitivity = 0.03;
-    
-    // Calculate zoom based on scale
-    let newZoom;
-    if (scale > 1) {
-      // Zooming in
-      newZoom = Math.min(1, zoom + sensitivity);
-    } else if (scale < 1) {
-      // Zooming out
-      newZoom = Math.max(0, zoom - sensitivity);
-    } else {
-      // No change
-      newZoom = zoom;
-    }
-    
-    // Only update state if zoom changed
-    if (newZoom !== zoom) {
-      setZoom(newZoom);
-      // Apply zoom directly to camera ref for immediate effect
-      if (cameraRef.current) {
-        try {
-          cameraRef.current.zoom = newZoom * 10;
-        } catch (err) {
-          console.error("Error setting zoom:", err);
+  // Create the pinch gesture handler with proper scaling
+  const pinchGesture = Gesture.Pinch()
+    .onStart(() => {
+      console.log("Pinch gesture started with zoom:", zoom)
+      setInitialZoom(zoom)
+    })
+    .onUpdate((e) => {
+      console.log("Pinch update with scale:", e.scale, "initial zoom:", initialZoom)
+      
+      // Apply a logarithmic scale for smoother zoom feel
+      const newZoom = Math.max(0, Math.min(0.9, initialZoom * e.scale))
+      
+      // Only update if changed significantly
+      if (Math.abs(newZoom - zoom) > 0.01) {
+        setZoom(newZoom)
+        
+        // Apply zoom directly to camera
+        if (cameraRef.current) {
+          try {
+            const cameraZoom = newZoom * 10
+            cameraRef.current.zoom = cameraZoom
+            console.log("Setting camera zoom to:", cameraZoom)
+          } catch (err) {
+            console.error("Error setting zoom:", err)
+          }
         }
       }
-      console.log("Camera zoom updated to:", newZoom, "× camera zoom:", newZoom * 10);
-    }
-  }
+    })
+    .onEnd(() => {
+      console.log("Pinch gesture ended with final zoom:", zoom)
+    })
 
   // const requestCameraPermission = React.useCallback(async () => {
   //   const permission = await Camera.requestCameraPermission()
@@ -328,7 +319,7 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   return (
     <Screen unsafe>
       <View style={StyleSheet.absoluteFill}>
-        <View style={StyleSheet.absoluteFill}>
+        <GestureDetector gesture={pinchGesture}>
           <Camera
             ref={cameraRef}
             style={StyleSheet.absoluteFill}
@@ -337,9 +328,9 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
             onError={onError}
             codeScanner={codeScanner}
             zoom={zoom * 10}
-            enableZoomGesture={true}
+            enableZoomGesture={false}
           />
-        </View>
+        </GestureDetector>
         <View style={styles.rectangleContainer}>
           <View style={styles.rectangle} />
         </View>
