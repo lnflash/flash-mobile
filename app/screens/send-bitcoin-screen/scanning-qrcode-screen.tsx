@@ -307,18 +307,16 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   return (
     <Screen unsafe>
       <View style={StyleSheet.absoluteFill}>
-        <PinchGestureHandler onGestureEvent={pinchHandler}>
-          <Reanimated.View style={StyleSheet.absoluteFill}>
-            <ReanimatedCamera
-              style={StyleSheet.absoluteFill}
-              device={device}
-              isActive={isFocused}
-              onError={onError}
-              codeScanner={codeScanner}
-              animatedProps={cameraAnimatedProps}
-            />
-          </Reanimated.View>
-        </PinchGestureHandler>
+        {/* Using the native pinchToZoom prop instead of a custom gesture handler */}
+        <Camera
+          style={StyleSheet.absoluteFill}
+          device={device}
+          isActive={isFocused}
+          onError={onError}
+          codeScanner={codeScanner}
+          zoom={zoom.value}
+          enableZoomGesture={true}
+        />
         <View style={styles.rectangleContainer}>
           <View style={styles.rectangle} />
         </View>
