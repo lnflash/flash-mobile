@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Alert, Dimensions, Linking, Pressable, StyleSheet, View } from "react-native"
+import { Alert, Dimensions, Linking, Pressable, StyleSheet, View, Platform } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -16,6 +16,8 @@ import {
   useCameraPermission,
   useCodeScanner,
 } from "react-native-vision-camera"
+import { GestureDetector, Gesture } from "react-native-gesture-handler"
+import { runOnJS } from "react-native-reanimated"
 
 // utils
 import { toastShow } from "@app/utils/toast"
@@ -89,6 +91,121 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   const { hasPermission, requestPermission } = useCameraPermission()
 
   const isFocused = useIsFocused()
+  
+  // Camera refs and state
+  const cameraRef = React.useRef<Camera>(null)
+  const [zoom, setZoom] = React.useState(0)
+  const [initialZoom, setInitialZoom] = React.useState(0)
+  
+  // Track target and current zoom values for smooth easing on Android
+  const targetZoom = React.useRef(0)
+  const lastUpdateTime = React.useRef(0)
+  const animationRef = React.useRef<number | null>(null)
+  
+  // Function for smooth easing on Android
+  const easeToTarget = React.useCallback(() => {
+    if (Platform.OS !== 'android') return
+    
+    // Calculate how far to move toward target this frame
+    const currentZoom = zoom
+    const target = targetZoom.current
+    const diff = target - currentZoom
+    
+    if (Math.abs(diff) < 0.001) {
+      // We're close enough, no need to update
+      animationRef.current = null
+      return
+    }
+    
+    // Apply easing: move 15% of the distance to target (responsive yet smooth)
+    const newZoom = currentZoom + (diff * 0.15)
+    
+    // Force a minimum change to ensure we see some effect
+    const minChange = 0.01
+    const forceChange = Math.abs(diff) < minChange ? 
+      (diff > 0 ? currentZoom + minChange : currentZoom - minChange) :
+      newZoom
+    
+    // Update zoom state with the new value
+    setZoom(forceChange)
+    
+    // Continue animation
+    animationRef.current = requestAnimationFrame(easeToTarget)
+  }, [zoom])
+  
+  // Create the pinch gesture handler with proper scaling
+  // Handler for updating zoom (runs on JS thread)
+  const updateZoom = React.useCallback((scale: number) => {
+    let newZoom
+    
+    if (Platform.OS === 'android') {
+      // For Android, use a more direct approach with exaggerated values
+      if (scale > 1) {
+        // Exaggerate the zoom effect to make it more visible
+        // Map scale 1.0-2.5 to zoom 0.0-0.7 for more noticeable effect
+        const targetValue = Math.min(0.7, (scale - 1) * 0.5)
+        targetZoom.current = targetValue
+      } else {
+        // Zooming out - make sure we go back to fully zoomed out
+        targetZoom.current = 0
+      }
+      
+      // Start animation if not already running
+      if (!animationRef.current) {
+        animationRef.current = requestAnimationFrame(easeToTarget)
+      }
+      
+      // Don't set zoom directly, let the animation handle it
+      return
+    } else {
+      // iOS can handle faster zoom changes with incremental approach
+      if (scale > 1) {
+        newZoom = Math.min(1, zoom + 0.05)
+      } else {
+        newZoom = Math.max(0, zoom - 0.05)
+      }
+      
+      // For iOS, we update camera directly for better responsiveness
+      if (cameraRef.current) {
+        try {
+          cameraRef.current.zoom = newZoom * 10
+        } catch (e) {
+          // Silently handle errors in production
+        }
+      }
+    }
+    
+    // Update zoom state
+    setZoom(newZoom)
+  }, [zoom])
+  
+  // Clean up animation on unmount
+  React.useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+    }
+  }, [])
+  
+  // Gesture handler implementation using worklets
+  const pinchGesture = Gesture.Pinch()
+    .onStart(() => {
+      'worklet';
+    })
+    .onUpdate((e) => {
+      'worklet';
+      
+      // Add bounds check directly in the worklet to prevent extreme scales
+      // This prevents even calling updateZoom with extreme values that could crash the camera
+      const scale = e.scale
+      const safeScale = Platform.OS === 'android' ? 
+        Math.max(0.9, Math.min(2.5, scale)) : // Increased maximum scale for Android
+        scale // No limit for iOS
+      
+      // Must use runOnJS for React state updates or camera ref access
+      runOnJS(updateZoom)(safeScale)
+    })
 
   // const requestCameraPermission = React.useCallback(async () => {
   //   const permission = await Camera.requestCameraPermission()
@@ -200,7 +317,6 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
     codeTypes: ["qr", "ean-13"],
     onCodeScanned: (codes) => {
       codes.forEach((code) => processInvoice(code.value))
-      console.log(`Scanned ${codes.length} codes!`)
     },
   })
 
@@ -242,7 +358,8 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   }
 
   const onError = React.useCallback((error: CameraRuntimeError) => {
-    console.error(error)
+    // In production, we could log to a monitoring service instead
+    crashlytics().recordError(error)
   }, [])
 
   if (!hasPermission) {
@@ -280,25 +397,29 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
 
   return (
     <Screen unsafe>
-      <View style={StyleSheet.absoluteFill}>
+      {/* Use same implementation for both platforms */}
+      <GestureDetector gesture={pinchGesture}>
         <Camera
+          ref={cameraRef}
           style={StyleSheet.absoluteFill}
           device={device}
           isActive={isFocused}
           onError={onError}
           codeScanner={codeScanner}
+          zoom={Platform.OS === 'android' ? zoom * 10 : zoom * 10} 
+          enableZoomGesture={false}
         />
-        <View style={styles.rectangleContainer}>
-          <View style={styles.rectangle} />
-        </View>
-        <Pressable onPress={navigation.goBack}>
-          <View style={styles.close}>
-            <Svg viewBox="0 0 100 100">
-              <Circle cx={50} cy={50} r={50} fill={colors._white} opacity={0.5} />
-            </Svg>
-            <Icon name="close" size={64} style={styles.iconClose} />
-          </View>
+      </GestureDetector>
+      
+      {/* Controls on top of camera */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        <Pressable onPress={navigation.goBack} style={styles.close}>
+          <Svg viewBox="0 0 100 100">
+            <Circle cx={50} cy={50} r={50} fill={colors._white} opacity={0.5} />
+          </Svg>
+          <Icon name="close" size={64} style={styles.iconClose} />
         </Pressable>
+        
         <View style={styles.openGallery}>
           <Pressable onPress={showImagePicker}>
             <Icon
@@ -309,7 +430,6 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
             />
           </Pressable>
           <Pressable onPress={handleInvoicePaste}>
-            {/* we could Paste from "FontAwesome" but as svg*/}
             <Icon
               name="clipboard-outline"
               size={64}
