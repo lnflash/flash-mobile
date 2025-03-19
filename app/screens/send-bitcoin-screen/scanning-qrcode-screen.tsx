@@ -112,16 +112,9 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
       newZoom = Math.max(0, zoom - 0.05)
     }
     
+    // Only update state - rely on the camera's zoom prop to update the camera
+    // This avoids trying to directly modify camera.zoom which causes issues on Android
     setZoom(newZoom)
-    
-    // Update camera zoom directly from JS thread
-    if (cameraRef.current) {
-      try {
-        cameraRef.current.zoom = newZoom * 10
-      } catch (e) {
-        console.error("Error setting zoom:", e)
-      }
-    }
   }, [zoom])
   
   // Simplest possible implementation using worklets
