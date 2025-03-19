@@ -137,9 +137,9 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
     if (Platform.OS === 'android') {
       // For Android, update the target zoom with very smooth easing
       if (scale > 1) {
-        // Very small maximum zoom to prevent camera issues
-        // Map scale 1.0-1.1 to zoom 0.0-0.25
-        const targetValue = Math.min(0.25, (scale - 1) * 2.5)
+        // Map scale 1.0-2.5 to zoom 0.0-0.5 for better range
+        // The formula maps the scale to a proportional zoom value
+        const targetValue = Math.min(0.5, (scale - 1) * 0.33)
         targetZoom.current = targetValue
       } else {
         // Zooming out
@@ -197,7 +197,7 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
       // This prevents even calling updateZoom with extreme values that could crash the camera
       const scale = e.scale
       const safeScale = Platform.OS === 'android' ? 
-        Math.max(0.9, Math.min(1.2, scale)) : // Allow slightly more range for Android
+        Math.max(0.9, Math.min(2.5, scale)) : // Increased maximum scale for Android
         scale // No limit for iOS
         
       console.log("Pinch scale:", scale, "Safe scale:", safeScale)
