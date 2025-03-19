@@ -95,17 +95,43 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   // Create camera ref
   const cameraRef = React.useRef<Camera>(null)
   
-  // Track zoom level
+  // Track zoom level and scale reference
   const [zoomLevel, setZoomLevel] = React.useState(0)
+  const baseScaleRef = React.useRef(1) // Reference value to track the base scale
   
   // Create pinch gesture handler
   const onPinchGestureEvent = React.useCallback((event: any) => {
     if (cameraRef.current) {
-      // Scale between 0 and 1 to set zoom (0-10 range typically)
-      const newZoomLevel = Math.max(0, Math.min(1, zoomLevel + event.nativeEvent.scale / 20))
-      setZoomLevel(newZoomLevel)
-      cameraRef.current.zoom = newZoomLevel * 10 // Adjust scaling as needed
-      console.log('Pinch detected, zoom level:', newZoomLevel)
+      try {
+        // Get the focal point of the pinch
+        const { scale } = event.nativeEvent;
+        
+        // Calculate the zoom change based on the scale relative to initial scale
+        let newZoom = zoomLevel;
+        
+        // Make zoom adjustment based on scale delta
+        if (scale > 1.0) {
+          // Pinching outward (zoom in)
+          newZoom = Math.min(1, zoomLevel + 0.02);
+        } else if (scale < 1.0) {
+          // Pinching inward (zoom out)
+          newZoom = Math.max(0, zoomLevel - 0.02);
+        }
+        
+        if (newZoom !== zoomLevel) {
+          setZoomLevel(newZoom);
+          
+          // Directly setting the zoom on the camera ref (should work on both platforms)
+          if (cameraRef.current) {
+            cameraRef.current.zoom = newZoom * 8;
+          }
+          
+          console.log('Pinch detected, action:', scale > 1 ? 'zoom in' : 'zoom out', 
+                      'new zoom:', newZoom, 'camera zoom:', newZoom * 8);
+        }
+      } catch (error) {
+        console.error('Error in pinch handler:', error);
+      }
     }
   }, [zoomLevel])
 
@@ -303,9 +329,12 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
         <PinchGestureHandler
           onGestureEvent={onPinchGestureEvent}
           onHandlerStateChange={(event) => {
-            // Reset zoom tracking when gesture ends
-            if (event.nativeEvent.state === State.END) {
-              console.log('Pinch gesture ended')
+            // Reset zoom tracking when gesture begins/ends
+            if (event.nativeEvent.state === State.BEGAN) {
+              baseScaleRef.current = event.nativeEvent.scale;
+              console.log('Pinch gesture began with scale:', baseScaleRef.current);
+            } else if (event.nativeEvent.state === State.END) {
+              console.log('Pinch gesture ended');
             }
           }}
         >
@@ -317,7 +346,7 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
               isActive={isFocused}
               onError={onError}
               codeScanner={codeScanner}
-              zoom={zoomLevel * 10}
+              zoom={zoomLevel * 8}
             />
           </View>
         </PinchGestureHandler>
