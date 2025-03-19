@@ -16,7 +16,7 @@ import { addDeviceToken, requestNotificationPermission } from "@app/utils/notifi
 
 // assets
 import Chart from "@app/assets/icons/chart.svg"
-import Menu from "@app/assets/icons/menu.svg"
+import Menu from "@app/assets/icons/setting.svg"
 
 const Header = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
