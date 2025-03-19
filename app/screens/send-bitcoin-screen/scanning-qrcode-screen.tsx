@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Alert, Dimensions, Linking, Pressable, StyleSheet, View } from "react-native"
+import { Alert, Dimensions, Linking, Pressable, StyleSheet, View, Platform } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -98,40 +98,75 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   // Track zoom level and scale reference
   const [zoomLevel, setZoomLevel] = React.useState(0)
   const baseScaleRef = React.useRef(1) // Reference value to track the base scale
+  const lastScaleRef = React.useRef(1) // Reference to last scale value for relative changes
+  const pinchStartedRef = React.useRef(false) // Track if pinch has started
   
+  // Log device platform
+  React.useEffect(() => {
+    const platform = Platform.OS;
+    console.log('Camera zoom: Running on platform:', platform);
+  }, []);
+
   // Create pinch gesture handler
   const onPinchGestureEvent = React.useCallback((event: any) => {
+    if (!pinchStartedRef.current) {
+      console.log('Camera zoom: First pinch movement detected');
+      pinchStartedRef.current = true;
+    }
+    
+    console.log('Camera zoom: Raw event received:', 
+                'scale:', event.nativeEvent.scale, 
+                'velocity:', event.nativeEvent.velocity,
+                'focal X:', event.nativeEvent.focalX,
+                'focal Y:', event.nativeEvent.focalY);
+    
     if (cameraRef.current) {
       try {
-        // Get the focal point of the pinch
+        // Get the scale from the pinch
         const { scale } = event.nativeEvent;
         
-        // Calculate the zoom change based on the scale relative to initial scale
-        let newZoom = zoomLevel;
+        // Calculate scale delta from last value
+        const scaleDelta = scale - lastScaleRef.current;
+        lastScaleRef.current = scale;
         
-        // Make zoom adjustment based on scale delta
-        if (scale > 1.0) {
-          // Pinching outward (zoom in)
-          newZoom = Math.min(1, zoomLevel + 0.02);
-        } else if (scale < 1.0) {
-          // Pinching inward (zoom out)
-          newZoom = Math.max(0, zoomLevel - 0.02);
+        console.log('Camera zoom: Scale delta:', scaleDelta);
+        
+        // Determine zoom direction from scale delta
+        let newZoom = zoomLevel;
+        if (Math.abs(scaleDelta) > 0.01) { // Apply threshold to avoid noise
+          if (scaleDelta > 0) {
+            // Pinching outward (zoom in)
+            newZoom = Math.min(1, zoomLevel + 0.04);
+            console.log('Camera zoom: Zooming IN', 'delta:', scaleDelta, 'new zoom:', newZoom);
+          } else {
+            // Pinching inward (zoom out)
+            newZoom = Math.max(0, zoomLevel - 0.04);
+            console.log('Camera zoom: Zooming OUT', 'delta:', scaleDelta, 'new zoom:', newZoom);
+          }
         }
         
         if (newZoom !== zoomLevel) {
           setZoomLevel(newZoom);
           
-          // Directly setting the zoom on the camera ref (should work on both platforms)
-          if (cameraRef.current) {
-            cameraRef.current.zoom = newZoom * 8;
+          // Apply zoom to camera
+          try {
+            const zoomToApply = newZoom * 8;
+            console.log('Camera zoom: Setting camera zoom to:', zoomToApply);
+            
+            // Try setting the property directly
+            cameraRef.current.zoom = zoomToApply;
+            
+            // Verify camera zoom was set
+            console.log('Camera zoom: Camera zoom after setting:', cameraRef.current.zoom);
+          } catch (zoomError) {
+            console.error('Camera zoom: Error setting zoom on camera:', zoomError);
           }
-          
-          console.log('Pinch detected, action:', scale > 1 ? 'zoom in' : 'zoom out', 
-                      'new zoom:', newZoom, 'camera zoom:', newZoom * 8);
         }
       } catch (error) {
-        console.error('Error in pinch handler:', error);
+        console.error('Camera zoom: Error in pinch handler:', error);
       }
+    } else {
+      console.log('Camera zoom: Camera ref is null');
     }
   }, [zoomLevel])
 
@@ -329,12 +364,25 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
         <PinchGestureHandler
           onGestureEvent={onPinchGestureEvent}
           onHandlerStateChange={(event) => {
+            console.log('Camera zoom: Gesture state changed to:', event.nativeEvent.state);
+            
             // Reset zoom tracking when gesture begins/ends
             if (event.nativeEvent.state === State.BEGAN) {
               baseScaleRef.current = event.nativeEvent.scale;
-              console.log('Pinch gesture began with scale:', baseScaleRef.current);
+              lastScaleRef.current = event.nativeEvent.scale;
+              pinchStartedRef.current = false;
+              console.log('Camera zoom: Pinch gesture BEGAN with scale:', baseScaleRef.current);
+            } else if (event.nativeEvent.state === State.ACTIVE) {
+              console.log('Camera zoom: Pinch gesture ACTIVE with scale:', event.nativeEvent.scale);
             } else if (event.nativeEvent.state === State.END) {
-              console.log('Pinch gesture ended');
+              console.log('Camera zoom: Pinch gesture ENDED with scale:', event.nativeEvent.scale);
+              pinchStartedRef.current = false;
+            } else if (event.nativeEvent.state === State.FAILED) {
+              console.log('Camera zoom: Pinch gesture FAILED');
+              pinchStartedRef.current = false;
+            } else if (event.nativeEvent.state === State.CANCELLED) {
+              console.log('Camera zoom: Pinch gesture CANCELLED');
+              pinchStartedRef.current = false;
             }
           }}
         >
