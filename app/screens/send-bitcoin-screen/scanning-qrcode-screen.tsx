@@ -97,36 +97,62 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   const [zoom, setZoom] = React.useState(0)
   const [initialZoom, setInitialZoom] = React.useState(0)
   
-  // Store last update time to throttle Android updates
+  // Track target and current zoom values for smooth easing on Android
+  const targetZoom = React.useRef(0)
   const lastUpdateTime = React.useRef(0)
+  const animationRef = React.useRef<number | null>(null)
+  
+  // Function for smooth easing on Android
+  const easeToTarget = React.useCallback(() => {
+    if (Platform.OS !== 'android') return
+    
+    // Calculate how far to move toward target this frame (5% per frame for very smooth easing)
+    const currentZoom = zoom
+    const target = targetZoom.current
+    const diff = target - currentZoom
+    
+    if (Math.abs(diff) < 0.001) {
+      // We're close enough, no need to update
+      animationRef.current = null
+      return
+    }
+    
+    // Apply easing: move only 5% of the distance to target (extremely gradual)
+    const newZoom = currentZoom + (diff * 0.05)
+    
+    // Update zoom state
+    setZoom(newZoom)
+    
+    // Continue animation
+    animationRef.current = requestAnimationFrame(easeToTarget)
+  }, [zoom])
   
   // Create the pinch gesture handler with proper scaling
   // Handler for updating zoom (runs on JS thread)
   const updateZoom = React.useCallback((scale: number) => {
-    // Get current time to check if we should throttle (Android only)
-    const now = Date.now()
-    if (Platform.OS === 'android' && now - lastUpdateTime.current < 50) {
-      // Throttle Android updates to 20fps
-      return
-    }
-    lastUpdateTime.current = now
-    
     console.log("JS thread handling zoom with scale:", scale, "on platform:", Platform.OS)
     
     let newZoom
     
     if (Platform.OS === 'android') {
-      // For Android, use absolute scale value rather than incremental approach
-      // This makes zooming immediately responsive rather than accumulative
-      // Cap at 0.4 to prevent camera issues while still providing zoom
+      // For Android, update the target zoom with very smooth easing
       if (scale > 1) {
-        // Map scale 1.0-1.1 to zoom 0.0-0.3 for smoother control
-        const zoomFactor = ((scale - 1) * 3) // Convert scale to zoom factor
-        newZoom = Math.min(0.3, zoomFactor) 
+        // Very small maximum zoom to prevent camera issues
+        // Map scale 1.0-1.1 to zoom 0.0-0.25
+        const targetValue = Math.min(0.25, (scale - 1) * 2.5)
+        targetZoom.current = targetValue
       } else {
-        // User is pinching to zoom out
-        newZoom = 0
+        // Zooming out
+        targetZoom.current = 0
       }
+      
+      // Start animation if not already running
+      if (!animationRef.current) {
+        animationRef.current = requestAnimationFrame(easeToTarget)
+      }
+      
+      // Don't set zoom directly, let the animation handle it
+      return
     } else {
       // iOS can handle faster zoom changes with incremental approach
       if (scale > 1) {
@@ -149,7 +175,16 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
     setZoom(newZoom)
   }, [zoom])
   
-  // Simplest possible implementation using worklets
+  // Clean up animation on unmount
+  React.useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+    }
+  }, [])
+  
+  // Gesture handler implementation using worklets
   const pinchGesture = Gesture.Pinch()
     .onStart(() => {
       'worklet';
@@ -162,7 +197,7 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
       // This prevents even calling updateZoom with extreme values that could crash the camera
       const scale = e.scale
       const safeScale = Platform.OS === 'android' ? 
-        Math.max(0.9, Math.min(1.1, scale)) : // Very conservative limits for Android
+        Math.max(0.9, Math.min(1.2, scale)) : // Allow slightly more range for Android
         scale // No limit for iOS
         
       console.log("Pinch scale:", scale, "Safe scale:", safeScale)
