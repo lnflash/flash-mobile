@@ -16,6 +16,8 @@ import {
   useCameraPermission,
   useCodeScanner,
 } from "react-native-vision-camera"
+import { PinchGestureHandler } from "react-native-gesture-handler"
+import Reanimated, { useAnimatedGestureHandler, useAnimatedProps, useSharedValue } from "react-native-reanimated"
 
 // utils
 import { toastShow } from "@app/utils/toast"
@@ -89,6 +91,27 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   const { hasPermission, requestPermission } = useCameraPermission()
 
   const isFocused = useIsFocused()
+  
+  // Create shared value for zoom level
+  const zoom = useSharedValue(1)
+
+  // Handler for pinch gesture to control zoom
+  const pinchHandler = useAnimatedGestureHandler({
+    onActive: (event) => {
+      // Clamp zoom between 1 and 8 (adjust max as needed)
+      zoom.value = Math.max(1, Math.min(8, event.scale))
+    },
+  })
+
+  // Create ReanimatedCamera component with animated props
+  const ReanimatedCamera = Reanimated.createAnimatedComponent(Camera)
+  
+  // Animated props for the camera
+  const cameraAnimatedProps = useAnimatedProps(() => {
+    return {
+      zoom: zoom.value,
+    }
+  })
 
   // const requestCameraPermission = React.useCallback(async () => {
   //   const permission = await Camera.requestCameraPermission()
@@ -281,13 +304,18 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   return (
     <Screen unsafe>
       <View style={StyleSheet.absoluteFill}>
-        <Camera
-          style={StyleSheet.absoluteFill}
-          device={device}
-          isActive={isFocused}
-          onError={onError}
-          codeScanner={codeScanner}
-        />
+        <PinchGestureHandler onGestureEvent={pinchHandler}>
+          <Reanimated.View style={StyleSheet.absoluteFill}>
+            <ReanimatedCamera
+              style={StyleSheet.absoluteFill}
+              device={device}
+              isActive={isFocused}
+              onError={onError}
+              codeScanner={codeScanner}
+              animatedProps={cameraAnimatedProps}
+            />
+          </Reanimated.View>
+        </PinchGestureHandler>
         <View style={styles.rectangleContainer}>
           <View style={styles.rectangle} />
         </View>
