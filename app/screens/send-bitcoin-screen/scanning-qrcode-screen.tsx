@@ -97,35 +97,30 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   const [initialZoom, setInitialZoom] = React.useState(0)
   
   // Create the pinch gesture handler with proper scaling
+  // Simplest possible implementation
   const pinchGesture = Gesture.Pinch()
     .onStart(() => {
-      console.log("Pinch gesture started with zoom:", zoom)
-      setInitialZoom(zoom)
+      console.log("Pinch started")
     })
     .onUpdate((e) => {
-      console.log("Pinch update with scale:", e.scale, "initial zoom:", initialZoom)
+      console.log("Pinch scale:", e.scale)
       
-      // Apply a logarithmic scale for smoother zoom feel
-      const newZoom = Math.max(0, Math.min(0.9, initialZoom * e.scale))
-      
-      // Only update if changed significantly
-      if (Math.abs(newZoom - zoom) > 0.01) {
-        setZoom(newZoom)
-        
-        // Apply zoom directly to camera
-        if (cameraRef.current) {
-          try {
-            const cameraZoom = newZoom * 10
-            cameraRef.current.zoom = cameraZoom
-            console.log("Setting camera zoom to:", cameraZoom)
-          } catch (err) {
-            console.error("Error setting zoom:", err)
-          }
-        }
+      // Simple direct approach
+      let newZoom
+      if (e.scale > 1) {
+        // Zoom in
+        newZoom = Math.min(1, zoom + 0.05)
+      } else {
+        // Zoom out
+        newZoom = Math.max(0, zoom - 0.05)
       }
-    })
-    .onEnd(() => {
-      console.log("Pinch gesture ended with final zoom:", zoom)
+      
+      setZoom(newZoom)
+      
+      // Set camera zoom directly
+      if (cameraRef.current) {
+        cameraRef.current.zoom = newZoom * 10
+      }
     })
 
   // const requestCameraPermission = React.useCallback(async () => {
@@ -318,30 +313,28 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
 
   return (
     <Screen unsafe>
-      <View style={StyleSheet.absoluteFill}>
-        <GestureDetector gesture={pinchGesture}>
-          <Camera
-            ref={cameraRef}
-            style={StyleSheet.absoluteFill}
-            device={device}
-            isActive={isFocused}
-            onError={onError}
-            codeScanner={codeScanner}
-            zoom={zoom * 10}
-            enableZoomGesture={false}
-          />
-        </GestureDetector>
-        <View style={styles.rectangleContainer}>
-          <View style={styles.rectangle} />
-        </View>
-        <Pressable onPress={navigation.goBack}>
-          <View style={styles.close}>
-            <Svg viewBox="0 0 100 100">
-              <Circle cx={50} cy={50} r={50} fill={colors._white} opacity={0.5} />
-            </Svg>
-            <Icon name="close" size={64} style={styles.iconClose} />
-          </View>
+      <GestureDetector gesture={pinchGesture}>
+        <Camera
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          device={device}
+          isActive={isFocused}
+          onError={onError}
+          codeScanner={codeScanner}
+          zoom={zoom * 10}
+          enableZoomGesture={false}
+        />
+      </GestureDetector>
+      
+      {/* Controls on top of camera */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        <Pressable onPress={navigation.goBack} style={styles.close}>
+          <Svg viewBox="0 0 100 100">
+            <Circle cx={50} cy={50} r={50} fill={colors._white} opacity={0.5} />
+          </Svg>
+          <Icon name="close" size={64} style={styles.iconClose} />
         </Pressable>
+        
         <View style={styles.openGallery}>
           <Pressable onPress={showImagePicker}>
             <Icon
@@ -352,7 +345,6 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
             />
           </Pressable>
           <Pressable onPress={handleInvoicePaste}>
-            {/* we could Paste from "FontAwesome" but as svg*/}
             <Icon
               name="clipboard-outline"
               size={64}
