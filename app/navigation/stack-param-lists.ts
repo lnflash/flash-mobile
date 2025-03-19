@@ -34,7 +34,7 @@ export type RootStackParamList = {
   Primary: undefined
   earnsSection: { section: EarnSectionType }
   earnsQuiz: { id: string }
-  scanningQRCode: { swapAddress?: string; amount?: number; fee?: number } | undefined
+  scanningQRCode?: { swapAddress: string; amount: number; fee: number; feeType: string }
   settings: undefined
   addressScreen: undefined
   defaultWallet: undefined
@@ -175,4 +175,5 @@ export type PrimaryStackParamList = {
   Card: undefined
   Map: undefined
   Earn: undefined
+  Scan: undefined
 }
