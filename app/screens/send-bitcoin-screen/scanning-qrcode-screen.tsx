@@ -106,10 +106,13 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   const easeToTarget = React.useCallback(() => {
     if (Platform.OS !== 'android') return
     
-    // Calculate how far to move toward target this frame (5% per frame for very smooth easing)
+    // Calculate how far to move toward target this frame (15% per frame for responsive yet smooth easing)
     const currentZoom = zoom
     const target = targetZoom.current
     const diff = target - currentZoom
+    
+    // Add logging to debug Android zoom issues
+    console.log("Android zoom animation:", {current: currentZoom, target, diff})
     
     if (Math.abs(diff) < 0.001) {
       // We're close enough, no need to update
@@ -117,11 +120,17 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
       return
     }
     
-    // Apply easing: move only 5% of the distance to target (extremely gradual)
-    const newZoom = currentZoom + (diff * 0.05)
+    // Apply easing: move 15% of the distance to target (more responsive while still smooth)
+    const newZoom = currentZoom + (diff * 0.15)
     
-    // Update zoom state
-    setZoom(newZoom)
+    // Force a minimum change to ensure we see some effect
+    const minChange = 0.01
+    const forceChange = Math.abs(diff) < minChange ? 
+      (diff > 0 ? currentZoom + minChange : currentZoom - minChange) :
+      newZoom
+    
+    // Update zoom state with the new value
+    setZoom(forceChange)
     
     // Continue animation
     animationRef.current = requestAnimationFrame(easeToTarget)
@@ -135,14 +144,16 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
     let newZoom
     
     if (Platform.OS === 'android') {
-      // For Android, update the target zoom with very smooth easing
+      // For Android, use a more direct approach with exaggerated values
       if (scale > 1) {
-        // Map scale 1.0-2.5 to zoom 0.0-0.5 for better range
-        // The formula maps the scale to a proportional zoom value
-        const targetValue = Math.min(0.5, (scale - 1) * 0.33)
+        // Exaggerate the zoom effect to make it more visible
+        // Map scale 1.0-2.5 to zoom 0.0-0.7 for more noticeable effect
+        const targetValue = Math.min(0.7, (scale - 1) * 0.5)
+        console.log("Setting Android target zoom to:", targetValue)
         targetZoom.current = targetValue
       } else {
-        // Zooming out
+        // Zooming out - make sure we go back to fully zoomed out
+        console.log("Zooming out on Android")
         targetZoom.current = 0
       }
       
@@ -405,7 +416,7 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
           isActive={isFocused}
           onError={onError}
           codeScanner={codeScanner}
-          zoom={Platform.OS === 'android' ? zoom * 3 : zoom * 10} 
+          zoom={Platform.OS === 'android' ? zoom * 10 : zoom * 10} 
           enableZoomGesture={false}
         />
       </GestureDetector>
