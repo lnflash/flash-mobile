@@ -102,29 +102,40 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   const updateZoom = React.useCallback((scale: number) => {
     console.log("JS thread handling zoom with scale:", scale, "on platform:", Platform.OS)
     
-    // Simple direct approach
     let newZoom
-    if (scale > 1) {
-      // Zoom in - more gradual for Android
-      const increment = Platform.OS === 'android' ? 0.02 : 0.05
-      newZoom = Math.min(1, zoom + increment)
+    
+    if (Platform.OS === 'android') {
+      // Android-specific zoom handling to prevent choppiness at higher zoom levels
+      if (scale > 1) {
+        // For Android, use smaller increments for smoother zoom
+        // Also reduce increment size at higher zoom levels to prevent choppiness
+        const increment = zoom > 0.6 ? 0.01 : zoom > 0.3 ? 0.015 : 0.02
+        newZoom = Math.min(0.8, zoom + increment) // Cap at 0.8 (4.0x) for Android
+      } else {
+        // Smooth zoom-out based on current zoom level
+        const decrement = zoom > 0.6 ? 0.01 : zoom > 0.3 ? 0.015 : 0.02
+        newZoom = Math.max(0, zoom - decrement)
+      }
     } else {
-      // Zoom out - more gradual for Android
-      const decrement = Platform.OS === 'android' ? 0.02 : 0.05
-      newZoom = Math.max(0, zoom - decrement)
-    }
-    
-    // Set zoom state for the camera prop
-    setZoom(newZoom)
-    
-    // On iOS, we can also update directly for better responsiveness
-    if (Platform.OS === 'ios' && cameraRef.current) {
-      try {
-        cameraRef.current.zoom = newZoom * 10
-      } catch (e) {
-        console.error("iOS direct zoom error:", e)
+      // iOS can handle faster zoom changes
+      if (scale > 1) {
+        newZoom = Math.min(1, zoom + 0.05)
+      } else {
+        newZoom = Math.max(0, zoom - 0.05)
+      }
+      
+      // For iOS, we can update camera directly for better responsiveness
+      if (cameraRef.current) {
+        try {
+          cameraRef.current.zoom = newZoom * 10
+        } catch (e) {
+          console.error("iOS direct zoom error:", e)
+        }
       }
     }
+    
+    // Update zoom state
+    setZoom(newZoom)
   }, [zoom])
   
   // Simplest possible implementation using worklets
