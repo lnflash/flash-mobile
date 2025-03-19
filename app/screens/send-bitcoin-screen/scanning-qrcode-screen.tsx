@@ -97,31 +97,45 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   const [zoom, setZoom] = React.useState(0)
   const [initialZoom, setInitialZoom] = React.useState(0)
   
+  // Store last update time to throttle Android updates
+  const lastUpdateTime = React.useRef(0)
+  
   // Create the pinch gesture handler with proper scaling
   // Handler for updating zoom (runs on JS thread)
   const updateZoom = React.useCallback((scale: number) => {
+    // Get current time to check if we should throttle (Android only)
+    const now = Date.now()
+    if (Platform.OS === 'android' && now - lastUpdateTime.current < 50) {
+      // Throttle Android updates to 20fps
+      return
+    }
+    lastUpdateTime.current = now
+    
     console.log("JS thread handling zoom with scale:", scale, "on platform:", Platform.OS)
     
     let newZoom
     
     if (Platform.OS === 'android') {
-      // Ultra conservative zoom for Android to prevent crashes
+      // For Android, use absolute scale value rather than incremental approach
+      // This makes zooming immediately responsive rather than accumulative
+      // Cap at 0.4 to prevent camera issues while still providing zoom
       if (scale > 1) {
-        // Very small increment for Android
-        newZoom = Math.min(0.3, zoom + 0.01) // Cap at 0.3 (0.9x) for Android
+        // Map scale 1.0-1.1 to zoom 0.0-0.3 for smoother control
+        const zoomFactor = ((scale - 1) * 3) // Convert scale to zoom factor
+        newZoom = Math.min(0.3, zoomFactor) 
       } else {
-        // Very small decrement for Android
-        newZoom = Math.max(0, zoom - 0.01)
+        // User is pinching to zoom out
+        newZoom = 0
       }
     } else {
-      // iOS can handle faster zoom changes
+      // iOS can handle faster zoom changes with incremental approach
       if (scale > 1) {
         newZoom = Math.min(1, zoom + 0.05)
       } else {
         newZoom = Math.max(0, zoom - 0.05)
       }
       
-      // For iOS, we can update camera directly for better responsiveness
+      // For iOS, we update camera directly for better responsiveness
       if (cameraRef.current) {
         try {
           cameraRef.current.zoom = newZoom * 10
