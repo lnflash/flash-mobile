@@ -17,6 +17,7 @@ import {
   useCodeScanner,
 } from "react-native-vision-camera"
 import { GestureDetector, Gesture } from "react-native-gesture-handler"
+import { runOnJS } from "react-native-reanimated"
 
 // utils
 import { toastShow } from "@app/utils/toast"
@@ -97,30 +98,44 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   const [initialZoom, setInitialZoom] = React.useState(0)
   
   // Create the pinch gesture handler with proper scaling
-  // Simplest possible implementation
+  // Handler for updating zoom (runs on JS thread)
+  const updateZoom = React.useCallback((scale: number) => {
+    console.log("JS thread handling zoom with scale:", scale)
+    
+    // Simple direct approach
+    let newZoom
+    if (scale > 1) {
+      // Zoom in
+      newZoom = Math.min(1, zoom + 0.05)
+    } else {
+      // Zoom out
+      newZoom = Math.max(0, zoom - 0.05)
+    }
+    
+    setZoom(newZoom)
+    
+    // Update camera zoom directly from JS thread
+    if (cameraRef.current) {
+      try {
+        cameraRef.current.zoom = newZoom * 10
+      } catch (e) {
+        console.error("Error setting zoom:", e)
+      }
+    }
+  }, [zoom])
+  
+  // Simplest possible implementation using worklets
   const pinchGesture = Gesture.Pinch()
     .onStart(() => {
+      'worklet';
       console.log("Pinch started")
     })
     .onUpdate((e) => {
+      'worklet';
       console.log("Pinch scale:", e.scale)
       
-      // Simple direct approach
-      let newZoom
-      if (e.scale > 1) {
-        // Zoom in
-        newZoom = Math.min(1, zoom + 0.05)
-      } else {
-        // Zoom out
-        newZoom = Math.max(0, zoom - 0.05)
-      }
-      
-      setZoom(newZoom)
-      
-      // Set camera zoom directly
-      if (cameraRef.current) {
-        cameraRef.current.zoom = newZoom * 10
-      }
+      // Must use runOnJS for React state updates or camera ref access
+      runOnJS(updateZoom)(e.scale)
     })
 
   // const requestCameraPermission = React.useCallback(async () => {
