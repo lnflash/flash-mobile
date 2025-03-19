@@ -11,7 +11,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useNavigation } from "@react-navigation/native"
-import { useBreez } from "@app/hooks"
+import { useBreez, useFlashcard } from "@app/hooks"
 
 // utils
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
@@ -21,6 +21,7 @@ const WalletOverview = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const isAuthed = useIsAuthed()
   const { btcWallet } = useBreez()
+  const { balanceInSats, readFlashcard } = useFlashcard()
 
   const { persistentState, updateState } = usePersistentStateContext()
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
@@ -79,7 +80,6 @@ const WalletOverview = () => {
     setBtcDisplayBalance(
       moneyAmountToDisplayCurrencyString({
         moneyAmount: extBtcWalletBalance,
-        isApproximate: true,
       }),
     )
 
@@ -94,7 +94,6 @@ const WalletOverview = () => {
       setCashDisplayBalance(
         moneyAmountToDisplayCurrencyString({
           moneyAmount: extUsdWalletBalance,
-          isApproximate: displayCurrency !== WalletCurrency.Usd,
         }),
       )
     }
@@ -105,6 +104,10 @@ const WalletOverview = () => {
   const onPressBitcoin = () => navigation.navigate("BTCTransactionHistory")
 
   const onPressFlashcard = () => navigation.navigate("Card")
+
+  const formattedCardBalance = moneyAmountToDisplayCurrencyString({
+    moneyAmount: toBtcMoneyAmount(balanceInSats ?? NaN),
+  })
 
   return (
     <>
@@ -127,11 +130,13 @@ const WalletOverview = () => {
         />
       )}
       <Balance
-        icon="flashcard"
+        icon={!!formattedCardBalance ? "flashcard" : "cardAdd"}
         title="Flash Card"
-        amount="$239.18"
-        currency="USD"
+        amount={formattedCardBalance}
+        currency={displayCurrency}
+        emptyCardText="Add Flash Card"
         onPress={onPressFlashcard}
+        onSync={() => readFlashcard(false)}
       />
     </>
   )
