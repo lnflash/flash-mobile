@@ -350,7 +350,22 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
 
   return (
     <Screen unsafe>
-      <GestureDetector gesture={pinchGesture}>
+      {Platform.OS === 'ios' ? (
+        // iOS supports pinch gestures well
+        <GestureDetector gesture={pinchGesture}>
+          <Camera
+            ref={cameraRef}
+            style={StyleSheet.absoluteFill}
+            device={device}
+            isActive={isFocused}
+            onError={onError}
+            codeScanner={codeScanner}
+            zoom={zoom * 10}
+            enableZoomGesture={false}
+          />
+        </GestureDetector>
+      ) : (
+        // For Android, use the built-in zoom gesture handling
         <Camera
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
@@ -358,10 +373,10 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
           isActive={isFocused}
           onError={onError}
           codeScanner={codeScanner}
-          zoom={Platform.OS === 'android' ? zoom * 5 : zoom * 10}
-          enableZoomGesture={false}
+          zoom={zoom * 5} 
+          enableZoomGesture={true}
         />
-      </GestureDetector>
+      )}
       
       {/* Controls on top of camera */}
       <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
