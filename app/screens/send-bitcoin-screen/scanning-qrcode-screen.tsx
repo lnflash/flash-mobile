@@ -106,13 +106,10 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   const easeToTarget = React.useCallback(() => {
     if (Platform.OS !== 'android') return
     
-    // Calculate how far to move toward target this frame (15% per frame for responsive yet smooth easing)
+    // Calculate how far to move toward target this frame
     const currentZoom = zoom
     const target = targetZoom.current
     const diff = target - currentZoom
-    
-    // Add logging to debug Android zoom issues
-    console.log("Android zoom animation:", {current: currentZoom, target, diff})
     
     if (Math.abs(diff) < 0.001) {
       // We're close enough, no need to update
@@ -120,7 +117,7 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
       return
     }
     
-    // Apply easing: move 15% of the distance to target (more responsive while still smooth)
+    // Apply easing: move 15% of the distance to target (responsive yet smooth)
     const newZoom = currentZoom + (diff * 0.15)
     
     // Force a minimum change to ensure we see some effect
@@ -139,8 +136,6 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   // Create the pinch gesture handler with proper scaling
   // Handler for updating zoom (runs on JS thread)
   const updateZoom = React.useCallback((scale: number) => {
-    console.log("JS thread handling zoom with scale:", scale, "on platform:", Platform.OS)
-    
     let newZoom
     
     if (Platform.OS === 'android') {
@@ -149,11 +144,9 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
         // Exaggerate the zoom effect to make it more visible
         // Map scale 1.0-2.5 to zoom 0.0-0.7 for more noticeable effect
         const targetValue = Math.min(0.7, (scale - 1) * 0.5)
-        console.log("Setting Android target zoom to:", targetValue)
         targetZoom.current = targetValue
       } else {
         // Zooming out - make sure we go back to fully zoomed out
-        console.log("Zooming out on Android")
         targetZoom.current = 0
       }
       
@@ -177,7 +170,7 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
         try {
           cameraRef.current.zoom = newZoom * 10
         } catch (e) {
-          console.error("iOS direct zoom error:", e)
+          // Silently handle errors in production
         }
       }
     }
@@ -199,7 +192,6 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   const pinchGesture = Gesture.Pinch()
     .onStart(() => {
       'worklet';
-      console.log("Pinch started")
     })
     .onUpdate((e) => {
       'worklet';
@@ -210,8 +202,6 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
       const safeScale = Platform.OS === 'android' ? 
         Math.max(0.9, Math.min(2.5, scale)) : // Increased maximum scale for Android
         scale // No limit for iOS
-        
-      console.log("Pinch scale:", scale, "Safe scale:", safeScale)
       
       // Must use runOnJS for React state updates or camera ref access
       runOnJS(updateZoom)(safeScale)
@@ -327,7 +317,6 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
     codeTypes: ["qr", "ean-13"],
     onCodeScanned: (codes) => {
       codes.forEach((code) => processInvoice(code.value))
-      console.log(`Scanned ${codes.length} codes!`)
     },
   })
 
@@ -369,7 +358,8 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   }
 
   const onError = React.useCallback((error: CameraRuntimeError) => {
-    console.error(error)
+    // In production, we could log to a monitoring service instead
+    crashlytics().recordError(error)
   }, [])
 
   if (!hasPermission) {
