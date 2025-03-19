@@ -16,7 +16,8 @@ import {
   useCameraPermission,
   useCodeScanner,
 } from "react-native-vision-camera"
-import { GestureDetector, Gesture } from "react-native-gesture-handler"
+import { GestureDetector, Gesture, PinchGestureHandler, State } from "react-native-gesture-handler"
+import { runOnJS } from "react-native-reanimated"
 
 // utils
 import { toastShow } from "@app/utils/toast"
@@ -93,6 +94,20 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   
   // Create camera ref
   const cameraRef = React.useRef<Camera>(null)
+  
+  // Track zoom level
+  const [zoomLevel, setZoomLevel] = React.useState(0)
+  
+  // Create pinch gesture handler
+  const onPinchGestureEvent = React.useCallback((event: any) => {
+    if (cameraRef.current) {
+      // Scale between 0 and 1 to set zoom (0-10 range typically)
+      const newZoomLevel = Math.max(0, Math.min(1, zoomLevel + event.nativeEvent.scale / 20))
+      setZoomLevel(newZoomLevel)
+      cameraRef.current.zoom = newZoomLevel * 10 // Adjust scaling as needed
+      console.log('Pinch detected, zoom level:', newZoomLevel)
+    }
+  }, [zoomLevel])
 
   // const requestCameraPermission = React.useCallback(async () => {
   //   const permission = await Camera.requestCameraPermission()
@@ -285,15 +300,27 @@ export const ScanningQRCodeScreen: React.FC<Props> = ({ navigation, route }) => 
   return (
     <Screen unsafe>
       <View style={StyleSheet.absoluteFill}>
-        <Camera
-          ref={cameraRef}
-          style={StyleSheet.absoluteFill}
-          device={device}
-          isActive={isFocused}
-          onError={onError}
-          codeScanner={codeScanner}
-          enableZoomGesture={true}
-        />
+        <PinchGestureHandler
+          onGestureEvent={onPinchGestureEvent}
+          onHandlerStateChange={(event) => {
+            // Reset zoom tracking when gesture ends
+            if (event.nativeEvent.state === State.END) {
+              console.log('Pinch gesture ended')
+            }
+          }}
+        >
+          <View style={StyleSheet.absoluteFill}>
+            <Camera
+              ref={cameraRef}
+              style={StyleSheet.absoluteFill}
+              device={device}
+              isActive={isFocused}
+              onError={onError}
+              codeScanner={codeScanner}
+              zoom={zoomLevel * 10}
+            />
+          </View>
+        </PinchGestureHandler>
         <View style={styles.rectangleContainer}>
           <View style={styles.rectangle} />
         </View>
