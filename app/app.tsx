@@ -15,6 +15,7 @@ import "@react-native-firebase/crashlytics"
 import { ThemeProvider } from "@rneui/themed"
 import "node-libs-react-native/globals" // needed for Buffer?
 import * as React from "react"
+import { Platform, StatusBar } from "react-native"
 import ErrorBoundary from "react-native-error-boundary"
 import { RootSiblingParent } from "react-native-root-siblings"
 import { GaloyToast } from "./components/galoy-toast"
@@ -58,6 +59,10 @@ loadAllLocales()
 export const App = () => (
   /* eslint-disable-next-line react-native/no-inline-styles */
   <SafeAreaProvider>
+    <StatusBar
+      backgroundColor={"#000"}
+      barStyle={Platform.OS === "android" ? "light-content" : "dark-content"}
+    />
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PolyfillCrypto />
       <Provider store={store}>
