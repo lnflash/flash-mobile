@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react"
 import { Alert, Linking, TouchableOpacity, View } from "react-native"
-import { Text, makeStyles } from "@rneui/themed"
+import { Icon, Text, makeStyles } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import crashlytics from "@react-native-firebase/crashlytics"
 import { useCameraDevice, useCameraPermission } from "react-native-vision-camera"
@@ -29,14 +29,14 @@ import { Screen } from "../../components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 import { ActionBtns, QRCamera } from "@app/components/scan"
 
-// assets
-import Close from "@app/assets/icons/close.svg"
-
 export const ScanningQRCodeScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const route = useRoute<RouteProp<RootStackParamList, "scanningQRCode">>()
   const styles = useStyles()
-  const device = useCameraDevice("back")
+  const device = useCameraDevice("back", {
+    physicalDevices: ["ultra-wide-angle-camera", "wide-angle-camera", "telephoto-camera"],
+  })
+
   const { LL } = useI18nContext()
   const { hasPermission, requestPermission } = useCameraPermission()
 
@@ -57,6 +57,17 @@ export const ScanningQRCodeScreen = () => {
       requestPermission()
     }
   }, [hasPermission, requestPermission])
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: "",
+      headerRight: () => (
+        <TouchableOpacity style={styles.close} onPress={navigation.goBack}>
+          <Icon name={"close"} size={40} color={"#fff"} type="ionicon" />
+        </TouchableOpacity>
+      ),
+    })
+  }, [navigation])
 
   const processInvoice = useMemo(() => {
     return async (data: string | undefined) => {
@@ -167,9 +178,6 @@ export const ScanningQRCodeScreen = () => {
   } else if (device === null || device === undefined) {
     return (
       <Screen>
-        <TouchableOpacity style={styles.close} onPress={navigation.goBack}>
-          <Close />
-        </TouchableOpacity>
         <View style={styles.permissionMissing}>
           <Text type="h1">{LL.ScanningQRCodeScreen.noCamera()}</Text>
         </View>
@@ -178,10 +186,7 @@ export const ScanningQRCodeScreen = () => {
   }
 
   return (
-    <Screen unsafe backgroundColor="#000">
-      <TouchableOpacity style={styles.close} onPress={navigation.goBack}>
-        <Close />
-      </TouchableOpacity>
+    <Screen unsafe>
       <QRCamera device={device} processInvoice={processInvoice} />
       <ActionBtns processInvoice={processInvoice} />
     </Screen>
@@ -190,8 +195,9 @@ export const ScanningQRCodeScreen = () => {
 
 const useStyles = makeStyles(() => ({
   close: {
-    alignSelf: "flex-end",
-    padding: 24,
+    height: "100%",
+    justifyContent: "center",
+    paddingHorizontal: 15,
   },
   permissionMissing: {
     alignItems: "center",

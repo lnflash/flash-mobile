@@ -2,6 +2,7 @@ import React from "react"
 import { Alert, TouchableOpacity, View } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { launchImageLibrary } from "react-native-image-picker"
 import Clipboard from "@react-native-clipboard/clipboard"
 import crashlytics from "@react-native-firebase/crashlytics"
@@ -20,6 +21,7 @@ type Props = {
 
 const ActionBtns: React.FC<Props> = ({ processInvoice }) => {
   const styles = useStyles()
+  const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
 
   const handleInvoicePaste = async () => {
@@ -60,7 +62,7 @@ const ActionBtns: React.FC<Props> = ({ processInvoice }) => {
   }
 
   return (
-    <View style={styles.bottom}>
+    <View style={[styles.bottom, { paddingBottom: bottom }]}>
       <TouchableOpacity style={styles.padding} onPress={showImagePicker}>
         <PhotoAdd />
       </TouchableOpacity>
@@ -75,6 +77,7 @@ const useStyles = makeStyles(() => ({
   bottom: {
     flexDirection: "row",
     justifyContent: "space-between",
+    backgroundColor: "#000",
   },
   padding: {
     padding: 24,
