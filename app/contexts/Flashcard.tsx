@@ -8,6 +8,7 @@ import axios from "axios"
 
 // components
 import { PrimaryBtn } from "@app/components/buttons"
+import { Loading } from "./ActivityIndicatorContext"
 
 // utils
 import { toastShow } from "../utils/toast"
@@ -260,6 +261,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       }}
     >
       {children}
+      {loading && <Loading />}
       <Modal
         animationType="slide"
         transparent={true}
