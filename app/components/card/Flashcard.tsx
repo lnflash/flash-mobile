@@ -1,5 +1,5 @@
 import React from "react"
-import { ScrollView, TouchableOpacity, View } from "react-native"
+import { Image, ScrollView, TouchableOpacity, View } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 
 // components
@@ -11,7 +11,7 @@ import { Loading } from "@app/contexts/ActivityIndicatorContext"
 import { useDisplayCurrency, useFlashcard, usePriceConversion } from "@app/hooks"
 
 // assets
-import FlashcardImage from "@app/assets/images/flashcard.svg"
+import FlashcardImage from "@app/assets/images/flashcard.png"
 import Sync from "@app/assets/icons/sync.svg"
 
 // utils
@@ -45,7 +45,7 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
 
   return (
     <ScrollView>
-      <FlashcardImage style={styles.flashcard} width={"100%"} />
+      <Image source={FlashcardImage} style={styles.flashcard} />
       <View style={styles.top} />
       <View style={styles.balanceWrapper}>
         <Text type="h03">{formattedBalance}</Text>
@@ -85,6 +85,7 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   flashcard: {
     position: "absolute",
+    alignSelf: "center",
     top: 10,
   },
   balanceWrapper: {
