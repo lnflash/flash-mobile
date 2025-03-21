@@ -250,9 +250,7 @@ export const RootStack = () => {
         name="sendBitcoinSuccess"
         component={SendBitcoinSuccessScreen}
         options={{
-          title: persistentState.isAdvanceMode
-            ? LL.SendBitcoinScreen.title()
-            : LL.SendBitcoinScreen.send(),
+          headerShown: false,
         }}
       />
       <RootNavigator.Screen

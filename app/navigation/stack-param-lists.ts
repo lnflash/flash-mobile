@@ -62,7 +62,10 @@ export type RootStackParamList = {
     moneyAmount: MoneyAmount<WalletOrDisplayCurrency>
   }
   conversionSuccess: undefined
-  sendBitcoinSuccess: undefined
+  sendBitcoinSuccess: {
+    unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
+    walletCurrency: WalletCurrency
+  }
   language: undefined
   currency: undefined
   security: {

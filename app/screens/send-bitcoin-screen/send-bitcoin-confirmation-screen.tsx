@@ -180,7 +180,10 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         })
 
         if (status === "SUCCESS" || status === "PENDING") {
-          navigation.navigate("sendBitcoinSuccess")
+          navigation.navigate("sendBitcoinSuccess", {
+            walletCurrency: paymentDetail.sendingWalletDescriptor.currency,
+            unitOfAccountAmount: paymentDetail.unitOfAccountAmount,
+          })
           ReactNativeHapticFeedback.trigger("notificationSuccess", {
             ignoreAndroidSystemSettings: true,
           })
