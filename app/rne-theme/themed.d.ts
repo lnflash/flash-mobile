@@ -53,6 +53,8 @@ declare module "@rneui/themed" {
     button01: string
     button02: string
     buttonInverse: string
+    tabActive: string
+    tabInactive: string
   }
 
   export interface TextProps {

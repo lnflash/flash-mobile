@@ -66,6 +66,8 @@ const light = {
   button01: "#002118",
   button02: "#E3E3E3",
   buttonInverse: "#FFFFFF",
+  tabActive: "#002118",
+  tabInactive: "#83899B",
 }
 
 const dark = {
@@ -136,6 +138,8 @@ const dark = {
   button01: "#FFFFFF",
   button02: "#212121",
   buttonInverse: "#002118",
+  tabActive: "#002118",
+  tabInactive: "#83899B",
 }
 
 export { light, dark }
