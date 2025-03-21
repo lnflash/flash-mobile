@@ -111,9 +111,17 @@ import { Messages } from "@app/screens/nip17-chat/messages"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
 
+import HomeActive from "@app/assets/icons/home-active.svg"
+import HomeInactive from "@app/assets/icons/home-inactive.svg"
+import CardActive from "@app/assets/icons/card-active.svg"
+import CardInactive from "@app/assets/icons/card-inactive.svg"
+import MapActive from "@app/assets/icons/map-active.svg"
+import MapInactive from "@app/assets/icons/map-inactive.svg"
+import ScanQR from "@app/assets/icons/scan-qr.svg"
+
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
-    height: "10%",
+    minHeight: 60,
     paddingTop: 4,
     backgroundColor: colors.white,
     borderTopColor: colors.grey4,
@@ -621,15 +629,13 @@ export const PrimaryNavigator = () => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { persistentState } = usePersistentStateContext()
-  // The cacheId is updated after every mutation that affects current user data (balanace, contacts, ...)
-  // It's used to re-mount this component and thus reset what's cached in Apollo (and React)
 
   return (
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.grey2,
+        tabBarActiveTintColor: colors.tabActive,
+        tabBarInactiveTintColor: colors.tabInactive,
         tabBarStyle: styles.bottomNavigatorStyle,
         tabBarLabelStyle: { paddingBottom: 6, fontSize: 12, fontWeight: "bold" },
         tabBarHideOnKeyboard: true,
@@ -645,9 +651,7 @@ export const PrimaryNavigator = () => {
           title: LL.HomeScreen.title(),
           tabBarAccessibilityLabel: LL.HomeScreen.title(),
           tabBarTestID: LL.HomeScreen.title(),
-          tabBarIcon: ({ color }) => (
-            <HomeIcon {...testProps("Home")} fill={color} color={color} />
-          ),
+          tabBarIcon: ({ focused }) => (focused ? <HomeActive /> : <HomeInactive />),
         }}
       />
       {/* <Tab.Screen
@@ -687,7 +691,7 @@ export const PrimaryNavigator = () => {
           headerShown: false,
           headerStyle: { backgroundColor: colors.white },
           tabBarTestID: LL.CardScreen.title(),
-          tabBarIcon: ({ color }) => <CardIcon color={color} />,
+          tabBarIcon: ({ focused }) => (focused ? <CardActive /> : <CardInactive />),
         }}
       />
       <Tab.Screen
@@ -698,7 +702,21 @@ export const PrimaryNavigator = () => {
           headerShown: false,
           tabBarAccessibilityLabel: LL.MapScreen.title(),
           tabBarTestID: LL.MapScreen.title(),
-          tabBarIcon: ({ color }) => <MapIcon color={color} />,
+          tabBarIcon: ({ focused }) => (focused ? <MapActive /> : <MapInactive />),
+        }}
+      />
+      <Tab.Screen
+        name="Scan"
+        component={ScanningQRCodeScreen}
+        options={{
+          title: LL.ScanningQRCodeScreen.title(),
+          headerShown: true,
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: "#000" },
+          tabBarAccessibilityLabel: LL.MapScreen.title(),
+          tabBarTestID: LL.MapScreen.title(),
+          tabBarIcon: () => <ScanQR />,
+          tabBarStyle: { display: "none" },
         }}
       />
       {/* <Tab.Screen
