@@ -19,6 +19,7 @@ export type AmountInputModalProps = {
   minAmount?: MoneyAmount<WalletOrDisplayCurrency>
   isOpen: boolean
   close: () => void
+  title: string
 }
 
 export const AmountInputModal: React.FC<AmountInputModalProps> = ({
@@ -30,6 +31,7 @@ export const AmountInputModal: React.FC<AmountInputModalProps> = ({
   convertMoneyAmount,
   isOpen,
   close,
+  title,
 }) => {
   const styles = useStyles()
 
@@ -44,6 +46,7 @@ export const AmountInputModal: React.FC<AmountInputModalProps> = ({
           maxAmount={maxAmount}
           minAmount={minAmount}
           goBack={close}
+          title={title}
         />
       </SafeAreaView>
     </Modal>

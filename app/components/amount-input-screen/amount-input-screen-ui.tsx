@@ -29,6 +29,7 @@ export type AmountInputScreenUIProps = {
   onClearAmount: () => void
   onSetAmountPress?: () => void
   goBack: () => void
+  title: string
 }
 
 export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
@@ -45,6 +46,7 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
   onSetAmountPress,
   setAmountDisabled,
   goBack,
+  title,
 }) => {
   const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
@@ -58,7 +60,7 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
       <View style={styles.topContainer}>
         <View style={styles.header}>
           <Text type={"h01"} style={styles.headerTxt}>
-            {`Receive ${walletCurrency}`}
+            {`${title} ${walletCurrency}`}
           </Text>
           <TouchableOpacity style={styles.close} onPress={goBack}>
             <Icon type="ionicon" name={"close"} size={40} />
@@ -71,7 +73,7 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
           {`${primaryCurrencySymbol}${primaryCurrencyFormattedAmount || 0}`}
           {!primaryCurrencySymbol && <Text>{` ${primaryCurrencyCode}`}</Text>}
         </Text>
-        {!!secondaryCurrencySymbol && (
+        {!!secondaryCurrencyCode && (
           <TouchableOpacity style={styles.secondaryAmount} onPress={onToggleCurrency}>
             <Text>{`${secondaryCurrencySymbol}${secondaryCurrencyFormattedAmount} ${
               secondaryCurrencySymbol ? "" : secondaryCurrencyCode

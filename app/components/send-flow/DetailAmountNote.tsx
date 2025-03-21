@@ -275,6 +275,7 @@ const DetailAmountNote: React.FC<Props> = ({
             isSendingMax={paymentDetail.isSendingMax}
             maxAmount={maxAmount}
             minAmount={minAmount}
+            title="Send"
           />
         </View>
       </View>
