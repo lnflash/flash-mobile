@@ -991,8 +991,8 @@ const en: BaseTranslation = {
       "SEND & RECEIVE:\n Easily transfer larger amounts in Bitcoin.\n" +
       "SWAP INSTANTLY:\n Convert between Bitcoin and USD seamlessly.\n" +
       "TRANSACTION TIME:\n Transactions may take up to 30 seconds to confirm and will appear as 'Pending' until confirmed.\n\n" +
-      "IMPORTANT: This is a non-custodial account, so small network fees may apply. You are solely responsible for securing your recovery phrase in a safe place. \n\n\nDO NOT SHARE YOUR RECOVERY PHRASE WITH ANYONE.",
-    termsAndConditions: "\nRead the Terms & Conditions.",
+      "IMPORTANT: This is a non-custodial account, so small network fees may apply. You are solely responsible for securing your recovery phrase in a safe place. \n\nDO NOT SHARE YOUR RECOVERY PHRASE WITH ANYONE.",
+    termsAndConditions: "Read the Terms & Conditions.",
     learnMore: "What is a Non-Custodial Wallet?",
     importWallet: "Import Wallet",
 		createWallet: "Create Wallet"
