@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react"
+import { View } from "react-native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
@@ -99,9 +100,19 @@ const WalletOverview = () => {
     }
   }
 
-  const onPressCash = () => navigation.navigate("USDTransactionHistory")
+  const navigateHandler = (activeTab: string) => {
+    if (persistentState.isAdvanceMode) {
+      navigation.navigate("TransactionHistoryTabs", {
+        initialRouteName: activeTab,
+      })
+    } else {
+      navigation.navigate(activeTab as any)
+    }
+  }
 
-  const onPressBitcoin = () => navigation.navigate("BTCTransactionHistory")
+  const onPressCash = () => navigateHandler("USDTransactionHistory")
+
+  const onPressBitcoin = () => navigateHandler("BTCTransactionHistory")
 
   const onPressFlashcard = () => navigation.navigate("Card")
 
@@ -110,7 +121,7 @@ const WalletOverview = () => {
   })
 
   return (
-    <>
+    <View style={{ marginTop: 10 }}>
       <Balance
         icon="cash"
         title="Cash"
@@ -138,7 +149,7 @@ const WalletOverview = () => {
         onPress={onPressFlashcard}
         onSync={() => readFlashcard(false)}
       />
-    </>
+    </View>
   )
 }
 
