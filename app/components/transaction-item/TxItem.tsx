@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react"
 import styled from "styled-components/native"
 import { Text, useTheme } from "@rneui/themed"
-import { TransactionFragment } from "@app/graphql/generated"
+import { TransactionFragment, useHideBalanceQuery } from "@app/graphql/generated"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+
+// components
+import HideableArea from "../hideable-area/hideable-area"
 
 // hooks
 import { useNavigation } from "@react-navigation/native"
@@ -37,6 +40,8 @@ export const TxItem: React.FC<Props> = ({ tx }) => {
 
   const [primary, setPrimary] = useState<string>()
   const [secondary, setSecondary] = useState<string>()
+
+  const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 
   useEffect(() => {
     formatAmount()
@@ -90,17 +95,19 @@ export const TxItem: React.FC<Props> = ({ tx }) => {
           {outputRelativeDate(tx.createdAt, locale)}
         </Text>
       </ColumnWrapper>
-      <ColumnWrapper style={{ alignItems: "flex-end" }}>
-        <Text
-          type="bl"
-          color={tx.direction === "RECEIVE" ? colors.accent02 : colors.black}
-        >
-          {primary}
-        </Text>
-        <Text type="caption" color={colors.text02}>
-          {secondary}
-        </Text>
-      </ColumnWrapper>
+      <HideableArea isContentVisible={hideBalance}>
+        <ColumnWrapper style={{ alignItems: "flex-end" }}>
+          <Text
+            type="bl"
+            color={tx.direction === "RECEIVE" ? colors.accent02 : colors.black}
+          >
+            {primary}
+          </Text>
+          <Text type="caption" color={colors.text02}>
+            {secondary}
+          </Text>
+        </ColumnWrapper>
+      </HideableArea>
     </Wrapper>
   )
 }

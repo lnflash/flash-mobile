@@ -6,9 +6,11 @@ import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { IconBtn } from "../buttons"
 import RecentActivity from "./RecentActivity"
 import { Loading } from "@app/contexts/ActivityIndicatorContext"
+import HideableArea from "../hideable-area/hideable-area"
 
 // hooks
 import { useDisplayCurrency, useFlashcard, usePriceConversion } from "@app/hooks"
+import { useHideBalanceQuery } from "@app/graphql/generated"
 
 // assets
 import FlashcardImage from "@app/assets/images/flashcard.png"
@@ -29,6 +31,8 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
   const { formatMoneyAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion("network-only")
 
+  const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
+
   if (!convertMoneyAmount) {
     return <Loading />
   }
@@ -48,10 +52,12 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
       <Image source={FlashcardImage} style={styles.flashcard} />
       <View style={styles.top} />
       <View style={styles.balanceWrapper}>
-        <Text type="h03">{formattedBalance}</Text>
-        <TouchableOpacity style={styles.sync} onPress={() => readFlashcard(false)}>
-          <Sync color={colors.icon02} width={32} height={32} />
-        </TouchableOpacity>
+        <HideableArea isContentVisible={hideBalance}>
+          <Text type="h03">{formattedBalance}</Text>
+          <TouchableOpacity style={styles.sync} onPress={() => readFlashcard(false)}>
+            <Sync color={colors.icon02} width={32} height={32} />
+          </TouchableOpacity>
+        </HideableArea>
       </View>
       <View style={styles.btns}>
         <IconBtn type="clear" icon="down" label={`Reload\nCard`} onPress={onReload} />
@@ -89,11 +95,11 @@ const useStyles = makeStyles(({ colors }) => ({
     top: 10,
   },
   balanceWrapper: {
+    minHeight: 56,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 30,
-    marginLeft: 30,
   },
   sync: {
     paddingVertical: 5,

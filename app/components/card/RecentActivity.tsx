@@ -3,8 +3,12 @@ import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { View } from "react-native"
 import moment from "moment"
 
+// components
+import HideableArea from "../hideable-area/hideable-area"
+
 // hooks
 import { useDisplayCurrency } from "@app/hooks"
+import { useHideBalanceQuery } from "@app/graphql/generated"
 
 // types
 import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details"
@@ -24,6 +28,8 @@ const RecentActivity: React.FC<Props> = ({ transactions, convertMoneyAmount }) =
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { formatMoneyAmount } = useDisplayCurrency()
+
+  const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 
   const renderItem = (item: TransactionItem) => {
     const sats = parseInt(item.sats.replaceAll(",", ""), 10)
@@ -47,8 +53,10 @@ const RecentActivity: React.FC<Props> = ({ transactions, convertMoneyAmount }) =
           {moment(item.date).format("MMM Do, h:mm a")}
         </Text>
         <View style={styles.column}>
-          <Text type="bl">{formattedAmount}</Text>
-          <Text type="caption" color={colors.placeholder}>{`${item.sats} SATS`}</Text>
+          <HideableArea isContentVisible={hideBalance}>
+            <Text type="bl">{formattedAmount}</Text>
+            <Text type="caption" color={colors.placeholder}>{`${item.sats} SATS`}</Text>
+          </HideableArea>
         </View>
       </View>
     )
@@ -75,6 +83,7 @@ const useStyles = makeStyles(() => ({
     paddingVertical: 10,
   },
   row: {
+    minHeight: 47,
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 5,

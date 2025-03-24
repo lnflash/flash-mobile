@@ -2,6 +2,12 @@ import React from "react"
 import styled from "styled-components/native"
 import { Text, useTheme } from "@rneui/themed"
 
+// components
+import HideableArea from "../hideable-area/hideable-area"
+
+// hooks
+import { useHideBalanceQuery } from "@app/graphql/generated"
+
 // assets
 import Cash from "@app/assets/icons/cash.svg"
 import Bitcoin from "@app/assets/icons/bitcoin.svg"
@@ -39,6 +45,8 @@ const Balance: React.FC<Props> = ({
 }) => {
   const { colors } = useTheme().theme
 
+  const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
+
   const Icon = icons[icon]
 
   return (
@@ -47,17 +55,19 @@ const Balance: React.FC<Props> = ({
       {!!amount ? (
         <>
           <ColumnWrapper>
-            <Text type="p4" color={colors.text02}>
+            <Text type="p4" style={{ marginBottom: 4 }} color={colors.text02}>
               {title}
             </Text>
-            <Text type="h02" bold>
-              {amount}{" "}
-              <Text type="h02" color={colors.text02}>
-                {currency}
+            <HideableArea isContentVisible={hideBalance}>
+              <Text type="h02" bold>
+                {amount}{" "}
+                <Text type="h02" color={colors.text02}>
+                  {currency}
+                </Text>
               </Text>
-            </Text>
+            </HideableArea>
           </ColumnWrapper>
-          {!!onSync && (
+          {!!onSync && !hideBalance && (
             <SyncBtn onPress={onSync}>
               <Sync color={colors.icon01} width={30} height={30} />
             </SyncBtn>
@@ -77,6 +87,7 @@ const Balance: React.FC<Props> = ({
 export default Balance
 
 const Wrapper = styled.TouchableOpacity<{ color: string }>`
+  min-height: 87px;
   flex-direction: row;
   align-items: center;
   padding: 16px;
