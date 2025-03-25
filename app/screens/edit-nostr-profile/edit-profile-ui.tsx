@@ -224,13 +224,21 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
       {updating ? (
         <ActivityIndicator size="large" color={theme.colors.primary} />
       ) : (
-        <Button title="Save Changes" onPress={onSubmit} color={theme.colors.primary} />
+        <Button
+          title="Save Changes"
+          onPress={onSubmit}
+          color={theme.colors.primary}
+          containerStyle={styles.saveButton}
+        />
       )}
     </View>
   )
 }
 
 const useStyles = makeStyles(({ colors }) => ({
+  saveButton: {
+    marginBottom: 30,
+  },
   profileImage: {
     width: 100,
     height: 100,
