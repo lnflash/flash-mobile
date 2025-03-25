@@ -1,42 +1,50 @@
 import React from "react"
-import { TextStyle, TouchableOpacity, ViewStyle } from "react-native"
+import { ActivityIndicator, TextStyle, TouchableOpacity, ViewStyle } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 
 type Props = {
   type?: "solid" | "outline" | "clear"
   label: string
+  loading?: boolean
   disabled?: boolean
   btnStyle?: ViewStyle
   txtStyle?: TextStyle
-  onPress: () => void
+  onPress?: () => void
 }
 
 const PrimaryBtn: React.FC<Props> = ({
   type = "solid",
   label,
+  loading = false,
   disabled = false,
   btnStyle = {},
   txtStyle = {},
-  onPress,
+  onPress = () => {},
 }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
 
+  const disabledStyle = disabled ? styles.disabled : {}
+
   return (
     <TouchableOpacity
-      style={[styles.base, styles[type], btnStyle]}
+      style={[styles.base, styles[type], btnStyle, disabledStyle]}
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || loading}
       activeOpacity={0.5}
     >
-      <Text
-        type={"bl"}
-        bold
-        color={type === "solid" ? colors.textInverse : colors.text01}
-        style={txtStyle}
-      >
-        {label}
-      </Text>
+      {loading ? (
+        <ActivityIndicator color={colors.primary} />
+      ) : (
+        <Text
+          type={"bl"}
+          bold
+          color={type === "solid" ? colors.textInverse : colors.text01}
+          style={[txtStyle]}
+        >
+          {label}
+        </Text>
+      )}
     </TouchableOpacity>
   )
 }
@@ -61,5 +69,8 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   clear: {
     backgroundColor: colors.button02,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 }))
