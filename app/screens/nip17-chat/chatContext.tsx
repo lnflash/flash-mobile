@@ -86,8 +86,12 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       const publicKey = getPublicKey(secret)
       const cachedGiftwraps = await loadGiftwrapsFromStorage()
       setGiftWraps(cachedGiftwraps)
-
-      let cachedRumors = cachedGiftwraps.map((wrap) => getRumorFromWrap(wrap, secret))
+      let cachedRumors = []
+      try {
+        cachedRumors = cachedGiftwraps.map((wrap) => getRumorFromWrap(wrap, secret))
+      } catch (e) {
+        console.log("ERROR WHILE DECRYPTING RUMORS", e)
+      }
       setRumors(cachedRumors)
       let closer = await fetchNewGiftwraps(cachedGiftwraps, publicKey)
       setCloser(closer)
@@ -99,7 +103,6 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     cachedGiftwraps = cachedGiftwraps.sort((a, b) => a.created_at - b.created_at)
     const lastCachedEvent = cachedGiftwraps[cachedGiftwraps.length - 1]
     let secretKeyString = await fetchSecretFromLocalStorage()
-    console.log("INITIALIZING FETCH NEW GIFT WRAPS", relayUrl)
     if (!secretKeyString) {
       console.log("SECRET KEY NOT FOUND")
       return null
