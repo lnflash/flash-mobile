@@ -1,6 +1,6 @@
 import ReactNativeModal from "react-native-modal"
 import Clipboard from "@react-native-clipboard/clipboard"
-import { View, ViewStyle, Alert } from "react-native"
+import { View, ViewStyle, Alert, ActivityIndicator } from "react-native"
 import { Text, useTheme } from "@rneui/themed"
 import { useEffect, useState } from "react"
 import { getPublicKey, nip19 } from "nostr-tools"
@@ -24,6 +24,7 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
 }) => {
   const [secretKey, setSecretKey] = useState<Uint8Array | null>(null)
   const [linked, setLinked] = useState<boolean | null>(null)
+  const [updatingNpub, setUpdatingNpub] = useState<boolean>(false)
   const isAuthed = useIsAuthed()
   const { data: dataAuthed, loading: loadingAuthed } = useHomeAuthedQuery({
     skip: !isAuthed,
@@ -42,19 +43,6 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
       } else {
         secret = secretKey
       }
-      if (!secret) return
-      console.log(
-        "DIFFERENT IDS ARE",
-        dataAuthed?.me,
-        dataAuthed?.me?.npub,
-        nip19.npubEncode(getPublicKey(secret)),
-      )
-      console.log(
-        "LINKED THINGS ARE ",
-        secret,
-        dataAuthed?.me?.npub,
-        dataAuthed?.me?.npub === (secret ? nip19.npubEncode(getPublicKey(secret)) : ""),
-      )
       if (
         secret &&
         dataAuthed &&
@@ -155,35 +143,43 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
         <View>
           {!!secretKey ? (
             <View style={styles.modalBody as ViewStyle}>
-              <Ionicons
-                name={linked ? "link-outline" : "unlink-outline"}
-                size={24}
-                color={linked ? "green" : "red"}
-                style={{
-                  position: "absolute",
-                  top: 10,
-                  right: 10,
-                }}
-                onPress={async () => {
-                  if (!secretKey) {
-                    Alert.alert("No Secret Key exists")
-                    return
-                  }
-                  console.log("POSTING NPUB")
-                  const data = await userUpdateNpub({
-                    variables: {
-                      input: {
-                        npub: nip19.npubEncode(getPublicKey(secretKey)),
+              {updatingNpub ? (
+                <ActivityIndicator
+                  size="small"
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                  }}
+                />
+              ) : (
+                <Ionicons
+                  name={linked ? "link-outline" : "unlink-outline"}
+                  size={24}
+                  color={linked ? "green" : "red"}
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                  }}
+                  onPress={async () => {
+                    if (!secretKey) {
+                      Alert.alert("No Secret Key exists")
+                      return
+                    }
+                    setUpdatingNpub(true)
+                    console.log("POSTING NPUB")
+                    const data = await userUpdateNpub({
+                      variables: {
+                        input: {
+                          npub: nip19.npubEncode(getPublicKey(secretKey)),
+                        },
                       },
-                    },
-                  })
-                  console.log(
-                    "NPUB POSTED",
-                    data.data?.userUpdateNpub.errors,
-                    data.data?.userUpdateNpub.user,
-                  )
-                }}
-              />
+                    })
+                    setUpdatingNpub(false)
+                  }}
+                />
+              )}
               <Text type="h2">Your nostr address is</Text>
               <View
                 style={styles.idContainer as ViewStyle}
