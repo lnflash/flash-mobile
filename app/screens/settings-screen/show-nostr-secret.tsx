@@ -1,6 +1,6 @@
 import ReactNativeModal from "react-native-modal"
 import Clipboard from "@react-native-clipboard/clipboard"
-import { View, ViewStyle, Alert, ActivityIndicator } from "react-native"
+import { View, ViewStyle, Alert, ActivityIndicator, Pressable } from "react-native"
 import { Text, useTheme } from "@rneui/themed"
 import { useEffect, useState } from "react"
 import { getPublicKey, nip19 } from "nostr-tools"
@@ -26,11 +26,15 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
   const [linked, setLinked] = useState<boolean | null>(null)
   const [updatingNpub, setUpdatingNpub] = useState<boolean>(false)
   const isAuthed = useIsAuthed()
-  const { data: dataAuthed, loading: loadingAuthed } = useHomeAuthedQuery({
+  const {
+    data: dataAuthed,
+    loading: loadingAuthed,
+    refetch,
+  } = useHomeAuthedQuery({
     skip: !isAuthed,
     fetchPolicy: "network-only",
     errorPolicy: "all",
-    nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
+    nextFetchPolicy: "network-only",
   })
   console.log("AUTHED AUTHED AUTHED", dataAuthed, loadingAuthed, isAuthed)
   const [userUpdateNpub] = useUserUpdateNpubMutation()
@@ -176,6 +180,7 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
                         },
                       },
                     })
+                    await refetch()
                     setUpdatingNpub(false)
                   }}
                 />
@@ -251,20 +256,29 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
             </View>
           ) : (
             <View style={styles.modalBody as ViewStyle}>
-              <Text style={{ margin: 20 }}> No Nostr Keys Found </Text>
-              <Ionicons
-                name="key"
-                size={10}
-                onPress={async () => {
-                  if (isGenerating) return
-                  setIsGenerating(true)
-                  let newSecret = await saveNewNostrKey()
-                  setSecretKey(newSecret)
-                  setIsGenerating(false)
-                }}
-                style={{ opacity: isGenerating ? 0.5 : 1 }}
-              />
-              <Text>Generate Nostr Keys</Text>
+              {!isGenerating ? (
+                <View>
+                  <Text style={{ margin: 20 }}> No Nostr Keys Found </Text>
+                  <Pressable
+                    onPress={async () => {
+                      if (isGenerating) return
+                      setIsGenerating(true)
+                      let newSecret = await saveNewNostrKey()
+                      setSecretKey(newSecret)
+                      setIsGenerating(false)
+                    }}
+                  >
+                    <Ionicons
+                      name="key"
+                      size={20}
+                      style={{ opacity: isGenerating ? 0.5 : 1 }}
+                    />
+                    <Text>Generate Nostr Keys</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Text>Generating Keys..</Text>
+              )}
             </View>
           )}
         </View>
