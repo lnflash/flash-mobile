@@ -48,7 +48,6 @@ const useNostrProfile = () => {
   const deleteNostrKeys = async () => {
     await Keychain.resetInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
   }
-
   const saveNewNostrKey = async () => {
     let secretKey = generateSecretKey()
     const nostrSecret = nip19.nsecEncode(secretKey)
