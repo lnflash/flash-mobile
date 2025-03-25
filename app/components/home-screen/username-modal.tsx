@@ -4,7 +4,6 @@ import {
   useUserUpdateUsernameMutation,
   MyUserIdDocument,
   MyUserIdQuery,
-  useUserUpdateNpubMutation,
 } from "../../graphql/generated"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 

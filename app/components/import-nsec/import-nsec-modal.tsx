@@ -2,9 +2,6 @@ import React, { useState } from "react"
 import { useTheme, Text, Input, Button } from "@rneui/themed"
 import { View, StyleSheet, Alert, Dimensions } from "react-native"
 import ReactNativeModal from "react-native-modal"
-import { useUserUpdateNpubMutation } from "@app/graphql/generated"
-import { getPublicKey, nip19 } from "nostr-tools"
-import { importNsec } from "./utils"
 import { NsecInputForm } from "./import-nsec-form"
 
 interface ImportNsecModalProps {

@@ -8,9 +8,8 @@ import Ionicons from "react-native-vector-icons/Ionicons"
 import { getSecretKey } from "@app/utils/nostr"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useNavigation } from "@react-navigation/native"
-import { useHomeAuthedQuery } from "@app/graphql/generated"
+import { useHomeAuthedQuery, useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { ImportNsecModal } from "@app/components/import-nsec/import-nsec-modal"
 import { NsecInputForm } from "@app/components/import-nsec/import-nsec-form"
 import { useChatContext } from "../nip17-chat/chatContext"
 
@@ -26,33 +25,46 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
   const [secretKey, setSecretKey] = useState<Uint8Array | null>(null)
   const [linked, setLinked] = useState<boolean | null>(null)
   const isAuthed = useIsAuthed()
-  const { data: dataAuthed } = useHomeAuthedQuery({
+  const { data: dataAuthed, loading: loadingAuthed } = useHomeAuthedQuery({
     skip: !isAuthed,
     fetchPolicy: "network-only",
     errorPolicy: "all",
     nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
-
+  console.log("AUTHED AUTHED AUTHED", dataAuthed, loadingAuthed, isAuthed)
+  const [userUpdateNpub] = useUserUpdateNpubMutation()
   useEffect(() => {
     const initialize = async () => {
+      let secret
       if (!secretKey) {
         let secret = await getSecretKey()
         setSecretKey(secret)
-        console.log(
-          "DIfferent ids are",
-          dataAuthed?.me?.npub,
-          nip19.npubEncode(getPublicKey(secret)),
-        )
-        if (
-          secret &&
-          dataAuthed &&
-          dataAuthed.me &&
-          dataAuthed.me.npub === nip19.npubEncode(getPublicKey(secret))
-        ) {
-          setLinked(true)
-        } else {
-          setLinked(false)
-        }
+      } else {
+        secret = secretKey
+      }
+      if (!secret) return
+      console.log(
+        "DIFFERENT IDS ARE",
+        dataAuthed?.me,
+        dataAuthed?.me?.npub,
+        nip19.npubEncode(getPublicKey(secret)),
+      )
+      console.log(
+        "LINKED THINGS ARE ",
+        secret,
+        dataAuthed?.me?.npub,
+        dataAuthed?.me?.npub === (secret ? nip19.npubEncode(getPublicKey(secret)) : ""),
+      )
+      if (
+        secret &&
+        dataAuthed &&
+        dataAuthed.me &&
+        dataAuthed.me.npub === nip19.npubEncode(getPublicKey(secret))
+      ) {
+        console.log("LINKED IS", true)
+        setLinked(true)
+      } else {
+        setLinked(false)
       }
     }
     initialize()
@@ -151,6 +163,25 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
                   position: "absolute",
                   top: 10,
                   right: 10,
+                }}
+                onPress={async () => {
+                  if (!secretKey) {
+                    Alert.alert("No Secret Key exists")
+                    return
+                  }
+                  console.log("POSTING NPUB")
+                  const data = await userUpdateNpub({
+                    variables: {
+                      input: {
+                        npub: nip19.npubEncode(getPublicKey(secretKey)),
+                      },
+                    },
+                  })
+                  console.log(
+                    "NPUB POSTED",
+                    data.data?.userUpdateNpub.errors,
+                    data.data?.userUpdateNpub.user,
+                  )
                 }}
               />
               <Text type="h2">Your nostr address is</Text>

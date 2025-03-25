@@ -8,7 +8,7 @@ import { EditProfileUI } from "./edit-profile-ui"
 
 const EditNostrProfileScreen = () => {
   const navigation = useNavigation()
-  const [secretKey, setNostrSecretKey] = useState<Uint8Array | null>(null)
+  const [secretKey, setSecretKey] = useState<Uint8Array | null>(null)
   const [profileEvent, setProfileEvent] = useState<Event | null>(null)
   const { poolRef } = useChatContext()
 
@@ -16,7 +16,7 @@ const EditNostrProfileScreen = () => {
     const initialize = async () => {
       let secret = await getSecretKey()
       if (secret) {
-        setNostrSecretKey(secret)
+        setSecretKey(secret)
         if (poolRef)
           fetchNostrUsers(
             [getPublicKey(secret)],
