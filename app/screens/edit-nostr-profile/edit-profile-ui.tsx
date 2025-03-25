@@ -1,19 +1,15 @@
 import useNostrProfile from "@app/hooks/use-nostr-profile"
-import theme from "@app/rne-theme/theme"
-import { Colors, useTheme, makeStyles } from "@rneui/themed"
+import { useTheme, makeStyles, Button, Input } from "@rneui/themed"
 import { Event, nip19 } from "nostr-tools"
 import React, { useState, useEffect } from "react"
 import {
   View,
-  TextInput,
-  Button,
   Alert,
   Text,
   ActivityIndicator,
   TouchableOpacity,
   Clipboard,
   ScrollView,
-  StyleSheet,
 } from "react-native"
 import { Image } from "react-native"
 
@@ -120,8 +116,6 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       ) : isFormVisible ? (
         <>
-          <Text style={styles.title}>Profile Information</Text>
-
           {profileEvent?.pubkey && (
             <TouchableOpacity onPress={copyToClipboard}>
               <View style={styles.pubkeyContainer}>
@@ -179,7 +173,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
       />
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Username</Text>
-        <TextInput
+        <Input
           style={styles.input}
           placeholder="Username"
           value={formData.username}
@@ -189,7 +183,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Name</Text>
-        <TextInput
+        <Input
           style={styles.input}
           placeholder="Name"
           value={formData.name}
@@ -199,7 +193,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>NIP-05</Text>
-        <TextInput
+        <Input
           style={styles.input}
           placeholder="NIP-05"
           value={formData.nip05}
@@ -209,7 +203,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Picture URL</Text>
-        <TextInput
+        <Input
           style={styles.input}
           placeholder="Picture URL"
           value={formData.picture}
@@ -219,7 +213,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>LUD-16</Text>
-        <TextInput
+        <Input
           style={styles.input}
           placeholder="LUD-16"
           value={formData.lud16}
@@ -275,15 +269,12 @@ const useStyles = makeStyles(({ colors }) => ({
     width: "100%",
   },
   label: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
     marginBottom: 5,
+    marginLeft: 5,
   },
   input: {
     width: "100%",
-    padding: 10,
-    borderWidth: 1,
-    borderColor: colors._lightGrey,
-    borderRadius: 5,
   },
 }))
