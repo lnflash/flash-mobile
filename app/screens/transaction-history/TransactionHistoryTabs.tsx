@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import styled from "styled-components/native"
+import { Text, useTheme } from "@rneui/themed"
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -9,13 +9,18 @@ import { USDTransactionHistory } from "./USDTransactionHistory"
 import { BTCTransactionHistory } from "./BTCTransactionHistory"
 
 // components
-import { BalanceHeader } from "@app/components/balance-header"
+import HideableArea from "@app/components/hideable-area/hideable-area"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { useBreez } from "@app/hooks"
-import { useTheme } from "@rneui/themed"
+import { useBreez, useDisplayCurrency } from "@app/hooks"
+import { useBalanceHeaderQuery, useHideBalanceQuery } from "@app/graphql/generated"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
+
+// types
+import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import { getUsdWallet } from "@app/graphql/wallets-utils"
 
 const Tab = createMaterialTopTabNavigator()
 
@@ -27,27 +32,48 @@ export const TransactionHistoryTabs: React.FC<Props> = ({ navigation, route }) =
   const { LL } = useI18nContext()
   const { btcWallet } = useBreez()
   const { persistentState } = usePersistentStateContext()
+  const { moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
 
-  const [isContentVisible, setIsContentVisible] = useState(false)
+  const [btcBalance, setBtcBalance] = useState<string>()
+  const [cashBalance, setCashBalance] = useState<string>()
   const [activeWallet, setActiveWallet] = useState<"btc" | "usd">(
     initialRouteName === "USDTransactionHistory" ? "usd" : "btc",
   )
 
+  const isAuthed = useIsAuthed()
+  const { data } = useBalanceHeaderQuery({ skip: !isAuthed })
+  const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
+
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <HeaderRight>
-          <BalanceHeader
-            isContentVisible={isContentVisible}
-            setIsContentVisible={setIsContentVisible}
-            breezBalance={btcWallet.balance}
-            walletType={persistentState.isAdvanceMode ? activeWallet : "usd"}
-            smallText
-          />
-        </HeaderRight>
+        <HideableArea isContentVisible={hideBalance} style={{ marginRight: 10 }}>
+          <Text type="p1" style={{ marginRight: 10 }}>
+            {activeWallet === "btc" ? btcBalance : cashBalance}
+          </Text>
+        </HideableArea>
       ),
     })
-  }, [navigation, btcWallet.balance, activeWallet, isContentVisible, setIsContentVisible])
+  }, [activeWallet, btcBalance, cashBalance])
+
+  useEffect(() => {
+    formatBalance()
+  }, [data?.me?.defaultAccount.wallets, btcWallet.balance])
+
+  const formatBalance = () => {
+    setBtcBalance(
+      moneyAmountToDisplayCurrencyString({
+        moneyAmount: toBtcMoneyAmount(btcWallet.balance ?? NaN),
+      }),
+    )
+    const extUsdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+    const extUsdWalletBalance = toUsdMoneyAmount(extUsdWallet?.balance ?? NaN)
+    setCashBalance(
+      moneyAmountToDisplayCurrencyString({
+        moneyAmount: extUsdWalletBalance,
+      }),
+    )
+  }
 
   return (
     <Tab.Navigator
@@ -62,7 +88,7 @@ export const TransactionHistoryTabs: React.FC<Props> = ({ navigation, route }) =
           name="BTCTransactionHistory"
           component={BTCTransactionHistory}
           options={{ title: LL.TransactionHistoryTabs.titleBTC() }}
-          listeners={({ navigation }) => ({
+          listeners={() => ({
             swipeEnd: (e) => {
               setActiveWallet("btc")
             },
@@ -77,7 +103,7 @@ export const TransactionHistoryTabs: React.FC<Props> = ({ navigation, route }) =
         name="USDTransactionHistory"
         component={USDTransactionHistory}
         options={{ title: LL.TransactionHistoryTabs.titleUSD() }}
-        listeners={({ navigation }) => ({
+        listeners={() => ({
           swipeEnd: (e) => {
             setActiveWallet("usd")
           },
@@ -89,7 +115,3 @@ export const TransactionHistoryTabs: React.FC<Props> = ({ navigation, route }) =
     </Tab.Navigator>
   )
 }
-
-const HeaderRight = styled.View`
-  margin-right: 15px;
-`
