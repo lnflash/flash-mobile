@@ -4,7 +4,7 @@ import { makeStyles } from "@rneui/themed"
 import crashlytics from "@react-native-firebase/crashlytics"
 
 // components
-import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
+import { PrimaryBtn } from "@app/components/buttons"
 import { SendBitcoinDetailsExtraInfo } from "./send-bitcoin-details-extra-info"
 import { Screen } from "@app/components/screen"
 import { Fees } from "@app/components/refund-flow"
@@ -326,11 +326,11 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           currentLevel={currentLevel}
         />
         <View style={styles.buttonContainer}>
-          <GaloyPrimaryButton
+          <PrimaryBtn
             onPress={goToNextScreen || undefined}
             loading={isLoadingLnurl}
             disabled={isDisabled}
-            title={LL.common.next()}
+            label={LL.common.next()}
           />
         </View>
       </Screen>

@@ -5,18 +5,20 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import Icon from "react-native-vector-icons/Ionicons"
 import ReactNativeModal from "react-native-modal"
 
-// types
-import { testProps } from "../../utils/testProps"
-
 // hooks
 import { useBreez } from "@app/hooks"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
+// assets
+import Cash from "@app/assets/icons/cash.svg"
+import Bitcoin from "@app/assets/icons/bitcoin.svg"
+
 // types
 import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
-import { Wallet, WalletCurrency } from "@app/graphql/generated"
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
+import { Wallet, WalletCurrency } from "@app/graphql/generated"
+import { testProps } from "../../utils/testProps"
 
 type Props = {
   usdWallet: any
@@ -81,25 +83,15 @@ const ChooseWallet: React.FC<Props> = ({
     wallets = [...wallets, btcWallet]
   }
 
+  const CurrencyIcon =
+    sendingWalletDescriptor.currency === WalletCurrency.Btc ? Bitcoin : Cash
   return (
     <View style={styles.fieldContainer}>
       <Text style={styles.fieldTitleText}>{LL.common.from()}</Text>
       <TouchableWithoutFeedback onPress={toggleModal} accessible={false}>
         <View style={styles.fieldBackground}>
           <View style={styles.walletSelectorTypeContainer}>
-            <View
-              style={
-                sendingWalletDescriptor.currency === WalletCurrency.Btc
-                  ? styles.walletSelectorTypeLabelBitcoin
-                  : styles.walletSelectorTypeLabelUsd
-              }
-            >
-              {sendingWalletDescriptor.currency === WalletCurrency.Btc ? (
-                <Text style={styles.walletSelectorTypeLabelBtcText}>BTC</Text>
-              ) : (
-                <Text style={styles.walletSelectorTypeLabelUsdText}>USD</Text>
-              )}
-            </View>
+            <CurrencyIcon />
           </View>
           <View style={styles.walletSelectorInfoContainer}>
             <View style={styles.walletSelectorTypeTextContainer}>
@@ -141,6 +133,8 @@ const ChooseWallet: React.FC<Props> = ({
       >
         <View>
           {wallets.map((wallet) => {
+            const CurrencyIcon =
+              wallet.walletCurrency === WalletCurrency.Btc ? Bitcoin : Cash
             return (
               <TouchableWithoutFeedback
                 key={wallet.id}
@@ -150,19 +144,7 @@ const ChooseWallet: React.FC<Props> = ({
               >
                 <View style={styles.walletContainer}>
                   <View style={styles.walletSelectorTypeContainer}>
-                    <View
-                      style={
-                        wallet.walletCurrency === WalletCurrency.Btc
-                          ? styles.walletSelectorTypeLabelBitcoin
-                          : styles.walletSelectorTypeLabelUsd
-                      }
-                    >
-                      {wallet.walletCurrency === WalletCurrency.Btc ? (
-                        <Text style={styles.walletSelectorTypeLabelBtcText}>BTC</Text>
-                      ) : (
-                        <Text style={styles.walletSelectorTypeLabelUsdText}>USD</Text>
-                      )}
-                    </View>
+                    <CurrencyIcon />
                   </View>
                   <View style={styles.walletSelectorInfoContainer}>
                     <View style={styles.walletSelectorTypeTextContainer}>
@@ -220,34 +202,7 @@ const useStyles = makeStyles(({ colors }) => ({
     height: 60,
   },
   walletSelectorTypeContainer: {
-    justifyContent: "center",
-    alignItems: "flex-start",
-    width: 50,
     marginRight: 20,
-  },
-  walletSelectorTypeLabelBitcoin: {
-    height: 30,
-    width: 50,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  walletSelectorTypeLabelUsd: {
-    height: 30,
-    width: 50,
-    backgroundColor: colors.green,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  walletSelectorTypeLabelUsdText: {
-    fontWeight: "bold",
-    color: colors.black,
-  },
-  walletSelectorTypeLabelBtcText: {
-    fontWeight: "bold",
-    color: colors.white,
   },
   walletSelectorInfoContainer: {
     flex: 1,
