@@ -545,6 +545,11 @@ export const RootStack = () => {
         component={RefundConfirmation}
         options={{ title: LL.RefundFlow.confirmationTitle() }}
       />
+      <RootNavigator.Screen
+        name="Card"
+        component={CardScreen}
+        options={{ title: "", headerStyle: { backgroundColor: colors.background } }}
+      />
     </RootNavigator.Navigator>
   )
 }

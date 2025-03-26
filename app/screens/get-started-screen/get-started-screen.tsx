@@ -13,7 +13,8 @@ import { DeviceAccountFailModal } from "./device-account-fail-modal"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useActivityIndicator, useAppConfig } from "@app/hooks"
+import { useIsFocused } from "@react-navigation/native"
+import { useActivityIndicator, useAppConfig, useFlashcard } from "@app/hooks"
 import { useCreateAccount } from "@app/hooks/useCreateAccount"
 
 // utils
@@ -30,11 +31,13 @@ const width = Dimensions.get("screen").width
 type Props = StackScreenProps<RootStackParamList, "getStarted">
 
 export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
+  const isFocused = useIsFocused()
   const { mode, colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
   const { toggleActivityIndicator } = useActivityIndicator()
   const { createDeviceAccountAndLogin, appcheckTokenLoading } = useCreateAccount()
+  const { lnurl, readFlashcard } = useFlashcard()
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
@@ -53,6 +56,10 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
       setSecretMenuCounter(0)
     }
   }, [navigation, secretMenuCounter])
+
+  useEffect(() => {
+    if (!!lnurl && isFocused) navigation.navigate("Card")
+  }, [lnurl])
 
   const handleCreateDeviceAccount = async () => {
     logGetStartedAction({
@@ -91,15 +98,11 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
     navigation.replace("Primary")
   }
 
-  const onPressLogo = () => {
-    setSecretMenuCounter(secretMenuCounter + 1)
-  }
+  const onPressLogo = () => setSecretMenuCounter(secretMenuCounter + 1)
 
-  const onPressHelp = () => {
-    navigation.navigate("welcomeFirst")
-  }
+  const onPressHelp = () => navigation.navigate("welcomeFirst")
 
-  const onPressCard = () => {}
+  const onPressCard = () => readFlashcard()
 
   return (
     <Screen>
@@ -119,7 +122,7 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
             animation="pulse"
             easing="ease-out"
             iterationCount="infinite"
-            color={colors.icon01}
+            color={colors.button01}
           />
         </TouchableOpacity>
         <TouchableOpacity
@@ -133,7 +136,7 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
             easing="ease-out"
             iterationCount="infinite"
             size={60}
-            color={colors.icon01}
+            color={colors.button01}
           />
         </TouchableOpacity>
       </IconsWrapper>
