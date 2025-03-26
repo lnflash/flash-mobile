@@ -31,7 +31,7 @@ export const ActivityIndicatorProvider = ({ children }: Props) => {
 
 export const Loading = () => (
   <Backdrop>
-    <ActivityIndicator color={"#60aa55"} size={"large"} />
+    <ActivityIndicator color={"#007856"} size={"large"} />
   </Backdrop>
 )
 

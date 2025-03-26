@@ -20,7 +20,7 @@ const light = {
   white: "#FFFFFF",
   black: "#000000",
 
-  primary: "#60aa55",
+  primary: "#007856",
   primary3: "#000000",
   primary4: "#fe990d",
   primary5: "#ffad0d",
@@ -92,7 +92,7 @@ const dark = {
   white: "#000000",
   black: "#FFFFFF",
 
-  primary: "#60aa55",
+  primary: "#007856",
   primary3: "#ffffff",
   primary4: "#fd800b",
   primary5: "#fc5805",
