@@ -10,6 +10,9 @@ import axios from "axios"
 import { PrimaryBtn } from "@app/components/buttons"
 import { Loading } from "./ActivityIndicatorContext"
 
+// hooks
+import { useIsAuthed } from "@app/graphql/is-authed-context"
+
 // utils
 import { toastShow } from "../utils/toast"
 import { loadJson, remove, save } from "@app/utils/storage"
@@ -18,8 +21,6 @@ import { loadJson, remove, save } from "@app/utils/storage"
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
 
 const width = Dimensions.get("screen").width
-
-NfcManager.start()
 
 type TransactionItem = {
   date: string
@@ -57,6 +58,7 @@ type Props = {
 }
 
 export const FlashcardProvider = ({ children }: Props) => {
+  const isAuthed = useIsAuthed()
   const styles = useStyles()
   const [visible, setVisible] = useState(false)
   const [tag, setTag] = useState<TagEvent>()
@@ -107,6 +109,7 @@ export const FlashcardProvider = ({ children }: Props) => {
   const handleTag = async (isPayment?: boolean) => {
     try {
       setVisible(true)
+      NfcManager.start()
       await NfcManager.requestTechnology(NfcTech.Ndef)
       const tag = await NfcManager.getTag()
       if (tag && tag.id) {
@@ -122,7 +125,7 @@ export const FlashcardProvider = ({ children }: Props) => {
           const payload = Ndef.text.decodePayload(new Uint8Array(ndefRecord.payload))
           if (payload.startsWith("lnurlw")) {
             setTag(tag)
-            save("CARD_TAG", tag.id) // save tag id to async storage
+            if (isAuthed) save("CARD_TAG", tag.id) // save tag id to async storage
             if (isPayment) {
               await getPayDetails(payload)
             } else {
@@ -180,7 +183,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       const url = `https://btcpay.flashapp.me/boltcards/balance?${payloadPart}`
       const response = await axios.get(url)
       const html = response.data
-      save("CARD_HTML", html) // save html to async storage
+      if (isAuthed) save("CARD_HTML", html) // save html to async storage
       getLnurl(html)
       getBalance(html)
       getTransactions(html)
