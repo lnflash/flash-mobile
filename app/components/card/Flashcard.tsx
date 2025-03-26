@@ -11,6 +11,7 @@ import HideableArea from "../hideable-area/hideable-area"
 // hooks
 import { useDisplayCurrency, useFlashcard, usePriceConversion } from "@app/hooks"
 import { useHideBalanceQuery } from "@app/graphql/generated"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 // assets
 import FlashcardImage from "@app/assets/images/flashcard.png"
@@ -25,6 +26,7 @@ type Props = {
 }
 
 const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
+  const isAuthed = useIsAuthed()
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { balanceInSats, transactions, readFlashcard, resetFlashcard } = useFlashcard()
@@ -59,16 +61,18 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
           </TouchableOpacity>
         </HideableArea>
       </View>
-      <View style={styles.btns}>
-        <IconBtn type="clear" icon="down" label={`Reload\nCard`} onPress={onReload} />
-        <IconBtn type="clear" icon="qr" label={`Topup via\nQR`} onPress={onTopup} />
-        <IconBtn
-          type="clear"
-          icon={"cardRemove"}
-          label={`Remove\nCard`}
-          onPress={resetFlashcard}
-        />
-      </View>
+      {isAuthed && (
+        <View style={styles.btns}>
+          <IconBtn type="clear" icon="down" label={`Reload\nCard`} onPress={onReload} />
+          <IconBtn type="clear" icon="qr" label={`Topup via\nQR`} onPress={onTopup} />
+          <IconBtn
+            type="clear"
+            icon={"cardRemove"}
+            label={`Remove\nCard`}
+            onPress={resetFlashcard}
+          />
+        </View>
+      )}
       <View style={styles.caption}>
         <Text type="bl" bold>
           Do not throw away your card!
