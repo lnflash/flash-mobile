@@ -30,7 +30,7 @@ export const CardScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const isAuthed = useIsAuthed()
   const { colors } = useTheme().theme
-  const { lnurl } = useFlashcard()
+  const { lnurl, resetFlashcard } = useFlashcard()
 
   const [reloadLnurl, setReloadLnurl] = useState<PaymentDestination>()
 
@@ -40,6 +40,15 @@ export const CardScreen = () => {
   })
   const wallets = data?.me?.defaultAccount.wallets
   const bitcoinNetwork = data?.globals?.network
+
+  useEffect(() => {
+    if (!isAuthed) {
+      const unsubscribe = navigation.addListener("beforeRemove", () => {
+        resetFlashcard()
+      })
+      return unsubscribe
+    }
+  }, [isAuthed, navigation])
 
   useEffect(() => {
     if (lnurl) parseAndSetDestination(lnurl)

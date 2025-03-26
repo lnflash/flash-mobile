@@ -17,12 +17,14 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useAppDispatch } from "@app/store/redux"
 
 import { BACKUP_COMPLETED, SCHEMA_VERSION_KEY } from "@app/config"
+import { useFlashcard } from "./useFlashcard"
 
 const useLogout = () => {
   const client = useApolloClient()
 
   const dispatch = useAppDispatch()
   const { resetState } = usePersistentStateContext()
+  const { resetFlashcard } = useFlashcard()
 
   const [userLogoutMutation] = useUserLogoutMutation({
     fetchPolicy: "no-cache",
@@ -43,6 +45,7 @@ const useLogout = () => {
         logLogout()
         if (stateToDefault) {
           resetState()
+          resetFlashcard()
         }
 
         await Promise.race([
