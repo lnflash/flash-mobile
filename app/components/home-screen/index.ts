@@ -5,6 +5,7 @@ import Transactions from "./Transactions"
 import Info from "./Info"
 import { UsernameModal } from "./username-modal"
 import WelcomeUserScreen from "./welcome-user-screen"
+import QuickStart from "./QuickStart"
 
 export {
   AccountCreateModal,
@@ -14,4 +15,5 @@ export {
   Info,
   UsernameModal,
   WelcomeUserScreen,
+  QuickStart,
 }
