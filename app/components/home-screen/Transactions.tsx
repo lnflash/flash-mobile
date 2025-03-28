@@ -201,7 +201,9 @@ const Transactions: React.FC<Props> = ({
 
 export default Transactions
 
-const Wrapper = styled.View``
+const Wrapper = styled.View`
+  margin-horizontal: 20;
+`
 
 const RecentActivity = styled.TouchableOpacity`
   margin-top: 30px;

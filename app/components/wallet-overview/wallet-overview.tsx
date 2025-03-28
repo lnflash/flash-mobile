@@ -121,7 +121,7 @@ const WalletOverview = () => {
   })
 
   return (
-    <View style={{ marginTop: 10 }}>
+    <View style={{ marginTop: 10, marginHorizontal: 20 }}>
       <Balance
         icon="cash"
         title="Cash"

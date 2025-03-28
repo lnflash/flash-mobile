@@ -13,7 +13,6 @@ import { useNavigation } from "@react-navigation/native"
 // components
 import { GaloyIcon } from "../atomic/galoy-icon"
 import { GaloyErrorBox } from "../atomic/galoy-error-box"
-import { GaloyTertiaryButton } from "../atomic/galoy-tertiary-button"
 
 // gql
 import { GraphQLError } from "graphql"
@@ -68,18 +67,20 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
 
   if (error || persistentState?.numOfRefundables > 0) {
     return (
-      <View>
+      <View style={{ marginTop: 15, marginHorizontal: 20 }}>
         {persistentState?.numOfRefundables > 0 && (
           <View style={styles.container}>
             <GaloyIcon name="warning" size={14} color={color} />
             <Text style={styles.textContainer} type={"p3"} color={color}>
-              {`${LL.HomeScreen.refundableWarning()}`}
-              <GaloyTertiaryButton
-                clear
-                title={LL.HomeScreen.refundables()}
+              {`${LL.HomeScreen.refundableWarning()}  `}
+              <Text
+                bold
+                type={"p3"}
+                color={colors.primary}
                 onPress={() => navigation.navigate("RefundTransactionList")}
-                containerStyle={{ marginTop: -4 }}
-              />
+              >
+                {LL.HomeScreen.refundables()}
+              </Text>
             </Text>
           </View>
         )}
@@ -101,7 +102,7 @@ const useStyles = makeStyles(({ colors }) => ({
     justifyContent: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 10,
     backgroundColor: colors.warning9,
   },
   textContainer: {

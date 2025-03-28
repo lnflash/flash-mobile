@@ -104,7 +104,7 @@ function QuickStart() {
       <Carousel
         ref={ref}
         width={width}
-        height={width / 2}
+        height={width / 2.9}
         data={data}
         renderItem={renderItem}
         mode="parallax"

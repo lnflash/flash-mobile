@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react"
-import { RefreshControl } from "react-native"
-import styled from "styled-components/native"
+import { RefreshControl, ScrollView } from "react-native"
 import { useTheme } from "@rneui/themed"
 
 // components
@@ -13,6 +12,7 @@ import {
   Buttons,
   Header,
   Info,
+  QuickStart,
   Transactions,
   UsernameModal,
   WelcomeUserScreen,
@@ -110,21 +110,22 @@ export const HomeScreen: React.FC = () => {
   return (
     <Screen backgroundColor={colors.background}>
       <Header />
-      <ScrollWrapper refreshControl={renderRefreshControl()}>
+      <ScrollView refreshControl={renderRefreshControl()}>
         <WalletOverview />
         <Info refreshTriggered={refreshTriggered} error={error} />
         <Buttons
           setModalVisible={setModalVisible}
           setDefaultAccountModalVisible={setDefaultAccountModalVisible}
         />
-        <Transactions
+        <QuickStart />
+        {/* <Transactions
           refreshTriggered={refreshTriggered}
           loadingAuthed={loadingAuthed}
           transactionsEdges={
             dataAuthed?.me?.defaultAccount?.transactions?.edges as TransactionEdge[]
           }
-        />
-      </ScrollWrapper>
+        /> */}
+      </ScrollView>
       <SetDefaultAccountModal
         isVisible={defaultAccountModalVisible}
         toggleModal={() => setDefaultAccountModalVisible(!defaultAccountModalVisible)}
@@ -151,7 +152,3 @@ export const HomeScreen: React.FC = () => {
     </Screen>
   )
 }
-
-const ScrollWrapper = styled.ScrollView`
-  padding-horizontal: 20px;
-`
