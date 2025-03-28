@@ -1,10 +1,18 @@
 import React from "react"
-import { Modal, Image, Linking, ScrollView, View, Dimensions } from "react-native"
+import {
+  Modal,
+  Image,
+  Linking,
+  ScrollView,
+  View,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { useNavigation } from "@react-navigation/native"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { makeStyles, Text } from "@rneui/themed"
+import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 // components
 import { PrimaryBtn } from "../buttons"
@@ -36,6 +44,7 @@ export const AdvancedModeModal: React.FC<Props> = ({
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
+  const { colors } = useTheme().theme
   const styles = useStyles()
 
   const acknowledgeModal = () => {
@@ -72,78 +81,87 @@ export const AdvancedModeModal: React.FC<Props> = ({
       visible={isVisible}
       onRequestClose={() => setIsVisible(false)}
     >
-      <View style={styles.modalCard}>
-        <ScrollView style={styles.scrollViewStyle}>
-          <Text style={styles.title}>Be your own Bank</Text>
-          <Image
-            source={AdvanceModeImage}
-            style={styles.advanceModeImage}
-            resizeMode="contain"
-          />
-          <View style={styles.body}>
-            <Text style={styles.text} type={"h2"} bold>
-              {LL.AdvancedModeModal.header()}
-            </Text>
-            <Text style={styles.text} type="p2">
-              {LL.AdvancedModeModal.body()}
-            </Text>
-            <Text
-              style={styles.textBtn}
-              type="p2"
-              bold
-              onPress={() => Linking.openURL(FLASH_TERMS_LINK)}
-            >
-              {LL.AdvancedModeModal.termsAndConditions()}
-            </Text>
-            <Text
-              style={styles.textBtn}
-              type="p2"
-              bold
-              onPress={() => Linking.openURL(DOCS_LINK)}
-            >
-              {LL.AdvancedModeModal.learnMore()}
-            </Text>
-            <PrimaryBtn
-              label={
-                hasRecoveryPhrase
-                  ? LL.common.revealSeed()
-                  : LL.AdvancedModeModal.importWallet()
-              }
-              onPress={hasRecoveryPhrase ? goToBackupBTCWallet : goToImportBTCWallet}
-              btnStyle={{ marginVertical: 10 }}
+      <View style={styles.backdrop}>
+        <View style={styles.container}>
+          <TouchableOpacity style={styles.close} onPress={() => setIsVisible(false)}>
+            <Icon name={"close"} size={35} color={colors.black} type="ionicon" />
+          </TouchableOpacity>
+          <ScrollView>
+            <Text style={styles.title}>Be your own Bank</Text>
+            <Image
+              source={AdvanceModeImage}
+              style={styles.advanceModeImage}
+              resizeMode="contain"
             />
-            <PrimaryBtn
-              type="outline"
-              label={
-                hasRecoveryPhrase
-                  ? LL.common.backHome()
-                  : LL.AdvancedModeModal.createWallet()
-              }
-              onPress={hasRecoveryPhrase ? acknowledgeModal : onCreateNewWallet}
-              btnStyle={{ marginBottom: bottom + 20 }}
-            />
-          </View>
-        </ScrollView>
+            <View style={styles.body}>
+              <Text style={styles.text} type={"h2"} bold>
+                {LL.AdvancedModeModal.header()}
+              </Text>
+              <Text style={styles.text} type="p2">
+                {LL.AdvancedModeModal.body()}
+              </Text>
+              <Text
+                style={styles.textBtn}
+                type="p2"
+                bold
+                onPress={() => Linking.openURL(FLASH_TERMS_LINK)}
+              >
+                {LL.AdvancedModeModal.termsAndConditions()}
+              </Text>
+              <Text
+                style={styles.textBtn}
+                type="p2"
+                bold
+                onPress={() => Linking.openURL(DOCS_LINK)}
+              >
+                {LL.AdvancedModeModal.learnMore()}
+              </Text>
+              <PrimaryBtn
+                label={
+                  hasRecoveryPhrase
+                    ? LL.common.revealSeed()
+                    : LL.AdvancedModeModal.importWallet()
+                }
+                onPress={hasRecoveryPhrase ? goToBackupBTCWallet : goToImportBTCWallet}
+                btnStyle={{ marginVertical: 10 }}
+              />
+              <PrimaryBtn
+                type="outline"
+                label={
+                  hasRecoveryPhrase
+                    ? LL.common.backHome()
+                    : LL.AdvancedModeModal.createWallet()
+                }
+                onPress={hasRecoveryPhrase ? acknowledgeModal : onCreateNewWallet}
+                btnStyle={{ marginBottom: bottom + 20 }}
+              />
+            </View>
+          </ScrollView>
+        </View>
       </View>
     </Modal>
   )
 }
 
 const useStyles = makeStyles(({ colors, mode }) => ({
-  modalCard: {
+  backdrop: {
     paddingTop: height / 7,
     backgroundColor: mode === "dark" ? "rgba(57,57,57,.7)" : "rgba(0,0,0,.5)",
   },
-  scrollViewStyle: {
+  container: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+  },
+  close: {
+    alignSelf: "flex-end",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   title: {
     fontSize: 28,
     textAlign: "center",
     marginBottom: 20,
-    marginTop: 30,
   },
   advanceModeImage: {
     width: "100%",
@@ -151,6 +169,7 @@ const useStyles = makeStyles(({ colors, mode }) => ({
   },
   body: {
     marginHorizontal: 20,
+    marginBottom: 150,
   },
   text: {
     marginBottom: 16,
