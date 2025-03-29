@@ -64,6 +64,8 @@ export const HomeScreen: React.FC = () => {
     nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
 
+  const transactions = dataAuthed?.me?.defaultAccount.transactions?.edges || []
+
   useEffect(() => {
     if (dataAuthed?.me) {
       dispatch(setUserData(dataAuthed.me))
@@ -117,14 +119,15 @@ export const HomeScreen: React.FC = () => {
           setModalVisible={setModalVisible}
           setDefaultAccountModalVisible={setDefaultAccountModalVisible}
         />
-        <QuickStart />
-        {/* <Transactions
-          refreshTriggered={refreshTriggered}
-          loadingAuthed={loadingAuthed}
-          transactionsEdges={
-            dataAuthed?.me?.defaultAccount?.transactions?.edges as TransactionEdge[]
-          }
-        /> */}
+        {transactions.length > 0 ? (
+          <Transactions
+            refreshTriggered={refreshTriggered}
+            loadingAuthed={loadingAuthed}
+            transactionsEdges={transactions as TransactionEdge[]}
+          />
+        ) : (
+          <QuickStart />
+        )}
       </ScrollView>
       <SetDefaultAccountModal
         isVisible={defaultAccountModalVisible}
