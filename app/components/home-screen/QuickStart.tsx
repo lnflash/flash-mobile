@@ -1,9 +1,14 @@
 import React, { useRef, useState } from "react"
-import { Dimensions, TouchableOpacity, View } from "react-native"
+import {
+  ActivityIndicator,
+  Dimensions,
+  Linking,
+  TouchableOpacity,
+  View,
+} from "react-native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import Carousel from "react-native-reanimated-carousel"
-import { useNavigation } from "@react-navigation/native"
-import { makeStyles, Text } from "@rneui/themed"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // assets
@@ -18,10 +23,17 @@ import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 import { UpgradeAccountModal } from "../upgrade-account-modal"
 import { QuickStartAdvancedMode } from "../advanced-mode-modal"
 
+// hooks
+import { useFlashcard } from "@app/hooks"
+import { useNavigation } from "@react-navigation/native"
+import { usePersistentStateContext } from "@app/store/persistent-state"
+import { AccountLevel, useHomeAuthedQuery } from "@app/graphql/generated"
+
 const width = Dimensions.get("window").width
 
-type Props = {
+type RenderItemProps = {
   item: {
+    type: string
     title: string
     description: string
     image: any
@@ -30,40 +42,50 @@ type Props = {
   index: number
 }
 
-function QuickStart() {
+const QuickStart = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
+  const { colors } = useTheme().theme
+  const { lnurl } = useFlashcard()
+  const { persistentState } = usePersistentStateContext()
 
   const ref = useRef(null)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
   const [upgradeAccountModalVisible, setUpgradeAccountModalVisible] = useState(false)
 
-  const data = [
+  const { data, loading } = useHomeAuthedQuery()
+
+  let carouselData = [
     {
+      type: "upgrade",
       title: "Upgrade your account",
       description: "Backup your cash wallet and increase transaction limits.",
       image: Account,
       onPress: () => setUpgradeAccountModalVisible(true),
     },
     {
+      type: "currency",
       title: "Change to your local currency",
       description: "Review our available currency list and select your currency",
       image: Dollar,
       onPress: () => navigation.navigate("currency"),
     },
     {
+      type: "flashcard",
       title: "Get a Flashcard",
       description: "Find a Flashpoint and get a Flashcard to use in daily life",
       image: Flashcard,
       onPress: () => navigation.navigate("Map"),
     },
     {
+      type: "nonCustodialWallet",
       title: "Non-custodial wallets",
       description: "Learn more about non-custodial wallets",
       image: NonCustodialWallet,
-      onPress: () => {},
+      onPress: () => Linking.openURL("https://docs.getflash.io/non-custodial-wallets"),
     },
     {
+      type: "email",
       title: "Email address",
       description:
         "Add your email address to secure your account and login using email address",
@@ -71,12 +93,14 @@ function QuickStart() {
       onPress: () => navigation.navigate("emailRegistrationInitiate"),
     },
     {
+      type: "btcWallet",
       title: "Enable BTC wallet",
       description: "Easily transfer larger amounts in Bitcoin.",
       image: GoldWallet,
       onPress: () => setAdvanceModalVisible(!advanceModalVisible),
     },
     {
+      type: "backup",
       title: "Backup your BTC wallet",
       description: "Backup and secure your Bitcoin wallet using recovery phrase",
       image: SecureWallet,
@@ -84,7 +108,23 @@ function QuickStart() {
     },
   ]
 
-  const renderItem = ({ item, index }: Props) => {
+  if (data?.me?.defaultAccount.level != AccountLevel.Zero) {
+    carouselData = carouselData.filter((el) => el.type !== "upgrade")
+  }
+  if (!!lnurl) {
+    carouselData = carouselData.filter((el) => el.type !== "flashcard")
+  }
+  if (!!data?.me?.email?.address) {
+    carouselData = carouselData.filter((el) => el.type !== "email")
+  }
+  if (persistentState.isAdvanceMode) {
+    carouselData = carouselData.filter((el) => el.type !== "btcWallet")
+  }
+  if (persistentState.backupBtcWallet || !persistentState.isAdvanceMode) {
+    carouselData = carouselData.filter((el) => el.type !== "backup")
+  }
+
+  const renderItem = ({ item, index }: RenderItemProps) => {
     const Image = item.image
     return (
       <TouchableOpacity onPress={item.onPress} key={index} style={styles.itemContainer}>
@@ -99,13 +139,19 @@ function QuickStart() {
     )
   }
 
+  if (loading) {
+    return (
+      <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />
+    )
+  }
+
   return (
     <View>
       <Carousel
         ref={ref}
         width={width}
-        height={width / 2.9}
-        data={data}
+        height={width / 2}
+        data={carouselData}
         renderItem={renderItem}
         mode="parallax"
       />

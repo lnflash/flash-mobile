@@ -74,6 +74,7 @@ type PersistentState_7 = {
   isAdvanceMode?: boolean
   chatEnabled?: boolean
   numOfRefundables: number
+  backupBtcWallet?: boolean // true if user backed up recovery phrase (btc wallet)
 }
 
 type JwtPayload = {
@@ -103,6 +104,7 @@ const migrate6ToCurrent = (state: PersistentState_6): Promise<PersistentState> =
     hasInitializedBreezSDK: false,
     introVideoCount: 0,
     helpTriggered: false,
+    numOfRefundables: 0,
   })
 }
 
