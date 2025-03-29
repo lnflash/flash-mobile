@@ -6,22 +6,29 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useTheme } from "@rneui/themed"
 
-// utils
-import { save } from "@app/utils/storage"
-
 // assets
 import CircleCheck from "@app/assets/icons/circleCheck.png"
+
+// store
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 type Props = StackScreenProps<RootStackParamList, "BackupComplete">
 
 const BackupComplete: React.FC<Props> = ({ navigation }) => {
-  const { theme } = useTheme()
-  const colors = theme.colors
-  const { LL } = useI18nContext()
   const bottom = useSafeAreaInsets().bottom
+  const { LL } = useI18nContext()
+  const { colors } = useTheme().theme
+  const { updateState } = usePersistentStateContext()
 
   const onContinue = () => {
-    save("backupCompleted", true)
+    updateState((state: any) => {
+      if (state)
+        return {
+          ...state,
+          backupBtcWallet: true,
+        }
+      return undefined
+    })
     navigation.navigate("BackupOptions")
   }
 
