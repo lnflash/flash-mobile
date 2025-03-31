@@ -1,73 +1,38 @@
-import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
-import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
-import { useI18nContext } from "@app/i18n/i18n-react"
-import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { useNavigation } from "@react-navigation/native"
-import { StackNavigationProp } from "@react-navigation/stack"
-import { Input, Text, makeStyles } from "@rneui/themed"
-import axios, { isAxiosError } from "axios"
-import * as React from "react"
+import React, { useEffect, useState } from "react"
 import { View } from "react-native"
-import validator from "validator"
+import axios, { isAxiosError } from "axios"
+import { Input, Text, makeStyles } from "@rneui/themed"
+import { StackScreenProps } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
+
+// components
 import { Screen } from "../../components/screen"
+import { PrimaryBtn } from "@app/components/buttons"
+import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
+
+// hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAppConfig } from "@app/hooks"
+
+// utils
 import { testProps } from "@app/utils/testProps"
+import validator from "validator"
 
-const useStyles = makeStyles(({ colors }) => ({
-  screenStyle: {
-    padding: 20,
-    flexGrow: 1,
-  },
-  buttonsContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
+type Props = StackScreenProps<RootStackParamList, "emailLoginInitiate">
 
-  inputContainer: {
-    marginBottom: 20,
-    flexDirection: "row",
-    alignItems: "stretch",
-    minHeight: 48,
-  },
-  textContainer: {
-    marginBottom: 20,
-  },
-  viewWrapper: { flex: 1 },
-
-  inputContainerStyle: {
-    flex: 1,
-    borderWidth: 2,
-    borderBottomWidth: 2,
-    paddingHorizontal: 10,
-    borderColor: colors.primary5,
-    borderRadius: 8,
-  },
-  errorContainer: {
-    marginBottom: 20,
-  },
-}))
-
-export const EmailLoginInitiateScreen: React.FC = () => {
+export const EmailLoginInitiateScreen: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
-  const {
-    appConfig: {
-      galoyInstance: { authUrl },
-    },
-  } = useAppConfig()
+  const { LL } = useI18nContext()
+  const { authUrl } = useAppConfig().appConfig.galoyInstance
 
-  const navigation =
-    useNavigation<StackNavigationProp<RootStackParamList, "emailLoginInitiate">>()
-
-  const [emailInput, setEmailInput] = React.useState<string>("")
-  const [errorMessage, setErrorMessage] = React.useState<string>("")
-  const [loading, setLoading] = React.useState<boolean>(false)
+  const [emailInput, setEmailInput] = useState<string>("")
+  const [errorMessage, setErrorMessage] = useState<string>("")
+  const [loading, setLoading] = useState<boolean>(false)
 
   const updateInput = (text: string) => {
     setEmailInput(text)
     setErrorMessage("")
   }
-
-  const { LL } = useI18nContext()
 
   const submit = async () => {
     if (!validator.isEmail(emailInput)) {
@@ -124,39 +89,56 @@ export const EmailLoginInitiateScreen: React.FC = () => {
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.viewWrapper}>
-        <View style={styles.textContainer}>
-          <Text type={"p1"}>{LL.EmailLoginInitiateScreen.header()}</Text>
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Input
-            {...testProps(LL.EmailRegistrationInitiateScreen.placeholder())}
-            placeholder={LL.EmailRegistrationInitiateScreen.placeholder()}
-            autoCapitalize="none"
-            inputContainerStyle={styles.inputContainerStyle}
-            renderErrorMessage={false}
-            textContentType="emailAddress"
-            keyboardType="email-address"
-            value={emailInput}
-            onChangeText={updateInput}
-            autoFocus={true}
-          />
-        </View>
-        {errorMessage && (
-          <View style={styles.errorContainer}>
-            <GaloyErrorBox errorMessage={errorMessage} />
-          </View>
-        )}
-
-        <View style={styles.buttonsContainer}>
-          <GaloyPrimaryButton
-            title={LL.EmailLoginInitiateScreen.send()}
-            loading={loading}
-            disabled={!emailInput}
-            onPress={submit}
-          />
-        </View>
+        <Text type={"p1"} style={styles.header}>
+          {LL.EmailLoginInitiateScreen.header()}
+        </Text>
+        <Input
+          {...testProps(LL.EmailRegistrationInitiateScreen.placeholder())}
+          placeholder={LL.EmailRegistrationInitiateScreen.placeholder()}
+          autoCapitalize="none"
+          containerStyle={styles.inputContainer}
+          inputContainerStyle={styles.inputContainerStyle}
+          renderErrorMessage={false}
+          textContentType="emailAddress"
+          keyboardType="email-address"
+          value={emailInput}
+          onChangeText={updateInput}
+          autoFocus={true}
+        />
+        {errorMessage && <GaloyErrorBox errorMessage={errorMessage} />}
       </View>
+      <PrimaryBtn
+        label={LL.EmailLoginInitiateScreen.send()}
+        loading={loading}
+        disabled={!emailInput}
+        onPress={submit}
+      />
     </Screen>
   )
 }
+
+const useStyles = makeStyles(({ colors }) => ({
+  screenStyle: {
+    padding: 20,
+    flexGrow: 1,
+  },
+  inputContainer: {
+    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "stretch",
+    minHeight: 48,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  viewWrapper: {
+    flex: 1,
+  },
+  inputContainerStyle: {
+    flex: 1,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    borderColor: colors.border02,
+    borderRadius: 10,
+  },
+}))
