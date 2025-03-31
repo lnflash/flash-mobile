@@ -16,7 +16,7 @@ import { useUserLogoutMutation } from "@app/graphql/generated"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useAppDispatch } from "@app/store/redux"
 
-import { BACKUP_COMPLETED, SCHEMA_VERSION_KEY } from "@app/config"
+import { SCHEMA_VERSION_KEY } from "@app/config"
 import { useFlashcard } from "./useFlashcard"
 
 const useLogout = () => {
@@ -36,7 +36,7 @@ const useLogout = () => {
         const deviceToken = await messaging().getToken()
 
         await client.cache.reset()
-        await AsyncStorage.multiRemove([SCHEMA_VERSION_KEY, BACKUP_COMPLETED])
+        await AsyncStorage.multiRemove([SCHEMA_VERSION_KEY])
         await KeyStoreWrapper.removeIsBiometricsEnabled()
         await KeyStoreWrapper.removePin()
         await KeyStoreWrapper.removePinAttempts()
