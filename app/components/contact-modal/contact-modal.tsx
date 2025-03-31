@@ -72,7 +72,7 @@ const ContactModal: React.FC<Props> = ({
     //icon: <TelegramOutline width={24} height={24} fill={colors.black} />,
     //name: LL.support.Discord(),
     {
-      name: LL.support.Discord(),
+      name: LL.support.discord(),
       icon: <Icon name={"logo-discord"} type="ionicon" color={colors.black} />,
       action: () => {
         openDiscordAction()

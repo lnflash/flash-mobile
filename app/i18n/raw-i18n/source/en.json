@@ -1188,7 +1188,7 @@
         "email": "Email",
         "enjoyingApp": "Enjoying the app?",
         "statusPage": "Status Page",
-        "Discord": "discord",
+        "discord": "Discord",
         "mattermost": "Mattermost",
         "thankYouText": "Thank you for the feedback, would you like to suggest an improvement?",
         "defaultEmailSubject": "{bankName: string} - Support",
