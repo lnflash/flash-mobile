@@ -10,6 +10,7 @@ import { Icon, ListItem, makeStyles, useTheme } from "@rneui/themed"
 
 export const SupportChannels = {
   Email: "email",
+ // Telegram: "telegram",
   Discord: "discord",
   WhatsApp: "whatsapp",
   StatusPage: "statusPage",
@@ -53,6 +54,7 @@ const ContactModal: React.FC<Props> = ({
   }
 
   // TODO: extract in Instance
+  // const openTelegramAction = () => Linking.openURL(`https://t.me/+TsqkMBTyU9o0ZTlh`)
   const openDiscordAction = () => Linking.openURL("https://discord.gg/8jCg8eCRhF")
   const openMattermostAction = () => Linking.openURL(`https://chat.galoy.io`)
 
@@ -66,6 +68,9 @@ const ContactModal: React.FC<Props> = ({
       },
       hidden: supportChannelsToHide?.includes(SupportChannels.StatusPage),
     },
+    //name: LL.support.telegram(),
+    //icon: <TelegramOutline width={24} height={24} fill={colors.black} />,
+    //name: LL.support.Discord(),
     {
       name: LL.support.Discord(),
       icon: <Icon name={"logo-discord"} type="ionicon" color={colors.black} />,

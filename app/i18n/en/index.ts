@@ -1302,7 +1302,8 @@ const en: BaseTranslation = {
     email: "Email",
     enjoyingApp: "Enjoying the app?",
     statusPage: "Status Page",
-    telegram: "Telegram",
+    //telegram: "Telegram",
+    Discord: "discord"
     mattermost: "Mattermost",
     thankYouText: "Thank you for the feedback, would you like to suggest an improvement?",
     defaultEmailSubject: "{bankName: string} - Support",

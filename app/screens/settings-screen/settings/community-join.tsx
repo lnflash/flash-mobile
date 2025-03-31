@@ -47,7 +47,6 @@ export const JoinCommunitySetting: React.FC = () => {
           SupportChannels.StatusPage,
           SupportChannels.WhatsApp,
           SupportChannels.Mattermost,
-
         ]}
       />
     </>
