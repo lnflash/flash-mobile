@@ -119,15 +119,11 @@ export const HomeScreen: React.FC = () => {
           setModalVisible={setModalVisible}
           setDefaultAccountModalVisible={setDefaultAccountModalVisible}
         />
-        {transactions.length > 0 ? (
-          <Transactions
-            refreshTriggered={refreshTriggered}
-            loadingAuthed={loadingAuthed}
-            transactionsEdges={transactions as TransactionEdge[]}
-          />
-        ) : (
-          <QuickStart />
-        )}
+        <Transactions
+          refreshTriggered={refreshTriggered}
+          loadingAuthed={loadingAuthed}
+          transactionsEdges={transactions as TransactionEdge[]}
+        />
       </ScrollView>
       <SetDefaultAccountModal
         isVisible={defaultAccountModalVisible}
