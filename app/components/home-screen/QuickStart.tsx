@@ -109,13 +109,19 @@ const QuickStart = () => {
     },
   ]
 
-  if (data?.me?.defaultAccount.level != AccountLevel.Zero) {
+  if (data?.me?.defaultAccount.level !== AccountLevel.Zero) {
     carouselData = carouselData.filter((el) => el.type !== "upgrade")
+  }
+  if (persistentState.currencyChanged) {
+    carouselData = carouselData.filter((el) => el.type !== "currency")
   }
   if (!!lnurl) {
     carouselData = carouselData.filter((el) => el.type !== "flashcard")
   }
-  if (!!data?.me?.email?.address) {
+  if (
+    data?.me?.defaultAccount.level === AccountLevel.Zero ||
+    !!data?.me?.email?.address
+  ) {
     carouselData = carouselData.filter((el) => el.type !== "email")
   }
   if (persistentState.isAdvanceMode) {
