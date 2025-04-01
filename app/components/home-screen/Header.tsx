@@ -62,7 +62,7 @@ const Header = () => {
       onPress={() => navigation.navigate("priceHistory")}
       activeOpacity={0.5}
     >
-      <Chart color={colors.icon01} />
+      <Chart color={colors.icon01} width={30} height={30} />
     </IconWrapper>
   )
 
@@ -77,6 +77,7 @@ const Header = () => {
           name={hideBalance ? "eye-off" : "eye"}
           type="ionicon"
           color={colors.black}
+          size={25}
         />
       </IconWrapper>
       <IconWrapper
@@ -84,7 +85,7 @@ const Header = () => {
         onPress={() => navigation.navigate("settings")}
         activeOpacity={0.5}
       >
-        <Menu color={colors.icon01} />
+        <Menu color={colors.icon01} width={30} height={30} />
       </IconWrapper>
     </HeaderRight>
   )

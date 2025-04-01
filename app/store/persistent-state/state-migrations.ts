@@ -75,6 +75,7 @@ type PersistentState_7 = {
   chatEnabled?: boolean
   numOfRefundables: number
   backupBtcWallet?: boolean // true if user backed up recovery phrase (btc wallet)
+  currencyChanged?: boolean
 }
 
 type JwtPayload = {
