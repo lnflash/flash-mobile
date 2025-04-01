@@ -25,6 +25,7 @@ import { QuickStartAdvancedMode } from "../advanced-mode-modal"
 
 // hooks
 import { useFlashcard } from "@app/hooks"
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { AccountLevel, useHomeAuthedQuery } from "@app/graphql/generated"
@@ -46,6 +47,7 @@ const QuickStart = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
   const { lnurl } = useFlashcard()
   const { persistentState } = usePersistentStateContext()
 
@@ -58,51 +60,50 @@ const QuickStart = () => {
   let carouselData = [
     {
       type: "upgrade",
-      title: "Upgrade your account",
-      description: "Backup your cash wallet and increase transaction limits.",
+      title: LL.HomeScreen.upgradeTitle(),
+      description: LL.HomeScreen.upgradeDesc(),
       image: Account,
       onPress: () => setUpgradeAccountModalVisible(true),
     },
     {
       type: "currency",
-      title: "Change to your local currency",
-      description: "Review our available currency list and select your currency",
+      title: LL.HomeScreen.currencyTitle(),
+      description: LL.HomeScreen.currencyDesc(),
       image: Dollar,
       onPress: () => navigation.navigate("currency"),
     },
     {
       type: "flashcard",
-      title: "Get a Flashcard",
-      description: "Find a Flashpoint and get a Flashcard to use in daily life",
+      title: LL.HomeScreen.flashcardTitle(),
+      description: LL.HomeScreen.flashcardDesc(),
       image: Flashcard,
       onPress: () => navigation.navigate("Map"),
     },
     {
       type: "nonCustodialWallet",
-      title: "Non-custodial wallets",
-      description: "Learn more about non-custodial wallets",
+      title: LL.HomeScreen.nonCustodialWalletTitle(),
+      description: LL.HomeScreen.nonCustodialWalletDesc(),
       image: NonCustodialWallet,
       onPress: () => Linking.openURL("https://docs.getflash.io/non-custodial-wallets"),
     },
     {
       type: "email",
-      title: "Email address",
-      description:
-        "Add your email address to secure your account and login using email address",
+      title: LL.HomeScreen.emailTitle(),
+      description: LL.HomeScreen.emailDesc(),
       image: Account,
       onPress: () => navigation.navigate("emailRegistrationInitiate"),
     },
     {
       type: "btcWallet",
-      title: "Enable BTC wallet",
-      description: "Easily transfer larger amounts in Bitcoin.",
+      title: LL.HomeScreen.btcWalletTitle(),
+      description: LL.HomeScreen.btcWalletDesc(),
       image: GoldWallet,
       onPress: () => setAdvanceModalVisible(!advanceModalVisible),
     },
     {
       type: "backup",
-      title: "Backup your BTC wallet",
-      description: "Backup and secure your Bitcoin wallet using recovery phrase",
+      title: LL.HomeScreen.backupTitle(),
+      description: LL.HomeScreen.backupDesc(),
       image: SecureWallet,
       onPress: () => navigation.navigate("BackupOptions"),
     },

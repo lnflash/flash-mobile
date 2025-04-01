@@ -12,6 +12,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useNavigation } from "@react-navigation/native"
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { useBreez, useFlashcard } from "@app/hooks"
 
 // utils
@@ -21,6 +22,7 @@ import { getUsdWallet } from "@app/graphql/wallets-utils"
 const WalletOverview = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const isAuthed = useIsAuthed()
+  const { LL } = useI18nContext()
   const { btcWallet } = useBreez()
   const { balanceInSats, readFlashcard } = useFlashcard()
 
@@ -124,7 +126,7 @@ const WalletOverview = () => {
     <View style={{ marginTop: 10, marginHorizontal: 20 }}>
       <Balance
         icon="cash"
-        title="Cash"
+        title={LL.HomeScreen.cash()}
         amount={cashDisplayBalance}
         // amount={cashBalance}
         currency={displayCurrency}
@@ -133,7 +135,7 @@ const WalletOverview = () => {
       {persistentState.isAdvanceMode && (
         <Balance
           icon="bitcoin"
-          title="Bitcoin"
+          title={LL.HomeScreen.bitcoin()}
           amount={btcBalance?.split(" ")[0]}
           // amount={btcDisplayBalance}
           currency="SATS"
@@ -142,10 +144,10 @@ const WalletOverview = () => {
       )}
       <Balance
         icon={!!formattedCardBalance ? "flashcard" : "cardAdd"}
-        title="Flash Card"
+        title={LL.HomeScreen.flashcard()}
         amount={formattedCardBalance}
         currency={displayCurrency}
-        emptyCardText="Add Flash Card"
+        emptyCardText={LL.HomeScreen.addFlashcard()}
         onPress={onPressFlashcard}
         onSync={() => readFlashcard(false)}
       />
