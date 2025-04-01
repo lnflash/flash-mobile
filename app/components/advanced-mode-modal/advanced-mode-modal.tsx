@@ -104,14 +104,6 @@ export const AdvancedModeModal: React.FC<Props> = ({
                 style={styles.textBtn}
                 type="p2"
                 bold
-                onPress={() => Linking.openURL(FLASH_TERMS_LINK)}
-              >
-                {LL.AdvancedModeModal.termsAndConditions()}
-              </Text>
-              <Text
-                style={styles.textBtn}
-                type="p2"
-                bold
                 onPress={() => Linking.openURL(DOCS_LINK)}
               >
                 {LL.AdvancedModeModal.learnMore()}
