@@ -31,7 +31,7 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
   const { colors } = useTheme().theme
   const { balanceInSats, transactions, readFlashcard, resetFlashcard } = useFlashcard()
   const { formatMoneyAmount } = useDisplayCurrency()
-  const { convertMoneyAmount } = usePriceConversion("network-only")
+  const { convertMoneyAmount } = usePriceConversion()
 
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 
