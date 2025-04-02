@@ -14,12 +14,15 @@ import Bitcoin from "@app/assets/icons/bitcoin.svg"
 import Flashcard from "@app/assets/icons/flashcard.svg"
 import CardAdd from "@app/assets/icons/card-add.svg"
 import Sync from "@app/assets/icons/sync.svg"
+import Warning from "@app/assets/icons/warning.svg"
 
 const icons = {
   cash: Cash,
   bitcoin: Bitcoin,
   flashcard: Flashcard,
   cardAdd: CardAdd,
+  sync: Sync,
+  warning: Warning,
 }
 
 type IconNamesType = keyof typeof icons
@@ -29,9 +32,10 @@ type Props = {
   title: string
   amount?: string
   currency: string
-  emptyCardText?: string
+  emptyText?: string
+  rightIcon?: IconNamesType
   onPress: () => void
-  onSync?: () => void
+  onPressRightBtn?: () => void
 }
 
 const Balance: React.FC<Props> = ({
@@ -39,15 +43,16 @@ const Balance: React.FC<Props> = ({
   title,
   amount,
   currency,
-  emptyCardText,
+  emptyText,
+  rightIcon,
   onPress,
-  onSync,
+  onPressRightBtn,
 }) => {
   const { colors } = useTheme().theme
-
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 
   const Icon = icons[icon]
+  const RightIcon = icons[rightIcon ? rightIcon : "sync"]
 
   return (
     <Wrapper onPress={onPress} activeOpacity={0.5} color={colors.layer}>
@@ -67,16 +72,16 @@ const Balance: React.FC<Props> = ({
               </Text>
             </HideableArea>
           </ColumnWrapper>
-          {!!onSync && !hideBalance && (
-            <SyncBtn onPress={onSync}>
-              <Sync color={colors.icon01} width={30} height={30} />
-            </SyncBtn>
+          {!!rightIcon && !hideBalance && (
+            <RightBtn onPress={onPressRightBtn}>
+              <RightIcon color={colors.icon01} width={30} height={30} />
+            </RightBtn>
           )}
         </>
       ) : (
         <ColumnWrapper>
           <Text type="h02" bold>
-            {emptyCardText}
+            {emptyText}
           </Text>
         </ColumnWrapper>
       )}
@@ -90,9 +95,10 @@ const Wrapper = styled.TouchableOpacity<{ color: string }>`
   min-height: 87px;
   flex-direction: row;
   align-items: center;
-  padding: 16px;
-  background-color: ${({ color }) => color};
   border-radius: 20px;
+  background-color: ${({ color }) => color};
+  padding: 16px;
+  padding-right: 0;
   margin-vertical: 5px;
 `
 
@@ -101,6 +107,7 @@ const ColumnWrapper = styled.View`
   margin-left: 24px;
 `
 
-const SyncBtn = styled.TouchableOpacity`
-  margin-left: 20px;
+const RightBtn = styled.TouchableOpacity`
+  padding-horizontal: 15px;
+  padding-vertical: 10px;
 `

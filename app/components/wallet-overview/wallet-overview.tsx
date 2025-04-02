@@ -7,7 +7,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Balance } from "../cards"
 
 // hooks
-import { useWalletOverviewScreenQuery, WalletCurrency } from "@app/graphql/generated"
+import { useWalletOverviewScreenQuery } from "@app/graphql/generated"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -19,12 +19,16 @@ import { useBreez, useFlashcard } from "@app/hooks"
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 
-const WalletOverview = () => {
+type Props = {
+  setIsUnverifiedSeedModalVisible: (value: boolean) => void
+}
+
+const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const isAuthed = useIsAuthed()
   const { LL } = useI18nContext()
   const { btcWallet } = useBreez()
-  const { balanceInSats, readFlashcard } = useFlashcard()
+  const { lnurl, balanceInSats, readFlashcard } = useFlashcard()
 
   const { persistentState, updateState } = usePersistentStateContext()
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
@@ -116,7 +120,10 @@ const WalletOverview = () => {
 
   const onPressBitcoin = () => navigateHandler("BTCTransactionHistory")
 
-  const onPressFlashcard = () => navigation.navigate("Card")
+  const onPressFlashcard = () => {
+    if (lnurl) navigation.navigate("Card")
+    else readFlashcard()
+  }
 
   const formattedCardBalance = moneyAmountToDisplayCurrencyString({
     moneyAmount: toBtcMoneyAmount(balanceInSats ?? NaN),
@@ -140,6 +147,8 @@ const WalletOverview = () => {
           // amount={btcDisplayBalance}
           currency="SATS"
           onPress={onPressBitcoin}
+          onPressRightBtn={() => setIsUnverifiedSeedModalVisible(true)}
+          rightIcon={persistentState.backupBtcWallet ? undefined : "warning"}
         />
       )}
       <Balance
@@ -147,9 +156,10 @@ const WalletOverview = () => {
         title={LL.HomeScreen.flashcard()}
         amount={formattedCardBalance}
         currency={displayCurrency}
-        emptyCardText={LL.HomeScreen.addFlashcard()}
+        emptyText={LL.HomeScreen.addFlashcard()}
         onPress={onPressFlashcard}
-        onSync={() => readFlashcard(false)}
+        onPressRightBtn={() => readFlashcard(false)}
+        rightIcon={"sync"}
       />
     </View>
   )
