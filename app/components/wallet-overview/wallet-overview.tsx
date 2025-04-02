@@ -148,7 +148,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
           currency="SATS"
           onPress={onPressBitcoin}
           onPressRightBtn={() => setIsUnverifiedSeedModalVisible(true)}
-          rightIcon={persistentState.backupBtcWallet ? undefined : "warning"}
+          rightIcon={persistentState.backedUpBtcWallet ? undefined : "warning"}
         />
       )}
       <Balance

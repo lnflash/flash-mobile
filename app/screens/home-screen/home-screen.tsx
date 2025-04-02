@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react"
-import { RefreshControl, ScrollView } from "react-native"
+import { ActivityIndicator, RefreshControl, ScrollView } from "react-native"
 import { useTheme } from "@rneui/themed"
 
 // components
@@ -121,12 +121,22 @@ export const HomeScreen: React.FC = () => {
           setModalVisible={setModalVisible}
           setDefaultAccountModalVisible={setDefaultAccountModalVisible}
         />
-        <QuickStart />
-        <Transactions
-          refreshTriggered={refreshTriggered}
-          loadingAuthed={loadingAuthed}
-          transactionsEdges={transactions as TransactionEdge[]}
-        />
+        {loadingAuthed ? (
+          <ActivityIndicator
+            size="large"
+            color={colors.primary}
+            style={{ marginTop: 50 }}
+          />
+        ) : (
+          <>
+            <QuickStart />
+            <Transactions
+              refreshTriggered={refreshTriggered}
+              loadingAuthed={loadingAuthed}
+              transactionsEdges={transactions as TransactionEdge[]}
+            />
+          </>
+        )}
       </ScrollView>
       <SetDefaultAccountModal
         isVisible={defaultAccountModalVisible}

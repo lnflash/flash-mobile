@@ -4,6 +4,7 @@ import { GALOY_INSTANCES, GaloyInstance, GaloyInstanceInput } from "@app/config"
 import { Network, TransactionFragment, Wallet } from "@app/graphql/generated"
 import { loadString } from "@app/utils/storage"
 import { SectionTransactions } from "@app/screens/transaction-history/index.types"
+import { TagEvent } from "react-native-nfc-manager"
 
 type WalletBalance = Pick<Wallet, "id" | "walletCurrency" | "balance">
 
@@ -74,8 +75,13 @@ type PersistentState_7 = {
   isAdvanceMode?: boolean
   chatEnabled?: boolean
   numOfRefundables: number
-  backupBtcWallet?: boolean // true if user backed up recovery phrase (btc wallet)
+  backedUpBtcWallet?: boolean // true if user backed up recovery phrase (btc wallet)
   currencyChanged?: boolean
+  flashcardAdded?: boolean
+  nonCustodialWalletOpened?: boolean
+  btcWalletEnabled?: boolean
+  flashcardTag?: TagEvent
+  flashcardHtml?: string
 }
 
 type JwtPayload = {

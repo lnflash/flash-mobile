@@ -39,6 +39,7 @@ export const QuickStartAdvancedMode: React.FC<Props> = ({
         return {
           ...state,
           isAdvanceMode: true,
+          btcWalletEnabled: true,
         }
       return undefined
     })

@@ -41,7 +41,7 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
   })
 
   const onBackupBTCWallet = async () => {
-    if (!persistentState.backupBtcWallet) {
+    if (!persistentState.backedUpBtcWallet) {
       navigation.navigate("BackupStart")
     } else {
       const isPinEnabled = await KeyStoreWrapper.getIsPinEnabled()
@@ -74,21 +74,21 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
             <Icon
               type="ionicon"
               name={
-                persistentState.backupBtcWallet
+                persistentState.backedUpBtcWallet
                   ? "checkmark-circle"
                   : "checkmark-circle-outline"
               }
-              color={persistentState.backupBtcWallet ? "#60aa55" : "#999"}
+              color={persistentState.backedUpBtcWallet ? "#60aa55" : "#999"}
               size={40}
             />
             <BtnTextWrapper>
               <BtnTitle style={{ color: colors.black }}>
-                {persistentState.backupBtcWallet
+                {persistentState.backedUpBtcWallet
                   ? LL.BackupOptions.revealRecoveryPhrase()
                   : LL.BackupOptions.recoveryPhrase()}
               </BtnTitle>
               <BtnDesc>
-                {persistentState.backupBtcWallet
+                {persistentState.backedUpBtcWallet
                   ? LL.BackupOptions.revealRecoveryPhraseDesc()
                   : LL.BackupOptions.recoveryPhraseDesc()}
               </BtnDesc>

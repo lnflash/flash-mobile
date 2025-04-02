@@ -25,7 +25,7 @@ const BackupComplete: React.FC<Props> = ({ navigation }) => {
       if (state)
         return {
           ...state,
-          backupBtcWallet: true,
+          backedUpBtcWallet: true,
         }
       return undefined
     })

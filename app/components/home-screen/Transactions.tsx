@@ -187,15 +187,6 @@ const Transactions: React.FC<Props> = ({
         ))}
       </Wrapper>
     )
-  } else {
-    return (
-      <ActivityIndicator
-        animating={breezTxsLoading || loadingAuthed}
-        size="large"
-        color={colors.primary}
-        style={{ marginTop: 24 }}
-      />
-    )
   }
 }
 

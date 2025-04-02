@@ -24,7 +24,6 @@ import { UpgradeAccountModal } from "../upgrade-account-modal"
 import { QuickStartAdvancedMode } from "../advanced-mode-modal"
 
 // hooks
-import { useFlashcard } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -48,8 +47,7 @@ const QuickStart = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
-  const { lnurl } = useFlashcard()
-  const { persistentState } = usePersistentStateContext()
+  const { persistentState, updateState } = usePersistentStateContext()
 
   const ref = useRef(null)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
@@ -84,7 +82,17 @@ const QuickStart = () => {
       title: LL.HomeScreen.nonCustodialWalletTitle(),
       description: LL.HomeScreen.nonCustodialWalletDesc(),
       image: NonCustodialWallet,
-      onPress: () => Linking.openURL("https://docs.getflash.io/non-custodial-wallets"),
+      onPress: () => {
+        updateState((state: any) => {
+          if (state)
+            return {
+              ...state,
+              nonCustodialWalletOpened: true,
+            }
+          return undefined
+        })
+        Linking.openURL("https://docs.getflash.io/non-custodial-wallets")
+      },
     },
     {
       type: "email",
@@ -115,8 +123,11 @@ const QuickStart = () => {
   if (persistentState.currencyChanged) {
     carouselData = carouselData.filter((el) => el.type !== "currency")
   }
-  if (!!lnurl) {
+  if (persistentState.flashcardAdded) {
     carouselData = carouselData.filter((el) => el.type !== "flashcard")
+  }
+  if (persistentState.nonCustodialWalletOpened) {
+    carouselData = carouselData.filter((el) => el.type !== "nonCustodialWallet")
   }
   if (
     data?.me?.defaultAccount.level === AccountLevel.Zero ||
@@ -124,10 +135,10 @@ const QuickStart = () => {
   ) {
     carouselData = carouselData.filter((el) => el.type !== "email")
   }
-  if (persistentState.isAdvanceMode) {
+  if (persistentState.btcWalletEnabled) {
     carouselData = carouselData.filter((el) => el.type !== "btcWallet")
   }
-  if (persistentState.backupBtcWallet || !persistentState.isAdvanceMode) {
+  if (persistentState.backedUpBtcWallet || !persistentState.isAdvanceMode) {
     carouselData = carouselData.filter((el) => el.type !== "backup")
   }
 
@@ -146,33 +157,32 @@ const QuickStart = () => {
     )
   }
 
-  if (loading) {
+  if (carouselData.length > 0) {
     return (
-      <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />
+      <View>
+        <Carousel
+          ref={ref}
+          width={width}
+          height={width / 2.5}
+          data={carouselData}
+          renderItem={renderItem}
+          mode="parallax"
+          loop={carouselData.length !== 1}
+          containerStyle={{ marginTop: 10 }}
+        />
+        <UpgradeAccountModal
+          isVisible={upgradeAccountModalVisible}
+          closeModal={() => setUpgradeAccountModalVisible(false)}
+        />
+        <QuickStartAdvancedMode
+          advanceModalVisible={advanceModalVisible}
+          setAdvanceModalVisible={setAdvanceModalVisible}
+        />
+      </View>
     )
+  } else {
+    return <View style={{ height: 20 }} />
   }
-
-  return (
-    <View>
-      <Carousel
-        ref={ref}
-        width={width}
-        height={width / 2.5}
-        data={carouselData}
-        renderItem={renderItem}
-        mode="parallax"
-        containerStyle={{ marginTop: 10 }}
-      />
-      <UpgradeAccountModal
-        isVisible={upgradeAccountModalVisible}
-        closeModal={() => setUpgradeAccountModalVisible(false)}
-      />
-      <QuickStartAdvancedMode
-        advanceModalVisible={advanceModalVisible}
-        setAdvanceModalVisible={setAdvanceModalVisible}
-      />
-    </View>
-  )
 }
 
 const useStyles = makeStyles(({ colors }) => ({

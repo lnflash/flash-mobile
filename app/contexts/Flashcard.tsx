@@ -12,10 +12,10 @@ import { Loading } from "./ActivityIndicatorContext"
 
 // hooks
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // utils
 import { toastShow } from "../utils/toast"
-import { loadJson, remove, save } from "@app/utils/storage"
 
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
@@ -60,6 +60,9 @@ type Props = {
 export const FlashcardProvider = ({ children }: Props) => {
   const isAuthed = useIsAuthed()
   const styles = useStyles()
+
+  const { updateState, persistentState } = usePersistentStateContext()
+
   const [visible, setVisible] = useState(false)
   const [tag, setTag] = useState<TagEvent>()
   const [k1, setK1] = useState<string>()
@@ -75,13 +78,12 @@ export const FlashcardProvider = ({ children }: Props) => {
   }, [])
 
   const loadFlashcard = async () => {
-    const tag = await loadJson("CARD_TAG")
-    const html = await loadJson("CARD_HTML")
-    if (tag && html) {
-      setTag(tag)
-      getLnurl(html)
-      getBalance(html)
-      getTransactions(html)
+    const { flashcardTag, flashcardHtml } = persistentState
+    if (flashcardTag && flashcardHtml) {
+      setTag(flashcardTag)
+      getLnurl(flashcardHtml)
+      getBalance(flashcardHtml)
+      getTransactions(flashcardHtml)
     }
   }
 
@@ -124,12 +126,10 @@ export const FlashcardProvider = ({ children }: Props) => {
           setLoading(true)
           const payload = Ndef.text.decodePayload(new Uint8Array(ndefRecord.payload))
           if (payload.startsWith("lnurlw")) {
-            setTag(tag)
-            if (isAuthed) save("CARD_TAG", tag.id) // save tag id to async storage
             if (isPayment) {
               await getPayDetails(payload)
             } else {
-              await getHtml(payload)
+              await getHtml(tag, payload)
             }
           }
           setLoading(false)
@@ -177,13 +177,25 @@ export const FlashcardProvider = ({ children }: Props) => {
     }
   }
 
-  const getHtml = async (payload: string) => {
+  const getHtml = async (tag: TagEvent, payload: string) => {
     try {
       const payloadPart = payload.split("?")[1]
       const url = `https://btcpay.flashapp.me/boltcards/balance?${payloadPart}`
       const response = await axios.get(url)
       const html = response.data
-      if (isAuthed) save("CARD_HTML", html) // save html to async storage
+
+      updateState((state: any) => {
+        if (state)
+          return {
+            ...state,
+            flashcardAdded: isAuthed ? true : undefined,
+            flashcardTag: isAuthed ? tag : undefined,
+            flashcardHtml: isAuthed ? html : undefined,
+          }
+        return undefined
+      })
+      setTag(tag)
+
       getLnurl(html)
       getBalance(html)
       getTransactions(html)
@@ -244,8 +256,15 @@ export const FlashcardProvider = ({ children }: Props) => {
     setTransactions(undefined)
     setLoading(undefined)
     setError(undefined)
-    await remove("CARD_TAG")
-    await remove("CARD_HTML")
+    updateState((state: any) => {
+      if (state)
+        return {
+          ...state,
+          flashcardTag: undefined,
+          flashcardHtml: undefined,
+        }
+      return undefined
+    })
   }
 
   return (

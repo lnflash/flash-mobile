@@ -58,6 +58,7 @@ export const AdvancedModeToggle: React.FC = () => {
           ...state,
           defaultWallet: isAdvanceMode ? state.defaultWallet : usdWallet,
           isAdvanceMode: isAdvanceMode,
+          btcWalletEnabled: true,
         }
       return undefined
     })
