@@ -157,12 +157,12 @@ const QuickStart = () => {
       <Carousel
         ref={ref}
         width={width}
-        height={width / 2}
+        height={width / 2.5}
         data={carouselData}
         renderItem={renderItem}
         mode="parallax"
+        containerStyle={{ marginTop: 10 }}
       />
-
       <UpgradeAccountModal
         isVisible={upgradeAccountModalVisible}
         closeModal={() => setUpgradeAccountModalVisible(false)}

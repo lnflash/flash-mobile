@@ -113,12 +113,15 @@ export const HomeScreen: React.FC = () => {
     <Screen backgroundColor={colors.background}>
       <Header />
       <ScrollView refreshControl={renderRefreshControl()}>
-        <WalletOverview />
+        <WalletOverview
+          setIsUnverifiedSeedModalVisible={setIsUnverifiedSeedModalVisible}
+        />
         <Info refreshTriggered={refreshTriggered} error={error} />
         <Buttons
           setModalVisible={setModalVisible}
           setDefaultAccountModalVisible={setDefaultAccountModalVisible}
         />
+        <QuickStart />
         <Transactions
           refreshTriggered={refreshTriggered}
           loadingAuthed={loadingAuthed}

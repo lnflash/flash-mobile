@@ -6,7 +6,6 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import styled from "styled-components/native"
 
 // components
-import QuickStart from "./QuickStart"
 import { TxItem } from "../../components/transaction-item"
 
 // hooks
@@ -188,22 +187,25 @@ const Transactions: React.FC<Props> = ({
         ))}
       </Wrapper>
     )
-  } else if (breezTxsLoading || loadingAuthed) {
-    return (
-      <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />
-    )
   } else {
-    return <QuickStart />
+    return (
+      <ActivityIndicator
+        animating={breezTxsLoading || loadingAuthed}
+        size="large"
+        color={colors.primary}
+        style={{ marginTop: 24 }}
+      />
+    )
   }
 }
 
 export default Transactions
 
 const Wrapper = styled.View`
-  margin-horizontal: 20px;
+  padding-horizontal: 20px;
 `
 
 const RecentActivity = styled.TouchableOpacity`
-  margin-top: 30px;
+  margin-top: 10px;
   margin-bottom: 10px;
 `
