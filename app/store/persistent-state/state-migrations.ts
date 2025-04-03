@@ -78,8 +78,8 @@ type PersistentState_7 = {
   backedUpBtcWallet?: boolean // true if user backed up recovery phrase (btc wallet)
   currencyChanged?: boolean
   flashcardAdded?: boolean
-  nonCustodialWalletOpened?: boolean
   btcWalletEnabled?: boolean
+  closedQuickStartTypes: string[]
   flashcardTag?: TagEvent
   flashcardHtml?: string
 }
@@ -112,6 +112,7 @@ const migrate6ToCurrent = (state: PersistentState_6): Promise<PersistentState> =
     introVideoCount: 0,
     helpTriggered: false,
     numOfRefundables: 0,
+    closedQuickStartTypes: [],
   })
 }
 
@@ -261,6 +262,7 @@ export const defaultPersistentState: PersistentState = {
   introVideoCount: 0,
   helpTriggered: false,
   numOfRefundables: 0,
+  closedQuickStartTypes: [],
 }
 
 export const migrateAndGetPersistentState = async (

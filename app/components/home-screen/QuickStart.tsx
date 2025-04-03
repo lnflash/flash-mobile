@@ -1,14 +1,8 @@
 import React, { useRef, useState } from "react"
-import {
-  ActivityIndicator,
-  Dimensions,
-  Linking,
-  TouchableOpacity,
-  View,
-} from "react-native"
+import { Dimensions, Linking, TouchableOpacity, View } from "react-native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import Carousel from "react-native-reanimated-carousel"
-import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // assets
@@ -83,14 +77,7 @@ const QuickStart = () => {
       description: LL.HomeScreen.nonCustodialWalletDesc(),
       image: NonCustodialWallet,
       onPress: () => {
-        updateState((state: any) => {
-          if (state)
-            return {
-              ...state,
-              nonCustodialWalletOpened: true,
-            }
-          return undefined
-        })
+        onHide("nonCustodialWallet")
         Linking.openURL("https://docs.getflash.io/non-custodial-wallets")
       },
     },
@@ -117,29 +104,59 @@ const QuickStart = () => {
     },
   ]
 
-  if (data?.me?.defaultAccount.level !== AccountLevel.Zero) {
+  if (
+    data?.me?.defaultAccount.level !== AccountLevel.Zero ||
+    persistentState?.closedQuickStartTypes?.includes("upgrade")
+  ) {
     carouselData = carouselData.filter((el) => el.type !== "upgrade")
   }
-  if (persistentState.currencyChanged) {
+  if (
+    persistentState.currencyChanged ||
+    persistentState?.closedQuickStartTypes?.includes("currency")
+  ) {
     carouselData = carouselData.filter((el) => el.type !== "currency")
   }
-  if (persistentState.flashcardAdded) {
+  if (
+    persistentState.flashcardAdded ||
+    persistentState?.closedQuickStartTypes?.includes("flashcard")
+  ) {
     carouselData = carouselData.filter((el) => el.type !== "flashcard")
   }
-  if (persistentState.nonCustodialWalletOpened) {
+  if (persistentState?.closedQuickStartTypes?.includes("nonCustodialWallet")) {
     carouselData = carouselData.filter((el) => el.type !== "nonCustodialWallet")
   }
   if (
     data?.me?.defaultAccount.level === AccountLevel.Zero ||
-    !!data?.me?.email?.address
+    !!data?.me?.email?.address ||
+    persistentState?.closedQuickStartTypes?.includes("email")
   ) {
     carouselData = carouselData.filter((el) => el.type !== "email")
   }
-  if (persistentState.btcWalletEnabled) {
+  if (
+    persistentState.btcWalletEnabled ||
+    persistentState?.closedQuickStartTypes?.includes("btcWallet")
+  ) {
     carouselData = carouselData.filter((el) => el.type !== "btcWallet")
   }
-  if (persistentState.backedUpBtcWallet || !persistentState.isAdvanceMode) {
+  if (
+    persistentState.backedUpBtcWallet ||
+    !persistentState.isAdvanceMode ||
+    persistentState?.closedQuickStartTypes?.includes("backup")
+  ) {
     carouselData = carouselData.filter((el) => el.type !== "backup")
+  }
+
+  const onHide = (type: string) => {
+    updateState((state: any) => {
+      if (state)
+        return {
+          ...state,
+          closedQuickStartTypes: state.closedQuickStartTypes
+            ? [...state.closedQuickStartTypes, type]
+            : [type],
+        }
+      return undefined
+    })
   }
 
   const renderItem = ({ item, index }: RenderItemProps) => {
@@ -148,11 +165,14 @@ const QuickStart = () => {
       <TouchableOpacity onPress={item.onPress} key={index} style={styles.itemContainer}>
         <Image height={width / 3} width={width / 3} />
         <View style={styles.texts}>
-          <Text type="h1" bold style={{ marginBottom: 5 }}>
+          <Text type="h1" bold style={styles.title}>
             {item.title}
           </Text>
           <Text type="bl">{item.description}</Text>
         </View>
+        <TouchableOpacity style={styles.close} onPress={() => onHide(item.type)}>
+          <Icon name={"close"} type="ionicon" color={colors.black} size={35} />
+        </TouchableOpacity>
       </TouchableOpacity>
     )
   }
@@ -196,12 +216,15 @@ const useStyles = makeStyles(({ colors }) => ({
   texts: {
     flex: 1,
   },
-  dotContainer: {
-    gap: 5,
+  title: {
+    marginBottom: 2,
+    marginRight: 10,
   },
-  dotStyle: {
-    backgroundColor: "rgba(0,0,0,0.2)",
-    borderRadius: 50,
+  close: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    padding: 5,
   },
 }))
 
