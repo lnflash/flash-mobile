@@ -1,0 +1,5 @@
+# set up a bash script
+git status
+git add .
+git commit -m "update"
+git push
