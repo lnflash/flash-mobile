@@ -39,7 +39,6 @@ const useNostrProfile = () => {
     skip: !isAuthed,
     fetchPolicy: "network-only",
     errorPolicy: "all",
-    nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
   const relays = [relayUrl, "wss://relay.damus.io"]
 
@@ -59,9 +58,6 @@ const useNostrProfile = () => {
         },
       },
     })
-    if (!data?.userUpdateNpub.user?.npub) {
-      throw Error("Npub not updated")
-    }
 
     await Keychain.setInternetCredentials(
       KEYCHAIN_NOSTRCREDS_KEY,
@@ -130,7 +126,6 @@ const useNostrProfile = () => {
     }
     const signedKind0Event = finalizeEvent(kind0Event, secret)
     let messages = await Promise.any(pool.publish(publicRelays, signedKind0Event))
-    console.log("Profile event published", messages)
     pool.close(publicRelays)
   }
 

@@ -102,7 +102,6 @@ export const NIP17Chat: React.FC = () => {
       async function checkSecretKey() {
         let secretKeyString = await fetchSecretFromLocalStorage()
         if (!secretKeyString) {
-          console.log("No secret on focus effect", secretKeyString)
           setShowImportModal(true)
           return
         }
@@ -125,7 +124,6 @@ export const NIP17Chat: React.FC = () => {
     async (newSearchText: string) => {
       const nip05Matching = async (alias: string) => {
         let nostrUser = await nip05.queryProfile(alias.toLocaleLowerCase())
-        console.log("nostr user for", alias, nostrUser)
         if (nostrUser) {
           let nostrProfile = profileMap?.get(nostrUser.pubkey)
           let userPubkey = getPublicKey(privateKey!)
@@ -170,7 +168,6 @@ export const NIP17Chat: React.FC = () => {
       } else if (!newSearchText.includes("@")) {
         let modifiedSearchText =
           newSearchText + "@" + appConfig.galoyInstance.lnAddressHostname
-        console.log("Searching for", modifiedSearchText)
         if (await nip05Matching(modifiedSearchText)) {
           setRefreshing(false)
           return

@@ -10,7 +10,6 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { updateUserData } from "@app/store/redux/slices/userSlice"
-import { setPreferredRelay } from "@app/utils/nostr"
 import { SetUserNameUI } from "./set-username-ui"
 import { SetAddressError } from "@app/types/errors"
 import { validateLightningAddress } from "@app/utils/validations"
