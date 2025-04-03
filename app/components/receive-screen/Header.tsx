@@ -5,14 +5,14 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 
-// components
-import { CustomIcon } from "@app/components/custom-icon"
-
 // types
 import { Invoice } from "@app/screens/receive-bitcoin-screen/payment/index.types"
 
 // store
 import { usePersistentStateContext } from "@app/store/persistent-state"
+
+// assets
+import NfcSignal from "@app/assets/icons/nfc-signal.svg"
 
 type Props = {
   request: any
@@ -50,25 +50,23 @@ const Header: React.FC<Props> = ({ request, setDisplayReceiveNfc }) => {
         request?.state === "Created" &&
         (await nfcManager.isSupported())
       ) {
-        console.log("DEBUG:", request.receiveViaNFC)
         navigation.setOptions({
-          headerRight: () => (
-            <TouchableOpacity
-              style={styles.nfcIcon}
-              onPress={() => setDisplayReceiveNfc(true)}
-            >
-              <Text type="p2">{LL.ReceiveScreen.nfc()}</Text>
-              <CustomIcon name="nfc" color={colors.black} />
-            </TouchableOpacity>
-          ),
+          headerRight: renderHeaderRight,
         })
       } else {
         navigation.setOptions({ headerRight: () => <></> })
       }
     })()
-    // Disable exhaustive-deps because styles.nfcIcon was causing an infinite loop
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [colors.black, navigation, request?.state, request?.type])
+  }, [colors, navigation, request?.state, request?.type])
+
+  const renderHeaderRight = () => (
+    <TouchableOpacity style={styles.nfcIcon} onPress={() => setDisplayReceiveNfc(true)}>
+      <Text type="p2" style={{ marginRight: 3 }}>
+        {LL.ReceiveScreen.nfc()}
+      </Text>
+      <NfcSignal color={colors.black} />
+    </TouchableOpacity>
+  )
 
   return null
 }
@@ -77,13 +75,11 @@ export default Header
 
 const useStyles = makeStyles(({ colors }) => ({
   nfcIcon: {
-    marginTop: -1,
-    marginRight: 14,
-    padding: 8,
-    display: "flex",
     flexDirection: "row",
-    columnGap: 4,
+    borderRadius: 8,
     backgroundColor: colors.grey5,
-    borderRadius: 4,
+    marginRight: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
 }))

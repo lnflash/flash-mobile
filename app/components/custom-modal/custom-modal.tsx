@@ -12,8 +12,7 @@ import Modal from "react-native-modal"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { GaloyIcon } from "../atomic/galoy-icon"
-import { GaloyPrimaryButton } from "../atomic/galoy-primary-button"
-import { GaloySecondaryButton } from "../atomic/galoy-secondary-button"
+import { PrimaryBtn } from "../buttons"
 
 export type CustomModalProps = {
   isVisible: boolean
@@ -104,16 +103,17 @@ const CustomModal: React.FC<CustomModalProps> = ({
                 {primaryButtonTextAbove}
               </Text>
             )}
-            <GaloyPrimaryButton
-              title={primaryButtonTitle}
+            <PrimaryBtn
+              label={primaryButtonTitle}
               onPress={primaryButtonOnPress}
               loading={primaryButtonLoading}
               disabled={primaryButtonDisabled}
             />
           </View>
           {secondaryButtonTitle && secondaryButtonOnPress && (
-            <GaloySecondaryButton
-              title={secondaryButtonTitle}
+            <PrimaryBtn
+              type="outline"
+              label={secondaryButtonTitle}
               loading={secondaryButtonLoading}
               onPress={secondaryButtonOnPress}
             />

@@ -1,5 +1,6 @@
 import {
   useRealtimePriceQuery,
+  useRealtimePriceUnauthedQuery,
   useRealtimePriceWsSubscription,
   WalletCurrency,
 } from "@app/graphql/generated"
@@ -33,14 +34,22 @@ export const usePriceConversion = (fetchPolicy?: WatchQueryFetchPolicy) => {
     skip: !isAuthed,
   })
 
+  const { data: dataUnauthed } = useRealtimePriceUnauthedQuery({
+    fetchPolicy: fetchPolicy || "cache-and-network",
+    variables: { currency: defaultDisplayCurrency.id },
+    skip: isAuthed,
+  })
+
   const displayCurrency =
     data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency ||
     defaultDisplayCurrency.id
+
+  const realtimePrice = isAuthed
+    ? data?.me?.defaultAccount?.realtimePrice
+    : dataUnauthed?.realtimePrice
+
   let displayCurrencyPerSat = NaN
   let displayCurrencyPerCent = NaN
-
-  const realtimePrice = data?.me?.defaultAccount?.realtimePrice
-
   if (realtimePrice) {
     displayCurrencyPerSat =
       realtimePrice.btcSatPrice.base / 10 ** realtimePrice.btcSatPrice.offset
@@ -49,8 +58,10 @@ export const usePriceConversion = (fetchPolicy?: WatchQueryFetchPolicy) => {
   }
 
   const { data: subData } = useRealtimePriceWsSubscription({
-    variables: { currency: displayCurrency },
-    skip: !realtimePrice?.denominatorCurrency,
+    variables: {
+      currency: data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency || "",
+    },
+    skip: !data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency,
   })
 
   const subRealtimePrice = subData?.realtimePrice.realtimePrice

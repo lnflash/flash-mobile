@@ -1,3 +1,6 @@
 import SaveCardModal from "./SaveCardModal"
+import RecentActivity from "./RecentActivity"
+import EmptyCard from "./EmptyCard"
+import Flashcard from "./Flashcard"
 
-export { SaveCardModal }
+export { SaveCardModal, RecentActivity, EmptyCard, Flashcard }

@@ -1,36 +1,26 @@
+import React, { useCallback, useState } from "react"
+import analytics from "@react-native-firebase/analytics"
+import { StackScreenProps } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import axios, { isAxiosError } from "axios"
+
+// components
 import { CodeInput } from "@app/components/code-input"
+
+// hooks
 import { useAppConfig } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import analytics from "@react-native-firebase/analytics"
-import { RouteProp, useNavigation } from "@react-navigation/native"
-import { StackNavigationProp } from "@react-navigation/stack"
-import axios, { isAxiosError } from "axios"
-import * as React from "react"
-import { useCallback, useState } from "react"
 
-type EmailLoginValidateScreenProps = {
-  route: RouteProp<RootStackParamList, "emailLoginValidate">
-}
+type Props = StackScreenProps<RootStackParamList, "emailLoginValidate">
 
-export const EmailLoginValidateScreen: React.FC<EmailLoginValidateScreenProps> = ({
-  route,
-}) => {
-  const navigation =
-    useNavigation<StackNavigationProp<RootStackParamList, "emailLoginValidate">>()
-
-  const [errorMessage, setErrorMessage] = React.useState<string>("")
-
-  const {
-    appConfig: {
-      galoyInstance: { authUrl },
-    },
-  } = useAppConfig()
-
+export const EmailLoginValidateScreen: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
+  const { authUrl } = useAppConfig().appConfig.galoyInstance
   const { saveToken } = useAppConfig()
 
+  const [errorMessage, setErrorMessage] = useState<string>("")
   const [loading, setLoading] = useState(false)
+
   const { emailLoginId, email } = route.params
 
   const send = useCallback(

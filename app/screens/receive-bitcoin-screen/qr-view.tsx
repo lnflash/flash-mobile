@@ -1,51 +1,27 @@
-import * as React from "react"
-import { useMemo } from "react"
+import React, { useMemo } from "react"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { useI18nContext } from "@app/i18n/i18n-react"
 import {
   ActivityIndicator,
   useWindowDimensions,
-  View,
-  Platform,
   StyleProp,
   ViewStyle,
   Pressable,
   Animated,
   Easing,
 } from "react-native"
-import QRCode from "react-native-qrcode-svg"
 
-import Logo from "@app/assets/logo/blink-logo-icon.png"
-
-import { Invoice, InvoiceType, GetFullUriFn } from "./payment/index.types"
-
-import { testProps } from "../../utils/testProps"
+// components
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 import { SuccessIconAnimation } from "@app/components/success-animation"
-import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { GaloyTertiaryButton } from "@app/components/atomic/galoy-tertiary-button"
-import { useI18nContext } from "@app/i18n/i18n-react"
-import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry"
 
-const configByType = {
-  [Invoice.Lightning]: {
-    copyToClipboardLabel: "ReceiveScreen.copyClipboard",
-    shareButtonLabel: "common.shareLightning",
-    ecl: "L" as const,
-    icon: "flash",
-  },
-  [Invoice.OnChain]: {
-    copyToClipboardLabel: "ReceiveScreen.copyClipboardBitcoin",
-    shareButtonLabel: "common.shareBitcoin",
-    ecl: "M" as const,
-    icon: "logo-bitcoin",
-  },
-  // TODO: Add them
-  [Invoice.PayCode]: {
-    copyToClipboardLabel: "ReceiveScreen.copyClipboardBitcoin",
-    shareButtonLabel: "common.shareBitcoin",
-    ecl: "M" as const,
-    icon: "logo-bitcoin",
-  },
-}
+// assets
+import QRCode from "react-native-qrcode-svg"
+import Logo from "@app/assets/logo/blink-logo-icon.png"
+
+// types
+import { InvoiceType, GetFullUriFn } from "./payment/index.types"
 
 type Props = {
   type: InvoiceType
@@ -53,7 +29,6 @@ type Props = {
   loading: boolean
   completed: boolean
   err: string
-  size?: number
   style?: StyleProp<ViewStyle>
   expired: boolean
   regenerateInvoiceFn?: () => void
@@ -69,7 +44,6 @@ export const QRView: React.FC<Props> = ({
   loading,
   completed,
   err,
-  size = 320,
   style,
   expired,
   regenerateInvoiceFn,
@@ -78,26 +52,16 @@ export const QRView: React.FC<Props> = ({
   canUsePayCode,
   toggleIsSetLightningAddressModalVisible,
 }) => {
-  // if (getFullUri) {
-  //   console.log("getFullUri", getFullUri({ uppercase: true }))
-  //   console.log("isPayCode", isPayCode)
-  // }
+  const { LL } = useI18nContext()
   const { width } = useWindowDimensions()
-  const {
-    theme: { colors },
-  } = useTheme()
-  const isPayCodeAndCanUsePayCode = isPayCode && canUsePayCode
+  const { colors } = useTheme().theme
+  const styles = useStyles()
 
+  const scaleAnim = React.useRef(new Animated.Value(1)).current
+  const isPayCodeAndCanUsePayCode = isPayCode && canUsePayCode
   const isReady = (!isPayCodeAndCanUsePayCode || Boolean(getFullUri)) && !loading && !err
   const displayingQR =
     !completed && isReady && !expired && (!isPayCode || isPayCodeAndCanUsePayCode)
-
-  const styles = useStyles()
-  const { scale } = useWindowDimensions()
-
-  const { LL } = useI18nContext()
-
-  const scaleAnim = React.useRef(new Animated.Value(1)).current
 
   const breatheIn = () => {
     Animated.timing(scaleAnim, {
@@ -121,28 +85,15 @@ export const QRView: React.FC<Props> = ({
   const renderSuccessView = useMemo(() => {
     if (completed) {
       return (
-        <View {...testProps("Success Icon")} style={[styles.container, style]}>
-          <SuccessIconAnimation>
-            <GaloyIcon name={"payment-success"} size={128} />
-          </SuccessIconAnimation>
-        </View>
+        <SuccessIconAnimation>
+          <GaloyIcon name={"payment-success"} size={width / 2} />
+        </SuccessIconAnimation>
       )
     }
     return null
-  }, [completed, styles, style])
+  }, [completed])
 
   const renderQRCode = useMemo(() => {
-    const getQrLogo = () => {
-      if (type === Invoice.OnChain) return Logo
-      if (type === Invoice.Lightning) return Logo
-      if (type === Invoice.PayCode) return Logo
-      return null
-    }
-
-    const getQrSize = () => {
-      return width - 80
-    }
-
     if (displayingQR && getFullUri) {
       let uri = ""
       if (typeof getFullUri === "string") {
@@ -151,60 +102,51 @@ export const QRView: React.FC<Props> = ({
         uri = getFullUri({ uppercase: true })
       }
       return (
-        <View style={[styles.container, style]}>
-          <QRCode
-            size={getQrSize()}
-            value={uri}
-            logoBackgroundColor="white"
-            ecl={type && configByType[type].ecl}
-            logo={getQrLogo() || undefined}
-            logoSize={60}
-            logoBorderRadius={10}
-          />
-        </View>
+        <QRCode
+          size={width - 72}
+          value={uri}
+          logoBackgroundColor="white"
+          logo={Logo}
+          logoSize={60}
+          logoBorderRadius={10}
+        />
       )
     }
     return null
-  }, [displayingQR, type, getFullUri, size, scale, styles, style])
+  }, [displayingQR, getFullUri])
 
   const renderStatusView = useMemo(() => {
     if (!completed && !isReady) {
-      return (
-        <View style={[styles.container, style]}>
-          <View style={styles.errorContainer}>
-            {(err !== "" && (
-              <Text style={styles.error} selectable>
-                {err}
-              </Text>
-            )) || <ActivityIndicator size="large" color={colors.primary} />}
-          </View>
-        </View>
+      return err !== "" ? (
+        <Text type="p2" style={styles.error}>
+          {err}
+        </Text>
+      ) : (
+        <ActivityIndicator size="large" color={colors.primary} />
       )
     } else if (expired) {
       return (
-        <View style={[styles.container, style]}>
-          <Text type="p2" style={styles.expiredInvoice}>
+        <>
+          <Text type="p2" style={styles.marginBottom}>
             {LL.ReceiveScreen.invoiceHasExpired()}
           </Text>
           <GaloyTertiaryButton
             title={LL.ReceiveScreen.regenerateInvoiceButtonTitle()}
             onPress={regenerateInvoiceFn}
-          ></GaloyTertiaryButton>
-        </View>
+          />
+        </>
       )
     } else if (isPayCode && !canUsePayCode) {
       return (
-        <View style={[styles.container, styles.cantUsePayCode, style]}>
-          <Text type="p2" style={styles.cantUsePayCodeText}>
+        <>
+          <Text type="p2" style={styles.marginBottom}>
             {LL.ReceiveScreen.setUsernameToAcceptViaPaycode()}
           </Text>
           <GaloyTertiaryButton
             title={LL.ReceiveScreen.setUsernameButtonTitle()}
             onPress={toggleIsSetLightningAddressModalVisible}
-            containerStyle={{ backgroundColor: "#000" }}
-            titleStyle={{ color: "#fff" }}
-          ></GaloyTertiaryButton>
-        </View>
+          />
+        </>
       )
     }
     return null
@@ -213,7 +155,6 @@ export const QRView: React.FC<Props> = ({
     isReady,
     completed,
     styles,
-    style,
     colors,
     expired,
     isPayCode,
@@ -224,55 +165,41 @@ export const QRView: React.FC<Props> = ({
   ])
 
   return (
-    <View style={styles.qr}>
-      <Pressable
-        onPressIn={displayingQR ? breatheIn : () => {}}
-        onPressOut={displayingQR ? breatheOut : () => {}}
+    <Pressable
+      onPressIn={displayingQR ? breatheIn : () => {}}
+      onPressOut={displayingQR ? breatheOut : () => {}}
+    >
+      <Animated.View
+        style={[styles.container, style, { transform: [{ scale: scaleAnim }] }]}
       >
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-          {renderSuccessView}
-          {renderQRCode}
-          {renderStatusView}
-        </Animated.View>
-      </Pressable>
-    </View>
+        {renderSuccessView}
+        {renderQRCode}
+        {renderStatusView}
+      </Animated.View>
+    </Pressable>
   )
 }
 
 const useStyles = makeStyles(({ colors }) => ({
   container: {
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: colors.grey5,
     width: "100%",
-    height: undefined,
-    borderRadius: 40,
-    aspectRatio: 1,
-    alignSelf: "center",
-    padding: 16,
-    overflow: "hidden",
-  },
-  containerSuccess: {
-    backgroundColor: colors.white,
-  },
-  errorContainer: {
     justifyContent: "center",
-    height: "100%",
-  },
-  error: { color: colors.error, alignSelf: "center" },
-  qr: {
     alignItems: "center",
+    aspectRatio: 1,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border01,
+    marginBottom: 20,
   },
-  expiredInvoice: {
-    marginBottom: 10,
+  error: {
+    textAlign: "center",
+    color: colors.error,
+    paddingHorizontal: 40,
   },
-  cantUsePayCode: {
-    padding: "10%",
-  },
-  cantUsePayCodeText: {
+  marginBottom: {
     marginBottom: 10,
     textAlign: "center",
-    color: "#000",
+    paddingHorizontal: 20,
   },
 }))
 

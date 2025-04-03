@@ -110,13 +110,14 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>Ionicons.ttf</string>
-		<string>SourceSansPro-Bold.ttf</string>
-		<string>SourceSansPro-BoldItalic.ttf</string>
-		<string>SourceSansPro-Italic.ttf</string>
-		<string>SourceSansPro-Regular.ttf</string>
-		<string>SourceSansPro-SemiBold.ttf</string>
-		<string>SourceSansPro-SemiBoldItalic.ttf</string>
-		<string>DMSans-Bold.ttf</string>
+		<string>Sora-Bold.ttf</string>
+		<string>Sora-ExtraBold.ttf</string>
+		<string>Sora-ExtraLight.ttf</string>
+		<string>Sora-Light.ttf</string>
+		<string>Sora-Medium.ttf</string>
+		<string>Sora-Regular.ttf</string>
+		<string>Sora-SemiBold.ttf</string>
+		<string>Sora-Thin.ttf</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

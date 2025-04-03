@@ -7,7 +7,7 @@ import { RouteProp, useNavigation } from "@react-navigation/native"
 
 // componenets
 import { Screen } from "@app/components/screen"
-import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
+import { PrimaryBtn } from "@app/components/buttons"
 import { DestinationField } from "@app/components/send-flow"
 import { ConfirmDestinationModal } from "./confirm-destination-modal"
 import { DestinationInformation } from "./destination-information"
@@ -255,8 +255,8 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ route }) => {
         />
         <DestinationInformation destinationState={destinationState} />
         <View style={styles.buttonContainer}>
-          <GaloyPrimaryButton
-            title={
+          <PrimaryBtn
+            label={
               destinationState.unparsedDestination
                 ? LL.common.next()
                 : LL.SendBitcoinScreen.destinationIsRequired()

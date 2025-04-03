@@ -1,33 +1,41 @@
-import { gql } from "@apollo/client"
-import analytics from "@react-native-firebase/analytics"
-import { RouteProp, useNavigation } from "@react-navigation/native"
-import { StackNavigationProp } from "@react-navigation/stack"
-import * as React from "react"
-import { useCallback, useEffect, useState } from "react"
+import React, { useCallback, useEffect, useState } from "react"
 import { ActivityIndicator, View } from "react-native"
+import analytics from "@react-native-firebase/analytics"
+import crashlytics from "@react-native-firebase/crashlytics"
+import { StackScreenProps } from "@react-navigation/stack"
+import { Text, makeStyles, useTheme, Input } from "@rneui/themed"
+import { gql } from "@apollo/client"
+
+// components
+import { Screen } from "../../components/screen"
+import { GaloyInfo } from "@app/components/atomic/galoy-info"
+import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
+import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-button"
+
+// gql
 import {
   PhoneCodeChannelType,
   useUserLoginMutation,
   useUserLoginUpgradeMutation,
 } from "@app/graphql/generated"
+import { AccountLevel, useLevel } from "@app/graphql/level-context"
+
+// hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import crashlytics from "@react-native-firebase/crashlytics"
-import { Text, makeStyles, useTheme, Input } from "@rneui/themed"
-import { Screen } from "../../components/screen"
 import { useAppConfig } from "../../hooks"
-import type { PhoneValidationStackParamList } from "../../navigation/stack-param-lists"
-import { parseTimer } from "../../utils/timer"
-import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-button"
-import { GaloyInfo } from "@app/components/atomic/galoy-info"
-import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
+
+// types
 import { TranslationFunctions } from "@app/i18n/i18n-types"
+import { PhoneCodeChannelToFriendlyName } from "./request-phone-code-login"
+import type { PhoneValidationStackParamList } from "../../navigation/stack-param-lists"
+
+// utils
+import { parseTimer } from "../../utils/timer"
 import {
   logUpgradeLoginAttempt,
   logUpgradeLoginSuccess,
   logValidateAuthCodeFailure,
 } from "@app/utils/analytics"
-import { PhoneCodeChannelToFriendlyName } from "./request-phone-code-login"
-import { AccountLevel, useLevel } from "@app/graphql/level-context"
 
 gql`
   mutation userLogin($input: UserLoginInput!) {
@@ -53,9 +61,7 @@ gql`
   }
 `
 
-type PhoneLoginValidationScreenProps = {
-  route: RouteProp<PhoneValidationStackParamList, "phoneLoginValidate">
-}
+type Props = StackScreenProps<PhoneValidationStackParamList, "phoneLoginValidate">
 
 const ValidatePhoneCodeStatus = {
   WaitingForCode: "WaitingForCode",
@@ -121,42 +127,30 @@ const mapValidatePhoneCodeErrorsToMessage = (
 export type ValidatePhoneCodeErrorsType =
   (typeof ValidatePhoneCodeErrors)[keyof typeof ValidatePhoneCodeErrors]
 
-export const PhoneLoginValidationScreen: React.FC<PhoneLoginValidationScreenProps> = ({
-  route,
-}) => {
+export const PhoneLoginValidationScreen: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
-  const navigation =
-    useNavigation<
-      StackNavigationProp<PhoneValidationStackParamList, "phoneLoginValidate">
-    >()
+  const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
+  const { currentLevel } = useLevel()
+  const { saveToken } = useAppConfig()
 
+  const [code, _setCode] = useState("")
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(30)
+  const [error, setError] = useState<ValidatePhoneCodeErrorsType | undefined>()
   const [status, setStatus] = useState<ValidatePhoneCodeStatusType>(
     ValidatePhoneCodeStatus.WaitingForCode,
   )
-  const [error, setError] = useState<ValidatePhoneCodeErrorsType | undefined>()
-
-  const { saveToken } = useAppConfig()
-
-  const { LL } = useI18nContext()
 
   const [userLoginMutation] = useUserLoginMutation({
     fetchPolicy: "no-cache",
   })
-
   const [userLoginUpgradeMutation] = useUserLoginUpgradeMutation({
     fetchPolicy: "no-cache",
   })
 
-  const { currentLevel } = useLevel()
-
   const isUpgradeFlow = currentLevel === AccountLevel.Zero
 
-  const [code, _setCode] = useState("")
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(30)
   const { phone, channel } = route.params
-  const {
-    theme: { colors },
-  } = useTheme()
 
   const send = useCallback(
     async (code: string) => {
@@ -332,31 +326,25 @@ export const PhoneLoginValidationScreen: React.FC<PhoneLoginValidationScreenProp
       keyboardOffset="navigationHeader"
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.viewWrapper}>
-        <View style={styles.textContainer}>
-          <Text type="h2">
-            {LL.PhoneLoginValidationScreen.header({
-              channel: PhoneCodeChannelToFriendlyName[channel],
-              phoneNumber: phone,
-            })}
-          </Text>
-        </View>
-
-        <Input
-          placeholder="000000"
-          containerStyle={styles.inputComponentContainerStyle}
-          inputContainerStyle={styles.inputContainerStyle}
-          inputStyle={styles.inputStyle}
-          value={code}
-          onChangeText={setCode}
-          renderErrorMessage={false}
-          autoFocus={true}
-          textContentType={"oneTimeCode"}
-          keyboardType="numeric"
-        />
-
-        <View style={styles.extraInfoContainer}>{extraInfoContent}</View>
-      </View>
+      <Text type="p1" style={styles.header}>
+        {LL.PhoneLoginValidationScreen.header({
+          channel: PhoneCodeChannelToFriendlyName[channel],
+          phoneNumber: phone,
+        })}
+      </Text>
+      <Input
+        placeholder="000000"
+        containerStyle={styles.inputComponentContainerStyle}
+        inputContainerStyle={styles.inputContainerStyle}
+        inputStyle={styles.inputStyle}
+        value={code}
+        onChangeText={setCode}
+        renderErrorMessage={false}
+        autoFocus={true}
+        textContentType={"oneTimeCode"}
+        keyboardType="numeric"
+      />
+      <View style={styles.extraInfoContainer}>{extraInfoContent}</View>
     </Screen>
   )
 }
@@ -366,22 +354,14 @@ const useStyles = makeStyles(({ colors }) => ({
     padding: 20,
     flexGrow: 1,
   },
-  flex: { flex: 1 },
-  flexAndMinHeight: { flex: 1, minHeight: 16 },
-  viewWrapper: { flex: 1 },
-
-  activityIndicator: { marginTop: 12 },
+  activityIndicator: {
+    marginTop: 12,
+  },
   extraInfoContainer: {
     marginBottom: 20,
     flex: 1,
   },
-  sendAgainButtonRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    paddingHorizontal: 25,
-    textAlign: "center",
-  },
-  textContainer: {
+  header: {
     marginBottom: 20,
   },
   timerRow: {
@@ -402,12 +382,10 @@ const useStyles = makeStyles(({ colors }) => ({
   inputContainerStyle: {
     minWidth: 160,
     minHeight: 60,
-    borderWidth: 2,
-    borderBottomWidth: 2,
+    borderWidth: 1,
     paddingHorizontal: 10,
-    borderColor: colors.primary5,
-    borderRadius: 8,
-    marginRight: 0,
+    borderColor: colors.border02,
+    borderRadius: 10,
   },
   inputStyle: {
     fontSize: 24,

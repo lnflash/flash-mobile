@@ -93,11 +93,12 @@ const RefundDestination: React.FC<Props> = ({ navigation, route }) => {
   }
 
   const navigateToScanning = () => {
-    if (!!selectedFee) {
+    if (!!selectedFee && !!selectedFeeType) {
       navigation.navigate("scanningQRCode", {
         swapAddress: route.params.swapAddress,
         amount: route.params.amount,
         fee: selectedFee,
+        feeType: selectedFeeType,
       })
     } else {
       setError("Please, select fee to proceed")

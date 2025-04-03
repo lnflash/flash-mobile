@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react"
+import { View } from "react-native"
+import { makeStyles } from "@rneui/themed"
 
 // components
 import { AmountInput } from "../amount-input"
@@ -19,6 +21,8 @@ type Props = {
 }
 
 const AmountNote: React.FC<Props> = ({ request }) => {
+  const styles = useStyles()
+
   const [minAmount, setMinAmount] = useState<MoneyAmount<WalletOrDisplayCurrency>>()
   const [maxAmount, setMaxAmount] = useState<MoneyAmount<WalletOrDisplayCurrency>>()
 
@@ -57,7 +61,7 @@ const AmountNote: React.FC<Props> = ({ request }) => {
 
   if (request.type !== "PayCode") {
     return (
-      <>
+      <View style={styles.container}>
         <AmountInput
           request={request}
           unitOfAccountAmount={request.unitOfAccountAmount}
@@ -69,6 +73,7 @@ const AmountNote: React.FC<Props> = ({ request }) => {
           minAmount={minAmount}
           maxAmount={maxAmount}
           big={false}
+          newDesign={true}
         />
         <NoteInput
           onBlur={request.setMemo}
@@ -77,8 +82,9 @@ const AmountNote: React.FC<Props> = ({ request }) => {
           editable={request.canSetMemo}
           style={{ marginTop: 10 }}
           big={false}
+          newDesign={true}
         />
-      </>
+      </View>
     )
   } else {
     return null
@@ -86,3 +92,11 @@ const AmountNote: React.FC<Props> = ({ request }) => {
 }
 
 export default AmountNote
+
+const useStyles = makeStyles(({ colors }) => ({
+  container: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border01,
+  },
+}))

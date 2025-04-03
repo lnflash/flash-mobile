@@ -1,13 +1,19 @@
 import React, { useState } from "react"
-import styled from "styled-components/native"
-import Icon from "react-native-vector-icons/Ionicons"
 import { Modal } from "react-native"
-import { GaloyCurrencyBubble } from "../atomic/galoy-currency-bubble"
-import { ListItem } from "@rneui/base"
-import { useTheme, Text } from "@rneui/themed"
+import styled from "styled-components/native"
+import { useTheme, Text, Icon } from "@rneui/themed"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { WalletCurrency } from "@app/graphql/generated"
 import { useI18nContext } from "@app/i18n/i18n-react"
+
+// assets
+import Cash from "@app/assets/icons/cash.svg"
+import Bitcoin from "@app/assets/icons/bitcoin.svg"
+
+const icons = {
+  USD: Cash,
+  BTC: Bitcoin,
+}
 
 const wallets = [
   { title: "Cash", key: "USD" },
@@ -22,10 +28,12 @@ type Props = {
 
 const WalletBottomSheet: React.FC<Props> = ({ currency, disabled, onChange }) => {
   const { LL } = useI18nContext()
-  const { theme } = useTheme()
-  const colors = theme.colors
+  const { colors, mode } = useTheme().theme
+
   const [modalVisible, setModalVisible] = useState(false)
   const bottom = useSafeAreaInsets().bottom
+
+  const CurrencyIcon = icons[currency]
 
   const onChangeCurrency = (currency: string) => {
     onChange(currency as WalletCurrency)
@@ -36,19 +44,16 @@ const WalletBottomSheet: React.FC<Props> = ({ currency, disabled, onChange }) =>
     <>
       <Btn
         onPress={() => setModalVisible(true)}
-        style={{ backgroundColor: colors.grey5, flex: 1 }}
+        style={{ flex: 1, borderColor: colors.border01 }}
         disabled={disabled}
       >
         <Row>
-          <GaloyCurrencyBubble currency={currency} iconSize={16} />
-          <BtnText style={{ color: colors.black }}>
-            {currency === "USD" ? "Cash" : "Bitcoin"}
-          </BtnText>
+          <CurrencyIcon width={25} height={25} style={{ marginRight: 10 }} />
+          <Text type="bl">{currency === "USD" ? "Cash" : "Bitcoin"}</Text>
         </Row>
-        <ListItem.Chevron
+        <Icon
           name={modalVisible ? "chevron-up" : "chevron-down"}
-          color={colors.grey0}
-          size={20}
+          color={colors.icon01}
           type="ionicon"
         />
       </Btn>
@@ -58,32 +63,31 @@ const WalletBottomSheet: React.FC<Props> = ({ currency, disabled, onChange }) =>
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <Backdrop
-          onPress={() => setModalVisible(false)}
-          activeOpacity={1}
-          mode={theme.mode}
-        >
+        <Backdrop onPress={() => setModalVisible(false)} activeOpacity={1} mode={mode}>
           <Container pb={bottom} style={{ backgroundColor: colors.white }}>
             <TitleWrapper>
-              <Title>{LL.ReceiveScreen.selectWallet()}</Title>
+              <Text type="h01">{LL.ReceiveScreen.selectWallet()}</Text>
               <Close onPress={() => setModalVisible(false)}>
-                <Icon name={"close"} size={30} color={colors.black} />
+                <Icon name={"close"} size={30} color={colors.black} type="ionicon" />
               </Close>
             </TitleWrapper>
-            {wallets.map((el) => (
-              <Btn
-                key={el.key}
-                onPress={() => onChangeCurrency(el.key)}
-                style={{ backgroundColor: colors.grey4, marginBottom: 10 }}
-              >
-                <BtnText
-                  style={{ color: currency === el.key ? colors.primary : colors.grey1 }}
+            {wallets.map((el) => {
+              const CurrencyIcon = icons[el.key as keyof typeof icons]
+              return (
+                <Btn
+                  key={el.key}
+                  onPress={() => onChangeCurrency(el.key)}
+                  style={{
+                    justifyContent: "flex-start",
+                    borderColor: colors.border01,
+                    marginBottom: 10,
+                  }}
                 >
-                  {el.title}
-                </BtnText>
-                <GaloyCurrencyBubble currency={el.key as WalletCurrency} iconSize={16} />
-              </Btn>
-            ))}
+                  <CurrencyIcon width={30} height={30} style={{ marginRight: 10 }} />
+                  <Text type="bl">{el.title}</Text>
+                </Btn>
+              )
+            })}
           </Container>
         </Backdrop>
       </Modal>
@@ -97,19 +101,15 @@ const Btn = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  border-radius: 5px;
-  padding-vertical: 15px;
-  padding-horizontal: 10px;
+  border-radius: 15px;
+  border-width: 1px;
+  padding-horizontal: 15px;
+  padding-vertical: 10px;
 `
 
 const Row = styled.View`
   flex-direction: row;
   align-items: center;
-`
-
-const BtnText = styled.Text`
-  font-size: 17px;
-  margin-left: 5px;
 `
 
 const Backdrop = styled.TouchableOpacity<{ mode: string }>`
@@ -132,10 +132,6 @@ const TitleWrapper = styled.View`
   align-items: center;
   justify-content: space-between;
   margin-bottom: 15px;
-`
-
-const Title = styled(Text)`
-  font-size: 20px;
 `
 
 const Close = styled.TouchableOpacity`

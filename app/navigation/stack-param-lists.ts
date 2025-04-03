@@ -34,7 +34,7 @@ export type RootStackParamList = {
   Primary: undefined
   earnsSection: { section: EarnSectionType }
   earnsQuiz: { id: string }
-  scanningQRCode: { swapAddress?: string; amount?: number; fee?: number } | undefined
+  scanningQRCode?: { swapAddress: string; amount: number; fee: number; feeType: string }
   settings: undefined
   addressScreen: undefined
   defaultWallet: undefined
@@ -62,7 +62,10 @@ export type RootStackParamList = {
     moneyAmount: MoneyAmount<WalletOrDisplayCurrency>
   }
   conversionSuccess: undefined
-  sendBitcoinSuccess: undefined
+  sendBitcoinSuccess: {
+    unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
+    walletCurrency: WalletCurrency
+  }
   language: undefined
   currency: undefined
   security: {
@@ -102,6 +105,7 @@ export type RootStackParamList = {
   breezTransactionDetail: { tx: TransactionFragment }
   TransactionHistoryTabs?: { initialRouteName?: string } | undefined
   USDTransactionHistory: undefined
+  BTCTransactionHistory: undefined
   transactionHistory?: undefined
   Earn: undefined
   Card: undefined
@@ -174,4 +178,5 @@ export type PrimaryStackParamList = {
   Card: undefined
   Map: undefined
   Earn: undefined
+  Scan: undefined
 }

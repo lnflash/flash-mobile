@@ -33,7 +33,7 @@ const useStyles = makeStyles(({ colors }) => ({
     justifyContent: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: colors.error9,
   },
   textContainer: {

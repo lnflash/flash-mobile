@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react"
 import { StackScreenProps } from "@react-navigation/stack"
 import styled from "styled-components/native"
-import { Icon, useTheme, useThemeMode } from "@rneui/themed"
+import { Icon, useTheme } from "@rneui/themed"
 import * as Keychain from "react-native-keychain"
+
+// components
+import { PrimaryBtn } from "@app/components/buttons"
 
 // hooks
 import { useAppConfig } from "@app/hooks"
@@ -26,9 +29,7 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
   const {
     persistentState: { btcWalletImported, isAdvanceMode },
   } = usePersistentStateContext()
-  const { theme } = useTheme()
-  const { mode } = useThemeMode()
-  const colors = theme.colors
+  const { colors } = useTheme().theme
   const insideApp = route.params?.insideApp
   const bottom = useSafeAreaInsets().bottom
   const { LL } = useI18nContext()
@@ -117,9 +118,9 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
           <Btn onPress={onImportBTCWallet}>
             <Icon
               type="ionicon"
-              name={btcWalletImported ? "checkmark-circle" : "checkmark-circle-outline"}
-              color={btcWalletImported ? "#60aa55" : "#999"}
               size={40}
+              name={btcWalletImported ? "checkmark-circle" : "checkmark-circle-outline"}
+              color={btcWalletImported ? colors.primary : colors.icon02}
             />
             <BtnTextWrapper>
               <BtnTitle style={{ color: colors.black }}>
@@ -135,13 +136,15 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
             <Btn onPress={onLoginWithPhone} disabled={USDWalletImported}>
               <Icon
                 type="ionicon"
+                size={40}
                 name={
                   USDWalletImported && phoneVerified
                     ? "checkmark-circle"
                     : "checkmark-circle-outline"
                 }
-                color={USDWalletImported && phoneVerified ? "#60aa55" : "#999"}
-                size={40}
+                color={
+                  USDWalletImported && phoneVerified ? colors.primary : colors.icon02
+                }
               />
               <BtnTextWrapper>
                 <BtnTitle style={{ color: colors.black }}>
@@ -161,7 +164,9 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
                     ? "checkmark-circle"
                     : "checkmark-circle-outline"
                 }
-                color={USDWalletImported && emailVerified ? "#60aa55" : "#999"}
+                color={
+                  USDWalletImported && emailVerified ? colors.primary : colors.icon02
+                }
                 size={40}
               />
               <BtnTextWrapper>
@@ -177,23 +182,12 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
           </>
         )}
       </Container>
-      <MainBtn
+      <PrimaryBtn
+        label={insideApp ? LL.ImportWalletOptions.done() : LL.ImportWalletOptions.login()}
         disabled={!btcWalletImported && !USDWalletImported}
-        bottom={bottom}
+        btnStyle={{ marginBottom: bottom + 10 }}
         onPress={onLogin}
-        style={{
-          backgroundColor:
-            !btcWalletImported && !USDWalletImported
-              ? mode === "dark"
-                ? "#5b5b5b"
-                : "#DEDEDE"
-              : "#60aa55",
-        }}
-      >
-        <MainBtnTitle style={{ color: colors.white }}>
-          {insideApp ? LL.ImportWalletOptions.done() : LL.ImportWalletOptions.login()}
-        </MainBtnTitle>
-      </MainBtn>
+      />
     </Wrapper>
   )
 }
@@ -218,7 +212,7 @@ const Title = styled.Text`
 const Btn = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
-  border-radius: 10px;
+  border-radius: 20px;
   border: 1px solid #dedede;
   margin-bottom: 20px;
   padding-vertical: 20px;
@@ -237,20 +231,4 @@ const BtnTitle = styled.Text`
 const BtnDesc = styled.Text`
   font-size: 15px;
   color: #777;
-`
-
-const MainBtn = styled.TouchableOpacity<{
-  disabled?: boolean
-  bottom: number
-}>`
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  margin-bottom: ${({ bottom }) => bottom || 10}px;
-  padding-vertical: 14px;
-`
-
-const MainBtnTitle = styled.Text`
-  font-size: 18px;
-  font-weight: 600;
 `
