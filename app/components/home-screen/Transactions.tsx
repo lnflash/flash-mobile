@@ -157,15 +157,17 @@ const Transactions: React.FC<Props> = ({
   }
 
   const updateMergedTransactions = (txs: TransactionFragment[]) => {
-    setMergedTransactions(txs.slice(0, 3))
-    updateState((state: any) => {
-      if (state)
-        return {
-          ...state,
-          mergedTransactions: txs.slice(0, 3),
-        }
-      return undefined
-    })
+    if (txs.length > 0) {
+      setMergedTransactions(txs.slice(0, 3))
+      updateState((state: any) => {
+        if (state)
+          return {
+            ...state,
+            mergedTransactions: txs.slice(0, 3),
+          }
+        return undefined
+      })
+    }
   }
 
   const navigateToTransactionHistory = () => {
@@ -186,6 +188,15 @@ const Transactions: React.FC<Props> = ({
           <TxItem key={item.id} tx={item} />
         ))}
       </Wrapper>
+    )
+  } else {
+    return (
+      <ActivityIndicator
+        animating={breezTxsLoading || loadingAuthed}
+        size="large"
+        color={colors.primary}
+        style={{ marginTop: 24 }}
+      />
     )
   }
 }
