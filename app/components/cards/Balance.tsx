@@ -15,7 +15,6 @@ import Flashcard from "@app/assets/icons/flashcard.svg"
 import CardAdd from "@app/assets/icons/card-add.svg"
 import Sync from "@app/assets/icons/sync.svg"
 import Warning from "@app/assets/icons/warning.svg"
-import Cashu from "@app/assets/icons/cashu.svg"
 
 const icons = {
   cash: Cash,
@@ -24,7 +23,6 @@ const icons = {
   cardAdd: CardAdd,
   sync: Sync,
   warning: Warning,
-  cashu: Cashu,
 }
 
 type IconNamesType = keyof typeof icons
