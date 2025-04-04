@@ -55,6 +55,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
     persistentState?.cashDisplayBalance || "0",
   )
   const [ecashBalance, setEcashBalance] = useState<number>(0)
+  const [ecashDisplayBalance, setEcashDisplayBalance] = useState<string>("0")
 
   // Initialize eCash wallet if enabled
   useEffect(() => {
@@ -65,6 +66,14 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
           await cashuService.initializeWallet()
           const balance = await cashuService.getBalance()
           setEcashBalance(balance)
+
+          // Format for display currency
+          const ecashMoneyAmount = toBtcMoneyAmount(balance)
+          setEcashDisplayBalance(
+            moneyAmountToDisplayCurrencyString({
+              moneyAmount: ecashMoneyAmount,
+            }) || "0",
+          )
         } catch (error) {
           console.error("Failed to initialize eCash wallet:", error)
         }
@@ -72,7 +81,12 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
     }
 
     initEcashWallet()
-  }, [persistentState.showECashWallet])
+  }, [
+    persistentState.showECashWallet,
+    displayCurrency,
+    formatMoneyAmount,
+    moneyAmountToDisplayCurrencyString,
+  ])
 
   useEffect(() => {
     if (
@@ -126,6 +140,16 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
         }),
       )
     }
+
+    // Update eCash display balance when display currency changes
+    if (ecashBalance > 0) {
+      const ecashMoneyAmount = toBtcMoneyAmount(ecashBalance)
+      setEcashDisplayBalance(
+        moneyAmountToDisplayCurrencyString({
+          moneyAmount: ecashMoneyAmount,
+        }) || "0",
+      )
+    }
   }
 
   const navigateHandler = (activeTab: string) => {
@@ -170,8 +194,8 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
         <Balance
           icon="bitcoin"
           title="Pocket Money"
-          amount={ecashBalance.toString()}
-          currency="SATS"
+          amount={ecashDisplayBalance}
+          currency={displayCurrency}
           onPress={onPressEcash}
         />
       )}
