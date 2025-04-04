@@ -146,6 +146,10 @@ export type RootStackParamList = {
   CashoutConfirmation: { offer: CashoutOffer }
   CashoutSuccess: undefined
   EditNostrProfile: undefined
+  ECashWallet: undefined
+  SendECash: undefined
+  ReceiveECash: undefined
+  ConvertECash: { initialAmount?: number }
 }
 
 export type ChatStackParamList = {

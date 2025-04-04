@@ -109,6 +109,7 @@ import { Messages } from "@app/screens/nip17-chat/messages"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
 import EditNostrProfileScreen from "@app/screens/edit-nostr-profile/edit-nostr-profile"
+import ECashWalletScreen from "@app/screens/ecash-wallet/main-screen"
 
 import HomeActive from "@app/assets/icons/home-active.svg"
 import HomeInactive from "@app/assets/icons/home-inactive.svg"
@@ -582,6 +583,11 @@ export const RootStack = () => {
         name="EditNostrProfile"
         component={EditNostrProfileScreen}
         options={{ headerShown: true, title: LL.Nostr.editProfile() }}
+      />
+      <RootNavigator.Screen
+        name="ECashWallet"
+        component={ECashWalletScreen}
+        options={{ title: "Pocket Money" }}
       />
     </RootNavigator.Navigator>
   )

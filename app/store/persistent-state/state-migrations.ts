@@ -73,6 +73,7 @@ type PersistentState_7 = {
   btcWalletImported?: boolean
   helpTriggered?: boolean
   isAdvanceMode?: boolean
+  showECashWallet?: boolean
   chatEnabled?: boolean
   numOfRefundables: number
   backedUpBtcWallet?: boolean // true if user backed up recovery phrase (btc wallet)
