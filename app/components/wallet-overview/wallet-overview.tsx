@@ -134,7 +134,8 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
         initialRouteName: activeTab,
       })
     } else {
-      navigation.navigate(activeTab as any)
+      // Using type assertion since we know these screen names are valid
+      navigation.navigate(activeTab as never)
     }
   }
 
@@ -143,8 +144,6 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   const onPressBitcoin = () => navigateHandler("BTCTransactionHistory")
 
   const onPressEcash = () => {
-    // For now, we'll just navigate to a placeholder screen
-    // Later we will implement the actual ECash wallet screen
     navigation.navigate("ECashWallet")
   }
 
@@ -167,6 +166,15 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
         currency={displayCurrency}
         onPress={onPressCash}
       />
+      {persistentState.showECashWallet && (
+        <Balance
+          icon="bitcoin"
+          title="Pocket Money"
+          amount={ecashBalance.toString()}
+          currency="SATS"
+          onPress={onPressEcash}
+        />
+      )}
       {persistentState.isAdvanceMode && (
         <Balance
           icon="bitcoin"
@@ -179,17 +187,8 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
           rightIcon={persistentState.backedUpBtcWallet ? undefined : "warning"}
         />
       )}
-      {persistentState.showECashWallet && (
-        <Balance
-          icon="cash"
-          title="Pocket Money"
-          amount={ecashBalance.toString()}
-          currency="SATS"
-          onPress={onPressEcash}
-        />
-      )}
       <Balance
-        icon={Boolean(formattedCardBalance) ? "flashcard" : "cardAdd"}
+        icon={formattedCardBalance ? "flashcard" : "cardAdd"}
         title={LL.HomeScreen.flashcard()}
         amount={formattedCardBalance}
         currency={displayCurrency}
