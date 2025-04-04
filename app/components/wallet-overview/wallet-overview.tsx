@@ -192,7 +192,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
       />
       {persistentState.showECashWallet && (
         <Balance
-          icon="bitcoin"
+          icon="cashu"
           title="Pocket Money"
           amount={ecashDisplayBalance}
           currency={displayCurrency}
