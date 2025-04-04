@@ -64,6 +64,20 @@ export const HomeScreen: React.FC = () => {
     nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
 
+  // Enable ECash wallet by default for all users
+  useEffect(() => {
+    if (persistentState.showECashWallet === undefined) {
+      updateState((state) => {
+        if (state)
+          return {
+            ...state,
+            showECashWallet: true,
+          }
+        return undefined
+      })
+    }
+  }, [persistentState.showECashWallet, updateState])
+
   const transactions = dataAuthed?.me?.defaultAccount.transactions?.edges || []
 
   useEffect(() => {
@@ -80,7 +94,7 @@ export const HomeScreen: React.FC = () => {
         dataAuthed?.me?.defaultAccount?.wallets,
         dataAuthed?.me?.defaultAccount?.defaultWalletId,
       )
-      updateState((state: any) => {
+      updateState((state) => {
         if (state)
           return {
             ...state,

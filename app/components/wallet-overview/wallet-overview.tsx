@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { View } from "react-native"
+import { View, StyleSheet } from "react-native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
@@ -19,6 +19,9 @@ import { useBreez, useFlashcard } from "@app/hooks"
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 
+// services
+import { CashuService } from "@app/services/ecash/cashu-service"
+
 type Props = {
   setIsUnverifiedSeedModalVisible: (value: boolean) => void
 }
@@ -34,7 +37,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
     useDisplayCurrency()
 
-  const { data, error } = useWalletOverviewScreenQuery({
+  const { data } = useWalletOverviewScreenQuery({
     fetchPolicy: "network-only",
     skip: !isAuthed,
   })
@@ -51,6 +54,25 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   const [cashDisplayBalance, setCashDisplayBalance] = useState<string | undefined>(
     persistentState?.cashDisplayBalance || "0",
   )
+  const [ecashBalance, setEcashBalance] = useState<number>(0)
+
+  // Initialize eCash wallet if enabled
+  useEffect(() => {
+    const initEcashWallet = async () => {
+      if (persistentState.showECashWallet) {
+        const cashuService = CashuService.getInstance()
+        try {
+          await cashuService.initializeWallet()
+          const balance = await cashuService.getBalance()
+          setEcashBalance(balance)
+        } catch (error) {
+          console.error("Failed to initialize eCash wallet:", error)
+        }
+      }
+    }
+
+    initEcashWallet()
+  }, [persistentState.showECashWallet])
 
   useEffect(() => {
     if (
@@ -120,6 +142,12 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
 
   const onPressBitcoin = () => navigateHandler("BTCTransactionHistory")
 
+  const onPressEcash = () => {
+    // For now, we'll just navigate to a placeholder screen
+    // Later we will implement the actual ECash wallet screen
+    navigation.navigate("ECashWallet")
+  }
+
   const onPressFlashcard = () => {
     if (lnurl) navigation.navigate("Card")
     else readFlashcard()
@@ -130,7 +158,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   })
 
   return (
-    <View style={{ marginTop: 10, marginHorizontal: 20 }}>
+    <View style={styles.container}>
       <Balance
         icon="cash"
         title={LL.HomeScreen.cash()}
@@ -151,8 +179,17 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
           rightIcon={persistentState.backedUpBtcWallet ? undefined : "warning"}
         />
       )}
+      {persistentState.showECashWallet && (
+        <Balance
+          icon="cash"
+          title="Pocket Money"
+          amount={ecashBalance.toString()}
+          currency="SATS"
+          onPress={onPressEcash}
+        />
+      )}
       <Balance
-        icon={!!formattedCardBalance ? "flashcard" : "cardAdd"}
+        icon={Boolean(formattedCardBalance) ? "flashcard" : "cardAdd"}
         title={LL.HomeScreen.flashcard()}
         amount={formattedCardBalance}
         currency={displayCurrency}
@@ -164,5 +201,12 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginTop: 10,
+    marginHorizontal: 20,
+  },
+})
 
 export default WalletOverview

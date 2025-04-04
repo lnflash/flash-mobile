@@ -138,6 +138,10 @@ export type RootStackParamList = {
     fee: number
     feeType: string
   }
+  ECashWallet: undefined
+  SendECash: undefined
+  ReceiveECash: undefined
+  ConvertECash: { initialAmount?: number }
 }
 
 export type ChatStackParamList = {
