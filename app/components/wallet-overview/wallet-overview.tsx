@@ -65,15 +65,20 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
         try {
           await cashuService.initializeWallet()
           const balance = await cashuService.getBalance()
+          console.log("eCash balance:", balance)
           setEcashBalance(balance)
 
           // Format for display currency
           const ecashMoneyAmount = toBtcMoneyAmount(balance)
-          setEcashDisplayBalance(
+          console.log("eCash money amount:", ecashMoneyAmount)
+
+          const formattedBalance =
             moneyAmountToDisplayCurrencyString({
               moneyAmount: ecashMoneyAmount,
-            }) || "0",
-          )
+            }) || "0"
+          console.log("eCash formatted balance:", formattedBalance)
+
+          setEcashDisplayBalance(formattedBalance)
         } catch (error) {
           console.error("Failed to initialize eCash wallet:", error)
         }
@@ -194,7 +199,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
         <Balance
           icon="cashu"
           title="Pocket Money"
-          amount={ecashDisplayBalance}
+          amount={ecashDisplayBalance || "0"}
           currency={displayCurrency}
           onPress={onPressEcash}
         />
