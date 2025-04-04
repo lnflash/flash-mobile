@@ -86,9 +86,17 @@ export class CashuService {
     this.wallet.balance = balance
   }
 
+  /**
+   * Get the current balance
+   * @returns The current balance in sats
+   */
   public async getBalance(): Promise<number> {
     if (!this.initialized) {
       await this.initializeWallet()
+    }
+    // If wallet is still not initialized after attempt, return 0
+    if (!this.initialized) {
+      return 0
     }
     return this.wallet.balance
   }
