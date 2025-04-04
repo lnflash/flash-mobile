@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { Image, Modal } from "react-native"
-import * as Keychain from "react-native-keychain"
 
 // components
 import { AdvancedModeModal } from "./advanced-mode-modal"
@@ -8,30 +7,19 @@ import { AdvancedModeModal } from "./advanced-mode-modal"
 // store
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
-// utils
-import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
-
 type Props = {
+  hasRecoveryPhrase: boolean
   advanceModalVisible: boolean
   setAdvanceModalVisible: (isVisible: boolean) => void
 }
 
 export const QuickStartAdvancedMode: React.FC<Props> = ({
+  hasRecoveryPhrase,
   advanceModalVisible,
   setAdvanceModalVisible,
 }) => {
   const { updateState } = usePersistentStateContext()
   const [animationVisible, setAnimationVisible] = useState(false)
-  const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
-
-  useEffect(() => {
-    checkRecoveryPhrase()
-  }, [])
-
-  const checkRecoveryPhrase = async () => {
-    const credentials = await Keychain.getInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
-    if (credentials) setHasRecoveryPhrase(true)
-  }
 
   const onUpdateState = () => {
     updateState((state: any) => {

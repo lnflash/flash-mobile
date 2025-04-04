@@ -1,9 +1,10 @@
-import React, { useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { Dimensions, Linking, TouchableOpacity, View } from "react-native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import Carousel from "react-native-reanimated-carousel"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import * as Keychain from "react-native-keychain"
 
 // assets
 import Account from "@app/assets/illustrations/account.svg"
@@ -22,6 +23,9 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { AccountLevel, useHomeAuthedQuery } from "@app/graphql/generated"
+
+// utils
+import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
 
 const width = Dimensions.get("window").width
 
@@ -46,8 +50,18 @@ const QuickStart = () => {
   const ref = useRef(null)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
   const [upgradeAccountModalVisible, setUpgradeAccountModalVisible] = useState(false)
+  const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
 
   const { data, loading } = useHomeAuthedQuery()
+
+  useEffect(() => {
+    checkRecoveryPhrase()
+  }, [])
+
+  const checkRecoveryPhrase = async () => {
+    const credentials = await Keychain.getInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
+    if (credentials) setHasRecoveryPhrase(true)
+  }
 
   let carouselData = [
     {
@@ -134,7 +148,8 @@ const QuickStart = () => {
   }
   if (
     persistentState.btcWalletEnabled ||
-    persistentState?.closedQuickStartTypes?.includes("btcWallet")
+    persistentState?.closedQuickStartTypes?.includes("btcWallet") ||
+    hasRecoveryPhrase
   ) {
     carouselData = carouselData.filter((el) => el.type !== "btcWallet")
   }
@@ -195,6 +210,7 @@ const QuickStart = () => {
           closeModal={() => setUpgradeAccountModalVisible(false)}
         />
         <QuickStartAdvancedMode
+          hasRecoveryPhrase={hasRecoveryPhrase}
           advanceModalVisible={advanceModalVisible}
           setAdvanceModalVisible={setAdvanceModalVisible}
         />
@@ -218,7 +234,7 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   title: {
     marginBottom: 2,
-    marginRight: 10,
+    width: "85%",
   },
   close: {
     position: "absolute",
