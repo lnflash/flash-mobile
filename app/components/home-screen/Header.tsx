@@ -10,9 +10,13 @@ import { useIsFocused, useNavigation } from "@react-navigation/native"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useApolloClient } from "@apollo/client"
 import { useHideBalanceQuery } from "@app/graphql/generated"
+import {
+  addDeviceToken,
+  isFirebaseMessagingAvailable,
+  requestNotificationPermission,
+} from "@app/utils/notifications"
 
 // utils
-import { addDeviceToken, requestNotificationPermission } from "@app/utils/notifications"
 import { saveHideBalance } from "@app/graphql/client-only-query"
 
 // assets
@@ -35,12 +39,25 @@ const Header = () => {
     if (isAuthed && isFocused && client) {
       timeout = setTimeout(
         async () => {
-          const result = await requestNotificationPermission()
-          if (
-            result === messaging.AuthorizationStatus.PROVISIONAL ||
-            result === messaging.AuthorizationStatus.AUTHORIZED
-          ) {
-            await addDeviceToken(client)
+          try {
+            // First check if Firebase messaging is available
+            const fcmAvailable = await isFirebaseMessagingAvailable()
+            if (!fcmAvailable) {
+              console.log(
+                "Skipping notification permission request - Firebase messaging not available",
+              )
+              return
+            }
+
+            const result = await requestNotificationPermission()
+            if (
+              result === messaging.AuthorizationStatus.PROVISIONAL ||
+              result === messaging.AuthorizationStatus.AUTHORIZED
+            ) {
+              await addDeviceToken(client)
+            }
+          } catch (error) {
+            console.log("Error requesting notification permission", error)
           }
         }, // no op if already requested
         5000,

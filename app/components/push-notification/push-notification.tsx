@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React, { useEffect, useState } from "react"
 import { Linking } from "react-native"
 import notifee, { AndroidImportance } from "@notifee/react-native"
 import messaging, { FirebaseMessagingTypes } from "@react-native-firebase/messaging"
@@ -8,13 +8,34 @@ import { useApolloClient } from "@apollo/client"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 // utils
-import { addDeviceToken, hasNotificationPermission } from "@app/utils/notifications"
+import {
+  addDeviceToken,
+  hasNotificationPermission,
+  isFirebaseMessagingAvailable,
+} from "@app/utils/notifications"
 
 export const PushNotificationComponent = (): JSX.Element => {
   const client = useApolloClient()
   const isAuthed = useIsAuthed()
+  const [fcmAvailable, setFcmAvailable] = useState<boolean | null>(null)
 
+  // Check if Firebase messaging is available on this device
   useEffect(() => {
+    const checkFcmAvailability = async () => {
+      const available = await isFirebaseMessagingAvailable()
+      setFcmAvailable(available)
+    }
+
+    checkFcmAvailability()
+  }, [])
+
+  // Setup FCM message handlers only if FCM is available
+  useEffect(() => {
+    // If FCM availability is still being checked or is not available, don't proceed
+    if (fcmAvailable !== true) {
+      return
+    }
+
     const followNotificationLink = (
       remoteMessage: FirebaseMessagingTypes.RemoteMessage,
     ) => {
@@ -58,9 +79,14 @@ export const PushNotificationComponent = (): JSX.Element => {
       unsubscribeInApp()
       unsubscribeBackground()
     }
-  }, [])
+  }, [fcmAvailable])
 
+  // Register device token only if FCM is available
   useEffect(() => {
+    if (!fcmAvailable) {
+      return
+    }
+
     ;(async () => {
       if (isAuthed && client) {
         const hasPermission = await hasNotificationPermission()
@@ -73,11 +99,16 @@ export const PushNotificationComponent = (): JSX.Element => {
         }
       }
     })()
-  }, [client, isAuthed])
+  }, [client, isAuthed, fcmAvailable])
 
   async function onDisplayNotification(
     remoteMessage: FirebaseMessagingTypes.RemoteMessage,
   ) {
+    // If FCM is not available, don't try to display notifications
+    if (!fcmAvailable) {
+      return
+    }
+
     // Request permissions (required for iOS)
     await notifee.requestPermission()
 
@@ -104,7 +135,7 @@ export const PushNotificationComponent = (): JSX.Element => {
         },
       })
     } catch (err) {
-      console.log("?????????????????????????", err)
+      console.log("Error displaying notification", err)
     }
   }
 
