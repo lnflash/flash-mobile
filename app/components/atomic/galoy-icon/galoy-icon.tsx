@@ -36,6 +36,7 @@ import MagnifyingGlass from "@app/assets/icons-redesign/magnifying-glass.svg"
 import Map from "@app/assets/icons-redesign/map.svg"
 import Menu from "@app/assets/icons-redesign/menu.svg"
 import Pencil from "@app/assets/icons-redesign/pencil.svg"
+import Plus from "@app/assets/icons-redesign/plus.svg"
 import QrCode from "@app/assets/icons-redesign/qr-code.svg"
 import Question from "@app/assets/icons-redesign/question.svg"
 import Receive from "@app/assets/icons-redesign/receive.svg"
@@ -93,6 +94,7 @@ export const icons = {
   "map": Map,
   "menu": Menu,
   "pencil": Pencil,
+  "plus": Plus,
   "note": Note,
   "rank": Rank,
   "qr-code": QrCode,

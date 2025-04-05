@@ -1,5 +1,6 @@
-import { ViewStyle } from "react-native"
+import { ViewStyle, RefreshControlProps } from "react-native"
 import { KeyboardOffsets, ScreenPresets } from "./screen.presets"
+import React from "react"
 
 export interface ScreenProps {
   /**
@@ -37,5 +38,13 @@ export interface ScreenProps {
    */
   keyboardOffset?: KeyboardOffsets
 
+  /**
+   * How should the keyboard persist when taps are happening
+   */
   keyboardShouldPersistTaps?: "always" | "never" | "handled"
+
+  /**
+   * RefreshControl component for enabling pull-to-refresh functionality
+   */
+  refreshControl?: React.ReactElement<RefreshControlProps>
 }

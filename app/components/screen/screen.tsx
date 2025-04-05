@@ -1,11 +1,5 @@
 import * as React from "react"
-import {
-  KeyboardAvoidingView,
-  ScrollView,
-  StatusBar,
-  View,
-  SafeAreaView,
-} from "react-native"
+import { KeyboardAvoidingView, ScrollView, View, SafeAreaView } from "react-native"
 
 import { ScreenProps } from "./screen.props"
 import { isNonScrolling, offsets, presets } from "./screen.presets"
@@ -14,10 +8,8 @@ import { useTheme } from "@rneui/themed"
 
 function ScreenWithoutScrolling(props: ScreenProps) {
   const {
-    theme: { mode, colors },
+    theme: { colors },
   } = useTheme()
-
-  const statusBarContent = mode === "light" ? "dark-content" : "light-content"
 
   const preset = presets.fixed
   const style = props.style || {}
@@ -39,10 +31,8 @@ function ScreenWithoutScrolling(props: ScreenProps) {
 
 function ScreenWithScrolling(props: ScreenProps) {
   const {
-    theme: { mode, colors },
+    theme: { colors },
   } = useTheme()
-
-  const statusBarContent = mode === "light" ? "dark-content" : "light-content"
 
   const preset = presets.scroll
   const style = props.style || {}
@@ -62,6 +52,7 @@ function ScreenWithScrolling(props: ScreenProps) {
           style={[preset.outer, backgroundStyle]}
           contentContainerStyle={[preset.inner, style]}
           keyboardShouldPersistTaps={props.keyboardShouldPersistTaps}
+          refreshControl={props.refreshControl}
         >
           {props.children}
         </ScrollView>
