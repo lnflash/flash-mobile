@@ -113,11 +113,13 @@ export class RedemptionQueue {
    * Add a token to the redemption queue
    * @param tokenString The original token string
    * @param knownMint Optional known mint URL if provided by user
+   * @param customId Optional custom ID for coordination with direct redemption
    * @returns A RedemptionRequest object
    */
   public async addToQueue(
     tokenString: string,
     knownMint?: string,
+    customId?: string,
   ): Promise<RedemptionRequest> {
     // Decode the token
     const decodedResult = TokenDecoder.decodeToken(tokenString)
@@ -137,7 +139,7 @@ export class RedemptionQueue {
 
     // Create a new redemption request
     const request: RedemptionRequest = {
-      id: uuidv4(),
+      id: customId || uuidv4(),
       tokenData: tokenString,
       status: "pending",
       amount: estimatedAmount,
@@ -146,6 +148,15 @@ export class RedemptionQueue {
       decodedToken: decodedResult.token,
       mintConfidence: decodedResult.mintConfidence,
       attemptedMints: [],
+    }
+
+    // Check if there's already a request with this ID in the queue
+    const existingRequest = this.queue.find((item) => item.id === request.id)
+    if (existingRequest) {
+      console.log(
+        `Request with ID ${request.id} already exists in queue, not adding duplicate`,
+      )
+      return existingRequest
     }
 
     // Add to queue
@@ -292,6 +303,9 @@ export class RedemptionQueue {
               if (nextMint && request.decodedToken) {
                 // Try another mint next time
                 request.decodedToken.mint = nextMint
+                if (!request.attemptedMints) {
+                  request.attemptedMints = []
+                }
                 request.attemptedMints.push(nextMint)
                 request.status = "pending" // Reset to pending for next attempt
                 request.error = `Failed with mint ${
@@ -311,13 +325,31 @@ export class RedemptionQueue {
           }
         } catch (error) {
           console.error("Error redeeming token:", error)
-          // Mark as failed
-          request.status = "failed"
-          request.error = error instanceof Error ? error.message : "Unknown error"
 
-          // If we've reached max retries, notify listeners
-          if (request.attemptCount >= this.config.maxRetries) {
+          // Check for already redeemed token error
+          const errorMsg = error instanceof Error ? error.message : String(error)
+          if (
+            errorMsg.includes("already spent") ||
+            errorMsg.includes("already redeemed") ||
+            errorMsg.includes("AlreadySpent")
+          ) {
+            // Mark as failed with specific error and notify to clean up the UI
+            request.status = "failed"
+            request.error =
+              "This token has already been redeemed and cannot be used again."
             this.notifyRedemptionFailed(request)
+
+            // Increase attempt count to max to prevent further retries
+            request.attemptCount = this.config.maxRetries
+          } else {
+            // Mark as failed with standard error
+            request.status = "failed"
+            request.error = error instanceof Error ? error.message : "Unknown error"
+
+            // If we've reached max retries, notify listeners
+            if (request.attemptCount >= this.config.maxRetries) {
+              this.notifyRedemptionFailed(request)
+            }
           }
         }
 
@@ -689,5 +721,29 @@ export class RedemptionQueue {
   public async clearAll(): Promise<void> {
     this.queue = []
     await this.saveQueue()
+  }
+
+  /**
+   * Clear all pending redemptions that have "already redeemed" errors
+   * @returns Promise that resolves when the operation completes
+   */
+  public async clearAlreadyRedeemed(): Promise<void> {
+    const beforeCount = this.queue.length
+
+    // Remove any requests with "already redeemed" errors
+    this.queue = this.queue.filter((req) => {
+      return !(
+        req.error &&
+        (req.error.includes("already redeemed") ||
+          req.error.includes("already spent") ||
+          req.error.includes("AlreadySpent"))
+      )
+    })
+
+    const removedCount = beforeCount - this.queue.length
+    if (removedCount > 0) {
+      console.log(`Removed ${removedCount} already redeemed tokens from queue`)
+      await this.saveQueue()
+    }
   }
 }

@@ -291,7 +291,7 @@ export const ECashWalletScreen: React.FC<Props> = ({ navigation, route }) => {
   const handleResetWallet = async () => {
     Alert.alert(
       "Reset Wallet",
-      "This will remove all tokens and transactions from your eCash wallet. This is useful for removing simulated tokens. Are you sure?",
+      "This will remove ALL tokens and transactions (including failed ones) from your eCash wallet. This action cannot be undone. Are you sure?",
       [
         {
           text: "Cancel",
@@ -321,7 +321,7 @@ export const ECashWalletScreen: React.FC<Props> = ({ navigation, route }) => {
               // Show success message
               Alert.alert(
                 "Wallet Reset",
-                "Your eCash wallet has been reset successfully.",
+                "Your eCash wallet has been completely reset. All tokens and transactions have been removed.",
               )
             } catch (error) {
               console.error("Failed to reset wallet:", error)
@@ -361,22 +361,76 @@ export const ECashWalletScreen: React.FC<Props> = ({ navigation, route }) => {
               setLoading(true)
               const cashuService = CashuService.getInstance()
 
-              // Clear all from redemption queue
-              const redemptionQueue = RedemptionQueue.getInstance()
-              await redemptionQueue.clearAll()
+              // First try to clear just already redeemed tokens
+              await cashuService.clearAlreadyRedeemedTokens()
 
-              // Update state
-              setPendingRedemptions([])
+              // Update pending redemptions
+              const updatedPending = cashuService.getPendingRedemptions()
 
-              // Refresh transactions
-              const walletTransactions = await cashuService.getTransactions()
-              setTransactions(walletTransactions)
+              // If there are still pending redemptions, ask if user wants to clear all
+              if (updatedPending.length > 0) {
+                setPendingRedemptions(updatedPending)
 
-              // Show success message
-              Alert.alert(
-                "Pending Transactions Cleared",
-                "All pending transactions have been removed.",
-              )
+                Alert.alert(
+                  "Some Transactions Cleared",
+                  "Already redeemed tokens were cleared, but some pending transactions remain. Would you like to clear all pending transactions?",
+                  [
+                    {
+                      text: "No, Keep Remaining",
+                      style: "cancel",
+                    },
+                    {
+                      text: "Yes, Clear All",
+                      style: "destructive",
+                      onPress: async () => {
+                        try {
+                          setLoading(true)
+
+                          // Clear all from redemption queue
+                          const redemptionQueue = RedemptionQueue.getInstance()
+                          await redemptionQueue.clearAll()
+
+                          // Update state
+                          setPendingRedemptions([])
+
+                          // Refresh transactions
+                          const walletTransactions = await cashuService.getTransactions()
+                          setTransactions(walletTransactions)
+
+                          Alert.alert(
+                            "All Pending Transactions Cleared",
+                            "All pending transactions have been removed.",
+                          )
+                        } catch (error) {
+                          console.error(
+                            "Failed to clear all pending transactions:",
+                            error,
+                          )
+                          Alert.alert(
+                            "Error",
+                            "Failed to clear all pending transactions.",
+                          )
+                        } finally {
+                          setLoading(false)
+                        }
+                      },
+                    },
+                  ],
+                )
+              } else {
+                // All were already redeemed tokens, which have been cleared
+                setPendingRedemptions([])
+
+                // Refresh transactions
+                const walletTransactions = await cashuService.getTransactions()
+                setTransactions(walletTransactions)
+
+                // Show success message
+                Alert.alert(
+                  "Pending Transactions Cleared",
+                  "All pending transactions have been removed.",
+                )
+              }
             } catch (error) {
               console.error("Failed to clear pending transactions:", error)
               Alert.alert("Error", "Failed to clear pending transactions.")
@@ -387,6 +441,62 @@ export const ECashWalletScreen: React.FC<Props> = ({ navigation, route }) => {
         },
       ],
     )
+  }
+
+  // Add a function to handle clearing already redeemed tokens
+  const handleClearAlreadyRedeemed = async () => {
+    try {
+      setLoading(true)
+      const cashuService = CashuService.getInstance()
+
+      // Use the new method to clear just already redeemed tokens
+      await cashuService.clearAlreadyRedeemedTokens()
+
+      // Update pending redemptions
+      const updatedPending = cashuService.getPendingRedemptions()
+      setPendingRedemptions(updatedPending)
+
+      // Refresh transactions
+      const walletTransactions = await cashuService.getTransactions()
+      setTransactions(walletTransactions)
+
+      // Show success message
+      Alert.alert(
+        "Already Redeemed Tokens Cleared",
+        "All tokens with 'already redeemed' errors have been removed from the pending list.",
+      )
+    } catch (error) {
+      console.error("Failed to clear already redeemed tokens:", error)
+      Alert.alert("Error", "Failed to clear already redeemed tokens.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Add a function to handle clearing failed transactions
+  const handleClearFailedTransactions = async () => {
+    try {
+      setLoading(true)
+      const cashuService = CashuService.getInstance()
+
+      // Use the new method to clear failed transactions
+      await cashuService.clearFailedTransactions()
+
+      // Refresh transactions
+      const walletTransactions = await cashuService.getTransactions()
+      setTransactions(walletTransactions)
+
+      // Show success message
+      Alert.alert(
+        "Failed Transactions Cleared",
+        "All failed transactions have been removed from the history.",
+      )
+    } catch (error) {
+      console.error("Failed to clear failed transactions:", error)
+      Alert.alert("Error", "Failed to clear failed transactions.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Add a component to display for tokens with unknown mints
@@ -498,8 +608,7 @@ export const ECashWalletScreen: React.FC<Props> = ({ navigation, route }) => {
     >
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Pocket Money</Text>
-          <Text style={styles.subtitle}>Powered by Cashu</Text>
+          <Text style={styles.mainTitle}>Powered by Cashu</Text>
           {!isOnline && (
             <View style={styles.offlineIndicator}>
               <Text style={styles.offlineText}>Offline Mode - Using Cached Data</Text>
@@ -521,7 +630,6 @@ export const ECashWalletScreen: React.FC<Props> = ({ navigation, route }) => {
                 onPress={() => setShowAdminMenu(false)}
               />
               <View style={styles.adminMenuDropdown}>
-                <Text style={styles.adminMenuTitle}>Admin Menu</Text>
                 <TouchableOpacity
                   style={styles.adminMenuItem}
                   onPress={() => {
@@ -541,6 +649,54 @@ export const ECashWalletScreen: React.FC<Props> = ({ navigation, route }) => {
                 <TouchableOpacity
                   style={styles.adminMenuItem}
                   onPress={() => {
+                    handleClearPending()
+                    setShowAdminMenu(false)
+                  }}
+                >
+                  <View style={styles.adminMenuItemContent}>
+                    <GaloyIcon name="refresh" size={18} color={colors.warning} />
+                    <View style={styles.iconSpacing} />
+                    <Text style={[styles.adminMenuItemText, { color: colors.warning }]}>
+                      Clear All Pending
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.adminMenuItem}
+                  onPress={() => {
+                    handleClearAlreadyRedeemed()
+                    setShowAdminMenu(false)
+                  }}
+                >
+                  <View style={styles.adminMenuItemContent}>
+                    <GaloyIcon name="check" size={18} color={colors.warning} />
+                    <View style={styles.iconSpacing} />
+                    <Text style={[styles.adminMenuItemText, { color: colors.warning }]}>
+                      Clear Already Redeemed
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.adminMenuItem}
+                  onPress={() => {
+                    handleClearFailedTransactions()
+                    setShowAdminMenu(false)
+                  }}
+                >
+                  <View style={styles.adminMenuItemContent}>
+                    <GaloyIcon name="close" size={18} color={colors.error} />
+                    <View style={styles.iconSpacing} />
+                    <Text style={[styles.adminMenuItemText, { color: colors.error }]}>
+                      Clear Failed Transactions
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.adminMenuItem, styles.lastMenuItem]}
+                  onPress={() => {
                     handleResetWallet()
                     setShowAdminMenu(false)
                   }}
@@ -550,22 +706,6 @@ export const ECashWalletScreen: React.FC<Props> = ({ navigation, route }) => {
                     <View style={styles.iconSpacing} />
                     <Text style={[styles.adminMenuItemText, { color: colors.error }]}>
                       Reset Wallet
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.adminMenuItem, styles.lastMenuItem]}
-                  onPress={() => {
-                    handleClearPending()
-                    setShowAdminMenu(false)
-                  }}
-                >
-                  <View style={styles.adminMenuItemContent}>
-                    <GaloyIcon name="refresh" size={18} color={colors.warning} />
-                    <View style={styles.iconSpacing} />
-                    <Text style={[styles.adminMenuItemText, { color: colors.warning }]}>
-                      Clear Pending
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -588,8 +728,8 @@ export const ECashWalletScreen: React.FC<Props> = ({ navigation, route }) => {
       {pendingRedemptions.length > 0 && (
         <View style={styles.pendingSection}>
           <Text style={styles.pendingSectionTitle}>Pending Redemptions</Text>
-          {pendingRedemptions.map((request) => (
-            <PendingRedemption key={request.id} request={request} />
+          {pendingRedemptions.map((request, index) => (
+            <PendingRedemption key={`${request.id}-${index}`} request={request} />
           ))}
         </View>
       )}
@@ -598,9 +738,9 @@ export const ECashWalletScreen: React.FC<Props> = ({ navigation, route }) => {
         <Text style={styles.loadingText}>Loading transactions...</Text>
       ) : transactions.length > 0 ? (
         <View style={styles.transactionsList}>
-          {transactions.map((tx) => (
+          {transactions.map((tx, index) => (
             <TransactionRow
-              key={tx.id}
+              key={`${tx.id}-${index}`}
               amount={tx.amount}
               status={tx.status}
               createdAt={tx.createdAt}
@@ -633,12 +773,7 @@ const useStyles = makeStyles(({ colors }) => ({
     alignItems: "center",
     flex: 1,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: colors.black,
-  },
-  subtitle: {
+  mainTitle: {
     fontSize: 14,
     color: colors.grey1,
     marginTop: 4,
@@ -849,7 +984,7 @@ const useStyles = makeStyles(({ colors }) => ({
     shadowRadius: 8,
     elevation: 5,
     zIndex: 3,
-    minWidth: 180,
+    minWidth: 250,
     borderWidth: 1,
     borderColor: colors.grey5,
   },
@@ -868,12 +1003,6 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   lastMenuItem: {
     borderBottomWidth: 0,
-  },
-  adminMenuTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: colors.black,
-    marginBottom: 16,
   },
   adminMenuItemContent: {
     flexDirection: "row",
