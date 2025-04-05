@@ -10,6 +10,8 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
 import { LNURL_DOMAINS } from "@app/config"
 import { parseDestination } from "./payment-destination"
 import { logParseDestinationResult } from "@app/utils/analytics"
+import { CashuService } from "@app/services/ecash/cashu-service"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // types
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -39,6 +41,7 @@ export const ScanningQRCodeScreen = () => {
 
   const { LL } = useI18nContext()
   const { hasPermission, requestPermission } = useCameraPermission()
+  const { persistentState } = usePersistentStateContext()
 
   const [pending, setPending] = useState(false)
 
@@ -77,6 +80,76 @@ export const ScanningQRCodeScreen = () => {
       try {
         setPending(true)
 
+        // Check if this is a Cashu token and the eCash wallet is enabled
+        if (persistentState.showECashWallet) {
+          const cashuService = CashuService.getInstance()
+          const isCashuToken = cashuService.isCashuToken(data)
+
+          if (isCashuToken) {
+            // Process the Cashu token
+            const result = await cashuService.receiveToken(data)
+
+            if (result.success) {
+              // Force a balance refresh when the token is successfully redeemed
+              if (!result.isPending) {
+                // For direct redemption (not pending), refresh balance immediately
+                await cashuService.recalculateBalances()
+                await cashuService.persistState()
+
+                // Log successful token redemption for debugging
+                console.log(
+                  `Successfully redeemed token with amount: ${result.amount} sats. Refreshing balance.`,
+                )
+              }
+
+              // Always do an immediate wallet data refresh before navigation
+              await cashuService.initializeWallet()
+
+              // Only navigate on success
+              setPending(false)
+              navigation.reset({
+                index: 1,
+                routes: [
+                  { name: "Primary" },
+                  {
+                    name: "ECashWallet",
+                    params: {
+                      // Pass a refresh flag to ensure the wallet screen refreshes data
+                      forceRefresh: true,
+                      refreshTimestamp: Date.now(),
+                    },
+                  },
+                ],
+              })
+              return
+            }
+
+            // Determine a user-friendly error message
+            let errorTitle = "Error Processing Cashu Token"
+            let errorMessage = result.error || "Failed to process the token"
+
+            // Check for specific error cases
+            if (result.error?.includes("already been redeemed")) {
+              errorTitle = "Token Already Used"
+              errorMessage =
+                "This token has already been redeemed and cannot be used again."
+            }
+
+            // Log the error to help with debugging
+            console.log("Cashu token redemption failed:", result.error)
+
+            // Show error message
+            Alert.alert(errorTitle, errorMessage, [
+              {
+                text: LL.common.ok(),
+                onPress: () => setPending(false),
+              },
+            ])
+            return
+          }
+        }
+
+        // If not a Cashu token or eCash wallet disabled, proceed with normal parsing
         const destination = await parseDestination({
           rawInput: data,
           myWalletIds: wallets.map((wallet) => wallet.id),
@@ -152,6 +225,7 @@ export const ScanningQRCodeScreen = () => {
     bitcoinNetwork,
     wallets,
     accountDefaultWalletQuery,
+    persistentState.showECashWallet,
   ])
 
   if (!hasPermission) {
@@ -171,7 +245,7 @@ export const ScanningQRCodeScreen = () => {
         <PrimaryBtn
           label={LL.ScanningQRCodeScreen.openSettings()}
           onPress={openSettings}
-          btnStyle={{ marginHorizontal: 20, marginBottom: 20 }}
+          btnStyle={styles.settingsButton}
         />
       </Screen>
     )
@@ -207,5 +281,9 @@ const useStyles = makeStyles(() => ({
   permissionMissingText: {
     width: "80%",
     textAlign: "center",
+  },
+  settingsButton: {
+    marginHorizontal: 20,
+    marginBottom: 20,
   },
 }))

@@ -24,13 +24,19 @@ import { JoinCommunitySetting } from "./settings/community-join"
 import { NostrSecret } from "./settings/nostr-secret"
 import { BackupWallet } from "./settings/backup-wallet"
 import { ImportWallet } from "./settings/import-wallet"
-import { AdvancedModeToggle } from "./settings/advanced-mode-toggle"
+import { AdvancedModeToggle as _AdvancedModeToggle } from "./settings/advanced-mode-toggle"
 import { ExportCsvSetting } from "./settings/advanced-export-csv"
-import { ApiAccessSetting } from "./settings/advanced-api-access"
+import { ApiAccessSetting as _ApiAccessSetting } from "./settings/advanced-api-access"
+import { ManageMintsSetting } from "./settings/manage-mints"
 import { GenerateReportsSetting } from "./settings/generate-reports"
 import { SettingsGroup } from "./group"
 import { EmailSetting } from "./account/settings/email"
 import { ChatSetting } from "./chat-setting"
+import {
+  ECashWalletToggle,
+  BitcoinWalletToggle,
+  CashWalletToggle,
+} from "./settings/wallet-display-toggle"
 // import { TotpSetting } from "./totp"
 
 gql`
@@ -59,11 +65,12 @@ gql`
 `
 
 const items = {
-  account: [AccountLevelSetting, AdvancedModeToggle, TxLimits],
+  account: [AccountLevelSetting, /* AdvancedModeToggle, */ TxLimits],
   loginMethods: [EmailSetting, PhoneSetting],
   waysToGetPaid: [AccountLNAddress, AccountPOS, AccountStaticQR],
   reports: [GenerateReportsSetting],
   wallet: [NostrSecret, BackupWallet, ImportWallet],
+  walletDisplay: [ECashWalletToggle, BitcoinWalletToggle, CashWalletToggle],
   preferences: [
     NotificationSetting,
     DefaultWallet,
@@ -78,6 +85,7 @@ const items = {
   ],
   advanced: [
     ExportCsvSetting,
+    ManageMintsSetting,
     //  ApiAccessSetting
   ],
   community: [NeedHelpSetting, JoinCommunitySetting],
@@ -92,29 +100,61 @@ export const SettingsScreen: React.FC = () => {
   return (
     <Screen preset="scroll" keyboardShouldPersistTaps="handled">
       <ScrollView contentContainerStyle={styles.outer}>
-        <SettingsGroup name={LL.common.account()} items={items.account} />
+        <SettingsGroup
+          name="Wallets"
+          items={items.walletDisplay}
+          initiallyExpanded={false}
+        />
+        <SettingsGroup
+          name={LL.common.preferences()}
+          items={items.preferences}
+          initiallyExpanded={false}
+        />
+        <SettingsGroup
+          name={LL.SettingsScreen.addressScreen()}
+          items={items.waysToGetPaid}
+          initiallyExpanded={false}
+        />
+        <SettingsGroup
+          name={LL.common.account()}
+          items={items.account}
+          initiallyExpanded={false}
+        />
+        <SettingsGroup
+          name={LL.common.securityAndPrivacy()}
+          items={items.securityAndPrivacy}
+          initiallyExpanded={false}
+        />
         {isAtLeastLevelOne && (
           <SettingsGroup
             name={LL.AccountScreen.loginMethods()}
             items={items.loginMethods}
+            initiallyExpanded={false}
           />
         )}
         <SettingsGroup
-          name={LL.SettingsScreen.addressScreen()}
-          items={items.waysToGetPaid}
+          name={LL.SettingsScreen.keysManagement()}
+          items={items.wallet}
+          initiallyExpanded={false}
+        />
+        <SettingsGroup
+          name="Experimental"
+          items={items.chats}
+          initiallyExpanded={false}
         />
         {currentLevel === AccountLevel.Two && (
-          <SettingsGroup name="Reports" items={items.reports} />
+          <SettingsGroup name="Reports" items={items.reports} initiallyExpanded={false} />
         )}
-        <SettingsGroup name="Chat(beta)" items={items.chats} />
-        <SettingsGroup name={LL.SettingsScreen.keysManagement()} items={items.wallet} />
-        <SettingsGroup name={LL.common.preferences()} items={items.preferences} />
         <SettingsGroup
-          name={LL.common.securityAndPrivacy()}
-          items={items.securityAndPrivacy}
+          name={LL.common.advanced()}
+          items={items.advanced}
+          initiallyExpanded={false}
         />
-        <SettingsGroup name={LL.common.advanced()} items={items.advanced} />
-        <SettingsGroup name={LL.common.community()} items={items.community} />
+        <SettingsGroup
+          name={LL.common.community()}
+          items={items.community}
+          initiallyExpanded={false}
+        />
         <VersionComponent />
       </ScrollView>
     </Screen>

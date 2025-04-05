@@ -79,58 +79,77 @@ export type RootStackParamList = {
   flashcardTopup: { flashcardLnurl: string }
   redeemBitcoinDetail: {
     receiveDestination: ReceiveDestination
+    paymentFlow?: string
   }
   redeemBitcoinResult: {
-    callback: string
-    domain: string
-    k1: string
-    defaultDescription: string
-    minWithdrawableSatoshis: MoneyAmount<WalletCurrency>
-    maxWithdrawableSatoshis: MoneyAmount<WalletCurrency>
-    receivingWalletDescriptor: WalletDescriptor<WalletCurrency>
-    unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
-    settlementAmount: MoneyAmount<WalletCurrency>
-    displayAmount: MoneyAmount<DisplayCurrency>
-    usdAmount: MoneyAmount<WalletCurrency>
-    lnurl: string
+    success: boolean
+    paymentFlow?: string
+    error?: string
   }
-  phoneFlow: { onComplete?: (token?: string) => void } | undefined
-  phoneRegistrationInitiate: { onComplete?: (token?: string) => void } | undefined
-  phoneRegistrationValidate: {
-    phone: string
-    channel: PhoneCodeChannelType
-    onComplete?: (token?: string) => void
+  transactionDetail: {
+    txid: string
+    walletId: string
   }
-  transactionDetail: { tx: TransactionFragment }
-  breezTransactionDetail: { tx: TransactionFragment }
-  TransactionHistoryTabs?: { initialRouteName?: string } | undefined
-  USDTransactionHistory: undefined
-  BTCTransactionHistory: undefined
-  transactionHistory?: undefined
-  Earn: undefined
-  Card: undefined
-  Map: undefined
+  breezTransactionDetail: {
+    id: string
+  }
+  loginWithBiometrics: undefined
+  phoneFlow: undefined
+  totpRegistrationInitiate: { deviceId: string; appCheckToken: string }
+  totpRegistrationValidate: {
+    deviceId: string
+    appCheckToken: string
+    totpSecret: string
+  }
+  totpLoginValidate: {
+    deviceId: string
+    appCheckToken: string
+    totpSecret: string
+    twoFAProvider: "TOTP"
+  }
   accountScreen: undefined
-  notificationSettingsScreen: undefined
-  transactionLimitsScreen: undefined
-  emailRegistrationInitiate: undefined
-  emailRegistrationValidate: { email: string; emailRegistrationId: string }
-  emailLoginInitiate: { onComplete?: (token?: string) => void }
-  emailLoginValidate: { email: string; emailLoginId: string }
-  totpRegistrationInitiate: undefined
-  totpRegistrationValidate: { totpRegistrationId: string }
-  totpLoginValidate: { authToken: string }
-  BackupOptions: undefined
+  phoneRegistrationInitiate: { deviceId: string; appCheckToken: string }
+  phoneRegistrationValidate: {
+    phoneNumber: string
+    deviceId: string
+    appCheckToken: string
+    channel: PhoneCodeChannelType
+  }
+  phoneLoginInitiate: { deviceId: string; appCheckToken: string }
+  phoneLoginValidate: {
+    phoneNumber: string
+    deviceId: string
+    appCheckToken: string
+    channel: PhoneCodeChannelType
+  }
+  walletOverview: undefined
+  BTCTransactionHistory: undefined
+  USDTransactionHistory: undefined
+  TransactionHistoryTabs: { initialRouteName?: string }
+  walletNotifications: undefined
+  nip05: undefined
+  notifications: undefined
+  securityAgreement: undefined
+  displayCurrency: { fromBalance?: boolean }
+  transactionLimits: undefined
+  developerOptions: undefined
   BackupStart: undefined
-  BackupSeedPhrase: undefined
+  BackupSeedPhrase: { walletId: string }
+  BackupShowSeedPhrase: { walletId: string; seedphrase: string[] }
+  BackupVerify: { walletId: string; seedphrase: string[] }
   BackupDoubleCheck: undefined
-  BackupVerify: undefined
   BackupComplete: undefined
-  BackupShowSeedPhrase: undefined
-  ImportWallet: { insideApp?: boolean; onComplete?: (token?: string) => void }
-  ImportWalletOptions: { insideApp?: boolean } | undefined
+  ImportWalletOptions: undefined
+  ImportWallet: undefined
+  BackupOptions: undefined
+  QRScannerWallet: { walletId: string }
   RefundTransactionList: undefined
-  RefundDestination: { swapAddress: string; amount: number }
+  RefundDestination: {
+    invoice: string
+    hash: string
+    createdAt: Date
+    amountMsats: number
+  }
   RefundConfirmation: {
     swapAddress: string
     amount: number
@@ -138,9 +157,18 @@ export type RootStackParamList = {
     fee: number
     feeType: string
   }
-  ECashWallet: undefined
-  SendECash: undefined
+  card: undefined
+  Card: { reloadlnurl?: string }
+  reconciliationReport: { id: string }
+  nip17Chat: undefined
+  Messages: { event: Event }
+  ECashWallet: {
+    forceRefresh?: boolean
+    refreshTimestamp?: number
+  }
+  ManageMints: undefined
   ReceiveECash: undefined
+  SendECash: undefined
   ConvertECash: { initialAmount?: number }
 }
 

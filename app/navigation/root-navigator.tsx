@@ -111,6 +111,7 @@ import { Messages } from "@app/screens/nip17-chat/messages"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
 import ECashWalletScreen from "@app/screens/ecash-wallet/main-screen"
+import { ManageMintsScreen } from "@app/screens/ecash-wallet/manage-mints-screen"
 
 import HomeActive from "@app/assets/icons/home-active.svg"
 import HomeInactive from "@app/assets/icons/home-inactive.svg"
@@ -555,6 +556,11 @@ export const RootStack = () => {
         name="ECashWallet"
         component={ECashWalletScreen}
         options={{ title: "Pocket Money" }}
+      />
+      <RootNavigator.Screen
+        name="ManageMints"
+        component={ManageMintsScreen}
+        options={{ title: "Manage Mints" }}
       />
     </RootNavigator.Navigator>
   )
