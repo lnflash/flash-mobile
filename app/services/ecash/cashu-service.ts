@@ -32,6 +32,10 @@ export class CashuService {
   private cashuWallets: Map<string, CashuWallet> = new Map()
   private redemptionQueue: RedemptionQueue
 
+  // Token scan debouncing - track recently scanned tokens to prevent duplicates
+  private recentScans: Map<string, number> = new Map() // Maps tokenString hash to timestamp
+  private recentScansTimeout = 3000 // 3 seconds
+
   // Private constructor prevents direct instantiation
   // The singleton pattern ensures only one instance of the service exists
   private constructor() {
@@ -311,6 +315,47 @@ export class CashuService {
   }
 
   /**
+   * Generate a hash for a token string to use for deduplication
+   * @param tokenString The token string to hash
+   * @returns A simple hash of the token string
+   */
+  private generateTokenHash(tokenString: string): string {
+    // Create a simpler hash without bit operations
+    // Just take first and last few characters plus length
+    const prefix = tokenString.substring(0, 8)
+    const suffix =
+      tokenString.length > 8 ? tokenString.substring(tokenString.length - 8) : ""
+    return `${prefix}-${tokenString.length}-${suffix}`
+  }
+
+  /**
+   * Checks if a token was recently scanned to prevent duplicate processing
+   * @param tokenString The token string to check
+   * @returns True if this is a duplicate recent scan
+   */
+  private isRecentDuplicateScan(tokenString: string): boolean {
+    const now = Date.now()
+    const hash = this.generateTokenHash(tokenString)
+
+    // Clear old entries
+    for (const [key, timestamp] of this.recentScans.entries()) {
+      if (now - timestamp > this.recentScansTimeout) {
+        this.recentScans.delete(key)
+      }
+    }
+
+    // Check if this token was recently scanned
+    if (this.recentScans.has(hash)) {
+      console.log("Duplicate token scan detected, ignoring this scan")
+      return true
+    }
+
+    // Add to recent scans
+    this.recentScans.set(hash, now)
+    return false
+  }
+
+  /**
    * Receives a Cashu token and adds it to the wallet
    * In this implementation, we prioritize a good user experience by:
    * 1. Decoding the token to estimate the amount
@@ -326,6 +371,18 @@ export class CashuService {
     if (!this.initialized) {
       await this.initializeWallet()
     }
+
+    // Check if this token was recently scanned to prevent duplicate processing
+    if (this.isRecentDuplicateScan(tokenString)) {
+      return {
+        success: false,
+        error: "This token is currently being processed. Please wait.",
+      }
+    }
+
+    // Generate a consistent token ID based on the token content
+    // This helps prevent duplicate processing of the same token
+    const tokenId = uuidv4() // We'll use this as a transaction ID for both direct and queue redemption
 
     // Get the default mint
     const defaultMint = await this.mintManagementService.getDefaultMint()
@@ -354,8 +411,9 @@ export class CashuService {
         console.log("Detected Bo-format token, attempting direct redemption")
         try {
           // Direct redemption approach for Bo tokens
-          const result = await this.redeemBinaryToken(normalizedToken)
+          const result = await this.redeemBinaryToken(normalizedToken, tokenId)
           if (result.success) {
+            // Since direct redemption succeeded, we do NOT need to add to the queue
             return {
               success: true,
               amount: result.amount,
@@ -363,6 +421,20 @@ export class CashuService {
             }
           }
         } catch (directError) {
+          // If the error is "already redeemed", return that error to the user
+          if (
+            directError instanceof Error &&
+            (directError.message.includes("already spent") ||
+              directError.message.includes("already redeemed") ||
+              directError.message.includes("AlreadySpent"))
+          ) {
+            // Return early without adding to the queue for already redeemed tokens
+            return {
+              success: false,
+              error: "This token has already been redeemed and cannot be used again.",
+            }
+          }
+
           console.log(
             "Direct redemption of Bo token failed, will try queue:",
             directError,
@@ -371,8 +443,26 @@ export class CashuService {
         }
       }
 
-      // Add the token to the redemption queue for processing
-      await this.redemptionQueue.addToQueue(tokenString)
+      // If we reach here, direct redemption either wasn't attempted or failed
+      // Check if we already have a transaction for this token ID
+      const existingTransaction = this.wallet.transactions.find((tx) => tx.id === tokenId)
+      if (existingTransaction) {
+        console.log(`Token with ID ${tokenId} was already processed, not adding to queue`)
+        if (existingTransaction.status === "received") {
+          return {
+            success: true,
+            amount: parseInt(existingTransaction.amount, 10),
+            isPending: false,
+          }
+        }
+        return {
+          success: false,
+          error: existingTransaction.error || "Failed to process token",
+        }
+      }
+
+      // Add the token to the redemption queue for processing with the same token ID
+      await this.redemptionQueue.addToQueue(tokenString, undefined, tokenId)
 
       // Update our pending redemptions list
       this.wallet.pendingRedemptions = this.redemptionQueue.getPending()
@@ -395,10 +485,12 @@ export class CashuService {
   /**
    * Directly redeem a binary token format (Bo)
    * @param tokenString The normalized token string
+   * @param tokenId Optional token ID to use for the transaction
    * @returns Result of redemption
    */
   private async redeemBinaryToken(
     tokenString: string,
+    tokenId?: string,
   ): Promise<{ success: boolean; amount?: number; error?: string }> {
     try {
       console.log("Attempting direct redemption of binary token format")
@@ -489,7 +581,7 @@ export class CashuService {
 
       // Create a transaction record
       const transaction: CashuTransaction = {
-        id: uuidv4(),
+        id: tokenId || uuidv4(),
         amount: totalAmount.toString(),
         status: "received",
         createdAt: new Date(),
@@ -682,16 +774,8 @@ export class CashuService {
     this.wallet.balance = 0
     this.wallet.mintBalances = {}
 
-    // Keep only non-simulated transactions
-    this.wallet.transactions = this.wallet.transactions.filter(
-      (tx) =>
-        !(
-          tx.description?.includes("simulation") ||
-          tx.description?.includes("Received via QR") ||
-          // Also filter out any transactions with exactly 1000 sats (our simulated amount)
-          tx.amount === "1000"
-        ),
-    )
+    // Clear ALL transactions
+    this.wallet.transactions = []
 
     // Remove ALL redemptions from the queue
     await this.redemptionQueue.clearAll()
@@ -701,6 +785,55 @@ export class CashuService {
 
     // Save the cleared wallet
     await this.saveState()
+  }
+
+  /**
+   * Clear pending redemptions that are stuck with "already redeemed" errors
+   * This is a utility function to clean up the UI when tokens show as both received and pending
+   */
+  public async clearAlreadyRedeemedTokens(): Promise<void> {
+    if (!this.initialized) {
+      await this.initializeWallet()
+    }
+
+    // Use the redemption queue's method to clear already redeemed tokens
+    await this.redemptionQueue.clearAlreadyRedeemed()
+
+    // Update our pending redemptions list
+    this.wallet.pendingRedemptions = this.redemptionQueue.getPending()
+
+    // Save the state to persist the changes
+    await this.saveState()
+
+    // Recalculate balances for consistency
+    this.calculateBalances()
+  }
+
+  /**
+   * Clear failed transactions from the transaction history
+   * This is useful for cleaning up the UI when there are failed transactions
+   */
+  public async clearFailedTransactions(): Promise<void> {
+    if (!this.initialized) {
+      await this.initializeWallet()
+    }
+
+    // Count before removal
+    const beforeCount = this.wallet.transactions.length
+
+    // Remove failed transactions
+    this.wallet.transactions = this.wallet.transactions.filter(
+      (tx) => tx.status !== "failed",
+    )
+
+    const removedCount = beforeCount - this.wallet.transactions.length
+    console.log(`Removed ${removedCount} failed transactions from history`)
+
+    // Save the state to persist the changes
+    await this.saveState()
+
+    // Recalculate balances for consistency
+    this.calculateBalances()
   }
 
   /**
