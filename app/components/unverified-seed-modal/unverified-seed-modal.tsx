@@ -1,12 +1,12 @@
 import * as React from "react"
-import { Image, Linking, Modal, View } from "react-native"
+import { Linking, Modal, useWindowDimensions, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles, Text } from "@rneui/themed"
 import { useNavigation, NavigationProp } from "@react-navigation/native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // assets
-import StablesatsImage from "../../assets/images/unlocked.png"
+import Unsecure from "@app/assets/illustrations/unsecure.svg"
 
 // components
 import { PrimaryBtn } from "../buttons"
@@ -20,6 +20,7 @@ type Props = {
 
 export const UnVerifiedSeedModal: React.FC<Props> = ({ isVisible, setIsVisible }) => {
   const { LL } = useI18nContext()
+  const { width } = useWindowDimensions()
   const styles = useStyles()
   const navigation = useNavigation<NavigationProp<RootStackParamList>>()
 
@@ -41,10 +42,10 @@ export const UnVerifiedSeedModal: React.FC<Props> = ({ isVisible, setIsVisible }
     >
       <View style={styles.backdrop}>
         <View style={styles.modalCard}>
-          <Image
-            source={StablesatsImage}
-            style={styles.stableSatsImage}
-            resizeMode="contain"
+          <Unsecure
+            style={{ alignSelf: "center" }}
+            width={width / 2}
+            height={width / 2}
           />
           <Text style={styles.cardTitle} type={"h2"} bold>
             {LL.UnVerifiedSeedModal.header()}
@@ -86,6 +87,7 @@ const useStyles = makeStyles(({ colors, mode }) => ({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
+    paddingTop: 0,
   },
   stableSatsImage: {
     height: 150,
