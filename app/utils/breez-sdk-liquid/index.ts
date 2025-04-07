@@ -32,6 +32,7 @@ import {
   prepareLnurlPay,
   PayAmountVariant,
   recommendedFees,
+  ReceiveAmountVariant,
 } from "@breeztech/react-native-breez-sdk-liquid"
 import { API_KEY } from "@env"
 
@@ -163,6 +164,7 @@ export const fetchBreezFee = async (
   invoice?: string,
   receiverAmountSat?: number,
   feeRateSatPerVbyte?: number,
+  isSendingMax?: boolean,
 ) => {
   try {
     if (paymentType === "lightning" && !!invoice) {
@@ -173,7 +175,10 @@ export const fetchBreezFee = async (
     } else if (paymentType === "onchain" && !!receiverAmountSat && !!feeRateSatPerVbyte) {
       console.log("Fee Rate Sat Per Vbyte:", feeRateSatPerVbyte)
       const response = await preparePayOnchain({
-        amount: { type: PayAmountVariant.RECEIVER, amountSat: receiverAmountSat },
+        amount: {
+          type: isSendingMax ? PayAmountVariant.DRAIN : PayAmountVariant.BITCOIN,
+          receiverAmountSat,
+        },
         feeRateSatPerVbyte,
       })
       return { fee: response.totalFeesSat, err: null }
@@ -186,7 +191,7 @@ export const fetchBreezFee = async (
       if (input.type === InputTypeVariant.LN_URL_PAY) {
         const response = await prepareLnurlPay({
           data: input.data,
-          amountMsat: receiverAmountSat * 1000,
+          amount: { type: PayAmountVariant.BITCOIN, receiverAmountSat },
         })
         return { fee: response.feesSat, err: null }
       }
@@ -210,8 +215,11 @@ export const receivePaymentBreezSDK = async (
 
     // Set the amount you wish the payer to send, which should be within the above limits
     const prepareResponse = await prepareReceivePayment({
-      payerAmountSat: payerAmountSat || currentLimits.receive.minSat,
       paymentMethod: PaymentMethod.LIGHTNING,
+      amount: {
+        type: ReceiveAmountVariant.BITCOIN,
+        payerAmountSat: payerAmountSat || currentLimits.receive.minSat,
+      },
     })
     // If the fees are acceptable, continue to create the Receive Payment
     const receiveFeesSat = prepareResponse.feesSat
@@ -242,8 +250,11 @@ export const receiveOnchainBreezSDK = async (
 
     // Set the amount you wish the payer to send, which should be within the above limits
     const prepareResponse = await prepareReceivePayment({
-      payerAmountSat: amount || currentLimits.receive.minSat,
       paymentMethod: PaymentMethod.BITCOIN_ADDRESS,
+      amount: {
+        type: ReceiveAmountVariant.BITCOIN,
+        payerAmountSat: amount || currentLimits.receive.minSat,
+      },
     })
 
     // If the fees are acceptable, continue to create the Onchain Receive Payment
@@ -288,10 +299,14 @@ export const sendOnchainBreezSDK = async (
   destinationAddress: string,
   amountSat: number,
   feeRateSatPerVbyte?: number,
+  isSendingMax?: boolean,
 ): Promise<SendPaymentResponse> => {
   try {
     const prepareResponse = await preparePayOnchain({
-      amount: { type: PayAmountVariant.RECEIVER, amountSat },
+      amount: {
+        type: isSendingMax ? PayAmountVariant.DRAIN : PayAmountVariant.BITCOIN,
+        receiverAmountSat: amountSat,
+      },
       feeRateSatPerVbyte,
     })
 
@@ -317,7 +332,12 @@ export const payLnurlBreezSDK = async (
     if (input.type === InputTypeVariant.LN_URL_PAY) {
       const prepareResponse = await prepareLnurlPay({
         data: input.data,
-        amountMsat: amountSat * 1000,
+        amount: {
+          type: PayAmountVariant.BITCOIN,
+          receiverAmountSat: amountSat,
+        },
+        bip353Address: input.bip353Address,
+        comment: memo,
         validateSuccessActionUrl: true,
       })
 
@@ -346,7 +366,11 @@ export const onRedeem = async (lnurl: string, defaultDescription: string) => {
     if (input.type === InputTypeVariant.LN_URL_PAY) {
       const prepareResponse = await prepareLnurlPay({
         data: input.data,
-        amountMsat: input.data.minSendable,
+        amount: {
+          type: PayAmountVariant.BITCOIN,
+          receiverAmountSat: input.data.minSendable,
+        },
+        bip353Address: input.bip353Address,
         validateSuccessActionUrl: true,
       })
       const lnUrlPayResult = await lnurlPay({ prepareResponse })
