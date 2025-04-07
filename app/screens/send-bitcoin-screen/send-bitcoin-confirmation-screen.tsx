@@ -91,6 +91,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     settlementAmount,
     feeRateSatPerVbyte,
     note,
+    isSendingMax,
   )
 
   useEffect(() => {

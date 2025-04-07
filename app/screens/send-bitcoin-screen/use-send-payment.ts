@@ -50,6 +50,7 @@ export const useSendPayment = (
   amountSats?: WalletAmount<WalletCurrency>,
   feeRateSatPerVbyte?: number,
   memo?: string,
+  isSendingMax?: boolean,
 ): UseSendPaymentResult => {
   const [intraLedgerPaymentSend, { loading: intraLedgerPaymentSendLoading }] =
     useIntraLedgerPaymentSendMutation({ refetchQueries: [HomeAuthedDocument] })
@@ -150,6 +151,7 @@ export const useSendPayment = (
                   paymentRequest,
                   amountSats.amount,
                   feeRateSatPerVbyte,
+                  isSendingMax,
                 )
                 console.log("BreezSDK onchain response:", response)
                 return {
