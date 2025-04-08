@@ -7,11 +7,11 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { openWhatsApp } from "@app/utils/external"
 import { Icon, ListItem, makeStyles, useTheme } from "@rneui/themed"
 
-import TelegramOutline from "./telegram.svg"
 
 export const SupportChannels = {
   Email: "email",
-  Telegram: "telegram",
+ // Telegram: "telegram",
+  Discord: "discord",
   WhatsApp: "whatsapp",
   StatusPage: "statusPage",
   Mattermost: "mattermost",
@@ -54,8 +54,8 @@ const ContactModal: React.FC<Props> = ({
   }
 
   // TODO: extract in Instance
-  const openTelegramAction = () => Linking.openURL(`https://t.me/+TsqkMBTyU9o0ZTlh`)
-
+  // const openTelegramAction = () => Linking.openURL(`https://t.me/+TsqkMBTyU9o0ZTlh`)
+  const openDiscordAction = () => Linking.openURL("https://discord.gg/8jCg8eCRhF")
   const openMattermostAction = () => Linking.openURL(`https://chat.galoy.io`)
 
   const contactOptionList = [
@@ -68,14 +68,17 @@ const ContactModal: React.FC<Props> = ({
       },
       hidden: supportChannelsToHide?.includes(SupportChannels.StatusPage),
     },
+    //name: LL.support.telegram(),
+    //icon: <TelegramOutline width={24} height={24} fill={colors.black} />,
+    //name: LL.support.Discord(),
     {
-      name: LL.support.telegram(),
-      icon: <TelegramOutline width={24} height={24} fill={colors.black} />,
+      name: LL.support.discord(),
+      icon: <Icon name={"logo-discord"} type="ionicon" color={colors.black} />,
       action: () => {
-        openTelegramAction()
+        openDiscordAction()
         toggleModal()
       },
-      hidden: supportChannelsToHide?.includes(SupportChannels.Telegram),
+      hidden: supportChannelsToHide?.includes(SupportChannels.Discord),
     },
     {
       name: LL.support.mattermost(),
