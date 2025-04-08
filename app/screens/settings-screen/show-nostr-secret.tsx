@@ -36,7 +36,6 @@ export const ShowNostrSecret: React.FC<ShowNostrSecretProps> = ({
     errorPolicy: "all",
     nextFetchPolicy: "network-only",
   })
-  console.log("AUTHED AUTHED AUTHED", dataAuthed, loadingAuthed, isAuthed)
   const [userUpdateNpub] = useUserUpdateNpubMutation()
   useEffect(() => {
     const initialize = async () => {

@@ -41,7 +41,15 @@ export const NIP17Chat: React.FC = () => {
     fetchPolicy: "network-only",
     errorPolicy: "all",
   })
-  const { rumors, poolRef, addEventToProfiles, profileMap, resetChat } = useChatContext()
+  const {
+    rumors,
+    poolRef,
+    addEventToProfiles,
+    profileMap,
+    resetChat,
+    activeSubscription,
+    initializeChat,
+  } = useChatContext()
   const [searchText, setSearchText] = useState("")
   const [refreshing, setRefreshing] = useState(false)
   const [initialized, setInitialized] = useState(false)
@@ -91,6 +99,7 @@ export const NIP17Chat: React.FC = () => {
         console.log("Account Info mismatch", accountNpub, storedNpub)
         setShowImportModal(true)
       }
+      if (!activeSubscription) initializeChat()
       setInitialized(true)
     }
     if (!initialized && poolRef) initialize()

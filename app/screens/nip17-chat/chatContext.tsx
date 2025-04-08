@@ -20,6 +20,8 @@ type ChatContextType = {
   profileMap: Map<string, NostrProfile> | undefined
   addEventToProfiles: (event: Event) => void
   resetChat: () => void
+  initializeChat: (count?: number) => void
+  activeSubscription: SubCloser | null
 }
 
 const publicRelays = [
@@ -39,6 +41,8 @@ const ChatContext = createContext<ChatContextType>({
   profileMap: undefined,
   addEventToProfiles: (event: Event) => {},
   resetChat: () => {},
+  initializeChat: () => {},
+  activeSubscription: null,
 })
 
 export const useChatContext = () => useContext(ChatContext)
@@ -74,30 +78,31 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   }
 
   React.useEffect(() => {
-    let closer: SubCloser | undefined
-    async function initialize(count = 0) {
-      let secretKeyString = await fetchSecretFromLocalStorage()
-      if (!secretKeyString) {
-        if (count >= 3) return
-        setTimeout(() => initialize(count + 1), 500)
-        return
-      }
-      let secret = nip19.decode(secretKeyString).data as Uint8Array
-      const publicKey = getPublicKey(secret)
-      const cachedGiftwraps = await loadGiftwrapsFromStorage()
-      setGiftWraps(cachedGiftwraps)
-      let cachedRumors = []
-      try {
-        cachedRumors = cachedGiftwraps.map((wrap) => getRumorFromWrap(wrap, secret))
-      } catch (e) {
-        console.log("ERROR WHILE DECRYPTING RUMORS", e)
-      }
-      setRumors(cachedRumors)
-      let closer = await fetchNewGiftwraps(cachedGiftwraps, publicKey)
-      setCloser(closer)
-    }
-    if (poolRef && !closer) initialize()
+    if (poolRef && !closer) initializeChat()
   }, [poolRef])
+
+  const initializeChat = async (count = 0) => {
+    if (closer) closer.close()
+    let secretKeyString = await fetchSecretFromLocalStorage()
+    if (!secretKeyString) {
+      if (count >= 3) return
+      setTimeout(() => initializeChat(count + 1), 500)
+      return
+    }
+    let secret = nip19.decode(secretKeyString).data as Uint8Array
+    const publicKey = getPublicKey(secret)
+    const cachedGiftwraps = await loadGiftwrapsFromStorage()
+    setGiftWraps(cachedGiftwraps)
+    let cachedRumors = []
+    try {
+      cachedRumors = cachedGiftwraps.map((wrap) => getRumorFromWrap(wrap, secret))
+    } catch (e) {
+      console.log("ERROR WHILE DECRYPTING RUMORS", e)
+    }
+    setRumors(cachedRumors)
+    let newCloser = await fetchNewGiftwraps(cachedGiftwraps, publicKey)
+    setCloser(newCloser)
+  }
 
   const fetchNewGiftwraps = async (cachedGiftwraps: Event[], publicKey: string) => {
     cachedGiftwraps = cachedGiftwraps.sort((a, b) => a.created_at - b.created_at)
@@ -173,12 +178,14 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       value={{
         giftwraps,
         setGiftWraps,
+        initializeChat,
         rumors,
         setRumors,
         poolRef,
         profileMap: profileMap.current,
         addEventToProfiles,
         resetChat,
+        activeSubscription: closer,
       }}
     >
       {children}
