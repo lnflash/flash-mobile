@@ -10,6 +10,7 @@ import { getSecretKey, setPreferredRelay } from "@app/utils/nostr"
 import { useHomeAuthedQuery, useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "./use-app-config"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export interface ChatInfo {
   pubkeys: string[]
@@ -47,6 +48,15 @@ const useNostrProfile = () => {
   const deleteNostrKeys = async () => {
     await Keychain.resetInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
   }
+
+  const deleteNostrData = async () => {
+    await deleteNostrKeys()
+    const keys = await AsyncStorage.getAllKeys()
+    const lastSeenKeys = keys.filter((key) => key.startsWith("lastSeen_"))
+    AsyncStorage.multiRemove(lastSeenKeys)
+    AsyncStorage.removeItem("giftwraps")
+  }
+
   const saveNewNostrKey = async () => {
     let secretKey = generateSecretKey()
     const nostrSecret = nip19.nsecEncode(secretKey)
@@ -134,6 +144,7 @@ const useNostrProfile = () => {
     updateNostrProfile,
     saveNewNostrKey,
     deleteNostrKeys,
+    deleteNostrData,
   }
 }
 
