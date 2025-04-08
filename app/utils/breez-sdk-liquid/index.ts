@@ -270,9 +270,7 @@ export const receiveOnchainBreezSDK = async (
   }
 }
 
-export const sendPaymentBreezSDK = async (
-  bolt11: string,
-): Promise<SendPaymentResponse> => {
+export const payLightningBreez = async (bolt11: string): Promise<SendPaymentResponse> => {
   try {
     const prepareResponse = await prepareSendPayment({
       destination: bolt11,
@@ -295,7 +293,7 @@ export const sendPaymentBreezSDK = async (
   }
 }
 
-export const sendOnchainBreezSDK = async (
+export const payOnchainBreez = async (
   destinationAddress: string,
   amountSat: number,
   feeRateSatPerVbyte?: number,
@@ -322,7 +320,7 @@ export const sendOnchainBreezSDK = async (
   }
 }
 
-export const payLnurlBreezSDK = async (
+export const payLnurlBreez = async (
   lnurl: string,
   amountSat: number,
   memo: string,

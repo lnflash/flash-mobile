@@ -18,7 +18,7 @@ import {
 import { getErrorMessages } from "@app/graphql/utils"
 
 // Breez SDK
-import { parseInvoiceBreezSDK, sendPaymentBreezSDK } from "@app/utils/breez-sdk-liquid"
+import { parseInvoiceBreezSDK, payLightningBreez } from "@app/utils/breez-sdk-liquid"
 
 // types
 import { SendPaymentMutation } from "../send-bitcoin-screen/payment-details"
@@ -88,7 +88,7 @@ export const useConvert = (): UseConvertResult => {
         try {
           const invoice = await parseInvoiceBreezSDK(paymentRequest)
           if (invoice.amountMsat !== null) {
-            const response = await sendPaymentBreezSDK(paymentRequest)
+            const response = await payLightningBreez(paymentRequest)
             console.log("BreezSDK LNInvoice response:", response)
             return {
               status: PaymentSendResult.Success,

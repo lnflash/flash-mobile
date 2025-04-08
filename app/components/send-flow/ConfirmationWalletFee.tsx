@@ -63,6 +63,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
         !!flashUserAddress ? flashUserAddress : paymentDetail.destination,
         settlementAmount.amount,
         feeRateSatPerVbyte,
+        paymentDetail.isSendingMax,
       )
       if (fee !== null) {
         setFee({
