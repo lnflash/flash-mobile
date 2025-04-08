@@ -10,7 +10,6 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { updateUserData } from "@app/store/redux/slices/userSlice"
-import { setPreferredRelay } from "@app/utils/nostr"
 import { SetUserNameUI } from "./set-username-ui"
 import { SetAddressError } from "@app/types/errors"
 import { validateLightningAddress } from "@app/utils/validations"
@@ -31,6 +30,7 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
   const dispatch = useAppDispatch()
   const [error, setError] = useState<SetAddressError | undefined>()
   const [lnAddress, setLnAddress] = useState("")
+  const [uploadingUsername, setUploadingUsername] = useState(false) // Manage loading state here
 
   const { updateNostrProfile } = useNostrProfile()
 
@@ -66,9 +66,11 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
   })
 
   const onSetLightningAddress = async () => {
+    setUploadingUsername(true)
     const validationResult = validateLightningAddress(lnAddress)
     if (!validationResult.valid) {
       setError(validationResult.error)
+      setUploadingUsername(false)
       return
     }
 
@@ -80,9 +82,15 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
       },
     })
 
-    console.log("Mutation response:", { data, errors })
-    console.log("User update errors:", data?.userUpdateUsername?.errors) // Log the errors array
-    updateNostrProfile({
+    if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
+      if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
+        setError(SetAddressError.ADDRESS_UNAVAILABLE)
+      }
+      setError(SetAddressError.UNKNOWN_ERROR)
+      setUploadingUsername(false)
+      return
+    }
+    await updateNostrProfile({
       content: {
         name: lnAddress,
         username: lnAddress,
@@ -90,17 +98,8 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
         nip05: `${lnAddress}@${lnDomain}`,
       },
     })
-    setPreferredRelay(relayUrl)
-    if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
-      if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
-        setError(SetAddressError.ADDRESS_UNAVAILABLE)
-      } else {
-        setError(SetAddressError.UNKNOWN_ERROR)
-      }
-      return
-    }
-
     dispatch(updateUserData({ username: lnAddress }))
+    setUploadingUsername(false)
     closeModal()
   }
 
@@ -113,6 +112,7 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({
       loading={loading}
       setLnAddress={onChangeLnAddress}
       onSetLightningAddress={onSetLightningAddress}
+      uploadingUsername={uploadingUsername}
     />
   )
 }
