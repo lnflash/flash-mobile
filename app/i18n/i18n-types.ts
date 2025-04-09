@@ -7903,7 +7903,7 @@ export type TranslationFunctions = {
 		 */
 		usernameHint: (arg: { bankName: string }) => LocalizedString
 		/**
-		 * enter your username here
+		 * Enter your username
 		 */
 		placeholder: () => LocalizedString
 		/**
@@ -7916,7 +7916,7 @@ export type TranslationFunctions = {
 		title: (arg: { bankName: string }) => LocalizedString
 		Errors: {
 			/**
-			 * Address must be at least 3 characters long
+			 * Username must be at least 3 characters long
 			 */
 			tooShort: () => LocalizedString
 			/**

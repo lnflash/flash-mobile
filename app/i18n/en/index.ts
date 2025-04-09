@@ -1083,11 +1083,11 @@ const en: BaseTranslation = {
     helloText: "Hello!",
     whoAreYou: "What should we call you?",
     usernameHint: "This will be your {bankName: string} username",
-    placeholder: "enter your username here",
+    placeholder: "Enter your username",
     title: "Set {bankName: string} address",
     save: "Save",
     Errors: {
-      tooShort: "Address must be at least 3 characters long",
+      tooShort: "Username must be at least 3 characters long",
       tooLong: "Address must be at most 50 characters long",
       invalidCharacter: "Address can only contain letters, numbers, and underscores",
       addressUnavailable: "Sorry, this address is already taken",
