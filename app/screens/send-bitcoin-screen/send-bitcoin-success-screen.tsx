@@ -139,6 +139,13 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
       })
   }
 
+  const onPressDone = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Primary" }],
+    })
+  }
+
   return (
     <Screen unsafe backgroundColor={colors.accent02}>
       <View style={styles.container}>
@@ -167,7 +174,7 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
       </View>
       <PrimaryBtn
         label="Done"
-        onPress={() => navigation.popToTop()}
+        onPress={onPressDone}
         btnStyle={{
           backgroundColor: "#fff",
           marginHorizontal: 20,
