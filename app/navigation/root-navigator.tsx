@@ -1,14 +1,12 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
-import {
-  CardStyleInterpolators,
-  StackScreenProps,
-  createStackNavigator,
-} from "@react-navigation/stack"
+import { CardStyleInterpolators, createStackNavigator } from "@react-navigation/stack"
 import * as React from "react"
 
 import {
   AuthenticationCheckScreen,
   AuthenticationScreen,
+  UsernameSet,
+  Welcome,
 } from "../screens/authentication-screen"
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
@@ -139,10 +137,9 @@ const RootNavigator = createStackNavigator<RootStackParamList>()
 export const RootStack = () => {
   const { persistentState } = usePersistentStateContext()
   const { LL } = useI18nContext()
-  const isAuthed = useIsAuthed()
+  const { colors } = useTheme().theme
   const styles = useStyles()
-  const { theme } = useTheme()
-  const colors = theme.colors
+  const isAuthed = useIsAuthed()
 
   // Check if intro screen is displayed twice.
   const initialRouteName =
@@ -154,6 +151,7 @@ export const RootStack = () => {
 
   return (
     <RootNavigator.Navigator
+      initialRouteName={initialRouteName}
       screenOptions={{
         gestureEnabled: true,
         headerBackTitle: LL.common.back(),
@@ -163,7 +161,6 @@ export const RootStack = () => {
         headerTintColor: colors.black,
         headerShadowVisible: false,
       }}
-      initialRouteName={initialRouteName}
     >
       {/* Intro Screen route */}
       <RootNavigator.Screen
@@ -179,6 +176,16 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="getStarted"
         component={GetStartedScreen}
+        options={{ headerShown: false, animationEnabled: false }}
+      />
+      <RootNavigator.Screen
+        name="UsernameSet"
+        component={UsernameSet}
+        options={{ headerShown: false, animationEnabled: false }}
+      />
+      <RootNavigator.Screen
+        name="Welcome"
+        component={Welcome}
         options={{ headerShown: false, animationEnabled: false }}
       />
       <RootNavigator.Screen
@@ -600,30 +607,19 @@ export const ContactNavigator = () => {
   )
 }
 const StackPhoneValidation = createStackNavigator<PhoneValidationStackParamList>()
-type Props = StackScreenProps<RootStackParamList, "phoneFlow">
-export const PhoneLoginNavigator: React.FC<Props> = ({ route }) => {
-  const { LL } = useI18nContext()
-  return (
-    <StackPhoneValidation.Navigator>
-      <StackPhoneValidation.Screen
-        name="phoneLoginInitiate"
-        options={{
-          headerShown: false,
-          title: LL.common.phoneNumber(),
-        }}
-        initialParams={route.params}
-        component={PhoneLoginInitiateScreen}
-      />
-      <StackPhoneValidation.Screen
-        name="phoneLoginValidate"
-        component={PhoneLoginValidationScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-    </StackPhoneValidation.Navigator>
-  )
-}
+
+export const PhoneLoginNavigator = () => (
+  <StackPhoneValidation.Navigator screenOptions={{ headerShown: false }}>
+    <StackPhoneValidation.Screen
+      name="phoneLoginInitiate"
+      component={PhoneLoginInitiateScreen}
+    />
+    <StackPhoneValidation.Screen
+      name="phoneLoginValidate"
+      component={PhoneLoginValidationScreen}
+    />
+  </StackPhoneValidation.Navigator>
+)
 
 const Tab = createBottomTabNavigator<PrimaryStackParamList>()
 
@@ -686,17 +682,6 @@ export const PrimaryNavigator = () => {
           }}
         />
       ) : null}
-      <Tab.Screen
-        name="Card"
-        component={CardScreen}
-        options={{
-          title: LL.CardScreen.title(),
-          headerShown: false,
-          headerStyle: { backgroundColor: colors.white },
-          tabBarTestID: LL.CardScreen.title(),
-          tabBarIcon: ({ focused }) => (focused ? <CardActive /> : <CardInactive />),
-        }}
-      />
       <Tab.Screen
         name="Map"
         component={MapScreen}
