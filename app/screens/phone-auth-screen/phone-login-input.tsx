@@ -37,10 +37,10 @@ const PLACEHOLDER_PHONE_NUMBER = "123-456-7890"
 
 type Props = StackScreenProps<PhoneValidationStackParamList, "phoneLoginInitiate">
 
-export const PhoneLoginInitiateScreen: React.FC<Props> = ({ navigation, route }) => {
-  const styles = useStyles()
-  const { colors, mode: themeMode } = useTheme().theme
+export const PhoneLoginInitiateScreen: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
+  const { colors, mode } = useTheme().theme
+  const styles = useStyles()
 
   const {
     submitPhoneNumber,
@@ -65,7 +65,6 @@ export const PhoneLoginInitiateScreen: React.FC<Props> = ({ navigation, route })
       navigation.navigate("phoneLoginValidate", {
         phone: validatedPhoneNumber || "",
         channel: phoneCodeChannel,
-        onComplete: route.params?.onComplete,
       })
     }
   }, [status, phoneCodeChannel, validatedPhoneNumber, navigation, setStatus])
@@ -115,7 +114,7 @@ export const PhoneLoginInitiateScreen: React.FC<Props> = ({ navigation, route })
         </Text>
         <View style={styles.inputContainer}>
           <CountryPicker
-            theme={themeMode === "dark" ? DARK_THEME : DEFAULT_THEME}
+            theme={mode === "dark" ? DARK_THEME : DEFAULT_THEME}
             countryCode={
               (phoneInputInfo?.countryCode || DEFAULT_COUNTRY_CODE) as CountryCode
             }

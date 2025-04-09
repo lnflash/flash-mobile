@@ -50,7 +50,10 @@ export const EmailLoginValidateScreen: React.FC<Props> = ({ navigation, route })
           } else {
             analytics().logLogin({ method: "email" })
             saveToken(authToken)
-            navigation.replace("Primary")
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Primary" }],
+            })
           }
         } else {
           throw new Error(LL.common.errorAuthToken())
