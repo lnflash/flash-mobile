@@ -14,8 +14,6 @@ import {
   Info,
   QuickStart,
   Transactions,
-  UsernameModal,
-  WelcomeUserScreen,
 } from "@app/components/home-screen"
 
 // gql
@@ -42,8 +40,6 @@ export const HomeScreen: React.FC = () => {
   const [refreshTriggered, setRefreshTriggered] = useState(false)
   const [defaultAccountModalVisible, setDefaultAccountModalVisible] = useState(false)
   const [isUnverifiedSeedModalVisible, setIsUnverifiedSeedModalVisible] = useState(false)
-  const [usernameModal, setUsernameModal] = useState(false)
-  const [showSplash, setShowSplash] = useState(false)
 
   // queries
   const isAuthed = useIsAuthed()
@@ -70,7 +66,6 @@ export const HomeScreen: React.FC = () => {
     if (dataAuthed?.me) {
       dispatch(setUserData(dataAuthed.me))
       saveDefaultWallet()
-      if (dataAuthed && dataAuthed.me && !dataAuthed.me.username) setUsernameModal(true)
     }
   }, [dataAuthed])
 
@@ -137,20 +132,6 @@ export const HomeScreen: React.FC = () => {
         setIsVisible={setIsUnverifiedSeedModalVisible}
       />
       <AccountCreateModal modalVisible={modalVisible} setModalVisible={setModalVisible} />
-      <WelcomeUserScreen
-        username={dataAuthed?.me?.username || "New User"}
-        visible={showSplash}
-        onComplete={() => {
-          setShowSplash(false)
-        }}
-      />
-      <UsernameModal
-        isVisible={usernameModal}
-        closeModal={() => {
-          setUsernameModal(false)
-          setTimeout(() => setShowSplash(true), 1000)
-        }}
-      />
     </Screen>
   )
 }
