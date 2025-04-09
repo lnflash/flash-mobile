@@ -1,6 +1,18 @@
 import { gql } from "@apollo/client"
 
 gql`
+  query auth {
+    me {
+      id
+      language
+      username
+      phone
+      email {
+        address
+        verified
+      }
+    }
+  }
   query homeAuthed {
     me {
       id
