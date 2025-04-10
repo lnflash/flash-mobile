@@ -30,7 +30,6 @@ import {
 } from "@app/utils/breez-sdk-liquid"
 
 type Props = {
-  recommendedFees?: RecommendedFees
   selectedFee?: number
   usdWallet: any
   paymentDetail: PaymentDetail<WalletCurrency>
@@ -39,7 +38,6 @@ type Props = {
 }
 
 const DetailAmountNote: React.FC<Props> = ({
-  recommendedFees,
   selectedFee,
   usdWallet,
   paymentDetail,
@@ -214,18 +212,8 @@ const DetailAmountNote: React.FC<Props> = ({
     let moneyAmount: MoneyAmount<WalletCurrency>
 
     if (paymentDetail.sendingWalletDescriptor.currency === WalletCurrency.Btc) {
-      let feeRateSatPerVbyte = selectedFee ? selectedFee : recommendedFees?.fastestFee
-
-      const { fee }: { fee: any; err: any } = await fetchBreezFee(
-        paymentDetail?.paymentType,
-        paymentDetail?.destination,
-        Math.round(btcWallet.balance * 0.9),
-        feeRateSatPerVbyte,
-      )
-      console.log("on-chain fee:", feeRateSatPerVbyte, fee)
-
       moneyAmount = {
-        amount: btcWallet.balance - Math.round(fee * 1.005),
+        amount: btcWallet.balance,
         currency: WalletCurrency.Btc,
         currencyCode: "BTC",
       }

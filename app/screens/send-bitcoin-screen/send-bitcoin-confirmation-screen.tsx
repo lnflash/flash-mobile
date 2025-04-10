@@ -76,22 +76,11 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   const { data } = useSendBitcoinConfirmationScreenQuery({ skip: !useIsAuthed() })
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
-  const convertedDestination =
-    sendingWalletDescriptor.currency === "BTC" && paymentType === "intraledger"
-      ? destination + `@${lnDomain}`
-      : destination
-
   const {
     loading: sendPaymentLoading,
     sendPayment,
     hasAttemptedSend,
-  } = useSendPayment(
-    sendPaymentMutation,
-    convertedDestination,
-    settlementAmount,
-    feeRateSatPerVbyte,
-    note,
-  )
+  } = useSendPayment(sendPaymentMutation, paymentDetail, feeRateSatPerVbyte)
 
   useEffect(() => {
     setWalletText()

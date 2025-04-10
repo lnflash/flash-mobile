@@ -4,12 +4,12 @@ PODS:
     - GoogleUtilities/UserDefaults (~> 7.13)
     - PromisesObjC (~> 2.3)
   - boost (1.76.0)
-  - breez_sdk_liquid (0.5.1):
-    - BreezSDKLiquid (= 0.5.1)
+  - breez_sdk_liquid (0.7.8):
+    - BreezSDKLiquid (= 0.7.8)
     - React-Core
-  - breez_sdk_liquidFFI (0.5.1)
-  - BreezSDKLiquid (0.5.1):
-    - breez_sdk_liquidFFI (= 0.5.1)
+  - breez_sdk_liquidFFI (0.7.8)
+  - BreezSDKLiquid (0.7.8):
+    - breez_sdk_liquidFFI (= 0.7.8)
   - BVLinearGradient (2.8.3):
     - React-Core
   - DoubleConversion (1.1.6)
@@ -143,7 +143,7 @@ PODS:
   - GoogleUtilities/UserDefaults (7.13.3):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
-  - GT3Captcha-iOS (0.15.8.4)
+  - GT3Captcha-iOS (0.15.9)
   - hermes-engine (0.72.7):
     - hermes-engine/Pre-built (= 0.72.7)
   - hermes-engine/Pre-built (0.72.7)
@@ -153,7 +153,7 @@ PODS:
     - nanopb/encode (= 2.30909.1)
   - nanopb/decode (2.30909.1)
   - nanopb/encode (2.30909.1)
-  - OpenSSL-Universal (3.3.2000)
+  - OpenSSL-Universal (3.3.3000)
   - PromisesObjC (2.4.0)
   - PromisesSwift (2.4.0):
     - PromisesObjC (= 2.4.0)
@@ -1039,10 +1039,10 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   AppCheckCore: 9feb4300caa596a36416cde10674dc5bec1e022e
-  boost: 57d2868c099736d80fcd648bf211b4431e51a558
-  breez_sdk_liquid: 8528aefaa995706819939f420f869bc1d90bd5c5
-  breez_sdk_liquidFFI: 60003088e92e35cf6fc5a8686883b346023a26d1
-  BreezSDKLiquid: 2895e61f32ed200952104575a56e937b0a787df8
+  boost: 7dcd2de282d72e344012f7d6564d024930a6a440
+  breez_sdk_liquid: 7bc2b2ea8f758ab8a9a33f96781361e09160b943
+  breez_sdk_liquidFFI: a843656a6e839f603401fb84a70cca17b08af9ca
+  BreezSDKLiquid: e848f16b29414c77f1282af4561e022665c0e9eb
   BVLinearGradient: 880f91a7854faff2df62518f0281afb1c60d49a3
   DoubleConversion: 5189b271737e1565bdce30deb4a08d647e3f5f54
   FBLazyVector: 5fbbff1d7734827299274638deb8ba3024f6c597
@@ -1066,11 +1066,11 @@ SPEC CHECKSUMS:
   GoogleAppMeasurement: 68afe759316673c6554dac35a0c7ae8f5d6cb4ed
   GoogleDataTransport: 6c09b596d841063d76d4288cc2d2f42cc36e1e2a
   GoogleUtilities: ea963c370a38a8069cc5f7ba4ca849a60b6d7d15
-  GT3Captcha-iOS: 3e7737ece3b2210ba19802be381b9aa88007f045
+  GT3Captcha-iOS: aeb6fed2e8594099821430a89208679e5a55b740
   hermes-engine: 9180d43df05c1ed658a87cc733dc3044cf90c00a
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
   nanopb: d4d75c12cd1316f4a64e3c6963f879ecd4b5e0d5
-  OpenSSL-Universal: b60a3702c9fea8b3145549d421fdb018e53ab7b4
+  OpenSSL-Universal: d776ce24dab24323e6995dfb17c64d598885d05c
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
   RCT-Folly: 424b8c9a7a0b9ab2886ffe9c3b041ef628fd4fb1

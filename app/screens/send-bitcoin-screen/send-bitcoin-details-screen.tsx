@@ -169,6 +169,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           !!flashUserAddress ? flashUserAddress : pd?.destination,
           pd?.settlementAmount.amount,
           selectedFee, // feeRateSatPerVbyte
+          pd.isSendingMax,
         )
         if (fee === null && err) {
           setAsyncErrorMessage(`${err?.message || err} (amount + fee)` || "")
@@ -304,7 +305,6 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           paymentDetail={paymentDetail}
         />
         <DetailAmountNote
-          recommendedFees={recommendedFees}
           selectedFee={selectedFee}
           usdWallet={usdWallet}
           paymentDetail={paymentDetail}

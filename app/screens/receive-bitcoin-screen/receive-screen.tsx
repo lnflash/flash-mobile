@@ -163,6 +163,7 @@ const ReceiveScreen = () => {
             settlementAmount={request.settlementAmount}
             receiveViaNFC={request.receiveViaNFC}
             onPaid={() => setUpdatedPaymentState(PaymentRequestState.Paid)}
+            note={request.memo}
           />
         </Screen>
       </>

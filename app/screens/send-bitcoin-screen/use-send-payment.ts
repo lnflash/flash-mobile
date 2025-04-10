@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react"
-import * as sdk from "@breeztech/react-native-breez-sdk-liquid"
 
 // gql
 import {
@@ -17,23 +16,25 @@ import {
   WalletCurrency,
 } from "@app/graphql/generated"
 
+// hooks
+import { useAppConfig } from "@app/hooks"
+
 // utils
 import { getErrorMessages } from "@app/graphql/utils"
 
 // types
-import { SendPaymentMutation } from "./payment-details/index.types"
-import { WalletAmount } from "@app/types/amounts"
+import { PaymentDetail, SendPaymentMutation } from "./payment-details/index.types"
 
 // Breez SDK
 import {
-  sendPaymentBreezSDK,
-  parseInvoiceBreezSDK,
-  sendOnchainBreezSDK,
-  payLnurlBreezSDK,
+  payLightningBreez,
+  payOnchainBreez,
+  payLnurlBreez,
 } from "@app/utils/breez-sdk-liquid"
 
 type UseSendPaymentResult = {
   loading: boolean
+  hasAttemptedSend: boolean
   sendPayment:
     | (() => Promise<{
         status: PaymentSendResult | null | undefined
@@ -41,16 +42,15 @@ type UseSendPaymentResult = {
       }>)
     | undefined
     | null
-  hasAttemptedSend: boolean
 }
 
 export const useSendPayment = (
   sendPaymentMutation?: SendPaymentMutation | null,
-  paymentRequest?: string,
-  amountSats?: WalletAmount<WalletCurrency>,
+  paymentDetail?: PaymentDetail<WalletCurrency>,
   feeRateSatPerVbyte?: number,
-  memo?: string,
 ): UseSendPaymentResult => {
+  const { lnAddressHostname } = useAppConfig().appConfig.galoyInstance
+
   const [intraLedgerPaymentSend, { loading: intraLedgerPaymentSendLoading }] =
     useIntraLedgerPaymentSendMutation({ refetchQueries: [HomeAuthedDocument] })
   const [intraLedgerUsdPaymentSend, { loading: intraLedgerUsdPaymentSendLoading }] =
@@ -93,65 +93,45 @@ export const useSendPayment = (
     return sendPaymentMutation && !hasAttemptedSend
       ? async () => {
           setHasAttemptedSend(true)
-          if (paymentRequest && amountSats?.currency === "BTC") {
-            let invoice: sdk.LnInvoice | null = null
-            if (
-              paymentRequest.length > 110 &&
-              !paymentRequest.toLowerCase().startsWith("lnurl")
-            ) {
-              try {
-                console.log("Parsing invoice using Breez SDK")
-                invoice = await parseInvoiceBreezSDK(paymentRequest)
-              } catch (error) {
-                console.error("Error parsing invoice with Breez SDK:", error)
-                return {
-                  status: PaymentSendResult.Failure,
-                  errorsMessage: "Failed to parse invoice",
-                }
-              }
-            }
+
+          if (paymentDetail && paymentDetail.sendingWalletDescriptor.currency === "BTC") {
+            const { settlementAmount, memo, isSendingMax, destination, paymentType } =
+              paymentDetail
 
             try {
-              if (
-                sendPaymentMutation.name === "sendPaymentMutation" &&
-                paymentRequest.length > 110 &&
-                !paymentRequest.toLowerCase().startsWith("lnurl") &&
-                invoice?.amountMsat !== null
-              ) {
-                console.log("Starting sendPaymentBreezSDK using invoice with amount")
-                const response = await sendPaymentBreezSDK(paymentRequest)
-                console.log("BreezSDK LNInvoice response:", response)
+              if (paymentType === "lightning") {
+                console.log("Starting payLightningBreez")
+                const response = await payLightningBreez(destination)
+                console.log("Response payLightningBreez: ", response)
                 return {
                   status: PaymentSendResult.Success,
                   errorsMessage: undefined,
                 }
-              } else if (
-                sendPaymentMutation?.name === "sendPaymentMutation" &&
-                (paymentRequest.toLowerCase().startsWith("lnurl") ||
-                  paymentRequest.includes("@"))
-              ) {
-                console.log("Starting payLnurlBreezSDK using lnurl or lightning address")
-                const response = await payLnurlBreezSDK(
-                  paymentRequest,
-                  amountSats?.amount,
-                  memo || "",
+              } else if (paymentType === "lnurl" || paymentType === "intraledger") {
+                console.log("Starting payLnurlBreez", memo)
+                const updatedDestination =
+                  paymentType === "intraledger"
+                    ? destination + `@${lnAddressHostname}`
+                    : destination
+                const response = await payLnurlBreez(
+                  updatedDestination,
+                  settlementAmount?.amount,
+                  "",
                 )
-                console.log("BreezSDK LNURL response:", response)
+                console.log("Response payLnurlBreez: ", response)
                 return {
                   status: PaymentSendResult.Success,
                   errorsMessage: undefined,
                 }
-              } else if (
-                sendPaymentMutation?.name === "sendPaymentMutation" &&
-                paymentRequest.length < 64
-              ) {
-                console.log("Starting sendOnchainBreezSDK using destination address")
-                const response = await sendOnchainBreezSDK(
-                  paymentRequest,
-                  amountSats.amount,
+              } else if (paymentType === "onchain") {
+                console.log("Starting payOnchainBreez")
+                const response = await payOnchainBreez(
+                  destination,
+                  settlementAmount.amount,
                   feeRateSatPerVbyte,
+                  isSendingMax,
                 )
-                console.log("BreezSDK onchain response:", response)
+                console.log("Response payOnchainBreez: ", response)
                 return {
                   status: PaymentSendResult.Success,
                   errorsMessage: undefined,
@@ -195,7 +175,8 @@ export const useSendPayment = (
   }, [
     sendPaymentMutation,
     hasAttemptedSend,
-    paymentRequest,
+    paymentDetail,
+    feeRateSatPerVbyte,
     intraLedgerPaymentSend,
     intraLedgerUsdPaymentSend,
     lnInvoicePaymentSend,
