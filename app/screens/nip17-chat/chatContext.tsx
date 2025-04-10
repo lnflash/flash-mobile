@@ -55,11 +55,6 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
   const poolRef = useRef(new SimplePool())
   const processedEventIds = useRef(new Set())
-  const {
-    appConfig: {
-      galoyInstance: { relayUrl },
-    },
-  } = useAppConfig()
 
   const handleGiftWraps = (event: Event, secret: Uint8Array) => {
     setGiftWraps((prevEvents) => [...(prevEvents || []), event])
@@ -134,7 +129,6 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         }
       },
       poolRef.current,
-      relayUrl,
       lastCachedEvent?.created_at - 20 * 60,
     )
     return closer
@@ -168,7 +162,6 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       publicKey,
       (event) => handleGiftWraps(event, secret),
       poolRef!.current,
-      relayUrl,
     )
     setCloser(newCloser)
   }
