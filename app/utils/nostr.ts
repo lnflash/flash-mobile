@@ -119,7 +119,6 @@ export const fetchGiftWrapsForPublicKey = (
   pubkey: string,
   eventHandler: (event: Event) => void,
   pool: SimplePool,
-  flashRelay: string,
   since?: number,
 ) => {
   let filter: Filter = {
@@ -128,16 +127,15 @@ export const fetchGiftWrapsForPublicKey = (
     "limit": 150,
   }
   if (since) filter.since = since
-  console.log("FETCHING MESSAGES for", filter, flashRelay)
   let closer = pool.subscribeMany(
-    [flashRelay, "wss://relay.damus.io", "wss://nostr.oxtr.dev"],
+    ["wss://relay.flashapp.me", "wss://relay.damus.io", "wss://nostr.oxtr.dev"],
     [filter],
     {
       onevent: eventHandler,
       onclose: () => {
         closer.close()
         console.log("Re-establishing connection")
-        closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool, flashRelay)
+        closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool)
       },
     },
   )
@@ -217,7 +215,6 @@ export const fetchPreferredRelays = async (pubKeys: string[], pool: SimplePool) 
 
 export const setPreferredRelay = async (secretKey?: Uint8Array) => {
   let pool = new SimplePool()
-  console.log("inside setpreferredRelay")
   let secret: Uint8Array | null = null
   if (!secretKey) {
     secret = await getSecretKey()
