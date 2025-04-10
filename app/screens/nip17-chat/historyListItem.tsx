@@ -10,6 +10,7 @@ import { useChatContext } from "./chatContext"
 import { Rumor, fetchNostrUsers } from "@app/utils/nostr"
 import { getLastSeen } from "./utils"
 import { bytesToHex } from "@noble/hashes/utils"
+import Icon from "react-native-vector-icons/Ionicons"
 
 interface HistoryListItemProps {
   item: string
@@ -25,6 +26,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
   const [hasUnread, setHasUnread] = useState(false)
 
   const userPublicKey = userPrivateKey ? getPublicKey(userPrivateKey) : ""
+  const selfNote = item.split(",").length === 1
 
   function handleProfileEvent(event: Event) {
     addEventToProfiles(event)
@@ -98,6 +100,15 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
             />
           )
         })}
+      {selfNote ? (
+        <Image
+          source={{
+            uri: "https://cdn.pixabay.com/photo/2016/07/29/21/39/school-1555899_960_720.png",
+          }}
+          style={styles.selfNotePicture}
+          key={"self-note-image"}
+        />
+      ) : null}
       <View style={{ flexDirection: "column", maxWidth: "80%" }}>
         <ListItem.Content key="heading">
           <ListItem.Subtitle style={styles.itemText} key="subheading">
@@ -114,6 +125,20 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
                 )
               })
               .join(", ")}
+            {selfNote ? (
+              <View
+                style={{ display: "flex", flexDirection: "row", alignItems: "center" }}
+              >
+                <Text style={{ ...styles.itemText, fontWeight: "bold" }}>
+                  Note to Self
+                </Text>
+                <Icon
+                  name="checkmark-done-circle-outline"
+                  size={20}
+                  style={styles.verifiedIcon}
+                ></Icon>
+              </View>
+            ) : null}
           </ListItem.Subtitle>
         </ListItem.Content>
         <ListItem.Content key="last message">
