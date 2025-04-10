@@ -201,7 +201,7 @@ export const PhoneLoginValidationScreen: React.FC<Props> = ({ navigation, route 
             saveToken(authToken)
             navigation.reset({
               index: 0,
-              routes: [{ name: "Primary" }],
+              routes: [{ name: "authenticationCheck" }],
             })
             return
           }

@@ -169,6 +169,7 @@ export type PhoneValidationStackParamList = {
   }
   Home: undefined
   totpLoginValidate: { authToken: string }
+  authenticationCheck: undefined
 }
 
 export type PrimaryStackParamList = {
