@@ -1,11 +1,15 @@
 import { ListItem, useTheme } from "@rneui/themed"
-import { useStyles } from "./style"
+import { useStyles } from "../style"
 import { Image } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import { nip19 } from "nostr-tools"
+import { getPublicKey, nip19 } from "nostr-tools"
 import { bytesToHex } from "@noble/hashes/utils"
+import { useChatContext } from "../chat/chatContext"
+import { addToContactList } from "@app/utils/nostr"
+import Icon from "react-native-vector-icons/Ionicons"
+import { getContactsFromEvent } from "../utils"
 
 interface SearchListItemProps {
   item: Chat
@@ -15,11 +19,31 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
   item,
   userPrivateKey,
 }) => {
+  const { poolRef, contactsEvent } = useChatContext()
+
+  const isUserAdded = () => {
+    if (!contactsEvent) return false
+    let existingContacts = getContactsFromEvent(contactsEvent)
+    return existingContacts.map((p: NostrProfile) => p.pubkey).includes(item.id)
+  }
+
   const styles = useStyles()
   const {
     theme: { colors },
   } = useTheme()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
+
+  const getIcon = () => {
+    let itemPubkey = item.groupId
+      .split(",")
+      .filter((p) => p !== getPublicKey(userPrivateKey))[0]
+    if (contactsEvent)
+      return getContactsFromEvent(contactsEvent).filter((c) => c.pubkey! === itemPubkey)
+        .length === 0
+        ? "person-add"
+        : "checkmark-outline"
+    else return "person-add"
+  }
   return (
     <ListItem
       key={item.id}
@@ -49,6 +73,20 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
             nip19.npubEncode(item.id)}
         </ListItem.Title>
       </ListItem.Content>
+
+      <Icon
+        name={getIcon()!}
+        size={24}
+        color={colors.primary}
+        disabled={isUserAdded()}
+        onPress={async () => {
+          console.log("Trying to add user to contact list")
+          if (isUserAdded()) return false
+          if (!poolRef) return
+          await addToContactList(userPrivateKey, item.id, poolRef.current, contactsEvent)
+          console.log("probably added user to contact list")
+        }}
+      />
     </ListItem>
   )
 }

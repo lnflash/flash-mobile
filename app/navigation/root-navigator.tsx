@@ -11,7 +11,7 @@ import {
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
-import { ChatList } from "@app/screens/nip17-chat"
+import { ChatList } from "@app/screens/social"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
@@ -105,7 +105,7 @@ import {
   RefundDestination,
   RefundTransactionsList,
 } from "@app/screens/refund-flow"
-import { Messages } from "@app/screens/nip17-chat/messages"
+import { Messages } from "@app/screens/social/chat/messages"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
 
