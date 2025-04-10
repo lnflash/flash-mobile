@@ -29,11 +29,6 @@ export type MessageType = {
 const useNostrProfile = () => {
   const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
 
-  const {
-    appConfig: {
-      galoyInstance: { relayUrl },
-    },
-  } = useAppConfig()
   const isAuthed = useIsAuthed()
 
   const { data: dataAuthed } = useHomeAuthedQuery({
@@ -41,7 +36,7 @@ const useNostrProfile = () => {
     fetchPolicy: "network-only",
     errorPolicy: "all",
   })
-  const relays = [relayUrl, "wss://relay.damus.io"]
+  const relays = ["wss://relay.flashapp.me", "wss://relay.damus.io"]
 
   const [userUpdateNpubMutation] = useUserUpdateNpubMutation()
 
@@ -74,7 +69,7 @@ const useNostrProfile = () => {
       KEYCHAIN_NOSTRCREDS_KEY,
       nostrSecret,
     )
-    await setPreferredRelay(relayUrl, secretKey)
+    await setPreferredRelay(secretKey)
     return secretKey
   }
 
@@ -113,7 +108,7 @@ const useNostrProfile = () => {
     const pool = new SimplePool()
     let publicRelays = [
       ...relays,
-      relayUrl,
+      "wss://relay.flashapp.me",
       "wss://relay.damus.io",
       "wss://relay.primal.net",
       "wss://nos.lol",
