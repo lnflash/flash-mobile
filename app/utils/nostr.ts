@@ -215,12 +215,7 @@ export const fetchPreferredRelays = async (pubKeys: string[], pool: SimplePool) 
   return relayMap
 }
 
-export const sendNIP4Message = async (message: string, recipient: string) => {
-  let privateKey = await getSecretKey()
-  let NIP4Messages = {}
-}
-
-export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Array) => {
+export const setPreferredRelay = async (secretKey?: Uint8Array) => {
   let pool = new SimplePool()
   console.log("inside setpreferredRelay")
   let secret: Uint8Array | null = null
@@ -237,7 +232,7 @@ export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Arr
   let relayEvent: UnsignedEvent = {
     pubkey: pubKey,
     tags: [
-      ["relay", flashRelay],
+      ["relay", "wss://relay.flashapp.me"],
       ["relay", "wss://relay.damus.io"],
       ["relay", "wss://relay.primal.net"],
     ],
@@ -272,11 +267,12 @@ export async function sendNip17Message(
       console.log("sending rumor for recipient ", recipientId)
       let recipientAcceptedRelays: string[] = []
       let recipientRelays = preferredRelaysMap.get(recipientId)
-      if (!recipientRelays) sendNIP4Message(message, recipientId)
       recipientRelays = [
-        ...(recipientRelays || publicRelays),
-        "wss://relay.damus.io",
-        "wss://nostr.oxtr.dev",
+        ...(recipientRelays || [
+          "wss://relay.flashapp.me",
+          "wss://relay.damus.io",
+          "wss://nostr.oxtr.dev",
+        ]),
       ]
       let seal = createSeal(rumor, privateKey, recipientId)
       let wrap = createWrap(seal, recipientId)
