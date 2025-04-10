@@ -1,6 +1,18 @@
 import { gql } from "@apollo/client"
 
 gql`
+  query auth {
+    me {
+      id
+      language
+      username
+      phone
+      email {
+        address
+        verified
+      }
+    }
+  }
   query homeAuthed {
     me {
       id
@@ -216,9 +228,44 @@ gql`
       }
     }
   }
+
   query myUserId {
     me {
       id
+    }
+  }
+
+  query scanningQRCodeScreen {
+    globals {
+      network
+    }
+    me {
+      id
+      defaultAccount {
+        id
+        wallets {
+          id
+        }
+      }
+      contacts {
+        id
+        username
+      }
+    }
+  }
+
+  query realtimePriceUnauthed($currency: DisplayCurrency!) {
+    realtimePrice(currency: $currency) {
+      timestamp
+      btcSatPrice {
+        base
+        offset
+      }
+      usdCentPrice {
+        base
+        offset
+      }
+      denominatorCurrency
     }
   }
 `

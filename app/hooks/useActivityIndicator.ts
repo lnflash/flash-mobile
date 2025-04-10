@@ -1,5 +1,5 @@
 import { useContext } from "react"
-import { ActivityIndicatorContext } from "@app/contexts"
+import { ActivityIndicatorContext } from "@app/contexts/ActivityIndicatorContext"
 
 interface ContextProps {
   toggleActivityIndicator: (visible: boolean) => void

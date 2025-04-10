@@ -1,5 +1,4 @@
-import React, { useCallback, useState } from "react"
-import { useFocusEffect } from "@react-navigation/native"
+import React, { useState } from "react"
 import { StackScreenProps } from "@react-navigation/stack"
 import styled from "styled-components/native"
 import { Icon } from "@rneui/themed"
@@ -17,7 +16,6 @@ import { UpgradeAccountModal } from "@app/components/upgrade-account-modal"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // utils
-import { loadJson } from "@app/utils/storage"
 import KeyStoreWrapper from "@app/utils/storage/secureStorage"
 import BiometricWrapper from "@app/utils/biometricAuthentication"
 import { AuthenticationScreenPurpose, PinScreenPurpose } from "@app/utils/enum"
@@ -29,13 +27,12 @@ import { useLevel } from "@app/graphql/level-context"
 type Props = StackScreenProps<RootStackParamList, "BackupOptions">
 
 const BackupOptions: React.FC<Props> = ({ navigation }) => {
-  const { theme } = useTheme()
-  const colors = theme.colors
-  const bottom = useSafeAreaInsets().bottom
-  const { persistentState } = usePersistentStateContext()
   const { LL } = useI18nContext()
+  const { colors } = useTheme().theme
+  const { bottom } = useSafeAreaInsets()
   const { isAtLeastLevelZero } = useLevel()
-  const [backupIsCompleted, setBackupIsCompleted] = React.useState(false)
+  const { persistentState } = usePersistentStateContext()
+
   const [upgradeAccountModalVisible, setUpgradeAccountModalVisible] = useState(false)
 
   const { data } = useAccountScreenQuery({
@@ -43,19 +40,8 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
     skip: !isAtLeastLevelZero,
   })
 
-  useFocusEffect(
-    useCallback(() => {
-      checkBackupCompleted()
-    }, []),
-  )
-
-  const checkBackupCompleted = async () => {
-    const res = await loadJson("backupCompleted")
-    setBackupIsCompleted(res)
-  }
-
   const onBackupBTCWallet = async () => {
-    if (!backupIsCompleted) {
+    if (!persistentState.backedUpBtcWallet) {
       navigation.navigate("BackupStart")
     } else {
       const isPinEnabled = await KeyStoreWrapper.getIsPinEnabled()
@@ -87,18 +73,22 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
           <Btn onPress={onBackupBTCWallet}>
             <Icon
               type="ionicon"
-              name={backupIsCompleted ? "checkmark-circle" : "checkmark-circle-outline"}
-              color={backupIsCompleted ? "#60aa55" : "#999"}
+              name={
+                persistentState.backedUpBtcWallet
+                  ? "checkmark-circle"
+                  : "checkmark-circle-outline"
+              }
+              color={persistentState.backedUpBtcWallet ? "#60aa55" : "#999"}
               size={40}
             />
             <BtnTextWrapper>
               <BtnTitle style={{ color: colors.black }}>
-                {backupIsCompleted
+                {persistentState.backedUpBtcWallet
                   ? LL.BackupOptions.revealRecoveryPhrase()
                   : LL.BackupOptions.recoveryPhrase()}
               </BtnTitle>
               <BtnDesc>
-                {backupIsCompleted
+                {persistentState.backedUpBtcWallet
                   ? LL.BackupOptions.revealRecoveryPhraseDesc()
                   : LL.BackupOptions.recoveryPhraseDesc()}
               </BtnDesc>

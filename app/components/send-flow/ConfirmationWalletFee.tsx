@@ -16,6 +16,10 @@ import { DisplayCurrency } from "@app/types/amounts"
 import { testProps } from "@app/utils/testProps"
 import { fetchBreezFee } from "@app/utils/breez-sdk-liquid"
 
+// assets
+import Cash from "@app/assets/icons/cash.svg"
+import Bitcoin from "@app/assets/icons/bitcoin.svg"
+
 type Props = {
   flashUserAddress?: string
   paymentDetail: PaymentDetail<WalletCurrency>
@@ -96,25 +100,15 @@ const ConfirmationWalletFee: React.FC<Props> = ({
     feeDisplayText = "Unable to calculate fee"
   }
 
+  const CurrencyIcon =
+    sendingWalletDescriptor.currency === WalletCurrency.Btc ? Bitcoin : Cash
   return (
     <>
       <View style={styles.fieldContainer}>
         <Text style={styles.fieldTitleText}>{LL.common.from()}</Text>
         <View style={styles.fieldBackground}>
           <View style={styles.walletSelectorTypeContainer}>
-            <View
-              style={
-                sendingWalletDescriptor.currency === WalletCurrency.Btc
-                  ? styles.walletSelectorTypeLabelBitcoin
-                  : styles.walletSelectorTypeLabelUsd
-              }
-            >
-              {sendingWalletDescriptor.currency === WalletCurrency.Btc ? (
-                <Text style={styles.walletSelectorTypeLabelBtcText}>BTC</Text>
-              ) : (
-                <Text style={styles.walletSelectorTypeLabelUsdText}>USD</Text>
-              )}
-            </View>
+            <CurrencyIcon />
           </View>
           <View style={styles.walletSelectorInfoContainer}>
             <View style={styles.walletSelectorTypeTextContainer}>
@@ -184,36 +178,8 @@ const useStyles = makeStyles(({ colors }) => ({
     fontWeight: "bold",
     marginBottom: 4,
   },
-
   walletSelectorTypeContainer: {
-    justifyContent: "center",
-    alignItems: "flex-start",
-    width: 50,
     marginRight: 20,
-  },
-  walletSelectorTypeLabelBitcoin: {
-    height: 30,
-    width: 50,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  walletSelectorTypeLabelUsd: {
-    height: 30,
-    width: 50,
-    backgroundColor: colors.green,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  walletSelectorTypeLabelUsdText: {
-    fontWeight: "bold",
-    color: colors.black,
-  },
-  walletSelectorTypeLabelBtcText: {
-    fontWeight: "bold",
-    color: colors.white,
   },
   walletSelectorInfoContainer: {
     flex: 1,

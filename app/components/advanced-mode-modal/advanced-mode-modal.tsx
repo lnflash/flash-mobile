@@ -1,20 +1,29 @@
 import React from "react"
-import { Image, Linking, ScrollView, View } from "react-native"
+import {
+  Modal,
+  Image,
+  Linking,
+  ScrollView,
+  View,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { useNavigation } from "@react-navigation/native"
-import { makeStyles, useTheme, Text } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import Modal from "react-native-modal"
-
-// assets
-import StablesatsImage from "../../assets/images/stable-sats.png"
+import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 // components
-import { GaloyPrimaryButton } from "../atomic/galoy-primary-button"
-import { GaloySecondaryButton } from "../atomic/galoy-secondary-button"
+import { PrimaryBtn } from "../buttons"
+
+// assets
+import AdvanceModeImage from "@app/assets/images/advance-mode.png"
 
 // utils
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+
+const { height } = Dimensions.get("screen")
 
 const DOCS_LINK = "https://docs.getflash.io" // TODO: Need to update link to be the correct documentation for non-custodial wallets.
 const FLASH_TERMS_LINK = "https://getflash.io/terms.html" // TODO: Need to update link to be the correct terms and conditions for Flash.
@@ -32,10 +41,11 @@ export const AdvancedModeModal: React.FC<Props> = ({
   setIsVisible,
   enableAdvancedMode,
 }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const styles = useStyles()
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
   const acknowledgeModal = () => {
     setIsVisible(false)
@@ -65,91 +75,99 @@ export const AdvancedModeModal: React.FC<Props> = ({
   }
 
   return (
-    <Modal isVisible={isVisible} backdropOpacity={0.3} backdropColor={colors.grey3}>
-      <View style={styles.modalCard}>
-        <ScrollView style={styles.scrollViewStyle}>
-          <Image
-            source={StablesatsImage}
-            style={styles.stableSatsImage}
-            resizeMode="contain"
-          />
-          <Text style={styles.cardTitle} type={"h2"}>
-            {LL.AdvancedModeModal.header()}
-          </Text>
-
-          <Text style={styles.cardDescription} type="p2">
-            {LL.AdvancedModeModal.body()}{" "}
-            <Text
-              style={styles.termsAndConditionsText}
-              onPress={() => Linking.openURL(FLASH_TERMS_LINK)}
-            >
-              {LL.AdvancedModeModal.termsAndConditions()}
-            </Text>
-          </Text>
-
-          <View style={styles.cardActionsContainer}>
-            <View style={styles.marginBottom}>
-              <GaloyPrimaryButton
-                title={
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={isVisible}
+      onRequestClose={() => setIsVisible(false)}
+    >
+      <View style={styles.backdrop}>
+        <View style={styles.container}>
+          <TouchableOpacity style={styles.close} onPress={() => setIsVisible(false)}>
+            <Icon name={"close"} size={35} color={colors.black} type="ionicon" />
+          </TouchableOpacity>
+          <ScrollView>
+            <Text style={styles.title}>Be your own Bank</Text>
+            <Image
+              source={AdvanceModeImage}
+              style={styles.advanceModeImage}
+              resizeMode="contain"
+            />
+            <View style={styles.body}>
+              <Text style={styles.text} type={"h2"} bold>
+                {LL.AdvancedModeModal.header()}
+              </Text>
+              <Text style={styles.text} type="p2">
+                {LL.AdvancedModeModal.body()}
+              </Text>
+              <Text
+                style={styles.textBtn}
+                type="p2"
+                bold
+                onPress={() => Linking.openURL(DOCS_LINK)}
+              >
+                {LL.AdvancedModeModal.learnMore()}
+              </Text>
+              <PrimaryBtn
+                label={
                   hasRecoveryPhrase
                     ? LL.common.revealSeed()
                     : LL.AdvancedModeModal.importWallet()
                 }
                 onPress={hasRecoveryPhrase ? goToBackupBTCWallet : goToImportBTCWallet}
+                btnStyle={{ marginVertical: 10 }}
               />
-            </View>
-
-            <View style={styles.marginBottom}>
-              <GaloyPrimaryButton
-                title={
+              <PrimaryBtn
+                type="outline"
+                label={
                   hasRecoveryPhrase
                     ? LL.common.backHome()
                     : LL.AdvancedModeModal.createWallet()
                 }
                 onPress={hasRecoveryPhrase ? acknowledgeModal : onCreateNewWallet}
+                btnStyle={{ marginBottom: bottom + 20 }}
               />
             </View>
-
-            <GaloySecondaryButton
-              title={LL.AdvancedModeModal.learnMore()}
-              onPress={() => Linking.openURL(DOCS_LINK)}
-            />
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </View>
       </View>
     </Modal>
   )
 }
 
-const useStyles = makeStyles(({ colors }) => ({
-  stableSatsImage: {
-    width: "100%",
-    height: 150,
-    marginBottom: 16,
+const useStyles = makeStyles(({ colors, mode }) => ({
+  backdrop: {
+    paddingTop: height / 7,
+    backgroundColor: mode === "dark" ? "rgba(57,57,57,.7)" : "rgba(0,0,0,.5)",
   },
-  scrollViewStyle: {
-    paddingHorizontal: 12,
-  },
-  modalCard: {
+  container: {
     backgroundColor: colors.white,
-    borderRadius: 16,
-    paddingVertical: 18,
-    marginVertical: 50,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
-  cardTitle: {
+  close: {
+    alignSelf: "flex-end",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  title: {
+    fontSize: 28,
     textAlign: "center",
+    marginBottom: 20,
+  },
+  advanceModeImage: {
+    width: "100%",
+    marginBottom: 20,
+  },
+  body: {
+    marginHorizontal: 20,
+    marginBottom: 150,
+  },
+  text: {
     marginBottom: 16,
   },
-  cardDescription: {
-    marginBottom: 16,
-  },
-  termsAndConditionsText: {
+  textBtn: {
     textDecorationLine: "underline",
-  },
-  cardActionsContainer: {
-    flexDirection: "column",
-  },
-  marginBottom: {
-    marginBottom: 10,
+    marginBottom: 20,
   },
 }))

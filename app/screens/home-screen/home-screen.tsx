@@ -1,50 +1,48 @@
 import React, { useCallback, useEffect, useState } from "react"
 import { RefreshControl, ScrollView } from "react-native"
-import { makeStyles, useTheme } from "@rneui/themed"
+import { useTheme } from "@rneui/themed"
 
 // components
-import { AppUpdate } from "@app/components/app-update/app-update"
 import WalletOverview from "@app/components/wallet-overview/wallet-overview"
 import { SetDefaultAccountModal } from "@app/components/set-default-account-modal"
 import { UnVerifiedSeedModal } from "@app/components/unverified-seed-modal"
-import { Screen } from "../../components/screen"
+import { Screen } from "@app/components/screen"
 import {
   AccountCreateModal,
   Buttons,
   Header,
   Info,
+  QuickStart,
   Transactions,
 } from "@app/components/home-screen"
 
-// queries
+// gql
 import {
   TransactionEdge,
-  useHideBalanceQuery,
   useHomeAuthedQuery,
   useRealtimePriceQuery,
 } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { getDefaultWallet } from "@app/graphql/wallets-utils"
 
-// hooks
-import { useBreez } from "@app/hooks"
-
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { setUserData } from "@app/store/redux/slices/userSlice"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { UsernameModal } from "../../components/home-screen/username-modal"
-import WelcomeUserScreen from "../../components/home-screen/welcome-user-screen"
 
 export const HomeScreen: React.FC = () => {
-  const dispatch = useAppDispatch()
-  const isAuthed = useIsAuthed()
-  const styles = useStyles()
   const { colors } = useTheme().theme
-  const { btcWallet } = useBreez()
+
+  const dispatch = useAppDispatch()
+  const { persistentState, updateState } = usePersistentStateContext()
+
+  const [modalVisible, setModalVisible] = useState(false)
+  const [refreshTriggered, setRefreshTriggered] = useState(false)
+  const [defaultAccountModalVisible, setDefaultAccountModalVisible] = useState(false)
+  const [isUnverifiedSeedModalVisible, setIsUnverifiedSeedModalVisible] = useState(false)
 
   // queries
-  const { data: { hideBalance } = {} } = useHideBalanceQuery()
+  const isAuthed = useIsAuthed()
   const {
     data: dataAuthed,
     loading: loadingAuthed,
@@ -56,33 +54,20 @@ export const HomeScreen: React.FC = () => {
     errorPolicy: "all",
     nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
-  const { loading: loadingPrice, refetch: refetchRealtimePrice } = useRealtimePriceQuery({
+  const { refetch: refetchRealtimePrice } = useRealtimePriceQuery({
     skip: !isAuthed,
     fetchPolicy: "network-only",
     nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
-  const { persistentState, updateState } = usePersistentStateContext()
-  const [defaultAccountModalVisible, setDefaultAccountModalVisible] = useState(false)
-  const [modalVisible, setModalVisible] = useState(false)
-  const [isContentVisible, setIsContentVisible] = useState(false)
-  const [refreshTriggered, setRefreshTriggered] = useState(false)
-  const [isUnverifiedSeedModalVisible, setIsUnverifiedSeedModalVisible] = useState(false)
-  const [usernameModal, setUsernameModal] = useState(false)
-  const [showSplash, setShowSplash] = useState(false)
 
-  const isBalanceVisible = hideBalance ?? false
+  const transactions = dataAuthed?.me?.defaultAccount.transactions?.edges || []
 
   useEffect(() => {
     if (dataAuthed?.me) {
       dispatch(setUserData(dataAuthed.me))
       saveDefaultWallet()
-      if (dataAuthed && dataAuthed.me && !dataAuthed.me.username) setUsernameModal(true)
     }
   }, [dataAuthed])
-
-  useEffect(() => {
-    setIsContentVisible(isBalanceVisible)
-  }, [isBalanceVisible])
 
   const saveDefaultWallet = () => {
     if (!persistentState.defaultWallet) {
@@ -109,49 +94,21 @@ export const HomeScreen: React.FC = () => {
       setTimeout(() => setRefreshTriggered(false), 1000)
     }
   }, [isAuthed, refetchAuthed, refetchRealtimePrice])
+
+  const renderRefreshControl = () => (
+    <RefreshControl
+      refreshing={refreshTriggered}
+      onRefresh={refetch}
+      colors={[colors.primary]} // Android refresh indicator colors
+      tintColor={colors.primary} // iOS refresh indicator color
+    />
+  )
+
   return (
-    <Screen>
-      <UsernameModal
-        isVisible={usernameModal}
-        closeModal={() => {
-          setUsernameModal(false)
-          setTimeout(() => setShowSplash(true), 1000)
-        }}
-      />
-      <WelcomeUserScreen
-        username={dataAuthed?.me?.username || "New User"}
-        visible={showSplash}
-        onComplete={() => {
-          setShowSplash(false)
-        }}
-      />
-      <AccountCreateModal modalVisible={modalVisible} setModalVisible={setModalVisible} />
-      <UnVerifiedSeedModal
-        isVisible={isUnverifiedSeedModalVisible}
-        setIsVisible={setIsUnverifiedSeedModalVisible}
-      />
-      <Header
-        isContentVisible={isContentVisible}
-        setIsContentVisible={setIsContentVisible}
-      />
-      <ScrollView
-        contentContainerStyle={styles.scrollView}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshTriggered}
-            onRefresh={refetch}
-            colors={[colors.primary]} // Android refresh indicator colors
-            tintColor={colors.primary} // iOS refresh indicator color
-          />
-        }
-      >
+    <Screen backgroundColor={colors.background}>
+      <Header />
+      <ScrollView refreshControl={renderRefreshControl()}>
         <WalletOverview
-          refreshTriggered={refreshTriggered}
-          isContentVisible={isContentVisible}
-          setIsContentVisible={setIsContentVisible}
-          loading={false}
-          breezBalance={btcWallet?.balance || 0}
-          pendingBalance={null}
           setIsUnverifiedSeedModalVisible={setIsUnverifiedSeedModalVisible}
         />
         <Info refreshTriggered={refreshTriggered} error={error} />
@@ -159,29 +116,22 @@ export const HomeScreen: React.FC = () => {
           setModalVisible={setModalVisible}
           setDefaultAccountModalVisible={setDefaultAccountModalVisible}
         />
+        <QuickStart />
         <Transactions
           refreshTriggered={refreshTriggered}
           loadingAuthed={loadingAuthed}
-          transactionsEdges={
-            dataAuthed?.me?.defaultAccount?.transactions?.edges as TransactionEdge[]
-          }
-        />
-        <AppUpdate />
-        <SetDefaultAccountModal
-          isVisible={defaultAccountModalVisible}
-          toggleModal={() => setDefaultAccountModalVisible(!defaultAccountModalVisible)}
+          transactionsEdges={transactions as TransactionEdge[]}
         />
       </ScrollView>
+      <SetDefaultAccountModal
+        isVisible={defaultAccountModalVisible}
+        toggleModal={() => setDefaultAccountModalVisible(!defaultAccountModalVisible)}
+      />
+      <UnVerifiedSeedModal
+        isVisible={isUnverifiedSeedModalVisible}
+        setIsVisible={setIsUnverifiedSeedModalVisible}
+      />
+      <AccountCreateModal modalVisible={modalVisible} setModalVisible={setModalVisible} />
     </Screen>
   )
 }
-
-const useStyles = makeStyles(({ colors }) => ({
-  scrollView: {
-    paddingBottom: 12,
-    marginHorizontal: 20,
-  },
-  marginButtonContainer: {
-    marginBottom: 20,
-  },
-}))

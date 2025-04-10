@@ -28,6 +28,7 @@ export type AmountInputScreenProps = {
   convertMoneyAmount: ConvertMoneyAmount
   maxAmount?: MoneyAmount<WalletOrDisplayCurrency>
   minAmount?: MoneyAmount<WalletOrDisplayCurrency>
+  title: string
 }
 
 const formatNumberPadNumber = (numberPadNumber: NumberPadNumber) => {
@@ -131,6 +132,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   convertMoneyAmount,
   maxAmount,
   minAmount,
+  title,
 }) => {
   const {
     currencyInfo,
@@ -238,6 +240,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
 
   return (
     <AmountInputScreenUI
+      walletCurrency={walletCurrency}
       primaryCurrencyCode={primaryCurrencyInfo.currencyCode}
       primaryCurrencyFormattedAmount={formatNumberPadNumber(
         numberPadState.numberPadNumber,
@@ -260,6 +263,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
       setAmountDisabled={Boolean(errorMessage)}
       onSetAmountPress={setAmount && (() => setAmount(newPrimaryAmount))}
       goBack={goBack}
+      title={title}
     />
   )
 }

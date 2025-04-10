@@ -1,55 +1,53 @@
-import React, { useEffect, useRef, useState } from "react"
-import { StackNavigationProp, StackScreenProps } from "@react-navigation/stack"
-import {
-  ActivityIndicator,
-  Animated,
-  Easing,
-  Image,
-  Pressable,
-  TouchableOpacity,
-  View,
-} from "react-native"
-import { Text, makeStyles, useTheme } from "@rneui/themed"
-import Icon from "react-native-vector-icons/Ionicons"
+import React, { useEffect, useState } from "react"
+import { Dimensions, Pressable, TouchableOpacity } from "react-native"
+import styled from "styled-components/native"
+import { useTheme } from "@rneui/themed"
+import * as Animatable from "react-native-animatable"
+import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "../../navigation/stack-param-lists"
 
 // components
 import { Screen } from "../../components/screen"
+import { PrimaryBtn } from "@app/components/buttons"
 import { DeviceAccountFailModal } from "./device-account-fail-modal"
-import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useAppConfig } from "@app/hooks"
+import { useIsFocused } from "@react-navigation/native"
+import { useActivityIndicator, useAppConfig, useFlashcard } from "@app/hooks"
 import { useCreateAccount } from "@app/hooks/useCreateAccount"
+
+// utils
+import { logGetStartedAction } from "@app/utils/analytics"
 
 // assets
 import AppLogoLightMode from "../../assets/logo/app-logo-light.png"
 import AppLogoDarkMode from "../../assets/logo/app-logo-dark.png"
+import Help from "@app/assets/icons/help.png"
+import Nfc from "@app/assets/icons/nfc.png"
 
-// utils
-import { logGetStartedAction } from "@app/utils/analytics"
-import { testProps } from "@app/utils/testProps"
-import { useNavigation } from "@react-navigation/native"
+const width = Dimensions.get("screen").width
 
 type Props = StackScreenProps<RootStackParamList, "getStarted">
 
 export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
-  const welcomeNavigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const {
-    theme: { mode },
-  } = useTheme()
-  const styles = useStyles()
+  const isFocused = useIsFocused()
+  const { mode, colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
+  const { toggleActivityIndicator } = useActivityIndicator()
   const { createDeviceAccountAndLogin, appcheckTokenLoading } = useCreateAccount()
+  const { lnurl, readFlashcard } = useFlashcard()
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [secretMenuCounter, setSecretMenuCounter] = useState(0)
-  const {
-    theme: { colors },
-  } = useTheme()
+
   const AppLogo = mode === "dark" ? AppLogoDarkMode : AppLogoLightMode
+
+  useEffect(() => {
+    toggleActivityIndicator(loading || appcheckTokenLoading)
+  }, [loading, appcheckTokenLoading])
 
   useEffect(() => {
     if (secretMenuCounter > 2) {
@@ -58,6 +56,10 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
       setSecretMenuCounter(0)
     }
   }, [navigation, secretMenuCounter])
+
+  useEffect(() => {
+    if (!!lnurl && isFocused) navigation.navigate("Card")
+  }, [lnurl])
 
   const handleCreateDeviceAccount = async () => {
     logGetStartedAction({
@@ -68,21 +70,14 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
     const token = await createDeviceAccountAndLogin()
     setLoading(false)
     if (token) {
-      onCompleteLogin(token)
-    } else {
-      navigation.navigate("phoneFlow", {
-        onComplete: onCompleteLogin,
-      })
-    }
-  }
-
-  const onCompleteLogin = (token?: string) => {
-    if (token) {
       setError(false)
       saveToken(token)
-      navigation.replace("Primary")
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "UsernameSet" }],
+      })
     } else {
-      setError(true)
+      navigation.navigate("phoneFlow")
     }
   }
 
@@ -96,72 +91,60 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
     navigation.replace("Primary")
   }
 
-  const pulseAnim = useRef(new Animated.Value(1)).current // Initial scale value
+  const onPressLogo = () => setSecretMenuCounter(secretMenuCounter + 1)
 
-  useEffect(() => {
-    const pulse = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.1, // Scale up
-            duration: 400,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1, // Scale down
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]),
-      ).start()
-    }
+  const onPressHelp = () => navigation.navigate("welcomeFirst")
 
-    pulse()
-  }, [pulseAnim])
-
-  const handleHelpPress = () => {
-    welcomeNavigation.navigate("welcomeFirst")
-  }
+  const onPressCard = () => readFlashcard()
 
   return (
     <Screen>
-      <Pressable
-        onPress={() => setSecretMenuCounter(secretMenuCounter + 1)}
-        style={styles.logoContainer}
-        {...testProps("logo-button")}
-      >
-        <Image source={AppLogo} style={styles.logo} />
-      </Pressable>
-      <View style={styles.bottom}>
-        {/* Help Icon */}
-        <View style={styles.helpIconContainer}>
-          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-            <TouchableOpacity onPress={handleHelpPress}>
-              {/* Help Icon - TEMPORARILY HIDING BUTTON UNTIL FULL PRODUCT LAUNCH*/}
-              {/* <Icon name="help-circle-outline" size={40} color={colors.primary} /> */}
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-        <GaloyPrimaryButton
-          title={LL.GetStartedScreen.quickStart()}
+      <LogoWrapper>
+        <Pressable onPress={onPressLogo}>
+          <Image source={AppLogo} />
+        </Pressable>
+      </LogoWrapper>
+      <IconsWrapper>
+        <TouchableOpacity
+          onPress={onPressHelp}
+          style={{ padding: 20 }}
+          activeOpacity={0.5}
+        >
+          <Icon
+            source={Help}
+            animation="pulse"
+            easing="ease-out"
+            iterationCount="infinite"
+            color={colors.button01}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onPressCard}
+          style={{ padding: 20 }}
+          activeOpacity={0.5}
+        >
+          <Icon
+            source={Nfc}
+            animation="pulse"
+            easing="ease-out"
+            iterationCount="infinite"
+            size={60}
+            color={colors.button01}
+          />
+        </TouchableOpacity>
+      </IconsWrapper>
+      <BtnsWrapper>
+        <PrimaryBtn
+          label={LL.GetStartedScreen.quickStart()}
           onPress={handleCreateDeviceAccount}
-          containerStyle={styles.buttonContainer}
+          btnStyle={{ marginBottom: 12 }}
         />
-        <View style={styles.loginFooterContainer}>
-          <TouchableOpacity activeOpacity={0.5} onPress={onRestoreWallet}>
-            <Text type="p2" style={styles.buttonText}>
-              {LL.GetStartedScreen.restoreWallet()}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      {(loading || appcheckTokenLoading) && (
-        <View style={styles.loading}>
-          <ActivityIndicator size={"large"} color={"#60aa55"} />
-        </View>
-      )}
+        <PrimaryBtn
+          type={"outline"}
+          label={LL.GetStartedScreen.restoreWallet()}
+          onPress={onRestoreWallet}
+        />
+      </BtnsWrapper>
       <DeviceAccountFailModal
         isVisible={error}
         closeModal={() => setError(false)}
@@ -171,50 +154,30 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
   )
 }
 
-const useStyles = makeStyles(({ colors }) => ({
-  bottom: {
-    flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: "flex-end",
-    marginBottom: 36,
-  },
-  buttonContainer: {
-    marginVertical: 6,
-  },
-  logoContainer: {
-    width: "100%",
-    height: "50%",
-    marginTop: 50,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logo: {
-    width: "100%",
-    resizeMode: "contain",
-  },
-  loginFooterContainer: {
-    marginTop: 24,
-    justifyContent: "center",
-    flexDirection: "row",
-  },
-  buttonText: {
-    textDecorationLine: "underline",
-  },
-  loading: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1,
-  },
-  helpIconContainer: {
-    flex: 1,
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-    color: colors.primary,
-  },
-}))
+const LogoWrapper = styled.View`
+  flex: 1;
+  justify-content: center;
+`
+
+const Image = styled.Image`
+  width: ${width}px;
+  height: 250px;
+  resize-mode: contain;
+`
+
+const IconsWrapper = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+`
+
+const Icon = styled(Animatable.Image)<{ size?: number; color: string }>`
+  width: ${({ size }) => size || 50}px;
+  height: ${({ size }) => size || 50}px;
+  tint-color: ${({ color }) => color};
+`
+
+const BtnsWrapper = styled.View`
+  margin-vertical: 30px;
+  margin-horizontal: 20px;
+`

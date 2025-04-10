@@ -1,4 +1,22 @@
+import React, { useEffect, useState, useCallback } from "react"
+import { makeStyles, SearchBar, Text } from "@rneui/themed"
+import { ScrollView, View } from "react-native"
 import { gql } from "@apollo/client"
+import { CommonActions, useNavigation } from "@react-navigation/native"
+import Icon from "react-native-vector-icons/Ionicons"
+
+// components
+import { Screen } from "../../components/screen"
+import { PrimaryBtn } from "@app/components/buttons"
+import { Loading } from "@app/contexts/ActivityIndicatorContext"
+import { MenuSelect, MenuSelectItem } from "@app/components/menu-select"
+
+// hooks
+import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { useI18nContext } from "@app/i18n/i18n-react"
+
+// gql
 import {
   Currency,
   RealtimePriceDocument,
@@ -6,17 +24,9 @@ import {
   useCurrencyListQuery,
   useDisplayCurrencyQuery,
 } from "@app/graphql/generated"
-import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { useI18nContext } from "@app/i18n/i18n-react"
+
+// utils
 import { testProps } from "@app/utils/testProps"
-import { makeStyles, SearchBar, Text, Button } from "@rneui/themed"
-import * as React from "react"
-import { useCallback } from "react"
-import { ActivityIndicator, ScrollView, View } from "react-native"
-import Icon from "react-native-vector-icons/Ionicons"
-import { Screen } from "../../components/screen"
-import { MenuSelect, MenuSelectItem } from "@app/components/menu-select"
-import { CommonActions, useNavigation } from "@react-navigation/native"
 
 gql`
   mutation accountUpdateDisplayCurrency($input: AccountUpdateDisplayCurrencyInput!) {
@@ -33,34 +43,34 @@ gql`
 `
 
 export const DisplayCurrencyScreen: React.FC = () => {
-  const styles = useStyles()
-
   const { LL } = useI18nContext()
+  const styles = useStyles()
   const isAuthed = useIsAuthed()
   const navigation = useNavigation()
 
-  const { data: dataAuthed } = useDisplayCurrencyQuery({ skip: !isAuthed })
-  const displayCurrency = dataAuthed?.me?.defaultAccount?.displayCurrency
+  const [newCurrency, setNewCurrency] = useState("")
+  const [searchText, setSearchText] = useState("")
+  const [matchingCurrencies, setMatchingCurrencies] = useState<Currency[]>([])
+
+  const { updateState } = usePersistentStateContext()
 
   const [updateDisplayCurrency] = useAccountUpdateDisplayCurrencyMutation()
-
+  const { data: dataAuthed } = useDisplayCurrencyQuery({ skip: !isAuthed })
   const { data, loading } = useCurrencyListQuery({
     fetchPolicy: "cache-and-network",
     skip: !isAuthed,
   })
 
-  const [newCurrency, setNewCurrency] = React.useState("")
-  const [searchText, setSearchText] = React.useState("")
-  const [matchingCurrencies, setMatchingCurrencies] = React.useState<Currency[]>([])
+  const displayCurrency = dataAuthed?.me?.defaultAccount?.displayCurrency
+
+  useEffect(() => {
+    data?.currencyList && setMatchingCurrencies(data.currencyList.slice())
+  }, [data?.currencyList])
 
   const reset = () => {
     setSearchText("")
     setMatchingCurrencies(data?.currencyList?.slice() ?? [])
   }
-
-  React.useEffect(() => {
-    data?.currencyList && setMatchingCurrencies(data.currencyList.slice())
-  }, [data?.currencyList])
 
   const updateMatchingCurrency = useCallback(
     (newSearchText: string) => {
@@ -95,55 +105,60 @@ export const DisplayCurrencyScreen: React.FC = () => {
     [data?.currencyList, displayCurrency],
   )
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator />
-      </View>
-    )
-  }
-
-  if (!data?.currencyList) {
-    return <Text>{LL.DisplayCurrencyScreen.errorLoading()}</Text>
-  }
-
   const handleCurrencyChange = async (currencyId: string) => {
     if (loading) return
     await updateDisplayCurrency({
       variables: { input: { currency: currencyId } },
       refetchQueries: [RealtimePriceDocument],
     })
+    updateState((state: any) => {
+      if (state)
+        return {
+          ...state,
+          currencyChanged: true,
+        }
+      return undefined
+    })
     setNewCurrency(currencyId)
   }
 
   const handleSave = () => {
-    // Reset navigation state to the initial route
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: "Primary" }], // Replace with your initial route name
+        routes: [{ name: "Primary" }],
       }),
     )
   }
 
+  if (loading) return <Loading />
+
+  if (!data?.currencyList) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text type="h1">{LL.DisplayCurrencyScreen.errorLoading()}</Text>
+      </View>
+    )
+  }
+
   return (
-    <Screen style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        <SearchBar
-          {...testProps(LL.common.search())}
-          placeholder={LL.common.search()}
-          value={searchText}
-          onChangeText={updateMatchingCurrency}
-          platform="default"
-          round
-          showLoading={false}
-          containerStyle={styles.searchBarContainer}
-          inputContainerStyle={styles.searchBarInputContainerStyle}
-          inputStyle={styles.searchBarText}
-          rightIconContainerStyle={styles.searchBarRightIconStyle}
-          searchIcon={<Icon name="search" size={24} />}
-          clearIcon={<Icon name="close" size={24} onPress={reset} />}
-        />
+    <Screen>
+      <SearchBar
+        {...testProps(LL.common.search())}
+        placeholder={LL.common.search()}
+        value={searchText}
+        onChangeText={updateMatchingCurrency}
+        platform="default"
+        round
+        showLoading={false}
+        containerStyle={styles.searchBarContainer}
+        inputContainerStyle={styles.searchBarInputContainerStyle}
+        inputStyle={styles.searchBarText}
+        rightIconContainerStyle={styles.searchBarRightIconStyle}
+        searchIcon={<Icon name="search" size={24} />}
+        clearIcon={<Icon name="close" size={24} onPress={reset} />}
+      />
+      <ScrollView>
         <MenuSelect
           value={newCurrency || displayCurrency || ""}
           onChange={handleCurrencyChange}
@@ -155,9 +170,11 @@ export const DisplayCurrencyScreen: React.FC = () => {
           ))}
         </MenuSelect>
       </ScrollView>
-      <View style={styles.buttonContainer}>
-        <Button title={LL.common.confirm()} onPress={handleSave} />
-      </View>
+      <PrimaryBtn
+        label={LL.common.confirm()}
+        onPress={handleSave}
+        btnStyle={styles.buttonContainer}
+      />
     </Screen>
   )
 }
@@ -178,21 +195,11 @@ export const getMatchingCurrencies = (searchText: string, currencies: Currency[]
 }
 
 const useStyles = makeStyles(({ colors }) => ({
-  container: {
+  errorContainer: {
     flex: 1,
-  },
-
-  scrollViewContent: {
-    flexGrow: 1,
-    paddingBottom: 16,
-  },
-
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
   },
-
   searchBarContainer: {
     backgroundColor: colors.white,
     borderBottomWidth: 0,
@@ -201,23 +208,17 @@ const useStyles = makeStyles(({ colors }) => ({
     marginVertical: 8,
     paddingTop: 8,
   },
-
   searchBarInputContainerStyle: {
     backgroundColor: colors.grey5,
   },
-
   searchBarRightIconStyle: {
     padding: 8,
   },
-
   searchBarText: {
     color: colors.black,
     textDecorationLine: "none",
   },
-
   buttonContainer: {
-    backgroundColor: colors.white,
-    padding: 16,
-    borderTopWidth: 1,
+    margin: 20,
   },
 }))

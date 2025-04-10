@@ -458,7 +458,7 @@ export type IntraLedgerUpdate = {
 
 export type IntraLedgerUsdPaymentSendInput = {
   /** Amount in cents. */
-  readonly amount: Scalars['CentAmount']['input'];
+  readonly amount: Scalars['FractionalCentAmount']['input'];
   /** Optional memo to be attached to the payment. */
   readonly memo?: InputMaybe<Scalars['Memo']['input']>;
   readonly recipientWalletId: Scalars['WalletId']['input'];
@@ -593,14 +593,14 @@ export type LnNoAmountInvoicePaymentInput = {
 };
 
 export type LnNoAmountUsdInvoiceFeeProbeInput = {
-  readonly amount: Scalars['CentAmount']['input'];
+  readonly amount: Scalars['FractionalCentAmount']['input'];
   readonly paymentRequest: Scalars['LnPaymentRequest']['input'];
   readonly walletId: Scalars['WalletId']['input'];
 };
 
 export type LnNoAmountUsdInvoicePaymentInput = {
   /** Amount to pay in USD cents. */
-  readonly amount: Scalars['CentAmount']['input'];
+  readonly amount: Scalars['FractionalCentAmount']['input'];
   /** Optional memo to associate with the lightning invoice. */
   readonly memo?: InputMaybe<Scalars['Memo']['input']>;
   /** Payment request representing the invoice which is being paid. */
@@ -629,7 +629,7 @@ export type LnUsdInvoiceCreateInput = {
 
 export type LnUsdInvoiceCreateOnBehalfOfRecipientInput = {
   /** Amount in USD cents. */
-  readonly amount: Scalars['CentAmount']['input'];
+  readonly amount: Scalars['FractionalCentAmount']['input'];
   readonly descriptionHash?: InputMaybe<Scalars['Hex32Bytes']['input']>;
   /** Optional invoice expiration time in minutes. */
   readonly expiresIn?: InputMaybe<Scalars['Minutes']['input']>;
@@ -777,7 +777,7 @@ export type Mutation = {
    *   associated with the amount).
    */
   readonly lnUsdInvoiceCreateOnBehalfOfRecipient: LnInvoicePayload;
-  readonly lnUsdInvoiceFeeProbe: SatAmountPayload;
+  readonly lnUsdInvoiceFeeProbe: CentAmountPayload;
   readonly merchantMapSuggest: MerchantPayload;
   readonly onChainAddressCreate: OnChainAddressPayload;
   readonly onChainAddressCurrent: OnChainAddressPayload;
@@ -1139,7 +1139,7 @@ export type OnChainUsdPaymentSendAsBtcDenominatedInput = {
 
 export type OnChainUsdPaymentSendInput = {
   readonly address: Scalars['OnChainAddress']['input'];
-  readonly amount: Scalars['CentAmount']['input'];
+  readonly amount: Scalars['FractionalCentAmount']['input'];
   readonly memo?: InputMaybe<Scalars['Memo']['input']>;
   readonly speed?: InputMaybe<PayoutSpeed>;
   readonly walletId: Scalars['WalletId']['input'];
@@ -2035,6 +2035,11 @@ export type UserUpdateNpubMutationVariables = Exact<{
 
 export type UserUpdateNpubMutation = { readonly __typename: 'Mutation', readonly userUpdateNpub: { readonly __typename: 'UserUpdateNpubPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null }>, readonly user?: { readonly __typename: 'User', readonly id: string, readonly npub?: string | null } | null } };
 
+export type AuthQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AuthQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly language: string, readonly username?: string | null, readonly phone?: string | null, readonly email?: { readonly __typename: 'Email', readonly address?: string | null, readonly verified?: boolean | null } | null } | null };
+
 export type HomeAuthedQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2114,6 +2119,18 @@ export type SendBitcoinConfirmationScreenQueryVariables = Exact<{ [key: string]:
 
 export type SendBitcoinConfirmationScreenQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly wallets: ReadonlyArray<{ readonly __typename: 'BTCWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency } | { readonly __typename: 'UsdWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency }> } } | null };
 
+export type ScanningQrCodeScreenQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ScanningQrCodeScreenQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly network: Network } | null, readonly me?: { readonly __typename: 'User', readonly id: string, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly wallets: ReadonlyArray<{ readonly __typename: 'BTCWallet', readonly id: string } | { readonly __typename: 'UsdWallet', readonly id: string }> }, readonly contacts: ReadonlyArray<{ readonly __typename: 'UserContact', readonly id: string, readonly username: string }> } | null };
+
+export type RealtimePriceUnauthedQueryVariables = Exact<{
+  currency: Scalars['DisplayCurrency']['input'];
+}>;
+
+
+export type RealtimePriceUnauthedQuery = { readonly __typename: 'Query', readonly realtimePrice: { readonly __typename: 'RealtimePrice', readonly timestamp: number, readonly denominatorCurrency: string, readonly btcSatPrice: { readonly __typename: 'PriceOfOneSatInMinorUnit', readonly base: number, readonly offset: number }, readonly usdCentPrice: { readonly __typename: 'PriceOfOneUsdCentInMinorUnit', readonly base: number, readonly offset: number } } };
+
 export type RealtimePriceWsSubscriptionVariables = Exact<{
   currency: Scalars['DisplayCurrency']['input'];
 }>;
@@ -2165,7 +2182,7 @@ export type LnUsdInvoiceFeeProbeMutationVariables = Exact<{
 }>;
 
 
-export type LnUsdInvoiceFeeProbeMutation = { readonly __typename: 'Mutation', readonly lnUsdInvoiceFeeProbe: { readonly __typename: 'SatAmountPayload', readonly amount?: number | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }> } };
+export type LnUsdInvoiceFeeProbeMutation = { readonly __typename: 'Mutation', readonly lnUsdInvoiceFeeProbe: { readonly __typename: 'CentAmountPayload', readonly amount?: number | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }> } };
 
 export type LnNoAmountUsdInvoiceFeeProbeMutationVariables = Exact<{
   input: LnNoAmountUsdInvoiceFeeProbeInput;
@@ -2342,11 +2359,6 @@ export type LnUsdInvoiceCreateMutationVariables = Exact<{
 
 
 export type LnUsdInvoiceCreateMutation = { readonly __typename: 'Mutation', readonly lnUsdInvoiceCreate: { readonly __typename: 'LnInvoicePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }>, readonly invoice?: { readonly __typename: 'LnInvoice', readonly paymentHash: string, readonly paymentRequest: string, readonly paymentSecret: string, readonly satoshis?: number | null } | null } };
-
-export type ScanningQrCodeScreenQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ScanningQrCodeScreenQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly network: Network } | null, readonly me?: { readonly __typename: 'User', readonly id: string, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly wallets: ReadonlyArray<{ readonly __typename: 'BTCWallet', readonly id: string } | { readonly __typename: 'UsdWallet', readonly id: string }> }, readonly contacts: ReadonlyArray<{ readonly __typename: 'UserContact', readonly id: string, readonly username: string }> } | null };
 
 export type FeedbackSubmitMutationVariables = Exact<{
   input: FeedbackSubmitInput;
@@ -3456,6 +3468,47 @@ export function useUserUpdateNpubMutation(baseOptions?: Apollo.MutationHookOptio
 export type UserUpdateNpubMutationHookResult = ReturnType<typeof useUserUpdateNpubMutation>;
 export type UserUpdateNpubMutationResult = Apollo.MutationResult<UserUpdateNpubMutation>;
 export type UserUpdateNpubMutationOptions = Apollo.BaseMutationOptions<UserUpdateNpubMutation, UserUpdateNpubMutationVariables>;
+export const AuthDocument = gql`
+    query auth {
+  me {
+    id
+    language
+    username
+    phone
+    email {
+      address
+      verified
+    }
+  }
+}
+    `;
+
+/**
+ * __useAuthQuery__
+ *
+ * To run a query within a React component, call `useAuthQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAuthQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAuthQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAuthQuery(baseOptions?: Apollo.QueryHookOptions<AuthQuery, AuthQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AuthQuery, AuthQueryVariables>(AuthDocument, options);
+      }
+export function useAuthLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AuthQuery, AuthQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AuthQuery, AuthQueryVariables>(AuthDocument, options);
+        }
+export type AuthQueryHookResult = ReturnType<typeof useAuthQuery>;
+export type AuthLazyQueryHookResult = ReturnType<typeof useAuthLazyQuery>;
+export type AuthQueryResult = Apollo.QueryResult<AuthQuery, AuthQueryVariables>;
 export const HomeAuthedDocument = gql`
     query homeAuthed {
   me {
@@ -4062,6 +4115,97 @@ export function useSendBitcoinConfirmationScreenLazyQuery(baseOptions?: Apollo.L
 export type SendBitcoinConfirmationScreenQueryHookResult = ReturnType<typeof useSendBitcoinConfirmationScreenQuery>;
 export type SendBitcoinConfirmationScreenLazyQueryHookResult = ReturnType<typeof useSendBitcoinConfirmationScreenLazyQuery>;
 export type SendBitcoinConfirmationScreenQueryResult = Apollo.QueryResult<SendBitcoinConfirmationScreenQuery, SendBitcoinConfirmationScreenQueryVariables>;
+export const ScanningQrCodeScreenDocument = gql`
+    query scanningQRCodeScreen {
+  globals {
+    network
+  }
+  me {
+    id
+    defaultAccount {
+      id
+      wallets {
+        id
+      }
+    }
+    contacts {
+      id
+      username
+    }
+  }
+}
+    `;
+
+/**
+ * __useScanningQrCodeScreenQuery__
+ *
+ * To run a query within a React component, call `useScanningQrCodeScreenQuery` and pass it any options that fit your needs.
+ * When your component renders, `useScanningQrCodeScreenQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useScanningQrCodeScreenQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useScanningQrCodeScreenQuery(baseOptions?: Apollo.QueryHookOptions<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>(ScanningQrCodeScreenDocument, options);
+      }
+export function useScanningQrCodeScreenLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>(ScanningQrCodeScreenDocument, options);
+        }
+export type ScanningQrCodeScreenQueryHookResult = ReturnType<typeof useScanningQrCodeScreenQuery>;
+export type ScanningQrCodeScreenLazyQueryHookResult = ReturnType<typeof useScanningQrCodeScreenLazyQuery>;
+export type ScanningQrCodeScreenQueryResult = Apollo.QueryResult<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>;
+export const RealtimePriceUnauthedDocument = gql`
+    query realtimePriceUnauthed($currency: DisplayCurrency!) {
+  realtimePrice(currency: $currency) {
+    timestamp
+    btcSatPrice {
+      base
+      offset
+    }
+    usdCentPrice {
+      base
+      offset
+    }
+    denominatorCurrency
+  }
+}
+    `;
+
+/**
+ * __useRealtimePriceUnauthedQuery__
+ *
+ * To run a query within a React component, call `useRealtimePriceUnauthedQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRealtimePriceUnauthedQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRealtimePriceUnauthedQuery({
+ *   variables: {
+ *      currency: // value for 'currency'
+ *   },
+ * });
+ */
+export function useRealtimePriceUnauthedQuery(baseOptions: Apollo.QueryHookOptions<RealtimePriceUnauthedQuery, RealtimePriceUnauthedQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<RealtimePriceUnauthedQuery, RealtimePriceUnauthedQueryVariables>(RealtimePriceUnauthedDocument, options);
+      }
+export function useRealtimePriceUnauthedLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<RealtimePriceUnauthedQuery, RealtimePriceUnauthedQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<RealtimePriceUnauthedQuery, RealtimePriceUnauthedQueryVariables>(RealtimePriceUnauthedDocument, options);
+        }
+export type RealtimePriceUnauthedQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedQuery>;
+export type RealtimePriceUnauthedLazyQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedLazyQuery>;
+export type RealtimePriceUnauthedQueryResult = Apollo.QueryResult<RealtimePriceUnauthedQuery, RealtimePriceUnauthedQueryVariables>;
 export const RealtimePriceWsDocument = gql`
     subscription realtimePriceWs($currency: DisplayCurrency!) {
   realtimePrice(input: {currency: $currency}) {
@@ -5434,53 +5578,6 @@ export function useLnUsdInvoiceCreateMutation(baseOptions?: Apollo.MutationHookO
 export type LnUsdInvoiceCreateMutationHookResult = ReturnType<typeof useLnUsdInvoiceCreateMutation>;
 export type LnUsdInvoiceCreateMutationResult = Apollo.MutationResult<LnUsdInvoiceCreateMutation>;
 export type LnUsdInvoiceCreateMutationOptions = Apollo.BaseMutationOptions<LnUsdInvoiceCreateMutation, LnUsdInvoiceCreateMutationVariables>;
-export const ScanningQrCodeScreenDocument = gql`
-    query scanningQRCodeScreen {
-  globals {
-    network
-  }
-  me {
-    id
-    defaultAccount {
-      id
-      wallets {
-        id
-      }
-    }
-    contacts {
-      id
-      username
-    }
-  }
-}
-    `;
-
-/**
- * __useScanningQrCodeScreenQuery__
- *
- * To run a query within a React component, call `useScanningQrCodeScreenQuery` and pass it any options that fit your needs.
- * When your component renders, `useScanningQrCodeScreenQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useScanningQrCodeScreenQuery({
- *   variables: {
- *   },
- * });
- */
-export function useScanningQrCodeScreenQuery(baseOptions?: Apollo.QueryHookOptions<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>(ScanningQrCodeScreenDocument, options);
-      }
-export function useScanningQrCodeScreenLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>(ScanningQrCodeScreenDocument, options);
-        }
-export type ScanningQrCodeScreenQueryHookResult = ReturnType<typeof useScanningQrCodeScreenQuery>;
-export type ScanningQrCodeScreenLazyQueryHookResult = ReturnType<typeof useScanningQrCodeScreenLazyQuery>;
-export type ScanningQrCodeScreenQueryResult = Apollo.QueryResult<ScanningQrCodeScreenQuery, ScanningQrCodeScreenQueryVariables>;
 export const FeedbackSubmitDocument = gql`
     mutation feedbackSubmit($input: FeedbackSubmitInput!) {
   feedbackSubmit(input: $input) {

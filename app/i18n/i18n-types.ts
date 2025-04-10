@@ -1650,6 +1650,78 @@ type RootTranslation = {
 		 * Refundables
 		 */
 		refundables: string
+		/**
+		 * Cash
+		 */
+		cash: string
+		/**
+		 * Bitcoin
+		 */
+		bitcoin: string
+		/**
+		 * Flashcard
+		 */
+		flashcard: string
+		/**
+		 * Add Flashcard
+		 */
+		addFlashcard: string
+		/**
+		 * Add your phone number
+		 */
+		upgradeTitle: string
+		/**
+		 * Backup your cash wallet and increase transaction limits.
+		 */
+		upgradeDesc: string
+		/**
+		 * Change to your local currency
+		 */
+		currencyTitle: string
+		/**
+		 * Review our available currency list and select your currency.
+		 */
+		currencyDesc: string
+		/**
+		 * Get a Flashcard
+		 */
+		flashcardTitle: string
+		/**
+		 * Find a Flashpoint and get a Flashcard to use in daily life.
+		 */
+		flashcardDesc: string
+		/**
+		 * Non-custodial wallets
+		 */
+		nonCustodialWalletTitle: string
+		/**
+		 * Learn more about non-custodial wallets.
+		 */
+		nonCustodialWalletDesc: string
+		/**
+		 * Email address
+		 */
+		emailTitle: string
+		/**
+		 * Add your email address to secure your account and login using email address.
+		 */
+		emailDesc: string
+		/**
+		 * Enable BTC wallet
+		 */
+		btcWalletTitle: string
+		/**
+		 * Easily transfer larger amounts in Bitcoin.
+		 */
+		btcWalletDesc: string
+		/**
+		 * Backup your BTC wallet
+		 */
+		backupTitle: string
+		/**
+		 * Backup and secure your Bitcoin wallet using recovery phrase.
+		 */
+		backupDesc: string
 	}
 	PinScreen: {
 		/**
@@ -5858,7 +5930,7 @@ export type TranslationFunctions = {
 		 */
 		quickStart: () => LocalizedString
 		/**
-		 * Import Wallet
+		 * Login
 		 */
 		restoreWallet: () => LocalizedString
 		/**
@@ -6036,6 +6108,78 @@ export type TranslationFunctions = {
 		 * Refundables
 		 */
 		refundables: () => LocalizedString
+		/**
+		 * Cash
+		 */
+		cash: () => LocalizedString
+		/**
+		 * Bitcoin
+		 */
+		bitcoin: () => LocalizedString
+		/**
+		 * Flashcard
+		 */
+		flashcard: () => LocalizedString
+		/**
+		 * Add Flashcard
+		 */
+		addFlashcard: () => LocalizedString
+		/**
+		 * Add your phone number
+		 */
+		upgradeTitle: () => LocalizedString
+		/**
+		 * Backup your cash wallet and increase transaction limits.
+		 */
+		upgradeDesc: () => LocalizedString
+		/**
+		 * Change to your local currency
+		 */
+		currencyTitle: () => LocalizedString
+		/**
+		 * Review our available currency list and select your currency.
+		 */
+		currencyDesc: () => LocalizedString
+		/**
+		 * Get a Flashcard
+		 */
+		flashcardTitle: () => LocalizedString
+		/**
+		 * Find a Flashpoint and get a Flashcard to use in daily life.
+		 */
+		flashcardDesc: () => LocalizedString
+		/**
+		 * Non-custodial wallets
+		 */
+		nonCustodialWalletTitle: () => LocalizedString
+		/**
+		 * Learn more about non-custodial wallets.
+		 */
+		nonCustodialWalletDesc: () => LocalizedString
+		/**
+		 * Email address
+		 */
+		emailTitle: () => LocalizedString
+		/**
+		 * Add your email address to secure your account and login using email address.
+		 */
+		emailDesc: () => LocalizedString
+		/**
+		 * Enable BTC wallet
+		 */
+		btcWalletTitle: () => LocalizedString
+		/**
+		 * Easily transfer larger amounts in Bitcoin.
+		 */
+		btcWalletDesc: () => LocalizedString
+		/**
+		 * Backup your BTC wallet
+		 */
+		backupTitle: () => LocalizedString
+		/**
+		 * Backup and secure your Bitcoin wallet using recovery phrase.
+		 */
+		backupDesc: () => LocalizedString
 	}
 	PinScreen: {
 		/**
@@ -6905,7 +7049,7 @@ export type TranslationFunctions = {
 		 */
 		backup: () => LocalizedString
 		/**
-		 * Import Wallet
+		 * Login
 		 */
 		importWallet: () => LocalizedString
 		/**
@@ -7364,7 +7508,7 @@ export type TranslationFunctions = {
 	}
 	ImportWalletOptions: {
 		/**
-		 * Import options
+		 * Login options
 		 */
 		loginOptions: () => LocalizedString
 		/**
@@ -7396,7 +7540,7 @@ export type TranslationFunctions = {
 		 */
 		importUsingEmail: () => LocalizedString
 		/**
-		 * Import/Create
+		 * Login/Create
 		 */
 		login: () => LocalizedString
 		/**
@@ -7759,7 +7903,7 @@ export type TranslationFunctions = {
 		 */
 		usernameHint: (arg: { bankName: string }) => LocalizedString
 		/**
-		 * enter your username here
+		 * Enter your username
 		 */
 		placeholder: () => LocalizedString
 		/**
@@ -7772,7 +7916,7 @@ export type TranslationFunctions = {
 		title: (arg: { bankName: string }) => LocalizedString
 		Errors: {
 			/**
-			 * Address must be at least 3 characters long
+			 * Username must be at least 3 characters long
 			 */
 			tooShort: () => LocalizedString
 			/**

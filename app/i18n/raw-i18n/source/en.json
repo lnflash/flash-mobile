@@ -29,7 +29,7 @@
         "bitcoinTag": "Choose this to be on a Bitcoin standard."
     },
     "NoteInput": {
-        "addNote": "Add note"
+        "addNote": "Add note..."
     },
     "AuthenticationScreen": {
         "authenticationDescription": "Authenticate to continue",
@@ -454,7 +454,7 @@
     "GetStartedScreen": {
         "logInCreateAccount": "Log in / create account",
         "quickStart": "Start",
-        "restoreWallet": "Import Wallet",
+        "restoreWallet": "Login",
         "exploreWalletInstead": "Explore wallet instead",
         "setupBusinessAccount": "Setup business account",
         "createAccount": "Create new account",
@@ -498,8 +498,25 @@
         "useLightning": "We use the Lightning Network.",
         "myAccounts": "My Accounts",
 		"refundableWarning": "Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.",
-        "refundables": "Refundables"
-
+        "refundables": "Refundables",
+        "cash": "Cash",
+		"bitcoin": "Bitcoin",
+		"flashcard": "Flashcard",
+		"addFlashcard": "Add Flashcard",
+        "upgradeTitle": "Add your phone number",
+        "upgradeDesc": "Backup your cash wallet and increase transaction limits.",
+        "currencyTitle":"Change to your local currency",
+        "currencyDesc": "Review our available currency list and select your currency.",
+        "flashcardTitle": "Get a Flashcard",
+        "flashcardDesc": "Find a Flashpoint and get a Flashcard to use in daily life.",
+        "nonCustodialWalletTitle": "Non-custodial wallets",
+        "nonCustodialWalletDesc": "Learn more about non-custodial wallets.",
+        "emailTitle": "Email address",
+        "emailDesc": "Add your email address to secure your account and login using email address.",
+        "btcWalletTitle": "Enable BTC wallet",
+        "btcWalletDesc": "Easily transfer larger amounts in Bitcoin.",
+        "backupTitle": "Backup your BTC wallet",
+        "backupDesc": "Backup and secure your Bitcoin wallet using recovery phrase."
     },
     "PinScreen": {
         "attemptsRemaining": "Incorrect PIN. {attemptsRemaining: number} attempts remaining.",
@@ -870,7 +887,7 @@
         "done": "Done"
     },
     "ImportWalletOptions": {
-        "loginOptions": "Import options",
+        "loginOptions": "Login options",
         "importOptions": "Import wallet options",
         "recoveryPhrase": "Recovery Phrase",
         "importBTCWallet": "Import Bitcoin Wallet using recovery phrase",
@@ -878,7 +895,7 @@
         "importUsingPhone": "Import or Create your Cash Wallet using phone number",
         "email": "Email",
         "importUsingEmail": "Import your Cash Wallet using email address",
-        "login": "Import/Create",
+        "login": "Login/Create",
         "done": "Done"
     },
     "ImportWallet": {
@@ -918,18 +935,18 @@
         "learnMore": "Learn more about Stablesats"
     },
     "AdvancedModeModal": {
-        "header": "Welcome to Advanced Mode. You now have a non-custodial Bitcoin account added to your wallet!",
-        "body": "You can use it to send and receive larger amounts of money, denominated in Bitcoin. You can also use the SWAP button to instantly transfer value between your Bitcoin account and USD account. The dollar value in the Bitcoin account WILL fluctuate with the price of Bitcoin.\n\nIMPORTANT: Your Bitcoin account is a non-custodial account, so you may be charged a small fee to make your first transaction. Also, you are solely responsible for securing your recovery phrase in a safe place. \n\n\nDO NOT SHARE YOUR RECOVERY PHRASE WITH ANYONE.",
-        "termsAndConditions": "\nRead the Terms & Conditions.",
+        "header": "Welcome to Advanced Mode!",
+        "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+        "termsAndConditions": "Read the Terms & Conditions.",
         "learnMore": "What is a Non-Custodial Wallet?",
         "importWallet": "Import Wallet",
-		"createWallet": "Create Wallet"
+        "createWallet": "Create Wallet"
     },
     "UnVerifiedSeedModal": {
         "header": "YOUR BITCOIN IS NOT SECURE!",
         "body": "You should WRITE DOWN your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.\n\n",
         "termsAndConditions": "\nRead the Terms & Conditions.",
-        "learnMore": "What is a Recovery Phase?"
+        "learnMore": "What is a Recovery Phrase?"
     },
     "SplashScreen": {
         "update": "Your app is outdated. An update is needed before the app can be used.\n\nThis can be done from the PlayStore for Android and Testflight for iOS"
@@ -961,7 +978,7 @@
     },
     "TransactionScreen": {
         "noTransaction": "No transaction to show",
-        "title": "Transactions",
+        "title": "Recent activity",
         "recentTransactions": "Recent transactions",
         "transactionHistoryTitle": "Transaction History"
     },
@@ -981,7 +998,7 @@
     "SetAddressModal": {
         "title": "Set {bankName: string} address",
         "Errors": {
-            "tooShort": "Address must be at least 3 characters long",
+            "tooShort": "Username must be at least 3 characters long",
             "tooLong": "Address must be at most 50 characters long",
             "invalidCharacter": "Address can only contain letters, numbers, and underscores",
             "addressUnavailable": "Sorry, this address is already taken",

@@ -1,8 +1,15 @@
-import { useTheme, Text, makeStyles } from "@rneui/themed"
 import React from "react"
+import { useTheme, Text, makeStyles } from "@rneui/themed"
 import { Pressable, PressableProps, StyleProp, View, ViewStyle } from "react-native"
+
+// components
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
+
+// utils
 import { testProps } from "@app/utils/testProps"
+
+// assets
+import Edit from "@app/assets/icons/edit.svg"
 
 export type AmountInputButtonProps = {
   placeholder?: string
@@ -14,6 +21,7 @@ export type AmountInputButtonProps = {
   primaryTextTestProps?: string
   showValuesIfDisabled?: boolean
   big?: boolean
+  newDesign?: boolean
 } & PressableProps
 
 export const AmountInputButton: React.FC<AmountInputButtonProps> = ({
@@ -26,6 +34,7 @@ export const AmountInputButton: React.FC<AmountInputButtonProps> = ({
   primaryTextTestProps,
   showValuesIfDisabled = true,
   big = true,
+  newDesign = false,
   ...props
 }) => {
   const {
@@ -72,12 +81,23 @@ export const AmountInputButton: React.FC<AmountInputButtonProps> = ({
 
   /* eslint-disable no-param-reassign */
   // hide values if disabled
-  if (!showValuesIfDisabled) {
+  if (!showValuesIfDisabled && disabled) {
     value = ""
     secondaryValue = ""
   }
 
   const primaryText = value || placeholder || ""
+
+  if (newDesign) {
+    return (
+      <Pressable {...props} style={styles.amount} disabled={disabled}>
+        <Text type="bm" bold color={!value ? colors.placeholder : colors.black}>
+          {primaryText}
+        </Text>
+        <Edit color={colors.accent02} />
+      </Pressable>
+    )
+  }
 
   return (
     <Pressable {...props} style={pressableStyle} disabled={disabled}>
@@ -108,10 +128,18 @@ export const AmountInputButton: React.FC<AmountInputButtonProps> = ({
   )
 }
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles(({ colors }) => ({
   contentContainerStyle: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  amount: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border01,
   },
 }))

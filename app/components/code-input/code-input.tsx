@@ -1,49 +1,13 @@
-import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
-import { testProps } from "@app/utils/testProps"
-import { useTheme } from "@react-navigation/native"
-import { Input, Text, makeStyles } from "@rneui/themed"
-import * as React from "react"
-import { useState } from "react"
+import React, { useState } from "react"
 import { ActivityIndicator, View } from "react-native"
+import { Input, Text, makeStyles, useTheme } from "@rneui/themed"
+
+// components
 import { Screen } from "../screen"
+import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 
-const useStyles = makeStyles(({ colors }) => ({
-  screenStyle: {
-    padding: 20,
-    flexGrow: 1,
-  },
-  viewWrapper: { flex: 1 },
-
-  activityIndicator: { marginTop: 12 },
-  textContainer: {
-    marginBottom: 20,
-  },
-
-  inputComponentContainerStyle: {
-    flexDirection: "row",
-    marginBottom: 20,
-    paddingLeft: 0,
-    paddingRight: 0,
-    justifyContent: "center",
-  },
-  inputContainerStyle: {
-    minWidth: 160,
-    minHeight: 60,
-    borderWidth: 2,
-    borderBottomWidth: 2,
-    paddingHorizontal: 10,
-    borderColor: colors.primary5,
-    borderRadius: 8,
-    marginRight: 0,
-  },
-  inputStyle: {
-    fontSize: 24,
-    textAlign: "center",
-  },
-  errorContainer: {
-    marginBottom: 20,
-  },
-}))
+// utils
+import { testProps } from "@app/utils/testProps"
 
 type Props = {
   send: (code: string) => void
@@ -63,7 +27,7 @@ export const CodeInput: React.FC<Props> = ({
   setErrorMessage,
 }) => {
   const styles = useStyles()
-  const { colors } = useTheme()
+  const { colors } = useTheme().theme
 
   const [code, _setCode] = useState("")
 
@@ -86,37 +50,70 @@ export const CodeInput: React.FC<Props> = ({
       keyboardOffset="navigationHeader"
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.viewWrapper}>
-        <View style={styles.textContainer}>
-          <Text type="h2">{header}</Text>
+      <Text type="p1" style={styles.header}>
+        {header}
+      </Text>
+      <Input
+        {...testProps(placeholder)}
+        placeholder={placeholder}
+        containerStyle={styles.inputComponentContainerStyle}
+        inputContainerStyle={styles.inputContainerStyle}
+        inputStyle={styles.inputStyle}
+        value={code}
+        onChangeText={setCode}
+        renderErrorMessage={false}
+        autoFocus={true}
+        textContentType={"oneTimeCode"}
+        keyboardType="numeric"
+      />
+      {errorMessage && (
+        <View style={styles.errorContainer}>
+          <GaloyErrorBox errorMessage={errorMessage} />
         </View>
-
-        <Input
-          {...testProps(placeholder)}
-          placeholder={placeholder}
-          containerStyle={styles.inputComponentContainerStyle}
-          inputContainerStyle={styles.inputContainerStyle}
-          inputStyle={styles.inputStyle}
-          value={code}
-          onChangeText={setCode}
-          renderErrorMessage={false}
-          autoFocus={true}
-          textContentType={"oneTimeCode"}
-          keyboardType="numeric"
+      )}
+      {loading && (
+        <ActivityIndicator
+          style={styles.activityIndicator}
+          size="large"
+          color={colors.primary}
         />
-        {errorMessage && (
-          <View style={styles.errorContainer}>
-            <GaloyErrorBox errorMessage={errorMessage} />
-          </View>
-        )}
-        {loading && (
-          <ActivityIndicator
-            style={styles.activityIndicator}
-            size="large"
-            color={colors.primary}
-          />
-        )}
-      </View>
+      )}
     </Screen>
   )
 }
+
+const useStyles = makeStyles(({ colors }) => ({
+  screenStyle: {
+    padding: 20,
+    flexGrow: 1,
+  },
+  activityIndicator: {
+    marginTop: 12,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  inputComponentContainerStyle: {
+    flexDirection: "row",
+    marginBottom: 20,
+    paddingLeft: 0,
+    paddingRight: 0,
+    justifyContent: "center",
+  },
+  inputContainerStyle: {
+    minWidth: 160,
+    minHeight: 60,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    borderColor: colors.border02,
+    borderRadius: 10,
+    marginRight: 0,
+  },
+  inputStyle: {
+    fontSize: 24,
+    textAlign: "center",
+  },
+  errorContainer: {
+    marginBottom: 20,
+  },
+}))

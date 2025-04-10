@@ -14,7 +14,7 @@ import {
   SendingAnimation,
 } from "@app/components/send-flow"
 import { Screen } from "@app/components/screen"
-import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
+import { PrimaryBtn } from "@app/components/buttons"
 
 // hooks
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
@@ -169,7 +169,10 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         })
 
         if (status === "SUCCESS" || status === "PENDING") {
-          navigation.navigate("sendBitcoinSuccess")
+          navigation.navigate("sendBitcoinSuccess", {
+            walletCurrency: paymentDetail.sendingWalletDescriptor.currency,
+            unitOfAccountAmount: paymentDetail.unitOfAccountAmount,
+          })
           ReactNativeHapticFeedback.trigger("notificationSuccess", {
             ignoreAndroidSystemSettings: true,
           })
@@ -218,9 +221,9 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           invalidAmountErrorMessage={invalidAmountErr}
         />
         <View style={styles.buttonContainer}>
-          <GaloyPrimaryButton
+          <PrimaryBtn
             loading={sendPaymentLoading}
-            title={LL.SendBitcoinConfirmationScreen.title()}
+            label={LL.SendBitcoinConfirmationScreen.title()}
             disabled={!isValidAmount || hasAttemptedSend}
             onPress={handleSendPayment}
           />

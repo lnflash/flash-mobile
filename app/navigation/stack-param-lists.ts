@@ -20,6 +20,8 @@ export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
   IntroScreen: undefined
   getStarted: undefined
+  UsernameSet: undefined
+  Welcome: undefined
   welcomeFirst: undefined
   liteDeviceAccount: {
     appCheckToken: string
@@ -34,7 +36,7 @@ export type RootStackParamList = {
   Primary: undefined
   earnsSection: { section: EarnSectionType }
   earnsQuiz: { id: string }
-  scanningQRCode: { swapAddress?: string; amount?: number; fee?: number } | undefined
+  scanningQRCode?: { swapAddress: string; amount: number; fee: number; feeType: string }
   settings: undefined
   addressScreen: undefined
   defaultWallet: undefined
@@ -62,7 +64,10 @@ export type RootStackParamList = {
     moneyAmount: MoneyAmount<WalletOrDisplayCurrency>
   }
   conversionSuccess: undefined
-  sendBitcoinSuccess: undefined
+  sendBitcoinSuccess: {
+    unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
+    walletCurrency: WalletCurrency
+  }
   language: undefined
   currency: undefined
   security: {
@@ -91,17 +96,17 @@ export type RootStackParamList = {
     usdAmount: MoneyAmount<WalletCurrency>
     lnurl: string
   }
-  phoneFlow: { onComplete?: (token?: string) => void } | undefined
-  phoneRegistrationInitiate: { onComplete?: (token?: string) => void } | undefined
+  phoneFlow: undefined
+  phoneRegistrationInitiate: undefined
   phoneRegistrationValidate: {
     phone: string
     channel: PhoneCodeChannelType
-    onComplete?: (token?: string) => void
   }
   transactionDetail: { tx: TransactionFragment }
   breezTransactionDetail: { tx: TransactionFragment }
   TransactionHistoryTabs?: { initialRouteName?: string } | undefined
   USDTransactionHistory: undefined
+  BTCTransactionHistory: undefined
   transactionHistory?: undefined
   Earn: undefined
   Card: undefined
@@ -111,7 +116,7 @@ export type RootStackParamList = {
   transactionLimitsScreen: undefined
   emailRegistrationInitiate: undefined
   emailRegistrationValidate: { email: string; emailRegistrationId: string }
-  emailLoginInitiate: { onComplete?: (token?: string) => void }
+  emailLoginInitiate: undefined
   emailLoginValidate: { email: string; emailLoginId: string }
   totpRegistrationInitiate: undefined
   totpRegistrationValidate: { totpRegistrationId: string }
@@ -123,7 +128,7 @@ export type RootStackParamList = {
   BackupVerify: undefined
   BackupComplete: undefined
   BackupShowSeedPhrase: undefined
-  ImportWallet: { insideApp?: boolean; onComplete?: (token?: string) => void }
+  ImportWallet: { insideApp?: boolean }
   ImportWalletOptions: { insideApp?: boolean } | undefined
   RefundTransactionList: undefined
   RefundDestination: { swapAddress: string; amount: number }
@@ -154,17 +159,17 @@ export type ContactStackParamList = {
 
 export type PhoneValidationStackParamList = {
   Primary: undefined
-  phoneLoginInitiate: { onComplete?: (token?: string) => void }
+  phoneLoginInitiate: undefined
   phoneLoginValidate: {
     phone: string
     channel: PhoneCodeChannelType
-    onComplete?: (token?: string) => void
   }
   authentication: {
     screenPurpose: AuthenticationScreenPurpose
   }
   Home: undefined
   totpLoginValidate: { authToken: string }
+  authenticationCheck: undefined
 }
 
 export type PrimaryStackParamList = {
@@ -174,4 +179,5 @@ export type PrimaryStackParamList = {
   Card: undefined
   Map: undefined
   Earn: undefined
+  Scan: undefined
 }

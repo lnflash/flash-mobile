@@ -15,6 +15,7 @@ import "@react-native-firebase/crashlytics"
 import { ThemeProvider } from "@rneui/themed"
 import "node-libs-react-native/globals" // needed for Buffer?
 import * as React from "react"
+import { Platform, StatusBar } from "react-native"
 import ErrorBoundary from "react-native-error-boundary"
 import { RootSiblingParent } from "react-native-root-siblings"
 import { GaloyToast } from "./components/galoy-toast"
@@ -37,11 +38,12 @@ import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { Provider } from "react-redux"
 import { store } from "./store/redux"
 import PolyfillCrypto from "react-native-webview-crypto"
-import { ActivityIndicatorProvider } from "./contexts"
+import { ActivityIndicatorProvider } from "./contexts/ActivityIndicatorContext"
 import { BreezProvider } from "./contexts/BreezContext"
 import { ChatContextProvider } from "./screens/nip17-chat/chatContext"
 import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
+import { FlashcardProvider } from "./contexts/Flashcard"
 
 // FIXME should we only load the currently used local?
 // this would help to make the app load faster
@@ -57,6 +59,10 @@ loadAllLocales()
 export const App = () => (
   /* eslint-disable-next-line react-native/no-inline-styles */
   <SafeAreaProvider>
+    <StatusBar
+      backgroundColor={"#000"}
+      barStyle={Platform.OS === "android" ? "light-content" : "dark-content"}
+    />
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PolyfillCrypto />
       <Provider store={store}>
@@ -74,7 +80,9 @@ export const App = () => (
                               <AppStateWrapper />
                               <PushNotificationComponent />
                               <BreezProvider>
-                                <RootStack />
+                                <FlashcardProvider>
+                                  <RootStack />
+                                </FlashcardProvider>
                               </BreezProvider>
                               <GaloyToast />
                               <NetworkErrorComponent />
