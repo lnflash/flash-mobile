@@ -53,13 +53,13 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
       if (insideApp) {
         await disconnectToSDK()
         await initializeBreezSDK()
+        if (route.params?.onComplete) {
+          route.params?.onComplete()
+        }
         setTimeout(() => {
           updateStateHandler(true)
           setLoading(false)
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "Primary" }],
-          })
+          navigation.goBack()
         }, 5000)
       } else {
         // const token: any = await createDeviceAccountAndLogin()
