@@ -100,9 +100,7 @@ const connectToSDK = async () => {
 export const disconnectToSDK = async () => {
   try {
     if (breezSDKInitialized) {
-      const config = await defaultConfig(LiquidNetwork.MAINNET)
       await disconnect()
-      await RNFS.unlink(config.workingDir)
       breezSDKInitialized = false
       breezSDKInitializing = null
     }
