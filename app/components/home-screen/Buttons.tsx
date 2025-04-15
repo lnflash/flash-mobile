@@ -1,6 +1,5 @@
 import React from "react"
-import { View } from "react-native"
-import { makeStyles } from "@rneui/themed"
+import styled from "styled-components/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
@@ -16,17 +15,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useLevel } from "@app/graphql/level-context"
 
 // components
-import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
-import { icons } from "@app/components/atomic/galoy-icon"
-
-type Target =
-  | "scanningQRCode"
-  | "sendBitcoinDestination"
-  | "receiveBitcoin"
-  | "TransactionHistoryTabs"
-  | "USDTransactionHistory"
-
-type IconNamesType = keyof typeof icons
+import { IconBtn } from "../buttons"
 
 type Props = {
   setModalVisible: (val: boolean) => void
@@ -36,20 +25,20 @@ type Props = {
 const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisible }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const isAuthed = useIsAuthed()
+
   const styles = useStyles()
   const { currentLevel } = useLevel()
   const { LL } = useI18nContext()
   const { persistentState } = usePersistentStateContext()
-  const { data: { hasPromptedSetDefaultAccount } = {} } =
-    useHasPromptedSetDefaultAccountQuery()
+  const { data } = useHasPromptedSetDefaultAccountQuery()
 
-  const onMenuClick = (target: Target) => {
+  const onMenuClick = (target: string) => {
     if (!isAuthed) {
       setModalVisible(true)
     } else {
       if (
         target === "receiveBitcoin" &&
-        !hasPromptedSetDefaultAccount &&
+        !data?.hasPromptedSetDefaultAccount &&
         persistentState.isAdvanceMode
       ) {
         setDefaultAccountModalVisible(true)
@@ -61,27 +50,22 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
 
   const buttons = [
     {
-      title: LL.HomeScreen.receive(),
-      target: "receiveBitcoin" as Target,
-      icon: "receive" as IconNamesType,
-    },
-    {
       title: LL.HomeScreen.send(),
-      target: "sendBitcoinDestination" as Target,
-      icon: "send" as IconNamesType,
+      target: "sendBitcoinDestination",
+      icon: "up",
     },
     {
-      title: LL.HomeScreen.scan(),
-      target: "scanningQRCode" as Target,
-      icon: "qr-code" as IconNamesType,
+      title: LL.HomeScreen.receive(),
+      target: "receiveBitcoin",
+      icon: "down",
     },
   ]
 
   if (persistentState.isAdvanceMode) {
-    buttons.unshift({
+    buttons.push({
       title: LL.ConversionDetailsScreen.title(),
-      target: "conversionDetails" as Target,
-      icon: "transfer" as IconNamesType,
+      target: "conversionDetails",
+      icon: "swap",
     })
   }
 
@@ -95,39 +79,25 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
   }
 
   return (
-    <View style={styles.listItemsContainer}>
+    <Wrapper>
       {buttons.map((item) => (
-        <View key={item.icon} style={styles.button}>
-          <GaloyIconButton
-            name={item.icon}
-            size="large"
-            text={item.title}
-            onPress={() => onMenuClick(item.target)}
-          />
-        </View>
+        <IconBtn
+          key={item.title}
+          type="clear"
+          icon={item.icon as any}
+          label={item.title}
+          onPress={() => onMenuClick(item.target)}
+        />
       ))}
-    </View>
+    </Wrapper>
   )
 }
 
 export default Buttons
 
-const useStyles = makeStyles(({ colors }) => ({
-  listItemsContainer: {
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    marginBottom: 20,
-    borderRadius: 12,
-    backgroundColor: colors.grey5,
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  button: {
-    display: "flex",
-    justifyContent: "space-between",
-    width: "100%",
-    maxWidth: 74,
-  },
-}))
+const Wrapper = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+`

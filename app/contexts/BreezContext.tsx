@@ -74,7 +74,7 @@ export const BreezProvider = ({ children }: Props) => {
   const getBreezInfo = async () => {
     setLoading(true)
     await initializeBreezSDK()
-    const walletInfo = await getInfo()
+    const { walletInfo } = await getInfo()
 
     setBtcWallet({
       id: walletInfo.pubkey,

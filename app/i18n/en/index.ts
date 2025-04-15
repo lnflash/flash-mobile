@@ -38,7 +38,7 @@ const en: BaseTranslation = {
     bitcoinTag: "Choose this to be on a Bitcoin standard.",
   },
   NoteInput: {
-    addNote: "Add note",
+    addNote: "Add note...",
   },
   AuthenticationScreen: {
     authenticationDescription: "Authenticate to continue",
@@ -74,6 +74,11 @@ const en: BaseTranslation = {
       "Tap a Flashcard to add it here",
     noMatchingCards: "No Cards matching your search were found.",
     title: "Flashcard",
+    notFlashcard: "Unsupported NFC card. Please ensure you are using a flashcard.",
+    noNDEFMessage: "NDEF message not found. Please ensure you are using a flashcard.",
+    notSupported: "NFC is not supported on this device.",
+    notEnabled: "NFC is not enabled on this device.",
+    noTag: "No tag found. Please ensure you are using a flashcard."
   },
   Cashout: {
     title: "Cashout",
@@ -487,7 +492,7 @@ const en: BaseTranslation = {
   GetStartedScreen: {
     logInCreateAccount: "Log in / create account",
     quickStart: "Start",
-    restoreWallet: "Import Wallet",
+    restoreWallet: "Login",
     exploreWalletInstead: "Explore wallet instead",
     setupBusinessAccount: "Setup business account",
     createAccount: "Create new account",
@@ -537,6 +542,26 @@ const en: BaseTranslation = {
     useLightning: "We use the Lightning Network.",
     myAccounts: "My Accounts",
     myBusinessAccounts: "My Business Accounts",
+    refundableWarning: "Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.",
+    refundables: "Refundables",
+		cash: "Cash",
+		bitcoin: "Bitcoin",
+		flashcard: "Flashcard",
+		addFlashcard: "Add Flashcard",
+    upgradeTitle: "Add your phone number",
+    upgradeDesc: "Backup your cash wallet and increase transaction limits.",
+    currencyTitle:"Change to your local currency",
+    currencyDesc: "Review our available currency list and select your currency.",
+    flashcardTitle: "Get a Flashcard",
+    flashcardDesc: "Find a Flashpoint and get a Flashcard to use in daily life.",
+    nonCustodialWalletTitle: "Non-custodial wallets",
+    nonCustodialWalletDesc: "Learn more about non-custodial wallets.",
+    emailTitle: "Email address",
+    emailDesc: "Add your email address to secure your account and login using email address.",
+    btcWalletTitle: "Enable BTC wallet",
+    btcWalletDesc: "Easily transfer larger amounts in Bitcoin.",
+    backupTitle: "Backup your BTC wallet",
+    backupDesc: "Backup and secure your Bitcoin wallet using recovery phrase."
   },
   PinScreen: {
     attemptsRemaining: "Incorrect PIN. {attemptsRemaining: number} attempts remaining.",
@@ -758,6 +783,7 @@ const en: BaseTranslation = {
     lnurlInvoiceIncorrectDescription:
       "The lnurl server responded with an invoice with an incorrect description hash.",
 		noAmountInvoiceError: "No amount invoice is not supported in BTC wallet. Please go back and scan or enter an invoice with an amount added.",
+    onchainMinAmountInvoiceError: "The amount you entered is less than the minimum amount required to send an on-chain transaction {amount: number}. Please consider sending this amount via Lightning!",
 		minAmountInvoiceError: "The amount on the invoice is less than minimum amount {amount: number}",
 		maxAmountInvoiceError: "The amount on the invoice is greater than maximum amount {amount: number}",
 		minAmountConvertError: "The conversion amount is less than minimum required amount {amount: number}",
@@ -938,7 +964,7 @@ const en: BaseTranslation = {
     done: "Done"
   },
   ImportWalletOptions: {		
-		loginOptions: "Import options",
+		loginOptions: "Login options",
 		importOptions: "Import wallet options",
     recoveryPhrase: "Recovery Phrase",
     importBTCWallet: "Import Bitcoin Wallet using recovery phrase",
@@ -946,7 +972,7 @@ const en: BaseTranslation = {
     importUsingPhone: "Import or Create your Cash Wallet using phone number",
     email: "Email",
     importUsingEmail: "Import your Cash Wallet using email address",
-		login: "Import/Create",
+		login: "Login/Create",
     done: "Done",
 	},
   ImportWallet: {		
@@ -988,14 +1014,13 @@ const en: BaseTranslation = {
     learnMore: "Learn more about Stablesats",
   },
   AdvancedModeModal: {
-    header: "Welcome to Advanced Mode! Your non-custodial Bitcoin account is now live.",
+    header: "Welcome to Advanced Mode!",
     body:
-      "Your Bitcoin is stored as LBTC on the Liquid Network, providing faster and secure transactions with your federated wallet.\n\n" +
-      "SEND & RECEIVE:\n Easily transfer larger amounts in Bitcoin.\n" +
-      "SWAP INSTANTLY:\n Convert between Bitcoin and USD seamlessly.\n" +
-      "TRANSACTION TIME:\n Transactions may take up to 30 seconds to confirm and will appear as 'Pending' until confirmed.\n\n" +
-      "IMPORTANT: This is a non-custodial account, so small network fees may apply. You are solely responsible for securing your recovery phrase in a safe place. \n\n\nDO NOT SHARE YOUR RECOVERY PHRASE WITH ANYONE.",
-    termsAndConditions: "\nRead the Terms & Conditions.",
+      "- Your BTC is non-custodial, fees may apply.\n" +
+      "- You can swap between BTC and USD.\n" +
+      "- BTC may take up to 60s to confirm.\n\n" +
+      "DO NOT SHARE YOUR RECOVERY PHRASE!",
+    termsAndConditions: "Read the Terms & Conditions.",
     learnMore: "What is a Non-Custodial Wallet?",
     importWallet: "Import Wallet",
 		createWallet: "Create Wallet"
@@ -1048,7 +1073,7 @@ const en: BaseTranslation = {
   },
   TransactionScreen: {
     noTransaction: "No transaction to show",
-    title: "Transactions",
+    title: "Recent activity",
     recentTransactions: "Recent transactions",
     transactionHistoryTitle: "Transaction History",
   },
@@ -1066,9 +1091,14 @@ const en: BaseTranslation = {
     stayInTrialMode: "Maybe later",
   },
   SetAddressModal: {
+    helloText: "Hello!",
+    whoAreYou: "What should we call you?",
+    usernameHint: "This will be your {bankName: string} username",
+    placeholder: "Enter your username",
     title: "Set {bankName: string} address",
+    save: "Save",
     Errors: {
-      tooShort: "Address must be at least 3 characters long",
+      tooShort: "Username must be at least 3 characters long",
       tooLong: "Address must be at most 50 characters long",
       invalidCharacter: "Address can only contain letters, numbers, and underscores",
       addressUnavailable: "Sorry, this address is already taken",
@@ -1300,7 +1330,8 @@ const en: BaseTranslation = {
     email: "Email",
     enjoyingApp: "Enjoying the app?",
     statusPage: "Status Page",
-    telegram: "Telegram",
+    //telegram: "Telegram",
+    discord: "Discord",
     mattermost: "Mattermost",
     thankYouText: "Thank you for the feedback, would you like to suggest an improvement?",
     defaultEmailSubject: "{bankName: string} - Support",
@@ -1352,6 +1383,21 @@ const en: BaseTranslation = {
     tapHereUpdate: "Tap here to update now",
     contactSupport: "Contact Support",
   },
+  RefundFlow: {
+    refundListTitle: "Refundable Transactions",
+		destinationTitle: "Destination",
+		confirmationTitle: "Confirmation",
+    pendingTransactions: "Pending Transactions",
+    noRefundables: "No refundable transactions found",
+    view: "View",
+    refund: "Refund",
+    refundTo: "Refund to USD wallet",
+    recommendedFees: "Recommended Fees",
+    fast: "Fast",
+    halfHour: "Half Hour",
+    hour: "Hour",
+    txId: "Transaction ID"
+	}
 }
 
 export default en

@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react"
-import { useNavigation } from "@react-navigation/native"
 import Clipboard from "@react-native-clipboard/clipboard"
-import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles } from "@rneui/themed"
+
+// hooks
+import { useNavigation } from "@react-navigation/native"
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { useReceiveBitcoin } from "./use-receive-bitcoin"
 import { useAppSelector } from "@app/store/redux"
 import { useAppConfig } from "@app/hooks"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // breez
 import {
@@ -34,9 +37,6 @@ import { WalletCurrency, useWalletsQuery } from "@app/graphql/generated"
 
 // types
 import { Invoice, PaymentRequestState } from "./payment/index.types"
-
-// store
-import { usePersistentStateContext } from "@app/store/persistent-state"
 
 const ReceiveScreen = () => {
   const navigation = useNavigation()
@@ -126,7 +126,7 @@ const ReceiveScreen = () => {
           keyboardShouldPersistTaps="handled"
           style={styles.screenStyle}
         >
-          <WalletReceiveTypeTabs request={request} />
+          <InvoiceInfo request={request} lnurlp={lnurlp} handleCopy={handleCopy} />
           <QRView
             type={request.info?.data?.invoiceType || Invoice.OnChain}
             getFullUri={!!lnurlp ? lnurlp : request.info?.data?.getFullUriFn}
@@ -140,7 +140,6 @@ const ReceiveScreen = () => {
                 ? LL.ReceiveScreen.error()
                 : ""
             }
-            style={styles.qrView}
             expired={request.state === PaymentRequestState.Expired}
             regenerateInvoiceFn={request.regenerateInvoice}
             copyToClipboard={handleCopy}
@@ -150,7 +149,7 @@ const ReceiveScreen = () => {
               request.toggleIsSetLightningAddressModalVisible
             }
           />
-          <InvoiceInfo request={request} lnurlp={lnurlp} handleCopy={handleCopy} />
+          <WalletReceiveTypeTabs request={request} />
           <AmountNote request={request} />
           <OnChainCharge request={request} />
           <SetLightningAddressModal
@@ -163,6 +162,7 @@ const ReceiveScreen = () => {
             settlementAmount={request.settlementAmount}
             receiveViaNFC={request.receiveViaNFC}
             onPaid={() => setUpdatedPaymentState(PaymentRequestState.Paid)}
+            note={request.memo}
           />
         </Screen>
       </>
@@ -174,12 +174,9 @@ const ReceiveScreen = () => {
 
 const useStyles = makeStyles(({ colors }) => ({
   screenStyle: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     flexGrow: 1,
-  },
-  qrView: {
-    marginBottom: 10,
+    padding: 20,
+    paddingTop: 0,
   },
 }))
 

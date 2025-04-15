@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react"
 import { ActivityIndicator } from "react-native"
-import { makeStyles, Text, useTheme } from "@rneui/themed"
-import { TouchableWithoutFeedback } from "react-native-gesture-handler"
+import { Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import styled from "styled-components/native"
 
 // components
-import { TransactionItem } from "../../components/transaction-item"
-import { BreezTransactionItem } from "../../components/transaction-item/breez-transaction-item"
+import { TxItem } from "../../components/transaction-item"
 
 // hooks
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -24,11 +23,10 @@ import {
 } from "@app/graphql/generated"
 
 // utils
-import { testProps } from "@app/utils/testProps"
 import { toBtcMoneyAmount } from "@app/types/amounts"
+import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk-liquid"
 
 // breez
-import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk-liquid"
 import {
   addEventListener,
   Payment,
@@ -49,7 +47,6 @@ const Transactions: React.FC<Props> = ({
   refreshTriggered,
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const styles = useStyles()
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const { persistentState, updateState } = usePersistentStateContext()
@@ -64,15 +61,10 @@ const Transactions: React.FC<Props> = ({
   )
 
   useEffect(() => {
-    if (refreshTriggered || (persistentState.isAdvanceMode && breezSDKInitialized)) {
+    if (persistentState.isAdvanceMode && breezSDKInitialized) {
       fetchPaymentsBreez()
     }
-  }, [
-    refreshTriggered,
-    breezSDKInitialized,
-    persistentState.isAdvanceMode,
-    persistentState.btcWalletImported,
-  ])
+  }, [refreshTriggered, breezSDKInitialized, persistentState.isAdvanceMode])
 
   useEffect(() => {
     if (!loadingAuthed && !breezTxsLoading) {
@@ -107,11 +99,17 @@ const Transactions: React.FC<Props> = ({
   }
 
   const fetchPaymentsBreez = async () => {
-    setBreezTxsLoading(true)
-    refreshBreez()
-    const payments = await listPaymentsBreezSDK(0, 3)
-    setBreezTransactions(payments)
-    setBreezTxsLoading(false)
+    try {
+      if (!breezTxsLoading) {
+        setBreezTxsLoading(true)
+        refreshBreez()
+        const payments = await listPaymentsBreezSDK(0, 3)
+        setBreezTransactions(payments)
+        setBreezTxsLoading(false)
+      }
+    } catch (err) {
+      console.log("listPaymentsBreezSDK ERROR:", err)
+    }
   }
 
   const mergeTransactions = async (breezTxs: Payment[]) => {
@@ -159,15 +157,17 @@ const Transactions: React.FC<Props> = ({
   }
 
   const updateMergedTransactions = (txs: TransactionFragment[]) => {
-    setMergedTransactions(txs.slice(0, 3))
-    updateState((state: any) => {
-      if (state)
-        return {
-          ...state,
-          mergedTransactions: txs.slice(0, 3),
-        }
-      return undefined
-    })
+    if (txs.length > 0) {
+      setMergedTransactions(txs.slice(0, 3))
+      updateState((state: any) => {
+        if (state)
+          return {
+            ...state,
+            mergedTransactions: txs.slice(0, 3),
+          }
+        return undefined
+      })
+    }
   }
 
   const navigateToTransactionHistory = () => {
@@ -178,42 +178,16 @@ const Transactions: React.FC<Props> = ({
 
   if (mergedTransactions.length > 0) {
     return (
-      <>
-        <TouchableWithoutFeedback
-          style={styles.recentTransaction}
-          onPress={navigateToTransactionHistory}
-        >
-          <Text type="p1" bold {...testProps(LL.TransactionScreen.title())}>
+      <Wrapper>
+        <RecentActivity onPress={navigateToTransactionHistory} activeOpacity={0.5}>
+          <Text type="bl" bold>
             {LL.TransactionScreen.title()}
           </Text>
-        </TouchableWithoutFeedback>
-        {mergedTransactions.map((item, index) => {
-          if (item.settlementCurrency === "BTC") {
-            return (
-              <BreezTransactionItem
-                tx={item}
-                key={`transaction-${item.id}`}
-                subtitle
-                isOnHomeScreen={true}
-                isFirst={index === 0}
-                isLast={index === mergedTransactions.length - 1}
-              />
-            )
-            // eslint-disable-next-line no-else-return
-          } else {
-            return (
-              <TransactionItem
-                tx={item}
-                key={`txn-${item.id}`}
-                subtitle
-                isOnHomeScreen={true}
-                isFirst={index === 0}
-                isLast={index === mergedTransactions.length - 1}
-              />
-            )
-          }
-        })}
-      </>
+        </RecentActivity>
+        {mergedTransactions.map((item, index) => (
+          <TxItem key={item.id} tx={item} />
+        ))}
+      </Wrapper>
     )
   } else {
     return (
@@ -221,6 +195,7 @@ const Transactions: React.FC<Props> = ({
         animating={breezTxsLoading || loadingAuthed}
         size="large"
         color={colors.primary}
+        style={{ marginTop: 24 }}
       />
     )
   }
@@ -228,18 +203,11 @@ const Transactions: React.FC<Props> = ({
 
 export default Transactions
 
-const useStyles = makeStyles(({ colors }) => ({
-  recentTransaction: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    columnGap: 10,
-    backgroundColor: colors.grey5,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    borderColor: colors.grey5,
-    borderBottomWidth: 2,
-    paddingVertical: 14,
-  },
-}))
+const Wrapper = styled.View`
+  padding-horizontal: 20px;
+`
+
+const RecentActivity = styled.TouchableOpacity`
+  margin-top: 10px;
+  margin-bottom: 10px;
+`

@@ -14,18 +14,14 @@ import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 export type ConfirmDestinationModalProps = {
   destinationState: SendBitcoinDestinationState
   dispatchDestinationStateAction: Dispatch<SendBitcoinDestinationAction>
-  setFlashUserAddress: (address: string) => void
 }
 
 export const ConfirmDestinationModal: React.FC<ConfirmDestinationModalProps> = ({
   destinationState,
   dispatchDestinationStateAction,
-  setFlashUserAddress,
 }) => {
   const styles = useStyles()
-  const {
-    theme: { colors },
-  } = useTheme()
+  const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { appConfig } = useAppConfig()
   const { lnAddressHostname: lnDomain, name: bankName } = appConfig.galoyInstance
@@ -36,7 +32,6 @@ export const ConfirmDestinationModal: React.FC<ConfirmDestinationModalProps> = (
       type: "set-confirmed",
       payload: { unparsedDestination: destinationState.unparsedDestination },
     })
-    setFlashUserAddress(destinationState.unparsedDestination + "@" + lnDomain)
   }, [destinationState, dispatchDestinationStateAction])
 
   if (destinationState.destinationState !== "requires-confirmation") return null

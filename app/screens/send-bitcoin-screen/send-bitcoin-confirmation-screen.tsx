@@ -14,7 +14,7 @@ import {
   SendingAnimation,
 } from "@app/components/send-flow"
 import { Screen } from "@app/components/screen"
-import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
+import { PrimaryBtn } from "@app/components/buttons"
 
 // hooks
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
@@ -47,7 +47,7 @@ import { getUsdWallet } from "@app/graphql/wallets-utils"
 type Props = {} & StackScreenProps<RootStackParamList, "sendBitcoinConfirmation">
 
 const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { paymentDetail } = route.params
+  const { paymentDetail, flashUserAddress, feeRateSatPerVbyte } = route.params
   const {
     destination,
     paymentType,
@@ -67,7 +67,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
 
   const [usdWalletText, setUsdWalletText] = useState("")
   const [btcWalletText, setBtcWalletText] = useState("")
-  const [isValidAmount, setIsValidAmount] = useState(false)
+  const [isValidAmount, setIsValidAmount] = useState(true)
   const [isAnimating, setIsAnimating] = useState(false)
   const [paymentError, setPaymentError] = useState<string>()
   const [invalidAmountErr, setInvalidAmountErr] = useState<string>()
@@ -76,16 +76,11 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   const { data } = useSendBitcoinConfirmationScreenQuery({ skip: !useIsAuthed() })
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
-  const convertedDestination =
-    sendingWalletDescriptor.currency === "BTC" && paymentType === "intraledger"
-      ? destination + `@${lnDomain}`
-      : destination
-
   const {
     loading: sendPaymentLoading,
     sendPayment,
     hasAttemptedSend,
-  } = useSendPayment(sendPaymentMutation, convertedDestination, settlementAmount, note)
+  } = useSendPayment(sendPaymentMutation, paymentDetail, feeRateSatPerVbyte)
 
   useEffect(() => {
     setWalletText()
@@ -174,7 +169,10 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         })
 
         if (status === "SUCCESS" || status === "PENDING") {
-          navigation.navigate("sendBitcoinSuccess")
+          navigation.navigate("sendBitcoinSuccess", {
+            walletCurrency: paymentDetail.sendingWalletDescriptor.currency,
+            unitOfAccountAmount: paymentDetail.unitOfAccountAmount,
+          })
           ReactNativeHapticFeedback.trigger("notificationSuccess", {
             ignoreAndroidSystemSettings: true,
           })
@@ -209,20 +207,23 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
       <View style={styles.sendBitcoinConfirmationContainer}>
         <ConfirmationDestinationAmountNote paymentDetail={paymentDetail} />
         <ConfirmationWalletFee
+          flashUserAddress={flashUserAddress}
           paymentDetail={paymentDetail}
           btcWalletText={btcWalletText}
           usdWalletText={usdWalletText}
+          feeRateSatPerVbyte={feeRateSatPerVbyte}
           fee={fee}
           setFee={setFee}
+          setPaymentError={setPaymentError}
         />
         <ConfirmationError
           paymentError={paymentError}
           invalidAmountErrorMessage={invalidAmountErr}
         />
         <View style={styles.buttonContainer}>
-          <GaloyPrimaryButton
+          <PrimaryBtn
             loading={sendPaymentLoading}
-            title={LL.SendBitcoinConfirmationScreen.title()}
+            label={LL.SendBitcoinConfirmationScreen.title()}
             disabled={!isValidAmount || hasAttemptedSend}
             onPress={handleSendPayment}
           />

@@ -14,11 +14,14 @@ import {
 } from "@app/screens/send-bitcoin-screen/payment-destination/index.types"
 import { WalletDescriptor } from "@app/types/wallets"
 import _Map from "@app/assets/icons-redesign/map.svg"
+import { Event } from "nostr-tools"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
   IntroScreen: undefined
   getStarted: undefined
+  UsernameSet: undefined
+  Welcome: undefined
   welcomeFirst: undefined
   liteDeviceAccount: {
     appCheckToken: string
@@ -33,7 +36,7 @@ export type RootStackParamList = {
   Primary: undefined
   earnsSection: { section: EarnSectionType }
   earnsQuiz: { id: string }
-  scanningQRCode: undefined
+  scanningQRCode?: { swapAddress: string; amount: number; fee: number; feeType: string }
   settings: undefined
   addressScreen: undefined
   defaultWallet: undefined
@@ -51,6 +54,8 @@ export type RootStackParamList = {
   }
   sendBitcoinConfirmation: {
     paymentDetail: PaymentDetail<WalletCurrency>
+    flashUserAddress?: string
+    feeRateSatPerVbyte?: number
   }
   conversionDetails: undefined
   conversionConfirmation: {
@@ -59,7 +64,10 @@ export type RootStackParamList = {
     moneyAmount: MoneyAmount<WalletOrDisplayCurrency>
   }
   conversionSuccess: undefined
-  sendBitcoinSuccess: undefined
+  sendBitcoinSuccess: {
+    unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
+    walletCurrency: WalletCurrency
+  }
   language: undefined
   currency: undefined
   security: {
@@ -88,17 +96,17 @@ export type RootStackParamList = {
     usdAmount: MoneyAmount<WalletCurrency>
     lnurl: string
   }
-  phoneFlow: { onComplete?: (token?: string) => void } | undefined
-  phoneRegistrationInitiate: { onComplete?: (token?: string) => void } | undefined
+  phoneFlow: undefined
+  phoneRegistrationInitiate: undefined
   phoneRegistrationValidate: {
     phone: string
     channel: PhoneCodeChannelType
-    onComplete?: (token?: string) => void
   }
   transactionDetail: { tx: TransactionFragment }
   breezTransactionDetail: { tx: TransactionFragment }
   TransactionHistoryTabs?: { initialRouteName?: string } | undefined
   USDTransactionHistory: undefined
+  BTCTransactionHistory: undefined
   transactionHistory?: undefined
   Earn: undefined
   Card: undefined
@@ -108,7 +116,7 @@ export type RootStackParamList = {
   transactionLimitsScreen: undefined
   emailRegistrationInitiate: undefined
   emailRegistrationValidate: { email: string; emailRegistrationId: string }
-  emailLoginInitiate: { onComplete?: (token?: string) => void }
+  emailLoginInitiate: undefined
   emailLoginValidate: { email: string; emailLoginId: string }
   totpRegistrationInitiate: undefined
   totpRegistrationValidate: { totpRegistrationId: string }
@@ -120,16 +128,26 @@ export type RootStackParamList = {
   BackupVerify: undefined
   BackupComplete: undefined
   BackupShowSeedPhrase: undefined
-  ImportWallet: { insideApp?: boolean; onComplete?: (token?: string) => void }
+  ImportWallet: { insideApp?: boolean }
   ImportWalletOptions: { insideApp?: boolean } | undefined
   CashoutDetails: undefined
+  RefundTransactionList: undefined
+  RefundDestination: { swapAddress: string; amount: number }
+  RefundConfirmation: {
+    swapAddress: string
+    amount: number
+    destination: string
+    fee: number
+    feeType: string
+  }
 }
 
 export type ChatStackParamList = {
   chatList: undefined
-  chatDetail: { chat: Chat }
+  chatDetail: { chat: Chat; giftwraps: Event[] }
   sendBitcoinDestination: { username: string }
   transactionDetail: { txid: string }
+  messages: { userPrivateKey: string; groupId: string }
 }
 
 export type ContactStackParamList = {
@@ -142,17 +160,17 @@ export type ContactStackParamList = {
 
 export type PhoneValidationStackParamList = {
   Primary: undefined
-  phoneLoginInitiate: { onComplete?: (token?: string) => void }
+  phoneLoginInitiate: undefined
   phoneLoginValidate: {
     phone: string
     channel: PhoneCodeChannelType
-    onComplete?: (token?: string) => void
   }
   authentication: {
     screenPurpose: AuthenticationScreenPurpose
   }
   Home: undefined
   totpLoginValidate: { authToken: string }
+  authenticationCheck: undefined
 }
 
 export type PrimaryStackParamList = {
@@ -162,4 +180,5 @@ export type PrimaryStackParamList = {
   Card: undefined
   Map: undefined
   Earn: undefined
+  Scan: undefined
 }

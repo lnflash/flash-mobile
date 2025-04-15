@@ -14,6 +14,7 @@ export type NoteInputProps = {
   editable?: boolean | undefined
   style?: StyleProp<ViewStyle>
   big?: boolean
+  newDesign?: boolean
 }
 
 export const NoteInput: React.FC<NoteInputProps> = ({
@@ -23,12 +24,28 @@ export const NoteInput: React.FC<NoteInputProps> = ({
   onBlur,
   style,
   big = true,
+  newDesign = false,
 }) => {
   const { LL } = useI18nContext()
   const styles = useStyles({ editable: Boolean(editable), big })
   const {
     theme: { colors },
   } = useTheme()
+
+  if (newDesign) {
+    return (
+      <TextInput
+        onChangeText={onChangeText}
+        onBlur={onBlur}
+        value={value}
+        editable={editable}
+        style={styles.input}
+        placeholder={LL.NoteInput.addNote()}
+        placeholderTextColor={colors.placeholder}
+        maxLength={500}
+      />
+    )
+  }
 
   return (
     <View style={[styles.fieldBackground, style]}>
@@ -86,6 +103,12 @@ const useStyles = makeStyles(
       flex: 1,
       color: colors.black,
       fontSize: 16,
+    },
+    input: {
+      fontSize: 14,
+      fontFamily: "Sora",
+      color: colors.black,
+      padding: 20,
     },
   }),
 )

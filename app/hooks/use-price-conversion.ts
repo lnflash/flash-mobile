@@ -1,4 +1,9 @@
-import { useRealtimePriceQuery, WalletCurrency } from "@app/graphql/generated"
+import {
+  useRealtimePriceQuery,
+  useRealtimePriceUnauthedQuery,
+  useRealtimePriceWsSubscription,
+  WalletCurrency,
+} from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import {
   createToDisplayAmount,
@@ -23,24 +28,49 @@ const defaultDisplayCurrency = usdDisplayCurrency
 
 export const usePriceConversion = (fetchPolicy?: WatchQueryFetchPolicy) => {
   const isAuthed = useIsAuthed()
+
   const { data } = useRealtimePriceQuery({
     fetchPolicy: fetchPolicy || "cache-and-network",
     skip: !isAuthed,
   })
 
+  const { data: dataUnauthed } = useRealtimePriceUnauthedQuery({
+    fetchPolicy: fetchPolicy || "cache-and-network",
+    variables: { currency: defaultDisplayCurrency.id },
+    skip: isAuthed,
+  })
+
   const displayCurrency =
     data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency ||
     defaultDisplayCurrency.id
+
+  const realtimePrice = isAuthed
+    ? data?.me?.defaultAccount?.realtimePrice
+    : dataUnauthed?.realtimePrice
+
   let displayCurrencyPerSat = NaN
   let displayCurrencyPerCent = NaN
-
-  const realtimePrice = data?.me?.defaultAccount?.realtimePrice
-
   if (realtimePrice) {
     displayCurrencyPerSat =
-      realtimePrice.btcSatPrice.base / 10 ** (realtimePrice.btcSatPrice.offset * 1.0002)
+      realtimePrice.btcSatPrice.base / 10 ** realtimePrice.btcSatPrice.offset
     displayCurrencyPerCent =
       realtimePrice.usdCentPrice.base / 10 ** realtimePrice.usdCentPrice.offset
+  }
+
+  const { data: subData } = useRealtimePriceWsSubscription({
+    variables: {
+      currency: data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency || "",
+    },
+    skip: !data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency,
+  })
+
+  const subRealtimePrice = subData?.realtimePrice.realtimePrice
+
+  if (subRealtimePrice) {
+    displayCurrencyPerSat =
+      subRealtimePrice.btcSatPrice.base / 10 ** subRealtimePrice.btcSatPrice.offset
+    displayCurrencyPerCent =
+      subRealtimePrice.usdCentPrice.base / 10 ** subRealtimePrice.usdCentPrice.offset
   }
 
   const priceOfCurrencyInCurrency = useMemo(() => {

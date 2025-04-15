@@ -1,19 +1,17 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
-import {
-  CardStyleInterpolators,
-  StackScreenProps,
-  createStackNavigator,
-} from "@react-navigation/stack"
+import { CardStyleInterpolators, createStackNavigator } from "@react-navigation/stack"
 import * as React from "react"
 
 import {
   AuthenticationCheckScreen,
   AuthenticationScreen,
+  UsernameSet,
+  Welcome,
 } from "../screens/authentication-screen"
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
-import { ChatDetailScreen, ChatScreen } from "../screens/chat-screen"
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
+import { ChatList } from "@app/screens/nip17-chat"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
@@ -103,10 +101,26 @@ import { NotificationSettingsScreen } from "@app/screens/settings-screen/notific
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { ReconciliationReport } from "@app/screens/reports"
 import { CashoutDetails } from "@app/screens/cashout-screen"
+import {
+  RefundConfirmation,
+  RefundDestination,
+  RefundTransactionsList,
+} from "@app/screens/refund-flow"
+import { Messages } from "@app/screens/nip17-chat/messages"
+import { View } from "react-native"
+import NotificationBadge from "./notification-badge"
+
+import HomeActive from "@app/assets/icons/home-active.svg"
+import HomeInactive from "@app/assets/icons/home-inactive.svg"
+import CardActive from "@app/assets/icons/card-active.svg"
+import CardInactive from "@app/assets/icons/card-inactive.svg"
+import MapActive from "@app/assets/icons/map-active.svg"
+import MapInactive from "@app/assets/icons/map-inactive.svg"
+import ScanQR from "@app/assets/icons/scan-qr.svg"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
-    height: "10%",
+    minHeight: 60,
     paddingTop: 4,
     backgroundColor: colors.white,
     borderTopColor: colors.grey4,
@@ -124,10 +138,9 @@ const RootNavigator = createStackNavigator<RootStackParamList>()
 export const RootStack = () => {
   const { persistentState } = usePersistentStateContext()
   const { LL } = useI18nContext()
-  const isAuthed = useIsAuthed()
+  const { colors } = useTheme().theme
   const styles = useStyles()
-  const { theme } = useTheme()
-  const colors = theme.colors
+  const isAuthed = useIsAuthed()
 
   // Check if intro screen is displayed twice.
   const initialRouteName =
@@ -139,6 +152,7 @@ export const RootStack = () => {
 
   return (
     <RootNavigator.Navigator
+      initialRouteName={initialRouteName}
       screenOptions={{
         gestureEnabled: true,
         headerBackTitle: LL.common.back(),
@@ -146,8 +160,8 @@ export const RootStack = () => {
         headerTitleStyle: styles.title,
         headerBackTitleStyle: styles.title,
         headerTintColor: colors.black,
+        headerShadowVisible: false,
       }}
-      initialRouteName={initialRouteName}
     >
       {/* Intro Screen route */}
       <RootNavigator.Screen
@@ -163,6 +177,16 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="getStarted"
         component={GetStartedScreen}
+        options={{ headerShown: false, animationEnabled: false }}
+      />
+      <RootNavigator.Screen
+        name="UsernameSet"
+        component={UsernameSet}
+        options={{ headerShown: false, animationEnabled: false }}
+      />
+      <RootNavigator.Screen
+        name="Welcome"
+        component={Welcome}
         options={{ headerShown: false, animationEnabled: false }}
       />
       <RootNavigator.Screen
@@ -234,9 +258,7 @@ export const RootStack = () => {
         name="sendBitcoinSuccess"
         component={SendBitcoinSuccessScreen}
         options={{
-          title: persistentState.isAdvanceMode
-            ? LL.SendBitcoinScreen.title()
-            : LL.SendBitcoinScreen.send(),
+          headerShown: false,
         }}
       />
       <RootNavigator.Screen
@@ -516,11 +538,6 @@ export const RootStack = () => {
         component={USDTransactionHistory}
         options={{ title: LL.TransactionScreen.transactionHistoryTitle() }}
       />
-      <RootNavigator.Screen
-        name={"CashoutDetails"}
-        component={CashoutDetails}
-        options={{ title: LL.Cashout.title() }}
-      />
     </RootNavigator.Navigator>
   )
 }
@@ -533,15 +550,15 @@ export const ChatNavigator = () => {
     <StackChats.Navigator>
       <StackChats.Screen
         name="chatList"
-        component={ChatScreen}
+        component={ChatList}
         options={{
           title: LL.ChatScreen.title(),
           headerShown: false,
         }}
       />
       <StackChats.Screen
-        name="chatDetail"
-        component={ChatDetailScreen}
+        name="messages"
+        component={Messages}
         options={{ headerShown: false }}
       />
     </StackChats.Navigator>
@@ -571,30 +588,19 @@ export const ContactNavigator = () => {
   )
 }
 const StackPhoneValidation = createStackNavigator<PhoneValidationStackParamList>()
-type Props = StackScreenProps<RootStackParamList, "phoneFlow">
-export const PhoneLoginNavigator: React.FC<Props> = ({ route }) => {
-  const { LL } = useI18nContext()
-  return (
-    <StackPhoneValidation.Navigator>
-      <StackPhoneValidation.Screen
-        name="phoneLoginInitiate"
-        options={{
-          headerShown: false,
-          title: LL.common.phoneNumber(),
-        }}
-        initialParams={route.params}
-        component={PhoneLoginInitiateScreen}
-      />
-      <StackPhoneValidation.Screen
-        name="phoneLoginValidate"
-        component={PhoneLoginValidationScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-    </StackPhoneValidation.Navigator>
-  )
-}
+
+export const PhoneLoginNavigator = () => (
+  <StackPhoneValidation.Navigator screenOptions={{ headerShown: false }}>
+    <StackPhoneValidation.Screen
+      name="phoneLoginInitiate"
+      component={PhoneLoginInitiateScreen}
+    />
+    <StackPhoneValidation.Screen
+      name="phoneLoginValidate"
+      component={PhoneLoginValidationScreen}
+    />
+  </StackPhoneValidation.Navigator>
+)
 
 const Tab = createBottomTabNavigator<PrimaryStackParamList>()
 
@@ -602,15 +608,14 @@ export const PrimaryNavigator = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
-  // The cacheId is updated after every mutation that affects current user data (balanace, contacts, ...)
-  // It's used to re-mount this component and thus reset what's cached in Apollo (and React)
+  const { persistentState } = usePersistentStateContext()
 
   return (
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.grey2,
+        tabBarActiveTintColor: colors.tabActive,
+        tabBarInactiveTintColor: colors.tabInactive,
         tabBarStyle: styles.bottomNavigatorStyle,
         tabBarLabelStyle: { paddingBottom: 6, fontSize: 12, fontWeight: "bold" },
         tabBarHideOnKeyboard: true,
@@ -620,13 +625,13 @@ export const PrimaryNavigator = () => {
         name="Home"
         component={HomeScreen}
         options={{
+          headerTitle: "",
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colors.background },
           title: LL.HomeScreen.title(),
           tabBarAccessibilityLabel: LL.HomeScreen.title(),
           tabBarTestID: LL.HomeScreen.title(),
-          tabBarIcon: ({ color }) => (
-            <HomeIcon {...testProps("Home")} fill={color} color={color} />
-          ),
-          headerShown: false,
+          tabBarIcon: ({ focused }) => (focused ? <HomeActive /> : <HomeInactive />),
         }}
       />
       {/* <Tab.Screen
@@ -642,26 +647,22 @@ export const PrimaryNavigator = () => {
           ),
         }}
       /> */}
-      {/* <Tab.Screen
-        name="Chat"
-        component={ChatNavigator}
-        options={{
-          headerShown: false,
-          title: LL.ChatScreen.title(),
-          tabBarIcon: ({ color }) => <ChatIcon color={color} />,
-        }}
-      /> */}
-      <Tab.Screen
-        name="Card"
-        component={CardScreen}
-        options={{
-          title: LL.CardScreen.title(),
-          headerShown: true,
-          headerStyle: { backgroundColor: colors.white },
-          tabBarTestID: LL.CardScreen.title(),
-          tabBarIcon: ({ color }) => <CardIcon color={color} />,
-        }}
-      />
+      {persistentState.chatEnabled ? (
+        <Tab.Screen
+          name="Chat"
+          component={ChatNavigator}
+          options={{
+            headerShown: false,
+            title: LL.ChatScreen.title(),
+            tabBarIcon: ({ color }) => (
+              <View>
+                <ChatIcon color={color} />
+                <NotificationBadge />
+              </View>
+            ),
+          }}
+        />
+      ) : null}
       <Tab.Screen
         name="Map"
         component={MapScreen}
@@ -670,7 +671,21 @@ export const PrimaryNavigator = () => {
           headerShown: false,
           tabBarAccessibilityLabel: LL.MapScreen.title(),
           tabBarTestID: LL.MapScreen.title(),
-          tabBarIcon: ({ color }) => <MapIcon color={color} />,
+          tabBarIcon: ({ focused }) => (focused ? <MapActive /> : <MapInactive />),
+        }}
+      />
+      <Tab.Screen
+        name="Scan"
+        component={ScanningQRCodeScreen}
+        options={{
+          title: LL.ScanningQRCodeScreen.title(),
+          headerShown: true,
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: "#000" },
+          tabBarAccessibilityLabel: LL.MapScreen.title(),
+          tabBarTestID: LL.MapScreen.title(),
+          tabBarIcon: () => <ScanQR />,
+          tabBarStyle: { display: "none" },
         }}
       />
       {/* <Tab.Screen

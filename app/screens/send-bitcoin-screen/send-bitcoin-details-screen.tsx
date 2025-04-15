@@ -4,9 +4,10 @@ import { makeStyles } from "@rneui/themed"
 import crashlytics from "@react-native-firebase/crashlytics"
 
 // components
-import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
+import { PrimaryBtn } from "@app/components/buttons"
 import { SendBitcoinDetailsExtraInfo } from "./send-bitcoin-details-extra-info"
 import { Screen } from "@app/components/screen"
+import { Fees } from "@app/components/refund-flow"
 import {
   ChooseWallet,
   DetailAmountNote,
@@ -26,7 +27,12 @@ import { getUsdWallet } from "@app/graphql/wallets-utils"
 // hooks
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useLevel } from "@app/graphql/level-context"
-import { useBreez, usePriceConversion } from "@app/hooks"
+import {
+  useActivityIndicator,
+  useBreez,
+  useIbexFee,
+  usePriceConversion,
+} from "@app/hooks"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -36,11 +42,13 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { NavigationProp, RouteProp, useNavigation } from "@react-navigation/native"
 import { PaymentDetail } from "./payment-details/index.types"
 import { Satoshis } from "lnurl-pay/dist/types/types"
+import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
 
 // utils
-import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { requestInvoice, utils } from "lnurl-pay"
+import { fetchBreezFee, fetchRecommendedFees } from "@app/utils/breez-sdk-liquid"
 
 type Props = {
   route: RouteProp<RootStackParamList, "sendBitcoinDetails">
@@ -56,14 +64,19 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
   const { currentLevel } = useLevel()
   const { btcWallet } = useBreez()
   const { persistentState } = usePersistentStateContext()
-  const { convertMoneyAmount: _convertMoneyAmount } = usePriceConversion()
-  const { zeroDisplayAmount, formatMoneyAmount } = useDisplayCurrency()
+  const { convertMoneyAmount: _convertMoneyAmount } = usePriceConversion("network-only")
+  const { zeroDisplayAmount, formatDisplayAndWalletAmount } = useDisplayCurrency()
+  const { toggleActivityIndicator } = useActivityIndicator()
+  const getIbexFee = useIbexFee()
 
   const { paymentDestination, flashUserAddress } = route.params
 
+  const [recommendedFees, setRecommendedFees] = useState<RecommendedFees>()
   const [isLoadingLnurl, setIsLoadingLnurl] = useState(false)
   const [paymentDetail, setPaymentDetail] = useState<PaymentDetail<WalletCurrency>>()
   const [asyncErrorMessage, setAsyncErrorMessage] = useState("")
+  const [selectedFee, setSelectedFee] = useState<number>()
+  const [selectedFeeType, setSelectedFeeType] = useState<string>()
 
   const { data } = useSendBitcoinDetailsScreenQuery({
     fetchPolicy: "cache-first",
@@ -130,10 +143,66 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
     zeroDisplayAmount,
   ])
 
+  useEffect(() => {
+    if (
+      paymentDetail &&
+      paymentDetail.sendingWalletDescriptor.currency === "BTC" &&
+      paymentDetail.paymentType === "onchain" &&
+      !recommendedFees
+    ) {
+      fetchBreezRecommendedFees()
+    }
+  }, [paymentDetail?.sendingWalletDescriptor, paymentDetail?.paymentType])
+
+  const fetchBreezRecommendedFees = async () => {
+    toggleActivityIndicator(true)
+    const recommendedFees = await fetchRecommendedFees()
+    setRecommendedFees(recommendedFees)
+    toggleActivityIndicator(false)
+  }
+
+  const fetchSendingFee = async (pd: PaymentDetail<WalletCurrency>) => {
+    if (pd) {
+      if (pd?.sendingWalletDescriptor.currency === "BTC") {
+        const { fee, err }: { fee: any; err: any } = await fetchBreezFee(
+          pd?.paymentType,
+          !!flashUserAddress ? flashUserAddress : pd?.destination,
+          pd?.settlementAmount.amount,
+          selectedFee, // feeRateSatPerVbyte
+          pd.isSendingMax,
+        )
+        if (fee === null && err) {
+          setAsyncErrorMessage(`${err?.message || err} (amount + fee)` || "")
+          return false
+        }
+      } else {
+        const estimatedFee = await getIbexFee(pd.getFee)
+        if (
+          _convertMoneyAmount &&
+          estimatedFee &&
+          pd.settlementAmount.amount + estimatedFee?.amount > usdBalanceMoneyAmount.amount
+        ) {
+          const amount = formatDisplayAndWalletAmount({
+            displayAmount: _convertMoneyAmount(usdBalanceMoneyAmount, DisplayCurrency),
+            walletAmount: usdBalanceMoneyAmount,
+          })
+          setAsyncErrorMessage(
+            LL.SendBitcoinScreen.amountExceed({
+              balance: amount,
+            }) + "(amount + fee)",
+          )
+          return false
+        }
+      }
+      return true
+    }
+  }
+
   const goToNextScreen =
     (paymentDetail?.sendPaymentMutation ||
       (paymentDetail?.paymentType === "lnurl" && paymentDetail?.unitOfAccountAmount)) &&
     (async () => {
+      toggleActivityIndicator(true)
       let paymentDetailForConfirmation: PaymentDetail<WalletCurrency> = paymentDetail
 
       if (paymentDetail.paymentType === "lnurl") {
@@ -185,12 +254,22 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
         }
       }
 
-      if (paymentDetailForConfirmation.sendPaymentMutation) {
+      const res = await fetchSendingFee(paymentDetailForConfirmation)
+      toggleActivityIndicator(false)
+
+      if (res && paymentDetailForConfirmation.sendPaymentMutation) {
         navigation.navigate("sendBitcoinConfirmation", {
           paymentDetail: paymentDetailForConfirmation,
+          flashUserAddress,
+          feeRateSatPerVbyte: selectedFee,
         })
       }
     })
+
+  const onSelectFee = (type: string, value?: number) => {
+    setSelectedFeeType(type)
+    setSelectedFee(value)
+  }
 
   const amountStatus = isValidAmount({
     paymentDetail,
@@ -199,6 +278,13 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
     intraledgerLimits: intraledgerLimitsData?.me?.defaultAccount?.limits?.internalSend,
     withdrawalLimits: withdrawalLimitsData?.me?.defaultAccount?.limits?.withdrawal,
   })
+
+  const isDisabled =
+    !amountStatus.validAmount ||
+    !!asyncErrorMessage ||
+    (paymentDetail?.sendingWalletDescriptor.currency === "BTC" &&
+      paymentDetail.paymentType === "onchain" &&
+      !selectedFee)
 
   if (paymentDetail) {
     return (
@@ -219,22 +305,32 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           paymentDetail={paymentDetail}
         />
         <DetailAmountNote
+          selectedFee={selectedFee}
           usdWallet={usdWallet}
           paymentDetail={paymentDetail}
           setPaymentDetail={setPaymentDetail}
           setAsyncErrorMessage={setAsyncErrorMessage}
         />
+        {paymentDetail.sendingWalletDescriptor.currency === "BTC" &&
+          paymentDetail.paymentType === "onchain" && (
+            <Fees
+              wrapperStyle={{ marginTop: 0 }}
+              recommendedFees={recommendedFees}
+              selectedFeeType={selectedFeeType}
+              onSelectFee={onSelectFee}
+            />
+          )}
         <SendBitcoinDetailsExtraInfo
           errorMessage={asyncErrorMessage}
           amountStatus={amountStatus}
           currentLevel={currentLevel}
         />
         <View style={styles.buttonContainer}>
-          <GaloyPrimaryButton
+          <PrimaryBtn
             onPress={goToNextScreen || undefined}
             loading={isLoadingLnurl}
-            disabled={!amountStatus.validAmount || !!asyncErrorMessage}
-            title={LL.common.next()}
+            disabled={isDisabled}
+            label={LL.common.next()}
           />
         </View>
       </Screen>

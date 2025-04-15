@@ -710,7 +710,7 @@
     "SetAddressModal": {
         "title": "Set {bankName: string} address",
         "Errors": {
-            "tooShort": "Address must be at least 3 characters long",
+            "tooShort": "Username must be at least 3 characters long",
             "tooLong": "Address must be at most 50 characters long",
             "invalidCharacter": "Address can only contain letters, numbers, and underscores",
             "addressUnavailable": "Sorry, this address is already taken",

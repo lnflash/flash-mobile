@@ -1,12 +1,14 @@
 import * as React from "react"
+import { makeStyles } from "@rneui/themed"
+import { Modal, SafeAreaView } from "react-native"
+
+// components
+import { AmountInputScreen } from "../amount-input-screen"
+
+// types
 import { WalletCurrency } from "@app/graphql/generated"
 import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details"
 import { MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
-import { makeStyles } from "@rneui/themed"
-import { SafeAreaView } from "react-native"
-import ReactNativeModal from "react-native-modal"
-import { AmountInputScreen } from "../amount-input-screen"
-import { timing } from "@app/rne-theme/timing"
 
 export type AmountInputModalProps = {
   moneyAmount?: MoneyAmount<WalletOrDisplayCurrency>
@@ -17,6 +19,7 @@ export type AmountInputModalProps = {
   minAmount?: MoneyAmount<WalletOrDisplayCurrency>
   isOpen: boolean
   close: () => void
+  title: string
 }
 
 export const AmountInputModal: React.FC<AmountInputModalProps> = ({
@@ -28,16 +31,12 @@ export const AmountInputModal: React.FC<AmountInputModalProps> = ({
   convertMoneyAmount,
   isOpen,
   close,
+  title,
 }) => {
   const styles = useStyles()
 
   return (
-    <ReactNativeModal
-      isVisible={isOpen}
-      coverScreen={true}
-      style={styles.modal}
-      animationInTiming={timing.quick}
-    >
+    <Modal visible={isOpen} style={styles.modal} animationType="slide">
       <SafeAreaView style={styles.amountInputScreenContainer}>
         <AmountInputScreen
           initialAmount={moneyAmount}
@@ -47,18 +46,19 @@ export const AmountInputModal: React.FC<AmountInputModalProps> = ({
           maxAmount={maxAmount}
           minAmount={minAmount}
           goBack={close}
+          title={title}
         />
       </SafeAreaView>
-    </ReactNativeModal>
+    </Modal>
   )
 }
 
-const useStyles = makeStyles(({ colors }) => ({
+const useStyles = makeStyles(({ colors, mode }) => ({
   amountInputScreenContainer: {
     flex: 1,
+    backgroundColor: mode === "light" ? colors.white : "#007856",
   },
   modal: {
-    backgroundColor: colors.white,
     margin: 0,
   },
 }))

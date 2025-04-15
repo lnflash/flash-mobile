@@ -26,6 +26,8 @@ export type AmountInputProps = {
   isSendingMax?: boolean
   showValuesIfDisabled?: boolean
   big?: boolean
+  newDesign?: boolean
+  title?: string
 }
 
 export const AmountInput: React.FC<AmountInputProps> = ({
@@ -40,6 +42,8 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   isSendingMax = false,
   showValuesIfDisabled = true,
   big = true,
+  newDesign = false,
+  title = "Receive",
 }) => {
   const navigation = useNavigation()
   const [isSettingAmount, setIsSettingAmount] = React.useState(false)
@@ -49,9 +53,25 @@ export const AmountInput: React.FC<AmountInputProps> = ({
 
   React.useEffect(() => {
     if (request?.receivingWalletDescriptor.currency === "BTC") {
-      setIsSettingAmount(true)
+      if (
+        !request?.settlementAmount ||
+        !(
+          (!minAmount ||
+            (minAmount && minAmount?.amount <= request.settlementAmount.amount)) &&
+          (!maxAmount ||
+            (maxAmount && maxAmount.amount >= request.settlementAmount.amount))
+        )
+      ) {
+        setIsSettingAmount(true)
+      }
     }
-  }, [request?.type, request?.receivingWalletDescriptor.currency])
+  }, [
+    request?.type,
+    request?.receivingWalletDescriptor.currency,
+    request?.settlementAmount,
+    minAmount,
+    maxAmount,
+  ])
 
   const onSetAmount = (amount: MoneyAmount<WalletOrDisplayCurrency>) => {
     if (
@@ -76,21 +96,6 @@ export const AmountInput: React.FC<AmountInputProps> = ({
     } else {
       setIsSettingAmount(false)
     }
-  }
-
-  if (isSettingAmount) {
-    return (
-      <AmountInputModal
-        moneyAmount={unitOfAccountAmount}
-        isOpen={true}
-        walletCurrency={walletCurrency}
-        convertMoneyAmount={convertMoneyAmount}
-        onSetAmount={onSetAmount}
-        maxAmount={maxAmount}
-        minAmount={minAmount}
-        close={closeHandler}
-      />
-    )
   }
 
   let formattedPrimaryAmount = undefined
@@ -135,32 +140,32 @@ export const AmountInput: React.FC<AmountInputProps> = ({
     setIsSettingAmount(true)
   }
 
-  if (canSetAmount) {
-    return (
+  return (
+    <>
       <AmountInputButton
         placeholder={LL.AmountInputButton.tapToSetAmount()}
         onPress={onPressInputButton}
         value={formattedPrimaryAmount}
         iconName="pencil"
         secondaryValue={formattedSecondaryAmount}
+        disabled={!canSetAmount}
         primaryTextTestProps={"Amount Input Button Amount"}
+        showValuesIfDisabled={showValuesIfDisabled}
         big={big}
+        newDesign={newDesign}
         {...testProps("Amount Input Button")}
       />
-    )
-  }
-
-  return (
-    <AmountInputButton
-      placeholder={LL.AmountInputButton.tapToSetAmount()}
-      iconName="pencil"
-      value={formattedPrimaryAmount}
-      secondaryValue={formattedSecondaryAmount}
-      disabled={true}
-      primaryTextTestProps={"Amount Input Button Amount"}
-      showValuesIfDisabled={showValuesIfDisabled}
-      big={big}
-      {...testProps("Amount Input Button")}
-    />
+      <AmountInputModal
+        moneyAmount={unitOfAccountAmount}
+        isOpen={isSettingAmount}
+        walletCurrency={walletCurrency}
+        convertMoneyAmount={convertMoneyAmount}
+        onSetAmount={onSetAmount}
+        maxAmount={maxAmount}
+        minAmount={minAmount}
+        close={closeHandler}
+        title={title}
+      />
+    </>
   )
 }

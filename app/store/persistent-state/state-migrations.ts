@@ -4,6 +4,7 @@ import { GALOY_INSTANCES, GaloyInstance, GaloyInstanceInput } from "@app/config"
 import { Network, TransactionFragment, Wallet } from "@app/graphql/generated"
 import { loadString } from "@app/utils/storage"
 import { SectionTransactions } from "@app/screens/transaction-history/index.types"
+import { TagEvent } from "react-native-nfc-manager"
 
 type WalletBalance = Pick<Wallet, "id" | "walletCurrency" | "balance">
 
@@ -61,9 +62,9 @@ type PersistentState_7 = {
   breezBalance?: number
   balance?: string
   btcBalance?: string
-  usdBalance?: string
-  convertedBtcBalance?: string
-  convertedUsdBalance?: string
+  cashBalance?: string
+  btcDisplayBalance?: string
+  cashDisplayBalance?: string
   mergedTransactions?: TransactionFragment[]
   usdTransactions?: SectionTransactions[]
   btcTransactions?: TransactionFragment[]
@@ -72,6 +73,15 @@ type PersistentState_7 = {
   btcWalletImported?: boolean
   helpTriggered?: boolean
   isAdvanceMode?: boolean
+  chatEnabled?: boolean
+  numOfRefundables: number
+  backedUpBtcWallet?: boolean // true if user backed up recovery phrase (btc wallet)
+  currencyChanged?: boolean
+  flashcardAdded?: boolean
+  btcWalletEnabled?: boolean
+  closedQuickStartTypes: string[]
+  flashcardTag?: TagEvent
+  flashcardHtml?: string
 }
 
 type JwtPayload = {
@@ -101,6 +111,8 @@ const migrate6ToCurrent = (state: PersistentState_6): Promise<PersistentState> =
     hasInitializedBreezSDK: false,
     introVideoCount: 0,
     helpTriggered: false,
+    numOfRefundables: 0,
+    closedQuickStartTypes: [],
   })
 }
 
@@ -249,6 +261,8 @@ export const defaultPersistentState: PersistentState = {
   hasInitializedBreezSDK: false,
   introVideoCount: 0,
   helpTriggered: false,
+  numOfRefundables: 0,
+  closedQuickStartTypes: [],
 }
 
 export const migrateAndGetPersistentState = async (

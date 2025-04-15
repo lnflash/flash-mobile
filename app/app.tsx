@@ -15,6 +15,7 @@ import "@react-native-firebase/crashlytics"
 import { ThemeProvider } from "@rneui/themed"
 import "node-libs-react-native/globals" // needed for Buffer?
 import * as React from "react"
+import { Platform, StatusBar } from "react-native"
 import ErrorBoundary from "react-native-error-boundary"
 import { RootSiblingParent } from "react-native-root-siblings"
 import { GaloyToast } from "./components/galoy-toast"
@@ -37,9 +38,12 @@ import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { Provider } from "react-redux"
 import { store } from "./store/redux"
 import PolyfillCrypto from "react-native-webview-crypto"
-import { ActivityIndicatorProvider } from "./contexts"
+import { ActivityIndicatorProvider } from "./contexts/ActivityIndicatorContext"
 import { BreezProvider } from "./contexts/BreezContext"
+import { ChatContextProvider } from "./screens/nip17-chat/chatContext"
 import { NotificationsProvider } from "./components/notification"
+import { SafeAreaProvider } from "react-native-safe-area-context"
+import { FlashcardProvider } from "./contexts/Flashcard"
 
 // FIXME should we only load the currently used local?
 // this would help to make the app load faster
@@ -54,37 +58,47 @@ loadAllLocales()
  */
 export const App = () => (
   /* eslint-disable-next-line react-native/no-inline-styles */
-  <GestureHandlerRootView style={{ flex: 1 }}>
-    <PolyfillCrypto />
-    <Provider store={store}>
-      <PersistentStateProvider>
-        <ActivityIndicatorProvider>
-          <TypesafeI18n locale={detectDefaultLocale()}>
-            <ThemeProvider theme={theme}>
-              <GaloyClient>
-                <FeatureFlagContextProvider>
-                  <ErrorBoundary FallbackComponent={ErrorScreen}>
-                    <NavigationContainerWrapper>
-                      <RootSiblingParent>
-                        <NotificationsProvider>
-                          <AppStateWrapper />
-                          <PushNotificationComponent />
-                          <BreezProvider>
-                            <RootStack />
-                          </BreezProvider>
-                          <GaloyToast />
-                          <NetworkErrorComponent />
-                        </NotificationsProvider>
-                      </RootSiblingParent>
-                    </NavigationContainerWrapper>
-                  </ErrorBoundary>
-                  <ThemeSyncGraphql />
-                </FeatureFlagContextProvider>
-              </GaloyClient>
-            </ThemeProvider>
-          </TypesafeI18n>
-        </ActivityIndicatorProvider>
-      </PersistentStateProvider>
-    </Provider>
-  </GestureHandlerRootView>
+  <SafeAreaProvider>
+    <StatusBar
+      backgroundColor={"#000"}
+      barStyle={Platform.OS === "android" ? "light-content" : "dark-content"}
+    />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PolyfillCrypto />
+      <Provider store={store}>
+        <PersistentStateProvider>
+          <ChatContextProvider>
+            <ActivityIndicatorProvider>
+              <TypesafeI18n locale={detectDefaultLocale()}>
+                <ThemeProvider theme={theme}>
+                  <GaloyClient>
+                    <FeatureFlagContextProvider>
+                      <ErrorBoundary FallbackComponent={ErrorScreen}>
+                        <NavigationContainerWrapper>
+                          <RootSiblingParent>
+                            <NotificationsProvider>
+                              <AppStateWrapper />
+                              <PushNotificationComponent />
+                              <BreezProvider>
+                                <FlashcardProvider>
+                                  <RootStack />
+                                </FlashcardProvider>
+                              </BreezProvider>
+                              <GaloyToast />
+                              <NetworkErrorComponent />
+                            </NotificationsProvider>
+                          </RootSiblingParent>
+                        </NavigationContainerWrapper>
+                      </ErrorBoundary>
+                      <ThemeSyncGraphql />
+                    </FeatureFlagContextProvider>
+                  </GaloyClient>
+                </ThemeProvider>
+              </TypesafeI18n>
+            </ActivityIndicatorProvider>
+          </ChatContextProvider>
+        </PersistentStateProvider>
+      </Provider>
+    </GestureHandlerRootView>
+  </SafeAreaProvider>
 )

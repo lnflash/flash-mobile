@@ -27,8 +27,8 @@ import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { GaloySecondaryButton } from "../atomic/galoy-secondary-button"
 import {
   InputTypeVariant,
-  LnUrlPayResultVariant,
-  lnurlPay,
+  LnUrlWithdrawResultVariant,
+  lnurlWithdraw,
   parse,
 } from "@breeztech/react-native-breez-sdk-liquid"
 
@@ -38,7 +38,8 @@ export const ModalNfc: React.FC<{
   settlementAmount?: WalletAmount<WalletCurrency>
   receiveViaNFC: (destination: ReceiveDestination) => Promise<void>
   onPaid: () => void
-}> = ({ isActive, setIsActive, settlementAmount, receiveViaNFC, onPaid }) => {
+  note?: string
+}> = ({ isActive, setIsActive, settlementAmount, receiveViaNFC, onPaid, note }) => {
   const { data } = useScanningQrCodeScreenQuery({ skip: !useIsAuthed() })
   const wallets = data?.me?.defaultAccount.wallets
   const bitcoinNetwork = data?.globals?.network
@@ -179,27 +180,18 @@ export const ModalNfc: React.FC<{
       } else {
         try {
           const input = await parse(lnurl)
-          if (input.type === InputTypeVariant.LN_URL_PAY) {
-            const amountMsat = input.data.minSendable
-            const optionalComment = "<comment>"
-            const optionalPaymentLabel = "<label>"
-            const optionalValidateSuccessActionUrl = true
-            const lnUrlPayResult = await lnurlPay({
+          if (input.type === InputTypeVariant.LN_URL_WITHDRAW) {
+            const lnUrlWithdrawResult = await lnurlWithdraw({
               data: input.data,
-              amountMsat,
-              comment: optionalComment,
-              paymentLabel: optionalPaymentLabel,
-              validateSuccessActionUrl: optionalValidateSuccessActionUrl,
+              amountMsat: settlementAmount.amount * 1000,
+              description: note,
             })
 
-            console.log(lnUrlPayResult)
-            if (lnUrlPayResult.type === LnUrlPayResultVariant.ENDPOINT_SUCCESS) {
+            console.log(lnUrlWithdrawResult)
+            if (lnUrlWithdrawResult.type === LnUrlWithdrawResultVariant.OK) {
               onPaid()
             } else {
-              console.error(lnUrlPayResult)
-              alert(
-                lnUrlPayResult?.data?.reason || LL.RedeemBitcoinScreen.redeemingError(),
-              )
+              alert(lnUrlWithdrawResult.data || LL.RedeemBitcoinScreen.redeemingError())
             }
           } else if (input.type === InputTypeVariant.LN_URL_ERROR) {
             alert(input?.data?.reason || LL.RedeemBitcoinScreen.redeemingError())

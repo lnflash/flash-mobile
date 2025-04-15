@@ -246,6 +246,26 @@ type RootTranslation = {
 		 * F​l​a​s​h​c​a​r​d
 		 */
 		title: string
+		/**
+		 * This is not a proper flashcard. Please use the correct flashcard.
+		 */
+		notFlashcard: string
+		/**
+		 * NDEF message not found.
+		 */
+		noNDEFMessage: string
+		/**
+		 * NFC is not supported on this device.
+		 */
+		notSupported: string
+		/**
+		 * NFC is not enabled on this device.
+		 */
+		notEnabled: string
+		/**
+		 * No tag found
+		 */
+		noTag: string
 	}
 	Cashout: {
 		/**
@@ -1636,6 +1656,86 @@ type RootTranslation = {
 		 * M​y​ Business ​A​c​c​o​u​n​t​s
 		 */
 		myBusinessAccounts: string
+		/**
+		 * Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.
+		 */
+		refundableWarning: string
+		/**
+		 * Refundables
+		 */
+		refundables: string
+		/**
+		 * Cash
+		 */
+		cash: string
+		/**
+		 * Bitcoin
+		 */
+		bitcoin: string
+		/**
+		 * Flashcard
+		 */
+		flashcard: string
+		/**
+		 * Add Flashcard
+		 */
+		addFlashcard: string
+		/**
+		 * Add your phone number
+		 */
+		upgradeTitle: string
+		/**
+		 * Backup your cash wallet and increase transaction limits.
+		 */
+		upgradeDesc: string
+		/**
+		 * Change to your local currency
+		 */
+		currencyTitle: string
+		/**
+		 * Review our available currency list and select your currency.
+		 */
+		currencyDesc: string
+		/**
+		 * Get a Flashcard
+		 */
+		flashcardTitle: string
+		/**
+		 * Find a Flashpoint and get a Flashcard to use in daily life.
+		 */
+		flashcardDesc: string
+		/**
+		 * Non-custodial wallets
+		 */
+		nonCustodialWalletTitle: string
+		/**
+		 * Learn more about non-custodial wallets.
+		 */
+		nonCustodialWalletDesc: string
+		/**
+		 * Email address
+		 */
+		emailTitle: string
+		/**
+		 * Add your email address to secure your account and login using email address.
+		 */
+		emailDesc: string
+		/**
+		 * Enable BTC wallet
+		 */
+		btcWalletTitle: string
+		/**
+		 * Easily transfer larger amounts in Bitcoin.
+		 */
+		btcWalletDesc: string
+		/**
+		 * Backup your BTC wallet
+		 */
+		backupTitle: string
+		/**
+		 * Backup and secure your Bitcoin wallet using recovery phrase.
+		 */
+		backupDesc: string
 	}
 	PinScreen: {
 		/**
@@ -1954,6 +2054,10 @@ type RootTranslation = {
 		 * S​e​l​e​c​t​ ​W​a​l​l​e​t
 		 */
 		selectWallet: string
+		/**
+		 * S​e​l​e​c​t​ ​W​a​l​l​e​t
+		 */
+		cantReceiveZeroSats: string
 	}
 	RedeemBitcoinScreen: {
 		/**
@@ -2391,6 +2495,10 @@ type RootTranslation = {
 		 * No amount invoice is not supported in BTC wallet
 		 */
 		noAmountInvoiceError: string
+		/**
+		 * The amount you entered is less than the minimum amount required to send an on-chain transaction. Please consider sending this amount via Lightning! 
+		 */
+		onchainMinAmountInvoiceError: RequiredParams<'amount'>
 		/**
 		 * The amount on the invoice is less than minimum amount
 		 * @param {number} amount
@@ -4349,6 +4457,60 @@ type RootTranslation = {
 		 * C​o​n​t​a​c​t​ ​S​u​p​p​o​r​t
 		 */
 		contactSupport: string
+	},
+	RefundFlow: {
+		/**
+		 * Refundable transactions
+		 */
+		refundListTitle: string
+		/**
+		 * Destination
+		 */
+		destinationTitle: string
+		/**
+		 * Confirmation
+		 */
+		confirmationTitle: string
+		/**
+		 * Pending Transactions
+		 */
+		pendingTransactions: string
+		/**
+		 * No refundable transactions found
+		 */
+		noRefundables: string
+		/**
+		 * View
+		 */
+		view: string
+		/**
+		 * Refund
+		 */
+		refund: string
+		/**
+		 * Refund to USD wallet
+		 */
+		refundTo: string
+		/**
+		 * Recommended Fees
+		 */
+		recommendedFees: string
+		/**
+		 * Fast
+		 */
+		fast: string
+		/**
+		 * Half Hour
+		 */
+		halfHour: string
+		/**
+		 * Hour
+		 */
+		hour: string
+		/**
+		 * Transaction ID
+		 */
+		txId: string
 	}
 }
 
@@ -4559,6 +4721,26 @@ export type TranslationFunctions = {
 		 * Flashcard
 		 */
 		title: () => LocalizedString
+		/**
+		 * This is not a proper flashcard. Please use the correct flashcard.
+		 */
+		notFlashcard: () => LocalizedString
+		/**
+		 * NDEF message not found.
+		 */
+		noNDEFMessage: () => LocalizedString
+		/**
+		 * NFC is not supported on this device.
+		 */
+		notSupported: () => LocalizedString
+		/**
+		 * NFC is not enabled on this device.
+		 */
+		notEnabled: () => LocalizedString
+		/**
+		 * No tag found
+		 */
+		noTag: () => LocalizedString
 	}
 	
 	Cashout: {
@@ -5773,7 +5955,7 @@ export type TranslationFunctions = {
 		 */
 		quickStart: () => LocalizedString
 		/**
-		 * Import Wallet
+		 * Login
 		 */
 		restoreWallet: () => LocalizedString
 		/**
@@ -5943,10 +6125,6 @@ export type TranslationFunctions = {
 		 * My Accounts
 		 */
 		myAccounts: () => LocalizedString
-		/**
-		 * My Business Accounts
-		 */
-		myBusinessAccounts: () => LocalizedString
 	}
 	PinScreen: {
 		/**
@@ -6259,6 +6437,10 @@ export type TranslationFunctions = {
 		 * Select Wallet
 		 */
 		selectWallet: () => LocalizedString
+		/**
+		 * S​e​l​e​c​t​ ​W​a​l​l​e​t
+		 */
+		cantReceiveZeroSats: () => LocalizedString
 	}
 	RedeemBitcoinScreen: {
 		/**
@@ -6670,6 +6852,10 @@ export type TranslationFunctions = {
 		 */
 		noAmountInvoiceError: () => LocalizedString
 		/**
+		 * The amount you entered is less than the minimum amound required to send an on-chain transaction. Please consider sending this amount via Lightning! 
+		 */
+		onchainMinAmountInvoiceError: (arg: { amount: number  | string }) => LocalizedString
+		/**
 		 * The amount on the invoice is less than minimum amount
 		 */
 		minAmountInvoiceError: (arg: { amount: number  | string }) => LocalizedString
@@ -6808,7 +6994,7 @@ export type TranslationFunctions = {
 		 */
 		backup: () => LocalizedString
 		/**
-		 * Import Wallet
+		 * Login
 		 */
 		importWallet: () => LocalizedString
 		/**
@@ -7267,7 +7453,7 @@ export type TranslationFunctions = {
 	}
 	ImportWalletOptions: {
 		/**
-		 * Import options
+		 * Login options
 		 */
 		loginOptions: () => LocalizedString
 		/**
@@ -7299,7 +7485,7 @@ export type TranslationFunctions = {
 		 */
 		importUsingEmail: () => LocalizedString
 		/**
-		 * Import/Create
+		 * Login/Create
 		 */
 		login: () => LocalizedString
 		/**
@@ -7650,12 +7836,32 @@ export type TranslationFunctions = {
 	}
 	SetAddressModal: {
 		/**
+		 * Hello!
+		 */
+		helloText: () => LocalizedString
+		/**
+		 * What should we call you?
+		 */
+		whoAreYou: () => LocalizedString
+		/**
+		 * This will be your bankName username
+		 */
+		usernameHint: (arg: { bankName: string }) => LocalizedString
+		/**
+		 * Enter your username
+		 */
+		placeholder: () => LocalizedString
+		/**
+		 * Save
+		 */
+		save: () => LocalizedString
+		/**
 		 * Set {bankName} address
 		 */
 		title: (arg: { bankName: string }) => LocalizedString
 		Errors: {
 			/**
-			 * Address must be at least 3 characters long
+			 * Username must be at least 3 characters long
 			 */
 			tooShort: () => LocalizedString
 			/**
@@ -8588,6 +8794,61 @@ export type TranslationFunctions = {
 		 * Contact Support
 		 */
 		contactSupport: () => LocalizedString
+	},
+	RefundFlow: {
+		/**
+		 * Refundable Transactions
+		 */
+		refundListTitle: () => LocalizedString
+		/**
+		 * Destination
+		 */
+		destinationTitle: () => LocalizedString
+		/**
+		 * Confirmation
+		 */
+		confirmationTitle: () => LocalizedString
+		/**
+		 * Pending Transactions
+		 */
+		pendingTransactions: () => LocalizedString
+		/**
+		 * No refundable transactions found
+		 */
+		noRefundables: () => LocalizedString
+		/**
+		 * Refund
+		 */
+		refund: () => LocalizedString
+		/**
+		 * View
+		 */
+		view: () => LocalizedString
+		/**
+		 * Refund to USD wallet
+		 */
+		refundTo: () => LocalizedString
+		/**
+		 * Recommended Fees
+		 */
+		recommendedFees: () => LocalizedString
+		/**
+		 * Fast
+		 */
+		fast: () => LocalizedString
+		/**
+		 * Half Hour
+		 */
+		halfHour: () => LocalizedString
+		/**
+		 * Hour
+		 */
+		hour: () => LocalizedString
+		/**
+		 * Transaction ID
+		 */
+		txId: () => LocalizedString
+		
 	}
 }
 

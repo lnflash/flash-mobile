@@ -29,7 +29,7 @@
         "bitcoinTag": "Choose this to be on a Bitcoin standard."
     },
     "NoteInput": {
-        "addNote": "Add note"
+        "addNote": "Add note..."
     },
     "AuthenticationScreen": {
         "authenticationDescription": "Authenticate to continue",
@@ -61,7 +61,13 @@
         "noCardsTitle": "No Cards Found",
         "noCardsYet": "Tap a Flashcard to add it here",
         "noMatchingCards": "No Cards matching your search were found.",
-        "title": "Flashcard"
+        "title": "Flashcard",
+        "notFlashcard": "Unsupported NFC card. Please ensure you are using a flashcard.",
+        "noNDEFMessage": "NDEF message not found. Please ensure you are using a flashcard.",
+        "notSupported": "NFC is not supported on this device.",
+        "notEnabled": "NFC is not enabled on this device.",
+        "noTag": "No tag found. Please ensure you are using a flashcard."
+
     },
     "Cashout": {
         "title": "Cashout",
@@ -458,7 +464,7 @@
     "GetStartedScreen": {
         "logInCreateAccount": "Log in / create account",
         "quickStart": "Start",
-        "restoreWallet": "Import Wallet",
+        "restoreWallet": "Login",
         "exploreWalletInstead": "Explore wallet instead",
         "setupBusinessAccount": "Setup business account",
         "createAccount": "Create new account",
@@ -501,7 +507,27 @@
         "updateAvailable": "An update is available.\nTap to update now",
         "useLightning": "We use the Lightning Network.",
         "myAccounts": "My Accounts",
-        "myBusinessAccounts": "My Business Accounts"
+        "myBusinessAccounts": "My Business Accounts",
+		"refundableWarning": "Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.",
+        "refundables": "Refundables",
+        "cash": "Cash",
+		"bitcoin": "Bitcoin",
+		"flashcard": "Flashcard",
+		"addFlashcard": "Add Flashcard",
+        "upgradeTitle": "Add your phone number",
+        "upgradeDesc": "Backup your cash wallet and increase transaction limits.",
+        "currencyTitle":"Change to your local currency",
+        "currencyDesc": "Review our available currency list and select your currency.",
+        "flashcardTitle": "Get a Flashcard",
+        "flashcardDesc": "Find a Flashpoint and get a Flashcard to use in daily life.",
+        "nonCustodialWalletTitle": "Non-custodial wallets",
+        "nonCustodialWalletDesc": "Learn more about non-custodial wallets.",
+        "emailTitle": "Email address",
+        "emailDesc": "Add your email address to secure your account and login using email address.",
+        "btcWalletTitle": "Enable BTC wallet",
+        "btcWalletDesc": "Easily transfer larger amounts in Bitcoin.",
+        "backupTitle": "Backup your BTC wallet",
+        "backupDesc": "Backup and secure your Bitcoin wallet using recovery phrase."
     },
     "PinScreen": {
         "attemptsRemaining": "Incorrect PIN. {attemptsRemaining: number} attempts remaining.",
@@ -695,6 +721,7 @@
         "lnurlInvoiceIncorrectAmount": "The lnurl server responded with an invoice with an incorrect amount.",
         "lnurlInvoiceIncorrectDescription": "The lnurl server responded with an invoice with an incorrect description hash.",
         "noAmountInvoiceError": "No amount invoice is not supported in BTC wallet",
+        "onchainMinAmountInvoiceError": "The amount you entered is less than the minimum amount required to send an on-chain transaction {amount: number}. Please consider sending this amount via Lightning!",
 		"minAmountInvoiceError": "The amount on the invoice is less than minimum amount",
 		"maxAmountInvoiceError": "The amount on the invoice is greater than maximum amount",
         "minAmountConvertError": "The conversion amount is less than minimum required amount {amount: number}",
@@ -871,7 +898,7 @@
         "done": "Done"
     },
     "ImportWalletOptions": {
-        "loginOptions": "Import options",
+        "loginOptions": "Login options",
         "importOptions": "Import wallet options",
         "recoveryPhrase": "Recovery Phrase",
         "importBTCWallet": "Import Bitcoin Wallet using recovery phrase",
@@ -879,7 +906,7 @@
         "importUsingPhone": "Import or Create your Cash Wallet using phone number",
         "email": "Email",
         "importUsingEmail": "Import your Cash Wallet using email address",
-        "login": "Import/Create",
+        "login": "Login/Create",
         "done": "Done"
     },
     "ImportWallet": {
@@ -919,18 +946,18 @@
         "learnMore": "Learn more about Stablesats"
     },
     "AdvancedModeModal": {
-        "header": "Welcome to Advanced Mode. You now have a non-custodial Bitcoin account added to your wallet!",
-        "body": "You can use it to send and receive larger amounts of money, denominated in Bitcoin. You can also use the SWAP button to instantly transfer value between your Bitcoin account and USD account. The dollar value in the Bitcoin account WILL fluctuate with the price of Bitcoin.\n\nIMPORTANT: Your Bitcoin account is a non-custodial account, so you may be charged a small fee to make your first transaction. Also, you are solely responsible for securing your recovery phrase in a safe place. \n\n\nDO NOT SHARE YOUR RECOVERY PHRASE WITH ANYONE.",
-        "termsAndConditions": "\nRead the Terms & Conditions.",
+        "header": "Welcome to Advanced Mode!",
+        "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+        "termsAndConditions": "Read the Terms & Conditions.",
         "learnMore": "What is a Non-Custodial Wallet?",
         "importWallet": "Import Wallet",
-		"createWallet": "Create Wallet"
+        "createWallet": "Create Wallet"
     },
     "UnVerifiedSeedModal": {
         "header": "YOUR BITCOIN IS NOT SECURE!",
         "body": "You should WRITE DOWN your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.\n\n",
         "termsAndConditions": "\nRead the Terms & Conditions.",
-        "learnMore": "What is a Recovery Phase?"
+        "learnMore": "What is a Recovery Phrase?"
     },
     "SplashScreen": {
         "update": "Your app is outdated. An update is needed before the app can be used.\n\nThis can be done from the PlayStore for Android and Testflight for iOS"
@@ -962,7 +989,7 @@
     },
     "TransactionScreen": {
         "noTransaction": "No transaction to show",
-        "title": "Transactions",
+        "title": "Recent activity",
         "recentTransactions": "Recent transactions",
         "transactionHistoryTitle": "Transaction History"
     },
@@ -982,7 +1009,7 @@
     "SetAddressModal": {
         "title": "Set {bankName: string} address",
         "Errors": {
-            "tooShort": "Address must be at least 3 characters long",
+            "tooShort": "Username must be at least 3 characters long",
             "tooLong": "Address must be at most 50 characters long",
             "invalidCharacter": "Address can only contain letters, numbers, and underscores",
             "addressUnavailable": "Sorry, this address is already taken",
@@ -1189,7 +1216,7 @@
         "email": "Email",
         "enjoyingApp": "Enjoying the app?",
         "statusPage": "Status Page",
-        "telegram": "Telegram",
+        "discord": "Discord",
         "mattermost": "Mattermost",
         "thankYouText": "Thank you for the feedback, would you like to suggest an improvement?",
         "defaultEmailSubject": "{bankName: string} - Support",
@@ -1233,5 +1260,20 @@
         "updateMandatory": "Update is mandatory",
         "tapHereUpdate": "Tap here to update now",
         "contactSupport": "Contact Support"
-    }
+    },
+    "RefundFlow": {
+        "refundListTitle": "Refundable Transactions",
+		"destinationTitle": "Destination",
+		"confirmationTitle": "Confirmation",
+        "pendingTransactions": "Pending Transactions",
+        "noRefundables": "No refundable transactions found",
+        "view": "View",
+        "refund": "Refund",
+        "refundTo": "Refund to USD wallet",
+        "recommendedFees": "Recommended Fees",
+        "fast": "Fast",
+        "halfHour": "Half Hour",
+        "hour": "Hour",
+        "txId": "Transaction ID"
+	}
 }

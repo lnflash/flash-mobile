@@ -1,50 +1,71 @@
 import React, { useEffect, useState } from "react"
-import { ActivityIndicator, RefreshControl, SectionList, Text, View } from "react-native"
+import { RefreshControl, SectionList, View } from "react-native"
 import { usePriceConversion } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { makeStyles, useTheme } from "@rneui/themed"
+import { useNavigation } from "@react-navigation/native"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { BarIndicator } from "react-native-indicators"
+import { StackNavigationProp } from "@react-navigation/stack"
 
 // components
 import { Screen } from "@app/components/screen"
-import { BreezTransactionItem } from "@app/components/transaction-item/breez-transaction-item"
+import { TxItem } from "@app/components/transaction-item"
+import { Loading } from "@app/contexts/ActivityIndicatorContext"
+import { PrimaryBtn } from "@app/components/buttons"
 
 // graphql
-import { TransactionFragment, WalletCurrency } from "@app/graphql/generated"
+import { WalletCurrency } from "@app/graphql/generated"
 import { groupTransactionsByDate } from "@app/graphql/transactions"
 
 // Breez SDK
+import {
+  listRefundables,
+  Payment,
+  RefundableSwap,
+} from "@breeztech/react-native-breez-sdk-liquid"
 import { listPaymentsBreezSDK } from "@app/utils/breez-sdk-liquid"
-import { Payment } from "@breeztech/react-native-breez-sdk-liquid"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 
 // types
 import { toBtcMoneyAmount } from "@app/types/amounts"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // store
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { loadJson } from "@app/utils/storage"
 
-export const BTCTransactionHistory: React.FC = () => {
-  const {
-    theme: { colors },
-  } = useTheme()
+type NavigationProp = StackNavigationProp<RootStackParamList, "USDTransactionHistory">
+
+export const BTCTransactionHistory = () => {
+  const navigation = useNavigation<NavigationProp>()
   const styles = useStyles()
+  const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { convertMoneyAmount } = usePriceConversion()
 
   const { persistentState, updateState } = usePersistentStateContext()
 
+  const [refundables, setRefundables] = useState<RefundableSwap[]>([])
   const [hasMore, setHasMore] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [fetchingMore, setFetchingMore] = useState(false)
   const [breezLoading, setBreezLoading] = useState(false)
-  const [txsList, setTxsList] = useState<TransactionFragment[]>(
-    persistentState.btcTransactions || [],
-  )
+  const [txsList, setTxsList] = useState<any[]>(persistentState.btcTransactions || [])
 
   useEffect(() => {
     fetchPaymentsBreez(0)
+    fetchRefundables()
   }, [])
+
+  const fetchRefundables = async () => {
+    const refundables = (await listRefundables()) || []
+    const refundedTxs = (await loadJson("refundedTxs")) || []
+    console.log("Refundable and Refunded Transactions>>>>>>>>>>", [
+      ...refundables,
+      ...refundedTxs,
+    ])
+    setRefundables([...refundables, ...refundedTxs])
+  }
 
   const fetchPaymentsBreez = async (offset: number) => {
     setBreezLoading(true)
@@ -112,36 +133,24 @@ export const BTCTransactionHistory: React.FC = () => {
   }
 
   if (breezLoading && transactionSections.length === 0) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator color={colors.primary} size={"large"} />
-      </View>
-    )
+    return <Loading />
   } else {
     return (
       <Screen>
         <SectionList
           showsVerticalScrollIndicator={false}
-          renderItem={({ item, index, section }) => (
-            <BreezTransactionItem
-              tx={item}
-              key={`transaction-${item.id}`}
-              subtitle
-              isFirst={index === 0}
-              isLast={index === section.data.length - 1}
-            />
-          )}
+          renderItem={({ item }) => <TxItem key={item.id} tx={item} />}
           initialNumToRender={20}
           renderSectionHeader={({ section: { title } }) => (
             <View style={styles.sectionHeaderContainer}>
-              <Text style={styles.sectionHeaderText}>{title}</Text>
+              <Text type="p1" bold>
+                {title}
+              </Text>
             </View>
           )}
           ListEmptyComponent={
             <View style={styles.noTransactionView}>
-              <Text style={styles.noTransactionText}>
-                {LL.TransactionScreen.noTransaction()}
-              </Text>
+              <Text type="h1">{LL.TransactionScreen.noTransaction()}</Text>
             </View>
           }
           ListFooterComponent={() =>
@@ -166,30 +175,39 @@ export const BTCTransactionHistory: React.FC = () => {
               tintColor={colors.primary}
             />
           }
+          contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 20 }}
         />
+        {refundables.length > 0 && (
+          <View style={styles.floatingButtonWrapper}>
+            <View style={styles.floatingButton}>
+              <PrimaryBtn
+                label={LL.RefundFlow.pendingTransactions()}
+                onPress={() => navigation.navigate("RefundTransactionList")}
+              />
+            </View>
+          </View>
+        )}
       </Screen>
     )
   }
 }
 
 const useStyles = makeStyles(({ colors }) => ({
-  loadingContainer: { justifyContent: "center", alignItems: "center", flex: 1 },
-  noTransactionText: {
-    fontSize: 24,
-  },
   noTransactionView: {
-    alignItems: "center",
     flex: 1,
+    alignItems: "center",
     marginVertical: 48,
   },
   sectionHeaderContainer: {
     backgroundColor: colors.white,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 18,
+    padding: 15,
   },
-  sectionHeaderText: {
-    color: colors.black,
-    fontSize: 18,
+  floatingButtonWrapper: {
+    alignItems: "center",
+  },
+  floatingButton: {
+    width: "90%",
+    position: "absolute",
+    bottom: 20,
   },
 }))

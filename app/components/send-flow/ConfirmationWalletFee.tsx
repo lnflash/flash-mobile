@@ -16,20 +16,30 @@ import { DisplayCurrency } from "@app/types/amounts"
 import { testProps } from "@app/utils/testProps"
 import { fetchBreezFee } from "@app/utils/breez-sdk-liquid"
 
+// assets
+import Cash from "@app/assets/icons/cash.svg"
+import Bitcoin from "@app/assets/icons/bitcoin.svg"
+
 type Props = {
+  flashUserAddress?: string
   paymentDetail: PaymentDetail<WalletCurrency>
   btcWalletText: string
   usdWalletText: string
+  feeRateSatPerVbyte?: number
   fee: FeeType
   setFee: (fee: FeeType) => void
+  setPaymentError: (val: string) => void
 }
 
 const ConfirmationWalletFee: React.FC<Props> = ({
+  flashUserAddress,
   paymentDetail,
   btcWalletText,
   usdWalletText,
+  feeRateSatPerVbyte,
   fee,
   setFee,
+  setPaymentError,
 }) => {
   const { sendingWalletDescriptor, getFee, settlementAmount, paymentType } = paymentDetail
   const { LL } = useI18nContext()
@@ -44,6 +54,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
     paymentType,
     sendingWalletDescriptor.currency,
     settlementAmount.amount,
+    feeRateSatPerVbyte,
   ])
 
   const getSendingFee = async () => {
@@ -51,21 +62,29 @@ const ConfirmationWalletFee: React.FC<Props> = ({
     if (sendingWalletDescriptor.currency === "USD") {
       setFee(getLightningFee)
     } else {
-      const fee = await fetchBreezFee(
+      const { fee, err } = await fetchBreezFee(
         paymentType,
-        paymentDetail.destination,
+        !!flashUserAddress ? flashUserAddress : paymentDetail.destination,
         settlementAmount.amount,
+        feeRateSatPerVbyte,
+        paymentDetail.isSendingMax,
       )
       if (fee !== null) {
         setFee({
           status: "set",
           amount: { amount: fee, currency: "BTC", currencyCode: "SATS" },
         })
-      } else {
+      } else if (fee === "null" && err === "null") {
         setFee({
           status: "unset",
           amount: undefined,
         })
+      } else {
+        setFee({
+          status: "error",
+          amount: undefined,
+        })
+        setPaymentError(`Failed to fetch the fee. ${err} (amount + fee)`)
       }
     }
   }
@@ -81,25 +100,15 @@ const ConfirmationWalletFee: React.FC<Props> = ({
     feeDisplayText = "Unable to calculate fee"
   }
 
+  const CurrencyIcon =
+    sendingWalletDescriptor.currency === WalletCurrency.Btc ? Bitcoin : Cash
   return (
     <>
       <View style={styles.fieldContainer}>
         <Text style={styles.fieldTitleText}>{LL.common.from()}</Text>
         <View style={styles.fieldBackground}>
           <View style={styles.walletSelectorTypeContainer}>
-            <View
-              style={
-                sendingWalletDescriptor.currency === WalletCurrency.Btc
-                  ? styles.walletSelectorTypeLabelBitcoin
-                  : styles.walletSelectorTypeLabelUsd
-              }
-            >
-              {sendingWalletDescriptor.currency === WalletCurrency.Btc ? (
-                <Text style={styles.walletSelectorTypeLabelBtcText}>BTC</Text>
-              ) : (
-                <Text style={styles.walletSelectorTypeLabelUsdText}>USD</Text>
-              )}
-            </View>
+            <CurrencyIcon />
           </View>
           <View style={styles.walletSelectorInfoContainer}>
             <View style={styles.walletSelectorTypeTextContainer}>
@@ -169,36 +178,8 @@ const useStyles = makeStyles(({ colors }) => ({
     fontWeight: "bold",
     marginBottom: 4,
   },
-
   walletSelectorTypeContainer: {
-    justifyContent: "center",
-    alignItems: "flex-start",
-    width: 50,
     marginRight: 20,
-  },
-  walletSelectorTypeLabelBitcoin: {
-    height: 30,
-    width: 50,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  walletSelectorTypeLabelUsd: {
-    height: 30,
-    width: 50,
-    backgroundColor: colors.green,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  walletSelectorTypeLabelUsdText: {
-    fontWeight: "bold",
-    color: colors.black,
-  },
-  walletSelectorTypeLabelBtcText: {
-    fontWeight: "bold",
-    color: colors.white,
   },
   walletSelectorInfoContainer: {
     flex: 1,

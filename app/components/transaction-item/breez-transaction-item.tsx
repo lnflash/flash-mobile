@@ -1,5 +1,4 @@
 import { View } from "react-native"
-import Icon from "react-native-vector-icons/Ionicons"
 
 // eslint-disable-next-line camelcase
 // import { useFragment_experimental } from "@apollo/client"
@@ -17,7 +16,7 @@ import { StackNavigationProp } from "@react-navigation/stack"
 
 import { useAppConfig } from "@app/hooks"
 import { toWalletAmount } from "@app/types/amounts"
-import { Text, makeStyles, ListItem } from "@rneui/themed"
+import { Text, makeStyles, ListItem, Icon } from "@rneui/themed"
 import HideableArea from "../hideable-area/hideable-area"
 import { IconTransaction } from "../icon-transactions"
 import { TransactionDate } from "../transaction-date"
@@ -52,9 +51,9 @@ export const useDescriptionDisplay = ({
     case "SettlementViaLn":
       if (isReceive) {
         return `Received`
-      } else {
-        return "Sent"
       }
+      return "Sent"
+
     case "SettlementViaIntraLedger":
       return isReceive
         ? `${LL.common.from()} ${
@@ -64,19 +63,15 @@ export const useDescriptionDisplay = ({
   }
 }
 
-const AmountDisplayStyle = ({
-  isReceive,
-  isPending,
-}: {
-  isReceive: boolean
-  isPending: boolean
-}) => {
-  const styles = useStyles()
-
+// Shared style helper - duplicate in both files since they're independent
+const getAmountStyle = (
+  styles: ReturnType<typeof useStyles>,
+  isReceive: boolean,
+  isPending: boolean,
+) => {
   if (isPending) {
     return styles.pending
   }
-
   return isReceive ? styles.receive : styles.send
 }
 
@@ -106,7 +101,8 @@ export const BreezTransactionItem: React.FC<Props> = ({
   const {
     appConfig: { galoyInstance },
   } = useAppConfig()
-  const { formatMoneyAmount, formatCurrency } = useDisplayCurrency()
+  const { formatMoneyAmount, formatCurrency, moneyAmountToDisplayCurrencyString } =
+    useDisplayCurrency()
   const { data: { hideBalance } = {} } = useHideBalanceQuery()
   const isBalanceVisible = hideBalance ?? false
 
@@ -124,7 +120,8 @@ export const BreezTransactionItem: React.FC<Props> = ({
 
   const walletCurrency = tx.settlementCurrency as WalletCurrency
 
-  const formattedSettlementAmount = formatMoneyAmount({
+  // set amount in sats for breez wallet as secondarqy amount
+  const formattedSettlementSecondaryAmount = formatMoneyAmount({
     moneyAmount: toWalletAmount({
       amount: tx.settlementAmount,
       currency: tx.settlementCurrency,
@@ -136,10 +133,13 @@ export const BreezTransactionItem: React.FC<Props> = ({
     currency: tx.settlementDisplayCurrency,
   })
 
-  const formattedSecondaryAmount =
-    tx.settlementDisplayCurrency === tx.settlementCurrency
-      ? undefined
-      : formattedSettlementAmount
+  const convertedAmount = moneyAmountToDisplayCurrencyString({
+    moneyAmount: toWalletAmount({
+      amount: tx.settlementAmount,
+      currency: tx.settlementCurrency,
+    }),
+    isApproximate: false,
+  })
 
   return (
     <ListItem
@@ -175,14 +175,17 @@ export const BreezTransactionItem: React.FC<Props> = ({
         hiddenContent={<Icon style={styles.hiddenBalanceContainer} name="eye" />}
       >
         <View>
-          <Text style={AmountDisplayStyle({ isReceive, isPending })}>
-            {formattedDisplayAmount}
+          <Text
+            style={[getAmountStyle(styles, isReceive, isPending), styles.primaryAmount]}
+          >
+            {convertedAmount}
           </Text>
-          {formattedSecondaryAmount ? (
-            <Text style={AmountDisplayStyle({ isReceive, isPending })}>
-              {formattedSecondaryAmount}
-            </Text>
-          ) : null}
+
+          <Text
+            style={[getAmountStyle(styles, isReceive, isPending), styles.secondaryAmount]}
+          >
+            {formattedSettlementSecondaryAmount}
+          </Text>
         </View>
       </HideableArea>
     </ListItem>
@@ -195,6 +198,7 @@ type UseStyleProps = {
   isOnHomeScreen?: boolean
 }
 
+// Update styles
 const useStyles = makeStyles(({ colors }, props: UseStyleProps) => ({
   container: {
     height: 60,
@@ -224,5 +228,12 @@ const useStyles = makeStyles(({ colors }, props: UseStyleProps) => ({
     color: colors.grey0,
     textAlign: "right",
     flexWrap: "wrap",
+  },
+  secondaryAmount: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  primaryAmount: {
+    fontSize: 18,
   },
 }))

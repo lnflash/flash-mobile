@@ -1,13 +1,14 @@
-import * as React from "react"
+import React, { useEffect, useState } from "react"
 import crashlytics from "@react-native-firebase/crashlytics"
-import { ActivityIndicator, RefreshControl, SectionList, View } from "react-native"
+import { RefreshControl, SectionList, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { BarIndicator } from "react-native-indicators"
 
 // components
 import { Screen } from "@app/components/screen"
-import { TransactionItem } from "../../components/transaction-item"
+import { TxItem } from "../../components/transaction-item"
+import { Loading } from "@app/contexts/ActivityIndicatorContext"
 
 // graphql
 import { useTransactionListForDefaultAccountQuery } from "@app/graphql/generated"
@@ -22,19 +23,17 @@ import { SectionTransactions } from "./index.types"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
 export const USDTransactionHistory: React.FC = () => {
-  const {
-    theme: { colors },
-  } = useTheme()
   const styles = useStyles()
+  const { colors } = useTheme().theme
   const { LL } = useI18nContext()
 
   const { persistentState, updateState } = usePersistentStateContext()
 
-  const [hasMore, setHasMore] = React.useState<boolean | undefined>()
-  const [numOfTxs, setNumOfTxs] = React.useState(0)
-  const [refreshing, setRefreshing] = React.useState(false)
-  const [fetchingMore, setFetchingMore] = React.useState(false)
-  const [transactions, setTransactions] = React.useState<SectionTransactions[]>(
+  const [hasMore, setHasMore] = useState<boolean | undefined>()
+  const [numOfTxs, setNumOfTxs] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+  const [fetchingMore, setFetchingMore] = useState(false)
+  const [transactions, setTransactions] = useState<SectionTransactions[]>(
     persistentState.usdTransactions || [],
   )
 
@@ -46,7 +45,7 @@ export const USDTransactionHistory: React.FC = () => {
       variables: { first: 15 },
     })
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (
       data?.me?.defaultAccount?.transactions?.edges &&
       data?.me?.defaultAccount?.transactions?.edges?.length > 0
@@ -129,42 +128,28 @@ export const USDTransactionHistory: React.FC = () => {
     crashlytics().recordError(error)
     return (
       <View style={styles.noTransactionView}>
-        <Text style={styles.noTransactionText}>
-          {LL.TransactionScreen.noTransaction()}
-        </Text>
+        <Text type="h1">{LL.TransactionScreen.noTransaction()}</Text>
       </View>
     )
   } else if (loading && transactions.length === 0) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator color={colors.primary} size={"large"} />
-      </View>
-    )
+    return <Loading />
   } else {
     return (
       <Screen>
         <SectionList
           showsVerticalScrollIndicator={false}
-          renderItem={({ item, index, section }) => (
-            <TransactionItem
-              tx={item}
-              key={`txn-${item.id}`}
-              subtitle
-              isFirst={index === 0}
-              isLast={index === section.data.length - 1}
-            />
-          )}
+          renderItem={({ item }) => <TxItem key={item.id} tx={item} />}
           initialNumToRender={20}
           renderSectionHeader={({ section: { title } }) => (
             <View style={styles.sectionHeaderContainer}>
-              <Text style={styles.sectionHeaderText}>{title}</Text>
+              <Text type="p1" bold>
+                {title}
+              </Text>
             </View>
           )}
           ListEmptyComponent={
             <View style={styles.noTransactionView}>
-              <Text style={styles.noTransactionText}>
-                {LL.TransactionScreen.noTransaction()}
-              </Text>
+              <Text type="h1">{LL.TransactionScreen.noTransaction()}</Text>
             </View>
           }
           ListFooterComponent={() =>
@@ -189,6 +174,7 @@ export const USDTransactionHistory: React.FC = () => {
               tintColor={colors.primary}
             />
           }
+          contentContainerStyle={{ paddingHorizontal: 20 }}
         />
       </Screen>
     )
@@ -196,26 +182,13 @@ export const USDTransactionHistory: React.FC = () => {
 }
 
 const useStyles = makeStyles(({ colors }) => ({
-  loadingContainer: { justifyContent: "center", alignItems: "center", flex: 1 },
-  noTransactionText: {
-    fontSize: 24,
-  },
-
   noTransactionView: {
-    alignItems: "center",
     flex: 1,
+    alignItems: "center",
     marginVertical: 48,
   },
-
   sectionHeaderContainer: {
     backgroundColor: colors.white,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 18,
-  },
-
-  sectionHeaderText: {
-    color: colors.black,
-    fontSize: 18,
+    padding: 15,
   },
 }))

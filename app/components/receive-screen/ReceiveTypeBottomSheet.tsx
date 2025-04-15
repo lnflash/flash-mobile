@@ -1,9 +1,7 @@
 import React, { useState } from "react"
 import { Modal } from "react-native"
 import styled from "styled-components/native"
-import Icon from "react-native-vector-icons/Ionicons"
-import { ListItem } from "@rneui/base"
-import { Text, useTheme } from "@rneui/themed"
+import { Icon, Text, useTheme } from "@rneui/themed"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { InvoiceType } from "@app/screens/receive-bitcoin-screen/payment/index.types"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -22,8 +20,8 @@ const ReceiveTypeBottomSheet: React.FC<Props> = ({
   onChange,
 }) => {
   const { LL } = useI18nContext()
-  const { theme } = useTheme()
-  const colors = theme.colors
+  const { colors, mode } = useTheme().theme
+
   const [modalVisible, setModalVisible] = useState(false)
   const bottom = useSafeAreaInsets().bottom
 
@@ -33,9 +31,9 @@ const ReceiveTypeBottomSheet: React.FC<Props> = ({
   }
 
   let receivingTypes = [
-    { key: "Lightning", title: "Lightning", icon: "flash" },
-    { key: "PayCode", title: "Paycode", icon: "at" },
-    { key: "OnChain", title: "Onchain ", icon: "logo-bitcoin" },
+    { key: "Lightning", title: "Lightning", icon: "flash", color: "#F0C243" },
+    { key: "PayCode", title: "Paycode", icon: "at", color: "#E8D315" },
+    { key: "OnChain", title: "Onchain ", icon: "logo-bitcoin", color: "#41AC48" },
   ]
 
   if (currency === "BTC") {
@@ -46,23 +44,22 @@ const ReceiveTypeBottomSheet: React.FC<Props> = ({
     <>
       <Btn
         onPress={() => setModalVisible(true)}
-        style={{ backgroundColor: colors.grey5, flex: 1 }}
+        style={{ flex: 1, borderColor: colors.border01 }}
         disabled={disabled}
       >
         <Row>
           <Icon
             name={receivingTypes.find((el) => el.key === type)?.icon as string}
-            size={18}
-            color={colors.primary}
+            color={receivingTypes.find((el) => el.key === type)?.color as string}
+            size={25}
+            style={{ marginRight: 5 }}
+            type="ionicon"
           />
-          <BtnText style={{ color: colors.black }}>
-            {receivingTypes.find((el) => el.key === type)?.title}
-          </BtnText>
+          <Text type="bl">{receivingTypes.find((el) => el.key === type)?.title}</Text>
         </Row>
-        <ListItem.Chevron
+        <Icon
           name={modalVisible ? "chevron-up" : "chevron-down"}
-          color={colors.grey0}
-          size={20}
+          color={colors.icon01}
           type="ionicon"
         />
       </Btn>
@@ -72,35 +69,32 @@ const ReceiveTypeBottomSheet: React.FC<Props> = ({
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <Backdrop
-          onPress={() => setModalVisible(false)}
-          activeOpacity={1}
-          mode={theme.mode}
-        >
+        <Backdrop onPress={() => setModalVisible(false)} activeOpacity={1} mode={mode}>
           <Container pb={bottom} style={{ backgroundColor: colors.white }}>
             <TitleWrapper>
-              <Title>{LL.ReceiveScreen.selectPaymentMethod()}</Title>
+              <Text type="h01">{LL.ReceiveScreen.selectPaymentMethod()}</Text>
               <Close onPress={() => setModalVisible(false)}>
-                <Icon name={"close"} size={30} color={colors.black} />
+                <Icon name={"close"} size={30} color={colors.black} type="ionicon" />
               </Close>
             </TitleWrapper>
-
             {receivingTypes.map((el) => (
               <Btn
                 key={el.key}
-                style={{ backgroundColor: colors.grey4, marginBottom: 10 }}
                 onPress={() => onChangeType(el.key)}
+                style={{
+                  justifyContent: "flex-start",
+                  borderColor: colors.border01,
+                  marginBottom: 10,
+                }}
               >
-                <BtnText
-                  style={{ color: type === el.key ? colors.primary : colors.grey1 }}
-                >
-                  {el.title}
-                </BtnText>
                 <Icon
                   name={el.icon}
-                  size={22}
-                  color={type === el.key ? colors.primary : colors.grey1}
+                  size={30}
+                  style={{ marginRight: 10 }}
+                  color={el.color}
+                  type="ionicon"
                 />
+                <Text type="bl">{el.title}</Text>
               </Btn>
             ))}
           </Container>
@@ -116,19 +110,14 @@ const Btn = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  border-radius: 5px;
-  padding-vertical: 15px;
-  padding-horizontal: 10px;
+  border-radius: 15px;
+  border-width: 1px;
+  padding: 10px;
 `
 
 const Row = styled.View`
   flex-direction: row;
   align-items: center;
-`
-
-const BtnText = styled.Text`
-  font-size: 17px;
-  margin-left: 5px;
 `
 
 const Backdrop = styled.TouchableOpacity<{ mode: string }>`
@@ -151,10 +140,6 @@ const TitleWrapper = styled.View`
   align-items: center;
   justify-content: space-between;
   margin-bottom: 15px;
-`
-
-const Title = styled(Text)`
-  font-size: 20px;
 `
 
 const Close = styled.TouchableOpacity`

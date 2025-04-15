@@ -20,7 +20,7 @@ const light = {
   white: "#FFFFFF",
   black: "#000000",
 
-  primary: "#60aa55",
+  primary: "#007856",
   primary3: "#000000",
   primary4: "#fe990d",
   primary5: "#ffad0d",
@@ -47,6 +47,27 @@ const light = {
   red: "#DC2626",
 
   warning: "#F59E0B",
+  warning9: "#fff1d8",
+
+  accent01: "#E8D315",
+  accent02: "#007856",
+  border01: "#DDE3E1",
+  border02: "#002118",
+  background: "#F1F1F1",
+  layer: "#FFFFFF",
+  text01: "#212121",
+  text02: "#939998",
+  textInverse: "#FFFFFF",
+  textPlaceholder: "#939998",
+  placeholder: "#829993",
+  icon01: "#000000",
+  icon02: "#939998",
+  iconInverse: "#FFFFFF",
+  button01: "#002118",
+  button02: "#E3E3E3",
+  buttonInverse: "#FFFFFF",
+  tabActive: "#002118",
+  tabInactive: "#83899B",
 }
 
 const dark = {
@@ -71,7 +92,7 @@ const dark = {
   white: "#000000",
   black: "#FFFFFF",
 
-  primary: "#60aa55",
+  primary: "#007856",
   primary3: "#ffffff",
   primary4: "#fd800b",
   primary5: "#fc5805",
@@ -98,6 +119,27 @@ const dark = {
   red: "#DC2626",
 
   warning: "#F59E0B",
+  warning9: "#ab6d02",
+
+  accent01: "#E8D315",
+  accent02: "#02c48d",
+  border01: "#212121",
+  border02: "#002118",
+  background: "#000000",
+  layer: "#212121",
+  text01: "#FFFFFF",
+  text02: "#939998",
+  textInverse: "#212121",
+  textPlaceholder: "#939998",
+  placeholder: "#829993",
+  icon01: "#FFFFFF",
+  icon02: "#939998",
+  iconInverse: "#FFFFFF",
+  button01: "#FFFFFF",
+  button02: "#212121",
+  buttonInverse: "#002118",
+  tabActive: "#002118",
+  tabInactive: "#83899B",
 }
 
 export { light, dark }

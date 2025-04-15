@@ -24,6 +24,7 @@ import Dollar from "@app/assets/icons-redesign/dollar.svg"
 import EyeSlash from "@app/assets/icons-redesign/eye-slash.svg"
 import Eye from "@app/assets/icons-redesign/eye.svg"
 import Filter from "@app/assets/icons-redesign/filter.svg"
+import Gear from "@app/assets/icons-redesign/gear.svg"
 import Globe from "@app/assets/icons-redesign/globe.svg"
 import Graph from "@app/assets/icons-redesign/graph.svg"
 import Image from "@app/assets/icons-redesign/image.svg"
@@ -53,6 +54,7 @@ import Note from "@app/assets/icons/note.svg"
 import People from "@app/assets/icons/people.svg"
 import Rank from "@app/assets/icons/rank.svg"
 import Refresh from "@app/assets/icons/refresh.svg"
+import SendSuccess from "@app/assets/icons-redesign/send-success.svg"
 import { makeStyles, useTheme } from "@rneui/themed"
 
 export const icons = {
@@ -79,6 +81,7 @@ export const icons = {
   "eye-slash": EyeSlash,
   "eye": Eye,
   "filter": Filter,
+  "gear": Gear,
   "globe": Globe,
   "graph": Graph,
   "image": Image,
@@ -108,6 +111,7 @@ export const icons = {
   "payment-error": PaymentError,
   "bell": Bell,
   "refresh": Refresh,
+  "send-success": SendSuccess,
 } as const
 
 export type IconNamesType = keyof typeof icons
