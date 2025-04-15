@@ -267,6 +267,37 @@ type RootTranslation = {
 		 */
 		noTag: string
 	}
+	Cashout: {
+		/**
+		 * Cashout
+		 */
+		title: string
+		/**
+		 * "% to cashout"
+		 */
+		percentageToCashout: string
+		/**
+		 * Valid for {time}
+		 * @param {string} time
+		 */
+		valid: RequiredParams<'time'>
+		/**
+		 * "Exchange Rate"
+		 */
+		exchangeRate: string
+		/**
+		 * "Send Amount"
+		 */
+		sendAmount: string
+		/**
+		 * "Receive Amount"
+		 */
+		receiveAmount: string
+		/**
+		 * "Flash Fee"
+		 */
+		fee: string
+	}
 	ConversionDetailsScreen: {
 		/**
 		 * S​w​a​p
@@ -4727,6 +4758,36 @@ export type TranslationFunctions = {
 		 * No tag found
 		 */
 		noTag: () => LocalizedString
+	}
+	Cashout: {
+		/**
+		 * Cashout
+		 */
+		title: () => LocalizedString
+		/**
+		 * "% to cashout"
+		 */
+		percentageToCashout: () => LocalizedString
+		/**
+		 * Valid for {time}
+		 */
+		valid: (arg: { time: string }) => LocalizedString
+		/**
+		 * "Exchange Rate"
+		 */
+		exchangeRate: () => LocalizedString
+		/**
+		 * "Send Amount"
+		 */
+		sendAmount: () => LocalizedString
+		/**
+		 * "Receive Amount"
+		 */
+		receiveAmount: () => LocalizedString
+		/**
+		 * "Flash Fee"
+		 */
+		fee: () => LocalizedString
 	}
 	ConversionDetailsScreen: {
 		/**
