@@ -117,7 +117,9 @@ mutation accountDelete {
   }
 }
 
-mutation accountDisableNotificationCategory($input: AccountDisableNotificationCategoryInput!) {
+mutation accountDisableNotificationCategory(
+  $input: AccountDisableNotificationCategoryInput!
+) {
   accountDisableNotificationCategory(input: $input) {
     errors {
       message
@@ -139,7 +141,9 @@ mutation accountDisableNotificationCategory($input: AccountDisableNotificationCa
   }
 }
 
-mutation accountDisableNotificationChannel($input: AccountDisableNotificationChannelInput!) {
+mutation accountDisableNotificationChannel(
+  $input: AccountDisableNotificationChannelInput!
+) {
   accountDisableNotificationChannel(input: $input) {
     errors {
       message
@@ -161,7 +165,9 @@ mutation accountDisableNotificationChannel($input: AccountDisableNotificationCha
   }
 }
 
-mutation accountEnableNotificationCategory($input: AccountEnableNotificationCategoryInput!) {
+mutation accountEnableNotificationCategory(
+  $input: AccountEnableNotificationCategoryInput!
+) {
   accountEnableNotificationCategory(input: $input) {
     errors {
       message
@@ -183,7 +189,9 @@ mutation accountEnableNotificationCategory($input: AccountEnableNotificationCate
   }
 }
 
-mutation accountEnableNotificationChannel($input: AccountEnableNotificationChannelInput!) {
+mutation accountEnableNotificationChannel(
+  $input: AccountEnableNotificationChannelInput!
+) {
   accountEnableNotificationChannel(input: $input) {
     errors {
       message
@@ -479,7 +487,9 @@ mutation onChainUsdPaymentSend($input: OnChainUsdPaymentSendInput!) {
   }
 }
 
-mutation onChainUsdPaymentSendAsBtcDenominated($input: OnChainUsdPaymentSendAsBtcDenominatedInput!) {
+mutation onChainUsdPaymentSendAsBtcDenominated(
+  $input: OnChainUsdPaymentSendAsBtcDenominatedInput!
+) {
   onChainUsdPaymentSendAsBtcDenominated(input: $input) {
     errors {
       message
@@ -951,6 +961,23 @@ query businessMapMarkers {
   }
 }
 
+query cashoutScreen {
+  me {
+    id
+    defaultAccount {
+      id
+      wallets {
+        id
+        balance
+        walletCurrency
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+
 query colorScheme {
   colorScheme @client
 }
@@ -1161,14 +1188,22 @@ query onChainTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: Sat
   }
 }
 
-query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: CentAmount!) {
+query onChainUsdTxFee(
+  $walletId: WalletId!
+  $address: OnChainAddress!
+  $amount: CentAmount!
+) {
   onChainUsdTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount
     __typename
   }
 }
 
-query onChainUsdTxFeeAsBtcDenominated($walletId: WalletId!, $address: OnChainAddress!, $amount: SatAmount!) {
+query onChainUsdTxFeeAsBtcDenominated(
+  $walletId: WalletId!
+  $address: OnChainAddress!
+  $amount: SatAmount!
+) {
   onChainUsdTxFeeAsBtcDenominated(
     walletId: $walletId
     address: $address
@@ -1471,7 +1506,13 @@ query totpRegistrationScreen {
   }
 }
 
-query transactionListForContact($username: Username!, $first: Int, $after: String, $last: Int, $before: String) {
+query transactionListForContact(
+  $username: Username!
+  $first: Int
+  $after: String
+  $last: Int
+  $before: String
+) {
   me {
     id
     contactByUsername(username: $username) {
@@ -1485,7 +1526,12 @@ query transactionListForContact($username: Username!, $first: Int, $after: Strin
   }
 }
 
-query transactionListForDefaultAccount($first: Int, $after: String, $last: Int, $before: String) {
+query transactionListForDefaultAccount(
+  $first: Int
+  $after: String
+  $last: Int
+  $before: String
+) {
   me {
     id
     defaultAccount {
@@ -1576,31 +1622,6 @@ subscription myLnUpdates {
         status
         __typename
       }
-      __typename
-    }
-    __typename
-  }
-}
-
-subscription realtimePriceWs($currency: DisplayCurrency!) {
-  realtimePrice(input: {currency: $currency}) {
-    errors {
-      message
-      __typename
-    }
-    realtimePrice {
-      timestamp
-      btcSatPrice {
-        base
-        offset
-        __typename
-      }
-      usdCentPrice {
-        base
-        offset
-        __typename
-      }
-      denominatorCurrency
       __typename
     }
     __typename

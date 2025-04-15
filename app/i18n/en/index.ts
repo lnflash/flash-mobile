@@ -80,6 +80,16 @@ const en: BaseTranslation = {
     notEnabled: "NFC is not enabled on this device.",
     noTag: "No tag found. Please ensure you are using a flashcard."
   },
+  Cashout: {
+    title: "Cashout",
+    amountToCashout: "% to cashout",
+    fee: "Fee",
+    total: "Total",
+    cashoutConfirmation: "Cashout Confirmation",
+    cashoutSuccess: "Cashout Success",
+    cashoutError: "Cashout Error",
+    cashoutErrorMessage: "Cashout failed - Please contact the administrator.",
+  },
   ConversionDetailsScreen: {
     title: "Swap",
     percentageToConvert: "% to convert",
@@ -531,6 +541,7 @@ const en: BaseTranslation = {
     updateAvailable: "An update is available.\nTap to update now",
     useLightning: "We use the Lightning Network.",
     myAccounts: "My Accounts",
+    myBusinessAccounts: "My Business Accounts",
     refundableWarning: "Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.",
     refundables: "Refundables",
 		cash: "Cash",

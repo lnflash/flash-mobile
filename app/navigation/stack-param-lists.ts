@@ -130,6 +130,7 @@ export type RootStackParamList = {
   BackupShowSeedPhrase: undefined
   ImportWallet: { insideApp?: boolean }
   ImportWalletOptions: { insideApp?: boolean } | undefined
+  CashoutDetails: undefined
   RefundTransactionList: undefined
   RefundDestination: { swapAddress: string; amount: number }
   RefundConfirmation: {

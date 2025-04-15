@@ -7,8 +7,12 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { useHasPromptedSetDefaultAccountQuery } from "@app/graphql/generated"
+import {
+  AccountLevel,
+  useHasPromptedSetDefaultAccountQuery,
+} from "@app/graphql/generated"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useLevel } from "@app/graphql/level-context"
 
 // components
 import { IconBtn } from "../buttons"
@@ -22,6 +26,8 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const isAuthed = useIsAuthed()
 
+  const styles = useStyles()
+  const { currentLevel } = useLevel()
   const { LL } = useI18nContext()
   const { persistentState } = usePersistentStateContext()
   const { data } = useHasPromptedSetDefaultAccountQuery()
@@ -60,6 +66,15 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
       title: LL.ConversionDetailsScreen.title(),
       target: "conversionDetails",
       icon: "swap",
+    })
+  }
+
+  if (currentLevel === AccountLevel.Two) {
+    buttons.pop()
+    buttons.push({
+      title: LL.Cashout.title(),
+      target: "CashoutDetails" as Target,
+      icon: "dollar" as IconNamesType,
     })
   }
 

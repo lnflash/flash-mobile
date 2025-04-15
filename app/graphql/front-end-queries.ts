@@ -116,6 +116,20 @@ gql`
     }
   }
 
+  query cashoutScreen {
+    me {
+      id
+      defaultAccount {
+        id
+        wallets {
+          id
+          balance
+          walletCurrency
+        }
+      }
+    }
+  }
+
   query walletCSVTransactions($walletIds: [WalletId!]!) {
     me {
       id

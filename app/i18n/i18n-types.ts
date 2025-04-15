@@ -267,6 +267,16 @@ type RootTranslation = {
 		 */
 		noTag: string
 	}
+	Cashout: {
+		/**
+		 * Swap
+		 */
+		title: string
+		/**
+		 * % to convert
+		 */
+		amountToCashout: string
+	}
 	ConversionDetailsScreen: {
 		/**
 		 * S​w​a​p
@@ -1642,6 +1652,10 @@ type RootTranslation = {
 		 * M​y​ ​A​c​c​o​u​n​t​s
 		 */
 		myAccounts: string
+		/**
+		 * M​y​ Business ​A​c​c​o​u​n​t​s
+		 */
+		myBusinessAccounts: string
 		/**
 		 * Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.
 		 */
@@ -4728,6 +4742,17 @@ export type TranslationFunctions = {
 		 */
 		noTag: () => LocalizedString
 	}
+	
+	Cashout: {
+		/**
+		 * Swap
+		 */
+		title: () => LocalizedString
+		/**
+		 * % to convert
+		 */
+		amountToCashout: () => LocalizedString
+	}
 	ConversionDetailsScreen: {
 		/**
 		 * Swap
@@ -6100,86 +6125,6 @@ export type TranslationFunctions = {
 		 * My Accounts
 		 */
 		myAccounts: () => LocalizedString
-		/**
-		 * Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.
-		 */
-		refundableWarning: () => LocalizedString
-		/**
-		 * Refundables
-		 */
-		refundables: () => LocalizedString
-		/**
-		 * Cash
-		 */
-		cash: () => LocalizedString
-		/**
-		 * Bitcoin
-		 */
-		bitcoin: () => LocalizedString
-		/**
-		 * Flashcard
-		 */
-		flashcard: () => LocalizedString
-		/**
-		 * Add Flashcard
-		 */
-		addFlashcard: () => LocalizedString
-		/**
-		 * Add your phone number
-		 */
-		upgradeTitle: () => LocalizedString
-		/**
-		 * Backup your cash wallet and increase transaction limits.
-		 */
-		upgradeDesc: () => LocalizedString
-		/**
-		 * Change to your local currency
-		 */
-		currencyTitle: () => LocalizedString
-		/**
-		 * Review our available currency list and select your currency.
-		 */
-		currencyDesc: () => LocalizedString
-		/**
-		 * Get a Flashcard
-		 */
-		flashcardTitle: () => LocalizedString
-		/**
-		 * Find a Flashpoint and get a Flashcard to use in daily life.
-		 */
-		flashcardDesc: () => LocalizedString
-		/**
-		 * Non-custodial wallets
-		 */
-		nonCustodialWalletTitle: () => LocalizedString
-		/**
-		 * Learn more about non-custodial wallets.
-		 */
-		nonCustodialWalletDesc: () => LocalizedString
-		/**
-		 * Email address
-		 */
-		emailTitle: () => LocalizedString
-		/**
-		 * Add your email address to secure your account and login using email address.
-		 */
-		emailDesc: () => LocalizedString
-		/**
-		 * Enable BTC wallet
-		 */
-		btcWalletTitle: () => LocalizedString
-		/**
-		 * Easily transfer larger amounts in Bitcoin.
-		 */
-		btcWalletDesc: () => LocalizedString
-		/**
-		 * Backup your BTC wallet
-		 */
-		backupTitle: () => LocalizedString
-		/**
-		 * Backup and secure your Bitcoin wallet using recovery phrase.
-		 */
-		backupDesc: () => LocalizedString
 	}
 	PinScreen: {
 		/**
