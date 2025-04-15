@@ -1,6 +1,7 @@
 import { DisplayCurrency, MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
 import { AuthenticationScreenPurpose, PinScreenPurpose } from "../utils/enum"
 import {
+  CashoutOffer,
   PhoneCodeChannelType,
   TransactionFragment,
   Wallet,
@@ -139,6 +140,8 @@ export type RootStackParamList = {
     fee: number
     feeType: string
   }
+  CashoutDetails: undefined
+  CashoutConfirmation?: { offer: CashoutOffer }
 }
 
 export type ChatStackParamList = {
