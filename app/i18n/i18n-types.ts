@@ -294,9 +294,13 @@ type RootTranslation = {
 		 */
 		receiveAmount: string
 		/**
-		 * "Flash Fee"
+		 * "Fee"
 		 */
 		fee: string
+		/**
+		 * "Cashout request initiated successfully."
+		 */
+		success: string
 	}
 	ConversionDetailsScreen: {
 		/**
@@ -4785,9 +4789,13 @@ export type TranslationFunctions = {
 		 */
 		receiveAmount: () => LocalizedString
 		/**
-		 * "Flash Fee"
+		 * "Fee"
 		 */
 		fee: () => LocalizedString
+		/**
+		 * "Cashout request initiated successfully."
+		 */
+		success: () => LocalizedString
 	}
 	ConversionDetailsScreen: {
 		/**

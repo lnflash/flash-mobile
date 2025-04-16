@@ -87,7 +87,8 @@ const en: BaseTranslation = {
     exchangeRate: "Exchange Rate",
     sendAmount: "Send Amount",
     receiveAmount: "Receive Amount",
-    fee: "Flash Fee"
+    fee: "Fee",
+    success: "Cashout request initiated successfully."
   },
   ConversionDetailsScreen: {
     title: "Swap",
