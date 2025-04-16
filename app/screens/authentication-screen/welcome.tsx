@@ -80,13 +80,9 @@ const useStyles = makeStyles(({ colors }) => ({
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 10,
   },
-  subtitle: {
-    fontSize: 18,
-    color: colors.primary3,
-    marginTop: 20,
-  },
   logo: {
     width: "30%",
+    height: "70%",
     resizeMode: "contain",
     shadowColor: colors.black, // Shadow color
     shadowOffset: { width: 0, height: 5 }, // Shadow position

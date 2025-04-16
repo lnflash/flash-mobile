@@ -20,7 +20,7 @@ import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
 export const AdvancedModeToggle: React.FC = () => {
   const { LL } = useI18nContext()
   const { isAtLeastLevelZero } = useLevel()
-  const { goBack } = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
   const { persistentState, updateState } = usePersistentStateContext()
   const { btcWallet } = useBreez()
@@ -64,17 +64,26 @@ export const AdvancedModeToggle: React.FC = () => {
     })
 
     if (isAdvanceMode) {
-      setAnimationVisible(true)
-      setTimeout(() => {
-        setAnimationVisible(false)
-        if (hasRecoveryPhrase) {
-          setAdvanceModalVisible(true)
-        } else {
-          goBack()
-        }
-      }, 5500)
+      if (!hasRecoveryPhrase) {
+        setAnimationVisible(true)
+        setTimeout(() => {
+          setAnimationVisible(false)
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "Primary" }],
+          })
+        }, 5500)
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Primary" }],
+        })
+      }
     } else {
-      goBack()
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Primary" }],
+      })
     }
   }
 
@@ -112,18 +121,25 @@ export const AdvancedModeToggle: React.FC = () => {
     }
   }
 
+  let leftIcon = isAdvanceMode ? "invert-mode-outline" : "invert-mode"
+  let title = isAdvanceMode
+    ? LL.SettingsScreen.beginnerMode()
+    : LL.SettingsScreen.advanceMode()
+  if (hasRecoveryPhrase) {
+    leftIcon = isAdvanceMode ? "eye" : "eye-off"
+    title = isAdvanceMode
+      ? LL.SettingsScreen.hideBtcAccount()
+      : LL.SettingsScreen.showBtcAccount()
+  }
+
   if (Platform.OS === "ios" && Number(Platform.Version) < 13) {
     return null
   } else {
     return (
       <>
         <SettingsRow
-          title={
-            isAdvanceMode
-              ? LL.SettingsScreen.beginnerMode()
-              : LL.SettingsScreen.advanceMode()
-          }
-          leftIcon={isAdvanceMode ? "invert-mode-outline" : "invert-mode"}
+          title={title}
+          leftIcon={leftIcon}
           action={toggleAdvanceMode}
           rightIcon={"sync-outline"}
         />

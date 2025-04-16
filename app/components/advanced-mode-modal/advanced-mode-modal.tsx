@@ -25,8 +25,8 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 const { height } = Dimensions.get("screen")
 
-const DOCS_LINK = "https://docs.getflash.io" // TODO: Need to update link to be the correct documentation for non-custodial wallets.
-const FLASH_TERMS_LINK = "https://getflash.io/terms.html" // TODO: Need to update link to be the correct terms and conditions for Flash.
+const DOCS_LINK =
+  "https://flash-docs-msp2z.ondigitalocean.app/en/guides/non-custodial-wallets"
 
 type Props = {
   hasRecoveryPhrase: boolean
@@ -125,7 +125,7 @@ export const AdvancedModeModal: React.FC<Props> = ({
                     : LL.AdvancedModeModal.createWallet()
                 }
                 onPress={hasRecoveryPhrase ? acknowledgeModal : onCreateNewWallet}
-                btnStyle={{ marginBottom: bottom + 20 }}
+                btnStyle={{ marginBottom: bottom || 10 }}
               />
             </View>
           </ScrollView>
@@ -137,13 +137,15 @@ export const AdvancedModeModal: React.FC<Props> = ({
 
 const useStyles = makeStyles(({ colors, mode }) => ({
   backdrop: {
-    paddingTop: height / 7,
+    flex: 1,
+    justifyContent: "flex-end",
     backgroundColor: mode === "dark" ? "rgba(57,57,57,.7)" : "rgba(0,0,0,.5)",
   },
   container: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    maxHeight: "100%",
   },
   close: {
     alignSelf: "flex-end",
@@ -161,7 +163,6 @@ const useStyles = makeStyles(({ colors, mode }) => ({
   },
   body: {
     marginHorizontal: 20,
-    marginBottom: 150,
   },
   text: {
     marginBottom: 16,

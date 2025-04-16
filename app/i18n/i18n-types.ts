@@ -2652,6 +2652,14 @@ type RootTranslation = {
 		 * K​e​y​s​ ​m​a​n​a​g​e​m​e​n​t
 		 */
 		keysManagement: string
+		/**
+		 * Show Bitcoin account
+		 */
+		showBtcAccount: string
+		/**
+		 * Hide Bitcoin account
+		 */
+		hideBtcAccount: string
 	}
 	NotificationSettingsScreen: {
 		/**
@@ -7072,6 +7080,14 @@ export type TranslationFunctions = {
 		 * Keys management
 		 */
 		keysManagement: () => LocalizedString
+		/**
+		 * Show Bitcoin account
+		 */
+		showBtcAccount: () => LocalizedString
+		/**
+		 * Hide Bitcoin account
+		 */
+		hideBtcAccount: () => LocalizedString
 	}
 	NotificationSettingsScreen: {
 		/**
