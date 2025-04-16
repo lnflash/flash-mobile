@@ -141,7 +141,8 @@ export type RootStackParamList = {
     feeType: string
   }
   CashoutDetails: undefined
-  CashoutConfirmation?: { offer: CashoutOffer }
+  CashoutConfirmation: { offer: CashoutOffer }
+  CashoutSuccess: { receiveUsd: string; receiveJmd: string }
 }
 
 export type ChatStackParamList = {
