@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { ScrollView } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { Text, useTheme } from "@rneui/themed"
@@ -11,6 +11,7 @@ import { CashoutCard, CashoutFromWallet } from "@app/components/cashout-flow"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { useActivityIndicator, useDisplayCurrency } from "@app/hooks"
 import { useCashoutScreenQuery, useInitiateCashoutMutation } from "@app/graphql/generated"
 
 //utils
@@ -25,6 +26,10 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
+  const { formatMoneyAmount } = useDisplayCurrency()
+  const { toggleActivityIndicator } = useActivityIndicator()
+
+  const [errorMsg, setErrorMsg] = useState<string>()
 
   const [initiateCashout] = useInitiateCashoutMutation()
 
@@ -36,19 +41,63 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
 
-  const onConfirm = () => {}
+  const {
+    walletId,
+    offerId,
+    expiresAt,
+    exchangeRate,
+    send,
+    receiveUsd,
+    receiveJmd,
+    flashFee,
+  } = route.params?.offer
+
+  const onConfirm = async () => {
+    toggleActivityIndicator(true)
+    const res = await initiateCashout({ variables: { input: { walletId, offerId } } })
+    console.log("RESPONSE>>>>>>>>>>>>", res)
+    if (res.data?.initiateCashout.success) {
+      navigation.navigate("CashoutSuccess", {
+        receiveUsd: formattedReceiveUsdAmount,
+        receiveJmd: `J$${receiveJmd}`,
+      })
+    } else {
+      setErrorMsg(res.data?.initiateCashout.errors[0].message)
+    }
+    toggleActivityIndicator(false)
+  }
+
+  const formattedSendAmount = formatMoneyAmount({
+    moneyAmount: toUsdMoneyAmount(send ?? NaN),
+  })
+
+  const formattedReceiveUsdAmount = formatMoneyAmount({
+    moneyAmount: toUsdMoneyAmount(receiveUsd ?? NaN),
+  })
+
+  const formattedFeeAmount = formatMoneyAmount({
+    moneyAmount: toUsdMoneyAmount(flashFee ?? NaN),
+  })
 
   return (
     <Screen>
       <ScrollView style={{ padding: 20 }}>
         <Text type="caption" color={colors.placeholder} style={styles.valid}>
-          {LL.Cashout.valid({ time: moment(1744716526481).fromNow(true) })}
+          {LL.Cashout.valid({ time: moment(expiresAt).fromNow(true) })}
         </Text>
         <CashoutFromWallet usdBalance={usdBalance} />
-        <CashoutCard title={LL.Cashout.exchangeRate()} detail="$84500/J$43212" />
-        <CashoutCard title={LL.Cashout.sendAmount()} detail="$0.99" />
-        <CashoutCard title={LL.Cashout.receiveAmount()} detail="$0.90/J$10" />
-        <CashoutCard title={LL.Cashout.fee()} detail="$0.10" />
+        <CashoutCard title={LL.Cashout.exchangeRate()} detail={`$1/J$${exchangeRate}`} />
+        <CashoutCard title={LL.Cashout.sendAmount()} detail={formattedSendAmount} />
+        <CashoutCard
+          title={LL.Cashout.receiveAmount()}
+          detail={`${formattedReceiveUsdAmount} (J$${receiveJmd})`}
+        />
+        <CashoutCard title={LL.Cashout.fee()} detail={formattedFeeAmount} />
+        {!!errorMsg && (
+          <Text type="bm" color={colors.red}>
+            {errorMsg}
+          </Text>
+        )}
       </ScrollView>
       <PrimaryBtn
         label={LL.common.confirm()}

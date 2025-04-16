@@ -57,8 +57,6 @@ const CashoutDetails = ({ navigation }: Props) => {
     settlementSendAmount.amount > 0 && settlementSendAmount.amount <= usdBalance.amount
 
   const onNext = async () => {
-    navigation.navigate("CashoutConfirmation")
-    return
     if (usdWallet) {
       toggleActivityIndicator(true)
       const res = await requestCashout({
