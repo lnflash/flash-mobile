@@ -24,7 +24,7 @@ import { useChatContext } from "./chatContext"
 import { useFocusEffect } from "@react-navigation/native"
 import { useAppConfig } from "@app/hooks"
 import { useAppSelector } from "@app/store/redux"
-import { ImportNsecModal } from "./import-nsec"
+import { ImportNsecModal } from "../../components/import-nsec/import-nsec-modal"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
 
@@ -41,7 +41,15 @@ export const NIP17Chat: React.FC = () => {
     fetchPolicy: "network-only",
     errorPolicy: "all",
   })
-  const { rumors, poolRef, addEventToProfiles, profileMap, resetChat } = useChatContext()
+  const {
+    rumors,
+    poolRef,
+    addEventToProfiles,
+    profileMap,
+    resetChat,
+    activeSubscription,
+    initializeChat,
+  } = useChatContext()
   const [searchText, setSearchText] = useState("")
   const [refreshing, setRefreshing] = useState(false)
   const [initialized, setInitialized] = useState(false)
@@ -91,6 +99,7 @@ export const NIP17Chat: React.FC = () => {
         console.log("Account Info mismatch", accountNpub, storedNpub)
         setShowImportModal(true)
       }
+      if (!activeSubscription) initializeChat()
       setInitialized(true)
     }
     if (!initialized && poolRef) initialize()
@@ -102,7 +111,6 @@ export const NIP17Chat: React.FC = () => {
       async function checkSecretKey() {
         let secretKeyString = await fetchSecretFromLocalStorage()
         if (!secretKeyString) {
-          console.log("No secret on focus effect", secretKeyString)
           setShowImportModal(true)
           return
         }
@@ -125,7 +133,6 @@ export const NIP17Chat: React.FC = () => {
     async (newSearchText: string) => {
       const nip05Matching = async (alias: string) => {
         let nostrUser = await nip05.queryProfile(alias.toLocaleLowerCase())
-        console.log("nostr user for", alias, nostrUser)
         if (nostrUser) {
           let nostrProfile = profileMap?.get(nostrUser.pubkey)
           let userPubkey = getPublicKey(privateKey!)
@@ -170,7 +177,6 @@ export const NIP17Chat: React.FC = () => {
       } else if (!newSearchText.includes("@")) {
         let modifiedSearchText =
           newSearchText + "@" + appConfig.galoyInstance.lnAddressHostname
-        console.log("Searching for", modifiedSearchText)
         if (await nip05Matching(modifiedSearchText)) {
           setRefreshing(false)
           return

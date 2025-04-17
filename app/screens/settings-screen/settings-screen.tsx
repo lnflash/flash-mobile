@@ -63,7 +63,7 @@ const items = {
   loginMethods: [EmailSetting, PhoneSetting],
   waysToGetPaid: [AccountLNAddress, AccountPOS, AccountStaticQR],
   reports: [GenerateReportsSetting],
-  wallet: [NostrSecret, BackupWallet, ImportWallet],
+  wallet: [BackupWallet, ImportWallet],
   preferences: [
     NotificationSetting,
     DefaultWallet,
@@ -71,7 +71,7 @@ const items = {
     CurrencySetting,
     ThemeSetting,
   ],
-  chats: [ChatSetting],
+  experimental: [ChatSetting, NostrSecret],
   securityAndPrivacy: [
     // TotpSetting,
     OnDeviceSecuritySetting,
@@ -106,7 +106,7 @@ export const SettingsScreen: React.FC = () => {
         {currentLevel === AccountLevel.Two && (
           <SettingsGroup name="Reports" items={items.reports} />
         )}
-        <SettingsGroup name="Chat(beta)" items={items.chats} />
+        <SettingsGroup name="Experimental" items={items.experimental} />
         <SettingsGroup name={LL.SettingsScreen.keysManagement()} items={items.wallet} />
         <SettingsGroup name={LL.common.preferences()} items={items.preferences} />
         <SettingsGroup
