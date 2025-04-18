@@ -81,14 +81,14 @@ const en: BaseTranslation = {
     noTag: "No tag found. Please ensure you are using a flashcard."
   },
   Cashout: {
-    title: "Cashout",
-    percentageToCashout: "% to cashout",
+    title: "Settle",
+    percentageToCashout: "% to settle",
     valid: "Valid for {time: string}",
     exchangeRate: "Exchange Rate",
     sendAmount: "Send Amount",
     receiveAmount: "Receive Amount",
     fee: "Fee",
-    success: "Cashout request initiated successfully."
+    success: "Settlement request initiated successfully."
   },
   ConversionDetailsScreen: {
     title: "Swap",
