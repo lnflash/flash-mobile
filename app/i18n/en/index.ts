@@ -80,6 +80,16 @@ const en: BaseTranslation = {
     notEnabled: "NFC is not enabled on this device.",
     noTag: "No tag found. Please ensure you are using a flashcard."
   },
+  Cashout: {
+    title: "Settle",
+    percentageToCashout: "% to settle",
+    valid: "Valid for {time: string}",
+    exchangeRate: "Exchange Rate",
+    sendAmount: "Send Amount",
+    receiveAmount: "Receive Amount",
+    fee: "Fee",
+    success: "Settlement request initiated successfully."
+  },
   ConversionDetailsScreen: {
     title: "Swap",
     percentageToConvert: "% to convert",

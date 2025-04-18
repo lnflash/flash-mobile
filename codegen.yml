@@ -67,3 +67,4 @@ generates:
         Lnurl: "string"
         npub: "string"
         FractionalCentAmount: "number"
+        JmdAmount: "string"
