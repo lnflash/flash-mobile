@@ -142,7 +142,7 @@ export type RootStackParamList = {
   }
   CashoutDetails: undefined
   CashoutConfirmation: { offer: CashoutOffer }
-  CashoutSuccess: { receiveUsd: string; receiveJmd: string }
+  CashoutSuccess: undefined
 }
 
 export type ChatStackParamList = {

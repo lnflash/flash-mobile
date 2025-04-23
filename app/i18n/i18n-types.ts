@@ -4796,6 +4796,14 @@ export type TranslationFunctions = {
 		 * "Cashout request initiated successfully."
 		 */
 		success: () => LocalizedString
+		/**
+		 * "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:
+			- Weekdays after 2:00pm
+			- Fridays & weekends
+			Transactions completed after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days."
+		 */
+		disclaimer: () => LocalizedString
+
 	}
 	ConversionDetailsScreen: {
 		/**

@@ -9,15 +9,10 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 import { PrimaryBtn } from "@app/components/buttons"
 import { Screen } from "@app/components/screen"
-import {
-  SuccessIconAnimation,
-  SuccessTextAnimation,
-} from "@app/components/success-animation"
 
 type Props = StackScreenProps<RootStackParamList, "CashoutSuccess">
 
-const CashoutSuccess: React.FC<Props> = ({ navigation, route }) => {
-  const { receiveUsd, receiveJmd } = route.params
+const CashoutSuccess: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const styles = useStyles()
@@ -32,23 +27,11 @@ const CashoutSuccess: React.FC<Props> = ({ navigation, route }) => {
   return (
     <Screen backgroundColor={colors.accent02}>
       <View style={styles.container}>
-        <SuccessIconAnimation>
-          <GaloyIcon name={"send-success"} size={128} />
-        </SuccessIconAnimation>
-        <SuccessTextAnimation>
-          <Text type="h01" style={[styles.successText, { marginTop: 32 }]}>
-            {LL.Cashout.success()}
-          </Text>
-          <Text type="h03" style={styles.successText}>
-            {receiveUsd}
-          </Text>
-          <Text
-            type="h01"
-            style={[styles.successText, { color: "rgba(255,255,255,.7)" }]}
-          >
-            {receiveJmd}
-          </Text>
-        </SuccessTextAnimation>
+        <GaloyIcon name={"send-success"} size={128} />
+        <Text type="h01" style={styles.successText}>
+          {LL.Cashout.success()}
+        </Text>
+        <Text style={styles.disclaimer}>{LL.Cashout.disclaimer()}</Text>
       </View>
       <PrimaryBtn
         label="Done"
@@ -71,8 +54,12 @@ const useStyles = makeStyles(() => ({
   successText: {
     textAlign: "center",
     color: "#fff",
-    marginBottom: 8,
+    marginVertical: 35,
     marginHorizontal: 30,
+  },
+  disclaimer: {
+    marginHorizontal: 20,
+    color: "rgba(255,255,255,.7)",
   },
   buttonContainer: {
     marginBottom: 20,

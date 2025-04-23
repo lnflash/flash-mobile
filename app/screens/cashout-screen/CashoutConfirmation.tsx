@@ -57,10 +57,7 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
     const res = await initiateCashout({ variables: { input: { walletId, offerId } } })
     console.log("RESPONSE>>>>>>>>>>>>", res)
     if (res.data?.initiateCashout.success) {
-      navigation.navigate("CashoutSuccess", {
-        receiveUsd: formattedReceiveUsdAmount,
-        receiveJmd: `J$${receiveJmd}`,
-      })
+      navigation.navigate("CashoutSuccess")
     } else {
       setErrorMsg(res.data?.initiateCashout.errors[0].message)
     }
