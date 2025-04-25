@@ -116,6 +116,11 @@ import CardInactive from "@app/assets/icons/card-inactive.svg"
 import MapActive from "@app/assets/icons/map-active.svg"
 import MapInactive from "@app/assets/icons/map-inactive.svg"
 import ScanQR from "@app/assets/icons/scan-qr.svg"
+import {
+  CashoutDetails,
+  CashoutConfirmation,
+  CashoutSuccess,
+} from "@app/screens/cashout-screen"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -556,6 +561,21 @@ export const RootStack = () => {
         name="Card"
         component={CardScreen}
         options={{ title: "", headerStyle: { backgroundColor: colors.background } }}
+      />
+      <RootNavigator.Screen
+        name="CashoutDetails"
+        component={CashoutDetails}
+        options={{ title: LL.Cashout.title() }}
+      />
+      <RootNavigator.Screen
+        name="CashoutConfirmation"
+        component={CashoutConfirmation}
+        options={{ title: LL.Cashout.title() }}
+      />
+      <RootNavigator.Screen
+        name="CashoutSuccess"
+        component={CashoutSuccess}
+        options={{ headerShown: false }}
       />
     </RootNavigator.Navigator>
   )
