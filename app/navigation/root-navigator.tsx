@@ -121,6 +121,11 @@ import {
   CashoutConfirmation,
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
+import {
+  PersonalInformation,
+  BusinessInformation,
+  BankInformation,
+} from "@app/screens/business-account-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -576,6 +581,21 @@ export const RootStack = () => {
         name="CashoutSuccess"
         component={CashoutSuccess}
         options={{ headerShown: false }}
+      />
+      <RootNavigator.Screen
+        name="PersonalInformation"
+        component={PersonalInformation}
+        options={{ title: "Personal Information" }}
+      />
+      <RootNavigator.Screen
+        name="BusinessInformation"
+        component={BusinessInformation}
+        options={{ title: "Business Information" }}
+      />
+      <RootNavigator.Screen
+        name="BankInformation"
+        component={BankInformation}
+        options={{ title: "Banking Information" }}
       />
     </RootNavigator.Navigator>
   )
