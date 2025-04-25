@@ -125,7 +125,7 @@ import {
   PersonalInformation,
   BusinessInformation,
   BankInformation,
-} from "@app/screens/business-account-flow"
+} from "@app/screens/account-upgrade-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {

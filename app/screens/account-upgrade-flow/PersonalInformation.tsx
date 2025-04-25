@@ -7,11 +7,11 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
-import { InputField, PhoneNumber } from "@app/components/business-account-flow"
+import { InputField, PhoneNumber } from "@app/components/account-upgrade-flow"
 
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
-import { setPersonalInfo } from "@app/store/redux/slices/businessAccountSlice"
+import { setPersonalInfo } from "@app/store/redux/slices/accountUpgradeSlice"
 
 type Props = StackScreenProps<RootStackParamList, "PersonalInformation">
 
@@ -20,7 +20,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
 
   const dispatch = useAppDispatch()
   const { fullName, countryCode, phoneNumber, email } = useAppSelector(
-    (state) => state.businessAccount.personalInfo,
+    (state) => state.accountUpgrade.personalInfo,
   )
 
   const onPressNext = () => {
