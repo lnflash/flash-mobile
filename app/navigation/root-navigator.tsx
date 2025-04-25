@@ -118,6 +118,11 @@ import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings
 import ContactDetailsScreen from "@app/screens/chat/contactDetailsScreen"
 import { SupportGroupChatScreen } from "@app/screens/chat/GroupChat/SupportGroupChat"
 import Contacts from "@app/screens/chat/contacts"
+import {
+  PersonalInformation,
+  BusinessInformation,
+  BankInformation,
+} from "@app/screens/business-account-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -585,6 +590,21 @@ export const RootStack = () => {
         name="Nip29GroupChat"
         component={SupportGroupChatScreen}
         options={{ title: "Group Chat" }}
+      />
+      <RootNavigator.Screen
+        name="PersonalInformation"
+        component={PersonalInformation}
+        options={{ title: "Personal Information" }}
+      />
+      <RootNavigator.Screen
+        name="BusinessInformation"
+        component={BusinessInformation}
+        options={{ title: "Business Information" }}
+      />
+      <RootNavigator.Screen
+        name="BankInformation"
+        component={BankInformation}
+        options={{ title: "Banking Information" }}
       />
     </RootNavigator.Navigator>
   )

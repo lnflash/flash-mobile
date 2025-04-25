@@ -154,6 +154,9 @@ export type RootStackParamList = {
   Contacts: { userPrivateKey: string }
   SignInViaQRCode: undefined
   Nip29GroupChat: { groupId: string }
+  PersonalInformation: undefined
+  BusinessInformation: undefined
+  BankInformation: undefined
 }
 
 export type ChatStackParamList = {
