@@ -7,11 +7,11 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
-import { InputField } from "@app/components/business-account-flow"
+import { InputField } from "@app/components/account-upgrade-flow"
 
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
-import { setBusinessInfo } from "@app/store/redux/slices/businessAccountSlice"
+import { setBusinessInfo } from "@app/store/redux/slices/accountUpgradeSlice"
 
 type Props = StackScreenProps<RootStackParamList, "BusinessInformation">
 
@@ -20,7 +20,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
 
   const dispatch = useAppDispatch()
   const { businessName, businessAddress } = useAppSelector(
-    (state) => state.businessAccount.businessInfo,
+    (state) => state.accountUpgrade.businessInfo,
   )
 
   const onPressNext = () => {

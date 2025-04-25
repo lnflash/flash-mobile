@@ -7,13 +7,13 @@ import {
   DropDownField,
   InputField,
   PhotoUploadField,
-} from "@app/components/business-account-flow"
+} from "@app/components/account-upgrade-flow"
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
-import { setBankInfo } from "@app/store/redux/slices/businessAccountSlice"
+import { setBankInfo } from "@app/store/redux/slices/accountUpgradeSlice"
 
 const accountTypes = [
   { label: "Select account type", value: null },
@@ -36,7 +36,7 @@ const BankInformation = () => {
 
   const dispatch = useAppDispatch()
   const { bankName, bankBranch, accountType, currency, accountNumber, document } =
-    useAppSelector((state) => state.businessAccount.bankInfo)
+    useAppSelector((state) => state.accountUpgrade.bankInfo)
 
   const onPressNext = () => {}
 

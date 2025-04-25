@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit"
 
-interface BusinessAccountSlice {
+interface AccountUpgradeSlice {
   personalInfo: {
     fullName: string
     countryCode: string
@@ -23,7 +23,7 @@ interface BusinessAccountSlice {
   error: string
 }
 
-const initialState: BusinessAccountSlice = {
+const initialState: AccountUpgradeSlice = {
   personalInfo: {
     fullName: null,
     countryCode: "JM",
@@ -46,8 +46,8 @@ const initialState: BusinessAccountSlice = {
   error: "",
 }
 
-export const businessAccountSlice = createSlice({
-  name: "businessAccount",
+export const accountUpgradeSlice = createSlice({
+  name: "accountUpgrade",
   initialState,
   reducers: {
     setPersonalInfo: (state, action) => ({
@@ -83,5 +83,5 @@ export const {
   setLoading,
   setError,
   resetUserSlice,
-} = businessAccountSlice.actions
-export default businessAccountSlice.reducer
+} = accountUpgradeSlice.actions
+export default accountUpgradeSlice.reducer
