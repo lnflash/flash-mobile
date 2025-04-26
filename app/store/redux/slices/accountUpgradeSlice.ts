@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit"
 
 interface AccountUpgradeSlice {
+  accountType: "personal" | "pro" | "merchant"
   personalInfo: {
     fullName: string
     countryCode: string
@@ -24,6 +25,7 @@ interface AccountUpgradeSlice {
 }
 
 const initialState: AccountUpgradeSlice = {
+  accountType: null,
   personalInfo: {
     fullName: null,
     countryCode: "JM",
@@ -50,6 +52,10 @@ export const accountUpgradeSlice = createSlice({
   name: "accountUpgrade",
   initialState,
   reducers: {
+    setAccountUpgrade: (state, action) => ({
+      ...state,
+      ...action.payload,
+    }),
     setPersonalInfo: (state, action) => ({
       ...state,
       personalInfo: { ...state.personalInfo, ...action.payload },
@@ -77,6 +83,7 @@ export const accountUpgradeSlice = createSlice({
 })
 
 export const {
+  setAccountUpgrade,
   setPersonalInfo,
   setBusinessInfo,
   setBankInfo,
