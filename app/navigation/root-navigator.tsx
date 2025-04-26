@@ -122,6 +122,7 @@ import {
   PersonalInformation,
   BusinessInformation,
   BankInformation,
+  AccountType,
 } from "@app/screens/account-upgrade-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
@@ -590,6 +591,11 @@ export const RootStack = () => {
         name="Nip29GroupChat"
         component={SupportGroupChatScreen}
         options={{ title: "Group Chat" }}
+      />
+      <RootNavigator.Screen
+        name="AccountType"
+        component={AccountType}
+        options={{ title: "Account Type" }}
       />
       <RootNavigator.Screen
         name="PersonalInformation"
