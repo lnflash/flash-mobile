@@ -1702,7 +1702,7 @@ type RootTranslation = {
 		 */
 		addFlashcard: string
 		/**
-		 * Add your phone number
+		 * Upgrade your account
 		 */
 		upgradeTitle: string
 		/**
@@ -6210,7 +6210,7 @@ export type TranslationFunctions = {
 		 */
 		addFlashcard: () => LocalizedString
 		/**
-		 * Add your phone number
+		 * Upgrade your account
 		 */
 		upgradeTitle: () => LocalizedString
 		/**
