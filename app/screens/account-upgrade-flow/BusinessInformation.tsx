@@ -7,7 +7,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
-import { InputField } from "@app/components/account-upgrade-flow"
+import { AddressField, InputField } from "@app/components/account-upgrade-flow"
 
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
@@ -32,16 +32,13 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
       <View style={styles.container}>
         <InputField
           label="Business Name"
-          placeholder="Optional for merchants"
+          placeholder={"Your business name"}
           value={businessName}
           onChangeText={(val) => dispatch(setBusinessInfo({ businessName: val }))}
         />
-
-        <InputField
+        <AddressField
           label="Business address"
-          placeholder="Optional for merchants"
-          value={businessAddress}
-          onChangeText={(val) => dispatch(setBusinessInfo({ businessAddress: val }))}
+          placeholder={"Enter your business address"}
         />
       </View>
       <PrimaryBtn label="Next" btnStyle={styles.btn} onPress={onPressNext} />
