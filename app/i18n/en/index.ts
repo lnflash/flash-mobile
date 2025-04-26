@@ -550,7 +550,7 @@ const en: BaseTranslation = {
 		bitcoin: "Bitcoin",
 		flashcard: "Flashcard",
 		addFlashcard: "Add Flashcard",
-    upgradeTitle: "Add your phone number",
+    upgradeTitle: "Upgrade your account",
     upgradeDesc: "Backup your cash wallet and increase transaction limits.",
     currencyTitle:"Change to your local currency",
     currencyDesc: "Review our available currency list and select your currency.",
