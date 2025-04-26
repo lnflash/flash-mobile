@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { TextInput, View } from "react-native"
 import { makeStyles, useTheme, Text } from "@rneui/themed"
 import { TouchableOpacity } from "react-native-gesture-handler"
@@ -32,9 +32,11 @@ const PhoneNumber: React.FC<Props> = ({
   setCountryCode,
 }) => {
   const styles = useStyles()
-  const { mode } = useTheme().theme
+  const { mode, colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { supportedCountries } = useRequestPhoneCodeLogin()
+
+  const [isFocused, setIsFocused] = useState(false)
 
   const renderCountryCode = ({ countryCode, onOpen }: FlagButtonProps) => {
     return (
@@ -68,11 +70,13 @@ const PhoneNumber: React.FC<Props> = ({
         />
         <TextInput
           placeholder={"123-456-7890"}
-          style={styles.input}
+          style={[styles.input, isFocused ? { borderColor: colors.primary } : {}]}
           textContentType="telephoneNumber"
           keyboardType="phone-pad"
           value={phoneNumber}
           onChangeText={setPhoneNumber}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
         />
       </View>
     </View>
@@ -89,6 +93,8 @@ const useStyles = makeStyles(({ colors }) => ({
   countryPicker: {
     padding: 14.5,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.grey4,
     backgroundColor: colors.grey5,
     flexDirection: "row",
     alignItems: "center",
@@ -98,6 +104,8 @@ const useStyles = makeStyles(({ colors }) => ({
     padding: 15,
     marginBottom: 15,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.grey4,
     backgroundColor: colors.grey5,
     fontSize: 16,
     fontFamily: "Sora-Regular",

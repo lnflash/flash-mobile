@@ -1,24 +1,42 @@
-import React from "react"
-import { makeStyles, Text } from "@rneui/themed"
+import React, { useState } from "react"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { TextInput, TextInputProps, View } from "react-native"
 
 type Props = {
   label: string
+  isOptional?: boolean
 } & TextInputProps
 
-const InputField: React.FC<Props> = ({ label, placeholder, value, onChangeText }) => {
+const InputField: React.FC<Props> = ({
+  label,
+  isOptional,
+  placeholder,
+  value,
+  onChangeText,
+}) => {
   const styles = useStyles()
+  const { colors } = useTheme().theme
+
+  const [isFocused, setIsFocused] = useState(false)
 
   return (
     <View>
       <Text type="bl" bold>
         {label}
+        {isOptional && (
+          <Text type="caption" color={colors.grey2}>
+            {" "}
+            (Optional)
+          </Text>
+        )}
       </Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, isFocused ? { borderColor: colors.primary } : {}]}
         placeholder={placeholder}
         value={value}
         onChangeText={onChangeText}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
       />
     </View>
   )
@@ -32,6 +50,8 @@ const useStyles = makeStyles(({ colors }) => ({
     marginTop: 5,
     marginBottom: 15,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.grey4,
     backgroundColor: colors.grey5,
     fontSize: 16,
     fontFamily: "Sora-Regular",
