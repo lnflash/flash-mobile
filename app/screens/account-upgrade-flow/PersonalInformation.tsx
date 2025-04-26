@@ -44,6 +44,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
         />
         <InputField
           label="Email Address"
+          isOptional={true}
           placeholder="your.email@example.com"
           value={email}
           onChangeText={(val) => dispatch(setPersonalInfo({ email: val }))}
