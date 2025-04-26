@@ -15,7 +15,6 @@ import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
 import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 
 // components
-import { UpgradeAccountModal } from "../upgrade-account-modal"
 import { QuickStartAdvancedMode } from "../advanced-mode-modal"
 
 // hooks
@@ -49,7 +48,6 @@ const QuickStart = () => {
 
   const ref = useRef(null)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
-  const [upgradeAccountModalVisible, setUpgradeAccountModalVisible] = useState(false)
   const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
 
   const { data, loading } = useHomeAuthedQuery()
@@ -69,7 +67,7 @@ const QuickStart = () => {
       title: LL.HomeScreen.upgradeTitle(),
       description: LL.HomeScreen.upgradeDesc(),
       image: Account,
-      onPress: () => setUpgradeAccountModalVisible(true),
+      onPress: () => navigation.navigate("AccountType"),
     },
     {
       type: "currency",
@@ -124,7 +122,7 @@ const QuickStart = () => {
     data?.me?.defaultAccount.level !== AccountLevel.Zero ||
     persistentState?.closedQuickStartTypes?.includes("upgrade")
   ) {
-    carouselData = carouselData.filter((el) => el.type !== "upgrade")
+    // carouselData = carouselData.filter((el) => el.type !== "upgrade")
   }
   if (
     persistentState.currencyChanged ||
@@ -206,10 +204,6 @@ const QuickStart = () => {
           mode="parallax"
           loop={carouselData.length !== 1}
           containerStyle={{ marginTop: 10 }}
-        />
-        <UpgradeAccountModal
-          isVisible={upgradeAccountModalVisible}
-          closeModal={() => setUpgradeAccountModalVisible(false)}
         />
         <QuickStartAdvancedMode
           hasRecoveryPhrase={hasRecoveryPhrase}
