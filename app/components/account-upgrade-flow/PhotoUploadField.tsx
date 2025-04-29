@@ -1,16 +1,62 @@
-import React from "react"
-import { Alert, TouchableOpacity, View } from "react-native"
+import React, { useCallback, useEffect, useRef, useState } from "react"
+import { Alert, Linking, Modal, TouchableOpacity, View } from "react-native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { launchImageLibrary } from "react-native-image-picker"
+import {
+  Camera,
+  CameraRuntimeError,
+  useCameraDevice,
+  useCameraPermission,
+} from "react-native-vision-camera"
+
+// component
+import { Screen } from "../screen"
+import { PrimaryBtn } from "../buttons"
+
+// hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+
+// assets
+import PhotoAdd from "@app/assets/icons/photo-add.svg"
+
+// utils
 import { toastShow } from "@app/utils/toast"
 
 type Props = {
   label: string
+  errorMsg?: string
 }
 
-const PhotoUploadField: React.FC<Props> = ({ label }) => {
+const PhotoUploadField: React.FC<Props> = ({ label, errorMsg }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
+  const { top, bottom } = useSafeAreaInsets()
+
+  const { hasPermission, requestPermission } = useCameraPermission()
+  const device = useCameraDevice("back", {
+    physicalDevices: ["wide-angle-camera", "telephoto-camera"],
+  })
+
+  const camera = useRef<Camera>(null)
+  const [isCameraVisible, setIsCameraVisible] = useState(false)
+
+  useEffect(() => {
+    if (!hasPermission) {
+      requestPermission()
+    }
+  }, [hasPermission, requestPermission])
+
+  const openSettings = () => {
+    Linking.openSettings().catch(() => {
+      Alert.alert(LL.ScanningQRCodeScreen.unableToOpenSettings())
+    })
+  }
+
+  const onError = useCallback((error: CameraRuntimeError) => {
+    console.error(error)
+  }, [])
 
   const showImagePicker = async () => {
     try {
@@ -21,7 +67,9 @@ const PhotoUploadField: React.FC<Props> = ({ label }) => {
             translations.ScanningQRCodeScreen.imageLibraryPermissionsNotGranted(),
         })
       }
-      console.log(">>>>>>>>>>>>>>", result)
+      if (result.assets && result.assets.length > 0 && result.assets[0].uri) {
+        console.log(">>>>>>>>>>>>>>>>", result)
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         Alert.alert(err.toString())
@@ -29,14 +77,81 @@ const PhotoUploadField: React.FC<Props> = ({ label }) => {
     }
   }
 
+  const takePhoto = async () => {
+    const photo = await camera?.current?.takePhoto()
+    console.log(">>>>>>>>>>>>>>>", photo)
+  }
+
   return (
-    <View>
+    <View style={styles.wrapper}>
       <Text type="bl" bold>
         {label}
       </Text>
-      <TouchableOpacity style={styles.container} onPress={showImagePicker}>
+      <TouchableOpacity style={styles.container} onPress={() => setIsCameraVisible(true)}>
         <Icon name={"images"} size={40} color={colors.grey2} type="ionicon" />
       </TouchableOpacity>
+      {!!errorMsg && (
+        <Text type="caption" color={colors.red}>
+          {errorMsg}
+        </Text>
+      )}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isCameraVisible}
+        onRequestClose={() => setIsCameraVisible(false)}
+      >
+        <Screen unsafe>
+          <View style={[styles.row, { paddingTop: top }]}>
+            <TouchableOpacity
+              style={styles.close}
+              onPress={() => setIsCameraVisible(false)}
+            >
+              <Icon name={"close"} size={40} color={"#fff"} type="ionicon" />
+            </TouchableOpacity>
+          </View>
+          {!hasPermission ? (
+            <>
+              <View style={styles.center}>
+                <Text type="h1" style={styles.permissionMissingText}>
+                  {LL.ScanningQRCodeScreen.permissionCamera()}
+                </Text>
+              </View>
+              <PrimaryBtn
+                label={LL.ScanningQRCodeScreen.openSettings()}
+                onPress={openSettings}
+                btnStyle={{ marginHorizontal: 20, marginBottom: 20 }}
+              />
+            </>
+          ) : device === null || device === undefined ? (
+            <View style={styles.center}>
+              <Text type="h1">{LL.ScanningQRCodeScreen.noCamera()}</Text>
+            </View>
+          ) : (
+            <View style={{ flex: 1 }}>
+              <Camera
+                ref={camera}
+                style={styles.camera}
+                device={device}
+                isActive={true}
+                onError={onError}
+                enableZoomGesture
+                photo={true}
+              />
+              <View style={styles.captureWrapper}>
+                <TouchableOpacity style={styles.captureOutline} onPress={takePhoto}>
+                  <View style={styles.capture} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          <View style={[styles.row, { paddingBottom: bottom }]}>
+            <TouchableOpacity style={styles.photoLibrary} onPress={showImagePicker}>
+              <PhotoAdd />
+            </TouchableOpacity>
+          </View>
+        </Screen>
+      </Modal>
     </View>
   )
 }
@@ -44,14 +159,61 @@ const PhotoUploadField: React.FC<Props> = ({ label }) => {
 export default PhotoUploadField
 
 const useStyles = makeStyles(({ colors }) => ({
+  wrapper: {
+    marginBottom: 35,
+  },
   container: {
     width: "100%",
     height: 150,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 5,
-    marginBottom: 15,
+    marginBottom: 2,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.grey4,
     backgroundColor: colors.grey5,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    backgroundColor: "#000",
+  },
+  close: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  camera: {
+    flex: 1,
+  },
+  captureWrapper: {
+    position: "absolute",
+    width: "100%",
+    alignItems: "center",
+    bottom: 20,
+  },
+  captureOutline: {
+    borderWidth: 3,
+    borderRadius: 100,
+    borderColor: "#fff",
+    padding: 5,
+  },
+  capture: {
+    width: 50,
+    height: 50,
+    borderRadius: 100,
+    backgroundColor: "#FFF",
+  },
+  permissionMissingText: {
+    width: "80%",
+    textAlign: "center",
+  },
+  photoLibrary: {
+    padding: 20,
   },
 }))
