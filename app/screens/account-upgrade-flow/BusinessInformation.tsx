@@ -19,12 +19,26 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
 
   const dispatch = useAppDispatch()
-  const { businessName, businessAddress } = useAppSelector(
-    (state) => state.accountUpgrade.businessInfo,
-  )
+  const {
+    accountType,
+    businessInfo: { businessName, businessAddress },
+  } = useAppSelector((state) => state.accountUpgrade)
+
+  const [businessNameErr, setBusinessNameErr] = useState<string>()
+  const [businessAddressErr, setBusinessAddressErr] = useState<string>()
 
   const onPressNext = () => {
-    navigation.navigate("BankInformation")
+    if (businessName.length < 2) {
+      setBusinessNameErr("Business name must be at least 2 characters")
+    } else if (businessAddress.split(",").length <= 1) {
+      setBusinessAddressErr("Please enter a valid address")
+    } else {
+      if (accountType === "pro") {
+        navigation.navigate("AccountUpgradeSuccess")
+      } else {
+        navigation.navigate("BankInformation")
+      }
+    }
   }
 
   return (
@@ -34,14 +48,21 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
           label="Business Name"
           placeholder={"Your business name"}
           value={businessName}
+          errorMsg={businessNameErr}
           onChangeText={(val) => dispatch(setBusinessInfo({ businessName: val }))}
         />
         <AddressField
           label="Business address"
           placeholder={"Enter your business address"}
+          errorMsg={businessAddressErr}
         />
       </View>
-      <PrimaryBtn label="Next" btnStyle={styles.btn} onPress={onPressNext} />
+      <PrimaryBtn
+        label="Next"
+        disabled={!businessName || !businessAddress}
+        btnStyle={styles.btn}
+        onPress={onPressNext}
+      />
     </Screen>
   )
 }
