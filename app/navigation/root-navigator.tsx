@@ -123,6 +123,8 @@ import {
   BusinessInformation,
   BankInformation,
   AccountType,
+  Validation,
+  Success,
 } from "@app/screens/account-upgrade-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
@@ -611,6 +613,16 @@ export const RootStack = () => {
         name="BankInformation"
         component={BankInformation}
         options={{ title: "Banking Information" }}
+      />
+      <RootNavigator.Screen
+        name="Validation"
+        component={Validation}
+        options={{ title: "Validation" }}
+      />
+      <RootNavigator.Screen
+        name="AccountUpgradeSuccess"
+        component={Success}
+        options={{ headerShown: false }}
       />
     </RootNavigator.Navigator>
   )

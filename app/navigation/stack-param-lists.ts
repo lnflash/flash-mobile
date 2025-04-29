@@ -158,6 +158,11 @@ export type RootStackParamList = {
   PersonalInformation: undefined
   BusinessInformation: undefined
   BankInformation: undefined
+  Validation: {
+    phone: string
+    channel: PhoneCodeChannelType
+  }
+  AccountUpgradeSuccess: undefined
 }
 
 export type ChatStackParamList = {
