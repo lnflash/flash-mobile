@@ -21,6 +21,7 @@ import { useRequestPhoneCodeLogin } from "@app/screens/phone-auth-screen/request
 type Props = {
   countryCode: string
   phoneNumber: string
+  errorMsg?: string
   setPhoneNumber: (number: string) => void
   setCountryCode: (countryCode: PhoneNumberCountryCode) => void
 }
@@ -28,6 +29,7 @@ type Props = {
 const PhoneNumber: React.FC<Props> = ({
   countryCode,
   phoneNumber,
+  errorMsg,
   setPhoneNumber,
   setCountryCode,
 }) => {
@@ -52,7 +54,7 @@ const PhoneNumber: React.FC<Props> = ({
   }
 
   return (
-    <View>
+    <View style={styles.wrapper}>
       <Text type="bl" bold>
         Phone Number
       </Text>
@@ -79,6 +81,11 @@ const PhoneNumber: React.FC<Props> = ({
           onBlur={() => setIsFocused(false)}
         />
       </View>
+      {!!errorMsg && (
+        <Text type="caption" color={colors.red}>
+          {errorMsg}
+        </Text>
+      )}
     </View>
   )
 }
@@ -86,9 +93,13 @@ const PhoneNumber: React.FC<Props> = ({
 export default PhoneNumber
 
 const useStyles = makeStyles(({ colors }) => ({
+  wrapper: {
+    marginBottom: 15,
+  },
   container: {
     flexDirection: "row",
     marginTop: 5,
+    marginBottom: 2,
   },
   countryPicker: {
     padding: 14.5,
@@ -102,7 +113,6 @@ const useStyles = makeStyles(({ colors }) => ({
   input: {
     flex: 1,
     padding: 15,
-    marginBottom: 15,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.grey4,
