@@ -1,6 +1,6 @@
 import React from "react"
 import { View } from "react-native"
-import { makeStyles, Text } from "@rneui/themed"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { Dropdown } from "react-native-element-dropdown"
 
 type Props = {
@@ -8,6 +8,7 @@ type Props = {
   placeholder: string
   data: any[]
   value: string
+  errorMsg?: string
   onChange: (val: string) => void
 }
 
@@ -16,11 +17,14 @@ const DropDownField: React.FC<Props> = ({
   placeholder,
   data,
   value,
+  errorMsg,
   onChange,
 }) => {
   const styles = useStyles()
+  const { colors } = useTheme().theme
+
   return (
-    <View>
+    <View style={styles.wrapper}>
       <Text type="bl" bold>
         {label}
       </Text>
@@ -36,6 +40,11 @@ const DropDownField: React.FC<Props> = ({
         value={value}
         onChange={(item) => onChange(item.value)}
       />
+      {!!errorMsg && (
+        <Text type="caption" color={colors.red}>
+          {errorMsg}
+        </Text>
+      )}
     </View>
   )
 }
@@ -43,11 +52,16 @@ const DropDownField: React.FC<Props> = ({
 export default DropDownField
 
 const useStyles = makeStyles(({ colors }) => ({
+  wrapper: {
+    marginBottom: 15,
+  },
   dropdown: {
     padding: 15,
     marginTop: 5,
-    marginBottom: 15,
+    marginBottom: 2,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.grey4,
     backgroundColor: colors.grey5,
     fontSize: 16,
     fontFamily: "Sora-Regular",

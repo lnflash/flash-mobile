@@ -4,11 +4,13 @@ import { TextInput, TextInputProps, View } from "react-native"
 
 type Props = {
   label: string
+  errorMsg?: string
   isOptional?: boolean
 } & TextInputProps
 
 const InputField: React.FC<Props> = ({
   label,
+  errorMsg,
   isOptional,
   placeholder,
   value,
@@ -20,7 +22,7 @@ const InputField: React.FC<Props> = ({
   const [isFocused, setIsFocused] = useState(false)
 
   return (
-    <View>
+    <View style={styles.container}>
       <Text type="bl" bold>
         {label}
         {isOptional && (
@@ -38,6 +40,11 @@ const InputField: React.FC<Props> = ({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
       />
+      {!!errorMsg && (
+        <Text type="caption" color={colors.red}>
+          {errorMsg}
+        </Text>
+      )}
     </View>
   )
 }
@@ -45,10 +52,13 @@ const InputField: React.FC<Props> = ({
 export default InputField
 
 const useStyles = makeStyles(({ colors }) => ({
+  container: {
+    marginBottom: 15,
+  },
   input: {
     padding: 15,
     marginTop: 5,
-    marginBottom: 15,
+    marginBottom: 2,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.grey4,

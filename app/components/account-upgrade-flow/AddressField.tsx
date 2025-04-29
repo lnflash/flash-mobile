@@ -6,9 +6,10 @@ import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplet
 type Props = {
   label: string
   placeholder: string
+  errorMsg: string
 }
 
-const AddressField: React.FC<Props> = ({ label, placeholder }) => {
+const AddressField: React.FC<Props> = ({ label, placeholder, errorMsg }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
 
@@ -37,6 +38,11 @@ const AddressField: React.FC<Props> = ({ label, placeholder }) => {
           onBlur: () => setIsFocused(false),
         }}
       />
+      {!!errorMsg && (
+        <Text style={{ marginTop: 60 }} type="caption" color={colors.red}>
+          {errorMsg}
+        </Text>
+      )}
     </View>
   )
 }
