@@ -7,9 +7,13 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // components
 import { Screen } from "@app/components/screen"
 
+// hooks
+import { useLevel } from "@app/graphql/level-context"
+
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
+import { AccountLevel } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "AccountType">
 
@@ -17,6 +21,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { currentLevel } = useLevel()
 
   const onPress = (accountType: string) => {
     dispatch(setAccountUpgrade({ accountType }))
@@ -25,18 +30,20 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
 
   return (
     <Screen>
-      <TouchableOpacity style={styles.card} onPress={() => onPress("personal")}>
-        <Icon name={"person"} size={35} color={colors.grey1} type="ionicon" />
-        <View style={styles.textWrapper}>
-          <Text type="bl" bold>
-            Personal
-          </Text>
-          <Text type="bm" style={{ marginTop: 2 }}>
-            For individual use, no additional info needed
-          </Text>
-        </View>
-        <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
-      </TouchableOpacity>
+      {currentLevel === AccountLevel.Zero && (
+        <TouchableOpacity style={styles.card} onPress={() => onPress("personal")}>
+          <Icon name={"person"} size={35} color={colors.grey1} type="ionicon" />
+          <View style={styles.textWrapper}>
+            <Text type="bl" bold>
+              Personal
+            </Text>
+            <Text type="bm" style={{ marginTop: 2 }}>
+              For individual use, no additional info needed
+            </Text>
+          </View>
+          <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
+        </TouchableOpacity>
+      )}
       <TouchableOpacity style={styles.card} onPress={() => onPress("pro")}>
         <Icon name={"briefcase"} size={35} color={colors.grey1} type="ionicon" />
         <View style={styles.textWrapper}>
