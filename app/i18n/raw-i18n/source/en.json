@@ -1264,5 +1264,8 @@
         "halfHour": "Half Hour",
         "hour": "Hour",
         "txId": "Transaction ID"
-	}
+	},
+    "Nostr": {
+        "editProfile": "Edit Profile"
+    }
 }

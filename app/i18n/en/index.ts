@@ -826,7 +826,7 @@ const en: BaseTranslation = {
     backup: "Backup",
     importWallet: "Import Wallet",
     showSeedPhrase: "Reveal recovery phrase",
-    showNostrSecret: "Reveal Nostr secret",
+    showNostrSecret: "Chat Settings",
     beginnerMode: "Disable Bitcoin Account",
     advanceMode: "Enable Bitcoin Account (Advanced Mode)",
     keysManagement: "Keys management",
@@ -1399,7 +1399,10 @@ const en: BaseTranslation = {
     halfHour: "Half Hour",
     hour: "Hour",
     txId: "Transaction ID"
-	}
+	},
+  Nostr: {
+    editProfile: "Edit Profile"
+  }
 }
 
 export default en

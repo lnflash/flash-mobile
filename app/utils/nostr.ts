@@ -119,7 +119,6 @@ export const fetchGiftWrapsForPublicKey = (
   pubkey: string,
   eventHandler: (event: Event) => void,
   pool: SimplePool,
-  flashRelay: string,
   since?: number,
 ) => {
   let filter: Filter = {
@@ -128,16 +127,15 @@ export const fetchGiftWrapsForPublicKey = (
     "limit": 150,
   }
   if (since) filter.since = since
-  console.log("FETCHING MESSAGES for", filter, flashRelay)
   let closer = pool.subscribeMany(
-    [flashRelay, "wss://relay.damus.io", "wss://nostr.oxtr.dev"],
+    ["wss://relay.flashapp.me", "wss://relay.damus.io", "wss://nostr.oxtr.dev"],
     [filter],
     {
       onevent: eventHandler,
       onclose: () => {
         closer.close()
         console.log("Re-establishing connection")
-        closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool, flashRelay)
+        closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool)
       },
     },
   )
@@ -215,14 +213,8 @@ export const fetchPreferredRelays = async (pubKeys: string[], pool: SimplePool) 
   return relayMap
 }
 
-export const sendNIP4Message = async (message: string, recipient: string) => {
-  let privateKey = await getSecretKey()
-  let NIP4Messages = {}
-}
-
-export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Array) => {
+export const setPreferredRelay = async (secretKey?: Uint8Array) => {
   let pool = new SimplePool()
-  console.log("inside setpreferredRelay")
   let secret: Uint8Array | null = null
   if (!secretKey) {
     secret = await getSecretKey()
@@ -237,7 +229,7 @@ export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Arr
   let relayEvent: UnsignedEvent = {
     pubkey: pubKey,
     tags: [
-      ["relay", flashRelay],
+      ["relay", "wss://relay.flashapp.me"],
       ["relay", "wss://relay.damus.io"],
       ["relay", "wss://relay.primal.net"],
     ],
@@ -272,11 +264,12 @@ export async function sendNip17Message(
       console.log("sending rumor for recipient ", recipientId)
       let recipientAcceptedRelays: string[] = []
       let recipientRelays = preferredRelaysMap.get(recipientId)
-      if (!recipientRelays) sendNIP4Message(message, recipientId)
       recipientRelays = [
-        ...(recipientRelays || publicRelays),
-        "wss://relay.damus.io",
-        "wss://nostr.oxtr.dev",
+        ...(recipientRelays || [
+          "wss://relay.flashapp.me",
+          "wss://relay.damus.io",
+          "wss://nostr.oxtr.dev",
+        ]),
       ]
       let seal = createSeal(rumor, privateKey, recipientId)
       let wrap = createWrap(seal, recipientId)

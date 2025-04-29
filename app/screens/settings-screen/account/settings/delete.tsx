@@ -21,6 +21,7 @@ import { useTheme, Text, makeStyles } from "@rneui/themed"
 import { SettingsButton } from "../../button"
 import { useAccountDeleteContext } from "../account-delete-context"
 import { useBreez } from "@app/hooks"
+import useNostrProfile from "@app/hooks/use-nostr-profile"
 
 gql`
   mutation accountDelete {
@@ -52,6 +53,7 @@ export const Delete = () => {
   const [deleteAccount] = useAccountDeleteMutation({ fetchPolicy: "no-cache" })
   const { data, loading } = useSettingsScreenQuery()
   const { formatMoneyAmount } = useDisplayCurrency()
+  const { deleteNostrData } = useNostrProfile()
 
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
@@ -108,6 +110,7 @@ export const Delete = () => {
       const res = await deleteAccount()
 
       if (res.data?.accountDelete?.success) {
+        await deleteNostrData()
         await logout(true)
         setAccountIsBeingDeleted(false)
         navigation.reset({

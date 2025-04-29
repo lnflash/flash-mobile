@@ -27,6 +27,7 @@ import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-but
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { useNavigation } from "@react-navigation/native"
 import { useAppConfig, useBreez } from "@app/hooks"
+import useNostrProfile from "@app/hooks/use-nostr-profile"
 
 gql`
   query accountScreen {
@@ -119,6 +120,7 @@ export const AccountScreen = () => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const { appConfig } = useAppConfig()
+  const { deleteNostrData } = useNostrProfile()
   const authToken = appConfig.token
 
   const {
@@ -306,6 +308,7 @@ export const AccountScreen = () => {
       const res = await deleteAccount()
 
       if (res.data?.accountDelete?.success) {
+        await deleteNostrData()
         await logout()
         Alert.alert(LL.support.bye(), LL.support.deleteAccountConfirmation(), [
           {

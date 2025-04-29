@@ -47,7 +47,7 @@ export const SetLightningAddressModal = ({
 }: SetLightningAddressModalProps) => {
   const {
     appConfig: {
-      galoyInstance: { lnAddressHostname: lnDomain, relayUrl },
+      galoyInstance: { lnAddressHostname: lnDomain },
     },
   } = useAppConfig()
   const dispatch = useAppDispatch()
@@ -118,9 +118,10 @@ export const SetLightningAddressModal = ({
         name: lnAddress,
         username: lnAddress,
         lud16: `${lnAddress}@${lnDomain}`,
+        nip05: lnAddress,
       },
     })
-    setPreferredRelay(relayUrl)
+    setPreferredRelay()
     if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
       if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
         setError(SetAddressError.ADDRESS_UNAVAILABLE)

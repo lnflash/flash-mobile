@@ -3,7 +3,13 @@ import { useAppConfig } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { SetAddressError } from "@app/types/errors"
 import { Button, makeStyles, useTheme } from "@rneui/themed"
-import { KeyboardAvoidingView, View, Text, TextInput } from "react-native"
+import {
+  KeyboardAvoidingView,
+  View,
+  Text,
+  TextInput,
+  ActivityIndicator,
+} from "react-native"
 import Modal from "react-native-modal"
 
 export type SetUserNameUIProps = {
@@ -14,6 +20,7 @@ export type SetUserNameUIProps = {
   error?: SetAddressError
   lnAddress: string
   setLnAddress?: (lightningAddress: string) => void
+  uploadingUsername: boolean
 }
 
 export const SetUserNameUI = ({
@@ -22,6 +29,7 @@ export const SetUserNameUI = ({
   lnAddress,
   setLnAddress,
   error,
+  uploadingUsername,
 }: SetUserNameUIProps) => {
   const {
     appConfig: {
@@ -88,7 +96,11 @@ export const SetUserNameUI = ({
             />
           </View>
           {errorMessage && <GaloyErrorBox errorMessage={errorMessage} />}
-          <Button onPress={setLightningAddress}>{LL.SetAddressModal.save()}</Button>
+          {uploadingUsername ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : (
+            <Button onPress={setLightningAddress}>{LL.SetAddressModal.save()}</Button>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>
