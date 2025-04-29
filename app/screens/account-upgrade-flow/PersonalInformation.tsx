@@ -1,8 +1,10 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { View } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { AccountLevel, PhoneCodeChannelType } from "@app/graphql/generated"
+import { parsePhoneNumber } from "libphonenumber-js/mobile"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -13,18 +15,83 @@ import { InputField, PhoneNumber } from "@app/components/account-upgrade-flow"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { setPersonalInfo } from "@app/store/redux/slices/accountUpgradeSlice"
 
+// hooks
+import {
+  RequestPhoneCodeStatus,
+  useRequestPhoneCodeLogin,
+} from "../phone-auth-screen/request-phone-code-login"
+import { useLevel } from "@app/graphql/level-context"
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { useActivityIndicator } from "@app/hooks"
+
 type Props = StackScreenProps<RootStackParamList, "PersonalInformation">
 
 const PersonalInformation: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
-
+  const { currentLevel } = useLevel()
+  const { LL } = useI18nContext()
+  const { toggleActivityIndicator } = useActivityIndicator()
   const dispatch = useAppDispatch()
   const { fullName, countryCode, phoneNumber, email } = useAppSelector(
     (state) => state.accountUpgrade.personalInfo,
   )
 
-  const onPressNext = () => {
-    navigation.navigate("BusinessInformation")
+  const [fullNameErr, setFullNameErr] = useState<string>()
+  const [phoneNumberErr, setPhoneNumberErr] = useState<string>()
+
+  const {
+    submitPhoneNumber,
+    captchaLoading,
+    status,
+    setPhoneNumber,
+    isSmsSupported,
+    isWhatsAppSupported,
+    phoneCodeChannel,
+    error,
+    validatedPhoneNumber,
+    setCountryCode,
+  } = useRequestPhoneCodeLogin()
+
+  console.log("PERSONAL INFO STATUS >>>>>>>>>>>>", status)
+  console.log("PERSONAL INFO ERROR >>>>>>>>>>>>", error)
+
+  useEffect(() => {
+    if (
+      status === RequestPhoneCodeStatus.CompletingCaptcha ||
+      status === RequestPhoneCodeStatus.RequestingCode
+    ) {
+      toggleActivityIndicator(true)
+    } else {
+      toggleActivityIndicator(false)
+    }
+  }, [status])
+
+  useEffect(() => {
+    if (status === RequestPhoneCodeStatus.SuccessRequestingCode) {
+      navigation.navigate("Validation", {
+        phone: validatedPhoneNumber || "",
+        channel: phoneCodeChannel,
+      })
+    }
+  }, [status, phoneCodeChannel, validatedPhoneNumber, navigation])
+
+  const onPressNext = async (channel?: PhoneCodeChannelType) => {
+    try {
+      const parsedPhoneNumber = parsePhoneNumber(phoneNumber, countryCode)
+      if (fullName.length < 2) {
+        setFullNameErr("Name must be at least 2 characters")
+      } else if (!parsedPhoneNumber?.isValid()) {
+        setPhoneNumberErr("Please enter a valid phone number")
+      } else {
+        if (currentLevel === AccountLevel.Zero) {
+          submitPhoneNumber(channel)
+        } else {
+          navigation.navigate("BusinessInformation")
+        }
+      }
+    } catch (err) {
+      console.log("Personal information error: ", err)
+    }
   }
 
   return (
@@ -34,13 +101,21 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
           label="Full Name"
           placeholder="John Doe"
           value={fullName}
+          errorMsg={fullNameErr}
           onChangeText={(val) => dispatch(setPersonalInfo({ fullName: val }))}
         />
         <PhoneNumber
           countryCode={countryCode}
           phoneNumber={phoneNumber}
-          setCountryCode={(val) => dispatch(setPersonalInfo({ countryCode: val }))}
-          setPhoneNumber={(val) => dispatch(setPersonalInfo({ phoneNumber: val }))}
+          errorMsg={phoneNumberErr}
+          setCountryCode={(val) => {
+            setCountryCode(val)
+            dispatch(setPersonalInfo({ countryCode: val }))
+          }}
+          setPhoneNumber={(val) => {
+            setPhoneNumber(val)
+            dispatch(setPersonalInfo({ phoneNumber: val }))
+          }}
         />
         <InputField
           label="Email Address"
@@ -50,7 +125,36 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
           onChangeText={(val) => dispatch(setPersonalInfo({ email: val }))}
         />
       </View>
-      <PrimaryBtn label="Next" btnStyle={styles.btn} onPress={onPressNext} />
+      <View style={styles.btn}>
+        {currentLevel === AccountLevel.Zero ? (
+          <>
+            {isSmsSupported && (
+              <PrimaryBtn
+                label={LL.PhoneLoginInitiateScreen.sms()}
+                loading={captchaLoading && phoneCodeChannel === PhoneCodeChannelType.Sms}
+                onPress={() => onPressNext(PhoneCodeChannelType.Sms)}
+                btnStyle={isWhatsAppSupported ? { marginBottom: 10 } : {}}
+              />
+            )}
+            {isWhatsAppSupported && (
+              <PrimaryBtn
+                type={isSmsSupported ? "outline" : "solid"}
+                label={LL.PhoneLoginInitiateScreen.whatsapp()}
+                loading={
+                  captchaLoading && phoneCodeChannel === PhoneCodeChannelType.Whatsapp
+                }
+                onPress={() => onPressNext(PhoneCodeChannelType.Whatsapp)}
+              />
+            )}
+          </>
+        ) : (
+          <PrimaryBtn
+            label="Next"
+            disabled={!fullName || !phoneNumber}
+            onPress={onPressNext}
+          />
+        )}
+      </View>
     </Screen>
   )
 }
