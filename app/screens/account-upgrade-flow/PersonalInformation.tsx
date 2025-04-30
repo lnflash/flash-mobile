@@ -27,17 +27,17 @@ import { useActivityIndicator } from "@app/hooks"
 type Props = StackScreenProps<RootStackParamList, "PersonalInformation">
 
 const PersonalInformation: React.FC<Props> = ({ navigation }) => {
+  const dispatch = useAppDispatch()
   const styles = useStyles()
   const { currentLevel } = useLevel()
   const { LL } = useI18nContext()
   const { toggleActivityIndicator } = useActivityIndicator()
-  const dispatch = useAppDispatch()
-  const { fullName, countryCode, phoneNumber, email } = useAppSelector(
-    (state) => state.accountUpgrade.personalInfo,
-  )
 
   const [fullNameErr, setFullNameErr] = useState<string>()
   const [phoneNumberErr, setPhoneNumberErr] = useState<string>()
+  const { fullName, countryCode, phoneNumber, email } = useAppSelector(
+    (state) => state.accountUpgrade.personalInfo,
+  )
 
   const {
     submitPhoneNumber,
@@ -77,13 +77,18 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
 
   const onPressNext = async (channel?: PhoneCodeChannelType) => {
     try {
+      let hasError = false
       const parsedPhoneNumber = parsePhoneNumber(phoneNumber, countryCode)
-      if (fullName.length < 2) {
+      if (fullName?.length < 2) {
         setFullNameErr("Name must be at least 2 characters")
-      } else if (!parsedPhoneNumber?.isValid()) {
+        hasError = true
+      }
+      if (!parsedPhoneNumber?.isValid()) {
         setPhoneNumberErr("Please enter a valid phone number")
-      } else {
-        if (currentLevel === AccountLevel.Zero) {
+        hasError = true
+      }
+      if (!hasError) {
+        if (currentLevel === AccountLevel.Zero && channel) {
           submitPhoneNumber(channel)
         } else {
           navigation.navigate("BusinessInformation")
@@ -91,6 +96,8 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
       }
     } catch (err) {
       console.log("Personal information error: ", err)
+      setFullNameErr("Name must be at least 2 characters")
+      setPhoneNumberErr("Please enter a valid phone number")
     }
   }
 
@@ -102,17 +109,22 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
           placeholder="John Doe"
           value={fullName}
           errorMsg={fullNameErr}
-          onChangeText={(val) => dispatch(setPersonalInfo({ fullName: val }))}
+          onChangeText={(val) => {
+            setFullNameErr(undefined)
+            dispatch(setPersonalInfo({ fullName: val }))
+          }}
         />
         <PhoneNumber
           countryCode={countryCode}
           phoneNumber={phoneNumber}
           errorMsg={phoneNumberErr}
           setCountryCode={(val) => {
+            setPhoneNumberErr(undefined)
             setCountryCode(val)
             dispatch(setPersonalInfo({ countryCode: val }))
           }}
           setPhoneNumber={(val) => {
+            setPhoneNumberErr(undefined)
             setPhoneNumber(val)
             dispatch(setPersonalInfo({ phoneNumber: val }))
           }}
@@ -131,6 +143,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
             {isSmsSupported && (
               <PrimaryBtn
                 label={LL.PhoneLoginInitiateScreen.sms()}
+                disabled={!fullName || !phoneNumber}
                 loading={captchaLoading && phoneCodeChannel === PhoneCodeChannelType.Sms}
                 onPress={() => onPressNext(PhoneCodeChannelType.Sms)}
                 btnStyle={isWhatsAppSupported ? { marginBottom: 10 } : {}}
@@ -140,6 +153,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
               <PrimaryBtn
                 type={isSmsSupported ? "outline" : "solid"}
                 label={LL.PhoneLoginInitiateScreen.whatsapp()}
+                disabled={!fullName || !phoneNumber}
                 loading={
                   captchaLoading && phoneCodeChannel === PhoneCodeChannelType.Whatsapp
                 }

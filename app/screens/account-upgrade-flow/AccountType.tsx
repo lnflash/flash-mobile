@@ -3,6 +3,7 @@ import { TouchableOpacity, View } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { AccountLevel } from "@app/graphql/generated"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -13,7 +14,6 @@ import { useLevel } from "@app/graphql/level-context"
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
-import { AccountLevel } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "AccountType">
 
