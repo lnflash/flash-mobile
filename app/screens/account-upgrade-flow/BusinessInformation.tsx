@@ -16,23 +16,28 @@ import { setBusinessInfo } from "@app/store/redux/slices/accountUpgradeSlice"
 type Props = StackScreenProps<RootStackParamList, "BusinessInformation">
 
 const BusinessInformation: React.FC<Props> = ({ navigation }) => {
+  const dispatch = useAppDispatch()
   const styles = useStyles()
 
-  const dispatch = useAppDispatch()
+  const [businessNameErr, setBusinessNameErr] = useState<string>()
+  const [businessAddressErr, setBusinessAddressErr] = useState<string>()
   const {
     accountType,
     businessInfo: { businessName, businessAddress },
   } = useAppSelector((state) => state.accountUpgrade)
 
-  const [businessNameErr, setBusinessNameErr] = useState<string>()
-  const [businessAddressErr, setBusinessAddressErr] = useState<string>()
-
   const onPressNext = () => {
+    let hasError = false
+
     if (businessName.length < 2) {
       setBusinessNameErr("Business name must be at least 2 characters")
-    } else if (businessAddress.split(",").length <= 1) {
+      hasError = true
+    }
+    if (businessAddress.split(",").length <= 1) {
       setBusinessAddressErr("Please enter a valid address")
-    } else {
+      hasError = true
+    }
+    if (!hasError) {
       if (accountType === "pro") {
         navigation.navigate("AccountUpgradeSuccess")
       } else {
@@ -49,7 +54,10 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
           placeholder={"Your business name"}
           value={businessName}
           errorMsg={businessNameErr}
-          onChangeText={(val) => dispatch(setBusinessInfo({ businessName: val }))}
+          onChangeText={(val) => {
+            setBusinessNameErr(undefined)
+            dispatch(setBusinessInfo({ businessName: val }))
+          }}
         />
         <AddressField
           label="Business address"
