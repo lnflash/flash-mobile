@@ -9,7 +9,7 @@ import { Screen } from "@app/components/screen"
 import { InputField } from "@app/components/account-upgrade-flow"
 
 // hooks
-import { useAppConfig } from "@app/hooks"
+import { useActivityIndicator, useAppConfig } from "@app/hooks"
 import { useUserLoginUpgradeMutation } from "@app/graphql/generated"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAppSelector } from "@app/store/redux"
@@ -21,10 +21,11 @@ type Props = StackScreenProps<RootStackParamList, "Validation">
 
 const Validation: React.FC<Props> = ({ navigation, route }) => {
   const { phone, channel } = route.params
+  const styles = useStyles()
   const { accountType } = useAppSelector((state) => state.accountUpgrade)
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
-  const styles = useStyles()
+  const { toggleActivityIndicator } = useActivityIndicator()
 
   const [code, setCode] = useState<string>()
   const [errorMsg, setErrorMsg] = useState<string>()
@@ -36,9 +37,11 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
   const send = useCallback(
     async (code: string) => {
       try {
+        toggleActivityIndicator(true)
         const { data } = await userLoginUpgradeMutation({
           variables: { input: { phone, code } },
         })
+        toggleActivityIndicator(false)
 
         const success = data?.userLoginUpgrade?.success
         const authToken = data?.userLoginUpgrade?.authToken
@@ -52,8 +55,8 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
             navigation.replace("BusinessInformation")
           }
         } else {
-          console.log(">>>>>>>>>>>>>>>>>", data.userLoginUpgrade)
-          setErrorMsg(data.userLoginUpgrade.errors[0].message)
+          console.log(">>>>>>>>>>>>>>>>>", data?.userLoginUpgrade)
+          setErrorMsg(data?.userLoginUpgrade.errors[0].message)
         }
         setCode("")
       } catch (err) {
