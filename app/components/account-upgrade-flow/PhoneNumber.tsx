@@ -19,8 +19,8 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useRequestPhoneCodeLogin } from "@app/screens/phone-auth-screen/request-phone-code-login"
 
 type Props = {
-  countryCode: string
-  phoneNumber: string
+  countryCode?: string
+  phoneNumber?: string
   errorMsg?: string
   setPhoneNumber: (number: string) => void
   setCountryCode: (countryCode: PhoneNumberCountryCode) => void
@@ -102,7 +102,8 @@ const useStyles = makeStyles(({ colors }) => ({
     marginBottom: 2,
   },
   countryPicker: {
-    padding: 14.5,
+    flex: 1,
+    paddingHorizontal: 15,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.grey4,

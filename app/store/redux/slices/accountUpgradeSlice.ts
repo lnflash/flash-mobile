@@ -1,10 +1,11 @@
 import { createSlice } from "@reduxjs/toolkit"
+import { CountryCode } from "libphonenumber-js"
 
 interface AccountUpgradeSlice {
-  accountType: "personal" | "pro" | "merchant"
+  accountType?: "personal" | "pro" | "merchant"
   personalInfo: {
     fullName: string
-    countryCode: string
+    countryCode: CountryCode
     phoneNumber: string
     email: string
   }
@@ -18,31 +19,31 @@ interface AccountUpgradeSlice {
     accountType: string
     currency: string
     accountNumber: string
-    document: string
+    idDocument: string
   }
   loading: boolean
   error: string
 }
 
 const initialState: AccountUpgradeSlice = {
-  accountType: null,
+  accountType: undefined,
   personalInfo: {
-    fullName: null,
+    fullName: "",
     countryCode: "JM",
-    phoneNumber: null,
-    email: null,
+    phoneNumber: "",
+    email: "",
   },
   businessInfo: {
-    businessName: null,
-    businessAddress: null,
+    businessName: "",
+    businessAddress: "",
   },
   bankInfo: {
-    bankName: null,
-    bankBranch: null,
-    accountType: null,
-    currency: null,
-    accountNumber: null,
-    document: null,
+    bankName: "",
+    bankBranch: "",
+    accountType: "",
+    currency: "",
+    accountNumber: "",
+    idDocument: "",
   },
   loading: false,
   error: "",
@@ -76,7 +77,7 @@ export const accountUpgradeSlice = createSlice({
       ...state,
       error: action.payload,
     }),
-    resetUserSlice: () => ({
+    resetAccountUpgrade: () => ({
       ...initialState,
     }),
   },
@@ -89,6 +90,6 @@ export const {
   setBankInfo,
   setLoading,
   setError,
-  resetUserSlice,
+  resetAccountUpgrade,
 } = accountUpgradeSlice.actions
 export default accountUpgradeSlice.reducer
