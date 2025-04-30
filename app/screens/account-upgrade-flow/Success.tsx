@@ -36,7 +36,7 @@ const Success: React.FC<Props> = ({ navigation }) => {
     <Screen backgroundColor={colors.accent02}>
       <View style={styles.wrapper}>
         <Text type="h02" bold style={styles.header}>
-          {`You successfully upgraded your account to ${accountType.toUpperCase()}`}
+          {`You successfully upgraded your account to ${accountType?.toUpperCase()}`}
         </Text>
         <Account />
       </View>
