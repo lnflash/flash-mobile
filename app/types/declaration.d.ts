@@ -30,4 +30,7 @@ declare module "@env" {
   export const API_KEY: string
   export const GREENLIGHT_PARTNER_CERT: string
   export const GREENLIGHT_PARTNER_KEY: string
+  export const GOOGLE_PLACE_API_KEY: string
+  export const SUPABASE_URL: string
+  export const SUPABASE_KEY: string
 }
