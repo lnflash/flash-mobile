@@ -134,7 +134,13 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
             dispatch(setBankInfo({ accountNumber: val }))
           }}
         />
-        <PhotoUploadField label="Upload ID Document" errorMsg={idDocumentErr} />
+        <PhotoUploadField
+          label="Upload ID Document"
+          photo={idDocument}
+          errorMsg={idDocumentErr}
+          onPhotoUpload={(val) => dispatch(setBankInfo({ idDocument: val }))}
+          setErrorMsg={setIdDocumentErr}
+        />
       </ScrollView>
       <PrimaryBtn label="Next" btnStyle={styles.btn} onPress={onPressNext} />
     </Screen>
