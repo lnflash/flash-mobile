@@ -35,6 +35,7 @@ const InputField: React.FC<Props> = ({
       <TextInput
         style={[styles.input, isFocused ? { borderColor: colors.primary } : {}]}
         placeholder={placeholder}
+        placeholderTextColor={colors.placeholder}
         value={value}
         onChangeText={onChangeText}
         onFocus={() => setIsFocused(true)}

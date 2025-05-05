@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit"
 import { CountryCode } from "libphonenumber-js"
+import { Asset } from "react-native-image-picker"
 
 interface AccountUpgradeSlice {
   accountType?: "personal" | "pro" | "merchant"
@@ -19,7 +20,7 @@ interface AccountUpgradeSlice {
     accountType: string
     currency: string
     accountNumber: string
-    idDocument: string
+    idDocument?: Asset
   }
   loading: boolean
   error: string
@@ -43,7 +44,7 @@ const initialState: AccountUpgradeSlice = {
     accountType: "",
     currency: "",
     accountNumber: "",
-    idDocument: "",
+    idDocument: undefined,
   },
   loading: false,
   error: "",
