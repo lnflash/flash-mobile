@@ -1,48 +1,95 @@
-import React, { useState } from "react"
-import { View } from "react-native"
+import React, { useEffect, useRef, useState } from "react"
+import { Modal, Platform, TouchableOpacity, View } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
-import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete"
+import {
+  GooglePlacesAutocomplete,
+  GooglePlacesAutocompleteRef,
+} from "react-native-google-places-autocomplete"
+
+// components
+import { PrimaryBtn } from "../buttons"
+
+// env
+import { GOOGLE_PLACE_API_KEY } from "@env"
 
 type Props = {
   label: string
   placeholder: string
-  errorMsg: string
+  value: string
+  errorMsg?: string
+  onAddressSelect: (val: string) => void
 }
 
-const AddressField: React.FC<Props> = ({ label, placeholder, errorMsg }) => {
+const AddressField: React.FC<Props> = ({
+  label,
+  placeholder,
+  value,
+  errorMsg,
+  onAddressSelect,
+}) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
 
+  const ref = useRef<GooglePlacesAutocompleteRef>(null)
   const [isFocused, setIsFocused] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    if (isVisible && ref.current) {
+      ref.current.focus()
+    }
+  }, [isVisible, ref.current])
 
   return (
     <View>
       <Text type="bl" bold>
         {label}
       </Text>
-      <GooglePlacesAutocomplete
-        styles={{
-          textInput: [styles.container, isFocused ? { borderColor: colors.primary } : {}],
-        }}
-        placeholder={placeholder}
-        onPress={(data, details = null) => {
-          // 'details' is provided when fetchDetails = true
-          console.log(data, details)
-        }}
-        query={{
-          key: "YOUR API KEY",
-          language: "en",
-        }}
-        textInputProps={{
-          onFocus: () => setIsFocused(true),
-          onBlur: () => setIsFocused(false),
-        }}
-      />
+      <TouchableOpacity style={styles.input} onPress={() => setIsVisible(true)}>
+        <Text type="bl" color={value ? colors.black : colors.placeholder}>
+          {!!value ? value : placeholder}
+        </Text>
+      </TouchableOpacity>
       {!!errorMsg && (
-        <Text style={{ marginTop: 60 }} type="caption" color={colors.red}>
+        <Text type="caption" color={colors.red}>
           {errorMsg}
         </Text>
       )}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isVisible}
+        onRequestClose={() => setIsVisible(false)}
+      >
+        <View style={styles.modal}>
+          <GooglePlacesAutocomplete
+            ref={ref}
+            listViewDisplayed="auto"
+            placeholder={placeholder}
+            onFail={(err) => console.log("Google places auto complete", err)}
+            onNotFound={() => console.log("Google places auto complete not found")}
+            onPress={(data) => {
+              setIsVisible(false)
+              onAddressSelect(data.description)
+            }}
+            query={{
+              key: GOOGLE_PLACE_API_KEY,
+              language: "en",
+            }}
+            styles={{
+              textInput: [
+                styles.googlePlace,
+                isFocused ? { borderColor: colors.primary } : {},
+              ],
+            }}
+            textInputProps={{
+              onFocus: () => setIsFocused(true),
+              onBlur: () => setIsFocused(false),
+            }}
+          />
+          <PrimaryBtn label="Cancel" onPress={() => setIsVisible(false)} />
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -50,9 +97,25 @@ const AddressField: React.FC<Props> = ({ label, placeholder, errorMsg }) => {
 export default AddressField
 
 const useStyles = makeStyles(({ colors }) => ({
-  container: {
-    paddingVertical: 25,
+  input: {
     paddingHorizontal: 15,
+    paddingVertical: 20,
+    marginTop: 5,
+    marginBottom: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.grey4,
+    backgroundColor: colors.grey5,
+  },
+  modal: {
+    flex: 1,
+    backgroundColor: colors.white,
+    padding: 20,
+  },
+  googlePlace: {
+    height: Platform.OS === "ios" ? 51 : 60,
+    paddingHorizontal: 15,
+    padding: 20,
     marginTop: 5,
     marginBottom: 15,
     borderWidth: 1,
