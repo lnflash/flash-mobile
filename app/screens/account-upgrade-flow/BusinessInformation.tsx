@@ -62,7 +62,9 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
         <AddressField
           label="Business address"
           placeholder={"Enter your business address"}
+          value={businessAddress}
           errorMsg={businessAddressErr}
+          onAddressSelect={(val) => dispatch(setBusinessInfo({ businessAddress: val }))}
         />
       </View>
       <PrimaryBtn
