@@ -93,6 +93,7 @@
     "@sinonjs/text-encoding": "^0.7.2",
     "@snort/system": "^1.1.8",
     "@stablelib/xchacha20": "^1.0.1",
+    "@supabase/supabase-js": "^2.49.4",
     "apollo3-cache-persist": "^0.14.1",
     "axios": "^1.6.2",
     "bech32": "^2.0.0",
