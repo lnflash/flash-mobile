@@ -35,9 +35,10 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
 
   const [fullNameErr, setFullNameErr] = useState<string>()
   const [phoneNumberErr, setPhoneNumberErr] = useState<string>()
-  const { fullName, countryCode, phoneNumber, email } = useAppSelector(
-    (state) => state.accountUpgrade.personalInfo,
-  )
+  const {
+    id,
+    personalInfo: { fullName, countryCode, phoneNumber, email },
+  } = useAppSelector((state) => state.accountUpgrade)
 
   const {
     submitPhoneNumber,
@@ -118,6 +119,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
           countryCode={countryCode}
           phoneNumber={phoneNumber}
           errorMsg={phoneNumberErr}
+          disabled={!!id}
           setCountryCode={(val) => {
             setPhoneNumberErr(undefined)
             setCountryCode(val)
