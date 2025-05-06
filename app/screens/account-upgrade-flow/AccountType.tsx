@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { TouchableOpacity, View } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
@@ -12,8 +12,15 @@ import { Screen } from "@app/components/screen"
 import { useLevel } from "@app/graphql/level-context"
 
 // store
-import { useAppDispatch } from "@app/store/redux"
-import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
+import { useAppDispatch, useAppSelector } from "@app/store/redux"
+import {
+  setAccountUpgrade,
+  setPersonalInfo,
+} from "@app/store/redux/slices/accountUpgradeSlice"
+
+// utils
+import { fetchUser } from "@app/supabase"
+import { parsePhoneNumber } from "libphonenumber-js"
 
 type Props = StackScreenProps<RootStackParamList, "AccountType">
 
@@ -22,6 +29,29 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { currentLevel } = useLevel()
+
+  const { userData } = useAppSelector((state) => state.user)
+
+  useEffect(() => {
+    fetchUserFromSupabase()
+  }, [])
+
+  const fetchUserFromSupabase = async () => {
+    if (userData.phone) {
+      const res = await fetchUser(userData.phone)
+      const parsedPhone = parsePhoneNumber(userData.phone)
+
+      dispatch(setAccountUpgrade({ id: res.id }))
+      dispatch(
+        setPersonalInfo({
+          fullName: res.name,
+          countryCode: parsedPhone.country,
+          phoneNumber: parsedPhone.nationalNumber,
+          email: res.email,
+        }),
+      )
+    }
+  }
 
   const onPress = (accountType: string) => {
     dispatch(setAccountUpgrade({ accountType }))
@@ -44,18 +74,20 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
           <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
         </TouchableOpacity>
       )}
-      <TouchableOpacity style={styles.card} onPress={() => onPress("pro")}>
-        <Icon name={"briefcase"} size={35} color={colors.grey1} type="ionicon" />
-        <View style={styles.textWrapper}>
-          <Text type="bl" bold>
-            Pro
-          </Text>
-          <Text type="bm" style={{ marginTop: 2 }}>
-            Accept payments as a Pro Flashpoint. Business Name & Address required
-          </Text>
-        </View>
-        <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
-      </TouchableOpacity>
+      {(currentLevel === AccountLevel.Zero || currentLevel === AccountLevel.One) && (
+        <TouchableOpacity style={styles.card} onPress={() => onPress("pro")}>
+          <Icon name={"briefcase"} size={35} color={colors.grey1} type="ionicon" />
+          <View style={styles.textWrapper}>
+            <Text type="bl" bold>
+              Pro
+            </Text>
+            <Text type="bm" style={{ marginTop: 2 }}>
+              Accept payments as a Pro Flashpoint. Business Name & Address required
+            </Text>
+          </View>
+          <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
+        </TouchableOpacity>
+      )}
       <TouchableOpacity style={styles.card} onPress={() => onPress("merchant")}>
         <Icon name={"cart"} size={35} color={colors.grey1} type="ionicon" />
         <View style={styles.textWrapper}>

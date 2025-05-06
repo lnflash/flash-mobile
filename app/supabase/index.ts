@@ -126,7 +126,7 @@ export async function fetchUser(phone: string) {
     .select("*") // or specify fields: 'id, name, email'
     .eq("phone", phone) // phone number to match
     .single() // if expecting only one match
-
+  console.log(data, error)
   if (error) {
     console.error("Fetch error:", error)
   } else {
