@@ -1,36 +1,49 @@
 // Contacts.tsx
 import React, { useEffect, useState } from "react"
-import { FlatList, Text, View, Image, ActivityIndicator } from "react-native"
+import { FlatList, Text, View, ActivityIndicator, TouchableOpacity } from "react-native"
 import { useStyles } from "./style" // Adjust the path as needed
 import { useChatContext } from "./chatContext"
 import { nip19, Event } from "nostr-tools"
 import { useNavigation } from "@react-navigation/native"
-import { ListItem, useTheme } from "@rneui/themed"
+import { useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import ChatIcon from "@app/assets/icons/chat.svg"
-import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 import { UserSearchBar } from "./UserSearchBar"
 import { SearchListItem } from "./searchListItem"
 import { hexToBytes } from "@noble/curves/abstract/utils"
 import { getContactsFromEvent } from "./utils"
 import ContactCard from "./contactCard"
-import { Swipeable } from "react-native-gesture-handler"
 import { fetchNostrUsers, publicRelays } from "@app/utils/nostr"
-import Icon from "react-native-vector-icons/Ionicons"
-import { bytesToHex } from "@noble/hashes/utils"
 
 interface ContactsProps {
   userPrivateKey: string
 }
 
 const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
-  const styles = useStyles()
+  const baseStyles = useStyles()
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
   const { poolRef, profileMap, contactsEvent, addEventToProfiles } = useChatContext()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   const { theme } = useTheme()
   const colors = theme.colors
+
+  // Merge the base styles with additional styles
+  const styles = {
+    ...baseStyles,
+    container: {
+      flex: 1,
+    },
+    contactCardWrapper: {
+      backgroundColor: "white",
+      borderRadius: 8,
+      marginBottom: 10,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+  }
 
   const getContactMetadata = (contact: NostrProfile) => {
     let profile = profileMap?.get(contact.pubkey || "")
@@ -47,10 +60,10 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
     console.log("unfollowing pubkey", contactPubkey)
     let profiles = contactsEvent.tags.filter((p) => p[0] === "p").map((p) => p[1])
     let tagsWithoutProfiles = contactsEvent.tags.filter((p) => p[0] !== "p")
-    let newProfiles = profiles.filter((p) => p[1] !== contactPubkey)
-    let newContactsEvent: Event = {
+    let newProfiles = profiles.filter((p) => p !== contactPubkey)
+    let newContactsEvent = {
       ...contactsEvent,
-      tags: [...tagsWithoutProfiles, newProfiles],
+      tags: [...tagsWithoutProfiles, ...newProfiles.map((p) => ["p", p])],
     }
     console.log(
       "Old Contacts event vs NewContacts Event",
@@ -79,48 +92,15 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
     </View>
   )
 
-  const renderRightActions = (item: { pubkey: string }) => {
-    return (
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          backgroundColor: colors.grey4,
-        }}
-      >
-        <Icon
-          name="remove-circle"
-          style={{ margin: 5, fontSize: 20, color: "red" }}
-          onPress={() => {
-            handleUnfollow(item.pubkey)
-          }}
-        />
-        <Icon
-          name="flash"
-          style={{ margin: 5, fontSize: 20, color: "orange" }}
-          onPress={() => {
-            navigation.navigate("sendBitcoinDestination", {
-              username: profileMap?.get(item.pubkey)?.lud16 || "",
-            })
-          }}
-        />
-        <ChatIcon
-          color={colors.primary}
-          onPress={() => {
-            navigation.navigate("messages", {
-              groupId: item.pubkey,
-              userPrivateKey: userPrivateKey,
-            })
-          }}
-          style={{ margin: 10 }}
-          fontSize={20}
-        />
-      </View>
-    )
+  const navigateToContactDetails = (contactPubkey: string) => {
+    navigation.navigate("contactDetails", {
+      contactPubkey,
+      userPrivateKey,
+    })
   }
+
   return (
-    <View>
+    <View style={styles.container}>
       <UserSearchBar setSearchedUsers={setSearchedUsers} />
       {searchedUsers.length !== 0 ? (
         <FlatList
@@ -141,9 +121,10 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
           data={getContactsFromEvent(contactsEvent)}
           ListEmptyComponent={<Text>No Contacts Available</Text>}
           renderItem={({ item }) => (
-            <Swipeable
-              renderRightActions={() => renderRightActions(item)}
-              containerStyle={styles.itemContainer}
+            <TouchableOpacity
+              onPress={() => navigateToContactDetails(item.pubkey)}
+              activeOpacity={0.7}
+              style={styles.contactCardWrapper}
             >
               <ContactCard
                 item={item}
@@ -151,7 +132,7 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
                 containerStyle={styles.itemContainer}
                 style={styles.item}
               />
-            </Swipeable>
+            </TouchableOpacity>
           )}
           keyExtractor={(item) => item.pubkey!}
         />
