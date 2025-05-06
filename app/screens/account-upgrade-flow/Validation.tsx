@@ -16,13 +16,14 @@ import { useAppSelector } from "@app/store/redux"
 
 // utils
 import { PhoneCodeChannelToFriendlyName } from "../phone-auth-screen/request-phone-code-login"
+import { insertUser } from "@app/supabase"
 
 type Props = StackScreenProps<RootStackParamList, "Validation">
 
 const Validation: React.FC<Props> = ({ navigation, route }) => {
   const { phone, channel } = route.params
   const styles = useStyles()
-  const { accountType } = useAppSelector((state) => state.accountUpgrade)
+  const { accountType, personalInfo } = useAppSelector((state) => state.accountUpgrade)
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
   const { toggleActivityIndicator } = useActivityIndicator()
@@ -50,7 +51,15 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
             saveToken(authToken)
           }
           if (accountType === "personal") {
-            navigation.replace("AccountUpgradeSuccess")
+            // insert user to supabase database
+            const res = await insertUser({
+              account_type: accountType,
+              name: personalInfo.fullName,
+              phone: phone,
+              email: personalInfo.email,
+            })
+            if (res) navigation.replace("AccountUpgradeSuccess")
+            else alert("Something went wrong. Please, try again later.")
           } else {
             navigation.replace("BusinessInformation")
           }
