@@ -22,6 +22,7 @@ type Props = {
   countryCode?: string
   phoneNumber?: string
   errorMsg?: string
+  disabled?: boolean
   setPhoneNumber: (number: string) => void
   setCountryCode: (countryCode: PhoneNumberCountryCode) => void
 }
@@ -30,6 +31,7 @@ const PhoneNumber: React.FC<Props> = ({
   countryCode,
   phoneNumber,
   errorMsg,
+  disabled,
   setPhoneNumber,
   setCountryCode,
 }) => {
@@ -43,9 +45,13 @@ const PhoneNumber: React.FC<Props> = ({
   const renderCountryCode = ({ countryCode, onOpen }: FlagButtonProps) => {
     return (
       countryCode && (
-        <TouchableOpacity style={styles.countryPicker} onPress={onOpen}>
+        <TouchableOpacity
+          style={styles.countryPicker}
+          disabled={disabled}
+          onPress={onOpen}
+        >
           <Flag countryCode={countryCode} flagSize={16} />
-          <Text type="bl">
+          <Text type="bl" color={disabled ? colors.grey3 : colors.black}>
             +{getCountryCallingCode(countryCode as PhoneNumberCountryCode)}
           </Text>
         </TouchableOpacity>
@@ -76,6 +82,7 @@ const PhoneNumber: React.FC<Props> = ({
           textContentType="telephoneNumber"
           keyboardType="phone-pad"
           value={phoneNumber}
+          editable={!disabled}
           onChangeText={setPhoneNumber}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
