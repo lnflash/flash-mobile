@@ -51,13 +51,14 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
             saveToken(authToken)
           }
           if (accountType === "personal") {
-            // insert user to supabase database
+            toggleActivityIndicator(true)
             const res = await insertUser({
               account_type: accountType,
               name: personalInfo.fullName,
               phone: phone,
               email: personalInfo.email,
             })
+            toggleActivityIndicator(false)
             if (res) navigation.replace("AccountUpgradeSuccess")
             else alert("Something went wrong. Please, try again later.")
           } else {
