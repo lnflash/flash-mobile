@@ -7,32 +7,25 @@ import { SUPABASE_URL, SUPABASE_KEY } from "@env"
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 type User = {
-  account_currency?: string
   account_type?: string
-  attempt?: string
-  bank_account_number?: string
-  bank_account_type?: string
-  bank_branch?: string
-  bank_name?: string
-  business_address?: string
-  business_name?: string
-  client_version?: string
-  created_at?: string
-  device_info?: string
+  name?: string
+  phone?: string
   email?: string
-  id?: string
+  business_name?: string
+  business_address?: string
+  latitude?: number
+  longitude?: number
+  bank_name?: string
+  bank_branch?: string
+  bank_account_type?: string
+  account_currency?: string
+  bank_account_number?: string
   id_image_url?: string
-  latitude?: string
-  longitude?: string
-  name: string
-  phone: string
-  signup_completed?: boolean
-  submission_source?: null
-  submitted_at?: string
-  terminal_requested?: boolean
   terms_accepted?: boolean
-  timestamp?: string
-  user_agent?: string
+  terminal_requested?: boolean
+  client_version?: string
+  device_info?: string
+  signup_completed?: boolean
 }
 
 // Upload file using standard upload
@@ -76,15 +69,11 @@ export async function uploadFile(file: any) {
   }
 }
 
-export async function insertUser(userData: any) {
+export async function insertUser(userData: User) {
   try {
-    const { data, error } = await supabase.from("signups").insert([
-      {
-        ...userData,
-        terms_accepted: true,
-      },
-    ])
-    console.log(data, error)
+    const { data, error } = await supabase
+      .from("signups")
+      .insert([{ ...userData, terms_accepted: true }])
     if (error) {
       console.error("Insert error:", error)
       return false
@@ -93,30 +82,22 @@ export async function insertUser(userData: any) {
       return true
     }
   } catch (err) {
-    console.log("????????>>>>>>>", err)
+    console.log("SUPABASE INSERT USER CATCH ERR: ", err)
   }
 }
 
-export async function updateUser() {
+export async function updateUser(id: string, userData: User) {
   try {
-    const { data, error } = await supabase
-      .from("signups")
-      .update({ email: "new@email.com" })
-      .eq("phone", "+1234567890")
-
+    const { data, error } = await supabase.from("signups").update(userData).eq("id", id)
     if (error) {
       console.error("Update error:", error)
+      return false
     } else {
       console.log("Updated user:", data)
-    }
-    console.log(data, error)
-    if (error) {
-      console.error("Insert error:", error)
-    } else {
-      console.log("Insert success:", data)
+      return true
     }
   } catch (err) {
-    console.log("????????>>>>>>>", err)
+    console.log("SUPABASE UPDATE USER CATCH ERR: ", err)
   }
 }
 
@@ -126,7 +107,6 @@ export async function fetchUser(phone: string) {
     .select("*") // or specify fields: 'id, name, email'
     .eq("phone", phone) // phone number to match
     .single() // if expecting only one match
-  console.log(data, error)
   if (error) {
     console.error("Fetch error:", error)
   } else {
