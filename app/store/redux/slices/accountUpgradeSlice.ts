@@ -14,6 +14,8 @@ interface AccountUpgradeSlice {
   businessInfo: {
     businessName: string
     businessAddress: string
+    lat?: number
+    lng?: number
   }
   bankInfo: {
     bankName: string
@@ -39,6 +41,8 @@ const initialState: AccountUpgradeSlice = {
   businessInfo: {
     businessName: "",
     businessAddress: "",
+    lat: undefined,
+    lng: undefined,
   },
   bankInfo: {
     bankName: "",
