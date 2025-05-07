@@ -53,9 +53,6 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
     setCountryCode,
   } = useRequestPhoneCodeLogin()
 
-  console.log("PERSONAL INFO STATUS >>>>>>>>>>>>", status)
-  console.log("PERSONAL INFO ERROR >>>>>>>>>>>>", error)
-
   useEffect(() => {
     if (
       status === RequestPhoneCodeStatus.CompletingCaptcha ||
