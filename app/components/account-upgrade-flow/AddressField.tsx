@@ -17,7 +17,7 @@ type Props = {
   placeholder: string
   value: string
   errorMsg?: string
-  onAddressSelect: (val: string) => void
+  onAddressSelect: (address: string, lat?: number, lng?: number) => void
 }
 
 const AddressField: React.FC<Props> = ({
@@ -68,9 +68,14 @@ const AddressField: React.FC<Props> = ({
             placeholder={placeholder}
             onFail={(err) => console.log("Google places auto complete", err)}
             onNotFound={() => console.log("Google places auto complete not found")}
-            onPress={(data) => {
+            fetchDetails={true}
+            onPress={(data, details) => {
               setIsVisible(false)
-              onAddressSelect(data.description)
+              onAddressSelect(
+                data.description,
+                details?.geometry.location.lat,
+                details?.geometry.location.lng,
+              )
             }}
             query={{
               key: GOOGLE_PLACE_API_KEY,
