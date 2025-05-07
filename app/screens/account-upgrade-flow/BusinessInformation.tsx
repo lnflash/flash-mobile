@@ -3,7 +3,6 @@ import { View } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { parsePhoneNumber } from "libphonenumber-js"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -11,21 +10,18 @@ import { PrimaryBtn } from "@app/components/buttons"
 import { AddressField, InputField } from "@app/components/account-upgrade-flow"
 
 // hooks
-import { useActivityIndicator } from "@app/hooks"
+import { useAccountUpgrade } from "@app/hooks"
 
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { setBusinessInfo } from "@app/store/redux/slices/accountUpgradeSlice"
-
-// utils
-import { insertUser, updateUser } from "@app/supabase"
 
 type Props = StackScreenProps<RootStackParamList, "BusinessInformation">
 
 const BusinessInformation: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
   const styles = useStyles()
-  const { toggleActivityIndicator } = useActivityIndicator()
+  const { submitAccountUpgrade } = useAccountUpgrade()
 
   const [businessNameErr, setBusinessNameErr] = useState<string>()
   const [businessAddressErr, setBusinessAddressErr] = useState<string>()
@@ -39,41 +35,17 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
   const onPressNext = async () => {
     let hasError = false
 
-    if (businessName.length < 2) {
+    if (businessName && businessName.length < 2) {
       setBusinessNameErr("Business name must be at least 2 characters")
       hasError = true
     }
-    if (businessAddress.split(",").length <= 1) {
+    if (businessAddress && businessAddress.length < 2) {
       setBusinessAddressErr("Please enter a valid address")
       hasError = true
     }
     if (!hasError) {
-      if (accountType === "pro") {
-        toggleActivityIndicator(true)
-        const data = {
-          account_type: accountType,
-          business_name: businessName,
-          business_address: businessAddress,
-          latitude: lat,
-          longitude: lng,
-        }
-        let res = null
-        if (!id) {
-          const parsedPhoneNumber = parsePhoneNumber(
-            personalInfo.phoneNumber,
-            personalInfo.countryCode,
-          )
-          const updatedData = {
-            ...data,
-            name: personalInfo.fullName,
-            phone: parsedPhoneNumber.number,
-            email: personalInfo.email,
-          }
-          res = await insertUser(updatedData)
-        } else {
-          res = await updateUser(id, data)
-        }
-        toggleActivityIndicator(false)
+      if (accountType === "business") {
+        const res = await submitAccountUpgrade()
         if (res) navigation.navigate("AccountUpgradeSuccess")
         else alert("Something went wrong. Please, try again later.")
       } else {

@@ -10,17 +10,11 @@ import { Screen } from "@app/components/screen"
 
 // hooks
 import { useLevel } from "@app/graphql/level-context"
+import { useAccountUpgrade } from "@app/hooks"
 
 // store
-import { useAppDispatch, useAppSelector } from "@app/store/redux"
-import {
-  setAccountUpgrade,
-  setPersonalInfo,
-} from "@app/store/redux/slices/accountUpgradeSlice"
-
-// utils
-import { fetchUser } from "@app/supabase"
-import { parsePhoneNumber } from "libphonenumber-js"
+import { useAppDispatch } from "@app/store/redux"
+import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
 
 type Props = StackScreenProps<RootStackParamList, "AccountType">
 
@@ -29,29 +23,11 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { currentLevel } = useLevel()
-
-  const { userData } = useAppSelector((state) => state.user)
+  const { fetchAccountUpgrade } = useAccountUpgrade()
 
   useEffect(() => {
-    fetchUserFromSupabase()
+    fetchAccountUpgrade()
   }, [])
-
-  const fetchUserFromSupabase = async () => {
-    if (userData.phone) {
-      const res = await fetchUser(userData.phone)
-      const parsedPhone = parsePhoneNumber(userData.phone)
-
-      dispatch(setAccountUpgrade({ id: res.id }))
-      dispatch(
-        setPersonalInfo({
-          fullName: res.name,
-          countryCode: parsedPhone.country,
-          phoneNumber: parsedPhone.nationalNumber,
-          email: res.email,
-        }),
-      )
-    }
-  }
 
   const onPress = (accountType: string) => {
     dispatch(setAccountUpgrade({ accountType }))
@@ -75,7 +51,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       )}
       {(currentLevel === AccountLevel.Zero || currentLevel === AccountLevel.One) && (
-        <TouchableOpacity style={styles.card} onPress={() => onPress("pro")}>
+        <TouchableOpacity style={styles.card} onPress={() => onPress("business")}>
           <Icon name={"briefcase"} size={35} color={colors.grey1} type="ionicon" />
           <View style={styles.textWrapper}>
             <Text type="bl" bold>

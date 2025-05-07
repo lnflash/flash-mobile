@@ -4,56 +4,56 @@ import { Asset } from "react-native-image-picker"
 
 interface AccountUpgradeSlice {
   id?: string
-  accountType?: "personal" | "pro" | "merchant"
+  accountType?: "personal" | "business" | "merchant"
   personalInfo: {
-    fullName: string
-    countryCode: CountryCode
-    phoneNumber: string
-    email: string
+    fullName?: string
+    countryCode?: CountryCode
+    phoneNumber?: string
+    email?: string
   }
   businessInfo: {
-    businessName: string
-    businessAddress: string
+    businessName?: string
+    businessAddress?: string
     lat?: number
     lng?: number
   }
   bankInfo: {
-    bankName: string
-    bankBranch: string
-    accountType: string
-    currency: string
-    accountNumber: string
+    bankName?: string
+    bankBranch?: string
+    bankAccountType?: string
+    currency?: string
+    accountNumber?: string
     idDocument?: Asset
   }
   loading: boolean
-  error: string
+  error?: string
 }
 
 const initialState: AccountUpgradeSlice = {
   id: undefined,
   accountType: undefined,
   personalInfo: {
-    fullName: "",
+    fullName: undefined,
     countryCode: "JM",
-    phoneNumber: "",
-    email: "",
+    phoneNumber: undefined,
+    email: undefined,
   },
   businessInfo: {
-    businessName: "",
-    businessAddress: "",
+    businessName: undefined,
+    businessAddress: undefined,
     lat: undefined,
     lng: undefined,
   },
   bankInfo: {
-    bankName: "",
-    bankBranch: "",
-    accountType: "",
-    currency: "",
-    accountNumber: "",
+    bankName: undefined,
+    bankBranch: undefined,
+    bankAccountType: undefined,
+    currency: undefined,
+    accountNumber: undefined,
     idDocument: undefined,
   },
   loading: false,
-  error: "",
+  error: undefined,
 }
 
 export const accountUpgradeSlice = createSlice({

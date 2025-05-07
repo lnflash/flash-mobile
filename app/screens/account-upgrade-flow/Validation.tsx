@@ -9,14 +9,13 @@ import { Screen } from "@app/components/screen"
 import { InputField } from "@app/components/account-upgrade-flow"
 
 // hooks
-import { useActivityIndicator, useAppConfig } from "@app/hooks"
+import { useAccountUpgrade, useActivityIndicator, useAppConfig } from "@app/hooks"
 import { useUserLoginUpgradeMutation } from "@app/graphql/generated"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAppSelector } from "@app/store/redux"
 
 // utils
 import { PhoneCodeChannelToFriendlyName } from "../phone-auth-screen/request-phone-code-login"
-import { insertUser } from "@app/supabase"
 
 type Props = StackScreenProps<RootStackParamList, "Validation">
 
@@ -27,6 +26,7 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
   const { toggleActivityIndicator } = useActivityIndicator()
+  const { submitAccountUpgrade } = useAccountUpgrade()
 
   const [code, setCode] = useState<string>()
   const [errorMsg, setErrorMsg] = useState<string>()
@@ -51,14 +51,7 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
             saveToken(authToken)
           }
           if (accountType === "personal") {
-            toggleActivityIndicator(true)
-            const res = await insertUser({
-              account_type: accountType,
-              name: personalInfo.fullName,
-              phone: phone,
-              email: personalInfo.email,
-            })
-            toggleActivityIndicator(false)
+            const res = await submitAccountUpgrade()
             if (res) navigation.replace("AccountUpgradeSuccess")
             else alert("Something went wrong. Please, try again later.")
           } else {

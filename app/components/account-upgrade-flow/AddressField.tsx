@@ -15,7 +15,7 @@ import { GOOGLE_PLACE_API_KEY } from "@env"
 type Props = {
   label: string
   placeholder: string
-  value: string
+  value?: string
   errorMsg?: string
   onAddressSelect: (address: string, lat?: number, lng?: number) => void
 }
