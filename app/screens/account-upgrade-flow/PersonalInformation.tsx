@@ -76,8 +76,8 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
   const onPressNext = async (channel?: PhoneCodeChannelType) => {
     try {
       let hasError = false
-      const parsedPhoneNumber = parsePhoneNumber(phoneNumber, countryCode)
-      if (fullName?.length < 2) {
+      const parsedPhoneNumber = parsePhoneNumber(phoneNumber || "", countryCode)
+      if (fullName && fullName?.length < 2) {
         setFullNameErr("Name must be at least 2 characters")
         hasError = true
       }
