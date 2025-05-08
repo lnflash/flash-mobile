@@ -21,6 +21,7 @@ type NostrProfile = {
   picture?: string
   lud16?: string
   about?: string
+  website?: string
 }
 
 interface EditProfileUIProps {
@@ -36,6 +37,8 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
     nip05: "",
     picture: "",
     lud16: "",
+    about: "",
+    website: "",
   })
 
   let { updateNostrProfile } = useNostrProfile()
@@ -176,6 +179,16 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
           placeholder="LUD-16"
           value={formData.lud16}
           onChangeText={(text) => handleInputChange("lud16", text)}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>LUD-16</Text>
+        <Input
+          style={styles.input}
+          placeholder="Website"
+          value={formData.lud16}
+          onChangeText={(text) => handleInputChange("website", text)}
         />
       </View>
 

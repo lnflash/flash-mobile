@@ -13,6 +13,7 @@ interface ContactCardProps {
   profileMap?: Map<string, NostrProfile>
   style?: Object
   containerStyle?: Object
+  onPress: () => void
 }
 
 const ContactCard: React.FC<ContactCardProps> = ({
@@ -20,6 +21,7 @@ const ContactCard: React.FC<ContactCardProps> = ({
   profileMap,
   style,
   containerStyle,
+  onPress,
 }) => {
   const { theme } = useTheme()
   const colors = theme.colors
@@ -35,10 +37,7 @@ const ContactCard: React.FC<ContactCardProps> = ({
   }
 
   return (
-    <ListItem
-      style={style}
-      containerStyle={[{ borderRadius: 10, padding: 0 }, containerStyle]}
-    >
+    <ListItem style={style} containerStyle={containerStyle} onPress={onPress}>
       <Image
         source={{
           uri:

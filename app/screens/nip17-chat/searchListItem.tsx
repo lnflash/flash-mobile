@@ -10,6 +10,8 @@ import { useChatContext } from "./chatContext"
 import { addToContactList } from "@app/utils/nostr"
 import Icon from "react-native-vector-icons/Ionicons"
 import { getContactsFromEvent } from "./utils"
+import { useState } from "react"
+import { ActivityIndicator } from "react-native"
 
 interface SearchListItemProps {
   item: Chat
@@ -20,6 +22,7 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
   userPrivateKey,
 }) => {
   const { poolRef, contactsEvent } = useChatContext()
+  const [isLoading, setIsLoading] = useState(false)
 
   const isUserAdded = () => {
     if (!contactsEvent) return false
@@ -44,6 +47,22 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
         : "checkmark-outline"
     else return "person-add"
   }
+
+  const handleAddContact = async () => {
+    console.log("Adding Contact, poolref present?", poolRef)
+    if (isUserAdded() || !poolRef) return
+    try {
+      setIsLoading(true)
+      console.log("Trying to add user to contact list")
+      await addToContactList(userPrivateKey, item.id, poolRef.current, contactsEvent)
+      console.log("probably added user to contact list")
+    } catch (error) {
+      console.error("Error adding contact:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <ListItem
       key={item.id}
@@ -74,19 +93,17 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
         </ListItem.Title>
       </ListItem.Content>
 
-      <Icon
-        name={getIcon()!}
-        size={24}
-        color={colors.primary}
-        disabled={isUserAdded()}
-        onPress={async () => {
-          console.log("Trying to add user to contact list")
-          if (isUserAdded()) return false
-          if (!poolRef) return
-          await addToContactList(userPrivateKey, item.id, poolRef.current, contactsEvent)
-          console.log("probably added user to contact list")
-        }}
-      />
+      {isLoading ? (
+        <ActivityIndicator size="small" color={colors.primary} />
+      ) : (
+        <Icon
+          name={getIcon()!}
+          size={24}
+          color={colors.primary}
+          disabled={isUserAdded()}
+          onPress={handleAddContact}
+        />
+      )}
     </ListItem>
   )
 }

@@ -45,35 +45,6 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
     },
   }
 
-  const getContactMetadata = (contact: NostrProfile) => {
-    let profile = profileMap?.get(contact.pubkey || "")
-    return (
-      profile?.nip05 ||
-      profile?.name ||
-      profile?.username ||
-      nip19.npubEncode(contact.pubkey!).slice(0, 9) + ".."
-    )
-  }
-
-  const handleUnfollow = (contactPubkey: string) => {
-    if (!poolRef || !contactsEvent) return
-    console.log("unfollowing pubkey", contactPubkey)
-    let profiles = contactsEvent.tags.filter((p) => p[0] === "p").map((p) => p[1])
-    let tagsWithoutProfiles = contactsEvent.tags.filter((p) => p[0] !== "p")
-    let newProfiles = profiles.filter((p) => p !== contactPubkey)
-    let newContactsEvent = {
-      ...contactsEvent,
-      tags: [...tagsWithoutProfiles, ...newProfiles.map((p) => ["p", p])],
-    }
-    console.log(
-      "Old Contacts event vs NewContacts Event",
-      contactPubkey,
-      contactsEvent,
-      newContactsEvent,
-    )
-    poolRef.current.publish(publicRelays, newContactsEvent)
-  }
-
   useEffect(() => {
     if (!poolRef) return
     let contactPubkeys =
@@ -117,22 +88,17 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
         />
       ) : contactsEvent ? (
         <FlatList
-          contentContainerStyle={{ ...styles.listContainer, margin: 20 }}
+          contentContainerStyle={{ ...styles.listContainer }}
           data={getContactsFromEvent(contactsEvent)}
           ListEmptyComponent={<Text>No Contacts Available</Text>}
           renderItem={({ item }) => (
-            <TouchableOpacity
+            <ContactCard
+              item={item}
+              profileMap={profileMap}
+              containerStyle={styles.itemContainer}
+              style={styles.item}
               onPress={() => navigateToContactDetails(item.pubkey)}
-              activeOpacity={0.7}
-              style={styles.contactCardWrapper}
-            >
-              <ContactCard
-                item={item}
-                profileMap={profileMap}
-                containerStyle={styles.itemContainer}
-                style={styles.item}
-              />
-            </TouchableOpacity>
+            />
           )}
           keyExtractor={(item) => item.pubkey!}
         />
