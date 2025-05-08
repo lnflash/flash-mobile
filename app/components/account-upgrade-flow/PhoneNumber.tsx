@@ -16,13 +16,13 @@ import CountryPicker, {
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useRequestPhoneCodeLogin } from "@app/screens/phone-auth-screen/request-phone-code-login"
 
 type Props = {
   countryCode?: string
   phoneNumber?: string
   errorMsg?: string
   disabled?: boolean
+  supportedCountries: CountryCode[]
   setPhoneNumber: (number: string) => void
   setCountryCode: (countryCode: PhoneNumberCountryCode) => void
 }
@@ -32,13 +32,13 @@ const PhoneNumber: React.FC<Props> = ({
   phoneNumber,
   errorMsg,
   disabled,
+  supportedCountries,
   setPhoneNumber,
   setCountryCode,
 }) => {
   const styles = useStyles()
   const { mode, colors } = useTheme().theme
   const { LL } = useI18nContext()
-  const { supportedCountries } = useRequestPhoneCodeLogin()
 
   const [isFocused, setIsFocused] = useState(false)
 
