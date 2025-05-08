@@ -5,6 +5,7 @@ import { Asset } from "react-native-image-picker"
 interface AccountUpgradeSlice {
   id?: string
   accountType?: "personal" | "business" | "merchant"
+  upgradeCompleted?: boolean
   personalInfo: {
     fullName?: string
     countryCode?: CountryCode
@@ -32,6 +33,7 @@ interface AccountUpgradeSlice {
 const initialState: AccountUpgradeSlice = {
   id: undefined,
   accountType: undefined,
+  upgradeCompleted: undefined,
   personalInfo: {
     fullName: undefined,
     countryCode: "JM",
