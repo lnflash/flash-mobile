@@ -125,6 +125,7 @@ import {
   AccountType,
   Validation,
   Success,
+  TestTransaction,
 } from "@app/screens/account-upgrade-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
@@ -623,6 +624,11 @@ export const RootStack = () => {
         name="AccountUpgradeSuccess"
         component={Success}
         options={{ headerShown: false }}
+      />
+      <RootNavigator.Screen
+        name="TestTransaction"
+        component={TestTransaction}
+        options={{ title: "Transaction Verification" }}
       />
     </RootNavigator.Navigator>
   )
