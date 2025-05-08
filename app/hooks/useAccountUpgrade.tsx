@@ -30,7 +30,13 @@ export const useAccountUpgrade = () => {
       toggleActivityIndicator(true)
       const res = await fetchUser(userData.phone)
       const parsedPhone = parsePhoneNumber(userData.phone)
-      dispatch(setAccountUpgrade({ id: res.id }))
+      dispatch(
+        setAccountUpgrade({
+          id: res.id,
+          accountType: res.account_type,
+          upgradeCompleted: res.signup_completed,
+        }),
+      )
       dispatch(
         setPersonalInfo({
           fullName: res.name,
