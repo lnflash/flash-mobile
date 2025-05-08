@@ -34,6 +34,7 @@ type RenderItemProps = {
     title: string
     description: string
     image: any
+    pending?: boolean
     onPress: () => void
   }
   index: number
@@ -61,13 +62,19 @@ const QuickStart = () => {
     if (credentials) setHasRecoveryPhrase(true)
   }
 
+  const upgradePending = false
+
   let carouselData = [
     {
       type: "upgrade",
       title: LL.HomeScreen.upgradeTitle(),
-      description: LL.HomeScreen.upgradeDesc(),
+      description: upgradePending
+        ? "Enter test transaction amount to complete upgrading your account"
+        : LL.HomeScreen.upgradeDesc(),
       image: Account,
-      onPress: () => navigation.navigate("AccountType"),
+      pending: upgradePending,
+      onPress: () =>
+        navigation.navigate(upgradePending ? "TestTransaction" : "AccountType"),
     },
     {
       type: "currency",
@@ -177,11 +184,23 @@ const QuickStart = () => {
   const renderItem = ({ item, index }: RenderItemProps) => {
     const Image = item.image
     return (
-      <TouchableOpacity onPress={item.onPress} key={index} style={styles.itemContainer}>
+      <TouchableOpacity
+        onPress={item.onPress}
+        key={index}
+        style={[
+          styles.itemContainer,
+          item.pending ? { borderColor: colors._orange } : {},
+        ]}
+      >
         <Image height={width / 3} width={width / 3} />
         <View style={styles.texts}>
           <Text type="h1" bold style={styles.title}>
             {item.title}
+            {item.pending && (
+              <Text type="p1" color={colors._orange}>
+                {`  (Pending)`}
+              </Text>
+            )}
           </Text>
           <Text type="bl">{item.description}</Text>
         </View>
