@@ -4,6 +4,7 @@ import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { AccountLevel, PhoneCodeChannelType } from "@app/graphql/generated"
+import { CountryCode } from "react-native-country-picker-modal"
 import { parsePhoneNumber } from "libphonenumber-js/mobile"
 
 // components
@@ -50,6 +51,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
     phoneCodeChannel,
     error,
     validatedPhoneNumber,
+    supportedCountries,
     setCountryCode,
   } = useRequestPhoneCodeLogin()
 
@@ -117,6 +119,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
           phoneNumber={phoneNumber}
           errorMsg={phoneNumberErr}
           disabled={!!id}
+          supportedCountries={supportedCountries as CountryCode[]}
           setCountryCode={(val) => {
             setPhoneNumberErr(undefined)
             setCountryCode(val)
