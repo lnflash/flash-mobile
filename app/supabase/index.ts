@@ -51,17 +51,18 @@ export async function uploadFile(file: any) {
     const fileName = `${secureFileName}.${fileExt}`
     const filePath = `${fileName}`
 
-    console.log(">>>>>>>>>>", filePath)
-
     const { data, error } = await supabase.storage
-      .from("id-documents")
+      .from("id_uploads")
       .upload(filePath, file)
     if (error) {
       // Handle error
       console.log("UPLOAD ERROR>>>>>>>", error)
+      return undefined
     } else {
       // Handle success
       console.log("UPLOAD SUCCESS>>>>>>>", data)
+      const res = supabase.storage.from("id_uploads").getPublicUrl(data.path)
+      return res.data.publicUrl
     }
     return
   } catch (err) {
@@ -112,5 +113,20 @@ export async function fetchUser(phone: string) {
   } else {
     console.log("User data:", data)
     return data
+  }
+}
+
+export async function deleteUser(id: string) {
+  const { data, error } = await supabase
+    .from("signups") // your table name
+    .delete()
+    .eq("id", id) // filter to match the row
+
+  if (error) {
+    console.error("Delete error:", error)
+    return false
+  } else {
+    console.log("Deleted row:", data)
+    return true
   }
 }
