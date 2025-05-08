@@ -13,6 +13,9 @@ import {
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 
+// hooks
+import { useAccountUpgrade } from "@app/hooks"
+
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { setBankInfo } from "@app/store/redux/slices/accountUpgradeSlice"
@@ -38,6 +41,7 @@ type Props = StackScreenProps<RootStackParamList, "BankInformation">
 const BankInformation: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
   const styles = useStyles()
+  const { submitAccountUpgrade } = useAccountUpgrade()
 
   const [nameErr, setNameErr] = useState<string>()
   const [branchErr, setBranchErr] = useState<string>()
@@ -45,16 +49,25 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
   const [currencyErr, setCurrencyErr] = useState<string>()
   const [accountNumErr, setAccountNumErr] = useState<string>()
   const [idDocumentErr, setIdDocumentErr] = useState<string>()
-  const { bankName, bankBranch, accountType, currency, accountNumber, idDocument } =
-    useAppSelector((state) => state.accountUpgrade.bankInfo)
+  const {
+    accountType,
+    bankInfo: {
+      bankName,
+      bankBranch,
+      bankAccountType,
+      currency,
+      accountNumber,
+      idDocument,
+    },
+  } = useAppSelector((state) => state.accountUpgrade)
 
-  const onPressNext = () => {
+  const onPressNext = async () => {
     let hasError = false
-    if (bankName.length < 2) {
+    if (bankName && bankName.length < 2) {
       setNameErr("Bank name is required")
       hasError = true
     }
-    if (bankBranch.length < 2) {
+    if (bankBranch && bankBranch.length < 2) {
       setBranchErr("Branch is required")
       hasError = true
     }
@@ -66,7 +79,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
       setCurrencyErr("Currency is required")
       hasError = true
     }
-    if (accountNumber.length < 4) {
+    if (accountNumber && accountNumber.length < 4) {
       setAccountNumErr("Account number is required")
       hasError = true
     }
@@ -75,7 +88,9 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
       hasError = true
     }
     if (!hasError) {
-      navigation.navigate("AccountUpgradeSuccess")
+      const res = await submitAccountUpgrade()
+      if (res) navigation.navigate("AccountUpgradeSuccess")
+      else alert("Something went wrong. Please, try again later.")
     }
   }
 
@@ -106,18 +121,18 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           label="Account Type"
           placeholder={"Select account type"}
           data={accountTypes}
-          value={accountType}
+          value={bankAccountType || ""}
           errorMsg={accountTypeErr}
           onChange={(val) => {
             setAccountTypeErr(undefined)
-            dispatch(setBankInfo({ accountType: val }))
+            dispatch(setBankInfo({ bankAccountType: val }))
           }}
         />
         <DropDownField
           label="Currency"
           placeholder="Select currency"
           data={currencies}
-          value={currency}
+          value={currency || ""}
           errorMsg={currencyErr}
           onChange={(val) => {
             setCurrencyErr(undefined)

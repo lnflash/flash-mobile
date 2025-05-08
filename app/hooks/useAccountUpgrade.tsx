@@ -1,3 +1,4 @@
+import { Platform } from "react-native"
 import DeviceInfo from "react-native-device-info"
 import { parsePhoneNumber } from "libphonenumber-js"
 
@@ -8,12 +9,13 @@ import { useActivityIndicator } from "./useActivityIndicator"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import {
   setAccountUpgrade,
+  setBankInfo,
   setBusinessInfo,
   setPersonalInfo,
 } from "@app/store/redux/slices/accountUpgradeSlice"
 
 // supabase
-import { fetchUser, insertUser, updateUser } from "@app/supabase"
+import { fetchUser, insertUser, updateUser, uploadFile } from "@app/supabase"
 
 export const useAccountUpgrade = () => {
   const dispatch = useAppDispatch()
@@ -21,7 +23,6 @@ export const useAccountUpgrade = () => {
   const { id, accountType, personalInfo, businessInfo, bankInfo } = useAppSelector(
     (state) => state.accountUpgrade,
   )
-
   const { toggleActivityIndicator } = useActivityIndicator()
 
   const fetchAccountUpgrade = async () => {
@@ -46,6 +47,15 @@ export const useAccountUpgrade = () => {
           lng: res.longitude,
         }),
       )
+      dispatch(
+        setBankInfo({
+          bankName: res.bank_name,
+          bankBranch: res.bank_branch,
+          bankAccountType: res.bank_account_type,
+          currency: res.account_currency,
+          accountNumber: res.bank_account_number,
+        }),
+      )
       toggleActivityIndicator(false)
     }
   }
@@ -57,6 +67,11 @@ export const useAccountUpgrade = () => {
       personalInfo.phoneNumber || "",
       personalInfo.countryCode,
     )
+
+    let id_image_url = undefined
+    if (accountType === "merchant") {
+      id_image_url = await uploadFile(bankInfo.idDocument)
+    }
 
     const data = {
       account_type: accountType,
@@ -72,11 +87,11 @@ export const useAccountUpgrade = () => {
       bank_account_type: bankInfo.bankAccountType,
       account_currency: bankInfo.currency,
       bank_account_number: bankInfo.accountNumber,
-      id_image_url: "",
+      id_image_url: id_image_url,
       terms_accepted: true,
       terminal_requested: undefined,
       client_version: readableVersion,
-      device_info: undefined,
+      device_info: Platform.OS,
       signup_completed: undefined,
     }
 
