@@ -1,4 +1,3 @@
-import { SearchBar } from "@rneui/base"
 import { useTheme } from "@rneui/themed"
 import * as React from "react"
 import { useCallback, useState } from "react"
@@ -7,15 +6,15 @@ import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
 import { Screen } from "../../components/screen"
+import { bytesToHex } from "@noble/hashes/utils"
 import { testProps } from "../../utils/testProps"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { Event, SubCloser, getPublicKey, nip05, nip19 } from "nostr-tools"
+import { getPublicKey, nip19 } from "nostr-tools"
 import {
   convertRumorsToGroups,
   fetchNostrUsers,
   fetchSecretFromLocalStorage,
-  getGroupId,
 } from "@app/utils/nostr"
 import { useStyles } from "./style"
 import { SearchListItem } from "./searchListItem"
@@ -27,10 +26,14 @@ import { useAppSelector } from "@app/store/redux"
 import { ImportNsecModal } from "../../components/import-nsec/import-nsec-modal"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
+import Contacts from "./contacts"
+import { UserSearchBar } from "./UserSearchBar"
+
+const Tab = createMaterialTopTabNavigator()
 
 export const NIP17Chat: React.FC = () => {
   const styles = useStyles()
-  const { appConfig } = useAppConfig()
   const {
     theme: { colors },
   } = useTheme()
@@ -59,24 +62,6 @@ export const NIP17Chat: React.FC = () => {
   const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
-
-  const reset = useCallback(() => {
-    setSearchText("")
-    setSearchedUsers([])
-    setRefreshing(false)
-    setskipMismatchCheck(true)
-  }, [])
-
-  const searchedUsersHandler = (event: Event, closer: SubCloser) => {
-    let nostrProfile = JSON.parse(event.content)
-    addEventToProfiles(event)
-    let userPubkey = getPublicKey(privateKey!)
-    let participants = [event.pubkey, userPubkey]
-    setSearchedUsers([
-      { ...nostrProfile, id: event.pubkey, groupId: getGroupId(participants) },
-    ])
-    closer.close()
-  }
 
   React.useEffect(() => {
     const unsubscribe = () => {
@@ -122,7 +107,6 @@ export const NIP17Chat: React.FC = () => {
         }
       }
       if (initialized) {
-        setSearchText("")
         setSearchedUsers([])
         checkSecretKey()
       }
@@ -183,30 +167,16 @@ export const NIP17Chat: React.FC = () => {
         }
       }
     },
-    [privateKey],
+    [setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck, privateKey],
   )
 
   let SearchBarContent: React.ReactNode
   let ListEmptyContent: React.ReactNode
 
   SearchBarContent = (
-    <SearchBar
-      {...testProps(LL.common.chatSearch())}
-      placeholder={LL.common.chatSearch()}
-      value={searchText}
-      onChangeText={updateSearchResults}
-      platform="default"
-      round
-      showLoading={refreshing && !!searchText}
-      containerStyle={styles.searchBarContainer}
-      inputContainerStyle={styles.searchBarInputContainerStyle}
-      inputStyle={styles.searchBarText}
-      rightIconContainerStyle={styles.searchBarRightIconStyle}
-      searchIcon={<Icon name="search" size={24} color={styles.icon.color} />}
-      clearIcon={
-        <Icon name="close" size={24} onPress={reset} color={styles.icon.color} />
-      }
-    />
+    <>
+      <UserSearchBar setSearchedUsers={setSearchedUsers} />
+    </>
   )
 
   if (!initialized) {
@@ -238,63 +208,84 @@ export const NIP17Chat: React.FC = () => {
   return (
     <Screen style={{ ...styles.header, flex: 1 }}>
       {privateKey && !showImportModal ? (
-        <View style={{ flex: 1 }}>
-          {SearchBarContent}
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
+            // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+            tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+            tabBarIcon: ({ color }) => {
+              let iconName: string
+              if (route.name === "Chats") {
+                iconName = "chatbubble-ellipses-outline" // Chat icon
+              } else if (route.name === "Contacts") {
+                iconName = "people-outline" // Contacts icon
+              } else {
+                iconName = ""
+              }
+              return <Icon name={iconName} size={24} color={color} />
+            },
+            tabBarShowLabel: false, // Hide text labels
+          })}
+        >
+          <Tab.Screen name="Chats">
+            {() => (
+              <View style={{ flex: 1, ...styles.header }}>
+                {SearchBarContent}
 
-          {searchText ? (
-            <FlatList
-              contentContainerStyle={styles.listContainer}
-              data={searchedUsers}
-              ListEmptyComponent={ListEmptyContent}
-              renderItem={({ item }) => (
-                <SearchListItem item={item} userPrivateKey={privateKey!} />
-              )}
-              keyExtractor={(item) => item.id}
-            />
-          ) : (
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 24,
-                  marginTop: 20,
-                  marginLeft: 20,
-                  color: colors.primary3,
-                }}
-              >
-                Chats
-              </Text>
-              <Text
-                style={{
-                  fontSize: 16,
-                  margin: 10,
-                  marginLeft: 20,
-                  color: colors.primary3,
-                }}
-              >
-                signed in as:{" "}
-                <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-                  {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
-                </Text>
-              </Text>
-              <FlatList
-                contentContainerStyle={styles.listContainer}
-                data={groupIds}
-                ListEmptyComponent={ListEmptyContent}
-                scrollEnabled={true}
-                renderItem={({ item }) => {
-                  return (
-                    <HistoryListItem
-                      item={item}
-                      userPrivateKey={privateKey!}
-                      groups={groups}
+                {searchedUsers.length !== 0 ? (
+                  <FlatList
+                    contentContainerStyle={styles.listContainer}
+                    data={searchedUsers}
+                    ListEmptyComponent={ListEmptyContent}
+                    renderItem={({ item }) => (
+                      <SearchListItem item={item} userPrivateKey={privateKey!} />
+                    )}
+                    keyExtractor={(item) => item.id}
+                  />
+                ) : (
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        margin: 10,
+                        marginLeft: 20,
+                        color: colors.primary3,
+                      }}
+                    >
+                      signed in as:{" "}
+                      <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                        {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
+                      </Text>
+                    </Text>
+                    <FlatList
+                      contentContainerStyle={styles.listContainer}
+                      data={groupIds}
+                      ListEmptyComponent={ListEmptyContent}
+                      scrollEnabled={true}
+                      renderItem={({ item }) => {
+                        return (
+                          <HistoryListItem
+                            item={item}
+                            userPrivateKey={privateKey!}
+                            groups={groups}
+                          />
+                        )
+                      }}
+                      keyExtractor={(item) => item}
                     />
-                  )
-                }}
-                keyExtractor={(item) => item}
-              />
-            </View>
-          )}
-        </View>
+                  </View>
+                )}
+              </View>
+            )}
+          </Tab.Screen>
+          <Tab.Screen name="Contacts">
+            {() => (
+              <View style={{ ...styles.header, height: "100%" }}>
+                <Contacts userPrivateKey={bytesToHex(privateKey)} />
+              </View>
+            )}
+          </Tab.Screen>
+        </Tab.Navigator>
       ) : (
         <Text>Loading your nostr keys...</Text>
       )}

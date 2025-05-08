@@ -4,8 +4,14 @@ import { Image } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import { nip19 } from "nostr-tools"
+import { getPublicKey, nip19 } from "nostr-tools"
 import { bytesToHex } from "@noble/hashes/utils"
+import { useChatContext } from "./chatContext"
+import { addToContactList } from "@app/utils/nostr"
+import Icon from "react-native-vector-icons/Ionicons"
+import { getContactsFromEvent } from "./utils"
+import { useState } from "react"
+import { ActivityIndicator } from "react-native"
 
 interface SearchListItemProps {
   item: Chat
@@ -15,11 +21,48 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
   item,
   userPrivateKey,
 }) => {
+  const { poolRef, contactsEvent } = useChatContext()
+  const [isLoading, setIsLoading] = useState(false)
+
+  const isUserAdded = () => {
+    if (!contactsEvent) return false
+    let existingContacts = getContactsFromEvent(contactsEvent)
+    return existingContacts.map((p: NostrProfile) => p.pubkey).includes(item.id)
+  }
+
   const styles = useStyles()
   const {
     theme: { colors },
   } = useTheme()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
+
+  const getIcon = () => {
+    let itemPubkey = item.groupId
+      .split(",")
+      .filter((p) => p !== getPublicKey(userPrivateKey))[0]
+    if (contactsEvent)
+      return getContactsFromEvent(contactsEvent).filter((c) => c.pubkey! === itemPubkey)
+        .length === 0
+        ? "person-add"
+        : "checkmark-outline"
+    else return "person-add"
+  }
+
+  const handleAddContact = async () => {
+    console.log("Adding Contact, poolref present?", poolRef)
+    if (isUserAdded() || !poolRef) return
+    try {
+      setIsLoading(true)
+      console.log("Trying to add user to contact list")
+      await addToContactList(userPrivateKey, item.id, poolRef.current, contactsEvent)
+      console.log("probably added user to contact list")
+    } catch (error) {
+      console.error("Error adding contact:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <ListItem
       key={item.id}
@@ -49,6 +92,18 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
             nip19.npubEncode(item.id)}
         </ListItem.Title>
       </ListItem.Content>
+
+      {isLoading ? (
+        <ActivityIndicator size="small" color={colors.primary} />
+      ) : (
+        <Icon
+          name={getIcon()!}
+          size={24}
+          color={colors.primary}
+          disabled={isUserAdded()}
+          onPress={handleAddContact}
+        />
+      )}
     </ListItem>
   )
 }
