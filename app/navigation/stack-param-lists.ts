@@ -163,6 +163,7 @@ export type RootStackParamList = {
     channel: PhoneCodeChannelType
   }
   AccountUpgradeSuccess: undefined
+  TestTransaction: undefined
 }
 
 export type ChatStackParamList = {
