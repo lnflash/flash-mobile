@@ -36,9 +36,18 @@ const Success: React.FC<Props> = ({ navigation }) => {
     <Screen backgroundColor={colors.accent02}>
       <View style={styles.wrapper}>
         <Text type="h02" bold style={styles.header}>
-          {`You successfully upgraded your account to ${accountType?.toUpperCase()}`}
+          {`You successfully requested to upgrade your account to ${accountType?.toUpperCase()}`}
         </Text>
         <Account />
+        {accountType === "merchant" && (
+          <Text
+            type="bl"
+            color={colors.grey5}
+            style={{ marginHorizontal: 30, textAlign: "center" }}
+          >
+            * Please enter the test transaction amount to confirm your bank details.
+          </Text>
+        )}
       </View>
       <PrimaryBtn
         label="Complete"
