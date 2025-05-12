@@ -7,7 +7,11 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
-import { AddressField, InputField } from "@app/components/account-upgrade-flow"
+import {
+  AddressField,
+  InputField,
+  ProgressSteps,
+} from "@app/components/account-upgrade-flow"
 
 // hooks
 import { useAccountUpgrade } from "@app/hooks"
@@ -26,9 +30,8 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
   const [businessNameErr, setBusinessNameErr] = useState<string>()
   const [businessAddressErr, setBusinessAddressErr] = useState<string>()
   const {
-    id,
     accountType,
-    personalInfo,
+    numOfSteps,
     businessInfo: { businessName, businessAddress, lat, lng },
   } = useAppSelector((state) => state.accountUpgrade)
 
@@ -56,6 +59,10 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
 
   return (
     <Screen>
+      <ProgressSteps
+        numOfSteps={numOfSteps}
+        currentStep={accountType === "business" ? numOfSteps : numOfSteps - 1}
+      />
       <View style={styles.container}>
         <InputField
           label="Business Name"

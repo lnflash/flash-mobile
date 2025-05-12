@@ -10,7 +10,11 @@ import { parsePhoneNumber } from "libphonenumber-js/mobile"
 // components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
-import { InputField, PhoneNumber } from "@app/components/account-upgrade-flow"
+import {
+  InputField,
+  PhoneNumber,
+  ProgressSteps,
+} from "@app/components/account-upgrade-flow"
 
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
@@ -38,6 +42,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
   const [phoneNumberErr, setPhoneNumberErr] = useState<string>()
   const {
     id,
+    numOfSteps,
     personalInfo: { fullName, countryCode, phoneNumber, email },
   } = useAppSelector((state) => state.accountUpgrade)
 
@@ -103,6 +108,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
 
   return (
     <Screen>
+      <ProgressSteps numOfSteps={numOfSteps} currentStep={2} />
       <View style={styles.container}>
         <InputField
           label="Full Name"

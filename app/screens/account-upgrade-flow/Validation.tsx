@@ -6,7 +6,7 @@ import { View } from "react-native"
 
 // components
 import { Screen } from "@app/components/screen"
-import { InputField } from "@app/components/account-upgrade-flow"
+import { InputField, ProgressSteps } from "@app/components/account-upgrade-flow"
 
 // hooks
 import { useAccountUpgrade, useActivityIndicator, useAppConfig } from "@app/hooks"
@@ -22,7 +22,7 @@ type Props = StackScreenProps<RootStackParamList, "Validation">
 const Validation: React.FC<Props> = ({ navigation, route }) => {
   const { phone, channel } = route.params
   const styles = useStyles()
-  const { accountType, personalInfo } = useAppSelector((state) => state.accountUpgrade)
+  const { accountType, numOfSteps } = useAppSelector((state) => state.accountUpgrade)
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
   const { toggleActivityIndicator } = useActivityIndicator()
@@ -83,6 +83,7 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <Screen>
+      <ProgressSteps numOfSteps={numOfSteps} currentStep={3} />
       <View style={styles.wrapper}>
         <Text type="p1" style={styles.header}>
           {LL.PhoneLoginValidationScreen.header({
