@@ -7,6 +7,7 @@ import { AccountLevel } from "@app/graphql/generated"
 
 // components
 import { Screen } from "@app/components/screen"
+import { ProgressSteps } from "@app/components/account-upgrade-flow"
 
 // hooks
 import { useLevel } from "@app/graphql/level-context"
@@ -30,12 +31,24 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   }, [])
 
   const onPress = (accountType: string) => {
-    dispatch(setAccountUpgrade({ accountType }))
+    const numOfSteps =
+      accountType === "personal"
+        ? 3
+        : currentLevel === AccountLevel.Zero
+        ? accountType === "business"
+          ? 4
+          : 5
+        : accountType === "business"
+        ? 3
+        : 4
+
+    dispatch(setAccountUpgrade({ accountType, numOfSteps }))
     navigation.navigate("PersonalInformation")
   }
 
   return (
     <Screen>
+      <ProgressSteps numOfSteps={3} currentStep={1} />
       {currentLevel === AccountLevel.Zero && (
         <TouchableOpacity style={styles.card} onPress={() => onPress("personal")}>
           <Icon name={"person"} size={35} color={colors.grey1} type="ionicon" />
