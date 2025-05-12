@@ -9,6 +9,7 @@ import {
   DropDownField,
   InputField,
   PhotoUploadField,
+  ProgressSteps,
 } from "@app/components/account-upgrade-flow"
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
@@ -51,6 +52,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
   const [idDocumentErr, setIdDocumentErr] = useState<string>()
   const {
     accountType,
+    numOfSteps,
     bankInfo: {
       bankName,
       bankBranch,
@@ -96,6 +98,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
 
   return (
     <Screen>
+      <ProgressSteps numOfSteps={numOfSteps} currentStep={numOfSteps} />
       <ScrollView style={styles.container}>
         <InputField
           label="Bank Name"

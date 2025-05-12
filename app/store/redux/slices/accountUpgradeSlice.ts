@@ -26,6 +26,7 @@ interface AccountUpgradeSlice {
     accountNumber?: string
     idDocument?: Asset
   }
+  numOfSteps: number
   loading: boolean
   error?: string
 }
@@ -54,6 +55,7 @@ const initialState: AccountUpgradeSlice = {
     accountNumber: undefined,
     idDocument: undefined,
   },
+  numOfSteps: 3,
   loading: false,
   error: undefined,
 }
