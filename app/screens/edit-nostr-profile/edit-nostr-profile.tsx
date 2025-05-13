@@ -1,42 +1,42 @@
-import React, { useEffect, useState } from "react"
-import { View, Text, Button } from "react-native"
-import { useNavigation } from "@react-navigation/native"
-import { Event, getPublicKey, nip19 } from "nostr-tools"
-import { fetchNostrUsers, getSecretKey } from "@app/utils/nostr"
+import React, { useEffect } from "react"
+import { View, StyleSheet, ActivityIndicator } from "react-native"
 import { useChatContext } from "../nip17-chat/chatContext"
 import { EditProfileUI } from "./edit-profile-ui"
 
 const EditNostrProfileScreen = () => {
-  const navigation = useNavigation()
-  const [secretKey, setSecretKey] = useState<Uint8Array | null>(null)
-  const [profileEvent, setProfileEvent] = useState<Event | null>(null)
-  const { poolRef } = useChatContext()
+  const { userProfileEvent, refreshUserProfile } = useChatContext()
 
   useEffect(() => {
-    const initialize = async () => {
-      let secret = await getSecretKey()
-      if (secret) {
-        setSecretKey(secret)
-        if (poolRef)
-          fetchNostrUsers(
-            [getPublicKey(secret)],
-            poolRef.current,
-            (event: Event, closer) => {
-              setProfileEvent(event)
-              closer.close()
-            },
-          )
-      }
+    console.log("EDIT PROFILE SCREEN, USER EVENT?", userProfileEvent)
+    if (!userProfileEvent) {
+      refreshUserProfile()
     }
-    initialize()
-  }, [poolRef])
+  }, [])
+
+  if (!userProfileEvent) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    )
+  }
 
   return (
-    <View>
-      {/* Add your form or profile fields here */}
-      <EditProfileUI profileEvent={profileEvent} />
+    <View style={styles.container}>
+      <EditProfileUI profileEvent={userProfileEvent} />
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+})
 
 export default EditNostrProfileScreen
