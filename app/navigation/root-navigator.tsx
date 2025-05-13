@@ -598,27 +598,27 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="AccountType"
         component={AccountType}
-        options={{ title: "Account Type" }}
+        options={{ title: LL.AccountUpgrade.accountType() }}
       />
       <RootNavigator.Screen
         name="PersonalInformation"
         component={PersonalInformation}
-        options={{ title: "Personal Information" }}
+        options={{ title: LL.AccountUpgrade.personalInfo() }}
       />
       <RootNavigator.Screen
         name="BusinessInformation"
         component={BusinessInformation}
-        options={{ title: "Business Information" }}
+        options={{ title: LL.AccountUpgrade.businessInfo() }}
       />
       <RootNavigator.Screen
         name="BankInformation"
         component={BankInformation}
-        options={{ title: "Banking Information" }}
+        options={{ title: LL.AccountUpgrade.bankingInfo() }}
       />
       <RootNavigator.Screen
         name="Validation"
         component={Validation}
-        options={{ title: "Validation" }}
+        options={{ title: LL.AccountUpgrade.validation() }}
       />
       <RootNavigator.Screen
         name="AccountUpgradeSuccess"

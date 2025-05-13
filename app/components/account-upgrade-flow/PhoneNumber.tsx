@@ -62,7 +62,7 @@ const PhoneNumber: React.FC<Props> = ({
   return (
     <View style={styles.wrapper}>
       <Text type="bl" bold>
-        Phone Number
+        {LL.AccountUpgrade.phoneNumber()}
       </Text>
       <View style={styles.container}>
         <CountryPicker

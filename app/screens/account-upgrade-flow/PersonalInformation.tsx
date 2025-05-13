@@ -111,7 +111,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
       <ProgressSteps numOfSteps={numOfSteps} currentStep={2} />
       <View style={styles.container}>
         <InputField
-          label="Full Name"
+          label={LL.AccountUpgrade.fullName()}
           placeholder="John Doe"
           value={fullName}
           errorMsg={fullNameErr}
@@ -138,7 +138,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
           }}
         />
         <InputField
-          label="Email Address"
+          label={LL.AccountUpgrade.email()}
           isOptional={true}
           placeholder="your.email@example.com"
           value={email}
@@ -171,7 +171,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
           </>
         ) : (
           <PrimaryBtn
-            label="Next"
+            label={LL.common.next()}
             disabled={!fullName || !phoneNumber}
             onPress={onPressNext}
           />

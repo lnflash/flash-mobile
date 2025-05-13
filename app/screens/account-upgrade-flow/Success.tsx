@@ -11,6 +11,9 @@ import { PrimaryBtn } from "@app/components/buttons"
 // assets
 import Account from "@app/assets/illustrations/account.svg"
 
+// hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
+
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { resetAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
@@ -20,6 +23,7 @@ type Props = StackScreenProps<RootStackParamList, "AccountUpgradeSuccess">
 const Success: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
 
   const dispatch = useAppDispatch()
   const { accountType } = useAppSelector((state) => state.accountUpgrade)
@@ -36,7 +40,9 @@ const Success: React.FC<Props> = ({ navigation }) => {
     <Screen backgroundColor={colors.accent02}>
       <View style={styles.wrapper}>
         <Text type="h02" bold style={styles.header}>
-          {`You successfully requested to upgrade your account to ${accountType?.toUpperCase()}`}
+          {LL.AccountUpgrade.successTitle({
+            accountType: accountType?.toUpperCase() || "",
+          })}
         </Text>
         <Account />
         {accountType === "merchant" && (
@@ -45,7 +51,7 @@ const Success: React.FC<Props> = ({ navigation }) => {
             color={colors.grey5}
             style={{ marginHorizontal: 30, textAlign: "center" }}
           >
-            * Please enter the test transaction amount to confirm your bank details.
+            {LL.AccountUpgrade.successDesc()}
           </Text>
         )}
       </View>

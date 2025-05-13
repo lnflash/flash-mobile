@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import { View, TouchableOpacity } from "react-native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import Tooltip from "react-native-walkthrough-tooltip"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 type Props = {
   isChecked?: boolean
@@ -11,6 +12,7 @@ type Props = {
 const CheckBoxField: React.FC<Props> = ({ isChecked, onCheck }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
 
   const [tooltipVisible, setTooltipVisible] = useState(false)
 
@@ -24,17 +26,11 @@ const CheckBoxField: React.FC<Props> = ({ isChecked, onCheck }) => {
           type="ionicon"
           style={{ marginRight: 10 }}
         />
-        <Text type="bl">Do you want a Flash terminal?</Text>
+        <Text type="bl">{LL.AccountUpgrade.flashTerminal()}</Text>
       </TouchableOpacity>
       <Tooltip
         isVisible={tooltipVisible}
-        content={
-          <Text>
-            A Flash Terminal is a smart device that can accept payment via Flash for your
-            business and print receipts. A customer service representative will contact
-            you if you check this box.
-          </Text>
-        }
+        content={<Text>{LL.AccountUpgrade.flashTerminalTooltip()}</Text>}
         placement="top"
         onClose={() => setTooltipVisible(false)}
       >
@@ -44,7 +40,7 @@ const CheckBoxField: React.FC<Props> = ({ isChecked, onCheck }) => {
             size={25}
             color={colors._lightBlue}
             type="ionicon"
-            style={{ marginHorizontal: 10 }}
+            style={{ marginHorizontal: 5 }}
           />
         </TouchableOpacity>
       </Tooltip>
