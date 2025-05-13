@@ -1,9 +1,6 @@
 import React from "react"
-import { Image, View } from "react-native"
-import { makeStyles, Text, useTheme } from "@rneui/themed"
-
-// assets
-import Check from "@app/assets/icons/circleCheck.png"
+import { View } from "react-native"
+import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 type Props = {
   numOfSteps: number
@@ -24,7 +21,9 @@ const ProgressSteps: React.FC<Props> = ({ numOfSteps, currentStep }) => {
         </View>
       )
     } else if (currentStep > i + 1) {
-      return <Image style={styles.icon} source={Check} />
+      return (
+        <Icon name={"checkmark-circle"} size={40} color={colors.green} type="ionicon" />
+      )
     } else {
       return (
         <View style={styles.step}>
@@ -65,10 +64,6 @@ const useStyles = makeStyles(({ colors }) => ({
     alignItems: "center",
     marginHorizontal: 20,
     marginVertical: 10,
-  },
-  icon: {
-    width: 35,
-    height: 35,
   },
   separator: {
     flex: 1,
