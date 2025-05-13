@@ -12,6 +12,7 @@ import { ProgressSteps } from "@app/components/account-upgrade-flow"
 // hooks
 import { useLevel } from "@app/graphql/level-context"
 import { useAccountUpgrade } from "@app/hooks"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 // store
 import { useAppDispatch } from "@app/store/redux"
@@ -23,6 +24,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
   const { fetchAccountUpgrade } = useAccountUpgrade()
 
@@ -54,10 +56,10 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
           <Icon name={"person"} size={35} color={colors.grey1} type="ionicon" />
           <View style={styles.textWrapper}>
             <Text type="bl" bold>
-              Personal
+              {LL.AccountUpgrade.personal()}
             </Text>
             <Text type="bm" style={{ marginTop: 2 }}>
-              For individual use, no additional info needed
+              {LL.AccountUpgrade.personalDesc()}
             </Text>
           </View>
           <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
@@ -68,10 +70,10 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
           <Icon name={"briefcase"} size={35} color={colors.grey1} type="ionicon" />
           <View style={styles.textWrapper}>
             <Text type="bl" bold>
-              Pro
+              {LL.AccountUpgrade.pro()}
             </Text>
             <Text type="bm" style={{ marginTop: 2 }}>
-              Accept payments as a Pro Flashpoint. Business Name & Address required
+              {LL.AccountUpgrade.proDesc()}
             </Text>
           </View>
           <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
@@ -81,10 +83,10 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
         <Icon name={"cart"} size={35} color={colors.grey1} type="ionicon" />
         <View style={styles.textWrapper}>
           <Text type="bl" bold>
-            Merchant
+            {LL.AccountUpgrade.merchant()}
           </Text>
           <Text type="bm" style={{ marginTop: 2 }}>
-            Give rewards as a Merchant Flashpoint. ID and Bank account info required
+            {LL.AccountUpgrade.merchantDesc()}
           </Text>
         </View>
         <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />

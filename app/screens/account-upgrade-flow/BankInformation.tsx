@@ -16,6 +16,7 @@ import { PrimaryBtn } from "@app/components/buttons"
 
 // hooks
 import { useAccountUpgrade } from "@app/hooks"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
@@ -42,6 +43,7 @@ type Props = StackScreenProps<RootStackParamList, "BankInformation">
 const BankInformation: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
   const styles = useStyles()
+  const { LL } = useI18nContext()
   const { submitAccountUpgrade } = useAccountUpgrade()
 
   const [nameErr, setNameErr] = useState<string>()
@@ -101,8 +103,8 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
       <ProgressSteps numOfSteps={numOfSteps} currentStep={numOfSteps} />
       <ScrollView style={styles.container}>
         <InputField
-          label="Bank Name"
-          placeholder="Enter your bank name"
+          label={LL.AccountUpgrade.bankName()}
+          placeholder={LL.AccountUpgrade.bankNamePlaceholder()}
           value={bankName}
           errorMsg={nameErr}
           onChangeText={(val) => {
@@ -111,8 +113,8 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           }}
         />
         <InputField
-          label="Bank Branch"
-          placeholder="Enter your bank branch"
+          label={LL.AccountUpgrade.bankBranch()}
+          placeholder={LL.AccountUpgrade.bankBranchPlaceholder()}
           value={bankBranch}
           errorMsg={branchErr}
           onChangeText={(val) => {
@@ -121,8 +123,8 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           }}
         />
         <DropDownField
-          label="Account Type"
-          placeholder={"Select account type"}
+          label={LL.AccountUpgrade.bankAccountType()}
+          placeholder={LL.AccountUpgrade.selectBankAccountType()}
           data={accountTypes}
           value={bankAccountType || ""}
           errorMsg={accountTypeErr}
@@ -132,8 +134,8 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           }}
         />
         <DropDownField
-          label="Currency"
-          placeholder="Select currency"
+          label={LL.AccountUpgrade.currency()}
+          placeholder={LL.AccountUpgrade.selectCurrency()}
           data={currencies}
           value={currency || ""}
           errorMsg={currencyErr}
@@ -143,8 +145,8 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           }}
         />
         <InputField
-          label="Account Number"
-          placeholder="Enter your account number"
+          label={LL.AccountUpgrade.accountNum()}
+          placeholder={LL.AccountUpgrade.accountNumPlaceholder()}
           value={accountNumber}
           errorMsg={accountNumErr}
           onChangeText={(val) => {
@@ -153,14 +155,14 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           }}
         />
         <PhotoUploadField
-          label="Upload ID Document"
+          label={LL.AccountUpgrade.uploadId()}
           photo={idDocument}
           errorMsg={idDocumentErr}
           onPhotoUpload={(val) => dispatch(setBankInfo({ idDocument: val }))}
           setErrorMsg={setIdDocumentErr}
         />
       </ScrollView>
-      <PrimaryBtn label="Next" btnStyle={styles.btn} onPress={onPressNext} />
+      <PrimaryBtn label={LL.common.next()} btnStyle={styles.btn} onPress={onPressNext} />
     </Screen>
   )
 }

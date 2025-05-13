@@ -92,7 +92,7 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
           })}
         </Text>
         <InputField
-          label="Validation code"
+          label={LL.AccountUpgrade.validationCode()}
           placeholder="123456"
           value={code}
           errorMsg={errorMsg}

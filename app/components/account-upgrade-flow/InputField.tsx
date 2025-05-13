@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { TextInput, TextInputProps, View } from "react-native"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 type Props = {
   label: string
@@ -18,6 +19,7 @@ const InputField: React.FC<Props> = ({
 }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
 
   const [isFocused, setIsFocused] = useState(false)
 
@@ -27,8 +29,7 @@ const InputField: React.FC<Props> = ({
         {label}
         {isOptional && (
           <Text type="caption" color={colors.grey2}>
-            {" "}
-            (Optional)
+            {LL.AccountUpgrade.optional()}
           </Text>
         )}
       </Text>

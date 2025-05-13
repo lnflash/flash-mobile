@@ -16,6 +16,7 @@ import {
 
 // hooks
 import { useAccountUpgrade } from "@app/hooks"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
@@ -26,6 +27,7 @@ type Props = StackScreenProps<RootStackParamList, "BusinessInformation">
 const BusinessInformation: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
   const styles = useStyles()
+  const { LL } = useI18nContext()
   const { submitAccountUpgrade } = useAccountUpgrade()
 
   const [businessNameErr, setBusinessNameErr] = useState<string>()
@@ -66,8 +68,8 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
       />
       <View style={styles.container}>
         <InputField
-          label="Business Name"
-          placeholder={"Your business name"}
+          label={LL.AccountUpgrade.businessName()}
+          placeholder={LL.AccountUpgrade.businessNamePlaceholder()}
           value={businessName}
           errorMsg={businessNameErr}
           onChangeText={(val) => {
@@ -76,8 +78,8 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
           }}
         />
         <AddressField
-          label="Business address"
-          placeholder={"Enter your business address"}
+          label={LL.AccountUpgrade.businessAddress()}
+          placeholder={LL.AccountUpgrade.businessAddressPlaceholder()}
           value={businessAddress}
           errorMsg={businessAddressErr}
           onAddressSelect={(val, lat, lng) =>
@@ -92,7 +94,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
         />
       </View>
       <PrimaryBtn
-        label="Next"
+        label={LL.common.next()}
         disabled={!businessName || !businessAddress}
         btnStyle={styles.btn}
         onPress={onPressNext}
