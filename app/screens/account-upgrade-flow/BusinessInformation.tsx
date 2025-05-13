@@ -1,6 +1,6 @@
 import React, { useState } from "react"
-import { View } from "react-native"
-import { makeStyles } from "@rneui/themed"
+import { TouchableOpacity, View } from "react-native"
+import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
@@ -25,6 +25,7 @@ type Props = StackScreenProps<RootStackParamList, "BusinessInformation">
 const BusinessInformation: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
   const styles = useStyles()
+  const { colors } = useTheme().theme
   const { submitAccountUpgrade } = useAccountUpgrade()
 
   const [businessNameErr, setBusinessNameErr] = useState<string>()
@@ -32,7 +33,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
   const {
     accountType,
     numOfSteps,
-    businessInfo: { businessName, businessAddress, lat, lng },
+    businessInfo: { businessName, businessAddress, terminalRequested },
   } = useAppSelector((state) => state.accountUpgrade)
 
   const onPressNext = async () => {
@@ -83,6 +84,21 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
             dispatch(setBusinessInfo({ businessAddress: val, lat, lng }))
           }
         />
+        <TouchableOpacity
+          style={styles.terminalRequest}
+          onPress={() =>
+            dispatch(setBusinessInfo({ terminalRequested: !terminalRequested }))
+          }
+        >
+          <Icon
+            name={terminalRequested ? "checkbox" : "checkbox-outline"}
+            size={30}
+            color={terminalRequested ? colors.green : colors.grey2}
+            type="ionicon"
+            style={{ marginRight: 10 }}
+          />
+          <Text type="bl">Do you want a Flash terminal?</Text>
+        </TouchableOpacity>
       </View>
       <PrimaryBtn
         label="Next"
@@ -105,5 +121,10 @@ const useStyles = makeStyles(({ colors }) => ({
   btn: {
     marginBottom: 10,
     marginHorizontal: 20,
+  },
+  terminalRequest: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 15,
   },
 }))
