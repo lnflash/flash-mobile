@@ -1,6 +1,6 @@
 import { ListItem, useTheme } from "@rneui/themed"
 import { useStyles } from "./style"
-import { Image } from "react-native"
+import { Image, TouchableOpacity } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
@@ -96,13 +96,15 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
       {isLoading ? (
         <ActivityIndicator size="small" color={colors.primary} />
       ) : (
-        <Icon
-          name={getIcon()!}
-          size={24}
-          color={colors.primary}
-          disabled={isUserAdded()}
-          onPress={handleAddContact}
-        />
+        <TouchableOpacity>
+          <Icon
+            name={getIcon()!}
+            size={24}
+            color={colors.primary}
+            disabled={isUserAdded()}
+            onPress={handleAddContact}
+          />
+        </TouchableOpacity>
       )}
     </ListItem>
   )
