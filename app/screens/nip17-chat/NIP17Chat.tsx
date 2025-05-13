@@ -15,13 +15,13 @@ import {
   convertRumorsToGroups,
   fetchNostrUsers,
   fetchSecretFromLocalStorage,
+  getGroupId,
 } from "@app/utils/nostr"
 import { useStyles } from "./style"
 import { SearchListItem } from "./searchListItem"
 import { HistoryListItem } from "./historyListItem"
 import { useChatContext } from "./chatContext"
-import { useFocusEffect } from "@react-navigation/native"
-import { useAppConfig } from "@app/hooks"
+import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { useAppSelector } from "@app/store/redux"
 import { ImportNsecModal } from "../../components/import-nsec/import-nsec-modal"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -29,6 +29,8 @@ import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
 import Contacts from "./contacts"
 import { UserSearchBar } from "./UserSearchBar"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 
 const Tab = createMaterialTopTabNavigator()
 
@@ -44,17 +46,8 @@ export const NIP17Chat: React.FC = () => {
     fetchPolicy: "network-only",
     errorPolicy: "all",
   })
-  const {
-    rumors,
-    poolRef,
-    addEventToProfiles,
-    profileMap,
-    resetChat,
-    activeSubscription,
-    initializeChat,
-  } = useChatContext()
-  const [searchText, setSearchText] = useState("")
-  const [refreshing, setRefreshing] = useState(false)
+  const { rumors, poolRef, profileMap, resetChat, activeSubscription, initializeChat } =
+    useChatContext()
   const [initialized, setInitialized] = useState(false)
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
@@ -62,6 +55,16 @@ export const NIP17Chat: React.FC = () => {
   const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
+
+  const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
+
+  const navigateToContactDetails = (contactPubkey: string) => {
+    if (!privateKey) return
+    navigation.navigate("contactDetails", {
+      contactPubkey,
+      userPrivateKey: bytesToHex(privateKey),
+    })
+  }
 
   React.useEffect(() => {
     const unsubscribe = () => {
@@ -93,7 +96,9 @@ export const NIP17Chat: React.FC = () => {
 
   useFocusEffect(
     React.useCallback(() => {
+      let isMounted = true
       async function checkSecretKey() {
+        if (!isMounted) return
         let secretKeyString = await fetchSecretFromLocalStorage()
         if (!secretKeyString) {
           setShowImportModal(true)
@@ -110,64 +115,10 @@ export const NIP17Chat: React.FC = () => {
         setSearchedUsers([])
         checkSecretKey()
       }
-    }, [setSearchText, setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck]),
-  )
-
-  const updateSearchResults = useCallback(
-    async (newSearchText: string) => {
-      const nip05Matching = async (alias: string) => {
-        let nostrUser = await nip05.queryProfile(alias.toLocaleLowerCase())
-        if (nostrUser) {
-          let nostrProfile = profileMap?.get(nostrUser.pubkey)
-          let userPubkey = getPublicKey(privateKey!)
-          let participants = [nostrUser.pubkey, userPubkey]
-          setSearchedUsers([
-            {
-              id: nostrUser.pubkey,
-              username: alias,
-              ...nostrProfile,
-              groupId: getGroupId(participants),
-            },
-          ])
-          if (!nostrProfile)
-            fetchNostrUsers([nostrUser.pubkey], poolRef!.current, searchedUsersHandler)
-          return true
-        }
-        return false
+      return () => {
+        isMounted = false
       }
-      const aliasPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/
-      if (!privateKey) {
-        Alert.alert("User Profile not yet loaded")
-        return
-      }
-      if (!newSearchText) {
-        setRefreshing(false)
-      }
-      setRefreshing(true)
-      setSearchText(newSearchText)
-      if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
-        let hexPubkey = nip19.decode(newSearchText).data as string
-        let userPubkey = getPublicKey(privateKey)
-        let participants = [hexPubkey, userPubkey]
-        setSearchedUsers([{ id: hexPubkey, groupId: getGroupId(participants) }])
-        fetchNostrUsers([hexPubkey], poolRef!.current, searchedUsersHandler)
-        setRefreshing(false)
-        return
-      } else if (newSearchText.match(aliasPattern)) {
-        if (await nip05Matching(newSearchText)) {
-          setRefreshing(false)
-          return
-        }
-      } else if (!newSearchText.includes("@")) {
-        let modifiedSearchText =
-          newSearchText + "@" + appConfig.galoyInstance.lnAddressHostname
-        if (await nip05Matching(modifiedSearchText)) {
-          setRefreshing(false)
-          return
-        }
-      }
-    },
-    [setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck, privateKey],
+    }, [setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck]),
   )
 
   let SearchBarContent: React.ReactNode
@@ -251,6 +202,7 @@ export const NIP17Chat: React.FC = () => {
                         marginLeft: 20,
                         color: colors.primary3,
                       }}
+                      onPress={() => navigateToContactDetails(getPublicKey(privateKey))}
                     >
                       signed in as:{" "}
                       <Text style={{ color: colors.primary, fontWeight: "bold" }}>

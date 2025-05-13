@@ -183,11 +183,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>LUD-16</Text>
+        <Text style={styles.label}>Website</Text>
         <Input
           style={styles.input}
           placeholder="Website"
-          value={formData.lud16}
+          value={formData.website}
           onChangeText={(text) => handleInputChange("website", text)}
         />
       </View>
