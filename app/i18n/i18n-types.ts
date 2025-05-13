@@ -4593,6 +4593,149 @@ type RootTranslation = {
 		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
 		 */
 		txId: string
+	},
+	AccountUpgrade: {
+		/**
+		 * Account Type
+		 */
+		accountType: string
+		/**
+		 * Personal
+		 */
+		personal: string
+		/**
+		 * For individual use, no additional info needed
+		 */
+		personalDesc: string
+		/**
+		 * Pro
+		 */
+		pro: string
+		/**
+		 * Accept payments as a Pro Flashpoint. Business Name & Address required
+		 */
+		proDesc: string
+		/**
+		 * Merchant
+		 */
+		merchant: string
+		/**
+		 * Give rewards as a Merchant Flahpoint. ID and Bank account info required
+		 */
+		merchantDesc: string
+		/**
+		 * Personal Information
+		 */
+		personalInfo: string
+		/**
+		 * Full name
+		 */
+		fullName: string
+		/**
+		 * Phone Number
+		 */
+		phoneNumber: string
+		/**
+		 * Email Address
+		 */
+		email: string
+		/**
+		 * Optional
+		 */
+		optional: string
+		/**
+		 * Validation
+		 */
+		validation: string
+		/**
+		 * Validation code
+		 */
+		validationCode: string
+		/**
+		 * Business Information
+		 */
+		businessInfo: string
+		/**
+		 * Business Name
+		 */
+		businessName: string
+		/**
+		 * Enter your business name
+		 */
+		businessNamePlaceholder: string
+		/**
+		 * Business Address
+		 */
+		businessAddress: string
+		/**
+		 * Enter your business address
+		 */
+		businessAddressPlaceholder: string
+		/**
+		 * Do you want a Flash terminal?
+		 */
+		flashTerminal: string
+		/**
+		 * A Flash Terminal is a smart device that can accept payment via Flash for your business and print receipts. A customer service representative will contact you if you check this box.
+		 */
+		flashTerminalTooltip: string
+		/**
+		 * Banking Information
+		 */
+		bankingInfo: string
+		/**
+		 * Bank Name
+		 */
+		bankName: string
+		/**
+		 * Enter your bank name
+		 */
+		bankNamePlaceholder: string
+		/**
+		 * Bank Branch
+		 */
+		bankBranch: string
+		/**
+		 * Enter your bank branch
+		 */
+		bankBranchPlaceholder: string
+		/**
+		 * Account Type
+		 */
+		bankAccountType: string
+		/**
+		 * Select account type
+		 */
+		selectBankAccountType: string,
+		/**
+		 * Currency
+		 */
+		currency: string
+		/**
+		 * Select currency
+		 */
+		selectCurrency: string,
+		/**
+		 * Account Number
+		 */
+		accountNum: string
+		/**
+		 * Enter your account number
+		 */
+		accountNumPlaceholder: string
+		/**
+		 * Upload ID Document
+		 */
+		uploadId: string
+		/**
+		 * You successfully requested to upgrade your account to {accountType} 
+		 * @param {string} accountType
+		 */
+		successTitle: RequiredParams<'accountType'>
+		/**
+		 * * Please enter the test transaction amount to confirm your bank details.
+		 */
+		successDesc: string
 	}
 	Nostr: {
 		/**
@@ -9309,7 +9452,7 @@ export type TranslationFunctions = {
 		 */
 		createProfileButton: () => LocalizedString
 		/**
-		 * We’re looking, but we haven’t been able to find your profile.
+		 * We're looking, but we haven't been able to find your profile.
 		 */
 		profileNotFound: () => LocalizedString
 		/**
@@ -9381,7 +9524,7 @@ export type TranslationFunctions = {
 		 */
 		noProfileFound: () => LocalizedString
 		/**
-		 * You haven’t created a Nostr profile yet.
+		 * You haven't created a Nostr profile yet.
 	Tap below to create one.
 		 */
 		noProfileDescription: () => LocalizedString
@@ -9480,6 +9623,149 @@ export type TranslationFunctions = {
 			goToSettings: () => LocalizedString
 		}
 	}
+	AccountUpgrade: {
+		/**
+		 * Account Type
+		 */
+		accountType: () => LocalizedString
+		/**
+		 * Personal
+		 */
+		personal: () => LocalizedString
+		/**
+		 * For individual use, no additional info needed
+		 */
+		personalDesc: () => LocalizedString
+		/**
+		 * Pro
+		 */
+		pro: () => LocalizedString
+		/**
+		 * Accept payments as a Pro Flashpoint. Business Name & Address required
+		 */
+		proDesc: () => LocalizedString
+		/**
+		 * Merchant
+		 */
+		merchant: () => LocalizedString
+		/**
+		 * Give rewards as a Merchant Flahpoint. ID and Bank account info required
+		 */
+		merchantDesc: () => LocalizedString
+		/**
+		 * Personal Information
+		 */
+		personalInfo: () => LocalizedString
+		/**
+		 * Full name
+		 */
+		fullName: () => LocalizedString
+		/**
+		 * Phone Number
+		 */
+		phoneNumber: () => LocalizedString
+		/**
+		 * Email Address
+		 */
+		email: () => LocalizedString
+		/**
+		 * Optional
+		 */
+		optional: () => LocalizedString
+		/**
+		 * Validation
+		 */
+		validation: () => LocalizedString
+		/**
+		 * Validation code
+		 */
+		validationCode: () => LocalizedString
+		/**
+		 * Business Information
+		 */
+		businessInfo: () => LocalizedString
+		/**
+		 * Business Name
+		 */
+		businessName: () => LocalizedString
+		/**
+		 * Enter your business name
+		 */
+		businessNamePlaceholder: () => LocalizedString
+		/**
+		 * Business Address
+		 */
+		businessAddress: () => LocalizedString
+		/**
+		 * Enter your business address
+		 */
+		businessAddressPlaceholder: () => LocalizedString
+		/**
+		 * Do you want a Flash terminal?
+		 */
+		flashTerminal: () => LocalizedString
+		/**
+		 * A Flash Terminal is a smart device that can accept payment via Flash for your business and print receipts. A customer service representative will contact you if you check this box.
+		 */
+		flashTerminalTooltip: () => LocalizedString
+		/**
+		 * Banking Information
+		 */
+		bankingInfo: () => LocalizedString
+		/**
+		 * Bank Name
+		 */
+		bankName: () => LocalizedString
+		/**
+		 * Enter your bank name
+		 */
+		bankNamePlaceholder: () => LocalizedString
+		/**
+		 * Bank Branch
+		 */
+		bankBranch: () => LocalizedString
+		/**
+		 * Enter your bank branch
+		 */
+		bankBranchPlaceholder: () => LocalizedString
+		/**
+		 * Account Type
+		 */
+		bankAccountType: () => LocalizedString
+		/**
+		 * Select account type
+		 */
+		selectBankAccountType: () => LocalizedString
+		/**
+		 * Currency
+		 */
+		currency: () => LocalizedString
+		/**
+		 * Select currency
+		 */
+		selectCurrency: () => LocalizedString
+		/**
+		 * Account Number
+		 */
+		accountNum: () => LocalizedString
+		/**
+		 * Enter your account number
+		 */
+		accountNumPlaceholder: () => LocalizedString
+		/**
+		 * Upload ID Document
+		 */
+		uploadId: () => LocalizedString
+		/**
+		 * You successfully requested to upgrade your account to {accountType}
+		 */
+		successTitle: (arg: { accountType: string }) => LocalizedString
+		/**
+		 * * Please enter the test transaction amount to confirm your bank details.
+		 */
+		successDesc: () => LocalizedString
+	}
+}
 }
 
 export type Formatters = {
