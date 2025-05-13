@@ -552,6 +552,7 @@ const en: BaseTranslation = {
 		addFlashcard: "Add Flashcard",
     upgradeTitle: "Upgrade your account",
     upgradeDesc: "Backup your cash wallet and increase transaction limits.",
+    upgradePendingDesc: "Enter test transaction amount to complete upgrading your account.",
     currencyTitle:"Change to your local currency",
     currencyDesc: "Review our available currency list and select your currency.",
     flashcardTitle: "Get a Flashcard",
@@ -1502,6 +1503,10 @@ const en: BaseTranslation = {
       uploadId: "Upload ID Document",
       successTitle: "You successfully requested to upgrade your account to {accountType: string}",
       successDesc: "* Please enter the test transaction amount to confirm your bank details.",
+      transactionVerification: "Transaction Verification",
+      transactionTitle: "To complete upgrading your account to MERCHANT, enter the test transaction amount we sent to your bank account {accountNum: string} to confirm your bank details.",
+      transactionAmount: "Transaction amount",
+
     }
 }
 

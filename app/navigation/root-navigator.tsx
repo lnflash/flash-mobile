@@ -628,7 +628,7 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="TestTransaction"
         component={TestTransaction}
-        options={{ title: "Transaction Verification" }}
+        options={{ title: LL.AccountUpgrade.transactionVerification() }}
       />
     </RootNavigator.Navigator>
   )

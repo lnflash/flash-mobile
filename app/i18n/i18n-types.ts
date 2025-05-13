@@ -1729,7 +1729,11 @@ type RootTranslation = {
 		 */
 		upgradeDesc: string
 		/**
-		 * C​h​a​n​g​e​ ​t​o​ ​y​o​u​r​ ​l​o​c​a​l​ ​c​u​r​r​e​n​c​y
+		 * Enter test transaction amount to complete upgrading your account.
+		 */
+		upgradePendingDesc: string
+		/**
+		 * Change to your local currency
 		 */
 		currencyTitle: string
 		/**
@@ -4736,6 +4740,19 @@ type RootTranslation = {
 		 * * Please enter the test transaction amount to confirm your bank details.
 		 */
 		successDesc: string
+		/**
+		 * * Transaction Verification
+		 */
+		transactionVerification: string
+		/**
+		 * To complete upgrading your account to MERCHANT, enter the test transaction amount we sent to your bank account {accountNum} to confirm your bank details.
+		 * @param {string} accountNum 
+		 */
+		transactionTitle: RequiredParams<'accountNum'>
+		/**
+		 * Transaction amount
+		 */
+		transactionAmount: string
 	}
 	Nostr: {
 		/**
@@ -6629,6 +6646,10 @@ export type TranslationFunctions = {
 		 * Backup your cash wallet and increase transaction limits.
 		 */
 		upgradeDesc: () => LocalizedString
+		/**
+		 * Enter test transaction amount to complete upgrading your account.
+		 */
+		upgradePendingDesc: () => LocalizedString
 		/**
 		 * Change to your local currency
 		 */
@@ -9764,6 +9785,18 @@ export type TranslationFunctions = {
 		 * * Please enter the test transaction amount to confirm your bank details.
 		 */
 		successDesc: () => LocalizedString
+		/**
+		 * * Transaction Verification
+		 */
+		transactionVerification: () => LocalizedString
+		/**
+		 * To complete upgrading your account to MERCHANT, enter the test transaction amount we sent to your bank account {accountNum} to confirm your bank details.
+		 */
+		transactionTitle: (arg: { accountNum: string }) => LocalizedString
+		/**
+		 * Transaction amount
+		 */
+		transactionAmount: () => LocalizedString
 	}
 }
 }

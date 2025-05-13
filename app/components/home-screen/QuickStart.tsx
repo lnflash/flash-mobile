@@ -69,7 +69,7 @@ const QuickStart = () => {
       type: "upgrade",
       title: LL.HomeScreen.upgradeTitle(),
       description: upgradePending
-        ? "Enter test transaction amount to complete upgrading your account"
+        ? LL.HomeScreen.upgradePendingDesc()
         : LL.HomeScreen.upgradeDesc(),
       image: Account,
       pending: upgradePending,
