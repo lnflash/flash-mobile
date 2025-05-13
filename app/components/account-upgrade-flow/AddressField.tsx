@@ -41,7 +41,7 @@ const AddressField: React.FC<Props> = ({
   }, [isVisible, ref.current])
 
   return (
-    <View>
+    <View style={styles.container}>
       <Text type="bl" bold>
         {label}
       </Text>
@@ -102,6 +102,9 @@ const AddressField: React.FC<Props> = ({
 export default AddressField
 
 const useStyles = makeStyles(({ colors }) => ({
+  container: {
+    marginBottom: 15,
+  },
   input: {
     paddingHorizontal: 15,
     paddingVertical: 20,
