@@ -95,7 +95,7 @@ export const useAccountUpgrade = () => {
       bank_account_number: bankInfo.accountNumber,
       id_image_url: id_image_url,
       terms_accepted: true,
-      terminal_requested: undefined,
+      terminal_requested: businessInfo.terminalRequested,
       client_version: readableVersion,
       device_info: Platform.OS,
       signup_completed: undefined,
