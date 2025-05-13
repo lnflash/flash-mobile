@@ -28,25 +28,23 @@ const defaultDisplayCurrency = usdDisplayCurrency
 
 export const usePriceConversion = (fetchPolicy?: WatchQueryFetchPolicy) => {
   const isAuthed = useIsAuthed()
+  let realtimePrice = null
+  if (isAuthed) {
+    const { data } = useRealtimePriceQuery({
+      fetchPolicy: fetchPolicy || "cache-and-network",
+      skip: !isAuthed,
+    })
+    realtimePrice = data?.me?.defaultAccount.realtimePrice
+  } else {
+    const { data } = useRealtimePriceUnauthedQuery({
+      fetchPolicy: fetchPolicy || "cache-and-network",
+      variables: { currency: defaultDisplayCurrency.id },
+      skip: isAuthed,
+    })
+    realtimePrice = data?.realtimePrice
+  }
 
-  const { data } = useRealtimePriceQuery({
-    fetchPolicy: fetchPolicy || "cache-and-network",
-    skip: !isAuthed,
-  })
-
-  const { data: dataUnauthed } = useRealtimePriceUnauthedQuery({
-    fetchPolicy: fetchPolicy || "cache-and-network",
-    variables: { currency: defaultDisplayCurrency.id },
-    skip: isAuthed,
-  })
-
-  const displayCurrency =
-    data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency ||
-    defaultDisplayCurrency.id
-
-  const realtimePrice = isAuthed
-    ? data?.me?.defaultAccount?.realtimePrice
-    : dataUnauthed?.realtimePrice
+  const displayCurrency = realtimePrice?.denominatorCurrency || defaultDisplayCurrency.id
 
   let displayCurrencyPerSat = NaN
   let displayCurrencyPerCent = NaN
@@ -58,10 +56,8 @@ export const usePriceConversion = (fetchPolicy?: WatchQueryFetchPolicy) => {
   }
 
   const { data: subData } = useRealtimePriceWsSubscription({
-    variables: {
-      currency: data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency || "",
-    },
-    skip: !data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency,
+    variables: { currency: realtimePrice?.denominatorCurrency || "" },
+    skip: !realtimePrice?.denominatorCurrency || !isAuthed,
   })
 
   const subRealtimePrice = subData?.realtimePrice.realtimePrice

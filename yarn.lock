@@ -1402,10 +1402,10 @@
     "@noble/hashes" "^1.1.5"
     "@noble/secp256k1" "^1.7.1"
 
-"@breeztech/react-native-breez-sdk-liquid@^0.7.8":
-  version "0.7.8"
-  resolved "https://registry.yarnpkg.com/@breeztech/react-native-breez-sdk-liquid/-/react-native-breez-sdk-liquid-0.7.8.tgz#58eccaea3a0eddc9ca052198d2eab0dfaaa2399b"
-  integrity sha512-J7fTUvvVuJNgLY+Vs0cNfPaMsYQr3p4LIdTX0aelmfdH6VPKnijXWbjiV+/xInoGlkbW8f3EdbUU9fXJ/l76qA==
+"@breeztech/react-native-breez-sdk-liquid@^0.8.3":
+  version "0.8.3"
+  resolved "https://registry.yarnpkg.com/@breeztech/react-native-breez-sdk-liquid/-/react-native-breez-sdk-liquid-0.8.3.tgz#c9303dd853b5410b06b9af0c3f77a57784677197"
+  integrity sha512-ItWZ42uEpv0o0e4l4Ty1k/79ewjr/JrtraV6U9CrJ4awCvcmXQCy7L/01q8/aN1EoKQD91lUt6iQ1gMv5NJj/A==
 
 "@callstack/react-theme-provider@3.0.3":
   version "3.0.3"

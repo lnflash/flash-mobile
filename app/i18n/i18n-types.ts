@@ -229,6 +229,9 @@ type RootTranslation = {
 		 */
 		title: RequiredParams<'username'>
 	}
+	Nostr: {
+		editProfile: string
+	}
 	CardScreen: {
 		/**
 		 * N​o​ ​C​a​r​d​s​ ​F​o​u​n​d
@@ -4704,6 +4707,9 @@ type RootTranslation = {
 }
 
 export type TranslationFunctions = {
+	Nostr: {
+		editProfile: () => LocalizedString
+	}
 	GaloyAddressScreen: {
 		/**
 		 * Receive payment by using:

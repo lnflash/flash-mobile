@@ -87,10 +87,20 @@ export const useStyles = makeStyles(({ colors }) => ({
   icon: {
     color: colors.primary3,
   },
+  verifiedIcon: {
+    marginLeft: 7,
+    color: colors.primary,
+  },
   profilePicture: {
     width: 50,
     height: 50,
     borderRadius: 50,
     backgroundColor: colors.black,
+  },
+  selfNotePicture: {
+    width: 50,
+    height: 50,
+    borderRadius: 50,
+    backgroundColor: colors.primary,
   },
 }))
