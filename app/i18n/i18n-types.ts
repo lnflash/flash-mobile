@@ -1725,7 +1725,7 @@ type RootTranslation = {
 		 */
 		upgradeTitle: string
 		/**
-		 * B​a​c​k​u​p​ ​y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​a​n​d​ ​i​n​c​r​e​a​s​e​ ​t​r​a​n​s​a​c​t​i​o​n​ ​l​i​m​i​t​s​.
+		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
 		 */
 		upgradeDesc: string
 		/**
@@ -4608,7 +4608,7 @@ type RootTranslation = {
 		 */
 		personal: string
 		/**
-		 * For individual use, no additional info needed
+		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
 		 */
 		personalDesc: string
 		/**
@@ -4616,7 +4616,7 @@ type RootTranslation = {
 		 */
 		pro: string
 		/**
-		 * Accept payments as a Pro Flashpoint. Business Name & Address required
+		 * Accept payments and get discovered on the map. Requires a business name and location.
 		 */
 		proDesc: string
 		/**
@@ -4624,7 +4624,7 @@ type RootTranslation = {
 		 */
 		merchant: string
 		/**
-		 * Give rewards as a Merchant Flahpoint. ID and Bank account info required
+		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
 		 */
 		merchantDesc: string
 		/**
@@ -6643,7 +6643,7 @@ export type TranslationFunctions = {
 		 */
 		upgradeTitle: () => LocalizedString
 		/**
-		 * Backup your cash wallet and increase transaction limits.
+		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
 		 */
 		upgradeDesc: () => LocalizedString
 		/**
@@ -9654,7 +9654,7 @@ export type TranslationFunctions = {
 		 */
 		personal: () => LocalizedString
 		/**
-		 * For individual use, no additional info needed
+		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
 		 */
 		personalDesc: () => LocalizedString
 		/**
@@ -9662,7 +9662,7 @@ export type TranslationFunctions = {
 		 */
 		pro: () => LocalizedString
 		/**
-		 * Accept payments as a Pro Flashpoint. Business Name & Address required
+		 * Accept payments and get discovered on the map. Requires a business name and location.
 		 */
 		proDesc: () => LocalizedString
 		/**
@@ -9670,7 +9670,7 @@ export type TranslationFunctions = {
 		 */
 		merchant: () => LocalizedString
 		/**
-		 * Give rewards as a Merchant Flahpoint. ID and Bank account info required
+		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
 		 */
 		merchantDesc: () => LocalizedString
 		/**
