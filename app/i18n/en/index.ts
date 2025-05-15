@@ -98,7 +98,9 @@ const en: BaseTranslation = {
   ConversionConfirmationScreen: {
     title: "Review conversion",
     youreConverting: "You're converting",
+    sendingAccount: "Sending account",
     receivingAccount: "Receiving account",
+    conversionFee: "Conversion Fee"
   },
   ConversionSuccessScreen: {
     title: "Conversion Success",

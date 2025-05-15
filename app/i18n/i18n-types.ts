@@ -325,9 +325,17 @@ type RootTranslation = {
 		 */
 		youreConverting: string
 		/**
+		 * Sending account
+		 */
+		sendingAccount: string
+		/**
 		 * R​e​c​e​i​v​i​n​g​ ​a​c​c​o​u​n​t
 		 */
 		receivingAccount: string
+		/**
+		 * Conversion Fee
+		 */
+		conversionFee: string
 	}
 	ConversionSuccessScreen: {
 		/**
@@ -4839,9 +4847,17 @@ export type TranslationFunctions = {
 		 */
 		youreConverting: () => LocalizedString
 		/**
+		 * Sending account
+		 */
+		sendingAccount: () => LocalizedString
+		/**
 		 * Receiving account
 		 */
 		receivingAccount: () => LocalizedString
+		/**
+		 * Conversion Fee
+		 */
+		conversionFee: () => LocalizedString
 	}
 	ConversionSuccessScreen: {
 		/**
