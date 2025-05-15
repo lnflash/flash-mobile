@@ -198,14 +198,14 @@ export const fetchBreezFee = async (
       return { fee: null, err: "Wrong payment type" }
     }
   } catch (err) {
-    return { fee: null, err: err }
+    return { fee: null, err }
   }
 }
 
 export const receivePaymentBreezSDK = async (
   payerAmountSat?: number,
   description?: string,
-): Promise<LnInvoice> => {
+) => {
   try {
     const currentLimits = await fetchLightningLimits()
     console.log(`Minimum amount, in sats: ${currentLimits.receive.minSat}`)
@@ -230,7 +230,7 @@ export const receivePaymentBreezSDK = async (
 
     const parsed = await parseInvoice(res.destination)
 
-    return parsed
+    return { ...parsed, fee: receiveFeesSat }
   } catch (error) {
     console.log("Debugging the receive payment BREEZSDK", error)
     throw error
