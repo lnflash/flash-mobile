@@ -60,9 +60,11 @@ export type RootStackParamList = {
   }
   conversionDetails: undefined
   conversionConfirmation: {
-    toWallet: Pick<Wallet, "id" | "walletCurrency" | "balance">
-    fromWallet: Pick<Wallet, "id" | "walletCurrency" | "balance">
     moneyAmount: MoneyAmount<WalletOrDisplayCurrency>
+    sendingFee: number
+    receivingFee: number
+    lnInvoice: string
+    fromWalletCurrency: WalletCurrency
   }
   conversionSuccess: undefined
   sendBitcoinSuccess: {
