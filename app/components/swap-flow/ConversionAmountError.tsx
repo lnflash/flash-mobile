@@ -85,7 +85,7 @@ const ConversionAmountError: React.FC<Props> = ({
     checkErrorMessage()
   }, [
     fromWalletCurrency,
-    settlementSendAmount,
+    settlementSendAmount.amount,
     btcBalance.amount,
     usdBalance.amount,
     minAmount,

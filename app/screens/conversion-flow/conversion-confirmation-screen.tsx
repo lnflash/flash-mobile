@@ -10,21 +10,14 @@ import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 import { ConfirmationDetails } from "@app/components/swap-flow"
 
-// gql
-import {
-  HomeAuthedDocument,
-  useConversionScreenQuery,
-  useLnInvoicePaymentSendMutation,
-} from "@app/graphql/generated"
-
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useActivityIndicator, useBreez } from "@app/hooks"
+import { useConversionScreenQuery } from "@app/graphql/generated"
+import { useActivityIndicator, useBreez, useSwap } from "@app/hooks"
 
 // utils
 import { toastShow } from "@app/utils/toast"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
-import { payLightningBreez } from "@app/utils/breez-sdk-liquid"
 
 // types
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -40,12 +33,9 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
   const { btcWallet } = useBreez()
 
   const { toggleActivityIndicator } = useActivityIndicator()
+  const { swap } = useSwap()
 
   const [errorMessage, setErrorMessage] = useState<string | undefined>()
-
-  const [lnInvoicePaymentSend] = useLnInvoicePaymentSendMutation({
-    refetchQueries: [HomeAuthedDocument],
-  })
 
   const { data } = useConversionScreenQuery({
     fetchPolicy: "cache-first",
@@ -55,35 +45,12 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
   const convertHandler = async () => {
-    if (lnInvoice && usdWallet) {
+    if (lnInvoice) {
       try {
         toggleActivityIndicator(true)
-        if (fromWalletCurrency === "USD") {
-          const res = await lnInvoicePaymentSend({
-            variables: {
-              input: {
-                walletId: usdWallet.id,
-                paymentRequest: lnInvoice,
-                memo: "Swap USD to BTC",
-              },
-            },
-          })
-          console.log(">>>>>>>>>>>>>>RES???????????????", res)
-          const status = res.data?.lnInvoicePaymentSend.status
-          if (status === "PENDING" || status === "SUCCESS") {
-            handlePaymentSuccess()
-          } else if (status === "ALREADY_PAID") {
-            throw new Error("Invoice is already paid")
-          } else {
-            const error = res.data?.lnInvoicePaymentSend.errors[0].message
-            throw new Error(error || "Something went wrong")
-          }
-        } else {
-          const res = await payLightningBreez(lnInvoice)
-          console.log(">>>>>>>>>?????????", res.payment)
-          if (res.payment.status === "pending") {
-            handlePaymentSuccess()
-          }
+        const res = await swap(lnInvoice, fromWalletCurrency)
+        if (res) {
+          handlePaymentSuccess()
         }
       } catch (err) {
         if (err instanceof Error) {
