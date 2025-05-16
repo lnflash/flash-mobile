@@ -146,32 +146,31 @@ export const useSwap = () => {
           },
         })
         console.log("FEE RES>>>>>>>>", feeRes.data?.lnUsdInvoiceFeeProbe)
-        if (feeRes.data?.lnUsdInvoiceFeeProbe.errors.length === 0) {
-          // check if (amount + fee) is larger than balance
-          const sendingFee = feeRes.data?.lnUsdInvoiceFeeProbe.amount || 0
-          if (sendingFee + settlementSendAmount.amount > usdBalance.amount) {
-            return {
-              data: null,
-              err:
-                LL.SendBitcoinScreen.amountExceed({
-                  balance: formattedUsdBalance,
-                }) + " (amount + fee)",
-            }
-          } else {
-            return {
-              data: {
-                moneyAmount: settlementSendAmount, // @ts-ignore: Unreachable code error
-                sendingFee: convertMoneyAmount(toUsdMoneyAmount(sendingFee), "BTC")
-                  .amount,
-                receivingFee: invoiceRes.fee,
-                lnInvoice: invoiceRes.bolt11,
-              },
-              err: null,
-            }
+        // if (feeRes.data?.lnUsdInvoiceFeeProbe.errors.length === 0) {
+        // check if (amount + fee) is larger than balance
+        const sendingFee = feeRes.data?.lnUsdInvoiceFeeProbe.amount || 0
+        if (sendingFee + settlementSendAmount.amount > usdBalance.amount) {
+          return {
+            data: null,
+            err:
+              LL.SendBitcoinScreen.amountExceed({
+                balance: formattedUsdBalance,
+              }) + " (amount + fee)",
           }
         } else {
-          return { data: null, err: feeRes.data?.lnUsdInvoiceFeeProbe.errors[0].message }
+          return {
+            data: {
+              moneyAmount: settlementSendAmount, // @ts-ignore: Unreachable code error
+              sendingFee: convertMoneyAmount(toUsdMoneyAmount(sendingFee), "BTC").amount,
+              receivingFee: invoiceRes.fee,
+              lnInvoice: invoiceRes.bolt11,
+            },
+            err: null,
+          }
         }
+        // } else {
+        //   return { data: null, err: feeRes.data?.lnUsdInvoiceFeeProbe.errors[0].message }
+        // }
       } else {
         return { data: null, err: "Something went wrong. Please, try again later." }
       }
