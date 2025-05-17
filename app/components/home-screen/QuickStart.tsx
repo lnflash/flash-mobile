@@ -204,9 +204,11 @@ const QuickStart = () => {
           </Text>
           <Text type="bl">{item.description}</Text>
         </View>
-        <TouchableOpacity style={styles.close} onPress={() => onHide(item.type)}>
-          <Icon name={"close"} type="ionicon" color={colors.black} size={35} />
-        </TouchableOpacity>
+        {!item.pending && (
+          <TouchableOpacity style={styles.close} onPress={() => onHide(item.type)}>
+            <Icon name={"close"} type="ionicon" color={colors.black} size={35} />
+          </TouchableOpacity>
+        )}
       </TouchableOpacity>
     )
   }
