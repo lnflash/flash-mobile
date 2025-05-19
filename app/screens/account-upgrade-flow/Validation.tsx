@@ -10,7 +10,7 @@ import { InputField, ProgressSteps } from "@app/components/account-upgrade-flow"
 
 // hooks
 import { useAccountUpgrade, useActivityIndicator, useAppConfig } from "@app/hooks"
-import { useUserLoginUpgradeMutation } from "@app/graphql/generated"
+import { HomeAuthedDocument, useUserLoginUpgradeMutation } from "@app/graphql/generated"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAppSelector } from "@app/store/redux"
 
@@ -26,13 +26,14 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
   const { toggleActivityIndicator } = useActivityIndicator()
-  const { submitAccountUpgrade } = useAccountUpgrade()
+  const { submitAccountUpgrade, fetchAccountUpgrade } = useAccountUpgrade()
 
   const [code, setCode] = useState<string>()
   const [errorMsg, setErrorMsg] = useState<string>()
 
   const [userLoginUpgradeMutation] = useUserLoginUpgradeMutation({
     fetchPolicy: "no-cache",
+    refetchQueries: [HomeAuthedDocument],
   })
 
   const send = useCallback(
@@ -50,6 +51,7 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
           if (authToken) {
             saveToken(authToken)
           }
+          await fetchAccountUpgrade(phone)
           if (accountType === "personal") {
             const res = await submitAccountUpgrade()
             if (res) navigation.replace("AccountUpgradeSuccess")
