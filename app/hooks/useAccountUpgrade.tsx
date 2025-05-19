@@ -25,43 +25,46 @@ export const useAccountUpgrade = () => {
   )
   const { toggleActivityIndicator } = useActivityIndicator()
 
-  const fetchAccountUpgrade = async () => {
-    if (userData.phone) {
+  const fetchAccountUpgrade = async (phone?: string) => {
+    if (userData.phone || phone) {
       toggleActivityIndicator(true)
-      const res = await fetchUser(userData.phone)
-      const parsedPhone = parsePhoneNumber(userData.phone)
-      dispatch(
-        setAccountUpgrade({
-          id: res.id,
-          accountType: res.account_type,
-          upgradeCompleted: res.signup_completed,
-        }),
-      )
-      dispatch(
-        setPersonalInfo({
-          fullName: res.name,
-          countryCode: parsedPhone.country,
-          phoneNumber: parsedPhone.nationalNumber,
-          email: res.email,
-        }),
-      )
-      dispatch(
-        setBusinessInfo({
-          businessName: res.business_name,
-          businessAddress: res.business_address,
-          lat: res.latitude,
-          lng: res.longitude,
-        }),
-      )
-      dispatch(
-        setBankInfo({
-          bankName: res.bank_name,
-          bankBranch: res.bank_branch,
-          bankAccountType: res.bank_account_type,
-          currency: res.account_currency,
-          accountNumber: res.bank_account_number,
-        }),
-      )
+      const res = await fetchUser(userData.phone || phone)
+      if (res) {
+        const parsedPhone = parsePhoneNumber(userData.phone || phone)
+        dispatch(
+          setAccountUpgrade({
+            id: res.id,
+            accountType: res.account_type,
+            upgradeCompleted: res.signup_completed,
+          }),
+        )
+        dispatch(
+          setPersonalInfo({
+            fullName: res.name,
+            countryCode: parsedPhone.country,
+            phoneNumber: parsedPhone.nationalNumber,
+            email: res.email,
+          }),
+        )
+        dispatch(
+          setBusinessInfo({
+            businessName: res.business_name,
+            businessAddress: res.business_address,
+            lat: res.latitude,
+            lng: res.longitude,
+            terminalRequested: res.terminal_requested,
+          }),
+        )
+        dispatch(
+          setBankInfo({
+            bankName: res.bank_name,
+            bankBranch: res.bank_branch,
+            bankAccountType: res.bank_account_type,
+            currency: res.account_currency,
+            accountNumber: res.bank_account_number,
+          }),
+        )
+      }
       toggleActivityIndicator(false)
     }
   }
@@ -96,6 +99,7 @@ export const useAccountUpgrade = () => {
       id_image_url: id_image_url,
       terms_accepted: true,
       terminal_requested: businessInfo.terminalRequested,
+      wants_terminal: businessInfo.terminalRequested,
       client_version: readableVersion,
       device_info: Platform.OS,
       signup_completed: undefined,
