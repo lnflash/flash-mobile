@@ -61,6 +61,13 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
   } = useRequestPhoneCodeLogin()
 
   useEffect(() => {
+    if (phoneNumber && countryCode) {
+      setPhoneNumber(phoneNumber)
+      setCountryCode(countryCode)
+    }
+  }, [])
+
+  useEffect(() => {
     if (
       status === RequestPhoneCodeStatus.CompletingCaptcha ||
       status === RequestPhoneCodeStatus.RequestingCode
@@ -123,7 +130,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
         <PhoneNumber
           countryCode={countryCode}
           phoneNumber={phoneNumber}
-          errorMsg={phoneNumberErr}
+          errorMsg={phoneNumberErr || error}
           disabled={!!id}
           supportedCountries={supportedCountries as CountryCode[]}
           setCountryCode={(val) => {

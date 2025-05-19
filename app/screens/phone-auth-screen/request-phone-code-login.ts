@@ -161,7 +161,7 @@ export const useRequestPhoneCodeLogin = (): UseRequestPhoneCodeReturn => {
       setStatus(RequestPhoneCodeStatus.InputtingPhoneNumber)
     }
 
-    getCountryCodeFromIP()
+    if (!countryCode) getCountryCodeFromIP()
   }, [])
 
   const setPhoneNumber = (number: string) => {
