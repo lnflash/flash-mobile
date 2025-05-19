@@ -22,6 +22,7 @@ import { SettingsButton } from "../../button"
 import { useAccountDeleteContext } from "../account-delete-context"
 import { useBreez } from "@app/hooks"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
+import { deleteUser } from "@app/supabase"
 
 gql`
   mutation accountDelete {
@@ -111,6 +112,8 @@ export const Delete = () => {
 
       if (res.data?.accountDelete?.success) {
         await deleteNostrData()
+        console.log(">>>>>>>>>>>>", data?.me)
+        if (data?.me?.phone) await deleteUser(data?.me?.phone)
         await logout(true)
         setAccountIsBeingDeleted(false)
         navigation.reset({

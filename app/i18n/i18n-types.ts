@@ -1705,13 +1705,17 @@ type RootTranslation = {
 		 */
 		addFlashcard: string
 		/**
-		 * Add your phone number
+		 * Upgrade your account
 		 */
 		upgradeTitle: string
 		/**
-		 * Backup your cash wallet and increase transaction limits.
+		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
 		 */
 		upgradeDesc: string
+		/**
+		 * Enter test transaction amount to complete upgrading your account.
+		 */
+		upgradePendingDesc: string
 		/**
 		 * Change to your local currency
 		 */
@@ -4543,6 +4547,162 @@ type RootTranslation = {
 		 * Transaction ID
 		 */
 		txId: string
+	},
+	AccountUpgrade: {
+		/**
+		 * Account Type
+		 */
+		accountType: string
+		/**
+		 * Personal
+		 */
+		personal: string
+		/**
+		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
+		 */
+		personalDesc: string
+		/**
+		 * Pro
+		 */
+		pro: string
+		/**
+		 * Accept payments and get discovered on the map. Requires a business name and location.
+		 */
+		proDesc: string
+		/**
+		 * Merchant
+		 */
+		merchant: string
+		/**
+		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
+		 */
+		merchantDesc: string
+		/**
+		 * Personal Information
+		 */
+		personalInfo: string
+		/**
+		 * Full name
+		 */
+		fullName: string
+		/**
+		 * Phone Number
+		 */
+		phoneNumber: string
+		/**
+		 * Email Address
+		 */
+		email: string
+		/**
+		 * Optional
+		 */
+		optional: string
+		/**
+		 * Validation
+		 */
+		validation: string
+		/**
+		 * Validation code
+		 */
+		validationCode: string
+		/**
+		 * Business Information
+		 */
+		businessInfo: string
+		/**
+		 * Business Name
+		 */
+		businessName: string
+		/**
+		 * Enter your business name
+		 */
+		businessNamePlaceholder: string
+		/**
+		 * Business Address
+		 */
+		businessAddress: string
+		/**
+		 * Enter your business address
+		 */
+		businessAddressPlaceholder: string
+		/**
+		 * Do you want a Flash terminal?
+		 */
+		flashTerminal: string
+		/**
+		 * A Flash Terminal is a smart device that can accept payment via Flash for your business and print receipts. A customer service representative will contact you if you check this box.
+		 */
+		flashTerminalTooltip: string
+		/**
+		 * Banking Information
+		 */
+		bankingInfo: string
+		/**
+		 * Bank Name
+		 */
+		bankName: string
+		/**
+		 * Enter your bank name
+		 */
+		bankNamePlaceholder: string
+		/**
+		 * Bank Branch
+		 */
+		bankBranch: string
+		/**
+		 * Enter your bank branch
+		 */
+		bankBranchPlaceholder: string
+		/**
+		 * Account Type
+		 */
+		bankAccountType: string
+		/**
+		 * Select account type
+		 */
+		selectBankAccountType: string,
+		/**
+		 * Currency
+		 */
+		currency: string
+		/**
+		 * Select currency
+		 */
+		selectCurrency: string,
+		/**
+		 * Account Number
+		 */
+		accountNum: string
+		/**
+		 * Enter your account number
+		 */
+		accountNumPlaceholder: string
+		/**
+		 * Upload ID Document
+		 */
+		uploadId: string
+		/**
+		 * You successfully requested to upgrade your account to {accountType} 
+		 * @param {string} accountType
+		 */
+		successTitle: RequiredParams<'accountType'>
+		/**
+		 * * Please enter the test transaction amount to confirm your bank details.
+		 */
+		successDesc: string
+		/**
+		 * * Transaction Verification
+		 */
+		transactionVerification: string
+		/**
+		 * To complete upgrading your account to MERCHANT, enter the test transaction amount we sent to your bank account {accountNum} to confirm your bank details.
+		 * @param {string} accountNum 
+		 */
+		transactionTitle: RequiredParams<'accountNum'>
+		/**
+		 * Transaction amount
+		 */
+		transactionAmount: string
 	}
 }
 
@@ -6216,13 +6376,17 @@ export type TranslationFunctions = {
 		 */
 		addFlashcard: () => LocalizedString
 		/**
-		 * Add your phone number
+		 * Upgrade your account
 		 */
 		upgradeTitle: () => LocalizedString
 		/**
-		 * Backup your cash wallet and increase transaction limits.
+		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
 		 */
 		upgradeDesc: () => LocalizedString
+		/**
+		 * Enter test transaction amount to complete upgrading your account.
+		 */
+		upgradePendingDesc: () => LocalizedString
 		/**
 		 * Change to your local currency
 		 */
@@ -9003,6 +9167,160 @@ export type TranslationFunctions = {
 		 */
 		txId: () => LocalizedString
 		
+	},
+	AccountUpgrade: {
+		/**
+		 * Account Type
+		 */
+		accountType: () => LocalizedString
+		/**
+		 * Personal
+		 */
+		personal: () => LocalizedString
+		/**
+		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
+		 */
+		personalDesc: () => LocalizedString
+		/**
+		 * Pro
+		 */
+		pro: () => LocalizedString
+		/**
+		 * Accept payments and get discovered on the map. Requires a business name and location.
+		 */
+		proDesc: () => LocalizedString
+		/**
+		 * Merchant
+		 */
+		merchant: () => LocalizedString
+		/**
+		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
+		 */
+		merchantDesc: () => LocalizedString
+		/**
+		 * Personal Information
+		 */
+		personalInfo: () => LocalizedString
+		/**
+		 * Full name
+		 */
+		fullName: () => LocalizedString
+		/**
+		 * Phone Number
+		 */
+		phoneNumber: () => LocalizedString
+		/**
+		 * Email Address
+		 */
+		email: () => LocalizedString
+		/**
+		 * Optional
+		 */
+		optional: () => LocalizedString
+		/**
+		 * Validation
+		 */
+		validation: () => LocalizedString
+		/**
+		 * Validation code
+		 */
+		validationCode: () => LocalizedString
+		/**
+		 * Business Information
+		 */
+		businessInfo: () => LocalizedString
+		/**
+		 * Business Name
+		 */
+		businessName: () => LocalizedString
+		/**
+		 * Enter your business name
+		 */
+		businessNamePlaceholder: () => LocalizedString
+		/**
+		 * Business Address
+		 */
+		businessAddress: () => LocalizedString
+		/**
+		 * Enter your business address
+		 */
+		businessAddressPlaceholder: () => LocalizedString
+		/**
+		 * Do you want a Flash terminal?
+		 */
+		flashTerminal: () => LocalizedString
+		/**
+		 * A Flash Terminal is a smart device that can accept payment via Flash for your business and print receipts. A customer service representative will contact you if you check this box.
+		 */
+		flashTerminalTooltip: () => LocalizedString
+		/**
+		 * Banking Information
+		 */
+		bankingInfo: () => LocalizedString
+		/**
+		 * Bank Name
+		 */
+		bankName: () => LocalizedString
+		/**
+		 * Enter your bank name
+		 */
+		bankNamePlaceholder: () => LocalizedString
+		/**
+		 * Bank Branch
+		 */
+		bankBranch: () => LocalizedString
+		/**
+		 * Enter your bank branch
+		 */
+		bankBranchPlaceholder: () => LocalizedString
+		/**
+		 * Account Type
+		 */
+		bankAccountType: () => LocalizedString
+		/**
+		 * Select account type
+		 */
+		selectBankAccountType: () => LocalizedString
+		/**
+		 * Currency
+		 */
+		currency: () => LocalizedString
+		/**
+		 * Select currency
+		 */
+		selectCurrency: () => LocalizedString
+		/**
+		 * Account Number
+		 */
+		accountNum: () => LocalizedString
+		/**
+		 * Enter your account number
+		 */
+		accountNumPlaceholder: () => LocalizedString
+		/**
+		 * Upload ID Document
+		 */
+		uploadId: () => LocalizedString
+		/**
+		 * You successfully requested to upgrade your account to {accountType}
+		 */
+		successTitle: (arg: { accountType: string }) => LocalizedString
+		/**
+		 * * Please enter the test transaction amount to confirm your bank details.
+		 */
+		successDesc: () => LocalizedString
+		/**
+		 * * Transaction Verification
+		 */
+		transactionVerification: () => LocalizedString
+		/**
+		 * To complete upgrading your account to MERCHANT, enter the test transaction amount we sent to your bank account {accountNum} to confirm your bank details.
+		 */
+		transactionTitle: (arg: { accountNum: string }) => LocalizedString
+		/**
+		 * Transaction amount
+		 */
+		transactionAmount: () => LocalizedString
 	}
 }
 
