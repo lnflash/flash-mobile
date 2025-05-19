@@ -20,6 +20,7 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useAccountDeleteContext } from "../account-delete-context"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useAccountDeleteMutation, useSettingsScreenQuery } from "@app/graphql/generated"
+import { deleteUser } from "@app/supabase"
 
 // utils
 import { CONTACT_EMAIL_ADDRESS } from "@app/config"
@@ -104,6 +105,7 @@ export const Delete = () => {
 
       if (res.data?.accountDelete?.success) {
         await deleteNostrData()
+        if (data?.me?.phone) await deleteUser(data?.me?.phone)
         await cleanUp(true)
         setAccountIsBeingDeleted(false)
         navigation.reset({

@@ -110,17 +110,18 @@ export async function fetchUser(phone: string) {
     .single() // if expecting only one match
   if (error) {
     console.error("Fetch error:", error)
+    return undefined
   } else {
     console.log("User data:", data)
     return data
   }
 }
 
-export async function deleteUser(id: string) {
+export async function deleteUser(phone: string) {
   const { data, error } = await supabase
     .from("signups") // your table name
     .delete()
-    .eq("id", id) // filter to match the row
+    .eq("phone", phone) // filter to match the row
 
   if (error) {
     console.error("Delete error:", error)
