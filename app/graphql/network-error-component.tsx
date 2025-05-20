@@ -56,7 +56,7 @@ export const NetworkErrorComponent: React.FC = () => {
                 onPress: () => {
                   setShowedAlert(false)
                   navigation.dispatch(() => {
-                    const routes = [{ name: "Primary" }]
+                    const routes = [{ name: "getStarted" }]
                     return CommonActions.reset({
                       routes,
                       index: routes.length - 1,
