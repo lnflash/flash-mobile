@@ -1,59 +1,47 @@
-import { useState } from "react"
+import React, { useState } from "react"
 import { Alert, TextInput, View } from "react-native"
+import { useTheme, Text, makeStyles } from "@rneui/themed"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import Modal from "react-native-modal"
 
-import { gql } from "@apollo/client"
+// components
+import { SettingsButton } from "../../button"
 import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-button"
-import { CONTACT_EMAIL_ADDRESS } from "@app/config"
-import { useAccountDeleteMutation, useSettingsScreenQuery } from "@app/graphql/generated"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
-import { useDisplayCurrency } from "@app/hooks/use-display-currency"
+
+// hooks
+import { useBreez } from "@app/hooks"
 import useLogout from "@app/hooks/use-logout"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { useNavigation } from "@react-navigation/native"
-import { StackNavigationProp } from "@react-navigation/stack"
-import { useTheme, Text, makeStyles } from "@rneui/themed"
-
-import { SettingsButton } from "../../button"
-import { useAccountDeleteContext } from "../account-delete-context"
-import { useBreez } from "@app/hooks"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
+import { useAccountDeleteContext } from "../account-delete-context"
+import { useDisplayCurrency } from "@app/hooks/use-display-currency"
+import { useAccountDeleteMutation, useSettingsScreenQuery } from "@app/graphql/generated"
 
-gql`
-  mutation accountDelete {
-    accountDelete {
-      errors {
-        message
-      }
-      success
-    }
-  }
-`
+// utils
+import { CONTACT_EMAIL_ADDRESS } from "@app/config"
+import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 
 export const Delete = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
-  const { colors } = useTheme().theme
-  const { logout } = useLogout()
   const { LL } = useI18nContext()
   const { btcWallet } = useBreez()
+  const { colors } = useTheme().theme
+  const { cleanUp } = useLogout()
+  const { deleteNostrData } = useNostrProfile()
+  const { formatMoneyAmount } = useDisplayCurrency()
   const { setAccountIsBeingDeleted } = useAccountDeleteContext()
 
   const [text, setText] = useState("")
   const [modalVisible, setModalVisible] = useState(false)
-  const closeModal = () => {
-    setModalVisible(false)
-    setText("")
-  }
 
   const [deleteAccount] = useAccountDeleteMutation({ fetchPolicy: "no-cache" })
   const { data, loading } = useSettingsScreenQuery()
-  const { formatMoneyAmount } = useDisplayCurrency()
-  const { deleteNostrData } = useNostrProfile()
 
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
@@ -85,6 +73,11 @@ export const Delete = () => {
     LL.support.deleteAccountBalanceWarning()
   ).trim()
 
+  const closeModal = () => {
+    setModalVisible(false)
+    setText("")
+  }
+
   const deleteAccountAction = async () => {
     if (balancePositive) {
       Alert.alert(LL.common.warning(), fullMessage, [
@@ -111,7 +104,7 @@ export const Delete = () => {
 
       if (res.data?.accountDelete?.success) {
         await deleteNostrData()
-        await logout(true)
+        await cleanUp()
         setAccountIsBeingDeleted(false)
         navigation.reset({
           index: 0,
