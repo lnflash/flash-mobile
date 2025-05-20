@@ -345,7 +345,7 @@ export const RootStack = () => {
         name="NostrSettingsScreen"
         component={NostrSettingsScreen}
         options={{
-          title: "Nostr Account",
+          title: "Social Settings",
           headerBackTitleVisible: false,
           // Add any other screen options you need
         }}

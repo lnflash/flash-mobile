@@ -5,8 +5,10 @@ import {
   Pressable,
   StyleSheet,
   Image,
+  TouchableOpacity,
+  Linking,
 } from "react-native"
-import { Text, useTheme } from "@rneui/themed"
+import { Button, makeStyles, Text, useTheme } from "@rneui/themed"
 import { useEffect, useState, useRef } from "react"
 import { getPublicKey, nip19 } from "nostr-tools"
 import Ionicons from "react-native-vector-icons/Ionicons"
@@ -21,6 +23,8 @@ import Clipboard from "@react-native-clipboard/clipboard"
 import { Screen } from "../../components/screen"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import ReactNativeModal from "react-native-modal"
+import { useAppConfig } from "@app/hooks"
+import { toastShow } from "@app/utils/toast"
 
 export const NostrSettingsScreen = () => {
   const { LL } = useI18nContext()
@@ -32,6 +36,7 @@ export const NostrSettingsScreen = () => {
   const [showSecretModal, setShowSecretModal] = useState(false)
   const [keysModalType, setKeysModalType] = useState<"public" | "private">("public")
   const isAuthed = useIsAuthed()
+  const styles = useStyles()
   const {
     data: dataAuthed,
     loading: loadingAuthed,
@@ -76,17 +81,22 @@ export const NostrSettingsScreen = () => {
   const {
     theme: { colors },
   } = useTheme()
+  const {
+    appConfig: {
+      galoyInstance: { lnAddressHostname: lnDomain },
+    },
+  } = useAppConfig()
   const [copiedNsec, setCopiedNsec] = useState(false)
   const [copiedNpub, setCopiedNpub] = useState(false)
   const [hideSecret, setHideSecret] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
   const { resetChat } = useChatContext()
 
-  const copyToClipboard = (copyText: string, handler: (copied: boolean) => void) => {
+  const copyToClipboard = (copyText: string, handler?: (copied: boolean) => void) => {
     Clipboard.setString(copyText)
-    handler(true)
+    handler?.(true)
     setTimeout(() => {
-      handler(false)
+      handler?.(false)
     }, 1000)
   }
 
@@ -147,6 +157,7 @@ export const NostrSettingsScreen = () => {
   }
 
   const renderKeyModal = () => {
+    const styles = useStyles()
     if (!secretKey) return null
 
     const isPublic = keysModalType === "public"
@@ -170,23 +181,17 @@ export const NostrSettingsScreen = () => {
           </Text>
 
           <View style={styles.keyContainer}>
-            <Text selectable={true} style={styles.keyText}>
-              {keyValue}
-            </Text>
+            <Text>{keyValue}</Text>
           </View>
 
           <View style={styles.modalButtonsRow}>
             {!isPublic && (
-              <Pressable
-                style={styles.modalButton}
-                onPress={() => setHideSecret(!hideSecret)}
-              >
-                <Text style={styles.modalButtonText}>{hideSecret ? "Show" : "Hide"}</Text>
-              </Pressable>
+              <Button onPress={() => setHideSecret(!hideSecret)}>
+                <Text>{hideSecret ? "Show" : "Hide"}</Text>
+              </Button>
             )}
 
-            <Pressable
-              style={styles.modalButton}
+            <Button
               onPress={() => {
                 copyToClipboard(
                   isPublic ? nostrPubKey : nip19.nsecEncode(secretKey),
@@ -196,14 +201,11 @@ export const NostrSettingsScreen = () => {
               }}
             >
               <Text style={styles.modalButtonText}>Copy</Text>
-            </Pressable>
+            </Button>
 
-            <Pressable
-              style={styles.modalButtonCancel}
-              onPress={() => setShowSecretModal(false)}
-            >
+            <Button onPress={() => setShowSecretModal(false)}>
               <Text style={styles.modalButtonText}>Close</Text>
-            </Pressable>
+            </Button>
           </View>
         </View>
       </ReactNativeModal>
@@ -220,7 +222,7 @@ export const NostrSettingsScreen = () => {
         onBackdropPress={() => setImportModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Import Profile</Text>
+          <Text>Import Profile</Text>
           <NsecInputForm
             onSubmit={(nsec, success) => {
               if (success) {
@@ -231,12 +233,9 @@ export const NostrSettingsScreen = () => {
               }
             }}
           />
-          <Pressable
-            style={styles.modalButtonCancel}
-            onPress={() => setImportModalVisible(false)}
-          >
-            <Text style={styles.modalButtonText}>Cancel</Text>
-          </Pressable>
+          <Button onPress={() => setImportModalVisible(false)}>
+            <Text>Cancel</Text>
+          </Button>
         </View>
       </ReactNativeModal>
     )
@@ -245,8 +244,8 @@ export const NostrSettingsScreen = () => {
   const renderContent = () => {
     if (!secretKey) {
       return (
-        <View style={styles.noKeysContainer}>
-          <Text style={styles.noKeysText}>No Profile Found</Text>
+        <View>
+          <Text>No Profile Found</Text>
           <Pressable
             style={styles.generateButton}
             onPress={async () => {
@@ -270,6 +269,10 @@ export const NostrSettingsScreen = () => {
       )
     }
 
+    const profileText = dataAuthed?.me?.username
+      ? `${dataAuthed.me.username}@${lnDomain}`
+      : "Finding You.."
+
     return (
       <View style={styles.container}>
         {/* Profile Header */}
@@ -290,12 +293,22 @@ export const NostrSettingsScreen = () => {
 
             {/* <Ionicons name="person-circle-outline" size={80} color={colors.grey3} /> */}
           </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.npubLabel}>Social ID</Text>
-            <Text style={styles.npubValue} numberOfLines={1} ellipsizeMode="middle">
-              {nostrPubKey}
-            </Text>
-          </View>
+          <TouchableOpacity
+            onPress={() => {
+              dataAuthed?.me?.username
+                ? copyToClipboard(profileText, (copied) => {
+                    toastShow({
+                      message: "Copied",
+                      type: "success",
+                    })
+                  })
+                : null
+            }}
+            activeOpacity={0.7}
+            style={styles.profileInfo}
+          >
+            <Text>{profileText}</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Main Menu Items */}
@@ -328,6 +341,25 @@ export const NostrSettingsScreen = () => {
           <View style={styles.advancedContainer}>
             {/* Show Public Key */}
             <Pressable
+              style={[styles.advancedMenuItem]}
+              onPress={() =>
+                Linking.openURL(
+                  "https://flash-docs-msp2z.ondigitalocean.app/en/guides/chat",
+                )
+              }
+            >
+              <View style={styles.menuIconContainer}>
+                <Ionicons name="book-outline" size={24} color="#3366cc" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuText}>Learn about Nostr</Text>
+                <Text style={styles.menuSubtext}>
+                  Explore this guide to get the most out of nostr chat
+                </Text>
+              </View>
+              <Ionicons name="open-outline" size={24} color="#3366cc" />
+            </Pressable>
+            <Pressable
               style={styles.advancedMenuItem}
               onPress={() => handleShowKeys("public")}
             >
@@ -351,13 +383,7 @@ export const NostrSettingsScreen = () => {
             </Pressable>
 
             {/* Reconnect Nostr Account */}
-            <Pressable
-              style={[
-                styles.advancedMenuItem,
-                { backgroundColor: linked ? "#f8f8f8" : "#f0f0f0" },
-              ]}
-              onPress={handleReconnectNostr}
-            >
+            <Pressable style={[styles.advancedMenuItem]} onPress={handleReconnectNostr}>
               <View style={styles.menuIconContainer}>
                 {updatingNpub ? (
                   <ActivityIndicator size="small" color={colors.black} />
@@ -411,7 +437,7 @@ export const NostrSettingsScreen = () => {
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, mode }) => ({
   container: {
     flex: 1,
     padding: 16,
@@ -421,8 +447,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 20,
     marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
   },
   profileIcon: {
     marginRight: 16,
@@ -430,28 +454,18 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
   },
-  npubLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
-  },
-  npubValue: {
-    fontSize: 14,
-    color: "#666",
-    width: "80%",
-  },
   menuContainer: {
     marginBottom: 10,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 16,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.divider,
   },
   advancedContainer: {
-    backgroundColor: "#f9f9f9",
+    backgroundColor: colors.white,
     borderRadius: 8,
     marginBottom: 16,
     overflow: "hidden",
@@ -462,7 +476,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.divider,
   },
   menuIconContainer: {
     width: 40,
@@ -474,33 +488,57 @@ const styles = StyleSheet.create({
   menuText: {
     flex: 1,
     fontSize: 16,
+    color: colors.black,
   },
   menuSubtext: {
     fontSize: 12,
-    color: "#888",
+    color: colors.black,
   },
-  noKeysContainer: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "center",
-    alignItems: "center",
+  nostrLearnCard: {
+    backgroundColor:
+      mode === "dark"
+        ? `${colors.primary}25` // 15% opacity in dark mode
+        : `${colors.primary}15`, // 10% opacity in light mode
   },
-  noKeysText: {
-    fontSize: 18,
-    marginBottom: 20,
+  nostrLearnIcon: {
+    color: colors.primary,
   },
-  generateButton: {
+  profileCopyButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f0f0f0",
-    padding: 12,
-    borderRadius: 8,
+  },
+  profileText: {
+    marginRight: 8,
+  },
+  profileCopyIcon: {
+    color: colors.grey3,
+  },
+  generateButton: {
+    backgroundColor: colors.grey5 + "40",
   },
   modalContainer: {
-    backgroundColor: "white",
+    backgroundColor: colors.background,
     borderRadius: 12,
     padding: 20,
     maxHeight: "80%",
+  },
+  keyContainer: {
+    backgroundColor: colors.grey5 + "30",
+  },
+  modalButton: {
+    backgroundColor: colors.grey5 + "40",
+  },
+  modalButtonCancel: {
+    backgroundColor: colors.grey5 + "60",
+  },
+  modalButtonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 10,
+  },
+  modalButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
   },
   modalTitle: {
     fontSize: 18,
@@ -508,39 +546,4 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: "center",
   },
-  keyContainer: {
-    backgroundColor: "#f5f5f5",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  keyText: {
-    fontSize: 14,
-    color: "#333",
-    fontFamily: "monospace",
-  },
-  modalButtonsRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 8,
-  },
-  modalButton: {
-    backgroundColor: "#f0f0f0",
-    padding: 12,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: "center",
-  },
-  modalButtonCancel: {
-    backgroundColor: "#e0e0e0",
-    padding: 12,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  modalButtonText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-})
+}))

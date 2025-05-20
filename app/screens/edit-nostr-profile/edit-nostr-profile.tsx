@@ -9,6 +9,7 @@ const EditNostrProfileScreen = () => {
   useEffect(() => {
     console.log("EDIT PROFILE SCREEN, USER EVENT?", userProfileEvent)
     if (!userProfileEvent) {
+      console.log("Refresjing still")
       refreshUserProfile()
     }
   }, [])
