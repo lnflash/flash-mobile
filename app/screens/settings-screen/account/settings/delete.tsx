@@ -104,7 +104,7 @@ export const Delete = () => {
 
       if (res.data?.accountDelete?.success) {
         await deleteNostrData()
-        await cleanUp()
+        await cleanUp(true)
         setAccountIsBeingDeleted(false)
         navigation.reset({
           index: 0,

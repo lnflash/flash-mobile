@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import messaging from "@react-native-firebase/messaging"
+import * as Keychain from "react-native-keychain"
 
 // store
 import { resetUserSlice } from "@app/store/redux/slices/userSlice"
@@ -14,6 +15,8 @@ import { useFlashcard } from "./useFlashcard"
 // utils
 import KeyStoreWrapper from "../utils/storage/secureStorage"
 import { SCHEMA_VERSION_KEY } from "@app/config"
+
+const DEVICE_ACCOUNT_CREDENTIALS_KEY = "device-account"
 
 const useLogout = () => {
   const client = useApolloClient()
@@ -32,7 +35,7 @@ const useLogout = () => {
         .then(async (res) => {
           console.log("USER LOGOUT MUTATION RES: ", res.data?.userLogout)
           if (res.data?.userLogout.success) {
-            cleanUp()
+            await cleanUp()
           }
         })
         .catch((err) => {
@@ -43,7 +46,7 @@ const useLogout = () => {
     }
   }
 
-  const cleanUp = async () => {
+  const cleanUp = async (isDelete?: boolean) => {
     await client.cache.reset()
     await AsyncStorage.multiRemove([SCHEMA_VERSION_KEY])
     await KeyStoreWrapper.removeIsBiometricsEnabled()
@@ -52,6 +55,10 @@ const useLogout = () => {
     dispatch(resetUserSlice())
     resetState()
     resetFlashcard()
+
+    if (isDelete) {
+      await Keychain.resetInternetCredentials(DEVICE_ACCOUNT_CREDENTIALS_KEY)
+    }
   }
 
   return {
