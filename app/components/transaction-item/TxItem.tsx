@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react"
+import React from "react"
+import moment from "moment"
 import styled from "styled-components/native"
 import { Text, useTheme } from "@rneui/themed"
 import { TransactionFragment, useHideBalanceQuery } from "@app/graphql/generated"
@@ -10,7 +11,6 @@ import HideableArea from "../hideable-area/hideable-area"
 
 // hooks
 import { useNavigation } from "@react-navigation/native"
-import { useI18nContext } from "@app/i18n/i18n-react"
 import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
 // assets
@@ -18,7 +18,6 @@ import ArrowUp from "@app/assets/icons/arrow-up.svg"
 import ArrowDown from "@app/assets/icons/arrow-down.svg"
 
 // utils
-import { outputRelativeDate } from "../transaction-date"
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 
 type Props = {
@@ -30,51 +29,39 @@ const label = {
   SEND: "Sent",
 }
 
-export const TxItem: React.FC<Props> = ({ tx }) => {
+export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-
   const { colors } = useTheme().theme
-  const { locale } = useI18nContext()
+
   const { formatMoneyAmount, moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
 
-  const [primary, setPrimary] = useState<string>()
-  const [secondary, setSecondary] = useState<string>()
-
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 
-  useEffect(() => {
-    formatAmount()
-  }, [tx])
+  let primaryAmount = null
+  let secondaryAmount = null
+  if (tx.settlementCurrency === "BTC") {
+    const moneyAmount = toBtcMoneyAmount(tx.settlementAmount ?? NaN)
+    primaryAmount = moneyAmountToDisplayCurrencyString({
+      moneyAmount,
+      isApproximate: true,
+    })
 
-  const formatAmount = () => {
-    if (tx.settlementCurrency === "BTC") {
-      const moneyAmount = toBtcMoneyAmount(tx.settlementAmount ?? NaN)
-      const primaryAmount = moneyAmountToDisplayCurrencyString({
-        moneyAmount,
-        isApproximate: true,
+    secondaryAmount = formatMoneyAmount({
+      moneyAmount,
+    })
+  } else {
+    const amount = tx.settlementAmount * 100
+    const moneyAmount = toUsdMoneyAmount(amount ?? NaN)
+
+    primaryAmount = moneyAmountToDisplayCurrencyString({
+      moneyAmount: moneyAmount,
+    })
+
+    if (convertMoneyAmount) {
+      secondaryAmount = formatMoneyAmount({
+        moneyAmount: convertMoneyAmount(moneyAmount, "BTC"),
       })
-      setPrimary(primaryAmount)
-
-      const secondaryAmount = formatMoneyAmount({
-        moneyAmount,
-      })
-      setSecondary(secondaryAmount)
-    } else {
-      const amount = tx.settlementAmount * 100
-      const moneyAmount = toUsdMoneyAmount(amount ?? NaN)
-
-      const primaryAmount = moneyAmountToDisplayCurrencyString({
-        moneyAmount: moneyAmount,
-      })
-      setPrimary(primaryAmount)
-
-      if (convertMoneyAmount) {
-        const secondaryAmount = formatMoneyAmount({
-          moneyAmount: convertMoneyAmount(moneyAmount, "BTC"),
-        })
-        setSecondary(secondaryAmount)
-      }
     }
   }
 
@@ -92,7 +79,7 @@ export const TxItem: React.FC<Props> = ({ tx }) => {
       <ColumnWrapper>
         <Text type="bl">{`${label[tx.direction]} ${tx.settlementCurrency}`}</Text>
         <Text type="caption" color={colors.text02}>
-          {outputRelativeDate(tx.createdAt, locale)}
+          {moment(moment.unix(tx.createdAt)).fromNow()}
         </Text>
       </ColumnWrapper>
       <HideableArea isContentVisible={hideBalance}>
@@ -101,16 +88,16 @@ export const TxItem: React.FC<Props> = ({ tx }) => {
             type="bl"
             color={tx.direction === "RECEIVE" ? colors.accent02 : colors.black}
           >
-            {primary}
+            {primaryAmount}
           </Text>
           <Text type="caption" color={colors.text02}>
-            {secondary}
+            {secondaryAmount}
           </Text>
         </ColumnWrapper>
       </HideableArea>
     </Wrapper>
   )
-}
+})
 
 const Wrapper = styled.TouchableOpacity`
   flex-direction: row;
