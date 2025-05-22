@@ -16,36 +16,64 @@ import {
 import { SATS_PER_BTC, useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
 type Props = {
-  toWallet: Pick<Wallet, "id" | "walletCurrency" | "balance">
-  fromWallet: Pick<Wallet, "id" | "walletCurrency" | "balance">
+  toWallet?: Pick<Wallet, "id" | "walletCurrency" | "balance">
+  fromWallet?: Pick<Wallet, "id" | "walletCurrency" | "balance">
   moneyAmount: MoneyAmount<WalletOrDisplayCurrency>
+  totalFee: number
 }
 
-const ConfirmationDetails: React.FC<Props> = ({ fromWallet, toWallet, moneyAmount }) => {
+const ConfirmationDetails: React.FC<Props> = ({
+  fromWallet,
+  toWallet,
+  moneyAmount,
+  totalFee,
+}) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { formatMoneyAmount, displayCurrency } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
 
-  // @ts-ignore: Unreachable code error
-  const fromAmount = convertMoneyAmount(moneyAmount, fromWallet.walletCurrency) // @ts-ignore: Unreachable code error
-  const toAmount = convertMoneyAmount(moneyAmount, toWallet.walletCurrency) // @ts-ignore: Unreachable code error
-  const convertingAmount = convertMoneyAmount(moneyAmount, DisplayCurrency) // @ts-ignore: Unreachable code error
+  if (!convertMoneyAmount || !fromWallet || !toWallet) return
+
+  const fromAmount = convertMoneyAmount(moneyAmount, fromWallet?.walletCurrency)
+  const toAmount = convertMoneyAmount(moneyAmount, toWallet?.walletCurrency)
+  const convertingAmount = convertMoneyAmount(moneyAmount, DisplayCurrency)
   const rate = convertMoneyAmount(toBtcMoneyAmount(Number(SATS_PER_BTC)), DisplayCurrency)
+  const fee = convertMoneyAmount(toBtcMoneyAmount(totalFee), DisplayCurrency)
 
   return (
     <View style={styles.conversionInfoCard}>
+      <View style={styles.conversionInfoField}>
+        <Text style={styles.conversionInfoFieldTitle}>
+          {LL.ConversionConfirmationScreen.sendingAccount()}
+        </Text>
+        <Text style={styles.conversionInfoFieldValue}>
+          {toWallet?.walletCurrency === WalletCurrency.Btc
+            ? LL.common.usdAccount()
+            : LL.common.btcAccount()}
+        </Text>
+      </View>
+      <View style={styles.conversionInfoField}>
+        <Text style={styles.conversionInfoFieldTitle}>
+          {LL.ConversionConfirmationScreen.receivingAccount()}
+        </Text>
+        <Text style={styles.conversionInfoFieldValue}>
+          {toWallet?.walletCurrency === WalletCurrency.Btc
+            ? LL.common.btcAccount()
+            : LL.common.usdAccount()}
+        </Text>
+      </View>
       <View style={styles.conversionInfoField}>
         <Text style={styles.conversionInfoFieldTitle}>
           {LL.ConversionConfirmationScreen.youreConverting()}
         </Text>
         <Text style={styles.conversionInfoFieldValue}>
           {formatMoneyAmount({ moneyAmount: fromAmount })}
-          {displayCurrency !== fromWallet.walletCurrency &&
-          displayCurrency !== toWallet.walletCurrency
-            ? ` - ${formatMoneyAmount({
+          {displayCurrency !== fromWallet?.walletCurrency &&
+          displayCurrency !== toWallet?.walletCurrency
+            ? ` (${formatMoneyAmount({
                 moneyAmount: convertingAmount,
-              })}`
+              })})`
             : ""}
         </Text>
       </View>
@@ -57,12 +85,13 @@ const ConfirmationDetails: React.FC<Props> = ({ fromWallet, toWallet, moneyAmoun
       </View>
       <View style={styles.conversionInfoField}>
         <Text style={styles.conversionInfoFieldTitle}>
-          {LL.ConversionConfirmationScreen.receivingAccount()}
+          {LL.ConversionConfirmationScreen.conversionFee()}
         </Text>
         <Text style={styles.conversionInfoFieldValue}>
-          {toWallet.walletCurrency === WalletCurrency.Btc
-            ? LL.common.btcAccount()
-            : LL.common.usdAccount()}
+          {formatMoneyAmount({
+            moneyAmount: toBtcMoneyAmount(totalFee),
+          })}
+          {` (${formatMoneyAmount({ moneyAmount: fee })})`}
         </Text>
       </View>
       <View style={styles.conversionInfoField}>

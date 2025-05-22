@@ -33,8 +33,9 @@ type Props = {
   usdBalance: UsdMoneyAmount
   settlementSendAmount: MoneyAmount<WalletCurrency>
   moneyAmount: MoneyAmount<WalletOrDisplayCurrency>
+  errorMsg?: string
   setMoneyAmount: (val: MoneyAmount<WalletOrDisplayCurrency>) => void
-  setHasError: (val: boolean) => void
+  setErrorMsg: (val?: string) => void
 }
 
 const ConversionAmountError: React.FC<Props> = ({
@@ -45,8 +46,9 @@ const ConversionAmountError: React.FC<Props> = ({
   usdBalance,
   settlementSendAmount,
   moneyAmount,
+  errorMsg,
   setMoneyAmount,
-  setHasError,
+  setErrorMsg,
 }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
@@ -54,7 +56,6 @@ const ConversionAmountError: React.FC<Props> = ({
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
 
-  const [errorMessage, setErrorMessage] = useState<string>()
   const [minAmount, setMinAmount] = useState<MoneyAmount<WalletCurrency>>()
   const [maxAmount, setMaxAmount] = useState<MoneyAmount<WalletCurrency>>()
 
@@ -63,7 +64,7 @@ const ConversionAmountError: React.FC<Props> = ({
 
   useEffect(() => {
     fetchMinMaxAmount()
-  }, [])
+  }, [fromWalletCurrency])
 
   const fetchMinMaxAmount = async () => {
     const limits = await fetchBreezLightningLimits()
@@ -84,9 +85,9 @@ const ConversionAmountError: React.FC<Props> = ({
     checkErrorMessage()
   }, [
     fromWalletCurrency,
-    settlementSendAmount,
-    btcBalance,
-    usdBalance,
+    settlementSendAmount.amount,
+    btcBalance.amount,
+    usdBalance.amount,
     minAmount,
     maxAmount,
   ])
@@ -134,8 +135,7 @@ const ConversionAmountError: React.FC<Props> = ({
         }),
       })
     }
-    setErrorMessage(amountFieldError)
-    setHasError(!!amountFieldError)
+    setErrorMsg(amountFieldError)
   }
 
   return (
@@ -149,10 +149,10 @@ const ConversionAmountError: React.FC<Props> = ({
         maxAmount={maxAmount}
         title="Convert"
       />
-      {errorMessage && (
-        <View style={styles.errorContainer}>
-          <Text color={colors.error}>{errorMessage}</Text>
-        </View>
+      {errorMsg && (
+        <Text style={styles.errMsg} color={colors.error}>
+          {errorMsg}
+        </Text>
       )}
     </View>
   )
@@ -164,8 +164,7 @@ const useStyles = makeStyles(({ colors }) => ({
   fieldContainer: {
     marginBottom: 20,
   },
-  errorContainer: {
+  errMsg: {
     marginTop: 10,
-    alignItems: "center",
   },
 }))
