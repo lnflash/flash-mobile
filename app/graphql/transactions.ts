@@ -84,3 +84,43 @@ export const groupTransactionsByDate = ({
 
   return sections
 }
+
+export const getDescriptionDisplay = ({
+  LL,
+  tx,
+  bankName,
+  showMemo,
+}: {
+  LL: TranslationFunctions
+  tx: TransactionFragment | undefined
+  bankName: string
+  showMemo?: boolean
+}) => {
+  if (!tx) {
+    return ""
+  }
+
+  const { memo, direction, settlementVia } = tx
+  if (memo && (!memo.includes("Pay to Flash Wallet User") || showMemo)) {
+    return memo
+  }
+
+  const isReceive = direction === "RECEIVE"
+
+  switch (settlementVia?.__typename) {
+    case "SettlementViaOnChain":
+      return "OnChain Payment"
+    case "SettlementViaLn":
+      if (isReceive) {
+        return `Received`
+      }
+      return "Sent"
+
+    case "SettlementViaIntraLedger":
+      return isReceive
+        ? `${LL.common.from()} ${
+            settlementVia?.counterPartyUsername || bankName + " User"
+          }`
+        : `${LL.common.to()} ${settlementVia?.counterPartyUsername || bankName + " User"}`
+  }
+}

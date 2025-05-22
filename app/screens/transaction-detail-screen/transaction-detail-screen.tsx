@@ -4,7 +4,7 @@ import Icon from "react-native-vector-icons/Ionicons"
 
 // eslint-disable-next-line camelcase
 import { TransactionDate } from "@app/components/transaction-date"
-import { useDescriptionDisplay } from "@app/components/transaction-item"
+
 import { WalletSummary } from "@app/components/wallet-summary"
 import {
   SettlementVia,
@@ -27,6 +27,7 @@ import { toWalletAmount } from "@app/types/amounts"
 import { isIos } from "@app/utils/helper"
 import { GaloyInfo } from "@app/components/atomic/galoy-info"
 import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
+import { getDescriptionDisplay } from "@app/graphql/transactions"
 
 const Row = ({
   entry,
@@ -99,7 +100,8 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
   const { LL } = useI18nContext()
   const { formatCurrency } = useDisplayCurrency()
 
-  const description = useDescriptionDisplay({
+  const description = getDescriptionDisplay({
+    LL,
     tx,
     bankName: galoyInstance.name,
     showMemo: true,
