@@ -87,8 +87,8 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
         },
       })
 
-      console.log("Mutation response:", { data, errors })
-      console.log("User update errors:", data?.userUpdateUsername?.errors) // Log the errors array
+      console.log("Mutation response:", data?.userUpdateUsername)
+
       updateNostrProfile({
         content: {
           name: lnAddress,
