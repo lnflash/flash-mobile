@@ -38,7 +38,6 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
   })
 
   let { updateNostrProfile } = useNostrProfile()
-  const [isLoading, setIsLoading] = useState(true)
   const [isFormVisible, setIsFormVisible] = useState(false)
   const [updating, setUpdating] = useState(false)
 
@@ -58,12 +57,6 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
         console.error("Error parsing content:", error)
       }
     }
-
-    const timeoutId = setTimeout(() => {
-      setIsLoading(false)
-    }, 10000)
-
-    return () => clearTimeout(timeoutId)
   }, [profileEvent])
 
   const handleInputChange = (field: keyof NostrProfile, value: string) => {
@@ -112,9 +105,7 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {isLoading ? (
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      ) : isFormVisible ? (
+      {isFormVisible ? (
         <>
           {profileEvent?.pubkey && (
             <TouchableOpacity onPress={copyToClipboard}>
