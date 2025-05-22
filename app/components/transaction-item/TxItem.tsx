@@ -77,7 +77,14 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
         )}
       </IconWrapper>
       <ColumnWrapper>
-        <Text type="bl">{`${label[tx.direction]} ${tx.settlementCurrency}`}</Text>
+        <RowWrapper>
+          <Text type="bl">{`${label[tx.direction]} ${tx.settlementCurrency}`}</Text>
+          {tx.status === "PENDING" && (
+            <Text type="caption" color={colors._orange}>
+              {`  (Pending)`}
+            </Text>
+          )}
+        </RowWrapper>
         <Text type="caption" color={colors.text02}>
           {moment(moment.unix(tx.createdAt)).fromNow()}
         </Text>
@@ -117,4 +124,9 @@ const IconWrapper = styled.View<{ borderColor: string }>`
 
 const ColumnWrapper = styled.View`
   flex: 1;
+`
+
+const RowWrapper = styled.View`
+  flex-direction: row;
+  align-items: center;
 `

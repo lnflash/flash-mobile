@@ -147,6 +147,15 @@ gql`
       success
     }
   }
+
+  mutation accountDelete {
+    accountDelete {
+      errors {
+        message
+      }
+      success
+    }
+  }
 `
 
 gql`
