@@ -1,9 +1,4 @@
-import {
-  useRealtimePriceQuery,
-  useRealtimePriceUnauthedQuery,
-  useRealtimePriceWsSubscription,
-  WalletCurrency,
-} from "@app/graphql/generated"
+import { useRealtimePriceQuery, WalletCurrency } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import {
   createToDisplayAmount,
@@ -14,7 +9,6 @@ import {
 } from "@app/types/amounts"
 import { useMemo } from "react"
 import crashlytics from "@react-native-firebase/crashlytics"
-import { WatchQueryFetchPolicy } from "@apollo/client"
 
 export const SATS_PER_BTC = 100000000
 
@@ -26,47 +20,23 @@ const usdDisplayCurrency = {
 
 const defaultDisplayCurrency = usdDisplayCurrency
 
-export const usePriceConversion = (fetchPolicy?: WatchQueryFetchPolicy) => {
+export const usePriceConversion = () => {
   const isAuthed = useIsAuthed()
-  let realtimePrice = null
-  if (isAuthed) {
-    const { data } = useRealtimePriceQuery({
-      fetchPolicy: fetchPolicy || "cache-and-network",
-      skip: !isAuthed,
-    })
-    realtimePrice = data?.me?.defaultAccount.realtimePrice
-  } else {
-    const { data } = useRealtimePriceUnauthedQuery({
-      fetchPolicy: fetchPolicy || "cache-and-network",
-      variables: { currency: defaultDisplayCurrency.id },
-      skip: isAuthed,
-    })
-    realtimePrice = data?.realtimePrice
-  }
+  const { data } = useRealtimePriceQuery({ skip: !isAuthed })
 
-  const displayCurrency = realtimePrice?.denominatorCurrency || defaultDisplayCurrency.id
-
+  const displayCurrency =
+    data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency ||
+    defaultDisplayCurrency.id
   let displayCurrencyPerSat = NaN
   let displayCurrencyPerCent = NaN
+
+  const realtimePrice = data?.me?.defaultAccount?.realtimePrice
+
   if (realtimePrice) {
     displayCurrencyPerSat =
       realtimePrice.btcSatPrice.base / 10 ** realtimePrice.btcSatPrice.offset
     displayCurrencyPerCent =
       realtimePrice.usdCentPrice.base / 10 ** realtimePrice.usdCentPrice.offset
-  }
-
-  const { data: subData } = useRealtimePriceWsSubscription({
-    variables: { currency: realtimePrice?.denominatorCurrency || "" },
-    skip: !realtimePrice?.denominatorCurrency || !isAuthed,
-  })
-
-  const subRealtimePrice = subData?.realtimePrice.realtimePrice
-
-  if (subRealtimePrice) {
-    displayCurrencyPerSat =
-      subRealtimePrice.btcSatPrice.base / 10 ** subRealtimePrice.btcSatPrice.offset
-    displayCurrencyPerCent =
-      subRealtimePrice.usdCentPrice.base / 10 ** subRealtimePrice.usdCentPrice.offset
   }
 
   const priceOfCurrencyInCurrency = useMemo(() => {
@@ -114,12 +84,9 @@ export const usePriceConversion = (fetchPolicy?: WatchQueryFetchPolicy) => {
         return moneyAmount
       }
 
-      let amount =
-        moneyAmount.amount * priceOfCurrencyInCurrency(moneyAmount.currency, toCurrency)
-
-      if (toCurrency === "BTC") {
-        amount = Math.floor(amount)
-      }
+      let amount = Math.round(
+        moneyAmount.amount * priceOfCurrencyInCurrency(moneyAmount.currency, toCurrency),
+      )
 
       if (
         moneyAmountIsCurrencyType(moneyAmount, DisplayCurrency) &&
