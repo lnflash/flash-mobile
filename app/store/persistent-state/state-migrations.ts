@@ -67,7 +67,6 @@ type PersistentState_7 = {
   cashDisplayBalance?: string
   mergedTransactions?: TransactionFragment[]
   btcTransactions?: TransactionFragment[]
-  introVideoCount: number
   defaultWallet?: WalletBalance
   btcWalletImported?: boolean
   helpTriggered?: boolean
@@ -108,7 +107,6 @@ const migrate6ToCurrent = (state: PersistentState_6): Promise<PersistentState> =
     ...state,
     schemaVersion: 7,
     hasInitializedBreezSDK: false,
-    introVideoCount: 0,
     helpTriggered: false,
     numOfRefundables: 0,
     closedQuickStartTypes: [],
@@ -258,7 +256,6 @@ export const defaultPersistentState: PersistentState = {
   galoyInstance: { id: __DEV__ ? "Test" : "Main" },
   galoyAuthToken: "",
   hasInitializedBreezSDK: false,
-  introVideoCount: 0,
   helpTriggered: false,
   numOfRefundables: 0,
   closedQuickStartTypes: [],

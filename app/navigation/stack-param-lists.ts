@@ -19,7 +19,6 @@ import { Event } from "nostr-tools"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
-  IntroScreen: undefined
   getStarted: undefined
   UsernameSet: undefined
   Welcome: undefined
