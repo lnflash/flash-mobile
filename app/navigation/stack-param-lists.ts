@@ -130,7 +130,7 @@ export type RootStackParamList = {
   BackupVerify: undefined
   BackupComplete: undefined
   BackupShowSeedPhrase: undefined
-  ImportWallet: { insideApp?: boolean; onComplete?: () => void }
+  ImportWallet: { insideApp?: boolean }
   ImportWalletOptions: { insideApp?: boolean } | undefined
   RefundTransactionList: undefined
   RefundDestination: { swapAddress: string; amount: number }

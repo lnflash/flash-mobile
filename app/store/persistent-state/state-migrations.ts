@@ -68,7 +68,6 @@ type PersistentState_7 = {
   mergedTransactions?: TransactionFragment[]
   btcTransactions?: TransactionFragment[]
   defaultWallet?: WalletBalance
-  btcWalletImported?: boolean
   helpTriggered?: boolean
   isAdvanceMode?: boolean
   chatEnabled?: boolean
@@ -76,7 +75,6 @@ type PersistentState_7 = {
   backedUpBtcWallet?: boolean // true if user backed up recovery phrase (btc wallet)
   currencyChanged?: boolean
   flashcardAdded?: boolean
-  btcWalletEnabled?: boolean
   closedQuickStartTypes: string[]
   flashcardTag?: TagEvent
   flashcardHtml?: string
