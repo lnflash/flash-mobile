@@ -91,7 +91,6 @@ export default ImportWalletOptions
 
 const Wrapper = styled.View`
   flex: 1;
-  justify-content: space-between;
   padding-horizontal: 20px;
 `
 
