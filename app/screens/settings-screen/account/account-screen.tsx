@@ -17,17 +17,16 @@ export const AccountScreen: React.FC = () => {
 
   return (
     <AccountDeleteContextProvider>
-      <Screen keyboardShouldPersistTaps="handled">
-        <ScrollView
-          contentContainerStyle={styles.outer}
-          {...testProps("account-screen-scroll-view")}
-        >
-          <AccountBanner />
-          <AccountId />
-          <UpgradeTrialAccount />
-          {/* <SettingsGroup items={[UpgradeAccountLevelOne]} /> */}
-          <DangerZoneSettings />
-        </ScrollView>
+      <Screen
+        keyboardShouldPersistTaps="handled"
+        style={styles.outer}
+        {...testProps("account-screen-scroll-view")}
+      >
+        <AccountBanner />
+        <AccountId />
+        <UpgradeTrialAccount />
+        {/* <SettingsGroup items={[UpgradeAccountLevelOne]} /> */}
+        <DangerZoneSettings />
       </Screen>
     </AccountDeleteContextProvider>
   )
@@ -35,11 +34,9 @@ export const AccountScreen: React.FC = () => {
 
 const useStyles = makeStyles(() => ({
   outer: {
-    marginTop: 4,
-    paddingHorizontal: 12,
+    marginTop: 10,
+    paddingHorizontal: 20,
     paddingBottom: 20,
-    display: "flex",
-    flexDirection: "column",
     rowGap: 12,
   },
 }))
