@@ -112,6 +112,7 @@ import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
 import ECashWalletScreen from "@app/screens/ecash-wallet/main-screen"
 import { ManageMintsScreen } from "@app/screens/ecash-wallet/manage-mints-screen"
+import { SendECashScreen } from "@app/screens/ecash-wallet/send-ecash-screen"
 
 import HomeActive from "@app/assets/icons/home-active.svg"
 import HomeInactive from "@app/assets/icons/home-inactive.svg"
@@ -555,7 +556,20 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="ECashWallet"
         component={ECashWalletScreen}
-        options={{ title: "Pocket Money" }}
+        options={{
+          title: LL.ECashWalletScreen.title(),
+          headerShown: true,
+          headerBackTitle: LL.common.back(),
+        }}
+      />
+      <RootNavigator.Screen
+        name="SendECash"
+        component={SendECashScreen}
+        options={{
+          title: LL.SendECashScreen.title(),
+          headerShown: true,
+          headerBackTitle: LL.common.back(),
+        }}
       />
       <RootNavigator.Screen
         name="ManageMints"

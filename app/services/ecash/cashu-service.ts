@@ -2,7 +2,7 @@ import { CashuToken, CashuTransaction, RedemptionRequest } from "@app/types/ecas
 import { generateRandomString } from "@app/utils/string"
 import { loadJson, save } from "@app/utils/storage"
 import { v4 as uuidv4 } from "uuid"
-import { CashuMint, CashuWallet, getDecodedToken } from "@cashu/cashu-ts"
+import { CashuMint, CashuWallet, getDecodedToken, getEncodedToken } from "@cashu/cashu-ts"
 import { TokenDecoder } from "./token-decoder"
 import { RedemptionQueue } from "./redemption-queue"
 import { MintManagementService, MintInfo } from "./mint-management"
@@ -396,8 +396,23 @@ export class CashuService {
         return { success: false, error: "Invalid token string" }
       }
 
+      // Check if this is a base64 encoded token (from BC-UR)
+      let actualTokenString = tokenString
+      try {
+        // Try to decode as base64 and check if it's a valid JSON
+        const decoded = Buffer.from(tokenString, "base64").toString("utf-8")
+        const parsed = JSON.parse(decoded)
+        if (parsed && parsed.token) {
+          // This is a base64 encoded Cashu token
+          actualTokenString = decoded
+          console.log("Detected base64 encoded Cashu token from BC-UR")
+        }
+      } catch {
+        // Not a base64 encoded token, use as-is
+      }
+
       // First, try to decode the token
-      const decodedResult = TokenDecoder.decodeToken(tokenString)
+      const decodedResult = TokenDecoder.decodeToken(actualTokenString)
       if (!decodedResult) {
         return { success: false, error: "Could not decode token" }
       }
@@ -406,7 +421,7 @@ export class CashuService {
       const estimatedAmount = TokenDecoder.estimateAmount(decodedResult.token)
 
       // For "Bo" tokens (binary format), we need special handling
-      const normalizedToken = TokenDecoder.normalizeTokenString(tokenString)
+      const normalizedToken = TokenDecoder.normalizeTokenString(actualTokenString)
       if (normalizedToken.startsWith("Bo")) {
         console.log("Detected Bo-format token, attempting direct redemption")
         try {
@@ -462,7 +477,7 @@ export class CashuService {
       }
 
       // Add the token to the redemption queue for processing with the same token ID
-      await this.redemptionQueue.addToQueue(tokenString, undefined, tokenId)
+      await this.redemptionQueue.addToQueue(actualTokenString, undefined, tokenId)
 
       // Update our pending redemptions list
       this.wallet.pendingRedemptions = this.redemptionQueue.getPending()
@@ -1089,6 +1104,113 @@ export class CashuService {
     } catch (error) {
       console.error("Error in addMintIfNeeded:", error)
       // Don't throw as this is a non-critical operation
+    }
+  }
+
+  /**
+   * Generates a Cashu token for sending
+   * @param amount The amount in sats to send
+   * @returns The generated token string or error
+   */
+  public async sendToken(
+    amount: number,
+  ): Promise<{ success: boolean; token?: string; error?: string }> {
+    if (!this.initialized) {
+      await this.initializeWallet()
+    }
+
+    try {
+      // Validate amount
+      if (amount <= 0) {
+        return { success: false, error: "Amount must be greater than 0" }
+      }
+
+      // Check if we have sufficient balance
+      const currentBalance = await this.getBalance()
+      if (currentBalance < amount) {
+        return {
+          success: false,
+          error: `Insufficient balance. You have ${currentBalance} sats but tried to send ${amount} sats.`,
+        }
+      }
+
+      // Get the default mint
+      const defaultMint = await this.mintManagementService.getDefaultMint()
+      if (!defaultMint || !this.cashuWallets.has(defaultMint.url)) {
+        return { success: false, error: "eCash wallet not initialized" }
+      }
+
+      const wallet = this.cashuWallets.get(defaultMint.url)
+      if (!wallet) {
+        return { success: false, error: "Wallet not found" }
+      }
+
+      console.log(`Generating token for ${amount} sats from mint: ${defaultMint.url}`)
+
+      // Send (create proofs) for the specified amount
+      const sendResponse = await wallet.send(amount, [])
+
+      if (sendResponse.send.length === 0) {
+        return { success: false, error: "Failed to generate proofs" }
+      }
+
+      // Create the token structure
+      const token: CashuToken = {
+        token: [
+          {
+            mint: defaultMint.url,
+            proofs: sendResponse.send,
+          },
+        ],
+      }
+
+      // Convert to token string using the cashu-ts library's encoding
+      const tokenString = getEncodedToken(token.token[0])
+
+      // Convert to base64 for BC-UR encoding
+      const base64Token = Buffer.from(tokenString).toString("base64")
+
+      // Update our local balance and save the change proofs
+      if (sendResponse.keep && sendResponse.keep.length > 0) {
+        // The change proofs should be kept in our wallet
+        const changeToken: CashuToken = {
+          token: [
+            {
+              mint: defaultMint.url,
+              proofs: sendResponse.keep,
+            },
+          ],
+        }
+        this.wallet.tokens.push(changeToken)
+      }
+
+      // Deduct the sent amount from our balance
+      this.wallet.balance -= amount
+
+      // Create a transaction record
+      const transaction: CashuTransaction = {
+        id: uuidv4(),
+        amount: amount.toString(),
+        status: "sent",
+        createdAt: new Date(),
+        description: "Sent via QR code",
+      }
+
+      this.wallet.transactions.push(transaction)
+      await this.saveState()
+
+      // Recalculate balances to ensure accuracy
+      this.calculateBalances()
+
+      console.log(`Successfully generated token for ${amount} sats`)
+
+      return { success: true, token: base64Token }
+    } catch (error) {
+      console.error("Error generating send token:", error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to generate token",
+      }
     }
   }
 }
