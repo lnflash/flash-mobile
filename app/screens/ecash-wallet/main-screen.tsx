@@ -721,6 +721,24 @@ export const ECashWalletScreen: React.FC<Props> = ({ navigation, route }) => {
         <Text style={styles.balanceValue}>{formattedBalance}</Text>
       </View>
 
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => navigation.navigate("SendECash")}
+        >
+          <GaloyIcon name="send" size={24} color={colors.white} />
+          <Text style={styles.actionButtonText}>Send</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => navigation.navigate("scanningQRCode")}
+        >
+          <GaloyIcon name="receive" size={24} color={colors.white} />
+          <Text style={styles.actionButtonText}>Receive</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.transactionsHeader}>
         <Text style={styles.transactionsTitle}>Transactions</Text>
       </View>
@@ -1010,6 +1028,28 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   iconSpacing: {
     width: 10,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 24,
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  actionButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  actionButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "600",
   },
 }))
 

@@ -46,6 +46,45 @@ The Breez SDK integration handles much of the complexity of Lightning Network op
 
 Developers working with the Breez SDK integration should refer to the [official Breez SDK documentation](https://sdk-doc.breez.technology/) for detailed API references and implementation guidelines. Configuration parameters for the SDK can be found in the environment configuration files.
 
+## Features
+
+### eCash Wallet Integration (Cashu Protocol)
+
+The Flash mobile app now includes a fully integrated **Cashu eCash wallet** with advanced QR code support using the BC-UR (Blockchain Commons Uniform Resource) standard for reliable token transfer.
+
+#### Key Features:
+
+- **Send & Receive eCash Tokens**: Generate and scan Cashu tokens via QR codes
+- **BC-UR Fragment Support**: Large tokens are automatically split into animated QR code fragments for reliable scanning
+- **Multiple Mint Support**: Connect to multiple Cashu mints and manage balances across them
+- **Offline Capability**: Tokens are cached locally for offline access
+- **Automatic Token Redemption**: Background processing queue for token redemption with retry logic
+
+#### Technical Implementation:
+
+- **BC-UR Library**: Uses `@gandlaf21/bc-ur` v1.1.12 for QR code fragmentation and reassembly
+- **Fragment Controls**: Adjustable animation speed (100ms-1000ms) and fragment sizes (200, 400, 800 bytes)
+- **Progress Tracking**: Visual feedback during multi-fragment QR code scanning
+- **Error Handling**: Graceful handling of network issues, duplicate scans, and already redeemed tokens
+
+#### Usage:
+
+1. **Sending eCash**:
+   - Navigate to the eCash wallet from the home screen
+   - Tap "Send" and enter the amount in sats
+   - An animated QR code will be generated using BC-UR encoding
+   - The recipient scans the QR code to receive the tokens
+
+2. **Receiving eCash**:
+   - Tap "Receive" in the eCash wallet
+   - Scan the sender's QR code (supports both single and multi-fragment codes)
+   - Tokens are automatically redeemed and added to your balance
+
+3. **Managing Mints**:
+   - Access mint management from the settings menu in the eCash wallet
+   - Add new mints, set default mint, or remove inactive mints
+   - View individual mint balances
+
 ## Contributing
 
 If you wish to contribute, please see [CONTRIBUTING.MD](./CONTRIBUTING.MD)

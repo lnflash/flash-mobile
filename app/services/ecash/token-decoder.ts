@@ -45,6 +45,25 @@ export class TokenDecoder {
       return true
     }
 
+    // Check if it's a base64 encoded token (could be from BC-UR)
+    try {
+      // Try to decode as base64 and check if it's a valid Cashu token structure
+      const decoded = Buffer.from(data, "base64").toString("utf-8")
+      const parsedData = JSON.parse(decoded)
+      return (
+        parsedData &&
+        typeof parsedData === "object" &&
+        parsedData.token &&
+        Array.isArray(parsedData.token) &&
+        parsedData.token.length > 0 &&
+        parsedData.token[0].mint &&
+        parsedData.token[0].proofs &&
+        Array.isArray(parsedData.token[0].proofs)
+      )
+    } catch {
+      // Not a base64 encoded JSON token
+    }
+
     // Try parsing as JSON format
     try {
       const parsedData = JSON.parse(data)
