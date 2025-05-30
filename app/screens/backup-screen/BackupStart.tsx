@@ -4,15 +4,17 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { StackScreenProps } from "@react-navigation/stack"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { useTheme } from "@rneui/themed"
+import { Text, useTheme } from "@rneui/themed"
+
+// components
+import { PrimaryBtn } from "@app/components/buttons"
 
 type Props = StackScreenProps<RootStackParamList, "BackupStart">
 
 const BackupStart: React.FC<Props> = ({ navigation }) => {
-  const { theme } = useTheme()
-  const colors = theme.colors
-  const { LL } = useI18nContext()
   const bottom = useSafeAreaInsets().bottom
+  const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
 
   const onContinue = () => {
     navigation.navigate("BackupSeedPhrase")
@@ -21,12 +23,18 @@ const BackupStart: React.FC<Props> = ({ navigation }) => {
   return (
     <Wrapper style={{ backgroundColor: colors.white }}>
       <Container>
-        <Title style={{ color: colors.black }}>{LL.BackupStart.title()}</Title>
-        <Description>{LL.BackupStart.description()}</Description>
+        <Text type="h01" bold style={{ textAlign: "center" }}>
+          {LL.BackupStart.title()}
+        </Text>
+        <Text type="p1" color={colors.grey2} style={{ textAlign: "center" }}>
+          {LL.BackupStart.description()}
+        </Text>
       </Container>
-      <Btn bottom={bottom} onPress={onContinue}>
-        <BtnTitle style={{ color: colors.white }}>{LL.BackupStart.continue()}</BtnTitle>
-      </Btn>
+      <PrimaryBtn
+        label={LL.BackupStart.continue()}
+        onPress={onContinue}
+        btnStyle={{ marginBottom: bottom || 10 }}
+      />
     </Wrapper>
   )
 }
@@ -39,32 +47,6 @@ const Wrapper = styled.View`
   padding-horizontal: 20px;
 `
 
-const Container = styled.View``
-
-const Title = styled.Text`
-  font-size: 21px;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 10px;
-`
-
-const Description = styled.Text`
-  font-size: 18px;
-  font-weight: 400;
-  color: #777;
-  text-align: center;
-`
-
-const Btn = styled.TouchableOpacity<{ bottom: number }>`
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  background-color: #60aa55;
-  margin-bottom: ${({ bottom }) => bottom || 10}px;
-  padding-vertical: 14px;
-`
-
-const BtnTitle = styled.Text`
-  font-size: 18px;
-  font-weight: 600;
+const Container = styled.View`
+  row-gap: 10;
 `
