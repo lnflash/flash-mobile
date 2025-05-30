@@ -69,12 +69,8 @@ const items = {
   loginMethods: [EmailSetting, PhoneSetting],
   waysToGetPaid: [AccountLNAddress, AccountPOS, AccountStaticQR],
   reports: [GenerateReportsSetting],
-<<<<<<< HEAD
-  wallet: [BackupWallet, ImportWallet],
-=======
   wallet: [NostrSecret, BackupWallet, ImportWallet],
   walletDisplay: [ECashWalletToggle, BitcoinWalletToggle, CashWalletToggle],
->>>>>>> b636ae55 (Improve Pocket Money UI: Remove action buttons, add admin menu, fix token redemption, add offline support)
   preferences: [
     NotificationSetting,
     DefaultWallet,
