@@ -32,6 +32,7 @@ const QRCamera: React.FC<Props> = ({ device, processInvoice }) => {
     receivedPartCount: number
     percentComplete: number
   } | null>(null)
+  const [lastCompletedToken, setLastCompletedToken] = useState<string | null>(null)
 
   // Initialize BC-UR decoder
   useEffect(() => {
@@ -76,6 +77,15 @@ const QRCamera: React.FC<Props> = ({ device, processInvoice }) => {
         // Check if this is a BC-UR fragment
         if (BCURQRCode.isValidFragment(code.value)) {
           if (bcurDecoder) {
+            // Check if we already completed a token recently - if so, ignore fragments
+            if (lastCompletedToken && !isRecentScan(lastCompletedToken)) {
+              // Clear the last completed token after timeout
+              setLastCompletedToken(null)
+            } else if (lastCompletedToken) {
+              // Still within timeout, ignore this fragment
+              return
+            }
+
             // Process BC-UR fragment
             const success = bcurDecoder.receivePart(code.value)
 
@@ -90,6 +100,9 @@ const QRCamera: React.FC<Props> = ({ device, processInvoice }) => {
                 if (decodedToken && !isRecentScan(decodedToken)) {
                   console.log("BC-UR decoding complete, processing token")
                   processInvoice(decodedToken)
+
+                  // Store the completed token to prevent immediate re-processing
+                  setLastCompletedToken(decodedToken)
 
                   // Reset decoder for next scan
                   bcurDecoder.reset()
