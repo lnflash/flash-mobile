@@ -519,9 +519,7 @@ export const RootStack = () => {
         <RootNavigator.Screen
           name="BackupComplete"
           component={BackupComplete}
-          options={{
-            headerLeft: () => <></>,
-          }}
+          options={{ headerShown: false }}
         />
         <RootNavigator.Screen
           name="BackupShowSeedPhrase"
