@@ -139,7 +139,7 @@ export const SettingsScreen: React.FC = () => {
         />
         <SettingsGroup
           name="Experimental"
-          items={items.chats}
+          items={items.experimental}
           initiallyExpanded={false}
         />
         {currentLevel === AccountLevel.Two && (
