@@ -87,7 +87,7 @@ const QRCamera: React.FC<Props> = ({ device, processInvoice }) => {
               // Check if decoding is complete
               if (bcurDecoder.isComplete()) {
                 const decodedToken = bcurDecoder.getDecodedToken()
-                if (decodedToken) {
+                if (decodedToken && !isRecentScan(decodedToken)) {
                   console.log("BC-UR decoding complete, processing token")
                   processInvoice(decodedToken)
 
