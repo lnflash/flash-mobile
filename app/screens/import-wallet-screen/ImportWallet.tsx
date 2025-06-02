@@ -1,16 +1,20 @@
 import React, { useRef, useState } from "react"
 import styled from "styled-components/native"
-import { ActivityIndicator, Alert, FlatList, TextInput } from "react-native"
+import { Alert, FlatList, TextInput } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import * as Keychain from "react-native-keychain"
 import * as bip39 from "bip39"
 
+// components
+import { PrimaryBtn } from "@app/components/buttons"
+import { Loading } from "@app/contexts/ActivityIndicatorContext"
+
 // hooks
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useCreateAccount } from "@app/hooks/useCreateAccount"
-import { useTheme, useThemeMode } from "@rneui/themed"
+import { Text, useTheme, useThemeMode } from "@rneui/themed"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // utils
@@ -18,24 +22,18 @@ import { disconnectToSDK, initializeBreezSDK } from "@app/utils/breez-sdk-liquid
 
 type Props = StackScreenProps<RootStackParamList, "ImportWallet">
 
-type ShuffledPhraseType = {
-  key: string
-  order: number
-  selectedInOrder?: boolean
-}
-
 const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 
 const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
   const insideApp = route.params?.insideApp
-  const { updateState } = usePersistentStateContext()
-  const { theme } = useTheme()
-  const { mode } = useThemeMode()
-  const colors = theme.colors
-  const { LL } = useI18nContext()
   const bottom = useSafeAreaInsets().bottom
-  const inputRef = useRef<TextInput[]>([])
+  const { colors } = useTheme().theme
+  const { mode } = useThemeMode()
+  const { LL } = useI18nContext()
+  const { updateState } = usePersistentStateContext()
   const { createDeviceAccountAndLogin } = useCreateAccount()
+
+  const inputRef = useRef<TextInput[]>([])
   const [inputSeedPhrase, setInputSeedPhrase] = useState(Array(12).fill(""))
   const [loading, setLoading] = useState(false)
 
@@ -85,20 +83,13 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
     })
   }
 
-  const renderItemHandler = ({
-    item,
-    index,
-  }: {
-    item: ShuffledPhraseType
-    index: number
-  }) => {
+  const renderItemHandler = ({ index }: { index: number }) => {
     return (
-      <SeedPhrase
-        style={{ backgroundColor: mode === "dark" ? "#5b5b5b" : "#ededed" }}
-        marginRight={index % 2 === 0}
-      >
+      <SeedPhrase style={{ backgroundColor: mode === "dark" ? "#5b5b5b" : "#ededed" }}>
         <SeedPhraseNum style={{ borderRightColor: colors.white }}>
-          <Text style={{ color: colors.black }}>{index + 1}</Text>
+          <Text type="p1" bold>
+            {index + 1}
+          </Text>
         </SeedPhraseNum>
         <SeedPhraseText>
           <Input
@@ -132,40 +123,29 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
   return (
     <Wrapper style={{ backgroundColor: colors.white }}>
       <Container>
-        <Title style={{ color: colors.black }}>
+        <Text type="h01" bold style={{ textAlign: "center" }}>
           {insideApp ? LL.ImportWallet.importTitle() : LL.ImportWallet.title()}
-        </Title>
-        <Description>{LL.ImportWallet.description()}</Description>
+        </Text>
+        <Text type="p1" color={colors.grey2} style={{ textAlign: "center" }}>
+          {LL.ImportWallet.description()}
+        </Text>
         <FlatList
           data={inputSeedPhrase}
           numColumns={2}
           renderItem={renderItemHandler}
-          columnWrapperStyle={{ justifyContent: "space-between" }}
+          columnWrapperStyle={{ justifyContent: "space-between", columnGap: 15 }}
           scrollEnabled={false}
-          style={{ marginVertical: 25 }}
+          style={{ marginVertical: 20 }}
         />
       </Container>
-
-      <Btn
-        bottom={bottom}
+      <PrimaryBtn
+        label={LL.ImportWallet.complete()}
         disabled={disabled}
+        loading={loading}
         onPress={onComplete}
-        style={{
-          backgroundColor: disabled
-            ? mode === "dark"
-              ? "#5b5b5b"
-              : "#DEDEDE"
-            : "#60aa55",
-        }}
-      >
-        <BtnTitle style={{ color: colors.white }}>{LL.ImportWallet.complete()}</BtnTitle>
-      </Btn>
-
-      {loading && (
-        <LoadingWrapper>
-          <ActivityIndicator size={"large"} color={"#60aa55"} />
-        </LoadingWrapper>
-      )}
+        btnStyle={{ marginBottom: bottom || 10 }}
+      />
+      {loading && <Loading />}
     </Wrapper>
   )
 }
@@ -175,35 +155,22 @@ export default ImportWallet
 const Wrapper = styled.View`
   flex: 1;
   justify-content: space-between;
-`
-
-const Container = styled.ScrollView`
   padding-horizontal: 20px;
 `
 
-const Title = styled.Text`
-  font-size: 21px;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 10px;
+const Container = styled.View`
+  row-gap: 10px;
 `
 
-const Description = styled.Text`
-  font-size: 18px;
-  font-weight: 400;
-  color: #777;
-  text-align: center;
-`
-
-const SeedPhrase = styled.View<{ marginRight: boolean }>`
+const SeedPhrase = styled.View`
   flex: 1;
   flex-direction: row;
   align-items: center;
-  border-radius: 100px;
+  border-radius: 20px;
   margin-bottom: 10px;
-  margin-right: ${({ marginRight }) => (marginRight ? 15 : 0)}px;
   overflow: hidden;
 `
+
 const SeedPhraseNum = styled.View<{ selectedInOrder?: boolean }>`
   width: 50px;
   height: 46px;
@@ -217,42 +184,11 @@ const SeedPhraseText = styled.View`
   align-items: center;
 `
 
-const Text = styled.Text`
-  font-size: 18px;
-  font-weight: 600;
-`
-
 const Input = styled.TextInput`
   width: 100%;
   height: 46px;
   font-size: 18px;
   font-weight: 600;
+  font-family: "Sora-Bold";
   padding-horizontal: 5px;
-`
-
-const Btn = styled.TouchableOpacity<{
-  bottom: number
-}>`
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  margin-bottom: ${({ bottom }) => bottom || 10}px;
-  margin-top: 10px;
-  margin-horizontal: 20px;
-  padding-vertical: 14px;
-`
-
-const BtnTitle = styled.Text`
-  font-size: 18px;
-  font-weight: 600;
-`
-
-const LoadingWrapper = styled.View`
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  justify-content: center;
-  align-items: center;
 `
