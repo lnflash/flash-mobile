@@ -169,7 +169,7 @@ export const useReceiveBitcoin = (initPRParams = {}) => {
   const posUrl = appConfig.galoyInstance.posUrl
   const lnAddressHostname = appConfig.galoyInstance.lnAddressHostname
 
-  const { convertMoneyAmount: _convertMoneyAmount } = usePriceConversion("network-only")
+  const { convertMoneyAmount: _convertMoneyAmount } = usePriceConversion()
 
   // Initialize Payment Request Creation Data
   useLayoutEffect(() => {

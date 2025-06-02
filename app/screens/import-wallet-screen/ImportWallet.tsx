@@ -53,13 +53,10 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
       if (insideApp) {
         await disconnectToSDK()
         await initializeBreezSDK()
-        if (route.params?.onComplete) {
-          route.params?.onComplete()
-        }
         setTimeout(() => {
           updateStateHandler(true)
           setLoading(false)
-          navigation.goBack()
+          navigation.reset({ index: 0, routes: [{ name: "Primary" }] })
         }, 5000)
       } else {
         // const token: any = await createDeviceAccountAndLogin()
@@ -73,7 +70,7 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
     }
   }
 
-  const updateStateHandler = (btcWalletImported: boolean) => {
+  const updateStateHandler = (isAdvanceMode: boolean) => {
     updateState((state: any) => {
       if (state)
         return {
@@ -82,7 +79,7 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
           breezBalance: undefined,
           btcBalance: undefined,
           convertedBtcBalance: undefined,
-          btcWalletImported,
+          isAdvanceMode,
         }
       return undefined
     })
