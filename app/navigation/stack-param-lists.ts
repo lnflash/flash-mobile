@@ -19,7 +19,6 @@ import { Event } from "nostr-tools"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
-  IntroScreen: undefined
   getStarted: undefined
   UsernameSet: undefined
   Welcome: undefined
@@ -131,7 +130,7 @@ export type RootStackParamList = {
   BackupVerify: undefined
   BackupComplete: undefined
   BackupShowSeedPhrase: undefined
-  ImportWallet: { insideApp?: boolean; onComplete?: () => void }
+  ImportWallet: { insideApp?: boolean }
   ImportWalletOptions: { insideApp?: boolean } | undefined
   RefundTransactionList: undefined
   RefundDestination: { swapAddress: string; amount: number }

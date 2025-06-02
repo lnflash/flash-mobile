@@ -93,7 +93,6 @@ import {
   ImportWallet,
   BackupOptions,
   TransactionHistoryTabs,
-  IntroScreen,
   USDTransactionHistory,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -148,12 +147,7 @@ export const RootStack = () => {
   const isAuthed = useIsAuthed()
 
   // Check if intro screen is displayed twice.
-  const initialRouteName =
-    persistentState.introVideoCount >= 2
-      ? isAuthed
-        ? "authenticationCheck"
-        : "getStarted"
-      : "IntroScreen"
+  const initialRouteName = isAuthed ? "authenticationCheck" : "getStarted"
 
   return (
     <RootNavigator.Navigator
@@ -173,11 +167,6 @@ export const RootStack = () => {
         name="Reconciliation"
         component={ReconciliationReport}
         options={{ headerShown: true, title: LL.reports.reconciliation() }}
-      />
-      <RootNavigator.Screen
-        name="IntroScreen"
-        component={IntroScreen}
-        options={{ headerShown: false }}
       />
       <RootNavigator.Screen
         name="getStarted"

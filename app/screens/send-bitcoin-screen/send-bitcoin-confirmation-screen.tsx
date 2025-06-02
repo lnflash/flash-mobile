@@ -11,7 +11,6 @@ import {
   ConfirmationDestinationAmountNote,
   ConfirmationError,
   ConfirmationWalletFee,
-  SendingAnimation,
 } from "@app/components/send-flow"
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
@@ -19,7 +18,7 @@ import { PrimaryBtn } from "@app/components/buttons"
 // hooks
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useSendPayment } from "./use-send-payment"
-import { useAppConfig, useBreez } from "@app/hooks"
+import { useActivityIndicator, useBreez } from "@app/hooks"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 // types
@@ -49,26 +48,24 @@ type Props = {} & StackScreenProps<RootStackParamList, "sendBitcoinConfirmation"
 const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) => {
   const { paymentDetail, flashUserAddress, feeRateSatPerVbyte } = route.params
   const {
-    destination,
     paymentType,
     sendingWalletDescriptor,
     sendPaymentMutation,
     settlementAmount,
     isSendingMax,
-    memo: note,
     convertMoneyAmount,
   } = paymentDetail
 
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const { lnAddressHostname: lnDomain } = useAppConfig().appConfig.galoyInstance
-  const { formatDisplayAndWalletAmount } = useDisplayCurrency()
   const { btcWallet } = useBreez()
+
+  const { formatDisplayAndWalletAmount } = useDisplayCurrency()
+  const { toggleActivityIndicator } = useActivityIndicator()
 
   const [usdWalletText, setUsdWalletText] = useState("")
   const [btcWalletText, setBtcWalletText] = useState("")
   const [isValidAmount, setIsValidAmount] = useState(true)
-  const [isAnimating, setIsAnimating] = useState(false)
   const [paymentError, setPaymentError] = useState<string>()
   const [invalidAmountErr, setInvalidAmountErr] = useState<string>()
   const [fee, setFee] = useState<FeeType>({ status: "loading" })
@@ -155,13 +152,14 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   const handleSendPayment = useCallback(async () => {
     if (sendPayment && sendingWalletDescriptor?.currency) {
       console.log("Starting animation and sending payment")
-      setIsAnimating(true) // Start the animation
       try {
         logPaymentAttempt({
           paymentType: paymentDetail.paymentType,
           sendingWallet: sendingWalletDescriptor.currency,
         })
+        toggleActivityIndicator(true)
         const { status, errorsMessage } = await sendPayment()
+        toggleActivityIndicator(false)
         logPaymentResult({
           paymentType: paymentDetail.paymentType,
           paymentStatus: status,
@@ -192,9 +190,6 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           crashlytics().recordError(err)
           setPaymentError(err.message || err.toString())
         }
-      } finally {
-        console.log("Stopping animation")
-        setIsAnimating(false)
       }
     } else {
       return null
@@ -203,31 +198,28 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
 
   return (
     <Screen preset="scroll" style={styles.screenStyle} keyboardOffset="navigationHeader">
-      <SendingAnimation isAnimating={isAnimating} />
-      <View style={styles.sendBitcoinConfirmationContainer}>
-        <ConfirmationDestinationAmountNote paymentDetail={paymentDetail} />
-        <ConfirmationWalletFee
-          flashUserAddress={flashUserAddress}
-          paymentDetail={paymentDetail}
-          btcWalletText={btcWalletText}
-          usdWalletText={usdWalletText}
-          feeRateSatPerVbyte={feeRateSatPerVbyte}
-          fee={fee}
-          setFee={setFee}
-          setPaymentError={setPaymentError}
+      <ConfirmationDestinationAmountNote paymentDetail={paymentDetail} />
+      <ConfirmationWalletFee
+        flashUserAddress={flashUserAddress}
+        paymentDetail={paymentDetail}
+        btcWalletText={btcWalletText}
+        usdWalletText={usdWalletText}
+        feeRateSatPerVbyte={feeRateSatPerVbyte}
+        fee={fee}
+        setFee={setFee}
+        setPaymentError={setPaymentError}
+      />
+      <ConfirmationError
+        paymentError={paymentError}
+        invalidAmountErrorMessage={invalidAmountErr}
+      />
+      <View style={styles.buttonContainer}>
+        <PrimaryBtn
+          loading={sendPaymentLoading}
+          label={LL.SendBitcoinConfirmationScreen.title()}
+          disabled={!isValidAmount || hasAttemptedSend}
+          onPress={handleSendPayment}
         />
-        <ConfirmationError
-          paymentError={paymentError}
-          invalidAmountErrorMessage={invalidAmountErr}
-        />
-        <View style={styles.buttonContainer}>
-          <PrimaryBtn
-            loading={sendPaymentLoading}
-            label={LL.SendBitcoinConfirmationScreen.title()}
-            disabled={!isValidAmount || hasAttemptedSend}
-            onPress={handleSendPayment}
-          />
-        </View>
       </View>
     </Screen>
   )
@@ -236,9 +228,6 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
 export default SendBitcoinConfirmationScreen
 
 const useStyles = makeStyles(({ colors }) => ({
-  sendBitcoinConfirmationContainer: {
-    flex: 1,
-  },
   buttonContainer: {
     flex: 1,
     justifyContent: "flex-end",

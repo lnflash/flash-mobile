@@ -40,7 +40,7 @@ export const BTCTransactionHistory = () => {
   const navigation = useNavigation<NavigationProp>()
   const styles = useStyles()
   const { colors } = useTheme().theme
-  const { LL } = useI18nContext()
+  const { LL, locale } = useI18nContext()
   const { convertMoneyAmount } = usePriceConversion()
 
   const { persistentState, updateState } = usePersistentStateContext()
@@ -115,7 +115,8 @@ export const BTCTransactionHistory = () => {
 
   const transactionSections = groupTransactionsByDate({
     txs: txsList ?? [],
-    common: LL.common,
+    LL,
+    locale,
   })
 
   const onRefresh = () => {
