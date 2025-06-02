@@ -1,6 +1,6 @@
 import React from "react"
 import { TouchableOpacity, View } from "react-native"
-import { Icon, makeStyles, Text } from "@rneui/themed"
+import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 // components
 import WalletBottomSheet from "./WalletBottomSheet"
@@ -22,6 +22,7 @@ type Props = {
 
 const WalletReceiveTypeTabs: React.FC<Props> = ({ request }) => {
   const styles = useStyles()
+  const { colors } = useTheme().theme
   const { persistentState } = usePersistentStateContext()
 
   const onChangeWallet = (id: WalletCurrency) => {
@@ -56,19 +57,35 @@ const WalletReceiveTypeTabs: React.FC<Props> = ({ request }) => {
     return (
       <View style={styles.wrapper}>
         <TouchableOpacity
-          style={styles.btn}
+          style={[
+            styles.btn,
+            request.type === "Lightning" ? { borderColor: colors.accent02 } : {},
+          ]}
           onPress={() => onChangeReceiveType("Lightning")}
         >
           <Icon name={"flash"} color={"#F0C243"} size={25} type="ionicon" />
-          <Text type="bl">Lightning</Text>
+          <Text
+            type="bl"
+            style={request.type === "Lightning" ? { color: colors.accent02 } : {}}
+          >
+            Lightning
+          </Text>
         </TouchableOpacity>
         <View style={{ width: 10 }} />
         <TouchableOpacity
-          style={styles.btn}
+          style={[
+            styles.btn,
+            request.type === "OnChain" ? { borderColor: colors.accent02 } : {},
+          ]}
           onPress={() => onChangeReceiveType("OnChain")}
         >
           <Icon name={"logo-bitcoin"} color={"#41AC48"} size={25} type="ionicon" />
-          <Text type="bl">Onchain</Text>
+          <Text
+            type="bl"
+            style={request.type === "OnChain" ? { color: colors.accent02 } : {}}
+          >
+            Onchain
+          </Text>
         </TouchableOpacity>
       </View>
     )
