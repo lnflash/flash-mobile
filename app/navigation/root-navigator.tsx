@@ -71,10 +71,7 @@ import { ScanningQRCodeScreen } from "../screens/send-bitcoin-screen"
 import { SettingsScreen } from "../screens/settings-screen"
 import { LanguageScreen } from "../screens/settings-screen/language-screen"
 import { SecurityScreen } from "../screens/settings-screen/security-screen"
-import {
-  BreezTransactionDetailScreen,
-  TransactionDetailScreen,
-} from "../screens/transaction-detail-screen"
+import { TransactionDetailScreen } from "../screens/transaction-detail-screen"
 import {
   ChatStackParamList,
   ContactStackParamList,
@@ -404,18 +401,12 @@ export const RootStack = () => {
         name="transactionDetail"
         component={TransactionDetailScreen}
         options={{
-          headerShown: false,
-          // cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+          headerTitle: "",
+          headerLeft: () => null,
+          cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
         }}
       />
-      <RootNavigator.Screen
-        name="breezTransactionDetail"
-        component={BreezTransactionDetailScreen}
-        options={{
-          headerShown: false,
-          // cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
-        }}
-      />
+
       <RootNavigator.Screen
         name="priceHistory"
         component={PriceHistoryScreen}

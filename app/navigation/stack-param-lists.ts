@@ -105,7 +105,6 @@ export type RootStackParamList = {
     channel: PhoneCodeChannelType
   }
   transactionDetail: { tx: TransactionFragment }
-  breezTransactionDetail: { tx: TransactionFragment }
   TransactionHistoryTabs?: { initialRouteName?: string } | undefined
   USDTransactionHistory: undefined
   BTCTransactionHistory: undefined
