@@ -47,9 +47,10 @@ export const groupTransactionsByDate = ({
   locale: string
 }) => {
   const sections: SectionTransactions[] = []
-  const settledOrOutgoingTransactions = txs.filter(
-    (tx) => tx.status !== TxStatus.Pending || tx.direction === TxDirection.Send,
-  )
+  const settledOrOutgoingTransactions = txs
+  // const settledOrOutgoingTransactions = txs.filter(
+  //   (tx) => tx.status !== TxStatus.Pending || tx.direction === TxDirection.Send,
+  // )
 
   const transactionsByRelativeDate: Record<string, TransactionFragment[]> = {}
 
