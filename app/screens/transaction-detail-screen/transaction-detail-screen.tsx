@@ -1,66 +1,52 @@
-import * as React from "react"
-import { Linking, TouchableWithoutFeedback, View } from "react-native"
+import React, { useEffect } from "react"
+import { Linking, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { StackScreenProps } from "@react-navigation/stack"
 import Icon from "react-native-vector-icons/Ionicons"
 
-// eslint-disable-next-line camelcase
-import { TransactionDate } from "@app/components/transaction-date"
-
-import { WalletSummary } from "@app/components/wallet-summary"
-import {
-  SettlementVia,
-  TransactionFragment,
-  TransactionFragmentDoc,
-  WalletCurrency,
-} from "@app/graphql/generated"
-import { useDisplayCurrency } from "@app/hooks/use-display-currency"
-import { useI18nContext } from "@app/i18n/i18n-react"
-import { RouteProp, useNavigation } from "@react-navigation/native"
-import { StackNavigationProp } from "@react-navigation/stack"
-
+// components
 import { IconTransaction } from "../../components/icon-transactions"
+import { TransactionDate } from "@app/components/transaction-date"
+import { WalletSummary } from "@app/components/wallet-summary"
+import { GaloyInfo } from "@app/components/atomic/galoy-info"
 import { Screen } from "../../components/screen"
 
-import type { RootStackParamList } from "../../navigation/stack-param-lists"
+// hooks
+import { useDisplayCurrency } from "@app/hooks/use-display-currency"
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAppConfig } from "@app/hooks"
-import { makeStyles, Text, useTheme } from "@rneui/themed"
-import { toWalletAmount } from "@app/types/amounts"
-import { isIos } from "@app/utils/helper"
-import { GaloyInfo } from "@app/components/atomic/galoy-info"
-import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
-import { getDescriptionDisplay } from "@app/graphql/transactions"
 
-const Row = ({
-  entry,
-  value,
-  __typename,
-  content,
-}: {
+// utils | types
+import { toWalletAmount } from "@app/types/amounts"
+import { SettlementVia } from "@app/graphql/generated"
+import { getDescriptionDisplay } from "@app/graphql/transactions"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
+
+type RowProps = {
   entry: string
   value?: string | JSX.Element
   __typename?: "SettlementViaIntraLedger" | "SettlementViaLn" | "SettlementViaOnChain"
-  content?: unknown
-}) => {
-  const {
-    theme: { colors },
-  } = useTheme()
+  content?: JSX.Element
+}
+
+const Row = ({ entry, value, __typename, content }: RowProps) => {
   const styles = useStyles()
+  const { colors } = useTheme().theme
   return (
     <View style={styles.description}>
-      <>
-        <Text style={styles.entry}>
-          {entry}
-          {__typename === "SettlementViaOnChain" && (
-            <Icon name="open-outline" size={18} color={colors.grey0} />
-          )}
-        </Text>
-        {content || (
-          <View style={styles.valueContainer}>
-            <Text selectable style={styles.value}>
-              {value}
-            </Text>
-          </View>
+      <Text style={styles.entry}>
+        {entry}
+        {__typename === "SettlementViaOnChain" && (
+          <Icon name="open-outline" size={18} color={colors.grey0} />
         )}
-      </>
+      </Text>
+      {content || (
+        <View style={styles.valueContainer}>
+          <Text selectable style={styles.value}>
+            {value}
+          </Text>
+        </View>
+      )}
     </View>
   )
 }
@@ -76,39 +62,28 @@ const typeDisplay = (instance: SettlementVia) => {
   }
 }
 
-type Props = {
-  route: RouteProp<RootStackParamList, "transactionDetail">
-}
+type Props = StackScreenProps<RootStackParamList, "transactionDetail">
 
-export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
-  const {
-    theme: { colors },
-  } = useTheme()
-  const styles = useStyles()
-
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const { formatMoneyAmount } = useDisplayCurrency()
-  const {
-    appConfig: { galoyInstance },
-  } = useAppConfig()
-
-  const viewInExplorer = (hash: string): Promise<Linking> =>
-    Linking.openURL(galoyInstance.blockExplorer + hash)
-
+export const TransactionDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const { tx } = route.params
 
+  const styles = useStyles()
+  const { colors } = useTheme().theme
+  const { galoyInstance } = useAppConfig().appConfig
   const { LL } = useI18nContext()
-  const { formatCurrency } = useDisplayCurrency()
 
-  const description = getDescriptionDisplay({
-    LL,
-    tx,
-    bankName: galoyInstance.name,
-    showMemo: true,
-  })
+  const { formatMoneyAmount, formatCurrency } = useDisplayCurrency()
 
-  // FIXME doesn't work with storybook
-  // TODO: translation
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity style={styles.close} onPress={navigation.goBack}>
+          <Icon name={"close"} size={40} color={colors.black} />
+        </TouchableOpacity>
+      ),
+    })
+  }, [navigation])
+
   if (!tx || Object.keys(tx).length === 0)
     return <Text>{"No transaction found with this ID (should not happen)"}</Text>
 
@@ -120,14 +95,15 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
     settlementDisplayAmount,
     settlementDisplayCurrency,
     settlementFee,
-
     settlementVia,
     initiationVia,
   } = tx
 
+  const viewInExplorer = (hash: string): Promise<Linking> =>
+    Linking.openURL(galoyInstance.blockExplorer + hash)
+
   const isReceive = tx.direction === "RECEIVE"
 
-  const walletCurrency = settlementCurrency as WalletCurrency
   const spendOrReceiveText = isReceive
     ? LL.TransactionDetailScreen.received()
     : LL.TransactionDetailScreen.spent()
@@ -152,59 +128,36 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
   const onChainTxBroadcasted =
     settlementVia?.__typename === "SettlementViaOnChain" &&
     settlementVia?.transactionHash !== null
+
   const onChainTxNotBroadcasted =
     settlementVia?.__typename === "SettlementViaOnChain" &&
     settlementVia?.transactionHash === null
 
-  // only show a secondary amount if it is in a different currency than the primary amount
   const formattedSecondaryFeeAmount =
-    tx.settlementDisplayCurrency === tx.settlementCurrency
-      ? undefined
-      : formattedSettlementFee
+    settlementDisplayCurrency === settlementCurrency ? undefined : formattedSettlementFee
 
   const formattedFeeText =
     formattedPrimaryFeeAmount +
     (formattedSecondaryFeeAmount ? ` (${formattedSecondaryFeeAmount})` : ``)
-  const Wallet = (
-    <WalletSummary
-      amountType={isReceive ? "RECEIVE" : "SEND"}
-      settlementAmount={toWalletAmount({
-        amount: Math.abs(settlementAmount),
-        currency: settlementCurrency,
-      })}
-      txDisplayAmount={settlementDisplayAmount}
-      txDisplayCurrency={settlementDisplayCurrency}
-    />
-  )
+
+  const description = getDescriptionDisplay({
+    LL,
+    tx,
+    bankName: galoyInstance.name,
+    showMemo: true,
+  })
 
   return (
     <Screen unsafe preset="scroll">
-      <View
-        style={[
-          styles.amountDetailsContainer,
-          {
-            backgroundColor: colors.grey5,
-          },
-        ]}
-      >
-        <View accessible={false} style={styles.closeIconContainer}>
-          <GaloyIconButton
-            name="close"
-            onPress={navigation.goBack}
-            iconOnly={true}
-            size={"large"}
-          />
-        </View>
-        <View style={styles.amountView}>
-          <IconTransaction
-            isReceive={isReceive}
-            walletCurrency={walletCurrency}
-            pending={false}
-            onChain={false}
-          />
-          <Text type="h2">{spendOrReceiveText}</Text>
-          <Text type="h1">{displayAmount}</Text>
-        </View>
+      <View style={styles.amountView}>
+        <IconTransaction
+          isReceive={isReceive}
+          walletCurrency={settlementCurrency}
+          pending={false}
+          onChain={false}
+        />
+        <Text type="h2">{spendOrReceiveText}</Text>
+        <Text type="h1">{displayAmount}</Text>
       </View>
 
       <View style={styles.transactionDetailView}>
@@ -219,10 +172,22 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
               ? LL.TransactionDetailScreen.receivingAccount()
               : LL.TransactionDetailScreen.sendingAccount()
           }
-          content={Wallet}
+          content={
+            <WalletSummary
+              amountType={tx.direction}
+              settlementAmount={toWalletAmount({
+                amount: Math.abs(settlementAmount),
+                currency: settlementCurrency,
+              })}
+              txDisplayAmount={settlementDisplayAmount}
+              txDisplayCurrency={settlementDisplayCurrency}
+            />
+          }
         />
         <Row entry={LL.common.date()} value={<TransactionDate {...tx} />} />
-        {!isReceive && <Row entry={LL.common.fees()} value={formattedFeeText} />}
+        {(!isReceive || settlementCurrency === "BTC") && (
+          <Row entry={LL.common.fees()} value={formattedFeeText} />
+        )}
         <Row entry={LL.common.description()} value={description} />
         {settlementVia?.__typename === "SettlementViaIntraLedger" && (
           <Row
@@ -232,17 +197,18 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
         )}
         <Row entry={LL.common.type()} value={typeDisplay(settlementVia)} />
         {settlementVia?.__typename === "SettlementViaLn" &&
-          initiationVia.__typename === "InitiationViaLn" && (
+          initiationVia.__typename === "InitiationViaLn" &&
+          initiationVia.paymentHash && (
             <Row entry="Hash" value={initiationVia.paymentHash} />
           )}
-        {onChainTxBroadcasted && (
+        {onChainTxBroadcasted && settlementVia?.transactionHash && (
           <TouchableWithoutFeedback
             onPress={() => viewInExplorer(settlementVia?.transactionHash || "")}
           >
             <View>
               <Row
                 entry="Hash"
-                value={settlementVia?.transactionHash || ""}
+                value={settlementVia?.transactionHash}
                 __typename={settlementVia?.__typename}
               />
             </View>
@@ -255,38 +221,23 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
 }
 
 const useStyles = makeStyles(({ colors }) => ({
-  closeIconContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    paddingRight: 10,
+  close: {
+    height: "100%",
+    justifyContent: "center",
+    paddingHorizontal: 15,
   },
-
-  amountText: {
-    fontSize: 18,
-    marginVertical: 6,
-  },
-
-  amountDetailsContainer: {
-    paddingTop: isIos ? 36 : 0,
-  },
-
   amountView: {
     alignItems: "center",
-    justifyContent: "center",
-    transform: [{ translateY: -12 }],
   },
-
   description: {
-    marginBottom: 6,
+    marginBottom: 10,
   },
-
   entry: {
-    marginBottom: 6,
+    marginBottom: 5,
   },
-
   transactionDetailView: {
-    marginHorizontal: 24,
-    marginVertical: 12,
+    marginHorizontal: 20,
+    marginVertical: 15,
   },
   valueContainer: {
     flexDirection: "row",
@@ -303,6 +254,6 @@ const useStyles = makeStyles(({ colors }) => ({
     fontWeight: "bold",
   },
   txNotBroadcast: {
-    marginBottom: 16,
+    marginBottom: 15,
   },
 }))
