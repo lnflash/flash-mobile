@@ -117,7 +117,7 @@ import {
   CashoutConfirmation,
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
-import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings-screen"
+import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -347,7 +347,6 @@ export const RootStack = () => {
         options={{
           title: "Social Settings",
           headerBackTitleVisible: false,
-          // Add any other screen options you need
         }}
       />
       <RootNavigator.Screen
