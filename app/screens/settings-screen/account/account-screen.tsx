@@ -1,5 +1,4 @@
-import { ScrollView } from "react-native-gesture-handler"
-
+import { View } from "react-native"
 import { Screen } from "@app/components/screen"
 import { testProps } from "@app/utils/testProps"
 import { makeStyles } from "@rneui/themed"
@@ -18,16 +17,13 @@ export const AccountScreen: React.FC = () => {
   return (
     <AccountDeleteContextProvider>
       <Screen keyboardShouldPersistTaps="handled">
-        <ScrollView
-          contentContainerStyle={styles.outer}
-          {...testProps("account-screen-scroll-view")}
-        >
+        <View style={styles.outer} {...testProps("account-screen-scroll-view")}>
           <AccountBanner />
           <AccountId />
           <UpgradeTrialAccount />
           {/* <SettingsGroup items={[UpgradeAccountLevelOne]} /> */}
           <DangerZoneSettings />
-        </ScrollView>
+        </View>
       </Screen>
     </AccountDeleteContextProvider>
   )
@@ -35,11 +31,9 @@ export const AccountScreen: React.FC = () => {
 
 const useStyles = makeStyles(() => ({
   outer: {
-    marginTop: 4,
-    paddingHorizontal: 12,
+    marginTop: 10,
+    paddingHorizontal: 20,
     paddingBottom: 20,
-    display: "flex",
-    flexDirection: "column",
     rowGap: 12,
   },
 }))
