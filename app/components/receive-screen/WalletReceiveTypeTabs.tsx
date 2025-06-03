@@ -1,5 +1,6 @@
 import React from "react"
-import { View } from "react-native"
+import { TouchableOpacity, View } from "react-native"
+import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 // components
 import WalletBottomSheet from "./WalletBottomSheet"
@@ -20,6 +21,8 @@ type Props = {
 }
 
 const WalletReceiveTypeTabs: React.FC<Props> = ({ request }) => {
+  const styles = useStyles()
+  const { colors } = useTheme().theme
   const { persistentState } = usePersistentStateContext()
 
   const onChangeWallet = (id: WalletCurrency) => {
@@ -35,7 +38,7 @@ const WalletReceiveTypeTabs: React.FC<Props> = ({ request }) => {
 
   if (persistentState.isAdvanceMode) {
     return (
-      <View style={{ flexDirection: "row", marginBottom: 10 }}>
+      <View style={styles.wrapper}>
         <WalletBottomSheet
           currency={request.receivingWalletDescriptor.currency}
           disabled={request.state === PaymentRequestState.Loading}
@@ -51,8 +54,59 @@ const WalletReceiveTypeTabs: React.FC<Props> = ({ request }) => {
       </View>
     )
   } else {
-    return null
+    return (
+      <View style={styles.wrapper}>
+        <TouchableOpacity
+          style={[
+            styles.btn,
+            request.type === "Lightning" ? { borderColor: colors.accent02 } : {},
+          ]}
+          onPress={() => onChangeReceiveType("Lightning")}
+        >
+          <Icon name={"flash"} color={"#F0C243"} size={25} type="ionicon" />
+          <Text
+            type="bl"
+            style={request.type === "Lightning" ? { color: colors.accent02 } : {}}
+          >
+            Lightning
+          </Text>
+        </TouchableOpacity>
+        <View style={{ width: 10 }} />
+        <TouchableOpacity
+          style={[
+            styles.btn,
+            request.type === "OnChain" ? { borderColor: colors.accent02 } : {},
+          ]}
+          onPress={() => onChangeReceiveType("OnChain")}
+        >
+          <Icon name={"logo-bitcoin"} color={"#41AC48"} size={25} type="ionicon" />
+          <Text
+            type="bl"
+            style={request.type === "OnChain" ? { color: colors.accent02 } : {}}
+          >
+            Onchain
+          </Text>
+        </TouchableOpacity>
+      </View>
+    )
   }
 }
 
 export default WalletReceiveTypeTabs
+
+const useStyles = makeStyles(({ colors }) => ({
+  wrapper: {
+    flexDirection: "row",
+    marginBottom: 10,
+  },
+  btn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 15,
+    borderWidth: 1,
+    padding: 10,
+    flex: 1,
+    borderColor: colors.border01,
+  },
+}))
