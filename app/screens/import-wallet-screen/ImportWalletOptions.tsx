@@ -1,6 +1,6 @@
 import React from "react"
 import styled from "styled-components/native"
-import { Icon, useTheme } from "@rneui/themed"
+import { Icon, Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 
 // hooks
@@ -10,20 +10,14 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 // types
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
-// assets
-import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
-import Account from "@app/assets/illustrations/account.svg"
-import EmailAccount from "@app/assets/illustrations/email-account.svg"
-
 type Props = StackScreenProps<RootStackParamList, "ImportWalletOptions">
 
 const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
   const insideApp = route.params?.insideApp
+
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
-
-  const { persistentState } = usePersistentStateContext()
-  const { isAdvanceMode } = persistentState
+  const { isAdvanceMode } = usePersistentStateContext().persistentState
 
   const onImportBTCWallet = () => {
     navigation.navigate("ImportWallet", {
@@ -41,20 +35,20 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <Wrapper style={{ backgroundColor: colors.white }}>
-      <Title style={{ color: colors.black }}>
+      <Text type="h02" bold style={{ textAlign: "center", marginBottom: 30 }}>
         {insideApp
           ? LL.ImportWalletOptions.importOptions()
           : LL.ImportWalletOptions.loginOptions()}
-      </Title>
+      </Text>
 
       {isAdvanceMode && (
         <Btn onPress={onImportBTCWallet}>
-          <GoldWallet width={60} height={60} />
+          <Icon type="ionicon" size={40} name={"apps"} color={colors.icon02} />
           <BtnTextWrapper>
-            <BtnTitle style={{ color: colors.black }}>
-              {LL.ImportWalletOptions.recoveryPhrase()}
-            </BtnTitle>
-            <BtnDesc>{LL.ImportWalletOptions.importBTCWallet()}</BtnDesc>
+            <Text type="p1">{LL.ImportWalletOptions.recoveryPhrase()}</Text>
+            <Text type="p3" color={colors.grey2}>
+              {LL.ImportWalletOptions.importBTCWallet()}
+            </Text>
           </BtnTextWrapper>
           <Icon type="ionicon" name={"chevron-forward"} size={20} />
         </Btn>
@@ -62,22 +56,22 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
       {!insideApp && (
         <>
           <Btn onPress={onLoginWithPhone}>
-            <Account width={60} height={60} />
+            <Icon type="ionicon" name={"mail-outline"} color={colors.icon02} size={40} />
             <BtnTextWrapper>
-              <BtnTitle style={{ color: colors.black }}>
-                {LL.ImportWalletOptions.phone()}
-              </BtnTitle>
-              <BtnDesc>{LL.ImportWalletOptions.importUsingPhone()}</BtnDesc>
+              <Text type="p1">{LL.ImportWalletOptions.phone()}</Text>
+              <Text type="p3" color={colors.grey2}>
+                {LL.ImportWalletOptions.importUsingPhone()}
+              </Text>
             </BtnTextWrapper>
             <Icon type="ionicon" name={"chevron-forward"} size={20} />
           </Btn>
           <Btn onPress={onLoginWithEmail}>
-            <EmailAccount width={60} height={60} />
+            <Icon type="ionicon" name={"at-outline"} color={colors.icon02} size={40} />
             <BtnTextWrapper>
-              <BtnTitle style={{ color: colors.black }}>
-                {LL.ImportWalletOptions.email()}
-              </BtnTitle>
-              <BtnDesc>{LL.ImportWalletOptions.importUsingEmail()}</BtnDesc>
+              <Text type="p1">{LL.ImportWalletOptions.email()}</Text>
+              <Text type="p3" color={colors.grey2}>
+                {LL.ImportWalletOptions.importUsingEmail()}
+              </Text>
             </BtnTextWrapper>
             <Icon type="ionicon" name={"chevron-forward"} size={20} />
           </Btn>
@@ -94,13 +88,6 @@ const Wrapper = styled.View`
   padding-horizontal: 20px;
 `
 
-const Title = styled.Text`
-  font-size: 21px;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 30px;
-`
-
 const Btn = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
@@ -113,14 +100,6 @@ const Btn = styled.TouchableOpacity`
 
 const BtnTextWrapper = styled.View`
   flex: 1;
+  row-gap: 5;
   margin-horizontal: 15px;
-`
-
-const BtnTitle = styled.Text`
-  font-size: 18px;
-`
-
-const BtnDesc = styled.Text`
-  font-size: 15px;
-  color: #777;
 `

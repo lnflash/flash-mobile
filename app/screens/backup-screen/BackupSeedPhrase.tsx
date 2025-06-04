@@ -6,16 +6,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import * as Keychain from "react-native-keychain"
-import { useTheme, useThemeMode } from "@rneui/themed"
+import { Text, useTheme, useThemeMode } from "@rneui/themed"
+
+// components
+import { PrimaryBtn } from "@app/components/buttons"
 
 type Props = StackScreenProps<RootStackParamList, "BackupSeedPhrase">
 
 const BackupSeedPhrase: React.FC<Props> = ({ navigation }) => {
-  const { theme } = useTheme()
-  const { mode } = useThemeMode()
-  const colors = theme.colors
-  const { LL } = useI18nContext()
   const bottom = useSafeAreaInsets().bottom
+  const { colors } = useTheme().theme
+  const { mode } = useThemeMode()
+  const { LL } = useI18nContext()
+
   const [seedPhrase, setSeedPhrase] = useState<string[]>([])
 
   useEffect(() => {
@@ -40,10 +43,14 @@ const BackupSeedPhrase: React.FC<Props> = ({ navigation }) => {
         style={{ backgroundColor: mode === "dark" ? "#5b5b5b" : "#ededed" }}
       >
         <SeedPhraseNum style={{ borderRightColor: colors.white }}>
-          <Text style={{ color: colors.black }}>{index + 1}</Text>
+          <Text type="p1" bold>
+            {index + 1}
+          </Text>
         </SeedPhraseNum>
         <SeedPhraseText>
-          <Text style={{ color: colors.black }}>{item}</Text>
+          <Text type="p1" bold>
+            {item}
+          </Text>
         </SeedPhraseText>
       </SeedPhrase>
     )
@@ -52,15 +59,19 @@ const BackupSeedPhrase: React.FC<Props> = ({ navigation }) => {
   return (
     <Wrapper style={{ backgroundColor: colors.white }}>
       <Container>
-        <Title style={{ color: colors.black }}>{LL.BackupSeedPhrase.title()}</Title>
-        <Description>{LL.BackupSeedPhrase.description()}</Description>
+        <Text type="h01" bold style={{ textAlign: "center" }}>
+          {LL.BackupSeedPhrase.title()}
+        </Text>
+        <Text type="p1" color={colors.grey2} style={{ textAlign: "center" }}>
+          {LL.BackupSeedPhrase.description()}
+        </Text>
         <FlatList
           data={seedPhrase}
           numColumns={2}
           renderItem={renderItemHandler}
           columnWrapperStyle={{ justifyContent: "space-between" }}
           scrollEnabled={false}
-          style={{ marginVertical: 25 }}
+          style={{ marginTop: 20 }}
         />
       </Container>
       <ButtonsWrapper>
@@ -72,11 +83,11 @@ const BackupSeedPhrase: React.FC<Props> = ({ navigation }) => {
             {LL.BackupSeedPhrase.backupToGoogleDrive()}
           </BtnTitle>
         </Btn> */}
-        <Btn bottom={bottom} onPress={onVerify}>
-          <BtnTitle style={{ color: colors.white }}>
-            {LL.BackupSeedPhrase.verify()}
-          </BtnTitle>
-        </Btn>
+        <PrimaryBtn
+          label={LL.BackupSeedPhrase.verify()}
+          onPress={onVerify}
+          btnStyle={{ marginBottom: bottom || 10 }}
+        />
       </ButtonsWrapper>
     </Wrapper>
   )
@@ -87,31 +98,18 @@ export default BackupSeedPhrase
 const Wrapper = styled.View`
   flex: 1;
   justify-content: space-between;
-`
-
-const Container = styled.ScrollView`
   padding-horizontal: 20px;
 `
 
-const Title = styled.Text`
-  font-size: 21px;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 10px;
-`
-
-const Description = styled.Text`
-  font-size: 18px;
-  font-weight: 400;
-  color: #777;
-  text-align: center;
+const Container = styled.View`
+  row-gap: 10px;
 `
 
 const SeedPhrase = styled.View<{ marginRight: boolean }>`
   flex: 1;
   flex-direction: row;
   align-items: center;
-  border-radius: 100px;
+  border-radius: 20px;
   margin-bottom: 10px;
   margin-right: ${({ marginRight }) => (marginRight ? 15 : 0)}px;
 `
@@ -124,32 +122,10 @@ const SeedPhraseNum = styled.View`
 `
 
 const SeedPhraseText = styled.View`
-  align-items: center;
   flex: 1;
-`
-
-const Text = styled.Text`
-  font-size: 18px;
-  font-weight: 600;
+  padding-horizontal: 15;
 `
 
 const ButtonsWrapper = styled.View`
   padding-top: 10px;
-  padding-horizontal: 20px;
-`
-
-const Btn = styled.TouchableOpacity<{ isOutline?: boolean; bottom: number }>`
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  background-color: ${({ isOutline }) => (isOutline ? "#fff" : "#60aa55")};
-  border: ${({ isOutline }) => (isOutline ? 1 : 0)}px solid #bbb;
-  margin-bottom: ${({ bottom }) => bottom || 10}px;
-  padding-vertical: 14px;
-`
-
-const BtnTitle = styled.Text<{ isOutline?: boolean }>`
-  font-size: 18px;
-  font-weight: 600;
-  color: ${({ isOutline }) => (isOutline ? "#000" : "#fff")};
 `

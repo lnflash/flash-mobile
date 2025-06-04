@@ -229,6 +229,7 @@ const useStyles = makeStyles(({ colors }) => ({
     alignItems: "center",
     borderWidth: 1,
     borderRadius: 20,
+    borderColor: colors.black,
     padding: 10,
   },
   texts: {

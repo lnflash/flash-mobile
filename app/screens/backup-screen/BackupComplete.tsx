@@ -1,13 +1,15 @@
 import React from "react"
-import styled from "styled-components/native"
+import { View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { StackScreenProps } from "@react-navigation/stack"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { useTheme } from "@rneui/themed"
+import { makeStyles, Text } from "@rneui/themed"
 
-// assets
-import CircleCheck from "@app/assets/icons/circleCheck.png"
+// components
+import { SuccessIconAnimation } from "@app/components/success-animation"
+import { GaloyIcon } from "@app/components/atomic/galoy-icon"
+import { PrimaryBtn } from "@app/components/buttons"
 
 // store
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -16,8 +18,8 @@ type Props = StackScreenProps<RootStackParamList, "BackupComplete">
 
 const BackupComplete: React.FC<Props> = ({ navigation }) => {
   const bottom = useSafeAreaInsets().bottom
+  const styles = useStyles()
   const { LL } = useI18nContext()
-  const { colors } = useTheme().theme
   const { updateState } = usePersistentStateContext()
 
   const onContinue = () => {
@@ -33,64 +35,39 @@ const BackupComplete: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <Wrapper style={{ backgroundColor: colors.white }}>
-      <Container>
-        <Image source={CircleCheck} />
-        <Title style={{ color: colors.black }}>{LL.BackupComplete.title()}</Title>
-        <Description>{LL.BackupComplete.description()}</Description>
-      </Container>
-      <Btn bottom={bottom} onPress={onContinue}>
-        <BtnTitle style={{ color: colors.white }}>
-          {LL.BackupComplete.complete()}
-        </BtnTitle>
-      </Btn>
-    </Wrapper>
+    <View style={styles.wrapper}>
+      <View style={styles.container}>
+        <SuccessIconAnimation>
+          <GaloyIcon name={"send-success"} size={128} />
+        </SuccessIconAnimation>
+        <Text type="h02" bold color="#fff" style={{ marginTop: 30, marginBottom: 20 }}>
+          {LL.BackupComplete.title()}
+        </Text>
+        <Text type="bl" color="#ebebeb" style={{ textAlign: "center" }}>
+          {LL.BackupComplete.description()}
+        </Text>
+      </View>
+      <PrimaryBtn
+        label={LL.BackupComplete.complete()}
+        onPress={onContinue}
+        btnStyle={{ backgroundColor: "#fff", marginBottom: bottom || 10 }}
+        txtStyle={{ color: "#002118" }}
+      />
+    </View>
   )
 }
 
 export default BackupComplete
 
-const Wrapper = styled.View`
-  flex: 1;
-  justify-content: space-between;
-  padding-horizontal: 20px;
-`
-
-const Container = styled.View`
-  align-items: center;
-`
-
-const Image = styled.Image`
-  height: 60px;
-  width: 60px;
-  margin-top: 10px;
-  margin-bottom: 25px;
-`
-
-const Title = styled.Text`
-  font-size: 21px;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 10px;
-`
-
-const Description = styled.Text`
-  font-size: 18px;
-  font-weight: 400;
-  color: #777;
-  text-align: center;
-`
-
-const Btn = styled.TouchableOpacity<{ bottom: number }>`
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  background-color: #60aa55;
-  margin-bottom: ${({ bottom }) => bottom || 10}px;
-  padding-vertical: 14px;
-`
-
-const BtnTitle = styled.Text`
-  font-size: 18px;
-  font-weight: 600;
-`
+const useStyles = makeStyles(({ colors }) => ({
+  wrapper: {
+    flex: 1,
+    paddingHorizontal: 20,
+    backgroundColor: colors.accent02,
+  },
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+}))
