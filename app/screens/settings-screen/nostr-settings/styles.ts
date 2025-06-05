@@ -96,7 +96,7 @@ export const useStyles = makeStyles(({ colors, mode }) => ({
   },
   modalButtonsRow: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
     marginTop: 10,
   },
   modalButtonText: {

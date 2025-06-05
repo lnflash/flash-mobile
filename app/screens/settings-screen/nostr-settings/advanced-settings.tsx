@@ -182,6 +182,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
           setImportModalVisible(false)
           Alert.alert("Success", "Profile imported successfully")
         }}
+        descriptionText="If you wish to use your own nsec, paste it below."
       />
       <KeyModal
         isOpen={showSecretModal}
