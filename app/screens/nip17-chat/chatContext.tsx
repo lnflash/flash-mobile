@@ -5,6 +5,7 @@ import {
   fetchNostrUsers,
   fetchSecretFromLocalStorage,
   getRumorFromWrap,
+  getSecretKey,
   loadGiftwrapsFromStorage,
   saveGiftwrapsToStorage,
 } from "@app/utils/nostr"
@@ -20,7 +21,7 @@ type ChatContextType = {
   poolRef?: React.MutableRefObject<SimplePool>
   profileMap: Map<string, NostrProfile> | undefined
   addEventToProfiles: (event: Event) => void
-  resetChat: () => void
+  resetChat: () => Promise<void>
   initializeChat: (count?: number) => void
   activeSubscription: SubCloser | null
   userProfileEvent: Event | null
@@ -44,7 +45,7 @@ const ChatContext = createContext<ChatContextType>({
   poolRef: undefined,
   profileMap: undefined,
   addEventToProfiles: (event: Event) => {},
-  resetChat: () => {},
+  resetChat: () => new Promise(() => {}),
   initializeChat: () => {},
   activeSubscription: null,
   userProfileEvent: null,
@@ -98,11 +99,19 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   }, [userPublicKey])
 
   const refreshUserProfile = async () => {
-    console.log("INSIDE REFRESH USER PROFILE", poolRef.current, userPublicKey)
-    if (!poolRef.current || !userPublicKey) return
-    console.log("POOL EXISTS, USERPUBKEY EXISTS!", userPublicKey)
+    if (!poolRef.current) return
+    let publicKey = userPublicKey
+    if (!publicKey) {
+      let secret = await getSecretKey()
+      if (!secret) {
+        setUserProfileEvent(null)
+        return
+      }
+      publicKey = getPublicKey(secret)
+      setUserPublicKey(publicKey)
+    }
     return new Promise<void>((resolve) => {
-      fetchNostrUsers([userPublicKey], poolRef.current, (event: Event, profileCloser) => {
+      fetchNostrUsers([publicKey], poolRef.current, (event: Event, profileCloser) => {
         setUserProfileEvent(event)
         try {
           let content = JSON.parse(event.content)
@@ -126,7 +135,6 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     }
     let secret = nip19.decode(secretKeyString).data as Uint8Array
     const publicKey = getPublicKey(secret)
-    console.log("SETTING USER PUBLIC KEY")
     setUserPublicKey(publicKey)
     const cachedGiftwraps = await loadGiftwrapsFromStorage()
     setGiftWraps(cachedGiftwraps)
@@ -146,7 +154,6 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     const lastCachedEvent = cachedGiftwraps[cachedGiftwraps.length - 1]
     let secretKeyString = await fetchSecretFromLocalStorage()
     if (!secretKeyString) {
-      console.log("SECRET KEY NOT FOUND")
       return null
     }
     let secret = nip19.decode(secretKeyString).data as Uint8Array
@@ -195,11 +202,14 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const resetChat = async () => {
     setGiftWraps([])
     setRumors([])
+    setUserPublicKey(null)
+    setUserProfileEvent(null)
     closer?.close()
     let secretKeyString = await fetchSecretFromLocalStorage()
     if (!secretKeyString) return
     let secret = nip19.decode(secretKeyString).data as Uint8Array
     const publicKey = getPublicKey(secret)
+    setUserPublicKey(getPublicKey(secret))
     let newCloser = fetchGiftWrapsForPublicKey(
       publicKey,
       (event) => handleGiftWraps(event, secret),

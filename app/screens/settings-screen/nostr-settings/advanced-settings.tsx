@@ -11,6 +11,9 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { ImportNsecModal } from "@app/components/import-nsec/import-nsec-modal"
 import { useChatContext } from "@app/screens/nip17-chat/chatContext"
 import { KeyModal } from "./key-modal"
+import { useNavigation } from "@react-navigation/native"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 interface AdvancedSettingsProps {
   expandAdvanced: boolean
@@ -32,7 +35,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
     theme: { colors },
   } = useTheme()
 
-  const { resetChat } = useChatContext()
+  const { resetChat, refreshUserProfile } = useChatContext()
 
   const [showSecretModal, setShowSecretModal] = useState(false)
   const [keysModalType, setKeysModalType] = useState<"public" | "private">("public")
@@ -40,6 +43,8 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   const [importModalVisible, setImportModalVisible] = useState(false)
   const [userUpdateNpub] = useUserUpdateNpubMutation()
   const { deleteNostrKeys } = useNostrProfile()
+  const navigation =
+    useNavigation<StackNavigationProp<RootStackParamList, "NostrSettingsScreen">>()
 
   const handleShowKeys = (type: "public" | "private") => {
     setKeysModalType(type)
@@ -74,8 +79,11 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            deleteNostrKeys()
+          onPress: async () => {
+            await deleteNostrKeys()
+            await refreshUserProfile()
+            await resetChat()
+            navigation.goBack()
           },
         },
       ],

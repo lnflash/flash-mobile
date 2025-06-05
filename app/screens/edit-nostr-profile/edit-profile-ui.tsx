@@ -66,36 +66,6 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
     })
   }
 
-  const handleCreateProfileClick = () => {
-    const pubkeyMessage = profileEvent
-      ? `Profile data will be overwritten.`
-      : `We couldn't find a Nostr account attached to this pubkey.`
-
-    Alert.alert(
-      "Create Profile",
-      `If you proceed, any existing profile data will be overwritten. ${pubkeyMessage} Do you want to continue?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "OK",
-          onPress: () => {
-            setFormData({
-              username: "",
-              name: "",
-              nip05: "",
-              picture: "",
-              lud16: "",
-            })
-            setIsFormVisible(true)
-          },
-        },
-      ],
-    )
-  }
-
   const copyToClipboard = async () => {
     if (profileEvent?.pubkey) {
       await Clipboard.setString(profileEvent.pubkey)
@@ -105,32 +75,28 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {isFormVisible ? (
-        <>
-          {profileEvent?.pubkey && (
-            <TouchableOpacity onPress={copyToClipboard}>
-              <View style={styles.pubkeyContainer}>
-                <Text style={styles.pubkeyText}>
-                  {profileEvent?.pubkey ? nip19.npubEncode(profileEvent.pubkey) : null}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
+      <>
+        {profileEvent?.pubkey && (
+          <TouchableOpacity onPress={copyToClipboard}>
+            <View style={styles.pubkeyContainer}>
+              <Text style={styles.pubkeyText}>
+                {profileEvent?.pubkey ? nip19.npubEncode(profileEvent.pubkey) : null}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
-          <ProfileForm
-            formData={formData}
-            handleInputChange={handleInputChange}
-            updating={updating}
-            onSubmit={async () => {
-              setUpdating(true)
-              await updateNostrProfile({ content: formData })
-              setUpdating(false)
-            }}
-          />
-        </>
-      ) : (
-        <Button title="Create Profile" onPress={handleCreateProfileClick} />
-      )}
+        <ProfileForm
+          formData={formData}
+          handleInputChange={handleInputChange}
+          updating={updating}
+          onSubmit={async () => {
+            setUpdating(true)
+            await updateNostrProfile({ content: formData })
+            setUpdating(false)
+          }}
+        />
+      </>
     </ScrollView>
   )
 }

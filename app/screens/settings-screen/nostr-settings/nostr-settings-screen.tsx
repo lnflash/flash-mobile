@@ -41,11 +41,16 @@ export const NostrSettingsScreen = () => {
     const initialize = async () => {
       let secret
       if (!secretKey) {
-        let secret = await getSecretKey()
+        secret = await getSecretKey()
         setSecretKey(secret)
       } else {
         secret = secretKey
       }
+      // console.log(
+      //   "NPUBS ARE DIFFEREMT? ",
+      //   dataAuthed?.me?.npub,
+      //   nip19.npubEncode(getPublicKey(secret)),
+      // )
       if (secret && dataAuthed?.me?.npub === nip19.npubEncode(getPublicKey(secret))) {
         setLinked(true)
       } else {
@@ -55,7 +60,7 @@ export const NostrSettingsScreen = () => {
     initialize()
   }, [secretKey, dataAuthed])
 
-  const { saveNewNostrKey, deleteNostrKeys } = useNostrProfile()
+  const { saveNewNostrKey } = useNostrProfile()
   let nostrPubKey = ""
   if (secretKey) {
     nostrPubKey = nip19.npubEncode(getPublicKey(secretKey as Uint8Array))
@@ -84,13 +89,44 @@ export const NostrSettingsScreen = () => {
     setExpandAdvanced(!expandAdvanced)
   }
 
-  const renderContent = () => {
+  const renderEmptyContent = () => {
     if (!secretKey) {
       return (
-        <View>
-          <Text>No Profile Found</Text>
+        <View
+          style={[
+            styles.container,
+            { flex: 1, justifyContent: "center", alignItems: "center" },
+          ]}
+        >
+          <Ionicons name="person-circle-outline" size={80} color={colors.grey3} />
+          <Text
+            style={{ fontSize: 18, fontWeight: "600", marginTop: 20, marginBottom: 8 }}
+          >
+            No Nostr Profile Found
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: colors.grey3,
+              textAlign: "center",
+              marginBottom: 20,
+            }}
+          >
+            You haven’t created a Nostr profile yet.{"\n"}Tap below to create one.
+          </Text>
+
           <Pressable
-            style={styles.generateButton}
+            style={[
+              styles.generateButton,
+              {
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                backgroundColor: colors.black,
+                borderRadius: 16,
+              },
+            ]}
             onPress={async () => {
               if (isGenerating) return
               setIsGenerating(true)
@@ -103,10 +139,12 @@ export const NostrSettingsScreen = () => {
             <Ionicons
               name="person-add-outline"
               size={20}
-              color={colors.black}
-              style={{ opacity: isGenerating ? 0.5 : 1, marginRight: 10 }}
+              color={colors.white}
+              style={{ marginRight: 10, opacity: isGenerating ? 0.5 : 1 }}
             />
-            <Text>{isGenerating ? "Creating Profile..." : "Create New Profile"}</Text>
+            <Text style={{ color: colors.white, fontWeight: "bold" }}>
+              {isGenerating ? "Creating Profile..." : "Create New Profile"}
+            </Text>
           </Pressable>
         </View>
       )
@@ -156,7 +194,7 @@ export const NostrSettingsScreen = () => {
 
   return (
     <Screen preset="scroll" keyboardShouldPersistTaps="handled">
-      {renderContent()}
+      {renderEmptyContent()}
     </Screen>
   )
 }

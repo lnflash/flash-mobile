@@ -34,7 +34,7 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
       style={styles.modalStyle}
     >
       <View style={styles.modalBody}>
-        <Text style={styles.title}>Import Your Notr Secret Key</Text>
+        <Text style={styles.title}>Import Your Nostr Secret Key</Text>
         <Text style={styles.description}>
           {descriptionText ? descriptionText : defaultText}
         </Text>

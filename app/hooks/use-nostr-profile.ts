@@ -36,6 +36,11 @@ const useNostrProfile = () => {
     fetchPolicy: "network-only",
     errorPolicy: "all",
   })
+  const {
+    appConfig: {
+      galoyInstance: { lnAddressHostname: lnDomain },
+    },
+  } = useAppConfig()
   const relays = ["wss://relay.flashapp.me", "wss://relay.damus.io"]
 
   const [userUpdateNpubMutation] = useUserUpdateNpubMutation()
@@ -53,6 +58,9 @@ const useNostrProfile = () => {
   }
 
   const saveNewNostrKey = async () => {
+    const username = dataAuthed?.me?.username || undefined
+    let lud16
+    if (username) lud16 = `${username}@${lnDomain}`
     let secretKey = generateSecretKey()
     const nostrSecret = nip19.nsecEncode(secretKey)
     let newNpub = nip19.npubEncode(getPublicKey(secretKey))
@@ -69,7 +77,17 @@ const useNostrProfile = () => {
       KEYCHAIN_NOSTRCREDS_KEY,
       nostrSecret,
     )
+
     await setPreferredRelay(secretKey)
+
+    await updateNostrProfile({
+      content: {
+        username: username,
+        lud16: lud16,
+        nip05: lud16,
+        name: username,
+      },
+    })
     return secretKey
   }
 
@@ -131,6 +149,7 @@ const useNostrProfile = () => {
     }
     const signedKind0Event = finalizeEvent(kind0Event, secret)
     let messages = await Promise.any(pool.publish(publicRelays, signedKind0Event))
+    console.log("PUblished, messages from relays are", messages)
     pool.close(publicRelays)
   }
 
