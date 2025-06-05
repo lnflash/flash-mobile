@@ -24,6 +24,13 @@ export const validateLightningAddress = (
     }
   }
 
+  if (/^[0-9]/.test(lightningAddress)) {
+    return {
+      valid: false,
+      error: SetAddressError.STARTS_WITH_NUMBER,
+    }
+  }
+
   return {
     valid: true,
   }
