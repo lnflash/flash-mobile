@@ -126,6 +126,9 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
     case SetAddressError.INVALID_CHARACTER:
       errorMessage = LL.SetAddressModal.Errors.invalidCharacter()
       break
+    case SetAddressError.STARTS_WITH_NUMBER:
+      errorMessage = LL.SetAddressModal.Errors.startsWithNumber()
+      break
     case SetAddressError.ADDRESS_UNAVAILABLE:
       errorMessage = LL.SetAddressModal.Errors.addressUnavailable()
       break
