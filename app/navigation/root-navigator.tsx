@@ -21,11 +21,6 @@ import { HomeScreen } from "../screens/home-screen"
 import { MapScreen } from "../screens/map-screen/map-screen"
 import { PriceHistoryScreen } from "../screens/price/price-history-screen"
 import ChatIcon from "@app/assets/icons/chat.svg"
-import CardIcon from "@app/assets/icons/nfc.svg"
-import ContactsIcon from "@app/assets/icons/contacts.svg"
-import HomeIcon from "@app/assets/icons/home.svg"
-import LearnIcon from "@app/assets/icons/learn.svg"
-import MapIcon from "@app/assets/icons/map.svg"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import {
@@ -118,6 +113,7 @@ import {
   CashoutConfirmation,
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
+import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -330,6 +326,14 @@ export const RootStack = () => {
         options={() => ({
           title: LL.SettingsScreen.title(),
         })}
+      />
+      <RootNavigator.Screen
+        name="NostrSettingsScreen"
+        component={NostrSettingsScreen}
+        options={{
+          title: "Social Settings",
+          headerBackTitleVisible: false,
+        }}
       />
       <RootNavigator.Screen
         name="addressScreen"
