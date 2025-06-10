@@ -1,6 +1,6 @@
-import React, { useState } from "react"
-import { useTheme, Text, Input, Button, makeStyles } from "@rneui/themed"
-import { View, StyleSheet, Alert, Dimensions } from "react-native"
+import React from "react"
+import { useTheme, Text, makeStyles } from "@rneui/themed"
+import { View } from "react-native"
 import ReactNativeModal from "react-native-modal"
 import { NsecInputForm } from "./import-nsec-form"
 
@@ -55,7 +55,7 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
 const useStyles = makeStyles((theme) => {
   return {
     modalStyle: {
-      justifyContent: "flex-end",
+      justifyContent: "center",
     },
     modalBody: {
       padding: 20,
