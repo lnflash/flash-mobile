@@ -7,6 +7,8 @@ import { Alert, TouchableOpacity, View } from "react-native"
 import { Button, Text, useTheme } from "@rneui/themed"
 import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import Ionicons from "react-native-vector-icons/Ionicons"
+import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-button"
+import { PrimaryBtn } from "@app/components/buttons"
 
 interface KeyModalProps {
   isOpen: boolean
@@ -90,16 +92,21 @@ export const KeyModal: React.FC<KeyModalProps> = ({
         </View>
 
         <View style={styles.modalButtonsRow}>
-          <GaloyPrimaryButton
-            title={"Copy"}
+          <PrimaryBtn
+            type="outline"
+            label={"Copy"}
             onPress={() => {
               copyToClipboard(isPublic ? nostrPubKey : nip19.nsecEncode(secretKey), () =>
                 Alert.alert("Copied", "Key copied to clipboard"),
               )
             }}
-            style={{ margin: 10 }}
+            btnStyle={{ margin: 10, minWidth: 100 }}
           />
-          <GaloyPrimaryButton title={"Close"} onPress={onClose} style={{ margin: 10 }} />
+          <PrimaryBtn
+            label={"Close"}
+            onPress={onClose}
+            btnStyle={{ margin: 10, minWidth: 100 }}
+          />
         </View>
       </View>
     </ReactNativeModal>
