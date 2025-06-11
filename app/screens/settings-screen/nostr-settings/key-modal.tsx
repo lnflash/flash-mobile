@@ -25,6 +25,7 @@ export const KeyModal: React.FC<KeyModalProps> = ({
   copyToClipboard,
 }) => {
   const styles = useStyles()
+  const { mode } = useTheme().theme
   const [hideSecret, setHideSecret] = useState(true)
   const secretKey = hexToBytes(secretKeyHex)
   const nostrPubKey = nip19.npubEncode(getPublicKey(secretKey))
@@ -39,10 +40,15 @@ export const KeyModal: React.FC<KeyModalProps> = ({
     theme: { colors },
   } = useTheme()
 
+  const onCopy = () =>
+    copyToClipboard(isPublic ? nostrPubKey : nip19.nsecEncode(secretKey), () =>
+      Alert.alert("Copied", "Key copied to clipboard"),
+    )
+
   return (
     <ReactNativeModal
       isVisible={isOpen}
-      backdropColor={colors.grey5}
+      backdropColor={mode === "dark" ? "#1d1d1d" : "#000"}
       backdropOpacity={0.7}
       onBackButtonPress={onClose}
       onBackdropPress={onClose}
@@ -92,6 +98,7 @@ export const KeyModal: React.FC<KeyModalProps> = ({
         </View>
 
         <View style={styles.modalButtonsRow}>
+          <PrimaryBtn label={"Copy"} onPress={onCopy} btnStyle={{ flex: 1 }} />
           <PrimaryBtn
             type="outline"
             label={"Copy"}
