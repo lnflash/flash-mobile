@@ -7,6 +7,9 @@
 // side effect of breaking other tooling like mobile-center and react-native-rename.
 //
 // It's easier just to leave it here.
+
+globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true
+
 import "react-native-get-random-values"
 import { TextEncoder, TextDecoder } from "@sinonjs/text-encoding"
 import { AppRegistry, LogBox, TextInput, Text } from "react-native"
