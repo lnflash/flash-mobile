@@ -1,6 +1,7 @@
 import { useAppConfig } from "@app/hooks"
 import {
   Rumor,
+  fetchContactList,
   fetchGiftWrapsForPublicKey,
   fetchSecretFromLocalStorage,
   getRumorFromWrap,
@@ -22,6 +23,8 @@ type ChatContextType = {
   resetChat: () => void
   initializeChat: (count?: number) => void
   activeSubscription: SubCloser | null
+  contactsEvent: Event | undefined
+  setContactsEvent: (e: Event) => void
 }
 
 const publicRelays = [
@@ -43,6 +46,8 @@ const ChatContext = createContext<ChatContextType>({
   resetChat: () => {},
   initializeChat: () => {},
   activeSubscription: null,
+  contactsEvent: undefined,
+  setContactsEvent: (event: Event) => {},
 })
 
 export const useChatContext = () => useContext(ChatContext)
@@ -55,6 +60,12 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
   const poolRef = useRef(new SimplePool())
   const processedEventIds = useRef(new Set())
+  const [contactsEvent, setContactsEvent] = useState<Event>()
+  const {
+    appConfig: {
+      galoyInstance: { relayUrl },
+    },
+  } = useAppConfig()
 
   const handleGiftWraps = (event: Event, secret: Uint8Array) => {
     setGiftWraps((prevEvents) => [...(prevEvents || []), event])
@@ -73,7 +84,31 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   }
 
   React.useEffect(() => {
+    let closer: SubCloser | undefined
     if (poolRef && !closer) initializeChat()
+    async function initialize(count = 0) {
+      let secretKeyString = await fetchSecretFromLocalStorage()
+      if (!secretKeyString) {
+        if (count >= 3) return
+        setTimeout(() => initialize(count + 1), 500)
+        return
+      }
+      let secret = nip19.decode(secretKeyString).data as Uint8Array
+      const publicKey = getPublicKey(secret)
+      const cachedGiftwraps = await loadGiftwrapsFromStorage()
+      setGiftWraps(cachedGiftwraps)
+
+      let cachedRumors = cachedGiftwraps.map((wrap) => getRumorFromWrap(wrap, secret))
+      setRumors(cachedRumors)
+      let closer = await fetchNewGiftwraps(cachedGiftwraps, publicKey)
+
+      fetchContactList(getPublicKey(secret), poolRef!.current, (event: Event) => {
+        console.log("NEW CONTACTS EVENT IS", event)
+        setContactsEvent(event)
+      })
+      setCloser(closer)
+    }
+    if (poolRef && !closer) initialize()
   }, [poolRef])
 
   const initializeChat = async (count = 0) => {
@@ -179,6 +214,8 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         addEventToProfiles,
         resetChat,
         activeSubscription: closer,
+        contactsEvent,
+        setContactsEvent,
       }}
     >
       {children}

@@ -118,6 +118,7 @@ import {
   CashoutConfirmation,
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
+import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -583,6 +584,13 @@ export const ChatNavigator = () => {
         name="messages"
         component={Messages}
         options={{ headerShown: false }}
+      />
+      <StackChats.Screen
+        name="contactDetails"
+        component={ContactDetailsScreen}
+        options={{
+          headerShown: false, // Since we're using our own header in the component
+        }}
       />
     </StackChats.Navigator>
   )
