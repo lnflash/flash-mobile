@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { StackScreenProps } from "@react-navigation/stack"
 import styled from "styled-components/native"
-import { Icon } from "@rneui/themed"
+import { Icon, Text } from "@rneui/themed"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -10,6 +10,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useTheme } from "@rneui/themed"
 
 // components
+import { PrimaryBtn } from "@app/components/buttons"
 import { UpgradeAccountModal } from "@app/components/upgrade-account-modal"
 
 // types
@@ -68,7 +69,9 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
   return (
     <Wrapper style={{ backgroundColor: colors.white }}>
       <Container>
-        <Title style={{ color: colors.black }}>{LL.BackupOptions.title()}</Title>
+        <Text type="h02" bold style={{ textAlign: "center", marginBottom: 30 }}>
+          {LL.BackupOptions.title()}
+        </Text>
         {persistentState.isAdvanceMode && (
           <Btn onPress={onBackupBTCWallet}>
             <Icon
@@ -78,20 +81,20 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
                   ? "checkmark-circle"
                   : "checkmark-circle-outline"
               }
-              color={persistentState.backedUpBtcWallet ? "#60aa55" : "#999"}
+              color={persistentState.backedUpBtcWallet ? colors.primary : colors.icon02}
               size={40}
             />
             <BtnTextWrapper>
-              <BtnTitle style={{ color: colors.black }}>
+              <Text type="p1">
                 {persistentState.backedUpBtcWallet
                   ? LL.BackupOptions.revealRecoveryPhrase()
                   : LL.BackupOptions.recoveryPhrase()}
-              </BtnTitle>
-              <BtnDesc>
+              </Text>
+              <Text type="p3" color={colors.grey2}>
                 {persistentState.backedUpBtcWallet
                   ? LL.BackupOptions.revealRecoveryPhraseDesc()
                   : LL.BackupOptions.recoveryPhraseDesc()}
-              </BtnDesc>
+              </Text>
             </BtnTextWrapper>
             <Icon type="ionicon" name={"chevron-forward"} size={20} />
           </Btn>
@@ -100,27 +103,25 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
           <Icon
             type="ionicon"
             name={!!data?.me?.phone ? "checkmark-circle" : "checkmark-circle-outline"}
-            color={!!data?.me?.phone ? "#60aa55" : "#999"}
+            color={!!data?.me?.phone ? colors.primary : colors.icon02}
             size={40}
           />
           <BtnTextWrapper>
-            <BtnTitle style={{ color: colors.black }}>
-              {LL.BackupOptions.phone()}
-            </BtnTitle>
-            <BtnDesc>
+            <Text type="p1">{LL.BackupOptions.phone()}</Text>
+            <Text type="p3" color={colors.grey2}>
               {!!data?.me?.phone
                 ? LL.BackupOptions.usePhoneNumber().replace("yourNumber", data?.me?.phone)
                 : LL.BackupOptions.phoneDesc()}
-            </BtnDesc>
+            </Text>
           </BtnTextWrapper>
           {!data?.me?.phone && <Icon type="ionicon" name={"chevron-forward"} size={20} />}
         </Btn>
       </Container>
-      <MainBtn bottom={bottom} onPress={() => navigation.popToTop()}>
-        <MainBtnTitle style={{ color: colors.white }}>
-          {LL.BackupOptions.done()}
-        </MainBtnTitle>
-      </MainBtn>
+      <PrimaryBtn
+        label={LL.BackupOptions.done()}
+        onPress={() => navigation.popToTop()}
+        btnStyle={{ marginBottom: bottom || 10 }}
+      />
       <UpgradeAccountModal
         isVisible={upgradeAccountModalVisible}
         closeModal={() => setUpgradeAccountModalVisible(false)}
@@ -139,17 +140,10 @@ const Wrapper = styled.View`
 
 const Container = styled.View``
 
-const Title = styled.Text`
-  font-size: 21px;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 30px;
-`
-
 const Btn = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
-  border-radius: 10px;
+  border-radius: 20px;
   border: 1px solid #dedede;
   margin-bottom: 20px;
   padding-vertical: 20px;
@@ -158,31 +152,6 @@ const Btn = styled.TouchableOpacity`
 
 const BtnTextWrapper = styled.View`
   flex: 1;
+  row-gap: 5;
   margin-horizontal: 15px;
-`
-
-const BtnTitle = styled.Text`
-  font-size: 18px;
-`
-
-const BtnDesc = styled.Text`
-  font-size: 15px;
-  color: #777;
-`
-
-const MainBtn = styled.TouchableOpacity<{
-  disabled?: boolean
-  bottom: number
-}>`
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  background-color: ${({ disabled }) => (disabled ? "#DEDEDE" : "#60aa55")};
-  margin-bottom: ${({ bottom }) => bottom || 10}px;
-  padding-vertical: 14px;
-`
-
-const MainBtnTitle = styled.Text`
-  font-size: 18px;
-  font-weight: 600;
 `

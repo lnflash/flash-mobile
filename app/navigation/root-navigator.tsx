@@ -71,10 +71,7 @@ import { ScanningQRCodeScreen } from "../screens/send-bitcoin-screen"
 import { SettingsScreen } from "../screens/settings-screen"
 import { LanguageScreen } from "../screens/settings-screen/language-screen"
 import { SecurityScreen } from "../screens/settings-screen/security-screen"
-import {
-  BreezTransactionDetailScreen,
-  TransactionDetailScreen,
-} from "../screens/transaction-detail-screen"
+import { TransactionDetailScreen } from "../screens/transaction-detail-screen"
 import {
   ChatStackParamList,
   ContactStackParamList,
@@ -93,7 +90,6 @@ import {
   ImportWallet,
   BackupOptions,
   TransactionHistoryTabs,
-  IntroScreen,
   USDTransactionHistory,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -157,12 +153,7 @@ export const RootStack = () => {
   const isAuthed = useIsAuthed()
 
   // Check if intro screen is displayed twice.
-  const initialRouteName =
-    persistentState.introVideoCount >= 2
-      ? isAuthed
-        ? "authenticationCheck"
-        : "getStarted"
-      : "IntroScreen"
+  const initialRouteName = isAuthed ? "authenticationCheck" : "getStarted"
 
   return (
     <RootNavigator.Navigator
@@ -182,11 +173,6 @@ export const RootStack = () => {
         name="Reconciliation"
         component={ReconciliationReport}
         options={{ headerShown: true, title: LL.reports.reconciliation() }}
-      />
-      <RootNavigator.Screen
-        name="IntroScreen"
-        component={IntroScreen}
-        options={{ headerShown: false }}
       />
       <RootNavigator.Screen
         name="getStarted"
@@ -424,18 +410,12 @@ export const RootStack = () => {
         name="transactionDetail"
         component={TransactionDetailScreen}
         options={{
-          headerShown: false,
-          // cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+          headerTitle: "",
+          headerLeft: () => null,
+          cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
         }}
       />
-      <RootNavigator.Screen
-        name="breezTransactionDetail"
-        component={BreezTransactionDetailScreen}
-        options={{
-          headerShown: false,
-          // cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
-        }}
-      />
+
       <RootNavigator.Screen
         name="priceHistory"
         component={PriceHistoryScreen}
@@ -528,9 +508,7 @@ export const RootStack = () => {
         <RootNavigator.Screen
           name="BackupComplete"
           component={BackupComplete}
-          options={{
-            headerLeft: () => <></>,
-          }}
+          options={{ headerShown: false }}
         />
         <RootNavigator.Screen
           name="BackupShowSeedPhrase"

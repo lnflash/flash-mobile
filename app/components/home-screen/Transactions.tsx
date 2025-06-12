@@ -145,12 +145,8 @@ const Transactions: React.FC<Props> = ({
     if (!convertMoneyAmount || !txs) {
       return []
     }
-    const formattedTxs = txs?.map((edge) =>
-      formatPaymentsBreezSDK(
-        edge.txId,
-        txs,
-        convertMoneyAmount(toBtcMoneyAmount(edge.amountSat), WalletCurrency.Usd).amount,
-      ),
+    const formattedTxs = txs?.map((txDetails) =>
+      formatPaymentsBreezSDK({ txDetails, convertMoneyAmount }),
     )
 
     return formattedTxs?.filter(Boolean) ?? []

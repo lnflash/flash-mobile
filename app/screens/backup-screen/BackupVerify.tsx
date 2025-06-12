@@ -6,7 +6,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import * as Keychain from "react-native-keychain"
-import { useTheme, useThemeMode } from "@rneui/themed"
+import { Text, useTheme, useThemeMode } from "@rneui/themed"
+
+// components
+import { PrimaryBtn } from "@app/components/buttons"
 
 type Props = StackScreenProps<RootStackParamList, "BackupVerify">
 
@@ -17,11 +20,11 @@ type ShuffledPhraseType = {
 }
 
 const BackupVerify: React.FC<Props> = ({ navigation }) => {
-  const { theme } = useTheme()
-  const { mode } = useThemeMode()
-  const colors = theme.colors
-  const { LL } = useI18nContext()
   const bottom = useSafeAreaInsets().bottom
+  const { colors } = useTheme().theme
+  const { mode } = useThemeMode()
+  const { LL } = useI18nContext()
+
   const [selectOrder, setSelectOrder] = useState(0)
   const [shuffledSeedPhrase, setShuffledSeedPhrase] = useState<ShuffledPhraseType[]>([])
 
@@ -105,7 +108,7 @@ const BackupVerify: React.FC<Props> = ({ navigation }) => {
           style={{ borderRightColor: colors.white }}
           selectedInOrder={item.selectedInOrder}
         >
-          <Text style={{ color: colors.black }}>
+          <Text type="p1" bold>
             {item.selectedInOrder !== undefined
               ? item.selectedInOrder
                 ? item.order + 1
@@ -114,7 +117,9 @@ const BackupVerify: React.FC<Props> = ({ navigation }) => {
           </Text>
         </SeedPhraseNum>
         <SeedPhraseText>
-          <Text style={{ color: colors.black }}>{item.key}</Text>
+          <Text type="p1" bold>
+            {item.key}
+          </Text>
         </SeedPhraseText>
       </SeedPhrase>
     )
@@ -123,49 +128,35 @@ const BackupVerify: React.FC<Props> = ({ navigation }) => {
   return (
     <Wrapper style={{ backgroundColor: colors.white }}>
       <Container>
-        <Title style={{ color: colors.black }}>
+        <Text type="h01" bold style={{ textAlign: "center" }}>
           {selectOrder === 12 && !wrongSelect
             ? LL.BackupVerify.correctTitle()
             : wrongSelect
             ? LL.BackupVerify.wrongTitle()
             : LL.BackupVerify.title()}
-        </Title>
+        </Text>
         <FlatList
           data={shuffledSeedPhrase}
           numColumns={2}
           renderItem={renderItemHandler}
           columnWrapperStyle={{ justifyContent: "space-between" }}
           scrollEnabled={false}
-          style={{ marginVertical: 25 }}
+          style={{ marginVertical: 20 }}
         />
       </Container>
       <ButtonsWrapper>
-        <Btn
-          isOutline={true}
-          bottom={25}
+        <PrimaryBtn
+          type="outline"
+          label={LL.BackupVerify.tryAgain()}
           onPress={() => shuffleSeedPhrase(shuffledSeedPhrase)}
-          style={{ backgroundColor: colors.white }}
-        >
-          <BtnTitle style={{ color: colors.black }}>
-            {LL.BackupVerify.tryAgain()}
-          </BtnTitle>
-        </Btn>
-        <Btn
-          bottom={bottom}
+          btnStyle={{ marginBottom: 20 }}
+        />
+        <PrimaryBtn
+          label={LL.BackupVerify.continue()}
           disabled={!(selectOrder === 12 && !wrongSelect)}
           onPress={onContinue}
-          style={{
-            backgroundColor: !(selectOrder === 12 && !wrongSelect)
-              ? mode === "dark"
-                ? "#5b5b5b"
-                : "#DEDEDE"
-              : "#60aa55",
-          }}
-        >
-          <BtnTitle style={{ color: colors.white }}>
-            {LL.BackupVerify.continue()}
-          </BtnTitle>
-        </Btn>
+          btnStyle={{ marginBottom: bottom || 10 }}
+        />
       </ButtonsWrapper>
     </Wrapper>
   )
@@ -178,21 +169,16 @@ const Wrapper = styled.View`
   justify-content: space-between;
 `
 
-const Container = styled.ScrollView`
+const Container = styled.View`
+  row-gap: 10;
   padding-horizontal: 20px;
-`
-
-const Title = styled.Text`
-  font-size: 21px;
-  font-weight: 600;
-  text-align: center;
 `
 
 const SeedPhrase = styled.TouchableOpacity<{ marginRight: boolean }>`
   flex: 1;
   flex-direction: row;
   align-items: center;
-  border-radius: 100px;
+  border-radius: 20px;
   margin-bottom: 10px;
   margin-right: ${({ marginRight }) => (marginRight ? 15 : 0)}px;
   overflow: hidden;
@@ -215,33 +201,11 @@ const SeedPhraseNum = styled.View<{ selectedInOrder?: boolean }>`
 
 const SeedPhraseText = styled.View`
   flex: 1;
-  align-items: center;
+  padding-horizontal: 15;
   padding-vertical: 14px;
-`
-
-const Text = styled.Text`
-  font-size: 18px;
-  font-weight: 600;
 `
 
 const ButtonsWrapper = styled.View`
   padding-top: 10px;
   padding-horizontal: 20px;
-`
-
-const Btn = styled.TouchableOpacity<{
-  isOutline?: boolean
-  bottom: number
-}>`
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  border: ${({ isOutline }) => (isOutline ? 1 : 0)}px solid #bbb;
-  margin-bottom: ${({ bottom }) => bottom || 10}px;
-  padding-vertical: 14px;
-`
-
-const BtnTitle = styled.Text`
-  font-size: 18px;
-  font-weight: 600;
 `

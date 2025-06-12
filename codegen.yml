@@ -1,5 +1,5 @@
 overwrite: true
-schema: "https://api.test.flashapp.me/graphql"
+schema: "https://api.flashapp.me/graphql"
 # schema: "https://raw.githubusercontent.com/lnflash/flash/feature/merchant-map-suggest/src/graphql/public/schema.graphql"
 documents:
   - "app/**/*.ts"

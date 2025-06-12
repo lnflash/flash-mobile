@@ -65,7 +65,7 @@ const ConfirmationDestinationAmountNote: React.FC<Props> = ({ paymentDetail }) =
           <Text style={styles.fieldTitleText}>{LL.SendBitcoinScreen.note()}</Text>
           <View style={styles.fieldBackground}>
             <View style={styles.noteIconContainer}>
-              <NoteIcon style={styles.noteIcon} />
+              <NoteIcon style={styles.noteIcon} color={colors.accent02} />
             </View>
             <Text>{note}</Text>
           </View>

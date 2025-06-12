@@ -19,7 +19,6 @@ import { Event } from "nostr-tools"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
-  IntroScreen: undefined
   getStarted: undefined
   UsernameSet: undefined
   Welcome: undefined
@@ -60,9 +59,11 @@ export type RootStackParamList = {
   }
   conversionDetails: undefined
   conversionConfirmation: {
-    toWallet: Pick<Wallet, "id" | "walletCurrency" | "balance">
-    fromWallet: Pick<Wallet, "id" | "walletCurrency" | "balance">
     moneyAmount: MoneyAmount<WalletOrDisplayCurrency>
+    sendingFee: number
+    receivingFee: number
+    lnInvoice: string
+    fromWalletCurrency: WalletCurrency
   }
   conversionSuccess: undefined
   sendBitcoinSuccess: {
@@ -104,7 +105,6 @@ export type RootStackParamList = {
     channel: PhoneCodeChannelType
   }
   transactionDetail: { tx: TransactionFragment }
-  breezTransactionDetail: { tx: TransactionFragment }
   TransactionHistoryTabs?: { initialRouteName?: string } | undefined
   USDTransactionHistory: undefined
   BTCTransactionHistory: undefined
@@ -129,7 +129,7 @@ export type RootStackParamList = {
   BackupVerify: undefined
   BackupComplete: undefined
   BackupShowSeedPhrase: undefined
-  ImportWallet: { insideApp?: boolean; onComplete?: () => void }
+  ImportWallet: { insideApp?: boolean }
   ImportWalletOptions: { insideApp?: boolean } | undefined
   RefundTransactionList: undefined
   RefundDestination: { swapAddress: string; amount: number }

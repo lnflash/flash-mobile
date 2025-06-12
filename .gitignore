@@ -78,6 +78,7 @@ yalc.lock
 *.log
 
 .env
+.env.*
 .envrc
 .dependencies
 ios/assets

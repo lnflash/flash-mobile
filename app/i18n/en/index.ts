@@ -98,7 +98,9 @@ const en: BaseTranslation = {
   ConversionConfirmationScreen: {
     title: "Review conversion",
     youreConverting: "You're converting",
+    sendingAccount: "Sending account",
     receivingAccount: "Receiving account",
+    conversionFee: "Conversion Fee"
   },
   ConversionSuccessScreen: {
     title: "Conversion Success",
@@ -1104,6 +1106,7 @@ const en: BaseTranslation = {
       tooShort: "Username must be at least 3 characters long",
       tooLong: "Address must be at most 50 characters long",
       invalidCharacter: "Address can only contain letters, numbers, and underscores",
+      startsWithNumber: "Your username must begin with an uppercase or lowercase letter",
       addressUnavailable: "Sorry, this address is already taken",
       unknownError: "An unknown error occurred, please try again later",
     },

@@ -74,7 +74,7 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
       saveToken(token)
       navigation.reset({
         index: 0,
-        routes: [{ name: "UsernameSet" }],
+        routes: [{ name: "authenticationCheck" }],
       })
     } else {
       navigation.navigate("phoneFlow")

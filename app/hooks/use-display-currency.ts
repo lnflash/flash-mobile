@@ -185,11 +185,11 @@ export const useDisplayCurrency = () => {
       [DisplayCurrency]: {
         symbol: displayCurrencyInfo.symbol,
         minorUnitToMajorUnitOffset: displayCurrencyInfo.fractionDigits,
-        showFractionDigits: displayCurrencyShouldDisplayDecimals,
+        showFractionDigits: displayCurrencyInfo.fractionDigits > 0,
         currencyCode: displayCurrencyInfo.id,
       },
     }
-  }, [displayCurrencyInfo, displayCurrencyShouldDisplayDecimals])
+  }, [displayCurrencyInfo])
 
   const formatCurrency = useCallback(
     ({
@@ -347,7 +347,7 @@ export const useDisplayCurrency = () => {
 
     // TODO: remove export. we should only accept MoneyAmount instead of number as input
     // for exported functions for consistency
-    displayCurrencyShouldDisplayDecimals,
+    displayCurrencyShouldDisplayDecimals: displayCurrencyInfo.fractionDigits > 0,
     currencyInfo,
     moneyAmountToMajorUnitOrSats,
     zeroDisplayAmount: toDisplayMoneyAmount(0),

@@ -26,7 +26,6 @@ export const AdvancedModeToggle: React.FC = () => {
   const { btcWallet } = useBreez()
   const { moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
 
-  const [animationVisible, setAnimationVisible] = useState(false)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
   const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
 
@@ -57,34 +56,14 @@ export const AdvancedModeToggle: React.FC = () => {
         return {
           ...state,
           defaultWallet: isAdvanceMode ? state.defaultWallet : usdWallet,
-          isAdvanceMode: isAdvanceMode,
-          btcWalletEnabled: true,
+          isAdvanceMode,
         }
       return undefined
     })
-
-    if (isAdvanceMode) {
-      if (!hasRecoveryPhrase) {
-        setAnimationVisible(true)
-        setTimeout(() => {
-          setAnimationVisible(false)
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "Primary" }],
-          })
-        }, 5500)
-      } else {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "Primary" }],
-        })
-      }
-    } else {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Primary" }],
-      })
-    }
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Primary" }],
+    })
   }
 
   const toggleAdvanceMode = async () => {
@@ -143,17 +122,10 @@ export const AdvancedModeToggle: React.FC = () => {
           action={toggleAdvanceMode}
           rightIcon={"sync-outline"}
         />
-        <Modal visible={animationVisible} animationType={"fade"}>
-          <Image
-            source={require("@app/assets/gifs/flash-logo-btc-enabled.gif")}
-            style={{ height: "100%", width: "100%" }}
-          />
-        </Modal>
         <AdvancedModeModal
           hasRecoveryPhrase={hasRecoveryPhrase}
           isVisible={advanceModalVisible}
           setIsVisible={setAdvanceModalVisible}
-          enableAdvancedMode={() => onUpdateState(true)}
         />
       </>
     )

@@ -117,32 +117,41 @@ gql`
     }
   }
 
-  mutation RequestCashout($input: RequestCashoutInput!) {
-    requestCashout(input: $input) {
-      errors {
-        code
-        message
-        path
-      }
-      offer {
-        exchangeRate
-        expiresAt
-        flashFee
-        offerId
-        receiveJmd
-        receiveUsd
-        send
-        walletId
-      }
-    }
-  }
+  # mutation RequestCashout($input: RequestCashoutInput!) {
+  #   requestCashout(input: $input) {
+  #     errors {
+  #       code
+  #       message
+  #       path
+  #     }
+  #     offer {
+  #       exchangeRate
+  #       expiresAt
+  #       flashFee
+  #       offerId
+  #       receiveJmd
+  #       receiveUsd
+  #       send
+  #       walletId
+  #     }
+  #   }
+  # }
 
-  mutation InitiateCashout($input: InitiateCashoutInput!) {
-    initiateCashout(input: $input) {
+  # mutation InitiateCashout($input: InitiateCashoutInput!) {
+  #   initiateCashout(input: $input) {
+  #     errors {
+  #       path
+  #       message
+  #       code
+  #     }
+  #     success
+  #   }
+  # }
+
+  mutation accountDelete {
+    accountDelete {
       errors {
-        path
         message
-        code
       }
       success
     }

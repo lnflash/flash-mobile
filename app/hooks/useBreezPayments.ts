@@ -1,53 +1,57 @@
-import * as sdk from "@breeztech/react-native-breez-sdk-liquid"
+import { Payment, PaymentDetailsVariant } from "@breeztech/react-native-breez-sdk-liquid"
+import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details"
+import { WalletCurrency } from "@app/graphql/generated"
+import { toBtcMoneyAmount } from "@app/types/amounts"
 
-export const formatPaymentsBreezSDK = (
-  txid: unknown,
-  payments: sdk.Payment[],
-  convertedAmount: number,
-) => {
-  const response: sdk.Payment[] = payments
-  const responseTx = response.find((tx) => tx.txId === txid)
-  let tx: any = {}
-  if (responseTx) {
-    const amountSat = responseTx.amountSat
-    // round up to 2 decimal places
-    const moneyAmount = (convertedAmount / 100).toString()
-    const transformedData = {
-      id: responseTx.txId || "",
-      direction: responseTx.paymentType === "receive" ? "RECEIVE" : "SEND",
-      status: responseTx.status.toUpperCase(),
-      memo: responseTx.details.description,
-      settlementAmount: amountSat,
-      settlementCurrency: "BTC",
-      settlementDisplayAmount: moneyAmount,
-      settlementDisplayCurrency: "USD",
-      settlementVia: {
-        __typename: "SettlementViaLn",
-        paymentSecret:
-          responseTx.details.type === sdk.PaymentDetailsVariant.LIGHTNING
-            ? responseTx.details.preimage
-            : "",
-      },
-      createdAt: responseTx.timestamp,
-      settlementFee: responseTx.feesSat,
-      settlementDisplayFee: "BTC",
-      settlementPrice: {
-        base: amountSat,
-        offset: 0,
-        currencyUnit: "SAT",
-        formattedAmount: "SAT",
-        __typename: "PriceOfOneSettlementMinorUnitInDisplayMinorUnit",
-      },
-      initiationVia: {
-        __typename: "InitiationViaLn",
-        paymentHash:
-          responseTx.details.type === sdk.PaymentDetailsVariant.LIGHTNING
-            ? responseTx.details.paymentHash || ""
-            : "",
-      },
-      __typename: "Transaction",
-    }
-    tx = transformedData
-  }
-  return tx
+export const formatPaymentsBreezSDK = ({
+  txDetails,
+  convertMoneyAmount,
+}: {
+  txDetails: Payment
+  convertMoneyAmount: ConvertMoneyAmount
+}) => {
+  const settlementDisplayAmount = convertMoneyAmount(
+    toBtcMoneyAmount(txDetails.amountSat),
+    WalletCurrency.Usd,
+  ).amount
+  const settlementDisplayFee = convertMoneyAmount(
+    toBtcMoneyAmount(txDetails.feesSat),
+    WalletCurrency.Usd,
+  ).amount
+
+  return {
+    id: txDetails.txId || "",
+    direction: txDetails.paymentType === "receive" ? "RECEIVE" : "SEND",
+    status: txDetails.status.toUpperCase(),
+    memo: txDetails.details.description,
+    settlementAmount: txDetails.amountSat,
+    settlementCurrency: "BTC",
+    settlementDisplayAmount: (settlementDisplayAmount / 100).toString(),
+    settlementDisplayCurrency: "USD",
+    settlementVia: {
+      __typename: "SettlementViaLn",
+      paymentSecret:
+        txDetails.details.type === PaymentDetailsVariant.LIGHTNING
+          ? txDetails.details.preimage
+          : "",
+    },
+    createdAt: txDetails.timestamp,
+    settlementFee: txDetails.feesSat,
+    settlementDisplayFee: (settlementDisplayFee / 100).toString(),
+    settlementPrice: {
+      base: txDetails.amountSat,
+      offset: 0,
+      currencyUnit: "SAT",
+      formattedAmount: "SAT",
+      __typename: "PriceOfOneSettlementMinorUnitInDisplayMinorUnit",
+    },
+    initiationVia: {
+      __typename: "InitiationViaLn",
+      paymentHash:
+        txDetails.details.type === PaymentDetailsVariant.LIGHTNING
+          ? txDetails.details.paymentHash || ""
+          : "",
+    },
+    __typename: "Transaction",
+  } as any
 }

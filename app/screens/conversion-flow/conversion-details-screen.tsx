@@ -1,23 +1,28 @@
 import React, { useState } from "react"
-import { ScrollView } from "react-native-gesture-handler"
+import { ScrollView } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
-import { useI18nContext } from "@app/i18n/i18n-react"
 
 // components
-import { Screen } from "@app/components/screen"
 import {
   ConversionAmountError,
   PercentageAmount,
   SwapWallets,
 } from "@app/components/swap-flow"
-import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
+import { Screen } from "@app/components/screen"
+import { PrimaryBtn } from "@app/components/buttons"
 
 // hooks
-import { useBreez, usePriceConversion, useDisplayCurrency } from "@app/hooks"
+import {
+  useBreez,
+  usePriceConversion,
+  useDisplayCurrency,
+  useActivityIndicator,
+  useSwap,
+} from "@app/hooks"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 // types & utils
-import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import {
   DisplayCurrency,
   MoneyAmount,
@@ -26,6 +31,8 @@ import {
   toWalletAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { getUsdWallet } from "@app/graphql/wallets-utils"
 
 // gql
 import {
@@ -33,19 +40,21 @@ import {
   useRealtimePriceQuery,
   WalletCurrency,
 } from "@app/graphql/generated"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
 
 type Props = StackScreenProps<RootStackParamList, "conversionDetails">
 
 export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
+  const { btcWallet } = useBreez()
   const { zeroDisplayAmount } = useDisplayCurrency()
+
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
-  const { btcWallet } = useBreez()
+  const { toggleActivityIndicator } = useActivityIndicator()
+  const { prepareBtcToUsd, prepareUsdToBtc } = useSwap()
 
-  const [hasError, setHasError] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string>()
   const [fromWalletCurrency, setFromWalletCurrency] = useState<WalletCurrency>("BTC")
   const [moneyAmount, setMoneyAmount] =
     useState<MoneyAmount<WalletOrDisplayCurrency>>(zeroDisplayAmount)
@@ -53,7 +62,6 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   useRealtimePriceQuery({
     fetchPolicy: "network-only",
   })
-
   const { data } = useConversionScreenQuery({
     fetchPolicy: "cache-first",
     returnPartialData: true,
@@ -64,9 +72,10 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const btcBalance = toBtcMoneyAmount(btcWallet?.balance ?? NaN)
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
 
-  // @ts-ignore: Unreachable code error
-  const convertedBTCBalance = convertMoneyAmount(btcBalance, DisplayCurrency) // @ts-ignore: Unreachable code error
-  const convertedUsdBalance = convertMoneyAmount(usdBalance, DisplayCurrency) // @ts-ignore: Unreachable code error
+  if (!convertMoneyAmount) return
+
+  const convertedBTCBalance = convertMoneyAmount(btcBalance, DisplayCurrency)
+  const convertedUsdBalance = convertMoneyAmount(usdBalance, DisplayCurrency)
   const settlementSendAmount = convertMoneyAmount(moneyAmount, fromWalletCurrency)
 
   const formattedBtcBalance = formatDisplayAndWalletAmount({
@@ -99,14 +108,22 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
     )
   }
 
-  const moveToNextScreen = () => {
-    if (usdWallet && btcWallet) {
+  const moveToNextScreen = async () => {
+    toggleActivityIndicator(true)
+    const { data, err } =
+      fromWalletCurrency === "USD"
+        ? await prepareUsdToBtc(settlementSendAmount)
+        : await prepareBtcToUsd(settlementSendAmount)
+
+    if (data) {
       navigation.navigate("conversionConfirmation", {
-        toWallet: fromWalletCurrency === "BTC" ? usdWallet : btcWallet,
-        fromWallet: fromWalletCurrency === "BTC" ? btcWallet : usdWallet,
-        moneyAmount: settlementSendAmount,
+        ...data,
+        fromWalletCurrency,
       })
+    } else {
+      setErrorMsg(err)
     }
+    toggleActivityIndicator(false)
   }
 
   return (
@@ -127,18 +144,19 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
           usdBalance={usdBalance}
           settlementSendAmount={settlementSendAmount}
           moneyAmount={moneyAmount}
+          errorMsg={errorMsg}
           setMoneyAmount={setMoneyAmount}
-          setHasError={setHasError}
+          setErrorMsg={setErrorMsg}
         />
         <PercentageAmount
           fromWalletCurrency={fromWalletCurrency}
           setAmountToBalancePercentage={setAmountToBalancePercentage}
         />
       </ScrollView>
-      <GaloyPrimaryButton
-        title={LL.common.next()}
-        containerStyle={styles.buttonContainer}
-        disabled={!isValidAmount || hasError}
+      <PrimaryBtn
+        label={LL.common.next()}
+        btnStyle={styles.btnStyle}
+        disabled={!isValidAmount || !!errorMsg}
         onPress={moveToNextScreen}
       />
     </Screen>
@@ -147,9 +165,10 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
 
 const useStyles = makeStyles(({ colors }) => ({
   scrollViewContainer: {
-    flex: 1,
-    flexDirection: "column",
     margin: 20,
   },
-  buttonContainer: { marginHorizontal: 20, marginBottom: 20 },
+  btnStyle: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
 }))

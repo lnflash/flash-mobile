@@ -30,7 +30,7 @@ gql`
         level
         defaultWalletId
 
-        transactions(first: 20) {
+        transactions(first: 3) {
           ...TransactionList
         }
         wallets {

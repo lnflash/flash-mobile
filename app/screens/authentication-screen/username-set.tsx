@@ -87,8 +87,8 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
         },
       })
 
-      console.log("Mutation response:", { data, errors })
-      console.log("User update errors:", data?.userUpdateUsername?.errors) // Log the errors array
+      console.log("Mutation response:", data?.userUpdateUsername)
+
       updateNostrProfile({
         content: {
           name: lnAddress,
@@ -125,6 +125,9 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
       break
     case SetAddressError.INVALID_CHARACTER:
       errorMessage = LL.SetAddressModal.Errors.invalidCharacter()
+      break
+    case SetAddressError.STARTS_WITH_NUMBER:
+      errorMessage = LL.SetAddressModal.Errors.startsWithNumber()
       break
     case SetAddressError.ADDRESS_UNAVAILABLE:
       errorMessage = LL.SetAddressModal.Errors.addressUnavailable()

@@ -66,11 +66,8 @@ type PersistentState_7 = {
   btcDisplayBalance?: string
   cashDisplayBalance?: string
   mergedTransactions?: TransactionFragment[]
-  usdTransactions?: SectionTransactions[]
   btcTransactions?: TransactionFragment[]
-  introVideoCount: number
   defaultWallet?: WalletBalance
-  btcWalletImported?: boolean
   helpTriggered?: boolean
   isAdvanceMode?: boolean
   chatEnabled?: boolean
@@ -78,7 +75,6 @@ type PersistentState_7 = {
   backedUpBtcWallet?: boolean // true if user backed up recovery phrase (btc wallet)
   currencyChanged?: boolean
   flashcardAdded?: boolean
-  btcWalletEnabled?: boolean
   closedQuickStartTypes: string[]
   flashcardTag?: TagEvent
   flashcardHtml?: string
@@ -109,7 +105,6 @@ const migrate6ToCurrent = (state: PersistentState_6): Promise<PersistentState> =
     ...state,
     schemaVersion: 7,
     hasInitializedBreezSDK: false,
-    introVideoCount: 0,
     helpTriggered: false,
     numOfRefundables: 0,
     closedQuickStartTypes: [],
@@ -259,7 +254,6 @@ export const defaultPersistentState: PersistentState = {
   galoyInstance: { id: __DEV__ ? "Test" : "Main" },
   galoyAuthToken: "",
   hasInitializedBreezSDK: false,
-  introVideoCount: 0,
   helpTriggered: false,
   numOfRefundables: 0,
   closedQuickStartTypes: [],

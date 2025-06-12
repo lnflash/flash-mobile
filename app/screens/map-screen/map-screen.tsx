@@ -186,7 +186,7 @@ export const MapScreen = memo(() => {
   }
 
   return (
-    <Screen style={styles.center}>
+    <Screen style={styles.center} keyboardShouldPersistTaps="handled">
       <MapView
         style={styles.map}
         showsUserLocation={true}

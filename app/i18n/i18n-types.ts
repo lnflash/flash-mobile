@@ -325,9 +325,17 @@ type RootTranslation = {
 		 */
 		youreConverting: string
 		/**
+		 * Sending account
+		 */
+		sendingAccount: string
+		/**
 		 * R​e​c​e​i​v​i​n​g​ ​a​c​c​o​u​n​t
 		 */
 		receivingAccount: string
+		/**
+		 * Conversion Fee
+		 */
+		conversionFee: string
 	}
 	ConversionSuccessScreen: {
 		/**
@@ -3548,6 +3556,10 @@ type RootTranslation = {
 			 */
 			invalidCharacter: string
 			/**
+			 * Your username must begin with an uppercase or lowercase letter.
+			 */
+			startsWithNumber: string
+			/**
 			 * S​o​r​r​y​,​ ​t​h​i​s​ ​a​d​d​r​e​s​s​ ​i​s​ ​a​l​r​e​a​d​y​ ​t​a​k​e​n
 			 */
 			addressUnavailable: string
@@ -4999,9 +5011,17 @@ export type TranslationFunctions = {
 		 */
 		youreConverting: () => LocalizedString
 		/**
+		 * Sending account
+		 */
+		sendingAccount: () => LocalizedString
+		/**
 		 * Receiving account
 		 */
 		receivingAccount: () => LocalizedString
+		/**
+		 * Conversion Fee
+		 */
+		conversionFee: () => LocalizedString
 	}
 	ConversionSuccessScreen: {
 		/**
@@ -8190,6 +8210,10 @@ export type TranslationFunctions = {
 			 * Address can only contain letters, numbers, and underscores
 			 */
 			invalidCharacter: () => LocalizedString
+			/**
+			 * Your username must begin with an uppercase or lowercase letter
+			 */
+			startsWithNumber: () => LocalizedString
 			/**
 			 * Sorry, this address is already taken
 			 */
