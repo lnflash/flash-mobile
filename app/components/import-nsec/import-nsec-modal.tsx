@@ -50,7 +50,7 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
   )
 }
 
-const useStyles = makeStyles(({ colors }) => {
+const useStyles = makeStyles(({ colors, mode }) => {
   return {
     modalStyle: {
       justifyContent: "center",
@@ -60,7 +60,7 @@ const useStyles = makeStyles(({ colors }) => {
       borderRadius: 15,
       maxWidth: 350,
       alignSelf: "center",
-      backgroundColor: colors.background,
+      backgroundColor: mode === "dark" ? "black" : "white",
     },
     title: {
       fontSize: 18,

@@ -80,7 +80,7 @@ export const useStyles = makeStyles(({ colors, mode }) => ({
     backgroundColor: colors.grey5 + "40",
   },
   modalContainer: {
-    backgroundColor: colors.background,
+    backgroundColor: mode === "dark" ? "black" : "white",
     borderRadius: 12,
     padding: 20,
     maxHeight: "80%",

@@ -48,8 +48,8 @@ export const KeyModal: React.FC<KeyModalProps> = ({
   return (
     <ReactNativeModal
       isVisible={isOpen}
-      backdropColor={mode === "dark" ? "#1d1d1d" : "#000"}
-      backdropOpacity={0.7}
+      backdropColor={mode === "dark" ? "rgba(57,57,57,.7)" : "rgba(0,0,0,.5)"}
+      backdropOpacity={1}
       onBackButtonPress={onClose}
       onBackdropPress={onClose}
     >
@@ -98,7 +98,6 @@ export const KeyModal: React.FC<KeyModalProps> = ({
         </View>
 
         <View style={styles.modalButtonsRow}>
-          <PrimaryBtn label={"Copy"} onPress={onCopy} btnStyle={{ flex: 1 }} />
           <PrimaryBtn
             type="outline"
             label={"Copy"}
@@ -107,13 +106,9 @@ export const KeyModal: React.FC<KeyModalProps> = ({
                 Alert.alert("Copied", "Key copied to clipboard"),
               )
             }}
-            btnStyle={{ margin: 10, minWidth: 150 }}
+            btnStyle={{ minWidth: 150 }}
           />
-          <PrimaryBtn
-            label={"Close"}
-            onPress={onClose}
-            btnStyle={{ margin: 10, minWidth: 150 }}
-          />
+          <PrimaryBtn label={"Close"} onPress={onClose} btnStyle={{ minWidth: 150 }} />
         </View>
       </View>
     </ReactNativeModal>
