@@ -1,24 +1,23 @@
-import { useState } from "react"
 import { useI18nContext } from "@app/i18n/i18n-react"
-
+import { useNavigation } from "@react-navigation/native"
 import { SettingsRow } from "../row"
-import { ShowNostrSecret } from "../show-nostr-secret"
 
 export const NostrSecret: React.FC = () => {
   const { LL } = useI18nContext()
-  const [isModalVisible, setIsModalVisible] = useState(false)
+  const navigation = useNavigation()
 
-  const toggleModal = () => setIsModalVisible((x) => !x)
+  const handleNavigateToNostrScreen = () => {
+    navigation.navigate("NostrSettingsScreen")
+  }
 
   return (
     <>
       <SettingsRow
-        title={LL.SettingsScreen.showNostrSecret()}
+        title={LL.SettingsScreen.showNostrSecret() || "Nostr Account"}
         leftIcon="globe-outline"
-        rightIcon={null}
-        action={toggleModal}
+        rightIcon="chevron-forward"
+        action={handleNavigateToNostrScreen}
       />
-      <ShowNostrSecret isActive={isModalVisible} onCancel={toggleModal} />
     </>
   )
 }
