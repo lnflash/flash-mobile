@@ -116,10 +116,12 @@ export const FlashcardProvider = ({ children }: Props) => {
       const tag = await NfcManager.getTag()
       if (tag && tag.id) {
         const ndefRecord = tag?.ndefMessage?.[0]
+        // eslint-disable-next-line no-negated-condition
         if (!ndefRecord) {
           toastShow({
             position: "top",
-            message: "NDEF message not found.",
+            message:
+              "Card data not readable. Please try holding your phone closer to the card and scan again.",
             type: "error",
           })
         } else {
@@ -137,7 +139,8 @@ export const FlashcardProvider = ({ children }: Props) => {
       } else {
         toastShow({
           position: "top",
-          message: "No tag found",
+          message:
+            "No card detected. Please hold your phone steady against the card and try again.",
           type: "error",
         })
       }
@@ -179,8 +182,18 @@ export const FlashcardProvider = ({ children }: Props) => {
 
   const getHtml = async (tag: TagEvent, payload: string) => {
     try {
+      // Extract the full URL from the payload instead of just the query parameters
+      const urlMatch = payload.match(/lnurlw?:\/\/[^?]+/)
+      if (!urlMatch) {
+        throw new Error("No valid URL found in payload")
+      }
+      let baseUrl = urlMatch[0].replace(/^lnurlw?:\/\//, "https://")
+      // Convert boltcard endpoint to boltcards/balance endpoint
+      if (baseUrl.includes("/boltcard")) {
+        baseUrl = baseUrl.replace("/boltcard", "/boltcards/balance")
+      }
       const payloadPart = payload.split("?")[1]
-      const url = `https://btcpay.flashapp.me/boltcards/balance?${payloadPart}`
+      const url = `${baseUrl}?${payloadPart}`
       const response = await axios.get(url)
       const html = response.data
 
@@ -203,7 +216,8 @@ export const FlashcardProvider = ({ children }: Props) => {
       console.log("NFC ERROR:", err)
       toastShow({
         position: "top",
-        message: "Unsupported NFC card. Please ensure you are using a flashcard.",
+        message:
+          "Unsupported NFC card. Please ensure you are using a flashcard or other boltcard compatible NFC",
         type: "error",
       })
     }

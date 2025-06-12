@@ -84,6 +84,8 @@ export const SendBitcoinDetailsExtraInfo = ({
       return <GaloyErrorBox errorMessage={LL.SendBitcoinScreen.MinOnChainLimit()} />
     case AmountInvalidReason.MinOnChainSatLimit:
       return <GaloyErrorBox errorMessage={LL.SendBitcoinScreen.MinOnChainSatLimit()} />
+    case AmountInvalidReason.MinFlashcardLimit:
+      return <GaloyErrorBox errorMessage={LL.SendBitcoinScreen.MinFlashcardLimit()} />
     default:
       return null
   }

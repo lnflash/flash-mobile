@@ -86,6 +86,7 @@ export const CardScreen = () => {
     if (reloadLnurl)
       navigation.navigate("sendBitcoinDetails", {
         paymentDestination: reloadLnurl,
+        isFromFlashcard: true,
       })
   }
 
@@ -102,7 +103,7 @@ export const CardScreen = () => {
       keyboardShouldPersistTaps="handled"
       backgroundColor={colors.background}
     >
-      {!!lnurl ? <Flashcard onReload={onReload} onTopup={onTopup} /> : <EmptyCard />}
+      {lnurl ? <Flashcard onReload={onReload} onTopup={onTopup} /> : <EmptyCard />}
     </Screen>
   )
 }
