@@ -74,9 +74,6 @@ export const NostrSettingsScreen = () => {
   const copyToClipboard = (copyText: string, handler?: (copied: boolean) => void) => {
     Clipboard.setString(copyText)
     handler?.(true)
-    setTimeout(() => {
-      handler?.(false)
-    }, 1000)
   }
 
   const navigation = useNavigation()

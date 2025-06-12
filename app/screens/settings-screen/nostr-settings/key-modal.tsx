@@ -100,12 +100,12 @@ export const KeyModal: React.FC<KeyModalProps> = ({
                 Alert.alert("Copied", "Key copied to clipboard"),
               )
             }}
-            btnStyle={{ margin: 10, minWidth: 100 }}
+            btnStyle={{ margin: 10, minWidth: 150 }}
           />
           <PrimaryBtn
             label={"Close"}
             onPress={onClose}
-            btnStyle={{ margin: 10, minWidth: 100 }}
+            btnStyle={{ margin: 10, minWidth: 150 }}
           />
         </View>
       </View>
