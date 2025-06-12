@@ -17,9 +17,7 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
   onSubmit,
   descriptionText,
 }) => {
-  const {
-    theme: { colors },
-  } = useTheme()
+  const { mode } = useTheme().theme
   const styles = useStyles()
 
   const defaultText =
@@ -27,7 +25,7 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
   return (
     <ReactNativeModal
       isVisible={isActive}
-      backdropColor={colors.grey5}
+      backdropColor={mode === "dark" ? "#1d1d1d" : "#000"}
       backdropOpacity={0.7}
       onBackButtonPress={onCancel}
       onBackdropPress={onCancel}
@@ -52,7 +50,7 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
   )
 }
 
-const useStyles = makeStyles((theme) => {
+const useStyles = makeStyles(({ colors }) => {
   return {
     modalStyle: {
       justifyContent: "center",
@@ -62,7 +60,7 @@ const useStyles = makeStyles((theme) => {
       borderRadius: 15,
       maxWidth: 350,
       alignSelf: "center",
-      backgroundColor: theme.colors.white,
+      backgroundColor: colors.background,
     },
     title: {
       fontSize: 18,
@@ -72,7 +70,7 @@ const useStyles = makeStyles((theme) => {
     },
     description: {
       fontSize: 14,
-      color: theme.colors.grey0,
+      color: colors.grey0,
       marginBottom: 20,
       textAlign: "center",
     },

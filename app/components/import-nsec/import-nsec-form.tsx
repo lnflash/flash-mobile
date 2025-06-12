@@ -4,7 +4,7 @@ import { View, Alert } from "react-native"
 import { useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { importNsec } from "./utils"
 import { getPublicKey, nip19 } from "nostr-tools"
-import { GaloyPrimaryButton } from "../atomic/galoy-primary-button"
+import { PrimaryBtn } from "../buttons"
 
 interface NsecInputFormProps {
   onSubmit: (nsec: string, success: boolean) => void
@@ -48,7 +48,7 @@ export const NsecInputForm: React.FC<NsecInputFormProps> = ({ onSubmit }) => {
         labelStyle={styles.inputLabel}
         errorStyle={styles.errorText}
       />
-      <GaloyPrimaryButton title={"Submit"} onPress={handleSubmit} />
+      <PrimaryBtn label={"Submit"} onPress={handleSubmit} />
     </View>
   )
 }
@@ -68,8 +68,10 @@ const useStyles = makeStyles(({ colors }) => ({
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 8,
     height: 40,
+    borderColor: colors.grey3,
+    backgroundColor: colors.white,
   },
   errorText: {
     fontSize: 12,
