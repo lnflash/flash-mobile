@@ -144,6 +144,16 @@ export type RootStackParamList = {
   CashoutConfirmation: { offer: CashoutOffer }
   CashoutSuccess: undefined
   EditNostrProfile: undefined
+  AccountType: undefined
+  PersonalInformation: undefined
+  BusinessInformation: undefined
+  BankInformation: undefined
+  Validation: {
+    phone: string
+    channel: PhoneCodeChannelType
+  }
+  AccountUpgradeSuccess: undefined
+  TestTransaction: undefined
 }
 
 export type ChatStackParamList = {
