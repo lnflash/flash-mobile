@@ -35,6 +35,7 @@ type Props = {
   paymentDetail: PaymentDetail<WalletCurrency>
   setPaymentDetail: (val: PaymentDetail<WalletCurrency>) => void
   setAsyncErrorMessage: (val: string) => void
+  isFromFlashcard?: boolean
 }
 
 const DetailAmountNote: React.FC<Props> = ({
@@ -43,6 +44,7 @@ const DetailAmountNote: React.FC<Props> = ({
   paymentDetail,
   setPaymentDetail,
   setAsyncErrorMessage,
+  isFromFlashcard,
 }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
@@ -90,8 +92,12 @@ const DetailAmountNote: React.FC<Props> = ({
         }
       }
 
+      const defaultMinSat = limits?.send.minSat || 0
+      const flashcardMinSat = isFromFlashcard ? 100 : 0
+      const minSat = Math.max(defaultMinSat, flashcardMinSat)
+
       setMinAmount({
-        amount: limits?.send.minSat || 0,
+        amount: minSat,
         currency: "BTC",
         currencyCode: "SAT",
       })
