@@ -6,6 +6,7 @@ import { useStyles } from "./styles"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "@app/hooks"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 interface ProfileHeaderProps {
   userProfile: { picture?: string } | null
@@ -28,9 +29,12 @@ export const ProfileHeader = ({ userProfile, copyToClipboard }: ProfileHeaderPro
     },
   } = useAppConfig()
 
+  const { LL } = useI18nContext()
+
   const profileText = dataAuthed?.me?.username
     ? `${dataAuthed.me.username}@${lnDomain}`
-    : "Finding You.."
+    : LL.Nostr.findingYou()
+
   return (
     <View style={styles.profileHeader}>
       <View style={styles.profileIcon}>
@@ -46,19 +50,17 @@ export const ProfileHeader = ({ userProfile, copyToClipboard }: ProfileHeaderPro
             borderRadius: 40,
           }}
         />
-
-        {/* <Ionicons name="person-circle-outline" size={80} color={colors.grey3} /> */}
       </View>
       <TouchableOpacity
         onPress={() => {
-          dataAuthed?.me?.username
-            ? copyToClipboard(profileText, (copied) => {
-                toastShow({
-                  message: "Copied",
-                  type: "success",
-                })
+          if (dataAuthed?.me?.username) {
+            copyToClipboard(profileText, (copied) => {
+              toastShow({
+                message: LL.Nostr.common.copied(),
+                type: "success",
               })
-            : null
+            })
+          }
         }}
         activeOpacity={0.7}
         style={styles.profileInfo}

@@ -14,6 +14,7 @@ import { KeyModal } from "./key-modal"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { useI18nContext } from "@app/i18n/i18n-react" // <-- import i18n context
 
 interface AdvancedSettingsProps {
   expandAdvanced: boolean
@@ -34,6 +35,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   const {
     theme: { colors },
   } = useTheme()
+  const { LL } = useI18nContext() // <-- use LL
 
   const { resetChat, refreshUserProfile } = useChatContext()
 
@@ -53,7 +55,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
 
   const handleReconnectNostr = async () => {
     if (!secretKeyHex) {
-      Alert.alert("No Profile ID exists")
+      Alert.alert(LL.Nostr.noProfileIdExists())
       return
     }
     const secretKey = hexToBytes(secretKeyHex)
@@ -67,27 +69,23 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
     })
     await onReconnect()
     setUpdatingNpub(false)
-    Alert.alert("Success", "Your profile has been reconnected successfully")
+    Alert.alert(LL.common.success(), LL.Nostr.profileReconnected())
   }
 
   const handleDeleteNostr = () => {
-    Alert.alert(
-      "Warning",
-      "Deleting your profile keys will remove your account from this device. Without a backup, you won't be able to access this profile again. Are you sure?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            await deleteNostrKeys()
-            await refreshUserProfile()
-            await resetChat()
-            navigation.goBack()
-          },
+    Alert.alert(LL.Nostr.deleteWarningTitle(), LL.Nostr.deleteWarningMessage(), [
+      { text: LL.common.cancel(), style: "cancel" },
+      {
+        text: LL.support.delete(),
+        style: "destructive",
+        onPress: async () => {
+          await deleteNostrKeys()
+          await refreshUserProfile()
+          await resetChat()
+          navigation.goBack()
         },
-      ],
-    )
+      },
+    ])
   }
 
   return (
@@ -107,10 +105,8 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
               <Ionicons name="book-outline" size={24} color="#3366cc" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.menuText}>Learn about Nostr</Text>
-              <Text style={styles.menuSubtext}>
-                Explore this guide to get the most out of nostr chat
-              </Text>
+              <Text style={styles.menuText}>{LL.Nostr.learnAboutNostr()}</Text>
+              <Text style={styles.menuSubtext}>{LL.Nostr.learnAboutNostrSubtext()}</Text>
             </View>
             <Ionicons name="open-outline" size={24} color="#3366cc" />
           </Pressable>
@@ -121,7 +117,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
             <View style={styles.menuIconContainer}>
               <Ionicons name="key-outline" size={24} color={colors.black} />
             </View>
-            <Text style={styles.menuText}>Show public key</Text>
+            <Text style={styles.menuText}>{LL.Nostr.showPublicKey()}</Text>
             <Ionicons name="chevron-forward" size={24} color={colors.grey3} />
           </Pressable>
 
@@ -133,7 +129,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
             <View style={styles.menuIconContainer}>
               <Ionicons name="lock-closed-outline" size={24} color={colors.black} />
             </View>
-            <Text style={styles.menuText}>Show private key</Text>
+            <Text style={styles.menuText}>{LL.Nostr.showPrivateKey()}</Text>
             <Ionicons name="chevron-forward" size={24} color={colors.grey3} />
           </Pressable>
 
@@ -152,10 +148,14 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.menuText}>
-                {accountLinked ? "Profile Connected" : "Reconnect Profile"}
+                {accountLinked
+                  ? LL.Nostr.profileConnected()
+                  : LL.Nostr.reconnectProfile()}
               </Text>
               {accountLinked && (
-                <Text style={styles.menuSubtext}>Tap to refresh connection</Text>
+                <Text style={styles.menuSubtext}>
+                  {LL.Nostr.tapToRefreshConnection()}
+                </Text>
               )}
             </View>
           </Pressable>
@@ -168,7 +168,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
             <View style={styles.menuIconContainer}>
               <Ionicons name="download-outline" size={24} color={colors.black} />
             </View>
-            <Text style={styles.menuText}>Import existing profile</Text>
+            <Text style={styles.menuText}>{LL.Nostr.importExistingProfile()}</Text>
             <Ionicons name="chevron-forward" size={24} color={colors.grey3} />
           </Pressable>
 
@@ -177,7 +177,9 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
             <View style={styles.menuIconContainer}>
               <Ionicons name="trash-outline" size={24} color="red" />
             </View>
-            <Text style={[styles.menuText, { color: "red" }]}>Delete profile</Text>
+            <Text style={[styles.menuText, { color: "red" }]}>
+              {LL.Nostr.deleteProfile()}
+            </Text>
             <Ionicons name="chevron-forward" size={24} color={colors.grey3} />
           </Pressable>
         </View>
@@ -188,9 +190,9 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
         onSubmit={() => {
           resetChat()
           setImportModalVisible(false)
-          Alert.alert("Success", "Profile imported successfully")
+          Alert.alert(LL.common.success(), LL.Nostr.profileImportedSuccessfully())
         }}
-        descriptionText="If you wish to use your own nsec, paste it below."
+        descriptionText={LL.Nostr.importNsecDescription()}
       />
       <KeyModal
         isOpen={showSecretModal}

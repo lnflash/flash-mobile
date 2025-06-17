@@ -4,11 +4,10 @@ import { getPublicKey, nip19 } from "nostr-tools"
 import { useState } from "react"
 import ReactNativeModal from "react-native-modal"
 import { Alert, TouchableOpacity, View } from "react-native"
-import { Button, Text, useTheme } from "@rneui/themed"
-import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
+import { useTheme, Text } from "@rneui/themed"
 import Ionicons from "react-native-vector-icons/Ionicons"
-import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-button"
 import { PrimaryBtn } from "@app/components/buttons"
+import { useI18nContext } from "@app/i18n/i18n-react" // <-- import i18n
 
 interface KeyModalProps {
   isOpen: boolean
@@ -40,9 +39,11 @@ export const KeyModal: React.FC<KeyModalProps> = ({
     theme: { colors },
   } = useTheme()
 
+  const { LL } = useI18nContext() // <-- use translations
+
   const onCopy = () =>
     copyToClipboard(isPublic ? nostrPubKey : nip19.nsecEncode(secretKey), () =>
-      Alert.alert("Copied", "Key copied to clipboard"),
+      Alert.alert(LL.Nostr.common.copied(), LL.Nostr.KeyModal.keyCopiedToClipboard()),
     )
 
   return (
@@ -55,7 +56,9 @@ export const KeyModal: React.FC<KeyModalProps> = ({
     >
       <View style={styles.modalContainer}>
         <Text style={styles.modalTitle}>
-          {isPublic ? "Your Public Profile ID" : "Your Private Profile Key"}
+          {isPublic
+            ? LL.Nostr.KeyModal.yourPublicProfileId()
+            : LL.Nostr.KeyModal.yourPrivateProfileKey()}
         </Text>
 
         <View
@@ -100,15 +103,15 @@ export const KeyModal: React.FC<KeyModalProps> = ({
         <View style={styles.modalButtonsRow}>
           <PrimaryBtn
             type="outline"
-            label={"Copy"}
-            onPress={() => {
-              copyToClipboard(isPublic ? nostrPubKey : nip19.nsecEncode(secretKey), () =>
-                Alert.alert("Copied", "Key copied to clipboard"),
-              )
-            }}
+            label={LL.Nostr.common.copy()}
+            onPress={onCopy}
             btnStyle={{ minWidth: 150 }}
           />
-          <PrimaryBtn label={"Close"} onPress={onClose} btnStyle={{ minWidth: 150 }} />
+          <PrimaryBtn
+            label={LL.common.close()}
+            onPress={onClose}
+            btnStyle={{ minWidth: 150 }}
+          />
         </View>
       </View>
     </ReactNativeModal>

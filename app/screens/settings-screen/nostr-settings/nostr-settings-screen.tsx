@@ -37,6 +37,7 @@ export const NostrSettingsScreen = () => {
     ? JSON.parse(userProfileEvent.content)
     : null
   console.log("USER PROFILE IS", userProfile)
+
   useEffect(() => {
     const initialize = async () => {
       let secret
@@ -46,11 +47,6 @@ export const NostrSettingsScreen = () => {
       } else {
         secret = secretKey
       }
-      // console.log(
-      //   "NPUBS ARE DIFFEREMT? ",
-      //   dataAuthed?.me?.npub,
-      //   nip19.npubEncode(getPublicKey(secret)),
-      // )
       if (secret && dataAuthed?.me?.npub === nip19.npubEncode(getPublicKey(secret))) {
         setLinked(true)
       } else {
@@ -99,7 +95,7 @@ export const NostrSettingsScreen = () => {
           <Text
             style={{ fontSize: 18, fontWeight: "600", marginTop: 20, marginBottom: 8 }}
           >
-            No Nostr Profile Found
+            {LL.Nostr.noProfileFound()}
           </Text>
           <Text
             style={{
@@ -109,7 +105,7 @@ export const NostrSettingsScreen = () => {
               marginBottom: 20,
             }}
           >
-            You haven’t created a Nostr profile yet.{"\n"}Tap below to create one.
+            {LL.Nostr.noProfileDescription()}
           </Text>
 
           <Pressable
@@ -140,7 +136,7 @@ export const NostrSettingsScreen = () => {
               style={{ marginRight: 10, opacity: isGenerating ? 0.5 : 1 }}
             />
             <Text style={{ color: colors.white, fontWeight: "bold" }}>
-              {isGenerating ? "Creating Profile..." : "Create New Profile"}
+              {isGenerating ? LL.Nostr.creatingProfile() : LL.Nostr.createNewProfile()}
             </Text>
           </Pressable>
         </View>
@@ -159,7 +155,7 @@ export const NostrSettingsScreen = () => {
             <View style={styles.menuIconContainer}>
               <Ionicons name="person-outline" size={24} color={colors.black} />
             </View>
-            <Text style={styles.menuText}>Edit Profile</Text>
+            <Text style={styles.menuText}>{LL.Nostr.editProfile()}</Text>
             <Ionicons name="chevron-forward" size={24} color={colors.grey3} />
           </Pressable>
 
@@ -168,7 +164,7 @@ export const NostrSettingsScreen = () => {
             <View style={styles.menuIconContainer}>
               <Ionicons name="settings-outline" size={24} color={colors.black} />
             </View>
-            <Text style={styles.menuText}>Advanced Nostr Settings</Text>
+            <Text style={styles.menuText}>{LL.Nostr.advancedSettings()}</Text>
             <Ionicons
               name={expandAdvanced ? "chevron-down" : "chevron-forward"}
               size={24}

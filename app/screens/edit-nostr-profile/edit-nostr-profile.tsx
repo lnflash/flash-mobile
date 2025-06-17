@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react"
-import { View, StyleSheet, ActivityIndicator, Text, Pressable, Alert } from "react-native"
+import { View, StyleSheet, ActivityIndicator, Text, Alert } from "react-native"
 import { useChatContext } from "../nip17-chat/chatContext"
 import { EditProfileUI } from "./edit-profile-ui"
-import Ionicons from "react-native-vector-icons/Ionicons"
 import { useTheme } from "@rneui/themed"
 import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-button"
+import { useI18nContext } from "@app/i18n/i18n-react" // <- i18n context
 
 const EditNostrProfileScreen = () => {
+  const { LL } = useI18nContext() // <- use LL
   const { userProfileEvent, refreshUserProfile } = useChatContext()
   const [fallbackToEmpty, setFallbackToEmpty] = useState(false)
   const [showPrompt, setShowPrompt] = useState(false)
@@ -17,18 +18,18 @@ const EditNostrProfileScreen = () => {
   } = useTheme()
 
   const handleCreateProfileClick = () => {
-    const pubkeyMessage = `We couldn't find a profile event attached to this pubkey.`
+    const pubkeyMessage = LL.Nostr.createProfilePubkeyMessage()
 
     Alert.alert(
-      "Create Profile",
-      `If you proceed, any existing profile data will be overwritten. ${pubkeyMessage} Do you want to continue to create?`,
+      LL.Nostr.createProfileTitle(),
+      `${LL.Nostr.createProfileWarning()} ${pubkeyMessage} ${LL.Nostr.createProfilePrompt()}`,
       [
         {
-          text: "Cancel",
+          text: LL.common.cancel(),
           style: "cancel",
         },
         {
-          text: "OK",
+          text: LL.common.ok(),
           onPress: () => {
             setFallbackToEmpty(true)
           },
@@ -58,15 +59,13 @@ const EditNostrProfileScreen = () => {
         ) : (
           <>
             <ActivityIndicator size="large" />
-            <Text style={styles.infoText}>
-              We’re looking, but we haven’t been able to find your profile.
-            </Text>
+            <Text style={styles.infoText}>{LL.Nostr.profileNotFound()}</Text>
             <Text style={[styles.infoText, { fontSize: 14 }]}>
-              Would you like to create one now?
+              {LL.Nostr.promptToCreateProfile()}
             </Text>
 
             <GaloySecondaryButton
-              title={"Create Profile"}
+              title={LL.Nostr.createProfileButton()}
               onPress={handleCreateProfileClick}
               style={styles.createButton}
             />

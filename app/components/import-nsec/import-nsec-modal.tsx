@@ -3,6 +3,7 @@ import { useTheme, Text, makeStyles } from "@rneui/themed"
 import { View } from "react-native"
 import ReactNativeModal from "react-native-modal"
 import { NsecInputForm } from "./import-nsec-form"
+import { useI18nContext } from "@app/i18n/i18n-react" // <- add this
 
 interface ImportNsecModalProps {
   isActive: boolean
@@ -19,9 +20,10 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
 }) => {
   const { mode } = useTheme().theme
   const styles = useStyles()
+  const { LL } = useI18nContext() // <- access translations
 
-  const defaultText =
-    "You are logged into another device. Please import your nsec from the other device to continue using the chat feature."
+  const defaultText = LL.Nostr.importNsecDefaultDescription()
+
   return (
     <ReactNativeModal
       isVisible={isActive}
@@ -32,7 +34,7 @@ export const ImportNsecModal: React.FC<ImportNsecModalProps> = ({
       style={styles.modalStyle}
     >
       <View style={styles.modalBody}>
-        <Text style={styles.title}>Import Your Nostr Secret Key</Text>
+        <Text style={styles.title}>{LL.Nostr.importNsecTitle()}</Text>
         <Text style={styles.description}>
           {descriptionText ? descriptionText : defaultText}
         </Text>
