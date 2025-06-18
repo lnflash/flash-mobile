@@ -23,6 +23,7 @@ export const isValidAmount = ({
   btcWalletAmount,
   withdrawalLimits,
   intraledgerLimits,
+  isFromFlashcard,
 }: {
   paymentDetail?: PaymentDetail<WalletCurrency>
   usdWalletAmount: UsdMoneyAmount
@@ -39,6 +40,7 @@ export const isValidAmount = ({
     readonly remainingLimit?: number | null
     readonly interval?: number | null
   }[]
+  isFromFlashcard?: boolean
 }): AmountStatus => {
   if (!paymentDetail || !isNonZeroMoneyAmount(paymentDetail.settlementAmount)) {
     return {
@@ -100,6 +102,21 @@ export const isValidAmount = ({
     return {
       validAmount: false,
       invalidReason: AmountInvalidReason.MinOnChainSatLimit,
+    }
+  }
+
+  // Flashcard-specific minimum validation (100 sats)
+  if (
+    isFromFlashcard &&
+    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Btc) &&
+    lessThan({
+      value: settlementAmount,
+      lessThan: toBtcMoneyAmount(100),
+    })
+  ) {
+    return {
+      validAmount: false,
+      invalidReason: AmountInvalidReason.MinFlashcardLimit,
     }
   }
 
