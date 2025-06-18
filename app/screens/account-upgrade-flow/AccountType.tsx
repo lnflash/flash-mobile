@@ -34,23 +34,17 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
 
   const onPress = (accountType: string) => {
     const numOfSteps =
-      accountType === "personal"
-        ? 3
-        : currentLevel === AccountLevel.Zero
-        ? accountType === "business"
-          ? 4
-          : 5
-        : accountType === "business"
-        ? 3
-        : 4
+      accountType === "personal" ? 3 : currentLevel === AccountLevel.Zero ? 5 : 4
 
     dispatch(setAccountUpgrade({ accountType, numOfSteps }))
     navigation.navigate("PersonalInformation")
   }
 
+  const numOfSteps = currentLevel === AccountLevel.Zero ? 3 : 4
+
   return (
     <Screen>
-      <ProgressSteps numOfSteps={3} currentStep={1} />
+      <ProgressSteps numOfSteps={numOfSteps} currentStep={1} />
       {currentLevel === AccountLevel.Zero && (
         <TouchableOpacity style={styles.card} onPress={() => onPress("personal")}>
           <Icon name={"person"} size={35} color={colors.grey1} type="ionicon" />
