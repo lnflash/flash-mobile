@@ -2,6 +2,7 @@ import React from "react"
 import { View } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { Dropdown } from "react-native-element-dropdown"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 type Props = {
   label: string
@@ -9,6 +10,7 @@ type Props = {
   data: any[]
   value: string
   errorMsg?: string
+  isOptional?: boolean
   onChange: (val: string) => void
 }
 
@@ -18,15 +20,22 @@ const DropDownField: React.FC<Props> = ({
   data,
   value,
   errorMsg,
+  isOptional,
   onChange,
 }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
 
   return (
     <View style={styles.wrapper}>
       <Text type="bl" bold>
         {label}
+        {isOptional && (
+          <Text type="caption" color={colors.grey2}>
+            {LL.AccountUpgrade.optional()}
+          </Text>
+        )}
       </Text>
       <Dropdown
         style={styles.dropdown}

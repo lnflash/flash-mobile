@@ -30,6 +30,7 @@ type Props = {
   label: string
   photo?: Asset
   errorMsg?: string
+  isOptional?: boolean
   onPhotoUpload: (val: Asset) => void
   setErrorMsg: (val: string) => void
 }
@@ -38,6 +39,7 @@ const PhotoUploadField: React.FC<Props> = ({
   label,
   photo,
   errorMsg,
+  isOptional,
   onPhotoUpload,
   setErrorMsg,
 }) => {
@@ -131,6 +133,11 @@ const PhotoUploadField: React.FC<Props> = ({
     <View style={styles.wrapper}>
       <Text type="bl" bold>
         {label}
+        {isOptional && (
+          <Text type="caption" color={colors.grey2}>
+            {LL.AccountUpgrade.optional()}
+          </Text>
+        )}
       </Text>
       <TouchableOpacity style={styles.container} onPress={() => setIsCameraVisible(true)}>
         {!!photo && <Image style={styles.img} source={{ uri: photo.uri }} />}
