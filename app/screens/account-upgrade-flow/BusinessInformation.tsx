@@ -15,7 +15,6 @@ import {
 } from "@app/components/account-upgrade-flow"
 
 // hooks
-import { useAccountUpgrade } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 // store
@@ -28,19 +27,16 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const { submitAccountUpgrade } = useAccountUpgrade()
 
   const [businessNameErr, setBusinessNameErr] = useState<string>()
   const [businessAddressErr, setBusinessAddressErr] = useState<string>()
   const {
-    accountType,
     numOfSteps,
     businessInfo: { businessName, businessAddress, terminalRequested },
   } = useAppSelector((state) => state.accountUpgrade)
 
   const onPressNext = async () => {
     let hasError = false
-
     if (businessName && businessName.length < 2) {
       setBusinessNameErr("Business name must be at least 2 characters")
       hasError = true
@@ -50,22 +46,13 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
       hasError = true
     }
     if (!hasError) {
-      if (accountType === "business") {
-        const res = await submitAccountUpgrade()
-        if (res) navigation.navigate("AccountUpgradeSuccess")
-        else alert("Something went wrong. Please, try again later.")
-      } else {
-        navigation.navigate("BankInformation")
-      }
+      navigation.navigate("BankInformation")
     }
   }
 
   return (
     <Screen>
-      <ProgressSteps
-        numOfSteps={numOfSteps}
-        currentStep={accountType === "business" ? numOfSteps : numOfSteps - 1}
-      />
+      <ProgressSteps numOfSteps={numOfSteps} currentStep={numOfSteps - 1} />
       <View style={styles.container}>
         <InputField
           label={LL.AccountUpgrade.businessName()}
