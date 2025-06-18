@@ -67,30 +67,33 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
 
   const onPressNext = async () => {
     let hasError = false
-    if (bankName && bankName.length < 2) {
-      setNameErr("Bank name is required")
-      hasError = true
+    if (accountType === "merchant") {
+      if (!bankName || bankName.length < 2) {
+        setNameErr("Bank name is required")
+        hasError = true
+      }
+      if (!bankBranch || bankBranch.length < 2) {
+        setBranchErr("Branch is required")
+        hasError = true
+      }
+      if (!bankAccountType) {
+        setAccountTypeErr("Account type is required")
+        hasError = true
+      }
+      if (!currency) {
+        setCurrencyErr("Currency is required")
+        hasError = true
+      }
+      if (!accountNumber || accountNumber.length < 4) {
+        setAccountNumErr("Account number is required")
+        hasError = true
+      }
+      if (!idDocument) {
+        setIdDocumentErr("You must upload an ID document before proceeding")
+        hasError = true
+      }
     }
-    if (bankBranch && bankBranch.length < 2) {
-      setBranchErr("Branch is required")
-      hasError = true
-    }
-    if (!accountType) {
-      setAccountTypeErr("Account type is required")
-      hasError = true
-    }
-    if (!currency) {
-      setCurrencyErr("Currency is required")
-      hasError = true
-    }
-    if (accountNumber && accountNumber.length < 4) {
-      setAccountNumErr("Account number is required")
-      hasError = true
-    }
-    if (!idDocument) {
-      setIdDocumentErr("You must upload an ID document before proceeding")
-      hasError = true
-    }
+
     if (!hasError) {
       const res = await submitAccountUpgrade()
       if (res) navigation.navigate("AccountUpgradeSuccess")
@@ -107,6 +110,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           placeholder={LL.AccountUpgrade.bankNamePlaceholder()}
           value={bankName}
           errorMsg={nameErr}
+          isOptional={accountType === "business"}
           onChangeText={(val) => {
             setNameErr(undefined)
             dispatch(setBankInfo({ bankName: val }))
@@ -117,6 +121,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           placeholder={LL.AccountUpgrade.bankBranchPlaceholder()}
           value={bankBranch}
           errorMsg={branchErr}
+          isOptional={accountType === "business"}
           onChangeText={(val) => {
             setBranchErr(undefined)
             dispatch(setBankInfo({ bankBranch: val }))
@@ -128,6 +133,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           data={accountTypes}
           value={bankAccountType || ""}
           errorMsg={accountTypeErr}
+          isOptional={accountType === "business"}
           onChange={(val) => {
             setAccountTypeErr(undefined)
             dispatch(setBankInfo({ bankAccountType: val }))
@@ -139,6 +145,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           data={currencies}
           value={currency || ""}
           errorMsg={currencyErr}
+          isOptional={accountType === "business"}
           onChange={(val) => {
             setCurrencyErr(undefined)
             dispatch(setBankInfo({ currency: val }))
@@ -149,6 +156,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           placeholder={LL.AccountUpgrade.accountNumPlaceholder()}
           value={accountNumber}
           errorMsg={accountNumErr}
+          isOptional={accountType === "business"}
           onChangeText={(val) => {
             setAccountNumErr(undefined)
             dispatch(setBankInfo({ accountNumber: val }))
@@ -158,6 +166,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           label={LL.AccountUpgrade.uploadId()}
           photo={idDocument}
           errorMsg={idDocumentErr}
+          isOptional={accountType === "business"}
           onPhotoUpload={(val) => dispatch(setBankInfo({ idDocument: val }))}
           setErrorMsg={setIdDocumentErr}
         />
