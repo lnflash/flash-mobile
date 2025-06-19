@@ -67,7 +67,17 @@
         "notSupported": "NFC is not supported on this device.",
         "notEnabled": "NFC is not enabled on this device.",
         "noTag": "No tag found. Please ensure you are using a flashcard."
-
+    },
+    "Cashout": {
+        "title": "Settle",
+        "percentageToCashout": "% to settle",
+        "valid": "Valid for {time: string}",
+        "exchangeRate": "Exchange Rate",
+        "sendAmount": "Send Amount",
+        "receiveAmount": "Receive Amount",
+        "fee": "Fee",
+        "success": "Settlement request initiated successfully.",
+        "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
     },
     "ConversionDetailsScreen": {
         "title": "Swap",
@@ -480,8 +490,12 @@
         "locationPermissionNeutral": "Ask Me Later",
         "locationPermissionPositive": "OK",
         "locationPermissionTitle": "Locate yourself on the map",
-        "payBusiness": "pay this business",
-        "title": "Map"
+        "payBusiness": "Pay this Business",
+        "title": "Map",
+        "addPin": "Click anywhere to add a pin",
+        "selectedCoordinates": "Your Flashpoint Coordinates: \n",
+        "viewInGoogleMaps": "View in Google Maps",
+        "getDirections": "Get Directions"
     },
     "HomeScreen": {
         "cashout": "Cash Out",
@@ -497,15 +511,15 @@
         "updateAvailable": "An update is available.\nTap to update now",
         "useLightning": "We use the Lightning Network.",
         "myAccounts": "My Accounts",
-		"refundableWarning": "Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.",
+        "refundableWarning": "Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.",
         "refundables": "Refundables",
         "cash": "Cash",
-		"bitcoin": "Bitcoin",
-		"flashcard": "Flashcard",
-		"addFlashcard": "Add Flashcard",
+        "bitcoin": "Bitcoin",
+        "flashcard": "Flashcard",
+        "addFlashcard": "Add Flashcard",
         "upgradeTitle": "Add your phone number",
         "upgradeDesc": "Backup your cash wallet and increase transaction limits.",
-        "currencyTitle":"Change to your local currency",
+        "currencyTitle": "Change to your local currency",
         "currencyDesc": "Review our available currency list and select your currency.",
         "flashcardTitle": "Get a Flashcard",
         "flashcardDesc": "Find a Flashpoint and get a Flashcard to use in daily life.",
@@ -710,12 +724,12 @@
         "failedToFetchLnurlInvoice": "Failed to fetch lnurl invoice",
         "lnurlInvoiceIncorrectAmount": "The lnurl server responded with an invoice with an incorrect amount.",
         "lnurlInvoiceIncorrectDescription": "The lnurl server responded with an invoice with an incorrect description hash.",
-        "noAmountInvoiceError": "No amount invoice is not supported in BTC wallet",
+        "noAmountInvoiceError": "No amount invoice is not supported in BTC wallet. Please go back and scan or enter an invoice with an amount added.",
         "onchainMinAmountInvoiceError": "The amount you entered is less than the minimum amount required to send an on-chain transaction {amount: number}. Please consider sending this amount via Lightning!",
-		"minAmountInvoiceError": "The amount on the invoice is less than minimum amount",
-		"maxAmountInvoiceError": "The amount on the invoice is greater than maximum amount",
+        "minAmountInvoiceError": "The amount on the invoice is less than minimum amount {amount: number}",
+        "maxAmountInvoiceError": "The amount on the invoice is greater than maximum amount {amount: number}",
         "minAmountConvertError": "The conversion amount is less than minimum required amount {amount: number}",
-		"maxAmountConvertError": "The conversion amount is greater than maximum amount {amount: number}"
+        "maxAmountConvertError": "The conversion amount is greater than maximum amount {amount: number}"
     },
     "SettingsScreen": {
         "staticQr": "Printable Static QR Code",
@@ -750,10 +764,12 @@
         "backup": "Backup",
         "importWallet": "Import Wallet",
         "showSeedPhrase": "Reveal recovery phrase",
-        "showNostrSecret": "Reveal Nostr secret",
+        "showNostrSecret": "Chat Settings",
         "beginnerMode": "Disable Bitcoin Account",
         "advanceMode": "Enable Bitcoin Account (Advanced Mode)",
-        "keysManagement": "Keys management"
+        "keysManagement": "Keys management",
+        "showBtcAccount": "Show Bitcoin account",
+        "hideBtcAccount": "Hide Bitcoin account"
     },
     "NotificationSettingsScreen": {
         "title": "Notification Settings",
@@ -943,11 +959,17 @@
         "importWallet": "Import Wallet",
         "createWallet": "Create Wallet"
     },
+    "MerchantSuggestModal": {
+        "header": "Add Flashpoint",
+        "body": "You have selected a location for your business on the map. Flash users will be able to find you on the map, and send you payments by clicking on your map pin.",
+        "termsAndConditions": "\nRead the Terms & Conditions.",
+        "learnMore": "Your pin request will be processed within 24 hours."
+    },
     "UnVerifiedSeedModal": {
         "header": "YOUR BITCOIN IS NOT SECURE!",
         "body": "You should WRITE DOWN your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.\n\n",
         "termsAndConditions": "\nRead the Terms & Conditions.",
-        "learnMore": "What is a Recovery Phrase?"
+        "learnMore": "What is a Recovery Phase?"
     },
     "SplashScreen": {
         "update": "Your app is outdated. An update is needed before the app can be used.\n\nThis can be done from the PlayStore for Android and Testflight for iOS"
@@ -970,12 +992,13 @@
         "stablesatTransfers": "Stablesat Transfers",
         "internalSend": "Send to {bankName: string} User",
         "error": "Unable to fetch limits at this time",
-        "contactUsMessageBody": "Hi, I will like to increase the transaction limits of my {bankName: string} account.",
-        "contactUsMessageSubject": "Request To Increase Transaction Limits",
-        "contactSupportToPerformKyc": "Contact support to perform manual KYC to increase your limit",
+        "contactUsMessageBody": "Hi, I would like to upgrade my account to a {bankName: string} Business account.",
+        "contactUsMessageSubject": "Flash Business Upgrade Request",
+        "contactSupportToPerformKyc": "Contact support to perform manual KYC and upgrade to {bankName: string} Business",
         "increaseLimits": "Increase your limits",
         "spendingLimits": "Spending Limits",
-        "spendingLimitsDescription": "The spending limits shown on this page are denominated in USD. For your convenience, we convert these limits into your local currency based on current foreign exchange rates. Please note that the displayed local currency amount may fluctuate as exchange rates are updated in real-time."
+        "spendingLimitsDescription": "The spending limits shown on this page are denominated in USD. For your convenience, we convert these limits into your local currency based on current foreign exchange rates. Please note that the displayed local currency amount may fluctuate as exchange rates are updated in real-time.",
+        "requestBusiness": "Request Business Account"
     },
     "TransactionScreen": {
         "noTransaction": "No transaction to show",
@@ -997,7 +1020,12 @@
         "stayInTrialMode": "Maybe later"
     },
     "SetAddressModal": {
+        "helloText": "Hello!",
+        "whoAreYou": "What should we call you?",
+        "usernameHint": "This will be your {bankName: string} username",
+        "placeholder": "Enter your username",
         "title": "Set {bankName: string} address",
+        "save": "Save",
         "Errors": {
             "tooShort": "Username must be at least 3 characters long",
             "tooLong": "Address must be at most 50 characters long",
@@ -1143,6 +1171,7 @@
         "phoneNumber": "Phone Number",
         "rate": "Rate",
         "reauth": "Your session has expired. Please log in again.",
+        "request": "Request Pin",
         "restart": "Restart",
         "sats": "sats",
         "search": "Search",
@@ -1200,6 +1229,18 @@
             "title": "Payment received"
         }
     },
+    "reports": {
+        "title": "Generate Reports",
+        "reconciliation": "Reconciliation Report",
+        "aggregation": "Aggregation Report",
+        "topRecipients": "Top Recipients Report",
+        "topSenders": "Top Senders Report",
+        "selectFromDate": "Select From Date",
+        "selectToDate": "Select To Date",
+        "fromDate": "From",
+        "toDate": "To",
+        "total": "Total"
+    },
     "support": {
         "contactUs": "Need help? Contact us.",
         "joinTheCommunity": "Join the community",
@@ -1254,8 +1295,8 @@
     },
     "RefundFlow": {
         "refundListTitle": "Refundable Transactions",
-		"destinationTitle": "Destination",
-		"confirmationTitle": "Confirmation",
+        "destinationTitle": "Destination",
+        "confirmationTitle": "Confirmation",
         "pendingTransactions": "Pending Transactions",
         "noRefundables": "No refundable transactions found",
         "view": "View",
@@ -1266,8 +1307,47 @@
         "halfHour": "Half Hour",
         "hour": "Hour",
         "txId": "Transaction ID"
-	},
+    },
     "Nostr": {
-        "editProfile": "Edit Profile"
+        "editProfile": "Edit Profile",
+        "importNsecTitle": "Import Your Nostr Secret Key",
+        "importNsecDefaultDescription": "You are logged into another device. Please import your nsec from the other device to continue using the chat feature.",
+        "createProfileTitle": "Create Profile",
+        "createProfileWarning": "If you proceed, any existing profile data will be overwritten.",
+        "createProfilePubkeyMessage": "We couldn't find a profile event attached to this pubkey.",
+        "createProfilePrompt": "Do you want to continue to create?",
+        "createProfileButton": "Create Profile",
+        "profileNotFound": "We’re looking, but we haven’t been able to find your profile.",
+        "promptToCreateProfile": "Would you like to create one now?",
+        "learnAboutNostr": "Learn about Nostr",
+        "learnAboutNostrSubtext": "Explore this guide to get the most out of nostr chat",
+        "showPublicKey": "Show public key",
+        "showPrivateKey": "Show private key",
+        "profileConnected": "Profile Connected",
+        "reconnectProfile": "Reconnect Profile",
+        "tapToRefreshConnection": "Tap to refresh connection",
+        "importExistingProfile": "Import existing profile",
+        "deleteProfile": "Delete profile",
+        "noProfileIdExists": "No Profile ID exists",
+        "profileReconnected": "Your profile has been reconnected successfully",
+        "deleteWarningTitle": "Warning",
+        "deleteWarningMessage": "Deleting your profile keys will remove your account from this device. Without a backup, you won't be able to access this profile again. Are you sure?",
+        "importNsecDescription": "If you wish to use your own nsec, paste it below.",
+        "profileImportedSuccessfully": "Profile imported successfully",
+        "noProfileFound": "No Nostr Profile Found",
+        "noProfileDescription": "You haven’t created a Nostr profile yet.\nTap below to create one.",
+        "creatingProfile": "Creating Profile...",
+        "createNewProfile": "Create New Profile",
+        "findingYou": "Finding You..",
+        "advancedSettings": "Advanced Nostr Settings",
+        "KeyModal": {
+            "yourPublicProfileId": "Your Public Profile ID",
+            "yourPrivateProfileKey": "Your Private Profile Key",
+            "keyCopiedToClipboard": "Key copied to clipboard"
+        },
+        "common": {
+            "copy": "Copy",
+            "copied": "Copied"
+        }
     }
 }

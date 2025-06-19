@@ -1,9 +1,10 @@
 import React, { useState } from "react"
-import { useTheme, Input, Button, makeStyles } from "@rneui/themed"
-import { View, StyleSheet, Alert } from "react-native"
+import { Input, makeStyles } from "@rneui/themed"
+import { View, Alert } from "react-native"
 import { useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { importNsec } from "./utils"
 import { getPublicKey, nip19 } from "nostr-tools"
+import { PrimaryBtn } from "../buttons"
 
 interface NsecInputFormProps {
   onSubmit: (nsec: string, success: boolean) => void
@@ -38,7 +39,6 @@ export const NsecInputForm: React.FC<NsecInputFormProps> = ({ onSubmit }) => {
   return (
     <View>
       <Input
-        label="Import Private Key"
         value={nsec}
         onChangeText={handleInputChange}
         placeholder="nsec1..."
@@ -48,19 +48,13 @@ export const NsecInputForm: React.FC<NsecInputFormProps> = ({ onSubmit }) => {
         labelStyle={styles.inputLabel}
         errorStyle={styles.errorText}
       />
-      <Button
-        title="Submit"
-        onPress={handleSubmit}
-        buttonStyle={styles.submitButton}
-        titleStyle={styles.submitButtonText}
-      />
+      <PrimaryBtn label={"Submit"} onPress={handleSubmit} />
     </View>
   )
 }
 
 const useStyles = makeStyles(({ colors }) => ({
   inputContainer: {
-    margin: 10,
     width: "100%",
     maxWidth: "100%",
   },
@@ -68,30 +62,19 @@ const useStyles = makeStyles(({ colors }) => ({
     fontSize: 14,
     marginBottom: 5,
     marginTop: 5,
-    color: colors._black,
   },
   input: {
     fontSize: 14,
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
     height: 40,
+    borderColor: colors.grey3,
+    backgroundColor: colors.white,
   },
   errorText: {
     fontSize: 12,
-    color: "#d9534f",
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: "bold",
+    color: colors.red,
   },
 }))
