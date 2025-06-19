@@ -59,7 +59,6 @@
 		2E782F00A296471DB427D608 /* Ionicons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Ionicons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Ionicons.ttf"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = LNFlash/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		8647B9DD2DFD831600E2F160 /* Flash.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Flash.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		8647B9DE2DFD831600E2F160 /* LNFlash-Alt-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "LNFlash-Alt-Info.plist"; path = "/Users/nodirbek/projects/flash/flash-mobile/ios/LNFlash-Alt-Info.plist"; sourceTree = "<absolute>"; };
 		8647B9EC2DFEAFE500E2F160 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "LNFlash/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		8647B9EE2DFEAFF900E2F160 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "LNFlash-Alt/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		86FB60FB2BC40BBC0088C78C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -167,7 +166,6 @@
 				52DBFAFEE2028D1D4AE01CB9 /* Pods */,
 				3D774DD6035C45B3A44518AC /* Resources */,
 				C6FCE05724592E5E0076B3C0 /* LNFlash-Bridging-Header.h */,
-				8647B9DE2DFD831600E2F160 /* LNFlash-Alt-Info.plist */,
 				8647B9EC2DFEAFE500E2F160 /* GoogleService-Info.plist */,
 				8647B9EE2DFEAFF900E2F160 /* GoogleService-Info.plist */,
 			);
@@ -1246,7 +1244,7 @@
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
-				INFOPLIST_FILE = "LNFlash-Alt-Info.plist";
+				INFOPLIST_FILE = LNFlash/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Flash;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
@@ -1281,7 +1279,7 @@
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
-				INFOPLIST_FILE = "LNFlash-Alt-Info.plist";
+				INFOPLIST_FILE = LNFlash/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Flash;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
