@@ -51,6 +51,7 @@ export type RootStackParamList = {
   sendBitcoinDetails: {
     paymentDestination: PaymentDestination
     flashUserAddress?: string
+    isFromFlashcard?: boolean
   }
   sendBitcoinConfirmation: {
     paymentDetail: PaymentDetail<WalletCurrency>
@@ -144,6 +145,7 @@ export type RootStackParamList = {
   CashoutConfirmation: { offer: CashoutOffer }
   CashoutSuccess: undefined
   EditNostrProfile: undefined
+  NostrSettingsScreen: undefined
   AccountType: undefined
   PersonalInformation: undefined
   BusinessInformation: undefined

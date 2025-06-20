@@ -87,6 +87,7 @@ export const ScanningQRCodeScreen = () => {
         logParseDestinationResult(destination)
 
         if (destination.valid) {
+          setPending(false)
           if (route.params && destination.validDestination.paymentType === "onchain") {
             navigation.navigate("RefundConfirmation", {
               swapAddress: route.params.swapAddress,
