@@ -146,6 +146,16 @@ export type RootStackParamList = {
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
+  AccountType: undefined
+  PersonalInformation: undefined
+  BusinessInformation: undefined
+  BankInformation: undefined
+  Validation: {
+    phone: string
+    channel: PhoneCodeChannelType
+  }
+  AccountUpgradeSuccess: undefined
+  TestTransaction: undefined
 }
 
 export type ChatStackParamList = {
