@@ -28,14 +28,14 @@ const useLogout = () => {
     fetchPolicy: "no-cache",
   })
 
-  const logout = async (stateToDefault = true) => {
+  const logout = async (clearDeviceCred?: boolean) => {
     try {
       const deviceToken = await messaging().getToken()
       userLogoutMutation({ variables: { input: { deviceToken } } })
         .then(async (res) => {
           console.log("USER LOGOUT MUTATION RES: ", res.data?.userLogout)
           if (res.data?.userLogout.success) {
-            await cleanUp()
+            await cleanUp(clearDeviceCred)
           }
         })
         .catch((err) => {
@@ -46,7 +46,7 @@ const useLogout = () => {
     }
   }
 
-  const cleanUp = async (isDelete?: boolean) => {
+  const cleanUp = async (clearDeviceCred?: boolean) => {
     await client.cache.reset()
     await AsyncStorage.multiRemove([SCHEMA_VERSION_KEY])
     await KeyStoreWrapper.removeIsBiometricsEnabled()
@@ -56,7 +56,7 @@ const useLogout = () => {
     resetState()
     resetFlashcard()
 
-    if (isDelete) {
+    if (clearDeviceCred) {
       await Keychain.resetInternetCredentials(DEVICE_ACCOUNT_CREDENTIALS_KEY)
     }
   }
