@@ -1,5 +1,6 @@
 import { Rumor } from "@app/utils/nostr"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { Event } from "nostr-tools"
 
 export const updateLastSeen = async (groupId: string, timestamp: number) => {
   try {
@@ -17,6 +18,14 @@ export const getLastSeen = async (groupId: string) => {
     console.error("Error getting last seen timestamp:", error)
     return 0
   }
+}
+
+export const getContactsFromEvent = (event: Event) => {
+  return event.tags
+    .filter((t) => t[0] === "p")
+    .map((t) => {
+      return { pubkey: t[1] }
+    })
 }
 
 export const getAllLastSeen = async () => {
