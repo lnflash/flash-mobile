@@ -107,13 +107,19 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       const publicKey = getPublicKey(secret)
       const cachedGiftwraps = await loadGiftwrapsFromStorage()
       setGiftWraps(cachedGiftwraps)
-
-      let cachedRumors = cachedGiftwraps.map((wrap) => getRumorFromWrap(wrap, secret))
-      setRumors(cachedRumors)
+      let cachedRumors
+      cachedRumors = cachedGiftwraps
+        .map((wrap) => {
+          try {
+            return getRumorFromWrap(wrap, secret)
+          } catch (e) {
+            return null
+          }
+        })
+        .filter((r) => r !== null)
+      setRumors(cachedRumors || [])
       let closer = await fetchNewGiftwraps(cachedGiftwraps, publicKey)
-
       fetchContactList(getPublicKey(secret), poolRef!.current, (event: Event) => {
-        console.log("NEW CONTACTS EVENT IS", event)
         setContactsEvent(event)
       })
       setCloser(closer)

@@ -49,13 +49,10 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
   }
 
   const handleAddContact = async () => {
-    console.log("Adding Contact, poolref present?", poolRef)
     if (isUserAdded() || !poolRef) return
     try {
       setIsLoading(true)
-      console.log("Trying to add user to contact list")
       await addToContactList(userPrivateKey, item.id, poolRef.current, contactsEvent)
-      console.log("probably added user to contact list")
     } catch (error) {
       console.error("Error adding contact:", error)
     } finally {

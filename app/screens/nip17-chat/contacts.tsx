@@ -13,7 +13,7 @@ import { SearchListItem } from "./searchListItem"
 import { hexToBytes } from "@noble/curves/abstract/utils"
 import { getContactsFromEvent } from "./utils"
 import ContactCard from "./contactCard"
-import { fetchNostrUsers, publicRelays } from "@app/utils/nostr"
+import { fetchNostrUsers } from "@app/utils/nostr"
 
 interface ContactsProps {
   userPrivateKey: string

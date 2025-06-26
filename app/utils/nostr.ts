@@ -228,8 +228,14 @@ export const fetchContactList = async (
     kinds: [3],
     authors: [userPubkey],
   }
-  pool.subscribeMany(["wss://relay.damus.io"], [filter], {
+  pool.subscribeMany(["wss://relay.damus.io", "wss://relay.prmal.net"], [filter], {
     onevent: onEvent,
+    onclose: () => {
+      console.log("Closing Subscription for Contacts")
+    },
+    oneose: () => {
+      console.log("EOSE RECEIVED, DID SUBSCRIPTION CLOSE?")
+    },
   })
 }
 
@@ -286,7 +292,10 @@ export const addToContactList = async (
     tags: tags,
   }
   const finalNewEvent = finalizeEvent(newEvent, userPrivateKey)
-  pool.publish(["wss://relay.damus.io"], finalNewEvent)
+  const messages = await Promise.any(
+    pool.publish(["wss://relay.damus.io", "wss://relay.primal.net"], finalNewEvent),
+  )
+  console.log("Relay replies", messages)
 }
 
 export async function sendNip17Message(
