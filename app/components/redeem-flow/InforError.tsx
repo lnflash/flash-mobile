@@ -37,7 +37,7 @@ const InforError: React.FC<Props> = ({
 
   useEffect(() => {
     fetchLimits()
-  }, [])
+  }, [unitOfAccountAmount])
 
   const fetchLimits = async () => {
     if (
@@ -72,6 +72,9 @@ const InforError: React.FC<Props> = ({
               }),
             }),
           )
+        } else {
+          setHasError(false)
+          setErrorMsg("")
         }
       }
     }
