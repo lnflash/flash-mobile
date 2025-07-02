@@ -2236,6 +2236,10 @@ type RootTranslation = {
 		 * S​e​t​ ​P​I​N
 		 */
 		setPin: string
+		/**
+		 * To set a PIN code, please back up your account by adding a phone number.
+		 */
+		backupDescription: string
 	}
 	SendBitcoinConfirmationScreen: {
 		/**
@@ -6908,6 +6912,10 @@ export type TranslationFunctions = {
 		 * Set PIN
 		 */
 		setPin: () => LocalizedString
+		/**
+		 * To set a PIN code, please back up your account by adding a phone number.
+		 */
+		backupDescription: () => LocalizedString
 	}
 	SendBitcoinConfirmationScreen: {
 		/**
