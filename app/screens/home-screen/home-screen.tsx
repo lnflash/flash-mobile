@@ -70,11 +70,15 @@ export const HomeScreen: React.FC = () => {
   }, [dataAuthed])
 
   const saveDefaultWallet = () => {
-    if (!persistentState.defaultWallet) {
-      const defaultWallet = getDefaultWallet(
-        dataAuthed?.me?.defaultAccount?.wallets,
-        dataAuthed?.me?.defaultAccount?.defaultWalletId,
-      )
+    const defaultWallet = getDefaultWallet(
+      dataAuthed?.me?.defaultAccount?.wallets,
+      dataAuthed?.me?.defaultAccount?.defaultWalletId,
+    )
+    if (
+      !persistentState.defaultWallet ||
+      (persistentState.defaultWallet.walletCurrency === "USD" &&
+        persistentState.defaultWallet.id !== defaultWallet?.id)
+    ) {
       updateState((state: any) => {
         if (state)
           return {

@@ -7191,7 +7191,7 @@ export type TranslationFunctions = {
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number| string }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
