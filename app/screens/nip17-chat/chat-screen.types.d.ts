@@ -22,4 +22,6 @@ type NostrProfile = {
   nip05?: string
   picture?: string
   lud16?: string
+  about?: string
+  website?: string
 }

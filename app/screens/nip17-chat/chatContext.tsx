@@ -1,6 +1,7 @@
 import { useAppConfig } from "@app/hooks"
 import {
   Rumor,
+  fetchContactList,
   fetchGiftWrapsForPublicKey,
   fetchNostrUsers,
   fetchSecretFromLocalStorage,
@@ -27,6 +28,8 @@ type ChatContextType = {
   userProfileEvent: Event | null
   userPublicKey: string | null
   refreshUserProfile: () => Promise<void>
+  contactsEvent: Event | undefined
+  setContactsEvent: (e: Event) => void
 }
 
 const publicRelays = [
@@ -51,6 +54,8 @@ const ChatContext = createContext<ChatContextType>({
   userProfileEvent: null,
   userPublicKey: null,
   refreshUserProfile: async () => {},
+  contactsEvent: undefined,
+  setContactsEvent: (event: Event) => {},
 })
 
 export const useChatContext = () => useContext(ChatContext)
@@ -65,6 +70,12 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
   const poolRef = useRef(new SimplePool())
   const processedEventIds = useRef(new Set())
+  const [contactsEvent, setContactsEvent] = useState<Event>()
+  const {
+    appConfig: {
+      galoyInstance: { relayUrl },
+    },
+  } = useAppConfig()
 
   const handleGiftWraps = (event: Event, secret: Uint8Array) => {
     setGiftWraps((prevEvents) => [...(prevEvents || []), event])
@@ -83,7 +94,37 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   }
 
   React.useEffect(() => {
+    let closer: SubCloser | undefined
     if (poolRef && !closer) initializeChat()
+    async function initialize(count = 0) {
+      let secretKeyString = await fetchSecretFromLocalStorage()
+      if (!secretKeyString) {
+        if (count >= 3) return
+        setTimeout(() => initialize(count + 1), 500)
+        return
+      }
+      let secret = nip19.decode(secretKeyString).data as Uint8Array
+      const publicKey = getPublicKey(secret)
+      const cachedGiftwraps = await loadGiftwrapsFromStorage()
+      setGiftWraps(cachedGiftwraps)
+      let cachedRumors
+      cachedRumors = cachedGiftwraps
+        .map((wrap) => {
+          try {
+            return getRumorFromWrap(wrap, secret)
+          } catch (e) {
+            return null
+          }
+        })
+        .filter((r) => r !== null)
+      setRumors(cachedRumors || [])
+      let closer = await fetchNewGiftwraps(cachedGiftwraps, publicKey)
+      fetchContactList(getPublicKey(secret), poolRef!.current, (event: Event) => {
+        setContactsEvent(event)
+      })
+      setCloser(closer)
+    }
+    if (poolRef && !closer) initialize()
   }, [poolRef])
 
   React.useEffect(() => {
@@ -234,6 +275,8 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         userProfileEvent,
         userPublicKey,
         refreshUserProfile,
+        contactsEvent,
+        setContactsEvent,
       }}
     >
       {children}
