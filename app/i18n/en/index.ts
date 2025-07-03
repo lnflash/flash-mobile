@@ -693,6 +693,7 @@ const en: BaseTranslation = {
       "PIN is used as the backup authentication method for biometric authentication.",
     pinTitle: "PIN Code",
     setPin: "Set PIN",
+    backupDescription: "To set a PIN code, please back up your account by adding a phone number."
   },
   SendBitcoinConfirmationScreen: {
     amountLabel: "Amount:",
