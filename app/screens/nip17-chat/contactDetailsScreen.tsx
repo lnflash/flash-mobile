@@ -11,7 +11,8 @@ import ChatIcon from "@app/assets/icons/chat.svg"
 import { nip19, getPublicKey } from "nostr-tools"
 import { publicRelays } from "@app/utils/nostr"
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
-import { Screen } from "../../components/screen" // Import the same Screen component used in MessagesScreen
+import { Screen } from "../../components/screen"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 type ContactDetailsRouteProp = RouteProp<ChatStackParamList, "contactDetails">
 
@@ -22,30 +23,25 @@ const ContactDetailsScreen: React.FC = () => {
   const { theme } = useTheme()
   const colors = theme.colors
   const { profileMap, contactsEvent, poolRef, setContactsEvent } = useChatContext()
+  const { LL } = useI18nContext()
 
   const { contactPubkey, userPrivateKey } = route.params
 
-  // Get profile data
   const profile = profileMap?.get(contactPubkey)
   const npub = nip19.npubEncode(contactPubkey)
 
-  // Ensure userPrivateKey is properly formatted
   const userPrivateKeyHex =
     typeof userPrivateKey === "string" ? userPrivateKey : bytesToHex(userPrivateKey)
 
-  // Get user public key
   const userPubkey = getPublicKey(
     typeof userPrivateKey === "string" ? hexToBytes(userPrivateKey) : userPrivateKey,
   )
 
-  // Create a proper groupId in the same format as HistoryListItem
   const groupId = [userPubkey, contactPubkey].sort().join(",")
 
   const handleUnfollow = () => {
-    console.log("UNFOLLOW CLICKED!!", poolRef, contactsEvent)
     if (!poolRef || !contactsEvent) return
 
-    console.log("unfollowing pubkey", contactPubkey)
     let profiles = contactsEvent.tags.filter((p) => p[0] === "p").map((p) => p[1])
     let tagsWithoutProfiles = contactsEvent.tags.filter((p) => p[0] !== "p")
     let newProfiles = profiles.filter((p) => p !== contactPubkey)
@@ -54,7 +50,6 @@ const ContactDetailsScreen: React.FC = () => {
       ...contactsEvent,
       tags: [...tagsWithoutProfiles, ...newProfiles.map((p) => ["p", p])],
     }
-    console.log("NEW CONTACTS EVENT IS", newContactsEvent)
     poolRef.current.publish(publicRelays, newContactsEvent)
     setContactsEvent(newContactsEvent)
     navigation.goBack()
@@ -68,9 +63,6 @@ const ContactDetailsScreen: React.FC = () => {
   }
 
   const handleStartChat = () => {
-    // Use replace instead of navigate to avoid stacking screens
-    // This will replace the current screen with the messages screen
-    // which should maintain the same layout behavior as when navigating from HistoryListItem
     navigation.replace("messages", {
       groupId: groupId,
       userPrivateKey: userPrivateKeyHex,
@@ -78,7 +70,6 @@ const ContactDetailsScreen: React.FC = () => {
   }
 
   return (
-    // Use the same Screen component that MessagesScreen uses
     <Screen>
       <Header
         leftComponent={
@@ -90,7 +81,7 @@ const ContactDetailsScreen: React.FC = () => {
           />
         }
         centerComponent={{
-          text: "Profile",
+          text: LL.Nostr.Contacts.profile(),
           style: { color: colors.black, fontSize: 18 },
         }}
         backgroundColor={colors.background}
@@ -110,7 +101,7 @@ const ContactDetailsScreen: React.FC = () => {
             style={styles.profileImage}
           />
           <Text style={[styles.profileName, { color: colors.black }]}>
-            {profile?.name || profile?.username || "Nostr User"}
+            {profile?.name || profile?.username || LL.Nostr.Contacts.nostrUser()}
           </Text>
           {profile?.nip05 && <Text style={styles.nip05}>{profile.nip05}</Text>}
           <Text style={styles.npub}>
@@ -125,7 +116,7 @@ const ContactDetailsScreen: React.FC = () => {
             onPress={handleStartChat}
           >
             <ChatIcon color={colors.primary} style={styles.actionIcon} fontSize={24} />
-            <Text style={styles.actionText}>Message</Text>
+            <Text style={styles.actionText}>{LL.Nostr.Contacts.message()}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -133,13 +124,12 @@ const ContactDetailsScreen: React.FC = () => {
             onPress={handleSendPayment}
           >
             <Icon name="flash" style={[styles.icon, { color: "orange" }]} />
-            <Text style={styles.actionText}>Send Payment</Text>
+            <Text style={styles.actionText}>{LL.Nostr.Contacts.sendPayment()}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Additional profile sections could go here */}
         <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>Contact Info</Text>
+          <Text style={styles.sectionTitle}>{LL.Nostr.Contacts.contactInfo()}</Text>
           {profile?.lud16 && (
             <View style={styles.infoRow}>
               <Icon name="flash-outline" style={styles.infoIcon} />
@@ -154,15 +144,18 @@ const ContactDetailsScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Separated unfollow button */}
         <View style={styles.dangerZoneContainer}>
-          <Text style={styles.dangerZoneTitle}>Contact Management</Text>
+          <Text style={styles.dangerZoneTitle}>
+            {LL.Nostr.Contacts.contactManagement()}
+          </Text>
           <TouchableOpacity
             style={[styles.unfollowButton, { backgroundColor: colors.error }]}
             onPress={handleUnfollow}
           >
             <Icon name="remove-circle" style={[styles.icon, { color: "white" }]} />
-            <Text style={[styles.actionText, { color: "white" }]}>Unfollow Contact</Text>
+            <Text style={[styles.actionText, { color: "white" }]}>
+              {LL.Nostr.Contacts.unfollowContact()}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

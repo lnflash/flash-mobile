@@ -4725,6 +4725,34 @@ type RootTranslation = {
 			 * N​o​ ​C​o​n​t​a​c​t​s​ ​A​v​a​i​l​a​b​l​e
 			 */
 			noCantacts: string
+			/**
+			 * P​r​o​f​i​l​e
+			 */
+			profile: string
+			/**
+			 * N​o​s​t​r​ ​U​s​e​r
+			 */
+			nostrUser: string
+			/**
+			 * M​e​s​s​a​g​e
+			 */
+			message: string
+			/**
+			 * S​e​n​d​ ​P​a​y​m​e​n​t
+			 */
+			sendPayment: string
+			/**
+			 * C​o​n​t​a​c​t​ ​I​n​f​o
+			 */
+			contactInfo: string
+			/**
+			 * C​o​n​t​a​c​t​ ​M​a​n​a​g​e​m​e​n​t
+			 */
+			contactManagement: string
+			/**
+			 * U​n​f​o​l​l​o​w​ ​C​o​n​t​a​c​t
+			 */
+			unfollowContact: string
 		}
 		common: {
 			/**
@@ -9346,6 +9374,34 @@ export type TranslationFunctions = {
 			 * No Contacts Available
 			 */
 			noCantacts: () => LocalizedString
+			/**
+			 * Profile
+			 */
+			profile: () => LocalizedString
+			/**
+			 * Nostr User
+			 */
+			nostrUser: () => LocalizedString
+			/**
+			 * Message
+			 */
+			message: () => LocalizedString
+			/**
+			 * Send Payment
+			 */
+			sendPayment: () => LocalizedString
+			/**
+			 * Contact Info
+			 */
+			contactInfo: () => LocalizedString
+			/**
+			 * Contact Management
+			 */
+			contactManagement: () => LocalizedString
+			/**
+			 * Unfollow Contact
+			 */
+			unfollowContact: () => LocalizedString
 		}
 		common: {
 			/**
