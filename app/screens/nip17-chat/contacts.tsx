@@ -1,6 +1,6 @@
 // Contacts.tsx
 import React, { useEffect, useState } from "react"
-import { FlatList, Text, View, ActivityIndicator, TouchableOpacity } from "react-native"
+import { FlatList, Text, View, ActivityIndicator } from "react-native"
 import { useStyles } from "./style" // Adjust the path as needed
 import { useChatContext } from "./chatContext"
 import { nip19, Event } from "nostr-tools"
@@ -27,6 +27,28 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
   const { theme } = useTheme()
   const colors = theme.colors
 
+  // State to toggle spinner size & message after 3 seconds
+  const [showAltMessage, setShowAltMessage] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowAltMessage(true)
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    if (!poolRef) return
+    let contactPubkeys =
+      contactsEvent?.tags.filter((p) => p[0] === "p").map((p) => p[1]) || []
+    let closer = fetchNostrUsers(contactPubkeys, poolRef.current, (event: Event) => {
+      addEventToProfiles(event)
+    })
+    return () => {
+      if (closer) closer.close()
+    }
+  }, [poolRef, contactsEvent])
+
   // Merge the base styles with additional styles
   const styles = {
     ...baseStyles,
@@ -44,18 +66,6 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
       elevation: 2,
     },
   }
-
-  useEffect(() => {
-    if (!poolRef) return
-    let contactPubkeys =
-      contactsEvent?.tags.filter((p) => p[0] === "p").map((p) => p[1]) || []
-    let closer = fetchNostrUsers(contactPubkeys, poolRef.current, (event: Event) => {
-      addEventToProfiles(event)
-    })
-    return () => {
-      if (closer) closer.close()
-    }
-  }, [poolRef, contactsEvent])
 
   let ListEmptyContent = (
     <View style={styles.activityIndicatorContainer}>
@@ -103,7 +113,22 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
           keyExtractor={(item) => item.pubkey!}
         />
       ) : (
-        <Text>Loading...</Text>
+        <View style={styles.activityIndicatorContainer}>
+          {showAltMessage ? (
+            <>
+              <ActivityIndicator
+                size="small"
+                color={colors.primary}
+                style={{ transform: [{ scale: 0.7 }] }}
+              />
+              <Text style={{ margin: 10, textAlign: "center" }}>
+                Having trouble finding your contact list, have you followed anyone yet?
+              </Text>
+            </>
+          ) : (
+            <ActivityIndicator size="large" color={colors.primary} />
+          )}
+        </View>
       )}
     </View>
   )
