@@ -1442,6 +1442,10 @@ const en: BaseTranslation = {
       yourPrivateProfileKey: "Your Private Profile Key",
       keyCopiedToClipboard: "Key copied to clipboard",
     },
+    Contacts: {
+      stillLoading: "Having trouble finding your contact list, have you followed anyone yet?",
+      noCantacts: "No Contacts Available"
+    },
     common: {
       copy: "Copy",
       copied: "Copied",

@@ -332,7 +332,7 @@ type RootTranslation = {
 		 */
 		youreConverting: string
 		/**
-		 * Sending account
+		 * S​e​n​d​i​n​g​ ​a​c​c​o​u​n​t
 		 */
 		sendingAccount: string
 		/**
@@ -340,7 +340,7 @@ type RootTranslation = {
 		 */
 		receivingAccount: string
 		/**
-		 * Conversion Fee
+		 * C​o​n​v​e​r​s​i​o​n​ ​F​e​e
 		 */
 		conversionFee: string
 	}
@@ -3572,7 +3572,7 @@ type RootTranslation = {
 			 */
 			invalidCharacter: string
 			/**
-			 * Your username must begin with an uppercase or lowercase letter.
+			 * Y​o​u​r​ ​u​s​e​r​n​a​m​e​ ​m​u​s​t​ ​b​e​g​i​n​ ​w​i​t​h​ ​a​n​ ​u​p​p​e​r​c​a​s​e​ ​o​r​ ​l​o​w​e​r​c​a​s​e​ ​l​e​t​t​e​r
 			 */
 			startsWithNumber: string
 			/**
@@ -4715,6 +4715,16 @@ type RootTranslation = {
 			 * K​e​y​ ​c​o​p​i​e​d​ ​t​o​ ​c​l​i​p​b​o​a​r​d
 			 */
 			keyCopiedToClipboard: string
+		}
+		Contacts: {
+			/**
+			 * H​a​v​i​n​g​ ​t​r​o​u​b​l​e​ ​f​i​n​d​i​n​g​ ​y​o​u​r​ ​c​o​n​t​a​c​t​ ​l​i​s​t​,​ ​h​a​v​e​ ​y​o​u​ ​f​o​l​l​o​w​e​d​ ​a​n​y​o​n​e​ ​y​e​t​?
+			 */
+			stillLoading: string
+			/**
+			 * N​o​ ​C​o​n​t​a​c​t​s​ ​A​v​a​i​l​a​b​l​e
+			 */
+			noCantacts: string
 		}
 		common: {
 			/**
@@ -9326,6 +9336,16 @@ export type TranslationFunctions = {
 			 * Key copied to clipboard
 			 */
 			keyCopiedToClipboard: () => LocalizedString
+		}
+		Contacts: {
+			/**
+			 * Having trouble finding your contact list, have you followed anyone yet?
+			 */
+			stillLoading: () => LocalizedString
+			/**
+			 * No Contacts Available
+			 */
+			noCantacts: () => LocalizedString
 		}
 		common: {
 			/**

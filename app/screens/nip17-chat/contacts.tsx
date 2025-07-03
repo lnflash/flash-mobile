@@ -14,6 +14,7 @@ import { hexToBytes } from "@noble/curves/abstract/utils"
 import { getContactsFromEvent } from "./utils"
 import ContactCard from "./contactCard"
 import { fetchNostrUsers } from "@app/utils/nostr"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 interface ContactsProps {
   userPrivateKey: string
@@ -25,6 +26,7 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
   const { poolRef, profileMap, contactsEvent, addEventToProfiles } = useChatContext()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   const { theme } = useTheme()
+  const { LL } = useI18nContext()
   const colors = theme.colors
 
   // State to toggle spinner size & message after 3 seconds
@@ -100,7 +102,7 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
         <FlatList
           contentContainerStyle={{ ...styles.listContainer }}
           data={getContactsFromEvent(contactsEvent)}
-          ListEmptyComponent={<Text>No Contacts Available</Text>}
+          ListEmptyComponent={<Text>{LL.Nostr.Contacts.noCantacts()}</Text>}
           renderItem={({ item }) => (
             <ContactCard
               item={item}
@@ -122,7 +124,7 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
                 style={{ transform: [{ scale: 0.7 }] }}
               />
               <Text style={{ margin: 10, textAlign: "center" }}>
-                Having trouble finding your contact list, have you followed anyone yet?
+                {LL.Nostr.Contacts.stillLoading()}
               </Text>
             </>
           ) : (

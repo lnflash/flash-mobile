@@ -93,14 +93,8 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
       {isLoading ? (
         <ActivityIndicator size="small" color={colors.primary} />
       ) : (
-        <TouchableOpacity>
-          <Icon
-            name={getIcon()!}
-            size={24}
-            color={colors.primary}
-            disabled={isUserAdded()}
-            onPress={handleAddContact}
-          />
+        <TouchableOpacity onPress={handleAddContact}>
+          <Icon name={getIcon()!} size={24} color={colors.primary} />
         </TouchableOpacity>
       )}
     </ListItem>
