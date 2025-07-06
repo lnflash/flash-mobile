@@ -13,7 +13,6 @@ import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSettingsScreenQuery } from "@app/graphql/generated"
-import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // utils
 import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
@@ -26,7 +25,6 @@ export const SignInQRCode = () => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const { width } = useWindowDimensions()
-  const { persistentState } = usePersistentStateContext()
 
   const [modalVisible, setModalVisible] = useState(false)
   const [QRCodeValue, setQRCodeValue] = useState<string>()

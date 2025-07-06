@@ -16,6 +16,7 @@ import {
 import { WalletDescriptor } from "@app/types/wallets"
 import _Map from "@app/assets/icons-redesign/map.svg"
 import { Event } from "nostr-tools"
+import { NavigatorScreenParams } from "@react-navigation/native"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
@@ -99,7 +100,7 @@ export type RootStackParamList = {
     usdAmount: MoneyAmount<WalletCurrency>
     lnurl: string
   }
-  phoneFlow: undefined
+  phoneFlow?: NavigatorScreenParams<PhoneValidationStackParamList>
   phoneRegistrationInitiate: undefined
   phoneRegistrationValidate: {
     phone: string
@@ -146,6 +147,7 @@ export type RootStackParamList = {
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
+  SignInViaQRCode: undefined
 }
 
 export type ChatStackParamList = {
@@ -170,6 +172,8 @@ export type PhoneValidationStackParamList = {
   phoneLoginValidate: {
     phone: string
     channel: PhoneCodeChannelType
+    mnemonicKey?: string
+    nsec?: string
   }
   authentication: {
     screenPurpose: AuthenticationScreenPurpose
