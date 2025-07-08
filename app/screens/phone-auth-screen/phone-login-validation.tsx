@@ -4,8 +4,10 @@ import analytics from "@react-native-firebase/analytics"
 import crashlytics from "@react-native-firebase/crashlytics"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme, Input } from "@rneui/themed"
+import { hexToBytes } from "@noble/curves/abstract/utils"
 import * as Keychain from "react-native-keychain"
 import { gql } from "@apollo/client"
+import { nip19 } from "nostr-tools"
 
 // components
 import { Screen } from "../../components/screen"
@@ -39,6 +41,7 @@ import {
 } from "@app/utils/analytics"
 import { parseTimer } from "../../utils/timer"
 import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
+import { KEYCHAIN_NOSTRCREDS_KEY } from "@app/components/import-nsec/utils"
 
 gql`
   mutation userLogin($input: UserLoginInput!) {
@@ -220,7 +223,15 @@ export const PhoneLoginValidationScreen: React.FC<Props> = ({ navigation, route 
                 return undefined
               })
             }
-            // enbale nsec
+            // enbale nostr chat
+            if (nsec) {
+              const secretKey = hexToBytes(nsec)
+              await Keychain.setInternetCredentials(
+                KEYCHAIN_NOSTRCREDS_KEY,
+                KEYCHAIN_NOSTRCREDS_KEY,
+                nip19.nsecEncode(secretKey),
+              )
+            }
 
             navigation.reset({
               index: 0,
