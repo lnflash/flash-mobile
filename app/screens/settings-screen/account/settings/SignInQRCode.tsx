@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { useWindowDimensions, View } from "react-native"
 import { useTheme, Text, makeStyles } from "@rneui/themed"
+import { bytesToHex } from "@noble/curves/abstract/utils"
 import * as Keychain from "react-native-keychain"
 import QRCode from "react-native-qrcode-svg"
 import { base64encode } from "byte-base64"
@@ -16,6 +17,7 @@ import { useSettingsScreenQuery } from "@app/graphql/generated"
 
 // utils
 import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
+import { getSecretKey } from "@app/utils/nostr"
 
 // assets
 import Logo from "@app/assets/logo/blink-logo-icon.png"
@@ -45,6 +47,11 @@ export const SignInQRCode = () => {
     const mnemonicKey = await Keychain.getInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
     if (mnemonicKey) {
       obj.mnemonicKey = mnemonicKey.password
+    }
+
+    const secret = await getSecretKey()
+    if (secret) {
+      obj.nsec = bytesToHex(secret)
     }
 
     setQRCodeValue(base64encode(JSON.stringify(obj)))
