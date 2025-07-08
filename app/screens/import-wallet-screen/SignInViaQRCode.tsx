@@ -12,6 +12,7 @@ import {
   RequestPhoneCodeStatus,
   useRequestPhoneCodeLogin,
 } from "../phone-auth-screen/request-phone-code-login"
+import { useActivityIndicator } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useCameraDevice, useCameraPermission } from "react-native-vision-camera"
 
@@ -29,6 +30,7 @@ type Props = StackScreenProps<RootStackParamList, "SignInViaQRCode">
 const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
+  const { toggleActivityIndicator } = useActivityIndicator()
 
   const [mnemonicKey, setMnemonicKey] = useState("")
   const [nsec, setNsec] = useState("")
@@ -60,6 +62,7 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
 
   useEffect(() => {
     if (status === RequestPhoneCodeStatus.SuccessRequestingCode) {
+      toggleActivityIndicator(false)
       navigation.navigate("phoneFlow", {
         screen: "phoneLoginValidate",
         params: {
@@ -70,6 +73,7 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
         },
       })
     } else if (status === RequestPhoneCodeStatus.Error) {
+      toggleActivityIndicator(false)
       let errorMessage: string | undefined
       if (error) {
         switch (error) {
@@ -113,6 +117,7 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
   const processQRCode = useMemo(() => {
     return async (data: string | undefined) => {
       if (data) {
+        toggleActivityIndicator(true)
         const decodedData = base64decode(data)
         const authData = JSON.parse(decodedData)
         const parsedPhoneNumber = parsePhoneNumber(authData.phone)
@@ -124,6 +129,7 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
           setMnemonicKey(authData.mnemonicKey)
         }
         if (authData.nsec) {
+          setNsec(authData.nsec)
         }
       }
     }
