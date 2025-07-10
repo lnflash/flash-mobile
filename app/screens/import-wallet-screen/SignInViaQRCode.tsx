@@ -3,7 +3,6 @@ import { Alert, Linking, TouchableOpacity, View } from "react-native"
 import { Icon, Text, makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { parsePhoneNumber } from "libphonenumber-js/mobile"
-import { toastShow } from "@app/utils/toast"
 import { base64decode } from "byte-base64"
 
 // hooks
@@ -32,6 +31,7 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
   const { toggleActivityIndicator } = useActivityIndicator()
 
+  const [pending, setPending] = useState(false)
   const [mnemonicKey, setMnemonicKey] = useState("")
   const [nsec, setNsec] = useState("")
 
@@ -62,6 +62,7 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
 
   useEffect(() => {
     if (status === RequestPhoneCodeStatus.SuccessRequestingCode) {
+      setPending(false)
       toggleActivityIndicator(false)
       navigation.navigate("phoneFlow", {
         screen: "phoneLoginValidate",
@@ -93,10 +94,15 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
             errorMessage = LL.PhoneLoginInitiateScreen.errorUnsupportedCountry()
             break
         }
-        toastShow({ message: errorMessage })
+        Alert.alert(errorMessage, "", [
+          {
+            text: LL.common.ok(),
+            onPress: () => setPending(false),
+          },
+        ])
       }
     }
-  }, [status, validatedPhoneNumber, phoneCodeChannel])
+  }, [status, error, validatedPhoneNumber, phoneCodeChannel, mnemonicKey, nsec])
 
   useEffect(() => {
     if (!hasPermission) {
@@ -116,24 +122,47 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
 
   const processQRCode = useMemo(() => {
     return async (data: string | undefined) => {
-      if (data) {
+      if (pending || !data) {
+        return
+      }
+      try {
+        setPending(true)
         toggleActivityIndicator(true)
+
         const decodedData = base64decode(data)
         const authData = JSON.parse(decodedData)
         const parsedPhoneNumber = parsePhoneNumber(authData.phone)
         if (parsedPhoneNumber.country) {
           setCountryCode(parsedPhoneNumber.country)
           setPhoneNumber(parsedPhoneNumber.nationalNumber)
+          if (authData.mnemonicKey) {
+            setMnemonicKey(authData.mnemonicKey)
+          }
+          if (authData.nsec) {
+            setNsec(authData.nsec)
+          }
+        } else {
+          toggleActivityIndicator(false)
+          Alert.alert(LL.ScanningQRCodeScreen.invalidTitle(), "", [
+            {
+              text: LL.common.ok(),
+              onPress: () => setPending(false),
+            },
+          ])
         }
-        if (authData.mnemonicKey) {
-          setMnemonicKey(authData.mnemonicKey)
-        }
-        if (authData.nsec) {
-          setNsec(authData.nsec)
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          toggleActivityIndicator(false)
+          Alert.alert(err.toString(), "", [
+            {
+              text: LL.common.ok(),
+              onPress: () => setPending(false),
+            },
+          ])
         }
       }
     }
-  }, [])
+  }, [pending])
 
   if (!hasPermission) {
     const openSettings = () => {
@@ -168,7 +197,11 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
 
   return (
     <Screen unsafe>
-      <QRCamera device={device} processInvoice={processQRCode} />
+      {pending ? (
+        <View style={{ flex: 1, backgroundColor: "#000" }} />
+      ) : (
+        <QRCamera device={device} processInvoice={processQRCode} />
+      )}
       <ActionBtns processInvoice={processQRCode} hidePaste={true} />
     </Screen>
   )
