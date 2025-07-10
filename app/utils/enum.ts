@@ -8,6 +8,7 @@ export const PinScreenPurpose = {
   AuthenticatePin: "AuthenticatePin",
   SetPin: "SetPin",
   ShowSeedPhrase: "showSeedPhrase",
+  CheckPin: "checkPin",
 } as const
 
 export type AuthenticationScreenPurpose =

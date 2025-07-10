@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react"
-import { useWindowDimensions, View } from "react-native"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { Alert, useWindowDimensions, View } from "react-native"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useTheme, Text, makeStyles } from "@rneui/themed"
 import { bytesToHex } from "@noble/curves/abstract/utils"
 import * as Keychain from "react-native-keychain"
@@ -14,15 +16,19 @@ import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSettingsScreenQuery } from "@app/graphql/generated"
+import { useFocusEffect, useNavigation } from "@react-navigation/native"
 
 // utils
 import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
+import KeyStoreWrapper from "@app/utils/storage/secureStorage"
+import { PinScreenPurpose } from "@app/utils/enum"
 import { getSecretKey } from "@app/utils/nostr"
 
 // assets
 import Logo from "@app/assets/logo/blink-logo-icon.png"
 
 export const SignInQRCode = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
@@ -30,12 +36,17 @@ export const SignInQRCode = () => {
 
   const [modalVisible, setModalVisible] = useState(false)
   const [QRCodeValue, setQRCodeValue] = useState<string>()
+  const [isPinEnabled, setIsPinEnabled] = useState(false)
 
   const { data, loading } = useSettingsScreenQuery()
 
   useEffect(() => {
     createQRCodeString()
   }, [data?.me?.phone])
+
+  useFocusEffect(() => {
+    getIsPinEnabled()
+  })
 
   const createQRCodeString = async () => {
     const obj = {
@@ -55,6 +66,34 @@ export const SignInQRCode = () => {
     }
 
     setQRCodeValue(base64encode(JSON.stringify(obj)))
+  }
+
+  const getIsPinEnabled = async () => {
+    setIsPinEnabled(await KeyStoreWrapper.getIsPinEnabled())
+  }
+
+  const onOpenModal = () => {
+    if (isPinEnabled) {
+      navigation.navigate("pin", {
+        screenPurpose: PinScreenPurpose.CheckPin,
+        callback: () => setModalVisible(true),
+      })
+    } else {
+      Alert.alert(
+        "Enable PIN Code",
+        "Please enable a PIN code as an extra security layer to display the login QR code.",
+        [
+          {
+            text: LL.common.ok(),
+            onPress: () =>
+              navigation.navigate("pin", {
+                screenPurpose: PinScreenPurpose.SetPin,
+                callback: () => setModalVisible(true),
+              }),
+          },
+        ],
+      )
+    }
   }
 
   const AccountDeletionModal = (
@@ -108,7 +147,7 @@ export const SignInQRCode = () => {
         loading={loading}
         title={"Show QR for Login"}
         variant="warning"
-        onPress={() => setModalVisible(!modalVisible)}
+        onPress={onOpenModal}
       />
       {AccountDeletionModal}
     </>

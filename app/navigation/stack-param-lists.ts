@@ -33,7 +33,7 @@ export type RootStackParamList = {
     screenPurpose: AuthenticationScreenPurpose
     isPinEnabled: boolean
   }
-  pin: { screenPurpose: PinScreenPurpose }
+  pin: { screenPurpose: PinScreenPurpose; callback?: () => void }
   Primary: undefined
   earnsSection: { section: EarnSectionType }
   earnsQuiz: { id: string }
