@@ -72,11 +72,11 @@ export const PinScreen: React.FC<Props> = ({ route }) => {
       }
     } else {
       setHelperText(LL.PinScreen.tooManyAttempts())
-      await logout()
+      await logout(true)
       await sleep(1000)
       navigation.reset({
         index: 0,
-        routes: [{ name: "Primary" }],
+        routes: [{ name: "getStarted" }],
       })
     }
   }
