@@ -1721,13 +1721,21 @@ type RootTranslation = {
 		 */
 		addFlashcard: string
 		/**
-		 * A​d​d​ ​y​o​u​r​ ​p​h​o​n​e​ ​n​u​m​b​e​r
+		 * Upgrade your account
 		 */
 		upgradeTitle: string
 		/**
-		 * B​a​c​k​u​p​ ​y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​a​n​d​ ​i​n​c​r​e​a​s​e​ ​t​r​a​n​s​a​c​t​i​o​n​ ​l​i​m​i​t​s​.
+		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
 		 */
 		upgradeDesc: string
+		/**
+		 * Enter test transaction amount to complete upgrading your account.
+		 */
+		upgradePendingDesc: string
+		/**
+		 * Enter test transaction amount to complete upgrading your account.
+		 */
+		upgradePendingDesc: string
 		/**
 		 * C​h​a​n​g​e​ ​t​o​ ​y​o​u​r​ ​l​o​c​a​l​ ​c​u​r​r​e​n​c​y
 		 */
@@ -4579,6 +4587,313 @@ type RootTranslation = {
 		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
 		 */
 		txId: string
+	},
+	AccountUpgrade: {
+		/**
+		 * Account Type
+		 */
+		accountType: string
+		/**
+		 * Personal
+		 */
+		personal: string
+		/**
+		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
+		 */
+		personalDesc: string
+		/**
+		 * Pro
+		 */
+		pro: string
+		/**
+		 * Accept payments and get discovered on the map. Requires a business name and location.
+		 */
+		proDesc: string
+		/**
+		 * Merchant
+		 */
+		merchant: string
+		/**
+		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
+		 */
+		merchantDesc: string
+		/**
+		 * Personal Information
+		 */
+		personalInfo: string
+		/**
+		 * Full name
+		 */
+		fullName: string
+		/**
+		 * Phone Number
+		 */
+		phoneNumber: string
+		/**
+		 * Email Address
+		 */
+		email: string
+		/**
+		 * Optional
+		 */
+		optional: string
+		/**
+		 * Validation
+		 */
+		validation: string
+		/**
+		 * Validation code
+		 */
+		validationCode: string
+		/**
+		 * Business Information
+		 */
+		businessInfo: string
+		/**
+		 * Business Name
+		 */
+		businessName: string
+		/**
+		 * Enter your business name
+		 */
+		businessNamePlaceholder: string
+		/**
+		 * Business Address
+		 */
+		businessAddress: string
+		/**
+		 * Enter your business address
+		 */
+		businessAddressPlaceholder: string
+		/**
+		 * Do you want a Flash terminal?
+		 */
+		flashTerminal: string
+		/**
+		 * A Flash Terminal is a smart device that can accept payment via Flash for your business and print receipts. A customer service representative will contact you if you check this box.
+		 */
+		flashTerminalTooltip: string
+		/**
+		 * Banking Information
+		 */
+		bankingInfo: string
+		/**
+		 * Bank Name
+		 */
+		bankName: string
+		/**
+		 * Enter your bank name
+		 */
+		bankNamePlaceholder: string
+		/**
+		 * Bank Branch
+		 */
+		bankBranch: string
+		/**
+		 * Enter your bank branch
+		 */
+		bankBranchPlaceholder: string
+		/**
+		 * Account Type
+		 */
+		bankAccountType: string
+		/**
+		 * Select account type
+		 */
+		selectBankAccountType: string,
+		/**
+		 * Currency
+		 */
+		currency: string
+		/**
+		 * Select currency
+		 */
+		selectCurrency: string,
+		/**
+		 * Account Number
+		 */
+		accountNum: string
+		/**
+		 * Enter your account number
+		 */
+		accountNumPlaceholder: string
+		/**
+		 * Upload ID Document
+		 */
+		uploadId: string
+		/**
+		 * You successfully requested to upgrade your account to {accountType} 
+		 * @param {string} accountType
+		 */
+		successTitle: RequiredParams<'accountType'>
+		/**
+		 * * Please enter the test transaction amount to confirm your bank details.
+		 */
+		successDesc: string
+		/**
+		 * * Transaction Verification
+		 */
+		transactionVerification: string
+		/**
+		 * To complete upgrading your account to MERCHANT, enter the test transaction amount we sent to your bank account {accountNum} to confirm your bank details.
+		 * @param {string} accountNum 
+		 */
+		transactionTitle: RequiredParams<'accountNum'>
+		/**
+		 * Transaction amount
+		 */
+		transactionAmount: string
+	}
+	Nostr: {
+		/**
+		 * E​d​i​t​ ​P​r​o​f​i​l​e
+		 */
+		editProfile: string
+		/**
+		 * I​m​p​o​r​t​ ​Y​o​u​r​ ​N​o​s​t​r​ ​S​e​c​r​e​t​ ​K​e​y
+		 */
+		importNsecTitle: string
+		/**
+		 * Y​o​u​ ​a​r​e​ ​l​o​g​g​e​d​ ​i​n​t​o​ ​a​n​o​t​h​e​r​ ​d​e​v​i​c​e​.​ ​P​l​e​a​s​e​ ​i​m​p​o​r​t​ ​y​o​u​r​ ​n​s​e​c​ ​f​r​o​m​ ​t​h​e​ ​o​t​h​e​r​ ​d​e​v​i​c​e​ ​t​o​ ​c​o​n​t​i​n​u​e​ ​u​s​i​n​g​ ​t​h​e​ ​c​h​a​t​ ​f​e​a​t​u​r​e​.
+		 */
+		importNsecDefaultDescription: string
+		/**
+		 * C​r​e​a​t​e​ ​P​r​o​f​i​l​e
+		 */
+		createProfileTitle: string
+		/**
+		 * I​f​ ​y​o​u​ ​p​r​o​c​e​e​d​,​ ​a​n​y​ ​e​x​i​s​t​i​n​g​ ​p​r​o​f​i​l​e​ ​d​a​t​a​ ​w​i​l​l​ ​b​e​ ​o​v​e​r​w​r​i​t​t​e​n​.
+		 */
+		createProfileWarning: string
+		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​f​i​n​d​ ​a​ ​p​r​o​f​i​l​e​ ​e​v​e​n​t​ ​a​t​t​a​c​h​e​d​ ​t​o​ ​t​h​i​s​ ​p​u​b​k​e​y​.
+		 */
+		createProfilePubkeyMessage: string
+		/**
+		 * D​o​ ​y​o​u​ ​w​a​n​t​ ​t​o​ ​c​o​n​t​i​n​u​e​ ​t​o​ ​c​r​e​a​t​e​?
+		 */
+		createProfilePrompt: string
+		/**
+		 * C​r​e​a​t​e​ ​P​r​o​f​i​l​e
+		 */
+		createProfileButton: string
+		/**
+		 * W​e​’​r​e​ ​l​o​o​k​i​n​g​,​ ​b​u​t​ ​w​e​ ​h​a​v​e​n​’​t​ ​b​e​e​n​ ​a​b​l​e​ ​t​o​ ​f​i​n​d​ ​y​o​u​r​ ​p​r​o​f​i​l​e​.
+		 */
+		profileNotFound: string
+		/**
+		 * W​o​u​l​d​ ​y​o​u​ ​l​i​k​e​ ​t​o​ ​c​r​e​a​t​e​ ​o​n​e​ ​n​o​w​?
+		 */
+		promptToCreateProfile: string
+		/**
+		 * L​e​a​r​n​ ​a​b​o​u​t​ ​N​o​s​t​r
+		 */
+		learnAboutNostr: string
+		/**
+		 * E​x​p​l​o​r​e​ ​t​h​i​s​ ​g​u​i​d​e​ ​t​o​ ​g​e​t​ ​t​h​e​ ​m​o​s​t​ ​o​u​t​ ​o​f​ ​n​o​s​t​r​ ​c​h​a​t
+		 */
+		learnAboutNostrSubtext: string
+		/**
+		 * S​h​o​w​ ​p​u​b​l​i​c​ ​k​e​y
+		 */
+		showPublicKey: string
+		/**
+		 * S​h​o​w​ ​p​r​i​v​a​t​e​ ​k​e​y
+		 */
+		showPrivateKey: string
+		/**
+		 * P​r​o​f​i​l​e​ ​C​o​n​n​e​c​t​e​d
+		 */
+		profileConnected: string
+		/**
+		 * R​e​c​o​n​n​e​c​t​ ​P​r​o​f​i​l​e
+		 */
+		reconnectProfile: string
+		/**
+		 * T​a​p​ ​t​o​ ​r​e​f​r​e​s​h​ ​c​o​n​n​e​c​t​i​o​n
+		 */
+		tapToRefreshConnection: string
+		/**
+		 * I​m​p​o​r​t​ ​e​x​i​s​t​i​n​g​ ​p​r​o​f​i​l​e
+		 */
+		importExistingProfile: string
+		/**
+		 * D​e​l​e​t​e​ ​p​r​o​f​i​l​e
+		 */
+		deleteProfile: string
+		/**
+		 * N​o​ ​P​r​o​f​i​l​e​ ​I​D​ ​e​x​i​s​t​s
+		 */
+		noProfileIdExists: string
+		/**
+		 * Y​o​u​r​ ​p​r​o​f​i​l​e​ ​h​a​s​ ​b​e​e​n​ ​r​e​c​o​n​n​e​c​t​e​d​ ​s​u​c​c​e​s​s​f​u​l​l​y
+		 */
+		profileReconnected: string
+		/**
+		 * W​a​r​n​i​n​g
+		 */
+		deleteWarningTitle: string
+		/**
+		 * D​e​l​e​t​i​n​g​ ​y​o​u​r​ ​p​r​o​f​i​l​e​ ​k​e​y​s​ ​w​i​l​l​ ​r​e​m​o​v​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​f​r​o​m​ ​t​h​i​s​ ​d​e​v​i​c​e​.​ ​W​i​t​h​o​u​t​ ​a​ ​b​a​c​k​u​p​,​ ​y​o​u​ ​w​o​n​'​t​ ​b​e​ ​a​b​l​e​ ​t​o​ ​a​c​c​e​s​s​ ​t​h​i​s​ ​p​r​o​f​i​l​e​ ​a​g​a​i​n​.​ ​A​r​e​ ​y​o​u​ ​s​u​r​e​?
+		 */
+		deleteWarningMessage: string
+		/**
+		 * I​f​ ​y​o​u​ ​w​i​s​h​ ​t​o​ ​u​s​e​ ​y​o​u​r​ ​o​w​n​ ​n​s​e​c​,​ ​p​a​s​t​e​ ​i​t​ ​b​e​l​o​w​.
+		 */
+		importNsecDescription: string
+		/**
+		 * P​r​o​f​i​l​e​ ​i​m​p​o​r​t​e​d​ ​s​u​c​c​e​s​s​f​u​l​l​y
+		 */
+		profileImportedSuccessfully: string
+		/**
+		 * N​o​ ​N​o​s​t​r​ ​P​r​o​f​i​l​e​ ​F​o​u​n​d
+		 */
+		noProfileFound: string
+		/**
+		 * Y​o​u​ ​h​a​v​e​n​’​t​ ​c​r​e​a​t​e​d​ ​a​ ​N​o​s​t​r​ ​p​r​o​f​i​l​e​ ​y​e​t​.​
+	​T​a​p​ ​b​e​l​o​w​ ​t​o​ ​c​r​e​a​t​e​ ​o​n​e​.
+		 */
+		noProfileDescription: string
+		/**
+		 * C​r​e​a​t​i​n​g​ ​P​r​o​f​i​l​e​.​.​.
+		 */
+		creatingProfile: string
+		/**
+		 * C​r​e​a​t​e​ ​N​e​w​ ​P​r​o​f​i​l​e
+		 */
+		createNewProfile: string
+		/**
+		 * F​i​n​d​i​n​g​ ​Y​o​u​.​.
+		 */
+		findingYou: string
+		/**
+		 * A​d​v​a​n​c​e​d​ ​N​o​s​t​r​ ​S​e​t​t​i​n​g​s
+		 */
+		advancedSettings: string
+		KeyModal: {
+			/**
+			 * Y​o​u​r​ ​P​u​b​l​i​c​ ​P​r​o​f​i​l​e​ ​I​D
+			 */
+			yourPublicProfileId: string
+			/**
+			 * Y​o​u​r​ ​P​r​i​v​a​t​e​ ​P​r​o​f​i​l​e​ ​K​e​y
+			 */
+			yourPrivateProfileKey: string
+			/**
+			 * K​e​y​ ​c​o​p​i​e​d​ ​t​o​ ​c​l​i​p​b​o​a​r​d
+			 */
+			keyCopiedToClipboard: string
+		}
+		common: {
+			/**
+			 * C​o​p​y
+			 */
+			copy: string
+			/**
+			 * C​o​p​i​e​d
+			 */
+			copied: string
+		}
 	}
 	Nostr: {
 		/**
@@ -6411,13 +6726,17 @@ export type TranslationFunctions = {
 		 */
 		addFlashcard: () => LocalizedString
 		/**
-		 * Add your phone number
+		 * Upgrade your account
 		 */
 		upgradeTitle: () => LocalizedString
 		/**
-		 * Backup your cash wallet and increase transaction limits.
+		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
 		 */
 		upgradeDesc: () => LocalizedString
+		/**
+		 * Enter test transaction amount to complete upgrading your account.
+		 */
+		upgradePendingDesc: () => LocalizedString
 		/**
 		 * Change to your local currency
 		 */
@@ -9345,6 +9664,160 @@ export type TranslationFunctions = {
 			 */
 			copied: () => LocalizedString
 		}
+	},
+	AccountUpgrade: {
+		/**
+		 * Account Type
+		 */
+		accountType: () => LocalizedString
+		/**
+		 * Personal
+		 */
+		personal: () => LocalizedString
+		/**
+		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
+		 */
+		personalDesc: () => LocalizedString
+		/**
+		 * Pro
+		 */
+		pro: () => LocalizedString
+		/**
+		 * Accept payments and get discovered on the map. Requires a business name and location.
+		 */
+		proDesc: () => LocalizedString
+		/**
+		 * Merchant
+		 */
+		merchant: () => LocalizedString
+		/**
+		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
+		 */
+		merchantDesc: () => LocalizedString
+		/**
+		 * Personal Information
+		 */
+		personalInfo: () => LocalizedString
+		/**
+		 * Full name
+		 */
+		fullName: () => LocalizedString
+		/**
+		 * Phone Number
+		 */
+		phoneNumber: () => LocalizedString
+		/**
+		 * Email Address
+		 */
+		email: () => LocalizedString
+		/**
+		 * Optional
+		 */
+		optional: () => LocalizedString
+		/**
+		 * Validation
+		 */
+		validation: () => LocalizedString
+		/**
+		 * Validation code
+		 */
+		validationCode: () => LocalizedString
+		/**
+		 * Business Information
+		 */
+		businessInfo: () => LocalizedString
+		/**
+		 * Business Name
+		 */
+		businessName: () => LocalizedString
+		/**
+		 * Enter your business name
+		 */
+		businessNamePlaceholder: () => LocalizedString
+		/**
+		 * Business Address
+		 */
+		businessAddress: () => LocalizedString
+		/**
+		 * Enter your business address
+		 */
+		businessAddressPlaceholder: () => LocalizedString
+		/**
+		 * Do you want a Flash terminal?
+		 */
+		flashTerminal: () => LocalizedString
+		/**
+		 * A Flash Terminal is a smart device that can accept payment via Flash for your business and print receipts. A customer service representative will contact you if you check this box.
+		 */
+		flashTerminalTooltip: () => LocalizedString
+		/**
+		 * Banking Information
+		 */
+		bankingInfo: () => LocalizedString
+		/**
+		 * Bank Name
+		 */
+		bankName: () => LocalizedString
+		/**
+		 * Enter your bank name
+		 */
+		bankNamePlaceholder: () => LocalizedString
+		/**
+		 * Bank Branch
+		 */
+		bankBranch: () => LocalizedString
+		/**
+		 * Enter your bank branch
+		 */
+		bankBranchPlaceholder: () => LocalizedString
+		/**
+		 * Account Type
+		 */
+		bankAccountType: () => LocalizedString
+		/**
+		 * Select account type
+		 */
+		selectBankAccountType: () => LocalizedString
+		/**
+		 * Currency
+		 */
+		currency: () => LocalizedString
+		/**
+		 * Select currency
+		 */
+		selectCurrency: () => LocalizedString
+		/**
+		 * Account Number
+		 */
+		accountNum: () => LocalizedString
+		/**
+		 * Enter your account number
+		 */
+		accountNumPlaceholder: () => LocalizedString
+		/**
+		 * Upload ID Document
+		 */
+		uploadId: () => LocalizedString
+		/**
+		 * You successfully requested to upgrade your account to {accountType}
+		 */
+		successTitle: (arg: { accountType: string }) => LocalizedString
+		/**
+		 * * Please enter the test transaction amount to confirm your bank details.
+		 */
+		successDesc: () => LocalizedString
+		/**
+		 * * Transaction Verification
+		 */
+		transactionVerification: () => LocalizedString
+		/**
+		 * To complete upgrading your account to MERCHANT, enter the test transaction amount we sent to your bank account {accountNum} to confirm your bank details.
+		 */
+		transactionTitle: (arg: { accountNum: string }) => LocalizedString
+		/**
+		 * Transaction amount
+		 */
+		transactionAmount: () => LocalizedString
 	}
 }
 

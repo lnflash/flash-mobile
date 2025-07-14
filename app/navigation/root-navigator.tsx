@@ -114,6 +114,15 @@ import {
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
+import {
+  PersonalInformation,
+  BusinessInformation,
+  BankInformation,
+  AccountType,
+  Validation,
+  Success,
+  TestTransaction,
+} from "@app/screens/account-upgrade-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -564,6 +573,41 @@ export const RootStack = () => {
         name="EditNostrProfile"
         component={EditNostrProfileScreen}
         options={{ headerShown: true, title: LL.Nostr.editProfile() }}
+      />
+      <RootNavigator.Screen
+        name="AccountType"
+        component={AccountType}
+        options={{ title: LL.AccountUpgrade.accountType() }}
+      />
+      <RootNavigator.Screen
+        name="PersonalInformation"
+        component={PersonalInformation}
+        options={{ title: LL.AccountUpgrade.personalInfo() }}
+      />
+      <RootNavigator.Screen
+        name="BusinessInformation"
+        component={BusinessInformation}
+        options={{ title: LL.AccountUpgrade.businessInfo() }}
+      />
+      <RootNavigator.Screen
+        name="BankInformation"
+        component={BankInformation}
+        options={{ title: LL.AccountUpgrade.bankingInfo() }}
+      />
+      <RootNavigator.Screen
+        name="Validation"
+        component={Validation}
+        options={{ title: LL.AccountUpgrade.validation() }}
+      />
+      <RootNavigator.Screen
+        name="AccountUpgradeSuccess"
+        component={Success}
+        options={{ headerShown: false }}
+      />
+      <RootNavigator.Screen
+        name="TestTransaction"
+        component={TestTransaction}
+        options={{ title: LL.AccountUpgrade.transactionVerification() }}
       />
     </RootNavigator.Navigator>
   )
