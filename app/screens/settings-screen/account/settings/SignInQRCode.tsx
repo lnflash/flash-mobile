@@ -73,26 +73,33 @@ export const SignInQRCode = () => {
   }
 
   const onOpenModal = () => {
-    if (isPinEnabled) {
-      navigation.navigate("pin", {
-        screenPurpose: PinScreenPurpose.CheckPin,
-        callback: () => setModalVisible(true),
-      })
-    } else {
+    if (!data?.me?.phone) {
       Alert.alert(
-        "Enable PIN Code",
-        "Please enable a PIN code as an extra security layer to display the login QR code.",
-        [
-          {
-            text: LL.common.ok(),
-            onPress: () =>
-              navigation.navigate("pin", {
-                screenPurpose: PinScreenPurpose.SetPin,
-                callback: () => setModalVisible(true),
-              }),
-          },
-        ],
+        "Add your phone number",
+        "Make sure you've added your phone number to access the login QR code.",
       )
+    } else {
+      if (isPinEnabled) {
+        navigation.navigate("pin", {
+          screenPurpose: PinScreenPurpose.CheckPin,
+          callback: () => setModalVisible(true),
+        })
+      } else {
+        Alert.alert(
+          "Enable PIN Code",
+          "Please enable a PIN code as an extra security layer to display the login QR code.",
+          [
+            {
+              text: LL.common.ok(),
+              onPress: () =>
+                navigation.navigate("pin", {
+                  screenPurpose: PinScreenPurpose.SetPin,
+                  callback: () => setModalVisible(true),
+                }),
+            },
+          ],
+        )
+      }
     }
   }
 
