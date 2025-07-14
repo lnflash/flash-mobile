@@ -127,33 +127,47 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
       }
       try {
         setPending(true)
-        toggleActivityIndicator(true)
 
         const decodedData = base64decode(data)
         const authData = JSON.parse(decodedData)
-        const parsedPhoneNumber = parsePhoneNumber(authData.phone)
-        if (parsedPhoneNumber.country) {
-          setCountryCode(parsedPhoneNumber.country)
-          setPhoneNumber(parsedPhoneNumber.nationalNumber)
-          if (authData.mnemonicKey) {
-            setMnemonicKey(authData.mnemonicKey)
-          }
-          if (authData.nsec) {
-            setNsec(authData.nsec)
-          }
+
+        if (!authData.phone) {
+          Alert.alert(
+            LL.ScanningQRCodeScreen.invalidTitle(),
+            "The account you're trying to log in to doesn't have a phone number linked.",
+            [
+              {
+                text: LL.common.ok(),
+                onPress: () => setPending(false),
+              },
+            ],
+          )
         } else {
-          toggleActivityIndicator(false)
-          Alert.alert(LL.ScanningQRCodeScreen.invalidTitle(), "", [
-            {
-              text: LL.common.ok(),
-              onPress: () => setPending(false),
-            },
-          ])
+          toggleActivityIndicator(true)
+          const parsedPhoneNumber = parsePhoneNumber(authData.phone)
+          if (parsedPhoneNumber.country) {
+            setCountryCode(parsedPhoneNumber.country)
+            setPhoneNumber(parsedPhoneNumber.nationalNumber)
+            if (authData.mnemonicKey) {
+              setMnemonicKey(authData.mnemonicKey)
+            }
+            if (authData.nsec) {
+              setNsec(authData.nsec)
+            }
+          } else {
+            toggleActivityIndicator(false)
+            Alert.alert(LL.ScanningQRCodeScreen.invalidTitle(), "", [
+              {
+                text: LL.common.ok(),
+                onPress: () => setPending(false),
+              },
+            ])
+          }
         }
       } catch (err: unknown) {
         if (err instanceof Error) {
           toggleActivityIndicator(false)
-          Alert.alert(err.toString(), "", [
+          Alert.alert(LL.ScanningQRCodeScreen.invalidTitle(), err.toString(), [
             {
               text: LL.common.ok(),
               onPress: () => setPending(false),
