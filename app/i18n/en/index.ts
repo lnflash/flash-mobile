@@ -758,6 +758,7 @@ const en: BaseTranslation = {
     amount: "Amount",
     MinOnChainLimit: "Minimum amount for this transaction is US$2.00",
     MinOnChainSatLimit: "Minimum amount for this transaction is 5,500 sats",
+    MinFlashcardLimit: "Minimum amount when reloading from flashcard is 100 sats",
     amountExceed: "Amount exceeds your balance of {balance: string}",
     amountExceedsLimit: "Amount exceeds your remaining daily limit of {limit: string}",
     upgradeAccountToIncreaseLimit: "Upgrade your account to increase your limit",
@@ -1442,6 +1443,17 @@ const en: BaseTranslation = {
       yourPublicProfileId: "Your Public Profile ID",
       yourPrivateProfileKey: "Your Private Profile Key",
       keyCopiedToClipboard: "Key copied to clipboard",
+    },
+    Contacts: {
+      stillLoading: "Having trouble finding your contact list, have you followed anyone yet?",
+      noCantacts: "No Contacts Available",
+      profile: "Profile",
+      nostrUser: "Nostr User",
+      message: "Message",
+      sendPayment: "Send Payment",
+      contactInfo: "Contact Info",
+      contactManagement: "Contact Management",
+      unfollowContact: "Unfollow Contact"
     },
     common: {
       copy: "Copy",

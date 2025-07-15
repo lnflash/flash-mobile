@@ -86,7 +86,9 @@
     "ConversionConfirmationScreen": {
         "title": "Review conversion",
         "youreConverting": "You're converting",
-        "receivingAccount": "Receiving account"
+        "sendingAccount": "Sending account",
+        "receivingAccount": "Receiving account",
+        "conversionFee": "Conversion Fee"
     },
     "ConversionSuccessScreen": {
         "title": "Conversion Success",
@@ -1346,6 +1348,17 @@
             "yourPublicProfileId": "Your Public Profile ID",
             "yourPrivateProfileKey": "Your Private Profile Key",
             "keyCopiedToClipboard": "Key copied to clipboard"
+        },
+        "Contacts": {
+            "stillLoading": "Having trouble finding your contact list, have you followed anyone yet?",
+            "noCantacts": "No Contacts Available",
+            "profile": "Profile",
+            "nostrUser": "Nostr User",
+            "message": "Message",
+            "sendPayment": "Send Payment",
+            "contactInfo": "Contact Info",
+            "contactManagement": "Contact Management",
+            "unfollowContact": "Unfollow Contact"
         },
         "common": {
             "copy": "Copy",

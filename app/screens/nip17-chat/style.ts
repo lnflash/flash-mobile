@@ -57,6 +57,8 @@ export const useStyles = makeStyles(({ colors }) => ({
   itemContainer: {
     borderRadius: 8,
     backgroundColor: colors.grey5,
+    minHeight: 50,
+    margin: 5,
   },
 
   listContainer: { flexGrow: 1 },
@@ -65,7 +67,7 @@ export const useStyles = makeStyles(({ colors }) => ({
     backgroundColor: colors.white,
     borderBottomColor: colors.white,
     borderTopColor: colors.white,
-    marginHorizontal: 26,
+    marginHorizontal: 12,
     marginVertical: 8,
   },
 

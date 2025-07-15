@@ -156,6 +156,7 @@ export type ChatStackParamList = {
   sendBitcoinDestination: { username: string }
   transactionDetail: { txid: string }
   messages: { userPrivateKey: string; groupId: string }
+  contactDetails: { contactPubkey: string; userPrivateKey: string }
 }
 
 export type ContactStackParamList = {
