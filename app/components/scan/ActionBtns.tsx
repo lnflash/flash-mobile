@@ -17,9 +17,10 @@ import PhotoAdd from "@app/assets/icons/photo-add.svg"
 
 type Props = {
   processInvoice: (data?: string) => void
+  hidePaste?: boolean
 }
 
-const ActionBtns: React.FC<Props> = ({ processInvoice }) => {
+const ActionBtns: React.FC<Props> = ({ processInvoice, hidePaste }) => {
   const styles = useStyles()
   const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
@@ -62,13 +63,23 @@ const ActionBtns: React.FC<Props> = ({ processInvoice }) => {
   }
 
   return (
-    <View style={[styles.bottom, { paddingBottom: bottom }]}>
+    <View
+      style={[
+        styles.bottom,
+        {
+          paddingBottom: bottom,
+          justifyContent: hidePaste ? "flex-end" : "space-between",
+        },
+      ]}
+    >
       <TouchableOpacity style={styles.padding} onPress={showImagePicker}>
         <PhotoAdd />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.padding} onPress={handleInvoicePaste}>
-        <Paste />
-      </TouchableOpacity>
+      {!hidePaste && (
+        <TouchableOpacity style={styles.padding} onPress={handleInvoicePaste}>
+          <Paste />
+        </TouchableOpacity>
+      )}
     </View>
   )
 }

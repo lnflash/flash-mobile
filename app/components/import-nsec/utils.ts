@@ -1,6 +1,6 @@
 import * as Keychain from "react-native-keychain"
 
-const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
+export const KEYCHAIN_NOSTRCREDS_KEY = "nostr_creds_key"
 
 export const validateNsec = (nsec: string) => {
   const bech32Pattern = /^nsec1[a-z0-9]{58}$/

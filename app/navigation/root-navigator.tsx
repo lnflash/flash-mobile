@@ -86,6 +86,7 @@ import {
   BackupOptions,
   TransactionHistoryTabs,
   USDTransactionHistory,
+  SignInViaQRCode,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -564,6 +565,14 @@ export const RootStack = () => {
         name="EditNostrProfile"
         component={EditNostrProfileScreen}
         options={{ headerShown: true, title: LL.Nostr.editProfile() }}
+      />
+      <RootNavigator.Screen
+        name="SignInViaQRCode"
+        component={SignInViaQRCode}
+        options={{
+          headerStyle: { backgroundColor: "#000" },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
       />
     </RootNavigator.Navigator>
   )
