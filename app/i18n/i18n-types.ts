@@ -2430,6 +2430,10 @@ type RootTranslation = {
 		 */
 		MinOnChainSatLimit: string
 		/**
+		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​w​h​e​n​ ​r​e​l​o​a​d​i​n​g​ ​f​r​o​m​ ​f​l​a​s​h​c​a​r​d​ ​i​s​ ​1​0​0​ ​s​a​t​s
+		 */
+		MinFlashcardLimit: string
+		/**
 		 * A​m​o​u​n​t​ ​e​x​c​e​e​d​s​ ​y​o​u​r​ ​b​a​l​a​n​c​e​ ​o​f​ ​{​b​a​l​a​n​c​e​}
 		 * @param {string} balance
 		 */
@@ -7122,6 +7126,10 @@ export type TranslationFunctions = {
 		 * Minimum amount for this transaction is 5,500 sats
 		 */
 		MinOnChainSatLimit: () => LocalizedString
+		/**
+		 * Minimum amount when reloading from flashcard is 100 sats
+		 */
+		MinFlashcardLimit: () => LocalizedString
 		/**
 		 * Amount exceeds your balance of {balance}
 		 */
