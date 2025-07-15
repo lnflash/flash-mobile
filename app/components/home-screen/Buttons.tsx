@@ -58,6 +58,11 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
       target: "receiveBitcoin",
       icon: "down",
     },
+    {
+      title: LL.HomeScreen.transfer(),
+      target: "transfer",
+      icon: "swap",
+    },
   ]
 
   if (persistentState.isAdvanceMode) {

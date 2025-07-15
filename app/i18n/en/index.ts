@@ -537,6 +537,7 @@ const en: BaseTranslation = {
     balance: "Refresh Balance",
     showQrCode: "Topup via QR",
     send: "Send",
+    transfer: "Transfer",
     sweep: "Sweep to Wallet",
     pay: "Pay",
     title: "Home",
@@ -564,6 +565,43 @@ const en: BaseTranslation = {
     btcWalletDesc: "Easily transfer larger amounts in Bitcoin.",
     backupTitle: "Backup your BTC wallet",
     backupDesc: "Backup and secure your Bitcoin wallet using recovery phrase."
+  },
+  TopUpScreen: {
+    title: "Top Up",
+    bankTransfer: "Bank Transfer",
+    bankTransferDesc: "Transfer funds from your bank account",
+    debitCreditCard: "Debit/Credit Card",
+    debitCreditCardDesc: "Pay with your card via Fygaro"
+  },
+  CardPaymentScreen: {
+    title: "Card Payment",
+    email: "Email",
+    emailPlaceholder: "Enter your email address",
+    wallet: "Wallet",
+    walletPlaceholder: "Select wallet",
+    amount: "Amount (USD)",
+    amountPlaceholder: "Enter amount",
+    continue: "Continue",
+    usdWallet: "USD Wallet",
+    btcWallet: "BTC Wallet",
+    invalidEmail: "Please enter a valid email address",
+    invalidAmount: "Please enter a valid amount",
+    minimumAmount: "Minimum amount is $1.00"
+  },
+  FygaroWebViewScreen: {
+    title: "Fygaro Payment",
+    loading: "Loading payment page...",
+    error: "Failed to load payment page",
+    retry: "Retry"
+  },
+  PaymentSuccessScreen: {
+    title: "Payment Successful",
+    successMessage: "Your payment has been processed successfully",
+    amountSent: "Amount Sent",
+    depositedTo: "Deposited to",
+    transactionId: "Transaction ID",
+    done: "Done",
+    viewTransaction: "View Transaction"
   },
   PinScreen: {
     attemptsRemaining: "Incorrect PIN. {attemptsRemaining: number} attempts remaining.",
@@ -1085,6 +1123,10 @@ const en: BaseTranslation = {
   TransferScreen: {
     title: "Transfer",
     percentageToConvert: "% to convert",
+    topUp: "Top Up",
+    topUpDesc: "Add funds to your wallet",
+    settle: "Settle",
+    settleDesc: "Settle pending transactions"
   },
   UpgradeAccountModal: {
     title: "Upgrade your account",
@@ -1336,7 +1378,7 @@ const en: BaseTranslation = {
     email: "Email",
     enjoyingApp: "Enjoying the app?",
     statusPage: "Status Page",
-    //telegram: "Telegram",
+    // telegram: "Telegram",
     discord: "Discord",
     mattermost: "Mattermost",
     thankYouText: "Thank you for the feedback, would you like to suggest an improvement?",

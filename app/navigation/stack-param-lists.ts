@@ -146,6 +146,22 @@ export type RootStackParamList = {
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
+  transfer: undefined
+  topUp: undefined
+  cardPayment: undefined
+  fygaroWebView: {
+    amount: number
+    email: string
+    wallet: string
+    sessionId: string
+    paymentUrl: string
+    username: string
+  }
+  paymentSuccess: {
+    amount: number
+    wallet: string
+    transactionId: string
+  }
 }
 
 export type ChatStackParamList = {

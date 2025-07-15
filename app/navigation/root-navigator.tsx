@@ -86,6 +86,11 @@ import {
   BackupOptions,
   TransactionHistoryTabs,
   USDTransactionHistory,
+  TransferScreen,
+  TopUpScreen,
+  CardPaymentScreen,
+  FygaroWebViewScreen,
+  PaymentSuccessScreen,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -558,6 +563,31 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="CashoutSuccess"
         component={CashoutSuccess}
+        options={{ headerShown: false }}
+      />
+      <RootNavigator.Screen
+        name="transfer"
+        component={TransferScreen}
+        options={{ title: LL.TransferScreen.title() }}
+      />
+      <RootNavigator.Screen
+        name="topUp"
+        component={TopUpScreen}
+        options={{ title: LL.TopUpScreen.title() }}
+      />
+      <RootNavigator.Screen
+        name="cardPayment"
+        component={CardPaymentScreen}
+        options={{ title: LL.CardPaymentScreen.title() }}
+      />
+      <RootNavigator.Screen
+        name="fygaroWebView"
+        component={FygaroWebViewScreen}
+        options={{ title: LL.FygaroWebViewScreen.title() }}
+      />
+      <RootNavigator.Screen
+        name="paymentSuccess"
+        component={PaymentSuccessScreen}
         options={{ headerShown: false }}
       />
       <RootNavigator.Screen
