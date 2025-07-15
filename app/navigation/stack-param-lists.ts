@@ -149,18 +149,22 @@ export type RootStackParamList = {
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
-  Contacts: undefined
-  SignInViaQRCode: undefined
-  Nip29GroupChat: { groupId: string }
-  AccountType: undefined
-  PersonalInformation: undefined
-  BusinessInformation: undefined
-  BankInformation: undefined
-  Validation: {
-    phone: string
-    channel: PhoneCodeChannelType
+  transfer: undefined
+  topUp: undefined
+  cardPayment: undefined
+  fygaroWebView: {
+    amount: number
+    email: string
+    wallet: string
+    sessionId: string
+    paymentUrl: string
+    username: string
   }
-  AccountUpgradeSuccess: undefined
+  paymentSuccess: {
+    amount: number
+    wallet: string
+    transactionId: string
+  }
 }
 
 export type ChatStackParamList = {
