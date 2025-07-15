@@ -8,7 +8,7 @@ import { MessageType } from "@flyerhq/react-native-chat-ui"
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 
 type Props = {
-  recipientId: string
+  recipientId?: string
   message: MessageType.Text
   nextMessage: number
   prevMessage: boolean

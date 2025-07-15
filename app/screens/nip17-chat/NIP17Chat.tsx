@@ -1,7 +1,15 @@
+import { SearchBar } from "@rneui/base"
 import { useTheme } from "@rneui/themed"
 import * as React from "react"
 import { useCallback, useState } from "react"
-import { ActivityIndicator, Text, View, Alert } from "react-native"
+import {
+  ActivityIndicator,
+  Text,
+  View,
+  Alert,
+  TouchableOpacity,
+  Image,
+} from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
@@ -21,18 +29,12 @@ import { useStyles } from "./style"
 import { SearchListItem } from "./searchListItem"
 import { HistoryListItem } from "./historyListItem"
 import { useChatContext } from "./chatContext"
-import { useFocusEffect, useNavigation } from "@react-navigation/native"
+import { useFocusEffect } from "@react-navigation/native"
+import { useAppConfig } from "@app/hooks"
 import { useAppSelector } from "@app/store/redux"
 import { ImportNsecModal } from "../../components/import-nsec/import-nsec-modal"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
-import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
-import Contacts from "./contacts"
-import { UserSearchBar } from "./UserSearchBar"
-import { StackNavigationProp } from "@react-navigation/stack"
-import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-
-const Tab = createMaterialTopTabNavigator()
 
 export const NIP17Chat: React.FC = () => {
   const styles = useStyles()
@@ -55,7 +57,6 @@ export const NIP17Chat: React.FC = () => {
   const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
-
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
 
   const navigateToContactDetails = (contactPubkey: string) => {
@@ -159,85 +160,63 @@ export const NIP17Chat: React.FC = () => {
   return (
     <Screen style={{ ...styles.header, flex: 1 }}>
       {privateKey && !showImportModal ? (
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-            // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
-            // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
-            tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
-            tabBarIcon: ({ color }) => {
-              let iconName: string
-              if (route.name === "Chats") {
-                iconName = "chatbubble-ellipses-outline" // Chat icon
-              } else if (route.name === "Contacts") {
-                iconName = "people-outline" // Contacts icon
-              } else {
-                iconName = ""
-              }
-              return <Icon name={iconName} size={24} color={color} />
-            },
-            tabBarShowLabel: false, // Hide text labels
-          })}
-        >
-          <Tab.Screen name="Chats">
-            {() => (
-              <View style={{ flex: 1, ...styles.header }}>
-                {SearchBarContent}
+        <View style={{ flex: 1 }}>
+          {SearchBarContent}
 
-                {searchedUsers.length !== 0 ? (
-                  <FlatList
-                    contentContainerStyle={styles.listContainer}
-                    data={searchedUsers}
-                    ListEmptyComponent={ListEmptyContent}
-                    renderItem={({ item }) => (
-                      <SearchListItem item={item} userPrivateKey={privateKey!} />
-                    )}
-                    keyExtractor={(item) => item.id}
-                  />
-                ) : (
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        margin: 10,
-                        marginLeft: 20,
-                        color: colors.primary3,
-                      }}
-                      onPress={() => navigateToContactDetails(getPublicKey(privateKey))}
-                    >
-                      signed in as:{" "}
-                      <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-                        {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
-                      </Text>
-                    </Text>
-                    <FlatList
-                      contentContainerStyle={styles.listContainer}
-                      data={groupIds}
-                      ListEmptyComponent={ListEmptyContent}
-                      scrollEnabled={true}
-                      renderItem={({ item }) => {
-                        return (
-                          <HistoryListItem
-                            item={item}
-                            userPrivateKey={privateKey!}
-                            groups={groups}
-                          />
-                        )
-                      }}
-                      keyExtractor={(item) => item}
+          {searchText ? (
+            <FlatList
+              contentContainerStyle={styles.listContainer}
+              data={searchedUsers}
+              ListEmptyComponent={ListEmptyContent}
+              renderItem={({ item }) => (
+                <SearchListItem item={item} userPrivateKey={privateKey!} />
+              )}
+              keyExtractor={(item) => item.id}
+            />
+          ) : (
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 24,
+                  marginTop: 20,
+                  marginLeft: 20,
+                  color: colors.primary3,
+                }}
+              >
+                Chats
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  margin: 10,
+                  marginLeft: 20,
+                  color: colors.primary3,
+                }}
+              >
+                signed in as:{" "}
+                <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                  {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
+                </Text>
+              </Text>
+              <FlatList
+                contentContainerStyle={styles.listContainer}
+                data={groupIds}
+                ListEmptyComponent={ListEmptyContent}
+                scrollEnabled={true}
+                renderItem={({ item }) => {
+                  return (
+                    <HistoryListItem
+                      item={item}
+                      userPrivateKey={privateKey!}
+                      groups={groups}
                     />
-                  </View>
-                )}
-              </View>
-            )}
-          </Tab.Screen>
-          <Tab.Screen name="Contacts">
-            {() => (
-              <View style={{ ...styles.header, height: "100%" }}>
-                <Contacts userPrivateKey={bytesToHex(privateKey)} />
-              </View>
-            )}
-          </Tab.Screen>
-        </Tab.Navigator>
+                  )
+                }}
+                keyExtractor={(item) => item}
+              />
+            </View>
+          )}
+        </View>
       ) : (
         <Text>Loading your nostr keys...</Text>
       )}
