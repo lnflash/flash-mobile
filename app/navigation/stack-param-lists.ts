@@ -146,6 +146,7 @@ export type RootStackParamList = {
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
+  Nip29GroupChat: { groupId: string }
 }
 
 export type ChatStackParamList = {

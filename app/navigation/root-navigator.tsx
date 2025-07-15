@@ -114,6 +114,7 @@ import {
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
+import { Nip29GroupChatScreen } from "@app/screens/nip17-chat/SupportGroupChat"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -564,6 +565,11 @@ export const RootStack = () => {
         name="EditNostrProfile"
         component={EditNostrProfileScreen}
         options={{ headerShown: true, title: LL.Nostr.editProfile() }}
+      />
+      <RootNavigator.Screen
+        name="Nip29GroupChat"
+        component={Nip29GroupChatScreen}
+        options={{ title: "Group Chat" }}
       />
     </RootNavigator.Navigator>
   )

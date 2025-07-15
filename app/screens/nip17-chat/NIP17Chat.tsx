@@ -1,8 +1,15 @@
 import { SearchBar } from "@rneui/base"
-import { useTheme } from "@rneui/themed"
+import { Card, useTheme } from "@rneui/themed"
 import * as React from "react"
 import { useCallback, useState } from "react"
-import { ActivityIndicator, Text, View, Alert } from "react-native"
+import {
+  ActivityIndicator,
+  Text,
+  View,
+  Alert,
+  TouchableOpacity,
+  Image,
+} from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
@@ -21,12 +28,14 @@ import { useStyles } from "./style"
 import { SearchListItem } from "./searchListItem"
 import { HistoryListItem } from "./historyListItem"
 import { useChatContext } from "./chatContext"
-import { useFocusEffect } from "@react-navigation/native"
+import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { useAppConfig } from "@app/hooks"
 import { useAppSelector } from "@app/store/redux"
 import { ImportNsecModal } from "../../components/import-nsec/import-nsec-modal"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 export const NIP17Chat: React.FC = () => {
   const styles = useStyles()
@@ -59,6 +68,7 @@ export const NIP17Chat: React.FC = () => {
   const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
   const reset = useCallback(() => {
     setSearchText("")
@@ -240,7 +250,6 @@ export const NIP17Chat: React.FC = () => {
       {privateKey && !showImportModal ? (
         <View style={{ flex: 1 }}>
           {SearchBarContent}
-
           {searchText ? (
             <FlatList
               contentContainerStyle={styles.listContainer}
@@ -276,6 +285,36 @@ export const NIP17Chat: React.FC = () => {
                   {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
                 </Text>
               </Text>
+              <TouchableOpacity
+                style={styles.itemContainer} // same style as your list items
+                onPress={() =>
+                  navigation.navigate("Nip29GroupChat", { groupId: "support-group-id" })
+                }
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Image
+                    source={{
+                      uri: "https://cdn.pixabay.com/photo/2016/07/29/21/39/school-1555899_960_720.png",
+                    }}
+                    style={styles.selfNotePicture}
+                  />
+                  <View style={{ flexDirection: "column", maxWidth: "80%" }}>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Text style={{ ...styles.itemText, fontWeight: "bold" }}>
+                        Chat with Support
+                      </Text>
+                      <Icon
+                        name="checkmark-done-circle-outline"
+                        size={20}
+                        style={styles.verifiedIcon}
+                      />
+                    </View>
+                    <Text style={{ ...styles.itemText, marginTop: 4 }}>
+                      Have questions or need help? Chat with our support team.
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
               <FlatList
                 contentContainerStyle={styles.listContainer}
                 data={groupIds}
