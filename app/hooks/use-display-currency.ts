@@ -177,10 +177,10 @@ export const useDisplayCurrency = () => {
         currencyCode: usdDisplayCurrency.id,
       },
       [WalletCurrency.Btc]: {
-        symbol: "",
+        symbol: "₿",
         minorUnitToMajorUnitOffset: 0,
         showFractionDigits: false,
-        currencyCode: "SAT",
+        currencyCode: "",
       },
       [DisplayCurrency]: {
         symbol: displayCurrencyInfo.symbol,

@@ -2237,7 +2237,7 @@ type RootTranslation = {
 		 */
 		setPin: string
 		/**
-		 * To set a PIN code, please back up your account by adding a phone number.
+		 * T​o​ ​s​e​t​ ​a​ ​P​I​N​ ​c​o​d​e​,​ ​p​l​e​a​s​e​ ​b​a​c​k​ ​u​p​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​b​y​ ​a​d​d​i​n​g​ ​a​ ​p​h​o​n​e​ ​n​u​m​b​e​r​.
 		 */
 		backupDescription: string
 	}
@@ -7245,7 +7245,7 @@ export type TranslationFunctions = {
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number| string }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */

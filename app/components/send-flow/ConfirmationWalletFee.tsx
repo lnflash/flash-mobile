@@ -72,7 +72,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
       if (fee !== null) {
         setFee({
           status: "set",
-          amount: { amount: fee, currency: "BTC", currencyCode: "SATS" },
+          amount: { amount: fee, currency: "BTC", currencyCode: "BTC" },
         })
       } else if (fee === "null" && err === "null") {
         setFee({

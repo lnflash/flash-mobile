@@ -143,9 +143,9 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
         <Balance
           icon="bitcoin"
           title={LL.HomeScreen.bitcoin()}
-          amount={btcBalance?.split(" ")[0]}
+          amount={btcBalance}
           // amount={btcDisplayBalance}
-          currency="SATS"
+          currency=""
           onPress={onPressBitcoin}
           onPressRightBtn={() => setIsUnverifiedSeedModalVisible(true)}
           rightIcon={persistentState.backedUpBtcWallet ? undefined : "warning"}

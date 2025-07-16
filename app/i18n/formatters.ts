@@ -7,12 +7,12 @@ export const initFormatters: FormattersInitializer<Locales, Formatters> = (
   const formatters: Formatters = {
     sats: (value: unknown): unknown => {
       if (value === 0) {
-        return `${value.toPrecision(1)} sat`
+        return `₿${value.toPrecision(1)}`
       }
       else if (value instanceof Number) {
-        return `${value.toPrecision(1)} sats`
+        return `₿${value.toPrecision(1)}`
       } 
-      return `${value} sats`
+      return `₿${value}`
     },
   }
   return formatters
