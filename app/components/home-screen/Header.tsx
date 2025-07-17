@@ -4,16 +4,21 @@ import styled from "styled-components/native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { StackNavigationProp } from "@react-navigation/stack"
 import messaging from "@react-native-firebase/messaging"
+import { getReadableVersion } from "react-native-device-info"
 
 // hooks
 import { useIsFocused, useNavigation } from "@react-navigation/native"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useApolloClient } from "@apollo/client"
 import { useHideBalanceQuery } from "@app/graphql/generated"
+import { useAppConfig } from "@app/hooks"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 // utils
 import { addDeviceToken, requestNotificationPermission } from "@app/utils/notifications"
 import { saveHideBalance } from "@app/graphql/client-only-query"
+import { openWhatsAppAction } from "@app/components/contact-modal/contact-modal"
+import { isIos } from "@app/utils/helper"
 
 // assets
 import Chart from "@app/assets/icons/chart.svg"
@@ -24,6 +29,8 @@ const Header = () => {
   const isAuthed = useIsAuthed()
   const isFocused = useIsFocused()
   const client = useApolloClient()
+  const { LL } = useI18nContext()
+  const { appConfig } = useAppConfig()
 
   const { colors, mode } = useTheme().theme
 
@@ -56,14 +63,39 @@ const Header = () => {
     })
   }, [mode, client, hideBalance])
 
+  const handleWhatsAppPress = () => {
+    const bankName = appConfig.galoyInstance.name
+    const messageBody = LL.support.defaultSupportMessage({
+      os: isIos ? "iOS" : "Android",
+      version: getReadableVersion(),
+      bankName,
+    })
+    
+    openWhatsAppAction(messageBody)
+  }
+
   const renderHeaderLeft = () => (
-    <IconWrapper
-      style={{ paddingHorizontal: 20 }}
-      onPress={() => navigation.navigate("priceHistory")}
-      activeOpacity={0.5}
-    >
-      <Chart color={colors.icon01} width={30} height={30} />
-    </IconWrapper>
+    <HeaderLeft>
+      <IconWrapper
+        style={{ paddingLeft: 20 }}
+        onPress={() => navigation.navigate("priceHistory")}
+        activeOpacity={0.5}
+      >
+        <Chart color={colors.icon01} width={30} height={30} />
+      </IconWrapper>
+      <IconWrapper
+        style={{ paddingRight: 20 }}
+        onPress={handleWhatsAppPress}
+        activeOpacity={0.5}
+      >
+        <Icon
+          name="logo-whatsapp"
+          type="ionicon"
+          color="#25D366"
+          size={26}
+        />
+      </IconWrapper>
+    </HeaderLeft>
   )
 
   const renderHeaderRight = () => (
@@ -94,6 +126,12 @@ const Header = () => {
 }
 
 export default Header
+
+const HeaderLeft = styled.View`
+  height: 100%;
+  flex-direction: row;
+  align-items: center;
+`
 
 const HeaderRight = styled.View`
   height: 100%;
