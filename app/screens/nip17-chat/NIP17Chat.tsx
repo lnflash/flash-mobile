@@ -286,32 +286,56 @@ export const NIP17Chat: React.FC = () => {
                 </Text>
               </Text>
               <TouchableOpacity
-                style={styles.itemContainer} // same style as your list items
                 onPress={() =>
                   navigation.navigate("Nip29GroupChat", { groupId: "support-group-id" })
                 }
+                style={{ marginRight: 10, marginLeft: 10, marginBottom: 4 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Image
-                    source={{
-                      uri: "https://cdn.pixabay.com/photo/2016/07/29/21/39/school-1555899_960_720.png",
+                <View
+                  style={{
+                    ...styles.itemContainer,
+                    justifyContent: "center",
+                    alignContent: "center",
+                    alignItems: "center",
+                    alignSelf: "center",
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginHorizontal: 20,
+                      marginVertical: 4,
                     }}
-                    style={styles.selfNotePicture}
-                  />
-                  <View style={{ flexDirection: "column", maxWidth: "80%" }}>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      <Text style={{ ...styles.itemText, fontWeight: "bold" }}>
-                        Chat with Support
+                  >
+                    <Image
+                      source={{
+                        uri: "https://cdn0.iconfinder.com/data/icons/business-strategy-4/100/Community-1024.png",
+                      }}
+                      style={styles.communityPicture}
+                    />
+                    <View style={{ flexDirection: "column", maxWidth: "80%" }}>
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <Text
+                          style={{
+                            ...styles.itemText,
+                            fontWeight: "bold",
+                            marginBottom: 4,
+                            marginTop: 4,
+                          }}
+                        >
+                          Chat with Support
+                        </Text>
+                        <Icon
+                          name="checkmark-done-circle-outline"
+                          size={20}
+                          style={styles.verifiedIcon}
+                        />
+                      </View>
+                      <Text style={{ ...styles.itemText, marginTop: 4, marginBottom: 5 }}>
+                        Have questions or need help? Chat with our support team.
                       </Text>
-                      <Icon
-                        name="checkmark-done-circle-outline"
-                        size={20}
-                        style={styles.verifiedIcon}
-                      />
                     </View>
-                    <Text style={{ ...styles.itemText, marginTop: 4 }}>
-                      Have questions or need help? Chat with our support team.
-                    </Text>
                   </View>
                 </View>
               </TouchableOpacity>
