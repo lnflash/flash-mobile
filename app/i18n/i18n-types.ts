@@ -2562,6 +2562,10 @@ type RootTranslation = {
 		 */
 		MinOnChainSatLimit: string
 		/**
+		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​w​h​e​n​ ​r​e​l​o​a​d​i​n​g​ ​f​r​o​m​ ​f​l​a​s​h​c​a​r​d​ ​i​s​ ​1​0​0​ ​s​a​t​s
+		 */
+		MinFlashcardLimit: string
+		/**
 		 * A​m​o​u​n​t​ ​e​x​c​e​e​d​s​ ​y​o​u​r​ ​b​a​l​a​n​c​e​ ​o​f​ ​{​b​a​l​a​n​c​e​}
 		 * @param {string} balance
 		 */
@@ -4863,6 +4867,44 @@ type RootTranslation = {
 			 * K​e​y​ ​c​o​p​i​e​d​ ​t​o​ ​c​l​i​p​b​o​a​r​d
 			 */
 			keyCopiedToClipboard: string
+		}
+		Contacts: {
+			/**
+			 * H​a​v​i​n​g​ ​t​r​o​u​b​l​e​ ​f​i​n​d​i​n​g​ ​y​o​u​r​ ​c​o​n​t​a​c​t​ ​l​i​s​t​,​ ​h​a​v​e​ ​y​o​u​ ​f​o​l​l​o​w​e​d​ ​a​n​y​o​n​e​ ​y​e​t​?
+			 */
+			stillLoading: string
+			/**
+			 * N​o​ ​C​o​n​t​a​c​t​s​ ​A​v​a​i​l​a​b​l​e
+			 */
+			noCantacts: string
+			/**
+			 * P​r​o​f​i​l​e
+			 */
+			profile: string
+			/**
+			 * N​o​s​t​r​ ​U​s​e​r
+			 */
+			nostrUser: string
+			/**
+			 * M​e​s​s​a​g​e
+			 */
+			message: string
+			/**
+			 * S​e​n​d​ ​P​a​y​m​e​n​t
+			 */
+			sendPayment: string
+			/**
+			 * C​o​n​t​a​c​t​ ​I​n​f​o
+			 */
+			contactInfo: string
+			/**
+			 * C​o​n​t​a​c​t​ ​M​a​n​a​g​e​m​e​n​t
+			 */
+			contactManagement: string
+			/**
+			 * U​n​f​o​l​l​o​w​ ​C​o​n​t​a​c​t
+			 */
+			unfollowContact: string
 		}
 		common: {
 			/**
@@ -7365,6 +7407,10 @@ export type TranslationFunctions = {
 		 */
 		MinOnChainSatLimit: () => LocalizedString
 		/**
+		 * Minimum amount when reloading from flashcard is 100 sats
+		 */
+		MinFlashcardLimit: () => LocalizedString
+		/**
 		 * Amount exceeds your balance of {balance}
 		 */
 		amountExceed: (arg: { balance: string }) => LocalizedString
@@ -9622,6 +9668,44 @@ export type TranslationFunctions = {
 			 * Key copied to clipboard
 			 */
 			keyCopiedToClipboard: () => LocalizedString
+		}
+		Contacts: {
+			/**
+			 * Having trouble finding your contact list, have you followed anyone yet?
+			 */
+			stillLoading: () => LocalizedString
+			/**
+			 * No Contacts Available
+			 */
+			noCantacts: () => LocalizedString
+			/**
+			 * Profile
+			 */
+			profile: () => LocalizedString
+			/**
+			 * Nostr User
+			 */
+			nostrUser: () => LocalizedString
+			/**
+			 * Message
+			 */
+			message: () => LocalizedString
+			/**
+			 * Send Payment
+			 */
+			sendPayment: () => LocalizedString
+			/**
+			 * Contact Info
+			 */
+			contactInfo: () => LocalizedString
+			/**
+			 * Contact Management
+			 */
+			contactManagement: () => LocalizedString
+			/**
+			 * Unfollow Contact
+			 */
+			unfollowContact: () => LocalizedString
 		}
 		common: {
 			/**

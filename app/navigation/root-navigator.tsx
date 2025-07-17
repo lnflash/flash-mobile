@@ -86,6 +86,7 @@ import {
   BackupOptions,
   TransactionHistoryTabs,
   USDTransactionHistory,
+  SignInViaQRCode,
   TransferScreen,
   TopUpScreen,
   CardPaymentScreen,
@@ -119,6 +120,7 @@ import {
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
+import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -595,6 +597,14 @@ export const RootStack = () => {
         component={EditNostrProfileScreen}
         options={{ headerShown: true, title: LL.Nostr.editProfile() }}
       />
+      <RootNavigator.Screen
+        name="SignInViaQRCode"
+        component={SignInViaQRCode}
+        options={{
+          headerStyle: { backgroundColor: "#000" },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
     </RootNavigator.Navigator>
   )
 }
@@ -617,6 +627,13 @@ export const ChatNavigator = () => {
         name="messages"
         component={Messages}
         options={{ headerShown: false }}
+      />
+      <StackChats.Screen
+        name="contactDetails"
+        component={ContactDetailsScreen}
+        options={{
+          headerShown: false, // Since we're using our own header in the component
+        }}
       />
     </StackChats.Navigator>
   )

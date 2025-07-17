@@ -27,19 +27,28 @@ export const usePriceConversion = () => {
   const displayCurrency =
     data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency ||
     defaultDisplayCurrency.id
-  let displayCurrencyPerSat = NaN
-  let displayCurrencyPerCent = NaN
 
-  const realtimePrice = data?.me?.defaultAccount?.realtimePrice
+  const priceData = useMemo(() => {
+    const realtimePrice = data?.me?.defaultAccount?.realtimePrice
 
-  if (realtimePrice) {
-    displayCurrencyPerSat =
-      realtimePrice.btcSatPrice.base / 10 ** realtimePrice.btcSatPrice.offset
-    displayCurrencyPerCent =
-      realtimePrice.usdCentPrice.base / 10 ** realtimePrice.usdCentPrice.offset
-  }
+    if (!realtimePrice) {
+      return {
+        displayCurrencyPerSat: NaN,
+        displayCurrencyPerCent: NaN,
+      }
+    }
+
+    return {
+      displayCurrencyPerSat:
+        realtimePrice.btcSatPrice.base / 10 ** realtimePrice.btcSatPrice.offset,
+      displayCurrencyPerCent:
+        realtimePrice.usdCentPrice.base / 10 ** realtimePrice.usdCentPrice.offset,
+    }
+  }, [data?.me?.defaultAccount?.realtimePrice])
 
   const priceOfCurrencyInCurrency = useMemo(() => {
+    const { displayCurrencyPerSat, displayCurrencyPerCent } = priceData
+
     if (!displayCurrencyPerSat || !displayCurrencyPerCent) {
       return undefined
     }
@@ -68,7 +77,7 @@ export const usePriceConversion = () => {
       }
       return priceOfCurrencyInCurrency[currency][inCurrency]
     }
-  }, [displayCurrencyPerSat, displayCurrencyPerCent])
+  }, [priceData])
 
   const convertMoneyAmount = useMemo(() => {
     if (!priceOfCurrencyInCurrency) {

@@ -16,6 +16,7 @@ import {
 import { WalletDescriptor } from "@app/types/wallets"
 import _Map from "@app/assets/icons-redesign/map.svg"
 import { Event } from "nostr-tools"
+import { NavigatorScreenParams } from "@react-navigation/native"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
@@ -32,7 +33,7 @@ export type RootStackParamList = {
     screenPurpose: AuthenticationScreenPurpose
     isPinEnabled: boolean
   }
-  pin: { screenPurpose: PinScreenPurpose }
+  pin: { screenPurpose: PinScreenPurpose; callback?: () => void }
   Primary: undefined
   earnsSection: { section: EarnSectionType }
   earnsQuiz: { id: string }
@@ -99,7 +100,7 @@ export type RootStackParamList = {
     usdAmount: MoneyAmount<WalletCurrency>
     lnurl: string
   }
-  phoneFlow: undefined
+  phoneFlow?: NavigatorScreenParams<PhoneValidationStackParamList>
   phoneRegistrationInitiate: undefined
   phoneRegistrationValidate: {
     phone: string
@@ -146,6 +147,7 @@ export type RootStackParamList = {
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
+  SignInViaQRCode: undefined
   transfer: undefined
   topUp: undefined
   cardPayment: undefined
@@ -170,6 +172,7 @@ export type ChatStackParamList = {
   sendBitcoinDestination: { username: string }
   transactionDetail: { txid: string }
   messages: { userPrivateKey: string; groupId: string }
+  contactDetails: { contactPubkey: string; userPrivateKey: string }
 }
 
 export type ContactStackParamList = {
@@ -186,6 +189,8 @@ export type PhoneValidationStackParamList = {
   phoneLoginValidate: {
     phone: string
     channel: PhoneCodeChannelType
+    mnemonicKey?: string
+    nsec?: string
   }
   authentication: {
     screenPurpose: AuthenticationScreenPurpose
