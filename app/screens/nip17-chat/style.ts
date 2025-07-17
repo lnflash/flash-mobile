@@ -105,4 +105,11 @@ export const useStyles = makeStyles(({ colors }) => ({
     borderRadius: 50,
     backgroundColor: colors.primary,
   },
+  communityPicture: {
+    width: 50,
+    height: 50,
+    borderRadius: 50,
+    backgroundColor: colors.primary,
+    marginRight: 10,
+  },
 }))

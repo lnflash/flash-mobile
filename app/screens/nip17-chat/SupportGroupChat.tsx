@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { View, Platform } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp, StackScreenProps } from "@react-navigation/stack"
@@ -9,11 +9,12 @@ import { SafeAreaProvider } from "react-native-safe-area-context"
 import Icon from "react-native-vector-icons/Ionicons"
 import { ChatMessage } from "./chatMessage"
 import type { RootStackParamList } from "../../navigation/stack-param-lists"
+import { useChatContext } from "./chatContext"
 
 type Nip29GroupChatScreenProps = StackScreenProps<RootStackParamList, "Nip29GroupChat">
 
 export const Nip29GroupChatScreen: React.FC<Nip29GroupChatScreenProps> = ({ route }) => {
-  const { groupId } = route.params
+  const { poolRef } = useChatContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const {
     theme: { colors },
@@ -22,6 +23,51 @@ export const Nip29GroupChatScreen: React.FC<Nip29GroupChatScreenProps> = ({ rout
 
   const [messages, setMessages] = useState<Map<string, MessageType.Text>>(new Map())
   const user = { id: "me" } // Replace with your actual pubkey
+
+  useEffect(() => {
+    if (!poolRef?.current) return
+    const subCloser = poolRef?.current.subscribeMany(
+      ["wss://groups.0xchat.com"],
+      [
+        {
+          "kinds": [39000],
+          "authors": ["ad98dd84852786e33eb0651878eb835b242d25f7c0255e6e5a745bf7b6be15c8"],
+          "#d": ["A9lScksyYAOWNxqR"],
+        },
+      ],
+      {
+        onevent: (event: any) => {
+          console.log("EVENT RECEIVED WAS", event)
+        },
+      },
+    )
+  }, [])
+  useEffect(() => {
+    if (!poolRef?.current) return
+    const subCloser = poolRef?.current.subscribeMany(
+      ["wss://groups.0xchat.com"],
+      [
+        {
+          "#h": ["A9lScksyYAOWNxqR"],
+          "kinds": [9],
+        },
+      ],
+      {
+        onevent: (event: any) => {
+          console.log("EVENT received was", event)
+          const msg: MessageType.Text = {
+            id: event.id,
+            author: { id: event.pubkey },
+            createdAt: event.created_at * 1000,
+            type: "text",
+            text: event.content,
+          }
+
+          setMessages((prev) => new Map(prev).set(msg.id, msg))
+        },
+      },
+    )
+  }, [])
 
   const handleSendPress = (message: MessageType.PartialText) => {
     // Placeholder send - just adds locally
