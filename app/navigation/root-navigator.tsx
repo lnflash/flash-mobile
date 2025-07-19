@@ -567,21 +567,7 @@ export const RootStack = () => {
         component={CashoutSuccess}
         options={{ headerShown: false }}
       />
-      <RootNavigator.Screen
-        name="transfer"
-        component={TransferScreen}
-        options={{ title: LL.TransferScreen.title() }}
-      />
-      <RootNavigator.Screen
-        name="topUp"
-        component={TopUpScreen}
-        options={{ title: LL.TopUpScreen.title() }}
-      />
-      <RootNavigator.Screen
-        name="cardPayment"
-        component={CardPaymentScreen}
-        options={{ title: LL.CardPaymentScreen.title() }}
-      />
+
       <RootNavigator.Screen
         name="fygaroWebView"
         component={FygaroWebViewScreen}
@@ -605,6 +591,16 @@ export const RootStack = () => {
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         }}
       />
+      <RootNavigator.Group
+        screenOptions={{
+          title: "",
+          headerShadowVisible: false,
+        }}
+      >
+        <RootNavigator.Screen name="transfer" component={TransferScreen} />
+        <RootNavigator.Screen name="topUp" component={TopUpScreen} />
+        <RootNavigator.Screen name="cardPayment" component={CardPaymentScreen} />
+      </RootNavigator.Group>
     </RootNavigator.Navigator>
   )
 }
