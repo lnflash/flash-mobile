@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from "react"
-import { View, TextInput, Alert, ScrollView } from "react-native"
-import { useNavigation } from "@react-navigation/native"
-import { StackNavigationProp } from "@react-navigation/stack"
+import { View, TextInput, Alert } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
-import { Screen } from "@app/components/screen"
-import { useI18nContext } from "@app/i18n/i18n-react"
+import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { useHomeAuthedQuery } from "@app/graphql/generated"
+
+// components
+import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 import { ButtonGroup } from "@app/components/button-group"
+
+// hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { useNavigation } from "@react-navigation/native"
+import { useHomeAuthedQuery } from "@app/graphql/generated"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 // assets
 import Cash from "@app/assets/icons/cash.svg"
@@ -19,10 +24,10 @@ type CardPaymentScreenProps = {
   navigation: StackNavigationProp<RootStackParamList, "cardPayment">
 }
 
-const CardPaymentScreen: React.FC<CardPaymentScreenProps> = () => {
+const CardPaymentScreen: React.FC<CardPaymentScreenProps> = ({ navigation }) => {
+  const { bottom } = useSafeAreaInsets()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const isAuthed = useIsAuthed()
   const styles = useStyles()
 
@@ -37,16 +42,10 @@ const CardPaymentScreen: React.FC<CardPaymentScreenProps> = () => {
   })
 
   useEffect(() => {
-    // Pre-populate email if available
     if (data?.me?.email?.address) {
       setEmail(data.me.email.address)
     }
   }, [data])
-
-  if (!isAuthed) {
-    navigation.goBack()
-    return null
-  }
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -102,105 +101,88 @@ const CardPaymentScreen: React.FC<CardPaymentScreenProps> = () => {
       id: "USD",
       text: LL.CardPaymentScreen.usdWallet(),
       icon: {
-        selected: <Cash color={colors.primary} width={20} height={20} />,
-        normal: <Cash color={colors.grey1} width={20} height={20} />,
+        selected: <Cash width={30} height={30} />,
+        normal: <Cash width={30} height={30} />,
       },
     },
     {
       id: "BTC",
       text: LL.CardPaymentScreen.btcWallet(),
       icon: {
-        selected: <Bitcoin color={colors.primary} width={20} height={20} />,
-        normal: <Bitcoin color={colors.grey1} width={20} height={20} />,
+        selected: <Bitcoin width={30} height={30} />,
+        normal: <Bitcoin width={30} height={30} />,
       },
     },
   ]
 
   return (
     <Screen>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.container}>
-          <Text type="h1" style={styles.title}>
-            {LL.CardPaymentScreen.title()}
+      <View style={styles.container}>
+        <Text type="h02" bold style={styles.title}>
+          {LL.CardPaymentScreen.title()}
+        </Text>
+        <View style={styles.fieldContainer}>
+          <Text type="p1" bold>
+            {LL.CardPaymentScreen.email()}
           </Text>
-
-          <View style={styles.formContainer}>
-            <View style={styles.fieldContainer}>
-              <Text type="p1" style={styles.label}>
-                {LL.CardPaymentScreen.email()}
-              </Text>
-              <TextInput
-                style={styles.input}
-                placeholder={LL.CardPaymentScreen.emailPlaceholder()}
-                placeholderTextColor={colors.grey1}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={styles.fieldContainer}>
-              <Text type="p1" style={styles.label}>
-                {LL.CardPaymentScreen.wallet()}
-              </Text>
-              <ButtonGroup
-                buttons={walletButtons}
-                selectedId={selectedWallet}
-                onPress={setSelectedWallet}
-                style={styles.buttonGroup}
-              />
-            </View>
-
-            <View style={styles.fieldContainer}>
-              <Text type="p1" style={styles.label}>
-                {LL.CardPaymentScreen.amount()}
-              </Text>
-              <TextInput
-                style={styles.input}
-                placeholder={LL.CardPaymentScreen.amountPlaceholder()}
-                placeholderTextColor={colors.grey1}
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="numeric"
-              />
-            </View>
-
-            <PrimaryBtn
-              label={LL.CardPaymentScreen.continue()}
-              onPress={handleContinue}
-              loading={isLoading}
-              btnStyle={styles.continueButton}
-            />
-          </View>
+          <TextInput
+            style={styles.input}
+            placeholder={LL.CardPaymentScreen.emailPlaceholder()}
+            placeholderTextColor={colors.grey1}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
         </View>
-      </ScrollView>
+
+        <View style={styles.fieldContainer}>
+          <Text type="p1" bold>
+            {LL.CardPaymentScreen.wallet()}
+          </Text>
+          <ButtonGroup
+            buttons={walletButtons}
+            selectedId={selectedWallet}
+            onPress={setSelectedWallet}
+            style={styles.buttonGroup}
+          />
+        </View>
+
+        <View style={styles.fieldContainer}>
+          <Text type="p1" bold>
+            {LL.CardPaymentScreen.amount()}
+          </Text>
+          <TextInput
+            style={styles.input}
+            placeholder={LL.CardPaymentScreen.amountPlaceholder()}
+            placeholderTextColor={colors.grey1}
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="numeric"
+          />
+        </View>
+      </View>
+      <PrimaryBtn
+        label={LL.CardPaymentScreen.continue()}
+        onPress={handleContinue}
+        loading={isLoading}
+        btnStyle={{ marginHorizontal: 20, marginBottom: bottom + 20 }}
+      />
     </Screen>
   )
 }
 
 const useStyles = makeStyles(({ colors }) => ({
-  scrollView: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
   },
   title: {
     textAlign: "center",
-    marginBottom: 40,
-  },
-  formContainer: {
-    flex: 1,
-    justifyContent: "center",
+    marginBottom: 30,
   },
   fieldContainer: {
     marginBottom: 24,
-  },
-  label: {
-    marginBottom: 8,
-    fontWeight: "600",
   },
   input: {
     borderWidth: 1,
@@ -210,12 +192,10 @@ const useStyles = makeStyles(({ colors }) => ({
     fontSize: 16,
     backgroundColor: colors.white,
     color: colors.black,
+    marginTop: 8,
   },
   buttonGroup: {
     marginTop: 8,
-  },
-  continueButton: {
-    marginTop: 32,
   },
 }))
 

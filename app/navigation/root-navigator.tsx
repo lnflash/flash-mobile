@@ -600,21 +600,7 @@ export const RootStack = () => {
         component={CashoutSuccess}
         options={{ headerShown: false }}
       />
-      <RootNavigator.Screen
-        name="transfer"
-        component={TransferScreen}
-        options={{ title: LL.TransferScreen.title() }}
-      />
-      <RootNavigator.Screen
-        name="topUp"
-        component={TopUpScreen}
-        options={{ title: LL.TopUpScreen.title() }}
-      />
-      <RootNavigator.Screen
-        name="cardPayment"
-        component={CardPaymentScreen}
-        options={{ title: LL.CardPaymentScreen.title() }}
-      />
+
       <RootNavigator.Screen
         name="fygaroWebView"
         component={FygaroWebViewScreen}
@@ -638,41 +624,16 @@ export const RootStack = () => {
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         }}
       />
-      <RootNavigator.Screen
-        name="Nip29GroupChat"
-        component={SupportGroupChatScreen}
-        options={{ headerShown: false }}
-      />
-      <RootNavigator.Screen
-        name="AccountType"
-        component={AccountType}
-        options={{ title: LL.AccountUpgrade.accountType() }}
-      />
-      <RootNavigator.Screen
-        name="PersonalInformation"
-        component={PersonalInformation}
-        options={{ title: LL.AccountUpgrade.personalInfo() }}
-      />
-      <RootNavigator.Screen
-        name="BusinessInformation"
-        component={BusinessInformation}
-        options={{ title: LL.AccountUpgrade.businessInfo() }}
-      />
-      <RootNavigator.Screen
-        name="BankInformation"
-        component={BankInformation}
-        options={{ title: LL.AccountUpgrade.bankingInfo() }}
-      />
-      <RootNavigator.Screen
-        name="Validation"
-        component={Validation}
-        options={{ title: LL.AccountUpgrade.validation() }}
-      />
-      <RootNavigator.Screen
-        name="AccountUpgradeSuccess"
-        component={Success}
-        options={{ headerShown: false }}
-      />
+      <RootNavigator.Group
+        screenOptions={{
+          title: "",
+          headerShadowVisible: false,
+        }}
+      >
+        <RootNavigator.Screen name="transfer" component={TransferScreen} />
+        <RootNavigator.Screen name="topUp" component={TopUpScreen} />
+        <RootNavigator.Screen name="cardPayment" component={CardPaymentScreen} />
+      </RootNavigator.Group>
     </RootNavigator.Navigator>
   )
 }
