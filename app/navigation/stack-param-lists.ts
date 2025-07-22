@@ -151,14 +151,15 @@ export type RootStackParamList = {
   BuySellBitcoin: undefined
   BuyBitcoin: undefined
   BuyBitcoinDetails: { paymentType: "card" | "bankTransfer" }
-  BankTransfer: undefined
-  fygaroWebView: {
-    amount: number
+  BankTransfer: {
     email: string
+    amount: number
     wallet: string
-    sessionId: string
-    paymentUrl: string
-    username: string
+  }
+  CardPayment: {
+    email: string
+    amount: number
+    wallet: string
   }
   paymentSuccess: {
     amount: number

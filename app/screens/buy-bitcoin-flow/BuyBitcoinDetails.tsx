@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { View, TextInput, Alert } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
-import { StackNavigationProp, StackScreenProps } from "@react-navigation/stack"
+import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
@@ -68,24 +68,19 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
     setIsLoading(true)
 
     try {
-      // Mock API call to initiate payment
-      const username = data?.me?.username || "user"
-      const paymentUrl = `https://fygaro.com/en/pb/bd4a34c1-3d24-4315-a2b8-627518f70916?amount=${amount}&client_reference=${username}`
-      const sessionId = `session_${Date.now()}`
-
-      // Simulate API delay
-      await new Promise<void>((resolve) => {
-        setTimeout(() => resolve(), 1000)
-      })
-
-      navigation.navigate("fygaroWebView", {
-        amount: parseFloat(amount),
-        email,
-        wallet: selectedWallet,
-        sessionId,
-        paymentUrl,
-        username,
-      })
+      if (route.params.paymentType === "bankTransfer") {
+        navigation.navigate("BankTransfer", {
+          email,
+          amount: parseFloat(amount),
+          wallet: selectedWallet,
+        })
+      } else {
+        navigation.navigate("CardPayment", {
+          email,
+          amount: parseFloat(amount),
+          wallet: selectedWallet,
+        })
+      }
     } catch (error) {
       Alert.alert("Error", "Failed to initiate payment. Please try again.")
     } finally {

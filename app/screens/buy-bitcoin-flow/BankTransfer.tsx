@@ -2,8 +2,11 @@ import React from "react"
 import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+
+// hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -11,96 +14,93 @@ import { PrimaryBtn } from "@app/components/buttons"
 
 type Props = StackScreenProps<RootStackParamList, "BankTransfer">
 
-const BankTransfer: React.FC<Props> = ({ navigation }) => {
+const BankTransfer: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { bottom } = useSafeAreaInsets()
+  const { LL } = useI18nContext()
+
+  const { email, amount, wallet } = route.params
+  const fee = amount * 0.02
 
   return (
     <Screen preset="scroll" style={{ paddingHorizontal: 20 }}>
       <Text type="h02" bold style={styles.title}>
-        Bank Transfer
+        {LL.BankTransfer.title()}
       </Text>
       <Text type="p1" style={styles.desc}>
-        Your order has been created. To complete the order, please transfer $102 USD to
-        the bank details provided below.
+        {LL.BankTransfer.desc1({ amount: amount + fee })}
       </Text>
       <Text type="p1" style={styles.desc}>
-        Use UUM7MJRD as the reference description. This unique code will help us associate
-        the payment with your Flash account and process the Bitcoin transfer.
+        {LL.BankTransfer.desc2({ code: "UUM7MJRD" })}
       </Text>
       <Text type="p1" style={styles.desc}>
-        After we have received your payment, you will be credited with $100 USD in your
-        Cash wallet, with a $2 USD fee deducted. You can then choose when you convert
-        those USD to Bitcoin on your own using the Convert functionality in the mobile
-        app.
+        {LL.BankTransfer.desc3({ amount: amount, fee: fee })}
       </Text>
       <View style={styles.bankDetails}>
         <View style={styles.fieldContainer}>
-          <Text type="bl">Account Type</Text>
+          <Text type="bl">{LL.BankTransfer.accountType()}</Text>
           <Text type="p1" bold>
             Checking
           </Text>
         </View>
         <View style={styles.fieldContainer}>
-          <Text type="bl">Destination Bank</Text>
+          <Text type="bl">{LL.BankTransfer.destinationBank()}</Text>
           <Text type="p1" bold>
             Banco Hipotecario
           </Text>
         </View>
         <View style={styles.fieldContainer}>
-          <Text type="bl">Account Number</Text>
+          <Text type="bl">{LL.BankTransfer.accountNumber()}</Text>
           <Text type="p1" bold>
             00210312362
           </Text>
         </View>
         <View style={styles.fieldContainer}>
-          <Text type="bl">Type of Client</Text>
+          <Text type="bl">{LL.BankTransfer.typeOfClient()}</Text>
           <Text type="p1" bold>
             Corporate
           </Text>
         </View>
         <View style={styles.fieldContainer}>
-          <Text type="bl">Receiver's Name</Text>
+          <Text type="bl">{LL.BankTransfer.receiverName()}</Text>
           <Text type="p1" bold>
             BBW SA de CV
           </Text>
         </View>
         <View style={styles.fieldContainer}>
-          <Text type="bl">Email</Text>
+          <Text type="bl">{LL.BankTransfer.email()}</Text>
           <Text type="p1" bold>
             fiat@blink.sv
           </Text>
         </View>
         <View style={styles.fieldContainer}>
-          <Text type="bl">Amount</Text>
+          <Text type="bl">{LL.BankTransfer.amount()}</Text>
           <Text type="p1" bold>
-            102 USD
+            {`${amount + fee} USD`}
           </Text>
         </View>
         <View style={styles.fieldContainer}>
-          <Text type="bl">Unique Code</Text>
+          <Text type="bl">{LL.BankTransfer.uniqueCode()}</Text>
           <Text type="p1" bold>
             UUM7MJRD
           </Text>
         </View>
         <View style={styles.fieldContainer}>
-          <Text type="bl">Fees</Text>
+          <Text type="bl">{LL.BankTransfer.fees()}</Text>
           <Text type="p1" bold>
-            2 USD
+            {`${fee} USD`}
           </Text>
         </View>
       </View>
       <Text type="p1" style={styles.desc}>
-        After payment completion on your end you can send us an email to fiat@blink.sv
-        with a screenshot of your payment confirmation.
+        {LL.BankTransfer.desc4({ email: "fiat@blink.sv" })}
       </Text>
       <Text type="p1" style={styles.desc}>
-        Your payment will be processed even if we don't receive this email, but having
-        this confirmation can help accelerate the order.
+        {LL.BankTransfer.desc5()}
       </Text>
       <PrimaryBtn
-        label="Back to Home"
-        onPress={() => {}}
+        label={LL.BankTransfer.backHome()}
+        onPress={() => navigation.reset({ index: 0, routes: [{ name: "Primary" }] })}
         btnStyle={{ marginBottom: bottom + 20, marginTop: 20 }}
       />
     </Screen>
