@@ -595,6 +595,24 @@ const en: BaseTranslation = {
     error: "Failed to load payment page",
     retry: "Retry"
   },
+  BankTransfer: {
+    title: "Bank Transfer",
+    desc1: "Your order has been created. To complete the order, please transfer ${amount: number} USD to the bank details provided below.",
+    desc2: "Use {code: string} as the reference description. This unique code will help us associate the payment with your Flash account and process the Bitcoin transfer.",
+    desc3: "After we have received your payment, you will be credited with ${amount: number} USD in your Cash wallet, with a ${fee: number} USD fee deducted. You can then choose when you convert those USD to Bitcoin on your own using the Convert functionality in the mobile app.",
+    accountType: "Account Type",
+    destinationBank: "Destination Bank",
+    accountNumber: "Account Number",
+    typeOfClient: "Type of Client",
+    receiverName: "Receiver's Name",
+    email: "Email",
+    amount: "Amount",
+    uniqueCode: "Unique Code",
+    fees: "Fees",
+    desc4: "After payment completion on your end you can send us an email to {email: string} with a screenshot of your payment confirmation.",
+    desc5: "Your payment will be processed even if we don't receive this email, but having this confirmation can help accelerate the order.",
+    backHome: "Back to Home"
+  },
   PaymentSuccessScreen: {
     title: "Payment Successful",
     successMessage: "Your payment has been processed successfully",

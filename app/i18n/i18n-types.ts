@@ -1879,6 +1879,77 @@ type RootTranslation = {
 		 */
 		retry: string
 	}
+	BankTransfer: {
+		/**
+		 * Bank Transfer
+		 */
+		title: string
+		/**
+		 * Your order has been created. To complete the order, please transfer ${amount} USD to the bank details provided below.
+		 * @param {number} amount
+		 */
+		desc1: string
+		/**
+		 * Use {code} as the reference description. This unique code will help us associate the payment with your Flash account and process the Bitcoin transfer.
+		 * @param {string} code
+		 */
+		desc2: string
+		/**
+		 * After we have received your payment, you will be credited with ${amount} USD in your Cash wallet, with a ${fee} USD fee deducted. You can then choose when you convert those USD to Bitcoin on your own using the Convert functionality in the mobile app.
+		 * @param {number} amount
+		 * @param {number} fee
+		 */
+		desc3: string
+		/**
+		 * Account Type
+		 */
+		accountType: string
+		/**
+		 * Destination Bank
+		 */
+		destinationBank: string
+		/**
+		 * Account Number
+		 */
+		accountNumber: string
+		/**
+		 * Type of Client
+		 */
+		typeOfClient: string
+		/**
+		 * Receiver's Name
+		 */
+		receiverName: string
+		/**
+		 * Email
+		 */
+		email: string
+		/**
+		 * Amount
+		 */
+		amount: string
+		/**
+		 * Unique Code
+		 */
+		uniqueCode: string
+		/**
+		 * Fees
+		 */
+		fees: string
+		/**
+		 * After payment completion on your end you can send us an email to {email} with a screenshot of your payment confirmation.
+		 * @param {number} email
+		 */
+		desc4: string
+		/**
+		 * Your payment will be processed even if we don't receive this email, but having this confirmation can help accelerate the order.
+		 */
+		desc5: string
+		/**
+		 * Back to Home
+		 */
+		backHome: string
+	}
 	PaymentSuccessScreen: {
 		/**
 		 * P​a​y​m​e​n​t​ ​S​u​c​c​e​s​s​f​u​l
@@ -6758,6 +6829,77 @@ export type TranslationFunctions = {
 		 * Retry
 		 */
 		retry: () => LocalizedString
+	}
+	BankTransfer: {
+		/**
+		 * Bank Transfer
+		 */
+		title: () => LocalizedString
+		/**
+		 * Your order has been created. To complete the order, please transfer ${amount} USD to the bank details provided below.
+		 * @param {number} amount
+		 */
+		desc1: (arg: { amount: number }) => LocalizedString
+		/**
+		 * Use {code} as the reference description. This unique code will help us associate the payment with your Flash account and process the Bitcoin transfer.
+		 * @param {string} code
+		 */
+		desc2: (arg: { code: string }) => LocalizedString
+		/**
+		 * After we have received your payment, you will be credited with ${amount} USD in your Cash wallet, with a ${fee} USD fee deducted. You can then choose when you convert those USD to Bitcoin on your own using the Convert functionality in the mobile app.
+		 * @param {number} amount
+		 * @param {number} fee
+		 */
+		desc3: (arg: { amount: number, fee: number }) => LocalizedString
+		/**
+		 * Account Type
+		 */
+		accountType: () => LocalizedString
+		/**
+		 * Destination Bank
+		 */
+		destinationBank: () => LocalizedString
+		/**
+		 * Account Number
+		 */
+		accountNumber: () => LocalizedString
+		/**
+		 * Type of Client
+		 */
+		typeOfClient: () => LocalizedString
+		/**
+		 * Receiver's Name
+		 */
+		receiverName: () => LocalizedString
+		/**
+		 * Email
+		 */
+		email: () => LocalizedString
+		/**
+		 * Amount
+		 */
+		amount: () => LocalizedString
+		/**
+		 * Unique Code
+		 */
+		uniqueCode: () => LocalizedString
+		/**
+		 * Fees
+		 */
+		fees: () => LocalizedString
+		/**
+		 * After payment completion on your end you can send us an email to {email} with a screenshot of your payment confirmation.
+		 * @param {string} email
+		 */
+		desc4: (arg: { email: string }) => LocalizedString
+		/**
+		 * Your payment will be processed even if we don't receive this email, but having this confirmation can help accelerate the order.
+		 */
+		desc5: () => LocalizedString
+		/**
+		 * Back to Home
+		 */
+		backHome: () => LocalizedString
 	}
 	PaymentSuccessScreen: {
 		/**
