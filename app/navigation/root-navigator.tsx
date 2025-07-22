@@ -120,6 +120,7 @@ import {
   BuyBitcoin,
   BuyBitcoinDetails,
   BuySellBitcoin,
+  CardPayment,
 } from "@app/screens/buy-bitcoin-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
@@ -612,6 +613,7 @@ export const RootStack = () => {
         <RootNavigator.Screen name="BuyBitcoin" component={BuyBitcoin} />
         <RootNavigator.Screen name="BuyBitcoinDetails" component={BuyBitcoinDetails} />
         <RootNavigator.Screen name="BankTransfer" component={BankTransfer} />
+        <RootNavigator.Screen name="CardPayment" component={CardPayment} />
       </RootNavigator.Group>
     </RootNavigator.Navigator>
   )

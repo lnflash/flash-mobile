@@ -1,31 +1,41 @@
 import React, { useState, useRef } from "react"
 import { View, ActivityIndicator, Alert } from "react-native"
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native"
-import { StackNavigationProp } from "@react-navigation/stack"
+import { StackScreenProps } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
-import { WebView } from "react-native-webview"
-import { Screen } from "@app/components/screen"
-import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { WebView } from "react-native-webview"
+
+// components
+import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 
-type FygaroWebViewScreenProps = {
-  navigation: StackNavigationProp<RootStackParamList, "fygaroWebView">
-  route: RouteProp<RootStackParamList, "fygaroWebView">
-}
+// hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { useHomeAuthedQuery } from "@app/graphql/generated"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
 
-const FygaroWebViewScreen: React.FC<FygaroWebViewScreenProps> = () => {
+type Props = StackScreenProps<RootStackParamList, "CardPayment">
+
+const CardPayment: React.FC<Props> = ({ navigation, route }) => {
+  const isAuthed = useIsAuthed()
+  const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const route = useRoute<RouteProp<RootStackParamList, "fygaroWebView">>()
+
   const webViewRef = useRef<WebView>(null)
-  const styles = useStyles()
 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
 
-  const { amount, wallet, paymentUrl } = route.params
+  const { data } = useHomeAuthedQuery({
+    skip: !isAuthed,
+    fetchPolicy: "cache-first",
+  })
+
+  const { email, amount, wallet } = route.params
+
+  const username = data?.me?.username || "user"
+  const paymentUrl = `https://fygaro.com/en/pb/bd4a34c1-3d24-4315-a2b8-627518f70916?amount=${amount}&client_reference=${username}`
 
   const handleNavigationStateChange = (navState: { url: string }) => {
     const { url } = navState
@@ -177,4 +187,4 @@ const useStyles = makeStyles(() => ({
   },
 }))
 
-export default FygaroWebViewScreen
+export default CardPayment
