@@ -152,6 +152,7 @@ export type RootStackParamList = {
   transfer: undefined
   topUp: undefined
   cardPayment: undefined
+  bankTransfer: undefined
   fygaroWebView: {
     amount: number
     email: string
