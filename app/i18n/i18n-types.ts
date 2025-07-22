@@ -1803,11 +1803,15 @@ type RootTranslation = {
 		 */
 		debitCreditCardDesc: string
 	}
-	CardPaymentScreen: {
+	BuyBitcoinDetails: {
 		/**
 		 * C​a​r​d​ ​P​a​y​m​e​n​t
 		 */
 		title: string
+		/**
+		 * Bank Transfer
+		 */
+		bankTransfer: string
 		/**
 		 * E​m​a​i​l
 		 */
@@ -6679,11 +6683,15 @@ export type TranslationFunctions = {
 		 */
 		debitCreditCardDesc: () => LocalizedString
 	}
-	CardPaymentScreen: {
+	BuyBitcoinDetails: {
 		/**
 		 * Card Payment
 		 */
 		title: () => LocalizedString
+		/**
+		 * Bank Transfer
+		 */
+		bankTransfer: () => LocalizedString
 		/**
 		 * Email
 		 */

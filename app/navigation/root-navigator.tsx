@@ -87,12 +87,6 @@ import {
   TransactionHistoryTabs,
   USDTransactionHistory,
   SignInViaQRCode,
-  TransferScreen,
-  TopUpScreen,
-  CardPaymentScreen,
-  FygaroWebViewScreen,
-  PaymentSuccessScreen,
-  BankTransferScreen,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -122,6 +116,12 @@ import {
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
+import {
+  BankTransfer,
+  BuyBitcoin,
+  BuyBitcoinDetails,
+  BuySellBitcoin,
+} from "@app/screens/buy-bitcoin-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -568,17 +568,6 @@ export const RootStack = () => {
         component={CashoutSuccess}
         options={{ headerShown: false }}
       />
-
-      <RootNavigator.Screen
-        name="fygaroWebView"
-        component={FygaroWebViewScreen}
-        options={{ title: LL.FygaroWebViewScreen.title() }}
-      />
-      <RootNavigator.Screen
-        name="paymentSuccess"
-        component={PaymentSuccessScreen}
-        options={{ headerShown: false }}
-      />
       <RootNavigator.Screen
         name="EditNostrProfile"
         component={EditNostrProfileScreen}
@@ -598,10 +587,10 @@ export const RootStack = () => {
           headerShadowVisible: false,
         }}
       >
-        <RootNavigator.Screen name="transfer" component={TransferScreen} />
-        <RootNavigator.Screen name="topUp" component={TopUpScreen} />
-        <RootNavigator.Screen name="cardPayment" component={CardPaymentScreen} />
-        <RootNavigator.Screen name="bankTransfer" component={BankTransferScreen} />
+        <RootNavigator.Screen name="BuySellBitcoin" component={BuySellBitcoin} />
+        <RootNavigator.Screen name="BuyBitcoin" component={BuyBitcoin} />
+        <RootNavigator.Screen name="BuyBitcoinDetails" component={BuyBitcoinDetails} />
+        <RootNavigator.Screen name="BankTransfer" component={BankTransfer} />
       </RootNavigator.Group>
     </RootNavigator.Navigator>
   )

@@ -573,8 +573,9 @@ const en: BaseTranslation = {
     debitCreditCard: "Debit/Credit Card",
     debitCreditCardDesc: "Pay with your card via Fygaro"
   },
-  CardPaymentScreen: {
+  BuyBitcoinDetails: {
     title: "Card Payment",
+    bankTransfer: "Bank Transfer",
     email: "Email",
     emailPlaceholder: "Enter your email address",
     wallet: "Wallet",

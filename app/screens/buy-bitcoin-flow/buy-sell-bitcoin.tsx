@@ -2,23 +2,21 @@ import React from "react"
 import { TouchableOpacity, View } from "react-native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
-import { StackNavigationProp } from "@react-navigation/stack"
+import { StackScreenProps } from "@react-navigation/stack"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 // components
 import { Screen } from "@app/components/screen"
 
-type TransferScreenProps = {
-  navigation: StackNavigationProp<RootStackParamList, "transfer">
-}
+type Props = StackScreenProps<RootStackParamList, "BuySellBitcoin">
 
-const TransferScreen: React.FC<TransferScreenProps> = ({ navigation }) => {
+const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
 
   const handleTopUp = () => {
-    navigation.navigate("topUp")
+    navigation.navigate("BuyBitcoin")
   }
 
   const handleSettle = () => {
@@ -94,4 +92,4 @@ const useStyles = makeStyles(({ colors }) => ({
   },
 }))
 
-export default TransferScreen
+export default BuySellBitcoin

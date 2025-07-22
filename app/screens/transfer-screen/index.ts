@@ -1,6 +1,0 @@
-export { default as TransferScreen } from "./transfer-screen"
-export * from "./topup-screen"
-export * from "./card-payment-screen"
-export * from "./fygaro-webview-screen"
-export * from "./payment-success-screen"
-export * from "./bank-transfer-screen"
