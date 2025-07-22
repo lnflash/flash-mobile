@@ -92,6 +92,7 @@ import {
   CardPaymentScreen,
   FygaroWebViewScreen,
   PaymentSuccessScreen,
+  BankTransferScreen,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -600,6 +601,7 @@ export const RootStack = () => {
         <RootNavigator.Screen name="transfer" component={TransferScreen} />
         <RootNavigator.Screen name="topUp" component={TopUpScreen} />
         <RootNavigator.Screen name="cardPayment" component={CardPaymentScreen} />
+        <RootNavigator.Screen name="bankTransfer" component={BankTransferScreen} />
       </RootNavigator.Group>
     </RootNavigator.Navigator>
   )
