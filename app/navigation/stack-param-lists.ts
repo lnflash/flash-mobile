@@ -149,10 +149,11 @@ export type RootStackParamList = {
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
-  transfer: undefined
-  topUp: undefined
-  cardPayment: undefined
-  bankTransfer: undefined
+  SignInViaQRCode: undefined
+  BuySellBitcoin: undefined
+  BuyBitcoin: undefined
+  BuyBitcoinDetails: { paymentType: "card" | "bankTransfer" }
+  BankTransfer: undefined
   fygaroWebView: {
     amount: number
     email: string

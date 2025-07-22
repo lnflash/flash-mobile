@@ -2,29 +2,18 @@ import React from "react"
 import { TouchableOpacity, View } from "react-native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
-import { StackNavigationProp } from "@react-navigation/stack"
+import { StackScreenProps } from "@react-navigation/stack"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 // components
 import { Screen } from "@app/components/screen"
 
-type TopUpScreenProps = {
-  navigation: StackNavigationProp<RootStackParamList, "topUp">
-}
+type Props = StackScreenProps<RootStackParamList, "BuyBitcoin">
 
-const TopUpScreen: React.FC<TopUpScreenProps> = ({ navigation }) => {
+const BuyBitcoin: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
-
-  const handleBankTransfer = () => {
-    // TODO: Implement bank transfer functionality
-    console.log("Bank transfer functionality not implemented yet")
-  }
-
-  const handleCardPayment = () => {
-    navigation.navigate("cardPayment")
-  }
 
   return (
     <Screen>
@@ -32,7 +21,12 @@ const TopUpScreen: React.FC<TopUpScreenProps> = ({ navigation }) => {
         <Text type="h02" bold style={styles.title}>
           {LL.TopUpScreen.title()}
         </Text>
-        <TouchableOpacity style={styles.btn} onPress={handleBankTransfer}>
+        <TouchableOpacity
+          style={styles.btn}
+          onPress={() =>
+            navigation.navigate("BuyBitcoinDetails", { paymentType: "bankTransfer" })
+          }
+        >
           <Icon type="ionicon" name={"business"} size={40} />
 
           <View style={styles.btnTextWrapper}>
@@ -43,7 +37,12 @@ const TopUpScreen: React.FC<TopUpScreenProps> = ({ navigation }) => {
           </View>
           <Icon type="ionicon" name={"chevron-forward"} size={20} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.btn} onPress={handleCardPayment}>
+        <TouchableOpacity
+          style={styles.btn}
+          onPress={() =>
+            navigation.navigate("BuyBitcoinDetails", { paymentType: "card" })
+          }
+        >
           <Icon type="ionicon" name={"card"} size={40} />
           <View style={styles.btnTextWrapper}>
             <Text type="p1"> {LL.TopUpScreen.debitCreditCard()}</Text>
@@ -84,4 +83,4 @@ const useStyles = makeStyles(({ colors }) => ({
   },
 }))
 
-export default TopUpScreen
+export default BuyBitcoin

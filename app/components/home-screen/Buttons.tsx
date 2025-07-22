@@ -60,7 +60,7 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
     },
     {
       title: LL.HomeScreen.transfer(),
-      target: "transfer",
+      target: "BuySellBitcoin",
       icon: "swap",
     },
   ]

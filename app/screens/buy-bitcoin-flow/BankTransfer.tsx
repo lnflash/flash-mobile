@@ -1,13 +1,17 @@
 import React from "react"
 import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
+import { StackScreenProps } from "@react-navigation/stack"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 
-const BankTransferScreen = () => {
+type Props = StackScreenProps<RootStackParamList, "BankTransfer">
+
+const BankTransfer: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { bottom } = useSafeAreaInsets()
 
@@ -103,7 +107,7 @@ const BankTransferScreen = () => {
   )
 }
 
-export default BankTransferScreen
+export default BankTransfer
 
 const useStyles = makeStyles(({ colors }) => ({
   container: {

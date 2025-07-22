@@ -88,12 +88,7 @@ import {
   BackupOptions,
   TransactionHistoryTabs,
   USDTransactionHistory,
-  TransferScreen,
-  TopUpScreen,
-  CardPaymentScreen,
-  FygaroWebViewScreen,
-  PaymentSuccessScreen,
-  BankTransferScreen,
+  SignInViaQRCode,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -119,20 +114,13 @@ import {
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
-import ContactDetailsScreen from "@app/screens/chat/contactDetailsScreen"
-import { SupportGroupChatScreen } from "@app/screens/chat/GroupChat/SupportGroupChat"
-import Contacts from "@app/screens/chat/contacts"
-import MakeNostrPost from "@app/screens/social/post"
-import PostSuccess from "@app/screens/social/post-success"
-import IrisBrowser from "@app/screens/social/iris-browser"
+import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
 import {
-  PersonalInformation,
-  BusinessInformation,
-  BankInformation,
-  AccountType,
-  Validation,
-  Success,
-} from "@app/screens/account-upgrade-flow"
+  BankTransfer,
+  BuyBitcoin,
+  BuyBitcoinDetails,
+  BuySellBitcoin,
+} from "@app/screens/buy-bitcoin-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -601,17 +589,6 @@ export const RootStack = () => {
         component={CashoutSuccess}
         options={{ headerShown: false }}
       />
-
-      <RootNavigator.Screen
-        name="fygaroWebView"
-        component={FygaroWebViewScreen}
-        options={{ title: LL.FygaroWebViewScreen.title() }}
-      />
-      <RootNavigator.Screen
-        name="paymentSuccess"
-        component={PaymentSuccessScreen}
-        options={{ headerShown: false }}
-      />
       <RootNavigator.Screen
         name="EditNostrProfile"
         component={EditNostrProfileScreen}
@@ -631,10 +608,10 @@ export const RootStack = () => {
           headerShadowVisible: false,
         }}
       >
-        <RootNavigator.Screen name="transfer" component={TransferScreen} />
-        <RootNavigator.Screen name="topUp" component={TopUpScreen} />
-        <RootNavigator.Screen name="cardPayment" component={CardPaymentScreen} />
-        <RootNavigator.Screen name="bankTransfer" component={BankTransferScreen} />
+        <RootNavigator.Screen name="BuySellBitcoin" component={BuySellBitcoin} />
+        <RootNavigator.Screen name="BuyBitcoin" component={BuyBitcoin} />
+        <RootNavigator.Screen name="BuyBitcoinDetails" component={BuyBitcoinDetails} />
+        <RootNavigator.Screen name="BankTransfer" component={BankTransfer} />
       </RootNavigator.Group>
     </RootNavigator.Navigator>
   )

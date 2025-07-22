@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { View, TextInput, Alert } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
-import { StackNavigationProp } from "@react-navigation/stack"
+import { StackNavigationProp, StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
@@ -11,7 +11,6 @@ import { ButtonGroup } from "@app/components/button-group"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useNavigation } from "@react-navigation/native"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -20,11 +19,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Cash from "@app/assets/icons/cash.svg"
 import Bitcoin from "@app/assets/icons/bitcoin.svg"
 
-type CardPaymentScreenProps = {
-  navigation: StackNavigationProp<RootStackParamList, "cardPayment">
-}
+type Props = StackScreenProps<RootStackParamList, "BuyBitcoinDetails">
 
-const CardPaymentScreen: React.FC<CardPaymentScreenProps> = ({ navigation }) => {
+const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
   const { bottom } = useSafeAreaInsets()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
@@ -59,12 +56,12 @@ const CardPaymentScreen: React.FC<CardPaymentScreenProps> = ({ navigation }) => 
 
   const handleContinue = async () => {
     if (!validateEmail(email)) {
-      Alert.alert("Invalid Email", LL.CardPaymentScreen.invalidEmail())
+      Alert.alert("Invalid Email", LL.BuyBitcoinDetails.invalidEmail())
       return
     }
 
     if (!validateAmount(amount)) {
-      Alert.alert("Invalid Amount", LL.CardPaymentScreen.minimumAmount())
+      Alert.alert("Invalid Amount", LL.BuyBitcoinDetails.minimumAmount())
       return
     }
 
@@ -99,7 +96,7 @@ const CardPaymentScreen: React.FC<CardPaymentScreenProps> = ({ navigation }) => 
   const walletButtons = [
     {
       id: "USD",
-      text: LL.CardPaymentScreen.usdWallet(),
+      text: LL.BuyBitcoinDetails.usdWallet(),
       icon: {
         selected: <Cash width={30} height={30} />,
         normal: <Cash width={30} height={30} />,
@@ -107,7 +104,7 @@ const CardPaymentScreen: React.FC<CardPaymentScreenProps> = ({ navigation }) => 
     },
     {
       id: "BTC",
-      text: LL.CardPaymentScreen.btcWallet(),
+      text: LL.BuyBitcoinDetails.btcWallet(),
       icon: {
         selected: <Bitcoin width={30} height={30} />,
         normal: <Bitcoin width={30} height={30} />,
@@ -119,15 +116,17 @@ const CardPaymentScreen: React.FC<CardPaymentScreenProps> = ({ navigation }) => 
     <Screen>
       <View style={styles.container}>
         <Text type="h02" bold style={styles.title}>
-          {LL.CardPaymentScreen.title()}
+          {route.params.paymentType === "card"
+            ? LL.BuyBitcoinDetails.title()
+            : LL.BuyBitcoinDetails.bankTransfer()}
         </Text>
         <View style={styles.fieldContainer}>
           <Text type="p1" bold>
-            {LL.CardPaymentScreen.email()}
+            {LL.BuyBitcoinDetails.email()}
           </Text>
           <TextInput
             style={styles.input}
-            placeholder={LL.CardPaymentScreen.emailPlaceholder()}
+            placeholder={LL.BuyBitcoinDetails.emailPlaceholder()}
             placeholderTextColor={colors.grey1}
             value={email}
             onChangeText={setEmail}
@@ -138,7 +137,7 @@ const CardPaymentScreen: React.FC<CardPaymentScreenProps> = ({ navigation }) => 
 
         <View style={styles.fieldContainer}>
           <Text type="p1" bold>
-            {LL.CardPaymentScreen.wallet()}
+            {LL.BuyBitcoinDetails.wallet()}
           </Text>
           <ButtonGroup
             buttons={walletButtons}
@@ -150,11 +149,11 @@ const CardPaymentScreen: React.FC<CardPaymentScreenProps> = ({ navigation }) => 
 
         <View style={styles.fieldContainer}>
           <Text type="p1" bold>
-            {LL.CardPaymentScreen.amount()}
+            {LL.BuyBitcoinDetails.amount()}
           </Text>
           <TextInput
             style={styles.input}
-            placeholder={LL.CardPaymentScreen.amountPlaceholder()}
+            placeholder={LL.BuyBitcoinDetails.amountPlaceholder()}
             placeholderTextColor={colors.grey1}
             value={amount}
             onChangeText={setAmount}
@@ -163,7 +162,7 @@ const CardPaymentScreen: React.FC<CardPaymentScreenProps> = ({ navigation }) => 
         </View>
       </View>
       <PrimaryBtn
-        label={LL.CardPaymentScreen.continue()}
+        label={LL.BuyBitcoinDetails.continue()}
         onPress={handleContinue}
         loading={isLoading}
         btnStyle={{ marginHorizontal: 20, marginBottom: bottom + 20 }}
@@ -199,4 +198,4 @@ const useStyles = makeStyles(({ colors }) => ({
   },
 }))
 
-export default CardPaymentScreen
+export default BuyBitcoinDetails
