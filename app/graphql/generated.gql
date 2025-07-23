@@ -81,15 +81,15 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
-mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
-  idDocumentUploadUrlGenerate(input: $input) {
+mutation InitiateCashout($input: InitiateCashoutInput!) {
+  initiateCashout(input: $input) {
     errors {
-      code
+      path
       message
+      code
       __typename
     }
-    fileKey
-    uploadUrl
+    success
     __typename
   }
 }
@@ -113,6 +113,28 @@ mutation MerchantMapSuggest($input: MerchantMapSuggestInput!) {
       title
       username
       validated
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation RequestCashout($input: RequestCashoutInput!) {
+  requestCashout(input: $input) {
+    errors {
+      code
+      message
+      path
+      __typename
+    }
+    offer {
+      expiresAt
+      flashFee
+      offerId
+      receiveJmd
+      receiveUsd
+      send
+      walletId
       __typename
     }
     __typename
