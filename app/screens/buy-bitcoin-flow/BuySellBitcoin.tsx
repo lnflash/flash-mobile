@@ -8,6 +8,10 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 // components
 import { Screen } from "@app/components/screen"
 
+// assets
+import ArrowDown from "@app/assets/icons/arrow-down-to-bracket.svg"
+import ArrowUp from "@app/assets/icons/arrow-up-from-bracket.svg"
+
 type Props = StackScreenProps<RootStackParamList, "BuySellBitcoin">
 
 const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
@@ -20,8 +24,7 @@ const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
   }
 
   const handleSettle = () => {
-    // TODO: Implement settle functionality
-    console.log("Settle functionality not implemented yet")
+    navigation.navigate("CashoutDetails")
   }
 
   return (
@@ -31,12 +34,7 @@ const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
           {LL.TransferScreen.title()}
         </Text>
         <TouchableOpacity style={styles.btn} onPress={handleTopUp}>
-          <Icon
-            type="ionicon"
-            name={"arrow-down"}
-            size={40}
-            style={{ borderBottomWidth: 4, borderColor: colors.black }}
-          />
+          <ArrowDown color={colors.black} width={40} height={40} />
           <View style={styles.btnTextWrapper}>
             <Text type="p1">{LL.TransferScreen.topUp()}</Text>
             <Text type="p3" color={colors.grey2}>
@@ -46,13 +44,7 @@ const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
           <Icon type="ionicon" name={"chevron-forward"} size={20} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.btn} onPress={handleSettle}>
-          <Icon
-            type="ionicon"
-            name={"arrow-up"}
-            size={40}
-            style={{ borderBottomWidth: 4, borderColor: colors.black }}
-          />
-
+          <ArrowUp color={colors.black} width={40} height={40} />
           <View style={styles.btnTextWrapper}>
             <Text type="p1"> {LL.TransferScreen.settle()}</Text>
             <Text type="p3" color={colors.grey2}>
