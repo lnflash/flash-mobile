@@ -1,4 +1,4 @@
-import BuySellBitcoin from "./buy-sell-bitcoin"
+import BuySellBitcoin from "./BuySellBitcoin"
 import BuyBitcoin from "./BuyBitcoin"
 import BuyBitcoinDetails from "./BuyBitcoinDetails"
 import BankTransfer from "./BankTransfer"
