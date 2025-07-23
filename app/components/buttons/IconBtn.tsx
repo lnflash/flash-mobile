@@ -10,6 +10,7 @@ import QR from "@app/assets/icons/qr-code-new.svg"
 import Setting from "@app/assets/icons/setting.svg"
 import CardRemove from "@app/assets/icons/card-remove.svg"
 import Dollar from "@app/assets/icons/dollar-new.svg"
+import ArrowUpDown from "@app/assets/icons/arrow-up-down.svg"
 
 const icons = {
   up: ArrowUp,
@@ -19,6 +20,7 @@ const icons = {
   setting: Setting,
   cardRemove: CardRemove,
   dollar: Dollar,
+  upDown: ArrowUpDown,
 }
 
 type IconNamesType = keyof typeof icons
