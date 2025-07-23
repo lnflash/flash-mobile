@@ -58,11 +58,6 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
       target: "receiveBitcoin",
       icon: "down",
     },
-    {
-      title: LL.HomeScreen.transfer(),
-      target: "BuySellBitcoin",
-      icon: "swap",
-    },
   ]
 
   if (persistentState.isAdvanceMode) {
@@ -73,13 +68,13 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
     })
   }
 
-  // if (currentLevel === AccountLevel.Two) {
-  //   buttons.push({
-  //     title: LL.Cashout.title(),
-  //     target: "CashoutDetails",
-  //     icon: "dollar",
-  //   })
-  // }
+  if (currentLevel === AccountLevel.Two) {
+    buttons.push({
+      title: LL.HomeScreen.transfer(),
+      target: "BuySellBitcoin",
+      icon: "upDown",
+    })
+  }
 
   return (
     <Wrapper>
