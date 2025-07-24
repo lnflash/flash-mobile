@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react"
 import { View, Platform } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp, StackScreenProps } from "@react-navigation/stack"
-import { useTheme, Text, makeStyles } from "@rneui/themed"
+import { useTheme, makeStyles, Button } from "@rneui/themed"
 import { Screen } from "../../components/screen"
 import { Chat, MessageType, defaultTheme } from "@flyerhq/react-native-chat-ui"
 import { SafeAreaProvider } from "react-native-safe-area-context"
-import Icon from "react-native-vector-icons/Ionicons"
 import { ChatMessage } from "./chatMessage"
 import type { RootStackParamList } from "../../navigation/stack-param-lists"
 import { useChatContext } from "./chatContext"
+import { finalizeEvent } from "nostr-tools"
+import { getSecretKey } from "@app/utils/nostr"
 
 type Nip29GroupChatScreenProps = StackScreenProps<RootStackParamList, "Nip29GroupChat">
 
@@ -22,11 +23,35 @@ export const Nip29GroupChatScreen: React.FC<Nip29GroupChatScreenProps> = ({ rout
   const styles = useStyles()
 
   const [messages, setMessages] = useState<Map<string, MessageType.Text>>(new Map())
-  const user = { id: "me" } // Replace with your actual pubkey
+  const [isMember, setIsMember] = useState(false)
+  const { userPublicKey } = useChatContext()
+
+  const sendJoinGroupRequest = async () => {
+    if (!poolRef?.current) throw Error("No PoolRef present")
+
+    const secretKey = await getSecretKey()
+    if (!secretKey) throw Error("Could not get Secret Key")
+
+    const joinEvent = {
+      kind: 9021,
+      created_at: Math.floor(Date.now() / 1000),
+      tags: [
+        ["h", "A9lScksyYAOWNxqR"], // Group ID
+        // ["code", "optional-code"], // Optional invite code
+      ],
+      content: "I'd like to join this group.",
+      pubkey: userPublicKey,
+    }
+
+    const signedJoinEvent = finalizeEvent(joinEvent, secretKey)
+    console.log("Membership Request Sent:", signedJoinEvent)
+
+    poolRef.current.publish(["wss://groups.0xchat.com"], signedJoinEvent)
+  }
 
   useEffect(() => {
     if (!poolRef?.current) return
-    const subCloser = poolRef?.current.subscribeMany(
+    poolRef?.current.subscribeMany(
       ["wss://groups.0xchat.com"],
       [
         {
@@ -69,16 +94,47 @@ export const Nip29GroupChatScreen: React.FC<Nip29GroupChatScreenProps> = ({ rout
     )
   }, [])
 
-  const handleSendPress = (message: MessageType.PartialText) => {
-    // Placeholder send - just adds locally
-    const textMessage: MessageType.Text = {
-      author: user,
-      createdAt: Date.now(),
-      text: message.text,
-      type: "text",
-      id: message.text,
+  useEffect(() => {
+    poolRef?.current.subscribeMany(
+      ["wss://groups.0xchat.com"],
+      [
+        {
+          "kinds": [39002],
+          "authors": ["ad98dd84852786e33eb0651878eb835b242d25f7c0255e6e5a745bf7b6be15c8"],
+          "#d": ["A9lScksyYAOWNxqR"],
+        },
+      ],
+      {
+        onevent: (event: any) => {
+          console.log("MEMBERSHIP EVENT RECEIVED WAS", event)
+          const isUserMember = event.tags.some(
+            (tag: string[]) => tag[0] === "p" && tag[1] === userPublicKey,
+          )
+
+          setIsMember(isUserMember)
+        },
+      },
+    )
+  }, [poolRef?.current, userPublicKey])
+
+  const handleSendPress = async (message: MessageType.PartialText) => {
+    if (!poolRef?.current) throw Error("No PoolRef present")
+
+    // Now publish to relay
+    const nostrEvent = {
+      kind: 9,
+      created_at: Math.floor(Date.now() / 1000),
+      tags: [["h", "A9lScksyYAOWNxqR", "wss://groups.0xchat.com"]], // Your group ID tag
+      content: message.text,
+      pubkey: userPublicKey, // Your pubkey
     }
-    setMessages((prev) => new Map(prev).set(textMessage.id, textMessage))
+
+    // Sign the event (requires your signing logic)
+    const secretKey = await getSecretKey()
+    if (!secretKey) throw Error("Could not get Secret Key")
+    const signedEvent = finalizeEvent(nostrEvent, secretKey)
+    console.log("SIGNED EVENT IS", signedEvent)
+    poolRef.current.publish(["wss://groups.0xchat.com"], signedEvent)
   }
 
   return (
@@ -90,19 +146,30 @@ export const Nip29GroupChatScreen: React.FC<Nip29GroupChatScreenProps> = ({ rout
               (a, b) => b.createdAt! - a.createdAt!,
             )}
             onSendPress={handleSendPress}
-            user={user}
+            user={{ id: userPublicKey! }}
             renderTextMessage={(message, next, prev) => (
               <ChatMessage
                 key={message.id}
                 message={message}
                 nextMessage={next}
                 prevMessage={prev}
+                showSender={true}
               />
             )}
+            customBottomComponent={
+              !isMember
+                ? () => (
+                    <View style={{ padding: 16, alignItems: "center" }}>
+                      <Button title="Join Support Group" onPress={sendJoinGroupRequest} />
+                    </View>
+                  )
+                : undefined
+            }
             renderBubble={({ child, message }) => (
               <View
                 style={{
-                  backgroundColor: user.id === message.author.id ? "#8fbc8f" : "white",
+                  backgroundColor:
+                    userPublicKey === message.author.id ? "#8fbc8f" : "white",
                   borderRadius: 15,
                   overflow: "hidden",
                 }}
