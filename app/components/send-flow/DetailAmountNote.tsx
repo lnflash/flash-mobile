@@ -12,7 +12,6 @@ import { AmountInput } from "@app/components/amount-input/amount-input"
 import { NoteInput } from "@app/components/note-input"
 
 // types
-import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
 import { WalletCurrency } from "@app/graphql/generated"
 import {
