@@ -9214,7 +9214,7 @@ export type TranslationFunctions = {
 		 */
 		settle: () => LocalizedString
 		/**
-		 * Settle pending transactions
+		 * Cashout funds from your wallet
 		 */
 		settleDesc: () => LocalizedString
 	}

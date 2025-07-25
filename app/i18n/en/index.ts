@@ -1169,7 +1169,7 @@ const en: BaseTranslation = {
     topUp: "Top Up",
     topUpDesc: "Add funds to your wallet",
     settle: "Settle",
-    settleDesc: "Settle pending transactions"
+    settleDesc: "Cashout funds from your wallet"
   },
   UpgradeAccountModal: {
     title: "Upgrade your account",
