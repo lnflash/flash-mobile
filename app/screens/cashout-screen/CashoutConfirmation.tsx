@@ -11,6 +11,7 @@ import { CashoutCard, CashoutFromWallet } from "@app/components/cashout-flow"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useActivityIndicator, useDisplayCurrency } from "@app/hooks"
 import { useCashoutScreenQuery, useInitiateCashoutMutation } from "@app/graphql/generated"
 
@@ -25,8 +26,9 @@ type Props = StackScreenProps<RootStackParamList, "CashoutConfirmation">
 const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
-  const { formatMoneyAmount } = useDisplayCurrency()
+  const { moneyAmountToDisplayCurrencyString, displayCurrency } = useDisplayCurrency()
   const { toggleActivityIndicator } = useActivityIndicator()
 
   const [errorMsg, setErrorMsg] = useState<string>()
@@ -64,15 +66,15 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
     toggleActivityIndicator(false)
   }
 
-  const formattedSendAmount = formatMoneyAmount({
+  const formattedSendAmount = moneyAmountToDisplayCurrencyString({
     moneyAmount: toUsdMoneyAmount(send ?? NaN),
   })
 
-  const formattedReceiveUsdAmount = formatMoneyAmount({
+  const formattedReceiveUsdAmount = moneyAmountToDisplayCurrencyString({
     moneyAmount: toUsdMoneyAmount(receiveUsd ?? NaN),
   })
 
-  const formattedFeeAmount = formatMoneyAmount({
+  const formattedFeeAmount = moneyAmountToDisplayCurrencyString({
     moneyAmount: toUsdMoneyAmount(flashFee ?? NaN),
   })
 
@@ -87,7 +89,9 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
         <CashoutCard title={LL.Cashout.sendAmount()} detail={formattedSendAmount} />
         <CashoutCard
           title={LL.Cashout.receiveAmount()}
-          detail={`${formattedReceiveUsdAmount} (J$${receiveJmd})`}
+          detail={`${formattedReceiveUsdAmount} ${
+            displayCurrency === "JMD" ? "" : `(J${receiveJmd / 100})`
+          }`}
         />
         <CashoutCard title={LL.Cashout.fee()} detail={formattedFeeAmount} />
         {!!errorMsg && (
@@ -98,7 +102,7 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
       </ScrollView>
       <PrimaryBtn
         label={LL.common.confirm()}
-        btnStyle={styles.buttonContainer}
+        btnStyle={{ marginHorizontal: 20, marginBottom: bottom + 10 }}
         onPress={onConfirm}
       />
     </Screen>
@@ -107,13 +111,9 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
 
 export default CashoutConfirmation
 
-const useStyles = makeStyles(({ colors }) => ({
+const useStyles = makeStyles(() => ({
   valid: {
     alignSelf: "center",
     marginBottom: 10,
-  },
-  buttonContainer: {
-    marginHorizontal: 20,
-    marginBottom: 20,
   },
 }))
