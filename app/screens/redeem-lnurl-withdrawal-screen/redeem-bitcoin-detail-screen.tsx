@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react"
 import { View } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { makeStyles } from "@rneui/themed"
+import { parsePaymentDestination, Network as NetworkGaloyClient } from "@flash/client"
+import { LNURL_DOMAINS } from "@app/config"
 
 // components
 import { DetailDescription, InforError } from "@app/components/redeem-flow"
@@ -15,7 +17,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // types
-import { WalletCurrency } from "@app/graphql/generated"
+import { useLnUsdInvoiceCreateMutation, WalletCurrency } from "@app/graphql/generated"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import {
   DisplayCurrency,
@@ -41,37 +43,66 @@ const RedeemBitcoinDetailScreen: React.FC<Prop> = ({ route, navigation }) => {
   const { persistentState } = usePersistentStateContext()
   const { convertMoneyAmount } = usePriceConversion()
 
+  const [lnUsdInvoiceCreate] = useLnUsdInvoiceCreateMutation()
+
   const [hasError, setHasError] = useState(false)
+  const [minSats, setMinSats] = useState(
+    toBtcMoneyAmount(Math.round(minWithdrawable / 1000)),
+  )
+  const [maxSats, setMaxSats] = useState(
+    toBtcMoneyAmount(Math.round(maxWithdrawable / 1000)),
+  )
 
-  const minWithdrawableSatoshis = toBtcMoneyAmount(Math.round(minWithdrawable / 1000))
-  const maxWithdrawableSatoshis = toBtcMoneyAmount(Math.round(maxWithdrawable / 1000))
-
-  const [unitOfAccountAmount, setUnitOfAccountAmount] = useState<
-    MoneyAmount<WalletOrDisplayCurrency>
-  >(minWithdrawableSatoshis)
+  const [unitOfAccountAmount, setUnitOfAccountAmount] =
+    useState<MoneyAmount<WalletOrDisplayCurrency>>(minSats)
 
   if (!convertMoneyAmount) {
     console.log("convertMoneyAmount is undefined")
     return null
   }
 
-  const amountIsFlexible =
-    minWithdrawableSatoshis.amount !== maxWithdrawableSatoshis.amount
+  const amountIsFlexible = minSats.amount !== maxSats.amount
 
   const btcMoneyAmount = convertMoneyAmount(unitOfAccountAmount, WalletCurrency.Btc)
 
   const validAmount =
     btcMoneyAmount.amount !== null &&
-    btcMoneyAmount.amount <= maxWithdrawableSatoshis.amount &&
-    btcMoneyAmount.amount >= minWithdrawableSatoshis.amount
+    btcMoneyAmount.amount <= maxSats.amount &&
+    btcMoneyAmount.amount >= minSats.amount
 
   useEffect(() => {
     if (persistentState.defaultWallet?.walletCurrency === WalletCurrency.Usd) {
+      calculateEstimatedFee()
       navigation.setOptions({ title: LL.RedeemBitcoinScreen.usdTitle() })
     } else if (persistentState.defaultWallet?.walletCurrency === WalletCurrency.Btc) {
       navigation.setOptions({ title: LL.RedeemBitcoinScreen.title() })
     }
   }, [persistentState.defaultWallet])
+
+  const calculateEstimatedFee = async () => {
+    if (persistentState.defaultWallet) {
+      const usdAmount = convertMoneyAmount(maxSats, WalletCurrency.Usd)
+      const { data } = await lnUsdInvoiceCreate({
+        variables: {
+          input: {
+            walletId: persistentState.defaultWallet?.id,
+            amount: usdAmount.amount,
+            memo: defaultDescription,
+          },
+        },
+      })
+      if (data?.lnUsdInvoiceCreate.invoice) {
+        const parsedDestination: any = parsePaymentDestination({
+          destination: data?.lnUsdInvoiceCreate.invoice?.paymentRequest,
+          network: "mainnet" as NetworkGaloyClient, // hard coded to mainnet
+          lnAddressDomains: LNURL_DOMAINS,
+        })
+        const estimatedFee = parsedDestination.amount - maxSats.amount
+        const maxAmount = maxSats.amount - estimatedFee
+        setMaxSats(toBtcMoneyAmount(maxAmount))
+      }
+    }
+  }
 
   const navigate = () => {
     if (persistentState.defaultWallet) {
@@ -80,8 +111,8 @@ const RedeemBitcoinDetailScreen: React.FC<Prop> = ({ route, navigation }) => {
         domain,
         k1,
         defaultDescription,
-        minWithdrawableSatoshis,
-        maxWithdrawableSatoshis,
+        minWithdrawableSatoshis: minSats,
+        maxWithdrawableSatoshis: maxSats,
         receivingWalletDescriptor: {
           id: persistentState.defaultWallet?.id,
           currency: persistentState.defaultWallet?.walletCurrency,
@@ -103,15 +134,15 @@ const RedeemBitcoinDetailScreen: React.FC<Prop> = ({ route, navigation }) => {
           walletCurrency={persistentState.defaultWallet?.walletCurrency || "BTC"}
           unitOfAccountAmount={unitOfAccountAmount}
           setAmount={setUnitOfAccountAmount}
-          maxAmount={maxWithdrawableSatoshis}
-          minAmount={minWithdrawableSatoshis}
+          maxAmount={maxSats}
+          minAmount={minSats}
           convertMoneyAmount={convertMoneyAmount}
           canSetAmount={amountIsFlexible}
         />
         <InforError
           unitOfAccountAmount={unitOfAccountAmount}
-          minWithdrawableSatoshis={minWithdrawableSatoshis}
-          maxWithdrawableSatoshis={maxWithdrawableSatoshis}
+          minWithdrawableSatoshis={minSats}
+          maxWithdrawableSatoshis={maxSats}
           amountIsFlexible={amountIsFlexible}
           setHasError={setHasError}
         />

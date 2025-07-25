@@ -10,6 +10,7 @@ import { Screen } from "@app/components/screen"
 // hooks
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import useLogout from "@app/hooks/use-logout"
 import { useAppConfig } from "@app/hooks"
 
 // gql
@@ -39,11 +40,13 @@ type Props = StackScreenProps<RootStackParamList, "UsernameSet">
 
 export const UsernameSet: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
-  const { updateNostrProfile } = useNostrProfile()
   const { lnAddressHostname, relayUrl, name } = useAppConfig().appConfig.galoyInstance
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const styles = useStyles()
+
+  const { updateNostrProfile } = useNostrProfile()
+  const { logout } = useLogout()
 
   const [error, setError] = useState<SetAddressError | undefined>()
   const [lnAddress, setLnAddress] = useState("")
@@ -115,6 +118,14 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
     }
   }
 
+  const onCancel = () => {
+    logout()
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "getStarted" }],
+    })
+  }
+
   let errorMessage = ""
   switch (error) {
     case SetAddressError.TOO_SHORT:
@@ -166,6 +177,12 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
           label={LL.SetAddressModal.save()}
           disabled={lnAddress.length < 3}
           onPress={onSetLightningAddress}
+          btnStyle={{ marginBottom: 10 }}
+        />
+        <PrimaryBtn
+          type="outline"
+          label={LL.common.cancel()}
+          onPress={onCancel}
           btnStyle={{ marginBottom: 20 }}
         />
       </View>

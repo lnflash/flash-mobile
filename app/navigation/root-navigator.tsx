@@ -86,6 +86,7 @@ import {
   BackupOptions,
   TransactionHistoryTabs,
   USDTransactionHistory,
+  SignInViaQRCode,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -114,6 +115,7 @@ import {
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
+import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
 import {
   PersonalInformation,
   BusinessInformation,
@@ -575,6 +577,14 @@ export const RootStack = () => {
         options={{ headerShown: true, title: LL.Nostr.editProfile() }}
       />
       <RootNavigator.Screen
+        name="SignInViaQRCode"
+        component={SignInViaQRCode}
+        options={{
+          headerStyle: { backgroundColor: "#000" },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+      <RootNavigator.Screen
         name="AccountType"
         component={AccountType}
         options={{ title: LL.AccountUpgrade.accountType() }}
@@ -631,6 +641,13 @@ export const ChatNavigator = () => {
         name="messages"
         component={Messages}
         options={{ headerShown: false }}
+      />
+      <StackChats.Screen
+        name="contactDetails"
+        component={ContactDetailsScreen}
+        options={{
+          headerShown: false, // Since we're using our own header in the component
+        }}
       />
     </StackChats.Navigator>
   )

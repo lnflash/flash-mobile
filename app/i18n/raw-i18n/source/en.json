@@ -86,7 +86,9 @@
     "ConversionConfirmationScreen": {
         "title": "Review conversion",
         "youreConverting": "You're converting",
-        "receivingAccount": "Receiving account"
+        "sendingAccount": "Sending account",
+        "receivingAccount": "Receiving account",
+        "conversionFee": "Conversion Fee"
     },
     "ConversionSuccessScreen": {
         "title": "Conversion Success",
@@ -459,7 +461,7 @@
         "unlockQuestion": "To unlock, answer the question:",
         "youEarned": "You Earned",
         "registerTitle": "Need to upgrade your account",
-        "registerContent": "Register with your phone number to receive sats"
+        "registerContent": "Register with your phone number to receive bitcoin"
     },
     "GetStartedScreen": {
         "logInCreateAccount": "Log in / create account",
@@ -650,7 +652,8 @@
         "hideBalanceTitle": "Hide Balance",
         "pinDescription": "PIN is used as the backup authentication method for biometric authentication.",
         "pinTitle": "PIN Code",
-        "setPin": "Set PIN"
+        "setPin": "Set PIN",
+        "backupDescription": "To set a PIN code, please back up your account by adding a phone number."
     },
     "SendBitcoinConfirmationScreen": {
         "amountLabel": "Amount:",
@@ -1344,6 +1347,17 @@
             "yourPublicProfileId": "Your Public Profile ID",
             "yourPrivateProfileKey": "Your Private Profile Key",
             "keyCopiedToClipboard": "Key copied to clipboard"
+        },
+        "Contacts": {
+            "stillLoading": "Having trouble finding your contact list, have you followed anyone yet?",
+            "noCantacts": "No Contacts Available",
+            "profile": "Profile",
+            "nostrUser": "Nostr User",
+            "message": "Message",
+            "sendPayment": "Send Payment",
+            "contactInfo": "Contact Info",
+            "contactManagement": "Contact Management",
+            "unfollowContact": "Unfollow Contact"
         },
         "common": {
             "copy": "Copy",

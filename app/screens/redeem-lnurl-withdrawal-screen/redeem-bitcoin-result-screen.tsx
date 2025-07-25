@@ -148,7 +148,7 @@ const RedeemBitcoinResultScreen: React.FC<Prop> = ({ route, navigation }) => {
   )
 
   const redeemToBTCWallet = async () => {
-    const res = await onRedeem(lnurl, defaultDescription)
+    const res = await onRedeem(lnurl, settlementAmount, defaultDescription)
     if (res.success) {
       setSuccess(true)
     } else {

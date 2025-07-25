@@ -6,6 +6,7 @@ import { Text, makeStyles } from "@rneui/themed"
 
 import { Delete } from "./delete"
 import { LogOut } from "./logout"
+import { SignInQRCode } from "./SignInQRCode"
 
 export const DangerZoneSettings: React.FC = () => {
   const { LL } = useI18nContext()
@@ -19,6 +20,7 @@ export const DangerZoneSettings: React.FC = () => {
       <Text type="p2" bold>
         {LL.AccountScreen.dangerZone()}
       </Text>
+      {isAtLeastLevelOne && <SignInQRCode />}
       {isAtLeastLevelOne && <LogOut />}
       {currentLevel !== AccountLevel.NonAuth && <Delete />}
     </View>

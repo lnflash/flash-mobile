@@ -4,7 +4,10 @@ import analytics from "@react-native-firebase/analytics"
 import crashlytics from "@react-native-firebase/crashlytics"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme, Input } from "@rneui/themed"
+import { hexToBytes } from "@noble/curves/abstract/utils"
+import * as Keychain from "react-native-keychain"
 import { gql } from "@apollo/client"
+import { nip19 } from "nostr-tools"
 
 // components
 import { Screen } from "../../components/screen"
@@ -21,6 +24,7 @@ import {
 import { AccountLevel, useLevel } from "@app/graphql/level-context"
 
 // hooks
+import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAppConfig } from "../../hooks"
 
@@ -30,12 +34,14 @@ import { PhoneCodeChannelToFriendlyName } from "./request-phone-code-login"
 import type { PhoneValidationStackParamList } from "../../navigation/stack-param-lists"
 
 // utils
-import { parseTimer } from "../../utils/timer"
 import {
   logUpgradeLoginAttempt,
   logUpgradeLoginSuccess,
   logValidateAuthCodeFailure,
 } from "@app/utils/analytics"
+import { parseTimer } from "../../utils/timer"
+import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
+import { KEYCHAIN_NOSTRCREDS_KEY } from "@app/components/import-nsec/utils"
 
 gql`
   mutation userLogin($input: UserLoginInput!) {
@@ -133,6 +139,7 @@ export const PhoneLoginValidationScreen: React.FC<Props> = ({ navigation, route 
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
   const { saveToken } = useAppConfig()
+  const { updateState } = usePersistentStateContext()
 
   const [code, _setCode] = useState("")
   const [secondsRemaining, setSecondsRemaining] = useState<number>(30)
@@ -150,7 +157,7 @@ export const PhoneLoginValidationScreen: React.FC<Props> = ({ navigation, route 
 
   const isUpgradeFlow = currentLevel === AccountLevel.Zero
 
-  const { phone, channel } = route.params
+  const { phone, channel, mnemonicKey, nsec } = route.params
 
   const send = useCallback(
     async (code: string) => {
@@ -199,6 +206,33 @@ export const PhoneLoginValidationScreen: React.FC<Props> = ({ navigation, route 
             }
             analytics().logLogin({ method: "phone" })
             saveToken(authToken)
+
+            // enable breez btc wallet
+            if (mnemonicKey) {
+              await Keychain.setInternetCredentials(
+                KEYCHAIN_MNEMONIC_KEY,
+                KEYCHAIN_MNEMONIC_KEY,
+                mnemonicKey,
+              )
+              updateState((state: any) => {
+                if (state)
+                  return {
+                    ...state,
+                    isAdvanceMode: true,
+                  }
+                return undefined
+              })
+            }
+            // enbale nostr chat
+            if (nsec) {
+              const secretKey = hexToBytes(nsec)
+              await Keychain.setInternetCredentials(
+                KEYCHAIN_NOSTRCREDS_KEY,
+                KEYCHAIN_NOSTRCREDS_KEY,
+                nip19.nsecEncode(secretKey),
+              )
+            }
+
             navigation.reset({
               index: 0,
               routes: [{ name: "authenticationCheck" }],

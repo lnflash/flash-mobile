@@ -332,7 +332,7 @@ type RootTranslation = {
 		 */
 		youreConverting: string
 		/**
-		 * Sending account
+		 * S​e​n​d​i​n​g​ ​a​c​c​o​u​n​t
 		 */
 		sendingAccount: string
 		/**
@@ -340,7 +340,7 @@ type RootTranslation = {
 		 */
 		receivingAccount: string
 		/**
-		 * Conversion Fee
+		 * C​o​n​v​e​r​s​i​o​n​ ​F​e​e
 		 */
 		conversionFee: string
 	}
@@ -2244,6 +2244,10 @@ type RootTranslation = {
 		 * S​e​t​ ​P​I​N
 		 */
 		setPin: string
+		/**
+		 * T​o​ ​s​e​t​ ​a​ ​P​I​N​ ​c​o​d​e​,​ ​p​l​e​a​s​e​ ​b​a​c​k​ ​u​p​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​b​y​ ​a​d​d​i​n​g​ ​a​ ​p​h​o​n​e​ ​n​u​m​b​e​r​.
+		 */
+		backupDescription: string
 	}
 	SendBitcoinConfirmationScreen: {
 		/**
@@ -2437,6 +2441,10 @@ type RootTranslation = {
 		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​f​o​r​ ​t​h​i​s​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​5​,​5​0​0​ ​s​a​t​s
 		 */
 		MinOnChainSatLimit: string
+		/**
+		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​w​h​e​n​ ​r​e​l​o​a​d​i​n​g​ ​f​r​o​m​ ​f​l​a​s​h​c​a​r​d​ ​i​s​ ​1​0​0​ ​s​a​t​s
+		 */
+		MinFlashcardLimit: string
 		/**
 		 * A​m​o​u​n​t​ ​e​x​c​e​e​d​s​ ​y​o​u​r​ ​b​a​l​a​n​c​e​ ​o​f​ ​{​b​a​l​a​n​c​e​}
 		 * @param {string} balance
@@ -3580,7 +3588,7 @@ type RootTranslation = {
 			 */
 			invalidCharacter: string
 			/**
-			 * Your username must begin with an uppercase or lowercase letter.
+			 * Y​o​u​r​ ​u​s​e​r​n​a​m​e​ ​m​u​s​t​ ​b​e​g​i​n​ ​w​i​t​h​ ​a​n​ ​u​p​p​e​r​c​a​s​e​ ​o​r​ ​l​o​w​e​r​c​a​s​e​ ​l​e​t​t​e​r
 			 */
 			startsWithNumber: string
 			/**
@@ -5030,6 +5038,44 @@ type RootTranslation = {
 			 * K​e​y​ ​c​o​p​i​e​d​ ​t​o​ ​c​l​i​p​b​o​a​r​d
 			 */
 			keyCopiedToClipboard: string
+		}
+		Contacts: {
+			/**
+			 * H​a​v​i​n​g​ ​t​r​o​u​b​l​e​ ​f​i​n​d​i​n​g​ ​y​o​u​r​ ​c​o​n​t​a​c​t​ ​l​i​s​t​,​ ​h​a​v​e​ ​y​o​u​ ​f​o​l​l​o​w​e​d​ ​a​n​y​o​n​e​ ​y​e​t​?
+			 */
+			stillLoading: string
+			/**
+			 * N​o​ ​C​o​n​t​a​c​t​s​ ​A​v​a​i​l​a​b​l​e
+			 */
+			noCantacts: string
+			/**
+			 * P​r​o​f​i​l​e
+			 */
+			profile: string
+			/**
+			 * N​o​s​t​r​ ​U​s​e​r
+			 */
+			nostrUser: string
+			/**
+			 * M​e​s​s​a​g​e
+			 */
+			message: string
+			/**
+			 * S​e​n​d​ ​P​a​y​m​e​n​t
+			 */
+			sendPayment: string
+			/**
+			 * C​o​n​t​a​c​t​ ​I​n​f​o
+			 */
+			contactInfo: string
+			/**
+			 * C​o​n​t​a​c​t​ ​M​a​n​a​g​e​m​e​n​t
+			 */
+			contactManagement: string
+			/**
+			 * U​n​f​o​l​l​o​w​ ​C​o​n​t​a​c​t
+			 */
+			unfollowContact: string
 		}
 		common: {
 			/**
@@ -7227,6 +7273,10 @@ export type TranslationFunctions = {
 		 * Set PIN
 		 */
 		setPin: () => LocalizedString
+		/**
+		 * To set a PIN code, please back up your account by adding a phone number.
+		 */
+		backupDescription: () => LocalizedString
 	}
 	SendBitcoinConfirmationScreen: {
 		/**
@@ -7403,6 +7453,10 @@ export type TranslationFunctions = {
 		 * Minimum amount for this transaction is 5,500 sats
 		 */
 		MinOnChainSatLimit: () => LocalizedString
+		/**
+		 * Minimum amount when reloading from flashcard is 100 sats
+		 */
+		MinFlashcardLimit: () => LocalizedString
 		/**
 		 * Amount exceeds your balance of {balance}
 		 */
@@ -9645,6 +9699,44 @@ export type TranslationFunctions = {
 			 * Key copied to clipboard
 			 */
 			keyCopiedToClipboard: () => LocalizedString
+		}
+		Contacts: {
+			/**
+			 * Having trouble finding your contact list, have you followed anyone yet?
+			 */
+			stillLoading: () => LocalizedString
+			/**
+			 * No Contacts Available
+			 */
+			noCantacts: () => LocalizedString
+			/**
+			 * Profile
+			 */
+			profile: () => LocalizedString
+			/**
+			 * Nostr User
+			 */
+			nostrUser: () => LocalizedString
+			/**
+			 * Message
+			 */
+			message: () => LocalizedString
+			/**
+			 * Send Payment
+			 */
+			sendPayment: () => LocalizedString
+			/**
+			 * Contact Info
+			 */
+			contactInfo: () => LocalizedString
+			/**
+			 * Contact Management
+			 */
+			contactManagement: () => LocalizedString
+			/**
+			 * Unfollow Contact
+			 */
+			unfollowContact: () => LocalizedString
 		}
 		common: {
 			/**

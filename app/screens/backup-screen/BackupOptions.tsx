@@ -152,6 +152,6 @@ const Btn = styled.TouchableOpacity`
 
 const BtnTextWrapper = styled.View`
   flex: 1;
-  row-gap: 5;
+  row-gap: 5px;
   margin-horizontal: 15px;
 `

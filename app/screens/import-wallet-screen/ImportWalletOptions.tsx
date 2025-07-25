@@ -33,6 +33,10 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
     navigation.navigate("emailLoginInitiate")
   }
 
+  const onLoginWithQRCode = () => {
+    navigation.navigate("SignInViaQRCode")
+  }
+
   return (
     <Wrapper style={{ backgroundColor: colors.white }}>
       <Text type="h02" bold style={{ textAlign: "center", marginBottom: 30 }}>
@@ -56,7 +60,7 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
       {!insideApp && (
         <>
           <Btn onPress={onLoginWithPhone}>
-            <Icon type="ionicon" name={"mail-outline"} color={colors.icon02} size={40} />
+            <Icon type="ionicon" name={"mail"} color={colors.icon02} size={40} />
             <BtnTextWrapper>
               <Text type="p1">{LL.ImportWalletOptions.phone()}</Text>
               <Text type="p3" color={colors.grey2}>
@@ -66,11 +70,21 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
             <Icon type="ionicon" name={"chevron-forward"} size={20} />
           </Btn>
           <Btn onPress={onLoginWithEmail}>
-            <Icon type="ionicon" name={"at-outline"} color={colors.icon02} size={40} />
+            <Icon type="ionicon" name={"at"} color={colors.icon02} size={40} />
             <BtnTextWrapper>
               <Text type="p1">{LL.ImportWalletOptions.email()}</Text>
               <Text type="p3" color={colors.grey2}>
                 {LL.ImportWalletOptions.importUsingEmail()}
+              </Text>
+            </BtnTextWrapper>
+            <Icon type="ionicon" name={"chevron-forward"} size={20} />
+          </Btn>
+          <Btn onPress={onLoginWithQRCode}>
+            <Icon type="ionicon" name={"qr-code"} color={colors.icon02} size={40} />
+            <BtnTextWrapper>
+              <Text type="p1">Sign In with QR code</Text>
+              <Text type="p3" color={colors.grey2}>
+                Import your account by scanning a QR code from your old phone.{" "}
               </Text>
             </BtnTextWrapper>
             <Icon type="ionicon" name={"chevron-forward"} size={20} />
@@ -100,6 +114,6 @@ const Btn = styled.TouchableOpacity`
 
 const BtnTextWrapper = styled.View`
   flex: 1;
-  row-gap: 5;
+  row-gap: 5px;
   margin-horizontal: 15px;
 `
