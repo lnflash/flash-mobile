@@ -116,6 +116,13 @@ import {
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
+import {
+  BankTransfer,
+  BuyBitcoin,
+  BuyBitcoinDetails,
+  BuySellBitcoin,
+  CardPayment,
+} from "@app/screens/buy-bitcoin-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -575,6 +582,18 @@ export const RootStack = () => {
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         }}
       />
+      <RootNavigator.Group
+        screenOptions={{
+          title: "",
+          headerShadowVisible: false,
+        }}
+      >
+        <RootNavigator.Screen name="BuySellBitcoin" component={BuySellBitcoin} />
+        <RootNavigator.Screen name="BuyBitcoin" component={BuyBitcoin} />
+        <RootNavigator.Screen name="BuyBitcoinDetails" component={BuyBitcoinDetails} />
+        <RootNavigator.Screen name="BankTransfer" component={BankTransfer} />
+        <RootNavigator.Screen name="CardPayment" component={CardPayment} />
+      </RootNavigator.Group>
     </RootNavigator.Navigator>
   )
 }

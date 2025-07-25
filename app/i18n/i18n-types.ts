@@ -1668,6 +1668,10 @@ type RootTranslation = {
 		 */
 		send: string
 		/**
+		 * T​r​a​n​s​f​e​r
+		 */
+		transfer: string
+		/**
 		 * S​w​e​e​p​ ​t​o​ ​W​a​l​l​e​t
 		 */
 		sweep: string
@@ -1776,6 +1780,205 @@ type RootTranslation = {
 		 * B​a​c​k​u​p​ ​a​n​d​ ​s​e​c​u​r​e​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​ ​u​s​i​n​g​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​.
 		 */
 		backupDesc: string
+	}
+	TopUpScreen: {
+		/**
+		 * T​o​p​ ​U​p
+		 */
+		title: string
+		/**
+		 * B​a​n​k​ ​T​r​a​n​s​f​e​r
+		 */
+		bankTransfer: string
+		/**
+		 * T​r​a​n​s​f​e​r​ ​f​u​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 */
+		bankTransferDesc: string
+		/**
+		 * D​e​b​i​t​/​C​r​e​d​i​t​ ​C​a​r​d
+		 */
+		debitCreditCard: string
+		/**
+		 * P​a​y​ ​w​i​t​h​ ​y​o​u​r​ ​c​a​r​d​ ​v​i​a​ ​F​y​g​a​r​o
+		 */
+		debitCreditCardDesc: string
+	}
+	BuyBitcoinDetails: {
+		/**
+		 * C​a​r​d​ ​P​a​y​m​e​n​t
+		 */
+		title: string
+		/**
+		 * Bank Transfer
+		 */
+		bankTransfer: string
+		/**
+		 * E​m​a​i​l
+		 */
+		email: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s
+		 */
+		emailPlaceholder: string
+		/**
+		 * W​a​l​l​e​t
+		 */
+		wallet: string
+		/**
+		 * S​e​l​e​c​t​ ​w​a​l​l​e​t
+		 */
+		walletPlaceholder: string
+		/**
+		 * A​m​o​u​n​t​ ​(​U​S​D​)
+		 */
+		amount: string
+		/**
+		 * E​n​t​e​r​ ​a​m​o​u​n​t
+		 */
+		amountPlaceholder: string
+		/**
+		 * C​o​n​t​i​n​u​e
+		 */
+		'continue': string
+		/**
+		 * U​S​D​ ​W​a​l​l​e​t
+		 */
+		usdWallet: string
+		/**
+		 * B​T​C​ ​W​a​l​l​e​t
+		 */
+		btcWallet: string
+		/**
+		 * P​l​e​a​s​e​ ​e​n​t​e​r​ ​a​ ​v​a​l​i​d​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s
+		 */
+		invalidEmail: string
+		/**
+		 * P​l​e​a​s​e​ ​e​n​t​e​r​ ​a​ ​v​a​l​i​d​ ​a​m​o​u​n​t
+		 */
+		invalidAmount: string
+		/**
+		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​i​s​ ​$​1​.​0​0
+		 */
+		minimumAmount: string
+	}
+	FygaroWebViewScreen: {
+		/**
+		 * F​y​g​a​r​o​ ​P​a​y​m​e​n​t
+		 */
+		title: string
+		/**
+		 * L​o​a​d​i​n​g​ ​p​a​y​m​e​n​t​ ​p​a​g​e​.​.​.
+		 */
+		loading: string
+		/**
+		 * F​a​i​l​e​d​ ​t​o​ ​l​o​a​d​ ​p​a​y​m​e​n​t​ ​p​a​g​e
+		 */
+		error: string
+		/**
+		 * R​e​t​r​y
+		 */
+		retry: string
+	}
+	BankTransfer: {
+		/**
+		 * Bank Transfer
+		 */
+		title: string
+		/**
+		 * Your order has been created. To complete the order, please transfer ${amount} USD to the bank details provided below.
+		 * @param {number} amount
+		 */
+		desc1: string
+		/**
+		 * Use {code} as the reference description. This unique code will help us associate the payment with your Flash account and process the Bitcoin transfer.
+		 * @param {string} code
+		 */
+		desc2: string
+		/**
+		 * After we have received your payment, you will be credited with ${amount} USD in your Cash wallet, with a ${fee} USD fee deducted. You can then choose when you convert those USD to Bitcoin on your own using the Convert functionality in the mobile app.
+		 * @param {number} amount
+		 * @param {number} fee
+		 */
+		desc3: string
+		/**
+		 * Account Type
+		 */
+		accountType: string
+		/**
+		 * Destination Bank
+		 */
+		destinationBank: string
+		/**
+		 * Account Number
+		 */
+		accountNumber: string
+		/**
+		 * Type of Client
+		 */
+		typeOfClient: string
+		/**
+		 * Receiver's Name
+		 */
+		receiverName: string
+		/**
+		 * Email
+		 */
+		email: string
+		/**
+		 * Amount
+		 */
+		amount: string
+		/**
+		 * Unique Code
+		 */
+		uniqueCode: string
+		/**
+		 * Fees
+		 */
+		fees: string
+		/**
+		 * After payment completion on your end you can send us an email to {email} with a screenshot of your payment confirmation.
+		 * @param {number} email
+		 */
+		desc4: string
+		/**
+		 * Your payment will be processed even if we don't receive this email, but having this confirmation can help accelerate the order.
+		 */
+		desc5: string
+		/**
+		 * Back to Home
+		 */
+		backHome: string
+	}
+	PaymentSuccessScreen: {
+		/**
+		 * P​a​y​m​e​n​t​ ​S​u​c​c​e​s​s​f​u​l
+		 */
+		title: string
+		/**
+		 * Y​o​u​r​ ​p​a​y​m​e​n​t​ ​h​a​s​ ​b​e​e​n​ ​p​r​o​c​e​s​s​e​d​ ​s​u​c​c​e​s​s​f​u​l​l​y
+		 */
+		successMessage: string
+		/**
+		 * A​m​o​u​n​t​ ​S​e​n​t
+		 */
+		amountSent: string
+		/**
+		 * D​e​p​o​s​i​t​e​d​ ​t​o
+		 */
+		depositedTo: string
+		/**
+		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
+		 */
+		transactionId: string
+		/**
+		 * D​o​n​e
+		 */
+		done: string
+		/**
+		 * V​i​e​w​ ​T​r​a​n​s​a​c​t​i​o​n
+		 */
+		viewTransaction: string
 	}
 	PinScreen: {
 		/**
@@ -3508,6 +3711,22 @@ type RootTranslation = {
 		 * %​ ​t​o​ ​c​o​n​v​e​r​t
 		 */
 		percentageToConvert: string
+		/**
+		 * T​o​p​ ​U​p
+		 */
+		topUp: string
+		/**
+		 * A​d​d​ ​f​u​n​d​s​ ​t​o​ ​y​o​u​r​ ​w​a​l​l​e​t
+		 */
+		topUpDesc: string
+		/**
+		 * S​e​t​t​l​e
+		 */
+		settle: string
+		/**
+		 * S​e​t​t​l​e​ ​p​e​n​d​i​n​g​ ​t​r​a​n​s​a​c​t​i​o​n​s
+		 */
+		settleDesc: string
 	}
 	UpgradeAccountModal: {
 		/**
@@ -6400,6 +6619,10 @@ export type TranslationFunctions = {
 		 */
 		send: () => LocalizedString
 		/**
+		 * Transfer
+		 */
+		transfer: () => LocalizedString
+		/**
 		 * Sweep to Wallet
 		 */
 		sweep: () => LocalizedString
@@ -6508,6 +6731,205 @@ export type TranslationFunctions = {
 		 * Backup and secure your Bitcoin wallet using recovery phrase.
 		 */
 		backupDesc: () => LocalizedString
+	}
+	TopUpScreen: {
+		/**
+		 * Top Up
+		 */
+		title: () => LocalizedString
+		/**
+		 * Bank Transfer
+		 */
+		bankTransfer: () => LocalizedString
+		/**
+		 * Transfer funds from your bank account
+		 */
+		bankTransferDesc: () => LocalizedString
+		/**
+		 * Debit/Credit Card
+		 */
+		debitCreditCard: () => LocalizedString
+		/**
+		 * Pay with your card via Fygaro
+		 */
+		debitCreditCardDesc: () => LocalizedString
+	}
+	BuyBitcoinDetails: {
+		/**
+		 * Card Payment
+		 */
+		title: () => LocalizedString
+		/**
+		 * Bank Transfer
+		 */
+		bankTransfer: () => LocalizedString
+		/**
+		 * Email
+		 */
+		email: () => LocalizedString
+		/**
+		 * Enter your email address
+		 */
+		emailPlaceholder: () => LocalizedString
+		/**
+		 * Wallet
+		 */
+		wallet: () => LocalizedString
+		/**
+		 * Select wallet
+		 */
+		walletPlaceholder: () => LocalizedString
+		/**
+		 * Amount (USD)
+		 */
+		amount: () => LocalizedString
+		/**
+		 * Enter amount
+		 */
+		amountPlaceholder: () => LocalizedString
+		/**
+		 * Continue
+		 */
+		'continue': () => LocalizedString
+		/**
+		 * USD Wallet
+		 */
+		usdWallet: () => LocalizedString
+		/**
+		 * BTC Wallet
+		 */
+		btcWallet: () => LocalizedString
+		/**
+		 * Please enter a valid email address
+		 */
+		invalidEmail: () => LocalizedString
+		/**
+		 * Please enter a valid amount
+		 */
+		invalidAmount: () => LocalizedString
+		/**
+		 * Minimum amount is $1.00
+		 */
+		minimumAmount: () => LocalizedString
+	}
+	FygaroWebViewScreen: {
+		/**
+		 * Fygaro Payment
+		 */
+		title: () => LocalizedString
+		/**
+		 * Loading payment page...
+		 */
+		loading: () => LocalizedString
+		/**
+		 * Failed to load payment page
+		 */
+		error: () => LocalizedString
+		/**
+		 * Retry
+		 */
+		retry: () => LocalizedString
+	}
+	BankTransfer: {
+		/**
+		 * Bank Transfer
+		 */
+		title: () => LocalizedString
+		/**
+		 * Your order has been created. To complete the order, please transfer ${amount} USD to the bank details provided below.
+		 * @param {number} amount
+		 */
+		desc1: (arg: { amount: number }) => LocalizedString
+		/**
+		 * Use {code} as the reference description. This unique code will help us associate the payment with your Flash account and process the Bitcoin transfer.
+		 * @param {string} code
+		 */
+		desc2: (arg: { code: string }) => LocalizedString
+		/**
+		 * After we have received your payment, you will be credited with ${amount} USD in your Cash wallet, with a ${fee} USD fee deducted. You can then choose when you convert those USD to Bitcoin on your own using the Convert functionality in the mobile app.
+		 * @param {number} amount
+		 * @param {number} fee
+		 */
+		desc3: (arg: { amount: number, fee: number }) => LocalizedString
+		/**
+		 * Account Type
+		 */
+		accountType: () => LocalizedString
+		/**
+		 * Destination Bank
+		 */
+		destinationBank: () => LocalizedString
+		/**
+		 * Account Number
+		 */
+		accountNumber: () => LocalizedString
+		/**
+		 * Type of Client
+		 */
+		typeOfClient: () => LocalizedString
+		/**
+		 * Receiver's Name
+		 */
+		receiverName: () => LocalizedString
+		/**
+		 * Email
+		 */
+		email: () => LocalizedString
+		/**
+		 * Amount
+		 */
+		amount: () => LocalizedString
+		/**
+		 * Unique Code
+		 */
+		uniqueCode: () => LocalizedString
+		/**
+		 * Fees
+		 */
+		fees: () => LocalizedString
+		/**
+		 * After payment completion on your end you can send us an email to {email} with a screenshot of your payment confirmation.
+		 * @param {string} email
+		 */
+		desc4: (arg: { email: string }) => LocalizedString
+		/**
+		 * Your payment will be processed even if we don't receive this email, but having this confirmation can help accelerate the order.
+		 */
+		desc5: () => LocalizedString
+		/**
+		 * Back to Home
+		 */
+		backHome: () => LocalizedString
+	}
+	PaymentSuccessScreen: {
+		/**
+		 * Payment Successful
+		 */
+		title: () => LocalizedString
+		/**
+		 * Your payment has been processed successfully
+		 */
+		successMessage: () => LocalizedString
+		/**
+		 * Amount Sent
+		 */
+		amountSent: () => LocalizedString
+		/**
+		 * Deposited to
+		 */
+		depositedTo: () => LocalizedString
+		/**
+		 * Transaction ID
+		 */
+		transactionId: () => LocalizedString
+		/**
+		 * Done
+		 */
+		done: () => LocalizedString
+		/**
+		 * View Transaction
+		 */
+		viewTransaction: () => LocalizedString
 	}
 	PinScreen: {
 		/**
@@ -8191,6 +8613,22 @@ export type TranslationFunctions = {
 		 * % to convert
 		 */
 		percentageToConvert: () => LocalizedString
+		/**
+		 * Top Up
+		 */
+		topUp: () => LocalizedString
+		/**
+		 * Add funds to your wallet
+		 */
+		topUpDesc: () => LocalizedString
+		/**
+		 * Settle
+		 */
+		settle: () => LocalizedString
+		/**
+		 * Cashout funds from your wallet
+		 */
+		settleDesc: () => LocalizedString
 	}
 	UpgradeAccountModal: {
 		/**
