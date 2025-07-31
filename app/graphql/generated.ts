@@ -40,6 +40,8 @@ export type Scalars = {
   FractionalCentAmount: { input: number; output: number; }
   /** Hex-encoded string of 32 bytes */
   Hex32Bytes: { input: string; output: string; }
+  /** Amount in Jamaican cents */
+  JMDCents: { input: number; output: number; }
   Language: { input: string; output: string; }
   LnPaymentPreImage: { input: string; output: string; }
   /** BOLT11 lightning invoice payment request with the amount included */
@@ -78,6 +80,8 @@ export type Scalars = {
   TotpRegistrationId: { input: string; output: string; }
   /** A secret to generate time-based one-time password */
   TotpSecret: { input: string; output: string; }
+  /** Amount in USD cents */
+  USDCents: { input: number; output: number; }
   /** Unique identifier of a user */
   Username: { input: string; output: string; }
   /** Unique identifier of a wallet */
@@ -143,6 +147,7 @@ export type AccountEnableNotificationChannelInput = {
 
 export const AccountLevel = {
   One: 'ONE',
+  Three: 'THREE',
   Two: 'TWO',
   Zero: 'ZERO'
 } as const;
@@ -284,10 +289,31 @@ export type CaptchaRequestAuthCodeInput = {
   readonly validationCode: Scalars['String']['input'];
 };
 
+export type CashoutOffer = {
+  readonly __typename: 'CashoutOffer';
+  /** The rate used when withdrawing to a JMD bank account */
+  readonly exchangeRate: Scalars['JMDCents']['output'];
+  /** The time at which this offer is no longer accepted by Flash */
+  readonly expiresAt: Scalars['Timestamp']['output'];
+  /** The amount that Flash is charging for it's services */
+  readonly flashFee: Scalars['USDCents']['output'];
+  /** ID of the offer */
+  readonly offerId: Scalars['ID']['output'];
+  /** The amount Flash owes to the user denominated in JMD as cents */
+  readonly receiveJmd: Scalars['JMDCents']['output'];
+  /** The amount Flash owes to the user denominated in USD as cents */
+  readonly receiveUsd: Scalars['USDCents']['output'];
+  /** The amount the user is sending to flash */
+  readonly send: Scalars['USDCents']['output'];
+  /** ID for the users USD wallet to send from */
+  readonly walletId: Scalars['WalletId']['output'];
+};
+
 export type CentAmountPayload = {
   readonly __typename: 'CentAmountPayload';
-  readonly amount?: Maybe<Scalars['CentAmount']['output']>;
+  readonly amount?: Maybe<Scalars['USDCents']['output']>;
   readonly errors: ReadonlyArray<Error>;
+  readonly invoiceAmount?: Maybe<Scalars['USDCents']['output']>;
 };
 
 export type ConsumerAccount = Account & {
@@ -416,6 +442,12 @@ export type GraphQlApplicationError = Error & {
   readonly code?: Maybe<Scalars['String']['output']>;
   readonly message: Scalars['String']['output'];
   readonly path?: Maybe<ReadonlyArray<Maybe<Scalars['String']['output']>>>;
+};
+
+export type InitiateCashoutInput = {
+  /** The id of the offer being executed. */
+  readonly offerId: Scalars['ID']['input'];
+  readonly walletId: Scalars['WalletId']['input'];
 };
 
 export type InitiationVia = InitiationViaIntraLedger | InitiationViaLn | InitiationViaOnChain;
@@ -705,6 +737,11 @@ export type Mutation = {
   readonly deviceNotificationTokenCreate: SuccessPayload;
   readonly feedbackSubmit: SuccessPayload;
   /**
+   * Start the Cashout process;
+   * User sends USD to Flash via Ibex and receives USD or JMD to bank account.
+   */
+  readonly initiateCashout: SuccessPayload;
+  /**
    * Actions a payment which is internal to the ledger e.g. it does
    * not use onchain/lightning. Returns payment status (success,
    * failed, pending, already_paid).
@@ -786,6 +823,11 @@ export type Mutation = {
   readonly onChainUsdPaymentSend: PaymentSendPayload;
   readonly onChainUsdPaymentSendAsBtcDenominated: PaymentSendPayload;
   readonly quizCompleted: QuizCompletedPayload;
+  /**
+   * Returns an offer from Flash for a user to withdraw from their USD wallet (denominated in cents).
+   * The user can review this offer and then execute the withdrawal by calling the initiateCashout mutation.
+   */
+  readonly requestCashout: RequestCashoutResponse;
   /** @deprecated will be moved to AccountContact */
   readonly userContactUpdateAlias: UserContactUpdateAliasPayload;
   readonly userEmailDelete: UserEmailDeletePayload;
@@ -861,6 +903,11 @@ export type MutationDeviceNotificationTokenCreateArgs = {
 
 export type MutationFeedbackSubmitArgs = {
   input: FeedbackSubmitInput;
+};
+
+
+export type MutationInitiateCashoutArgs = {
+  input: InitiateCashoutInput;
 };
 
 
@@ -976,6 +1023,11 @@ export type MutationOnChainUsdPaymentSendAsBtcDenominatedArgs = {
 
 export type MutationQuizCompletedArgs = {
   input: QuizCompletedInput;
+};
+
+
+export type MutationRequestCashoutArgs = {
+  input: RequestCashoutInput;
 };
 
 
@@ -1426,6 +1478,19 @@ export type RealtimePricePayload = {
   readonly __typename: 'RealtimePricePayload';
   readonly errors: ReadonlyArray<Error>;
   readonly realtimePrice?: Maybe<RealtimePrice>;
+};
+
+export type RequestCashoutInput = {
+  /** Amount in USD cents. */
+  readonly amount: Scalars['USDCents']['input'];
+  /** ID for a USD wallet belonging to the current user. */
+  readonly walletId: Scalars['WalletId']['input'];
+};
+
+export type RequestCashoutResponse = {
+  readonly __typename: 'RequestCashoutResponse';
+  readonly errors: ReadonlyArray<Error>;
+  readonly offer?: Maybe<CashoutOffer>;
 };
 
 export type SatAmountPayload = {
@@ -2032,6 +2097,13 @@ export type AccountDeleteMutationVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AccountDeleteMutation = { readonly __typename: 'Mutation', readonly accountDelete: { readonly __typename: 'AccountDeletePayload', readonly success: boolean, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }> } };
+
+export type LnUsdInvoiceAmountMutationVariables = Exact<{
+  input: LnUsdInvoiceFeeProbeInput;
+}>;
+
+
+export type LnUsdInvoiceAmountMutation = { readonly __typename: 'Mutation', readonly lnUsdInvoiceFeeProbe: { readonly __typename: 'CentAmountPayload', readonly invoiceAmount?: number | null, readonly amount?: number | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }> } };
 
 export type UserUpdateNpubMutationVariables = Exact<{
   input: UserUpdateNpubInput;
@@ -3469,6 +3541,43 @@ export function useAccountDeleteMutation(baseOptions?: Apollo.MutationHookOption
 export type AccountDeleteMutationHookResult = ReturnType<typeof useAccountDeleteMutation>;
 export type AccountDeleteMutationResult = Apollo.MutationResult<AccountDeleteMutation>;
 export type AccountDeleteMutationOptions = Apollo.BaseMutationOptions<AccountDeleteMutation, AccountDeleteMutationVariables>;
+export const LnUsdInvoiceAmountDocument = gql`
+    mutation lnUsdInvoiceAmount($input: LnUsdInvoiceFeeProbeInput!) {
+  lnUsdInvoiceFeeProbe(input: $input) {
+    errors {
+      message
+    }
+    invoiceAmount
+    amount
+  }
+}
+    `;
+export type LnUsdInvoiceAmountMutationFn = Apollo.MutationFunction<LnUsdInvoiceAmountMutation, LnUsdInvoiceAmountMutationVariables>;
+
+/**
+ * __useLnUsdInvoiceAmountMutation__
+ *
+ * To run a mutation, you first call `useLnUsdInvoiceAmountMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useLnUsdInvoiceAmountMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [lnUsdInvoiceAmountMutation, { data, loading, error }] = useLnUsdInvoiceAmountMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useLnUsdInvoiceAmountMutation(baseOptions?: Apollo.MutationHookOptions<LnUsdInvoiceAmountMutation, LnUsdInvoiceAmountMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<LnUsdInvoiceAmountMutation, LnUsdInvoiceAmountMutationVariables>(LnUsdInvoiceAmountDocument, options);
+      }
+export type LnUsdInvoiceAmountMutationHookResult = ReturnType<typeof useLnUsdInvoiceAmountMutation>;
+export type LnUsdInvoiceAmountMutationResult = Apollo.MutationResult<LnUsdInvoiceAmountMutation>;
+export type LnUsdInvoiceAmountMutationOptions = Apollo.BaseMutationOptions<LnUsdInvoiceAmountMutation, LnUsdInvoiceAmountMutationVariables>;
 export const UserUpdateNpubDocument = gql`
     mutation userUpdateNpub($input: UserUpdateNpubInput!) {
   userUpdateNpub(input: $input) {
