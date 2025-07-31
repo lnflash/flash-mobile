@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
@@ -13,7 +13,8 @@ import NoteIcon from "@app/assets/icons/note.svg"
 
 // types
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
-import { WalletCurrency } from "@app/graphql/generated"
+import { useLnUsdInvoiceAmountMutation, WalletCurrency } from "@app/graphql/generated"
+import { MoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 
 type Props = {
   paymentDetail: PaymentDetail<WalletCurrency>
@@ -23,6 +24,31 @@ const ConfirmationDestinationAmountNote: React.FC<Props> = ({ paymentDetail }) =
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const styles = useStyles()
+
+  const [invoiceAmount, setInvoiceAmount] = useState<MoneyAmount<WalletCurrency>>()
+
+  const [lnUsdInvoiceAmount] = useLnUsdInvoiceAmountMutation()
+
+  useEffect(() => {
+    fetchInvoiceAmount()
+  }, [paymentDetail.destination])
+
+  const fetchInvoiceAmount = async () => {
+    const { data } = await lnUsdInvoiceAmount({
+      variables: {
+        input: {
+          paymentRequest: paymentDetail.destination,
+          walletId: paymentDetail.sendingWalletDescriptor.id,
+        },
+      },
+    })
+    if (
+      data?.lnUsdInvoiceFeeProbe.invoiceAmount !== null &&
+      data?.lnUsdInvoiceFeeProbe.invoiceAmount !== undefined
+    ) {
+      setInvoiceAmount(toUsdMoneyAmount(data.lnUsdInvoiceFeeProbe.invoiceAmount))
+    }
+  }
 
   const {
     destination,
@@ -53,7 +79,11 @@ const ConfirmationDestinationAmountNote: React.FC<Props> = ({ paymentDetail }) =
       <View style={styles.fieldContainer}>
         <Text style={styles.fieldTitleText}>{LL.SendBitcoinScreen.amount()}</Text>
         <AmountInput
-          unitOfAccountAmount={unitOfAccountAmount}
+          unitOfAccountAmount={
+            sendingWalletDescriptor.currency === "USD"
+              ? invoiceAmount
+              : paymentDetail.unitOfAccountAmount
+          }
           canSetAmount={false}
           isSendingMax={isSendingMax}
           convertMoneyAmount={convertMoneyAmount}

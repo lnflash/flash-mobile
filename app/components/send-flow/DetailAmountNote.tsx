@@ -13,10 +13,11 @@ import { NoteInput } from "@app/components/note-input"
 
 // types
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
-import { WalletCurrency } from "@app/graphql/generated"
+import { useLnUsdInvoiceAmountMutation, WalletCurrency } from "@app/graphql/generated"
 import {
   isNonZeroMoneyAmount,
   MoneyAmount,
+  toUsdMoneyAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
 
@@ -55,6 +56,30 @@ const DetailAmountNote: React.FC<Props> = ({
 
   const [minAmount, setMinAmount] = useState<MoneyAmount<WalletCurrency>>()
   const [maxAmount, setMaxAmount] = useState<MoneyAmount<WalletCurrency>>()
+  const [invoiceAmount, setInvoiceAmount] = useState<MoneyAmount<WalletCurrency>>()
+
+  const [lnUsdInvoiceAmount] = useLnUsdInvoiceAmountMutation()
+
+  useEffect(() => {
+    fetchInvoiceAmount()
+  }, [paymentDetail.destination])
+
+  const fetchInvoiceAmount = async () => {
+    const { data } = await lnUsdInvoiceAmount({
+      variables: {
+        input: {
+          paymentRequest: paymentDetail.destination,
+          walletId: paymentDetail.sendingWalletDescriptor.id,
+        },
+      },
+    })
+    if (
+      data?.lnUsdInvoiceFeeProbe.invoiceAmount !== null &&
+      data?.lnUsdInvoiceFeeProbe.invoiceAmount !== undefined
+    ) {
+      setInvoiceAmount(toUsdMoneyAmount(data.lnUsdInvoiceFeeProbe.invoiceAmount))
+    }
+  }
 
   useEffect(() => {
     if (paymentDetail.isSendingMax && selectedFee) {
@@ -260,7 +285,11 @@ const DetailAmountNote: React.FC<Props> = ({
         </View>
         <View style={styles.currencyInputContainer}>
           <AmountInput
-            unitOfAccountAmount={paymentDetail.unitOfAccountAmount}
+            unitOfAccountAmount={
+              sendingWalletDescriptor.currency === "USD"
+                ? invoiceAmount
+                : paymentDetail.unitOfAccountAmount
+            }
             setAmount={setAmount}
             convertMoneyAmount={paymentDetail.convertMoneyAmount}
             walletCurrency={sendingWalletDescriptor.currency}
