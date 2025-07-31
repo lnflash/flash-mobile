@@ -291,6 +291,8 @@ export type CaptchaRequestAuthCodeInput = {
 
 export type CashoutOffer = {
   readonly __typename: 'CashoutOffer';
+  /** The rate used when withdrawing to a JMD bank account */
+  readonly exchangeRate: Scalars['JMDCents']['output'];
   /** The time at which this offer is no longer accepted by Flash */
   readonly expiresAt: Scalars['Timestamp']['output'];
   /** The amount that Flash is charging for it's services */
@@ -309,8 +311,9 @@ export type CashoutOffer = {
 
 export type CentAmountPayload = {
   readonly __typename: 'CentAmountPayload';
-  readonly amount?: Maybe<Scalars['CentAmount']['output']>;
+  readonly amount?: Maybe<Scalars['USDCents']['output']>;
   readonly errors: ReadonlyArray<Error>;
+  readonly invoiceAmount?: Maybe<Scalars['USDCents']['output']>;
 };
 
 export type ConsumerAccount = Account & {
@@ -2095,7 +2098,7 @@ export type RequestCashoutMutationVariables = Exact<{
 }>;
 
 
-export type RequestCashoutMutation = { readonly __typename: 'Mutation', readonly requestCashout: { readonly __typename: 'RequestCashoutResponse', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string, readonly path?: ReadonlyArray<string | null> | null }>, readonly offer?: { readonly __typename: 'CashoutOffer', readonly expiresAt: number, readonly flashFee: number, readonly offerId: string, readonly receiveJmd: number, readonly receiveUsd: number, readonly send: number, readonly walletId: string } | null } };
+export type RequestCashoutMutation = { readonly __typename: 'Mutation', readonly requestCashout: { readonly __typename: 'RequestCashoutResponse', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string, readonly path?: ReadonlyArray<string | null> | null }>, readonly offer?: { readonly __typename: 'CashoutOffer', readonly exchangeRate: number, readonly expiresAt: number, readonly flashFee: number, readonly offerId: string, readonly receiveJmd: number, readonly receiveUsd: number, readonly send: number, readonly walletId: string } | null } };
 
 export type InitiateCashoutMutationVariables = Exact<{
   input: InitiateCashoutInput;
@@ -3519,6 +3522,7 @@ export const RequestCashoutDocument = gql`
       path
     }
     offer {
+      exchangeRate
       expiresAt
       flashFee
       offerId
