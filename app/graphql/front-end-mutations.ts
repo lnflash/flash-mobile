@@ -125,6 +125,7 @@ gql`
         path
       }
       offer {
+        exchangeRate
         expiresAt
         flashFee
         offerId
