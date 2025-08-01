@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { View, Alert } from "react-native"
 import { makeStyles } from "@rneui/themed"
+import { StackScreenProps } from "@react-navigation/stack"
 import crashlytics from "@react-native-firebase/crashlytics"
 
 // components
@@ -16,6 +17,7 @@ import {
 
 // gql
 import {
+  useLnUsdInvoiceAmountMutation,
   useSendBitcoinDetailsScreenQuery,
   useSendBitcoinInternalLimitsQuery,
   useSendBitcoinWithdrawalLimitsQuery,
@@ -45,20 +47,21 @@ import { Satoshis } from "lnurl-pay/dist/types/types"
 import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
 
 // utils
-import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import {
+  DisplayCurrency,
+  MoneyAmount,
+  toBtcMoneyAmount,
+  toUsdMoneyAmount,
+} from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { requestInvoice, utils } from "lnurl-pay"
 import { fetchBreezFee, fetchRecommendedFees } from "@app/utils/breez-sdk-liquid"
 
-type Props = {
-  route: RouteProp<RootStackParamList, "sendBitcoinDetails">
-}
+type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 
 const network = "mainnet" // data?.globals?.network
 
-const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
-  const navigation =
-    useNavigation<NavigationProp<RootStackParamList, "sendBitcoinDetails">>()
+const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
@@ -78,6 +81,9 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
   const [selectedFee, setSelectedFee] = useState<number>()
   const [selectedFeeType, setSelectedFeeType] = useState<string>()
   const [isProcessing, setIsProcessing] = useState(false)
+  const [invoiceAmount, setInvoiceAmount] = useState<MoneyAmount<WalletCurrency>>()
+
+  const [lnUsdInvoiceAmount] = useLnUsdInvoiceAmountMutation()
 
   const { data } = useSendBitcoinDetailsScreenQuery({
     fetchPolicy: "cache-first",
@@ -154,6 +160,29 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
       fetchBreezRecommendedFees()
     }
   }, [paymentDetail?.sendingWalletDescriptor, paymentDetail?.paymentType])
+
+  useEffect(() => {
+    fetchInvoiceAmount()
+  }, [paymentDetail?.destination])
+
+  const fetchInvoiceAmount = async () => {
+    if (paymentDetail) {
+      const { data } = await lnUsdInvoiceAmount({
+        variables: {
+          input: {
+            paymentRequest: paymentDetail?.destination,
+            walletId: paymentDetail?.sendingWalletDescriptor.id,
+          },
+        },
+      })
+      if (
+        data?.lnUsdInvoiceFeeProbe.invoiceAmount !== null &&
+        data?.lnUsdInvoiceFeeProbe.invoiceAmount !== undefined
+      ) {
+        setInvoiceAmount(toUsdMoneyAmount(data.lnUsdInvoiceFeeProbe.invoiceAmount))
+      }
+    }
+  }
 
   const fetchBreezRecommendedFees = async () => {
     toggleActivityIndicator(true)
@@ -353,6 +382,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
             paymentDetail: paymentDetailForConfirmation,
             flashUserAddress,
             feeRateSatPerVbyte: selectedFee,
+            invoiceAmount,
           })
         }
       } catch (error) {
@@ -412,6 +442,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           setPaymentDetail={setPaymentDetail}
           setAsyncErrorMessage={setAsyncErrorMessage}
           isFromFlashcard={isFromFlashcard}
+          invoiceAmount={invoiceAmount}
         />
         {paymentDetail.sendingWalletDescriptor.currency === "BTC" &&
           paymentDetail.paymentType === "onchain" && (

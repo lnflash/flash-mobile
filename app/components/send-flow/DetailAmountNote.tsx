@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react"
-import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
-import { useI18nContext } from "@app/i18n/i18n-react"
+import { View } from "react-native"
 
 // hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { useBreez, useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
 // components
@@ -13,18 +13,16 @@ import { NoteInput } from "@app/components/note-input"
 
 // types
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
-import { useLnUsdInvoiceAmountMutation, WalletCurrency } from "@app/graphql/generated"
+import { WalletCurrency } from "@app/graphql/generated"
 import {
   isNonZeroMoneyAmount,
   MoneyAmount,
-  toUsdMoneyAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
 
 // utils
 import { testProps } from "../../utils/testProps"
 import {
-  fetchBreezFee,
   fetchBreezLightningLimits,
   fetchBreezOnChainLimits,
 } from "@app/utils/breez-sdk-liquid"
@@ -36,6 +34,7 @@ type Props = {
   setPaymentDetail: (val: PaymentDetail<WalletCurrency>) => void
   setAsyncErrorMessage: (val: string) => void
   isFromFlashcard?: boolean
+  invoiceAmount?: MoneyAmount<WalletCurrency>
 }
 
 const DetailAmountNote: React.FC<Props> = ({
@@ -45,6 +44,7 @@ const DetailAmountNote: React.FC<Props> = ({
   setPaymentDetail,
   setAsyncErrorMessage,
   isFromFlashcard,
+  invoiceAmount,
 }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
@@ -56,30 +56,6 @@ const DetailAmountNote: React.FC<Props> = ({
 
   const [minAmount, setMinAmount] = useState<MoneyAmount<WalletCurrency>>()
   const [maxAmount, setMaxAmount] = useState<MoneyAmount<WalletCurrency>>()
-  const [invoiceAmount, setInvoiceAmount] = useState<MoneyAmount<WalletCurrency>>()
-
-  const [lnUsdInvoiceAmount] = useLnUsdInvoiceAmountMutation()
-
-  useEffect(() => {
-    fetchInvoiceAmount()
-  }, [paymentDetail.destination])
-
-  const fetchInvoiceAmount = async () => {
-    const { data } = await lnUsdInvoiceAmount({
-      variables: {
-        input: {
-          paymentRequest: paymentDetail.destination,
-          walletId: paymentDetail.sendingWalletDescriptor.id,
-        },
-      },
-    })
-    if (
-      data?.lnUsdInvoiceFeeProbe.invoiceAmount !== null &&
-      data?.lnUsdInvoiceFeeProbe.invoiceAmount !== undefined
-    ) {
-      setInvoiceAmount(toUsdMoneyAmount(data.lnUsdInvoiceFeeProbe.invoiceAmount))
-    }
-  }
 
   useEffect(() => {
     if (paymentDetail.isSendingMax && selectedFee) {

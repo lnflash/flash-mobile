@@ -58,6 +58,7 @@ export type RootStackParamList = {
     paymentDetail: PaymentDetail<WalletCurrency>
     flashUserAddress?: string
     feeRateSatPerVbyte?: number
+    invoiceAmount?: MoneyAmount<WalletCurrency>
   }
   conversionDetails: undefined
   conversionConfirmation: {
@@ -71,6 +72,7 @@ export type RootStackParamList = {
   sendBitcoinSuccess: {
     unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
     walletCurrency: WalletCurrency
+    invoiceAmount?: MoneyAmount<WalletCurrency>
   }
   language: undefined
   currency: undefined
