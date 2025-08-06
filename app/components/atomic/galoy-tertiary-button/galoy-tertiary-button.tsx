@@ -14,7 +14,7 @@ export type GaloyTertiaryButtonProps = {
   clear?: boolean
   containerStyle?: StyleProp<ViewStyle>
   title: string
-  icon?: JSX.Element
+  icon?: React.JSX.Element
   titleStyle?: StyleProp<TextStyle>
 } & PressableProps
 

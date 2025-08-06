@@ -54,7 +54,7 @@ export const FlashcardContext = createContext<FlashcardInterface>({
 })
 
 type Props = {
-  children: string | JSX.Element | JSX.Element[]
+  children: string | React.JSX.Element | React.JSX.Element[]
 }
 
 export const FlashcardProvider = ({ children }: Props) => {

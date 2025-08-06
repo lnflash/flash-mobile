@@ -24,9 +24,9 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 type RowProps = {
   entry: string
-  value?: string | JSX.Element
+  value?: string | React.JSX.Element
   __typename?: "SettlementViaIntraLedger" | "SettlementViaLn" | "SettlementViaOnChain"
-  content?: JSX.Element
+  content?: React.JSX.Element
 }
 
 const Row = ({ entry, value, __typename, content }: RowProps) => {

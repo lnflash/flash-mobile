@@ -10,7 +10,7 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 // utils
 import { addDeviceToken, hasNotificationPermission } from "@app/utils/notifications"
 
-export const PushNotificationComponent = (): JSX.Element => {
+export const PushNotificationComponent = (): React.JSX.Element => {
   const client = useApolloClient()
   const isAuthed = useIsAuthed()
 

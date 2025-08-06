@@ -1,4 +1,5 @@
 apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 apply plugin: 'com.google.gms.google-services' // firebase
@@ -58,6 +59,8 @@ react {
     //
     //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
     // hermesFlags = ["-O", "-output-source-map"]
+    /* Autolinking */
+    autolinkLibrariesWithApp()
 }
 
 /**
@@ -81,6 +84,7 @@ def jscFlavor = 'org.webkit:android-jsc-intl:+'
 android {
     ndkVersion rootProject.ext.ndkVersion
 
+    buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdkVersion rootProject.ext.compileSdkVersion
 
     namespace "com.lnflash"
@@ -152,13 +156,7 @@ dependencies {
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
 
     implementation 'com.facebook.fresco:animated-gif:2.6.0'
-
-    debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}")
-    debugImplementation("com.facebook.flipper:flipper-network-plugin:${FLIPPER_VERSION}") {
-        exclude group:'com.squareup.okhttp3', module:'okhttp'
-    }
-
-    debugImplementation("com.facebook.flipper:flipper-fresco-plugin:${FLIPPER_VERSION}")
+   
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {
@@ -171,8 +169,6 @@ configurations.all {
         force "org.webkit:android-jsc:245459.0.0"
     }
 }
-
-apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
 
 project.ext.vectoricons = [
     iconFontNames: [ 'Ionicons.ttf' ]

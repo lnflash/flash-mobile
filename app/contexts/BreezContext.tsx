@@ -32,7 +32,7 @@ export const BreezContext = createContext<BreezInterface>({
 })
 
 type Props = {
-  children: string | JSX.Element | JSX.Element[]
+  children: string | React.JSX.Element | React.JSX.Element[]
 }
 
 export const BreezProvider = ({ children }: Props) => {

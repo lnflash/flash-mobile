@@ -13,7 +13,7 @@ export const ActivityIndicatorContext = createContext<ActivityIndicatorInterface
 })
 
 type Props = {
-  children: string | JSX.Element | JSX.Element[]
+  children: string | React.JSX.Element | React.JSX.Element[]
 }
 
 export const ActivityIndicatorProvider = ({ children }: Props) => {
