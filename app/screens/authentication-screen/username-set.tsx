@@ -24,8 +24,6 @@ import {
 import { useAppDispatch } from "@app/store/redux"
 import { updateUserData } from "@app/store/redux/slices/userSlice"
 
-// utils
-import { setPreferredRelay } from "@app/utils/nostr"
 import { validateLightningAddress } from "@app/utils/validations"
 import { SetAddressError } from "@app/types/errors"
 
@@ -40,7 +38,7 @@ type Props = StackScreenProps<RootStackParamList, "UsernameSet">
 
 export const UsernameSet: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
-  const { lnAddressHostname, relayUrl, name } = useAppConfig().appConfig.galoyInstance
+  const { lnAddressHostname, name } = useAppConfig().appConfig.galoyInstance
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const styles = useStyles()
@@ -100,7 +98,6 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
           nip05: `${lnAddress}@${lnAddressHostname}`,
         },
       })
-      setPreferredRelay(relayUrl)
       if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
         if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
           setError(SetAddressError.ADDRESS_UNAVAILABLE)
