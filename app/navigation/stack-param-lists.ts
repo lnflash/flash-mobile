@@ -53,6 +53,7 @@ export type RootStackParamList = {
     paymentDestination: PaymentDestination
     flashUserAddress?: string
     isFromFlashcard?: boolean
+    invoiceAmount?: MoneyAmount<WalletCurrency>
   }
   sendBitcoinConfirmation: {
     paymentDetail: PaymentDetail<WalletCurrency>
