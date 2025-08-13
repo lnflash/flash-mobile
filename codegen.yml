@@ -68,3 +68,5 @@ generates:
         npub: "string"
         FractionalCentAmount: "number"
         JmdAmount: "string"
+        JMDCents: "number"
+        USDCents: "number"
