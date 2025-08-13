@@ -262,7 +262,7 @@ const DetailAmountNote: React.FC<Props> = ({
         <View style={styles.currencyInputContainer}>
           <AmountInput
             unitOfAccountAmount={
-              sendingWalletDescriptor.currency === "USD"
+              sendingWalletDescriptor.currency === "USD" && invoiceAmount
                 ? invoiceAmount
                 : paymentDetail.unitOfAccountAmount
             }
