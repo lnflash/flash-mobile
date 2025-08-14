@@ -93,7 +93,7 @@ const QuickStart = () => {
       onPress: () => {
         onHide("nonCustodialWallet")
         Linking.openURL(
-          "https://flash-docs-msp2z.ondigitalocean.app/en/guides/non-custodial-wallets",
+          "https://documentation.getflash.io/en/guides/non-custodial-wallets",
         )
       },
     },
