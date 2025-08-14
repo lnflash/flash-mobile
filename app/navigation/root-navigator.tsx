@@ -11,7 +11,7 @@ import {
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
-import { ChatList } from "@app/screens/nip17-chat"
+import { ChatList } from "@app/screens/chat"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
@@ -97,7 +97,7 @@ import {
   RefundDestination,
   RefundTransactionsList,
 } from "@app/screens/refund-flow"
-import { Messages } from "@app/screens/nip17-chat/messages"
+import { Messages } from "@app/screens/chat/messages"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
 import EditNostrProfileScreen from "@app/screens/edit-nostr-profile/edit-nostr-profile"
@@ -116,7 +116,7 @@ import {
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
-import { Nip29GroupChatScreen } from "@app/screens/nip17-chat/SupportGroupChat"
+import { SupportGroupChatScreen } from "@app/screens/chat/GroupChat/SupportGroupChat"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -578,7 +578,7 @@ export const RootStack = () => {
       />
       <RootNavigator.Screen
         name="Nip29GroupChat"
-        component={Nip29GroupChatScreen}
+        component={SupportGroupChatScreen}
         options={{ title: "Group Chat" }}
       />
     </RootNavigator.Navigator>

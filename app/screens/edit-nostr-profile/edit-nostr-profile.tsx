@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react"
 import { View, StyleSheet, ActivityIndicator, Text, Alert } from "react-native"
-import { useChatContext } from "../nip17-chat/chatContext"
+import { useChatContext } from "../chat/chatContext"
 import { EditProfileUI } from "./edit-profile-ui"
 import { useTheme } from "@rneui/themed"
 import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
