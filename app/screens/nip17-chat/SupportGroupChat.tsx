@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { View, Platform } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp, StackScreenProps } from "@react-navigation/stack"
-import { useTheme, makeStyles, Button } from "@rneui/themed"
+import { useTheme, makeStyles, Button, Text } from "@rneui/themed"
 import { Screen } from "../../components/screen"
 import { Chat, MessageType, defaultTheme } from "@flyerhq/react-native-chat-ui"
 import { SafeAreaProvider } from "react-native-safe-area-context"
@@ -25,6 +25,9 @@ export const Nip29GroupChatScreen: React.FC<Nip29GroupChatScreenProps> = ({ rout
   const [messages, setMessages] = useState<Map<string, MessageType.Text>>(new Map())
   const [isMember, setIsMember] = useState(false)
   const { userPublicKey } = useChatContext()
+  const [hasRequestedJoin, setHasRequestedJoin] = useState(false)
+  const prevIsMemberRef = useRef(isMember)
+  const [knownMembers, setKnownMembers] = useState<Set<string>>(new Set())
 
   const sendJoinGroupRequest = async () => {
     if (!poolRef?.current) throw Error("No PoolRef present")
@@ -47,7 +50,27 @@ export const Nip29GroupChatScreen: React.FC<Nip29GroupChatScreenProps> = ({ rout
     console.log("Membership Request Sent:", signedJoinEvent)
 
     poolRef.current.publish(["wss://groups.0xchat.com"], signedJoinEvent)
+
+    setHasRequestedJoin(true)
   }
+
+  const addSystemMessage = (text: string) => {
+    const sysMsg: MessageType.Text = {
+      id: `sys-${Date.now()}`,
+      author: { id: "system" },
+      createdAt: Date.now(),
+      type: "text",
+      text,
+    }
+    setMessages((prev) => new Map(prev).set(sysMsg.id, sysMsg))
+  }
+  useEffect(() => {
+    if (!prevIsMemberRef.current && isMember && hasRequestedJoin) {
+      addSystemMessage("You joined the group")
+      setHasRequestedJoin(false)
+    }
+    prevIsMemberRef.current = isMember
+  }, [isMember, hasRequestedJoin])
 
   useEffect(() => {
     if (!poolRef?.current) return
@@ -94,8 +117,12 @@ export const Nip29GroupChatScreen: React.FC<Nip29GroupChatScreenProps> = ({ rout
     )
   }, [])
 
+  const shortenPubKey = (pubkey: string) => pubkey.slice(0, 6) + "…" + pubkey.slice(-4)
+
   useEffect(() => {
-    poolRef?.current.subscribeMany(
+    if (!poolRef?.current) return
+
+    poolRef.current.subscribeMany(
       ["wss://groups.0xchat.com"],
       [
         {
@@ -107,11 +134,34 @@ export const Nip29GroupChatScreen: React.FC<Nip29GroupChatScreenProps> = ({ rout
       {
         onevent: (event: any) => {
           console.log("MEMBERSHIP EVENT RECEIVED WAS", event)
-          const isUserMember = event.tags.some(
-            (tag: string[]) => tag[0] === "p" && tag[1] === userPublicKey,
-          )
 
-          setIsMember(isUserMember)
+          // Current set of members from event
+          const currentMembers = event.tags
+            .filter((tag: string[]) => tag[0] === "p")
+            .map((tag: string[]) => tag[1])
+
+          setKnownMembers((prev) => {
+            const updated = new Set(prev)
+
+            currentMembers.forEach((memberPubKey: string) => {
+              if (!updated.has(memberPubKey)) {
+                // New member detected
+                if (memberPubKey === userPublicKey) {
+                  addSystemMessage("You joined the group")
+                } else {
+                  addSystemMessage(`${shortenPubKey(memberPubKey)} joined the group`)
+                }
+                updated.add(memberPubKey)
+              }
+            })
+
+            return updated
+          })
+
+          // Check if user is a member
+          if (currentMembers.includes(userPublicKey)) {
+            setIsMember(true)
+          }
         },
       },
     )
@@ -147,15 +197,49 @@ export const Nip29GroupChatScreen: React.FC<Nip29GroupChatScreenProps> = ({ rout
             )}
             onSendPress={handleSendPress}
             user={{ id: userPublicKey! }}
-            renderTextMessage={(message, next, prev) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                nextMessage={next}
-                prevMessage={prev}
-                showSender={true}
-              />
-            )}
+            renderTextMessage={(message, next, prev) => {
+              // System message (e.g., joined group)
+              if (message.author.id === "system") {
+                return (
+                  <View
+                    style={{
+                      alignItems: "center",
+                      paddingVertical: 8,
+                      backgroundColor: "#e0e0e0",
+                    }}
+                  >
+                    <View
+                      style={{
+                        borderRadius: 12,
+                        paddingHorizontal: 12,
+                        paddingVertical: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: "#555",
+                          textAlign: "center",
+                        }}
+                      >
+                        {message.text}
+                      </Text>
+                    </View>
+                  </View>
+                )
+              }
+
+              // Normal chat messages
+              return (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  nextMessage={next}
+                  prevMessage={prev}
+                  showSender={true}
+                />
+              )
+            }}
             customBottomComponent={
               !isMember
                 ? () => (
