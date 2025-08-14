@@ -73,7 +73,6 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   // ----- Sub: group messages (kind 9) -----
   useEffect(() => {
     if (!poolRef?.current) return
-    console.log("SUBSCRIBING FOR MESSAGES")
     const unsub = poolRef.current.subscribeMany(
       relayUrls,
       [
@@ -84,7 +83,6 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       ],
       {
         onevent: (event: any) => {
-          console.log("GOT MESSAGE EVENT", JSON.stringify(event))
           const msg: MessageType.Text = {
             id: event.id,
             author: { id: event.pubkey },
@@ -103,7 +101,6 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     )
 
     return () => {
-      console.log("USEEFFECT UNMOUNTING", unsub)
       if (unsub) unsub.close()
     }
   }, [poolRef?.current, relayUrls.join("|"), groupId])
@@ -239,7 +236,6 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     () => ({ messages, isMember, knownMembers, sendMessage, requestJoin }),
     [messages, isMember, knownMembers, sendMessage, requestJoin],
   )
-  console.log("GOT MESSAGES AS ", messages, messages.length, messagesMap.size)
 
   return (
     <NostrGroupChatContext.Provider value={value}>

@@ -112,7 +112,6 @@ export const SupportGroupChatScreen: React.FC<SupportGroupChatScreenProps> = ({
   route,
 }) => {
   const groupId = "A9lScksyYAOWNxqR"
-  console.log("GROUP ID IS", groupId)
   const adminPubkeys: string[] = []
 
   return (
