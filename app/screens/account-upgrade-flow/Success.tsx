@@ -1,0 +1,85 @@
+import React from "react"
+import { View } from "react-native"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { StackScreenProps } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
+
+// components
+import { Screen } from "@app/components/screen"
+import { PrimaryBtn } from "@app/components/buttons"
+
+// assets
+import Account from "@app/assets/illustrations/account.svg"
+
+// hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
+
+// store
+import { useAppDispatch, useAppSelector } from "@app/store/redux"
+import { resetAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
+
+type Props = StackScreenProps<RootStackParamList, "AccountUpgradeSuccess">
+
+const Success: React.FC<Props> = ({ navigation }) => {
+  const styles = useStyles()
+  const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
+
+  const dispatch = useAppDispatch()
+  const { accountType } = useAppSelector((state) => state.accountUpgrade)
+
+  const onComplete = () => {
+    dispatch(resetAccountUpgrade())
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Primary" }],
+    })
+  }
+
+  return (
+    <Screen backgroundColor={colors.accent02}>
+      <View style={styles.wrapper}>
+        <Text type="h02" bold style={styles.header}>
+          {LL.AccountUpgrade.successTitle({
+            accountType: accountType?.toUpperCase() || "",
+          })}
+        </Text>
+        <Account />
+        {accountType === "merchant" && (
+          <Text
+            type="bl"
+            color={colors.grey5}
+            style={{ marginHorizontal: 30, textAlign: "center" }}
+          >
+            {LL.AccountUpgrade.successDesc()}
+          </Text>
+        )}
+      </View>
+      <PrimaryBtn
+        label="Complete"
+        onPress={onComplete}
+        btnStyle={styles.btn}
+        txtStyle={{ color: "#002118" }}
+      />
+    </Screen>
+  )
+}
+
+export default Success
+
+const useStyles = makeStyles(() => ({
+  wrapper: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  header: {
+    textAlign: "center",
+    color: "#fff",
+  },
+  btn: {
+    backgroundColor: "#fff",
+    marginHorizontal: 20,
+    marginBottom: 10,
+  },
+}))
