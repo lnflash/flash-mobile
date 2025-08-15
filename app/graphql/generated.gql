@@ -407,6 +407,18 @@ mutation lnNoAmountUsdInvoicePaymentSend($input: LnNoAmountUsdInvoicePaymentInpu
   }
 }
 
+mutation lnUsdInvoiceAmount($input: LnUsdInvoiceFeeProbeInput!) {
+  lnUsdInvoiceFeeProbe(input: $input) {
+    errors {
+      message
+      __typename
+    }
+    invoiceAmount
+    amount
+    __typename
+  }
+}
+
 mutation lnUsdInvoiceCreate($input: LnUsdInvoiceCreateInput!) {
   lnUsdInvoiceCreate(input: $input) {
     errors {

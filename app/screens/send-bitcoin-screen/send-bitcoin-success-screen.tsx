@@ -49,59 +49,59 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
 
   if (!convertMoneyAmount) return
 
-  useEffect(() => {
-    // if (!feedbackModalShown) {
-    //   const feedbackTimeout = setTimeout(() => {
-    //     requestFeedback()
-    //   }, 3000)
-    //   return () => {
-    //     clearTimeout(feedbackTimeout)
-    //   }
-    // }
-  }, [client, feedbackModalShown, LL])
+  // useEffect(() => {
+  // if (!feedbackModalShown) {
+  //   const feedbackTimeout = setTimeout(() => {
+  //     requestFeedback()
+  //   }, 3000)
+  //   return () => {
+  //     clearTimeout(feedbackTimeout)
+  //   }
+  // }
+  // }, [client, feedbackModalShown, LL])
 
-  const dismiss = () => {
-    logAppFeedback({
-      isEnjoingApp: false,
-    })
-    setShowSuggestionModal(true)
-  }
+  // const dismiss = () => {
+  //   logAppFeedback({
+  //     isEnjoingApp: false,
+  //   })
+  //   setShowSuggestionModal(true)
+  // }
 
-  const rateUs = () => {
-    logAppFeedback({
-      isEnjoingApp: true,
-    })
-    Rate.rate(ratingOptions, (success, errorMessage) => {
-      if (success) {
-        crashlytics().log("User went to the review page")
-      }
-      if (errorMessage) {
-        crashlytics().recordError(new Error(errorMessage))
-      }
-    })
-  }
+  // const rateUs = () => {
+  //   logAppFeedback({
+  //     isEnjoingApp: true,
+  //   })
+  //   Rate.rate(ratingOptions, (success, errorMessage) => {
+  //     if (success) {
+  //       crashlytics().log("User went to the review page")
+  //     }
+  //     if (errorMessage) {
+  //       crashlytics().recordError(new Error(errorMessage))
+  //     }
+  //   })
+  // }
 
-  const requestFeedback = useCallback(() => {
-    Alert.alert(
-      "",
-      LL.support.enjoyingApp(),
-      [
-        {
-          text: LL.common.No(),
-          onPress: () => dismiss(),
-        },
-        {
-          text: LL.common.yes(),
-          onPress: () => rateUs(),
-        },
-      ],
-      {
-        cancelable: true,
-        onDismiss: () => dismiss(),
-      },
-    )
-    setFeedbackModalShown(client, true)
-  }, [LL, client])
+  // const requestFeedback = useCallback(() => {
+  //   Alert.alert(
+  //     "",
+  //     LL.support.enjoyingApp(),
+  //     [
+  //       {
+  //         text: LL.common.No(),
+  //         onPress: () => dismiss(),
+  //       },
+  //       {
+  //         text: LL.common.yes(),
+  //         onPress: () => rateUs(),
+  //       },
+  //     ],
+  //     {
+  //       cancelable: true,
+  //       onDismiss: () => dismiss(),
+  //     },
+  //   )
+  //   setFeedbackModalShown(client, true)
+  // }, [LL, client])
 
   let formattedPrimaryAmount = undefined
   let formattedSecondaryAmount = undefined
