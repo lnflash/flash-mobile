@@ -120,6 +120,7 @@ import {
   BankTransfer,
   BuyBitcoin,
   BuyBitcoinDetails,
+  BuyBitcoinSuccess,
   BuySellBitcoin,
   CardPayment,
 } from "@app/screens/buy-bitcoin-flow"
@@ -593,6 +594,11 @@ export const RootStack = () => {
         <RootNavigator.Screen name="BuyBitcoinDetails" component={BuyBitcoinDetails} />
         <RootNavigator.Screen name="BankTransfer" component={BankTransfer} />
         <RootNavigator.Screen name="CardPayment" component={CardPayment} />
+        <RootNavigator.Screen
+          name="BuyBitcoinSuccess"
+          component={BuyBitcoinSuccess}
+          options={{ headerShown: false }}
+        />
       </RootNavigator.Group>
     </RootNavigator.Navigator>
   )

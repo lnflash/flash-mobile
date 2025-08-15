@@ -161,6 +161,7 @@ export type RootStackParamList = {
     amount: number
     wallet: string
   }
+  BuyBitcoinSuccess: undefined
   paymentSuccess: {
     amount: number
     wallet: string
