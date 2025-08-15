@@ -4,7 +4,7 @@ import { makeStyles, Text } from "@rneui/themed"
 
 type Props = {
   title: string
-  detail: string | number
+  detail?: string | number
 }
 
 const CashoutCard: React.FC<Props> = ({ title, detail }) => {
