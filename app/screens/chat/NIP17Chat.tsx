@@ -1,14 +1,7 @@
 import { useTheme } from "@rneui/themed"
 import * as React from "react"
-import { useCallback, useState } from "react"
-import {
-  ActivityIndicator,
-  Text,
-  View,
-  Alert,
-  TouchableOpacity,
-  Image,
-} from "react-native"
+import { useState } from "react"
+import { ActivityIndicator, Text, View, TouchableOpacity, Image } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
@@ -18,18 +11,11 @@ import { testProps } from "../../utils/testProps"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { getPublicKey, nip19 } from "nostr-tools"
-import {
-  convertRumorsToGroups,
-  fetchNostrUsers,
-  fetchSecretFromLocalStorage,
-  getGroupId,
-} from "@app/utils/nostr"
+import { convertRumorsToGroups, fetchSecretFromLocalStorage } from "@app/utils/nostr"
 import { useStyles } from "./style"
-import { SearchListItem } from "./searchListItem"
 import { HistoryListItem } from "./historyListItem"
 import { useChatContext } from "./chatContext"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
-import { useAppConfig } from "@app/hooks"
 import { useAppSelector } from "@app/store/redux"
 import { ImportNsecModal } from "../../components/import-nsec/import-nsec-modal"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -37,6 +23,7 @@ import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { UserSearchBar } from "./UserSearchBar"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList, RootStackParamList } from "@app/navigation/stack-param-lists"
+import { useNostrGroupChat } from "./GroupChat/GroupChatProvider"
 
 export const NIP17Chat: React.FC = () => {
   const styles = useStyles()
@@ -53,7 +40,7 @@ export const NIP17Chat: React.FC = () => {
   const { rumors, poolRef, profileMap, resetChat, activeSubscription, initializeChat } =
     useChatContext()
   const [initialized, setInitialized] = useState(false)
-  const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
+  const [_, setSearchedUsers] = useState<Chat[]>([])
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
   const [showImportModal, setShowImportModal] = useState<boolean>(false)
   const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
@@ -62,6 +49,8 @@ export const NIP17Chat: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   const RootNavigator =
     useNavigation<StackNavigationProp<RootStackParamList, "Nip29GroupChat">>()
+
+  const { groupMetadata } = useNostrGroupChat()
 
   const navigateToContactDetails = (contactPubkey: string) => {
     if (!privateKey) return
@@ -216,7 +205,7 @@ export const NIP17Chat: React.FC = () => {
                 >
                   <Image
                     source={{
-                      uri: "https://cdn0.iconfinder.com/data/icons/business-strategy-4/100/Community-1024.png",
+                      uri: groupMetadata.picture,
                     }}
                     style={styles.communityPicture}
                   />
@@ -230,7 +219,7 @@ export const NIP17Chat: React.FC = () => {
                           marginTop: 4,
                         }}
                       >
-                        Chat with Support
+                        {groupMetadata.name}
                       </Text>
                       <Icon
                         name="checkmark-done-circle-outline"
@@ -238,8 +227,16 @@ export const NIP17Chat: React.FC = () => {
                         style={styles.verifiedIcon}
                       />
                     </View>
-                    <Text style={{ ...styles.itemText, marginTop: 4, marginBottom: 5 }}>
-                      Have questions or need help? Chat with our support team.
+                    <Text
+                      style={{
+                        ...styles.itemText,
+                        marginTop: 4,
+                        marginBottom: 5,
+                      }}
+                      numberOfLines={3} // show max 3 lines
+                      ellipsizeMode="tail" // add "..." at the end if overflowing
+                    >
+                      {groupMetadata.about}
                     </Text>
                   </View>
                 </View>

@@ -44,6 +44,7 @@ import { ChatContextProvider } from "./screens/chat/chatContext"
 import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { FlashcardProvider } from "./contexts/Flashcard"
+import { NostrGroupChatProvider } from "./screens/chat/GroupChat/GroupChatProvider"
 
 // FIXME should we only load the currently used local?
 // this would help to make the app load faster
@@ -68,34 +69,40 @@ export const App = () => (
       <Provider store={store}>
         <PersistentStateProvider>
           <ChatContextProvider>
-            <ActivityIndicatorProvider>
-              <TypesafeI18n locale={detectDefaultLocale()}>
-                <ThemeProvider theme={theme}>
-                  <GaloyClient>
-                    <FeatureFlagContextProvider>
-                      <ErrorBoundary FallbackComponent={ErrorScreen}>
-                        <NavigationContainerWrapper>
-                          <RootSiblingParent>
-                            <NotificationsProvider>
-                              <AppStateWrapper />
-                              <PushNotificationComponent />
-                              <BreezProvider>
-                                <FlashcardProvider>
-                                  <RootStack />
-                                </FlashcardProvider>
-                              </BreezProvider>
-                              <GaloyToast />
-                              <NetworkErrorComponent />
-                            </NotificationsProvider>
-                          </RootSiblingParent>
-                        </NavigationContainerWrapper>
-                      </ErrorBoundary>
-                      <ThemeSyncGraphql />
-                    </FeatureFlagContextProvider>
-                  </GaloyClient>
-                </ThemeProvider>
-              </TypesafeI18n>
-            </ActivityIndicatorProvider>
+            <NostrGroupChatProvider
+              groupId={"A9lScksyYAOWNxqR"}
+              relayUrls={["wss://groups.0xchat.com"]}
+              adminPubkeys={[]}
+            >
+              <ActivityIndicatorProvider>
+                <TypesafeI18n locale={detectDefaultLocale()}>
+                  <ThemeProvider theme={theme}>
+                    <GaloyClient>
+                      <FeatureFlagContextProvider>
+                        <ErrorBoundary FallbackComponent={ErrorScreen}>
+                          <NavigationContainerWrapper>
+                            <RootSiblingParent>
+                              <NotificationsProvider>
+                                <AppStateWrapper />
+                                <PushNotificationComponent />
+                                <BreezProvider>
+                                  <FlashcardProvider>
+                                    <RootStack />
+                                  </FlashcardProvider>
+                                </BreezProvider>
+                                <GaloyToast />
+                                <NetworkErrorComponent />
+                              </NotificationsProvider>
+                            </RootSiblingParent>
+                          </NavigationContainerWrapper>
+                        </ErrorBoundary>
+                        <ThemeSyncGraphql />
+                      </FeatureFlagContextProvider>
+                    </GaloyClient>
+                  </ThemeProvider>
+                </TypesafeI18n>
+              </ActivityIndicatorProvider>
+            </NostrGroupChatProvider>
           </ChatContextProvider>
         </PersistentStateProvider>
       </Provider>

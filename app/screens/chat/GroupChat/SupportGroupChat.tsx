@@ -113,18 +113,7 @@ const InnerGroupChat: React.FC = () => {
 export const SupportGroupChatScreen: React.FC<SupportGroupChatScreenProps> = ({
   route,
 }) => {
-  const groupId = "A9lScksyYAOWNxqR"
-  const adminPubkeys: string[] = []
-
-  return (
-    <NostrGroupChatProvider
-      groupId={groupId}
-      relayUrls={["wss://groups.0xchat.com"]}
-      adminPubkeys={adminPubkeys}
-    >
-      <InnerGroupChat />
-    </NostrGroupChatProvider>
-  )
+  return <InnerGroupChat />
 }
 
 const useStyles = makeStyles(({ colors }) => ({

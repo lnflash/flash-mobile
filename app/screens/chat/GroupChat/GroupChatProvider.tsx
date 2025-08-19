@@ -26,6 +26,7 @@ export type NostrGroupChatProviderProps = {
 
 type ContextValue = {
   messages: MessageType.Text[]
+  groupMetadata: { [key: string]: string }
   isMember: boolean
   knownMembers: Set<string>
   /**
@@ -61,7 +62,11 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   const [messagesMap, setMessagesMap] = useState<Map<string, MessageType.Text>>(new Map())
   const [isMember, setIsMember] = useState(false)
   const [knownMembers, setKnownMembers] = useState<Set<string>>(new Set())
-
+  const [metadata, setMetadata] = useState<{
+    name?: string
+    about?: string
+    picture?: string
+  }>({})
   // Track last known membership set to detect new joins for system messages
   const prevMembersRef = useRef<Set<string>>(new Set())
 
@@ -104,6 +109,31 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       if (unsub) unsub.close()
     }
   }, [poolRef?.current, relayUrls.join("|"), groupId])
+
+  //metadata
+  useEffect(() => {
+    function parseGroupTags(tags: string[][]) {
+      const result: { name?: string; about?: string; picture?: string } = {}
+      for (const tag of tags) {
+        const [key, value] = tag
+        if (key === "name") result.name = value
+        else if (key === "about") result.about = value
+        else if (key === "picture") result.picture = value
+      }
+      return result
+    }
+    const unsub = poolRef?.current.subscribeMany(
+      relayUrls,
+      [{ "kinds": [39000], "#d": [groupId] }],
+      {
+        onevent: (event) => {
+          const parsed = parseGroupTags(event.tags)
+          setMetadata(parsed)
+        },
+      },
+    )
+    return () => unsub?.close()
+  }, [poolRef?.current, groupId])
 
   // ----- Sub: membership roster (kind 39002) -----
   useEffect(() => {
@@ -233,7 +263,14 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   }, [poolRef?.current, userPublicKey, groupId, relayUrls])
 
   const value = useMemo<ContextValue>(
-    () => ({ messages, isMember, knownMembers, sendMessage, requestJoin }),
+    () => ({
+      messages,
+      isMember,
+      knownMembers,
+      sendMessage,
+      requestJoin,
+      groupMetadata: metadata,
+    }),
     [messages, isMember, knownMembers, sendMessage, requestJoin],
   )
 
