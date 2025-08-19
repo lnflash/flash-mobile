@@ -24,6 +24,11 @@ import { UserSearchBar } from "./UserSearchBar"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList, RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useNostrGroupChat } from "./GroupChat/GroupChatProvider"
+import { SearchListItem } from "./searchListItem"
+import Contacts from "./contacts"
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
+
+const Tab = createMaterialTopTabNavigator()
 
 export const NIP17Chat: React.FC = () => {
   const styles = useStyles()
@@ -40,7 +45,7 @@ export const NIP17Chat: React.FC = () => {
   const { rumors, poolRef, profileMap, resetChat, activeSubscription, initializeChat } =
     useChatContext()
   const [initialized, setInitialized] = useState(false)
-  const [_, setSearchedUsers] = useState<Chat[]>([])
+  const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
   const [showImportModal, setShowImportModal] = useState<boolean>(false)
   const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
@@ -153,113 +158,151 @@ export const NIP17Chat: React.FC = () => {
   return (
     <Screen style={{ ...styles.header, flex: 1 }}>
       {privateKey && !showImportModal ? (
-        <View style={{ flex: 1 }}>
-          {SearchBarContent}
-
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontSize: 24,
-                marginTop: 20,
-                marginLeft: 20,
-                color: colors.primary3,
-              }}
-            >
-              Chats
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                margin: 10,
-                marginLeft: 20,
-                color: colors.primary3,
-              }}
-            >
-              signed in as:{" "}
-              <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-                {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
-              </Text>
-            </Text>
-            <TouchableOpacity
-              onPress={() =>
-                RootNavigator.navigate("Nip29GroupChat", { groupId: "support-group-id" })
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
+            // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+            tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+            tabBarIcon: ({ color }) => {
+              let iconName: string
+              if (route.name === "Chats") {
+                iconName = "chatbubble-ellipses-outline" // Chat icon
+              } else if (route.name === "Contacts") {
+                iconName = "people-outline" // Contacts icon
+              } else {
+                iconName = ""
               }
-              style={{ marginRight: 10, marginLeft: 10, marginBottom: 4 }}
-            >
-              <View
-                style={{
-                  ...styles.itemContainer,
-                  justifyContent: "center",
-                  alignContent: "center",
-                  alignItems: "center",
-                  alignSelf: "center",
-                }}
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginHorizontal: 20,
-                    marginVertical: 4,
-                  }}
-                >
-                  <Image
-                    source={{
-                      uri: groupMetadata.picture,
-                    }}
-                    style={styles.communityPicture}
+              return <Icon name={iconName} size={24} color={color} />
+            },
+            tabBarShowLabel: false, // Hide text labels
+          })}
+        >
+          <Tab.Screen name="Chats">
+            {() => (
+              <View style={{ flex: 1 }}>
+                {SearchBarContent}
+                {searchedUsers.length !== 0 ? (
+                  <FlatList
+                    contentContainerStyle={styles.listContainer}
+                    data={searchedUsers}
+                    ListEmptyComponent={ListEmptyContent}
+                    renderItem={({ item }) => (
+                      <SearchListItem item={item} userPrivateKey={privateKey!} />
+                    )}
+                    keyExtractor={(item) => item.id}
                   />
-                  <View style={{ flexDirection: "column", maxWidth: "80%" }}>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      <Text
-                        style={{
-                          ...styles.itemText,
-                          fontWeight: "bold",
-                          marginBottom: 4,
-                          marginTop: 4,
-                        }}
-                      >
-                        {groupMetadata.name}
-                      </Text>
-                      <Icon
-                        name="checkmark-done-circle-outline"
-                        size={20}
-                        style={styles.verifiedIcon}
-                      />
-                    </View>
+                ) : (
+                  <View style={{ flex: 1 }}>
                     <Text
                       style={{
-                        ...styles.itemText,
-                        marginTop: 4,
-                        marginBottom: 5,
+                        fontSize: 16,
+                        margin: 10,
+                        marginLeft: 20,
+                        color: colors.primary3,
                       }}
-                      numberOfLines={3} // show max 3 lines
-                      ellipsizeMode="tail" // add "..." at the end if overflowing
                     >
-                      {groupMetadata.about}
+                      signed in as:{" "}
+                      <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                        {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
+                      </Text>
                     </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        RootNavigator.navigate("Nip29GroupChat", {
+                          groupId: "support-group-id",
+                        })
+                      }
+                      style={{ marginRight: 10, marginLeft: 10, marginBottom: 4 }}
+                    >
+                      <View
+                        style={{
+                          ...styles.itemContainer,
+                          justifyContent: "center",
+                          alignContent: "center",
+                          alignItems: "center",
+                          alignSelf: "center",
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            marginVertical: 4,
+                          }}
+                        >
+                          <Image
+                            source={{
+                              uri: groupMetadata.picture,
+                            }}
+                            style={styles.communityPicture}
+                          />
+                          <View
+                            style={{
+                              flexDirection: "column",
+                              maxWidth: "80%",
+                            }}
+                          >
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                              <Text
+                                style={{
+                                  ...styles.itemText,
+                                  fontWeight: "bold",
+                                  marginBottom: 4,
+                                  marginTop: 4,
+                                }}
+                              >
+                                {groupMetadata.name}
+                              </Text>
+                              <Icon
+                                name="checkmark-done-circle-outline"
+                                size={20}
+                                style={styles.verifiedIcon}
+                              />
+                            </View>
+                            <Text
+                              style={{
+                                ...styles.itemText,
+                                marginTop: 4,
+                                marginBottom: 5,
+                              }}
+                              numberOfLines={3} // show max 3 lines
+                              ellipsizeMode="tail" // add "..." at the end if overflowing
+                            >
+                              {groupMetadata.about}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                    <FlatList
+                      contentContainerStyle={styles.listContainer}
+                      data={groupIds}
+                      ListEmptyComponent={ListEmptyContent}
+                      scrollEnabled={true}
+                      renderItem={({ item }) => {
+                        return (
+                          <HistoryListItem
+                            item={item}
+                            userPrivateKey={privateKey!}
+                            groups={groups}
+                          />
+                        )
+                      }}
+                      keyExtractor={(item) => item}
+                    />
                   </View>
-                </View>
+                )}
               </View>
-            </TouchableOpacity>
-            <FlatList
-              contentContainerStyle={styles.listContainer}
-              data={groupIds}
-              ListEmptyComponent={ListEmptyContent}
-              scrollEnabled={true}
-              renderItem={({ item }) => {
-                return (
-                  <HistoryListItem
-                    item={item}
-                    userPrivateKey={privateKey!}
-                    groups={groups}
-                  />
-                )
-              }}
-              keyExtractor={(item) => item}
-            />
-          </View>
-        </View>
+            )}
+          </Tab.Screen>
+          <Tab.Screen name="Contacts">
+            {() => (
+              <View style={{ ...styles.header, height: "100%" }}>
+                <Contacts userPrivateKey={bytesToHex(privateKey)} />
+              </View>
+            )}
+          </Tab.Screen>
+        </Tab.Navigator>
       ) : (
         <Text>Loading your nostr keys...</Text>
       )}
