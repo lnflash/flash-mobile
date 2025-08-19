@@ -115,7 +115,7 @@ import {
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
-import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
+import ContactDetailsScreen from "@app/screens/chat/contactDetailsScreen"
 import { SupportGroupChatScreen } from "@app/screens/chat/GroupChat/SupportGroupChat"
 
 const useStyles = makeStyles(({ colors }) => ({
