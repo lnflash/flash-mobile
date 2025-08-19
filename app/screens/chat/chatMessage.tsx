@@ -59,7 +59,6 @@ export const ChatMessage: React.FC<Props> = ({
     if (!poolRef) return
     else {
       fetchNostrUsers([message.author.id], poolRef.current, (event: Event) => {
-        console.log("GOT USER", event)
         addEventToProfiles(event)
       })
     }

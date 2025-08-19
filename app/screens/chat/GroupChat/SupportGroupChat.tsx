@@ -8,6 +8,7 @@ import { ChatMessage } from "../chatMessage"
 import type { StackScreenProps } from "@react-navigation/stack"
 import type { RootStackParamList } from "../../../navigation/stack-param-lists"
 import { NostrGroupChatProvider, useNostrGroupChat } from "./GroupChatProvider"
+import { useChatContext } from "../chatContext"
 
 type SupportGroupChatScreenProps = StackScreenProps<RootStackParamList, "Nip29GroupChat">
 
@@ -18,6 +19,7 @@ const InnerGroupChat: React.FC = () => {
   } = useTheme()
 
   const { messages, isMember, sendMessage, requestJoin } = useNostrGroupChat()
+  const { userPublicKey } = useChatContext()
 
   const renderTextMessage = (
     message: MessageType.Text,
@@ -56,7 +58,7 @@ const InnerGroupChat: React.FC = () => {
           <Chat
             messages={messages}
             onSendPress={(partial: MessageType.PartialText) => sendMessage(partial.text)}
-            user={{ id: "me" }}
+            user={{ id: userPublicKey || "me" }}
             renderTextMessage={(message, showName, nextMessage) =>
               renderTextMessage(message, showName, nextMessage)
             }
