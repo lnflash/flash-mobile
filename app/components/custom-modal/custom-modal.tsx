@@ -29,6 +29,9 @@ export type CustomModalProps = {
   secondaryButtonTitle?: string
   secondaryButtonOnPress?: () => void
   secondaryButtonLoading?: boolean
+  tertiaryButtonTitle?: string
+  tertiaryButtonOnPress?: () => void
+  tertiaryButtonLoading?: boolean
   showCloseIconButton?: boolean
   minHeight?: DimensionValue
   titleMaxWidth?: DimensionValue
@@ -53,6 +56,9 @@ const CustomModal: React.FC<CustomModalProps> = ({
   secondaryButtonTitle,
   secondaryButtonOnPress,
   secondaryButtonLoading,
+  tertiaryButtonTitle,
+  tertiaryButtonOnPress,
+  tertiaryButtonLoading,
   showCloseIconButton = true,
 }) => {
   const styles = useStyles({
@@ -116,6 +122,14 @@ const CustomModal: React.FC<CustomModalProps> = ({
               label={secondaryButtonTitle}
               loading={secondaryButtonLoading}
               onPress={secondaryButtonOnPress}
+            />
+          )}
+          {tertiaryButtonTitle && tertiaryButtonOnPress && (
+            <PrimaryBtn
+              type="outline"
+              label={tertiaryButtonTitle}
+              loading={tertiaryButtonLoading}
+              onPress={tertiaryButtonOnPress}
             />
           )}
         </View>
