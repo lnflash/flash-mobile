@@ -90,33 +90,31 @@ export const SettingsScreen: React.FC = () => {
   const { currentLevel } = useLevel()
 
   return (
-    <Screen preset="scroll" keyboardShouldPersistTaps="handled">
-      <ScrollView contentContainerStyle={styles.outer}>
-        <SettingsGroup name={LL.common.account()} items={items.account} />
-        {isAtLeastLevelOne && (
-          <SettingsGroup
-            name={LL.AccountScreen.loginMethods()}
-            items={items.loginMethods}
-          />
-        )}
+    <Screen preset="scroll" keyboardShouldPersistTaps="handled" style={styles.outer}>
+      <SettingsGroup name={LL.common.account()} items={items.account} />
+      {isAtLeastLevelOne && (
         <SettingsGroup
-          name={LL.SettingsScreen.addressScreen()}
-          items={items.waysToGetPaid}
+          name={LL.AccountScreen.loginMethods()}
+          items={items.loginMethods}
         />
-        {currentLevel === AccountLevel.Two && (
-          <SettingsGroup name="Reports" items={items.reports} />
-        )}
-        <SettingsGroup name="Experimental" items={items.experimental} />
-        <SettingsGroup name={LL.SettingsScreen.keysManagement()} items={items.wallet} />
-        <SettingsGroup name={LL.common.preferences()} items={items.preferences} />
-        <SettingsGroup
-          name={LL.common.securityAndPrivacy()}
-          items={items.securityAndPrivacy}
-        />
-        <SettingsGroup name={LL.common.advanced()} items={items.advanced} />
-        <SettingsGroup name={LL.common.community()} items={items.community} />
-        <VersionComponent />
-      </ScrollView>
+      )}
+      <SettingsGroup
+        name={LL.SettingsScreen.addressScreen()}
+        items={items.waysToGetPaid}
+      />
+      {currentLevel === AccountLevel.Two && (
+        <SettingsGroup name="Reports" items={items.reports} />
+      )}
+      <SettingsGroup name="Experimental" items={items.experimental} />
+      <SettingsGroup name={LL.SettingsScreen.keysManagement()} items={items.wallet} />
+      <SettingsGroup name={LL.common.preferences()} items={items.preferences} />
+      <SettingsGroup
+        name={LL.common.securityAndPrivacy()}
+        items={items.securityAndPrivacy}
+      />
+      <SettingsGroup name={LL.common.advanced()} items={items.advanced} />
+      <SettingsGroup name={LL.common.community()} items={items.community} />
+      <VersionComponent />
     </Screen>
   )
 }
@@ -124,11 +122,12 @@ export const SettingsScreen: React.FC = () => {
 const useStyles = makeStyles(({ colors }) => ({
   outer: {
     marginTop: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 20,
     paddingBottom: 20,
     display: "flex",
     flexDirection: "column",
     rowGap: 18,
+    flexGrow: 1,
   },
   headerRight: {
     marginRight: 12,
