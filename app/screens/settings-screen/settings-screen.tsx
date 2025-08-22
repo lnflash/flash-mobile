@@ -81,7 +81,7 @@ const items = {
     ExportCsvSetting,
     //  ApiAccessSetting
   ],
-  community: [NeedHelpSetting, JoinCommunitySetting],
+  community: [JoinCommunitySetting],
 }
 
 export const SettingsScreen: React.FC = () => {
@@ -92,6 +92,7 @@ export const SettingsScreen: React.FC = () => {
 
   return (
     <Screen preset="scroll" keyboardShouldPersistTaps="handled" style={styles.outer}>
+      <NeedHelpSetting />
       <SettingsGroup name={LL.common.account()} items={items.account} />
       {isAtLeastLevelOne && (
         <SettingsGroup
