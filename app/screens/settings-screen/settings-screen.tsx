@@ -59,7 +59,7 @@ gql`
 `
 
 const items = {
-  account: [AccountLevelSetting, AdvancedModeToggle, TxLimits],
+  account: [AccountLevelSetting, TxLimits],
   loginMethods: [EmailSetting, PhoneSetting],
   waysToGetPaid: [AccountLNAddress, AccountPOS, AccountStaticQR],
   reports: [GenerateReportsSetting],
@@ -71,12 +71,13 @@ const items = {
     CurrencySetting,
     ThemeSetting,
   ],
-  experimental: [ChatSetting, NostrSecret],
+  experimental: [NostrSecret],
   securityAndPrivacy: [
     // TotpSetting,
     OnDeviceSecuritySetting,
   ],
   advanced: [
+    AdvancedModeToggle,
     ExportCsvSetting,
     //  ApiAccessSetting
   ],
