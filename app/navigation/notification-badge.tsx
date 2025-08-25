@@ -1,5 +1,5 @@
-import { useChatContext } from "@app/screens/nip17-chat/chatContext"
-import { getUnreadChatsCount } from "@app/screens/nip17-chat/utils"
+import { useChatContext } from "@app/screens/chat/chatContext"
+import { getUnreadChatsCount } from "@app/screens/chat/utils"
 import { convertRumorsToGroups } from "@app/utils/nostr"
 import React, { useEffect, useState } from "react"
 import { View, Text, StyleSheet } from "react-native"
