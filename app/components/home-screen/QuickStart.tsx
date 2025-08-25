@@ -15,7 +15,6 @@ import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
 import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 
 // components
-import { UpgradeAccountModal } from "../upgrade-account-modal"
 import { AdvancedModeModal } from "../advanced-mode-modal"
 
 // hooks
@@ -35,6 +34,7 @@ type RenderItemProps = {
     title: string
     description: string
     image: any
+    pending?: boolean
     onPress: () => void
   }
   index: number
@@ -49,7 +49,6 @@ const QuickStart = () => {
 
   const ref = useRef(null)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
-  const [upgradeAccountModalVisible, setUpgradeAccountModalVisible] = useState(false)
   const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
 
   const { data, loading } = useHomeAuthedQuery()
@@ -63,13 +62,19 @@ const QuickStart = () => {
     if (credentials) setHasRecoveryPhrase(true)
   }
 
+  const upgradePending = false
+
   let carouselData = [
     {
       type: "upgrade",
       title: LL.HomeScreen.upgradeTitle(),
-      description: LL.HomeScreen.upgradeDesc(),
+      description: upgradePending
+        ? LL.HomeScreen.upgradePendingDesc()
+        : LL.HomeScreen.upgradeDesc(),
       image: Account,
-      onPress: () => setUpgradeAccountModalVisible(true),
+      pending: upgradePending,
+      onPress: () =>
+        navigation.navigate(upgradePending ? "TestTransaction" : "AccountType"),
     },
     {
       type: "currency",
@@ -124,7 +129,7 @@ const QuickStart = () => {
     data?.me?.defaultAccount.level !== AccountLevel.Zero ||
     persistentState?.closedQuickStartTypes?.includes("upgrade")
   ) {
-    carouselData = carouselData.filter((el) => el.type !== "upgrade")
+    // carouselData = carouselData.filter((el) => el.type !== "upgrade")
   }
   if (
     persistentState.currencyChanged ||
@@ -179,17 +184,31 @@ const QuickStart = () => {
   const renderItem = ({ item, index }: RenderItemProps) => {
     const Image = item.image
     return (
-      <TouchableOpacity onPress={item.onPress} key={index} style={styles.itemContainer}>
+      <TouchableOpacity
+        onPress={item.onPress}
+        key={index}
+        style={[
+          styles.itemContainer,
+          item.pending ? { borderColor: colors._orange } : {},
+        ]}
+      >
         <Image height={width / 3} width={width / 3} />
         <View style={styles.texts}>
           <Text type="h1" bold style={styles.title}>
             {item.title}
+            {item.pending && (
+              <Text type="p1" color={colors._orange}>
+                {`  (Pending)`}
+              </Text>
+            )}
           </Text>
           <Text type="bl">{item.description}</Text>
         </View>
-        <TouchableOpacity style={styles.close} onPress={() => onHide(item.type)}>
-          <Icon name={"close"} type="ionicon" color={colors.black} size={35} />
-        </TouchableOpacity>
+        {!item.pending && (
+          <TouchableOpacity style={styles.close} onPress={() => onHide(item.type)}>
+            <Icon name={"close"} type="ionicon" color={colors.black} size={35} />
+          </TouchableOpacity>
+        )}
       </TouchableOpacity>
     )
   }
@@ -206,10 +225,6 @@ const QuickStart = () => {
           mode="parallax"
           loop={carouselData.length !== 1}
           containerStyle={{ marginTop: 10 }}
-        />
-        <UpgradeAccountModal
-          isVisible={upgradeAccountModalVisible}
-          closeModal={() => setUpgradeAccountModalVisible(false)}
         />
         <AdvancedModeModal
           hasRecoveryPhrase={hasRecoveryPhrase}
