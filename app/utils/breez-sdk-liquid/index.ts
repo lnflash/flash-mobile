@@ -1,6 +1,5 @@
 import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
-import RNFS from "react-native-fs"
 import { PaymentType } from "@galoymoney/client"
 import {
   connect,
@@ -35,6 +34,8 @@ import {
   ReceiveAmountVariant,
 } from "@breeztech/react-native-breez-sdk-liquid"
 import { API_KEY } from "@env"
+import { MoneyAmount } from "@app/types/amounts"
+import { WalletCurrency } from "@app/graphql/generated"
 
 export const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
 
@@ -192,8 +193,11 @@ export const fetchBreezFee = async (
           amount: { type: PayAmountVariant.BITCOIN, receiverAmountSat },
         })
         return { fee: response.feesSat, err: null }
+      } else if (input.type === InputTypeVariant.LN_URL_ERROR) {
+        return { fee: null, err: input.data.reason }
+      } else {
+        return { fee: null, err: "Wrong payment type" }
       }
-      return { fee: null, err: "Wrong payment type" }
     } else {
       return { fee: null, err: "Wrong payment type" }
     }
@@ -355,7 +359,11 @@ export const payLnurlBreez = async (
   }
 }
 
-export const onRedeem = async (lnurl: string, defaultDescription: string) => {
+export const onRedeem = async (
+  lnurl: string,
+  settlementAmount: MoneyAmount<WalletCurrency>,
+  defaultDescription: string,
+) => {
   try {
     const input = await parse(lnurl)
 
@@ -380,7 +388,9 @@ export const onRedeem = async (lnurl: string, defaultDescription: string) => {
     } else if (input.type === InputTypeVariant.LN_URL_WITHDRAW) {
       const lnUrlWithdrawResult = await lnurlWithdraw({
         data: input.data,
-        amountMsat: input.data.minWithdrawable,
+        amountMsat: settlementAmount
+          ? settlementAmount.amount * 1000
+          : input.data.minWithdrawable,
         description: defaultDescription,
       })
       console.log("LNURL WITHDRAW>>>>>>>>", lnUrlWithdrawResult)

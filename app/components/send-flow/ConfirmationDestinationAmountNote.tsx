@@ -14,12 +14,17 @@ import NoteIcon from "@app/assets/icons/note.svg"
 // types
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
 import { WalletCurrency } from "@app/graphql/generated"
+import { MoneyAmount } from "@app/types/amounts"
 
 type Props = {
   paymentDetail: PaymentDetail<WalletCurrency>
+  invoiceAmount?: MoneyAmount<WalletCurrency>
 }
 
-const ConfirmationDestinationAmountNote: React.FC<Props> = ({ paymentDetail }) => {
+const ConfirmationDestinationAmountNote: React.FC<Props> = ({
+  paymentDetail,
+  invoiceAmount,
+}) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const styles = useStyles()
@@ -53,7 +58,11 @@ const ConfirmationDestinationAmountNote: React.FC<Props> = ({ paymentDetail }) =
       <View style={styles.fieldContainer}>
         <Text style={styles.fieldTitleText}>{LL.SendBitcoinScreen.amount()}</Text>
         <AmountInput
-          unitOfAccountAmount={unitOfAccountAmount}
+          unitOfAccountAmount={
+            sendingWalletDescriptor.currency === "USD" && invoiceAmount
+              ? invoiceAmount
+              : unitOfAccountAmount
+          }
           canSetAmount={false}
           isSendingMax={isSendingMax}
           convertMoneyAmount={convertMoneyAmount}
@@ -65,7 +74,7 @@ const ConfirmationDestinationAmountNote: React.FC<Props> = ({ paymentDetail }) =
           <Text style={styles.fieldTitleText}>{LL.SendBitcoinScreen.note()}</Text>
           <View style={styles.fieldBackground}>
             <View style={styles.noteIconContainer}>
-              <NoteIcon style={styles.noteIcon} />
+              <NoteIcon style={styles.noteIcon} color={colors.accent02} />
             </View>
             <Text>{note}</Text>
           </View>

@@ -26,7 +26,7 @@ export const PinScreen: React.FC<Props> = ({ route }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "pin">>()
 
   const { logout } = useLogout()
-  const { screenPurpose } = route.params
+  const { screenPurpose, callback } = route.params
   const { setAppUnlocked } = useAuthenticationContext()
   const { LL } = useI18nContext()
   const [enteredPIN, setEnteredPIN] = useState("")
@@ -50,6 +50,9 @@ export const PinScreen: React.FC<Props> = ({ route }) => {
       setAppUnlocked()
       if (screenPurpose === PinScreenPurpose.ShowSeedPhrase) {
         navigation.replace("BackupShowSeedPhrase")
+      } else if (screenPurpose === PinScreenPurpose.CheckPin) {
+        if (callback) callback()
+        navigation.goBack()
       } else {
         navigation.reset({
           index: 0,
@@ -69,11 +72,11 @@ export const PinScreen: React.FC<Props> = ({ route }) => {
       }
     } else {
       setHelperText(LL.PinScreen.tooManyAttempts())
-      await logout()
+      await logout(true)
       await sleep(1000)
       navigation.reset({
         index: 0,
-        routes: [{ name: "Primary" }],
+        routes: [{ name: "getStarted" }],
       })
     }
   }
@@ -96,7 +99,8 @@ export const PinScreen: React.FC<Props> = ({ route }) => {
       if (newEnteredPIN.length === 4) {
         if (
           screenPurpose === PinScreenPurpose.AuthenticatePin ||
-          screenPurpose === PinScreenPurpose.ShowSeedPhrase
+          screenPurpose === PinScreenPurpose.ShowSeedPhrase ||
+          screenPurpose === PinScreenPurpose.CheckPin
         ) {
           handleCompletedPinForAuthenticatePin(newEnteredPIN)
         } else if (screenPurpose === PinScreenPurpose.SetPin) {
@@ -110,6 +114,7 @@ export const PinScreen: React.FC<Props> = ({ route }) => {
     if (previousPIN === newEnteredPIN) {
       if (await KeyStoreWrapper.setPin(previousPIN)) {
         KeyStoreWrapper.resetPinAttempts()
+        if (callback) callback()
         navigation.goBack()
       } else {
         returnToSetPin()

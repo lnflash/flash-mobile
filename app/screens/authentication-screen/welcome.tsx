@@ -1,8 +1,8 @@
 import React from "react"
-import { Text, Image } from "react-native"
+import { Text, Image, View } from "react-native"
+import { makeStyles, useTheme } from "@rneui/themed"
 import * as Animatable from "react-native-animatable"
 import LinearGradient from "react-native-linear-gradient"
-import { Button, makeStyles, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { StackScreenProps } from "@react-navigation/stack"
 
@@ -12,6 +12,9 @@ import AppLogo from "../../assets/logo/blink-logo-icon.png"
 // hooks
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAuthQuery } from "@app/graphql/generated"
+
+// components
+import { PrimaryBtn } from "@app/components/buttons"
 
 type Props = StackScreenProps<RootStackParamList, "Welcome">
 
@@ -44,14 +47,9 @@ export const Welcome: React.FC<Props> = ({ navigation }) => {
         >
           <Text style={styles.title}>Welcome {data?.me?.username}!</Text>
         </Animatable.Text>
-
-        <Button
-          color={colors.primary}
-          onPress={onPressStart}
-          style={styles.welcomeButton}
-        >
-          <Text style={{ color: colors.primary3 }}>Let’s get started 🚀</Text>
-        </Button>
+        <View style={styles.btnContainer}>
+          <PrimaryBtn label="Let’s get started 🚀" onPress={onPressStart} />
+        </View>
       </LinearGradient>
     </Animatable.View>
   )
@@ -89,10 +87,7 @@ const useStyles = makeStyles(({ colors }) => ({
     shadowOpacity: 0.3, // Shadow transparency
     shadowRadius: 8, // Shadow blur
   },
-  welcomeButton: {
-    elevation: 10,
-    shadowRadius: 2,
-    shadowColor: "black",
-    shadowOpacity: 20,
+  btnContainer: {
+    width: "80%",
   },
 }))

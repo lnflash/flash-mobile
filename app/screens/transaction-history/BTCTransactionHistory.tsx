@@ -40,7 +40,7 @@ export const BTCTransactionHistory = () => {
   const navigation = useNavigation<NavigationProp>()
   const styles = useStyles()
   const { colors } = useTheme().theme
-  const { LL } = useI18nContext()
+  const { LL, locale } = useI18nContext()
   const { convertMoneyAmount } = usePriceConversion()
 
   const { persistentState, updateState } = usePersistentStateContext()
@@ -102,12 +102,8 @@ export const BTCTransactionHistory = () => {
     if (!convertMoneyAmount || !txs) {
       return []
     }
-    const formattedTxs = txs?.map((edge) =>
-      formatPaymentsBreezSDK(
-        edge.txId,
-        txs,
-        convertMoneyAmount(toBtcMoneyAmount(edge.amountSat), WalletCurrency.Usd).amount,
-      ),
+    const formattedTxs = txs?.map((txDetails) =>
+      formatPaymentsBreezSDK({ txDetails, convertMoneyAmount }),
     )
 
     return formattedTxs?.filter(Boolean) ?? []
@@ -115,7 +111,8 @@ export const BTCTransactionHistory = () => {
 
   const transactionSections = groupTransactionsByDate({
     txs: txsList ?? [],
-    common: LL.common,
+    LL,
+    locale,
   })
 
   const onRefresh = () => {

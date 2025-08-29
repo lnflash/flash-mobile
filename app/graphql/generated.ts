@@ -40,8 +40,8 @@ export type Scalars = {
   FractionalCentAmount: { input: number; output: number; }
   /** Hex-encoded string of 32 bytes */
   Hex32Bytes: { input: string; output: string; }
-  /** (Positive) Jamaican dollar amount */
-  JmdAmount: { input: string; output: string; }
+  /** Amount in Jamaican cents */
+  JMDCents: { input: number; output: number; }
   Language: { input: string; output: string; }
   LnPaymentPreImage: { input: string; output: string; }
   /** BOLT11 lightning invoice payment request with the amount included */
@@ -80,6 +80,8 @@ export type Scalars = {
   TotpRegistrationId: { input: string; output: string; }
   /** A secret to generate time-based one-time password */
   TotpSecret: { input: string; output: string; }
+  /** Amount in USD cents */
+  USDCents: { input: number; output: number; }
   /** Unique identifier of a user */
   Username: { input: string; output: string; }
   /** Unique identifier of a wallet */
@@ -145,6 +147,7 @@ export type AccountEnableNotificationChannelInput = {
 
 export const AccountLevel = {
   One: 'ONE',
+  Three: 'THREE',
   Two: 'TWO',
   Zero: 'ZERO'
 } as const;
@@ -288,28 +291,29 @@ export type CaptchaRequestAuthCodeInput = {
 
 export type CashoutOffer = {
   readonly __typename: 'CashoutOffer';
-  /** The price to convert USD -> Flash */
-  readonly exchangeRate: Scalars['Float']['output'];
+  /** The rate used when withdrawing to a JMD bank account */
+  readonly exchangeRate: Scalars['JMDCents']['output'];
   /** The time at which this offer is no longer accepted by Flash */
   readonly expiresAt: Scalars['Timestamp']['output'];
   /** The amount that Flash is charging for it's services */
-  readonly flashFee: Scalars['FractionalCentAmount']['output'];
+  readonly flashFee: Scalars['USDCents']['output'];
   /** ID of the offer */
   readonly offerId: Scalars['ID']['output'];
-  /** The amount Flash owes to the user denominated in JMD */
-  readonly receiveJmd: Scalars['JmdAmount']['output'];
-  /** The amount Flash owes to the user denominated in USD */
-  readonly receiveUsd: Scalars['FractionalCentAmount']['output'];
+  /** The amount Flash owes to the user denominated in JMD as cents */
+  readonly receiveJmd: Scalars['JMDCents']['output'];
+  /** The amount Flash owes to the user denominated in USD as cents */
+  readonly receiveUsd: Scalars['USDCents']['output'];
   /** The amount the user is sending to flash */
-  readonly send: Scalars['FractionalCentAmount']['output'];
+  readonly send: Scalars['USDCents']['output'];
   /** ID for the users USD wallet to send from */
   readonly walletId: Scalars['WalletId']['output'];
 };
 
 export type CentAmountPayload = {
   readonly __typename: 'CentAmountPayload';
-  readonly amount?: Maybe<Scalars['CentAmount']['output']>;
+  readonly amount?: Maybe<Scalars['USDCents']['output']>;
   readonly errors: ReadonlyArray<Error>;
+  readonly invoiceAmount?: Maybe<Scalars['USDCents']['output']>;
 };
 
 export type ConsumerAccount = Account & {
@@ -1478,7 +1482,7 @@ export type RealtimePricePayload = {
 
 export type RequestCashoutInput = {
   /** Amount in USD cents. */
-  readonly usdAmount: Scalars['FractionalCentAmount']['input'];
+  readonly amount: Scalars['USDCents']['input'];
   /** ID for a USD wallet belonging to the current user. */
   readonly walletId: Scalars['WalletId']['input'];
 };
@@ -2089,19 +2093,17 @@ export type MerchantMapSuggestMutationVariables = Exact<{
 
 export type MerchantMapSuggestMutation = { readonly __typename: 'Mutation', readonly merchantMapSuggest: { readonly __typename: 'MerchantPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string, readonly path?: ReadonlyArray<string | null> | null }>, readonly merchant?: { readonly __typename: 'Merchant', readonly createdAt: number, readonly id: string, readonly title: string, readonly username: string, readonly validated: boolean, readonly coordinates: { readonly __typename: 'Coordinates', readonly latitude: number, readonly longitude: number } } | null } };
 
-export type RequestCashoutMutationVariables = Exact<{
-  input: RequestCashoutInput;
+export type AccountDeleteMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AccountDeleteMutation = { readonly __typename: 'Mutation', readonly accountDelete: { readonly __typename: 'AccountDeletePayload', readonly success: boolean, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }> } };
+
+export type LnUsdInvoiceAmountMutationVariables = Exact<{
+  input: LnUsdInvoiceFeeProbeInput;
 }>;
 
 
-export type RequestCashoutMutation = { readonly __typename: 'Mutation', readonly requestCashout: { readonly __typename: 'RequestCashoutResponse', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string, readonly path?: ReadonlyArray<string | null> | null }>, readonly offer?: { readonly __typename: 'CashoutOffer', readonly exchangeRate: number, readonly expiresAt: number, readonly flashFee: number, readonly offerId: string, readonly receiveJmd: string, readonly receiveUsd: number, readonly send: number, readonly walletId: string } | null } };
-
-export type InitiateCashoutMutationVariables = Exact<{
-  input: InitiateCashoutInput;
-}>;
-
-
-export type InitiateCashoutMutation = { readonly __typename: 'Mutation', readonly initiateCashout: { readonly __typename: 'SuccessPayload', readonly success?: boolean | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly path?: ReadonlyArray<string | null> | null, readonly message: string, readonly code?: string | null }> } };
+export type LnUsdInvoiceAmountMutation = { readonly __typename: 'Mutation', readonly lnUsdInvoiceFeeProbe: { readonly __typename: 'CentAmountPayload', readonly invoiceAmount?: number | null, readonly amount?: number | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }> } };
 
 export type UserUpdateNpubMutationVariables = Exact<{
   input: UserUpdateNpubInput;
@@ -2451,11 +2453,6 @@ export type AccountScreenQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AccountScreenQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly phone?: string | null, readonly totpEnabled: boolean, readonly email?: { readonly __typename: 'Email', readonly address?: string | null, readonly verified?: boolean | null } | null, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly level: AccountLevel, readonly wallets: ReadonlyArray<{ readonly __typename: 'BTCWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency } | { readonly __typename: 'UsdWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency }> } } | null };
-
-export type AccountDeleteMutationVariables = Exact<{ [key: string]: never; }>;
-
-
-export type AccountDeleteMutation = { readonly __typename: 'Mutation', readonly accountDelete: { readonly __typename: 'AccountDeletePayload', readonly success: boolean, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }> } };
 
 export type UserEmailDeleteMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -3509,91 +3506,78 @@ export function useMerchantMapSuggestMutation(baseOptions?: Apollo.MutationHookO
 export type MerchantMapSuggestMutationHookResult = ReturnType<typeof useMerchantMapSuggestMutation>;
 export type MerchantMapSuggestMutationResult = Apollo.MutationResult<MerchantMapSuggestMutation>;
 export type MerchantMapSuggestMutationOptions = Apollo.BaseMutationOptions<MerchantMapSuggestMutation, MerchantMapSuggestMutationVariables>;
-export const RequestCashoutDocument = gql`
-    mutation RequestCashout($input: RequestCashoutInput!) {
-  requestCashout(input: $input) {
+export const AccountDeleteDocument = gql`
+    mutation accountDelete {
+  accountDelete {
     errors {
-      code
       message
-      path
-    }
-    offer {
-      exchangeRate
-      expiresAt
-      flashFee
-      offerId
-      receiveJmd
-      receiveUsd
-      send
-      walletId
-    }
-  }
-}
-    `;
-export type RequestCashoutMutationFn = Apollo.MutationFunction<RequestCashoutMutation, RequestCashoutMutationVariables>;
-
-/**
- * __useRequestCashoutMutation__
- *
- * To run a mutation, you first call `useRequestCashoutMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useRequestCashoutMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [requestCashoutMutation, { data, loading, error }] = useRequestCashoutMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useRequestCashoutMutation(baseOptions?: Apollo.MutationHookOptions<RequestCashoutMutation, RequestCashoutMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<RequestCashoutMutation, RequestCashoutMutationVariables>(RequestCashoutDocument, options);
-      }
-export type RequestCashoutMutationHookResult = ReturnType<typeof useRequestCashoutMutation>;
-export type RequestCashoutMutationResult = Apollo.MutationResult<RequestCashoutMutation>;
-export type RequestCashoutMutationOptions = Apollo.BaseMutationOptions<RequestCashoutMutation, RequestCashoutMutationVariables>;
-export const InitiateCashoutDocument = gql`
-    mutation InitiateCashout($input: InitiateCashoutInput!) {
-  initiateCashout(input: $input) {
-    errors {
-      path
-      message
-      code
     }
     success
   }
 }
     `;
-export type InitiateCashoutMutationFn = Apollo.MutationFunction<InitiateCashoutMutation, InitiateCashoutMutationVariables>;
+export type AccountDeleteMutationFn = Apollo.MutationFunction<AccountDeleteMutation, AccountDeleteMutationVariables>;
 
 /**
- * __useInitiateCashoutMutation__
+ * __useAccountDeleteMutation__
  *
- * To run a mutation, you first call `useInitiateCashoutMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useInitiateCashoutMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useAccountDeleteMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAccountDeleteMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [initiateCashoutMutation, { data, loading, error }] = useInitiateCashoutMutation({
+ * const [accountDeleteMutation, { data, loading, error }] = useAccountDeleteMutation({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAccountDeleteMutation(baseOptions?: Apollo.MutationHookOptions<AccountDeleteMutation, AccountDeleteMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AccountDeleteMutation, AccountDeleteMutationVariables>(AccountDeleteDocument, options);
+      }
+export type AccountDeleteMutationHookResult = ReturnType<typeof useAccountDeleteMutation>;
+export type AccountDeleteMutationResult = Apollo.MutationResult<AccountDeleteMutation>;
+export type AccountDeleteMutationOptions = Apollo.BaseMutationOptions<AccountDeleteMutation, AccountDeleteMutationVariables>;
+export const LnUsdInvoiceAmountDocument = gql`
+    mutation lnUsdInvoiceAmount($input: LnUsdInvoiceFeeProbeInput!) {
+  lnUsdInvoiceFeeProbe(input: $input) {
+    errors {
+      message
+    }
+    invoiceAmount
+    amount
+  }
+}
+    `;
+export type LnUsdInvoiceAmountMutationFn = Apollo.MutationFunction<LnUsdInvoiceAmountMutation, LnUsdInvoiceAmountMutationVariables>;
+
+/**
+ * __useLnUsdInvoiceAmountMutation__
+ *
+ * To run a mutation, you first call `useLnUsdInvoiceAmountMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useLnUsdInvoiceAmountMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [lnUsdInvoiceAmountMutation, { data, loading, error }] = useLnUsdInvoiceAmountMutation({
  *   variables: {
  *      input: // value for 'input'
  *   },
  * });
  */
-export function useInitiateCashoutMutation(baseOptions?: Apollo.MutationHookOptions<InitiateCashoutMutation, InitiateCashoutMutationVariables>) {
+export function useLnUsdInvoiceAmountMutation(baseOptions?: Apollo.MutationHookOptions<LnUsdInvoiceAmountMutation, LnUsdInvoiceAmountMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<InitiateCashoutMutation, InitiateCashoutMutationVariables>(InitiateCashoutDocument, options);
+        return Apollo.useMutation<LnUsdInvoiceAmountMutation, LnUsdInvoiceAmountMutationVariables>(LnUsdInvoiceAmountDocument, options);
       }
-export type InitiateCashoutMutationHookResult = ReturnType<typeof useInitiateCashoutMutation>;
-export type InitiateCashoutMutationResult = Apollo.MutationResult<InitiateCashoutMutation>;
-export type InitiateCashoutMutationOptions = Apollo.BaseMutationOptions<InitiateCashoutMutation, InitiateCashoutMutationVariables>;
+export type LnUsdInvoiceAmountMutationHookResult = ReturnType<typeof useLnUsdInvoiceAmountMutation>;
+export type LnUsdInvoiceAmountMutationResult = Apollo.MutationResult<LnUsdInvoiceAmountMutation>;
+export type LnUsdInvoiceAmountMutationOptions = Apollo.BaseMutationOptions<LnUsdInvoiceAmountMutation, LnUsdInvoiceAmountMutationVariables>;
 export const UserUpdateNpubDocument = gql`
     mutation userUpdateNpub($input: UserUpdateNpubInput!) {
   userUpdateNpub(input: $input) {
@@ -3690,7 +3674,7 @@ export const HomeAuthedDocument = gql`
       id
       level
       defaultWalletId
-      transactions(first: 20) {
+      transactions(first: 3) {
         ...TransactionList
       }
       wallets {
@@ -5872,41 +5856,6 @@ export function useAccountScreenLazyQuery(baseOptions?: Apollo.LazyQueryHookOpti
 export type AccountScreenQueryHookResult = ReturnType<typeof useAccountScreenQuery>;
 export type AccountScreenLazyQueryHookResult = ReturnType<typeof useAccountScreenLazyQuery>;
 export type AccountScreenQueryResult = Apollo.QueryResult<AccountScreenQuery, AccountScreenQueryVariables>;
-export const AccountDeleteDocument = gql`
-    mutation accountDelete {
-  accountDelete {
-    errors {
-      message
-    }
-    success
-  }
-}
-    `;
-export type AccountDeleteMutationFn = Apollo.MutationFunction<AccountDeleteMutation, AccountDeleteMutationVariables>;
-
-/**
- * __useAccountDeleteMutation__
- *
- * To run a mutation, you first call `useAccountDeleteMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useAccountDeleteMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [accountDeleteMutation, { data, loading, error }] = useAccountDeleteMutation({
- *   variables: {
- *   },
- * });
- */
-export function useAccountDeleteMutation(baseOptions?: Apollo.MutationHookOptions<AccountDeleteMutation, AccountDeleteMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<AccountDeleteMutation, AccountDeleteMutationVariables>(AccountDeleteDocument, options);
-      }
-export type AccountDeleteMutationHookResult = ReturnType<typeof useAccountDeleteMutation>;
-export type AccountDeleteMutationResult = Apollo.MutationResult<AccountDeleteMutation>;
-export type AccountDeleteMutationOptions = Apollo.BaseMutationOptions<AccountDeleteMutation, AccountDeleteMutationVariables>;
 export const UserEmailDeleteDocument = gql`
     mutation userEmailDelete {
   userEmailDelete {

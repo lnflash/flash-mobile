@@ -16,10 +16,10 @@ import {
 import { WalletDescriptor } from "@app/types/wallets"
 import _Map from "@app/assets/icons-redesign/map.svg"
 import { Event } from "nostr-tools"
+import { NavigatorScreenParams } from "@react-navigation/native"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
-  IntroScreen: undefined
   getStarted: undefined
   UsernameSet: undefined
   Welcome: undefined
@@ -33,7 +33,7 @@ export type RootStackParamList = {
     screenPurpose: AuthenticationScreenPurpose
     isPinEnabled: boolean
   }
-  pin: { screenPurpose: PinScreenPurpose }
+  pin: { screenPurpose: PinScreenPurpose; callback?: () => void }
   Primary: undefined
   earnsSection: { section: EarnSectionType }
   earnsQuiz: { id: string }
@@ -52,11 +52,14 @@ export type RootStackParamList = {
   sendBitcoinDetails: {
     paymentDestination: PaymentDestination
     flashUserAddress?: string
+    isFromFlashcard?: boolean
+    invoiceAmount?: MoneyAmount<WalletCurrency>
   }
   sendBitcoinConfirmation: {
     paymentDetail: PaymentDetail<WalletCurrency>
     flashUserAddress?: string
     feeRateSatPerVbyte?: number
+    invoiceAmount?: MoneyAmount<WalletCurrency>
   }
   conversionDetails: undefined
   conversionConfirmation: {
@@ -70,6 +73,7 @@ export type RootStackParamList = {
   sendBitcoinSuccess: {
     unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
     walletCurrency: WalletCurrency
+    invoiceAmount?: MoneyAmount<WalletCurrency>
   }
   language: undefined
   currency: undefined
@@ -99,14 +103,13 @@ export type RootStackParamList = {
     usdAmount: MoneyAmount<WalletCurrency>
     lnurl: string
   }
-  phoneFlow: undefined
+  phoneFlow?: NavigatorScreenParams<PhoneValidationStackParamList>
   phoneRegistrationInitiate: undefined
   phoneRegistrationValidate: {
     phone: string
     channel: PhoneCodeChannelType
   }
   transactionDetail: { tx: TransactionFragment }
-  breezTransactionDetail: { tx: TransactionFragment }
   TransactionHistoryTabs?: { initialRouteName?: string } | undefined
   USDTransactionHistory: undefined
   BTCTransactionHistory: undefined
@@ -131,7 +134,7 @@ export type RootStackParamList = {
   BackupVerify: undefined
   BackupComplete: undefined
   BackupShowSeedPhrase: undefined
-  ImportWallet: { insideApp?: boolean; onComplete?: () => void }
+  ImportWallet: { insideApp?: boolean }
   ImportWalletOptions: { insideApp?: boolean } | undefined
   RefundTransactionList: undefined
   RefundDestination: { swapAddress: string; amount: number }
@@ -146,6 +149,8 @@ export type RootStackParamList = {
   CashoutConfirmation: { offer: CashoutOffer }
   CashoutSuccess: undefined
   EditNostrProfile: undefined
+  NostrSettingsScreen: undefined
+  SignInViaQRCode: undefined
 }
 
 export type ChatStackParamList = {
@@ -154,6 +159,7 @@ export type ChatStackParamList = {
   sendBitcoinDestination: { username: string }
   transactionDetail: { txid: string }
   messages: { userPrivateKey: string; groupId: string }
+  contactDetails: { contactPubkey: string; userPrivateKey: string }
 }
 
 export type ContactStackParamList = {
@@ -170,6 +176,8 @@ export type PhoneValidationStackParamList = {
   phoneLoginValidate: {
     phone: string
     channel: PhoneCodeChannelType
+    mnemonicKey?: string
+    nsec?: string
   }
   authentication: {
     screenPurpose: AuthenticationScreenPurpose

@@ -21,11 +21,6 @@ import { HomeScreen } from "../screens/home-screen"
 import { MapScreen } from "../screens/map-screen/map-screen"
 import { PriceHistoryScreen } from "../screens/price/price-history-screen"
 import ChatIcon from "@app/assets/icons/chat.svg"
-import CardIcon from "@app/assets/icons/nfc.svg"
-import ContactsIcon from "@app/assets/icons/contacts.svg"
-import HomeIcon from "@app/assets/icons/home.svg"
-import LearnIcon from "@app/assets/icons/learn.svg"
-import MapIcon from "@app/assets/icons/map.svg"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import {
@@ -71,10 +66,7 @@ import { ScanningQRCodeScreen } from "../screens/send-bitcoin-screen"
 import { SettingsScreen } from "../screens/settings-screen"
 import { LanguageScreen } from "../screens/settings-screen/language-screen"
 import { SecurityScreen } from "../screens/settings-screen/security-screen"
-import {
-  BreezTransactionDetailScreen,
-  TransactionDetailScreen,
-} from "../screens/transaction-detail-screen"
+import { TransactionDetailScreen } from "../screens/transaction-detail-screen"
 import {
   ChatStackParamList,
   ContactStackParamList,
@@ -93,8 +85,8 @@ import {
   ImportWallet,
   BackupOptions,
   TransactionHistoryTabs,
-  IntroScreen,
   USDTransactionHistory,
+  SignInViaQRCode,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -122,6 +114,8 @@ import {
   CashoutConfirmation,
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
+import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
+import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -148,12 +142,7 @@ export const RootStack = () => {
   const isAuthed = useIsAuthed()
 
   // Check if intro screen is displayed twice.
-  const initialRouteName =
-    persistentState.introVideoCount >= 2
-      ? isAuthed
-        ? "authenticationCheck"
-        : "getStarted"
-      : "IntroScreen"
+  const initialRouteName = isAuthed ? "authenticationCheck" : "getStarted"
 
   return (
     <RootNavigator.Navigator
@@ -173,11 +162,6 @@ export const RootStack = () => {
         name="Reconciliation"
         component={ReconciliationReport}
         options={{ headerShown: true, title: LL.reports.reconciliation() }}
-      />
-      <RootNavigator.Screen
-        name="IntroScreen"
-        component={IntroScreen}
-        options={{ headerShown: false }}
       />
       <RootNavigator.Screen
         name="getStarted"
@@ -346,6 +330,14 @@ export const RootStack = () => {
         })}
       />
       <RootNavigator.Screen
+        name="NostrSettingsScreen"
+        component={NostrSettingsScreen}
+        options={{
+          title: "Social Settings",
+          headerBackTitleVisible: false,
+        }}
+      />
+      <RootNavigator.Screen
         name="addressScreen"
         component={GaloyAddressScreen}
         options={() => ({
@@ -415,18 +407,12 @@ export const RootStack = () => {
         name="transactionDetail"
         component={TransactionDetailScreen}
         options={{
-          headerShown: false,
-          // cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+          headerTitle: "",
+          headerLeft: () => null,
+          cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
         }}
       />
-      <RootNavigator.Screen
-        name="breezTransactionDetail"
-        component={BreezTransactionDetailScreen}
-        options={{
-          headerShown: false,
-          // cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
-        }}
-      />
+
       <RootNavigator.Screen
         name="priceHistory"
         component={PriceHistoryScreen}
@@ -519,9 +505,7 @@ export const RootStack = () => {
         <RootNavigator.Screen
           name="BackupComplete"
           component={BackupComplete}
-          options={{
-            headerLeft: () => <></>,
-          }}
+          options={{ headerShown: false }}
         />
         <RootNavigator.Screen
           name="BackupShowSeedPhrase"
@@ -583,6 +567,14 @@ export const RootStack = () => {
         component={EditNostrProfileScreen}
         options={{ headerShown: true, title: LL.Nostr.editProfile() }}
       />
+      <RootNavigator.Screen
+        name="SignInViaQRCode"
+        component={SignInViaQRCode}
+        options={{
+          headerStyle: { backgroundColor: "#000" },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
     </RootNavigator.Navigator>
   )
 }
@@ -605,6 +597,13 @@ export const ChatNavigator = () => {
         name="messages"
         component={Messages}
         options={{ headerShown: false }}
+      />
+      <StackChats.Screen
+        name="contactDetails"
+        component={ContactDetailsScreen}
+        options={{
+          headerShown: false, // Since we're using our own header in the component
+        }}
       />
     </StackChats.Navigator>
   )

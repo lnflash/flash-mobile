@@ -8,11 +8,14 @@ import {
   Dimensions,
   TouchableOpacity,
 } from "react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StackNavigationProp } from "@react-navigation/stack"
-import { useNavigation } from "@react-navigation/native"
-import { useI18nContext } from "@app/i18n/i18n-react"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
+
+// hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { useNavigation } from "@react-navigation/native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // components
 import { PrimaryBtn } from "../buttons"
@@ -32,20 +35,20 @@ type Props = {
   hasRecoveryPhrase: boolean
   isVisible: boolean
   setIsVisible: (isVisible: boolean) => void
-  enableAdvancedMode: () => void
 }
 
 export const AdvancedModeModal: React.FC<Props> = ({
   hasRecoveryPhrase,
   isVisible,
   setIsVisible,
-  enableAdvancedMode,
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const styles = useStyles()
+  const { colors } = useTheme().theme
   const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
-  const { colors } = useTheme().theme
-  const styles = useStyles()
+
+  const { updateState } = usePersistentStateContext()
 
   const acknowledgeModal = () => {
     setIsVisible(false)
@@ -58,19 +61,22 @@ export const AdvancedModeModal: React.FC<Props> = ({
   }
 
   const onCreateNewWallet = () => {
+    updateState((state: any) => {
+      if (state)
+        return {
+          ...state,
+          isAdvanceMode: true,
+        }
+      return undefined
+    })
     setIsVisible(false)
-    enableAdvancedMode()
+    navigation.reset({ index: 0, routes: [{ name: "Primary" }] })
   }
 
   const goToImportBTCWallet = () => {
     setIsVisible(false)
     navigation.navigate("ImportWallet", {
       insideApp: true,
-      onComplete: () => {
-        setTimeout(() => {
-          enableAdvancedMode()
-        }, 5000)
-      },
     })
   }
 

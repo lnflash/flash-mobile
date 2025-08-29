@@ -9,7 +9,12 @@ import { Loading } from "@app/contexts/ActivityIndicatorContext"
 import HideableArea from "../hideable-area/hideable-area"
 
 // hooks
-import { useDisplayCurrency, useFlashcard, usePriceConversion } from "@app/hooks"
+import {
+  useDisplayCurrency,
+  useFlashcard,
+  usePriceConversion,
+  useUnauthedPriceConversion,
+} from "@app/hooks"
 import { useHideBalanceQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 
@@ -31,7 +36,9 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
   const { colors } = useTheme().theme
   const { balanceInSats, transactions, readFlashcard, resetFlashcard } = useFlashcard()
   const { formatMoneyAmount } = useDisplayCurrency()
-  const { convertMoneyAmount } = usePriceConversion()
+  const { convertMoneyAmount } = isAuthed
+    ? usePriceConversion()
+    : useUnauthedPriceConversion()
 
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 

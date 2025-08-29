@@ -20,6 +20,8 @@ type NostrProfile = {
   nip05?: string
   picture?: string
   lud16?: string
+  about?: string
+  website?: string
 }
 
 interface EditProfileUIProps {
@@ -35,10 +37,11 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
     nip05: "",
     picture: "",
     lud16: "",
+    about: "",
+    website: "",
   })
 
   let { updateNostrProfile } = useNostrProfile()
-  const [isLoading, setIsLoading] = useState(true)
   const [isFormVisible, setIsFormVisible] = useState(false)
   const [updating, setUpdating] = useState(false)
 
@@ -58,12 +61,6 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
         console.error("Error parsing content:", error)
       }
     }
-
-    const timeoutId = setTimeout(() => {
-      setIsLoading(false)
-    }, 10000)
-
-    return () => clearTimeout(timeoutId)
   }, [profileEvent])
 
   const handleInputChange = (field: keyof NostrProfile, value: string) => {
@@ -71,36 +68,6 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
       ...formData,
       [field]: value,
     })
-  }
-
-  const handleCreateProfileClick = () => {
-    const pubkeyMessage = profileEvent
-      ? `Profile data will be overwritten.`
-      : `We couldn't find a Nostr account attached to this pubkey.`
-
-    Alert.alert(
-      "Create Profile",
-      `If you proceed, any existing profile data will be overwritten. ${pubkeyMessage} Do you want to continue?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "OK",
-          onPress: () => {
-            setFormData({
-              username: "",
-              name: "",
-              nip05: "",
-              picture: "",
-              lud16: "",
-            })
-            setIsFormVisible(true)
-          },
-        },
-      ],
-    )
   }
 
   const copyToClipboard = async () => {
@@ -112,34 +79,28 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {isLoading ? (
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      ) : isFormVisible ? (
-        <>
-          {profileEvent?.pubkey && (
-            <TouchableOpacity onPress={copyToClipboard}>
-              <View style={styles.pubkeyContainer}>
-                <Text style={styles.pubkeyText}>
-                  {profileEvent?.pubkey ? nip19.npubEncode(profileEvent.pubkey) : null}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
+      <>
+        {profileEvent?.pubkey && (
+          <TouchableOpacity onPress={copyToClipboard}>
+            <View style={styles.pubkeyContainer}>
+              <Text style={styles.pubkeyText}>
+                {profileEvent?.pubkey ? nip19.npubEncode(profileEvent.pubkey) : null}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
-          <ProfileForm
-            formData={formData}
-            handleInputChange={handleInputChange}
-            updating={updating}
-            onSubmit={async () => {
-              setUpdating(true)
-              await updateNostrProfile({ content: formData })
-              setUpdating(false)
-            }}
-          />
-        </>
-      ) : (
-        <Button title="Create Profile" onPress={handleCreateProfileClick} />
-      )}
+        <ProfileForm
+          formData={formData}
+          handleInputChange={handleInputChange}
+          updating={updating}
+          onSubmit={async () => {
+            setUpdating(true)
+            await updateNostrProfile({ content: formData })
+            setUpdating(false)
+          }}
+        />
+      </>
     </ScrollView>
   )
 }
@@ -218,6 +179,16 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
           placeholder="LUD-16"
           value={formData.lud16}
           onChangeText={(text) => handleInputChange("lud16", text)}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Website</Text>
+        <Input
+          style={styles.input}
+          placeholder="Website"
+          value={formData.website}
+          onChangeText={(text) => handleInputChange("website", text)}
         />
       </View>
 

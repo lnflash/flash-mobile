@@ -1,14 +1,10 @@
 import React from "react"
 import styled from "styled-components/native"
-import { Icon, useTheme } from "@rneui/themed"
+import { Icon, Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
-
-// components
-import { PrimaryBtn } from "@app/components/buttons"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // types
@@ -18,12 +14,10 @@ type Props = StackScreenProps<RootStackParamList, "ImportWalletOptions">
 
 const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
   const insideApp = route.params?.insideApp
-  const bottom = useSafeAreaInsets().bottom
+
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
-
-  const { persistentState } = usePersistentStateContext()
-  const { btcWalletImported, isAdvanceMode } = persistentState
+  const { isAdvanceMode } = usePersistentStateContext().persistentState
 
   const onImportBTCWallet = () => {
     navigation.navigate("ImportWallet", {
@@ -39,73 +33,63 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
     navigation.navigate("emailLoginInitiate")
   }
 
-  const onPressDone = async () => {
-    navigation.reset({ index: 0, routes: [{ name: "Primary" }] })
+  const onLoginWithQRCode = () => {
+    navigation.navigate("SignInViaQRCode")
   }
 
   return (
     <Wrapper style={{ backgroundColor: colors.white }}>
-      <Container>
-        <Title style={{ color: colors.black }}>
-          {insideApp
-            ? LL.ImportWalletOptions.importOptions()
-            : LL.ImportWalletOptions.loginOptions()}
-        </Title>
+      <Text type="h02" bold style={{ textAlign: "center", marginBottom: 30 }}>
+        {insideApp
+          ? LL.ImportWalletOptions.importOptions()
+          : LL.ImportWalletOptions.loginOptions()}
+      </Text>
 
-        {isAdvanceMode && (
-          <Btn onPress={onImportBTCWallet}>
-            <Icon
-              type="ionicon"
-              size={40}
-              name={btcWalletImported ? "checkmark-circle" : "checkmark-circle-outline"}
-              color={btcWalletImported ? colors.primary : colors.icon02}
-            />
+      {isAdvanceMode && (
+        <Btn onPress={onImportBTCWallet}>
+          <Icon type="ionicon" size={40} name={"apps"} color={colors.icon02} />
+          <BtnTextWrapper>
+            <Text type="p1">{LL.ImportWalletOptions.recoveryPhrase()}</Text>
+            <Text type="p3" color={colors.grey2}>
+              {LL.ImportWalletOptions.importBTCWallet()}
+            </Text>
+          </BtnTextWrapper>
+          <Icon type="ionicon" name={"chevron-forward"} size={20} />
+        </Btn>
+      )}
+      {!insideApp && (
+        <>
+          <Btn onPress={onLoginWithPhone}>
+            <Icon type="ionicon" name={"mail"} color={colors.icon02} size={40} />
             <BtnTextWrapper>
-              <BtnTitle style={{ color: colors.black }}>
-                {LL.ImportWalletOptions.recoveryPhrase()}
-              </BtnTitle>
-              <BtnDesc>{LL.ImportWalletOptions.importBTCWallet()}</BtnDesc>
+              <Text type="p1">{LL.ImportWalletOptions.phone()}</Text>
+              <Text type="p3" color={colors.grey2}>
+                {LL.ImportWalletOptions.importUsingPhone()}
+              </Text>
             </BtnTextWrapper>
             <Icon type="ionicon" name={"chevron-forward"} size={20} />
           </Btn>
-        )}
-        {!insideApp && (
-          <>
-            <Btn onPress={onLoginWithPhone}>
-              <Icon
-                type="ionicon"
-                name={"mail-outline"}
-                color={colors.icon02}
-                size={40}
-              />
-              <BtnTextWrapper>
-                <BtnTitle style={{ color: colors.black }}>
-                  {LL.ImportWalletOptions.phone()}
-                </BtnTitle>
-                <BtnDesc>{LL.ImportWalletOptions.importUsingPhone()}</BtnDesc>
-              </BtnTextWrapper>
-              <Icon type="ionicon" name={"chevron-forward"} size={20} />
-            </Btn>
-            <Btn onPress={onLoginWithEmail}>
-              <Icon type="ionicon" name={"at-outline"} color={colors.icon02} size={40} />
-              <BtnTextWrapper>
-                <BtnTitle style={{ color: colors.black }}>
-                  {LL.ImportWalletOptions.email()}
-                </BtnTitle>
-                <BtnDesc>{LL.ImportWalletOptions.importUsingEmail()}</BtnDesc>
-              </BtnTextWrapper>
-              <Icon type="ionicon" name={"chevron-forward"} size={20} />
-            </Btn>
-          </>
-        )}
-      </Container>
-      {insideApp && (
-        <PrimaryBtn
-          label={LL.ImportWalletOptions.done()}
-          disabled={!btcWalletImported}
-          btnStyle={{ marginBottom: bottom + 10 }}
-          onPress={onPressDone}
-        />
+          <Btn onPress={onLoginWithEmail}>
+            <Icon type="ionicon" name={"at"} color={colors.icon02} size={40} />
+            <BtnTextWrapper>
+              <Text type="p1">{LL.ImportWalletOptions.email()}</Text>
+              <Text type="p3" color={colors.grey2}>
+                {LL.ImportWalletOptions.importUsingEmail()}
+              </Text>
+            </BtnTextWrapper>
+            <Icon type="ionicon" name={"chevron-forward"} size={20} />
+          </Btn>
+          <Btn onPress={onLoginWithQRCode}>
+            <Icon type="ionicon" name={"qr-code"} color={colors.icon02} size={40} />
+            <BtnTextWrapper>
+              <Text type="p1">Sign In with QR code</Text>
+              <Text type="p3" color={colors.grey2}>
+                Import your account by scanning a QR code from your old phone.{" "}
+              </Text>
+            </BtnTextWrapper>
+            <Icon type="ionicon" name={"chevron-forward"} size={20} />
+          </Btn>
+        </>
       )}
     </Wrapper>
   )
@@ -115,17 +99,7 @@ export default ImportWalletOptions
 
 const Wrapper = styled.View`
   flex: 1;
-  justify-content: space-between;
   padding-horizontal: 20px;
-`
-
-const Container = styled.View``
-
-const Title = styled.Text`
-  font-size: 21px;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 30px;
 `
 
 const Btn = styled.TouchableOpacity`
@@ -140,14 +114,6 @@ const Btn = styled.TouchableOpacity`
 
 const BtnTextWrapper = styled.View`
   flex: 1;
+  row-gap: 5px;
   margin-horizontal: 15px;
-`
-
-const BtnTitle = styled.Text`
-  font-size: 18px;
-`
-
-const BtnDesc = styled.Text`
-  font-size: 15px;
-  color: #777;
 `

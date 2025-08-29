@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react"
-import { View } from "react-native"
+import React, { useEffect, useState, useCallback } from "react"
+import { View, Alert } from "react-native"
 import { makeStyles } from "@rneui/themed"
+import { StackScreenProps } from "@react-navigation/stack"
 import crashlytics from "@react-native-firebase/crashlytics"
 
 // components
@@ -39,7 +40,6 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // types
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { NavigationProp, RouteProp, useNavigation } from "@react-navigation/native"
 import { PaymentDetail } from "./payment-details/index.types"
 import { Satoshis } from "lnurl-pay/dist/types/types"
 import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
@@ -50,26 +50,23 @@ import { isValidAmount } from "./payment-details"
 import { requestInvoice, utils } from "lnurl-pay"
 import { fetchBreezFee, fetchRecommendedFees } from "@app/utils/breez-sdk-liquid"
 
-type Props = {
-  route: RouteProp<RootStackParamList, "sendBitcoinDetails">
-}
+type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 
 const network = "mainnet" // data?.globals?.network
 
-const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
-  const navigation =
-    useNavigation<NavigationProp<RootStackParamList, "sendBitcoinDetails">>()
+const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
   const { btcWallet } = useBreez()
   const { persistentState } = usePersistentStateContext()
-  const { convertMoneyAmount: _convertMoneyAmount } = usePriceConversion("network-only")
+  const { convertMoneyAmount: _convertMoneyAmount } = usePriceConversion()
   const { zeroDisplayAmount, formatDisplayAndWalletAmount } = useDisplayCurrency()
   const { toggleActivityIndicator } = useActivityIndicator()
   const getIbexFee = useIbexFee()
 
-  const { paymentDestination, flashUserAddress } = route.params
+  const { paymentDestination, flashUserAddress, isFromFlashcard, invoiceAmount } =
+    route.params
 
   const [recommendedFees, setRecommendedFees] = useState<RecommendedFees>()
   const [isLoadingLnurl, setIsLoadingLnurl] = useState(false)
@@ -77,6 +74,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
   const [asyncErrorMessage, setAsyncErrorMessage] = useState("")
   const [selectedFee, setSelectedFee] = useState<number>()
   const [selectedFeeType, setSelectedFeeType] = useState<string>()
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const { data } = useSendBitcoinDetailsScreenQuery({
     fetchPolicy: "cache-first",
@@ -172,7 +170,11 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           pd.isSendingMax,
         )
         if (fee === null && err) {
-          setAsyncErrorMessage(`${err?.message || err} (amount + fee)` || "")
+          const error = err?.message || err
+          const errMsg = error.includes("not enough funds")
+            ? `${error} (amount + fee)`
+            : error
+          setAsyncErrorMessage(errMsg)
           return false
         }
       } else {
@@ -198,71 +200,169 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
     }
   }
 
+  // Add timeout wrapper for operations
+  const withTimeout = useCallback(
+    <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+          setTimeout(
+            () => reject(new Error(`Operation timed out after ${timeoutMs}ms`)),
+            timeoutMs,
+          )
+        }),
+      ])
+    },
+    [],
+  )
+
+  // Safe error handler that prevents app freezing
+  const handleCriticalError = useCallback(
+    (error: any, context: string) => {
+      console.error(`Critical error in ${context}:`, error)
+      crashlytics().recordError(error instanceof Error ? error : new Error(String(error)))
+
+      // Show user-friendly error and offer to reload
+      Alert.alert(
+        "Something went wrong",
+        `There was an issue processing your request. Would you like to try again or go back?`,
+        [
+          {
+            text: "Go Back",
+            onPress: () => navigation.goBack(),
+            style: "cancel",
+          },
+          {
+            text: "Try Again",
+            onPress: () => {
+              setAsyncErrorMessage("")
+              setIsProcessing(false)
+              setIsLoadingLnurl(false)
+              toggleActivityIndicator(false)
+            },
+          },
+        ],
+      )
+    },
+    [navigation, toggleActivityIndicator],
+  )
+
   const goToNextScreen =
     (paymentDetail?.sendPaymentMutation ||
       (paymentDetail?.paymentType === "lnurl" && paymentDetail?.unitOfAccountAmount)) &&
     (async () => {
-      toggleActivityIndicator(true)
-      let paymentDetailForConfirmation: PaymentDetail<WalletCurrency> = paymentDetail
-
-      if (paymentDetail.paymentType === "lnurl") {
-        const lnurlParams = paymentDetail?.lnurlParams
-        try {
-          setIsLoadingLnurl(true)
-
-          const btcAmount = paymentDetail.convertMoneyAmount(
-            paymentDetail.unitOfAccountAmount,
-            "BTC",
-          )
-
-          const requestInvoiceParams: {
-            lnUrlOrAddress: string
-            tokens: Satoshis
-            comment?: string
-          } = {
-            lnUrlOrAddress: paymentDetail.destination,
-            tokens: utils.toSats(btcAmount.amount),
-          }
-
-          if (lnurlParams?.commentAllowed) {
-            requestInvoiceParams.comment = paymentDetail.memo
-          }
-
-          const result = await requestInvoice(requestInvoiceParams)
-          setIsLoadingLnurl(false)
-          const invoice = result.invoice
-          const decodedInvoice = decodeInvoiceString(invoice, network as NetworkLibGaloy)
-
-          if (
-            Math.round(Number(decodedInvoice.millisatoshis) / 1000) !== btcAmount.amount
-          ) {
-            setAsyncErrorMessage(LL.SendBitcoinScreen.lnurlInvoiceIncorrectAmount())
-            return
-          }
-
-          paymentDetailForConfirmation = paymentDetail.setInvoice({
-            paymentRequest: invoice,
-            paymentRequestAmount: btcAmount,
-          })
-        } catch (error) {
-          setIsLoadingLnurl(false)
-          if (error instanceof Error) {
-            crashlytics().recordError(error)
-          }
-          setAsyncErrorMessage(LL.SendBitcoinScreen.failedToFetchLnurlInvoice())
-          return
-        }
+      // Prevent multiple simultaneous executions
+      if (isProcessing) {
+        return
       }
 
-      const res = await fetchSendingFee(paymentDetailForConfirmation)
-      toggleActivityIndicator(false)
+      try {
+        setIsProcessing(true)
+        toggleActivityIndicator(true)
+        let paymentDetailForConfirmation: PaymentDetail<WalletCurrency> = paymentDetail
 
-      if (res && paymentDetailForConfirmation.sendPaymentMutation) {
-        navigation.navigate("sendBitcoinConfirmation", {
-          paymentDetail: paymentDetailForConfirmation,
-          flashUserAddress,
-          feeRateSatPerVbyte: selectedFee,
-        })
+        if (paymentDetail.paymentType === "lnurl") {
+          const lnurlParams = paymentDetail?.lnurlParams
+          try {
+            setIsLoadingLnurl(true)
+
+            const btcAmount = paymentDetail.convertMoneyAmount(
+              paymentDetail.unitOfAccountAmount,
+              "BTC",
+            )
+
+            const requestInvoiceParams: {
+              lnUrlOrAddress: string
+              tokens: Satoshis
+              comment?: string
+            } = {
+              lnUrlOrAddress: paymentDetail.destination,
+              tokens: utils.toSats(btcAmount.amount),
+            }
+
+            if (lnurlParams?.commentAllowed) {
+              requestInvoiceParams.comment = paymentDetail.memo
+            }
+
+            // Add timeout to LNURL request (30 seconds)
+            const result = await withTimeout(requestInvoice(requestInvoiceParams), 30000)
+
+            setIsLoadingLnurl(false)
+            const invoice = result.invoice
+            const decodedInvoice = decodeInvoiceString(
+              invoice,
+              network as NetworkLibGaloy,
+            )
+
+            const invoiceAmountSats = Math.round(
+              Number(decodedInvoice.millisatoshis) / 1000,
+            )
+            const requestedAmountSats = btcAmount.amount
+            const amountDifference = Math.abs(invoiceAmountSats - requestedAmountSats)
+
+            // For flashcard reloads, allow small rounding differences (up to 15 sats)
+            // This accommodates flashcard servers that may round amounts
+            if (isFromFlashcard) {
+              if (amountDifference > 15) {
+                setAsyncErrorMessage(
+                  `Flashcard server returned ${invoiceAmountSats} sats but you requested ${requestedAmountSats} sats. Please try a different amount.`,
+                )
+                return
+              }
+              // Use the amount from the invoice for flashcard reloads to handle rounding
+              const adjustedBtcAmount = toBtcMoneyAmount(invoiceAmountSats)
+              paymentDetailForConfirmation = paymentDetail.setInvoice({
+                paymentRequest: invoice,
+                paymentRequestAmount: adjustedBtcAmount,
+              })
+            } else {
+              // For regular LNURL payments, maintain strict validation
+              if (invoiceAmountSats !== requestedAmountSats) {
+                setAsyncErrorMessage(LL.SendBitcoinScreen.lnurlInvoiceIncorrectAmount())
+                return
+              }
+              paymentDetailForConfirmation = paymentDetail.setInvoice({
+                paymentRequest: invoice,
+                paymentRequestAmount: btcAmount,
+              })
+            }
+          } catch (error) {
+            setIsLoadingLnurl(false)
+            if (error instanceof Error) {
+              crashlytics().recordError(error)
+              if (error.message.includes("timed out")) {
+                setAsyncErrorMessage(
+                  "Request timed out. Please check your connection and try again.",
+                )
+              } else {
+                setAsyncErrorMessage(LL.SendBitcoinScreen.failedToFetchLnurlInvoice())
+              }
+            } else {
+              setAsyncErrorMessage("An unexpected error occurred. Please try again.")
+            }
+            return
+          }
+        }
+
+        const res = await withTimeout(
+          fetchSendingFee(paymentDetailForConfirmation),
+          15000,
+        )
+
+        if (res && paymentDetailForConfirmation.sendPaymentMutation) {
+          navigation.navigate("sendBitcoinConfirmation", {
+            paymentDetail: paymentDetailForConfirmation,
+            flashUserAddress,
+            feeRateSatPerVbyte: selectedFee,
+            invoiceAmount,
+          })
+        }
+      } catch (error) {
+        handleCriticalError(error, "goToNextScreen")
+      } finally {
+        setIsProcessing(false)
+        toggleActivityIndicator(false)
+        setIsLoadingLnurl(false)
       }
     })
 
@@ -277,11 +377,14 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
     btcWalletAmount: btcBalanceMoneyAmount,
     intraledgerLimits: intraledgerLimitsData?.me?.defaultAccount?.limits?.internalSend,
     withdrawalLimits: withdrawalLimitsData?.me?.defaultAccount?.limits?.withdrawal,
+    isFromFlashcard,
   })
 
   const isDisabled =
     !amountStatus.validAmount ||
-    !!asyncErrorMessage ||
+    Boolean(asyncErrorMessage) ||
+    isProcessing ||
+    isLoadingLnurl ||
     (paymentDetail?.sendingWalletDescriptor.currency === "BTC" &&
       paymentDetail.paymentType === "onchain" &&
       !selectedFee)
@@ -310,6 +413,8 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           paymentDetail={paymentDetail}
           setPaymentDetail={setPaymentDetail}
           setAsyncErrorMessage={setAsyncErrorMessage}
+          isFromFlashcard={isFromFlashcard}
+          invoiceAmount={invoiceAmount}
         />
         {paymentDetail.sendingWalletDescriptor.currency === "BTC" &&
           paymentDetail.paymentType === "onchain" && (

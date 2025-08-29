@@ -10,6 +10,7 @@ import { Screen } from "@app/components/screen"
 // hooks
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import useLogout from "@app/hooks/use-logout"
 import { useAppConfig } from "@app/hooks"
 
 // gql
@@ -23,8 +24,6 @@ import {
 import { useAppDispatch } from "@app/store/redux"
 import { updateUserData } from "@app/store/redux/slices/userSlice"
 
-// utils
-import { setPreferredRelay } from "@app/utils/nostr"
 import { validateLightningAddress } from "@app/utils/validations"
 import { SetAddressError } from "@app/types/errors"
 
@@ -39,11 +38,13 @@ type Props = StackScreenProps<RootStackParamList, "UsernameSet">
 
 export const UsernameSet: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
-  const { updateNostrProfile } = useNostrProfile()
-  const { lnAddressHostname, relayUrl, name } = useAppConfig().appConfig.galoyInstance
+  const { lnAddressHostname, name } = useAppConfig().appConfig.galoyInstance
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const styles = useStyles()
+
+  const { updateNostrProfile } = useNostrProfile()
+  const { logout } = useLogout()
 
   const [error, setError] = useState<SetAddressError | undefined>()
   const [lnAddress, setLnAddress] = useState("")
@@ -97,7 +98,6 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
           nip05: `${lnAddress}@${lnAddressHostname}`,
         },
       })
-      setPreferredRelay(relayUrl)
       if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
         if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
           setError(SetAddressError.ADDRESS_UNAVAILABLE)
@@ -115,6 +115,14 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
     }
   }
 
+  const onCancel = () => {
+    logout()
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "getStarted" }],
+    })
+  }
+
   let errorMessage = ""
   switch (error) {
     case SetAddressError.TOO_SHORT:
@@ -125,6 +133,9 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
       break
     case SetAddressError.INVALID_CHARACTER:
       errorMessage = LL.SetAddressModal.Errors.invalidCharacter()
+      break
+    case SetAddressError.STARTS_WITH_NUMBER:
+      errorMessage = LL.SetAddressModal.Errors.startsWithNumber()
       break
     case SetAddressError.ADDRESS_UNAVAILABLE:
       errorMessage = LL.SetAddressModal.Errors.addressUnavailable()
@@ -163,6 +174,12 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
           label={LL.SetAddressModal.save()}
           disabled={lnAddress.length < 3}
           onPress={onSetLightningAddress}
+          btnStyle={{ marginBottom: 10 }}
+        />
+        <PrimaryBtn
+          type="outline"
+          label={LL.common.cancel()}
+          onPress={onCancel}
           btnStyle={{ marginBottom: 20 }}
         />
       </View>

@@ -16,7 +16,7 @@ import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 
 // components
 import { UpgradeAccountModal } from "../upgrade-account-modal"
-import { QuickStartAdvancedMode } from "../advanced-mode-modal"
+import { AdvancedModeModal } from "../advanced-mode-modal"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -93,7 +93,7 @@ const QuickStart = () => {
       onPress: () => {
         onHide("nonCustodialWallet")
         Linking.openURL(
-          "https://flash-docs-msp2z.ondigitalocean.app/en/guides/non-custodial-wallets",
+          "https://documentation.getflash.io/en/guides/non-custodial-wallets",
         )
       },
     },
@@ -149,7 +149,7 @@ const QuickStart = () => {
     carouselData = carouselData.filter((el) => el.type !== "email")
   }
   if (
-    persistentState.btcWalletEnabled ||
+    persistentState.isAdvanceMode ||
     persistentState?.closedQuickStartTypes?.includes("btcWallet") ||
     hasRecoveryPhrase
   ) {
@@ -211,10 +211,10 @@ const QuickStart = () => {
           isVisible={upgradeAccountModalVisible}
           closeModal={() => setUpgradeAccountModalVisible(false)}
         />
-        <QuickStartAdvancedMode
+        <AdvancedModeModal
           hasRecoveryPhrase={hasRecoveryPhrase}
-          advanceModalVisible={advanceModalVisible}
-          setAdvanceModalVisible={setAdvanceModalVisible}
+          isVisible={advanceModalVisible}
+          setIsVisible={setAdvanceModalVisible}
         />
       </View>
     )
@@ -229,6 +229,7 @@ const useStyles = makeStyles(({ colors }) => ({
     alignItems: "center",
     borderWidth: 1,
     borderRadius: 20,
+    borderColor: colors.black,
     padding: 10,
   },
   texts: {

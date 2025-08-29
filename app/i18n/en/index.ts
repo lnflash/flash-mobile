@@ -693,6 +693,7 @@ const en: BaseTranslation = {
       "PIN is used as the backup authentication method for biometric authentication.",
     pinTitle: "PIN Code",
     setPin: "Set PIN",
+    backupDescription: "To set a PIN code, please back up your account by adding a phone number."
   },
   SendBitcoinConfirmationScreen: {
     amountLabel: "Amount:",
@@ -757,6 +758,7 @@ const en: BaseTranslation = {
     amount: "Amount",
     MinOnChainLimit: "Minimum amount for this transaction is US$2.00",
     MinOnChainSatLimit: "Minimum amount for this transaction is 5,500 sats",
+    MinFlashcardLimit: "Minimum amount when reloading from flashcard is 100 sats",
     amountExceed: "Amount exceeds your balance of {balance: string}",
     amountExceedsLimit: "Amount exceeds your remaining daily limit of {limit: string}",
     upgradeAccountToIncreaseLimit: "Upgrade your account to increase your limit",
@@ -831,7 +833,7 @@ const en: BaseTranslation = {
     showNostrSecret: "Chat Settings",
     beginnerMode: "Disable Bitcoin Account",
     advanceMode: "Enable Bitcoin Account (Advanced Mode)",
-    keysManagement: "Keys management",
+    keysManagement: "Key management",
 		showBtcAccount: "Show Bitcoin account",
 		hideBtcAccount: "Hide Bitcoin account"
   },
@@ -1105,6 +1107,7 @@ const en: BaseTranslation = {
       tooShort: "Username must be at least 3 characters long",
       tooLong: "Address must be at most 50 characters long",
       invalidCharacter: "Address can only contain letters, numbers, and underscores",
+      startsWithNumber: "Your username must begin with an uppercase or lowercase letter",
       addressUnavailable: "Sorry, this address is already taken",
       unknownError: "An unknown error occurred, please try again later",
     },
@@ -1403,7 +1406,59 @@ const en: BaseTranslation = {
     txId: "Transaction ID"
 	},
   Nostr: {
-    editProfile: "Edit Profile"
+    editProfile: "Edit Profile",
+    importNsecTitle: "Import Your Nostr Secret Key",
+    importNsecDefaultDescription:
+      "You are logged into another device. Please import your nsec from the other device to continue using the chat feature.",
+    createProfileTitle: "Create Profile",
+    createProfileWarning: "If you proceed, any existing profile data will be overwritten.",
+    createProfilePubkeyMessage: "We couldn't find a profile event attached to this pubkey.",
+    createProfilePrompt: "Do you want to continue to create?",
+    createProfileButton: "Create Profile",
+    profileNotFound: "We’re looking, but we haven’t been able to find your profile.",
+    promptToCreateProfile: "Would you like to create one now?",
+      learnAboutNostr: "Learn about Nostr",
+    learnAboutNostrSubtext: "Explore this guide to get the most out of nostr chat",
+    showPublicKey: "Show public key",
+    showPrivateKey: "Show private key",
+    profileConnected: "Profile Connected",
+    reconnectProfile: "Reconnect Profile",
+    tapToRefreshConnection: "Tap to refresh connection",
+    importExistingProfile: "Import existing profile",
+    deleteProfile: "Delete profile",
+    noProfileIdExists: "No Profile ID exists",
+    profileReconnected: "Your profile has been reconnected successfully",
+    deleteWarningTitle: "Warning",
+    deleteWarningMessage:
+      "Deleting your profile keys will remove your account from this device. Without a backup, you won't be able to access this profile again. Are you sure?",
+    importNsecDescription: "If you wish to use your own nsec, paste it below.",
+    profileImportedSuccessfully: "Profile imported successfully",
+      noProfileFound: "No Nostr Profile Found",
+    noProfileDescription: "You haven’t created a Nostr profile yet.\nTap below to create one.",
+    creatingProfile: "Creating Profile...",
+    createNewProfile: "Create New Profile",
+    findingYou: "Finding You..",
+    advancedSettings: "Advanced Nostr Settings",
+    KeyModal: {
+      yourPublicProfileId: "Your Public Profile ID",
+      yourPrivateProfileKey: "Your Private Profile Key",
+      keyCopiedToClipboard: "Key copied to clipboard",
+    },
+    Contacts: {
+      stillLoading: "Having trouble finding your contact list, have you followed anyone yet?",
+      noCantacts: "No Contacts Available",
+      profile: "Profile",
+      nostrUser: "Nostr User",
+      message: "Message",
+      sendPayment: "Send Payment",
+      contactInfo: "Contact Info",
+      contactManagement: "Contact Management",
+      unfollowContact: "Unfollow Contact"
+    },
+    common: {
+      copy: "Copy",
+      copied: "Copied",
+    }
   }
 }
 

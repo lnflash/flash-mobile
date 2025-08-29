@@ -1,4 +1,5 @@
 import { useAppConfig } from "@app/hooks"
+import { getContactsFromEvent } from "@app/screens/nip17-chat/utils"
 import { bytesToHex } from "@noble/curves/abstract/utils"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
@@ -20,7 +21,7 @@ import { Alert } from "react-native"
 
 import * as Keychain from "react-native-keychain"
 
-let publicRelays = [
+export const publicRelays = [
   "wss://relay.damus.io",
   "wss://relay.primal.net",
   "wss://relay.snort.social",
@@ -213,6 +214,31 @@ export const fetchPreferredRelays = async (pubKeys: string[], pool: SimplePool) 
   return relayMap
 }
 
+export const sendNIP4Message = async (message: string, recipient: string) => {
+  let privateKey = await getSecretKey()
+  let NIP4Messages = {}
+}
+
+export const fetchContactList = async (
+  userPubkey: string,
+  pool: SimplePool,
+  onEvent: (event: Event) => void,
+) => {
+  let filter = {
+    kinds: [3],
+    authors: [userPubkey],
+  }
+  pool.subscribeMany(["wss://relay.damus.io", "wss://relay.prmal.net"], [filter], {
+    onevent: onEvent,
+    onclose: () => {
+      console.log("Closing Subscription for Contacts")
+    },
+    oneose: () => {
+      console.log("EOSE RECEIVED, DID SUBSCRIPTION CLOSE?")
+    },
+  })
+}
+
 export const setPreferredRelay = async (secretKey?: Uint8Array) => {
   let pool = new SimplePool()
   let secret: Uint8Array | null = null
@@ -243,6 +269,33 @@ export const setPreferredRelay = async (secretKey?: Uint8Array) => {
   setTimeout(() => {
     pool.close(publicRelays)
   }, 5000)
+}
+
+export const addToContactList = async (
+  userPrivateKey: Uint8Array,
+  pubKeyToAdd: string,
+  pool: SimplePool,
+  contactsEvent?: Event,
+) => {
+  const userPubkey = getPublicKey(userPrivateKey)
+  let existingContacts: NostrProfile[]
+  if (contactsEvent) existingContacts = getContactsFromEvent(contactsEvent)
+  else existingContacts = []
+  let tags = contactsEvent?.tags || []
+  if (existingContacts.map((p: NostrProfile) => p.pubkey).includes(pubKeyToAdd)) return
+  tags.push(["p", pubKeyToAdd])
+  let newEvent: UnsignedEvent = {
+    kind: 3,
+    pubkey: userPubkey,
+    content: contactsEvent?.content || "",
+    created_at: Math.floor(Date.now() / 1000),
+    tags: tags,
+  }
+  const finalNewEvent = finalizeEvent(newEvent, userPrivateKey)
+  const messages = await Promise.any(
+    pool.publish(["wss://relay.damus.io", "wss://relay.primal.net"], finalNewEvent),
+  )
+  console.log("Relay replies", messages)
 }
 
 export async function sendNip17Message(

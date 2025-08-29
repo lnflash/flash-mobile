@@ -25,21 +25,13 @@ export const getPaymentRequestFullUri = ({
     if (wallet === "BTC") {
       return input
     } else {
+      return input
       const uriPrefix = prefix ? prefixByType[type] : ""
       const uri = `${uriPrefix}${input}`
 
       const params = new URLSearchParams()
 
       if (amount && convertMoneyAmount) {
-        console.log(
-          "Receiver<<<<<<<<<<<<<<<<<<<< BTC",
-          convertMoneyAmount(toUsdMoneyAmount(amount), "BTC").amount,
-        )
-        const convertedAmount = convertMoneyAmount(toUsdMoneyAmount(amount), "BTC").amount
-        console.log(
-          "Receiver>>>>>>>>>>>>>>>>>>>> USD",
-          convertMoneyAmount(toBtcMoneyAmount(convertedAmount), "USD"),
-        )
         params.append(
           "amount",
           `${satsToBTC(convertMoneyAmount(toUsdMoneyAmount(amount), "BTC").amount)}`,
