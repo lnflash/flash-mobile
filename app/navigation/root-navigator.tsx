@@ -116,6 +116,7 @@ import {
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
+import MakeNostrPost from "@app/screens/social/post"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -521,6 +522,11 @@ export const RootStack = () => {
         name="TransactionHistoryTabs"
         component={TransactionHistoryTabs}
         options={{ title: LL.TransactionScreen.transactionHistoryTitle() }}
+      />
+      <RootNavigator.Screen
+        name="makeNostrPost"
+        component={MakeNostrPost}
+        options={{ title: LL.Social.postTitle() }}
       />
       <RootNavigator.Screen
         name="USDTransactionHistory"

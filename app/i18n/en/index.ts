@@ -1299,6 +1299,17 @@ const en: BaseTranslation = {
     postDesc: "Introduce your self to Nostr!"
 
   },
+  Social: {
+    post: "Post to Nostr",
+    flashAppCredit: "Posted from Flash App, get it @ http://getflashapp.me",
+    writeYourNote: "Write your note, make it special :)",
+    postButton: "Post",
+    notePosted: "Success!\n Your note has been posted",
+    errorPostFailed: "Error!\n Error in posting note",
+    errorEmptyNote: "Error: \n Empty note",
+    posting: "posting..."
+
+  },
   errors: {
     generic: "There was an error.\nPlease try again later.",
     invalidEmail: "Invalid email",
