@@ -4240,6 +4240,16 @@ type RootTranslation = {
 		 */
 		warning: string
 	}
+	NostrQuickStart: {
+		/**
+		 * M​a​k​e​ ​y​o​u​r​ ​f​i​r​s​t​ ​p​o​s​t​ ​o​n​ ​n​o​s​t​r​!
+		 */
+		postHeading: string
+		/**
+		 * I​n​t​r​o​d​u​c​e​ ​y​o​u​r​ ​s​e​l​f​ ​t​o​ ​N​o​s​t​r​!
+		 */
+		postDesc: string
+	}
 	errors: {
 		/**
 		 * T​h​e​r​e​ ​w​a​s​ ​a​n​ ​e​r​r​o​r​.​
@@ -8933,6 +8943,16 @@ export type TranslationFunctions = {
 		 * Warning
 		 */
 		warning: () => LocalizedString
+	}
+	NostrQuickStart: {
+		/**
+		 * Make your first post on nostr!
+		 */
+		postHeading: () => LocalizedString
+		/**
+		 * Introduce your self to Nostr!
+		 */
+		postDesc: () => LocalizedString
 	}
 	errors: {
 		/**
