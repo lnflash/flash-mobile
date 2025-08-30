@@ -80,7 +80,7 @@
     "@react-native-firebase/app": "^22.2.0",
     "@react-native-firebase/app-check": "^22.2.0",
     "@react-native-firebase/crashlytics": "^22.2.0",
-    "@react-native-firebase/messaging": "^22.2.0",
+    "@react-native-firebase/messaging": "^23.2.0",
     "@react-native-firebase/perf": "^22.2.0",
     "@react-native-firebase/remote-config": "^22.2.0",
     "@react-navigation/bottom-tabs": "^6.5.11",
