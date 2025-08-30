@@ -106,6 +106,7 @@ export type RootStackParamList = {
   }
   phoneFlow?: NavigatorScreenParams<PhoneValidationStackParamList>
   phoneRegistrationInitiate: undefined
+  makeNostrPost: undefined
   phoneRegistrationValidate: {
     phone: string
     channel: PhoneCodeChannelType

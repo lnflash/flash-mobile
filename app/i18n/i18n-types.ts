@@ -4250,6 +4250,43 @@ type RootTranslation = {
 		 */
 		postDesc: string
 	}
+	Social: {
+		/**
+		 * P​o​s​t​ ​t​o​ ​N​o​s​t​r
+		 */
+		post: string
+		/**
+		 * P​o​s​t​e​d​ ​f​r​o​m​ ​F​l​a​s​h​ ​A​p​p​,​ ​g​e​t​ ​i​t​ ​@​ ​h​t​t​p​:​/​/​g​e​t​f​l​a​s​h​a​p​p​.​m​e
+		 */
+		flashAppCredit: string
+		/**
+		 * W​r​i​t​e​ ​y​o​u​r​ ​n​o​t​e​,​ ​m​a​k​e​ ​i​t​ ​s​p​e​c​i​a​l​ ​:​)
+		 */
+		writeYourNote: string
+		/**
+		 * P​o​s​t
+		 */
+		postButton: string
+		/**
+		 * S​u​c​c​e​s​s​!​
+	​ ​Y​o​u​r​ ​n​o​t​e​ ​h​a​s​ ​b​e​e​n​ ​p​o​s​t​e​d
+		 */
+		notePosted: string
+		/**
+		 * E​r​r​o​r​!​
+	​ ​E​r​r​o​r​ ​i​n​ ​p​o​s​t​i​n​g​ ​n​o​t​e
+		 */
+		errorPostFailed: string
+		/**
+		 * E​r​r​o​r​:​ ​
+	​ ​E​m​p​t​y​ ​n​o​t​e
+		 */
+		errorEmptyNote: string
+		/**
+		 * p​o​s​t​i​n​g​.​.​.
+		 */
+		posting: string
+	}
 	errors: {
 		/**
 		 * T​h​e​r​e​ ​w​a​s​ ​a​n​ ​e​r​r​o​r​.​
@@ -8953,6 +8990,43 @@ export type TranslationFunctions = {
 		 * Introduce your self to Nostr!
 		 */
 		postDesc: () => LocalizedString
+	}
+	Social: {
+		/**
+		 * Post to Nostr
+		 */
+		post: () => LocalizedString
+		/**
+		 * Posted from Flash App, get it @ http://getflashapp.me
+		 */
+		flashAppCredit: () => LocalizedString
+		/**
+		 * Write your note, make it special :)
+		 */
+		writeYourNote: () => LocalizedString
+		/**
+		 * Post
+		 */
+		postButton: () => LocalizedString
+		/**
+		 * Success!
+	 Your note has been posted
+		 */
+		notePosted: () => LocalizedString
+		/**
+		 * Error!
+	 Error in posting note
+		 */
+		errorPostFailed: () => LocalizedString
+		/**
+		 * Error: 
+	 Empty note
+		 */
+		errorEmptyNote: () => LocalizedString
+		/**
+		 * posting...
+		 */
+		posting: () => LocalizedString
 	}
 	errors: {
 		/**
