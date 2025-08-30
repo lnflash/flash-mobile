@@ -41,7 +41,7 @@ const NostrQuickStart = () => {
       title: LL.NostrQuickStart.postHeading(),
       description: LL.NostrQuickStart.postDesc(),
       image: FeedIcon,
-      onPress: () => navigation.navigate("getStarted"),
+      onPress: () => navigation.navigate("makeNostrPost"),
     },
   ]
 

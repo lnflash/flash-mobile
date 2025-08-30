@@ -117,6 +117,7 @@ import {
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 import ContactDetailsScreen from "@app/screens/chat/contactDetailsScreen"
 import { SupportGroupChatScreen } from "@app/screens/chat/GroupChat/SupportGroupChat"
+import MakeNostrPost from "@app/screens/social/post"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -522,6 +523,11 @@ export const RootStack = () => {
         name="TransactionHistoryTabs"
         component={TransactionHistoryTabs}
         options={{ title: LL.TransactionScreen.transactionHistoryTitle() }}
+      />
+      <RootNavigator.Screen
+        name="makeNostrPost"
+        component={MakeNostrPost}
+        options={{ title: LL.Social.postTitle() }}
       />
       <RootNavigator.Screen
         name="USDTransactionHistory"
