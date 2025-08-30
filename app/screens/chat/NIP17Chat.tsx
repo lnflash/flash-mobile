@@ -1,7 +1,7 @@
-import { useTheme } from "@rneui/themed"
+import { useTheme, Image } from "@rneui/themed"
 import * as React from "react"
 import { useState } from "react"
-import { ActivityIndicator, Text, View, TouchableOpacity, Image } from "react-native"
+import { ActivityIndicator, Text, View, TouchableOpacity } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
@@ -27,6 +27,7 @@ import { useNostrGroupChat } from "./GroupChat/GroupChatProvider"
 import { SearchListItem } from "./searchListItem"
 import Contacts from "./contacts"
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
+import NostrQuickStart from "@app/components/nostr-quickstart"
 
 const Tab = createMaterialTopTabNavigator()
 
@@ -49,6 +50,7 @@ export const NIP17Chat: React.FC = () => {
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
   const [showImportModal, setShowImportModal] = useState<boolean>(false)
   const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
+  const [showQuickStart, setShowQuickStart] = useState(false)
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
@@ -184,20 +186,30 @@ export const NIP17Chat: React.FC = () => {
                     keyExtractor={(item) => item.id}
                   />
                 ) : (
-                  <View style={{ flex: 1 }}>
-                    <Text
+                  <View style={{ flex: 1, flexDirection: "column" }}>
+                    {/* Signed in as + toggle in a row */}
+                    <View
                       style={{
-                        fontSize: 16,
-                        margin: 10,
-                        marginLeft: 20,
-                        color: colors.primary3,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginHorizontal: 20,
+                        marginVertical: 10,
                       }}
                     >
-                      signed in as:{" "}
-                      <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-                        {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          color: colors.primary3,
+                        }}
+                        onPress={() => {}}
+                      >
+                        signed in as:{" "}
+                        <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                          {userData?.username ||
+                            nip19.npubEncode(getPublicKey(privateKey))}
+                        </Text>
                       </Text>
-                    </Text>
+                    </View>
                     <TouchableOpacity
                       onPress={() =>
                         RootNavigator.navigate("Nip29GroupChat", {
@@ -273,15 +285,13 @@ export const NIP17Chat: React.FC = () => {
                       data={groupIds}
                       ListEmptyComponent={ListEmptyContent}
                       scrollEnabled={true}
-                      renderItem={({ item }) => {
-                        return (
-                          <HistoryListItem
-                            item={item}
-                            userPrivateKey={privateKey!}
-                            groups={groups}
-                          />
-                        )
-                      }}
+                      renderItem={({ item }) => (
+                        <HistoryListItem
+                          item={item}
+                          userPrivateKey={privateKey!}
+                          groups={groups}
+                        />
+                      )}
                       keyExtractor={(item) => item}
                     />
                   </View>
