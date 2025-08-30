@@ -1,5 +1,6 @@
 // prettier-ignore
 
+import NostrQuickStart from "@app/components/nostr-quickstart"
 import { BaseTranslation } from "../i18n-types"
 
 const en: BaseTranslation = {
@@ -1292,6 +1293,11 @@ const en: BaseTranslation = {
     problemMaybeReauth:
       "There was a problem with your request. Please retry in one minute. If the problem persist, we recommend that you log out and log back in. You can log out by going into Settings > Account > Log out",
     warning: "Warning",
+  },
+  NostrQuickStart: {
+    postHeading: "Make your first post on nostr!",
+    postDesc: "Introduce your self to Nostr!"
+
   },
   errors: {
     generic: "There was an error.\nPlease try again later.",
