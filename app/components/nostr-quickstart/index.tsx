@@ -7,8 +7,6 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // assets (replace with your actual Nostr illustrations/icons)
 import FeedIcon from "@app/assets/illustrations/nostr-feed.svg"
-import DmIcon from "@app/assets/illustrations/nostr-dm.svg"
-import ProfileIcon from "@app/assets/illustrations/nostr-profile.svg"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -43,7 +41,7 @@ const NostrQuickStart = () => {
       title: LL.NostrQuickStart.postHeading(),
       description: LL.NostrQuickStart.postDesc(),
       image: FeedIcon,
-      onPress: () => navigation.navigate("NostrFeed"),
+      onPress: () => navigation.navigate("getStarted"),
     },
   ]
 
