@@ -461,7 +461,7 @@
         "unlockQuestion": "To unlock, answer the question:",
         "youEarned": "You Earned",
         "registerTitle": "Need to upgrade your account",
-        "registerContent": "Register with your phone number to receive bitcoin"
+        "registerContent": "Register with your phone number to receive sats"
     },
     "GetStartedScreen": {
         "logInCreateAccount": "Log in / create account",
@@ -1208,6 +1208,10 @@
         "prevMonths": "Previous months",
         "problemMaybeReauth": "There was a problem with your request. Please retry in one minute. If the problem persist, we recommend that you log out and log back in. You can log out by going into Settings > Account > Log out",
         "warning": "Warning"
+    },
+    "NostrQuickStart": {
+        "postHeading": "Make your first post on nostr!",
+        "postDesc": "Introduce your self to Nostr!"
     },
     "errors": {
         "generic": "There was an error.\nPlease try again later.",

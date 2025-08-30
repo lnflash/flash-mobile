@@ -2708,7 +2708,7 @@ type RootTranslation = {
 		 */
 		advanceMode: string
 		/**
-		 * K​e​y​s​ ​m​a​n​a​g​e​m​e​n​t
+		 * K​e​y​ ​m​a​n​a​g​e​m​e​n​t
 		 */
 		keysManagement: string
 		/**
@@ -4229,6 +4229,16 @@ type RootTranslation = {
 		 * W​a​r​n​i​n​g
 		 */
 		warning: string
+	}
+	NostrQuickStart: {
+		/**
+		 * M​a​k​e​ ​y​o​u​r​ ​f​i​r​s​t​ ​p​o​s​t​ ​o​n​ ​n​o​s​t​r​!
+		 */
+		postHeading: string
+		/**
+		 * I​n​t​r​o​d​u​c​e​ ​y​o​u​r​ ​s​e​l​f​ ​t​o​ ​N​o​s​t​r​!
+		 */
+		postDesc: string
 	}
 	errors: {
 		/**
@@ -7241,23 +7251,23 @@ export type TranslationFunctions = {
 		/**
 		 * The amount you entered is less than the minimum amount required to send an on-chain transaction {amount}. Please consider sending this amount via Lightning!
 		 */
-		onchainMinAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		onchainMinAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is less than minimum required amount {amount}
 		 */
-		minAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		minAmountConvertError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is greater than maximum amount {amount}
 		 */
-		maxAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**
@@ -7401,7 +7411,7 @@ export type TranslationFunctions = {
 		 */
 		advanceMode: () => LocalizedString
 		/**
-		 * Keys management
+		 * Key management
 		 */
 		keysManagement: () => LocalizedString
 		/**
@@ -8899,6 +8909,16 @@ export type TranslationFunctions = {
 		 * Warning
 		 */
 		warning: () => LocalizedString
+	}
+	NostrQuickStart: {
+		/**
+		 * Make your first post on nostr!
+		 */
+		postHeading: () => LocalizedString
+		/**
+		 * Introduce your self to Nostr!
+		 */
+		postDesc: () => LocalizedString
 	}
 	errors: {
 		/**
