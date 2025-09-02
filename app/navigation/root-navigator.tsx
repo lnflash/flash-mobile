@@ -63,7 +63,7 @@ import {
 import { testProps } from "@app/utils/testProps"
 import { makeStyles, useTheme } from "@rneui/themed"
 import { ScanningQRCodeScreen } from "../screens/send-bitcoin-screen"
-import { SettingsScreen } from "../screens/settings-screen"
+import { InviteFriend, SettingsScreen } from "../screens/settings-screen"
 import { LanguageScreen } from "../screens/settings-screen/language-screen"
 import { SecurityScreen } from "../screens/settings-screen/security-screen"
 import { TransactionDetailScreen } from "../screens/transaction-detail-screen"
@@ -574,6 +574,11 @@ export const RootStack = () => {
           headerStyle: { backgroundColor: "#000" },
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         }}
+      />
+      <RootNavigator.Screen
+        name="InviteFriend"
+        component={InviteFriend}
+        options={{ headerShown: true, title: "Invitation" }}
       />
     </RootNavigator.Navigator>
   )
