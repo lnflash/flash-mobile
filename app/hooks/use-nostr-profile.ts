@@ -11,6 +11,7 @@ import { useHomeAuthedQuery, useUserUpdateNpubMutation } from "@app/graphql/gene
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "./use-app-config"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { pool } from "@app/utils/nostr/pool"
 
 export interface ChatInfo {
   pubkeys: string[]
@@ -83,12 +84,10 @@ const useNostrProfile = () => {
   }
 
   const fetchNostrUser = async (npub: `npub1${string}`) => {
-    const pool = new SimplePool()
     const nostrProfile = await pool.get(relays, {
       kinds: [0],
       authors: [nip19.decode(npub).data],
     })
-    pool.close(relays)
     if (!nostrProfile?.content) {
       return { pubkey: npub }
     }
@@ -114,7 +113,6 @@ const useNostrProfile = () => {
       lud16?: string
     }
   }) => {
-    const pool = new SimplePool()
     let publicRelays = [
       ...relays,
       "wss://relay.flashapp.me",
@@ -141,7 +139,6 @@ const useNostrProfile = () => {
     const signedKind0Event = finalizeEvent(kind0Event, secret)
     let messages = await Promise.any(pool.publish(publicRelays, signedKind0Event))
     console.log("PUblished, messages from relays are", messages)
-    pool.close(publicRelays)
   }
 
   return {
