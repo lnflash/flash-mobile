@@ -31,6 +31,7 @@ import { GenerateReportsSetting } from "./settings/generate-reports"
 import { SettingsGroup } from "./group"
 import { EmailSetting } from "./account/settings/email"
 import { ChatSetting } from "./chat-setting"
+import { InviteFriendSetting } from "./settings/invite-friend"
 // import { TotpSetting } from "./totp"
 
 gql`
@@ -81,7 +82,7 @@ const items = {
     ExportCsvSetting,
     //  ApiAccessSetting
   ],
-  community: [JoinCommunitySetting],
+  community: [JoinCommunitySetting, InviteFriendSetting],
 }
 
 export const SettingsScreen: React.FC = () => {
