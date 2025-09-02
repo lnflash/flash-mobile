@@ -14,8 +14,9 @@ import { useNavigation } from "@react-navigation/native"
 import { PrimaryBtn } from "@app/components/buttons"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
-import { nip19, getPublicKey, finalizeEvent, Relay } from "nostr-tools"
+import { nip19, getPublicKey, finalizeEvent, Relay, SimplePool } from "nostr-tools"
 import { getSecretKey } from "@app/utils/nostr"
+import { pool } from "@app/utils/nostr/pool"
 
 // Replace this with your actual relay URLs
 const RELAYS = ["wss://relay.damus.io", "wss://relay.nostr.info"]
@@ -62,11 +63,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
       }
 
       const signedEvent = await finalizeEvent(event, privateKey)
-
-      const relayConnections = RELAYS.map((url) => new Relay(url))
-      await Promise.all(relayConnections.map((r) => r.connect()))
-
-      await Promise.all(relayConnections.map((relay) => relay.publish(signedEvent)))
+      await Promise.any(pool.publish(RELAYS, signedEvent))
 
       Alert.alert(LL.Social.notePosted())
       navigation.goBack()
