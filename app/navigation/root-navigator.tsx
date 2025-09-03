@@ -63,7 +63,7 @@ import {
 import { testProps } from "@app/utils/testProps"
 import { makeStyles, useTheme } from "@rneui/themed"
 import { ScanningQRCodeScreen } from "../screens/send-bitcoin-screen"
-import { InviteFriend, SettingsScreen } from "../screens/settings-screen"
+import { SettingsScreen } from "../screens/settings-screen"
 import { LanguageScreen } from "../screens/settings-screen/language-screen"
 import { SecurityScreen } from "../screens/settings-screen/security-screen"
 import { TransactionDetailScreen } from "../screens/transaction-detail-screen"
@@ -87,6 +87,8 @@ import {
   TransactionHistoryTabs,
   USDTransactionHistory,
   SignInViaQRCode,
+  InviteFriend,
+  InviteFriendSuccess,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -579,6 +581,11 @@ export const RootStack = () => {
         name="InviteFriend"
         component={InviteFriend}
         options={{ headerShown: true, title: "Invitation" }}
+      />
+      <RootNavigator.Screen
+        name="InviteFriendSuccess"
+        component={InviteFriendSuccess}
+        options={{ headerShown: false }}
       />
     </RootNavigator.Navigator>
   )

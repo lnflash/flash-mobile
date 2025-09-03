@@ -8,8 +8,7 @@ import { SettingsRow } from "../row"
 
 export const InviteFriendSetting: React.FC = () => {
   const { LL } = useI18nContext()
-  const navigation =
-    useNavigation<StackNavigationProp<RootStackParamList, "InviteFriend">>()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList, "settings">>()
 
   const onNavigate = () => {
     navigation.navigate("InviteFriend")

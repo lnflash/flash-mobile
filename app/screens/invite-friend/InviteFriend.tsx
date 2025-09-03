@@ -1,7 +1,9 @@
 import React, { useState } from "react"
 import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
+import { StackScreenProps } from "@react-navigation/stack"
 import { CountryCode } from "react-native-country-picker-modal"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import {
   parsePhoneNumber,
   CountryCode as PhoneNumberCountryCode,
@@ -13,7 +15,9 @@ import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 import { EmailInput, PhoneNumberInput } from "@app/components/input"
 
-export const InviteFriend = () => {
+type Props = StackScreenProps<RootStackParamList, "InviteFriend">
+
+const InviteFriend: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
 
   const [countryCode, setCountryCode] = useState<CountryCode | undefined>()
@@ -21,6 +25,8 @@ export const InviteFriend = () => {
   const [email, setEmail] = useState<string>()
 
   const onSubmit = () => {
+    navigation.navigate("InviteFriendSuccess")
+    return
     console.log(">>>>>>>>????", countryCode, phoneNumber)
     if (countryCode && phoneNumber) {
       const parsedPhoneNumber = parsePhoneNumber(
@@ -71,3 +77,5 @@ const useStyles = makeStyles(({ colors }) => ({
     flex: 1,
   },
 }))
+
+export default InviteFriend
