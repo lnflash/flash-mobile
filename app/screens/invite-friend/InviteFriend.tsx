@@ -49,7 +49,10 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
     <Screen preset="scroll" style={styles.screenStyle}>
       <View style={styles.main}>
         <Text type="h1" bold style={styles.title}>
-          Invite a friend to Flash via phone number or email address!
+          Invite a friend to Flash!
+        </Text>
+        <Text type="h2" style={{ marginBottom: 40 }}>
+          Enter a phone number or email address to invite a friend.
         </Text>
         <PhoneNumberInput
           title={"Enter phone number"}
@@ -58,6 +61,9 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
           setCountryCode={setCountryCode}
           setPhoneNumber={setPhoneNumber}
         />
+        <Text type="h2" style={{ marginVertical: 20, alignSelf: "center" }}>
+          OR
+        </Text>
         <EmailInput title={"Enter email address"} email={email} setEmail={setEmail} />
       </View>
       <PrimaryBtn label="Invite" onPress={onSubmit} />

@@ -14,7 +14,7 @@ import CountryPicker, {
 import { PhoneCodeChannelType, useSupportedCountriesQuery } from "@app/graphql/generated"
 
 const DEFAULT_COUNTRY_CODE = "JM"
-const PLACEHOLDER_PHONE_NUMBER = "123-456-7890"
+const PLACEHOLDER_PHONE_NUMBER = "876-555-7890"
 
 type Props = {
   title: string

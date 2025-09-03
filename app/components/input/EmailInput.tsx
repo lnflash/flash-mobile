@@ -18,7 +18,7 @@ const EmailInput: React.FC<Props> = ({ title, email, setEmail }) => {
       </Text>
       <View style={styles.inputContainer}>
         <Input
-          placeholder={"invitation@getflash.com"}
+          placeholder={"friend@email.com"}
           containerStyle={styles.inputComponentContainerStyle}
           inputContainerStyle={styles.inputContainerStyle}
           renderErrorMessage={false}
