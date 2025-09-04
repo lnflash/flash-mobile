@@ -772,7 +772,19 @@
         "advanceMode": "Enable Bitcoin Account (Advanced Mode)",
         "keysManagement": "Key management",
         "showBtcAccount": "Show Bitcoin account",
-        "hideBtcAccount": "Hide Bitcoin account"
+        "hideBtcAccount": "Hide Bitcoin account",
+        "inviteFriend": "Invite a friend"
+    },
+    "InviteFriend": {
+        "invitation": "Invitation",
+        "title": "Invite a friend to Flash!",
+        "subtitle": "Enter a phone number or email address to invite a friend.",
+        "phoneNumber": "Enter phone number",
+        "email": "Enter email address",
+        "invite": "Invite",
+        "or": "OR",
+        "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+        "done": "Done"
     },
     "NotificationSettingsScreen": {
         "title": "Notification Settings",
