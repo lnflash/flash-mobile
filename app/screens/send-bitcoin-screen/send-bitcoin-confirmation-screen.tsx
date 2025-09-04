@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react"
 import { View } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { StackScreenProps } from "@react-navigation/stack"
 import ReactNativeHapticFeedback from "react-native-haptic-feedback"
 
@@ -191,7 +191,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         }
       } catch (err) {
         if (err instanceof Error) {
-          crashlytics().recordError(err)
+          getCrashlytics().recordError(err)
           setPaymentError(err.message || err.toString())
         }
       }

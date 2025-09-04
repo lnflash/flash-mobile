@@ -1,5 +1,5 @@
 import React, { useState, createContext, useContext, useEffect } from "react"
-import remoteConfigInstance from "@react-native-firebase/remote-config"
+import { getRemoteConfig } from "@react-native-firebase/remote-config"
 import { useAppConfig } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
 
@@ -21,9 +21,9 @@ const defaultFeatureFlags = {
   deviceAccountEnabled: false,
 }
 
-remoteConfigInstance().setDefaults(defaultRemoteConfig)
+getRemoteConfig().setDefaults(defaultRemoteConfig)
 
-remoteConfigInstance().setConfigSettings({
+getRemoteConfig().setConfigSettings({
   minimumFetchIntervalMillis: 0,
 })
 
@@ -44,8 +44,8 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
   useEffect(() => {
     ;(async () => {
       try {
-        await remoteConfigInstance().fetchAndActivate()
-        const deviceAccountEnabledRestAuth = remoteConfigInstance()
+        await getRemoteConfig().fetchAndActivate()
+        const deviceAccountEnabledRestAuth = getRemoteConfig()
           .getValue(DeviceAccountEnabledKey)
           .asBoolean()
         setRemoteConfig({ deviceAccountEnabledRestAuth })

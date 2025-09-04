@@ -3,7 +3,7 @@ import Rate from "react-native-rate"
 import { View, Alert } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // hooks
@@ -73,10 +73,10 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   //   })
   //   Rate.rate(ratingOptions, (success, errorMessage) => {
   //     if (success) {
-  //       crashlytics().log("User went to the review page")
+  //       getCrashlytics().log("User went to the review page")
   //     }
   //     if (errorMessage) {
-  //       crashlytics().recordError(new Error(errorMessage))
+  //       getCrashlytics().recordError(new Error(errorMessage))
   //     }
   //   })
   // }

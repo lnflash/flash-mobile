@@ -7,7 +7,7 @@ import { useAppConfig } from "@app/hooks/use-app-config"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { toastShow } from "@app/utils/toast"
 import Clipboard from "@react-native-clipboard/clipboard"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { Button, Text, makeStyles } from "@rneui/themed"
 import * as React from "react"
 import { Alert, DevSettings, View } from "react-native"
@@ -147,8 +147,8 @@ export const DeveloperScreen: React.FC = () => {
               title="Crash test"
               containerStyle={styles.button}
               onPress={() => {
-                crashlytics().log("Testing crash")
-                crashlytics().crash()
+                getCrashlytics().log("Testing crash")
+                getCrashlytics().crash()
               }}
             />
             <Button
