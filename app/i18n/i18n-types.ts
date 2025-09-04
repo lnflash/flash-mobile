@@ -8949,11 +8949,11 @@ export type TranslationFunctions = {
 	}
 	NostrQuickStart: {
 		/**
-		 * Make your first post on nostr!
+		 * Make your first social post!
 		 */
 		postHeading: () => LocalizedString
 		/**
-		 * Introduce your self to Nostr!
+		 * Introduce yourself to the World!
 		 */
 		postDesc: () => LocalizedString
 	}
@@ -8963,7 +8963,7 @@ export type TranslationFunctions = {
 		 */
 		post: () => LocalizedString
 		/**
-		 * Posted from Flash App, get it @ http://getflashapp.me
+		 * Posted using Flash! Get it @ https://getflash.io/app
 		 */
 		flashAppCredit: () => LocalizedString
 		/**
