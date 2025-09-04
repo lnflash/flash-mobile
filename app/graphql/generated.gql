@@ -1544,6 +1544,7 @@ query walletCSVTransactions($walletIds: [WalletId!]!) {
 query walletOverviewScreen {
   me {
     id
+    username
     defaultAccount {
       id
       wallets {

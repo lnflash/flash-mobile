@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react"
-import { View } from "react-native"
+import { TouchableOpacity, View } from "react-native"
+import Clipboard from "@react-native-clipboard/clipboard"
 import { StackNavigationProp } from "@react-navigation/stack"
+import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
@@ -13,11 +15,12 @@ import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useNavigation } from "@react-navigation/native"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useBreez, useFlashcard } from "@app/hooks"
+import { useAppConfig, useBreez, useFlashcard } from "@app/hooks"
 
 // utils
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { toastShow } from "@app/utils/toast"
 
 type Props = {
   setIsUnverifiedSeedModalVisible: (value: boolean) => void
@@ -26,6 +29,9 @@ type Props = {
 const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const isAuthed = useIsAuthed()
+  const styles = useStyle()
+  const { colors } = useTheme().theme
+  const { appConfig } = useAppConfig()
   const { LL } = useI18nContext()
   const { btcWallet } = useBreez()
   const { lnurl, balanceInSats, readFlashcard } = useFlashcard()
@@ -51,6 +57,9 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   const [cashDisplayBalance, setCashDisplayBalance] = useState<string | undefined>(
     persistentState?.cashDisplayBalance || "0",
   )
+
+  const hostName = appConfig.galoyInstance.lnAddressHostname
+  const lnAddress = `${data?.me?.username}@${hostName}`
 
   useEffect(() => {
     if (
@@ -125,12 +134,31 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
     else readFlashcard()
   }
 
+  const onCopyLnAddress = () => {
+    Clipboard.setString(lnAddress)
+    toastShow({
+      type: "success",
+      position: "top",
+      message: (translations) =>
+        translations.GaloyAddressScreen.copiedLightningAddressToClipboard(),
+      currentTranslation: LL,
+    })
+  }
+
   const formattedCardBalance = moneyAmountToDisplayCurrencyString({
     moneyAmount: toBtcMoneyAmount(balanceInSats ?? NaN),
   })
 
   return (
-    <View style={{ marginTop: 10, marginHorizontal: 20 }}>
+    <View style={styles.wrapper}>
+      {data?.me?.username && (
+        <TouchableOpacity style={styles.lnAddressWrapper} onPress={onCopyLnAddress}>
+          <Text type="p2" style={{ marginRight: 10 }}>
+            {lnAddress}
+          </Text>
+          <Icon name={"copy-outline"} color={colors.text02} type="ionicon" />
+        </TouchableOpacity>
+      )}
       <Balance
         icon="cash"
         title={LL.HomeScreen.cash()}
@@ -166,3 +194,15 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
 }
 
 export default WalletOverview
+
+const useStyle = makeStyles(() => ({
+  wrapper: {
+    marginTop: 10,
+    marginHorizontal: 20,
+  },
+  lnAddressWrapper: {
+    flexDirection: "row",
+    marginLeft: 5,
+    marginBottom: 5,
+  },
+}))
