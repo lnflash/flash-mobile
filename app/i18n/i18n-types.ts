@@ -2719,6 +2719,49 @@ type RootTranslation = {
 		 * H​i​d​e​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t
 		 */
 		hideBtcAccount: string
+		/**
+		 * Invite a friend
+		 */
+		inviteFriend: string
+	}
+	InviteFriend: {
+		/**
+		 * Invitation
+		 */
+		invitation: string
+		/**
+		 * Invite a friend to Flash!
+		 */
+		title: string
+		/**
+		 * Enter a phone number or email address to invite a friend.
+		 */
+		subtitle: string
+		/**
+		 * Enter phone number
+		 */
+		phoneNumber: string
+		/**
+		 * Enter email address
+		 */
+		email: string
+		/**
+		 * Invite
+		 */
+		invite: string
+		/**
+		 * OR
+		 */
+		or: string
+		/**
+		 * Invitation has been sent to {value}
+		 * @param {string} value
+		 */
+		invitationSuccessTitle: RequiredParams<'value'>
+		/**
+		 * Done
+		 */
+		done: string
 	}
 	NotificationSettingsScreen: {
 		/**
@@ -7412,6 +7455,48 @@ export type TranslationFunctions = {
 		 * Hide Bitcoin account
 		 */
 		hideBtcAccount: () => LocalizedString
+		/**
+		 * Invite a friend
+		 */
+		inviteFriend: () => LocalizedString
+	}
+	InviteFriend: {
+		/**
+		 * Invitation
+		 */
+		invitation: () => LocalizedString
+		/**
+		 * Invite a friend to Flash!
+		 */
+		title: () => LocalizedString
+		/**
+		 * Enter a phone number or email address to invite a friend.
+		 */
+		subtitle: () => LocalizedString
+		/**
+		 * Enter phone number
+		 */
+		phoneNumber: () => LocalizedString
+		/**
+		 * Enter email address
+		 */
+		email: () => LocalizedString
+		/**
+		 * Invite
+		 */
+		invite: () => LocalizedString
+		/**
+		 * OR
+		 */
+		or: () => LocalizedString
+		/**
+		 * Invitation has been sent to {value}
+		 */
+		invitationSuccessTitle: (arg: { value: string }) => LocalizedString
+		/**
+		 * Done
+		 */
+		done: () => LocalizedString
 	}
 	NotificationSettingsScreen: {
 		/**

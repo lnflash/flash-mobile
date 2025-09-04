@@ -4,6 +4,7 @@ import { makeStyles, Text } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { CountryCode } from "react-native-country-picker-modal"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { useI18nContext } from "@app/i18n/i18n-react"
 import {
   parsePhoneNumber,
   CountryCode as PhoneNumberCountryCode,
@@ -18,6 +19,7 @@ import { EmailInput, PhoneNumberInput } from "@app/components/input"
 type Props = StackScreenProps<RootStackParamList, "InviteFriend">
 
 const InviteFriend: React.FC<Props> = ({ navigation }) => {
+  const { LL } = useI18nContext()
   const styles = useStyles()
 
   const [countryCode, setCountryCode] = useState<CountryCode | undefined>()
@@ -49,24 +51,28 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
     <Screen preset="scroll" style={styles.screenStyle}>
       <View style={styles.main}>
         <Text type="h1" bold style={styles.title}>
-          Invite a friend to Flash!
+          {LL.InviteFriend.title()}
         </Text>
         <Text type="h2" style={{ marginBottom: 40 }}>
-          Enter a phone number or email address to invite a friend.
+          {LL.InviteFriend.subtitle()}
         </Text>
         <PhoneNumberInput
-          title={"Enter phone number"}
+          title={LL.InviteFriend.phoneNumber()}
           countryCode={countryCode}
           phoneNumber={phoneNumber}
           setCountryCode={setCountryCode}
           setPhoneNumber={setPhoneNumber}
         />
         <Text type="h2" style={{ marginVertical: 20, alignSelf: "center" }}>
-          OR
+          {LL.InviteFriend.or()}
         </Text>
-        <EmailInput title={"Enter email address"} email={email} setEmail={setEmail} />
+        <EmailInput title={LL.InviteFriend.email()} email={email} setEmail={setEmail} />
       </View>
-      <PrimaryBtn label="Invite" onPress={onSubmit} btnStyle={{ marginBottom: 10 }} />
+      <PrimaryBtn
+        label={LL.InviteFriend.invite()}
+        onPress={onSubmit}
+        btnStyle={{ marginBottom: 10 }}
+      />
     </Screen>
   )
 }

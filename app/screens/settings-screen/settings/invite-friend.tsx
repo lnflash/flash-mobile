@@ -16,7 +16,7 @@ export const InviteFriendSetting: React.FC = () => {
 
   return (
     <SettingsRow
-      title={"Invite a friend"}
+      title={LL.SettingsScreen.inviteFriend()}
       leftIcon="person-add-outline"
       action={onNavigate}
     />

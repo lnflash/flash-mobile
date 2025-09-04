@@ -4,6 +4,7 @@ import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { StackScreenProps } from "@react-navigation/stack"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -17,15 +18,13 @@ const width = Dimensions.get("window").width
 type Props = StackScreenProps<RootStackParamList, "InviteFriendSuccess">
 
 const InviteFriendSuccess: React.FC<Props> = ({ navigation }) => {
-  const styles = useStyles()
-  const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
   const { bottom } = useSafeAreaInsets()
+  const { colors } = useTheme().theme
+  const styles = useStyles()
 
   const onPressDone = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "Primary" }],
-    })
+    navigation.popToTop()
   }
 
   return (
@@ -33,11 +32,11 @@ const InviteFriendSuccess: React.FC<Props> = ({ navigation }) => {
       <View style={styles.container}>
         <SendSuccess width={width / 1.2} height={width / 1.2} />
         <Text type="h02" color={colors.white} style={{ textAlign: "center" }}>
-          Invitation has been sent to friend@email.com
+          {LL.InviteFriend.invitationSuccessTitle({ value: "friend@email.com" })}
         </Text>
       </View>
       <PrimaryBtn
-        label="Done"
+        label={LL.InviteFriend.done()}
         onPress={onPressDone}
         btnStyle={{
           backgroundColor: "#fff",
