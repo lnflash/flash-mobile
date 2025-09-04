@@ -1295,13 +1295,13 @@ const en: BaseTranslation = {
     warning: "Warning",
   },
   NostrQuickStart: {
-    postHeading: "Make your first post on nostr!",
-    postDesc: "Introduce your self to Nostr!"
+    postHeading: "Make your first social post!",
+    postDesc: "Introduce yourself to the World!"
 
   },
   Social: {
-    post: "Post to Nostr",
-    flashAppCredit: "Posted from Flash App, get it @ http://getflashapp.me",
+    post: "Shout to the World",
+    flashAppCredit: "Posted using Flash! Get it @ https://getflash.io/app",
     writeYourNote: "Write your note, make it special :)",
     postButton: "Post",
     notePosted: "Success!\n Your note has been posted",
