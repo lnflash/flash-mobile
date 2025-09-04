@@ -66,7 +66,7 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
         </Text>
         <EmailInput title={"Enter email address"} email={email} setEmail={setEmail} />
       </View>
-      <PrimaryBtn label="Invite" onPress={onSubmit} />
+      <PrimaryBtn label="Invite" onPress={onSubmit} btnStyle={{ marginBottom: 10 }} />
     </Screen>
   )
 }
