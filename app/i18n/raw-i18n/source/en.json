@@ -1211,7 +1211,7 @@
     },
     "NostrQuickStart": {
         "postHeading": "Make your first social post!",
-        "postDesc": "Introduce your self to the World!"
+        "postDesc": "Introduce yourself to the World!"
     },
     "Social": {
         "post": "Post to Nostr",
