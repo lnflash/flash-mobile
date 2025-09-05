@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import messaging from "@react-native-firebase/messaging"
+import { getMessaging } from "@react-native-firebase/messaging"
 import * as Keychain from "react-native-keychain"
 
 // store
@@ -30,7 +30,7 @@ const useLogout = () => {
 
   const logout = async (clearDeviceCred?: boolean) => {
     try {
-      const deviceToken = await messaging().getToken()
+      const deviceToken = await getMessaging().getToken()
       userLogoutMutation({ variables: { input: { deviceToken } } })
         .then(async (res) => {
           console.log("USER LOGOUT MUTATION RES: ", res.data?.userLogout)

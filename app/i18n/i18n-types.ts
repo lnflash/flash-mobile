@@ -2708,7 +2708,7 @@ type RootTranslation = {
 		 */
 		advanceMode: string
 		/**
-		 * K​e​y​s​ ​m​a​n​a​g​e​m​e​n​t
+		 * K​e​y​ ​m​a​n​a​g​e​m​e​n​t
 		 */
 		keysManagement: string
 		/**
@@ -4229,6 +4229,53 @@ type RootTranslation = {
 		 * W​a​r​n​i​n​g
 		 */
 		warning: string
+	}
+	NostrQuickStart: {
+		/**
+		 * M​a​k​e​ ​y​o​u​r​ ​f​i​r​s​t​ ​p​o​s​t​ ​o​n​ ​n​o​s​t​r​!
+		 */
+		postHeading: string
+		/**
+		 * I​n​t​r​o​d​u​c​e​ ​y​o​u​r​ ​s​e​l​f​ ​t​o​ ​N​o​s​t​r​!
+		 */
+		postDesc: string
+	}
+	Social: {
+		/**
+		 * P​o​s​t​ ​t​o​ ​N​o​s​t​r
+		 */
+		post: string
+		/**
+		 * P​o​s​t​e​d​ ​f​r​o​m​ ​F​l​a​s​h​ ​A​p​p​,​ ​g​e​t​ ​i​t​ ​@​ ​h​t​t​p​:​/​/​g​e​t​f​l​a​s​h​a​p​p​.​m​e
+		 */
+		flashAppCredit: string
+		/**
+		 * W​r​i​t​e​ ​y​o​u​r​ ​n​o​t​e​,​ ​m​a​k​e​ ​i​t​ ​s​p​e​c​i​a​l​ ​:​)
+		 */
+		writeYourNote: string
+		/**
+		 * P​o​s​t
+		 */
+		postButton: string
+		/**
+		 * S​u​c​c​e​s​s​!​
+	​ ​Y​o​u​r​ ​n​o​t​e​ ​h​a​s​ ​b​e​e​n​ ​p​o​s​t​e​d
+		 */
+		notePosted: string
+		/**
+		 * E​r​r​o​r​!​
+	​ ​E​r​r​o​r​ ​i​n​ ​p​o​s​t​i​n​g​ ​n​o​t​e
+		 */
+		errorPostFailed: string
+		/**
+		 * E​r​r​o​r​:​ ​
+	​ ​E​m​p​t​y​ ​n​o​t​e
+		 */
+		errorEmptyNote: string
+		/**
+		 * p​o​s​t​i​n​g​.​.​.
+		 */
+		posting: string
 	}
 	errors: {
 		/**
@@ -7241,23 +7288,23 @@ export type TranslationFunctions = {
 		/**
 		 * The amount you entered is less than the minimum amount required to send an on-chain transaction {amount}. Please consider sending this amount via Lightning!
 		 */
-		onchainMinAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		onchainMinAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is less than minimum required amount {amount}
 		 */
-		minAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		minAmountConvertError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is greater than maximum amount {amount}
 		 */
-		maxAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**
@@ -7401,7 +7448,7 @@ export type TranslationFunctions = {
 		 */
 		advanceMode: () => LocalizedString
 		/**
-		 * Keys management
+		 * Key management
 		 */
 		keysManagement: () => LocalizedString
 		/**
@@ -8899,6 +8946,53 @@ export type TranslationFunctions = {
 		 * Warning
 		 */
 		warning: () => LocalizedString
+	}
+	NostrQuickStart: {
+		/**
+		 * Make your first social post!
+		 */
+		postHeading: () => LocalizedString
+		/**
+		 * Introduce your self to the World!
+		 */
+		postDesc: () => LocalizedString
+	}
+	Social: {
+		/**
+		 * Post to Nostr
+		 */
+		post: () => LocalizedString
+		/**
+		 * Posted from Flash App, get it @ http://getflashapp.me
+		 */
+		flashAppCredit: () => LocalizedString
+		/**
+		 * Write your note, make it special :)
+		 */
+		writeYourNote: () => LocalizedString
+		/**
+		 * Post
+		 */
+		postButton: () => LocalizedString
+		/**
+		 * Success!
+	 Your note has been posted
+		 */
+		notePosted: () => LocalizedString
+		/**
+		 * Error!
+	 Error in posting note
+		 */
+		errorPostFailed: () => LocalizedString
+		/**
+		 * Error: 
+	 Empty note
+		 */
+		errorEmptyNote: () => LocalizedString
+		/**
+		 * posting...
+		 */
+		posting: () => LocalizedString
 	}
 	errors: {
 		/**

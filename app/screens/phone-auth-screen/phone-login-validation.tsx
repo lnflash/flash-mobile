@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react"
 import { ActivityIndicator, View } from "react-native"
-import analytics from "@react-native-firebase/analytics"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getAnalytics } from "@react-native-firebase/analytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme, Input } from "@rneui/themed"
 import { hexToBytes } from "@noble/curves/abstract/utils"
@@ -204,7 +204,7 @@ export const PhoneLoginValidationScreen: React.FC<Props> = ({ navigation, route 
               })
               return
             }
-            analytics().logLogin({ method: "phone" })
+            getAnalytics().logLogin({ method: "phone" })
             saveToken(authToken)
 
             // enable breez btc wallet
@@ -255,7 +255,7 @@ export const PhoneLoginValidationScreen: React.FC<Props> = ({ navigation, route 
         setStatus(ValidatePhoneCodeStatus.ReadyToRegenerate)
       } catch (err) {
         if (err instanceof Error) {
-          crashlytics().recordError(err)
+          getCrashlytics().recordError(err)
           console.debug({ err })
         }
         setError(ValidatePhoneCodeErrors.UnknownError)

@@ -1,6 +1,6 @@
 import React from "react"
 import { TextInput, TouchableWithoutFeedback, View } from "react-native"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { makeStyles, useTheme, Text } from "@rneui/themed"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { useNavigation } from "@react-navigation/native"
@@ -98,7 +98,7 @@ const DestinationField: React.FC<Props> = ({
               validateDestination && (await validateDestination(clipboard))
             } catch (err) {
               if (err instanceof Error) {
-                crashlytics().recordError(err)
+                getCrashlytics().recordError(err)
               }
               toastShow({
                 type: "error",

@@ -1,4 +1,4 @@
-import analytics from "@react-native-firebase/analytics"
+import { getAnalytics } from "@react-native-firebase/analytics"
 import { useAnalyticsQuery } from "@app/graphql/generated"
 import { gql } from "@apollo/client"
 import { useEffect } from "react"
@@ -33,27 +33,27 @@ export const AnalyticsContainer = () => {
   })
 
   useEffect(() => {
-    analytics().setUserProperty("hasUsername", data?.me?.username ? "true" : "false")
+    getAnalytics().setUserProperty("hasUsername", data?.me?.username ? "true" : "false")
   }, [data?.me?.username])
 
   useEffect(() => {
     if (data?.me?.id) {
-      analytics().setUserId(data?.me?.id)
+      getAnalytics().setUserId(data?.me?.id)
     }
   }, [data?.me?.id])
 
   useEffect(() => {
     if (data?.globals?.network) {
-      analytics().setUserProperties({ network: data.globals.network })
+      getAnalytics().setUserProperties({ network: data.globals.network })
     }
   }, [data?.globals?.network])
 
   useEffect(() => {
-    analytics().setUserProperty("accountLevel", level.currentLevel)
+    getAnalytics().setUserProperty("accountLevel", level.currentLevel)
   }, [level])
 
   useEffect(() => {
-    analytics().setUserProperty("galoyInstance", galoyInstanceName)
+    getAnalytics().setUserProperty("galoyInstance", galoyInstanceName)
   }, [galoyInstanceName])
 
   return null
