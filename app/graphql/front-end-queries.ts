@@ -143,7 +143,6 @@ gql`
   query walletOverviewScreen {
     me {
       id
-      username
       defaultAccount {
         id
         wallets {

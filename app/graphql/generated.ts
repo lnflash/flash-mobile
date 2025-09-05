@@ -2167,7 +2167,7 @@ export type WalletCsvTransactionsQuery = { readonly __typename: 'Query', readonl
 export type WalletOverviewScreenQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type WalletOverviewScreenQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly username?: string | null, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly wallets: ReadonlyArray<{ readonly __typename: 'BTCWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency } | { readonly __typename: 'UsdWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency }> } } | null };
+export type WalletOverviewScreenQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly wallets: ReadonlyArray<{ readonly __typename: 'BTCWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency } | { readonly __typename: 'UsdWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency }> } } | null };
 
 export type SendBitcoinDestinationQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4010,7 +4010,6 @@ export const WalletOverviewScreenDocument = gql`
     query walletOverviewScreen {
   me {
     id
-    username
     defaultAccount {
       id
       wallets {

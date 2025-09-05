@@ -9,7 +9,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { SetLightningAddressModal } from "../set-lightning-address-modal"
 
 // hooks
-import { useWalletOverviewScreenQuery } from "@app/graphql/generated"
+import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -28,7 +28,7 @@ const Username = () => {
 
   const [modalVisible, setModalVisible] = useState(false)
 
-  const { data, loading } = useWalletOverviewScreenQuery({
+  const { data, loading } = useHomeAuthedQuery({
     skip: !isAuthed,
   })
 
