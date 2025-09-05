@@ -14,6 +14,7 @@ import {
   Info,
   QuickStart,
   Transactions,
+  Username,
 } from "@app/components/home-screen"
 
 // gql
@@ -112,6 +113,7 @@ export const HomeScreen: React.FC = () => {
     <Screen backgroundColor={colors.background}>
       <Header />
       <ScrollView refreshControl={renderRefreshControl()}>
+        <Username />
         <WalletOverview
           setIsUnverifiedSeedModalVisible={setIsUnverifiedSeedModalVisible}
         />
