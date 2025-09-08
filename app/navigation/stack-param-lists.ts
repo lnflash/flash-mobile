@@ -151,6 +151,16 @@ export type RootStackParamList = {
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
   SignInViaQRCode: undefined
+  AccountType: undefined
+  PersonalInformation: undefined
+  BusinessInformation: undefined
+  BankInformation: undefined
+  Validation: {
+    phone: string
+    channel: PhoneCodeChannelType
+  }
+  AccountUpgradeSuccess: undefined
+  TestTransaction: undefined
 }
 
 export type ChatStackParamList = {
