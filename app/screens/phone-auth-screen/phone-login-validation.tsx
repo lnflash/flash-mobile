@@ -11,7 +11,9 @@ import { nip19 } from "nostr-tools"
 
 // components
 import { Screen } from "../../components/screen"
+import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 import { GaloyInfo } from "@app/components/atomic/galoy-info"
+import CustomModal from "@app/components/custom-modal/custom-modal"
 import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-button"
 
@@ -377,6 +379,27 @@ export const PhoneLoginValidationScreen: React.FC<Props> = ({ navigation, route 
         keyboardType="numeric"
       />
       <View style={styles.extraInfoContainer}>{extraInfoContent}</View>
+      <CustomModal
+        isVisible={true}
+        toggleModal={() => {}}
+        image={<GaloyIcon name="payment-success" size={100} />}
+        title={"Merge your accounts"}
+        body={
+          <View>
+            <Text type="bl" style={{ textAlign: "center" }}>
+              {`You’re currently using a trial account with value added. Logging into your
+              account linked to ${phone} will log you out of this trial account.
+              What would you like to do?`}
+            </Text>
+          </View>
+        }
+        primaryButtonTitle={"Merge accounts"}
+        primaryButtonOnPress={() => {}}
+        secondaryButtonTitle={"Keep the trial account"}
+        secondaryButtonOnPress={() => {}}
+        tertiaryButtonTitle={"Switch accounts"}
+        tertiaryButtonOnPress={() => {}}
+      />
     </Screen>
   )
 }
