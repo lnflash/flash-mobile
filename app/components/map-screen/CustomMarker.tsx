@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/display-name */
 import React, { memo } from "react"
-import { Linking, View } from "react-native"
+import { Linking } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { makeStyles, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
-import { Callout, MapMarkerProps, Marker } from "react-native-maps"
-import { Button } from "@rneui/base"
+import { MapMarkerProps, Marker } from "react-native-maps"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // utils
@@ -17,10 +16,11 @@ import { isIos } from "@app/utils/helper"
 type Props = {
   blinkData: any
   flashData: any
+  setSelectedItem: (item: any) => void
 }
 
 export const CustomMarker: React.FC<Props> = memo(
-  ({ blinkData, flashData }) => {
+  ({ blinkData, flashData, setSelectedItem }) => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
     const styles = useStyles()
     const isAuthed = useIsAuthed()
@@ -67,25 +67,8 @@ export const CustomMarker: React.FC<Props> = memo(
             key={key}
             pinColor={colors._orange}
             tracksViewChanges={false}
-          >
-            <Callout
-              onPress={() => (Boolean(item.username) && !isIos ? onPress() : null)}
-            >
-              <View style={styles.customView}>
-                <Text style={styles.title}>{item.mapInfo.title}</Text>
-                <Button
-                  containerStyle={isIos ? styles.ios : styles.android}
-                  title={LL.MapScreen.payBusiness()}
-                  onPress={onPress}
-                />
-                <Button
-                  containerStyle={isIos ? styles.ios : styles.android}
-                  title={LL.MapScreen.getDirections()}
-                  onPress={openInGoogleMaps}
-                />
-              </View>
-            </Callout>
-          </Marker>,
+            onPress={() => setSelectedItem(item)}
+          />,
         )
       }
     })
