@@ -16,6 +16,7 @@ import { Screen } from "../../components/screen"
 import {
   AddButton,
   AddPin,
+  CalloutModal,
   CustomMarker,
   MerchantSuggestModal,
   RefreshButton,
@@ -73,6 +74,7 @@ export const MapScreen = memo(() => {
   const { data } = useSettingsScreenQuery({ fetchPolicy: "cache-first" })
   const usernameTitle = data?.me?.username || LL.common.flashUser()
 
+  const [selectedItem, setSelectedItem] = useState<any>()
   const [businessName, setBusinessName] = useState("")
   const [isAddingPin, setIsAddingPin] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
@@ -198,7 +200,11 @@ export const MapScreen = memo(() => {
           longitudeDelta: 2.1,
         }}
       >
-        <CustomMarker blinkData={blinkData} flashData={flashData} />
+        <CustomMarker
+          blinkData={blinkData}
+          flashData={flashData}
+          setSelectedItem={setSelectedItem}
+        />
       </MapView>
       {!isAddingPin && <RefreshButton onRefresh={() => refetch()} />}
       <AddPin visible={isAddingPin} />
@@ -211,6 +217,7 @@ export const MapScreen = memo(() => {
         onSubmit={handleSubmit}
         selectedLocation={selectedLocation}
       />
+      <CalloutModal selectedItem={selectedItem} setSelectedItem={setSelectedItem} />
     </Screen>
   )
 })
