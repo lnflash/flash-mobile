@@ -48,6 +48,8 @@ const SERVICE_BADGES = [
   },
 ] as const
 
+// add boolean values to MarkerItem for each badge key
+
 type Props = {
   blinkData: any
   flashData: any
@@ -215,17 +217,29 @@ export const CustomMarker: React.FC<Props> = memo(
 
     // Combine and transform marker data
     const markerData = useMemo(() => {
+      const setServiceDefaults = (item: any) => ({
+        ...item,
+        acceptsFlash: item.acceptsFlash ?? true,
+        redeemTopup: item.redeemTopup ?? false,
+        hasRewards: item.hasRewards ?? false,
+        sellsBitcoin: item.sellsBitcoin ?? false,
+      })
+
       const blinkMarkers =
-        blinkData?.businessMapMarkers?.map((item: any) => ({
-          ...item,
-          source: "blink" as const,
-        })) ?? []
+        blinkData?.businessMapMarkers?.map((item: any) =>
+          setServiceDefaults({
+            ...item,
+            source: "blink" as const,
+          }),
+        ) ?? []
 
       const flashMarkers =
-        flashData?.businessMapMarkers?.map((item: any) => ({
-          ...item,
-          source: "flash" as const,
-        })) ?? []
+        flashData?.businessMapMarkers?.map((item: any) =>
+          setServiceDefaults({
+            ...item,
+            source: "flash" as const,
+          }),
+        ) ?? []
 
       return [...blinkMarkers, ...flashMarkers].filter(Boolean)
     }, [blinkData, flashData])
