@@ -21,7 +21,7 @@ import { NavigatorScreenParams } from "@react-navigation/native"
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
   getStarted: undefined
-  UsernameSet: undefined
+  UsernameSet?: { insideApp?: boolean }
   Welcome: undefined
   welcomeFirst: undefined
   liteDeviceAccount: {
