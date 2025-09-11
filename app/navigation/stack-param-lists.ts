@@ -151,6 +151,11 @@ export type RootStackParamList = {
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
   SignInViaQRCode: undefined
+  InviteFriend: undefined
+  InviteFriendSuccess: {
+    contact: string
+    method: string
+  } | undefined
 }
 
 export type ChatStackParamList = {

@@ -369,6 +369,17 @@ export type Country = {
   readonly supportedAuthChannels: ReadonlyArray<PhoneCodeChannelType>;
 };
 
+export type CreateInviteInput = {
+  readonly contact: Scalars['String']['input'];
+  readonly method: InviteMethod;
+};
+
+export type CreateInvitePayload = {
+  readonly __typename: 'CreateInvitePayload';
+  readonly errors: ReadonlyArray<Scalars['String']['output']>;
+  readonly invite?: Maybe<Invite>;
+};
+
 export type Currency = {
   readonly __typename: 'Currency';
   readonly flag: Scalars['String']['output'];
@@ -498,6 +509,31 @@ export type IntraLedgerUsdPaymentSendInput = {
   readonly walletId: Scalars['WalletId']['input'];
 };
 
+export type Invite = {
+  readonly __typename: 'Invite';
+  readonly contact: Scalars['String']['output'];
+  readonly createdAt: Scalars['String']['output'];
+  readonly expiresAt: Scalars['String']['output'];
+  readonly id: Scalars['ID']['output'];
+  readonly method: InviteMethod;
+  readonly status: InviteStatus;
+};
+
+export const InviteMethod = {
+  Email: 'EMAIL',
+  Sms: 'SMS',
+  Whatsapp: 'WHATSAPP'
+} as const;
+
+export type InviteMethod = typeof InviteMethod[keyof typeof InviteMethod];
+export const InviteStatus = {
+  Accepted: 'ACCEPTED',
+  Expired: 'EXPIRED',
+  Pending: 'PENDING',
+  Sent: 'SENT'
+} as const;
+
+export type InviteStatus = typeof InviteStatus[keyof typeof InviteStatus];
 export const InvoicePaymentStatus = {
   Expired: 'EXPIRED',
   Paid: 'PAID',
@@ -734,6 +770,7 @@ export type Mutation = {
   readonly callbackEndpointDelete: SuccessPayload;
   readonly captchaCreateChallenge: CaptchaCreateChallengePayload;
   readonly captchaRequestAuthCode: SuccessPayload;
+  readonly createInvite: CreateInvitePayload;
   readonly deviceNotificationTokenCreate: SuccessPayload;
   readonly feedbackSubmit: SuccessPayload;
   /**
@@ -823,6 +860,7 @@ export type Mutation = {
   readonly onChainUsdPaymentSend: PaymentSendPayload;
   readonly onChainUsdPaymentSendAsBtcDenominated: PaymentSendPayload;
   readonly quizCompleted: QuizCompletedPayload;
+  readonly redeemInvite: RedeemInvitePayload;
   /**
    * Returns an offer from Flash for a user to withdraw from their USD wallet (denominated in cents).
    * The user can review this offer and then execute the withdrawal by calling the initiateCashout mutation.
@@ -893,6 +931,11 @@ export type MutationCallbackEndpointDeleteArgs = {
 
 export type MutationCaptchaRequestAuthCodeArgs = {
   input: CaptchaRequestAuthCodeInput;
+};
+
+
+export type MutationCreateInviteArgs = {
+  input: CreateInviteInput;
 };
 
 
@@ -1023,6 +1066,11 @@ export type MutationOnChainUsdPaymentSendAsBtcDenominatedArgs = {
 
 export type MutationQuizCompletedArgs = {
   input: QuizCompletedInput;
+};
+
+
+export type MutationRedeemInviteArgs = {
+  input: RedeemInviteInput;
 };
 
 
@@ -1478,6 +1526,16 @@ export type RealtimePricePayload = {
   readonly __typename: 'RealtimePricePayload';
   readonly errors: ReadonlyArray<Error>;
   readonly realtimePrice?: Maybe<RealtimePrice>;
+};
+
+export type RedeemInviteInput = {
+  readonly token: Scalars['String']['input'];
+};
+
+export type RedeemInvitePayload = {
+  readonly __typename: 'RedeemInvitePayload';
+  readonly errors: ReadonlyArray<Scalars['String']['output']>;
+  readonly success: Scalars['Boolean']['output'];
 };
 
 export type RequestCashoutInput = {
@@ -2111,6 +2169,20 @@ export type UserUpdateNpubMutationVariables = Exact<{
 
 
 export type UserUpdateNpubMutation = { readonly __typename: 'Mutation', readonly userUpdateNpub: { readonly __typename: 'UserUpdateNpubPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null }>, readonly user?: { readonly __typename: 'User', readonly id: string, readonly npub?: string | null } | null } };
+
+export type CreateInviteMutationVariables = Exact<{
+  input: CreateInviteInput;
+}>;
+
+
+export type CreateInviteMutation = { readonly __typename: 'Mutation', readonly createInvite: { readonly __typename: 'CreateInvitePayload', readonly errors: ReadonlyArray<string>, readonly invite?: { readonly __typename: 'Invite', readonly id: string, readonly contact: string, readonly method: InviteMethod, readonly status: InviteStatus, readonly createdAt: string, readonly expiresAt: string } | null } };
+
+export type RedeemInviteMutationVariables = Exact<{
+  input: RedeemInviteInput;
+}>;
+
+
+export type RedeemInviteMutation = { readonly __typename: 'Mutation', readonly redeemInvite: { readonly __typename: 'RedeemInvitePayload', readonly success: boolean, readonly errors: ReadonlyArray<string> } };
 
 export type AuthQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3617,6 +3689,81 @@ export function useUserUpdateNpubMutation(baseOptions?: Apollo.MutationHookOptio
 export type UserUpdateNpubMutationHookResult = ReturnType<typeof useUserUpdateNpubMutation>;
 export type UserUpdateNpubMutationResult = Apollo.MutationResult<UserUpdateNpubMutation>;
 export type UserUpdateNpubMutationOptions = Apollo.BaseMutationOptions<UserUpdateNpubMutation, UserUpdateNpubMutationVariables>;
+export const CreateInviteDocument = gql`
+    mutation createInvite($input: CreateInviteInput!) {
+  createInvite(input: $input) {
+    invite {
+      id
+      contact
+      method
+      status
+      createdAt
+      expiresAt
+    }
+    errors
+  }
+}
+    `;
+export type CreateInviteMutationFn = Apollo.MutationFunction<CreateInviteMutation, CreateInviteMutationVariables>;
+
+/**
+ * __useCreateInviteMutation__
+ *
+ * To run a mutation, you first call `useCreateInviteMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateInviteMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createInviteMutation, { data, loading, error }] = useCreateInviteMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateInviteMutation(baseOptions?: Apollo.MutationHookOptions<CreateInviteMutation, CreateInviteMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateInviteMutation, CreateInviteMutationVariables>(CreateInviteDocument, options);
+      }
+export type CreateInviteMutationHookResult = ReturnType<typeof useCreateInviteMutation>;
+export type CreateInviteMutationResult = Apollo.MutationResult<CreateInviteMutation>;
+export type CreateInviteMutationOptions = Apollo.BaseMutationOptions<CreateInviteMutation, CreateInviteMutationVariables>;
+export const RedeemInviteDocument = gql`
+    mutation redeemInvite($input: RedeemInviteInput!) {
+  redeemInvite(input: $input) {
+    success
+    errors
+  }
+}
+    `;
+export type RedeemInviteMutationFn = Apollo.MutationFunction<RedeemInviteMutation, RedeemInviteMutationVariables>;
+
+/**
+ * __useRedeemInviteMutation__
+ *
+ * To run a mutation, you first call `useRedeemInviteMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRedeemInviteMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [redeemInviteMutation, { data, loading, error }] = useRedeemInviteMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRedeemInviteMutation(baseOptions?: Apollo.MutationHookOptions<RedeemInviteMutation, RedeemInviteMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RedeemInviteMutation, RedeemInviteMutationVariables>(RedeemInviteDocument, options);
+      }
+export type RedeemInviteMutationHookResult = ReturnType<typeof useRedeemInviteMutation>;
+export type RedeemInviteMutationResult = Apollo.MutationResult<RedeemInviteMutation>;
+export type RedeemInviteMutationOptions = Apollo.BaseMutationOptions<RedeemInviteMutation, RedeemInviteMutationVariables>;
 export const AuthDocument = gql`
     query auth {
   me {
