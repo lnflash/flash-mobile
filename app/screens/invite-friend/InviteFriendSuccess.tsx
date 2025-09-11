@@ -17,11 +17,15 @@ const width = Dimensions.get("window").width
 
 type Props = StackScreenProps<RootStackParamList, "InviteFriendSuccess">
 
-const InviteFriendSuccess: React.FC<Props> = ({ navigation }) => {
+const InviteFriendSuccess: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const { bottom } = useSafeAreaInsets()
   const { colors } = useTheme().theme
   const styles = useStyles()
+  
+  // Get the contact from route params, or use default
+  const contact = route.params?.contact || "your friend"
+  const method = route.params?.method || "EMAIL"
 
   const onPressDone = () => {
     navigation.popToTop()
@@ -32,7 +36,7 @@ const InviteFriendSuccess: React.FC<Props> = ({ navigation }) => {
       <View style={styles.container}>
         <SendSuccess width={width / 1.2} height={width / 1.2} />
         <Text type="h02" color={colors.white} style={{ textAlign: "center" }}>
-          {LL.InviteFriend.invitationSuccessTitle({ value: "friend@email.com" })}
+          {LL.InviteFriend.invitationSuccessTitle({ value: contact })}
         </Text>
       </View>
       <PrimaryBtn

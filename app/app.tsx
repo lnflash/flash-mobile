@@ -44,6 +44,7 @@ import { ChatContextProvider } from "./screens/nip17-chat/chatContext"
 import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { FlashcardProvider } from "./contexts/Flashcard"
+import { InviteDeepLinkHandler } from "./screens/invite-friend/InviteDeepLinkHandler"
 
 // FIXME should we only load the currently used local?
 // this would help to make the app load faster
@@ -81,7 +82,9 @@ export const App = () => (
                               <PushNotificationComponent />
                               <BreezProvider>
                                 <FlashcardProvider>
-                                  <RootStack />
+                                  <InviteDeepLinkHandler>
+                                    <RootStack />
+                                  </InviteDeepLinkHandler>
                                 </FlashcardProvider>
                               </BreezProvider>
                               <GaloyToast />

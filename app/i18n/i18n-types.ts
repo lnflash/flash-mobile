@@ -2708,7 +2708,7 @@ type RootTranslation = {
 		 */
 		advanceMode: string
 		/**
-		 * K​e​y​s​ ​m​a​n​a​g​e​m​e​n​t
+		 * K​e​y​ ​m​a​n​a​g​e​m​e​n​t
 		 */
 		keysManagement: string
 		/**
@@ -2720,46 +2720,46 @@ type RootTranslation = {
 		 */
 		hideBtcAccount: string
 		/**
-		 * Invite a friend
+		 * I​n​v​i​t​e​ ​a​ ​f​r​i​e​n​d
 		 */
 		inviteFriend: string
 	}
 	InviteFriend: {
 		/**
-		 * Invitation
+		 * I​n​v​i​t​a​t​i​o​n
 		 */
 		invitation: string
 		/**
-		 * Invite a friend to Flash!
+		 * I​n​v​i​t​e​ ​a​ ​f​r​i​e​n​d​ ​t​o​ ​F​l​a​s​h​!
 		 */
 		title: string
 		/**
-		 * Enter a phone number or email address to invite a friend.
+		 * E​n​t​e​r​ ​a​ ​p​h​o​n​e​ ​n​u​m​b​e​r​ ​o​r​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s​ ​t​o​ ​i​n​v​i​t​e​ ​a​ ​f​r​i​e​n​d​.
 		 */
 		subtitle: string
 		/**
-		 * Enter phone number
+		 * E​n​t​e​r​ ​p​h​o​n​e​ ​n​u​m​b​e​r
 		 */
 		phoneNumber: string
 		/**
-		 * Enter email address
+		 * E​n​t​e​r​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s
 		 */
 		email: string
 		/**
-		 * Invite
+		 * I​n​v​i​t​e
 		 */
 		invite: string
 		/**
-		 * OR
+		 * O​R
 		 */
 		or: string
 		/**
-		 * Invitation has been sent to {value}
+		 * I​n​v​i​t​a​t​i​o​n​ ​h​a​s​ ​b​e​e​n​ ​s​e​n​t​ ​t​o​ ​{​v​a​l​u​e​}
 		 * @param {string} value
 		 */
 		invitationSuccessTitle: RequiredParams<'value'>
 		/**
-		 * Done
+		 * D​o​n​e
 		 */
 		done: string
 	}
@@ -7284,23 +7284,23 @@ export type TranslationFunctions = {
 		/**
 		 * The amount you entered is less than the minimum amount required to send an on-chain transaction {amount}. Please consider sending this amount via Lightning!
 		 */
-		onchainMinAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		onchainMinAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is less than minimum required amount {amount}
 		 */
-		minAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		minAmountConvertError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is greater than maximum amount {amount}
 		 */
-		maxAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**
@@ -7444,7 +7444,7 @@ export type TranslationFunctions = {
 		 */
 		advanceMode: () => LocalizedString
 		/**
-		 * Keys management
+		 * Key management
 		 */
 		keysManagement: () => LocalizedString
 		/**

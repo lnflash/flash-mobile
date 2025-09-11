@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { View } from "react-native"
+import { View, Alert } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { CountryCode } from "react-native-country-picker-modal"
@@ -10,6 +10,7 @@ import {
   CountryCode as PhoneNumberCountryCode,
 } from "libphonenumber-js/mobile"
 import validator from "validator"
+import { useCreateInviteMutation, InviteMethod } from "@app/graphql/generated"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -25,25 +26,60 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
   const [countryCode, setCountryCode] = useState<CountryCode | undefined>()
   const [phoneNumber, setPhoneNumber] = useState<string | undefined>()
   const [email, setEmail] = useState<string>()
+  const [loading, setLoading] = useState(false)
+  
+  const [createInvite] = useCreateInviteMutation()
 
-  const onSubmit = () => {
-    navigation.navigate("InviteFriendSuccess")
-    return
-    console.log(">>>>>>>>????", countryCode, phoneNumber)
-    if (countryCode && phoneNumber) {
+  const onSubmit = async () => {
+    // Validate inputs
+    let contact: string = ""
+    let method: InviteMethod = InviteMethod.Email
+    
+    if (email && validator.isEmail(email)) {
+      contact = email
+      method = InviteMethod.Email
+    } else if (countryCode && phoneNumber) {
       const parsedPhoneNumber = parsePhoneNumber(
         phoneNumber,
         countryCode as PhoneNumberCountryCode,
       )
-      if (parsedPhoneNumber.isValid()) {
-        // send email parsedPhoneNumber.number
-        console.log("$$$$$$$$$$$$$$$$$", parsedPhoneNumber)
+      if (parsedPhoneNumber?.isValid()) {
+        contact = parsedPhoneNumber.format("E.164")
+        method = InviteMethod.Sms
+      } else {
+        Alert.alert("Error", "Please enter a valid phone number")
+        return
       }
-    }
-    if (email && validator.isEmail(email)) {
-      console.log(">>>>>>>>>>>", email)
     } else {
-      console.log(">>>>>>>INVALID EMAIL")
+      Alert.alert("Error", "Please enter a phone number or email address")
+      return
+    }
+    
+    // Send invite
+    setLoading(true)
+    try {
+      const { data } = await createInvite({
+        variables: {
+          input: {
+            contact,
+            method,
+          },
+        },
+      })
+      
+      if (data?.createInvite?.invite) {
+        navigation.navigate("InviteFriendSuccess", {
+          contact: data.createInvite.invite.contact,
+          method: data.createInvite.invite.method,
+        })
+      } else if (data?.createInvite?.errors && data.createInvite.errors.length > 0) {
+        Alert.alert("Error", data.createInvite.errors[0])
+      }
+    } catch (error) {
+      console.error("Error sending invite:", error)
+      Alert.alert("Error", "Unable to send invitation. Please try again.")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -71,6 +107,8 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
       <PrimaryBtn
         label={LL.InviteFriend.invite()}
         onPress={onSubmit}
+        loading={loading}
+        disabled={loading || (!email && (!countryCode || !phoneNumber))}
         btnStyle={{ marginBottom: 10 }}
       />
     </Screen>

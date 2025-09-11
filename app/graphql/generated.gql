@@ -264,6 +264,22 @@ mutation captchaRequestAuthCode($input: CaptchaRequestAuthCodeInput!) {
   }
 }
 
+mutation createInvite($input: CreateInviteInput!) {
+  createInvite(input: $input) {
+    invite {
+      id
+      contact
+      method
+      status
+      createdAt
+      expiresAt
+      __typename
+    }
+    errors
+    __typename
+  }
+}
+
 mutation deviceNotificationTokenCreate($input: DeviceNotificationTokenCreateInput!) {
   deviceNotificationTokenCreate(input: $input) {
     errors {
@@ -513,6 +529,14 @@ mutation quizCompleted($input: QuizCompletedInput!) {
       completed
       __typename
     }
+    __typename
+  }
+}
+
+mutation redeemInvite($input: RedeemInviteInput!) {
+  redeemInvite(input: $input) {
+    success
+    errors
     __typename
   }
 }

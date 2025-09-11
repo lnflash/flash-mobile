@@ -22,8 +22,8 @@ const EmailInput: React.FC<Props> = ({ title, email, setEmail }) => {
           containerStyle={styles.inputComponentContainerStyle}
           inputContainerStyle={styles.inputContainerStyle}
           renderErrorMessage={false}
-          textContentType="telephoneNumber"
-          keyboardType="phone-pad"
+          textContentType="emailAddress"
+          keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
           autoFocus={true}
