@@ -16,6 +16,7 @@ import { useCreateInviteMutation, InviteMethod } from "@app/graphql/generated"
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 import { EmailInput, PhoneNumberInput } from "@app/components/input"
+import { ButtonGroup } from "@app/components/button-group"
 
 type Props = StackScreenProps<RootStackParamList, "InviteFriend">
 
@@ -27,6 +28,7 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState<string | undefined>()
   const [email, setEmail] = useState<string>()
   const [loading, setLoading] = useState(false)
+  const [phoneMethod, setPhoneMethod] = useState<"whatsapp" | "sms">("whatsapp")
   
   const [createInvite] = useCreateInviteMutation()
 
@@ -45,7 +47,8 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
       )
       if (parsedPhoneNumber?.isValid()) {
         contact = parsedPhoneNumber.format("E.164")
-        method = InviteMethod.Sms
+        // Use the selected phone method (WhatsApp or SMS)
+        method = phoneMethod === "whatsapp" ? InviteMethod.Whatsapp : InviteMethod.Sms
       } else {
         Alert.alert("Error", "Please enter a valid phone number")
         return
@@ -99,6 +102,27 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
           setCountryCode={setCountryCode}
           setPhoneNumber={setPhoneNumber}
         />
+        {/* SMS/WhatsApp selection - only show when phone number is selected */}
+        {(phoneNumber || countryCode) && (
+          <View style={styles.methodSelector}>
+            <ButtonGroup
+              selectedId={phoneMethod}
+              buttons={[
+                {
+                  id: "whatsapp",
+                  text: "WhatsApp",
+                  icon: "logo-whatsapp",
+                },
+                {
+                  id: "sms",
+                  text: "SMS",
+                  icon: "chatbubble-outline",
+                },
+              ]}
+              onPress={(id) => setPhoneMethod(id as "whatsapp" | "sms")}
+            />
+          </View>
+        )}
         <Text type="h2" style={{ marginVertical: 20, alignSelf: "center" }}>
           {LL.InviteFriend.or()}
         </Text>
@@ -108,7 +132,13 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
         label={LL.InviteFriend.invite()}
         onPress={onSubmit}
         loading={loading}
-        disabled={loading || (!email && (!countryCode || !phoneNumber))}
+        disabled={
+          loading || 
+          (
+            !email && // No email
+            (!phoneNumber || phoneNumber.length === 0) // AND no phone number
+          )
+        }
         btnStyle={{ marginBottom: 10 }}
       />
     </Screen>
@@ -125,6 +155,10 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   main: {
     flex: 1,
+  },
+  methodSelector: {
+    marginTop: 15,
+    marginBottom: 5,
   },
 }))
 

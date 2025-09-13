@@ -73,19 +73,48 @@ export const useInviteDeepLink = () => {
 }
 
 // Helper function to check and redeem pending invite after login
-export const redeemPendingInvite = async () => {
+export const redeemPendingInvite = async (
+  redeemInviteMutation: any,
+  showAlert = true
+) => {
   try {
     const token = await AsyncStorage.getItem("pendingInviteToken")
     
     if (!token) {
-      return
+      return { success: false, message: "No pending invite" }
     }
     
-    // TODO: Call the redeemInvite mutation here
-    // After successful redemption, clear the token
+    // Call the redeemInvite mutation
+    const { data } = await redeemInviteMutation({
+      variables: {
+        input: { token }
+      }
+    })
+    
+    // Clear the token after attempting redemption
     await AsyncStorage.removeItem("pendingInviteToken")
     
+    if (data?.redeemInvite?.success) {
+      if (showAlert) {
+        Alert.alert(
+          "Welcome!",
+          "You've successfully accepted the invitation and joined through a referral.",
+          [{ text: "OK" }]
+        )
+      }
+      return { success: true, message: "Invite redeemed successfully" }
+    } else if (data?.redeemInvite?.errors?.[0]) {
+      const errorMessage = data.redeemInvite.errors[0]
+      // Only show alert for non-duplicate errors
+      if (showAlert && !errorMessage.includes("already been used")) {
+        Alert.alert("Notice", errorMessage)
+      }
+      return { success: false, message: errorMessage }
+    }
+    
+    return { success: false, message: "Unknown error" }
   } catch (error) {
     console.error("Error redeeming pending invite:", error)
+    return { success: false, message: "Error redeeming invite" }
   }
 }
