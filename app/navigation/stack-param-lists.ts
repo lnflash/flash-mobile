@@ -20,7 +20,11 @@ import { NavigatorScreenParams } from "@react-navigation/native"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
-  getStarted: undefined
+  getStarted: {
+    inviteToken?: string
+    prefilledContact?: string
+    contactMethod?: string
+  } | undefined
   UsernameSet: undefined
   Welcome: undefined
   welcomeFirst: undefined

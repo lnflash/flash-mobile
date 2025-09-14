@@ -282,4 +282,15 @@ gql`
       denominatorCurrency
     }
   }
+
+  # TODO: Enable when server exposes invitePreview query
+  # query invitePreview($token: String!) {
+  #   invitePreview(token: $token) {
+  #     contact
+  #     method
+  #     inviterUsername
+  #     expiresAt
+  #     isValid
+  #   }
+  # }
 `

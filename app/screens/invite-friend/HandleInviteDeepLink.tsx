@@ -29,16 +29,23 @@ export const useInviteDeepLink = () => {
   }, [isAuthed, navigation, redeemInvite])
 
   const handleDeepLink = async (url: string) => {
-    // Parse the URL to get the token
-    // Expected format: flash://invite?token=xxxxx
-    const regex = /[?&]token=([a-f0-9]{40})/
-    const match = url.match(regex)
+    // Parse the URL to get the token and optional contact/method
+    // Expected format: flash://invite?token=xxxxx&contact=+1650555xxxx&method=SMS
+    const tokenRegex = /[?&]token=([a-f0-9]{40})/
+    const contactRegex = /[?&]contact=([^&]+)/
+    const methodRegex = /[?&]method=([^&]+)/
     
-    if (!match || !match[1]) {
+    const tokenMatch = url.match(tokenRegex)
+    if (!tokenMatch || !tokenMatch[1]) {
       return
     }
     
-    const token = match[1]
+    const token = tokenMatch[1]
+    const contactMatch = url.match(contactRegex)
+    const methodMatch = url.match(methodRegex)
+    
+    const contact = contactMatch ? decodeURIComponent(contactMatch[1]) : null
+    const method = methodMatch ? methodMatch[1] : "SMS"
     
     try {
       // Store token for later use (after signup/login)
@@ -62,8 +69,12 @@ export const useInviteDeepLink = () => {
           Alert.alert("Error", data.redeemInvite.errors[0])
         }
       } else {
-        // If not logged in, navigate to signup/login with the token
-        navigation.navigate("getStarted", { inviteToken: token } as any)
+        // If not logged in, navigate to signup/login with the token and contact info
+        navigation.navigate("getStarted", { 
+          inviteToken: token,
+          prefilledContact: contact,
+          contactMethod: method
+        } as any)
       }
     } catch (error) {
       console.error("Error handling invite deep link:", error)
