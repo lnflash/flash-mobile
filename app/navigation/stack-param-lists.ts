@@ -24,6 +24,7 @@ export type RootStackParamList = {
     inviteToken?: string
     prefilledContact?: string
     contactMethod?: string
+    inviterUsername?: string
   } | undefined
   UsernameSet: undefined
   Welcome: undefined
@@ -108,7 +109,11 @@ export type RootStackParamList = {
     lnurl: string
   }
   phoneFlow?: NavigatorScreenParams<PhoneValidationStackParamList>
-  phoneRegistrationInitiate: undefined
+  phoneRegistrationInitiate: {
+    inviteToken?: string
+    prefilledPhone?: string
+    inviterUsername?: string
+  } | undefined
   phoneRegistrationValidate: {
     phone: string
     channel: PhoneCodeChannelType
@@ -124,7 +129,11 @@ export type RootStackParamList = {
   accountScreen: undefined
   notificationSettingsScreen: undefined
   transactionLimitsScreen: undefined
-  emailRegistrationInitiate: undefined
+  emailRegistrationInitiate: {
+    inviteToken?: string
+    prefilledEmail?: string
+    inviterUsername?: string
+  } | undefined
   emailRegistrationValidate: { email: string; emailRegistrationId: string }
   emailLoginInitiate: undefined
   emailLoginValidate: { email: string; emailLoginId: string }

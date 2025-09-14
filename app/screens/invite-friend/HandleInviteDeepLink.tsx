@@ -1,13 +1,15 @@
 import { useEffect } from "react"
 import { Linking, Alert } from "react-native"
-import { useNavigation } from "@react-navigation/native"
-import { useRedeemInviteMutation } from "@app/graphql/generated"
+import { useNavigation, NavigationProp } from "@react-navigation/native"
+import { useRedeemInviteMutation, useInvitePreviewLazyQuery } from "@app/graphql/generated"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 export const useInviteDeepLink = () => {
-  const navigation = useNavigation()
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>()
   const [redeemInvite] = useRedeemInviteMutation()
+  const [fetchInvitePreview] = useInvitePreviewLazyQuery()
   const isAuthed = useIsAuthed()
 
   useEffect(() => {
@@ -26,55 +28,100 @@ export const useInviteDeepLink = () => {
     return () => {
       subscription.remove()
     }
-  }, [isAuthed, navigation, redeemInvite])
+  }, [isAuthed, navigation, redeemInvite, fetchInvitePreview])
 
   const handleDeepLink = async (url: string) => {
-    // Parse the URL to get the token and optional contact/method
-    // Expected format: flash://invite?token=xxxxx&contact=+1650555xxxx&method=SMS
-    const tokenRegex = /[?&]token=([a-f0-9]{40})/
-    const contactRegex = /[?&]contact=([^&]+)/
-    const methodRegex = /[?&]method=([^&]+)/
-    
-    const tokenMatch = url.match(tokenRegex)
-    if (!tokenMatch || !tokenMatch[1]) {
+    console.log("HandleInviteDeepLink: Processing URL:", url)
+
+    // Only handle invite URLs
+    if (!url.includes("invite")) {
+      console.log("HandleInviteDeepLink: Not an invite URL, skipping")
       return
     }
-    
+
+    // Parse the URL to get the token
+    // Expected format: flash://invite?token=xxxxx or https://getflash.io/invite?token=xxxxx
+    const tokenRegex = /[?&]token=([a-f0-9]{40})/
+
+    const tokenMatch = url.match(tokenRegex)
+    if (!tokenMatch || !tokenMatch[1]) {
+      console.log("HandleInviteDeepLink: No valid token found in URL")
+      return
+    }
+
     const token = tokenMatch[1]
-    const contactMatch = url.match(contactRegex)
-    const methodMatch = url.match(methodRegex)
-    
-    const contact = contactMatch ? decodeURIComponent(contactMatch[1]) : null
-    const method = methodMatch ? methodMatch[1] : "SMS"
-    
+    console.log("HandleInviteDeepLink: Found token:", token)
+
     try {
       // Store token for later use (after signup/login)
       await AsyncStorage.setItem("pendingInviteToken", token)
-      
-      if (isAuthed) {
-        // If logged in, redeem the invite immediately
-        const { data } = await redeemInvite({
-          variables: {
-            input: { token }
+
+      // Fetch invite preview to get details
+      console.log("HandleInviteDeepLink: Fetching invite preview for token:", token)
+      const { data: previewData, error } = await fetchInvitePreview({
+        variables: { token },
+        fetchPolicy: 'network-only', // Force fresh fetch, bypass cache
+        context: {
+          // Add a header to indicate this is the recipient requesting their own invite
+          headers: {
+            'X-Invite-Recipient': 'true'
           }
-        })
-        
-        if (data?.redeemInvite?.success) {
-          Alert.alert(
-            "Welcome!",
-            "You've successfully accepted the invitation.",
-            [{ text: "OK" }]
-          )
-        } else if (data?.redeemInvite?.errors?.[0]) {
-          Alert.alert("Error", data.redeemInvite.errors[0])
         }
+      })
+
+      if (error) {
+        console.log("HandleInviteDeepLink: Error fetching preview:", error)
+        Alert.alert("Error", "Unable to fetch invitation details. Please try again.")
+        return
+      }
+
+      console.log("HandleInviteDeepLink: Preview data:", previewData)
+
+      if (!previewData?.invitePreview?.isValid) {
+        console.log("HandleInviteDeepLink: Invite is not valid")
+        Alert.alert(
+          "Invalid Invitation",
+          "This invitation link is invalid or has expired.",
+          [{ text: "OK" }]
+        )
+        return
+      }
+
+      const { contact, method, inviterUsername } = previewData.invitePreview
+      console.log("HandleInviteDeepLink: Invite details - contact:", contact, "method:", method, "inviter:", inviterUsername)
+
+      // Backend now returns full contact for the intended recipient
+
+      if (isAuthed) {
+        console.log("HandleInviteDeepLink: User is authenticated, showing info message")
+        // Existing user - show message but don't redeem
+        Alert.alert(
+          "Invitation for New Users",
+          `This invitation from ${inviterUsername || "a friend"} is for new users only. Share it with friends who haven't joined yet!`,
+          [{ text: "OK" }]
+        )
       } else {
-        // If not logged in, navigate to signup/login with the token and contact info
-        navigation.navigate("getStarted", { 
-          inviteToken: token,
-          prefilledContact: contact,
-          contactMethod: method
-        } as any)
+        console.log("HandleInviteDeepLink: User not authenticated, determining registration flow")
+        // If not logged in, navigate to appropriate registration screen based on method
+        // Add a small delay to ensure navigation is ready
+        setTimeout(() => {
+          if (method === "EMAIL") {
+            console.log("HandleInviteDeepLink: Navigating to email registration with contact:", contact)
+            navigation.navigate("emailRegistrationInitiate", {
+              inviteToken: token,
+              prefilledEmail: contact,
+              inviterUsername: inviterUsername || undefined
+            } as any)
+          } else {
+            // For SMS or WHATSAPP, go to phone registration
+            console.log("HandleInviteDeepLink: Navigating to phone registration with contact:", contact)
+            navigation.navigate("phoneRegistrationInitiate", {
+              inviteToken: token,
+              prefilledPhone: contact,
+              inviterUsername: inviterUsername || undefined
+            } as any)
+          }
+        }, 500)
       }
     } catch (error) {
       console.error("Error handling invite deep link:", error)

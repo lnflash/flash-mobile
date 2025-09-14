@@ -526,6 +526,15 @@ export const InviteMethod = {
 } as const;
 
 export type InviteMethod = typeof InviteMethod[keyof typeof InviteMethod];
+export type InvitePreview = {
+  readonly __typename: 'InvitePreview';
+  readonly contact: Scalars['String']['output'];
+  readonly expiresAt: Scalars['String']['output'];
+  readonly inviterUsername?: Maybe<Scalars['String']['output']>;
+  readonly isValid: Scalars['Boolean']['output'];
+  readonly method: Scalars['String']['output'];
+};
+
 export const InviteStatus = {
   Accepted: 'ACCEPTED',
   Expired: 'EXPIRED',
@@ -1395,6 +1404,7 @@ export type Query = {
   readonly hasPromptedSetDefaultAccount: Scalars['Boolean']['output'];
   readonly hiddenBalanceToolTip: Scalars['Boolean']['output'];
   readonly hideBalance: Scalars['Boolean']['output'];
+  readonly invitePreview?: Maybe<InvitePreview>;
   readonly isFlashNpub?: Maybe<IsFlashNpubPayload>;
   readonly lnInvoicePaymentStatus: LnInvoicePaymentStatusPayload;
   readonly me?: Maybe<User>;
@@ -1427,6 +1437,11 @@ export type QueryBtcPriceArgs = {
 
 export type QueryBtcPriceListArgs = {
   range: PriceGraphRange;
+};
+
+
+export type QueryInvitePreviewArgs = {
+  token: Scalars['String']['input'];
 };
 
 
@@ -2284,6 +2299,13 @@ export type RealtimePriceUnauthedQueryVariables = Exact<{
 
 
 export type RealtimePriceUnauthedQuery = { readonly __typename: 'Query', readonly realtimePrice: { readonly __typename: 'RealtimePrice', readonly timestamp: number, readonly denominatorCurrency: string, readonly btcSatPrice: { readonly __typename: 'PriceOfOneSatInMinorUnit', readonly base: number, readonly offset: number }, readonly usdCentPrice: { readonly __typename: 'PriceOfOneUsdCentInMinorUnit', readonly base: number, readonly offset: number } } };
+
+export type InvitePreviewQueryVariables = Exact<{
+  token: Scalars['String']['input'];
+}>;
+
+
+export type InvitePreviewQuery = { readonly __typename: 'Query', readonly invitePreview?: { readonly __typename: 'InvitePreview', readonly contact: string, readonly method: string, readonly isValid: boolean, readonly inviterUsername?: string | null, readonly expiresAt: string } | null };
 
 export type RealtimePriceWsSubscriptionVariables = Exact<{
   currency: Scalars['DisplayCurrency']['input'];
@@ -4544,6 +4566,45 @@ export function useRealtimePriceUnauthedLazyQuery(baseOptions?: Apollo.LazyQuery
 export type RealtimePriceUnauthedQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedQuery>;
 export type RealtimePriceUnauthedLazyQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedLazyQuery>;
 export type RealtimePriceUnauthedQueryResult = Apollo.QueryResult<RealtimePriceUnauthedQuery, RealtimePriceUnauthedQueryVariables>;
+export const InvitePreviewDocument = gql`
+    query invitePreview($token: String!) {
+  invitePreview(token: $token) {
+    contact
+    method
+    isValid
+    inviterUsername
+    expiresAt
+  }
+}
+    `;
+
+/**
+ * __useInvitePreviewQuery__
+ *
+ * To run a query within a React component, call `useInvitePreviewQuery` and pass it any options that fit your needs.
+ * When your component renders, `useInvitePreviewQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useInvitePreviewQuery({
+ *   variables: {
+ *      token: // value for 'token'
+ *   },
+ * });
+ */
+export function useInvitePreviewQuery(baseOptions: Apollo.QueryHookOptions<InvitePreviewQuery, InvitePreviewQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<InvitePreviewQuery, InvitePreviewQueryVariables>(InvitePreviewDocument, options);
+      }
+export function useInvitePreviewLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<InvitePreviewQuery, InvitePreviewQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<InvitePreviewQuery, InvitePreviewQueryVariables>(InvitePreviewDocument, options);
+        }
+export type InvitePreviewQueryHookResult = ReturnType<typeof useInvitePreviewQuery>;
+export type InvitePreviewLazyQueryHookResult = ReturnType<typeof useInvitePreviewLazyQuery>;
+export type InvitePreviewQueryResult = Apollo.QueryResult<InvitePreviewQuery, InvitePreviewQueryVariables>;
 export const RealtimePriceWsDocument = gql`
     subscription realtimePriceWs($currency: DisplayCurrency!) {
   realtimePrice(input: {currency: $currency}) {

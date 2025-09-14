@@ -24,7 +24,7 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
 
-  const [countryCode, setCountryCode] = useState<CountryCode | undefined>()
+  const [countryCode, setCountryCode] = useState<CountryCode | undefined>("JM")
   const [phoneNumber, setPhoneNumber] = useState<string | undefined>()
   const [email, setEmail] = useState<string>()
   const [loading, setLoading] = useState(false)

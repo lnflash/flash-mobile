@@ -1125,6 +1125,17 @@ query homeUnauthed {
   }
 }
 
+query invitePreview($token: String!) {
+  invitePreview(token: $token) {
+    contact
+    method
+    isValid
+    inviterUsername
+    expiresAt
+    __typename
+  }
+}
+
 query language {
   me {
     id

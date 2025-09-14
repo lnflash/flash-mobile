@@ -283,14 +283,13 @@ gql`
     }
   }
 
-  # TODO: Enable when server exposes invitePreview query
-  # query invitePreview($token: String!) {
-  #   invitePreview(token: $token) {
-  #     contact
-  #     method
-  #     inviterUsername
-  #     expiresAt
-  #     isValid
-  #   }
-  # }
+  query invitePreview($token: String!) {
+    invitePreview(token: $token) {
+      contact
+      method
+      isValid
+      inviterUsername
+      expiresAt
+    }
+  }
 `
