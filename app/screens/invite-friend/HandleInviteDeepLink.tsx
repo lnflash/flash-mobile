@@ -101,24 +101,28 @@ export const useInviteDeepLink = () => {
           [{ text: "OK" }]
         )
       } else {
-        console.log("HandleInviteDeepLink: User not authenticated, determining registration flow")
-        // If not logged in, navigate to appropriate registration screen based on method
+        console.log("HandleInviteDeepLink: User not authenticated, navigating to phoneFlow")
+        // If not logged in, navigate to phone login flow (which handles both login and registration)
+        // Store the invite details for use after successful authentication
         // Add a small delay to ensure navigation is ready
         setTimeout(() => {
           if (method === "EMAIL") {
-            console.log("HandleInviteDeepLink: Navigating to email registration with contact:", contact)
-            navigation.navigate("emailRegistrationInitiate", {
+            console.log("HandleInviteDeepLink: Navigating to email login with contact:", contact)
+            navigation.navigate("emailLoginInitiate", {
               inviteToken: token,
               prefilledEmail: contact,
               inviterUsername: inviterUsername || undefined
             } as any)
           } else {
-            // For SMS or WHATSAPP, go to phone registration
-            console.log("HandleInviteDeepLink: Navigating to phone registration with contact:", contact)
-            navigation.navigate("phoneRegistrationInitiate", {
-              inviteToken: token,
-              prefilledPhone: contact,
-              inviterUsername: inviterUsername || undefined
+            // For SMS or WHATSAPP, go to phone login flow
+            console.log("HandleInviteDeepLink: Navigating to phoneFlow with contact:", contact)
+            navigation.navigate("phoneFlow", {
+              screen: "phoneLoginInitiate",
+              params: {
+                inviteToken: token,
+                prefilledPhone: contact,
+                inviterUsername: inviterUsername || undefined
+              }
             } as any)
           }
         }, 500)

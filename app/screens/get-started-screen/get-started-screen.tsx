@@ -80,12 +80,26 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation, route }) => {
         routes: [{ name: "authenticationCheck" }],
       })
     } else {
-      navigation.navigate("phoneFlow", {
-        inviteToken,
-        prefilledContact,
-        contactMethod,
-        inviterUsername,
-      })
+      // If we have an invite token, go to phone registration instead of login
+      if (inviteToken && prefilledContact) {
+        if (contactMethod === "EMAIL") {
+          navigation.navigate("emailRegistrationInitiate", {
+            inviteToken,
+            prefilledEmail: prefilledContact,
+            inviterUsername,
+          })
+        } else {
+          // For SMS or WHATSAPP
+          navigation.navigate("phoneRegistrationInitiate", {
+            inviteToken,
+            prefilledPhone: prefilledContact,
+            inviterUsername,
+          })
+        }
+      } else {
+        // No invite, go to normal phone login flow
+        navigation.navigate("phoneFlow", {})
+      }
     }
   }
 
