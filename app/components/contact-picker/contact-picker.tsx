@@ -71,7 +71,6 @@ export const ContactPicker: React.FC<ContactPickerProps> = ({
       if (!permission) return
 
       const result = await check(permission)
-      console.log("Permission check result:", result)
 
       if (result === RESULTS.GRANTED) {
         setPermissionGranted(true)
@@ -97,9 +96,7 @@ export const ContactPicker: React.FC<ContactPickerProps> = ({
         )
       } else {
         // Request permission - this should show the native dialog
-        console.log("Requesting permission...")
         const requestResult = await request(permission)
-        console.log("Permission request result:", requestResult)
 
         if (requestResult === RESULTS.GRANTED) {
           setPermissionGranted(true)

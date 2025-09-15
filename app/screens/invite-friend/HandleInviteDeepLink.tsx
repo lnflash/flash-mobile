@@ -31,11 +31,9 @@ export const useInviteDeepLink = () => {
   }, [isAuthed, navigation, redeemInvite, fetchInvitePreview])
 
   const handleDeepLink = async (url: string) => {
-    console.log("HandleInviteDeepLink: Processing URL:", url)
 
     // Only handle invite URLs
     if (!url.includes("invite")) {
-      console.log("HandleInviteDeepLink: Not an invite URL, skipping")
       return
     }
 
@@ -45,19 +43,16 @@ export const useInviteDeepLink = () => {
 
     const tokenMatch = url.match(tokenRegex)
     if (!tokenMatch || !tokenMatch[1]) {
-      console.log("HandleInviteDeepLink: No valid token found in URL")
       return
     }
 
     const token = tokenMatch[1]
-    console.log("HandleInviteDeepLink: Found token:", token)
 
     try {
       // Store token for later use (after signup/login)
       await AsyncStorage.setItem("pendingInviteToken", token)
 
       // Fetch invite preview to get details
-      console.log("HandleInviteDeepLink: Fetching invite preview for token:", token)
       const { data: previewData, error } = await fetchInvitePreview({
         variables: { token },
         fetchPolicy: 'network-only', // Force fresh fetch, bypass cache
@@ -70,15 +65,11 @@ export const useInviteDeepLink = () => {
       })
 
       if (error) {
-        console.log("HandleInviteDeepLink: Error fetching preview:", error)
         Alert.alert("Error", "Unable to fetch invitation details. Please try again.")
         return
       }
 
-      console.log("HandleInviteDeepLink: Preview data:", previewData)
-
       if (!previewData?.invitePreview?.isValid) {
-        console.log("HandleInviteDeepLink: Invite is not valid")
         Alert.alert(
           "Invalid Invitation",
           "This invitation link is invalid or has expired.",
@@ -88,12 +79,10 @@ export const useInviteDeepLink = () => {
       }
 
       const { contact, method, inviterUsername } = previewData.invitePreview
-      console.log("HandleInviteDeepLink: Invite details - contact:", contact, "method:", method, "inviter:", inviterUsername)
 
       // Backend now returns full contact for the intended recipient
 
       if (isAuthed) {
-        console.log("HandleInviteDeepLink: User is authenticated, showing info message")
         // Existing user - show message but don't redeem
         Alert.alert(
           "Invitation for New Users",
@@ -101,13 +90,11 @@ export const useInviteDeepLink = () => {
           [{ text: "OK" }]
         )
       } else {
-        console.log("HandleInviteDeepLink: User not authenticated, navigating to phoneFlow")
         // If not logged in, navigate to phone login flow (which handles both login and registration)
         // Store the invite details for use after successful authentication
         // Add a small delay to ensure navigation is ready
         setTimeout(() => {
           if (method === "EMAIL") {
-            console.log("HandleInviteDeepLink: Navigating to email login with contact:", contact)
             navigation.navigate("emailLoginInitiate", {
               inviteToken: token,
               prefilledEmail: contact,
@@ -115,7 +102,6 @@ export const useInviteDeepLink = () => {
             } as any)
           } else {
             // For SMS or WHATSAPP, go to phone login flow
-            console.log("HandleInviteDeepLink: Navigating to phoneFlow with contact:", contact)
             navigation.navigate("phoneFlow", {
               screen: "phoneLoginInitiate",
               params: {
