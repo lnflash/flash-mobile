@@ -4931,10 +4931,10 @@
   dependencies:
     stacktrace-js "^2.0.2"
 
-"@react-native-firebase/messaging@^22.2.0":
-  version "22.2.0"
-  resolved "https://registry.yarnpkg.com/@react-native-firebase/messaging/-/messaging-22.2.0.tgz#0f2fcce3114702e23ae8d4a25b2c42d132656c2e"
-  integrity sha512-bAkVKcXTcFyqXsVw2cgOk0pX8yW1IpQd3+CeLBywB1/L56lIk3e2giGuTqDjw2sspRbSRu/JOMU4YEZ/8/+7rA==
+"@react-native-firebase/messaging@^23.2.0":
+  version "23.2.0"
+  resolved "https://registry.yarnpkg.com/@react-native-firebase/messaging/-/messaging-23.2.0.tgz#6c3996be189c2e2e7b601a54c5222c78ff91069b"
+  integrity sha512-k5pr7VWPvApqLjMEyrBLHtGSb9B7vV/wFkNwRJ36KRurSgwQoMIf5lNiD+8Liw0ROQ01Sfm4YRqHfKkc8xvsqg==
 
 "@react-native-firebase/perf@^22.2.0":
   version "22.2.0"

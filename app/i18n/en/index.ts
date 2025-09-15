@@ -1,5 +1,6 @@
 // prettier-ignore
 
+import NostrQuickStart from "@app/components/nostr-quickstart"
 import { BaseTranslation } from "../i18n-types"
 
 const en: BaseTranslation = {
@@ -1292,6 +1293,22 @@ const en: BaseTranslation = {
     problemMaybeReauth:
       "There was a problem with your request. Please retry in one minute. If the problem persist, we recommend that you log out and log back in. You can log out by going into Settings > Account > Log out",
     warning: "Warning",
+  },
+  NostrQuickStart: {
+    postHeading: "Make your first social post!",
+    postDesc: "Introduce yourself to the World!"
+
+  },
+  Social: {
+    post: "Shout to the World",
+    flashAppCredit: "Posted using Flash! Get it @ https://getflash.io/app",
+    writeYourNote: "Write your note, make it special :)",
+    postButton: "Post",
+    notePosted: "Success!\n Your note has been posted",
+    errorPostFailed: "Error!\n Error in posting note",
+    errorEmptyNote: "Error: \n Empty note",
+    posting: "posting..."
+
   },
   errors: {
     generic: "There was an error.\nPlease try again later.",
