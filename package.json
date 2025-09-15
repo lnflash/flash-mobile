@@ -128,6 +128,7 @@
     "react-native-base64": "^0.2.1",
     "react-native-bootsplash": "^4.6.0",
     "react-native-config": "^1.5.1",
+    "react-native-contacts": "^8.0.7",
     "react-native-countdown-circle-timer": "^3.2.1",
     "react-native-country-picker-modal": "^2.0.0",
     "react-native-crypto": "^2.2.0",

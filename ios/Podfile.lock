@@ -477,6 +477,9 @@ PODS:
     - react-native-config/App (= 1.5.1)
   - react-native-config/App (1.5.1):
     - React-Core
+  - react-native-contacts (8.0.7):
+    - RCT-Folly (= 2021.07.22.00)
+    - React-Core
   - react-native-date-picker (5.0.7):
     - React-Core
   - react-native-document-picker (9.1.0):
@@ -766,6 +769,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - react-native-aes (from `../node_modules/react-native-aes-crypto`)
   - react-native-config (from `../node_modules/react-native-config`)
+  - react-native-contacts (from `../node_modules/react-native-contacts`)
   - react-native-date-picker (from `../node_modules/react-native-date-picker`)
   - react-native-document-picker (from `../node_modules/react-native-document-picker`)
   - react-native-fingerprint-scanner (from `../node_modules/react-native-fingerprint-scanner`)
@@ -922,6 +926,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-aes-crypto"
   react-native-config:
     :path: "../node_modules/react-native-config"
+  react-native-contacts:
+    :path: "../node_modules/react-native-contacts"
   react-native-date-picker:
     :path: "../node_modules/react-native-date-picker"
   react-native-document-picker:
@@ -1114,6 +1120,7 @@ SPEC CHECKSUMS:
   React-logger: 61efd44da84482aabbbbb478a49b893c7c912f99
   react-native-aes: bed3ca6c47c5a5ebd5bac683efdf737c874f6d3f
   react-native-config: 136f9755ccc991cc6438053a44363259ad4c7813
+  react-native-contacts: 2be02d0d63726f388cac53413044a7299391365f
   react-native-date-picker: 585252087d4820b4cd8f2cf80068f6e8f5b72413
   react-native-document-picker: 74f5ca4179532f9ff205275990af514d1f2e22d8
   react-native-fingerprint-scanner: 91bf6825709dd7bd3abc4588a4772eb097a2b2d8
@@ -1170,7 +1177,7 @@ SPEC CHECKSUMS:
   RNKeychain: df33ae4d27df06622fc14190b790ba8749f6be76
   RNLocalize: 8bf466de4c92d4721b254aabe1ff0a1456e7b9f4
   RNNotifee: 8768d065bf1e2f9f8f347b4bd79147431c7eacd6
-  RNPermissions: 4f7b81b0d457c8ec4e892cc36ef2376734a4b22c
+  RNPermissions: 963fdb9cf67420e1eaf915940f523b340aa0e2b8
   RNQrGenerator: 60eab4f7c9e3f09db78029636fe356dca5cb585f
   RNRate: 7641919330e0d6688ad885a985b4bd697ed7d14c
   RNReactNativeHapticFeedback: a6fb5b7a981683bf58af43e3fb827d4b7ed87f83
@@ -1186,6 +1193,6 @@ SPEC CHECKSUMS:
   Yoga: 4c3aa327e4a6a23eeacd71f61c81df1bcdf677d5
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: 8f3be271786b090aa00d644ea8f00c5b02f4374f
+PODFILE CHECKSUM: 63a8f9493884b43ef99724d57712e63b5849e5db
 
 COCOAPODS: 1.16.2

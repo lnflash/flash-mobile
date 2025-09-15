@@ -552,6 +552,8 @@ const en: BaseTranslation = {
 		addFlashcard: "Add Flashcard",
     upgradeTitle: "Add your phone number",
     upgradeDesc: "Backup your cash wallet and increase transaction limits.",
+    inviteTitle: "Invite Friends",
+    inviteDesc: "Get rewards for inviting friends to Flash",
     currencyTitle:"Change to your local currency",
     currencyDesc: "Review our available currency list and select your currency.",
     flashcardTitle: "Get a Flashcard",
@@ -841,7 +843,7 @@ const en: BaseTranslation = {
   InviteFriend: {
     invitation: "Invitation",
     title: "Invite a friend to Flash!",
-    subtitle: "Enter a phone number or email address to invite a friend.",
+    subtitle: "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
     phoneNumber: "Enter phone number",
     email: "Enter email address",
     invite: "Invite",
