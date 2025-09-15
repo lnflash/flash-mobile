@@ -1,12 +1,9 @@
-import React, { useState } from "react"
+import React from "react"
 import { TouchableOpacity } from "react-native"
-import Clipboard from "@react-native-clipboard/clipboard"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-
-// components
-import { SetLightningAddressModal } from "../set-lightning-address-modal"
+import Clipboard from "@react-native-clipboard/clipboard"
 
 // hooks
 import { useHomeAuthedQuery } from "@app/graphql/generated"
@@ -26,12 +23,11 @@ const Username = () => {
   const { appConfig } = useAppConfig()
   const { LL } = useI18nContext()
 
-  const [modalVisible, setModalVisible] = useState(false)
-
   const { data, loading } = useHomeAuthedQuery({
     skip: !isAuthed,
   })
 
+  const isHyperlink = !isAuthed || !data?.me?.username
   const hostName = appConfig.galoyInstance.lnAddressHostname
   const lnAddress = `${data?.me?.username}@${hostName}`
 
@@ -41,7 +37,7 @@ const Username = () => {
       : "Set username"
     : "Login"
 
-  const onCopyLnAddress = () => {
+  const handleOnPress = () => {
     if (isAuthed) {
       if (data?.me?.username) {
         Clipboard.setString(lnAddress)
@@ -53,34 +49,25 @@ const Username = () => {
           currentTranslation: LL,
         })
       } else {
-        setModalVisible(true)
+        navigation.navigate("UsernameSet", { insideApp: true })
       }
     } else {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "getStarted" }],
-      })
+      navigation.navigate("getStarted")
     }
   }
 
   if (!loading) {
     return (
-      <>
-        <TouchableOpacity style={styles.lnAddressWrapper} onPress={onCopyLnAddress}>
-          <Text type="p2" style={{ marginRight: 10 }}>
-            {label}
-            {data?.me?.username && (
-              <Text type="caption" color={colors.grey3}>
-                @{hostName}
-              </Text>
-            )}
-          </Text>
-        </TouchableOpacity>
-        <SetLightningAddressModal
-          isVisible={modalVisible}
-          toggleModal={() => setModalVisible(!modalVisible)}
-        />
-      </>
+      <TouchableOpacity style={styles.lnAddressWrapper} onPress={handleOnPress}>
+        <Text type="p2" style={isHyperlink ? styles.hyperlink : {}}>
+          {label}
+          {!isHyperlink && (
+            <Text type="caption" color={colors.grey3}>
+              @{hostName}
+            </Text>
+          )}
+        </Text>
+      </TouchableOpacity>
     )
   }
 
@@ -89,9 +76,13 @@ const Username = () => {
 
 export default Username
 
-const useStyle = makeStyles(() => ({
+const useStyle = makeStyles(({ colors }) => ({
   lnAddressWrapper: {
     marginTop: 10,
     marginHorizontal: 25,
+  },
+  hyperlink: {
+    color: colors.accent02,
+    textDecorationLine: "underline",
   },
 }))
