@@ -87,6 +87,7 @@ import {
   TransactionHistoryTabs,
   USDTransactionHistory,
   SignInViaQRCode,
+  FavoritesCardList,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -574,6 +575,11 @@ export const RootStack = () => {
           headerStyle: { backgroundColor: "#000" },
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         }}
+      />
+      <RootNavigator.Screen
+        name="FavoritesCardList"
+        component={FavoritesCardList}
+        options={{ headerShown: true, title: "Favorites List" }}
       />
     </RootNavigator.Navigator>
   )
