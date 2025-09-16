@@ -1776,6 +1776,14 @@ type RootTranslation = {
 		 * B​a​c​k​u​p​ ​a​n​d​ ​s​e​c​u​r​e​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​ ​u​s​i​n​g​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​.
 		 */
 		backupDesc: string
+		/**
+		 * Flash favorites
+		 */
+		favoritesTitle: string
+		/**
+		 * Discover hand-picked deals, exclusive events, and special rewards all in one place.
+		 */
+		favoritesDesc: string
 	}
 	PinScreen: {
 		/**
@@ -6508,6 +6516,14 @@ export type TranslationFunctions = {
 		 * Backup and secure your Bitcoin wallet using recovery phrase.
 		 */
 		backupDesc: () => LocalizedString
+		/**
+		 * Flash favorites
+		 */
+		favoritesTitle: () => LocalizedString
+		/**
+		 * Discover hand-picked deals, exclusive events, and special rewards all in one place.
+		 */
+		favoritesDesc: () => LocalizedString
 	}
 	PinScreen: {
 		/**
@@ -9430,6 +9446,7 @@ export type TranslationFunctions = {
 			copied: () => LocalizedString
 		}
 	}
+	
 }
 
 export type Formatters = {
