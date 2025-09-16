@@ -13,7 +13,7 @@ type Props = {
   description: string
   starts: number
   ends: number
-  type: "event" | "reward" | "discount"
+  type: string
 }
 
 const Favorites: React.FC<Props> = ({ title, description, starts, ends, type }) => {
@@ -26,7 +26,7 @@ const Favorites: React.FC<Props> = ({ title, description, starts, ends, type }) 
   const time = new Date().getTime()
   const status = time > ends ? "expired" : time < starts ? "coming" : "active"
 
-  const Image = type === "event" ? Event : type === "reward" ? Reward : Discount
+  const Image = type === "event" ? Event : type === "discount" ? Discount : Reward
   return (
     <View style={styles.wrapper}>
       <Image width={100} height={100} />
