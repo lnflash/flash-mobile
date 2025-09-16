@@ -4,10 +4,10 @@ import { makeStyles } from "@rneui/themed"
 // components
 import { Screen } from "@app/components/screen"
 
-const FavoritesCardDetails = () => {
+const FlashFavoriteDetails = () => {
   return <Screen></Screen>
 }
 
-export default FavoritesCardDetails
+export default FlashFavoriteDetails
 
 const useStyles = makeStyles(() => ({}))

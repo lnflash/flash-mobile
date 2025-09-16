@@ -87,7 +87,7 @@ import {
   TransactionHistoryTabs,
   USDTransactionHistory,
   SignInViaQRCode,
-  FavoritesCardList,
+  FlashFavoritesList,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -577,9 +577,9 @@ export const RootStack = () => {
         }}
       />
       <RootNavigator.Screen
-        name="FavoritesCardList"
-        component={FavoritesCardList}
-        options={{ headerShown: true, title: "Favorites List" }}
+        name="FlashFavoritesList"
+        component={FlashFavoritesList}
+        options={{ headerShown: true, title: LL.HomeScreen.favoritesTitle() }}
       />
     </RootNavigator.Navigator>
   )

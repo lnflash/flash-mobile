@@ -8,7 +8,7 @@ import { Favorites } from "@app/components/cards"
 
 const data = [
   {
-    title: "Favorite card",
+    title: "Event Favorite card",
     description:
       "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is",
     starts: 1757211118472,
@@ -16,7 +16,7 @@ const data = [
     type: "event",
   },
   {
-    title: "Favorite card",
+    title: "Reward Favorite card",
     description:
       "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is",
     starts: 1757711118472,
@@ -24,7 +24,7 @@ const data = [
     type: "reward",
   },
   {
-    title: "Favorite card",
+    title: "Discount Favorite card",
     description:
       "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is",
     starts: 1758711118472,
@@ -33,7 +33,7 @@ const data = [
   },
 ]
 
-const FavoritesCardList = () => {
+const FlashFavoritesList = () => {
   return (
     <Screen>
       <FlatList
@@ -45,6 +45,6 @@ const FavoritesCardList = () => {
   )
 }
 
-export default FavoritesCardList
+export default FlashFavoritesList
 
 const useStyles = makeStyles(() => ({}))

@@ -70,7 +70,7 @@ const QuickStart = () => {
       title: LL.HomeScreen.favoritesTitle(),
       description: LL.HomeScreen.favoritesDesc(),
       image: Reward,
-      onPress: () => navigation.navigate("FavoritesCardList"),
+      onPress: () => navigation.navigate("FlashFavoritesList"),
     },
     {
       type: "upgrade",
