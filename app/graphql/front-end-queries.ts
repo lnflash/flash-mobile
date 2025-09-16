@@ -282,4 +282,10 @@ gql`
       denominatorCurrency
     }
   }
+  query npubByUsername($username: Username!) {
+    npubByUsername(username: $username) {
+      npub
+      username
+    }
+  }
 `
