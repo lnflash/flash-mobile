@@ -30,6 +30,7 @@ type ChatContextType = {
   refreshUserProfile: () => Promise<void>
   contactsEvent: Event | undefined
   setContactsEvent: (e: Event) => void
+  getContactPubkeys: () => string[] | null
 }
 
 const publicRelays = [
@@ -56,6 +57,7 @@ const ChatContext = createContext<ChatContextType>({
   refreshUserProfile: async () => {},
   contactsEvent: undefined,
   setContactsEvent: (event: Event) => {},
+  getContactPubkeys: () => null,
 })
 
 export const useChatContext = () => useContext(ChatContext)
@@ -164,6 +166,16 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         resolve()
       })
     })
+  }
+
+  const getContactPubkeys = () => {
+    if (!contactsEvent) return null
+    return contactsEvent.tags
+      .filter((t: string[]) => {
+        if (t[0] === "p") return true
+        return false
+      })
+      .map((t: string[]) => t[1])
   }
 
   const initializeChat = async (count = 0) => {
@@ -277,6 +289,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         refreshUserProfile,
         contactsEvent,
         setContactsEvent,
+        getContactPubkeys,
       }}
     >
       {children}
