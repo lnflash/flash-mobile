@@ -563,7 +563,10 @@ const en: BaseTranslation = {
     btcWalletTitle: "Enable BTC wallet",
     btcWalletDesc: "Easily transfer larger amounts in Bitcoin.",
     backupTitle: "Backup your BTC wallet",
-    backupDesc: "Backup and secure your Bitcoin wallet using recovery phrase."
+    backupDesc: "Backup and secure your Bitcoin wallet using recovery phrase.",
+		favoritesTitle: "Flash favorites",
+		favoritesDesc: "Discover hand-picked deals, exclusive events, and special rewards all in one place."
+    
   },
   PinScreen: {
     attemptsRemaining: "Incorrect PIN. {attemptsRemaining: number} attempts remaining.",
