@@ -88,8 +88,8 @@ android {
         applicationId "com.lnflash"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 57
-        versionName "0.4.2"
+        versionCode 60
+        versionName "0.4.5"
     }
 
     splits {

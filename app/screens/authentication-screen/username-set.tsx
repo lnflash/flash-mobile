@@ -36,7 +36,7 @@ const { width } = Dimensions.get("window")
 
 type Props = StackScreenProps<RootStackParamList, "UsernameSet">
 
-export const UsernameSet: React.FC<Props> = ({ navigation }) => {
+export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
   const dispatch = useAppDispatch()
   const { lnAddressHostname, name } = useAppConfig().appConfig.galoyInstance
   const { LL } = useI18nContext()
@@ -116,11 +116,15 @@ export const UsernameSet: React.FC<Props> = ({ navigation }) => {
   }
 
   const onCancel = () => {
-    logout()
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "getStarted" }],
-    })
+    if (route.params?.insideApp) {
+      navigation.popToTop()
+    } else {
+      logout()
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "getStarted" }],
+      })
+    }
   }
 
   let errorMessage = ""

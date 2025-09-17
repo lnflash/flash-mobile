@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { View, Alert } from "react-native"
 import { makeStyles } from "@rneui/themed"
+import { StackScreenProps } from "@react-navigation/stack"
 import crashlytics from "@react-native-firebase/crashlytics"
 
 // components
@@ -39,7 +40,6 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // types
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { NavigationProp, RouteProp, useNavigation } from "@react-navigation/native"
 import { PaymentDetail } from "./payment-details/index.types"
 import { Satoshis } from "lnurl-pay/dist/types/types"
 import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
@@ -50,15 +50,11 @@ import { isValidAmount } from "./payment-details"
 import { requestInvoice, utils } from "lnurl-pay"
 import { fetchBreezFee, fetchRecommendedFees } from "@app/utils/breez-sdk-liquid"
 
-type Props = {
-  route: RouteProp<RootStackParamList, "sendBitcoinDetails">
-}
+type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 
 const network = "mainnet" // data?.globals?.network
 
-const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
-  const navigation =
-    useNavigation<NavigationProp<RootStackParamList, "sendBitcoinDetails">>()
+const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
@@ -69,7 +65,8 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
   const { toggleActivityIndicator } = useActivityIndicator()
   const getIbexFee = useIbexFee()
 
-  const { paymentDestination, flashUserAddress, isFromFlashcard } = route.params
+  const { paymentDestination, flashUserAddress, isFromFlashcard, invoiceAmount } =
+    route.params
 
   const [recommendedFees, setRecommendedFees] = useState<RecommendedFees>()
   const [isLoadingLnurl, setIsLoadingLnurl] = useState(false)
@@ -173,7 +170,11 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           pd.isSendingMax,
         )
         if (fee === null && err) {
-          setAsyncErrorMessage(`${err?.message || err} (amount + fee)` || "")
+          const error = err?.message || err
+          const errMsg = error.includes("not enough funds")
+            ? `${error} (amount + fee)`
+            : error
+          setAsyncErrorMessage(errMsg)
           return false
         }
       } else {
@@ -353,6 +354,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
             paymentDetail: paymentDetailForConfirmation,
             flashUserAddress,
             feeRateSatPerVbyte: selectedFee,
+            invoiceAmount,
           })
         }
       } catch (error) {
@@ -412,6 +414,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ route }) => {
           setPaymentDetail={setPaymentDetail}
           setAsyncErrorMessage={setAsyncErrorMessage}
           isFromFlashcard={isFromFlashcard}
+          invoiceAmount={invoiceAmount}
         />
         {paymentDetail.sendingWalletDescriptor.currency === "BTC" &&
           paymentDetail.paymentType === "onchain" && (
