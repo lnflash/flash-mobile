@@ -1,41 +1,67 @@
-import { View } from "react-native"
-
+import { useState } from "react"
+import { TouchableOpacity, View } from "react-native"
+import { makeStyles, useTheme, Text, Divider, Icon } from "@rneui/themed"
 import { testProps } from "@app/utils/testProps"
-import { makeStyles, useTheme, Text, Divider } from "@rneui/themed"
 
 export const SettingsGroup: React.FC<{
   name?: string
   items: React.FC[]
-}> = ({ name, items }) => {
+  initiallyExpanded?: boolean
+}> = ({ name, items, initiallyExpanded = false }) => {
   const styles = useStyles()
-  const {
-    theme: { colors },
-  } = useTheme()
+  const { colors } = useTheme().theme
+
+  const [isExpanded, setIsExpanded] = useState(initiallyExpanded)
 
   const filteredItems = items.filter((x) => x({}) !== null)
 
   return (
-    <View>
+    <View style={styles.container}>
       {name && (
-        <Text {...testProps(name + "-group")} type="p2" bold>
-          {name}
-        </Text>
+        <TouchableOpacity
+          onPress={() => setIsExpanded(!isExpanded)}
+          style={styles.headerContainer}
+          {...testProps(name + "-group")}
+        >
+          <Text type="p2" bold style={styles.headerText}>
+            {name}
+          </Text>
+          {isExpanded ? (
+            <Icon name={"chevron-down"} type="ionicon" />
+          ) : (
+            <Icon name={"chevron-forward"} type="ionicon" />
+          )}
+        </TouchableOpacity>
       )}
-      <View style={styles.groupCard}>
-        {filteredItems.map((Element, index) => (
-          <View key={index}>
-            <Element />
-            {index < filteredItems.length - 1 && (
-              <Divider color={colors.grey4} style={styles.divider} />
-            )}
-          </View>
-        ))}
-      </View>
+      {isExpanded && (
+        <View style={styles.groupCard}>
+          {filteredItems.map((Element, index) => (
+            <View key={index}>
+              <Element />
+              {index < filteredItems.length - 1 && (
+                <Divider color={colors.grey4} style={styles.divider} />
+              )}
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   )
 }
 
 const useStyles = makeStyles(({ colors }) => ({
+  container: {
+    marginBottom: 5,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 5,
+  },
+  headerText: {
+    flex: 1,
+  },
   groupCard: {
     marginTop: 5,
     backgroundColor: colors.grey5,

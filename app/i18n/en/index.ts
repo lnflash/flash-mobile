@@ -833,7 +833,7 @@ const en: BaseTranslation = {
     showNostrSecret: "Chat Settings",
     beginnerMode: "Disable Bitcoin Account",
     advanceMode: "Enable Bitcoin Account (Advanced Mode)",
-    keysManagement: "Keys management",
+    keysManagement: "Key management",
 		showBtcAccount: "Show Bitcoin account",
 		hideBtcAccount: "Hide Bitcoin account"
   },

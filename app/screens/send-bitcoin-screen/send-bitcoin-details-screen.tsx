@@ -170,7 +170,11 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           pd.isSendingMax,
         )
         if (fee === null && err) {
-          setAsyncErrorMessage(`${err?.message || err} (amount + fee)` || "")
+          const error = err?.message || err
+          const errMsg = error.includes("not enough funds")
+            ? `${error} (amount + fee)`
+            : error
+          setAsyncErrorMessage(errMsg)
           return false
         }
       } else {
