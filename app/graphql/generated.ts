@@ -816,6 +816,8 @@ export type Mutation = {
   readonly lnUsdInvoiceCreateOnBehalfOfRecipient: LnInvoicePayload;
   readonly lnUsdInvoiceFeeProbe: CentAmountPayload;
   readonly merchantMapSuggest: MerchantPayload;
+  readonly newUserEmailRegistrationInitiate: NewUserEmailRegistrationInitiatePayload;
+  readonly newUserEmailRegistrationValidate: AuthTokenPayload;
   readonly onChainAddressCreate: OnChainAddressPayload;
   readonly onChainAddressCurrent: OnChainAddressPayload;
   readonly onChainPaymentSend: PaymentSendPayload;
@@ -991,6 +993,16 @@ export type MutationMerchantMapSuggestArgs = {
 };
 
 
+export type MutationNewUserEmailRegistrationInitiateArgs = {
+  input: NewUserEmailRegistrationInitiateInput;
+};
+
+
+export type MutationNewUserEmailRegistrationValidateArgs = {
+  input: NewUserEmailRegistrationValidateInput;
+};
+
+
 export type MutationOnChainAddressCreateArgs = {
   input: OnChainAddressCreateInput;
 };
@@ -1120,6 +1132,21 @@ export const Network = {
 } as const;
 
 export type Network = typeof Network[keyof typeof Network];
+export type NewUserEmailRegistrationInitiateInput = {
+  readonly email: Scalars['EmailAddress']['input'];
+};
+
+export type NewUserEmailRegistrationInitiatePayload = {
+  readonly __typename: 'NewUserEmailRegistrationInitiatePayload';
+  readonly emailFlowId?: Maybe<Scalars['String']['output']>;
+  readonly errors: ReadonlyArray<Error>;
+};
+
+export type NewUserEmailRegistrationValidateInput = {
+  readonly code: Scalars['OneTimeAuthCode']['input'];
+  readonly emailFlowId: Scalars['String']['input'];
+};
+
 export const NotificationChannel = {
   Push: 'PUSH'
 } as const;
@@ -2339,6 +2366,20 @@ export type QuizCompletedMutationVariables = Exact<{
 
 
 export type QuizCompletedMutation = { readonly __typename: 'Mutation', readonly quizCompleted: { readonly __typename: 'QuizCompletedPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }>, readonly quiz?: { readonly __typename: 'Quiz', readonly id: string, readonly completed: boolean } | null } };
+
+export type NewUserEmailRegistrationInitiateMutationVariables = Exact<{
+  input: NewUserEmailRegistrationInitiateInput;
+}>;
+
+
+export type NewUserEmailRegistrationInitiateMutation = { readonly __typename: 'Mutation', readonly newUserEmailRegistrationInitiate: { readonly __typename: 'NewUserEmailRegistrationInitiatePayload', readonly emailFlowId?: string | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null }> } };
+
+export type NewUserEmailRegistrationValidateMutationVariables = Exact<{
+  input: NewUserEmailRegistrationValidateInput;
+}>;
+
+
+export type NewUserEmailRegistrationValidateMutation = { readonly __typename: 'Mutation', readonly newUserEmailRegistrationValidate: { readonly __typename: 'AuthTokenPayload', readonly authToken?: string | null, readonly totpRequired?: boolean | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null }> } };
 
 export type UserEmailRegistrationInitiateMutationVariables = Exact<{
   input: UserEmailRegistrationInitiateInput;
@@ -5130,6 +5171,81 @@ export function useQuizCompletedMutation(baseOptions?: Apollo.MutationHookOption
 export type QuizCompletedMutationHookResult = ReturnType<typeof useQuizCompletedMutation>;
 export type QuizCompletedMutationResult = Apollo.MutationResult<QuizCompletedMutation>;
 export type QuizCompletedMutationOptions = Apollo.BaseMutationOptions<QuizCompletedMutation, QuizCompletedMutationVariables>;
+export const NewUserEmailRegistrationInitiateDocument = gql`
+    mutation newUserEmailRegistrationInitiate($input: NewUserEmailRegistrationInitiateInput!) {
+  newUserEmailRegistrationInitiate(input: $input) {
+    errors {
+      message
+      code
+    }
+    emailFlowId
+  }
+}
+    `;
+export type NewUserEmailRegistrationInitiateMutationFn = Apollo.MutationFunction<NewUserEmailRegistrationInitiateMutation, NewUserEmailRegistrationInitiateMutationVariables>;
+
+/**
+ * __useNewUserEmailRegistrationInitiateMutation__
+ *
+ * To run a mutation, you first call `useNewUserEmailRegistrationInitiateMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useNewUserEmailRegistrationInitiateMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [newUserEmailRegistrationInitiateMutation, { data, loading, error }] = useNewUserEmailRegistrationInitiateMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useNewUserEmailRegistrationInitiateMutation(baseOptions?: Apollo.MutationHookOptions<NewUserEmailRegistrationInitiateMutation, NewUserEmailRegistrationInitiateMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<NewUserEmailRegistrationInitiateMutation, NewUserEmailRegistrationInitiateMutationVariables>(NewUserEmailRegistrationInitiateDocument, options);
+      }
+export type NewUserEmailRegistrationInitiateMutationHookResult = ReturnType<typeof useNewUserEmailRegistrationInitiateMutation>;
+export type NewUserEmailRegistrationInitiateMutationResult = Apollo.MutationResult<NewUserEmailRegistrationInitiateMutation>;
+export type NewUserEmailRegistrationInitiateMutationOptions = Apollo.BaseMutationOptions<NewUserEmailRegistrationInitiateMutation, NewUserEmailRegistrationInitiateMutationVariables>;
+export const NewUserEmailRegistrationValidateDocument = gql`
+    mutation newUserEmailRegistrationValidate($input: NewUserEmailRegistrationValidateInput!) {
+  newUserEmailRegistrationValidate(input: $input) {
+    errors {
+      message
+      code
+    }
+    authToken
+    totpRequired
+  }
+}
+    `;
+export type NewUserEmailRegistrationValidateMutationFn = Apollo.MutationFunction<NewUserEmailRegistrationValidateMutation, NewUserEmailRegistrationValidateMutationVariables>;
+
+/**
+ * __useNewUserEmailRegistrationValidateMutation__
+ *
+ * To run a mutation, you first call `useNewUserEmailRegistrationValidateMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useNewUserEmailRegistrationValidateMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [newUserEmailRegistrationValidateMutation, { data, loading, error }] = useNewUserEmailRegistrationValidateMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useNewUserEmailRegistrationValidateMutation(baseOptions?: Apollo.MutationHookOptions<NewUserEmailRegistrationValidateMutation, NewUserEmailRegistrationValidateMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<NewUserEmailRegistrationValidateMutation, NewUserEmailRegistrationValidateMutationVariables>(NewUserEmailRegistrationValidateDocument, options);
+      }
+export type NewUserEmailRegistrationValidateMutationHookResult = ReturnType<typeof useNewUserEmailRegistrationValidateMutation>;
+export type NewUserEmailRegistrationValidateMutationResult = Apollo.MutationResult<NewUserEmailRegistrationValidateMutation>;
+export type NewUserEmailRegistrationValidateMutationOptions = Apollo.BaseMutationOptions<NewUserEmailRegistrationValidateMutation, NewUserEmailRegistrationValidateMutationVariables>;
 export const UserEmailRegistrationInitiateDocument = gql`
     mutation userEmailRegistrationInitiate($input: UserEmailRegistrationInitiateInput!) {
   userEmailRegistrationInitiate(input: $input) {
