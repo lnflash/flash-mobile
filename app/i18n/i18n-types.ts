@@ -7876,7 +7876,7 @@ export type TranslationFunctions = {
 		 */
 		email: () => LocalizedString
 		/**
-		 * Import your Cash Wallet using email address
+		 * Import or Create your Cash wallet using email address
 		 */
 		importUsingEmail: () => LocalizedString
 		/**
