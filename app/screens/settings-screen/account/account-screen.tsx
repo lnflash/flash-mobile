@@ -1,15 +1,16 @@
 import { View } from "react-native"
-import { Screen } from "@app/components/screen"
-import { testProps } from "@app/utils/testProps"
 import { makeStyles } from "@rneui/themed"
 
-// import { SettingsGroup } from "../group"
-import { AccountDeleteContextProvider } from "./account-delete-context"
-import { AccountBanner } from "./banner"
+// components
 import { AccountId } from "./id"
+import { AccountBanner } from "./banner"
+import { Screen } from "@app/components/screen"
 import { DangerZoneSettings } from "./settings/danger-zone"
-// import { UpgradeAccountLevelOne } from "./settings/upgrade"
+import { AccountDeleteContextProvider } from "./account-delete-context"
 import { UpgradeTrialAccount } from "./settings/upgrade-trial-account"
+
+// type
+import { testProps } from "@app/utils/testProps"
 
 export const AccountScreen: React.FC = () => {
   const styles = useStyles()
@@ -21,7 +22,6 @@ export const AccountScreen: React.FC = () => {
           <AccountBanner />
           <AccountId />
           <UpgradeTrialAccount />
-          {/* <SettingsGroup items={[UpgradeAccountLevelOne]} /> */}
           <DangerZoneSettings />
         </View>
       </Screen>

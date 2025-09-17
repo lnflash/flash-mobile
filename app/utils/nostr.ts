@@ -239,7 +239,7 @@ export const fetchContactList = async (
   })
 }
 
-export const setPreferredRelay = async (flashRelay: string, secretKey?: Uint8Array) => {
+export const setPreferredRelay = async (secretKey?: Uint8Array) => {
   let pool = new SimplePool()
   let secret: Uint8Array | null = null
   if (!secretKey) {

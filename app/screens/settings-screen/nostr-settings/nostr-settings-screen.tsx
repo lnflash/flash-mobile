@@ -1,5 +1,5 @@
 import { View, Pressable } from "react-native"
-import { Text, useTheme } from "@rneui/themed"
+import { Switch, Text, useTheme } from "@rneui/themed"
 import { useEffect, useState } from "react"
 import { getPublicKey, nip19 } from "nostr-tools"
 import Ionicons from "react-native-vector-icons/Ionicons"
@@ -16,12 +16,15 @@ import { useStyles } from "./styles"
 import { ProfileHeader } from "./profile-header"
 import { AdvancedSettings } from "./advanced-settings"
 import { bytesToHex } from "@noble/curves/abstract/utils"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 export const NostrSettingsScreen = () => {
   const { LL } = useI18nContext()
   const [secretKey, setSecretKey] = useState<Uint8Array | null>(null)
   const [linked, setLinked] = useState<boolean | null>(null)
   const [expandAdvanced, setExpandAdvanced] = useState(false)
+
+  const { persistentState, updateState } = usePersistentStateContext()
 
   const isAuthed = useIsAuthed()
   const styles = useStyles()
@@ -180,6 +183,25 @@ export const NostrSettingsScreen = () => {
             copyToClipboard={copyToClipboard}
             accountLinked={linked}
           />
+          <View style={styles.menuItem}>
+            <View style={styles.menuIconContainer}>
+              <Ionicons name="chatbubbles-outline" size={24} color={colors.black} />
+            </View>
+            <Text style={styles.menuText}>Enable Chat</Text>
+            <Switch
+              value={!!persistentState.chatEnabled}
+              onValueChange={(enabled) => {
+                updateState((state: any) => {
+                  if (state)
+                    return {
+                      ...state,
+                      chatEnabled: enabled,
+                    }
+                  return undefined
+                })
+              }}
+            />
+          </View>
         </View>
       </View>
     )

@@ -1,16 +1,11 @@
-import React, { useState } from "react"
+import React from "react"
 import { ActivityIndicator, Button, View } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { gql } from "@apollo/client"
 
 // components
 import { Screen } from "@app/components/screen"
-import ContactModal, {
-  SupportChannels,
-} from "@app/components/contact-modal/contact-modal"
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
-import { UpgradeAccountModal } from "@app/components/upgrade-account-modal"
-import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { TransactionLimitsPeriod } from "@app/components/transaction-limits"
 
 // hooks
@@ -18,9 +13,6 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAccountLimitsQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "@app/hooks"
-
-// gql
-import { AccountLevel, useLevel } from "@app/graphql/level-context"
 
 gql`
   query accountLimits {
@@ -55,7 +47,6 @@ export const TransactionLimitsScreen = () => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { appConfig } = useAppConfig()
-  const { currentLevel } = useLevel()
 
   const { data, loading, error, refetch } = useAccountLimitsQuery({
     fetchPolicy: "no-cache",
@@ -63,22 +54,6 @@ export const TransactionLimitsScreen = () => {
   })
 
   const { name: bankName } = appConfig.galoyInstance
-
-  const [isContactModalVisible, setIsContactModalVisible] = useState(false)
-  const [isUpgradeAccountModalVisible, setIsUpgradeAccountModalVisible] = useState(false)
-
-  const toggleIsContactModalVisible = () => {
-    setIsContactModalVisible(!isContactModalVisible)
-  }
-
-  const toggleIsUpgradeAccountModalVisible = () => {
-    setIsUpgradeAccountModalVisible(!isUpgradeAccountModalVisible)
-  }
-
-  const messageBody = LL.TransactionLimitsScreen.contactUsMessageBody({
-    bankName,
-  })
-  const messageSubject = LL.TransactionLimitsScreen.contactUsMessageSubject()
 
   if (error) {
     return (
@@ -119,9 +94,7 @@ export const TransactionLimitsScreen = () => {
           </View>
         </View>
       </View>
-
       <View style={styles.divider}></View>
-
       <View style={styles.limitWrapper}>
         <Text adjustsFontSizeToFit style={styles.valueFieldType}>
           {LL.TransactionLimitsScreen.withdraw()}
@@ -130,9 +103,7 @@ export const TransactionLimitsScreen = () => {
           <TransactionLimitsPeriod key={index} {...data} />
         ))}
       </View>
-
       <View style={styles.divider}></View>
-
       <View style={styles.limitWrapper}>
         <Text adjustsFontSizeToFit style={styles.valueFieldType}>
           {LL.TransactionLimitsScreen.internalSend({ bankName })}
@@ -141,9 +112,7 @@ export const TransactionLimitsScreen = () => {
           <TransactionLimitsPeriod key={index} {...data} />
         ))}
       </View>
-
       <View style={styles.divider}></View>
-
       <View style={styles.infoWrapper}>
         <View style={styles.infoTitleWrapper}>
           <GaloyIcon name={"info"} size={20} color={colors.grey0} />
@@ -155,36 +124,6 @@ export const TransactionLimitsScreen = () => {
           {LL.TransactionLimitsScreen.spendingLimitsDescription()}
         </Text>
       </View>
-      {currentLevel !== AccountLevel.Two && (
-        <GaloyPrimaryButton
-          title={
-            currentLevel === AccountLevel.Zero
-              ? LL.TransactionLimitsScreen.increaseLimits()
-              : LL.TransactionLimitsScreen.requestBusiness()
-          }
-          containerStyle={styles.increaseLimitsButtonContainer}
-          onPress={
-            currentLevel === AccountLevel.Zero
-              ? toggleIsUpgradeAccountModalVisible
-              : toggleIsContactModalVisible
-          }
-        />
-      )}
-      <ContactModal
-        isVisible={isContactModalVisible}
-        toggleModal={toggleIsContactModalVisible}
-        messageBody={messageBody}
-        messageSubject={messageSubject}
-        supportChannelsToHide={[
-          SupportChannels.Mattermost,
-          SupportChannels.StatusPage,
-          SupportChannels.Telegram,
-        ]}
-      />
-      <UpgradeAccountModal
-        isVisible={isUpgradeAccountModalVisible}
-        closeModal={toggleIsUpgradeAccountModalVisible}
-      />
     </Screen>
   )
 }
@@ -193,10 +132,6 @@ const useStyles = makeStyles(({ colors }) => ({
   limitWrapper: {
     padding: 20,
     backgroundColor: colors.white,
-  },
-  increaseLimitsButtonContainer: {
-    marginVertical: 20,
-    paddingHorizontal: 20,
   },
   contentTextBox: {
     flexDirection: "row",

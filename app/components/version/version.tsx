@@ -1,21 +1,12 @@
-import { useNavigation } from "@react-navigation/native"
 import * as React from "react"
 import { Pressable } from "react-native"
+import { Text, makeStyles } from "@rneui/themed"
 import DeviceInfo from "react-native-device-info"
+import { useNavigation } from "@react-navigation/native"
 import type { StackNavigationProp } from "@react-navigation/stack"
 import type { RootStackParamList } from "../../navigation/stack-param-lists"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { testProps } from "../../utils/testProps"
-import { Text, makeStyles } from "@rneui/themed"
-
-const useStyles = makeStyles(({ colors }) => ({
-  version: {
-    color: colors.grey0,
-    fontSize: 18,
-    marginTop: 18,
-    textAlign: "center",
-  },
-}))
 
 type VersionComponentNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -37,7 +28,10 @@ export const VersionComponent = () => {
   const readableVersion = DeviceInfo.getReadableVersion()
 
   return (
-    <Pressable onPress={() => setSecretMenuCounter(secretMenuCounter + 1)}>
+    <Pressable
+      style={styles.wrapper}
+      onPress={() => setSecretMenuCounter(secretMenuCounter + 1)}
+    >
       <Text {...testProps("Version Build Text")} style={styles.version}>
         {readableVersion}
         {"\n"}
@@ -46,3 +40,17 @@ export const VersionComponent = () => {
     </Pressable>
   )
 }
+
+const useStyles = makeStyles(({ colors }) => ({
+  wrapper: {
+    flex: 1,
+    justifyContent: "flex-end",
+    marginBottom: 40,
+  },
+  version: {
+    color: colors.grey0,
+    fontSize: 18,
+    marginTop: 18,
+    textAlign: "center",
+  },
+}))

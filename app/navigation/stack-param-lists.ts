@@ -21,7 +21,7 @@ import { NavigatorScreenParams } from "@react-navigation/native"
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
   getStarted: undefined
-  UsernameSet: undefined
+  UsernameSet?: { insideApp?: boolean }
   Welcome: undefined
   welcomeFirst: undefined
   liteDeviceAccount: {
@@ -53,11 +53,13 @@ export type RootStackParamList = {
     paymentDestination: PaymentDestination
     flashUserAddress?: string
     isFromFlashcard?: boolean
+    invoiceAmount?: MoneyAmount<WalletCurrency>
   }
   sendBitcoinConfirmation: {
     paymentDetail: PaymentDetail<WalletCurrency>
     flashUserAddress?: string
     feeRateSatPerVbyte?: number
+    invoiceAmount?: MoneyAmount<WalletCurrency>
   }
   conversionDetails: undefined
   conversionConfirmation: {
@@ -71,6 +73,7 @@ export type RootStackParamList = {
   sendBitcoinSuccess: {
     unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
     walletCurrency: WalletCurrency
+    invoiceAmount?: MoneyAmount<WalletCurrency>
   }
   language: undefined
   currency: undefined

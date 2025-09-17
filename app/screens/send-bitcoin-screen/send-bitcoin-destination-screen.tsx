@@ -2,8 +2,7 @@ import React, { useCallback, useEffect, useMemo, useReducer, useState } from "re
 import { View } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { StackNavigationProp } from "@react-navigation/stack"
-import { RouteProp, useNavigation } from "@react-navigation/native"
+import { StackScreenProps } from "@react-navigation/stack"
 
 // componenets
 import { Screen } from "@app/components/screen"
@@ -12,13 +11,14 @@ import { DestinationField } from "@app/components/send-flow"
 import { ConfirmDestinationModal } from "./confirm-destination-modal"
 import { DestinationInformation } from "./destination-information"
 
-// gql
+// hooks
 import {
   useAccountDefaultWalletLazyQuery,
+  useLnUsdInvoiceAmountMutation,
   useRealtimePriceQuery,
   useSendBitcoinDestinationQuery,
 } from "@app/graphql/generated"
-import { logParseDestinationResult } from "@app/utils/analytics"
+import { useActivityIndicator, useAppConfig } from "@app/hooks"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 // types
@@ -31,7 +31,9 @@ import {
 
 // utils
 import { LNURL_DOMAINS } from "@app/config"
+import { toUsdMoneyAmount } from "@app/types/amounts"
 import { parseDestination } from "./payment-destination"
+import { logParseDestinationResult } from "@app/utils/analytics"
 
 // store
 import {
@@ -41,26 +43,20 @@ import {
   SendBitcoinDestinationState,
 } from "./send-bitcoin-reducer"
 
-// hooks
-import { useAppConfig } from "@app/hooks"
-
 export const defaultDestinationState: SendBitcoinDestinationState = {
   unparsedDestination: "",
   destinationState: DestinationState.Entering,
 }
 
-type Props = {
-  route: RouteProp<RootStackParamList, "sendBitcoinDestination">
-}
+type Props = StackScreenProps<RootStackParamList, "sendBitcoinDestination">
 
-const SendBitcoinDestinationScreen: React.FC<Props> = ({ route }) => {
+const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const isAuthed = useIsAuthed()
   const styles = usestyles()
   const { appConfig } = useAppConfig()
+  const { toggleActivityIndicator } = useActivityIndicator()
   const { lnAddressHostname: lnDomain } = appConfig.galoyInstance
-  const navigation =
-    useNavigation<StackNavigationProp<RootStackParamList, "sendBitcoinDestination">>()
 
   const [destinationState, dispatchDestinationStateAction] = useReducer(
     sendBitcoinDestinationReducer,
@@ -69,14 +65,14 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ route }) => {
   const [goToNextScreenWhenValid, setGoToNextScreenWhenValid] = useState(false)
   const [flashUserAddress, setFlashUserAddress] = useState<string>()
 
+  const [lnUsdInvoiceAmount] = useLnUsdInvoiceAmountMutation()
+  const [accountDefaultWalletQuery] = useAccountDefaultWalletLazyQuery({
+    fetchPolicy: "no-cache",
+  })
   const { data } = useSendBitcoinDestinationQuery({
     fetchPolicy: "cache-and-network",
     returnPartialData: true,
     skip: !isAuthed,
-  })
-
-  const [accountDefaultWalletQuery] = useAccountDefaultWalletLazyQuery({
-    fetchPolicy: "no-cache",
   })
 
   // forcing price refresh
@@ -90,6 +86,19 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ route }) => {
   const contacts = useMemo(() => data?.me?.contacts ?? [], [data?.me?.contacts])
 
   useEffect(() => {
+    handleNavigation()
+  }, [destinationState, goToNextScreenWhenValid])
+
+  useEffect(() => {
+    if (route.params?.username) {
+      handleChangeText(route.params?.username)
+    }
+    if (route.params?.payment) {
+      handleChangeText(route.params?.payment)
+    }
+  }, [route.params?.username, route.params?.payment])
+
+  const handleNavigation = async () => {
     if (
       !goToNextScreenWhenValid ||
       destinationState.destinationState !== DestinationState.Valid
@@ -100,10 +109,37 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ route }) => {
         destinationState.destination.destinationDirection === DestinationDirection.Send
       ) {
         // go to send bitcoin details screen
+        let invoiceAmount
+        if (
+          destinationState.destination.validDestination.paymentType === "lightning" &&
+          wallets
+        ) {
+          toggleActivityIndicator(true)
+          const walletId = wallets[0].id
+          const paymentRequest =
+            destinationState.destination.validDestination.paymentRequest
+
+          const { data } = await lnUsdInvoiceAmount({
+            variables: {
+              input: {
+                paymentRequest,
+                walletId,
+              },
+            },
+          })
+          if (
+            data?.lnUsdInvoiceFeeProbe.invoiceAmount !== null &&
+            data?.lnUsdInvoiceFeeProbe.invoiceAmount !== undefined
+          ) {
+            invoiceAmount = toUsdMoneyAmount(data.lnUsdInvoiceFeeProbe.invoiceAmount)
+          }
+          toggleActivityIndicator(false)
+        }
         setGoToNextScreenWhenValid(false)
         navigation.navigate("sendBitcoinDetails", {
           paymentDestination: destinationState.destination,
           flashUserAddress,
+          invoiceAmount,
         })
       } else if (
         destinationState.destination.destinationDirection === DestinationDirection.Receive
@@ -115,16 +151,7 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ route }) => {
         })
       }
     }
-  }, [destinationState, goToNextScreenWhenValid])
-
-  useEffect(() => {
-    if (route.params?.username) {
-      handleChangeText(route.params?.username)
-    }
-    if (route.params?.payment) {
-      handleChangeText(route.params?.payment)
-    }
-  }, [route.params?.username, route.params?.payment])
+  }
 
   const handleChangeText = useCallback(
     (newDestination: string) => {
@@ -190,24 +217,24 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ route }) => {
         destination.validDestination.paymentType === PaymentType.Intraledger
       ) {
         setFlashUserAddress(destination.validDestination.handle + "@" + lnDomain)
-        if (
-          !contacts
-            .map((contact) => contact.username.toLowerCase())
-            .includes(destination.validDestination.handle.toLowerCase())
-        ) {
-          dispatchDestinationStateAction({
-            type: SendBitcoinActions.SetRequiresConfirmation,
-            payload: {
-              validDestination: destination,
-              unparsedDestination: rawInput,
-              confirmationType: {
-                type: "new-username",
-                username: destination.validDestination.handle,
-              },
-            },
-          })
-          return
-        }
+        // if (
+        //   !contacts
+        //     .map((contact) => contact.username.toLowerCase())
+        //     .includes(destination.validDestination.handle.toLowerCase())
+        // ) {
+        //   dispatchDestinationStateAction({
+        //     type: SendBitcoinActions.SetRequiresConfirmation,
+        //     payload: {
+        //       validDestination: destination,
+        //       unparsedDestination: rawInput,
+        //       confirmationType: {
+        //         type: "new-username",
+        //         username: destination.validDestination.handle,
+        //       },
+        //     },
+        //   })
+        //   return
+        // }
       }
 
       dispatchDestinationStateAction({

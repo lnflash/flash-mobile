@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react"
-import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
-import { useI18nContext } from "@app/i18n/i18n-react"
+import { View } from "react-native"
 
 // hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { useBreez, useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
 // components
@@ -12,7 +12,6 @@ import { AmountInput } from "@app/components/amount-input/amount-input"
 import { NoteInput } from "@app/components/note-input"
 
 // types
-import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
 import { WalletCurrency } from "@app/graphql/generated"
 import {
@@ -24,7 +23,6 @@ import {
 // utils
 import { testProps } from "../../utils/testProps"
 import {
-  fetchBreezFee,
   fetchBreezLightningLimits,
   fetchBreezOnChainLimits,
 } from "@app/utils/breez-sdk-liquid"
@@ -36,6 +34,7 @@ type Props = {
   setPaymentDetail: (val: PaymentDetail<WalletCurrency>) => void
   setAsyncErrorMessage: (val: string) => void
   isFromFlashcard?: boolean
+  invoiceAmount?: MoneyAmount<WalletCurrency>
 }
 
 const DetailAmountNote: React.FC<Props> = ({
@@ -45,6 +44,7 @@ const DetailAmountNote: React.FC<Props> = ({
   setPaymentDetail,
   setAsyncErrorMessage,
   isFromFlashcard,
+  invoiceAmount,
 }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
@@ -261,7 +261,11 @@ const DetailAmountNote: React.FC<Props> = ({
         </View>
         <View style={styles.currencyInputContainer}>
           <AmountInput
-            unitOfAccountAmount={paymentDetail.unitOfAccountAmount}
+            unitOfAccountAmount={
+              sendingWalletDescriptor.currency === "USD" && invoiceAmount
+                ? invoiceAmount
+                : paymentDetail.unitOfAccountAmount
+            }
             setAmount={setAmount}
             convertMoneyAmount={paymentDetail.convertMoneyAmount}
             walletCurrency={sendingWalletDescriptor.currency}

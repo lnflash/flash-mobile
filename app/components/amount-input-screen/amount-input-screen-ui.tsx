@@ -60,7 +60,7 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
       <View style={styles.topContainer}>
         <View style={styles.header}>
           <Text type={"h01"} style={styles.headerTxt}>
-            {`${title} ${walletCurrency}`}
+            {title}
           </Text>
           <TouchableOpacity style={styles.close} onPress={goBack}>
             <Icon type="ionicon" name={"close"} size={40} />

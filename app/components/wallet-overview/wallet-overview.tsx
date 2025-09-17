@@ -34,7 +34,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
     useDisplayCurrency()
 
-  const { data, error } = useWalletOverviewScreenQuery({
+  const { data } = useWalletOverviewScreenQuery({
     fetchPolicy: "network-only",
     skip: !isAuthed,
   })
@@ -130,7 +130,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   })
 
   return (
-    <View style={{ marginTop: 10, marginHorizontal: 20 }}>
+    <View style={{ marginHorizontal: 20 }}>
       <Balance
         icon="cash"
         title={LL.HomeScreen.cash()}

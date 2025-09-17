@@ -156,6 +156,16 @@ gql`
       success
     }
   }
+
+  mutation lnUsdInvoiceAmount($input: LnUsdInvoiceFeeProbeInput!) {
+    lnUsdInvoiceFeeProbe(input: $input) {
+      errors {
+        message
+      }
+      invoiceAmount
+      amount
+    }
+  }
 `
 
 gql`

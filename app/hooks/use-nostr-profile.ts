@@ -77,17 +77,7 @@ const useNostrProfile = () => {
       KEYCHAIN_NOSTRCREDS_KEY,
       nostrSecret,
     )
-
     await setPreferredRelay(secretKey)
-
-    await updateNostrProfile({
-      content: {
-        username: username,
-        lud16: lud16,
-        nip05: lud16,
-        name: username,
-      },
-    })
     return secretKey
   }
 

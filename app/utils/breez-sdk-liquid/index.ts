@@ -193,8 +193,11 @@ export const fetchBreezFee = async (
           amount: { type: PayAmountVariant.BITCOIN, receiverAmountSat },
         })
         return { fee: response.feesSat, err: null }
+      } else if (input.type === InputTypeVariant.LN_URL_ERROR) {
+        return { fee: null, err: input.data.reason }
+      } else {
+        return { fee: null, err: "Wrong payment type" }
       }
-      return { fee: null, err: "Wrong payment type" }
     } else {
       return { fee: null, err: "Wrong payment type" }
     }

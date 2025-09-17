@@ -46,7 +46,8 @@ import { getUsdWallet } from "@app/graphql/wallets-utils"
 type Props = {} & StackScreenProps<RootStackParamList, "sendBitcoinConfirmation">
 
 const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { paymentDetail, flashUserAddress, feeRateSatPerVbyte } = route.params
+  const { paymentDetail, flashUserAddress, feeRateSatPerVbyte, invoiceAmount } =
+    route.params
   const {
     paymentType,
     sendingWalletDescriptor,
@@ -168,8 +169,11 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
 
         if (status === "SUCCESS" || status === "PENDING") {
           navigation.navigate("sendBitcoinSuccess", {
-            walletCurrency: paymentDetail.sendingWalletDescriptor.currency,
-            unitOfAccountAmount: paymentDetail.unitOfAccountAmount,
+            walletCurrency: sendingWalletDescriptor.currency,
+            unitOfAccountAmount:
+              sendingWalletDescriptor.currency === "USD" && invoiceAmount
+                ? invoiceAmount
+                : paymentDetail.unitOfAccountAmount,
           })
           ReactNativeHapticFeedback.trigger("notificationSuccess", {
             ignoreAndroidSystemSettings: true,
@@ -198,7 +202,10 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
 
   return (
     <Screen preset="scroll" style={styles.screenStyle} keyboardOffset="navigationHeader">
-      <ConfirmationDestinationAmountNote paymentDetail={paymentDetail} />
+      <ConfirmationDestinationAmountNote
+        paymentDetail={paymentDetail}
+        invoiceAmount={invoiceAmount}
+      />
       <ConfirmationWalletFee
         flashUserAddress={flashUserAddress}
         paymentDetail={paymentDetail}
