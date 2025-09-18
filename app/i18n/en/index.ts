@@ -751,6 +751,8 @@ const en: BaseTranslation = {
         "If the {bankName: string} address is entered incorrectly, {bankName: string} can't undo the transaction.",
       checkBox: "{lnAddress: string} is the right address.",
       confirmButton: "I'm 100% sure",
+      externalWarning: "You are about to send outside {bankName: string}. Double-check the address!",
+      externalCheckBox: "I confirm sending to {address: string}."
     },
     clipboardError: "Error getting value from clipboard",
   },
