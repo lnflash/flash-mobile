@@ -27,7 +27,6 @@ const destinationStateToInformation = (
   adviceTooltip?: { text: string }
 } => {
   const { bankName, lnDomain } = bankDetails
-
   const toLnAddress = createToLnAddress(lnDomain)
 
   if (sendBitcoinReducerState.destinationState === DestinationState.Entering) {
@@ -103,7 +102,6 @@ const destinationStateToInformation = (
         }
     }
   }
-
   if (
     sendBitcoinReducerState.destinationState === "valid" &&
     sendBitcoinReducerState.confirmationType
@@ -133,7 +131,6 @@ export const DestinationInformation = ({
   const { lnAddressHostname, name } = appConfig.galoyInstance
   const bankDetails = { lnDomain: lnAddressHostname, bankName: name }
   const information = destinationStateToInformation(destinationState, LL, bankDetails)
-
   return (
     <View style={styles.informationContainer}>
       {information.infoTooltip && (
