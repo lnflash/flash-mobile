@@ -4,12 +4,12 @@ PODS:
     - GoogleUtilities/UserDefaults (~> 8.0)
     - PromisesObjC (~> 2.4)
   - boost (1.76.0)
-  - breez_sdk_liquid (0.10.3):
-    - BreezSDKLiquid (= 0.10.3)
+  - breez_sdk_liquid (0.11.2):
+    - BreezSDKLiquid (= 0.11.2)
     - React-Core
-  - breez_sdk_liquidFFI (0.10.3)
-  - BreezSDKLiquid (0.10.3):
-    - breez_sdk_liquidFFI (= 0.10.3)
+  - breez_sdk_liquidFFI (0.11.2)
+  - BreezSDKLiquid (0.11.2):
+    - breez_sdk_liquidFFI (= 0.11.2)
   - BVLinearGradient (2.8.3):
     - React-Core
   - DoubleConversion (1.1.6)
@@ -1068,10 +1068,10 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
   boost: 7dcd2de282d72e344012f7d6564d024930a6a440
-  breez_sdk_liquid: 8861b77f4217a5054262e71bb26b7c2ef03af211
-  breez_sdk_liquidFFI: 7f93642382f88641d1923e68a5dfd64c25c2ba8a
-  BreezSDKLiquid: 8eb4a8da929f175cd468a50b725cd4980b2c15d5
-  BVLinearGradient: cb006ba232a1f3e4f341bb62c42d1098c284da70
+  breez_sdk_liquid: c1ca8548830cd519e7443e9358b2ea97b4cc4461
+  breez_sdk_liquidFFI: 1091fe9e2d677e7c3b0296848037338b419d0405
+  BreezSDKLiquid: ebab2b6ffdbf45986b193624c0b37d2a5eb65b24
+  BVLinearGradient: 880f91a7854faff2df62518f0281afb1c60d49a3
   DoubleConversion: 5189b271737e1565bdce30deb4a08d647e3f5f54
   FBLazyVector: 5fbbff1d7734827299274638deb8ba3024f6c597
   FBReactNativeSpec: 638095fe8a01506634d77b260ef8a322019ac671

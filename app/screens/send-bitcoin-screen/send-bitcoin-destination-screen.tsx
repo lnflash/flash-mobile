@@ -217,24 +217,24 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
         destination.validDestination.paymentType === PaymentType.Intraledger
       ) {
         setFlashUserAddress(destination.validDestination.handle + "@" + lnDomain)
-        if (
-          !contacts
-            .map((contact) => contact.username.toLowerCase())
-            .includes(destination.validDestination.handle.toLowerCase())
-        ) {
-          dispatchDestinationStateAction({
-            type: SendBitcoinActions.SetRequiresConfirmation,
-            payload: {
-              validDestination: destination,
-              unparsedDestination: rawInput,
-              confirmationType: {
-                type: "new-username",
-                username: destination.validDestination.handle,
-              },
-            },
-          })
-          return
-        }
+        // if (
+        //   !contacts
+        //     .map((contact) => contact.username.toLowerCase())
+        //     .includes(destination.validDestination.handle.toLowerCase())
+        // ) {
+        //   dispatchDestinationStateAction({
+        //     type: SendBitcoinActions.SetRequiresConfirmation,
+        //     payload: {
+        //       validDestination: destination,
+        //       unparsedDestination: rawInput,
+        //       confirmationType: {
+        //         type: "new-username",
+        //         username: destination.validDestination.handle,
+        //       },
+        //     },
+        //   })
+        //   return
+        // }
       }
 
       dispatchDestinationStateAction({

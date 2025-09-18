@@ -105,7 +105,7 @@ export const SettingsScreen: React.FC = () => {
         name={LL.SettingsScreen.addressScreen()}
         items={items.waysToGetPaid}
       />
-      {currentLevel === AccountLevel.Two && (
+      {(currentLevel === AccountLevel.Two || currentLevel === AccountLevel.Three) && (
         <SettingsGroup name="Reports" items={items.reports} />
       )}
       <SettingsGroup name="Experimental" items={items.experimental} />

@@ -20,12 +20,14 @@ import { NavigatorScreenParams } from "@react-navigation/native"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
-  getStarted: {
-    inviteToken?: string
-    prefilledContact?: string
-    contactMethod?: string
-    inviterUsername?: string
-  } | undefined
+  getStarted:
+    | {
+        inviteToken?: string
+        prefilledContact?: string
+        contactMethod?: string
+        inviterUsername?: string
+      }
+    | undefined
   UsernameSet: undefined
   Welcome: undefined
   welcomeFirst: undefined
@@ -109,11 +111,13 @@ export type RootStackParamList = {
     lnurl: string
   }
   phoneFlow?: NavigatorScreenParams<PhoneValidationStackParamList>
-  phoneRegistrationInitiate: {
-    inviteToken?: string
-    prefilledPhone?: string
-    inviterUsername?: string
-  } | undefined
+  phoneRegistrationInitiate:
+    | {
+        inviteToken?: string
+        prefilledPhone?: string
+        inviterUsername?: string
+      }
+    | undefined
   phoneRegistrationValidate: {
     phone: string
     channel: PhoneCodeChannelType
@@ -129,11 +133,13 @@ export type RootStackParamList = {
   accountScreen: undefined
   notificationSettingsScreen: undefined
   transactionLimitsScreen: undefined
-  emailRegistrationInitiate: {
-    inviteToken?: string
-    prefilledEmail?: string
-    inviterUsername?: string
-  } | undefined
+  emailRegistrationInitiate:
+    | {
+        inviteToken?: string
+        prefilledEmail?: string
+        inviterUsername?: string
+      }
+    | undefined
   emailRegistrationValidate: { email: string; emailRegistrationId: string }
   emailLoginInitiate: undefined
   emailLoginValidate: { email: string; emailLoginId: string }
@@ -165,10 +171,12 @@ export type RootStackParamList = {
   NostrSettingsScreen: undefined
   SignInViaQRCode: undefined
   InviteFriend: undefined
-  InviteFriendSuccess: {
-    contact: string
-    method: string
-  } | undefined
+  InviteFriendSuccess:
+    | {
+        contact: string
+        method: string
+      }
+    | undefined
 }
 
 export type ChatStackParamList = {
