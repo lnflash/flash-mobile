@@ -10,6 +10,7 @@ import { gql } from "@apollo/client"
 import {
   PhoneCodeChannelType,
   useCaptchaRequestAuthCodeMutation,
+  useUserPhoneRegistrationInitiateMutation,
   useSupportedCountriesQuery,
 } from "@app/graphql/generated"
 
@@ -87,7 +88,8 @@ gql`
   }
 `
 
-export const useRequestPhoneCodeLogin = (): UseRequestPhoneCodeReturn => {
+export const useRequestPhoneCodeLogin = (isInviteSignup = false): UseRequestPhoneCodeReturn => {
+  console.log("useRequestPhoneCodeLogin: isInviteSignup =", isInviteSignup)
   const [status, setStatus] = useState<RequestPhoneCodeStatus>(
     RequestPhoneCodeStatus.LoadingCountryCode,
   )
@@ -102,6 +104,7 @@ export const useRequestPhoneCodeLogin = (): UseRequestPhoneCodeReturn => {
 
   const [error, setError] = useState<ErrorType | undefined>()
   const [captchaRequestAuthCode] = useCaptchaRequestAuthCodeMutation()
+  const [userPhoneRegistrationInitiate] = useUserPhoneRegistrationInitiateMutation()
 
   const { data, loading: loadingSupportedCountries } = useSupportedCountriesQuery()
   const { isWhatsAppSupported, isSmsSupported, allSupportedCountries } = useMemo(() => {
@@ -157,7 +160,13 @@ export const useRequestPhoneCodeLogin = (): UseRequestPhoneCodeReturn => {
         // Handle the error gracefully by not logging it
       }
 
-      setCountryCode(defaultCountryCode)
+      // Only set country code if not already set (e.g., from pre-filled invite)
+      setCountryCode((prevCountryCode) => {
+        if (prevCountryCode) {
+          return prevCountryCode
+        }
+        return defaultCountryCode
+      })
       setStatus(RequestPhoneCodeStatus.InputtingPhoneNumber)
     }
 
@@ -182,15 +191,24 @@ export const useRequestPhoneCodeLogin = (): UseRequestPhoneCodeReturn => {
     setStatus(RequestPhoneCodeStatus.InputtingPhoneNumber)
   }
 
-  const submitPhoneNumber = (phoneCodeChannel: PhoneCodeChannelType) => {
+  const submitPhoneNumber = async (phoneCodeChannel: PhoneCodeChannelType) => {
+    console.log("submitPhoneNumber called with channel:", phoneCodeChannel)
+    console.log("Current status:", status)
+    console.log("isInviteSignup:", isInviteSignup)
+    console.log("rawPhoneNumber:", rawPhoneNumber)
+    console.log("countryCode:", countryCode)
+
     if (
       status === RequestPhoneCodeStatus.LoadingCountryCode ||
       status === RequestPhoneCodeStatus.RequestingCode
     ) {
+      console.log("submitPhoneNumber: Returning early due to status:", status)
       return
     }
 
     const parsedPhoneNumber = parsePhoneNumber(rawPhoneNumber, countryCode)
+    console.log("Parsed phone number:", parsedPhoneNumber?.number, "isValid:", parsedPhoneNumber?.isValid())
+
     phoneCodeChannel && setPhoneCodeChannel(phoneCodeChannel)
     if (parsedPhoneNumber?.isValid()) {
       if (
@@ -198,20 +216,61 @@ export const useRequestPhoneCodeLogin = (): UseRequestPhoneCodeReturn => {
         (phoneCodeChannel === PhoneCodeChannelType.Sms && !isSmsSupported) ||
         (phoneCodeChannel === PhoneCodeChannelType.Whatsapp && !isWhatsAppSupported)
       ) {
+        console.log("submitPhoneNumber: Unsupported country/channel")
+        console.log("Country:", parsedPhoneNumber.country)
+        console.log("isSmsSupported:", isSmsSupported)
+        console.log("isWhatsAppSupported:", isWhatsAppSupported)
         setStatus(RequestPhoneCodeStatus.Error)
         setError(ErrorType.UnsupportedCountryError)
         return
       }
 
       setValidatedPhoneNumber(parsedPhoneNumber.number)
+      console.log("Set validated phone number:", parsedPhoneNumber.number)
 
       if (skipRequestPhoneCode) {
+        console.log("Skipping request phone code (local environment)")
         setStatus(RequestPhoneCodeStatus.SuccessRequestingCode)
         return
       }
 
-      setStatus(RequestPhoneCodeStatus.CompletingCaptcha)
-      registerCaptcha()
+      // If this is an invite signup, use registration flow (no captcha needed)
+      if (isInviteSignup) {
+        console.log("=== INVITE SIGNUP FLOW - USING REGISTRATION API ===")
+        console.log("About to call userPhoneRegistrationInitiate mutation")
+        console.log("Phone number:", parsedPhoneNumber.number)
+        console.log("Channel:", phoneCodeChannel)
+
+        setStatus(RequestPhoneCodeStatus.RequestingCode)
+        try {
+          console.log("Calling userPhoneRegistrationInitiate mutation...")
+          const res = await userPhoneRegistrationInitiate({
+            variables: {
+              input: { phone: parsedPhoneNumber.number, channel: phoneCodeChannel },
+            },
+          })
+
+          console.log("Registration API response:", JSON.stringify(res.data))
+
+          if (res.data?.userPhoneRegistrationInitiate?.errors?.length) {
+            console.log("Registration API returned errors:", res.data.userPhoneRegistrationInitiate.errors)
+            setStatus(RequestPhoneCodeStatus.Error)
+            setError(ErrorType.RequestCodeError)
+          } else {
+            console.log("Registration API SUCCESS - code should be sent via Twilio")
+            setStatus(RequestPhoneCodeStatus.SuccessRequestingCode)
+          }
+        } catch (error) {
+          console.error("Error requesting registration code:", error)
+          setStatus(RequestPhoneCodeStatus.Error)
+          setError(ErrorType.RequestCodeError)
+        }
+      } else {
+        // Regular login flow with captcha
+        console.log("=== REGULAR LOGIN FLOW - USING CAPTCHA ===")
+        setStatus(RequestPhoneCodeStatus.CompletingCaptcha)
+        registerCaptcha()
+      }
     } else {
       setStatus(RequestPhoneCodeStatus.Error)
       setError(ErrorType.InvalidPhoneNumberError)

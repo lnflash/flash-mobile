@@ -20,8 +20,15 @@ import { NavigatorScreenParams } from "@react-navigation/native"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
-  getStarted: undefined
-  UsernameSet?: { insideApp?: boolean }
+  getStarted:
+    | {
+        inviteToken?: string
+        prefilledContact?: string
+        contactMethod?: string
+        inviterUsername?: string
+      }
+    | undefined
+  UsernameSet: undefined
   Welcome: undefined
   welcomeFirst: undefined
   liteDeviceAccount: {
@@ -104,7 +111,13 @@ export type RootStackParamList = {
     lnurl: string
   }
   phoneFlow?: NavigatorScreenParams<PhoneValidationStackParamList>
-  phoneRegistrationInitiate: undefined
+  phoneRegistrationInitiate:
+    | {
+        inviteToken?: string
+        prefilledPhone?: string
+        inviterUsername?: string
+      }
+    | undefined
   phoneRegistrationValidate: {
     phone: string
     channel: PhoneCodeChannelType
@@ -120,7 +133,13 @@ export type RootStackParamList = {
   accountScreen: undefined
   notificationSettingsScreen: undefined
   transactionLimitsScreen: undefined
-  emailRegistrationInitiate: undefined
+  emailRegistrationInitiate:
+    | {
+        inviteToken?: string
+        prefilledEmail?: string
+        inviterUsername?: string
+      }
+    | undefined
   emailRegistrationValidate: { email: string; emailRegistrationId: string }
   emailLoginInitiate: undefined
   emailLoginValidate: { email: string; emailLoginId: string }
@@ -151,6 +170,13 @@ export type RootStackParamList = {
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
   SignInViaQRCode: undefined
+  InviteFriend: undefined
+  InviteFriendSuccess:
+    | {
+        contact: string
+        method: string
+      }
+    | undefined
 }
 
 export type ChatStackParamList = {
