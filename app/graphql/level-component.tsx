@@ -29,7 +29,7 @@ export const LevelContainer: React.FC<PropsWithChildren> = ({ children }) => {
 
   const { data } = useLevelQuery({ fetchPolicy: "cache-only" })
   const level = data?.me?.defaultAccount?.level
-  const isAtLeastLevelOne = level === "ONE" || level === "TWO"
+  const isAtLeastLevelOne = level === "ONE" || level === "TWO" || level === "THREE"
 
   const currentLevel = isAuthed && level ? level : "NonAuth"
 
