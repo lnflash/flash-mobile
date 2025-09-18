@@ -16,7 +16,6 @@ import {
   useAccountDefaultWalletLazyQuery,
   useLnUsdInvoiceAmountMutation,
   useNpubByUsernameLazyQuery,
-  useNpubByUsernameQuery,
   useRealtimePriceQuery,
   useSendBitcoinDestinationQuery,
 } from "@app/graphql/generated"
@@ -171,24 +170,20 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
   )
 
   const validateDestination = useMemo(() => {
-    console.log("HERE")
     if (!bitcoinNetwork || !wallets) {
       return null
     }
 
     return async (rawInput: string) => {
-      console.log("HERE1")
       if (destinationState.destinationState !== "entering") {
         return
       }
-      console.log("HERE3")
       dispatchDestinationStateAction({
         type: "set-validating",
         payload: {
           unparsedDestination: rawInput,
         },
       })
-      console.log("BEGINNING FETCH")
       const destination = await parseDestination({
         rawInput,
         myWalletIds: wallets.map((wallet) => wallet.id),
@@ -196,13 +191,6 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
         lnurlDomains: LNURL_DOMAINS,
         accountDefaultWalletQuery,
       })
-      console.log("FETCH MIDDLE")
-      const queryResult = await npubByUsernameQuery({
-        variables: { username: rawInput },
-      })
-      console.log("QUERY RESULT", queryResult)
-      const destinationNpub = queryResult.data?.npubByUsername?.npub || ""
-      logParseDestinationResult(destination)
 
       if (destination.valid === false) {
         if (destination.invalidReason === InvalidDestinationReason.SelfPayment) {
@@ -230,14 +218,13 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
         destination.destinationDirection === DestinationDirection.Send &&
         destination.validDestination.paymentType === PaymentType.Intraledger
       ) {
+        const queryResult = await npubByUsernameQuery({
+          variables: { username: rawInput },
+        })
+        const destinationNpub = queryResult.data?.npubByUsername?.npub || ""
+        logParseDestinationResult(destination)
         setFlashUserAddress(destination.validDestination.handle + "@" + lnDomain)
         let contacts = getContactPubkeys()
-        console.log(
-          "DESTINATIUON NPUB AND CONTACTS",
-          destinationNpub,
-          contacts,
-          nip19.decode(destinationNpub).data,
-        )
         if (
           destinationNpub &&
           contacts &&
@@ -256,6 +243,20 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
           })
           return
         }
+      } else {
+        // 🚨 any NON-intraledger destination
+        dispatchDestinationStateAction({
+          type: SendBitcoinActions.SetRequiresConfirmation,
+          payload: {
+            validDestination: destination,
+            unparsedDestination: rawInput,
+            confirmationType: {
+              type: "external-destination", // you can define this in your reducer/types
+              address: rawInput,
+            },
+          },
+        })
+        return
       }
 
       dispatchDestinationStateAction({
