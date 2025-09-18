@@ -2708,7 +2708,7 @@ type RootTranslation = {
 		 */
 		advanceMode: string
 		/**
-		 * K​e​y​s​ ​m​a​n​a​g​e​m​e​n​t
+		 * K​e​y​ ​m​a​n​a​g​e​m​e​n​t
 		 */
 		keysManagement: string
 		/**
@@ -7241,23 +7241,23 @@ export type TranslationFunctions = {
 		/**
 		 * The amount you entered is less than the minimum amount required to send an on-chain transaction {amount}. Please consider sending this amount via Lightning!
 		 */
-		onchainMinAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		onchainMinAmountInvoiceError: (arg: { amount: number | string  }) => LocalizedString
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number | string  }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number | string  }) => LocalizedString
 		/**
 		 * The conversion amount is less than minimum required amount {amount}
 		 */
-		minAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		minAmountConvertError: (arg: { amount: number | string  }) => LocalizedString
 		/**
 		 * The conversion amount is greater than maximum amount {amount}
 		 */
-		maxAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountConvertError: (arg: { amount: number | string  }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**
@@ -7401,7 +7401,7 @@ export type TranslationFunctions = {
 		 */
 		advanceMode: () => LocalizedString
 		/**
-		 * Keys management
+		 * Key management
 		 */
 		keysManagement: () => LocalizedString
 		/**
@@ -7876,7 +7876,7 @@ export type TranslationFunctions = {
 		 */
 		email: () => LocalizedString
 		/**
-		 * Import your Cash Wallet using email address
+		 * Import or Create your Cash wallet using email address
 		 */
 		importUsingEmail: () => LocalizedString
 		/**

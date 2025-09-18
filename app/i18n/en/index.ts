@@ -977,7 +977,7 @@ const en: BaseTranslation = {
     phone: "Phone",
     importUsingPhone: "Import or Create your Cash Wallet using phone number",
     email: "Email",
-    importUsingEmail: "Import your Cash Wallet using email address",
+    importUsingEmail: "Import or Create your Cash wallet using email address",
 		login: "Login/Create",
     done: "Done",
 	},
