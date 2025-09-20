@@ -150,7 +150,13 @@ export const useRequestPhoneCodeRegistration = (): UseRequestPhoneCodeReturn => 
         console.error(error)
       }
 
-      setCountryCode(defaultCountryCode)
+      // Only set country code if not already set
+      setCountryCode((prevCountryCode) => {
+        if (prevCountryCode) {
+          return prevCountryCode
+        }
+        return defaultCountryCode
+      })
       setStatus(RequestPhoneCodeStatus.InputtingPhoneNumber)
     }
 
