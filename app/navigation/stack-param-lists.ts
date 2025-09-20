@@ -20,7 +20,12 @@ import { NavigatorScreenParams } from "@react-navigation/native"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
-  getStarted: undefined
+  getStarted?: {
+    inviteToken?: string
+    prefilledContact?: string
+    contactMethod?: string
+    inviterUsername?: string
+  }
   UsernameSet?: { insideApp?: boolean }
   Welcome: undefined
   welcomeFirst: undefined
@@ -104,7 +109,11 @@ export type RootStackParamList = {
     lnurl: string
   }
   phoneFlow?: NavigatorScreenParams<PhoneValidationStackParamList>
-  phoneRegistrationInitiate: undefined
+  phoneRegistrationInitiate?: {
+    inviteToken?: string
+    prefilledPhone?: string
+    inviterUsername?: string
+  }
   phoneRegistrationValidate: {
     phone: string
     channel: PhoneCodeChannelType
@@ -120,7 +129,11 @@ export type RootStackParamList = {
   accountScreen: undefined
   notificationSettingsScreen: undefined
   transactionLimitsScreen: undefined
-  emailRegistrationInitiate: undefined
+  emailRegistrationInitiate?: {
+    inviteToken?: string
+    prefilledEmail?: string
+    inviterUsername?: string
+  }
   emailRegistrationValidate: { email: string; emailRegistrationId: string }
   emailLoginInitiate: undefined
   emailLoginValidate: { email: string; emailLoginId: string }
@@ -152,6 +165,11 @@ export type RootStackParamList = {
   NostrSettingsScreen: undefined
   SignInViaQRCode: undefined
   Nip29GroupChat: { groupId: string }
+  InviteFriend: undefined
+  InviteFriendSuccess?: {
+    contact: string
+    method: string
+  }
 }
 
 export type ChatStackParamList = {
