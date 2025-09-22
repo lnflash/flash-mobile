@@ -13,6 +13,7 @@ import Flashcard from "@app/assets/icons/empty-flashcard.svg"
 import NonCustodialWallet from "@app/assets/illustrations/non-custodial-wallet.svg"
 import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
 import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
+import Reward from "@app/assets/illustrations/reward.svg"
 
 // components
 import { UpgradeAccountModal } from "../upgrade-account-modal"
@@ -64,6 +65,13 @@ const QuickStart = () => {
   }
 
   let carouselData = [
+    {
+      type: "favorites",
+      title: LL.HomeScreen.favoritesTitle(),
+      description: LL.HomeScreen.favoritesDesc(),
+      image: Reward,
+      onPress: () => navigation.navigate("FlashFavoritesList"),
+    },
     {
       type: "upgrade",
       title: LL.HomeScreen.upgradeTitle(),
