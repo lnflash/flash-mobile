@@ -9,6 +9,7 @@ import CountryPicker, {
 import {
   CountryCode as PhoneNumberCountryCode,
   getCountryCallingCode,
+  parsePhoneNumber,
 } from "libphonenumber-js/mobile"
 import { ContactSupportButton } from "@app/components/contact-support-button/contact-support-button"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -24,11 +25,19 @@ import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-but
 import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 import { PhoneCodeChannelType } from "@app/graphql/generated"
 import { TouchableOpacity } from "react-native-gesture-handler"
+import { RouteProp, useRoute } from "@react-navigation/native"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 const DEFAULT_COUNTRY_CODE = "SV"
 const PLACEHOLDER_PHONE_NUMBER = "123-456-7890"
 
-export const PhoneRegistrationInitiateScreen: React.FC = () => {
+type Props = {
+  route?: RouteProp<RootStackParamList, "phoneRegistrationInitiate">
+}
+
+export const PhoneRegistrationInitiateScreen: React.FC<Props> = () => {
+  const route = useRoute<RouteProp<RootStackParamList, "phoneRegistrationInitiate">>()
   const styles = useStyles()
 
   const {
@@ -49,6 +58,96 @@ export const PhoneRegistrationInitiateScreen: React.FC = () => {
   } = useRequestPhoneCodeRegistration()
 
   const { LL } = useI18nContext()
+
+  // State to track if we've already pre-filled
+  const [hasPreFilled, setHasPreFilled] = React.useState(false)
+  const [targetCountryCode, setTargetCountryCode] = React.useState<
+    CountryCode | undefined
+  >()
+
+  // Handle pre-filled phone from invite
+  React.useEffect(() => {
+    const handlePrefilledPhone = async () => {
+      const params = route.params as any
+
+      // Only pre-fill once and if we have the phone number parameter
+      if (params?.prefilledPhone && !hasPreFilled) {
+        setHasPreFilled(true)
+
+        try {
+          // First check for specific country codes that might be problematic
+          // Jamaica numbers start with +1876
+          if (params.prefilledPhone.startsWith("+1876")) {
+            // Jamaica - keep the area code 876 as part of the phone number
+            // Remove only the +1 country code
+            const numberWithoutCountryCode = params.prefilledPhone.replace("+1", "")
+
+            // Set phone number immediately
+            setPhoneNumber(numberWithoutCountryCode)
+
+            // Store the target country code to set later
+            setTargetCountryCode("JM" as CountryCode)
+          } else if (params.prefilledPhone.startsWith("+1868")) {
+            // Trinidad and Tobago
+            const numberWithoutCountryCode = params.prefilledPhone.replace("+1", "")
+            setPhoneNumber(numberWithoutCountryCode)
+            setTargetCountryCode("TT" as CountryCode)
+          } else if (params.prefilledPhone.startsWith("+1246")) {
+            // Barbados
+            const numberWithoutCountryCode = params.prefilledPhone.replace("+1", "")
+            setPhoneNumber(numberWithoutCountryCode)
+            setTargetCountryCode("BB" as CountryCode)
+          } else {
+            // Try parsing with libphonenumber
+            const parsed = parsePhoneNumber(params.prefilledPhone)
+            if (parsed && parsed.isValid()) {
+              const countryCode = parsed.country as CountryCode
+              const nationalNumber = parsed.nationalNumber
+
+              setTargetCountryCode(countryCode)
+              setPhoneNumber(nationalNumber)
+            } else {
+              // If parsing fails, try to extract what we can
+              if (params.prefilledPhone.startsWith("+1")) {
+                // Default to US for other +1 numbers
+                setTargetCountryCode("US" as CountryCode)
+                const numberWithoutCountry = params.prefilledPhone.replace("+1", "")
+                setPhoneNumber(numberWithoutCountry)
+              } else {
+                // Just set the number without country code
+                const cleanNumber = params.prefilledPhone.replace(/[^\d]/g, "")
+                setPhoneNumber(cleanNumber)
+              }
+            }
+          }
+
+          // Store invite token for later redemption
+          if (params.inviteToken) {
+            await AsyncStorage.setItem("pendingInviteToken", params.inviteToken)
+          }
+        } catch (error) {
+          console.error("Error parsing pre-filled phone:", error)
+          // If all else fails, just set what we have
+          const cleanNumber = params.prefilledPhone.replace(/[^\d]/g, "")
+          setPhoneNumber(cleanNumber)
+        }
+      }
+    }
+
+    handlePrefilledPhone()
+  }, [route.params, setPhoneNumber, hasPreFilled])
+
+  // Set country code when status changes to InputtingPhoneNumber and we have a target
+  React.useEffect(() => {
+    if (status === RequestPhoneCodeStatus.InputtingPhoneNumber && targetCountryCode) {
+      // Add a small delay to ensure the component is ready
+      setTimeout(() => {
+        setCountryCode(targetCountryCode)
+        // Clear the target after setting
+        setTargetCountryCode(undefined)
+      }, 100)
+    }
+  }, [status, targetCountryCode, setCountryCode])
 
   if (status === RequestPhoneCodeStatus.LoadingCountryCode) {
     return (

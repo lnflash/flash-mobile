@@ -87,6 +87,8 @@ import {
   TransactionHistoryTabs,
   USDTransactionHistory,
   SignInViaQRCode,
+  InviteFriend,
+  InviteFriendSuccess,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -574,6 +576,16 @@ export const RootStack = () => {
           headerStyle: { backgroundColor: "#000" },
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         }}
+      />
+      <RootNavigator.Screen
+        name="InviteFriend"
+        component={InviteFriend}
+        options={{ headerShown: true, title: "Invitation" }}
+      />
+      <RootNavigator.Screen
+        name="InviteFriendSuccess"
+        component={InviteFriendSuccess}
+        options={{ headerShown: false }}
       />
     </RootNavigator.Navigator>
   )
