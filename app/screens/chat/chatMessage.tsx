@@ -9,6 +9,7 @@ import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 import { useChatContext } from "./chatContext"
 import { fetchNostrUsers } from "@app/utils/nostr"
 import { Event, nip19, SubCloser } from "nostr-tools"
+import { SUPPORT_AGENTS } from "@app/config/supportAgents"
 
 type Props = {
   message: MessageType.Text
@@ -52,6 +53,9 @@ export const ChatMessage: React.FC<Props> = ({
 
   const { profileMap, addEventToProfiles, poolRef } = useChatContext()
 
+  console.log("AUTHOR IS", message.author.id, "Agents are", SUPPORT_AGENTS)
+  const isAgent = SUPPORT_AGENTS.has(message.author.id)
+
   useEffect(() => {
     isMounted.current = true
     if (!showSender) return
@@ -70,16 +74,23 @@ export const ChatMessage: React.FC<Props> = ({
     <View style={styles.container}>
       {/* ✅ Optional sender display */}
       {showSender && (
-        <Text
-          style={{
-            ...styles.sender,
-            color: getColorForUserId(message.author.id),
-          }}
-        >
-          {profileMap?.get(message.author.id)?.name ||
-            nip19.npubEncode(message.author.id).slice(0, 10) ||
-            "Unknown"}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+          <Text
+            style={{
+              ...styles.sender,
+              color: getColorForUserId(message.author.id),
+            }}
+          >
+            {profileMap?.get(message.author.id)?.name ||
+              nip19.npubEncode(message.author.id).slice(0, 10) ||
+              "Unknown"}
+          </Text>
+          {isAgent && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>Support</Text>
+            </View>
+          )}
+        </View>
       )}
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         {message.metadata?.errors && (
@@ -108,5 +119,19 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   errorIcon: {
     marginRight: 10,
+  },
+  badge: {
+    marginLeft: 6,
+    paddingHorizontal: 6,
+    marginBottom: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backgroundColor: "#1976d2", // blue badge
+  },
+  badgeText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "bold",
+    paddingBottom: 2,
   },
 }))

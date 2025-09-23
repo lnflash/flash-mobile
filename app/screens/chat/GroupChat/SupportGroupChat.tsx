@@ -7,7 +7,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context"
 import { ChatMessage } from "../chatMessage"
 import type { StackScreenProps } from "@react-navigation/stack"
 import type { RootStackParamList } from "../../../navigation/stack-param-lists"
-import { NostrGroupChatProvider, useNostrGroupChat } from "./GroupChatProvider"
+import { useNostrGroupChat } from "./GroupChatProvider"
 import { useChatContext } from "../chatContext"
 
 type SupportGroupChatScreenProps = StackScreenProps<RootStackParamList, "Nip29GroupChat">
