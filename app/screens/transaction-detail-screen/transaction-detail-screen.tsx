@@ -249,7 +249,7 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
                   <Icon
                     name="document-text"
                     size={30}
-                    color={styles.memoIcon.color}
+                    color={colors.primary}
                     style={styles.memoIcon}
                   />
                   <Text type="p1" style={styles.memoText}>
