@@ -444,6 +444,60 @@ export type GraphQlApplicationError = Error & {
   readonly path?: Maybe<ReadonlyArray<Maybe<Scalars['String']['output']>>>;
 };
 
+export type IbexTransactionDetails = {
+  readonly __typename: 'IbexTransactionDetails';
+  /** Account ID associated with the transaction */
+  readonly accountId?: Maybe<Scalars['String']['output']>;
+  /** Bitcoin address for onchain transactions */
+  readonly address?: Maybe<Scalars['String']['output']>;
+  /** Transaction amount */
+  readonly amount?: Maybe<Scalars['Float']['output']>;
+  /** Number of confirmations for onchain transactions */
+  readonly confirmations?: Maybe<Scalars['Int']['output']>;
+  /** Transaction creation timestamp */
+  readonly createdAt?: Maybe<Scalars['String']['output']>;
+  /** Transaction currency */
+  readonly currency?: Maybe<Scalars['String']['output']>;
+  /** Transaction fee */
+  readonly fee?: Maybe<Scalars['Float']['output']>;
+  /** Transaction ID */
+  readonly id: Scalars['String']['output'];
+  /** Lightning invoice (bolt11) */
+  readonly invoice?: Maybe<Scalars['String']['output']>;
+  /** Transaction memo/description */
+  readonly memo?: Maybe<Scalars['String']['output']>;
+  /** Lightning payment hash */
+  readonly paymentHash?: Maybe<Scalars['String']['output']>;
+  /** Lightning payment preimage */
+  readonly paymentPreimage?: Maybe<Scalars['String']['output']>;
+  /** Transaction status */
+  readonly status?: Maybe<Scalars['String']['output']>;
+  /** Bitcoin transaction ID for onchain transactions */
+  readonly txid?: Maybe<Scalars['String']['output']>;
+  /** Transaction type (lightning/onchain) */
+  readonly type?: Maybe<Scalars['String']['output']>;
+  /** Transaction last update timestamp */
+  readonly updatedAt?: Maybe<Scalars['String']['output']>;
+  /** Output index for onchain transactions */
+  readonly vout?: Maybe<Scalars['Int']['output']>;
+};
+
+export type IbexTransactionDetailsError = {
+  readonly __typename: 'IbexTransactionDetailsError';
+  readonly message: Scalars['String']['output'];
+};
+
+export type IbexTransactionDetailsFetchInput = {
+  /** Ibex transaction ID to fetch details for */
+  readonly ibexTransactionId: Scalars['String']['input'];
+};
+
+export type IbexTransactionDetailsPayload = {
+  readonly __typename: 'IbexTransactionDetailsPayload';
+  readonly errors: ReadonlyArray<IbexTransactionDetailsError>;
+  readonly transactionDetails?: Maybe<IbexTransactionDetails>;
+};
+
 export type InitiateCashoutInput = {
   /** The id of the offer being executed. */
   readonly offerId: Scalars['ID']['input'];
@@ -736,6 +790,7 @@ export type Mutation = {
   readonly captchaRequestAuthCode: SuccessPayload;
   readonly deviceNotificationTokenCreate: SuccessPayload;
   readonly feedbackSubmit: SuccessPayload;
+  readonly ibexTransactionDetailsFetch: IbexTransactionDetailsPayload;
   /**
    * Start the Cashout process;
    * User sends USD to Flash via Ibex and receives USD or JMD to bank account.
@@ -903,6 +958,11 @@ export type MutationDeviceNotificationTokenCreateArgs = {
 
 export type MutationFeedbackSubmitArgs = {
   input: FeedbackSubmitInput;
+};
+
+
+export type MutationIbexTransactionDetailsFetchArgs = {
+  input: IbexTransactionDetailsFetchInput;
 };
 
 
@@ -2219,6 +2279,13 @@ export type RealtimePriceWsSubscriptionVariables = Exact<{
 
 
 export type RealtimePriceWsSubscription = { readonly __typename: 'Subscription', readonly realtimePrice: { readonly __typename: 'RealtimePricePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }>, readonly realtimePrice?: { readonly __typename: 'RealtimePrice', readonly timestamp: number, readonly denominatorCurrency: string, readonly btcSatPrice: { readonly __typename: 'PriceOfOneSatInMinorUnit', readonly base: number, readonly offset: number }, readonly usdCentPrice: { readonly __typename: 'PriceOfOneUsdCentInMinorUnit', readonly base: number, readonly offset: number } } | null } };
+
+export type IbexTransactionDetailsFetchMutationVariables = Exact<{
+  input: IbexTransactionDetailsFetchInput;
+}>;
+
+
+export type IbexTransactionDetailsFetchMutation = { readonly __typename: 'Mutation', readonly ibexTransactionDetailsFetch: { readonly __typename: 'IbexTransactionDetailsPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'IbexTransactionDetailsError', readonly message: string }>, readonly transactionDetails?: { readonly __typename: 'IbexTransactionDetails', readonly id: string, readonly accountId?: string | null, readonly amount?: number | null, readonly currency?: string | null, readonly status?: string | null, readonly type?: string | null, readonly createdAt?: string | null, readonly updatedAt?: string | null, readonly invoice?: string | null, readonly paymentHash?: string | null, readonly paymentPreimage?: string | null, readonly memo?: string | null, readonly address?: string | null, readonly txid?: string | null, readonly vout?: number | null, readonly confirmations?: number | null, readonly fee?: number | null } | null } };
 
 export type NetworkQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4441,6 +4508,60 @@ export function useRealtimePriceWsSubscription(baseOptions: Apollo.SubscriptionH
       }
 export type RealtimePriceWsSubscriptionHookResult = ReturnType<typeof useRealtimePriceWsSubscription>;
 export type RealtimePriceWsSubscriptionResult = Apollo.SubscriptionResult<RealtimePriceWsSubscription>;
+export const IbexTransactionDetailsFetchDocument = gql`
+    mutation ibexTransactionDetailsFetch($input: IbexTransactionDetailsFetchInput!) {
+  ibexTransactionDetailsFetch(input: $input) {
+    errors {
+      message
+    }
+    transactionDetails {
+      id
+      accountId
+      amount
+      currency
+      status
+      type
+      createdAt
+      updatedAt
+      invoice
+      paymentHash
+      paymentPreimage
+      memo
+      address
+      txid
+      vout
+      confirmations
+      fee
+    }
+  }
+}
+    `;
+export type IbexTransactionDetailsFetchMutationFn = Apollo.MutationFunction<IbexTransactionDetailsFetchMutation, IbexTransactionDetailsFetchMutationVariables>;
+
+/**
+ * __useIbexTransactionDetailsFetchMutation__
+ *
+ * To run a mutation, you first call `useIbexTransactionDetailsFetchMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useIbexTransactionDetailsFetchMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [ibexTransactionDetailsFetchMutation, { data, loading, error }] = useIbexTransactionDetailsFetchMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useIbexTransactionDetailsFetchMutation(baseOptions?: Apollo.MutationHookOptions<IbexTransactionDetailsFetchMutation, IbexTransactionDetailsFetchMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<IbexTransactionDetailsFetchMutation, IbexTransactionDetailsFetchMutationVariables>(IbexTransactionDetailsFetchDocument, options);
+      }
+export type IbexTransactionDetailsFetchMutationHookResult = ReturnType<typeof useIbexTransactionDetailsFetchMutation>;
+export type IbexTransactionDetailsFetchMutationResult = Apollo.MutationResult<IbexTransactionDetailsFetchMutation>;
+export type IbexTransactionDetailsFetchMutationOptions = Apollo.BaseMutationOptions<IbexTransactionDetailsFetchMutation, IbexTransactionDetailsFetchMutationVariables>;
 export const NetworkDocument = gql`
     query network {
   globals {

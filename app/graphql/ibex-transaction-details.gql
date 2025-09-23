@@ -1,0 +1,28 @@
+mutation ibexTransactionDetailsFetch($input: IbexTransactionDetailsFetchInput!) {
+  ibexTransactionDetailsFetch(input: $input) {
+    errors {
+      message
+    }
+    transactionDetails {
+      id
+      accountId
+      amount
+      currency
+      status
+      type
+      createdAt
+      updatedAt
+      # Lightning specific fields
+      invoice
+      paymentHash
+      paymentPreimage
+      memo
+      # Onchain specific fields
+      address
+      txid
+      vout
+      confirmations
+      fee
+    }
+  }
+}
