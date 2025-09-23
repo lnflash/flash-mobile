@@ -162,7 +162,7 @@ export const NIP17Chat: React.FC = () => {
           screenOptions={({ route }) => ({
             // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
             // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
-            tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+            // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
             tabBarIcon: ({ color }) => {
               let iconName: string
               if (route.name === "Chats") {
@@ -226,13 +226,14 @@ export const NIP17Chat: React.FC = () => {
                         <View
                           style={{
                             flexDirection: "row",
-                            alignItems: "center",
+
                             marginVertical: 4,
                           }}
                         >
                           <Image
                             source={{
-                              uri: groupMetadata.picture,
+                              uri:
+                                groupMetadata.picture || "../../assets/Flash-Mascot.png",
                             }}
                             style={styles.communityPicture}
                           />
@@ -251,7 +252,7 @@ export const NIP17Chat: React.FC = () => {
                                   marginTop: 4,
                                 }}
                               >
-                                {groupMetadata.name}
+                                {groupMetadata.name || "Support Group Chat"}
                               </Text>
                               <Icon
                                 name="checkmark-done-circle-outline"
@@ -268,7 +269,7 @@ export const NIP17Chat: React.FC = () => {
                               numberOfLines={3} // show max 3 lines
                               ellipsizeMode="tail" // add "..." at the end if overflowing
                             >
-                              {groupMetadata.about}
+                              {groupMetadata.about || "..."}
                             </Text>
                           </View>
                         </View>

@@ -53,7 +53,6 @@ export const ChatMessage: React.FC<Props> = ({
 
   const { profileMap, addEventToProfiles, poolRef } = useChatContext()
 
-  console.log("AUTHOR IS", message.author.id, "Agents are", SUPPORT_AGENTS)
   const isAgent = SUPPORT_AGENTS.has(message.author.id)
 
   useEffect(() => {
