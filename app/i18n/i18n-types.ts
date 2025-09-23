@@ -2415,7 +2415,7 @@ type RootTranslation = {
 			 */
 			confirmButton: string
 			/**
-			 * Y​o​u​ ​a​r​e​ ​a​b​o​u​t​ ​t​o​ ​s​e​n​d​ ​o​u​t​s​i​d​e​ ​{​b​a​n​k​N​a​m​e​}​.​ ​D​o​u​b​l​e​-​c​h​e​c​k​ ​t​h​e​ ​a​d​d​r​e​s​s​!
+			 * Y​o​u​ ​a​r​e​ ​a​b​o​u​t​ ​t​o​ ​s​e​n​d​ ​m​o​n​e​y​ ​t​o​ ​s​o​m​e​o​n​e​ ​t​h​a​t​ ​i​s​ ​n​o​t​ ​a​ ​{​b​a​n​k​N​a​m​e​}​ ​a​c​c​o​u​n​t​.​ ​A​r​e​ ​y​o​u​ ​s​u​r​e​ ​t​h​i​s​ ​i​s​ ​t​h​e​ ​a​d​d​r​e​s​s​ ​y​o​u​ ​i​n​t​e​n​d​ ​t​o​ ​s​e​n​d​ ​t​o​?
 			 * @param {string} bankName
 			 */
 			externalWarning: RequiredParams<'bankName'>
@@ -7126,7 +7126,7 @@ export type TranslationFunctions = {
 			 */
 			confirmButton: () => LocalizedString
 			/**
-			 * You are about to send outside {bankName}. Double-check the address!
+			 * You are about to send money to someone that is not a {bankName} account. Are you sure this is the address you intend to send to?
 			 */
 			externalWarning: (arg: { bankName: string }) => LocalizedString
 			/**
