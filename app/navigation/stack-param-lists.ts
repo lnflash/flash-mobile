@@ -155,12 +155,10 @@ export type RootStackParamList = {
   BuyBitcoin: undefined
   BuyBitcoinDetails: { paymentType: "card" | "bankTransfer" }
   BankTransfer: {
-    email: string
     amount: number
     wallet: string
   }
   CardPayment: {
-    email: string
     amount: number
     wallet: string
   }

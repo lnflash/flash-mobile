@@ -68,7 +68,7 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
     })
   }
 
-  if (currentLevel === AccountLevel.Two) {
+  if (currentLevel === AccountLevel.Two || currentLevel === AccountLevel.Three) {
     buttons.push({
       title: LL.HomeScreen.transfer(),
       target: "BuySellBitcoin",

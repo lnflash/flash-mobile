@@ -6742,7 +6742,7 @@ export type TranslationFunctions = {
 		 */
 		bankTransfer: () => LocalizedString
 		/**
-		 * Transfer funds from your bank account
+		 * Transfer funds from your bank
 		 */
 		bankTransferDesc: () => LocalizedString
 		/**
@@ -6750,7 +6750,7 @@ export type TranslationFunctions = {
 		 */
 		debitCreditCard: () => LocalizedString
 		/**
-		 * Pay with your card via Fygaro
+		 * Pay with your debit or credit card
 		 */
 		debitCreditCardDesc: () => LocalizedString
 	}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 import { View, TextInput, Alert } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -11,8 +11,6 @@ import { ButtonGroup } from "@app/components/button-group"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useHomeAuthedQuery } from "@app/graphql/generated"
-import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 // assets
@@ -22,32 +20,14 @@ import Bitcoin from "@app/assets/icons/bitcoin.svg"
 type Props = StackScreenProps<RootStackParamList, "BuyBitcoinDetails">
 
 const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
-  const { bottom } = useSafeAreaInsets()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
-  const isAuthed = useIsAuthed()
-  const styles = useStyles()
+  const { bottom } = useSafeAreaInsets()
+  const styles = useStyles()({ bottom })
 
-  const [email, setEmail] = useState("")
   const [selectedWallet, setSelectedWallet] = useState("USD")
   const [amount, setAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-
-  const { data } = useHomeAuthedQuery({
-    skip: !isAuthed,
-    fetchPolicy: "cache-first",
-  })
-
-  useEffect(() => {
-    if (data?.me?.email?.address) {
-      setEmail(data.me.email.address)
-    }
-  }, [data])
-
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  }
 
   const validateAmount = (amount: string): boolean => {
     const numAmount = parseFloat(amount)
@@ -55,11 +35,6 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
   }
 
   const handleContinue = async () => {
-    if (!validateEmail(email)) {
-      Alert.alert("Invalid Email", LL.BuyBitcoinDetails.invalidEmail())
-      return
-    }
-
     if (!validateAmount(amount)) {
       Alert.alert("Invalid Amount", LL.BuyBitcoinDetails.minimumAmount())
       return
@@ -70,13 +45,11 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
     try {
       if (route.params.paymentType === "bankTransfer") {
         navigation.navigate("BankTransfer", {
-          email,
           amount: parseFloat(amount),
           wallet: selectedWallet,
         })
       } else {
         navigation.navigate("CardPayment", {
-          email,
           amount: parseFloat(amount),
           wallet: selectedWallet,
         })
@@ -115,20 +88,6 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
             ? LL.BuyBitcoinDetails.title()
             : LL.BuyBitcoinDetails.bankTransfer()}
         </Text>
-        <View style={styles.fieldContainer}>
-          <Text type="p1" bold>
-            {LL.BuyBitcoinDetails.email()}
-          </Text>
-          <TextInput
-            style={styles.input}
-            placeholder={LL.BuyBitcoinDetails.emailPlaceholder()}
-            placeholderTextColor={colors.grey1}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
 
         <View style={styles.fieldContainer}>
           <Text type="p1" bold>
@@ -160,19 +119,19 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
         label={LL.BuyBitcoinDetails.continue()}
         onPress={handleContinue}
         loading={isLoading}
-        btnStyle={{ marginHorizontal: 20, marginBottom: bottom + 20 }}
+        btnStyle={styles.primaryButton}
       />
     </Screen>
   )
 }
 
-const useStyles = makeStyles(({ colors }) => ({
+const useStyles = makeStyles(({ colors }) => (props: { bottom: number }) => ({
   container: {
     flex: 1,
     paddingHorizontal: 20,
   },
   title: {
-    textAlign: "center",
+    textAlign: "center" as const,
     marginBottom: 30,
   },
   fieldContainer: {
@@ -190,6 +149,10 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   buttonGroup: {
     marginTop: 8,
+  },
+  primaryButton: {
+    marginHorizontal: 20,
+    marginBottom: Math.max(20, props.bottom),
   },
 }))
 

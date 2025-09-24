@@ -569,9 +569,9 @@ const en: BaseTranslation = {
   TopUpScreen: {
     title: "Top Up",
     bankTransfer: "Bank Transfer",
-    bankTransferDesc: "Transfer funds from your bank account",
+    bankTransferDesc: "Transfer funds from your bank",
     debitCreditCard: "Debit/Credit Card",
-    debitCreditCardDesc: "Pay with your card via Fygaro"
+    debitCreditCardDesc: "Pay with your debit or credit card"
   },
   BuyBitcoinDetails: {
     title: "Card Payment",
