@@ -151,6 +151,23 @@ export type RootStackParamList = {
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
   SignInViaQRCode: undefined
+  BuySellBitcoin: undefined
+  BuyBitcoin: undefined
+  BuyBitcoinDetails: { paymentType: "card" | "bankTransfer" }
+  BankTransfer: {
+    amount: number
+    wallet: string
+  }
+  CardPayment: {
+    amount: number
+    wallet: string
+  }
+  BuyBitcoinSuccess: undefined
+  paymentSuccess: {
+    amount: number
+    wallet: string
+    transactionId: string
+  }
 }
 
 export type ChatStackParamList = {
