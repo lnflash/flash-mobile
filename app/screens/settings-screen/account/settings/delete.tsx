@@ -25,6 +25,7 @@ import { useAccountDeleteMutation, useSettingsScreenQuery } from "@app/graphql/g
 import { CONTACT_EMAIL_ADDRESS } from "@app/config"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import { deleteUser } from "@app/supabase"
 
 export const Delete = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -103,6 +104,7 @@ export const Delete = () => {
       const res = await deleteAccount()
 
       if (res.data?.accountDelete?.success) {
+        if (data?.me?.phone) await deleteUser(data?.me?.phone) // delete user from supabase
         await deleteNostrData()
         await cleanUp(true)
         setAccountIsBeingDeleted(false)
