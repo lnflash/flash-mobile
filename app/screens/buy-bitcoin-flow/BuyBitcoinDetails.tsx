@@ -1,3 +1,18 @@
+/**
+ * BuyBitcoinDetails Component
+ *
+ * This screen collects payment details before initiating the topup flow.
+ * Users select:
+ * 1. Target wallet (USD or BTC)
+ * 2. Amount to topup
+ *
+ * Previously, this screen also collected email address, but that was removed
+ * to avoid double entry - users now enter email directly on Fygaro's form.
+ *
+ * The component supports both card payments (Fygaro) and bank transfers,
+ * routing to the appropriate flow based on the selected payment type.
+ */
+
 import React, { useState } from "react"
 import { View, TextInput, Alert } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
@@ -25,15 +40,40 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
   const { bottom } = useSafeAreaInsets()
   const styles = useStyles()({ bottom })
 
+  /**
+   * Component state:
+   * - selectedWallet: Which wallet to credit (USD or BTC)
+   * - amount: Topup amount in USD
+   * - isLoading: Loading state for navigation
+   *
+   * NOTE: Email field was removed to prevent double entry.
+   * Users enter email on Fygaro's payment form instead.
+   */
   const [selectedWallet, setSelectedWallet] = useState("USD")
   const [amount, setAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
+  /**
+   * Validates the entered amount.
+   * Minimum topup amount is $1.00 to prevent micro-transactions
+   * that would be unprofitable due to processing fees.
+   */
   const validateAmount = (amount: string): boolean => {
     const numAmount = parseFloat(amount)
     return !isNaN(numAmount) && numAmount >= 1.0
   }
 
+  /**
+   * Handles the continue button press.
+   *
+   * Validates amount and navigates to the appropriate payment flow:
+   * - Card payment: Goes to CardPayment (WebView with Fygaro)
+   * - Bank transfer: Goes to BankTransfer screen
+   *
+   * The wallet type and amount are passed to the next screen.
+   * The wallet type will be included in the webhook metadata
+   * to ensure the correct wallet is credited.
+   */
   const handleContinue = async () => {
     if (!validateAmount(amount)) {
       Alert.alert("Invalid Amount", LL.BuyBitcoinDetails.minimumAmount())
@@ -49,9 +89,10 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
           wallet: selectedWallet,
         })
       } else {
+        // Card payment flow via Fygaro WebView
         navigation.navigate("CardPayment", {
           amount: parseFloat(amount),
-          wallet: selectedWallet,
+          wallet: selectedWallet, // Will be sent to webhook via metadata
         })
       }
     } catch (error) {
@@ -61,6 +102,16 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
     }
   }
 
+  /**
+   * Wallet selection buttons configuration.
+   *
+   * Users can choose to credit either:
+   * - USD wallet: Fiat balance for USD transactions
+   * - BTC wallet: Bitcoin balance (amount converted at current rate)
+   *
+   * The selected wallet type is passed through the payment flow
+   * and included in the webhook metadata to ensure correct crediting.
+   */
   const walletButtons = [
     {
       id: "USD",
