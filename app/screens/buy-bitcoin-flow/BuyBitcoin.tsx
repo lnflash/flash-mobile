@@ -24,6 +24,21 @@ const BuyBitcoin: React.FC<Props> = ({ navigation }) => {
         <TouchableOpacity
           style={styles.btn}
           onPress={() =>
+            navigation.navigate("BuyBitcoinDetails", { paymentType: "card" })
+          }
+        >
+          <Icon type="ionicon" name={"card"} size={40} />
+          <View style={styles.btnTextWrapper}>
+            <Text type="p1"> {LL.TopUpScreen.debitCreditCard()}</Text>
+            <Text type="p3" color={colors.grey2}>
+              {LL.TopUpScreen.debitCreditCardDesc()}
+            </Text>
+          </View>
+          <Icon type="ionicon" name={"chevron-forward"} size={20} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.btn}
+          onPress={() =>
             navigation.navigate("BuyBitcoinDetails", { paymentType: "bankTransfer" })
           }
         >
@@ -33,21 +48,6 @@ const BuyBitcoin: React.FC<Props> = ({ navigation }) => {
             <Text type="p1"> {LL.TopUpScreen.bankTransfer()}</Text>
             <Text type="p3" color={colors.grey2}>
               {LL.TopUpScreen.bankTransferDesc()}
-            </Text>
-          </View>
-          <Icon type="ionicon" name={"chevron-forward"} size={20} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.btn}
-          onPress={() =>
-            navigation.navigate("BuyBitcoinDetails", { paymentType: "card" })
-          }
-        >
-          <Icon type="ionicon" name={"card"} size={40} />
-          <View style={styles.btnTextWrapper}>
-            <Text type="p1"> {LL.TopUpScreen.debitCreditCard()}</Text>
-            <Text type="p3" color={colors.grey2}>
-              {LL.TopUpScreen.debitCreditCardDesc()}
             </Text>
           </View>
           <Icon type="ionicon" name={"chevron-forward"} size={20} />
