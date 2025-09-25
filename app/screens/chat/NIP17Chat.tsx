@@ -57,14 +57,6 @@ export const NIP17Chat: React.FC = () => {
 
   const { groupMetadata } = useNostrGroupChat()
 
-  const navigateToContactDetails = (contactPubkey: string) => {
-    if (!privateKey) return
-    navigation.navigate("contactDetails", {
-      contactPubkey,
-      userPrivateKey: bytesToHex(privateKey),
-    })
-  }
-
   React.useEffect(() => {
     const unsubscribe = () => {
       console.log("unsubscribing")
@@ -212,15 +204,15 @@ export const NIP17Chat: React.FC = () => {
                           groupId: "support-group-id",
                         })
                       }
-                      style={{ marginRight: 10, marginLeft: 10, marginBottom: 4 }}
+                      style={{ marginRight: 20, marginLeft: 20, marginBottom: 4 }}
                     >
                       <View
                         style={{
                           ...styles.itemContainer,
-                          justifyContent: "center",
-                          alignContent: "center",
-                          alignItems: "center",
-                          alignSelf: "center",
+                          // justifyContent: "center",
+                          // alignContent: "center",
+                          // alignItems: "center",
+                          // alignSelf: "center",
                         }}
                       >
                         <View
@@ -241,6 +233,7 @@ export const NIP17Chat: React.FC = () => {
                             style={{
                               flexDirection: "column",
                               maxWidth: "80%",
+                              alignItems: "flex-start",
                             }}
                           >
                             <View style={{ flexDirection: "row", alignItems: "center" }}>

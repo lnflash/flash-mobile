@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react"
-import { finalizeEvent } from "nostr-tools"
+import { Event, finalizeEvent } from "nostr-tools"
 import { MessageType } from "@flyerhq/react-native-chat-ui"
 import { getSecretKey } from "@app/utils/nostr"
 import { useChatContext } from "../../../screens/chat/chatContext"
@@ -87,7 +87,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
         },
       ],
       {
-        onevent: (event: any) => {
+        onevent: (event: Event) => {
           const msg: MessageType.Text = {
             id: event.id,
             author: { id: event.pubkey },
@@ -127,8 +127,12 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       [{ "kinds": [39000], "#d": [groupId] }],
       {
         onevent: (event) => {
+          console.log("==============GOT METADATA EVENT=============")
           const parsed = parseGroupTags(event.tags)
           setMetadata(parsed)
+        },
+        oneose: () => {
+          console.log("EOSE TRIGGERED FOR ", 39000)
         },
       },
     )
@@ -138,7 +142,6 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   // ----- Sub: membership roster (kind 39002) -----
   useEffect(() => {
     if (!poolRef?.current) return
-
     const filters: any = {
       "kinds": [39002],
       "#d": [groupId],
@@ -148,12 +151,11 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     const unsub = poolRef.current.subscribeMany(relayUrls, [filters], {
       onevent: (event: any) => {
         // Extract all `p` tags as pubkeys
+        console.log("==============GOT MEMBERSHIP EVENT=============")
         const currentMembers: string[] = event.tags
           .filter((tag: string[]) => tag?.[0] === "p" && tag[1])
           .map((tag: string[]) => tag[1])
 
-        const now = Date.now()
-        const eventTime = event.created_at * 1000 // convert from seconds
         // Convert to Set for easy diff
         const currentSet = new Set(currentMembers)
 
