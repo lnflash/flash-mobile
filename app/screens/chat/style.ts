@@ -1,3 +1,4 @@
+import { color } from "@rneui/base"
 import { makeStyles } from "@rneui/themed"
 
 export const useStyles = makeStyles(({ colors }) => ({
@@ -57,22 +58,29 @@ export const useStyles = makeStyles(({ colors }) => ({
   itemContainer: {
     borderRadius: 8,
     backgroundColor: colors.grey5,
+    // borderColor: colors.grey2,
+    // borderWidth: 0.5,
     minHeight: 50,
     margin: 5,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
   },
 
   listContainer: { flexGrow: 1 },
 
   searchBarContainer: {
-    backgroundColor: colors.white,
-    borderBottomColor: colors.white,
-    borderTopColor: colors.white,
+    backgroundColor: colors.grey5,
+    borderBottomColor: colors.grey5,
+    borderTopColor: colors.grey5,
     marginHorizontal: 12,
     marginVertical: 8,
   },
 
   searchBarInputContainerStyle: {
-    backgroundColor: colors.grey5,
+    backgroundColor: colors.grey4,
   },
 
   searchBarRightIconStyle: {
@@ -104,5 +112,15 @@ export const useStyles = makeStyles(({ colors }) => ({
     height: 50,
     borderRadius: 50,
     backgroundColor: colors.primary,
+  },
+  communityPicture: {
+    width: 50,
+    height: 50,
+    borderRadius: 50,
+    backgroundColor: colors.primary,
+    marginRight: 10,
+    padding: 10,
+    marginLeft: 15,
+    margin: 10,
   },
 }))

@@ -269,7 +269,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
                 <ChatMessage
                   key={message.id}
                   message={message}
-                  recipientId={userPubkey}
+                  // recipientId={userPubkey}
                   nextMessage={nextMessage}
                   prevMessage={prevMessage}
                 />
