@@ -90,3 +90,5 @@ android/app/src/main/assets
 .metro-health-check*
 Gemfile.lock
 vendor/
+
+ci/secrets.yml
