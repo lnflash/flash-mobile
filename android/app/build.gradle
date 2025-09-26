@@ -90,6 +90,20 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 60
         versionName "0.4.5"
+
+        // use google-service.dev.json if google-service.json is not exits
+        def googleServicesFile = rootProject.file("app/google-services.json")
+        def googleServicesDevFile = rootProject.file("app/google-services.dev.json")
+
+        if (!googleServicesFile.exists() && googleServicesDevFile.exists()) {
+            println("⚠️ google-services.json not found. Using google-services.dev.json instead.")
+            copy {
+                from googleServicesDevFile
+                into rootProject.file("app")
+                rename { "google-services.json" }
+            }
+        }
+        // end
     }
 
     splits {
