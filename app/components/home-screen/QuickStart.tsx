@@ -13,6 +13,7 @@ import Flashcard from "@app/assets/icons/empty-flashcard.svg"
 import NonCustodialWallet from "@app/assets/illustrations/non-custodial-wallet.svg"
 import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
 import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
+import SocialChat from "@app/assets/illustrations/social-chat.svg"
 
 // components
 import { UpgradeAccountModal } from "../upgrade-account-modal"
@@ -118,6 +119,13 @@ const QuickStart = () => {
       image: SecureWallet,
       onPress: () => navigation.navigate("BackupOptions"),
     },
+    {
+      type: "socialPost",
+      title: LL.NostrQuickStart.postHeading(),
+      description: LL.NostrQuickStart.postDesc(),
+      image: SocialChat,
+      onPress: () => navigation.navigate("makeNostrPost"),
+    },
   ]
 
   if (
@@ -161,6 +169,12 @@ const QuickStart = () => {
     persistentState?.closedQuickStartTypes?.includes("backup")
   ) {
     carouselData = carouselData.filter((el) => el.type !== "backup")
+  }
+  if (
+    !persistentState.chatEnabled ||
+    persistentState?.closedQuickStartTypes?.includes("socialPost")
+  ) {
+    carouselData = carouselData.filter((el) => el.type !== "socialPost")
   }
 
   const onHide = (type: string) => {
