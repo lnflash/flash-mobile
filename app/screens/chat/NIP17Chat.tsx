@@ -50,7 +50,6 @@ export const NIP17Chat: React.FC = () => {
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
   const [showImportModal, setShowImportModal] = useState<boolean>(false)
   const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
-  const [showQuickStart, setShowQuickStart] = useState(false)
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
@@ -187,7 +186,7 @@ export const NIP17Chat: React.FC = () => {
                   />
                 ) : (
                   <View style={{ flex: 1, flexDirection: "column" }}>
-                    {/* Signed in as + toggle in a row */}
+                    {/* Signed in as */}
                     <View
                       style={{
                         flexDirection: "row",
