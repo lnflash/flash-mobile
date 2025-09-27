@@ -31,7 +31,6 @@ import Contacts from "./contacts"
 import { UserSearchBar } from "./UserSearchBar"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import NostrQuickStart from "@app/components/nostr-quickstart"
 
 const Tab = createMaterialTopTabNavigator()
 
@@ -54,7 +53,6 @@ export const NIP17Chat: React.FC = () => {
   const [privateKey, setPrivateKey] = useState<Uint8Array>()
   const [showImportModal, setShowImportModal] = useState<boolean>(false)
   const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
-  const [showQuickStart, setShowQuickStart] = useState(false)
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
 
@@ -197,7 +195,7 @@ export const NIP17Chat: React.FC = () => {
                   />
                 ) : (
                   <View style={{ flex: 1, flexDirection: "column" }}>
-                    {/* Signed in as + toggle in a row */}
+                    {/* Signed in as */}
                     <View
                       style={{
                         flexDirection: "row",
@@ -219,28 +217,7 @@ export const NIP17Chat: React.FC = () => {
                             nip19.npubEncode(getPublicKey(privateKey))}
                         </Text>
                       </Text>
-
-                      {/* Expand / collapse toggle */}
-                      <TouchableOpacity
-                        onPress={() => setShowQuickStart((prev) => !prev)}
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          marginLeft: 10,
-                        }}
-                      >
-                        <Icon
-                          name={
-                            showQuickStart ? "chevron-up-outline" : "chevron-down-outline"
-                          }
-                          size={20}
-                          color={colors.primary}
-                        />
-                      </TouchableOpacity>
                     </View>
-
-                    {/* NostrQuickStart directly, visible when toggled */}
-                    {showQuickStart && <NostrQuickStart />}
 
                     <FlatList
                       contentContainerStyle={styles.listContainer}
