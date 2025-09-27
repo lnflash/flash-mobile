@@ -1729,6 +1729,14 @@ type RootTranslation = {
 		 */
 		upgradeDesc: string
 		/**
+		 * I​n​v​i​t​e​ ​F​r​i​e​n​d​s
+		 */
+		inviteTitle: string
+		/**
+		 * G​e​t​ ​r​e​w​a​r​d​s​ ​f​o​r​ ​i​n​v​i​t​i​n​g​ ​f​r​i​e​n​d​s​ ​t​o​ ​F​l​a​s​h
+		 */
+		inviteDesc: string
+		/**
 		 * C​h​a​n​g​e​ ​t​o​ ​y​o​u​r​ ​l​o​c​a​l​ ​c​u​r​r​e​n​c​y
 		 */
 		currencyTitle: string
@@ -2734,7 +2742,7 @@ type RootTranslation = {
 		 */
 		title: string
 		/**
-		 * E​n​t​e​r​ ​a​ ​p​h​o​n​e​ ​n​u​m​b​e​r​ ​o​r​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s​ ​t​o​ ​i​n​v​i​t​e​ ​a​ ​f​r​i​e​n​d​.
+		 * E​n​t​e​r​ ​a​ ​p​h​o​n​e​ ​n​u​m​b​e​r​ ​o​r​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s​ ​t​o​ ​i​n​v​i​t​e​ ​a​ ​f​r​i​e​n​d​.​ ​B​y​ ​i​n​v​i​t​i​n​g​ ​a​ ​f​r​i​e​n​d​,​ ​y​o​u​ ​c​o​n​f​i​r​m​ ​t​h​a​t​ ​t​h​e​ ​r​e​c​i​p​i​e​n​t​ ​h​a​s​ ​g​i​v​e​n​ ​c​o​n​s​e​n​t​ ​t​o​ ​r​e​c​e​i​v​e​ ​t​h​i​s​ ​i​n​v​i​t​a​t​i​o​n​.
 		 */
 		subtitle: string
 		/**
@@ -6504,6 +6512,14 @@ export type TranslationFunctions = {
 		 */
 		upgradeDesc: () => LocalizedString
 		/**
+		 * Invite Friends
+		 */
+		inviteTitle: () => LocalizedString
+		/**
+		 * Get rewards for inviting friends to Flash
+		 */
+		inviteDesc: () => LocalizedString
+		/**
 		 * Change to your local currency
 		 */
 		currencyTitle: () => LocalizedString
@@ -7470,7 +7486,7 @@ export type TranslationFunctions = {
 		 */
 		title: () => LocalizedString
 		/**
-		 * Enter a phone number or email address to invite a friend.
+		 * Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.
 		 */
 		subtitle: () => LocalizedString
 		/**
