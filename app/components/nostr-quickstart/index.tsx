@@ -6,7 +6,7 @@ import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // assets (replace with your actual Nostr illustrations/icons)
-import FeedIcon from "@app/assets/illustrations/nostr-feed.svg"
+import FeedIcon from "@app/assets/illustrations/social-chat.svg"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
