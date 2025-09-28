@@ -119,6 +119,8 @@ import ContactDetailsScreen from "@app/screens/chat/contactDetailsScreen"
 import { SupportGroupChatScreen } from "@app/screens/chat/GroupChat/SupportGroupChat"
 import Contacts from "@app/screens/chat/contacts"
 import MakeNostrPost from "@app/screens/social/post"
+import PostSuccess from "@app/screens/social/post-success"
+import IrisBrowser from "@app/screens/social/iris-browser"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -533,6 +535,16 @@ export const RootStack = () => {
         name="makeNostrPost"
         component={MakeNostrPost}
         options={{ title: LL.Social.postTitle() }}
+      />
+      <RootNavigator.Screen
+        name="postSuccess"
+        component={PostSuccess}
+        options={{ title: LL.Social.postSuccessTitle(), headerShown: false }}
+      />
+      <RootNavigator.Screen
+        name="irisBrowser"
+        component={IrisBrowser}
+        options={{ title: LL.Social.socialFeedTitle(), headerShown: false }}
       />
       <RootNavigator.Screen
         name="USDTransactionHistory"

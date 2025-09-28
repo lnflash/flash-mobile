@@ -1,7 +1,14 @@
-import { useTheme, Image } from "@rneui/themed"
+import { useTheme } from "@rneui/themed"
 import * as React from "react"
-import { useState } from "react"
-import { ActivityIndicator, Text, View, TouchableOpacity } from "react-native"
+import { useCallback, useState } from "react"
+import {
+  ActivityIndicator,
+  Text,
+  View,
+  Alert,
+  TouchableOpacity,
+  Image,
+} from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
@@ -148,6 +155,58 @@ export const NIP17Chat: React.FC = () => {
     return (lastBRumor?.created_at || 0) - (lastARumor?.created_at || 0)
   })
 
+  const userPublicKey = privateKey ? getPublicKey(privateKey) : null
+  const userProfile = userPublicKey ? profileMap?.get(userPublicKey) : null
+
+  // Profile menu component displayed above tab navigation - tappable to view own profile
+  const ProfileMenu = () => (
+    <TouchableOpacity
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.grey5,
+        backgroundColor: colors.background,
+      }}
+      onPress={() => {}}
+      activeOpacity={0.7}
+    >
+      <Image
+        source={
+          userProfile?.picture
+            ? { uri: userProfile.picture }
+            : {
+                uri: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwinaero.com%2Fblog%2Fwp-content%2Fuploads%2F2017%2F12%2FUser-icon-256-blue.png&f=1&nofb=1&ipt=d8f3a13e26633e5c7fb42aed4cd2ab50e1bb3d91cfead71975713af0d1ed278c",
+              }
+        }
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          marginRight: 12,
+          borderWidth: 2,
+          borderColor: colors.grey5,
+        }}
+      />
+      <View style={{ flex: 1 }}>
+        <Text
+          style={{
+            fontSize: 15,
+            color: colors.black,
+            fontWeight: "600",
+          }}
+        >
+          {userData?.username ||
+            userProfile?.name ||
+            (userPublicKey ? nip19.npubEncode(userPublicKey).slice(0, 12) + "..." : "")}
+        </Text>
+      </View>
+      <Icon name="person-circle-outline" size={24} color={colors.grey3} />
+    </TouchableOpacity>
+  )
+
   return (
     <Screen style={{ ...styles.header, flex: 1 }}>
       {privateKey && !showImportModal ? (
@@ -170,6 +229,25 @@ export const NIP17Chat: React.FC = () => {
             tabBarShowLabel: false, // Hide text labels
           })}
         >
+          <ProfileMenu />
+          {/* <Tab.Navigator
+            initialRouteName="Chats"
+            screenOptions={({ route }) => ({
+              tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+              tabBarIcon: ({ color }) => {
+                let iconName: string
+                if (route.name === "Chats") {
+                  iconName = "chatbubble-ellipses-outline"
+                } else if (route.name === "Contacts") {
+                  iconName = "people-outline"
+                } else {
+                  iconName = ""
+                }
+                return <Icon name={iconName} size={24} color={color} />
+              },
+              tabBarShowLabel: false,
+            })}
+          > */}
           <Tab.Screen name="Chats">
             {() => (
               <View style={{ flex: 1 }}>
