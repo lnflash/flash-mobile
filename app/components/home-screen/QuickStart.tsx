@@ -172,6 +172,7 @@ const QuickStart = () => {
   }
   if (
     !persistentState.chatEnabled ||
+    persistentState.hasPostedToNostr ||
     persistentState?.closedQuickStartTypes?.includes("socialPost")
   ) {
     carouselData = carouselData.filter((el) => el.type !== "socialPost")
