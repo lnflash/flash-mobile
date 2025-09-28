@@ -78,6 +78,7 @@ type PersistentState_7 = {
   closedQuickStartTypes: string[]
   flashcardTag?: TagEvent
   flashcardHtml?: string
+  hasPostedToNostr?: boolean // true if user has made at least one Nostr post
 }
 
 type JwtPayload = {

@@ -117,6 +117,8 @@ import {
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
 import MakeNostrPost from "@app/screens/social/post"
+import PostSuccess from "@app/screens/social/post-success"
+import IrisBrowser from "@app/screens/social/iris-browser"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -527,6 +529,16 @@ export const RootStack = () => {
         name="makeNostrPost"
         component={MakeNostrPost}
         options={{ title: LL.Social.postTitle() }}
+      />
+      <RootNavigator.Screen
+        name="postSuccess"
+        component={PostSuccess}
+        options={{ title: LL.Social.postSuccessTitle(), headerShown: false }}
+      />
+      <RootNavigator.Screen
+        name="irisBrowser"
+        component={IrisBrowser}
+        options={{ title: LL.Social.socialFeedTitle(), headerShown: false }}
       />
       <RootNavigator.Screen
         name="USDTransactionHistory"

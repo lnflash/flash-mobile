@@ -4232,11 +4232,11 @@ type RootTranslation = {
 	}
 	NostrQuickStart: {
 		/**
-		 * M​a​k​e​ ​y​o​u​r​ ​f​i​r​s​t​ ​p​o​s​t​ ​o​n​ ​n​o​s​t​r​!
+		 * M​a​k​e​ ​y​o​u​r​ ​f​i​r​s​t​ ​s​o​c​i​a​l​ ​p​o​s​t​!
 		 */
 		postHeading: string
 		/**
-		 * I​n​t​r​o​d​u​c​e​ ​y​o​u​r​ ​s​e​l​f​ ​t​o​ ​N​o​s​t​r​!
+		 * I​n​t​r​o​d​u​c​e​ ​y​o​u​r​s​e​l​f​ ​t​o​ ​t​h​e​ ​W​o​r​l​d​!
 		 */
 		postDesc: string
 	}
@@ -4246,7 +4246,11 @@ type RootTranslation = {
 		 */
 		post: string
 		/**
-		 * P​o​s​t​e​d​ ​f​r​o​m​ ​F​l​a​s​h​ ​A​p​p​,​ ​g​e​t​ ​i​t​ ​@​ ​h​t​t​p​:​/​/​g​e​t​f​l​a​s​h​a​p​p​.​m​e
+		 * M​a​k​e​ ​a​ ​P​o​s​t
+		 */
+		postTitle: string
+		/**
+		 * P​o​s​t​e​d​ ​u​s​i​n​g​ ​F​l​a​s​h​!​ ​G​e​t​ ​i​t​ ​@​ ​h​t​t​p​s​:​/​/​g​e​t​f​l​a​s​h​.​i​o​/​a​p​p
 		 */
 		flashAppCredit: string
 		/**
@@ -4276,6 +4280,34 @@ type RootTranslation = {
 		 * p​o​s​t​i​n​g​.​.​.
 		 */
 		posting: string
+		/**
+		 * V​i​e​w​ ​o​n​ ​i​r​i​s​.​t​o
+		 */
+		viewOnIris: string
+		/**
+		 * W​o​u​l​d​ ​y​o​u​ ​l​i​k​e​ ​t​o​ ​v​i​e​w​ ​y​o​u​r​ ​p​o​s​t​ ​o​n​ ​i​r​i​s​.​t​o​?
+		 */
+		viewPostQuestion: string
+		/**
+		 * B​r​o​w​s​e​ ​S​o​c​i​a​l​ ​F​e​e​d
+		 */
+		browseSocialFeed: string
+		/**
+		 * S​o​c​i​a​l​ ​F​e​e​d
+		 */
+		socialFeedTitle: string
+		/**
+		 * P​o​s​t​ ​S​h​a​r​e​d​!
+		 */
+		postSuccessTitle: string
+		/**
+		 * Y​o​u​r​ ​p​o​s​t​ ​h​a​s​ ​b​e​e​n​ ​p​u​b​l​i​s​h​e​d​ ​t​o​ ​N​o​s​t​r
+		 */
+		postSuccessSubtitle: string
+		/**
+		 * S​h​o​w​ ​m​e​ ​m​o​r​e
+		 */
+		showMeMore: string
 	}
 	errors: {
 		/**
@@ -8963,6 +8995,10 @@ export type TranslationFunctions = {
 		 */
 		post: () => LocalizedString
 		/**
+		 * Make a Post
+		 */
+		postTitle: () => LocalizedString
+		/**
 		 * Posted using Flash! Get it @ https://getflash.io/app
 		 */
 		flashAppCredit: () => LocalizedString
@@ -8993,6 +9029,34 @@ export type TranslationFunctions = {
 		 * posting...
 		 */
 		posting: () => LocalizedString
+		/**
+		 * View on iris.to
+		 */
+		viewOnIris: () => LocalizedString
+		/**
+		 * Would you like to view your post on iris.to?
+		 */
+		viewPostQuestion: () => LocalizedString
+		/**
+		 * Browse Social Feed
+		 */
+		browseSocialFeed: () => LocalizedString
+		/**
+		 * Social Feed
+		 */
+		socialFeedTitle: () => LocalizedString
+		/**
+		 * Post Shared!
+		 */
+		postSuccessTitle: () => LocalizedString
+		/**
+		 * Your post has been published to Nostr
+		 */
+		postSuccessSubtitle: () => LocalizedString
+		/**
+		 * Show me more
+		 */
+		showMeMore: () => LocalizedString
 	}
 	errors: {
 		/**
