@@ -62,11 +62,6 @@ export const FeedItem: React.FC<FeedItemProps> = ({
     return null
   }
 
-  console.log("FeedItem event:", JSON.stringify(event))
-  console.log("FeedItem profile:", JSON.stringify(profile))
-  console.log("FeedItem repostedEvent:", JSON.stringify(repostedEvent))
-  console.log("FeedItem repostedProfile:", JSON.stringify(repostedProfile))
-
   // Handle reposts (kind 6) by displaying the embedded event and original author's profile
   const isRepost = event.kind === 6
   const displayEvent = isRepost && repostedEvent ? repostedEvent : event
@@ -93,7 +88,9 @@ export const FeedItem: React.FC<FeedItemProps> = ({
 
   const displayName = (() => {
     try {
-      return displayProfile?.name || nip19.npubEncode(displayEvent.pubkey).slice(0, 12) + "..."
+      return (
+        displayProfile?.name || nip19.npubEncode(displayEvent.pubkey).slice(0, 12) + "..."
+      )
     } catch (e) {
       console.error("Error encoding displayName:", e)
       return "Nostr User"
@@ -204,7 +201,6 @@ export const FeedItem: React.FC<FeedItemProps> = ({
 
   const linkifyText = (text: string) => {
     try {
-      console.log("linkifyText input:", text)
       const urlRegex = /(https?:\/\/[^\s]+)/g
       const nostrMentionRegex =
         /(nostr:)?(npub1[a-zA-Z0-9]+|note1[a-zA-Z0-9]+|nevent1[a-zA-Z0-9]+|nprofile1[a-zA-Z0-9]+)/g
@@ -213,7 +209,6 @@ export const FeedItem: React.FC<FeedItemProps> = ({
         "g",
       )
       const parts = text.split(combinedRegex).filter(Boolean)
-      console.log("linkifyText parts:", parts)
 
       return parts.map((part, index) => {
         try {
@@ -257,210 +252,209 @@ export const FeedItem: React.FC<FeedItemProps> = ({
     Linking.openURL(`lightning:${invoice}`)
   }
 
-  console.log("About to render FeedItem")
-  console.log("media object:", JSON.stringify(media))
-  console.log("selectedGradient:", selectedGradient)
-  console.log("displayName:", displayName)
-
   try {
     return (
       <View style={styles.containerWrapper}>
-      <LinearGradient
-        colors={selectedGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.accentBar}
-      />
+        <LinearGradient
+          colors={selectedGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.accentBar}
+        />
 
-      <View style={styles.container}>
-        {isRepost && reposterName && (
-          <View style={styles.repostHeader}>
-            <Icon name="repeat" size={14} color="#60aa55" />
-            <Text style={styles.repostText}>{reposterName} reposted</Text>
-          </View>
-        )}
-
-        <View style={styles.header}>
-          <LinearGradient colors={selectedGradient} style={styles.avatarGradientBorder}>
-            <View style={styles.avatarInner}>
-              <Avatar
-                size={36}
-                rounded
-                source={
-                  displayProfile?.picture ? { uri: displayProfile.picture } : undefined
-                }
-                title={
-                  !displayProfile?.picture
-                    ? displayName.charAt(0).toUpperCase()
-                    : undefined
-                }
-                containerStyle={
-                  !displayProfile?.picture
-                    ? { backgroundColor: selectedGradient[0] }
-                    : undefined
-                }
-              />
+        <View style={styles.container}>
+          {isRepost && reposterName && (
+            <View style={styles.repostHeader}>
+              <Icon name="repeat" size={14} color="#60aa55" />
+              <Text style={styles.repostText}>{reposterName} reposted</Text>
             </View>
-          </LinearGradient>
-          <View style={styles.userInfo}>
-            <Text style={styles.username}>{displayName}</Text>
-            <View style={styles.timestampContainer}>
-              <Icon
-                name="time-outline"
-                size={12}
-                color={CARIBBEAN_COLORS.oceanBlue}
-                style={{ marginRight: 4 }}
-              />
-              <Text style={styles.timestamp}>
-                {formatTimestamp(displayEvent.created_at)}
+          )}
+
+          <View style={styles.header}>
+            <LinearGradient colors={selectedGradient} style={styles.avatarGradientBorder}>
+              <View style={styles.avatarInner}>
+                <Avatar
+                  size={36}
+                  rounded
+                  source={
+                    displayProfile?.picture ? { uri: displayProfile.picture } : undefined
+                  }
+                  title={
+                    !displayProfile?.picture
+                      ? displayName.charAt(0).toUpperCase()
+                      : undefined
+                  }
+                  containerStyle={
+                    !displayProfile?.picture
+                      ? { backgroundColor: selectedGradient[0] }
+                      : undefined
+                  }
+                />
+              </View>
+            </LinearGradient>
+            <View style={styles.userInfo}>
+              <Text style={styles.username}>{displayName}</Text>
+              <View style={styles.timestampContainer}>
+                <Icon
+                  name="time-outline"
+                  size={12}
+                  color={CARIBBEAN_COLORS.oceanBlue}
+                  style={{ marginRight: 4 }}
+                />
+                <Text style={styles.timestamp}>
+                  {formatTimestamp(displayEvent.created_at)}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={compact ? styles.contentCompact : styles.content}>
+            {media.text && (
+              <Text style={styles.contentText} numberOfLines={compact ? 3 : undefined}>
+                {linkifyText(media.text)}
               </Text>
-            </View>
-          </View>
-        </View>
+            )}
 
-        <View style={compact ? styles.contentCompact : styles.content}>
-          {media.text && (
-            <Text style={styles.contentText} numberOfLines={compact ? 3 : undefined}>
-              {linkifyText(media.text)}
-            </Text>
-          )}
-
-          {media.images.length > 0 && (
-            <View style={styles.mediaContainer}>
-              {media.images.slice(0, compact ? 1 : 4).map((imageUrl, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => setSelectedImage(imageUrl)}
-                  style={styles.imageWrapper}
-                >
-                  <Image
-                    source={{ uri: imageUrl }}
-                    style={compact ? styles.mediaImageCompact : styles.mediaImage}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
-              ))}
-              {compact && media.images.length > 1 && (
-                <Text style={styles.moreImagesText}>+{media.images.length - 1} more</Text>
-              )}
-            </View>
-          )}
-
-          {media.videos.length > 0 && (
-            <View style={styles.mediaContainer}>
-              {media.videos
-                .slice(0, compact ? 1 : media.videos.length)
-                .map((videoUrl, index) => (
+            {media.images.length > 0 && (
+              <View style={styles.mediaContainer}>
+                {media.images.slice(0, compact ? 1 : 4).map((imageUrl, index) => (
                   <TouchableOpacity
                     key={index}
-                    onPress={() => setSelectedVideo(videoUrl)}
-                    style={styles.videoWrapper}
+                    onPress={() => setSelectedImage(imageUrl)}
+                    style={styles.imageWrapper}
                   >
-                    <View
-                      style={
-                        compact ? styles.videoPlaceholderCompact : styles.videoPlaceholder
-                      }
-                    >
-                      <Icon
-                        name="play-circle"
-                        size={compact ? 32 : 48}
-                        color={theme.colors.grey3}
-                      />
-                      {!compact && <Text style={styles.videoText}>Video</Text>}
-                    </View>
+                    <Image
+                      source={{ uri: imageUrl }}
+                      style={compact ? styles.mediaImageCompact : styles.mediaImage}
+                      resizeMode="cover"
+                    />
                   </TouchableOpacity>
                 ))}
-            </View>
-          )}
-
-          {!compact && (media.invoices.length > 0 || media.lnurls.length > 0) && (
-            <View style={styles.invoiceContainer}>
-              {media.invoices.map((invoice, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.invoiceButton}
-                  onPress={() => handleInvoicePress(invoice)}
-                >
-                  <Icon name="flash" size={20} color="#FF8C42" />
-                  <Text style={styles.invoiceText}>Pay Lightning Invoice</Text>
-                  <Icon name="open-outline" size={16} color={theme.colors.grey3} />
-                </TouchableOpacity>
-              ))}
-              {media.lnurls.map((lnurl, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.invoiceButton}
-                  onPress={() => Linking.openURL(`lightning:${lnurl}`)}
-                >
-                  <Icon name="flash" size={20} color="#60aa55" />
-                  <Text style={styles.invoiceText}>Zap Request</Text>
-                  <Icon name="open-outline" size={16} color={theme.colors.grey3} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Image Modal */}
-      <Modal
-        visible={selectedImage !== null}
-        transparent={true}
-        onRequestClose={() => setSelectedImage(null)}
-        animationType="fade"
-      >
-        <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.modalCloseButton}
-            onPress={() => setSelectedImage(null)}
-          >
-            <Icon name="close" size={32} color="#FFFFFF" />
-          </TouchableOpacity>
-          <ScrollView
-            contentContainerStyle={styles.modalScrollContent}
-            maximumZoomScale={3}
-            minimumZoomScale={1}
-          >
-            {selectedImage && (
-              <Image
-                source={{ uri: selectedImage }}
-                style={styles.modalImage}
-                resizeMode="contain"
-              />
+                {compact && media.images.length > 1 && (
+                  <Text style={styles.moreImagesText}>
+                    +{media.images.length - 1} more
+                  </Text>
+                )}
+              </View>
             )}
-          </ScrollView>
-        </View>
-      </Modal>
 
-      {/* Video Modal */}
-      <Modal
-        visible={selectedVideo !== null}
-        transparent={true}
-        onRequestClose={() => setSelectedVideo(null)}
-        animationType="fade"
-      >
-        <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.modalCloseButton}
-            onPress={() => setSelectedVideo(null)}
-          >
-            <Icon name="close" size={32} color="#FFFFFF" />
-          </TouchableOpacity>
-          {selectedVideo && (
-            <View style={styles.videoPlayerContainer}>
-              <Video
-                source={{ uri: selectedVideo }}
-                style={styles.videoPlayer}
-                controls={true}
-                resizeMode="contain"
-                paused={false}
-                onError={(error) => console.error("Video error:", error)}
-              />
-            </View>
-          )}
+            {media.videos.length > 0 && (
+              <View style={styles.mediaContainer}>
+                {media.videos
+                  .slice(0, compact ? 1 : media.videos.length)
+                  .map((videoUrl, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => setSelectedVideo(videoUrl)}
+                      style={styles.videoWrapper}
+                    >
+                      <View
+                        style={
+                          compact
+                            ? styles.videoPlaceholderCompact
+                            : styles.videoPlaceholder
+                        }
+                      >
+                        <Icon
+                          name="play-circle"
+                          size={compact ? 32 : 48}
+                          color={theme.colors.grey3}
+                        />
+                        {!compact && <Text style={styles.videoText}>Video</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+              </View>
+            )}
+
+            {!compact && (media.invoices.length > 0 || media.lnurls.length > 0) && (
+              <View style={styles.invoiceContainer}>
+                {media.invoices.map((invoice, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.invoiceButton}
+                    onPress={() => handleInvoicePress(invoice)}
+                  >
+                    <Icon name="flash" size={20} color="#FF8C42" />
+                    <Text style={styles.invoiceText}>Pay Lightning Invoice</Text>
+                    <Icon name="open-outline" size={16} color={theme.colors.grey3} />
+                  </TouchableOpacity>
+                ))}
+                {media.lnurls.map((lnurl, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.invoiceButton}
+                    onPress={() => Linking.openURL(`lightning:${lnurl}`)}
+                  >
+                    <Icon name="flash" size={20} color="#60aa55" />
+                    <Text style={styles.invoiceText}>Zap Request</Text>
+                    <Icon name="open-outline" size={16} color={theme.colors.grey3} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
-      </Modal>
-    </View>
+
+        {/* Image Modal */}
+        <Modal
+          visible={selectedImage !== null}
+          transparent={true}
+          onRequestClose={() => setSelectedImage(null)}
+          animationType="fade"
+        >
+          <View style={styles.modalContainer}>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setSelectedImage(null)}
+            >
+              <Icon name="close" size={32} color="#FFFFFF" />
+            </TouchableOpacity>
+            <ScrollView
+              contentContainerStyle={styles.modalScrollContent}
+              maximumZoomScale={3}
+              minimumZoomScale={1}
+            >
+              {selectedImage && (
+                <Image
+                  source={{ uri: selectedImage }}
+                  style={styles.modalImage}
+                  resizeMode="contain"
+                />
+              )}
+            </ScrollView>
+          </View>
+        </Modal>
+
+        {/* Video Modal */}
+        <Modal
+          visible={selectedVideo !== null}
+          transparent={true}
+          onRequestClose={() => setSelectedVideo(null)}
+          animationType="fade"
+        >
+          <View style={styles.modalContainer}>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setSelectedVideo(null)}
+            >
+              <Icon name="close" size={32} color="#FFFFFF" />
+            </TouchableOpacity>
+            {selectedVideo && (
+              <View style={styles.videoPlayerContainer}>
+                <Video
+                  source={{ uri: selectedVideo }}
+                  style={styles.videoPlayer}
+                  controls={true}
+                  resizeMode="contain"
+                  paused={false}
+                  onError={(error) => console.error("Video error:", error)}
+                />
+              </View>
+            )}
+          </View>
+        </Modal>
+      </View>
     )
   } catch (e) {
     console.error("Error rendering FeedItem:", e)
