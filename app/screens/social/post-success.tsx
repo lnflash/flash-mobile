@@ -10,6 +10,8 @@ import { useAppSelector } from "@app/store/redux"
 import LinearGradient from "react-native-linear-gradient"
 import { FeedItem } from "@app/components/nostr-feed/FeedItem"
 import { Event, nip19 } from "nostr-tools"
+import { bytesToHex } from "@noble/hashes/utils"
+import { getSecretKey } from "@app/utils/nostr"
 
 type PostSuccessNavigationProp = StackNavigationProp<RootStackParamList, "postSuccess">
 type PostSuccessRouteProp = RouteProp<RootStackParamList, "postSuccess">
@@ -23,6 +25,16 @@ const PostSuccess = () => {
   const { userData } = useAppSelector((state) => state.user)
 
   const { postContent, userNpub } = route.params
+
+  const handleViewProfile = async () => {
+    const privateKey = await getSecretKey()
+    if (!privateKey) return
+    const pubkey = extractPubkey(userNpub)
+    navigation.navigate("contactDetails", {
+      contactPubkey: pubkey,
+      userPrivateKey: bytesToHex(privateKey),
+    })
+  }
 
   // Extract npub from userNpub string if it's in nip19 format
   const extractPubkey = (npubString: string): string => {
@@ -122,6 +134,19 @@ const PostSuccess = () => {
               </View>
             </View>
           </LinearGradient>
+        </TouchableOpacity>
+
+        {/* View Profile Button */}
+        <TouchableOpacity
+          style={[styles.viewProfileButton, { backgroundColor: theme.colors.grey5 }]}
+          onPress={handleViewProfile}
+          activeOpacity={0.8}
+        >
+          <Icon name="person-outline" size={20} color={theme.colors.primary} />
+          <Text style={[styles.viewProfileText, { color: theme.colors.black }]}>
+            Show Recent Posts
+          </Text>
+          <Icon name="chevron-forward" size={20} color={theme.colors.grey3} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -228,6 +253,25 @@ const useStyles = makeStyles(({ colors }) => ({
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
+  },
+  viewProfileButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  viewProfileText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 12,
   },
   backHomeButton: {
     paddingVertical: 12,
