@@ -210,63 +210,69 @@ const ContactDetailsScreen: React.FC = () => {
             </>
           )}
           <View style={styles.profileHeader}>
-            <Image
-              source={
-                profile?.picture
-                  ? { uri: profile.picture }
-                  : {
-                      uri: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwinaero.com%2Fblog%2Fwp-content%2Fuploads%2F2017%2F12%2FUser-icon-256-blue.png&f=1&nofb=1&ipt=d8f3a13e26633e5c7fb42aed4cd2ab50e1bb3d91cfead71975713af0d1ed278c",
-                    }
-              }
-              style={styles.profileImage}
-            />
-            {isBusiness && (
-              <View style={styles.businessBadge}>
-                <Icon name="storefront" size={16} color="#FFFFFF" />
-                <Text style={styles.businessBadgeText}>Business</Text>
+            <View style={styles.profileTopRow}>
+              <Image
+                source={
+                  profile?.picture
+                    ? { uri: profile.picture }
+                    : {
+                        uri: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwinaero.com%2Fblog%2Fwp-content%2Fuploads%2F2017%2F12%2FUser-icon-256-blue.png&f=1&nofb=1&ipt=d8f3a13e26633e5c7fb42aed4cd2ab50e1bb3d91cfead71975713af0d1ed278c",
+                      }
+                }
+                style={styles.profileImage}
+              />
+              <View style={styles.profileInfo}>
+                <View style={styles.nameRow}>
+                  <Text
+                    style={[
+                      styles.profileName,
+                      { color: profile?.banner ? "#FFFFFF" : colors.black },
+                      profile?.banner && styles.textShadow
+                    ]}
+                  >
+                    {profile?.name || profile?.username || LL.Nostr.Contacts.nostrUser()}
+                  </Text>
+                  {isBusiness && (
+                    <View style={styles.businessBadge}>
+                      <Icon name="storefront" size={12} color="#FFFFFF" />
+                      <Text style={styles.businessBadgeText}>Business</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.profileNpub}>
+                  <Icon name="key-outline" size={12} color={profile?.banner ? "#FFFFFF" : colors.grey3} />
+                  <Text
+                    style={[
+                      styles.npubText,
+                      profile?.banner && { color: "rgba(255, 255, 255, 0.95)" },
+                      profile?.banner && styles.textShadow
+                    ]}
+                  >
+                    {npub.slice(0, 8)}...{npub.slice(-6)}
+                  </Text>
+                </View>
+                {profile?.lud16 && (
+                  <View style={[styles.profileLud16, profile?.banner && styles.lightBackground]}>
+                    <Icon name="flash" size={12} color="orange" />
+                    <Text style={[styles.lud16Text, { color: profile?.banner ? "#333" : colors.grey1 }]}>{profile.lud16}</Text>
+                  </View>
+                )}
+                {profile?.website && (
+                  <View style={styles.profileWebsite}>
+                    <Icon name="globe-outline" size={12} color={profile?.banner ? "#FFFFFF" : colors.grey3} />
+                    <Text
+                      style={[
+                        styles.websiteText,
+                        profile?.banner && { color: "rgba(255, 255, 255, 0.95)" },
+                        profile?.banner && styles.textShadow
+                      ]}
+                    >
+                      {profile.website}
+                    </Text>
+                  </View>
+                )}
               </View>
-            )}
-            <Text
-              style={[
-                styles.profileName,
-                { color: profile?.banner ? "#FFFFFF" : colors.black },
-                profile?.banner && styles.textShadow
-              ]}
-            >
-              {profile?.name || profile?.username || LL.Nostr.Contacts.nostrUser()}
-            </Text>
-            <View style={styles.profileNpub}>
-              <Icon name="key-outline" size={14} color={profile?.banner ? "#FFFFFF" : colors.grey3} />
-              <Text
-                style={[
-                  styles.npubText,
-                  profile?.banner && { color: "rgba(255, 255, 255, 0.95)" },
-                  profile?.banner && styles.textShadow
-                ]}
-              >
-                {npub.slice(0, 8)}...{npub.slice(-6)}
-              </Text>
             </View>
-            {profile?.lud16 && (
-              <View style={[styles.profileLud16, profile?.banner && styles.lightBackground]}>
-                <Icon name="flash" size={14} color="orange" />
-                <Text style={[styles.lud16Text, { color: profile?.banner ? "#333" : colors.grey1 }]}>{profile.lud16}</Text>
-              </View>
-            )}
-            {profile?.website && (
-              <View style={styles.profileWebsite}>
-                <Icon name="globe-outline" size={14} color={profile?.banner ? "#FFFFFF" : colors.grey3} />
-                <Text
-                  style={[
-                    styles.websiteText,
-                    profile?.banner && { color: "rgba(255, 255, 255, 0.95)" },
-                    profile?.banner && styles.textShadow
-                  ]}
-                >
-                  {profile.website}
-                </Text>
-              </View>
-            )}
             {profile?.about && (
               <Text
                 style={[
@@ -457,7 +463,7 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   profileHeaderContainer: {
     position: "relative",
-    minHeight: 200,
+    minHeight: 100,
   },
   bannerBackground: {
     position: "absolute",
@@ -485,17 +491,30 @@ const useStyles = makeStyles(({ colors }) => ({
     backgroundColor: "rgba(255, 255, 255, 0.95)",
   },
   profileHeader: {
-    alignItems: "center",
-    paddingVertical: 24,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     position: "relative",
   },
+  profileTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  profileInfo: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
   profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 12,
-    borderWidth: 4,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 3,
     borderColor: "#FFFFFF",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -507,71 +526,65 @@ const useStyles = makeStyles(({ colors }) => ({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#60aa55",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginBottom: 12,
-    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 3,
   },
   businessBadgeText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "600",
   },
   profileName: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: "bold",
-    marginBottom: 8,
   },
   profileNpub: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: 4,
-    marginBottom: 8,
+    gap: 4,
+    marginBottom: 3,
   },
   npubText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#888",
   },
   profileLud16: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginBottom: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: 4,
+    marginBottom: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     backgroundColor: "rgba(255, 165, 0, 0.1)",
-    borderRadius: 12,
+    borderRadius: 8,
+    alignSelf: "flex-start",
   },
   lud16Text: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
   },
   profileWebsite: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: 4,
-    marginBottom: 8,
+    gap: 4,
   },
   websiteText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#888",
   },
   aboutText: {
-    fontSize: 14,
-    textAlign: "center",
-    paddingHorizontal: 16,
-    lineHeight: 20,
-    marginTop: 8,
+    fontSize: 12,
+    paddingTop: 8,
+    lineHeight: 16,
   },
   actionsContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
-    paddingVertical: 12,
+    marginTop: 12,
+    paddingVertical: 8,
   },
   iconBtnContainer: {
     alignItems: "center",
