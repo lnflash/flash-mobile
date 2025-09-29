@@ -537,6 +537,7 @@ const en: BaseTranslation = {
     balance: "Refresh Balance",
     showQrCode: "Topup via QR",
     send: "Send",
+    transfer: "Transfer",
     sweep: "Sweep to Wallet",
     pay: "Pay",
     title: "Home",
@@ -564,6 +565,62 @@ const en: BaseTranslation = {
     btcWalletDesc: "Easily transfer larger amounts in Bitcoin.",
     backupTitle: "Backup your BTC wallet",
     backupDesc: "Backup and secure your Bitcoin wallet using recovery phrase."
+  },
+  TopUpScreen: {
+    title: "Top Up",
+    bankTransfer: "Bank Transfer",
+    bankTransferDesc: "Transfer funds from your bank",
+    debitCreditCard: "Debit/Credit Card",
+    debitCreditCardDesc: "Pay with your debit or credit card"
+  },
+  BuyBitcoinDetails: {
+    title: "Card Payment",
+    bankTransfer: "Bank Transfer",
+    email: "Email",
+    emailPlaceholder: "Enter your email address",
+    wallet: "Wallet",
+    walletPlaceholder: "Select wallet",
+    amount: "Amount (USD)",
+    amountPlaceholder: "Enter amount",
+    continue: "Continue",
+    usdWallet: "USD Wallet",
+    btcWallet: "BTC Wallet",
+    invalidEmail: "Please enter a valid email address",
+    invalidAmount: "Please enter a valid amount",
+    minimumAmount: "Minimum amount is $1.00"
+  },
+  FygaroWebViewScreen: {
+    title: "Fygaro Payment",
+    loading: "Loading payment page...",
+    error: "Failed to load payment page",
+    retry: "Retry"
+  },
+  BankTransfer: {
+    title: "Bank Transfer",
+    desc1: "Your order has been created. To complete the order, please transfer ${amount: number} USD to the bank details provided below.",
+    desc2: "Use {code: string} as the reference description. This unique code will help us associate the payment with your Flash account and process the Bitcoin transfer.",
+    desc3: "After we have received your payment, you will be credited with ${amount: number} USD in your Cash wallet, with a ${fee: number} USD fee deducted. You can then choose when you convert those USD to Bitcoin on your own using the Convert functionality in the mobile app.",
+    accountType: "Account Type",
+    destinationBank: "Destination Bank",
+    accountNumber: "Account Number",
+    typeOfClient: "Type of Client",
+    receiverName: "Receiver's Name",
+    email: "Email",
+    amount: "Amount",
+    uniqueCode: "Unique Code",
+    fees: "Fees",
+    desc4: "After payment completion on your end you can send us an email to {email: string} with a screenshot of your payment confirmation.",
+    desc5: "Your payment will be processed even if we don't receive this email, but having this confirmation can help accelerate the order.",
+    backHome: "Back to Home"
+  },
+  PaymentSuccessScreen: {
+    title: "Payment Successful",
+    successMessage: "Your payment has been processed successfully",
+    amountSent: "Amount Sent",
+    depositedTo: "Deposited to",
+    transactionId: "Transaction ID",
+    done: "Done",
+    viewTransaction: "View Transaction"
   },
   PinScreen: {
     attemptsRemaining: "Incorrect PIN. {attemptsRemaining: number} attempts remaining.",
@@ -1086,6 +1143,10 @@ const en: BaseTranslation = {
   TransferScreen: {
     title: "Transfer",
     percentageToConvert: "% to convert",
+    topUp: "Top Up",
+    topUpDesc: "Add funds to your wallet",
+    settle: "Settle",
+    settleDesc: "Cashout funds from your wallet"
   },
   UpgradeAccountModal: {
     title: "Upgrade your account",
@@ -1337,7 +1398,7 @@ const en: BaseTranslation = {
     email: "Email",
     enjoyingApp: "Enjoying the app?",
     statusPage: "Status Page",
-    //telegram: "Telegram",
+    // telegram: "Telegram",
     discord: "Discord",
     mattermost: "Mattermost",
     thankYouText: "Thank you for the feedback, would you like to suggest an improvement?",

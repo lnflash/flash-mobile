@@ -2093,6 +2093,20 @@ export type MerchantMapSuggestMutationVariables = Exact<{
 
 export type MerchantMapSuggestMutation = { readonly __typename: 'Mutation', readonly merchantMapSuggest: { readonly __typename: 'MerchantPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string, readonly path?: ReadonlyArray<string | null> | null }>, readonly merchant?: { readonly __typename: 'Merchant', readonly createdAt: number, readonly id: string, readonly title: string, readonly username: string, readonly validated: boolean, readonly coordinates: { readonly __typename: 'Coordinates', readonly latitude: number, readonly longitude: number } } | null } };
 
+export type RequestCashoutMutationVariables = Exact<{
+  input: RequestCashoutInput;
+}>;
+
+
+export type RequestCashoutMutation = { readonly __typename: 'Mutation', readonly requestCashout: { readonly __typename: 'RequestCashoutResponse', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string, readonly path?: ReadonlyArray<string | null> | null }>, readonly offer?: { readonly __typename: 'CashoutOffer', readonly exchangeRate: number, readonly expiresAt: number, readonly flashFee: number, readonly offerId: string, readonly receiveJmd: number, readonly receiveUsd: number, readonly send: number, readonly walletId: string } | null } };
+
+export type InitiateCashoutMutationVariables = Exact<{
+  input: InitiateCashoutInput;
+}>;
+
+
+export type InitiateCashoutMutation = { readonly __typename: 'Mutation', readonly initiateCashout: { readonly __typename: 'SuccessPayload', readonly success?: boolean | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly path?: ReadonlyArray<string | null> | null, readonly message: string, readonly code?: string | null }> } };
+
 export type AccountDeleteMutationVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -3506,6 +3520,91 @@ export function useMerchantMapSuggestMutation(baseOptions?: Apollo.MutationHookO
 export type MerchantMapSuggestMutationHookResult = ReturnType<typeof useMerchantMapSuggestMutation>;
 export type MerchantMapSuggestMutationResult = Apollo.MutationResult<MerchantMapSuggestMutation>;
 export type MerchantMapSuggestMutationOptions = Apollo.BaseMutationOptions<MerchantMapSuggestMutation, MerchantMapSuggestMutationVariables>;
+export const RequestCashoutDocument = gql`
+    mutation RequestCashout($input: RequestCashoutInput!) {
+  requestCashout(input: $input) {
+    errors {
+      code
+      message
+      path
+    }
+    offer {
+      exchangeRate
+      expiresAt
+      flashFee
+      offerId
+      receiveJmd
+      receiveUsd
+      send
+      walletId
+    }
+  }
+}
+    `;
+export type RequestCashoutMutationFn = Apollo.MutationFunction<RequestCashoutMutation, RequestCashoutMutationVariables>;
+
+/**
+ * __useRequestCashoutMutation__
+ *
+ * To run a mutation, you first call `useRequestCashoutMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestCashoutMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestCashoutMutation, { data, loading, error }] = useRequestCashoutMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRequestCashoutMutation(baseOptions?: Apollo.MutationHookOptions<RequestCashoutMutation, RequestCashoutMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RequestCashoutMutation, RequestCashoutMutationVariables>(RequestCashoutDocument, options);
+      }
+export type RequestCashoutMutationHookResult = ReturnType<typeof useRequestCashoutMutation>;
+export type RequestCashoutMutationResult = Apollo.MutationResult<RequestCashoutMutation>;
+export type RequestCashoutMutationOptions = Apollo.BaseMutationOptions<RequestCashoutMutation, RequestCashoutMutationVariables>;
+export const InitiateCashoutDocument = gql`
+    mutation InitiateCashout($input: InitiateCashoutInput!) {
+  initiateCashout(input: $input) {
+    errors {
+      path
+      message
+      code
+    }
+    success
+  }
+}
+    `;
+export type InitiateCashoutMutationFn = Apollo.MutationFunction<InitiateCashoutMutation, InitiateCashoutMutationVariables>;
+
+/**
+ * __useInitiateCashoutMutation__
+ *
+ * To run a mutation, you first call `useInitiateCashoutMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useInitiateCashoutMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [initiateCashoutMutation, { data, loading, error }] = useInitiateCashoutMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useInitiateCashoutMutation(baseOptions?: Apollo.MutationHookOptions<InitiateCashoutMutation, InitiateCashoutMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<InitiateCashoutMutation, InitiateCashoutMutationVariables>(InitiateCashoutDocument, options);
+      }
+export type InitiateCashoutMutationHookResult = ReturnType<typeof useInitiateCashoutMutation>;
+export type InitiateCashoutMutationResult = Apollo.MutationResult<InitiateCashoutMutation>;
+export type InitiateCashoutMutationOptions = Apollo.BaseMutationOptions<InitiateCashoutMutation, InitiateCashoutMutationVariables>;
 export const AccountDeleteDocument = gql`
     mutation accountDelete {
   accountDelete {

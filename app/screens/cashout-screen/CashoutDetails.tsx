@@ -24,12 +24,14 @@ import {
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { View } from "react-native"
 import { PrimaryBtn } from "@app/components/buttons"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 type Props = StackScreenProps<RootStackParamList, "CashoutDetails">
 
 const CashoutDetails = ({ navigation }: Props) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
   const { zeroDisplayAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
@@ -61,7 +63,7 @@ const CashoutDetails = ({ navigation }: Props) => {
       toggleActivityIndicator(true)
       const res = await requestCashout({
         variables: {
-          input: { walletId: usdWallet.id, usdAmount: settlementSendAmount.amount },
+          input: { walletId: usdWallet.id, amount: settlementSendAmount.amount },
         },
       })
       console.log("Response: ", res.data?.requestCashout)
@@ -116,7 +118,7 @@ const CashoutDetails = ({ navigation }: Props) => {
       </ScrollView>
       <PrimaryBtn
         label={LL.common.next()}
-        btnStyle={styles.buttonContainer}
+        btnStyle={{ marginHorizontal: 20, marginBottom: bottom + 10 }}
         disabled={!isValidAmount}
         onPress={onNext}
       />
@@ -131,9 +133,5 @@ const useStyles = makeStyles(() => ({
     flex: 1,
     flexDirection: "column",
     margin: 20,
-  },
-  buttonContainer: {
-    marginHorizontal: 20,
-    marginBottom: 20,
   },
 }))
