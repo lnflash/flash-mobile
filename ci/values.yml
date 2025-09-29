@@ -5,8 +5,8 @@ git_uri: https://github.com/lnflash/flash-mobile.git
 git_mobile_deployments_uri: https://github.com/lnflash/flash-mobile-deployments.git
 git_version_branch: main
 
-git_branch: main
-pipeline_git_branch: main
+git_branch: feat/concourse-integration
+pipeline_git_branch: feat/concourse-integration
 git_build_number_branch: build-numbers
 
 github_private_key: ((github.private_key))
