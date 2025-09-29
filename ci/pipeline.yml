@@ -151,8 +151,8 @@ jobs:
         PLATFORM: android
         WAIT_FOR_BUILD_MINS: 30
         BUILD_NUMBER_FILE: build-number-android/android
-        GIT_REF_FILE: repo/.git/ref
-        VERSION_FILE: repo/.git/ref
+        GIT_REF_FILE: repo/.git/HEAD
+        VERSION_FILE: build-number-android/android
         GCS_DIRECTORY: dev/android
         CIRCLECI_TOKEN: #@ data.values.circleci_token
     on_abort: #@ cancel_circleci_build_on_abort()
@@ -181,8 +181,8 @@ jobs:
         PLATFORM: ios
         WAIT_FOR_BUILD_MINS: 45
         BUILD_NUMBER_FILE: build-number-ios/ios
-        GIT_REF_FILE: repo/.git/ref
-        VERSION_FILE: repo/.git/ref
+        GIT_REF_FILE: repo/.git/HEAD
+        VERSION_FILE: build-number-ios/ios
         GCS_DIRECTORY: dev/ios
         CIRCLECI_TOKEN: #@ data.values.circleci_token
     on_abort: #@ cancel_circleci_build_on_abort()
