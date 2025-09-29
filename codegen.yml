@@ -6,6 +6,8 @@ documents:
   - "app/**/*.tsx"
   - "e2e/**/*.ts"
   - "app/graphql/local-schema.gql"
+  - "app/graphql/*.gql"
+  - "!app/graphql/generated.gql"
 generates:
   app/graphql/generated.ts:
     schema: "app/graphql/local-schema.gql"

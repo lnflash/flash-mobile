@@ -16,6 +16,7 @@ import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 // assets
 import ArrowUp from "@app/assets/icons/arrow-up.svg"
 import ArrowDown from "@app/assets/icons/arrow-down.svg"
+import Icon from "react-native-vector-icons/Ionicons"
 
 // utils
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
@@ -85,6 +86,28 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
             </Text>
           )}
         </RowWrapper>
+        {tx.memo && (
+          <RowWrapper style={{ marginTop: 4, marginBottom: 2 }}>
+            <Icon
+              name="document-text"
+              size={16}
+              color={colors.primary}
+              style={{ marginRight: 4, marginTop: 1 }}
+            />
+            <Text
+              type="bl"
+              style={{
+                color: colors.primary,
+                fontWeight: "600",
+                flex: 1,
+              }}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {tx.memo}
+            </Text>
+          </RowWrapper>
+        )}
         <Text type="caption" color={colors.text02}>
           {moment(moment.unix(tx.createdAt)).fromNow()}
         </Text>
