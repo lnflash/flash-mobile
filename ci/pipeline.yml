@@ -133,9 +133,6 @@ jobs:
   - in_parallel:
     - get: repo
       trigger: true
-      passed:
-      - test-unit
-      - check-code
     - get: pipeline-tasks
     - get: build-number-android
   - task: build
@@ -166,9 +163,6 @@ jobs:
   - in_parallel:
     - get: repo
       trigger: true
-      passed:
-      - test-unit
-      - check-code
     - get: pipeline-tasks
     - get: build-number-ios
   - task: build

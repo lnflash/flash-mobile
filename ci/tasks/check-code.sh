@@ -8,4 +8,4 @@ unpack_deps
 
 pushd repo
 
-yarn check-code || true
+yarn check-code
