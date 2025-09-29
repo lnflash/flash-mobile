@@ -1,7 +1,7 @@
 #@ load("@ytt:data", "data")
 
 #@ def pipeline_image():
-#@   return data.values.docker_registry + "/flash-mobile-pipeline"
+#@   return data.values.docker_registry + "/flash-mobile"
 #@ end
 
 #@ def release_pipeline_image():

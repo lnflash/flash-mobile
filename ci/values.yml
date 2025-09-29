@@ -12,7 +12,7 @@ git_build_number_branch: build-numbers
 github_private_key: ((github.private_key))
 github_api_token: ((github.api_token))
 
-docker_registry: us.gcr.io/galoy-org
+docker_registry: docker.io/lnflash
 docker_registry_user: ((docker-creds.username))
 docker_registry_password: ((docker-creds.password))
 
