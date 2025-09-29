@@ -447,6 +447,31 @@ mutation lnUsdInvoiceFeeProbe($input: LnUsdInvoiceFeeProbeInput!) {
   }
 }
 
+mutation newUserEmailRegistrationInitiate($input: NewUserEmailRegistrationInitiateInput!) {
+  newUserEmailRegistrationInitiate(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    emailFlowId
+    __typename
+  }
+}
+
+mutation newUserEmailRegistrationValidate($input: NewUserEmailRegistrationValidateInput!) {
+  newUserEmailRegistrationValidate(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    authToken
+    totpRequired
+    __typename
+  }
+}
+
 mutation onChainAddressCurrent($input: OnChainAddressCurrentInput!) {
   onChainAddressCurrent(input: $input) {
     errors {
