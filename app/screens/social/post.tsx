@@ -23,10 +23,11 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { nip19, getPublicKey, finalizeEvent, Relay, SimplePool } from "nostr-tools"
 import { getSecretKey } from "@app/utils/nostr"
 import { pool } from "@app/utils/nostr/pool"
+import { publishEventToRelays, getPublishingRelays } from "@app/utils/nostr/publish-helpers"
 import Config from "react-native-config"
 
-// Replace this with your actual relay URLs
-const RELAYS = ["wss://relay.damus.io", "wss://relay.nostr.info"]
+// Get appropriate relays for note publishing
+const RELAYS = getPublishingRelays("note")
 
 type MakeNostrPostNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -222,13 +223,28 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
     )
   }
 
+  // Extract hashtags from content and create t tags
+  const extractHashtags = (content: string): string[] => {
+    // Match hashtags: #word including at start of string, after space, or after newline
+    // But not inside URLs
+    const hashtags = new Set<string>()
+    const regex = /(^|\s)#([a-zA-Z0-9_]+)/g
+    let match
+    while ((match = regex.exec(content)) !== null) {
+      // Add the hashtag without the # symbol, converted to lowercase
+      hashtags.add(match[2].toLowerCase())
+    }
+    return Array.from(hashtags)
+  }
+
   const publishNostrNote = async (content: string) => {
     try {
       setLoading(true)
       const privateKey = await getSecretKey()
       if (!privateKey) {
         Alert.alert("Your nostr key is not yet set.")
-        throw Error("Your nostr key is not yet set.")
+        setLoading(false)
+        return
       }
 
       let finalContent = content
@@ -236,56 +252,87 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
       // Upload media if any are selected
       if (selectedImages.length > 0 || selectedVideo) {
         setUploadingImages(true)
-        const uploadedUrls: string[] = []
+        try {
+          const uploadedUrls: string[] = []
 
-        console.log("Starting media upload. Images:", selectedImages.length, "Video:", !!selectedVideo)
+          console.log("Starting media upload. Images:", selectedImages.length, "Video:", !!selectedVideo)
 
-        // Upload images
-        for (const imageUri of selectedImages) {
-          console.log("Uploading image:", imageUri)
-          const url = await uploadMediaToNostrBuild(imageUri, false)
-          if (url) {
-            console.log("Image uploaded successfully:", url)
-            uploadedUrls.push(url)
-          } else {
-            console.log("Image upload failed")
+          // Upload images
+          for (const imageUri of selectedImages) {
+            console.log("Uploading image:", imageUri)
+            const url = await uploadMediaToNostrBuild(imageUri, false)
+            if (url) {
+              console.log("Image uploaded successfully:", url)
+              uploadedUrls.push(url)
+            } else {
+              console.log("Image upload failed")
+            }
           }
-        }
 
-        // Upload video
-        if (selectedVideo) {
-          console.log("Uploading video:", selectedVideo)
-          const url = await uploadMediaToNostrBuild(selectedVideo, true)
-          if (url) {
-            console.log("Video uploaded successfully:", url)
-            uploadedUrls.push(url)
-          } else {
-            console.log("Video upload failed")
+          // Upload video
+          if (selectedVideo) {
+            console.log("Uploading video:", selectedVideo)
+            const url = await uploadMediaToNostrBuild(selectedVideo, true)
+            if (url) {
+              console.log("Video uploaded successfully:", url)
+              uploadedUrls.push(url)
+            } else {
+              console.log("Video upload failed")
+            }
           }
-        }
 
-        setUploadingImages(false)
-
-        console.log("Total uploaded URLs:", uploadedUrls.length)
-        if (uploadedUrls.length > 0) {
-          finalContent = content + "\n\n" + uploadedUrls.join("\n")
-          console.log("Final content with media:", finalContent)
-        } else {
-          Alert.alert("Upload Failed", "Media upload failed. Posting without media.")
+          console.log("Total uploaded URLs:", uploadedUrls.length)
+          if (uploadedUrls.length > 0) {
+            finalContent = content + "\n\n" + uploadedUrls.join("\n")
+            console.log("Final content with media:", finalContent)
+          } else if (selectedImages.length > 0 || selectedVideo) {
+            // Only show alert if we actually tried to upload media
+            Alert.alert("Upload Failed", "Media upload failed. Posting without media.")
+          }
+        } catch (uploadError) {
+          console.error("Error during media upload:", uploadError)
+          Alert.alert("Upload Error", "Failed to upload media. Posting without media.")
+        } finally {
+          setUploadingImages(false)
         }
       }
 
       const pubkey = getPublicKey(privateKey)
+
+      // Extract hashtags and create t tags
+      const hashtags = extractHashtags(finalContent)
+      const tags: string[][] = hashtags.map(tag => ["t", tag])
+
+      console.log("Extracted hashtags:", hashtags)
+      console.log("Created tags:", tags)
+
       const event = {
         kind: 1, // kind 1 = short text note
         pubkey,
         created_at: Math.floor(Date.now() / 1000),
-        tags: [],
+        tags: tags,
         content: finalContent,
       }
 
       const signedEvent = await finalizeEvent(event, privateKey)
-      await Promise.any(pool.publish(RELAYS, signedEvent))
+
+      console.log("Publishing kind-1 note to relays...")
+      console.log("Author pubkey:", pubkey)
+      console.log("Event ID:", signedEvent.id)
+
+      // Use the new helper for reliable publishing
+      const publishResult = await publishEventToRelays(
+        pool,
+        signedEvent,
+        RELAYS,
+        "Note (kind-1)"
+      )
+
+      if (publishResult.successCount === 0) {
+        throw new Error("Failed to publish note to any relay")
+      }
+
+      console.log(`✅ Note successfully published to ${publishResult.successCount}/${RELAYS.length} relays`)
 
       // Mark that user has posted to Nostr
       updateState((state: any) => {
@@ -307,12 +354,16 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
     } catch (e) {
       console.error("Error posting Nostr note:", e)
       Alert.alert(LL.Social.errorPostFailed())
-    } finally {
       setLoading(false)
     }
   }
 
-  const onPost = () => {
+  const onPost = async () => {
+    if (loading) {
+      console.log("Already posting, ignoring duplicate press")
+      return
+    }
+
     // Only add #introductions hashtag on first post and if checkbox is checked
     const shouldIncludeCredit = isFirstPost && includeFlashCredit
     const finalText = shouldIncludeCredit
@@ -323,7 +374,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
       Alert.alert(LL.Social.errorEmptyNote())
       return
     }
-    publishNostrNote(finalText)
+    await publishNostrNote(finalText)
   }
 
   return (

@@ -211,16 +211,18 @@ const ContactDetailsScreen: React.FC = () => {
           )}
           <View style={styles.profileHeader}>
             <View style={styles.profileTopRow}>
-              <Image
-                source={
-                  profile?.picture
-                    ? { uri: profile.picture }
-                    : {
-                        uri: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwinaero.com%2Fblog%2Fwp-content%2Fuploads%2F2017%2F12%2FUser-icon-256-blue.png&f=1&nofb=1&ipt=d8f3a13e26633e5c7fb42aed4cd2ab50e1bb3d91cfead71975713af0d1ed278c",
-                      }
-                }
-                style={styles.profileImage}
-              />
+              <View style={styles.profileImageContainer}>
+                <Image
+                  source={
+                    profile?.picture
+                      ? { uri: profile.picture }
+                      : {
+                          uri: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwinaero.com%2Fblog%2Fwp-content%2Fuploads%2F2017%2F12%2FUser-icon-256-blue.png&f=1&nofb=1&ipt=d8f3a13e26633e5c7fb42aed4cd2ab50e1bb3d91cfead71975713af0d1ed278c",
+                        }
+                  }
+                  style={styles.profileImage}
+                />
+              </View>
               <View style={styles.profileInfo}>
                 <View style={styles.nameRow}>
                   <Text
@@ -510,17 +512,22 @@ const useStyles = makeStyles(({ colors }) => ({
     gap: 8,
     marginBottom: 4,
   },
+  profileImageContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
   profileImage: {
     width: 64,
     height: 64,
     borderRadius: 32,
     borderWidth: 3,
     borderColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
   },
   businessBadge: {
     flexDirection: "row",
