@@ -17,6 +17,8 @@ import { ProfileHeader } from "./profile-header"
 import { AdvancedSettings } from "./advanced-settings"
 import { bytesToHex } from "@noble/curves/abstract/utils"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useAppConfig } from "@app/hooks/use-app-config"
+import { ManualRepublishButton } from "./manual-republish-button"
 
 export const NostrSettingsScreen = () => {
   const { LL } = useI18nContext()
@@ -25,6 +27,7 @@ export const NostrSettingsScreen = () => {
   const [expandAdvanced, setExpandAdvanced] = useState(false)
 
   const { persistentState, updateState } = usePersistentStateContext()
+  const { appConfig: { galoyInstance: { lnAddressHostname: lnDomain } } } = useAppConfig()
 
   const isAuthed = useIsAuthed()
   const styles = useStyles()
@@ -150,6 +153,16 @@ export const NostrSettingsScreen = () => {
       <View style={styles.container}>
         {/* Profile Header */}
         <ProfileHeader userProfile={userProfile} copyToClipboard={copyToClipboard} />
+
+        {/* Manual Republish Button - DEBUG TOOL */}
+        <ManualRepublishButton
+          username={dataAuthed?.me?.username}
+          lnDomain={lnDomain}
+          onSuccess={() => {
+            refetch()
+            console.log("Profile republished successfully")
+          }}
+        />
 
         {/* Main Menu Items */}
         <View style={styles.menuContainer}>
