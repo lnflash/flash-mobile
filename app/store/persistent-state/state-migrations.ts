@@ -81,6 +81,36 @@ type PersistentState_7 = {
   hasPostedToNostr?: boolean // true if user has made at least one Nostr post
 }
 
+type PersistentState_8 = {
+  schemaVersion: 8
+  galoyInstance: GaloyInstanceInput
+  galoyAuthToken: string
+  hasInitializedBreezSDK: boolean
+  breezBalance?: number
+  balance?: string
+  btcBalance?: string
+  cashBalance?: string
+  btcDisplayBalance?: string
+  cashDisplayBalance?: string
+  mergedTransactions?: TransactionFragment[]
+  btcTransactions?: TransactionFragment[]
+  defaultWallet?: WalletBalance
+  helpTriggered?: boolean
+  isAdvanceMode?: boolean
+  chatEnabled?: boolean
+  numOfRefundables: number
+  backedUpBtcWallet?: boolean // true if user backed up recovery phrase (btc wallet)
+  currencyChanged?: boolean
+  flashcardAdded?: boolean
+  closedQuickStartTypes: string[]
+  flashcardTag?: TagEvent
+  flashcardHtml?: string
+  hasPostedToNostr?: boolean // true if user has made at least one Nostr post
+  pubkeyCreatedAt?: number // Timestamp when pubkey was first seen on relays
+  pubkeyAgeCheckTime?: number // Last time we checked the pubkey age
+  bypassPubkeyAgeCheck?: boolean // Developer override flag
+}
+
 type JwtPayload = {
   uid: string
   network: Network
@@ -98,8 +128,16 @@ const decodeToken = (token: string): { uid: string; network: Network } | null =>
   }
 }
 
-const migrate7ToCurrent = (state: PersistentState_7): Promise<PersistentState> =>
-  Promise.resolve(state)
+const migrate7ToCurrent = (state: PersistentState_7): Promise<PersistentState> => {
+  return Promise.resolve({
+    ...state,
+    schemaVersion: 8,
+    // New fields for pubkey age check
+    pubkeyCreatedAt: undefined,
+    pubkeyAgeCheckTime: undefined,
+    bypassPubkeyAgeCheck: false,
+  })
+}
 
 const migrate6ToCurrent = (state: PersistentState_6): Promise<PersistentState> => {
   return migrate7ToCurrent({
@@ -248,10 +286,10 @@ const stateMigrations: StateMigrations = {
   7: migrate7ToCurrent,
 }
 
-export type PersistentState = PersistentState_7
+export type PersistentState = PersistentState_8
 
 export const defaultPersistentState: PersistentState = {
-  schemaVersion: 7,
+  schemaVersion: 8,
   galoyInstance: { id: __DEV__ ? "Test" : "Main" },
   galoyAuthToken: "",
   hasInitializedBreezSDK: false,

@@ -6,6 +6,8 @@ import { useBetaQuery, useLevelQuery } from "@app/graphql/generated"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { toastShow } from "@app/utils/toast"
+import { usePersistentStateContext } from "@app/store/persistent-state"
+import { Switch } from "@rneui/base"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { Button, Text, makeStyles } from "@rneui/themed"
@@ -27,6 +29,7 @@ export const DeveloperScreen: React.FC = () => {
 
   const { appConfig, saveToken, saveTokenAndInstance } = useAppConfig()
   const token = appConfig.token
+  const { persistentState, updateState } = usePersistentStateContext()
 
   const { data: dataLevel } = useLevelQuery({ fetchPolicy: "cache-only" })
   const level = String(dataLevel?.me?.defaultAccount?.level)
@@ -138,6 +141,29 @@ export const DeveloperScreen: React.FC = () => {
         />
         {__DEV__ && (
           <>
+            <View style={styles.switchContainer}>
+              <Text style={styles.switchLabel}>Bypass Pubkey Age Check (3-day requirement)</Text>
+              <Switch
+                value={!!persistentState.bypassPubkeyAgeCheck}
+                onValueChange={(enabled) => {
+                  updateState((state: any) => {
+                    if (state) {
+                      return {
+                        ...state,
+                        bypassPubkeyAgeCheck: enabled,
+                      }
+                    }
+                    return undefined
+                  })
+                  Alert.alert(
+                    "Setting Updated",
+                    enabled
+                      ? "Pubkey age check bypassed. You can now post immediately."
+                      : "Pubkey age check re-enabled. 3-day requirement is now active."
+                  )
+                }}
+              />
+            </View>
             <Button
               title="Reload"
               containerStyle={styles.button}
@@ -306,5 +332,21 @@ const useStyles = makeStyles(({ colors }) => ({
   notSelectedInstanceButton: {
     backgroundColor: colors.white,
     color: colors.grey3,
+  },
+  switchContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: colors.grey5,
+    borderRadius: 8,
+  },
+  switchLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.black,
+    marginRight: 8,
   },
 }))

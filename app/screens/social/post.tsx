@@ -19,6 +19,7 @@ import { useNavigation } from "@react-navigation/native"
 import { PrimaryBtn } from "@app/components/buttons"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { usePubkeyAge, getPubkeyAgeMessage } from "@app/hooks/use-pubkey-age"
 
 import { nip19, getPublicKey, finalizeEvent, Relay, SimplePool } from "nostr-tools"
 import { getSecretKey } from "@app/utils/nostr"
@@ -46,6 +47,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
   const { theme } = useTheme()
   const { LL } = useI18nContext()
   const { persistentState, updateState } = usePersistentStateContext()
+  const pubkeyAge = usePubkeyAge()
   const [userText, setUserText] = useState("")
   const [inputHeight, setInputHeight] = useState(40)
   const [loading, setLoading] = useState(false)
@@ -377,6 +379,38 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
     await publishNostrNote(finalText)
   }
 
+  // Check if pubkey is old enough
+  const pubkeyAgeMessage = getPubkeyAgeMessage(pubkeyAge)
+  const canPost = pubkeyAge.isOldEnough && !pubkeyAge.isLoading
+
+  // If pubkey is not old enough, show message
+  if (!canPost && !pubkeyAge.isLoading) {
+    return (
+      <View style={[styles.container, styles.centerContent, { backgroundColor: theme.colors.background }]}>
+        <Icon
+          name="time-outline"
+          size={64}
+          color={theme.colors.grey3}
+          style={{ marginBottom: 20 }}
+        />
+        <Text style={[styles.ageRestrictionTitle, { color: theme.colors.black }]}>
+          Profile Too New
+        </Text>
+        <Text style={[styles.ageRestrictionMessage, { color: theme.colors.grey3 }]}>
+          {pubkeyAgeMessage || "Your profile is not old enough to post yet."}
+        </Text>
+        {pubkeyAge.daysUntilOldEnough && (
+          <View style={[styles.countdownContainer, { backgroundColor: theme.colors.grey5 }]}>
+            <Icon name="hourglass-outline" size={20} color={theme.colors.primary} />
+            <Text style={[styles.countdownText, { color: theme.colors.primary }]}>
+              {Math.ceil(pubkeyAge.daysUntilOldEnough)} {Math.ceil(pubkeyAge.daysUntilOldEnough) === 1 ? 'day' : 'days'} remaining
+            </Text>
+          </View>
+        )}
+      </View>
+    )
+  }
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -550,7 +584,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
         label={loading ? LL.Social.posting() : LL.Social.postButton()}
         onPress={onPost}
         btnStyle={styles.buttonContainer}
-        disabled={loading || uploadingImages}
+        disabled={loading || uploadingImages || !canPost}
       />
     </ScrollView>
   )
@@ -684,6 +718,33 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   buttonContainer: {
     marginTop: 10,
+  },
+  centerContent: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  ageRestrictionTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 12,
+  },
+  ageRestrictionMessage: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 24,
+    paddingHorizontal: 32,
+    lineHeight: 22,
+  },
+  countdownContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  countdownText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 }))
 
