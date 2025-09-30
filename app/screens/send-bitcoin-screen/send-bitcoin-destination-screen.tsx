@@ -43,8 +43,8 @@ import {
   sendBitcoinDestinationReducer,
   SendBitcoinDestinationState,
 } from "./send-bitcoin-reducer"
-import { useChatContext } from "../nip17-chat/chatContext"
 import { nip19 } from "nostr-tools"
+import { useChatContext } from "../chat/chatContext"
 
 export const defaultDestinationState: SendBitcoinDestinationState = {
   unparsedDestination: "",

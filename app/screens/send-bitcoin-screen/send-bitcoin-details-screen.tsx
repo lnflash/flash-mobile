@@ -49,8 +49,9 @@ import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/
 import { isValidAmount } from "./payment-details"
 import { fetchBreezFee, fetchRecommendedFees } from "@app/utils/breez-sdk-liquid"
 import { addToContactList, getSecretKey } from "@app/utils/nostr"
-import { useChatContext } from "../nip17-chat/chatContext"
+
 import { nip19 } from "nostr-tools"
+import { useChatContext } from "../chat/chatContext"
 
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 
@@ -77,9 +78,6 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const [selectedFee, setSelectedFee] = useState<number>()
   const [selectedFeeType, setSelectedFeeType] = useState<string>()
   const [isProcessing, setIsProcessing] = useState(false)
-  const { contactsEvent, poolRef } = useChatContext()
-  const [npubByUsernameQuery] = useNpubByUsernameLazyQuery()
-
   const { data } = useSendBitcoinDetailsScreenQuery({
     fetchPolicy: "cache-first",
     returnPartialData: true,
@@ -270,33 +268,6 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         )
 
         if (res && paymentDetailForConfirmation.sendPaymentMutation) {
-          if (flashUserAddress && poolRef && contactsEvent) {
-            const flashUsername = flashUserAddress.split("@")[0]
-            try {
-              const queryResult = await npubByUsernameQuery({
-                variables: { username: flashUsername },
-              })
-              const destinationNpub = queryResult.data?.npubByUsername?.npub || "" // your helper from ConfirmDestinationModal
-
-              if (destinationNpub) {
-                const secretKey = await getSecretKey()
-                if (secretKey) {
-                  // 3️⃣ add to contacts
-                  await addToContactList(
-                    secretKey,
-                    nip19.decode(destinationNpub).data as string,
-                    poolRef?.current,
-                    contactsEvent,
-                  )
-                }
-              } else {
-                console.warn("Could not resolve flash username to npub", flashUsername)
-              }
-            } catch (err) {
-              console.warn("Failed to auto-add flash user to contacts", err)
-            }
-          }
-
           navigation.navigate("sendBitcoinConfirmation", {
             paymentDetail: paymentDetailForConfirmation,
             flashUserAddress,
