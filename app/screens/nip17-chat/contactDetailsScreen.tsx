@@ -9,6 +9,7 @@ import { Header } from "@rneui/base"
 import Icon from "react-native-vector-icons/Ionicons"
 import ChatIcon from "@app/assets/icons/chat.svg"
 import { nip19, getPublicKey, Event } from "nostr-tools"
+import { usePubkeyAge } from "@app/hooks/use-pubkey-age"
 import { publicRelays } from "@app/utils/nostr"
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
 import { Screen } from "../../components/screen"
@@ -57,9 +58,14 @@ const ContactDetailsScreen: React.FC = () => {
 
   const businessUsernames = businessMapData?.businessMapMarkers.map((m) => m.username) || []
   const isBusiness = profile?.username ? businessUsernames.includes(profile.username) : false
+  const pubkeyAge = usePubkeyAge()
 
   const userPrivateKeyHex =
     typeof userPrivateKey === "string" ? userPrivateKey : bytesToHex(userPrivateKey)
+
+  // Check if viewing own profile
+  const selfPubkey = userPrivateKey ? getPublicKey(hexToBytes(userPrivateKeyHex)) : null
+  const isSelf = contactPubkey === selfPubkey
 
   const userPubkey = getPublicKey(
     typeof userPrivateKey === "string" ? hexToBytes(userPrivateKey) : userPrivateKey,
@@ -316,17 +322,19 @@ const ContactDetailsScreen: React.FC = () => {
           </View>
         )}
 
-        <View style={styles.postsSection}>
-          <View style={styles.postsSectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.black }]}>
-              {isBusiness ? "Business Updates" : "Recent Posts"}
-            </Text>
-            {posts.length > 0 && (
-              <Text style={[styles.postsCount, { color: colors.grey3 }]}>
-                {posts.length} {posts.length === 1 ? "post" : "posts"}
+        {/* Only show recent posts section if user's own pubkey is old enough or viewing someone else's profile */}
+        {(!isSelf || pubkeyAge.isOldEnough) && (
+          <View style={styles.postsSection}>
+            <View style={styles.postsSectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.black }]}>
+                {isBusiness ? "Business Updates" : "Recent Posts"}
               </Text>
-            )}
-          </View>
+              {posts.length > 0 && (
+                <Text style={[styles.postsCount, { color: colors.grey3 }]}>
+                  {posts.length} {posts.length === 1 ? "post" : "posts"}
+                </Text>
+              )}
+            </View>
           {loadingPosts ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color={colors.primary} />
@@ -419,7 +427,8 @@ const ContactDetailsScreen: React.FC = () => {
               </View>
             </LinearGradient>
           </TouchableOpacity>
-        </View>
+          </View>
+        )}
 
         <View style={[styles.dangerZoneContainer, { borderTopColor: colors.grey5 }]}>
           <Text style={[styles.dangerZoneTitle, { color: colors.black }]}>
