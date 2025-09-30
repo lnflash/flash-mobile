@@ -17,12 +17,12 @@ import {
 
 // gql
 import {
-  useNpubByUsernameLazyQuery,
   useSendBitcoinDetailsScreenQuery,
   useSendBitcoinInternalLimitsQuery,
   useSendBitcoinWithdrawalLimitsQuery,
   WalletCurrency,
 } from "@app/graphql/generated"
+import { decodeInvoiceString, Network as NetworkLibGaloy } from "@galoymoney/client"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 
 // hooks
@@ -48,10 +48,7 @@ import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
 import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { fetchBreezFee, fetchRecommendedFees } from "@app/utils/breez-sdk-liquid"
-import { addToContactList, getSecretKey } from "@app/utils/nostr"
-
-import { nip19 } from "nostr-tools"
-import { useChatContext } from "../chat/chatContext"
+import { requestInvoice, utils } from "lnurl-pay/dist/types"
 
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 
@@ -260,7 +257,88 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         toggleActivityIndicator(true)
         let paymentDetailForConfirmation: PaymentDetail<WalletCurrency> = paymentDetail
 
-        // --- LNURL invoice handling omitted for brevity ---
+        if (paymentDetail.paymentType === "lnurl") {
+          const lnurlParams = paymentDetail?.lnurlParams
+          try {
+            setIsLoadingLnurl(true)
+
+            const btcAmount = paymentDetail.convertMoneyAmount(
+              paymentDetail.unitOfAccountAmount,
+              "BTC",
+            )
+
+            const requestInvoiceParams: {
+              lnUrlOrAddress: string
+              tokens: Satoshis
+              comment?: string
+            } = {
+              lnUrlOrAddress: paymentDetail.destination,
+              tokens: utils.toSats(btcAmount.amount),
+            }
+
+            if (lnurlParams?.commentAllowed) {
+              requestInvoiceParams.comment = paymentDetail.memo
+            }
+
+            // Add timeout to LNURL request (30 seconds)
+            const result = await withTimeout(requestInvoice(requestInvoiceParams), 30000)
+
+            setIsLoadingLnurl(false)
+            const invoice = result.invoice
+            const decodedInvoice = decodeInvoiceString(
+              invoice,
+              network as NetworkLibGaloy,
+            )
+
+            const invoiceAmountSats = Math.round(
+              Number(decodedInvoice.millisatoshis) / 1000,
+            )
+            const requestedAmountSats = btcAmount.amount
+            const amountDifference = Math.abs(invoiceAmountSats - requestedAmountSats)
+
+            // For flashcard reloads, allow small rounding differences (up to 15 sats)
+            // This accommodates flashcard servers that may round amounts
+            if (isFromFlashcard) {
+              if (amountDifference > 15) {
+                setAsyncErrorMessage(
+                  `Flashcard server returned ${invoiceAmountSats} sats but you requested ${requestedAmountSats} sats. Please try a different amount.`,
+                )
+                return
+              }
+              // Use the amount from the invoice for flashcard reloads to handle rounding
+              const adjustedBtcAmount = toBtcMoneyAmount(invoiceAmountSats)
+              paymentDetailForConfirmation = paymentDetail.setInvoice({
+                paymentRequest: invoice,
+                paymentRequestAmount: adjustedBtcAmount,
+              })
+            } else {
+              // For regular LNURL payments, maintain strict validation
+              if (invoiceAmountSats !== requestedAmountSats) {
+                setAsyncErrorMessage(LL.SendBitcoinScreen.lnurlInvoiceIncorrectAmount())
+                return
+              }
+              paymentDetailForConfirmation = paymentDetail.setInvoice({
+                paymentRequest: invoice,
+                paymentRequestAmount: btcAmount,
+              })
+            }
+          } catch (error) {
+            setIsLoadingLnurl(false)
+            if (error instanceof Error) {
+              crashlytics().recordError(error)
+              if (error.message.includes("timed out")) {
+                setAsyncErrorMessage(
+                  "Request timed out. Please check your connection and try again.",
+                )
+              } else {
+                setAsyncErrorMessage(LL.SendBitcoinScreen.failedToFetchLnurlInvoice())
+              }
+            } else {
+              setAsyncErrorMessage("An unexpected error occurred. Please try again.")
+            }
+            return
+          }
+        }
 
         const res = await withTimeout(
           fetchSendingFee(paymentDetailForConfirmation),
