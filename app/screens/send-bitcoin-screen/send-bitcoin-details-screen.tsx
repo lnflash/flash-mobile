@@ -47,8 +47,8 @@ import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
 // utils
 import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
+import { requestInvoice, utils } from "lnurl-pay"
 import { fetchBreezFee, fetchRecommendedFees } from "@app/utils/breez-sdk-liquid"
-import { requestInvoice, utils } from "lnurl-pay/dist/types"
 
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 
