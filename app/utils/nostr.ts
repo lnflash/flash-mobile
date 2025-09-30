@@ -1,5 +1,5 @@
 import { useAppConfig } from "@app/hooks"
-import { getContactsFromEvent } from "@app/screens/nip17-chat/utils"
+import { getContactsFromEvent } from "@app/screens/chat/utils"
 import { bytesToHex } from "@noble/curves/abstract/utils"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
