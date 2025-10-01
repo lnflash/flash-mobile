@@ -19,10 +19,10 @@ pushd repo
 
 pipeline_id=$(
   curl -s --request POST \
-    --url https://circleci.com/api/v2/project/gh//lnflash/flash-mobile/pipeline \
+    --url https://circleci.com/api/v2/project/gh/lnflash/flash-mobile/pipeline \
     --header "Circle-Token: $CIRCLECI_TOKEN" \
     --header 'content-type: application/json' \
-    --data '{"branch":"main","parameters":{ "version": "'"$version"'", "platform": "'$PLATFORM'", "git_ref": "'"$git_ref"'", "build_number": "'$BUILD_NUMBER'", "gcs_directory": "'$GCS_DIRECTORY'" }}' \
+    --data '{"branch":"feat/concourse-integration","parameters":{ "version": "'"$version"'", "platform": "'$PLATFORM'", "git_ref": "'"$git_ref"'", "build_number": "'$BUILD_NUMBER'", "gcs_directory": "'$GCS_DIRECTORY'" }}' \
     | jq -r '.id'
 )
 
@@ -68,7 +68,7 @@ for (( i = 0; i <= $times; i++ ))
 do
   status=$(
     curl -s --request GET \
-      --url https://circleci.com/api/v2/project/gh//lnflash/flash-mobile/job/$job_number \
+      --url https://circleci.com/api/v2/project/gh/lnflash/flash-mobile/job/$job_number \
       | jq -r '.status'
   )
   if [[ $status != "running" && $status != "queued" ]]; then break; fi;
