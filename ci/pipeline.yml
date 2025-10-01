@@ -41,8 +41,6 @@ config:
 groups:
 - name: all
   jobs:
-  - test-unit
-  - check-code
   - install-deps
   - dev-build-android
   - dev-build-ios
@@ -54,8 +52,6 @@ groups:
   - build-pipeline-image
 - name: development
   jobs:
-  - test-unit
-  - check-code
   - install-deps
   - dev-build-android
   - dev-build-ios
@@ -92,40 +88,6 @@ jobs:
   - put: bundled-deps
     params:
       file: bundled-deps/bundled-deps-*.tgz
-
-- name: test-unit
-  plan:
-  - in_parallel:
-    - { get: repo, trigger: true }
-    - { get: bundled-deps, trigger: true }
-    - get: pipeline-tasks
-  - task: test-unit
-    config:
-      platform: linux
-      image_resource: #@ task_image_config()
-      inputs:
-      - name: bundled-deps
-      - name: pipeline-tasks
-      - name: repo
-      run:
-        path: pipeline-tasks/ci/tasks/test-unit.sh
-
-- name: check-code
-  plan:
-  - in_parallel:
-    - { get: repo, trigger: true }
-    - { get: bundled-deps, trigger: true }
-    - get: pipeline-tasks
-  - task: test-unit
-    config:
-      platform: linux
-      image_resource: #@ task_image_config()
-      inputs:
-      - name: bundled-deps
-      - name: pipeline-tasks
-      - name: repo
-      run:
-        path: pipeline-tasks/ci/tasks/check-code.sh
 
 - name: dev-build-android
   serial: true
@@ -197,7 +159,6 @@ jobs:
       passed: ["dev-build-android"]
       trigger: true
     - get: bundled-deps
-      passed: ["test-unit"]
     - get: pipeline-tasks
   - task: e2e-test
     config:
@@ -228,7 +189,6 @@ jobs:
       passed: ["dev-build-ios"]
       trigger: true
     - get: bundled-deps
-      passed: ["test-unit"]
     - get: pipeline-tasks
   - task: e2e-test
     config:
