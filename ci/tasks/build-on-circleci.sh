@@ -18,12 +18,24 @@ version=$(cat $VERSION_FILE)
 pushd repo
 
 pipeline_id=$(
-  curl -s --request POST \
-    --url https://circleci.com/api/v2/project/gh/lnflash/flash-mobile/pipeline \
+  echo "[DEBUG] Sending request to CircleCI..."
+  curl -v --request POST \
+    --url "https://circleci.com/api/v2/project/gh/lnflash/flash-mobile/pipeline" \
     --header "Circle-Token: $CIRCLECI_TOKEN" \
-    --header 'content-type: application/json' \
-    --data '{"branch":"feat/concourse-integration","parameters":{ "version": "'"$version"'", "platform": "'$PLATFORM'", "git_ref": "'"$git_ref"'", "build_number": "'$BUILD_NUMBER'", "gcs_directory": "'$GCS_DIRECTORY'" }}' \
-    | jq -r '.id'
+    --header "content-type: application/json" \
+    --data '{
+      "branch": "feat/concourse-integration",
+      "parameters": {
+        "version": "'"$version"'",
+        "platform": "'"$PLATFORM"'",
+        "git_ref": "'"$git_ref"'",
+        "build_number": "'"$BUILD_NUMBER"'",
+        "gcs_directory": "'"$GCS_DIRECTORY"'"
+      }
+    }' | tee /tmp/circleci_debug.json
+
+  echo "[DEBUG] Raw response from CircleCI:"
+  cat /tmp/circleci_debug.json
 )
 
 echo pipeline_id:$pipeline_id
