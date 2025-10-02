@@ -89,7 +89,7 @@ echo "[•] If final status wasn't failed, please cross check with CircleCI task
 
 artifacts_url=$(
   curl -s --request GET \
-    --url https://circleci.com/api/v2/project/gh/lnflash/flash-mobile/7477/artifacts \
+    --url https://circleci.com/api/v2/project/gh/lnflash/flash-mobile/$job_number/artifacts \
     | jq -r '.items[0].url'
 )
 wget -nv $artifacts_url -O build.log >> /dev/null
