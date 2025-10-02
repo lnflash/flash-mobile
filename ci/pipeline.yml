@@ -111,7 +111,7 @@ jobs:
         path: pipeline-tasks/ci/tasks/build-on-circleci.sh
       params:
         PLATFORM: android
-        WAIT_FOR_BUILD_MINS: 30
+        WAIT_FOR_BUILD_MINS: 60
         BUILD_NUMBER_FILE: build-number-android/android
         GIT_REF_FILE: repo/.git/HEAD
         VERSION_FILE: build-number-android/android

@@ -218,7 +218,7 @@ jobs:
             cd android
             sed -i'' -e "s/versionCode .*$/versionCode $BUILD_NUMBER/g" app/build.gradle
             bundle exec fastlane android build 2>&1 | tee android_build_output.log
-          no_output_timeout: 15m
+          no_output_timeout: 30m
       - run:
           name: upload to gcs
           command: gsutil cp -r android/app/build/outputs/* gs://galoy-build-artifacts/flash-mobile/$GCS_DIRECTORY/flash-mobile-$(date +%s)-v${PUBLIC_VERSION}/
