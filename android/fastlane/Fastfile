@@ -21,9 +21,8 @@ platform :android do
     android_set_version_name(version_name: ENV["PUBLIC_VERSION"])
     gradle(task: 'clean')
     gradle(
-      task: "assemble",
-      build_type: "Release",
-      flags: "--no-daemon --stacktrace --info",
+      task: "assembleRelease",
+      flags: "--no-daemon --stacktrace --info"
     )
   end
 
