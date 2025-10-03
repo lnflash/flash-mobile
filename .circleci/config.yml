@@ -30,7 +30,7 @@ jobs:
   test_android_in_pr:
     docker:
       - image: cimg/android:2024.01
-    resource_class: medium
+    resource_class: xlarge
     environment:
       TERM: dumb
       JAVA_OPTS: -Xms512m -Xmx2g
@@ -171,7 +171,7 @@ jobs:
   build_android:
     docker:
       - image: cimg/android:2024.01
-    resource_class: medium
+    resource_class: xlarge
     environment:
       TERM: dumb
       JAVA_OPTS: -Xms2g -Xmx4g
