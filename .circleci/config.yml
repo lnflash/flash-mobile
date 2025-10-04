@@ -74,7 +74,7 @@ jobs:
           key: yarn-{{ checksum "yarn.lock" }}
           paths:
             - node_modules
-      - run: echo $RELEASE_KEYSTORE | base64 -d > android/app/release.keystore
+      - run: echo $RELEASE_KEYSTORE | base64 -d > android/app/release-keystore.jks
       - run: yarn android:prepareAssets
       - run:
           name: Test Browserstack
@@ -211,7 +211,7 @@ jobs:
             - node_modules
       - run: echo $JAVA_OPTS
       - run: echo $GRADLE_OPTS
-      - run: echo $RELEASE_KEYSTORE | base64 -d > android/app/release.keystore
+      - run: echo $RELEASE_KEYSTORE | base64 -d > android/app/release-keystore.jks
       - run:
           name: build
           command: |
