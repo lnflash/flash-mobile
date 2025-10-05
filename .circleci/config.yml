@@ -95,7 +95,7 @@ jobs:
   test_ios_in_pr:
     macos:
       xcode: 16.2.0
-    resource_class: macos.m1.medium.gen1
+    resource_class: m4pro.medium
     working_directory: ~/flash-mobile
     environment:
       FL_OUTPUT_DIR: output
@@ -228,7 +228,7 @@ jobs:
   build_ios:
     macos:
       xcode: 16.2.0
-    resource_class: macos.m1.medium.gen1
+    resource_class: m4pro.medium
     environment:
       PUBLIC_VERSION: << pipeline.parameters.version >>
       BUILD_NUMBER: << pipeline.parameters.build_number >>
@@ -299,7 +299,7 @@ jobs:
   upload_to_app_store:
     macos:
       xcode: 16.2.0
-    resource_class: macos.m1.medium.gen1
+    resource_class: m4pro.medium
     environment:
       GCS_URL: << pipeline.parameters.gcs_url >>
     working_directory: ~/flash-mobile
