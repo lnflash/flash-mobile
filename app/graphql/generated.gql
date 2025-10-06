@@ -1183,6 +1183,14 @@ query notificationSettings {
   }
 }
 
+query npubByUsername($username: Username!) {
+  npubByUsername(username: $username) {
+    npub
+    username
+    __typename
+  }
+}
+
 query onChainTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: SatAmount!) {
   onChainTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount

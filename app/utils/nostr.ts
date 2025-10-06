@@ -273,7 +273,7 @@ export const setPreferredRelay = async (secretKey?: Uint8Array) => {
 
 export const addToContactList = async (
   userPrivateKey: Uint8Array,
-  pubKeyToAdd: string,
+  hexPubKeyToAdd: string,
   pool: SimplePool,
   contactsEvent?: Event,
 ) => {
@@ -282,8 +282,8 @@ export const addToContactList = async (
   if (contactsEvent) existingContacts = getContactsFromEvent(contactsEvent)
   else existingContacts = []
   let tags = contactsEvent?.tags || []
-  if (existingContacts.map((p: NostrProfile) => p.pubkey).includes(pubKeyToAdd)) return
-  tags.push(["p", pubKeyToAdd])
+  if (existingContacts.map((p: NostrProfile) => p.pubkey).includes(hexPubKeyToAdd)) return
+  tags.push(["p", hexPubKeyToAdd])
   let newEvent: UnsignedEvent = {
     kind: 3,
     pubkey: userPubkey,
