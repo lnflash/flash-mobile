@@ -189,9 +189,6 @@ jobs:
           fi
       - checkout:
           path: ~/flash-mobile
-      - run:
-          name: Verify GitHub CLI
-          command: gh --version
       - run: git checkout << pipeline.parameters.git_ref >>
       - run: sudo apt-get update
       - run: curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -245,9 +242,6 @@ jobs:
           fi
       - checkout:
           path: ~/flash-mobile
-      - run:
-          name: Verify GitHub CLI
-          command: gh --version
       - run: git checkout << pipeline.parameters.git_ref >>
       - run:
           name: Install Bundler 2.2.30
@@ -316,9 +310,6 @@ jobs:
           fi
       - checkout:
           path: ~/flash-mobile
-      - run:
-          name: Verify GitHub CLI
-          command: gh --version
       - run: HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask google-cloud-sdk
       - run: echo $GCLOUD_BUCKET_KEY | base64 --decode > key.json
       - run: gcloud auth activate-service-account --key-file key.json
