@@ -94,7 +94,7 @@ jobs:
 
   test_ios_in_pr:
     macos:
-      xcode: 15.2.0
+      xcode: 16.2.0
     resource_class: macos.m1.large.gen1
     working_directory: ~/flash-mobile
     environment:
@@ -108,6 +108,23 @@ jobs:
           fi
       - checkout:
           path: ~/flash-mobile
+      - run:
+        name: Install Ruby 2.7.7 via rbenv
+        command: |
+          export RBENV_ROOT="$HOME/.rbenv"
+          export PATH="$RBENV_ROOT/bin:$PATH"
+          if ! command -v rbenv >/dev/null 2>&1; then
+            echo "Installing rbenv..."
+            brew install rbenv
+          fi
+          eval "$(rbenv init -)"
+          if ! rbenv versions | grep -q 2.7.7; then
+            echo "Installing Ruby 2.7.7..."
+            rbenv install 2.7.7
+          fi
+          rbenv global 2.7.7
+          rbenv rehash
+          ruby -v
 
       - run:
           name: Check Ruby version
@@ -226,7 +243,7 @@ jobs:
 
   build_ios:
     macos:
-      xcode: 15.2.0
+      xcode: 16.2.0
     resource_class: macos.m1.large.gen1
     environment:
       PUBLIC_VERSION: << pipeline.parameters.version >>
@@ -243,6 +260,23 @@ jobs:
       - checkout:
           path: ~/flash-mobile
       - run: git checkout << pipeline.parameters.git_ref >>
+      - run:
+        name: Install Ruby 2.7.7 via rbenv
+        command: |
+          export RBENV_ROOT="$HOME/.rbenv"
+          export PATH="$RBENV_ROOT/bin:$PATH"
+          if ! command -v rbenv >/dev/null 2>&1; then
+            echo "Installing rbenv..."
+            brew install rbenv
+          fi
+          eval "$(rbenv init -)"
+          if ! rbenv versions | grep -q 2.7.7; then
+            echo "Installing Ruby 2.7.7..."
+            rbenv install 2.7.7
+          fi
+          rbenv global 2.7.7
+          rbenv rehash
+          ruby -v
       - run:
           name: Install Bundler 2.2.30
           command: |
@@ -296,7 +330,7 @@ jobs:
 
   upload_to_app_store:
     macos:
-      xcode: 15.2.0
+      xcode: 16.2.0
     resource_class: macos.m1.large.gen1
     environment:
       GCS_URL: << pipeline.parameters.gcs_url >>
