@@ -241,7 +241,11 @@ jobs:
           if [ << pipeline.trigger_source >> = "webhook" ]; then
               circleci-agent step halt
           fi
-      - gh/install
+      - run:
+          name: Install GitHub CLI
+          command: |
+            brew install gh
+            gh --version
       - checkout:
           path: ~/flash-mobile
       - run: git checkout << pipeline.parameters.git_ref >>
