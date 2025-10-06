@@ -94,7 +94,7 @@ jobs:
 
   test_ios_in_pr:
     macos:
-      xcode: 15.4.0
+      xcode: 16.2.0
     resource_class: macos.m1.large.gen1
     working_directory: ~/flash-mobile
     environment:
@@ -187,9 +187,11 @@ jobs:
           if [ << pipeline.trigger_source >> = "webhook" ]; then
               circleci-agent step halt
           fi
-      - gh/install
       - checkout:
           path: ~/flash-mobile
+      - run:
+          name: Verify GitHub CLI
+          command: gh --version
       - run: git checkout << pipeline.parameters.git_ref >>
       - run: sudo apt-get update
       - run: curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -227,7 +229,7 @@ jobs:
 
   build_ios:
     macos:
-      xcode: 15.4.0
+      xcode: 16.2.0
     resource_class: macos.m1.large.gen1
     environment:
       PUBLIC_VERSION: << pipeline.parameters.version >>
@@ -241,9 +243,11 @@ jobs:
           if [ << pipeline.trigger_source >> = "webhook" ]; then
               circleci-agent step halt
           fi
-      - gh/install
       - checkout:
           path: ~/flash-mobile
+      - run:
+          name: Verify GitHub CLI
+          command: gh --version
       - run: git checkout << pipeline.parameters.git_ref >>
       - run:
           name: Install Bundler 2.2.30
@@ -298,7 +302,7 @@ jobs:
 
   upload_to_app_store:
     macos:
-      xcode: 15.4.0
+      xcode: 16.2.0
     resource_class: macos.m1.large.gen1
     environment:
       GCS_URL: << pipeline.parameters.gcs_url >>
@@ -310,9 +314,11 @@ jobs:
           if [ << pipeline.trigger_source >> = "webhook" ]; then
               circleci-agent step halt
           fi
-      - gh/install
       - checkout:
           path: ~/flash-mobile
+      - run:
+          name: Verify GitHub CLI
+          command: gh --version
       - run: HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask google-cloud-sdk
       - run: echo $GCLOUD_BUCKET_KEY | base64 --decode > key.json
       - run: gcloud auth activate-service-account --key-file key.json
