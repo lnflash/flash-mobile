@@ -317,7 +317,7 @@ jobs:
       - gh/install
       - checkout:
           path: ~/flash-mobile
-      - run: HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask google-cloud-sdk
+      - run: HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask google-cloud-sdk || true
       - run: echo $GCLOUD_BUCKET_KEY | base64 --decode > key.json
       - run: gcloud auth activate-service-account --key-file key.json
       - run: git checkout << pipeline.parameters.git_ref >>
