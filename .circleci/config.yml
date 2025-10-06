@@ -130,13 +130,6 @@ jobs:
             - "19:7e:f3:6c:be:a7:17:01:7d:09:ca:39:c3:98:86:90"
       - restore_cache:
           key: 1-gem-{{ checksum "ios/Gemfile.lock" }}
-      - run:
-        name: Install Ruby 2.7.7
-        command: |
-          brew install ruby@2.7
-          echo 'export PATH="/usr/local/opt/ruby@2.7/bin:$PATH"' >> ~/.bash_profile
-          source ~/.bash_profile
-          ruby -v
       - run: cd ios && bundle config set deployment 'true'
       - run: cd ios && bundle config set --local path 'vendor/bundle'
       - run: cd ios && bundle check || bundle install
@@ -264,13 +257,6 @@ jobs:
       - run: gcloud auth activate-service-account --key-file key.json
       - restore_cache:
           key: 1-gem-{{ checksum "ios/Gemfile.lock" }}
-      - run:
-        name: Install Ruby 2.7.7
-        command: |
-          brew install ruby@2.7
-          echo 'export PATH="/usr/local/opt/ruby@2.7/bin:$PATH"' >> ~/.bash_profile
-          source ~/.bash_profile
-          ruby -v
       - run: cd ios && bundle config set deployment 'true'
       - run: cd ios && bundle config set --local path 'vendor/bundle'
       - run: cd ios && bundle check || bundle install
