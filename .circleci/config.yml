@@ -257,6 +257,15 @@ jobs:
           path: ~/flash-mobile
       - run: git checkout << pipeline.parameters.git_ref >>
       - run:
+          name: Install Ruby 3.2.2
+          command: |
+            brew install rbenv ruby-build
+            rbenv init -
+            eval "$(rbenv init -)"
+            rbenv install -s 3.2.2
+            rbenv global 3.2.2
+            ruby -v
+      - run:
           name: Install Bundler 2.2.30
           command: |
             gem install bundler:2.2.30
