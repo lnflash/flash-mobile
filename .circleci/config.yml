@@ -250,6 +250,13 @@ jobs:
             source $BASH_ENV
             gh --version
             gcloud --version
+      - run:
+          name: Install GitHub CLI and Google Cloud SDK
+          command: |
+            brew install gh
+            brew install google-cloud-sdk
+            gh --version
+            gcloud --version
       - checkout:
           path: ~/flash-mobile
       - run: git checkout << pipeline.parameters.git_ref >>
