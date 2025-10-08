@@ -241,7 +241,15 @@ jobs:
           if [ << pipeline.trigger_source >> = "webhook" ]; then
               circleci-agent step halt
           fi
-      - gh/install
+      - run:
+          name: Install GitHub CLI and Google Cloud SDK
+          command: |
+            export HOMEBREW_NO_AUTO_UPDATE=1
+            brew install gh google-cloud-sdk
+            echo 'export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"' >> $BASH_ENV
+            source $BASH_ENV
+            gh --version
+            gcloud --version
       - checkout:
           path: ~/flash-mobile
       - run: git checkout << pipeline.parameters.git_ref >>
