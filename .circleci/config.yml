@@ -242,14 +242,10 @@ jobs:
               circleci-agent step halt
           fi
       - run:
-          name: Install GitHub CLI and Google Cloud SDK
+          name: Install GitHub CLI
           command: |
-            export HOMEBREW_NO_AUTO_UPDATE=1
-            brew install gh google-cloud-sdk
-            echo 'export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"' >> $BASH_ENV
-            source $BASH_ENV
+            brew install gh
             gh --version
-            gcloud --version
       - run:
           name: Install GitHub CLI and Google Cloud SDK
           command: |
