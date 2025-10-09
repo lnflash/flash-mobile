@@ -271,7 +271,7 @@ jobs:
             source $BASH_ENV
       - add_ssh_keys:
           fingerprints:
-            - "19:7e:f3:6c:be:a7:17:01:7d:09:ca:39:c3:98:86:90"
+            - "FQ7taFplUsR+JpFd3w6c5HXTyk3vEjMrX933W376bw4"
       - run: HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask google-cloud-sdk || true
       - run: echo $GCLOUD_BUCKET_KEY | base64 --decode > key.json
       - run: gcloud auth activate-service-account --key-file key.json
