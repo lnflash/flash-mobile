@@ -1,6 +1,5 @@
 // prettier-ignore
 
-import NostrQuickStart from "@app/components/nostr-quickstart"
 import { BaseTranslation } from "../i18n-types"
 
 const en: BaseTranslation = {
