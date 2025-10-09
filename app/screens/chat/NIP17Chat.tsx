@@ -204,21 +204,8 @@ export const NIP17Chat: React.FC = () => {
                 ) : (
                   <View style={{ flex: 1, flexDirection: "column" }}>
                     {/* Signed in as */}
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginHorizontal: 20,
-                        marginVertical: 10,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          color: colors.primary3,
-                        }}
-                        onPress={() => {}}
-                      >
+                    <View style={styles.usernameContainer}>
+                      <Text style={styles.usernameText} onPress={() => {}}>
                         signed in as:{" "}
                         <Text style={{ color: colors.primary, fontWeight: "bold" }}>
                           {userData?.username ||
