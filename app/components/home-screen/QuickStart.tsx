@@ -24,7 +24,6 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { AccountLevel, useHomeAuthedQuery } from "@app/graphql/generated"
-import { usePubkeyAge } from "@app/hooks/use-pubkey-age"
 
 // utils
 import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
@@ -55,7 +54,6 @@ const QuickStart = () => {
   const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
 
   const { data, loading } = useHomeAuthedQuery()
-  const pubkeyAge = usePubkeyAge()
 
   useEffect(() => {
     checkRecoveryPhrase()
@@ -175,8 +173,7 @@ const QuickStart = () => {
   if (
     !persistentState.chatEnabled ||
     persistentState.hasPostedToNostr ||
-    persistentState?.closedQuickStartTypes?.includes("socialPost") ||
-    !pubkeyAge.isOldEnough
+    persistentState?.closedQuickStartTypes?.includes("socialPost")
   ) {
     carouselData = carouselData.filter((el) => el.type !== "socialPost")
   }
