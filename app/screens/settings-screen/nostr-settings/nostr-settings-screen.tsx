@@ -27,7 +27,11 @@ export const NostrSettingsScreen = () => {
   const [expandAdvanced, setExpandAdvanced] = useState(false)
 
   const { persistentState, updateState } = usePersistentStateContext()
-  const { appConfig: { galoyInstance: { lnAddressHostname: lnDomain } } } = useAppConfig()
+  const {
+    appConfig: {
+      galoyInstance: { lnAddressHostname: lnDomain },
+    },
+  } = useAppConfig()
 
   const isAuthed = useIsAuthed()
   const styles = useStyles()
@@ -155,14 +159,16 @@ export const NostrSettingsScreen = () => {
         <ProfileHeader userProfile={userProfile} copyToClipboard={copyToClipboard} />
 
         {/* Manual Republish Button - DEBUG TOOL */}
-        <ManualRepublishButton
-          username={dataAuthed?.me?.username}
-          lnDomain={lnDomain}
-          onSuccess={() => {
-            refetch()
-            console.log("Profile republished successfully")
-          }}
-        />
+        {true ? null : (
+          <ManualRepublishButton
+            username={dataAuthed?.me?.username}
+            lnDomain={lnDomain}
+            onSuccess={() => {
+              refetch()
+              console.log("Profile republished successfully")
+            }}
+          />
+        )}
 
         {/* Main Menu Items */}
         <View style={styles.menuContainer}>

@@ -12,6 +12,7 @@ import { FeedItem } from "@app/components/nostr-feed/FeedItem"
 import { Event, nip19 } from "nostr-tools"
 import { bytesToHex } from "@noble/hashes/utils"
 import { getSecretKey } from "@app/utils/nostr"
+import { useChatContext } from "../chat/chatContext"
 
 type PostSuccessNavigationProp = StackNavigationProp<RootStackParamList, "postSuccess">
 type PostSuccessRouteProp = RouteProp<RootStackParamList, "postSuccess">
@@ -24,7 +25,7 @@ const PostSuccess = () => {
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
 
-  const { postContent, userNpub } = route.params
+  const { postContent, userNpub, event } = route.params
 
   const handleViewProfile = async () => {
     const privateKey = await getSecretKey()
@@ -35,6 +36,8 @@ const PostSuccess = () => {
       userPrivateKey: bytesToHex(privateKey),
     })
   }
+
+  const { profileMap } = useChatContext()
 
   // Extract npub from userNpub string if it's in nip19 format
   const extractPubkey = (npubString: string): string => {
@@ -49,31 +52,10 @@ const PostSuccess = () => {
     }
   }
 
-  // Create a mock Nostr event for display
-  const mockEvent: Event = useMemo(
-    () => ({
-      id: "mock-id",
-      pubkey: extractPubkey(userNpub),
-      created_at: Math.floor(Date.now() / 1000),
-      kind: 1,
-      tags: [],
-      content: postContent,
-      sig: "mock-sig",
-    }),
-    [postContent, userNpub],
-  )
-
-  const mockProfile = useMemo(
-    () => ({
-      name: userData?.username || "Flash User",
-      picture: undefined,
-      about: undefined,
-    }),
-    [userData?.username],
-  )
+  const profile = profileMap?.get(extractPubkey(userNpub))
 
   const handlePrimalClick = () => {
-    Linking.openURL("https://primal.net")
+    Linking.openURL(`https://primal.net/e/${nip19.neventEncode(event)}`)
   }
 
   return (
@@ -100,7 +82,7 @@ const PostSuccess = () => {
       >
         {/* Post Preview using FeedItem */}
         <View style={styles.postCardWrapper}>
-          <FeedItem event={mockEvent} profile={mockProfile} compact={false} />
+          <FeedItem event={event} profile={profile} compact={false} />
         </View>
 
         {/* Primal CTA Button */}

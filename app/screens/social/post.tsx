@@ -361,6 +361,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
       navigation.replace("postSuccess", {
         postContent: finalContent,
         userNpub: npub,
+        event: signedEvent,
       })
     } catch (e) {
       console.error("Error posting Nostr note:", e)
@@ -454,7 +455,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
       {/* Media buttons */}
       <View style={styles.mediaButtonsContainer}>
         <TouchableOpacity
-          style={[styles.mediaButton, selectedVideo && styles.mediaButtonDisabled]}
+          style={[styles.mediaButton, selectedVideo ? styles.mediaButtonDisabled : null]}
           onPress={handleAddImage}
           disabled={loading || uploadingImages || !!selectedVideo}
         >
@@ -474,7 +475,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.mediaButton, selectedVideo && styles.mediaButtonDisabled]}
+          style={[styles.mediaButton, selectedVideo ? styles.mediaButtonDisabled : null]}
           onPress={handleTakePicture}
           disabled={loading || uploadingImages || !!selectedVideo}
         >
@@ -522,15 +523,19 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
 
       {isFirstPost && (
         <View style={styles.fixedTextContainer}>
-          <Text style={[styles.fixedText, { color: theme.colors.grey3 }]}>
-            {FIXED_TEXT_LINE}
-          </Text>
-          <Text style={[styles.fixedTextBold, { color: theme.colors.grey2 }]}>
-            {FIXED_TEXT_LINE_1}
-          </Text>
-          <Text style={[styles.fixedTextBold, { color: theme.colors.grey2 }]}>
-            {FIXED_TEXT_LINE_2}
-          </Text>
+          {includeFlashCredit ? (
+            <View>
+              <Text style={[styles.fixedText, { color: theme.colors.grey3 }]}>
+                {FIXED_TEXT_LINE}
+              </Text>
+              <Text style={[styles.fixedTextBold, { color: theme.colors.grey2 }]}>
+                {FIXED_TEXT_LINE_1}
+              </Text>
+              <Text style={[styles.fixedTextBold, { color: theme.colors.grey2 }]}>
+                {FIXED_TEXT_LINE_2}
+              </Text>
+            </View>
+          ) : null}
 
           <View style={styles.checkboxContainer}>
             <TouchableOpacity
