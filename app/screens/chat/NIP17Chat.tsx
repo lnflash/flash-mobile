@@ -13,7 +13,7 @@ import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
 import { Screen } from "../../components/screen"
-import { bytesToHex } from "@noble/hashes/utils"
+import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
 import { testProps } from "../../utils/testProps"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -34,7 +34,7 @@ import { useNostrGroupChat } from "./GroupChat/GroupChatProvider"
 import { SearchListItem } from "./searchListItem"
 import Contacts from "./contacts"
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
-import NostrQuickStart from "@app/components/nostr-quickstart"
+import ContactDetailsScreen from "./contactDetailsScreen"
 
 const Tab = createMaterialTopTabNavigator()
 
@@ -119,7 +119,6 @@ export const NIP17Chat: React.FC = () => {
       }
     }, [setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck]),
   )
-
   let SearchBarContent: React.ReactNode
   let ListEmptyContent: React.ReactNode
 
@@ -157,97 +156,37 @@ export const NIP17Chat: React.FC = () => {
 
   const userPublicKey = privateKey ? getPublicKey(privateKey) : null
   const userProfile = userPublicKey ? profileMap?.get(userPublicKey) : null
-
-  // Profile menu component displayed above tab navigation - tappable to view own profile
-  const ProfileMenu = () => (
-    <TouchableOpacity
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.grey5,
-        backgroundColor: colors.background,
-      }}
-      onPress={() => {}}
-      activeOpacity={0.7}
-    >
-      <Image
-        source={
-          userProfile?.picture
-            ? { uri: userProfile.picture }
-            : {
-                uri: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwinaero.com%2Fblog%2Fwp-content%2Fuploads%2F2017%2F12%2FUser-icon-256-blue.png&f=1&nofb=1&ipt=d8f3a13e26633e5c7fb42aed4cd2ab50e1bb3d91cfead71975713af0d1ed278c",
-              }
-        }
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 18,
-          marginRight: 12,
-          borderWidth: 2,
-          borderColor: colors.grey5,
-        }}
-      />
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            fontSize: 15,
-            color: colors.black,
-            fontWeight: "600",
-          }}
-        >
-          {userData?.username ||
-            userProfile?.name ||
-            (userPublicKey ? nip19.npubEncode(userPublicKey).slice(0, 12) + "..." : "")}
-        </Text>
-      </View>
-      <Icon name="person-circle-outline" size={24} color={colors.grey3} />
-    </TouchableOpacity>
-  )
-
   return (
     <Screen style={{ ...styles.header, flex: 1 }}>
       {privateKey && !showImportModal ? (
         <Tab.Navigator
-          screenOptions={({ route }) => ({
-            // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
-            // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
-            // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
-            tabBarIcon: ({ color }) => {
-              let iconName: string
-              if (route.name === "Chats") {
-                iconName = "chatbubble-ellipses-outline" // Chat icon
-              } else if (route.name === "Contacts") {
-                iconName = "people-outline" // Contacts icon
-              } else {
-                iconName = ""
-              }
-              return <Icon name={iconName} size={24} color={color} />
-            },
-            tabBarShowLabel: false, // Hide text labels
-          })}
-        >
-          <ProfileMenu />
-          {/* <Tab.Navigator
-            initialRouteName="Chats"
-            screenOptions={({ route }) => ({
-              tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+          screenOptions={({ route }) => {
+            const label = route.name === "Profile" ? `${userProfile?.name}` : null
+            return {
+              // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
+              // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+              // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
               tabBarIcon: ({ color }) => {
                 let iconName: string
+                if (route.name === "Profile") {
+                  iconName = "person"
+                }
                 if (route.name === "Chats") {
-                  iconName = "chatbubble-ellipses-outline"
+                  iconName = "chatbubble-ellipses-outline" // Chat icon
                 } else if (route.name === "Contacts") {
-                  iconName = "people-outline"
+                  iconName = "people-outline" // Contacts icon
                 } else {
-                  iconName = ""
+                  iconName = "person-circle-outline"
                 }
                 return <Icon name={iconName} size={24} color={color} />
               },
-              tabBarShowLabel: false,
-            })}
-          > */}
+              tabBarShowLabel: !!label,
+              tabBarActiveTintColor: colors.primary,
+              tabBarIndicatorStyle: { backgroundColor: colors.primary },
+            }
+          }}
+          style={{ borderColor: colors.primary }}
+        >
           <Tab.Screen name="Chats">
             {() => (
               <View style={{ flex: 1 }}>
@@ -376,6 +315,14 @@ export const NIP17Chat: React.FC = () => {
               </View>
             )}
           </Tab.Screen>
+          <Tab.Screen
+            name={`${userProfile?.name}`}
+            component={ContactDetailsScreen}
+            initialParams={{
+              contactPubkey: getPublicKey(privateKey),
+              userPrivateKey: bytesToHex(privateKey),
+            }}
+          />
           <Tab.Screen name="Contacts">
             {() => (
               <View style={{ ...styles.header, height: "100%" }}>
