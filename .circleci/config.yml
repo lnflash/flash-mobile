@@ -247,11 +247,9 @@ jobs:
             brew install gh
             gh --version
       - run:
-          name: Install GitHub CLI and Google Cloud SDK
+          name: Install Google Cloud SDK
           command: |
-            brew install gh
             brew install google-cloud-sdk
-            gh --version
             gcloud --version
       - checkout:
           path: ~/flash-mobile
@@ -295,6 +293,9 @@ jobs:
           paths:
             - node_modules
             - ios/Pods
+      - run:
+          name: Verify GitHub SSH access
+          command: ssh -T git@github.com || true
       - run:
           name: Import Apple Certificates
           command: |
