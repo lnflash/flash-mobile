@@ -55,7 +55,16 @@ const PostSuccess = () => {
   const profile = profileMap?.get(extractPubkey(userNpub))
 
   const handlePrimalClick = () => {
-    Linking.openURL(`https://primal.net/e/${nip19.neventEncode(event)}`)
+    Linking.openURL(
+      `https://primal.net/e/${nip19.neventEncode({
+        ...event,
+        relays: [
+          "wss://relay.damus.io",
+          "wss://relay.primal.net",
+          "wss://relay.snort.social",
+        ],
+      })}`,
+    )
   }
 
   return (
