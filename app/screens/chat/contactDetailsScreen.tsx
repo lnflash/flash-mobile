@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { View, StyleSheet, Text, Image, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native"
+import {
+  View,
+  StyleSheet,
+  Text,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  Platform,
+  StatusBar,
+} from "react-native"
 import { useTheme, makeStyles } from "@rneui/themed"
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
@@ -56,8 +66,11 @@ const ContactDetailsScreen: React.FC = () => {
     fetchPolicy: "cache-first",
   })
 
-  const businessUsernames = businessMapData?.businessMapMarkers.map((m) => m.username) || []
-  const isBusiness = profile?.username ? businessUsernames.includes(profile.username) : false
+  const businessUsernames =
+    businessMapData?.businessMapMarkers.map((m) => m.username) || []
+  const isBusiness = profile?.username
+    ? businessUsernames.includes(profile.username)
+    : false
   const pubkeyAge = usePubkeyAge()
 
   const userPrivateKeyHex =
@@ -197,14 +210,20 @@ const ContactDetailsScreen: React.FC = () => {
           style: { color: colors.black, fontSize: 18 },
         }}
         backgroundColor={colors.background}
-        containerStyle={styles.headerContainer}
+        containerStyle={[
+          styles.headerContainer,
+          {
+            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 20,
+          },
+        ]}
+        edges={[]}
       />
 
       <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
         {/* Profile header with optional banner image background */}
-        <View style={[styles.profileHeaderContainer, { backgroundColor: profile?.banner ? colors.white : colors.background }]}>
+        <View style={[]}>
           {/* Banner image as background with overlay for text readability */}
-          {profile?.banner && (
+          {/* {profile?.banner && (
             <>
               <Image
                 source={{ uri: profile.banner }}
@@ -214,7 +233,7 @@ const ContactDetailsScreen: React.FC = () => {
               />
               <View style={styles.bannerOverlay} />
             </>
-          )}
+          )} */}
           <View style={styles.profileHeader}>
             <View style={styles.profileTopRow}>
               <View style={styles.profileImageContainer}>
@@ -235,7 +254,7 @@ const ContactDetailsScreen: React.FC = () => {
                     style={[
                       styles.profileName,
                       { color: profile?.banner ? "#FFFFFF" : colors.black },
-                      profile?.banner && styles.textShadow
+                      // profile?.banner && styles.textShadow,
                     ]}
                   >
                     {profile?.name || profile?.username || LL.Nostr.Contacts.nostrUser()}
@@ -248,31 +267,40 @@ const ContactDetailsScreen: React.FC = () => {
                   )}
                 </View>
                 <View style={styles.profileNpub}>
-                  <Icon name="key-outline" size={12} color={profile?.banner ? "#FFFFFF" : colors.grey3} />
-                  <Text
-                    style={[
-                      styles.npubText,
-                      profile?.banner && { color: "rgba(255, 255, 255, 0.95)" },
-                      profile?.banner && styles.textShadow
-                    ]}
-                  >
+                  <Icon
+                    name="key-outline"
+                    size={12}
+                    color={profile?.banner ? "#FFFFFF" : colors.grey3}
+                  />
+                  <Text style={[styles.npubText]}>
                     {npub.slice(0, 8)}...{npub.slice(-6)}
                   </Text>
                 </View>
                 {profile?.lud16 && (
-                  <View style={[styles.profileLud16, profile?.banner && styles.lightBackground]}>
+                  <View style={[styles.profileLud16]}>
                     <Icon name="flash" size={12} color="orange" />
-                    <Text style={[styles.lud16Text, { color: profile?.banner ? "#333" : colors.grey1 }]}>{profile.lud16}</Text>
+                    <Text
+                      style={[
+                        styles.lud16Text,
+                        { color: profile?.banner ? "#333" : colors.grey1 },
+                      ]}
+                    >
+                      {profile.lud16}
+                    </Text>
                   </View>
                 )}
                 {profile?.website && (
                   <View style={styles.profileWebsite}>
-                    <Icon name="globe-outline" size={12} color={profile?.banner ? "#FFFFFF" : colors.grey3} />
+                    <Icon
+                      name="globe-outline"
+                      size={12}
+                      color={profile?.banner ? "#FFFFFF" : colors.grey3}
+                    />
                     <Text
                       style={[
                         styles.websiteText,
-                        profile?.banner && { color: "rgba(255, 255, 255, 0.95)" },
-                        profile?.banner && styles.textShadow
+                        // profile?.banner && { color: "rgba(255, 255, 255, 0.95)" },
+                        // profile?.banner && styles.textShadow,
                       ]}
                     >
                       {profile.website}
@@ -285,8 +313,8 @@ const ContactDetailsScreen: React.FC = () => {
               <Text
                 style={[
                   styles.aboutText,
-                  profile?.banner && { color: "rgba(255, 255, 255, 0.98)" },
-                  profile?.banner && styles.textShadow
+                  // profile?.banner && { color: "rgba(255, 255, 255, 0.98)" },
+                  // profile?.banner && styles.textShadow,
                 ]}
               >
                 {profile.about}
@@ -335,98 +363,100 @@ const ContactDetailsScreen: React.FC = () => {
                 </Text>
               )}
             </View>
-          {loadingPosts ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={[styles.loadingText, { color: colors.grey3 }]}>Loading...</Text>
-            </View>
-          ) : posts.length === 0 ? (
-            <View style={styles.emptyPostsContainer}>
-              <Icon
-                name={isBusiness ? "storefront-outline" : "chatbubble-outline"}
-                size={48}
-                color={colors.grey3}
-                style={{ marginBottom: 8 }}
-              />
-              <Text style={[styles.emptyPostsText, { color: colors.grey3 }]}>
-                {isBusiness ? "No business updates yet" : "No posts yet"}
-              </Text>
-              <TouchableOpacity
-                style={[styles.makePostCTA, { backgroundColor: colors.grey5 }]}
-                onPress={() => navigation.navigate("makeNostrPost")}
-                activeOpacity={0.7}
-              >
-                <Icon
-                  name="create-outline"
-                  size={24}
-                  color={colors.primary}
-                  style={{ marginRight: 12 }}
-                />
-                <View style={styles.makePostTextContainer}>
-                  <Text style={[styles.makePostTitle, { color: colors.black }]}>
-                    {LL.NostrQuickStart.postHeading()}
-                  </Text>
-                  <Text style={[styles.makePostDesc, { color: colors.grey3 }]}>
-                    {LL.NostrQuickStart.postDesc()}
-                  </Text>
-                </View>
-                <Icon name="chevron-forward" size={20} color={colors.grey3} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              {posts.map((post) => (
-                <FeedItem
-                  key={post.id}
-                  event={post}
-                  profile={profile}
-                  compact
-                  repostedEvent={post.kind === 6 ? repostedEvents.get(post.id) : undefined}
-                  repostedProfile={
-                    post.kind === 6
-                      ? repostedProfiles.get(
-                          post.tags.find((tag) => tag[0] === "p")?.[1] || "",
-                        )
-                      : undefined
-                  }
-                />
-              ))}
-            </>
-          )}
-          {/* CTA button to explore full Nostr experience on Primal */}
-          <TouchableOpacity
-            style={[styles.primalButton]}
-            onPress={() => Linking.openURL("https://primal.net")}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={["#FF6154", "#FE9F41"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.primalButtonGradient}
-            >
-              <View style={styles.primalButtonContent}>
-                <View style={styles.primalLogoContainer}>
-                  <Image
-                    source={require("@app/assets/images/primal-logo-large.png")}
-                    style={styles.primalLogo}
-                    resizeMode="contain"
-                  />
-                </View>
-                <View style={styles.primalTextContainer}>
-                  <Text style={styles.primalTitle}>
-                    Explore more on Primal
-                  </Text>
-                  <Text style={styles.primalSubtitle}>
-                    Full Nostr experience with feeds, notifications & more
-                  </Text>
-                </View>
-                <View style={styles.primalArrowContainer}>
-                  <Icon name="arrow-forward" size={22} color="#FFFFFF" />
-                </View>
+            {loadingPosts ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={[styles.loadingText, { color: colors.grey3 }]}>
+                  Loading...
+                </Text>
               </View>
-            </LinearGradient>
-          </TouchableOpacity>
+            ) : posts.length === 0 ? (
+              <View style={styles.emptyPostsContainer}>
+                <Icon
+                  name={isBusiness ? "storefront-outline" : "chatbubble-outline"}
+                  size={48}
+                  color={colors.grey3}
+                  style={{ marginBottom: 8 }}
+                />
+                <Text style={[styles.emptyPostsText, { color: colors.grey3 }]}>
+                  {isBusiness ? "No business updates yet" : "No posts yet"}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.makePostCTA, { backgroundColor: colors.grey5 }]}
+                  onPress={() => navigation.navigate("makeNostrPost")}
+                  activeOpacity={0.7}
+                >
+                  <Icon
+                    name="create-outline"
+                    size={24}
+                    color={colors.primary}
+                    style={{ marginRight: 12 }}
+                  />
+                  <View style={styles.makePostTextContainer}>
+                    <Text style={[styles.makePostTitle, { color: colors.black }]}>
+                      {LL.NostrQuickStart.postHeading()}
+                    </Text>
+                    <Text style={[styles.makePostDesc, { color: colors.grey3 }]}>
+                      {LL.NostrQuickStart.postDesc()}
+                    </Text>
+                  </View>
+                  <Icon name="chevron-forward" size={20} color={colors.grey3} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                {posts.map((post) => (
+                  <FeedItem
+                    key={post.id}
+                    event={post}
+                    profile={profile}
+                    compact
+                    repostedEvent={
+                      post.kind === 6 ? repostedEvents.get(post.id) : undefined
+                    }
+                    repostedProfile={
+                      post.kind === 6
+                        ? repostedProfiles.get(
+                            post.tags.find((tag) => tag[0] === "p")?.[1] || "",
+                          )
+                        : undefined
+                    }
+                  />
+                ))}
+              </>
+            )}
+            {/* CTA button to explore full Nostr experience on Primal */}
+            <TouchableOpacity
+              style={[styles.primalButton]}
+              onPress={() => Linking.openURL("https://primal.net")}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={["#FF6154", "#FE9F41"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.primalButtonGradient}
+              >
+                <View style={styles.primalButtonContent}>
+                  <View style={styles.primalLogoContainer}>
+                    <Image
+                      source={require("@app/assets/images/primal-logo-large.png")}
+                      style={styles.primalLogo}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <View style={styles.primalTextContainer}>
+                    <Text style={styles.primalTitle}>Explore more on Primal</Text>
+                    <Text style={styles.primalSubtitle}>
+                      Full Nostr experience with feeds, notifications & more
+                    </Text>
+                  </View>
+                  <View style={styles.primalArrowContainer}>
+                    <Icon name="arrow-forward" size={22} color="#FFFFFF" />
+                  </View>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -439,7 +469,7 @@ const ContactDetailsScreen: React.FC = () => {
             onPress={handleUnfollow}
           >
             <Icon name="remove-circle" style={[styles.icon, { color: "white" }]} />
-            <Text style={[styles.actionText, { color: "white" }]}>
+            <Text style={[{ color: "white" }]}>
               {LL.Nostr.Contacts.unfollowContact()}
             </Text>
           </TouchableOpacity>
@@ -462,9 +492,9 @@ const ContactDetailsScreen: React.FC = () => {
 
 const useStyles = makeStyles(({ colors }) => ({
   headerContainer: {
-    borderBottomWidth: 0,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    borderBottomWidth: 2,
+    shadowColor: colors.grey5,
+    shadowOffset: { width: 2  , height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
