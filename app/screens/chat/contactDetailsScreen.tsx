@@ -19,7 +19,6 @@ import { Header } from "@rneui/base"
 import Icon from "react-native-vector-icons/Ionicons"
 import ChatIcon from "@app/assets/icons/chat.svg"
 import { nip19, getPublicKey, Event } from "nostr-tools"
-import { usePubkeyAge } from "@app/hooks/use-pubkey-age"
 import { publicRelays } from "@app/utils/nostr"
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
 import { Screen } from "../../components/screen"
@@ -71,7 +70,6 @@ const ContactDetailsScreen: React.FC = () => {
   const isBusiness = profile?.username
     ? businessUsernames.includes(profile.username)
     : false
-  const pubkeyAge = usePubkeyAge()
 
   const userPrivateKeyHex =
     typeof userPrivateKey === "string" ? userPrivateKey : bytesToHex(userPrivateKey)
@@ -349,9 +347,7 @@ const ContactDetailsScreen: React.FC = () => {
             </View>
           </View>
         )}
-
-        {/* Only show recent posts section if user's own pubkey is old enough or viewing someone else's profile */}
-        {(!isSelf || pubkeyAge.isOldEnough) && (
+        {!isSelf && (
           <View style={styles.postsSection}>
             <View style={styles.postsSectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.black }]}>
@@ -494,7 +490,7 @@ const useStyles = makeStyles(({ colors }) => ({
   headerContainer: {
     borderBottomWidth: 2,
     shadowColor: colors.grey5,
-    shadowOffset: { width: 2  , height: 2 },
+    shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,

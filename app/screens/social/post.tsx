@@ -19,12 +19,14 @@ import { useNavigation } from "@react-navigation/native"
 import { PrimaryBtn } from "@app/components/buttons"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { usePubkeyAge, getPubkeyAgeMessage } from "@app/hooks/use-pubkey-age"
 
 import { nip19, getPublicKey, finalizeEvent, Relay, SimplePool } from "nostr-tools"
 import { getSecretKey } from "@app/utils/nostr"
 import { pool } from "@app/utils/nostr/pool"
-import { publishEventToRelays, getPublishingRelays } from "@app/utils/nostr/publish-helpers"
+import {
+  publishEventToRelays,
+  getPublishingRelays,
+} from "@app/utils/nostr/publish-helpers"
 import Config from "react-native-config"
 
 // Get appropriate relays for note publishing
@@ -47,7 +49,6 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
   const { theme } = useTheme()
   const { LL } = useI18nContext()
   const { persistentState, updateState } = usePersistentStateContext()
-  const pubkeyAge = usePubkeyAge()
   const [userText, setUserText] = useState("")
   const [inputHeight, setInputHeight] = useState(40)
   const [loading, setLoading] = useState(false)
@@ -66,7 +67,10 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
   }
 
   // Generate NIP-98 auth header
-  const generateNIP98AuthHeader = async (url: string, method: string): Promise<string> => {
+  const generateNIP98AuthHeader = async (
+    url: string,
+    method: string,
+  ): Promise<string> => {
     try {
       const nsec = Config.FLASH_NOSTR_NSEC
       if (!nsec || nsec === "ADD_YOUR_NSEC_HERE") {
@@ -216,8 +220,6 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
           return
         }
         if (response.assets && response.assets.length > 0 && response.assets[0].uri) {
-          // Add the captured photo to the selected images
-          setSelectedImages((prev) => [...prev, response.assets[0].uri!])
           // Clear video if any
           setSelectedVideo(null)
         }
@@ -257,7 +259,12 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
         try {
           const uploadedUrls: string[] = []
 
-          console.log("Starting media upload. Images:", selectedImages.length, "Video:", !!selectedVideo)
+          console.log(
+            "Starting media upload. Images:",
+            selectedImages.length,
+            "Video:",
+            !!selectedVideo,
+          )
 
           // Upload images
           for (const imageUri of selectedImages) {
@@ -303,7 +310,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
 
       // Extract hashtags and create t tags
       const hashtags = extractHashtags(finalContent)
-      const tags: string[][] = hashtags.map(tag => ["t", tag])
+      const tags: string[][] = hashtags.map((tag) => ["t", tag])
 
       console.log("Extracted hashtags:", hashtags)
       console.log("Created tags:", tags)
@@ -327,14 +334,16 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
         pool,
         signedEvent,
         RELAYS,
-        "Note (kind-1)"
+        "Note (kind-1)",
       )
 
       if (publishResult.successCount === 0) {
         throw new Error("Failed to publish note to any relay")
       }
 
-      console.log(`✅ Note successfully published to ${publishResult.successCount}/${RELAYS.length} relays`)
+      console.log(
+        `✅ Note successfully published to ${publishResult.successCount}/${RELAYS.length} relays`,
+      )
 
       // Mark that user has posted to Nostr
       updateState((state: any) => {
@@ -377,38 +386,6 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
       return
     }
     await publishNostrNote(finalText)
-  }
-
-  // Check if pubkey is old enough
-  const pubkeyAgeMessage = getPubkeyAgeMessage(pubkeyAge)
-  const canPost = pubkeyAge.isOldEnough && !pubkeyAge.isLoading
-
-  // If pubkey is not old enough, show message
-  if (!canPost && !pubkeyAge.isLoading) {
-    return (
-      <View style={[styles.container, styles.centerContent, { backgroundColor: theme.colors.background }]}>
-        <Icon
-          name="time-outline"
-          size={64}
-          color={theme.colors.grey3}
-          style={{ marginBottom: 20 }}
-        />
-        <Text style={[styles.ageRestrictionTitle, { color: theme.colors.black }]}>
-          Profile Too New
-        </Text>
-        <Text style={[styles.ageRestrictionMessage, { color: theme.colors.grey3 }]}>
-          {pubkeyAgeMessage || "Your profile is not old enough to post yet."}
-        </Text>
-        {pubkeyAge.daysUntilOldEnough && (
-          <View style={[styles.countdownContainer, { backgroundColor: theme.colors.grey5 }]}>
-            <Icon name="hourglass-outline" size={20} color={theme.colors.primary} />
-            <Text style={[styles.countdownText, { color: theme.colors.primary }]}>
-              {Math.ceil(pubkeyAge.daysUntilOldEnough)} {Math.ceil(pubkeyAge.daysUntilOldEnough) === 1 ? 'day' : 'days'} remaining
-            </Text>
-          </View>
-        )}
-      </View>
-    )
   }
 
   return (
@@ -584,7 +561,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
         label={loading ? LL.Social.posting() : LL.Social.postButton()}
         onPress={onPost}
         btnStyle={styles.buttonContainer}
-        disabled={loading || uploadingImages || !canPost}
+        disabled={loading || uploadingImages}
       />
     </ScrollView>
   )
