@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react"
 import {
   View,
-  StyleSheet,
   Text,
   Image,
   TouchableOpacity,
@@ -29,6 +28,9 @@ import { useBusinessMapMarkersQuery } from "@app/graphql/generated"
 import ArrowUp from "@app/assets/icons/arrow-up.svg"
 import { Linking } from "react-native"
 import LinearGradient from "react-native-linear-gradient"
+import Clipboard from "@react-native-clipboard/clipboard"
+import { toastShow } from "@app/utils/toast"
+import { Pressable } from "react-native"
 
 const RELAYS = [
   "wss://relay.damus.io",
@@ -114,6 +116,12 @@ const ContactDetailsScreen: React.FC = () => {
       groupId: groupId,
       userPrivateKey: userPrivateKeyHex,
     })
+  }
+
+  const handleCopy = () => {
+    if (!npub) return
+    Clipboard.setString(npub)
+    toastShow({ type: "success", message: "npub copied to clipboard", autoHide: true })
   }
 
   // Fetch Nostr posts (kind 1) and reposts (kind 6) from this contact
@@ -251,7 +259,6 @@ const ContactDetailsScreen: React.FC = () => {
                   <Text
                     style={[
                       styles.profileName,
-                      { color: profile?.banner ? "#FFFFFF" : colors.black },
                       // profile?.banner && styles.textShadow,
                     ]}
                   >
@@ -264,16 +271,19 @@ const ContactDetailsScreen: React.FC = () => {
                     </View>
                   )}
                 </View>
-                <View style={styles.profileNpub}>
-                  <Icon
-                    name="key-outline"
-                    size={12}
-                    color={profile?.banner ? "#FFFFFF" : colors.grey3}
-                  />
-                  <Text style={[styles.npubText]}>
-                    {npub.slice(0, 8)}...{npub.slice(-6)}
+                <Pressable
+                  onPress={handleCopy}
+                  android_ripple={{ color: "#ddd" }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Copy npub to clipboard"
+                  style={() => [styles.profileNpub]}
+                  hitSlop={8}
+                >
+                  <Icon name="key-outline" size={12} color={colors.grey3} />
+                  <Text style={styles.npubText}>
+                    {npub?.slice(0, 8)}...{npub?.slice(-6)}
                   </Text>
-                </View>
+                </Pressable>
                 {profile?.lud16 && (
                   <View style={[styles.profileLud16]}>
                     <Icon name="flash" size={12} color="orange" />
@@ -424,7 +434,7 @@ const ContactDetailsScreen: React.FC = () => {
             {/* CTA button to explore full Nostr experience on Primal */}
             <TouchableOpacity
               style={[styles.primalButton]}
-              onPress={() => Linking.openURL("https://primal.net")}
+              onPress={() => Linking.openURL(`https://primal.net/p/${userPubkey}`)}
               activeOpacity={0.8}
             >
               <LinearGradient
