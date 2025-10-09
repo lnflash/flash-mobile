@@ -12,6 +12,18 @@ export const useStyles = makeStyles(({ colors }) => ({
     justifyContent: "center",
   },
 
+  usernameContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginVertical: 10,
+  },
+
+  usernameText: {
+    fontSize: 16,
+    color: colors.primary3,
+  },
+
   emptyListNoContacts: {
     marginHorizontal: 12,
     marginTop: 32,

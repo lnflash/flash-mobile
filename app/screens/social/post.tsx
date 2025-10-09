@@ -391,7 +391,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={[styles.container]}
       contentContainerStyle={{ flexGrow: 1 }}
       keyboardShouldPersistTaps="handled"
     >
@@ -576,7 +576,7 @@ const useStyles = makeStyles(({ colors }) => ({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
   },
   textInputContainer: {
     width: "100%",
