@@ -1,12 +1,19 @@
 import { useTheme } from "@rneui/themed"
 import * as React from "react"
-import { useState } from "react"
-import { ActivityIndicator, Text, View, TouchableOpacity, Image } from "react-native"
+import { useCallback, useState } from "react"
+import {
+  ActivityIndicator,
+  Text,
+  View,
+  Alert,
+  TouchableOpacity,
+  Image,
+} from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
 import { Screen } from "../../components/screen"
-import { bytesToHex } from "@noble/hashes/utils"
+import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
 import { testProps } from "../../utils/testProps"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -27,6 +34,7 @@ import { useNostrGroupChat } from "./GroupChat/GroupChatProvider"
 import { SearchListItem } from "./searchListItem"
 import Contacts from "./contacts"
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
+import ContactDetailsScreen from "./contactDetailsScreen"
 
 const Tab = createMaterialTopTabNavigator()
 
@@ -111,7 +119,6 @@ export const NIP17Chat: React.FC = () => {
       }
     }, [setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck]),
   )
-
   let SearchBarContent: React.ReactNode
   let ListEmptyContent: React.ReactNode
 
@@ -147,27 +154,38 @@ export const NIP17Chat: React.FC = () => {
     return (lastBRumor?.created_at || 0) - (lastARumor?.created_at || 0)
   })
 
+  const userPublicKey = privateKey ? getPublicKey(privateKey) : null
+  const userProfile = userPublicKey ? profileMap?.get(userPublicKey) : null
   return (
     <Screen style={{ ...styles.header, flex: 1 }}>
       {privateKey && !showImportModal ? (
         <Tab.Navigator
-          screenOptions={({ route }) => ({
-            // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
-            // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
-            // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
-            tabBarIcon: ({ color }) => {
-              let iconName: string
-              if (route.name === "Chats") {
-                iconName = "chatbubble-ellipses-outline" // Chat icon
-              } else if (route.name === "Contacts") {
-                iconName = "people-outline" // Contacts icon
-              } else {
-                iconName = ""
-              }
-              return <Icon name={iconName} size={24} color={color} />
-            },
-            tabBarShowLabel: false, // Hide text labels
-          })}
+          screenOptions={({ route }) => {
+            const label = route.name === "Profile" ? `${userProfile?.name}` : null
+            return {
+              // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
+              // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+              // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+              tabBarIcon: ({ color }) => {
+                let iconName: string
+                if (route.name === "Profile") {
+                  iconName = "person"
+                }
+                if (route.name === "Chats") {
+                  iconName = "chatbubble-ellipses-outline" // Chat icon
+                } else if (route.name === "Contacts") {
+                  iconName = "people-outline" // Contacts icon
+                } else {
+                  iconName = "person-circle-outline"
+                }
+                return <Icon name={iconName} size={24} color={color} />
+              },
+              tabBarShowLabel: !!label,
+              tabBarActiveTintColor: colors.primary,
+              tabBarIndicatorStyle: { backgroundColor: colors.primary },
+            }
+          }}
+          style={{ borderColor: colors.primary }}
         >
           <Tab.Screen name="Chats">
             {() => (
@@ -184,20 +202,17 @@ export const NIP17Chat: React.FC = () => {
                     keyExtractor={(item) => item.id}
                   />
                 ) : (
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        margin: 10,
-                        marginLeft: 20,
-                        color: colors.primary3,
-                      }}
-                    >
-                      signed in as:{" "}
-                      <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-                        {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
+                  <View style={{ flex: 1, flexDirection: "column" }}>
+                    {/* Signed in as */}
+                    <View style={styles.usernameContainer}>
+                      <Text style={styles.usernameText} onPress={() => {}}>
+                        signed in as:{" "}
+                        <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                          {userData?.username ||
+                            nip19.npubEncode(getPublicKey(privateKey))}
+                        </Text>
                       </Text>
-                    </Text>
+                    </View>
                     <TouchableOpacity
                       onPress={() =>
                         RootNavigator.navigate("Nip29GroupChat", {
@@ -273,15 +288,13 @@ export const NIP17Chat: React.FC = () => {
                       data={groupIds}
                       ListEmptyComponent={ListEmptyContent}
                       scrollEnabled={true}
-                      renderItem={({ item }) => {
-                        return (
-                          <HistoryListItem
-                            item={item}
-                            userPrivateKey={privateKey!}
-                            groups={groups}
-                          />
-                        )
-                      }}
+                      renderItem={({ item }) => (
+                        <HistoryListItem
+                          item={item}
+                          userPrivateKey={privateKey!}
+                          groups={groups}
+                        />
+                      )}
                       keyExtractor={(item) => item}
                     />
                   </View>
@@ -289,6 +302,14 @@ export const NIP17Chat: React.FC = () => {
               </View>
             )}
           </Tab.Screen>
+          <Tab.Screen
+            name={`${userProfile?.name}`}
+            component={ContactDetailsScreen}
+            initialParams={{
+              contactPubkey: getPublicKey(privateKey),
+              userPrivateKey: bytesToHex(privateKey),
+            }}
+          />
           <Tab.Screen name="Contacts">
             {() => (
               <View style={{ ...styles.header, height: "100%" }}>
