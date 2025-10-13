@@ -314,6 +314,12 @@ jobs:
             timestamp=$(date +%s)
             gsutil cp -r ~/flash-mobile/ios/Flash.ipa gs://flash-mobile-build/flash-mobile/$GCS_DIRECTORY/flash-mobile-$timestamp-v${PUBLIC_VERSION}/
             gsutil cp -r ~/flash-mobile/ios/Flash.app.dSYM.zip gs://flash-mobile-build/flash-mobile/$GCS_DIRECTORY/flash-mobile-$timestamp-v${PUBLIC_VERSION}/
+      - run:
+          name: Show Xcode build log if Fastlane fails
+          when: on_fail
+          command: |
+            echo "==== Showing gym log ===="
+            cat ~/Library/Logs/gym/Flash-LNFlash.log || echo "Log not found"
       - store_artifacts:
           path: ios/ios_build_output.log
 
