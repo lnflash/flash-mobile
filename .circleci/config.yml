@@ -302,6 +302,13 @@ jobs:
             tmpfile=$(mktemp /tmp/wwdr-cert.cer)
             curl -f -o $tmpfile https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer && security import $tmpfile ~/Library/Keychains/login.keychain-db
       - run:
+          name: Clean CocoaPods and DerivedData
+          command: |
+            rm -rf ~/Library/Developer/Xcode/DerivedData
+            rm -rf ios/Pods
+            rm -rf ios/Podfile.lock
+            cd ios && pod deintegrate && pod install --repo-update
+      - run:
           name: build
           command: |
             cd ios
@@ -309,17 +316,17 @@ jobs:
             bundle exec fastlane build 2>&1 | tee ios_build_output.log
           no_output_timeout: 15m
       - run:
-          name: upload to gcs
-          command: |
-            timestamp=$(date +%s)
-            gsutil cp -r ~/flash-mobile/ios/Flash.ipa gs://flash-mobile-build/flash-mobile/$GCS_DIRECTORY/flash-mobile-$timestamp-v${PUBLIC_VERSION}/
-            gsutil cp -r ~/flash-mobile/ios/Flash.app.dSYM.zip gs://flash-mobile-build/flash-mobile/$GCS_DIRECTORY/flash-mobile-$timestamp-v${PUBLIC_VERSION}/
-      - run:
           name: Show Xcode build log if Fastlane fails
           when: on_fail
           command: |
             echo "==== Showing gym log ===="
             cat ~/Library/Logs/gym/Flash-LNFlash.log || echo "Log not found"
+      - run:
+          name: upload to gcs
+          command: |
+            timestamp=$(date +%s)
+            gsutil cp -r ~/flash-mobile/ios/Flash.ipa gs://flash-mobile-build/flash-mobile/$GCS_DIRECTORY/flash-mobile-$timestamp-v${PUBLIC_VERSION}/
+            gsutil cp -r ~/flash-mobile/ios/Flash.app.dSYM.zip gs://flash-mobile-build/flash-mobile/$GCS_DIRECTORY/flash-mobile-$timestamp-v${PUBLIC_VERSION}/
       - store_artifacts:
           path: ios/ios_build_output.log
 
