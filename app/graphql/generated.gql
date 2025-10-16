@@ -235,6 +235,18 @@ mutation accountUpdateDisplayCurrency($input: AccountUpdateDisplayCurrencyInput!
   }
 }
 
+mutation businessAccountUpgradeRequest($input: BusinessAccountUpgradeRequestInput!) {
+  businessAccountUpgradeRequest(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    success
+    __typename
+  }
+}
+
 mutation captchaCreateChallenge {
   captchaCreateChallenge {
     errors {
@@ -878,6 +890,15 @@ query accountScreen {
   }
 }
 
+query accountUpgradeRequestStatus {
+  accountUpgradeRequestStatus {
+    hasPendingRequest
+    requestedLevel
+    errors
+    __typename
+  }
+}
+
 query addressScreen {
   me {
     id
@@ -941,6 +962,20 @@ query btcPriceList($range: PriceGraphRange!) {
       base
       offset
       currencyUnit
+      __typename
+    }
+    __typename
+  }
+}
+
+query businessAddressEnrich($address: String!) {
+  businessAddressEnrich(address: $address) {
+    formattedAddress
+    latitude
+    longitude
+    errors {
+      message
+      code
       __typename
     }
     __typename
