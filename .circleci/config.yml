@@ -113,29 +113,12 @@ jobs:
       - run:
           name: build
           command: |
-            cd ios
-            sed -i'' -e "s/MARKETING_VERSION.*/MARKETING_VERSION = $PUBLIC_VERSION;/g" LNFlash.xcodeproj/project.pbxproj
-
-            echo "=== Running Fastlane with verbose logs ==="
-            export FASTLANE_SKIP_UPDATE_CHECK=true
-            export FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT=120
-            export FASTLANE_XCODEBUILD_LOG_FORMATTER="xcbeautify"
-
-            bundle exec fastlane build --verbose 2>&1 | tee ios_build_output.log
+            cd ios  
+            bundle exec fastlane ios build --verbose
 
             mkdir -p ../artifacts
             cp ~/Library/Logs/gym/* ../artifacts/ || true
           no_output_timeout: 15m
-      - run:
-          name: Show last 200 lines of iOS build log
-          when: on_fail
-          command: |
-            echo "=== Last 200 lines of Fastlane log ==="
-            tail -n 200 ios/ios_build_output.log || true
-      - store_artifacts:
-          path: ios/ios_build_output.log
-      - store_artifacts:
-          path: artifacts
 workflows:
   build_ios_and_upload_to_bucket:
     when:
