@@ -1,53 +1,118 @@
-version: 2.1
+version: 2.2
+
+orbs:
+  gh: circleci/github-cli@2.0
+
+parameters:
+  version:
+    type: string
+    default: ""
+  platform:
+    type: string
+    default: ""
+  git_ref:
+    type: string
+    default: ""
+  gcs_directory:
+    type: string
+    default: ""
+  build_number:
+    type: string
+    default: ""
+  task:
+    type: string
+    default: ""
+  gcs_url:
+    type: string
+    default: ""
 
 jobs:
   build_ios:
     macos:
       xcode: 16.2
-    resource_class: macos.m1.medium.gen1 # 💡 balanced between performance & cost
+    resource_class: macos.m1.medium.gen1
+    environment:
+      PUBLIC_VERSION: << pipeline.parameters.version >>
+      BUILD_NUMBER: << pipeline.parameters.build_number >>
+      GCS_DIRECTORY: << pipeline.parameters.gcs_directory >>
     working_directory: ~/flash-mobile
     shell: /bin/bash --login -o pipefail
-    environment:
-      PUBLIC_VERSION: "0.1.0"
-      BUILD_NUMBER: "100"
-
     steps:
-      - checkout
-
       - run:
-          name: Install Ruby and Bundler
+          name: Install GitHub CLI
+          command: brew install gh
+      - run:
+          name: Install Google Cloud SDK
+          command: brew install google-cloud-sdk
+      - checkout:
+          path: ~/flash-mobile
+      - run: git checkout << pipeline.parameters.git_ref >>
+      - run:
+          name: Install Ruby 3.2.2
           command: |
             brew install rbenv ruby-build
+            rbenv init -
+            eval "$(rbenv init -)"
             rbenv install -s 3.2.2
             rbenv global 3.2.2
-            gem install bundler -v 2.2.30
-
+            ruby -v
       - run:
-          name: Install Dependencies
+          name: Install Bundler 2.2.30
+          command: |
+            gem install bundler:2.2.30
+            echo "export BUNDLE_PATH=$(bundle show --path)" >> $BASH_ENV
+            source $BASH_ENV
+      - add_ssh_keys:
+          fingerprints:
+            - "FQ7taFplUsR+JpFd3w6c5HXTyk3vEjMrX933W376bw4"
+      - run: HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask google-cloud-sdk || true
+      - run: echo $GCLOUD_BUCKET_KEY | base64 --decode > key.json
+      - run: gcloud auth activate-service-account --key-file key.json
+      - restore_cache:
+          key: 1-gem-{{ checksum "ios/Gemfile.lock" }}
+      - run: cd ios && bundle config set deployment 'true'
+      - run: cd ios && bundle config set --local path 'vendor/bundle'
+      - run: cd ios && bundle check || bundle install
+      - run: gem install cocoapods
+      - save_cache:
+          key: 1-gem-{{ checksum "ios/Gemfile.lock" }}
+          paths:
+            - ios/vendor
+      - restore_cache:
+          key: 1-yarn-{{ checksum "yarn.lock" }}-pod1-{{ checksum "ios/Podfile.lock" }}
+      - run: yarn install
+      - save_cache:
+          key: 1-yarn-{{ checksum "yarn.lock" }}-pod1-{{ checksum "ios/Podfile.lock" }}
+          paths:
+            - node_modules
+            - ios/Pods
+      - run:
+          name: Verify GitHub SSH access
+          command: ssh -T git@github.com || true
+      - run:
+          name: Import Apple Certificates
+          command: |
+            tmpfile=$(mktemp /tmp/wwdr-cert.cer)
+            curl -f -o $tmpfile https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer && security import $tmpfile ~/Library/Keychains/login.keychain-db
+      - run:
+          name: build
           command: |
             cd ios
-            bundle install
-            pod install
-
-      # 👇 Fastlane build (same as local), but skip signing/uploading for testing
+            sed -i'' -e "s/MARKETING_VERSION.*/MARKETING_VERSION = $PUBLIC_VERSION;/g" LNFlash.xcodeproj/project.pbxproj
+            bundle exec fastlane build 2>&1 | tee ios_build_output.log
+          no_output_timeout: 15m
       - run:
-          name: Build iOS (Debug mode, skip signing)
+          name: Show Xcode build log if Fastlane fails
+          when: on_fail
           command: |
-            cd ios
-            set -x
-            bundle exec fastlane gym \
-              --scheme "LNFlash" \
-              --configuration "Debug" \
-              --skip_codesigning true \
-              --skip_package_ipa true \
-              --clean \
-              --verbose 2>&1 | tee ios_build_output.log
-
+            echo "==== Showing gym log ===="
+            cat ~/Library/Logs/gym/Flash-LNFlash.log || echo "Log not found"
       - store_artifacts:
           path: ios/ios_build_output.log
-          destination: ios_build_output.log
 
 workflows:
-  build_ios_workflow:
+  build_ios:
+    when:
+      equal: [ios, << pipeline.parameters.platform >>]
     jobs:
       - build_ios
