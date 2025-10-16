@@ -1,74 +1,144 @@
 version: 2.1
+
+orbs:
+  gh: circleci/github-cli@2.0
+
+parameters:
+  version:
+    type: string
+    default: ""
+  platform:
+    type: string
+    default: ""
+  git_ref:
+    type: string
+    default: ""
+  gcs_directory:
+    type: string
+    default: ""
+  build_number:
+    type: string
+    default: ""
+  task:
+    type: string
+    default: ""
+  gcs_url:
+    type: string
+    default: ""
+
 jobs:
-  macos-build-and-test:
-    working_directory: ~/demo-react-native
+  build_ios:
     macos:
-      xcode: 11.3.0
+      xcode: 16.2
+    resource_class: macos.m1.medium.gen1
     environment:
-      FL_OUTPUT_DIR: output
-      FASTLANE_LANE: test
-
+      PUBLIC_VERSION: << pipeline.parameters.version >>
+      BUILD_NUMBER: << pipeline.parameters.build_number >>
+      GCS_DIRECTORY: << pipeline.parameters.gcs_directory >>
+    working_directory: ~/flash-mobile
+    shell: /bin/bash --login -o pipefail
     steps:
-      - checkout
+      # if workflow was triggered by github then don't run the test jobs
+      - run: |
+          if [ << pipeline.trigger_source >> = "webhook" ]; then
+              circleci-agent step halt
+          fi
+      - run:
+          name: Install GitHub CLI
+          command: |
+            brew install gh
+            gh --version
+      - run:
+          name: Install Google Cloud SDK
+          command: |
+            brew install google-cloud-sdk
+            gcloud --version
+      - checkout:
+          path: ~/flash-mobile
+      - run: git checkout << pipeline.parameters.git_ref >>
+      - run:
+          name: Install Ruby 3.2.2
+          command: |
+            brew install rbenv ruby-build
+            rbenv init -
+            eval "$(rbenv init -)"
+            rbenv install -s 3.2.2
+            rbenv global 3.2.2
+            ruby -v
+      - run:
+          name: Install Bundler 2.2.30
+          command: |
+            gem install bundler:2.2.30
+            echo "export BUNDLE_PATH=$(bundle show --path)" >> $BASH_ENV
+            source $BASH_ENV
+      - add_ssh_keys:
+          fingerprints:
+            - "FQ7taFplUsR+JpFd3w6c5HXTyk3vEjMrX933W376bw4"
+      - run: HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask google-cloud-sdk || true
+      - run: echo $GCLOUD_BUCKET_KEY | base64 --decode > key.json
+      - run: gcloud auth activate-service-account --key-file key.json
       - restore_cache:
-          key: yarn-v1-{{ checksum "yarn.lock" }}-{{ arch }}
-
-      - restore_cache:
-          key: node-v1-{{ checksum "package.json" }}-{{ arch }}
-
-      - run: yarn install
-
+          key: 1-gem-{{ checksum "ios/Gemfile.lock" }}
+      - run: cd ios && bundle config set deployment 'true'
+      - run: cd ios && bundle config set --local path 'vendor/bundle'
+      - run: cd ios && bundle check || bundle install
+      - run: gem install cocoapods
       - save_cache:
-          key: yarn-v1-{{ checksum "yarn.lock" }}-{{ arch }}
+          key: 1-gem-{{ checksum "ios/Gemfile.lock" }}
           paths:
-            - ~/.cache/yarn
-
+            - ios/vendor
+      - restore_cache:
+          key: 1-yarn-{{ checksum "yarn.lock" }}-pod1-{{ checksum "ios/Podfile.lock" }}
+      - run: yarn install
       - save_cache:
-          key: node-v1-{{ checksum "package.json" }}-{{ arch }}
+          key: 1-yarn-{{ checksum "yarn.lock" }}-pod1-{{ checksum "ios/Podfile.lock" }}
           paths:
             - node_modules
-
-      - restore_cache:
-          key: bundle-v1-{{ checksum "ios/Gemfile.lock" }}-{{ arch }}
-
-      #Pods directory is ignored to match default RN setup, but can also check them into source control
-      #https://guides.cocoapods.org/using/using-cocoapods.html#should-i-check-the-pods-directory-into-source-control
-      - restore_cache:
-          key: pods-v1-{{ checksum "ios/Podfile.lock" }}-{{ arch }}
-
-      - run:
-          command: pod install
-          working_directory: ios
-
-      - run:
-          command: bundle install
-          working_directory: ios
-
-      - save_cache:
-          key: bundle-v1-{{ checksum "ios/Gemfile.lock" }}-{{ arch }}
-          paths:
-            - vendor/bundle
-
-      - save_cache:
-          key: pods-v1-{{ checksum "ios/Podfile.lock" }}-{{ arch }}
-          paths:
             - ios/Pods
-
       - run:
-          name: Fastlane
-          command: bundle exec fastlane $FASTLANE_LANE
-          working_directory: ios
+          name: Verify GitHub SSH access
+          command: ssh -T git@github.com || true
+      - run:
+          name: Import Apple Certificates
+          command: |
+            tmpfile=$(mktemp /tmp/wwdr-cert.cer)
+            curl -f -o $tmpfile https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer && security import $tmpfile ~/Library/Keychains/login.keychain-db
+      - run:
+          name: Clean CocoaPods and DerivedData
+          command: |
+            rm -rf ~/Library/Developer/Xcode/DerivedData
+            rm -rf ios/Pods
+            rm -rf ios/Podfile.lock
+            cd ios && pod deintegrate && pod install --repo-update
+      - run:
+          name: build
+          command: |
+            cd ios
+            sed -i'' -e "s/MARKETING_VERSION.*/MARKETING_VERSION = $PUBLIC_VERSION;/g" LNFlash.xcodeproj/project.pbxproj
 
+            echo "=== Running Fastlane with verbose logs ==="
+            export FASTLANE_SKIP_UPDATE_CHECK=true
+            export FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT=120
+            export FASTLANE_XCODEBUILD_LOG_FORMATTER="xcbeautify"
+
+            bundle exec fastlane build --verbose 2>&1 | tee ios_build_output.log
+
+            mkdir -p ../artifacts
+            cp ~/Library/Logs/gym/* ../artifacts/ || true
+          no_output_timeout: 15m
+      - run:
+          name: Show last 200 lines of iOS build log
+          when: on_fail
+          command: |
+            echo "=== Last 200 lines of Fastlane log ==="
+            tail -n 200 ios/ios_build_output.log || true
       - store_artifacts:
-          path: output
-
-      - store_test_results:
-          path: output/scan
-
+          path: ios/ios_build_output.log
+      - store_artifacts:
+          path: artifacts
 workflows:
-  node-android-ios:
+  build_ios_and_upload_to_bucket:
+    when:
+      equal: [ios, << pipeline.parameters.platform >>]
     jobs:
-      - node
-      - macos-build-and-test:
-          requires:
-            - node
+      - build_ios
