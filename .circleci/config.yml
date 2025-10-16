@@ -115,22 +115,27 @@ jobs:
           command: |
             cd ios
             sed -i'' -e "s/MARKETING_VERSION.*/MARKETING_VERSION = $PUBLIC_VERSION;/g" LNFlash.xcodeproj/project.pbxproj
-            bundle exec fastlane build 2>&1 | tee ios_build_output.log
+
+            echo "=== Running Fastlane with verbose logs ==="
+            export FASTLANE_SKIP_UPDATE_CHECK=true
+            export FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT=120
+            export FASTLANE_XCODEBUILD_LOG_FORMATTER="xcbeautify"
+
+            bundle exec fastlane build --verbose 2>&1 | tee ios_build_output.log
+
+            mkdir -p ../artifacts
+            cp ~/Library/Logs/gym/* ../artifacts/ || true
           no_output_timeout: 15m
       - run:
-          name: Show Xcode build log if Fastlane fails
+          name: Show last 200 lines of iOS build log
           when: on_fail
           command: |
-            echo "==== Showing gym log ===="
-            cat ~/Library/Logs/gym/Flash-LNFlash.log || echo "Log not found"
-      - run:
-          name: upload to gcs
-          command: |
-            timestamp=$(date +%s)
-            gsutil cp -r ~/flash-mobile/ios/Flash.ipa gs://flash-mobile-build/flash-mobile/$GCS_DIRECTORY/flash-mobile-$timestamp-v${PUBLIC_VERSION}/
-            gsutil cp -r ~/flash-mobile/ios/Flash.app.dSYM.zip gs://flash-mobile-build/flash-mobile/$GCS_DIRECTORY/flash-mobile-$timestamp-v${PUBLIC_VERSION}/
+            echo "=== Last 200 lines of Fastlane log ==="
+            tail -n 200 ios/ios_build_output.log || true
       - store_artifacts:
           path: ios/ios_build_output.log
+      - store_artifacts:
+          path: artifacts
 workflows:
   build_ios_and_upload_to_bucket:
     when:
