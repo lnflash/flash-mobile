@@ -1,6 +1,7 @@
 import { Platform } from "react-native"
 import DeviceInfo from "react-native-device-info"
 import { parsePhoneNumber } from "libphonenumber-js"
+import RNFS from "react-native-fs"
 
 // hooks
 import { useActivityIndicator } from "./useActivityIndicator"
@@ -14,8 +15,7 @@ import {
   setPersonalInfo,
 } from "@app/store/redux/slices/accountUpgradeSlice"
 
-// supabase
-import { fetchUser, insertUser, updateUser, uploadFile } from "@app/supabase"
+import { useBusinessAccountUpgradeRequestMutation, HomeAuthedDocument } from "@app/graphql/generated"
 
 export const useAccountUpgrade = () => {
   const dispatch = useAppDispatch()
@@ -25,48 +25,15 @@ export const useAccountUpgrade = () => {
   )
   const { toggleActivityIndicator } = useActivityIndicator()
 
+  const [businessAccountUpgradeRequestMutation] = useBusinessAccountUpgradeRequestMutation({
+    refetchQueries: [HomeAuthedDocument],
+  })
+
   const fetchAccountUpgrade = async (phone?: string) => {
-    if (userData.phone || phone) {
-      toggleActivityIndicator(true)
-      const res = await fetchUser(userData.phone || phone)
-      if (res) {
-        const parsedPhone = parsePhoneNumber(userData.phone || phone)
-        dispatch(
-          setAccountUpgrade({
-            id: res.id,
-            accountType: res.account_type,
-            upgradeCompleted: res.signup_completed,
-          }),
-        )
-        dispatch(
-          setPersonalInfo({
-            fullName: res.name,
-            countryCode: parsedPhone.country,
-            phoneNumber: parsedPhone.nationalNumber,
-            email: res.email,
-          }),
-        )
-        dispatch(
-          setBusinessInfo({
-            businessName: res.business_name,
-            businessAddress: res.business_address,
-            lat: res.latitude,
-            lng: res.longitude,
-            terminalRequested: res.terminal_requested,
-          }),
-        )
-        dispatch(
-          setBankInfo({
-            bankName: res.bank_name,
-            bankBranch: res.bank_branch,
-            bankAccountType: res.bank_account_type,
-            currency: res.account_currency,
-            accountNumber: res.bank_account_number,
-          }),
-        )
-      }
-      toggleActivityIndicator(false)
-    }
+    // Note: This function previously fetched from Supabase
+    // Now we rely on the GraphQL backend data from queries
+    // This function may no longer be needed, but keeping for compatibility
+    console.log("fetchAccountUpgrade called - functionality moved to GraphQL queries")
   }
 
   const submitAccountUpgrade = async () => {
@@ -77,42 +44,58 @@ export const useAccountUpgrade = () => {
       personalInfo.countryCode,
     )
 
-    let id_image_url = undefined
-    if (accountType === "merchant") {
-      id_image_url = await uploadFile(bankInfo.idDocument)
+    let idDocumentBase64 = undefined
+    if (accountType === "merchant" && bankInfo.idDocument) {
+      try {
+        // Convert image file to base64
+        const base64String = await RNFS.readFile(
+          bankInfo.idDocument.uri,
+          "base64",
+        )
+        idDocumentBase64 = `data:${bankInfo.idDocument.type};base64,${base64String}`
+      } catch (err) {
+        console.log("Error converting ID document to base64:", err)
+      }
     }
 
-    const data = {
-      account_type: accountType,
-      name: personalInfo.fullName,
+    const input = {
+      accountType: accountType,
+      fullName: personalInfo.fullName,
       phone: parsedPhoneNumber.number,
       email: personalInfo.email,
-      business_name: businessInfo.businessName,
-      business_address: businessInfo.businessAddress,
+      businessName: businessInfo.businessName,
+      businessAddress: businessInfo.businessAddress,
       latitude: businessInfo.lat,
       longitude: businessInfo.lng,
-      bank_name: bankInfo.bankName,
-      bank_branch: bankInfo.bankBranch,
-      bank_account_type: bankInfo.bankAccountType,
-      account_currency: bankInfo.currency,
-      bank_account_number: bankInfo.accountNumber,
-      id_image_url: id_image_url,
-      terms_accepted: true,
-      terminal_requested: businessInfo.terminalRequested,
-      wants_terminal: businessInfo.terminalRequested,
-      client_version: readableVersion,
-      device_info: Platform.OS,
-      signup_completed: undefined,
+      terminalRequested: businessInfo.terminalRequested,
+      bankName: bankInfo.bankName,
+      bankBranch: bankInfo.bankBranch,
+      bankAccountType: bankInfo.bankAccountType,
+      accountCurrency: bankInfo.currency,
+      bankAccountNumber: bankInfo.accountNumber,
+      idDocumentBase64: idDocumentBase64,
+      clientVersion: readableVersion,
+      deviceInfo: Platform.OS,
     }
 
-    let res = null
-    if (!id) {
-      res = await insertUser(data)
-    } else {
-      res = await updateUser(id, data)
+    try {
+      const { data } = await businessAccountUpgradeRequestMutation({
+        variables: { input },
+      })
+
+      toggleActivityIndicator(false)
+
+      if (data?.businessAccountUpgradeRequest?.errors?.length) {
+        console.error("Upgrade request errors:", data.businessAccountUpgradeRequest.errors)
+        return false
+      }
+
+      return data?.businessAccountUpgradeRequest?.success ?? false
+    } catch (err) {
+      console.log("BUSINESS ACCOUNT UPGRADE REQUEST ERR: ", err)
+      toggleActivityIndicator(false)
+      return false
     }
-    toggleActivityIndicator(false)
-    return res
   }
 
   return { fetchAccountUpgrade, submitAccountUpgrade }

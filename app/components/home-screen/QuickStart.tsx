@@ -21,7 +21,7 @@ import { QuickStartAdvancedMode } from "../advanced-mode-modal"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { AccountLevel, useHomeAuthedQuery } from "@app/graphql/generated"
+import { AccountLevel, useHomeAuthedQuery, useAccountUpgradeRequestStatusQuery } from "@app/graphql/generated"
 
 // utils
 import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
@@ -62,7 +62,8 @@ const QuickStart = () => {
     if (credentials) setHasRecoveryPhrase(true)
   }
 
-  const upgradePending = false
+  const { data: upgradeStatusData } = useAccountUpgradeRequestStatusQuery()
+  const upgradePending = upgradeStatusData?.accountUpgradeRequestStatus?.hasPendingRequest ?? false
 
   let carouselData = [
     {

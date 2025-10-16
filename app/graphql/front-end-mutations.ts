@@ -195,3 +195,15 @@ gql`
     }
   }
 `
+
+gql`
+  mutation businessAccountUpgradeRequest($input: BusinessAccountUpgradeRequestInput!) {
+    businessAccountUpgradeRequest(input: $input) {
+      errors {
+        message
+        code
+      }
+      success
+    }
+  }
+`

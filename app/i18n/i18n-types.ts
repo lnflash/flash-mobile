@@ -1721,11 +1721,11 @@ type RootTranslation = {
 		 */
 		addFlashcard: string
 		/**
-		 * Upgrade your account
+		 * U​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t
 		 */
 		upgradeTitle: string
 		/**
-		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
+		 * U​n​l​o​c​k​ ​y​o​u​r​ ​f​u​l​l​ ​p​o​t​e​n​t​i​a​l​!​ ​U​p​g​r​a​d​e​ ​t​o​ ​b​o​o​s​t​ ​v​i​s​i​b​i​l​i​t​y​,​ ​l​i​m​i​t​s​,​ ​a​n​d​ ​p​a​y​o​u​t​s​.
 		 */
 		upgradeDesc: string
 		/**
@@ -4597,6 +4597,7 @@ type RootTranslation = {
 		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
 		 */
 		txId: string
+<<<<<<< HEAD
 	},
 	AccountUpgrade: {
 		/**
@@ -4958,6 +4959,162 @@ type RootTranslation = {
 			 */
 			goToSettings: string
 		}
+	}
+	AccountUpgrade: {
+		/**
+		 * A​c​c​o​u​n​t​ ​T​y​p​e
+		 */
+		accountType: string
+		/**
+		 * P​e​r​s​o​n​a​l
+		 */
+		personal: string
+		/**
+		 * S​e​c​u​r​e​ ​y​o​u​r​ ​w​a​l​l​e​t​ ​w​i​t​h​ ​p​h​o​n​e​ ​a​n​d​ ​e​m​a​i​l​.​ ​S​t​a​y​ ​s​a​f​e​ ​a​n​d​ ​r​e​c​o​v​e​r​ ​e​a​s​i​l​y​ ​i​f​ ​n​e​e​d​e​d
+		 */
+		personalDesc: string
+		/**
+		 * P​r​o
+		 */
+		pro: string
+		/**
+		 * A​c​c​e​p​t​ ​p​a​y​m​e​n​t​s​ ​a​n​d​ ​g​e​t​ ​d​i​s​c​o​v​e​r​e​d​ ​o​n​ ​t​h​e​ ​m​a​p​.​ ​R​e​q​u​i​r​e​s​ ​a​ ​b​u​s​i​n​e​s​s​ ​n​a​m​e​ ​a​n​d​ ​l​o​c​a​t​i​o​n​.
+		 */
+		proDesc: string
+		/**
+		 * M​e​r​c​h​a​n​t
+		 */
+		merchant: string
+		/**
+		 * G​i​v​e​ ​r​e​w​a​r​d​s​,​ ​a​p​p​e​a​r​ ​o​n​ ​t​h​e​ ​m​a​p​,​ ​a​n​d​ ​s​e​t​t​l​e​ ​t​o​ ​y​o​u​r​ ​b​a​n​k​.​ ​I​D​ ​a​n​d​ ​b​a​n​k​ ​i​n​f​o​ ​r​e​q​u​i​r​e​d​.
+		 */
+		merchantDesc: string
+		/**
+		 * P​e​r​s​o​n​a​l​ ​I​n​f​o​r​m​a​t​i​o​n
+		 */
+		personalInfo: string
+		/**
+		 * F​u​l​l​ ​n​a​m​e
+		 */
+		fullName: string
+		/**
+		 * P​h​o​n​e​ ​N​u​m​b​e​r
+		 */
+		phoneNumber: string
+		/**
+		 * E​m​a​i​l​ ​A​d​d​r​e​s​s
+		 */
+		email: string
+		/**
+		 *  ​(​O​p​t​i​o​n​a​l​)
+		 */
+		optional: string
+		/**
+		 * V​a​l​i​d​a​t​i​o​n
+		 */
+		validation: string
+		/**
+		 * V​a​l​i​d​a​t​i​o​n​ ​c​o​d​e
+		 */
+		validationCode: string
+		/**
+		 * B​u​s​i​n​e​s​s​ ​I​n​f​o​r​m​a​t​i​o​n
+		 */
+		businessInfo: string
+		/**
+		 * B​u​s​i​n​e​s​s​ ​N​a​m​e
+		 */
+		businessName: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​n​a​m​e
+		 */
+		businessNamePlaceholder: string
+		/**
+		 * B​u​s​i​n​e​s​s​ ​A​d​d​r​e​s​s
+		 */
+		businessAddress: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​a​d​d​r​e​s​s
+		 */
+		businessAddressPlaceholder: string
+		/**
+		 * D​o​ ​y​o​u​ ​w​a​n​t​ ​a​ ​F​l​a​s​h​ ​t​e​r​m​i​n​a​l​?
+		 */
+		flashTerminal: string
+		/**
+		 * A​ ​F​l​a​s​h​ ​T​e​r​m​i​n​a​l​ ​i​s​ ​a​ ​s​m​a​r​t​ ​d​e​v​i​c​e​ ​t​h​a​t​ ​c​a​n​ ​a​c​c​e​p​t​ ​p​a​y​m​e​n​t​ ​v​i​a​ ​F​l​a​s​h​ ​f​o​r​ ​y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​a​n​d​ ​p​r​i​n​t​ ​r​e​c​e​i​p​t​s​.​ ​A​ ​c​u​s​t​o​m​e​r​ ​s​e​r​v​i​c​e​ ​r​e​p​r​e​s​e​n​t​a​t​i​v​e​ ​w​i​l​l​ ​c​o​n​t​a​c​t​ ​y​o​u​ ​i​f​ ​y​o​u​ ​c​h​e​c​k​ ​t​h​i​s​ ​b​o​x​.
+		 */
+		flashTerminalTooltip: string
+		/**
+		 * B​a​n​k​i​n​g​ ​I​n​f​o​r​m​a​t​i​o​n
+		 */
+		bankingInfo: string
+		/**
+		 * B​a​n​k​ ​N​a​m​e
+		 */
+		bankName: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​b​a​n​k​ ​n​a​m​e
+		 */
+		bankNamePlaceholder: string
+		/**
+		 * B​a​n​k​ ​B​r​a​n​c​h
+		 */
+		bankBranch: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​b​a​n​k​ ​b​r​a​n​c​h
+		 */
+		bankBranchPlaceholder: string
+		/**
+		 * A​c​c​o​u​n​t​ ​T​y​p​e
+		 */
+		bankAccountType: string
+		/**
+		 * S​e​l​e​c​t​ ​a​c​c​o​u​n​t​ ​t​y​p​e
+		 */
+		selectBankAccountType: string
+		/**
+		 * C​u​r​r​e​n​c​y
+		 */
+		currency: string
+		/**
+		 * S​e​l​e​c​t​ ​C​u​r​r​e​n​c​y
+		 */
+		selectCurrency: string
+		/**
+		 * A​c​c​o​u​n​t​ ​N​u​m​b​e​r
+		 */
+		accountNum: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​n​u​m​b​e​r
+		 */
+		accountNumPlaceholder: string
+		/**
+		 * U​p​l​o​a​d​ ​I​D​ ​D​o​c​u​m​e​n​t
+		 */
+		uploadId: string
+		/**
+		 * Y​o​u​ ​s​u​c​c​e​s​s​f​u​l​l​y​ ​r​e​q​u​e​s​t​e​d​ ​t​o​ ​u​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​{​a​c​c​o​u​n​t​T​y​p​e​}
+		 * @param {string} accountType
+		 */
+		successTitle: RequiredParams<'accountType'>
+		/**
+		 * *​ ​P​l​e​a​s​e​ ​e​n​t​e​r​ ​t​h​e​ ​t​e​s​t​ ​t​r​a​n​s​a​c​t​i​o​n​ ​a​m​o​u​n​t​ ​t​o​ ​c​o​n​f​i​r​m​ ​y​o​u​r​ ​b​a​n​k​ ​d​e​t​a​i​l​s​.
+		 */
+		successDesc: string
+		/**
+		 * T​r​a​n​s​a​c​t​i​o​n​ ​V​e​r​i​f​i​c​a​t​i​o​n
+		 */
+		transactionVerification: string
+		/**
+		 * T​o​ ​c​o​m​p​l​e​t​e​ ​u​p​g​r​a​d​i​n​g​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​M​E​R​C​H​A​N​T​,​ ​e​n​t​e​r​ ​t​h​e​ ​t​e​s​t​ ​t​r​a​n​s​a​c​t​i​o​n​ ​a​m​o​u​n​t​ ​w​e​ ​s​e​n​t​ ​t​o​ ​y​o​u​r​ ​b​a​n​k​ ​a​c​c​o​u​n​t​ ​{​a​c​c​o​u​n​t​N​u​m​}​ ​t​o​ ​c​o​n​f​i​r​m​ ​y​o​u​r​ ​b​a​n​k​ ​d​e​t​a​i​l​s​.
+		 * @param {string} accountNum
+		 */
+		transactionTitle: RequiredParams<'accountNum'>
+		/**
+		 * T​r​a​n​s​a​c​t​i​o​n​ ​a​m​o​u​n​t
+		 */
+		transactionAmount: string
 	}
 }
 
@@ -9690,7 +9847,7 @@ export type TranslationFunctions = {
 		 */
 		email: () => LocalizedString
 		/**
-		 * Optional
+		 *  (Optional)
 		 */
 		optional: () => LocalizedString
 		/**
@@ -9762,7 +9919,7 @@ export type TranslationFunctions = {
 		 */
 		currency: () => LocalizedString
 		/**
-		 * Select currency
+		 * Select Currency
 		 */
 		selectCurrency: () => LocalizedString
 		/**
@@ -9786,7 +9943,7 @@ export type TranslationFunctions = {
 		 */
 		successDesc: () => LocalizedString
 		/**
-		 * * Transaction Verification
+		 * Transaction Verification
 		 */
 		transactionVerification: () => LocalizedString
 		/**

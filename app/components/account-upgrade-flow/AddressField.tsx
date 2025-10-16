@@ -1,16 +1,11 @@
-import React, { useEffect, useRef, useState } from "react"
-import { Modal, Platform, TouchableOpacity, View } from "react-native"
+import React, { useState } from "react"
+import { ActivityIndicator, TextInput, View } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
-import {
-  GooglePlacesAutocomplete,
-  GooglePlacesAutocompleteRef,
-} from "react-native-google-places-autocomplete"
 
 // components
 import { PrimaryBtn } from "../buttons"
 
-// env
-import { GOOGLE_PLACE_API_KEY } from "@env"
+import { useBusinessAddressEnrichLazyQuery } from "@app/graphql/generated"
 
 type Props = {
   label: string
@@ -30,71 +25,79 @@ const AddressField: React.FC<Props> = ({
   const styles = useStyles()
   const { colors } = useTheme().theme
 
-  const ref = useRef<GooglePlacesAutocompleteRef>(null)
-  const [isFocused, setIsFocused] = useState(false)
-  const [isVisible, setIsVisible] = useState(false)
+  const [inputValue, setInputValue] = useState(value || "")
+  const [loading, setLoading] = useState(false)
+  const [enrichError, setEnrichError] = useState<string>()
 
-  useEffect(() => {
-    if (isVisible && ref.current) {
-      ref.current.focus()
+  const [enrichAddress] = useBusinessAddressEnrichLazyQuery()
+
+  const handleEnrichAddress = async () => {
+    if (!inputValue || inputValue.length < 3) {
+      setEnrichError("Please enter a valid address")
+      return
     }
-  }, [isVisible, ref.current])
+
+    setLoading(true)
+    setEnrichError(undefined)
+
+    try {
+      const { data } = await enrichAddress({
+        variables: { address: inputValue },
+      })
+
+      if (data?.businessAddressEnrich?.errors?.length) {
+        setEnrichError(data.businessAddressEnrich.errors[0].message)
+      } else if (data?.businessAddressEnrich?.formattedAddress) {
+        onAddressSelect(
+          data.businessAddressEnrich.formattedAddress,
+          data.businessAddressEnrich.latitude ?? undefined,
+          data.businessAddressEnrich.longitude ?? undefined,
+        )
+      }
+    } catch (err) {
+      console.log("Address enrichment error:", err)
+      setEnrichError("Failed to validate address. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <View style={styles.container}>
       <Text type="bl" bold>
         {label}
       </Text>
-      <TouchableOpacity style={styles.input} onPress={() => setIsVisible(true)}>
-        <Text type="bl" color={value ? colors.black : colors.placeholder}>
-          {!!value ? value : placeholder}
-        </Text>
-      </TouchableOpacity>
-      {!!errorMsg && (
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder={placeholder}
+          placeholderTextColor={colors.placeholder}
+          value={inputValue}
+          onChangeText={(text) => {
+            setInputValue(text)
+            setEnrichError(undefined)
+          }}
+        />
+      </View>
+      {(errorMsg || enrichError) && (
         <Text type="caption" color={colors.red}>
-          {errorMsg}
+          {errorMsg || enrichError}
         </Text>
       )}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isVisible}
-        onRequestClose={() => setIsVisible(false)}
-      >
-        <View style={styles.modal}>
-          <GooglePlacesAutocomplete
-            ref={ref}
-            listViewDisplayed="auto"
-            placeholder={placeholder}
-            onFail={(err) => console.log("Google places auto complete", err)}
-            onNotFound={() => console.log("Google places auto complete not found")}
-            fetchDetails={true}
-            onPress={(data, details) => {
-              setIsVisible(false)
-              onAddressSelect(
-                data.description,
-                details?.geometry.location.lat,
-                details?.geometry.location.lng,
-              )
-            }}
-            query={{
-              key: GOOGLE_PLACE_API_KEY,
-              language: "en",
-            }}
-            styles={{
-              textInput: [
-                styles.googlePlace,
-                isFocused ? { borderColor: colors.primary } : {},
-              ],
-            }}
-            textInputProps={{
-              onFocus: () => setIsFocused(true),
-              onBlur: () => setIsFocused(false),
-            }}
-          />
-          <PrimaryBtn label="Cancel" onPress={() => setIsVisible(false)} />
+      {value && (
+        <View style={styles.selectedAddress}>
+          <Text type="caption" color={colors.grey3}>
+            Selected: {value}
+          </Text>
         </View>
-      </Modal>
+      )}
+      <PrimaryBtn
+        label={loading ? "Validating..." : "Validate Address"}
+        onPress={handleEnrichAddress}
+        disabled={loading || !inputValue}
+        btnStyle={styles.btn}
+      />
+      {loading && <ActivityIndicator style={styles.loader} />}
     </View>
   )
 }
@@ -105,32 +108,32 @@ const useStyles = makeStyles(({ colors }) => ({
   container: {
     marginBottom: 15,
   },
+  inputContainer: {
+    marginTop: 5,
+    marginBottom: 2,
+  },
   input: {
     paddingHorizontal: 15,
     paddingVertical: 20,
-    marginTop: 5,
-    marginBottom: 2,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.grey4,
-    backgroundColor: colors.grey5,
-  },
-  modal: {
-    flex: 1,
-    backgroundColor: colors.white,
-    padding: 20,
-  },
-  googlePlace: {
-    height: Platform.OS === "ios" ? 51 : 60,
-    paddingHorizontal: 15,
-    padding: 20,
-    marginTop: 5,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderRadius: 10,
     borderColor: colors.grey4,
     backgroundColor: colors.grey5,
     fontSize: 16,
     fontFamily: "Sora-Regular",
+    color: colors.black,
+    width: "100%",
+  },
+  btn: {
+    marginTop: 10,
+  },
+  loader: {
+    marginTop: 10,
+  },
+  selectedAddress: {
+    marginTop: 5,
+    padding: 8,
+    backgroundColor: colors.grey5,
+    borderRadius: 8,
   },
 }))
