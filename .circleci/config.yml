@@ -38,86 +38,79 @@ jobs:
     working_directory: ~/flash-mobile
     shell: /bin/bash --login -o pipefail
     steps:
-      - checkout
-
+      # if workflow was triggered by github then don't run the test jobs
+      - run: |
+          if [ << pipeline.trigger_source >> = "webhook" ]; then
+              circleci-agent step halt
+          fi
       - run:
-          name: Check out target git ref
-          command: git checkout << pipeline.parameters.git_ref >>
-
+          name: Install Google Cloud SDK
+          command: brew install google-cloud-sdk
+      - checkout:
+          path: ~/flash-mobile
+      - run: git checkout << pipeline.parameters.git_ref >>
       - run:
-          name: Set up Ruby 3.2.2 & Bundler
+          name: Install Ruby 3.2.2
           command: |
             brew install rbenv ruby-build
+            rbenv init -
             eval "$(rbenv init -)"
             rbenv install -s 3.2.2
             rbenv global 3.2.2
+      - run:
+          name: Install Bundler 2.2.30
+          command: |
             gem install bundler:2.2.30
-            ruby -v && bundle -v
-
+            echo "export BUNDLE_PATH=$(bundle show --path)" >> $BASH_ENV
+            source $BASH_ENV
+      - add_ssh_keys:
+          fingerprints:
+            - "FQ7taFplUsR+JpFd3w6c5HXTyk3vEjMrX933W376bw4"
+      - run: HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask google-cloud-sdk || true
+      - run: echo $GCLOUD_BUCKET_KEY | base64 --decode > key.json
+      - run: gcloud auth activate-service-account --key-file key.json
       - restore_cache:
           key: 1-gem-{{ checksum "ios/Gemfile.lock" }}
-
-      - run:
-          name: Install Ruby gems
-          command: |
-            cd ios
-            bundle config set --local path 'vendor/bundle'
-            bundle check || bundle install --jobs=4 --retry=3
-
+      - run: cd ios && bundle config set deployment 'true'
+      - run: cd ios && bundle config set --local path 'vendor/bundle'
+      - run: cd ios && bundle check || bundle install
+      - run: gem install cocoapods
       - save_cache:
           key: 1-gem-{{ checksum "ios/Gemfile.lock" }}
           paths:
             - ios/vendor
-
       - restore_cache:
           key: 1-yarn-{{ checksum "yarn.lock" }}-pod1-{{ checksum "ios/Podfile.lock" }}
-
-      - run:
-          name: Install JS and iOS dependencies
-          command: yarn install
-
+      - run: yarn install
       - save_cache:
           key: 1-yarn-{{ checksum "yarn.lock" }}-pod1-{{ checksum "ios/Podfile.lock" }}
           paths:
             - node_modules
             - ios/Pods
-
       - run:
-          name: Authenticate with Google Cloud
+          name: Import Apple Certificates
           command: |
-            echo $GCLOUD_BUCKET_KEY | base64 --decode > key.json
-            gcloud auth activate-service-account --key-file key.json
-
+            tmpfile=$(mktemp /tmp/wwdr-cert.cer)
+            curl -f -o $tmpfile https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer && security import $tmpfile ~/Library/Keychains/login.keychain-db
       - run:
-          name: Import Apple WWDR certificate
-          command: |
-            curl -fsSL https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer \
-              -o /tmp/AppleWWDRCAG3.cer
-            security import /tmp/AppleWWDRCAG3.cer -k ~/Library/Keychains/login.keychain-db
-
-      - run:
-          name: Build and archive iOS app
+          name: build
           command: |
             cd ios
             sed -i'' -e "s/MARKETING_VERSION.*/MARKETING_VERSION = $PUBLIC_VERSION;/g" LNFlash.xcodeproj/project.pbxproj
             bundle exec fastlane build 2>&1 | tee ios_build_output.log
           no_output_timeout: 15m
-
       - run:
           name: Show Xcode build log if Fastlane fails
           when: on_fail
           command: |
             echo "==== Showing gym log ===="
             cat ~/Library/Logs/gym/Flash-LNFlash.log || echo "Log not found"
-
       - run:
-          name: Upload build artifacts to GCS
+          name: upload to gcs
           command: |
             timestamp=$(date +%s)
-            DEST=gs://flash-mobile-build/flash-mobile/$GCS_DIRECTORY/flash-mobile-$timestamp-v${PUBLIC_VERSION}/
-            gsutil cp ios/Flash.ipa $DEST
-            gsutil cp ios/Flash.app.dSYM.zip $DEST
-
+            gsutil cp -r ~/flash-mobile/ios/Flash.ipa gs://flash-mobile-build/flash-mobile/$GCS_DIRECTORY/flash-mobile-$timestamp-v${PUBLIC_VERSION}/
+            gsutil cp -r ~/flash-mobile/ios/Flash.app.dSYM.zip gs://flash-mobile-build/flash-mobile/$GCS_DIRECTORY/flash-mobile-$timestamp-v${PUBLIC_VERSION}/
       - store_artifacts:
           path: ios/ios_build_output.log
 
