@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid"
 import * as Keychain from "react-native-keychain"
-import analytics from "@react-native-firebase/analytics"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getAnalytics } from "@react-native-firebase/analytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { generateSecureRandom } from "react-native-securerandom"
 
 // utils
@@ -79,12 +79,12 @@ export const useCreateAccount = () => {
       }
 
       logCreatedDeviceAccount()
-      analytics().logLogin({ method: "device" })
+      getAnalytics().logLogin({ method: "device" })
       return authToken
     } catch (error) {
       logCreateDeviceAccountFailure()
       if (error instanceof Error) {
-        crashlytics().recordError(error)
+        getCrashlytics().recordError(error)
       }
       return false
     }

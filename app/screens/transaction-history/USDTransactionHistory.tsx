@@ -1,5 +1,5 @@
 import React, { useMemo } from "react"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { SectionList, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { Text, makeStyles } from "@rneui/themed"
@@ -41,7 +41,7 @@ export const USDTransactionHistory: React.FC = () => {
 
   if (error) {
     console.error(error)
-    crashlytics().recordError(error)
+    getCrashlytics().recordError(error)
     toastShow({
       message: (translations) => translations.common.transactionsError(),
     })

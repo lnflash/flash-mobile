@@ -3,11 +3,11 @@ import { Platform, PermissionsAndroid } from "react-native"
 
 import { ApolloClient, gql } from "@apollo/client"
 import { DeviceNotificationTokenCreateDocument } from "@app/graphql/generated"
-import crashlytics from "@react-native-firebase/crashlytics"
-import messaging from "@react-native-firebase/messaging"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
+import { getMessaging, AuthorizationStatus } from "@react-native-firebase/messaging"
 
 // No op if the permission has already been requested
-export const requestNotificationPermission = () => messaging().requestPermission()
+export const requestNotificationPermission = () => getMessaging().requestPermission()
 
 gql`
   mutation deviceNotificationTokenCreate($input: DeviceNotificationTokenCreateInput!) {
@@ -28,14 +28,14 @@ export const addDeviceToken = async (client: ApolloClient<unknown>): Promise<voi
   }
   addingDeviceToken = true
   try {
-    const deviceToken = await messaging().getToken()
+    const deviceToken = await getMessaging().getToken()
     await client.mutate({
       mutation: DeviceNotificationTokenCreateDocument,
       variables: { input: { deviceToken } },
     })
   } catch (err: unknown) {
     if (err instanceof Error) {
-      crashlytics().recordError(err)
+      getCrashlytics().recordError(err)
     }
     console.error(err, "impossible to upload device token")
   }
@@ -46,10 +46,10 @@ export const addDeviceToken = async (client: ApolloClient<unknown>): Promise<voi
 
 export const hasNotificationPermission = async (): Promise<boolean> => {
   if (Platform.OS === "ios") {
-    const authorizationStatus = await messaging().hasPermission()
+    const authorizationStatus = await getMessaging().hasPermission()
     return (
-      authorizationStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authorizationStatus === messaging.AuthorizationStatus.PROVISIONAL
+      authorizationStatus === AuthorizationStatus.AUTHORIZED ||
+      authorizationStatus === AuthorizationStatus.PROVISIONAL
     )
   }
 

@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react"
-import appCheck from "@react-native-firebase/app-check"
+import {
+  initializeAppCheck,
+  ReactNativeFirebaseAppCheckProvider,
+} from "@react-native-firebase/app-check"
 import Config from "react-native-config"
 
-const rnfbProvider = appCheck().newReactNativeFirebaseAppCheckProvider()
+const rnfbProvider = new ReactNativeFirebaseAppCheckProvider()
 rnfbProvider.configure({
   android: {
     provider: __DEV__ ? "debug" : "playIntegrity",
@@ -14,11 +17,14 @@ rnfbProvider.configure({
   },
 })
 
-appCheck().initializeAppCheck({ provider: rnfbProvider, isTokenAutoRefreshEnabled: true })
-
 export const getAppCheckToken = async (): Promise<string | undefined> => {
   try {
-    const result = await appCheck().getToken()
+    const appCheck = await initializeAppCheck(undefined, {
+      provider: rnfbProvider,
+      isTokenAutoRefreshEnabled: true,
+    })
+
+    const result = await appCheck.getToken(true)
     const token = result.token
     return token
   } catch (err) {
