@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react"
 import { View, Alert } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 
 // components
 import { PrimaryBtn } from "@app/components/buttons"
@@ -220,7 +220,9 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const handleCriticalError = useCallback(
     (error: any, context: string) => {
       console.error(`Critical error in ${context}:`, error)
-      crashlytics().recordError(error instanceof Error ? error : new Error(String(error)))
+      getCrashlytics().recordError(
+        error instanceof Error ? error : new Error(String(error)),
+      )
 
       // Show user-friendly error and offer to reload
       Alert.alert(
@@ -329,7 +331,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           } catch (error) {
             setIsLoadingLnurl(false)
             if (error instanceof Error) {
-              crashlytics().recordError(error)
+              getCrashlytics().recordError(error)
               if (error.message.includes("timed out")) {
                 setAsyncErrorMessage(
                   "Request timed out. Please check your connection and try again.",

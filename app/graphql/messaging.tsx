@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 
 import { useApolloClient } from "@apollo/client"
-import messaging from "@react-native-firebase/messaging"
+import { getMessaging } from "@react-native-firebase/messaging"
 
 import { HomeAuthedDocument } from "./generated"
 
@@ -10,7 +10,7 @@ export const MessagingContainer = () => {
   const client = useApolloClient()
 
   useEffect(() => {
-    const unsubscribe = messaging().onMessage(async (_remoteMessage) => {
+    const unsubscribe = getMessaging().onMessage(async (_remoteMessage) => {
       client.refetchQueries({ include: [HomeAuthedDocument] })
     })
 

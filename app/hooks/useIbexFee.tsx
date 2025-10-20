@@ -1,7 +1,7 @@
 import { useCallback } from "react"
 import { gql } from "@apollo/client"
 import { WalletAmount } from "@app/types/amounts"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { GetFee } from "@app/screens/send-bitcoin-screen/payment-details"
 import {
   WalletCurrency,
@@ -132,7 +132,7 @@ export const useIbexFee = <T extends WalletCurrency>() => {
         return feeResponse.amount
       } catch (err) {
         if (err instanceof Error) {
-          crashlytics().recordError(err)
+          getCrashlytics().recordError(err)
         }
         return undefined
       }

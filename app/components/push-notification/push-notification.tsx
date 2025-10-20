@@ -1,7 +1,7 @@
 import React, { useEffect } from "react"
 import { Linking } from "react-native"
 import notifee, { AndroidImportance } from "@notifee/react-native"
-import messaging, { FirebaseMessagingTypes } from "@react-native-firebase/messaging"
+import { getMessaging, FirebaseMessagingTypes } from "@react-native-firebase/messaging"
 
 // hooks
 import { useApolloClient } from "@apollo/client"
@@ -34,19 +34,19 @@ export const PushNotificationComponent = (): JSX.Element => {
     }
 
     // When the application is running, but in the background.
-    const unsubscribeBackground = messaging().onNotificationOpenedApp(
+    const unsubscribeBackground = getMessaging().onNotificationOpenedApp(
       (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
         followNotificationLink(remoteMessage)
       },
     )
 
-    const unsubscribeInApp = messaging().onMessage(async (remoteMessage) => {
+    const unsubscribeInApp = getMessaging().onMessage(async (remoteMessage) => {
       console.log("A new FCM message arrived!", remoteMessage)
       onDisplayNotification(remoteMessage)
     })
 
     // When the application is opened from a quit state.
-    messaging()
+    getMessaging()
       .getInitialNotification()
       .then((remoteMessage: FirebaseMessagingTypes.RemoteMessage | null) => {
         if (remoteMessage) {
@@ -66,7 +66,7 @@ export const PushNotificationComponent = (): JSX.Element => {
         const hasPermission = await hasNotificationPermission()
         if (hasPermission) {
           addDeviceToken(client)
-          const unsubscribeFromRefresh = messaging().onTokenRefresh(() =>
+          const unsubscribeFromRefresh = getMessaging().onTokenRefresh(() =>
             addDeviceToken(client),
           )
           return unsubscribeFromRefresh

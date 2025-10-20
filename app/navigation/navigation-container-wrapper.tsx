@@ -1,5 +1,5 @@
 import { PREFIX_LINKING } from "@app/config"
-import analytics from "@react-native-firebase/analytics"
+import { getAnalytics } from "@react-native-firebase/analytics"
 import {
   LinkingOptions,
   NavigationContainer,
@@ -130,7 +130,7 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
 
           if (routeName.current !== currentRouteName && currentRouteName) {
             /* eslint-disable camelcase */
-            analytics().logScreenView({
+            getAnalytics().logScreenView({
               screen_name: currentRouteName,
               screen_class: currentRouteName,
               is_manual_log: true,

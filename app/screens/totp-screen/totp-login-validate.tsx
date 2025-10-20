@@ -6,7 +6,7 @@ import { RouteProp, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import axios, { isAxiosError } from "axios"
 import React, { useCallback, useState } from "react"
-import analytics from "@react-native-firebase/analytics"
+import { getAnalytics } from "@react-native-firebase/analytics"
 
 type Props = {
   route: RouteProp<RootStackParamList, "totpLoginValidate">
@@ -48,7 +48,7 @@ export const TotpLoginValidateScreen: React.FC<Props> = ({ route }) => {
 
         const success = response.status === 200
         if (success) {
-          analytics().logLogin({
+          getAnalytics().logLogin({
             method: "email-2fa",
           })
 
