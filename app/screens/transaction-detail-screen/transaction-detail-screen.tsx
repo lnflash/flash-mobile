@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React from "react"
 import { Linking, TouchableWithoutFeedback, View, TouchableOpacity } from "react-native"
 import { makeStyles, Text, useTheme, Card } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -21,10 +21,40 @@ import { useAppConfig } from "@app/hooks"
 import { toWalletAmount } from "@app/types/amounts"
 import {
   SettlementVia,
-  useIbexTransactionDetailsFetchMutation,
+  useTransactionDetailsQuery,
 } from "@app/graphql/generated"
 import { getDescriptionDisplay } from "@app/graphql/transactions"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { gql } from "@apollo/client"
+
+gql`
+  query transactionDetails($input: TransactionDetailsInput!) {
+    transactionDetails(input: $input) {
+      errors {
+        message
+      }
+      transactionDetails {
+        id
+        accountId
+        amount
+        currency
+        status
+        type
+        createdAt
+        updatedAt
+        invoice
+        paymentHash
+        paymentPreimage
+        memo
+        address
+        txid
+        vout
+        confirmations
+        fee
+      }
+    }
+  }
+`
 
 type RowProps = {
   entry: string
@@ -87,26 +117,16 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
 
   const { formatMoneyAmount, formatCurrency } = useDisplayCurrency()
 
-  const [ibexDetails, setIbexDetails] = useState<any>(null)
-  const [fetchIbexDetails] = useIbexTransactionDetailsFetchMutation()
+  const { data: transactionDetailsData } = useTransactionDetailsQuery({
+    variables: {
+      input: {
+        transactionId: tx?.id || "",
+      },
+    },
+    skip: !tx?.id,
+  })
 
-  useEffect(() => {
-    if (tx?.id) {
-      fetchIbexDetails({
-        variables: {
-          input: {
-            ibexTransactionId: tx.id,
-          },
-        },
-      })
-        .then((result) => {
-          if (result.data?.ibexTransactionDetailsFetch?.transactionDetails) {
-            setIbexDetails(result.data.ibexTransactionDetailsFetch.transactionDetails)
-          }
-        })
-        .catch(() => {})
-    }
-  }, [tx?.id, fetchIbexDetails])
+  const ibexDetails = transactionDetailsData?.transactionDetails?.transactionDetails
 
   if (!tx || Object.keys(tx).length === 0)
     return <Text>{"No transaction found with this ID (should not happen)"}</Text>
@@ -198,10 +218,12 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
           {/* Show memo for Lightning or confirmations for onchain */}
           {(ibexDetails?.memo ||
             (settlementVia?.__typename === "SettlementViaOnChain" &&
-              ibexDetails?.confirmations !== undefined)) && (
+              ibexDetails?.confirmations !== undefined &&
+              ibexDetails?.confirmations !== null)) && (
             <View style={styles.memoContainer}>
               {settlementVia?.__typename === "SettlementViaOnChain" &&
-              ibexDetails?.confirmations !== undefined ? (
+              ibexDetails?.confirmations !== undefined &&
+              ibexDetails?.confirmations !== null ? (
                 <>
                   <Icon
                     name={
@@ -253,7 +275,7 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
                     style={styles.memoIcon}
                   />
                   <Text type="p1" style={styles.memoText}>
-                    {ibexDetails.memo}
+                    {ibexDetails?.memo}
                   </Text>
                 </>
               )}

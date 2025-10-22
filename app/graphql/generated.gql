@@ -286,36 +286,6 @@ mutation feedbackSubmit($input: FeedbackSubmitInput!) {
   }
 }
 
-mutation ibexTransactionDetailsFetch($input: IbexTransactionDetailsFetchInput!) {
-  ibexTransactionDetailsFetch(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    transactionDetails {
-      id
-      accountId
-      amount
-      currency
-      status
-      type
-      createdAt
-      updatedAt
-      invoice
-      paymentHash
-      paymentPreimage
-      memo
-      address
-      txid
-      vout
-      confirmations
-      fee
-      __typename
-    }
-    __typename
-  }
-}
-
 mutation intraLedgerPaymentSend($input: IntraLedgerPaymentSendInput!) {
   intraLedgerPaymentSend(input: $input) {
     errors {
@@ -1526,6 +1496,36 @@ query supportedCountries {
 query totpRegistrationScreen {
   me {
     username
+    __typename
+  }
+}
+
+query transactionDetails($input: TransactionDetailsInput!) {
+  transactionDetails(input: $input) {
+    errors {
+      message
+      __typename
+    }
+    transactionDetails {
+      id
+      accountId
+      amount
+      currency
+      status
+      type
+      createdAt
+      updatedAt
+      invoice
+      paymentHash
+      paymentPreimage
+      memo
+      address
+      txid
+      vout
+      confirmations
+      fee
+      __typename
+    }
     __typename
   }
 }

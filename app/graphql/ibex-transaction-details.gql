@@ -1,5 +1,5 @@
-mutation ibexTransactionDetailsFetch($input: IbexTransactionDetailsFetchInput!) {
-  ibexTransactionDetailsFetch(input: $input) {
+query transactionDetails($input: TransactionDetailsInput!) {
+  transactionDetails(input: $input) {
     errors {
       message
     }
