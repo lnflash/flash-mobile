@@ -3190,7 +3190,7 @@ type RootTranslation = {
 		 */
 		email: string
 		/**
-		 * I​m​p​o​r​t​ ​y​o​u​r​ ​C​a​s​h​ ​W​a​l​l​e​t​ ​u​s​i​n​g​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s
+		 * I​m​p​o​r​t​ ​o​r​ ​C​r​e​a​t​e​ ​y​o​u​r​ ​C​a​s​h​ ​w​a​l​l​e​t​ ​u​s​i​n​g​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s
 		 */
 		importUsingEmail: string
 		/**
@@ -7241,23 +7241,23 @@ export type TranslationFunctions = {
 		/**
 		 * The amount you entered is less than the minimum amount required to send an on-chain transaction {amount}. Please consider sending this amount via Lightning!
 		 */
-		onchainMinAmountInvoiceError: (arg: { amount: number | string  }) => LocalizedString
+		onchainMinAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number | string  }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number | string  }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is less than minimum required amount {amount}
 		 */
-		minAmountConvertError: (arg: { amount: number | string  }) => LocalizedString
+		minAmountConvertError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is greater than maximum amount {amount}
 		 */
-		maxAmountConvertError: (arg: { amount: number | string  }) => LocalizedString
+		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**

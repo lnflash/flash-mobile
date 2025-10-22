@@ -450,6 +450,12 @@ export type InitiateCashoutInput = {
   readonly walletId: Scalars['WalletId']['input'];
 };
 
+export type InitiatedCashoutResponse = {
+  readonly __typename: 'InitiatedCashoutResponse';
+  readonly errors: ReadonlyArray<Error>;
+  readonly journalId?: Maybe<Scalars['ID']['output']>;
+};
+
 export type InitiationVia = InitiationViaIntraLedger | InitiationViaLn | InitiationViaOnChain;
 
 export type InitiationViaIntraLedger = {
@@ -740,7 +746,7 @@ export type Mutation = {
    * Start the Cashout process;
    * User sends USD to Flash via Ibex and receives USD or JMD to bank account.
    */
-  readonly initiateCashout: SuccessPayload;
+  readonly initiateCashout: InitiatedCashoutResponse;
   /**
    * Actions a payment which is internal to the ledger e.g. it does
    * not use onchain/lightning. Returns payment status (success,
