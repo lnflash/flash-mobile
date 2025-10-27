@@ -12,12 +12,22 @@ import Clipboard from "@react-native-clipboard/clipboard"
 import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { Button, Text, makeStyles } from "@rneui/themed"
 import * as React from "react"
-import { Alert, DevSettings, View } from "react-native"
+import { Alert, DevSettings, View, ActivityIndicator } from "react-native"
 import { Screen } from "../../components/screen"
 import { usePriceConversion } from "../../hooks"
 import useLogout from "../../hooks/use-logout"
 import { addDeviceToken } from "../../utils/notifications"
 import { testProps } from "../../utils/testProps"
+import Config from "react-native-config"
+import { getPublicKey } from "nostr-tools"
+import { getSecretKey } from "@app/utils/nostr"
+import useNostrProfile from "@app/hooks/use-nostr-profile"
+import {
+  generateRoboHashAvatar,
+  generateGradientBanner,
+} from "@app/utils/nostr/image-generation"
+import { uploadToNostrBuild } from "@app/utils/nostr/media-upload"
+import { useChatContext } from "@app/screens/chat/chatContext"
 
 const usingHermes = typeof HermesInternal === "object" && HermesInternal !== null
 
@@ -30,6 +40,10 @@ export const DeveloperScreen: React.FC = () => {
   const { appConfig, saveToken, saveTokenAndInstance } = useAppConfig()
   const token = appConfig.token
   const { persistentState, updateState } = usePersistentStateContext()
+  const { updateNostrProfile } = useNostrProfile()
+  const { userProfileEvent } = useChatContext()
+
+  const [generatingImages, setGeneratingImages] = React.useState(false)
 
   const { data: dataLevel } = useLevelQuery({ fetchPolicy: "cache-only" })
   const level = String(dataLevel?.me?.defaultAccount?.level)
@@ -113,6 +127,107 @@ export const DeveloperScreen: React.FC = () => {
     saveToken(newToken || "")
   }
 
+  const handleGenerateProfileImages = async () => {
+    try {
+      setGeneratingImages(true)
+
+      // Get user's Nostr key
+      const secretKey = await getSecretKey()
+      if (!secretKey) {
+        Alert.alert("Error", "No Nostr profile found. Please create a Nostr profile first.")
+        return
+      }
+
+      const pubkey = getPublicKey(secretKey)
+      console.log("Generating images for pubkey:", pubkey)
+
+      // Check FLASH_NOSTR_NSEC is configured
+      const flashNsec = Config.FLASH_NOSTR_NSEC
+      if (!flashNsec || flashNsec === "ADD_YOUR_NSEC_HERE") {
+        Alert.alert(
+          "Configuration Error",
+          "FLASH_NOSTR_NSEC not configured in .env file. Cannot upload images.",
+        )
+        return
+      }
+
+      Alert.alert(
+        "Generating Images",
+        "This will generate a random profile picture and banner, upload them to nostr.build, and update your profile. Continue?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Generate",
+            onPress: async () => {
+              try {
+                // Generate images
+                console.log("Step 1: Generating RoboHash avatar...")
+                const avatarUri = await generateRoboHashAvatar(pubkey)
+                console.log("Avatar generated:", avatarUri)
+
+                console.log("Step 2: Generating gradient banner...")
+                const bannerUri = await generateGradientBanner(pubkey)
+                console.log("Banner generated:", bannerUri)
+
+                // Upload to nostr.build
+                console.log("Step 3: Uploading avatar to nostr.build...")
+                const pictureUrl = await uploadToNostrBuild(avatarUri, flashNsec, false)
+                console.log("Avatar uploaded:", pictureUrl)
+
+                console.log("Step 4: Uploading banner to nostr.build...")
+                const bannerUrl = await uploadToNostrBuild(bannerUri, flashNsec, false)
+                console.log("Banner uploaded:", bannerUrl)
+
+                // Update kind-0 event
+                console.log("Step 5: Updating Nostr profile...")
+
+                // Parse existing profile data to preserve all fields
+                let existingProfile = {}
+                if (userProfileEvent?.content) {
+                  try {
+                    existingProfile = JSON.parse(userProfileEvent.content)
+                    console.log("Existing profile data:", existingProfile)
+                  } catch (e) {
+                    console.log("No existing profile found, creating new one")
+                  }
+                }
+
+                // Merge with new images
+                const updatedProfile = {
+                  ...existingProfile,
+                  picture: pictureUrl,
+                  banner: bannerUrl,
+                }
+
+                console.log("Updated profile data:", updatedProfile)
+
+                await updateNostrProfile({
+                  content: updatedProfile,
+                })
+
+                Alert.alert(
+                  "Success!",
+                  `Profile picture and banner generated and uploaded!\n\nAvatar: ${pictureUrl}\nBanner: ${bannerUrl}`,
+                )
+              } catch (error) {
+                console.error("Error in image generation flow:", error)
+                const message = error instanceof Error ? error.message : "Failed to generate images"
+                Alert.alert("Error", message)
+              } finally {
+                setGeneratingImages(false)
+              }
+            },
+          },
+        ],
+      )
+    } catch (error) {
+      console.error("Error generating images:", error)
+      const message = error instanceof Error ? error.message : "Failed to generate images"
+      Alert.alert("Error", message)
+      setGeneratingImages(false)
+    }
+  }
+
   return (
     <Screen preset="scroll">
       <View style={styles.screenContainer}>
@@ -190,6 +305,23 @@ export const DeveloperScreen: React.FC = () => {
                 })
               }}
             />
+            <Button
+              title={
+                generatingImages
+                  ? "Generating..."
+                  : "Generate Profile Pic & Banner"
+              }
+              containerStyle={styles.button}
+              onPress={handleGenerateProfileImages}
+              disabled={generatingImages}
+            />
+            {generatingImages && (
+              <ActivityIndicator
+                size="small"
+                color="#007AFF"
+                style={{ marginVertical: 8 }}
+              />
+            )}
           </>
         )}
         <View>

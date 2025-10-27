@@ -31,6 +31,8 @@ import LinearGradient from "react-native-linear-gradient"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { toastShow } from "@app/utils/toast"
 import { Pressable } from "react-native"
+import { SvgUri } from "react-native-svg"
+import { ExplainerVideo } from "@app/components/explainer-video"
 
 const RELAYS = [
   "wss://relay.damus.io",
@@ -55,6 +57,14 @@ const ContactDetailsScreen: React.FC = () => {
 
   const profile = profileMap?.get(contactPubkey)
   const npub = nip19.npubEncode(contactPubkey)
+
+  // Debug: Check if banner exists
+  console.log("Profile data:", {
+    hasPicture: !!profile?.picture,
+    hasBanner: !!profile?.banner,
+    bannerUrl: profile?.banner,
+    pictureUrl: profile?.picture,
+  })
 
   // State for managing Nostr posts (kind 1) and reposts (kind 6)
   const [posts, setPosts] = useState<Event[]>([])
@@ -226,108 +236,94 @@ const ContactDetailsScreen: React.FC = () => {
       />
 
       <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
-        {/* Profile header with optional banner image background */}
-        <View style={[]}>
-          {/* Banner image as background with overlay for text readability */}
-          {/* {profile?.banner && (
-            <>
-              <Image
-                source={{ uri: profile.banner }}
-                style={styles.bannerBackground}
-                resizeMode="cover"
-                blurRadius={2}
-              />
-              <View style={styles.bannerOverlay} />
-            </>
-          )} */}
-          <View style={styles.profileHeader}>
-            <View style={styles.profileTopRow}>
-              <View style={styles.profileImageContainer}>
-                <Image
-                  source={
-                    profile?.picture
-                      ? { uri: profile.picture }
-                      : {
-                          uri: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwinaero.com%2Fblog%2Fwp-content%2Fuploads%2F2017%2F12%2FUser-icon-256-blue.png&f=1&nofb=1&ipt=d8f3a13e26633e5c7fb42aed4cd2ab50e1bb3d91cfead71975713af0d1ed278c",
-                        }
-                  }
-                  style={styles.profileImage}
-                />
-              </View>
-              <View style={styles.profileInfo}>
-                <View style={styles.nameRow}>
-                  <Text
-                    style={[
-                      styles.profileName,
-                      // profile?.banner && styles.textShadow,
-                    ]}
-                  >
-                    {profile?.name || profile?.username || LL.Nostr.Contacts.nostrUser()}
-                  </Text>
-                  {isBusiness && (
-                    <View style={styles.businessBadge}>
-                      <Icon name="storefront" size={12} color="#FFFFFF" />
-                      <Text style={styles.businessBadgeText}>Business</Text>
-                    </View>
-                  )}
-                </View>
-                <Pressable
-                  onPress={handleCopy}
-                  android_ripple={{ color: "#ddd" }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Copy npub to clipboard"
-                  style={() => [styles.profileNpub]}
-                  hitSlop={8}
-                >
-                  <Icon name="key-outline" size={12} color={colors.grey3} />
-                  <Text style={styles.npubText}>
-                    {npub?.slice(0, 8)}...{npub?.slice(-6)}
-                  </Text>
-                </Pressable>
-                {profile?.lud16 && (
-                  <View style={[styles.profileLud16]}>
-                    <Icon name="flash" size={12} color="orange" />
-                    <Text
-                      style={[
-                        styles.lud16Text,
-                        { color: profile?.banner ? "#333" : colors.grey1 },
-                      ]}
-                    >
-                      {profile.lud16}
-                    </Text>
-                  </View>
-                )}
-                {profile?.website && (
-                  <View style={styles.profileWebsite}>
-                    <Icon
-                      name="globe-outline"
-                      size={12}
-                      color={profile?.banner ? "#FFFFFF" : colors.grey3}
-                    />
-                    <Text
-                      style={[
-                        styles.websiteText,
-                        // profile?.banner && { color: "rgba(255, 255, 255, 0.95)" },
-                        // profile?.banner && styles.textShadow,
-                      ]}
-                    >
-                      {profile.website}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-            {profile?.about && (
-              <Text
-                style={[
-                  styles.aboutText,
-                  // profile?.banner && { color: "rgba(255, 255, 255, 0.98)" },
-                  // profile?.banner && styles.textShadow,
-                ]}
-              >
-                {profile.about}
+        {/* Banner section - Primal style */}
+        {profile?.banner ? (
+          profile.banner.endsWith(".svg") ? (
+            <SvgUri
+              uri={profile.banner}
+              width="100%"
+              height={150}
+              style={styles.bannerImage}
+            />
+          ) : (
+            <Image
+              source={{ uri: profile.banner }}
+              style={styles.bannerImage}
+              resizeMode="cover"
+            />
+          )
+        ) : (
+          <View style={styles.bannerImage} />
+        )}
+
+        {/* Profile section with overlapping profile picture */}
+        <View style={styles.profileContainer}>
+          {/* Profile picture overlaps the banner */}
+          <View style={styles.profileImageWrapper}>
+            <Image
+              source={
+                profile?.picture
+                  ? { uri: profile.picture }
+                  : {
+                      uri: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwinaero.com%2Fblog%2Fwp-content%2Fuploads%2F2017%2F12%2FUser-icon-256-blue.png&f=1&nofb=1&ipt=d8f3a13e26633e5c7fb42aed4cd2ab50e1bb3d91cfead71975713af0d1ed278c",
+                    }
+              }
+              style={styles.profileImage}
+            />
+          </View>
+
+          {/* Profile info section */}
+          <View style={styles.profileInfoSection}>
+            <View style={styles.nameRow}>
+              <Text style={styles.profileName}>
+                {profile?.name || profile?.username || LL.Nostr.Contacts.nostrUser()}
               </Text>
+              {isOwnProfile && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("EditNostrProfile" as any)}
+                  hitSlop={8}
+                  style={styles.editIconButton}
+                >
+                  <Icon name="create-outline" size={16} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+              {isBusiness && (
+                <View style={styles.businessBadge}>
+                  <Icon name="storefront" size={12} color="#FFFFFF" />
+                  <Text style={styles.businessBadgeText}>Business</Text>
+                </View>
+              )}
+            </View>
+
+            <Pressable
+              onPress={handleCopy}
+              android_ripple={{ color: "#ddd" }}
+              accessibilityRole="button"
+              accessibilityLabel="Copy npub to clipboard"
+              style={() => [styles.profileNpub]}
+              hitSlop={8}
+            >
+              <Icon name="key-outline" size={12} color={colors.grey3} />
+              <Text style={styles.npubText}>
+                {npub?.slice(0, 8)}...{npub?.slice(-6)}
+              </Text>
+            </Pressable>
+
+            {profile?.lud16 && (
+              <View style={[styles.profileLud16]}>
+                <Icon name="flash" size={12} color="orange" />
+                <Text style={styles.lud16Text}>{profile.lud16}</Text>
+              </View>
             )}
+
+            {profile?.website && (
+              <View style={styles.profileWebsite}>
+                <Icon name="globe-outline" size={12} color={colors.grey3} />
+                <Text style={styles.websiteText}>{profile.website}</Text>
+              </View>
+            )}
+
+            {profile?.about && <Text style={styles.aboutText}>{profile.about}</Text>}
           </View>
         </View>
 
@@ -357,114 +353,120 @@ const ContactDetailsScreen: React.FC = () => {
             </View>
           </View>
         )}
-        {!isSelf && (
-          <View style={styles.postsSection}>
-            <View style={styles.postsSectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.black }]}>
-                {isBusiness ? "Business Updates" : "Recent Posts"}
+        <View style={styles.postsSection}>
+          <View style={styles.postsSectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.black }]}>
+              {isBusiness ? "Business Updates" : "Recent Posts"}
+            </Text>
+            {posts.length > 0 && (
+              <Text style={[styles.postsCount, { color: colors.grey3 }]}>
+                {posts.length} {posts.length === 1 ? "post" : "posts"}
               </Text>
-              {posts.length > 0 && (
-                <Text style={[styles.postsCount, { color: colors.grey3 }]}>
-                  {posts.length} {posts.length === 1 ? "post" : "posts"}
-                </Text>
-              )}
-            </View>
-            {loadingPosts ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={[styles.loadingText, { color: colors.grey3 }]}>
-                  Loading...
-                </Text>
-              </View>
-            ) : posts.length === 0 ? (
-              <View style={styles.emptyPostsContainer}>
-                <Icon
-                  name={isBusiness ? "storefront-outline" : "chatbubble-outline"}
-                  size={48}
-                  color={colors.grey3}
-                  style={{ marginBottom: 8 }}
-                />
-                <Text style={[styles.emptyPostsText, { color: colors.grey3 }]}>
-                  {isBusiness ? "No business updates yet" : "No posts yet"}
-                </Text>
-                <TouchableOpacity
-                  style={[styles.makePostCTA, { backgroundColor: colors.grey5 }]}
-                  onPress={() => navigation.navigate("makeNostrPost")}
-                  activeOpacity={0.7}
-                >
-                  <Icon
-                    name="create-outline"
-                    size={24}
-                    color={colors.primary}
-                    style={{ marginRight: 12 }}
-                  />
-                  <View style={styles.makePostTextContainer}>
-                    <Text style={[styles.makePostTitle, { color: colors.black }]}>
-                      {LL.NostrQuickStart.postHeading()}
-                    </Text>
-                    <Text style={[styles.makePostDesc, { color: colors.grey3 }]}>
-                      {LL.NostrQuickStart.postDesc()}
-                    </Text>
-                  </View>
-                  <Icon name="chevron-forward" size={20} color={colors.grey3} />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <>
-                {posts.map((post) => (
-                  <FeedItem
-                    key={post.id}
-                    event={post}
-                    profile={profile}
-                    compact
-                    repostedEvent={
-                      post.kind === 6 ? repostedEvents.get(post.id) : undefined
-                    }
-                    repostedProfile={
-                      post.kind === 6
-                        ? repostedProfiles.get(
-                            post.tags.find((tag) => tag[0] === "p")?.[1] || "",
-                          )
-                        : undefined
-                    }
-                  />
-                ))}
-              </>
             )}
-            {/* CTA button to explore full Nostr experience on Primal */}
-            <TouchableOpacity
-              style={[styles.primalButton]}
-              onPress={() => Linking.openURL(`https://primal.net/p/${userPubkey}`)}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={["#FF6154", "#FE9F41"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.primalButtonGradient}
-              >
-                <View style={styles.primalButtonContent}>
-                  <View style={styles.primalLogoContainer}>
-                    <Image
-                      source={require("@app/assets/images/primal-logo-large.png")}
-                      style={styles.primalLogo}
-                      resizeMode="contain"
-                    />
-                  </View>
-                  <View style={styles.primalTextContainer}>
-                    <Text style={styles.primalTitle}>Explore more on Primal</Text>
-                    <Text style={styles.primalSubtitle}>
-                      Full Nostr experience with feeds, notifications & more
-                    </Text>
-                  </View>
-                  <View style={styles.primalArrowContainer}>
-                    <Icon name="arrow-forward" size={22} color="#FFFFFF" />
-                  </View>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
           </View>
-        )}
+          {loadingPosts ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.grey3 }]}>
+                Loading...
+              </Text>
+            </View>
+          ) : posts.length === 0 ? (
+            <View style={styles.emptyPostsContainer}>
+              <Icon
+                name={isBusiness ? "storefront-outline" : "chatbubble-outline"}
+                size={48}
+                color={colors.grey3}
+                style={{ marginBottom: 8 }}
+              />
+              <Text style={[styles.emptyPostsText, { color: colors.grey3 }]}>
+                {isBusiness ? "No business updates yet" : "No posts yet"}
+              </Text>
+              <TouchableOpacity
+                style={[styles.makePostCTA, { backgroundColor: colors.grey5 }]}
+                onPress={() => navigation.navigate("makeNostrPost")}
+                activeOpacity={0.7}
+              >
+                <Icon
+                  name="create-outline"
+                  size={24}
+                  color={colors.primary}
+                  style={{ marginRight: 12 }}
+                />
+                <View style={styles.makePostTextContainer}>
+                  <Text style={[styles.makePostTitle, { color: colors.black }]}>
+                    {LL.NostrQuickStart.postHeading()}
+                  </Text>
+                  <Text style={[styles.makePostDesc, { color: colors.grey3 }]}>
+                    {LL.NostrQuickStart.postDesc()}
+                  </Text>
+                </View>
+                <Icon name="chevron-forward" size={20} color={colors.grey3} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              {posts.map((post) => (
+                <FeedItem
+                  key={post.id}
+                  event={post}
+                  profile={profile}
+                  compact
+                  repostedEvent={
+                    post.kind === 6 ? repostedEvents.get(post.id) : undefined
+                  }
+                  repostedProfile={
+                    post.kind === 6
+                      ? repostedProfiles.get(
+                          post.tags.find((tag) => tag[0] === "p")?.[1] || "",
+                        )
+                      : undefined
+                  }
+                />
+              ))}
+            </>
+          )}
+
+          {/* Explainer video */}
+          <ExplainerVideo
+            videoUrl="https://v.nostr.build/2TNtuYh8WLpWBHXV.mp4"
+            title="How to make a great post (Video Tutorial)"
+            style={styles.explainerVideo}
+          />
+
+          {/* CTA button to explore full Nostr experience on Primal */}
+          <TouchableOpacity
+            style={[styles.primalButton]}
+            onPress={() => Linking.openURL(`https://primal.net/p/${userPubkey}`)}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={["#FF6154", "#FE9F41"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.primalButtonGradient}
+            >
+              <View style={styles.primalButtonContent}>
+                <View style={styles.primalLogoContainer}>
+                  <Image
+                    source={require("@app/assets/images/primal-logo-large.png")}
+                    style={styles.primalLogo}
+                    resizeMode="contain"
+                  />
+                </View>
+                <View style={styles.primalTextContainer}>
+                  <Text style={styles.primalTitle}>Explore more on Primal</Text>
+                  <Text style={styles.primalSubtitle}>
+                    Full Nostr experience with feeds, notifications & more
+                  </Text>
+                </View>
+                <View style={styles.primalArrowContainer}>
+                  <Icon name="arrow-forward" size={22} color="#FFFFFF" />
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
 
         <View style={[styles.dangerZoneContainer, { borderTopColor: colors.grey5 }]}>
           <Text style={[styles.dangerZoneTitle, { color: colors.black }]}>
@@ -508,71 +510,34 @@ const useStyles = makeStyles(({ colors }) => ({
   scrollView: {
     flex: 1,
   },
-  profileHeaderContainer: {
-    position: "relative",
-    minHeight: 100,
-  },
-  bannerBackground: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  bannerImage: {
     width: "100%",
-    height: "100%",
+    height: 150,
+    backgroundColor: colors.grey5,
   },
-  bannerOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
-  },
-  textShadow: {
-    textShadowColor: "rgba(0, 0, 0, 0.8)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  lightBackground: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-  },
-  profileHeader: {
-    paddingVertical: 12,
+  profileContainer: {
     paddingHorizontal: 16,
-    position: "relative",
   },
-  profileTopRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
+  profileImageWrapper: {
+    marginTop: -40,
+    marginBottom: 12,
   },
-  profileInfo: {
-    flex: 1,
-    justifyContent: "center",
+  profileImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 4,
+    borderColor: colors.background,
+    backgroundColor: colors.grey5,
+  },
+  profileInfoSection: {
+    paddingBottom: 12,
   },
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 4,
-  },
-  profileImageContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  profileImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 3,
-    borderColor: "#FFFFFF",
+    marginBottom: 8,
   },
   businessBadge: {
     flexDirection: "row",
@@ -589,8 +554,9 @@ const useStyles = makeStyles(({ colors }) => ({
     fontWeight: "600",
   },
   profileName: {
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: "bold",
+    color: colors.black,
   },
   profileNpub: {
     flexDirection: "row",
@@ -616,6 +582,7 @@ const useStyles = makeStyles(({ colors }) => ({
   lud16Text: {
     fontSize: 12,
     fontWeight: "500",
+    color: colors.grey1,
   },
   profileWebsite: {
     flexDirection: "row",
@@ -624,12 +591,13 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   websiteText: {
     fontSize: 12,
-    color: "#888",
+    color: colors.grey3,
   },
   aboutText: {
-    fontSize: 12,
+    fontSize: 14,
     paddingTop: 8,
-    lineHeight: 16,
+    lineHeight: 20,
+    color: colors.grey1,
   },
   actionsContainer: {
     flexDirection: "row",
@@ -663,6 +631,10 @@ const useStyles = makeStyles(({ colors }) => ({
     fontSize: 14,
     fontWeight: "600",
     color: colors.black,
+  },
+  editIconButton: {
+    marginLeft: 6,
+    padding: 2,
   },
   icon: {
     fontSize: 24,
@@ -747,8 +719,13 @@ const useStyles = makeStyles(({ colors }) => ({
     fontSize: 13,
     lineHeight: 18,
   },
-  primalButton: {
+  explainerVideo: {
     marginTop: 16,
+    marginHorizontal: 8,
+    marginBottom: 8,
+  },
+  primalButton: {
+    marginTop: 8,
     marginHorizontal: 8,
     borderRadius: 16,
     overflow: "hidden",
