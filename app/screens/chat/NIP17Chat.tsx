@@ -8,6 +8,8 @@ import {
   Alert,
   TouchableOpacity,
   Image,
+  Platform,
+  StatusBar,
 } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
@@ -156,37 +158,43 @@ export const NIP17Chat: React.FC = () => {
 
   const userPublicKey = privateKey ? getPublicKey(privateKey) : null
   const userProfile = userPublicKey ? profileMap?.get(userPublicKey) : null
+
+  // Android status bar height
+  const statusBarHeight = Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0
+
   return (
     <Screen style={{ ...styles.header, flex: 1 }}>
+      <StatusBar translucent backgroundColor="transparent" />
       {privateKey && !showImportModal ? (
-        <Tab.Navigator
-          screenOptions={({ route }) => {
-            const label = route.name === "Profile" ? `${userProfile?.name}` : null
-            return {
-              // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
-              // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
-              // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
-              tabBarIcon: ({ color }) => {
-                let iconName: string
-                if (route.name === "Profile") {
-                  iconName = "person"
-                }
-                if (route.name === "Chats") {
-                  iconName = "chatbubble-ellipses-outline" // Chat icon
-                } else if (route.name === "Contacts") {
-                  iconName = "people-outline" // Contacts icon
-                } else {
-                  iconName = "person-circle-outline"
-                }
-                return <Icon name={iconName} size={24} color={color} />
-              },
-              tabBarShowLabel: !!label,
-              tabBarActiveTintColor: colors.primary,
-              tabBarIndicatorStyle: { backgroundColor: colors.primary },
-            }
-          }}
-          style={{ borderColor: colors.primary }}
-        >
+        <View style={{ flex: 1, paddingTop: statusBarHeight }}>
+          <Tab.Navigator
+            screenOptions={({ route }) => {
+              const label = route.name === "Profile" ? `${userProfile?.name}` : null
+              return {
+                // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
+                // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+                // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+                tabBarIcon: ({ color }) => {
+                  let iconName: string
+                  if (route.name === "Profile") {
+                    iconName = "person"
+                  }
+                  if (route.name === "Chats") {
+                    iconName = "chatbubble-ellipses-outline" // Chat icon
+                  } else if (route.name === "Contacts") {
+                    iconName = "people-outline" // Contacts icon
+                  } else {
+                    iconName = "person-circle-outline"
+                  }
+                  return <Icon name={iconName} size={24} color={color} />
+                },
+                tabBarShowLabel: !!label,
+                tabBarActiveTintColor: colors.primary,
+                tabBarIndicatorStyle: { backgroundColor: colors.primary },
+              }
+            }}
+            style={{ borderColor: colors.primary }}
+          >
           <Tab.Screen name="Chats">
             {() => (
               <View style={{ flex: 1 }}>
@@ -238,10 +246,11 @@ export const NIP17Chat: React.FC = () => {
                           }}
                         >
                           <Image
-                            source={{
-                              uri:
-                                groupMetadata.picture || "../../assets/Flash-Mascot.png",
-                            }}
+                            source={
+                              groupMetadata.picture
+                                ? { uri: groupMetadata.picture }
+                                : require("../../assets/images/Flash-Mascot.png")
+                            }
                             style={styles.communityPicture}
                           />
                           <View
@@ -318,6 +327,7 @@ export const NIP17Chat: React.FC = () => {
             )}
           </Tab.Screen>
         </Tab.Navigator>
+        </View>
       ) : (
         <Text>Loading your nostr keys...</Text>
       )}

@@ -19,6 +19,7 @@ import { useNavigation } from "@react-navigation/native"
 import { PrimaryBtn } from "@app/components/buttons"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { ExplainerVideo } from "@app/components/explainer-video"
 
 import { nip19, getPublicKey, finalizeEvent, Relay, SimplePool } from "nostr-tools"
 import { getSecretKey } from "@app/utils/nostr"
@@ -562,6 +563,13 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
         </View>
       )}
 
+      {/* Explainer video */}
+      <ExplainerVideo
+        videoUrl="https://v.nostr.build/2TNtuYh8WLpWBHXV.mp4"
+        title="How to make a great post (Video Tutorial)"
+        style={styles.explainerVideo}
+      />
+
       <PrimaryBtn
         label={loading ? LL.Social.posting() : LL.Social.postButton()}
         onPress={onPost}
@@ -667,6 +675,9 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   uploadingText: {
     fontSize: 14,
+  },
+  explainerVideo: {
+    marginBottom: 16,
   },
   fixedTextContainer: {
     marginBottom: 20,

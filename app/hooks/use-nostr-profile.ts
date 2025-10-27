@@ -241,6 +241,10 @@ const useNostrProfile = () => {
       nip05?: string
       flash_username?: string
       lud16?: string
+      picture?: string
+      banner?: string
+      about?: string
+      website?: string
     }
   }) => {
     console.log("\n🚀 Starting Nostr profile update...")
