@@ -142,7 +142,9 @@ export const DeveloperScreen: React.FC = () => {
         {__DEV__ && (
           <>
             <View style={styles.switchContainer}>
-              <Text style={styles.switchLabel}>Bypass Pubkey Age Check (3-day requirement)</Text>
+              <Text style={styles.switchLabel}>
+                Bypass Pubkey Age Check (3-day requirement)
+              </Text>
               <Switch
                 value={!!persistentState.bypassPubkeyAgeCheck}
                 onValueChange={(enabled) => {
@@ -159,7 +161,7 @@ export const DeveloperScreen: React.FC = () => {
                     "Setting Updated",
                     enabled
                       ? "Pubkey age check bypassed. You can now post immediately."
-                      : "Pubkey age check re-enabled. 3-day requirement is now active."
+                      : "Pubkey age check re-enabled. 3-day requirement is now active.",
                   )
                 }}
               />

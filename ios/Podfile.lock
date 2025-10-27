@@ -662,7 +662,7 @@ PODS:
     - FirebaseCoreExtension
     - React-Core
     - RNFBApp
-  - RNFBMessaging (23.2.0):
+  - RNFBMessaging (22.2.0):
     - Firebase/Messaging (= 11.12.0)
     - FirebaseCoreExtension
     - React-Core
@@ -1160,7 +1160,7 @@ SPEC CHECKSUMS:
   RNFBApp: fa5825b36d8362ce9b993cac8bf070d116848640
   RNFBAppCheck: f98d1bd525efe4e22f28c6070796434c9baf6e9a
   RNFBCrashlytics: 14dcfb073e7d9f41189400128e203d5314a8c606
-  RNFBMessaging: 842dcc45475d5896f59bd8eaa9a33aa80c2fc533
+  RNFBMessaging: 32a107c0463048f1c03df06ab235bf56e976299a
   RNFBPerf: a3f48919b73a6355113735a463f048a772fc79a4
   RNFBRemoteConfig: f2d4de1a288ede64e777f3229c7746ed4127ccb3
   RNFileViewer: ce7ca3ac370e18554d35d6355cffd7c30437c592
