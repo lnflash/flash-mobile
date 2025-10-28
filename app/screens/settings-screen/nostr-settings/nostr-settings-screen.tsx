@@ -76,6 +76,7 @@ export const NostrSettingsScreen = () => {
     theme: { colors },
   } = useTheme()
   const [isGenerating, setIsGenerating] = useState(false)
+  const [progressMessage, setProgressMessage] = useState("")
 
   const copyToClipboard = (copyText: string, handler?: (copied: boolean) => void) => {
     Clipboard.setString(copyText)
@@ -133,9 +134,13 @@ export const NostrSettingsScreen = () => {
             onPress={async () => {
               if (isGenerating) return
               setIsGenerating(true)
-              let newSecret = await saveNewNostrKey()
+              setProgressMessage("Creating Nostr profile...")
+              let newSecret = await saveNewNostrKey((message) => {
+                setProgressMessage(message)
+              })
               setSecretKey(newSecret)
               setIsGenerating(false)
+              setProgressMessage("")
             }}
             disabled={isGenerating}
           >
@@ -146,7 +151,7 @@ export const NostrSettingsScreen = () => {
               style={{ marginRight: 10, opacity: isGenerating ? 0.5 : 1 }}
             />
             <Text style={{ color: colors.white, fontWeight: "bold" }}>
-              {isGenerating ? LL.Nostr.creatingProfile() : LL.Nostr.createNewProfile()}
+              {isGenerating ? progressMessage || LL.Nostr.creatingProfile() : LL.Nostr.createNewProfile()}
             </Text>
           </Pressable>
         </View>
