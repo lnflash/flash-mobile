@@ -86,54 +86,34 @@ export async function generateRoboHashAvatar(pubkey: string): Promise<string> {
 
 /**
  * Generate a deterministic gradient banner based on pubkey
- * Creates an SVG and saves it as a file, returns the file URI
+ * Uses RoboHash banner API which returns PNG images
  */
 export async function generateGradientBanner(pubkey: string): Promise<string> {
   try {
     console.log("Generating gradient banner for pubkey:", pubkey.slice(0, 16) + "...")
 
-    // Create seeded random number generator
-    const seed = hashStringToSeed(pubkey)
-    const random = mulberry32(seed)
+    // Use RoboHash with set5 (abstract patterns) for banners
+    // This generates deterministic PNG images that work reliably
+    const url = `https://robohash.org/${pubkey}?set=set4&size=1500x500`
+    console.log("Fetching banner from:", url)
 
-    // Generate 3 colors for the gradient
-    const h1 = Math.floor(random() * 360)
-    const s1 = 60 + Math.floor(random() * 30)
-    const l1 = 45 + Math.floor(random() * 20)
-    const color1 = hslToHex(h1, s1, l1)
+    const tempPath = `${RNFS.CachesDirectoryPath}/banner_${Date.now()}.png`
 
-    const h2 = Math.floor(random() * 360)
-    const s2 = 60 + Math.floor(random() * 30)
-    const l2 = 45 + Math.floor(random() * 20)
-    const color2 = hslToHex(h2, s2, l2)
+    const download = await RNFS.downloadFile({
+      fromUrl: url,
+      toFile: tempPath,
+      connectionTimeout: 30000, // 30 seconds to establish connection
+      readTimeout: 60000, // 60 seconds to download the image
+    }).promise
 
-    const h3 = Math.floor(random() * 360)
-    const s3 = 60 + Math.floor(random() * 30)
-    const l3 = 45 + Math.floor(random() * 20)
-    const color3 = hslToHex(h3, s3, l3)
+    if (download.statusCode !== 200) {
+      throw new Error(`Failed to download banner: HTTP ${download.statusCode}`)
+    }
 
-    console.log("Generated gradient colors:", { color1, color2, color3 })
-
-    // Create SVG gradient
-    const svgString = `<svg width="1500" height="500" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:${color1};stop-opacity:1" />
-      <stop offset="50%" style="stop-color:${color2};stop-opacity:1" />
-      <stop offset="100%" style="stop-color:${color3};stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  <rect width="1500" height="500" fill="url(#grad)" />
-</svg>`
-
-    // Save SVG to file
-    const tempPath = `${RNFS.CachesDirectoryPath}/gradient_banner_${Date.now()}.svg`
-    await RNFS.writeFile(tempPath, svgString, "utf8")
-
-    console.log("Gradient banner saved to:", tempPath)
+    console.log("Banner downloaded to:", tempPath)
     return `file://${tempPath}`
   } catch (error) {
-    console.error("Error generating gradient banner:", error)
+    console.error("Error generating banner:", error)
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(`Failed to generate banner: ${message}`)
   }
