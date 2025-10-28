@@ -12,7 +12,7 @@ import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
 import { ChatList } from "@app/screens/chat"
-import { DeveloperScreen } from "../screens/developer-screen"
+import { AlertFlashUsers, DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
 import { SectionCompleted } from "../screens/earns-screen/section-completed"
@@ -580,6 +580,11 @@ export const RootStack = () => {
         name="Nip29GroupChat"
         component={SupportGroupChatScreen}
         options={{ title: "Group Chat" }}
+      />
+      <RootNavigator.Screen
+        name="AlertFlashUsers"
+        component={AlertFlashUsers}
+        options={{ title: "Alert Flash Users" }}
       />
     </RootNavigator.Navigator>
   )

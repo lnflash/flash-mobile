@@ -152,6 +152,7 @@ export type RootStackParamList = {
   NostrSettingsScreen: undefined
   SignInViaQRCode: undefined
   Nip29GroupChat: { groupId: string }
+  AlertFlashUsers: undefined
 }
 
 export type ChatStackParamList = {
