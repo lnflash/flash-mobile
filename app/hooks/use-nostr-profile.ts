@@ -17,6 +17,12 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "./use-app-config"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { pool } from "@app/utils/nostr/pool"
+import {
+  generateRoboHashAvatar,
+  generateGradientBanner,
+} from "@app/utils/nostr/image-generation"
+import { uploadToNostrBuild } from "@app/utils/nostr/media-upload"
+import Config from "react-native-config"
 
 export interface ChatInfo {
   pubkeys: string[]
@@ -67,7 +73,10 @@ const useNostrProfile = () => {
     AsyncStorage.removeItem("giftwraps")
   }
 
-  const saveNewNostrKey = async () => {
+  const saveNewNostrKey = async (
+    progressCallback?: (message: string) => void,
+    additionalContent?: any,
+  ) => {
     const username = dataAuthed?.me?.username || undefined
     let lud16
     if (username) lud16 = `${username}@${lnDomain}`
@@ -78,6 +87,8 @@ const useNostrProfile = () => {
     console.log("🔑 Creating new Nostr key...")
     console.log("Username:", username || "(no username yet)")
     console.log("NPub:", newNpub)
+    progressCallback?.("Creating Nostr profile...")
+
     const { data } = await userUpdateNpubMutation({
       variables: {
         input: {
@@ -94,21 +105,84 @@ const useNostrProfile = () => {
     await setPreferredRelay(secretKey)
     await createContactListEvent(secretKey)
 
+    // Generate profile images automatically
+    let pictureUrl: string | undefined
+    let bannerUrl: string | undefined
+
+    console.log("\n🎨 Generating profile images...")
+    progressCallback?.("Generating profile picture...")
+
+    try {
+      const pubKey = getPublicKey(secretKey)
+      const flashNsec = Config.FLASH_NOSTR_NSEC
+
+      if (flashNsec && flashNsec !== "ADD_YOUR_NSEC_HERE") {
+        // Generate avatar
+        console.log("Generating RoboHash avatar...")
+        const avatarUri = await generateRoboHashAvatar(pubKey)
+
+        // Generate banner
+        progressCallback?.("Generating banner image...")
+        console.log("Generating gradient banner...")
+        const bannerUri = await generateGradientBanner(pubKey)
+
+        // Upload avatar
+        progressCallback?.("Uploading profile picture...")
+        console.log("Uploading avatar to nostr.build...")
+        pictureUrl = await uploadToNostrBuild(avatarUri, flashNsec, false)
+        console.log("Avatar uploaded:", pictureUrl)
+
+        // Upload banner
+        progressCallback?.("Uploading banner image...")
+        console.log("Uploading banner to nostr.build...")
+        bannerUrl = await uploadToNostrBuild(bannerUri, flashNsec, false)
+        console.log("Banner uploaded:", bannerUrl)
+      } else {
+        console.log("⚠️ FLASH_NOSTR_NSEC not configured, skipping image upload")
+      }
+    } catch (error) {
+      console.error(
+        "Failed to generate/upload images, continuing with text-only profile:",
+        error,
+      )
+      // Silently continue without images
+    }
+
     // Always publish a profile, even if minimal
     console.log("\n📝 Publishing initial profile...")
+    progressCallback?.("Publishing profile to relays...")
+
     try {
-      const profileContent = username
+      const baseProfileContent = username
         ? {
             name: username,
             username: username,
             flash_username: username,
             lud16: lud16,
             nip05: `${username}@${lnDomain}`,
+            ...(pictureUrl && { picture: pictureUrl }),
+            ...(bannerUrl && { banner: bannerUrl }),
           }
         : {
             name: "Flash User",
             about: "Flash wallet user",
+            ...(pictureUrl && { picture: pictureUrl }),
+            ...(bannerUrl && { banner: bannerUrl }),
           }
+
+      // Merge with any additional content passed in (e.g., from username screen)
+      const profileContent = {
+        ...baseProfileContent,
+        ...additionalContent,
+        // Ensure images are not overwritten if they were generated
+        ...(pictureUrl && { picture: pictureUrl }),
+        ...(bannerUrl && { banner: bannerUrl }),
+      }
+
+      console.log(
+        "Final profile content with images:",
+        JSON.stringify(profileContent, null, 2),
+      )
 
       // Create and publish the profile event
       const pubKey = getPublicKey(secretKey)
@@ -140,6 +214,8 @@ const useNostrProfile = () => {
         )
       }
 
+      progressCallback?.("Profile created successfully!")
+
       // Verify after a short delay
       setTimeout(async () => {
         const verification = await verifyEventOnRelays(
@@ -164,6 +240,60 @@ const useNostrProfile = () => {
     }
 
     return secretKey
+  }
+
+  const generateProfileImages = async (
+    existingProfileContent?: any,
+    progressCallback?: (message: string) => void,
+  ): Promise<{ picture?: string; banner?: string } | null> => {
+    try {
+      progressCallback?.("Generating profile picture...")
+
+      const secret = await getSecretKey()
+      if (!secret) {
+        throw new Error("No Nostr profile found. Please create a Nostr profile first.")
+      }
+
+      const pubKey = getPublicKey(secret)
+      const flashNsec = Config.FLASH_NOSTR_NSEC
+
+      if (!flashNsec || flashNsec === "ADD_YOUR_NSEC_HERE") {
+        throw new Error("FLASH_NOSTR_NSEC not configured. Cannot upload images.")
+      }
+
+      // Generate images
+      console.log("Generating RoboHash avatar...")
+      const avatarUri = await generateRoboHashAvatar(pubKey)
+
+      progressCallback?.("Generating banner image...")
+      console.log("Generating gradient banner...")
+      const bannerUri = await generateGradientBanner(pubKey)
+
+      // Upload to nostr.build
+      progressCallback?.("Uploading profile picture...")
+      console.log("Uploading avatar to nostr.build...")
+      const pictureUrl = await uploadToNostrBuild(avatarUri, flashNsec, false)
+
+      progressCallback?.("Uploading banner image...")
+      console.log("Uploading banner to nostr.build...")
+      const bannerUrl = await uploadToNostrBuild(bannerUri, flashNsec, false)
+
+      // Update profile with new images
+      progressCallback?.("Updating profile...")
+      const updatedProfile = {
+        ...existingProfileContent,
+        picture: pictureUrl,
+        banner: bannerUrl,
+      }
+
+      await updateNostrProfile({ content: updatedProfile })
+
+      progressCallback?.("Images generated successfully!")
+      return { picture: pictureUrl, banner: bannerUrl }
+    } catch (error) {
+      console.error("Error generating profile images:", error)
+      throw error
+    }
   }
 
   const fetchNostrUser = async (npub: `npub1${string}`) => {
@@ -257,7 +387,11 @@ const useNostrProfile = () => {
     let secret = await getSecretKey()
     if (!secret) {
       if (dataAuthed && dataAuthed.me && !dataAuthed.me.npub) {
-        secret = await saveNewNostrKey()
+        console.log("No secret key found, creating new profile with provided content...")
+        await saveNewNostrKey(undefined, content)
+        console.log("Profile created with images and content, returning early")
+        // Return early - saveNewNostrKey already published the profile with images
+        return { successCount: 1, totalRelays: 1, successfulRelays: [] }
       } else {
         throw Error("Could not verify npub")
       }
@@ -375,6 +509,7 @@ const useNostrProfile = () => {
     deleteNostrKeys,
     deleteNostrData,
     verifyProfile,
+    generateProfileImages,
   }
 }
 
