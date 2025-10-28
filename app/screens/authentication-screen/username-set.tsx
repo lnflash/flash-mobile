@@ -12,6 +12,7 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import useLogout from "@app/hooks/use-logout"
 import { useAppConfig } from "@app/hooks"
+import { useChatContext } from "../chat/chatContext"
 
 // gql
 import {
@@ -45,6 +46,7 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
 
   const { updateNostrProfile } = useNostrProfile()
   const { logout } = useLogout()
+  const { userProfileEvent } = useChatContext()
 
   const [error, setError] = useState<SetAddressError | undefined>()
   const [lnAddress, setLnAddress] = useState("")
@@ -90,8 +92,21 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
 
       console.log("Mutation response:", data?.userUpdateUsername)
 
+      // Get existing profile content to preserve picture, banner, etc.
+      let existingProfile = {}
+      if (userProfileEvent?.content) {
+        try {
+          existingProfile = JSON.parse(userProfileEvent.content)
+          console.log("Existing profile data:", existingProfile)
+        } catch (e) {
+          console.log("No existing profile found or failed to parse")
+        }
+      }
+
+      // Merge with new username data
       updateNostrProfile({
         content: {
+          ...existingProfile,
           name: lnAddress,
           username: lnAddress,
           lud16: `${lnAddress}@${lnAddressHostname}`,
