@@ -16,10 +16,14 @@ import { usePriceConversion } from "../../hooks"
 import useLogout from "../../hooks/use-logout"
 import { addDeviceToken } from "../../utils/notifications"
 import { testProps } from "../../utils/testProps"
+import { StackScreenProps } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 const usingHermes = typeof HermesInternal === "object" && HermesInternal !== null
 
-export const DeveloperScreen: React.FC = () => {
+type Props = StackScreenProps<RootStackParamList, "developerScreen">
+
+export const DeveloperScreen: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const client = useApolloClient()
   const { usdPerSat } = usePriceConversion()
@@ -113,6 +117,12 @@ export const DeveloperScreen: React.FC = () => {
   return (
     <Screen preset="scroll">
       <View style={styles.screenContainer}>
+        <Button
+          title="Alert Flash Users"
+          containerStyle={styles.button}
+          onPress={() => navigation.navigate("AlertFlashUsers")}
+          {...testProps("logout button")}
+        />
         <Button
           title="Log out"
           containerStyle={styles.button}
