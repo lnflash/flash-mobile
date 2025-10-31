@@ -63,7 +63,8 @@ const RedeemBitcoinDetailScreen: React.FC<Prop> = ({ route, navigation }) => {
 
   const amountIsFlexible = minSats.amount !== maxSats.amount
 
-  const btcMoneyAmount = convertMoneyAmount(unitOfAccountAmount, WalletCurrency.Btc)
+  // Round to ensure integer satoshis for LNURL withdrawal validation
+  const btcMoneyAmount = convertMoneyAmount(unitOfAccountAmount, WalletCurrency.Btc, true)
 
   const validAmount =
     btcMoneyAmount.amount !== null &&

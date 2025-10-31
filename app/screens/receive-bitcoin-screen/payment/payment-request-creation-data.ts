@@ -83,9 +83,13 @@ export const createPaymentRequestCreationData = <T extends WalletCurrency>(
   const { unitOfAccountAmount } = params
   let settlementAmount: WalletAmount<T> | undefined = undefined
   if (unitOfAccountAmount) {
+    // Only round for BTC wallet to ensure integer satoshis
+    // USD wallet can handle fractional cents for better precision
+    const shouldRound = receivingWalletDescriptor.currency === WalletCurrency.Btc
     settlementAmount = convertMoneyAmount(
       unitOfAccountAmount,
       receivingWalletDescriptor.currency,
+      shouldRound,
     )
   }
 

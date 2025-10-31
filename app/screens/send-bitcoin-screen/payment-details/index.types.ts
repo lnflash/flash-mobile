@@ -32,6 +32,7 @@ import { LnUrlPayServiceResponse } from "lnurl-pay/dist/types/types"
 export type ConvertMoneyAmount = <W extends WalletOrDisplayCurrency>(
   moneyAmount: MoneyAmount<WalletOrDisplayCurrency>,
   toCurrency: W,
+  shouldRound?: boolean,
 ) => MoneyAmount<W>
 
 export type BaseCreatePaymentDetailsParams<T extends WalletCurrency> = {

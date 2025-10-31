@@ -129,7 +129,8 @@ export const useSwap = () => {
     if (usdWallet && btcWallet) {
       // fetch breez(BTC) invoice
       // @ts-ignore: Unreachable code error
-      const convertedAmount = convertMoneyAmount(settlementSendAmount, "BTC")
+      // Round to ensure integer satoshis for Breez SDK
+      const convertedAmount = convertMoneyAmount(settlementSendAmount, "BTC", true)
       const invoiceRes = await receivePaymentBreezSDK(
         convertedAmount.amount,
         "Swap USD to BTC",

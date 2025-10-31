@@ -37,9 +37,12 @@ export const createNoAmountOnchainPaymentDetails = <T extends WalletCurrency>(
     address,
   } = params
 
+  // Only round for BTC wallet to ensure integer satoshis
+  const shouldRound = sendingWalletDescriptor.currency === WalletCurrency.Btc
   const settlementAmount = convertMoneyAmount(
     unitOfAccountAmount,
     sendingWalletDescriptor.currency,
+    shouldRound,
   )
   const memo = destinationSpecifiedMemo || senderSpecifiedMemo
 
@@ -343,9 +346,12 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
     address,
   } = params
 
+  // Only round for BTC wallet to ensure integer satoshis
+  const shouldRound = sendingWalletDescriptor.currency === WalletCurrency.Btc
   const settlementAmount = convertMoneyAmount(
     destinationSpecifiedAmount,
     sendingWalletDescriptor.currency,
+    shouldRound,
   )
   const unitOfAccountAmount = destinationSpecifiedAmount
 

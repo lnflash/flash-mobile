@@ -33,9 +33,12 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
   } = params
 
   const memo = destinationSpecifiedMemo || senderSpecifiedMemo
+  // Only round for BTC wallet to ensure integer satoshis
+  const shouldRound = sendingWalletDescriptor.currency === WalletCurrency.Btc
   const settlementAmount = convertMoneyAmount(
     unitOfAccountAmount,
     sendingWalletDescriptor.currency,
+    shouldRound,
   )
 
   const getFee: GetFee<T> = (_) => {

@@ -41,9 +41,12 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
   } = params
 
   const memo = destinationSpecifiedMemo || senderSpecifiedMemo
+  // Only round for BTC wallet to ensure integer satoshis
+  const shouldRound = sendingWalletDescriptor.currency === WalletCurrency.Btc
   const settlementAmount = convertMoneyAmount(
     unitOfAccountAmount,
     sendingWalletDescriptor.currency,
+    shouldRound,
   )
 
   const setConvertMoneyAmount = (convertMoneyAmount: ConvertMoneyAmount) => {
@@ -232,9 +235,12 @@ export const createAmountLightningPaymentDetails = <T extends WalletCurrency>(
   } = params
 
   const memo = destinationSpecifiedMemo || senderSpecifiedMemo
+  // Only round for BTC wallet to ensure integer satoshis
+  const shouldRound = sendingWalletDescriptor.currency === WalletCurrency.Btc
   const settlementAmount = convertMoneyAmount(
     paymentRequestAmount,
     sendingWalletDescriptor.currency,
+    shouldRound,
   )
   const unitOfAccountAmount = paymentRequestAmount
 
@@ -415,9 +421,12 @@ export const createLnurlPaymentDetails = <T extends WalletCurrency>(
       }
     }
   } else {
+    // Only round for BTC wallet to ensure integer satoshis
+    const shouldRound = sendingWalletDescriptor.currency === WalletCurrency.Btc
     settlementAmount = convertMoneyAmount(
       unitOfAccountAmount,
       sendingWalletDescriptor.currency,
+      shouldRound,
     )
   }
 

@@ -87,6 +87,7 @@ export const usePriceConversion = () => {
     return <T extends WalletOrDisplayCurrency>(
       moneyAmount: MoneyAmount<WalletOrDisplayCurrency>,
       toCurrency: T,
+      shouldRound?: boolean,
     ): MoneyAmount<T> => {
       // If the money amount is already the correct currency, return it
       if (moneyAmountIsCurrencyType(moneyAmount, toCurrency)) {
@@ -96,9 +97,11 @@ export const usePriceConversion = () => {
       let amount =
         moneyAmount.amount * priceOfCurrencyInCurrency(moneyAmount.currency, toCurrency)
 
-      // if (toCurrency === "BTC") {
-      //   amount = Math.round(amount)
-      // }
+      // Only round when converting to BTC AND shouldRound is explicitly true
+      // This ensures BTC wallet operations get integer satoshis while USD wallet operations maintain precision
+      if (toCurrency === "BTC" && shouldRound) {
+        amount = Math.round(amount)
+      }
 
       if (
         moneyAmountIsCurrencyType(moneyAmount, DisplayCurrency) &&
