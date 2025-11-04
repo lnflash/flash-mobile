@@ -237,8 +237,8 @@ const ContactDetailsScreen: React.FC = () => {
 
       <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
         {/* Banner section - Primal style */}
-        {profile?.banner ? (
-          profile.banner.endsWith(".svg") ? (
+        {profile?.banner &&
+          (profile.banner.endsWith(".svg") ? (
             <SvgUri
               uri={profile.banner}
               width="100%"
@@ -251,13 +251,15 @@ const ContactDetailsScreen: React.FC = () => {
               style={styles.bannerImage}
               resizeMode="cover"
             />
-          )
-        ) : (
-          <View style={styles.bannerImage} />
-        )}
+          ))}
 
         {/* Profile section with overlapping profile picture */}
-        <View style={styles.profileContainer}>
+        <View
+          style={[
+            styles.profileContainer,
+            !profile?.banner && { marginTop: 40 }, // only add spacing if no banner
+          ]}
+        >
           {/* Profile picture overlaps the banner */}
           <View style={styles.profileImageWrapper}>
             <Image
@@ -467,21 +469,22 @@ const ContactDetailsScreen: React.FC = () => {
             </LinearGradient>
           </TouchableOpacity>
         </View>
-
-        <View style={[styles.dangerZoneContainer, { borderTopColor: colors.grey5 }]}>
-          <Text style={[styles.dangerZoneTitle, { color: colors.black }]}>
-            {LL.Nostr.Contacts.contactManagement()}
-          </Text>
-          <TouchableOpacity
-            style={[styles.unfollowButton, { backgroundColor: colors.error }]}
-            onPress={handleUnfollow}
-          >
-            <Icon name="remove-circle" style={[styles.icon, { color: "white" }]} />
-            <Text style={[{ color: "white" }]}>
-              {LL.Nostr.Contacts.unfollowContact()}
+        {selfPubkey !== contactPubkey ? (
+          <View style={[styles.dangerZoneContainer, { borderTopColor: colors.grey5 }]}>
+            <Text style={[styles.dangerZoneTitle, { color: colors.black }]}>
+              {LL.Nostr.Contacts.contactManagement()}
             </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={[styles.unfollowButton, { backgroundColor: colors.error }]}
+              onPress={handleUnfollow}
+            >
+              <Icon name="remove-circle" style={[styles.icon, { color: "white" }]} />
+              <Text style={[{ color: "white" }]}>
+                {LL.Nostr.Contacts.unfollowContact()}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </ScrollView>
 
       {/* Floating Action Button to create new post - only shown when user has posts */}
