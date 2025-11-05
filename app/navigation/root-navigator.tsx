@@ -408,8 +408,7 @@ export const RootStack = () => {
         name="transactionDetail"
         component={TransactionDetailScreen}
         options={{
-          headerTitle: "",
-          headerLeft: () => null,
+          headerShown: false,
           cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
         }}
       />
