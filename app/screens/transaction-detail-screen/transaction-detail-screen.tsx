@@ -1,5 +1,11 @@
 import React from "react"
-import { Linking, TouchableWithoutFeedback, View, TouchableOpacity } from "react-native"
+import {
+  Linking,
+  TouchableWithoutFeedback,
+  View,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native"
 import { makeStyles, Text, useTheme, Card } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import Icon from "react-native-vector-icons/Ionicons"
@@ -19,10 +25,7 @@ import { useAppConfig } from "@app/hooks"
 
 // utils | types
 import { toWalletAmount } from "@app/types/amounts"
-import {
-  SettlementVia,
-  useTransactionDetailsQuery,
-} from "@app/graphql/generated"
+import { SettlementVia, useTransactionDetailsQuery } from "@app/graphql/generated"
 import { getDescriptionDisplay } from "@app/graphql/transactions"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { gql } from "@apollo/client"
@@ -192,181 +195,190 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
   })
 
   return (
-    <Screen unsafe preset="scroll">
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-        activeOpacity={0.7}
-      >
-        <Icon name="arrow-back" size={24} color={colors.black} />
-      </TouchableOpacity>
-
-      <Card containerStyle={styles.headerCard}>
-        <View style={styles.amountView}>
-          <IconTransaction
-            isReceive={isReceive}
-            walletCurrency={settlementCurrency}
-            pending={false}
-            onChain={false}
-          />
-          <Text type="h2" style={styles.spendReceiveText}>
-            {spendOrReceiveText}
-          </Text>
-          <Text type="h1" style={styles.displayAmount}>
-            {displayAmount}
-          </Text>
-          {/* Show memo for Lightning or confirmations for onchain */}
-          {(ibexDetails?.memo ||
-            (settlementVia?.__typename === "SettlementViaOnChain" &&
-              ibexDetails?.confirmations !== undefined &&
-              ibexDetails?.confirmations !== null)) && (
-            <View style={styles.memoContainer}>
-              {settlementVia?.__typename === "SettlementViaOnChain" &&
-              ibexDetails?.confirmations !== undefined &&
-              ibexDetails?.confirmations !== null ? (
-                <>
-                  <Icon
-                    name={
-                      ibexDetails.confirmations >= 6
-                        ? "shield-checkmark"
-                        : ibexDetails.confirmations >= 1
-                        ? "shield"
-                        : "time"
-                    }
-                    size={30}
-                    color={
-                      ibexDetails.confirmations >= 6
-                        ? colors.success
-                        : ibexDetails.confirmations >= 1
-                        ? colors.warning
-                        : colors.grey2
-                    }
-                    style={styles.memoIcon}
-                  />
-                  <Text
-                    type="p1"
-                    style={[
-                      styles.memoText,
-                      {
-                        color:
-                          ibexDetails.confirmations >= 6
-                            ? colors.success
-                            : ibexDetails.confirmations >= 1
-                            ? colors.warning
-                            : colors.grey2,
-                      },
-                    ]}
-                  >
-                    {ibexDetails.confirmations === 0
-                      ? "Pending"
-                      : `${ibexDetails.confirmations} ${
-                          ibexDetails.confirmations === 1
-                            ? "Confirmation"
-                            : "Confirmations"
-                        }`}
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Icon
-                    name="document-text"
-                    size={30}
-                    color={colors.primary}
-                    style={styles.memoIcon}
-                  />
-                  <Text type="p1" style={styles.memoText}>
-                    {ibexDetails?.memo}
-                  </Text>
-                </>
-              )}
-            </View>
-          )}
-        </View>
-      </Card>
-
-      <Card containerStyle={styles.detailsCard}>
-        {onChainTxNotBroadcasted && (
-          <View style={styles.txNotBroadcast}>
-            <GaloyInfo>{LL.TransactionDetailScreen.txNotBroadcast()}</GaloyInfo>
-          </View>
-        )}
-
-        <Row
-          entry={
-            isReceive
-              ? LL.TransactionDetailScreen.receivingAccount()
-              : LL.TransactionDetailScreen.sendingAccount()
-          }
-          content={
-            <WalletSummary
-              amountType={tx.direction}
-              settlementAmount={toWalletAmount({
-                amount: Math.abs(settlementAmount),
-                currency: settlementCurrency,
-              })}
-              txDisplayAmount={settlementDisplayAmount}
-              txDisplayCurrency={settlementDisplayCurrency}
+    <Screen unsafe preset="fixed">
+      <View style={styles.backButtonWrapper}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Icon name="arrow-back" size={24} color={colors.black} />
+        </TouchableOpacity>
+      </View>
+      <ScrollView style={styles.scrollContent}>
+        <Card containerStyle={styles.headerCard}>
+          <View style={styles.amountView}>
+            <IconTransaction
+              isReceive={isReceive}
+              walletCurrency={settlementCurrency}
+              pending={false}
+              onChain={false}
             />
-          }
-        />
+            <Text type="h2" style={styles.spendReceiveText}>
+              {spendOrReceiveText}
+            </Text>
+            <Text type="h1" style={styles.displayAmount}>
+              {displayAmount}
+            </Text>
+            {/* Show memo for Lightning or confirmations for onchain */}
+            {(ibexDetails?.memo ||
+              (settlementVia?.__typename === "SettlementViaOnChain" &&
+                ibexDetails?.confirmations !== undefined &&
+                ibexDetails?.confirmations !== null)) && (
+              <View style={styles.memoContainer}>
+                {settlementVia?.__typename === "SettlementViaOnChain" &&
+                ibexDetails?.confirmations !== undefined &&
+                ibexDetails?.confirmations !== null ? (
+                  <>
+                    <Icon
+                      name={
+                        ibexDetails.confirmations >= 6
+                          ? "shield-checkmark"
+                          : ibexDetails.confirmations >= 1
+                          ? "shield"
+                          : "time"
+                      }
+                      size={30}
+                      color={
+                        ibexDetails.confirmations >= 6
+                          ? colors.success
+                          : ibexDetails.confirmations >= 1
+                          ? colors.warning
+                          : colors.grey2
+                      }
+                      style={styles.memoIcon}
+                    />
+                    <Text
+                      type="p1"
+                      style={[
+                        styles.memoText,
+                        {
+                          color:
+                            ibexDetails.confirmations >= 6
+                              ? colors.success
+                              : ibexDetails.confirmations >= 1
+                              ? colors.warning
+                              : colors.grey2,
+                        },
+                      ]}
+                    >
+                      {ibexDetails.confirmations === 0
+                        ? "Pending"
+                        : `${ibexDetails.confirmations} ${
+                            ibexDetails.confirmations === 1
+                              ? "Confirmation"
+                              : "Confirmations"
+                          }`}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Icon
+                      name="document-text"
+                      size={30}
+                      color={colors.primary}
+                      style={styles.memoIcon}
+                    />
+                    <Text type="p1" style={styles.memoText}>
+                      {ibexDetails?.memo}
+                    </Text>
+                  </>
+                )}
+              </View>
+            )}
+          </View>
+        </Card>
 
-        <Row entry={LL.common.date()} value={<TransactionDate {...tx} />} />
-
-        <View style={styles.separator} />
-
-        {(!isReceive || settlementCurrency === "BTC") && (
-          <Row entry={LL.common.fees()} value={formattedFeeText} />
-        )}
-
-        <Row entry={LL.common.description()} value={description} />
-
-        {settlementVia?.__typename === "SettlementViaIntraLedger" && (
-          <Row
-            entry={LL.TransactionDetailScreen.paid()}
-            value={settlementVia?.counterPartyUsername || galoyInstance.name}
-          />
-        )}
-
-        <Row entry={LL.common.type()} value={typeDisplay(settlementVia)} />
-
-        <View style={styles.separator} />
-
-        {settlementVia?.__typename === "SettlementViaLn" &&
-          initiationVia.__typename === "InitiationViaLn" &&
-          initiationVia.paymentHash && (
-            <Row entry="Hash" value={initiationVia.paymentHash} />
-          )}
-
-        {settlementVia?.__typename === "SettlementViaLn" &&
-          ibexDetails?.paymentPreimage && (
-            <Row entry="Preimage" value={ibexDetails.paymentPreimage} />
-          )}
-
-        {onChainTxBroadcasted && settlementVia?.transactionHash && (
-          <TouchableWithoutFeedback
-            onPress={() => viewInExplorer(settlementVia?.transactionHash || "")}
-          >
-            <View>
-              <Row
-                entry="Hash"
-                value={settlementVia?.transactionHash}
-                __typename={settlementVia?.__typename}
-              />
+        <Card containerStyle={styles.detailsCard}>
+          {onChainTxNotBroadcasted && (
+            <View style={styles.txNotBroadcast}>
+              <GaloyInfo>{LL.TransactionDetailScreen.txNotBroadcast()}</GaloyInfo>
             </View>
-          </TouchableWithoutFeedback>
-        )}
+          )}
 
-        {id && <Row entry="Transaction ID" value={id} />}
-      </Card>
+          <Row
+            entry={
+              isReceive
+                ? LL.TransactionDetailScreen.receivingAccount()
+                : LL.TransactionDetailScreen.sendingAccount()
+            }
+            content={
+              <WalletSummary
+                amountType={tx.direction}
+                settlementAmount={toWalletAmount({
+                  amount: Math.abs(settlementAmount),
+                  currency: settlementCurrency,
+                })}
+                txDisplayAmount={settlementDisplayAmount}
+                txDisplayCurrency={settlementDisplayCurrency}
+              />
+            }
+          />
+
+          <Row entry={LL.common.date()} value={<TransactionDate {...tx} />} />
+
+          <View style={styles.separator} />
+
+          {(!isReceive || settlementCurrency === "BTC") && (
+            <Row entry={LL.common.fees()} value={formattedFeeText} />
+          )}
+
+          <Row entry={LL.common.description()} value={description} />
+
+          {settlementVia?.__typename === "SettlementViaIntraLedger" && (
+            <Row
+              entry={LL.TransactionDetailScreen.paid()}
+              value={settlementVia?.counterPartyUsername || galoyInstance.name}
+            />
+          )}
+
+          <Row entry={LL.common.type()} value={typeDisplay(settlementVia)} />
+
+          <View style={styles.separator} />
+
+          {settlementVia?.__typename === "SettlementViaLn" &&
+            initiationVia.__typename === "InitiationViaLn" &&
+            initiationVia.paymentHash && (
+              <Row entry="Hash" value={initiationVia.paymentHash} />
+            )}
+
+          {settlementVia?.__typename === "SettlementViaLn" &&
+            ibexDetails?.paymentPreimage && (
+              <Row entry="Preimage" value={ibexDetails.paymentPreimage} />
+            )}
+
+          {onChainTxBroadcasted && settlementVia?.transactionHash && (
+            <TouchableWithoutFeedback
+              onPress={() => viewInExplorer(settlementVia?.transactionHash || "")}
+            >
+              <View>
+                <Row
+                  entry="Hash"
+                  value={settlementVia?.transactionHash}
+                  __typename={settlementVia?.__typename}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          )}
+
+          {id && <Row entry="Transaction ID" value={id} />}
+        </Card>
+      </ScrollView>
     </Screen>
   )
 }
 
 const useStyles = makeStyles(({ colors }) => ({
-  backButton: {
+  backButtonWrapper: {
+    backgroundColor: "white",
     position: "absolute",
-    top: 16,
-    left: 16,
+    zIndex: 1,
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: 15,
+  },
+  backButton: {
     zIndex: 100,
     width: 44,
     height: 44,
@@ -380,9 +392,12 @@ const useStyles = makeStyles(({ colors }) => ({
     shadowRadius: 4,
     elevation: 5,
   },
+  scrollContent: {
+    flex: 1,
+  },
   headerCard: {
     marginHorizontal: 16,
-    marginTop: 72, // Account for back button
+    marginTop: 82, // Account for back button
     marginBottom: 8,
     borderRadius: 16,
     elevation: 2,
@@ -393,7 +408,7 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   detailsCard: {
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 26,
     borderRadius: 16,
     elevation: 2,
     shadowColor: colors.black,
