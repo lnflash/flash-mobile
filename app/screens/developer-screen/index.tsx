@@ -19,7 +19,7 @@ import useLogout from "../../hooks/use-logout"
 import { addDeviceToken } from "../../utils/notifications"
 import { testProps } from "../../utils/testProps"
 import Config from "react-native-config"
-import { getPublicKey } from "nostr-tools"
+import { getPublicKey, nip19 } from "nostr-tools"
 import { getSecretKey } from "@app/utils/nostr"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import {
@@ -134,22 +134,15 @@ export const DeveloperScreen: React.FC = () => {
       // Get user's Nostr key
       const secretKey = await getSecretKey()
       if (!secretKey) {
-        Alert.alert("Error", "No Nostr profile found. Please create a Nostr profile first.")
+        Alert.alert(
+          "Error",
+          "No Nostr profile found. Please create a Nostr profile first.",
+        )
         return
       }
 
       const pubkey = getPublicKey(secretKey)
       console.log("Generating images for pubkey:", pubkey)
-
-      // Check FLASH_NOSTR_NSEC is configured
-      const flashNsec = Config.FLASH_NOSTR_NSEC
-      if (!flashNsec || flashNsec === "ADD_YOUR_NSEC_HERE") {
-        Alert.alert(
-          "Configuration Error",
-          "FLASH_NOSTR_NSEC not configured in .env file. Cannot upload images.",
-        )
-        return
-      }
 
       Alert.alert(
         "Generating Images",
@@ -171,11 +164,19 @@ export const DeveloperScreen: React.FC = () => {
 
                 // Upload to nostr.build
                 console.log("Step 3: Uploading avatar to nostr.build...")
-                const pictureUrl = await uploadToNostrBuild(avatarUri, flashNsec, false)
+                const pictureUrl = await uploadToNostrBuild(
+                  avatarUri,
+                  nip19.nsecEncode(secretKey),
+                  false,
+                )
                 console.log("Avatar uploaded:", pictureUrl)
 
                 console.log("Step 4: Uploading banner to nostr.build...")
-                const bannerUrl = await uploadToNostrBuild(bannerUri, flashNsec, false)
+                const bannerUrl = await uploadToNostrBuild(
+                  bannerUri,
+                  nip19.nsecEncode(secretKey),
+                  false,
+                )
                 console.log("Banner uploaded:", bannerUrl)
 
                 // Update kind-0 event
@@ -211,7 +212,8 @@ export const DeveloperScreen: React.FC = () => {
                 )
               } catch (error) {
                 console.error("Error in image generation flow:", error)
-                const message = error instanceof Error ? error.message : "Failed to generate images"
+                const message =
+                  error instanceof Error ? error.message : "Failed to generate images"
                 Alert.alert("Error", message)
               } finally {
                 setGeneratingImages(false)
@@ -306,11 +308,7 @@ export const DeveloperScreen: React.FC = () => {
               }}
             />
             <Button
-              title={
-                generatingImages
-                  ? "Generating..."
-                  : "Generate Profile Pic & Banner"
-              }
+              title={generatingImages ? "Generating..." : "Generate Profile Pic & Banner"}
               containerStyle={styles.button}
               onPress={handleGenerateProfileImages}
               disabled={generatingImages}
