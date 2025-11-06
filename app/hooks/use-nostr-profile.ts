@@ -114,32 +114,27 @@ const useNostrProfile = () => {
 
     try {
       const pubKey = getPublicKey(secretKey)
-      const flashNsec = Config.FLASH_NOSTR_NSEC
 
-      if (flashNsec && flashNsec !== "ADD_YOUR_NSEC_HERE") {
-        // Generate avatar
-        console.log("Generating RoboHash avatar...")
-        const avatarUri = await generateRoboHashAvatar(pubKey)
+      // Generate avatar
+      console.log("Generating RoboHash avatar...")
+      const avatarUri = await generateRoboHashAvatar(pubKey)
 
-        // Generate banner
-        progressCallback?.("Generating banner image...")
-        console.log("Generating gradient banner...")
-        const bannerUri = await generateGradientBanner(pubKey)
+      // Generate banner
+      progressCallback?.("Generating banner image...")
+      console.log("Generating gradient banner...")
+      const bannerUri = await generateGradientBanner(pubKey)
 
-        // Upload avatar
-        progressCallback?.("Uploading profile picture...")
-        console.log("Uploading avatar to nostr.build...")
-        pictureUrl = await uploadToNostrBuild(avatarUri, flashNsec, false)
-        console.log("Avatar uploaded:", pictureUrl)
+      // Upload avatar
+      progressCallback?.("Uploading profile picture...")
+      console.log("Uploading avatar to nostr.build...")
+      pictureUrl = await uploadToNostrBuild(avatarUri, nostrSecret, false)
+      console.log("Avatar uploaded:", pictureUrl)
 
-        // Upload banner
-        progressCallback?.("Uploading banner image...")
-        console.log("Uploading banner to nostr.build...")
-        bannerUrl = await uploadToNostrBuild(bannerUri, flashNsec, false)
-        console.log("Banner uploaded:", bannerUrl)
-      } else {
-        console.log("⚠️ FLASH_NOSTR_NSEC not configured, skipping image upload")
-      }
+      // Upload banner
+      progressCallback?.("Uploading banner image...")
+      console.log("Uploading banner to nostr.build...")
+      bannerUrl = await uploadToNostrBuild(bannerUri, nostrSecret, false)
+      console.log("Banner uploaded:", bannerUrl)
     } catch (error) {
       console.error(
         "Failed to generate/upload images, continuing with text-only profile:",
@@ -255,11 +250,6 @@ const useNostrProfile = () => {
       }
 
       const pubKey = getPublicKey(secret)
-      const flashNsec = Config.FLASH_NOSTR_NSEC
-
-      if (!flashNsec || flashNsec === "ADD_YOUR_NSEC_HERE") {
-        throw new Error("FLASH_NOSTR_NSEC not configured. Cannot upload images.")
-      }
 
       // Generate images
       console.log("Generating RoboHash avatar...")
@@ -272,11 +262,19 @@ const useNostrProfile = () => {
       // Upload to nostr.build
       progressCallback?.("Uploading profile picture...")
       console.log("Uploading avatar to nostr.build...")
-      const pictureUrl = await uploadToNostrBuild(avatarUri, flashNsec, false)
+      const pictureUrl = await uploadToNostrBuild(
+        avatarUri,
+        nip19.nsecEncode(secret),
+        false,
+      )
 
       progressCallback?.("Uploading banner image...")
       console.log("Uploading banner to nostr.build...")
-      const bannerUrl = await uploadToNostrBuild(bannerUri, flashNsec, false)
+      const bannerUrl = await uploadToNostrBuild(
+        bannerUri,
+        nip19.nsecEncode(secret),
+        false,
+      )
 
       // Update profile with new images
       progressCallback?.("Updating profile...")

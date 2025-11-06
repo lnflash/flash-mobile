@@ -73,13 +73,8 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
     method: string,
   ): Promise<string> => {
     try {
-      const nsec = Config.FLASH_NOSTR_NSEC
-      if (!nsec || nsec === "ADD_YOUR_NSEC_HERE") {
-        throw new Error("FLASH_NOSTR_NSEC not configured")
-      }
-
-      const decoded = nip19.decode(nsec)
-      const privateKey = decoded.data as Uint8Array
+      const privateKey = await getSecretKey()
+      if (!privateKey) throw Error
       const publicKey = getPublicKey(privateKey)
 
       const authEvent = {
