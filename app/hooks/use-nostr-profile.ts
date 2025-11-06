@@ -7,13 +7,20 @@ import {
   finalizeEvent,
 } from "nostr-tools"
 import { getSecretKey, setPreferredRelay } from "@app/utils/nostr"
-import { publishEventToRelays, verifyEventOnRelays, getPublishingRelays } from "@app/utils/nostr/publish-helpers"
+import {
+  publishEventToRelays,
+  verifyEventOnRelays,
+  getPublishingRelays,
+} from "@app/utils/nostr/publish-helpers"
 import { useHomeAuthedQuery, useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "./use-app-config"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { pool } from "@app/utils/nostr/pool"
-import { generateRoboHashAvatar, generateGradientBanner } from "@app/utils/nostr/image-generation"
+import {
+  generateRoboHashAvatar,
+  generateGradientBanner,
+} from "@app/utils/nostr/image-generation"
 import { uploadToNostrBuild } from "@app/utils/nostr/media-upload"
 import Config from "react-native-config"
 
@@ -46,7 +53,11 @@ const useNostrProfile = () => {
       galoyInstance: { lnAddressHostname: lnDomain },
     },
   } = useAppConfig()
-  const relays = ["wss://relay.flashapp.me", "wss://relay.islandbitcoin.com", "wss://relay.damus.io"]
+  const relays = [
+    "wss://relay.flashapp.me",
+    "wss://relay.islandbitcoin.com",
+    "wss://relay.damus.io",
+  ]
 
   const [userUpdateNpubMutation] = useUserUpdateNpubMutation()
 
@@ -64,7 +75,7 @@ const useNostrProfile = () => {
 
   const saveNewNostrKey = async (
     progressCallback?: (message: string) => void,
-    additionalContent?: any
+    additionalContent?: any,
   ) => {
     const username = dataAuthed?.me?.username || undefined
     let lud16
@@ -102,34 +113,32 @@ const useNostrProfile = () => {
 
     try {
       const pubKey = getPublicKey(secretKey)
-      const flashNsec = Config.FLASH_NOSTR_NSEC
 
-      if (flashNsec && flashNsec !== "ADD_YOUR_NSEC_HERE") {
-        // Generate avatar
-        console.log("Generating RoboHash avatar...")
-        const avatarUri = await generateRoboHashAvatar(pubKey)
+      // Generate avatar
+      console.log("Generating RoboHash avatar...")
+      const avatarUri = await generateRoboHashAvatar(pubKey)
 
-        // Generate banner
-        progressCallback?.("Generating banner image...")
-        console.log("Generating gradient banner...")
-        const bannerUri = await generateGradientBanner(pubKey)
+      // Generate banner
+      progressCallback?.("Generating banner image...")
+      console.log("Generating gradient banner...")
+      const bannerUri = await generateGradientBanner(pubKey)
 
-        // Upload avatar
-        progressCallback?.("Uploading profile picture...")
-        console.log("Uploading avatar to nostr.build...")
-        pictureUrl = await uploadToNostrBuild(avatarUri, flashNsec, false)
-        console.log("Avatar uploaded:", pictureUrl)
+      // Upload avatar
+      progressCallback?.("Uploading profile picture...")
+      console.log("Uploading avatar to nostr.build...")
+      pictureUrl = await uploadToNostrBuild(avatarUri, nostrSecret, false)
+      console.log("Avatar uploaded:", pictureUrl)
 
-        // Upload banner
-        progressCallback?.("Uploading banner image...")
-        console.log("Uploading banner to nostr.build...")
-        bannerUrl = await uploadToNostrBuild(bannerUri, flashNsec, false)
-        console.log("Banner uploaded:", bannerUrl)
-      } else {
-        console.log("⚠️ FLASH_NOSTR_NSEC not configured, skipping image upload")
-      }
+      // Upload banner
+      progressCallback?.("Uploading banner image...")
+      console.log("Uploading banner to nostr.build...")
+      bannerUrl = await uploadToNostrBuild(bannerUri, nostrSecret, false)
+      console.log("Banner uploaded:", bannerUrl)
     } catch (error) {
-      console.error("Failed to generate/upload images, continuing with text-only profile:", error)
+      console.error(
+        "Failed to generate/upload images, continuing with text-only profile:",
+        error,
+      )
       // Silently continue without images
     }
 
@@ -138,20 +147,22 @@ const useNostrProfile = () => {
     progressCallback?.("Publishing profile to relays...")
 
     try {
-      const baseProfileContent = username ? {
-        name: username,
-        username: username,
-        flash_username: username,
-        lud16: lud16,
-        nip05: `${username}@${lnDomain}`,
-        ...(pictureUrl && { picture: pictureUrl }),
-        ...(bannerUrl && { banner: bannerUrl }),
-      } : {
-        name: "Flash User",
-        about: "Flash wallet user",
-        ...(pictureUrl && { picture: pictureUrl }),
-        ...(bannerUrl && { banner: bannerUrl }),
-      }
+      const baseProfileContent = username
+        ? {
+            name: username,
+            username: username,
+            flash_username: username,
+            lud16: lud16,
+            nip05: `${username}@${lnDomain}`,
+            ...(pictureUrl && { picture: pictureUrl }),
+            ...(bannerUrl && { banner: bannerUrl }),
+          }
+        : {
+            name: "Flash User",
+            about: "Flash wallet user",
+            ...(pictureUrl && { picture: pictureUrl }),
+            ...(bannerUrl && { banner: bannerUrl }),
+          }
 
       // Merge with any additional content passed in (e.g., from username screen)
       const profileContent = {
@@ -162,7 +173,10 @@ const useNostrProfile = () => {
         ...(bannerUrl && { banner: bannerUrl }),
       }
 
-      console.log("Final profile content with images:", JSON.stringify(profileContent, null, 2))
+      console.log(
+        "Final profile content with images:",
+        JSON.stringify(profileContent, null, 2),
+      )
 
       // Create and publish the profile event
       const pubKey = getPublicKey(secretKey)
@@ -183,13 +197,15 @@ const useNostrProfile = () => {
         pool,
         signedKind0Event,
         publicRelays,
-        "Initial Profile (kind-0)"
+        "Initial Profile (kind-0)",
       )
 
       if (publishResult.successCount === 0) {
         console.error("❌ CRITICAL: Failed to publish initial profile to ANY relay")
       } else {
-        console.log(`✅ Initial profile successfully published to ${publishResult.successCount} relays`)
+        console.log(
+          `✅ Initial profile successfully published to ${publishResult.successCount} relays`,
+        )
       }
 
       progressCallback?.("Profile created successfully!")
@@ -199,8 +215,12 @@ const useNostrProfile = () => {
         const verification = await verifyEventOnRelays(
           pool,
           signedKind0Event.id,
-          ["wss://relay.damus.io", "wss://relay.primal.net", "wss://relay.islandbitcoin.com"],
-          0
+          [
+            "wss://relay.damus.io",
+            "wss://relay.primal.net",
+            "wss://relay.islandbitcoin.com",
+          ],
+          0,
         )
         if (verification.found) {
           console.log("✅ Initial profile verified on major relays")
@@ -218,7 +238,7 @@ const useNostrProfile = () => {
 
   const generateProfileImages = async (
     existingProfileContent?: any,
-    progressCallback?: (message: string) => void
+    progressCallback?: (message: string) => void,
   ): Promise<{ picture?: string; banner?: string } | null> => {
     try {
       progressCallback?.("Generating profile picture...")
@@ -229,11 +249,6 @@ const useNostrProfile = () => {
       }
 
       const pubKey = getPublicKey(secret)
-      const flashNsec = Config.FLASH_NOSTR_NSEC
-
-      if (!flashNsec || flashNsec === "ADD_YOUR_NSEC_HERE") {
-        throw new Error("FLASH_NOSTR_NSEC not configured. Cannot upload images.")
-      }
 
       // Generate images
       console.log("Generating RoboHash avatar...")
@@ -246,11 +261,19 @@ const useNostrProfile = () => {
       // Upload to nostr.build
       progressCallback?.("Uploading profile picture...")
       console.log("Uploading avatar to nostr.build...")
-      const pictureUrl = await uploadToNostrBuild(avatarUri, flashNsec, false)
+      const pictureUrl = await uploadToNostrBuild(
+        avatarUri,
+        nip19.nsecEncode(secret),
+        false,
+      )
 
       progressCallback?.("Uploading banner image...")
       console.log("Uploading banner to nostr.build...")
-      const bannerUrl = await uploadToNostrBuild(bannerUri, flashNsec, false)
+      const bannerUrl = await uploadToNostrBuild(
+        bannerUri,
+        nip19.nsecEncode(secret),
+        false,
+      )
 
       // Update profile with new images
       progressCallback?.("Updating profile...")
@@ -293,9 +316,8 @@ const useNostrProfile = () => {
   const retryFailedRelays = async (event: any, failedRelays: string[]) => {
     if (failedRelays.length === 0) return { successCount: 0, successfulRelays: [] }
 
-
     const successfulRelays: string[] = []
-    const retryPromises = failedRelays.map(async relay => {
+    const retryPromises = failedRelays.map(async (relay) => {
       try {
         // pool.publish returns an array of promises
         const publishResults = pool.publish([relay], event)
@@ -316,14 +338,14 @@ const useNostrProfile = () => {
     const criticalRelays = [
       "wss://relay.flashapp.me",
       "wss://relay.islandbitcoin.com",
-      "wss://relay.damus.io"
+      "wss://relay.damus.io",
     ]
 
-    const verificationPromises = criticalRelays.map(async relay => {
+    const verificationPromises = criticalRelays.map(async (relay) => {
       try {
         const profile = await pool.get([relay], {
           kinds: [0],
-          authors: [pubkey]
+          authors: [pubkey],
         })
         return { relay, found: !!profile }
       } catch (error) {
@@ -332,8 +354,7 @@ const useNostrProfile = () => {
     })
 
     const results = await Promise.all(verificationPromises)
-    const foundCount = results.filter(r => r.found).length
-
+    const foundCount = results.filter((r) => r.found).length
 
     return foundCount
   }
@@ -383,7 +404,6 @@ const useNostrProfile = () => {
       created_at: Math.floor(Date.now() / 1000),
     }
 
-
     const signedKind0Event = finalizeEvent(kind0Event, secret)
     console.log(`✍️ Event signed with id: ${signedKind0Event.id}`)
 
@@ -392,7 +412,7 @@ const useNostrProfile = () => {
       pool,
       signedKind0Event,
       publicRelays,
-      "Profile (kind-0)"
+      "Profile (kind-0)",
     )
 
     const successfulRelays = publishResult.successfulRelays
@@ -400,22 +420,26 @@ const useNostrProfile = () => {
     const successCount = publishResult.successCount
 
     // Ensure at least one core relay succeeded
-    const coreRelays = [
-      "wss://relay.flashapp.me",
-      "wss://relay.islandbitcoin.com"
-    ]
-    const coreSuccess = successfulRelays.some(relay => coreRelays.includes(relay))
-    console.log(`\n🎯 Core relay status: ${coreSuccess ? '✅ At least one core relay succeeded' : '⚠️ No core relays succeeded'}`)
-
+    const coreRelays = ["wss://relay.flashapp.me", "wss://relay.islandbitcoin.com"]
+    const coreSuccess = successfulRelays.some((relay) => coreRelays.includes(relay))
+    console.log(
+      `\n🎯 Core relay status: ${
+        coreSuccess
+          ? "✅ At least one core relay succeeded"
+          : "⚠️ No core relays succeeded"
+      }`,
+    )
 
     if (!coreSuccess && failedRelays.length > 0) {
       // Retry core relays if none succeeded
-      const coreRelaysToRetry = coreRelays.filter(r => failedRelays.includes(r))
+      const coreRelaysToRetry = coreRelays.filter((r) => failedRelays.includes(r))
       console.log(`🔄 Retrying ${coreRelaysToRetry.length} core relays...`)
       const retryResults = await retryFailedRelays(signedKind0Event, coreRelaysToRetry)
       if (retryResults.successCount > 0) {
         successfulRelays.push(...retryResults.successfulRelays)
-        console.log(`✅ Core relay retry successful! Added ${retryResults.successCount} relays`)
+        console.log(
+          `✅ Core relay retry successful! Added ${retryResults.successCount} relays`,
+        )
       } else {
         console.log("⚠️ Core relay retry failed")
       }
@@ -430,13 +454,14 @@ const useNostrProfile = () => {
 
     // Background retry for remaining failed relays
     if (failedRelays.length > 0) {
-      console.log(`⏰ Scheduling background retry for ${failedRelays.length} failed relays in 5 seconds...`)
+      console.log(
+        `⏰ Scheduling background retry for ${failedRelays.length} failed relays in 5 seconds...`,
+      )
       setTimeout(() => {
         console.log("🔄 Starting background retry for failed relays...")
         retryFailedRelays(signedKind0Event, failedRelays)
       }, 5000)
     }
-
 
     // Verify profile propagation after 3 seconds
     if (successfulRelays.length > 0) {
@@ -448,21 +473,25 @@ const useNostrProfile = () => {
           "wss://relay.flashapp.me",
           "wss://relay.islandbitcoin.com",
           "wss://relay.damus.io",
-          "wss://relay.primal.net"
+          "wss://relay.primal.net",
         ]
 
         const verification = await verifyEventOnRelays(
           pool,
           signedKind0Event.id,
           verifyRelays,
-          0 // kind-0 for profile
+          0, // kind-0 for profile
         )
 
         if (verification.found) {
-          console.log(`✅ Profile verified on ${verification.foundOnRelays.length} critical relays`)
+          console.log(
+            `✅ Profile verified on ${verification.foundOnRelays.length} critical relays`,
+          )
           console.log("Profile available on:", verification.foundOnRelays.join(", "))
         } else {
-          console.log("⚠️ WARNING: Profile verification failed - not found on any critical relay")
+          console.log(
+            "⚠️ WARNING: Profile verification failed - not found on any critical relay",
+          )
         }
       }, 3000)
     }
