@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React, { useEffect, useState } from "react"
 import { ActivityIndicator, View } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { TouchableOpacity } from "react-native-gesture-handler"
@@ -37,10 +37,15 @@ const PLACEHOLDER_PHONE_NUMBER = "123-456-7890"
 
 type Props = StackScreenProps<PhoneValidationStackParamList, "phoneLoginInitiate">
 
-export const PhoneLoginInitiateScreen: React.FC<Props> = ({ navigation }) => {
+export const PhoneLoginInitiateScreen: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const { colors, mode } = useTheme().theme
   const styles = useStyles()
+
+  // Check if this is an invite signup
+  const hasInviteToken = !!(route?.params as any)?.inviteToken
+  console.log("PhoneLoginInitiate: Route params:", JSON.stringify(route?.params))
+  console.log("PhoneLoginInitiate: Has invite token:", hasInviteToken)
 
   const {
     submitPhoneNumber,
@@ -57,10 +62,102 @@ export const PhoneLoginInitiateScreen: React.FC<Props> = ({ navigation }) => {
     setCountryCode,
     supportedCountries,
     loadingSupportedCountries,
-  } = useRequestPhoneCodeLogin()
+  } = useRequestPhoneCodeLogin(hasInviteToken)
+
+  // Handle pre-filled phone from invite
+  const [hasPreFilled, setHasPreFilled] = React.useState(false)
+  const [targetCountryCode, setTargetCountryCode] = React.useState<
+    CountryCode | undefined
+  >()
 
   useEffect(() => {
+    const handlePrefilledPhone = async () => {
+      const params = route?.params as any
+
+      // Only pre-fill once and if we have the phone number parameter
+      if (params?.prefilledPhone && !hasPreFilled) {
+        setHasPreFilled(true)
+
+        try {
+          // Import parsePhoneNumber at the top of the file
+          const { parsePhoneNumber } = await import("libphonenumber-js/mobile")
+
+          // Check for specific Caribbean country codes
+          if (params.prefilledPhone.startsWith("+1876")) {
+            // Jamaica
+            const numberWithoutCountryCode = params.prefilledPhone.replace("+1", "")
+            setPhoneNumber(numberWithoutCountryCode)
+            setTargetCountryCode("JM" as CountryCode)
+          } else if (params.prefilledPhone.startsWith("+1868")) {
+            // Trinidad and Tobago
+            const numberWithoutCountryCode = params.prefilledPhone.replace("+1", "")
+            setPhoneNumber(numberWithoutCountryCode)
+            setTargetCountryCode("TT" as CountryCode)
+          } else if (params.prefilledPhone.startsWith("+1246")) {
+            // Barbados
+            const numberWithoutCountryCode = params.prefilledPhone.replace("+1", "")
+            setPhoneNumber(numberWithoutCountryCode)
+            setTargetCountryCode("BB" as CountryCode)
+          } else {
+            // Try parsing with libphonenumber
+            const parsed = parsePhoneNumber(params.prefilledPhone)
+            if (parsed && parsed.isValid()) {
+              const countryCode = parsed.country as CountryCode
+              const nationalNumber = parsed.nationalNumber
+              setTargetCountryCode(countryCode)
+              setPhoneNumber(nationalNumber)
+            } else {
+              // If parsing fails, try to extract what we can
+              if (params.prefilledPhone.startsWith("+1")) {
+                // Default to US for other +1 numbers
+                setTargetCountryCode("US" as CountryCode)
+                const numberWithoutCountry = params.prefilledPhone.replace("+1", "")
+                setPhoneNumber(numberWithoutCountry)
+              } else {
+                // Just set the number without country code
+                const cleanNumber = params.prefilledPhone.replace(/[^\d]/g, "")
+                setPhoneNumber(cleanNumber)
+              }
+            }
+          }
+
+          // Store invite token for later redemption
+          if (params.inviteToken) {
+            const AsyncStorage = (
+              await import("@react-native-async-storage/async-storage")
+            ).default
+            await AsyncStorage.setItem("pendingInviteToken", params.inviteToken)
+          }
+        } catch (error) {
+          console.error("Error parsing pre-filled phone:", error)
+          // If all else fails, just set what we have
+          const cleanNumber = params.prefilledPhone.replace(/[^\d]/g, "")
+          setPhoneNumber(cleanNumber)
+        }
+      }
+    }
+
+    handlePrefilledPhone()
+  }, [route?.params, setPhoneNumber, hasPreFilled])
+
+  // Set country code when status changes and we have a target
+  useEffect(() => {
+    if (status === RequestPhoneCodeStatus.InputtingPhoneNumber && targetCountryCode) {
+      // Add a small delay to ensure the component is ready
+      setTimeout(() => {
+        setCountryCode(targetCountryCode)
+        // Clear the target after setting
+        setTargetCountryCode(undefined)
+      }, 100)
+    }
+  }, [status, targetCountryCode, setCountryCode])
+
+  useEffect(() => {
+    console.log("PhoneLoginInitiate: Status changed to:", status)
     if (status === RequestPhoneCodeStatus.SuccessRequestingCode) {
+      console.log("PhoneLoginInitiate: Success! Navigating to validation screen")
+      console.log("Phone:", validatedPhoneNumber)
+      console.log("Channel:", phoneCodeChannel)
       setStatus(RequestPhoneCodeStatus.InputtingPhoneNumber)
       navigation.navigate("phoneLoginValidate", {
         phone: validatedPhoneNumber || "",

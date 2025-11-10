@@ -282,4 +282,14 @@ gql`
       denominatorCurrency
     }
   }
+
+  query invitePreview($token: String!) {
+    invitePreview(token: $token) {
+      contact
+      method
+      isValid
+      inviterUsername
+      expiresAt
+    }
+  }
 `

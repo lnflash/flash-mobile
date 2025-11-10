@@ -89,10 +89,16 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
             Home: "/",
           },
         },
+        // Don't map invite URLs to any specific screen
+        // Let the InviteDeepLinkHandler handle them
       },
     },
     getInitialURL: async () => {
       const url = await Linking.getInitialURL()
+      // Don't let the navigation container handle invite URLs
+      if (url && url.includes("invite")) {
+        return null
+      }
       if (Boolean(url) && isAuthed && !isAppLocked) {
         return url
       }
@@ -102,6 +108,11 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
       console.log("listener", listener)
       const onReceiveURL = ({ url }: { url: string }) => {
         console.log("onReceiveURL", url)
+        // Don't let the navigation container handle invite URLs
+        if (url && url.includes("invite")) {
+          console.log("Skipping invite URL in navigation container")
+          return
+        }
         listener(url)
       }
       // Listen to incoming links from deep linking

@@ -20796,6 +20796,11 @@ react-native-config@^1.5.1:
   resolved "https://registry.yarnpkg.com/react-native-config/-/react-native-config-1.5.1.tgz#73c94f511493e9b7ff9350cdf351d203a1b05acc"
   integrity sha512-g1xNgt1tV95FCX+iWz6YJonxXkQX0GdD3fB8xQtR1GUBEqweB9zMROW77gi2TygmYmUkBI7LU4pES+zcTyK4HA==
 
+react-native-contacts@^8.0.7:
+  version "8.0.7"
+  resolved "https://registry.yarnpkg.com/react-native-contacts/-/react-native-contacts-8.0.7.tgz#486fcc1cc267a2c5bceb51f46263a3e10dbb2650"
+  integrity sha512-9JyH+3MXZcOD1+Lm+kl1DeQzT24ayZ//LonTSZM2cln66mHgC2MzW1wBQAJ7EL9eu5NSjSav4c4BIWuOsods6Q==
+
 react-native-countdown-circle-timer@^3.2.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/react-native-countdown-circle-timer/-/react-native-countdown-circle-timer-3.2.1.tgz#077548e943fcf24b47c7e5ce2f12c1dfa35833c2"

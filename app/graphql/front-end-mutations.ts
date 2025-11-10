@@ -195,3 +195,28 @@ gql`
     }
   }
 `
+
+gql`
+  mutation createInvite($input: CreateInviteInput!) {
+    createInvite(input: $input) {
+      invite {
+        id
+        contact
+        method
+        status
+        createdAt
+        expiresAt
+      }
+      errors
+    }
+  }
+`
+
+gql`
+  mutation redeemInvite($input: RedeemInviteInput!) {
+    redeemInvite(input: $input) {
+      success
+      errors
+    }
+  }
+`

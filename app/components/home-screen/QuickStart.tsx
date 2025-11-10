@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
-import { Dimensions, Linking, TouchableOpacity, View } from "react-native"
+import { Dimensions, Linking, TouchableOpacity, View, Image } from "react-native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import Carousel from "react-native-reanimated-carousel"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
@@ -13,6 +13,7 @@ import Flashcard from "@app/assets/icons/empty-flashcard.svg"
 import NonCustodialWallet from "@app/assets/illustrations/non-custodial-wallet.svg"
 import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
 import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
+import FriendsIcon from "@app/assets/images/heart-symbol.png"
 
 // components
 import { UpgradeAccountModal } from "../upgrade-account-modal"
@@ -64,6 +65,13 @@ const QuickStart = () => {
   }
 
   let carouselData = [
+    {
+      type: "invite",
+      title: LL.HomeScreen.inviteTitle?.() || "Invite Friends",
+      description: LL.HomeScreen.inviteDesc?.() || "Get  for inviting friends to Flash",
+      image: FriendsIcon,
+      onPress: () => navigation.navigate("InviteFriend"),
+    },
     {
       type: "upgrade",
       title: LL.HomeScreen.upgradeTitle(),
@@ -120,6 +128,9 @@ const QuickStart = () => {
     },
   ]
 
+  if (persistentState?.closedQuickStartTypes?.includes("invite")) {
+    carouselData = carouselData.filter((el) => el.type !== "invite")
+  }
   if (
     data?.me?.defaultAccount.level !== AccountLevel.Zero ||
     persistentState?.closedQuickStartTypes?.includes("upgrade")
@@ -177,10 +188,20 @@ const QuickStart = () => {
   }
 
   const renderItem = ({ item, index }: RenderItemProps) => {
-    const Image = item.image
+    const ImageOrAsset = item.image
+    const isAsset = typeof ImageOrAsset === "number"
+    const isHeartIcon = item.type === "invite" && isAsset
+
     return (
       <TouchableOpacity onPress={item.onPress} key={index} style={styles.itemContainer}>
-        <Image height={width / 3} width={width / 3} />
+        {isAsset ? (
+          <Image
+            source={ImageOrAsset}
+            style={[styles.imageStyle, isHeartIcon && styles.heartIconRotation]}
+          />
+        ) : (
+          <ImageOrAsset height={width / 3} width={width / 3} />
+        )}
         <View style={styles.texts}>
           <Text type="h1" bold style={styles.title}>
             {item.title}
@@ -244,6 +265,14 @@ const useStyles = makeStyles(({ colors }) => ({
     top: 0,
     right: 0,
     padding: 5,
+  },
+  imageStyle: {
+    width: width / 3,
+    height: width / 3,
+    resizeMode: "contain",
+  },
+  heartIconRotation: {
+    transform: [{ rotate: "-25deg" }],
   },
 }))
 

@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { Text, Image, View } from "react-native"
 import { makeStyles, useTheme } from "@rneui/themed"
 import * as Animatable from "react-native-animatable"
@@ -11,7 +11,8 @@ import AppLogo from "../../assets/logo/blink-logo-icon.png"
 
 // hooks
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { useAuthQuery } from "@app/graphql/generated"
+import { useAuthQuery, useRedeemInviteMutation } from "@app/graphql/generated"
+import { redeemPendingInvite } from "../invite-friend/HandleInviteDeepLink"
 
 // components
 import { PrimaryBtn } from "@app/components/buttons"
@@ -24,6 +25,18 @@ export const Welcome: React.FC<Props> = ({ navigation }) => {
   const { colors } = useTheme().theme
 
   const { data } = useAuthQuery({ skip: !isAuthed })
+  const [redeemInviteMutation] = useRedeemInviteMutation()
+
+  useEffect(() => {
+    // Check and redeem pending invite when user reaches Welcome screen
+    if (isAuthed) {
+      redeemPendingInvite(redeemInviteMutation, true).then((result) => {
+        if (result.success) {
+          console.log("Invite redeemed successfully after onboarding")
+        }
+      })
+    }
+  }, [isAuthed, redeemInviteMutation])
 
   const onPressStart = () => {
     navigation.reset({
