@@ -46,6 +46,7 @@ import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { useChatContext } from "../chat/chatContext"
 import { addToContactList, getSecretKey } from "@app/utils/nostr"
 import { nip19 } from "nostr-tools"
+import { useConfirmOverwrite } from "./confirm-contact-override-modal"
 
 type Props = {} & StackScreenProps<RootStackParamList, "sendBitcoinConfirmation">
 
@@ -76,6 +77,8 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   const [fee, setFee] = useState<FeeType>({ status: "loading" })
   const { contactsEvent, poolRef } = useChatContext()
   const [npubByUsernameQuery] = useNpubByUsernameLazyQuery()
+  const { confirmOverwrite, ModalComponent: ConfirmOverwriteModal } =
+    useConfirmOverwrite()
 
   const { data } = useSendBitcoinConfirmationScreenQuery({ skip: !useIsAuthed() })
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
@@ -174,7 +177,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         })
 
         if (status === "SUCCESS" || status === "PENDING") {
-          if (flashUserAddress && poolRef && contactsEvent) {
+          if (flashUserAddress && poolRef) {
             try {
               const flashUsername = flashUserAddress.split("@")[0]
               const queryResult = await npubByUsernameQuery({
@@ -188,6 +191,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
                     secretKey,
                     nip19.decode(destinationNpub).data as string,
                     poolRef.current,
+                    confirmOverwrite,
                     contactsEvent,
                   )
                 }
@@ -258,6 +262,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           onPress={handleSendPayment}
         />
       </View>
+      <ConfirmOverwriteModal />
     </Screen>
   )
 }

@@ -224,10 +224,9 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
         const destinationNpub = queryResult.data?.npubByUsername?.npub || ""
         logParseDestinationResult(destination)
         setFlashUserAddress(destination.validDestination.handle + "@" + lnDomain)
-        let contacts = getContactPubkeys()
+        let contacts = getContactPubkeys() || []
         if (
           destinationNpub &&
-          contacts &&
           !contacts.includes(nip19.decode(destinationNpub).data as string)
         ) {
           dispatchDestinationStateAction({

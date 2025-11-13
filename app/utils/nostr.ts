@@ -221,22 +221,25 @@ export const sendNIP4Message = async (message: string, recipient: string) => {
 
 export const fetchContactList = async (
   userPubkey: string,
-  pool: SimplePool,
   onEvent: (event: Event) => void,
 ) => {
   let filter = {
     kinds: [3],
     authors: [userPubkey],
   }
-  pool.subscribeMany(["wss://relay.damus.io", "wss://relay.prmal.net"], [filter], {
-    onevent: onEvent,
-    onclose: () => {
-      console.log("Closing Subscription for Contacts")
+  pool.subscribeMany(
+    ["wss://relay.damus.io", "wss://relay.prmal.net", "wss://nos.lol"],
+    [filter],
+    {
+      onevent: onEvent,
+      onclose: () => {
+        console.log("Closing Subscription for Contacts")
+      },
+      oneose: () => {
+        console.log("EOSE RECEIVED, DID SUBSCRIPTION CLOSE?")
+      },
     },
-    oneose: () => {
-      console.log("EOSE RECEIVED, DID SUBSCRIPTION CLOSE?")
-    },
-  })
+  )
 }
 
 export const setPreferredRelay = async (secretKey?: Uint8Array) => {
@@ -275,27 +278,47 @@ export const addToContactList = async (
   userPrivateKey: Uint8Array,
   hexPubKeyToAdd: string,
   pool: SimplePool,
+  confirmOverwrite: () => Promise<boolean>, // 🔸 mandatory callback
   contactsEvent?: Event,
 ) => {
   const userPubkey = getPublicKey(userPrivateKey)
-  let existingContacts: NostrProfile[]
-  if (contactsEvent) existingContacts = getContactsFromEvent(contactsEvent)
-  else existingContacts = []
-  let tags = contactsEvent?.tags || []
-  if (existingContacts.map((p: NostrProfile) => p.pubkey).includes(hexPubKeyToAdd)) return
+  const existingContacts = contactsEvent ? getContactsFromEvent(contactsEvent) : []
+  const tags = contactsEvent?.tags || []
+
+  // ✅ Prevent duplicates
+  if (existingContacts.some((p: NostrProfile) => p.pubkey === hexPubKeyToAdd)) {
+    console.log("Contact already in list.")
+    return
+  }
+
+  // 🟡 No existing contact list event found
+  if (!contactsEvent) {
+    const confirmed = await confirmOverwrite()
+    if (!confirmed) {
+      console.log("User declined to create a new contact list.")
+      return
+    }
+  }
+
+  // 🧩 Build updated contact list event
   tags.push(["p", hexPubKeyToAdd])
-  let newEvent: UnsignedEvent = {
+  const newEvent: UnsignedEvent = {
     kind: 3,
     pubkey: userPubkey,
     content: contactsEvent?.content || "",
     created_at: Math.floor(Date.now() / 1000),
-    tags: tags,
+    tags,
   }
+
   const finalNewEvent = finalizeEvent(newEvent, userPrivateKey)
-  const messages = await Promise.any(
-    pool.publish(["wss://relay.damus.io", "wss://relay.primal.net"], finalNewEvent),
+  const messages = await Promise.allSettled(
+    pool.publish(
+      ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol"],
+      finalNewEvent,
+    ),
   )
-  console.log("Relay replies", messages)
+
+  console.log("Contact Publish: Relay replies", messages)
 }
 
 export async function sendNip17Message(
@@ -435,3 +458,23 @@ export const saveGiftwrapsToStorage = async (giftwraps: Event[]) => {
     console.error("Error saving giftwraps to storage:", e)
   }
 }
+
+export const createContactListEvent = async (secretKey: Uint8Array) => {
+  const selfPublicKey = getPublicKey(secretKey)
+  let event: UnsignedEvent | Event = {
+    kind: 3,
+    tags: [["p", selfPublicKey]],
+    content: "",
+    created_at: Math.floor(Date.now() / 1000),
+    pubkey: selfPublicKey,
+  }
+  event = finalizeEvent(event, secretKey)
+  await Promise.allSettled(
+    pool.publish(
+      ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol"],
+      event as Event,
+    ),
+  )
+}
+
+export const pool = new SimplePool()
