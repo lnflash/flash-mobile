@@ -3,7 +3,7 @@ import { WalletCurrency } from "@app/graphql/generated"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { initializeBreezSDK } from "@app/utils/breez-sdk-liquid"
 import { getInfo } from "@breeztech/react-native-breez-sdk-liquid"
-import { Platform } from "react-native"
+import { Alert, Platform } from "react-native"
 
 type BtcWallet = {
   id: string
@@ -72,26 +72,30 @@ export const BreezProvider = ({ children }: Props) => {
   }, [persistentState.isAdvanceMode])
 
   const getBreezInfo = async () => {
-    setLoading(true)
-    await initializeBreezSDK()
-    const { walletInfo } = await getInfo()
+    try {
+      setLoading(true)
+      await initializeBreezSDK()
+      const { walletInfo } = await getInfo()
 
-    setBtcWallet({
-      id: walletInfo.pubkey,
-      walletCurrency: WalletCurrency.Btc,
-      balance: walletInfo.balanceSat,
-      pendingReceiveSat: walletInfo.pendingReceiveSat,
-      pendingSendSat: walletInfo.pendingSendSat,
-    })
-    updateState((state: any) => {
-      if (state)
-        return {
-          ...state,
-          breezBalance: walletInfo.balanceSat,
-        }
-      return undefined
-    })
-    setLoading(false)
+      setBtcWallet({
+        id: walletInfo.pubkey,
+        walletCurrency: WalletCurrency.Btc,
+        balance: walletInfo.balanceSat,
+        pendingReceiveSat: walletInfo.pendingReceiveSat,
+        pendingSendSat: walletInfo.pendingSendSat,
+      })
+      updateState((state: any) => {
+        if (state)
+          return {
+            ...state,
+            breezBalance: walletInfo.balanceSat,
+          }
+        return undefined
+      })
+      setLoading(false)
+    } catch (err: any) {
+      Alert.alert("BTC wallet initialization failed", err.toString())
+    }
   }
 
   const refreshBreez = () => {
