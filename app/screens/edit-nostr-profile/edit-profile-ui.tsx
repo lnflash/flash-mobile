@@ -41,9 +41,11 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
     website: "",
   })
 
-  let { updateNostrProfile } = useNostrProfile()
+  let { updateNostrProfile, generateProfileImages } = useNostrProfile()
   const [isFormVisible, setIsFormVisible] = useState(false)
   const [updating, setUpdating] = useState(false)
+  const [generatingImages, setGeneratingImages] = useState(false)
+  const [imageProgressMessage, setImageProgressMessage] = useState("")
 
   useEffect(() => {
     if (profileEvent?.content) {
@@ -77,6 +79,32 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
     }
   }
 
+  const handleGenerateImages = async () => {
+    try {
+      setGeneratingImages(true)
+      setImageProgressMessage("Starting image generation...")
+
+      const result = await generateProfileImages(formData, (message) => {
+        setImageProgressMessage(message)
+      })
+
+      if (result) {
+        // Update form data with generated image URLs
+        setFormData({
+          ...formData,
+          picture: result.picture || formData.picture,
+        })
+        Alert.alert("Success!", "Profile picture and banner generated successfully!")
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to generate images"
+      Alert.alert("Error", message)
+    } finally {
+      setGeneratingImages(false)
+      setImageProgressMessage("")
+    }
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <>
@@ -94,11 +122,14 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
           formData={formData}
           handleInputChange={handleInputChange}
           updating={updating}
+          generatingImages={generatingImages}
+          imageProgressMessage={imageProgressMessage}
           onSubmit={async () => {
             setUpdating(true)
             await updateNostrProfile({ content: formData })
             setUpdating(false)
           }}
+          onGenerateImages={handleGenerateImages}
         />
       </>
     </ScrollView>
@@ -109,14 +140,20 @@ interface ProfileFormProps {
   formData: NostrProfile
   handleInputChange: (field: keyof NostrProfile, value: string) => void
   updating: boolean
+  generatingImages: boolean
+  imageProgressMessage: string
   onSubmit: () => void
+  onGenerateImages: () => void
 }
 
 const ProfileForm: React.FC<ProfileFormProps> = ({
   formData,
   handleInputChange,
   updating,
+  generatingImages,
+  imageProgressMessage,
   onSubmit,
+  onGenerateImages,
 }) => {
   const styles = useStyles()
   const { theme } = useTheme()
@@ -170,6 +207,29 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
           value={formData.picture}
           onChangeText={(text) => handleInputChange("picture", text)}
         />
+      </View>
+
+      {/* Generate Images Button */}
+      <View style={styles.inputGroup}>
+        {generatingImages ? (
+          <View style={styles.generatingContainer}>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+            <Text style={styles.generatingText}>{imageProgressMessage}</Text>
+          </View>
+        ) : (
+          <Button
+            title="Generate Profile Images"
+            onPress={onGenerateImages}
+            type="outline"
+            containerStyle={styles.generateButton}
+            icon={{
+              name: "image",
+              type: "ionicon",
+              size: 18,
+              color: theme.colors.primary,
+            }}
+          />
+        )}
       </View>
 
       <View style={styles.inputGroup}>
@@ -255,5 +315,21 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   input: {
     width: "100%",
+  },
+  generateButton: {
+    marginBottom: 10,
+  },
+  generatingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 12,
+    backgroundColor: colors.grey5,
+    borderRadius: 8,
+  },
+  generatingText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: colors.grey1,
   },
 }))
