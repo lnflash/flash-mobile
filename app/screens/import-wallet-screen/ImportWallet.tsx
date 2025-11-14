@@ -43,13 +43,13 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
     const mnemonicKey = inputSeedPhrase.join(" ").toLowerCase()
     const res = bip39.validateMnemonic(mnemonicKey)
     if (res) {
-      await Keychain.setInternetCredentials(
-        KEYCHAIN_MNEMONIC_KEY,
-        KEYCHAIN_MNEMONIC_KEY,
-        mnemonicKey,
-      )
       if (insideApp) {
         await disconnectToSDK()
+        await Keychain.setInternetCredentials(
+          KEYCHAIN_MNEMONIC_KEY,
+          KEYCHAIN_MNEMONIC_KEY,
+          mnemonicKey,
+        )
         await initializeBreezSDK()
         setTimeout(() => {
           updateStateHandler(true)
