@@ -36,7 +36,24 @@ export const ConfirmDestinationModal: React.FC<ConfirmDestinationModalProps> = (
 
   if (destinationState.destinationState !== "requires-confirmation") return null
 
-  const lnAddress = destinationState.confirmationType.username + "@" + lnDomain
+  let checkBoxLabel = ""
+  let warningMessage = ""
+  let identifier = ""
+
+  if (destinationState.confirmationType.type === "new-username") {
+    const lnAddress = destinationState.confirmationType.username + "@" + lnDomain
+    identifier = lnAddress
+    warningMessage = LL.SendBitcoinDestinationScreen.confirmModal.warning({ bankName })
+    checkBoxLabel = LL.SendBitcoinDestinationScreen.confirmModal.checkBox({ lnAddress })
+  } else if (destinationState.confirmationType.type === "external-destination") {
+    identifier = destinationState.confirmationType.address
+    warningMessage = LL.SendBitcoinDestinationScreen.confirmModal.externalWarning({
+      bankName,
+    })
+    checkBoxLabel = LL.SendBitcoinDestinationScreen.confirmModal.externalCheckBox({
+      address: identifier,
+    })
+  }
 
   const goBack = () => {
     dispatchDestinationStateAction({
@@ -54,7 +71,7 @@ export const ConfirmDestinationModal: React.FC<ConfirmDestinationModalProps> = (
       body={
         <View style={styles.body}>
           <Text type={"p2"} color={colors.warning} style={styles.warningText}>
-            {LL.SendBitcoinDestinationScreen.confirmModal.warning({ bankName })}
+            {warningMessage}
           </Text>
         </View>
       }
@@ -65,9 +82,7 @@ export const ConfirmDestinationModal: React.FC<ConfirmDestinationModalProps> = (
         >
           <View style={styles.checkBoxContainer}>
             <CheckBox
-              {...testProps(
-                LL.SendBitcoinDestinationScreen.confirmModal.checkBox({ lnAddress }),
-              )}
+              {...testProps(checkBoxLabel)}
               containerStyle={styles.checkBox}
               checked={confirmationEnabled}
               iconType="ionicon"
@@ -76,7 +91,9 @@ export const ConfirmDestinationModal: React.FC<ConfirmDestinationModalProps> = (
               onPress={() => setConfirmationEnabled(!confirmationEnabled)}
             />
             <Text type={"p2"} style={styles.checkBoxText}>
-              {LL.SendBitcoinDestinationScreen.confirmModal.checkBox({ lnAddress })}
+              <Text type={"p2"} style={styles.checkBoxText}>
+                {checkBoxLabel}
+              </Text>
             </Text>
           </View>
         </TouchableOpacity>

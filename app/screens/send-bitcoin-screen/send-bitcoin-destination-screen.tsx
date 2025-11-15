@@ -15,6 +15,7 @@ import { DestinationInformation } from "./destination-information"
 import {
   useAccountDefaultWalletLazyQuery,
   useLnUsdInvoiceAmountMutation,
+  useNpubByUsernameLazyQuery,
   useRealtimePriceQuery,
   useSendBitcoinDestinationQuery,
 } from "@app/graphql/generated"
@@ -42,6 +43,8 @@ import {
   sendBitcoinDestinationReducer,
   SendBitcoinDestinationState,
 } from "./send-bitcoin-reducer"
+import { nip19 } from "nostr-tools"
+import { useChatContext } from "../chat/chatContext"
 
 export const defaultDestinationState: SendBitcoinDestinationState = {
   unparsedDestination: "",
@@ -69,6 +72,9 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
   const [accountDefaultWalletQuery] = useAccountDefaultWalletLazyQuery({
     fetchPolicy: "no-cache",
   })
+  const [npubByUsernameQuery] = useNpubByUsernameLazyQuery()
+  const { getContactPubkeys } = useChatContext()
+
   const { data } = useSendBitcoinDestinationQuery({
     fetchPolicy: "cache-and-network",
     returnPartialData: true,
@@ -83,7 +89,6 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
 
   const wallets = data?.me?.defaultAccount.wallets
   const bitcoinNetwork = data?.globals?.network
-  const contacts = useMemo(() => data?.me?.contacts ?? [], [data?.me?.contacts])
 
   useEffect(() => {
     handleNavigation()
@@ -165,7 +170,7 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
   )
 
   const validateDestination = useMemo(() => {
-    if (!bitcoinNetwork || !wallets || !contacts) {
+    if (!bitcoinNetwork || !wallets) {
       return null
     }
 
@@ -173,14 +178,12 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
       if (destinationState.destinationState !== "entering") {
         return
       }
-
       dispatchDestinationStateAction({
         type: "set-validating",
         payload: {
           unparsedDestination: rawInput,
         },
       })
-
       const destination = await parseDestination({
         rawInput,
         myWalletIds: wallets.map((wallet) => wallet.id),
@@ -188,7 +191,6 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
         lnurlDomains: LNURL_DOMAINS,
         accountDefaultWalletQuery,
       })
-      logParseDestinationResult(destination)
 
       if (destination.valid === false) {
         if (destination.invalidReason === InvalidDestinationReason.SelfPayment) {
@@ -216,25 +218,44 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
         destination.destinationDirection === DestinationDirection.Send &&
         destination.validDestination.paymentType === PaymentType.Intraledger
       ) {
+        const queryResult = await npubByUsernameQuery({
+          variables: { username: rawInput },
+        })
+        const destinationNpub = queryResult.data?.npubByUsername?.npub || ""
+        logParseDestinationResult(destination)
         setFlashUserAddress(destination.validDestination.handle + "@" + lnDomain)
-        // if (
-        //   !contacts
-        //     .map((contact) => contact.username.toLowerCase())
-        //     .includes(destination.validDestination.handle.toLowerCase())
-        // ) {
-        //   dispatchDestinationStateAction({
-        //     type: SendBitcoinActions.SetRequiresConfirmation,
-        //     payload: {
-        //       validDestination: destination,
-        //       unparsedDestination: rawInput,
-        //       confirmationType: {
-        //         type: "new-username",
-        //         username: destination.validDestination.handle,
-        //       },
-        //     },
-        //   })
-        //   return
-        // }
+        let contacts = getContactPubkeys() || []
+        if (
+          destinationNpub &&
+          !contacts.includes(nip19.decode(destinationNpub).data as string)
+        ) {
+          dispatchDestinationStateAction({
+            type: SendBitcoinActions.SetRequiresConfirmation,
+            payload: {
+              validDestination: destination,
+              unparsedDestination: rawInput,
+              confirmationType: {
+                type: "new-username",
+                username: destination.validDestination.handle,
+              },
+            },
+          })
+          return
+        }
+      } else {
+        // 🚨 any NON-intraledger destination
+        dispatchDestinationStateAction({
+          type: SendBitcoinActions.SetRequiresConfirmation,
+          payload: {
+            validDestination: destination,
+            unparsedDestination: rawInput,
+            confirmationType: {
+              type: "external-destination", // you can define this in your reducer/types
+              address: rawInput,
+            },
+          },
+        })
+        return
       }
 
       dispatchDestinationStateAction({
@@ -248,7 +269,6 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
   }, [
     bitcoinNetwork,
     wallets,
-    contacts,
     destinationState.destinationState,
     accountDefaultWalletQuery,
     dispatchDestinationStateAction,

@@ -33,6 +33,7 @@ import {
   ZeroUsdMoneyAmount,
 } from "@app/types/amounts"
 import {
+  useNpubByUsernameLazyQuery,
   useSendBitcoinConfirmationScreenQuery,
   WalletCurrency,
 } from "@app/graphql/generated"
@@ -42,6 +43,10 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // utils
 import { logPaymentAttempt, logPaymentResult } from "@app/utils/analytics"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { useChatContext } from "../chat/chatContext"
+import { addToContactList, getSecretKey } from "@app/utils/nostr"
+import { nip19 } from "nostr-tools"
+import { useConfirmOverwrite } from "./confirm-contact-override-modal"
 
 type Props = {} & StackScreenProps<RootStackParamList, "sendBitcoinConfirmation">
 
@@ -70,6 +75,10 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   const [paymentError, setPaymentError] = useState<string>()
   const [invalidAmountErr, setInvalidAmountErr] = useState<string>()
   const [fee, setFee] = useState<FeeType>({ status: "loading" })
+  const { contactsEvent, poolRef } = useChatContext()
+  const [npubByUsernameQuery] = useNpubByUsernameLazyQuery()
+  const { confirmOverwrite, ModalComponent: ConfirmOverwriteModal } =
+    useConfirmOverwrite()
 
   const { data } = useSendBitcoinConfirmationScreenQuery({ skip: !useIsAuthed() })
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
@@ -168,6 +177,31 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         })
 
         if (status === "SUCCESS" || status === "PENDING") {
+          if (flashUserAddress && poolRef) {
+            try {
+              const flashUsername = flashUserAddress.split("@")[0]
+              const queryResult = await npubByUsernameQuery({
+                variables: { username: flashUsername },
+              })
+              const destinationNpub = queryResult.data?.npubByUsername?.npub
+              if (destinationNpub) {
+                const secretKey = await getSecretKey()
+                if (secretKey) {
+                  await addToContactList(
+                    secretKey,
+                    nip19.decode(destinationNpub).data as string,
+                    poolRef.current,
+                    confirmOverwrite,
+                    contactsEvent,
+                  )
+                }
+              } else {
+                console.warn("Could not resolve flash username to npub", flashUsername)
+              }
+            } catch (err) {
+              console.warn("Failed to auto-add flash user to contacts", err)
+            }
+          }
           navigation.navigate("sendBitcoinSuccess", {
             walletCurrency: sendingWalletDescriptor.currency,
             unitOfAccountAmount:
@@ -228,6 +262,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           onPress={handleSendPayment}
         />
       </View>
+      <ConfirmOverwriteModal />
     </Screen>
   )
 }

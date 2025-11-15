@@ -52,7 +52,13 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
     if (isUserAdded() || !poolRef) return
     try {
       setIsLoading(true)
-      await addToContactList(userPrivateKey, item.id, poolRef.current, contactsEvent)
+      await addToContactList(
+        userPrivateKey,
+        item.id,
+        poolRef.current,
+        () => Promise.resolve(true),
+        contactsEvent,
+      )
     } catch (error) {
       console.error("Error adding contact:", error)
     } finally {
