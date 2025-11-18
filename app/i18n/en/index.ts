@@ -1455,11 +1455,15 @@ const en: BaseTranslation = {
       sendPayment: "Send Payment",
       contactInfo: "Contact Info",
       contactManagement: "Contact Management",
-      unfollowContact: "Unfollow Contact"
+      unfollowContact: "Unfollow Contact",
+      noListDeepLinkMessage: "We couldn't find your contact list. To add friends, you need to initialize your contact list in Settings first.",
+      manageContacts: "Manage Contacts",
+      createContactList: "Create Contact List"
     },
     common: {
       copy: "Copy",
       copied: "Copied",
+      goToSettings: "Go to settings"
     }
   }
 }

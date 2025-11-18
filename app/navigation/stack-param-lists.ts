@@ -150,6 +150,7 @@ export type RootStackParamList = {
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
+  Contacts: { userPrivateKey: string }
   SignInViaQRCode: undefined
   Nip29GroupChat: { groupId: string }
 }
