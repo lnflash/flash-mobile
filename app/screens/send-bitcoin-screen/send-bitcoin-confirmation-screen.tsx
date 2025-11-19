@@ -159,6 +159,39 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     }
   }
 
+  const autoAddContact = useCallback(async () => {
+    if (!flashUserAddress || !poolRef) return
+
+    try {
+      const flashUsername = flashUserAddress.split("@")[0]
+      const queryResult = await npubByUsernameQuery({
+        variables: { username: flashUsername },
+      })
+
+      const destinationNpub = queryResult.data?.npubByUsername?.npub
+      if (!destinationNpub) return
+
+      const secretKey = await getSecretKey()
+      if (!secretKey) return
+
+      await addToContactList(
+        secretKey,
+        nip19.decode(destinationNpub).data as string,
+        poolRef.current,
+        promptForContactList,
+        contactsEvent,
+      )
+    } catch (err) {
+      console.warn("Failed to auto-add flash user to contacts", err)
+    }
+  }, [
+    flashUserAddress,
+    poolRef,
+    npubByUsernameQuery,
+    promptForContactList,
+    contactsEvent,
+  ])
+
   const handleSendPayment = useCallback(async () => {
     if (sendPayment && sendingWalletDescriptor?.currency) {
       console.log("Starting animation and sending payment")
@@ -177,37 +210,13 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         })
 
         if (status === "SUCCESS" || status === "PENDING") {
-          if (flashUserAddress && poolRef) {
-            try {
-              const flashUsername = flashUserAddress.split("@")[0]
-              const queryResult = await npubByUsernameQuery({
-                variables: { username: flashUsername },
-              })
-              const destinationNpub = queryResult.data?.npubByUsername?.npub
-              if (destinationNpub) {
-                const secretKey = await getSecretKey()
-                if (secretKey) {
-                  await addToContactList(
-                    secretKey,
-                    nip19.decode(destinationNpub).data as string,
-                    poolRef.current,
-                    promptForContactList,
-                    contactsEvent,
-                  )
-                }
-              } else {
-                console.warn("Could not resolve flash username to npub", flashUsername)
-              }
-            } catch (err) {
-              console.warn("Failed to auto-add flash user to contacts", err)
-            }
-          }
           navigation.navigate("sendBitcoinSuccess", {
             walletCurrency: sendingWalletDescriptor.currency,
             unitOfAccountAmount:
               sendingWalletDescriptor.currency === "USD" && invoiceAmount
                 ? invoiceAmount
                 : paymentDetail.unitOfAccountAmount,
+            onSuccessAddContact: autoAddContact,
           })
           ReactNativeHapticFeedback.trigger("notificationSuccess", {
             ignoreAndroidSystemSettings: true,

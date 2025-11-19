@@ -25,10 +25,7 @@ export const useRequireContactList = () => {
     // We resolve false regardless because the original action (adding a contact)
     // cannot proceed until the list is created in settings.
     resolver.current?.(false)
-
-    if (goToSettings) {
-      navigation.navigate("NostrSettingsScreen")
-    }
+    navigation.navigate("NostrSettingsScreen")
   }
 
   const ModalComponent: React.FC = () => (
@@ -38,12 +35,6 @@ export const useRequireContactList = () => {
           <Text style={styles.title}>{LL.Nostr.Contacts.noCantacts()}</Text>
           <Text style={styles.message}>{LL.Nostr.Contacts.noListDeepLinkMessage()}</Text>
           <View style={styles.buttonsRow}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={() => handleChoice(false)}
-            >
-              <Text style={styles.cancelText}>{LL.common.cancel()}</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.confirmButton]}
               onPress={() => handleChoice(true)}

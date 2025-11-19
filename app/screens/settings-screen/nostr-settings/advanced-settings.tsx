@@ -107,10 +107,11 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
             try {
               setCreatingContacts(true)
               // Call your utility function
+              console.log("Creating contact list")
               await createContactListEvent(hexToBytes(secretKeyHex))
               // Refresh the context to see the new list immediately
-              await refreshUserProfile()
               Alert.alert(LL.common.success(), "Contact list created successfully.")
+              await refreshUserProfile()
             } catch (error) {
               console.error(error)
               Alert.alert(LL.common.error(), "Failed to create contact list.")
@@ -173,11 +174,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
                 />
               )}
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={(styles.menuText, { marginTop: 2 })}>
-                {contactSectionText}
-              </Text>
-            </View>
+            <Text style={styles.menuText}>{contactSectionText}</Text>
             <Ionicons name="chevron-forward" size={24} color={colors.grey3} />
           </Pressable>
 

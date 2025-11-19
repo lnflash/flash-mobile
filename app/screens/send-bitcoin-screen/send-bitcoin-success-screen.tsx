@@ -105,7 +105,13 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
 
   let formattedPrimaryAmount = undefined
   let formattedSecondaryAmount = undefined
-  const { walletCurrency, unitOfAccountAmount } = route.params
+  const { walletCurrency, unitOfAccountAmount, onSuccessAddContact } = route.params
+
+  useEffect(() => {
+    if (typeof onSuccessAddContact === "function") {
+      onSuccessAddContact()
+    }
+  }, [])
 
   if (isNonZeroMoneyAmount(unitOfAccountAmount)) {
     const isBtcDenominatedUsdWalletAmount =

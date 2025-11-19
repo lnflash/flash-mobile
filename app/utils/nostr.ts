@@ -469,12 +469,13 @@ export const createContactListEvent = async (secretKey: Uint8Array) => {
     pubkey: selfPublicKey,
   }
   event = finalizeEvent(event, secretKey)
-  await Promise.allSettled(
+  const messages = await Promise.allSettled(
     pool.publish(
       ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol"],
       event as Event,
     ),
   )
+  console.log("Message from relays for contact list publish", messages)
 }
 
 export const pool = new SimplePool()

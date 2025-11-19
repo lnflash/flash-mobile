@@ -74,6 +74,7 @@ export type RootStackParamList = {
     unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
     walletCurrency: WalletCurrency
     invoiceAmount?: MoneyAmount<WalletCurrency>
+    onSuccessAddContact?: () => void
   }
   language: undefined
   currency: undefined
