@@ -2,10 +2,6 @@ import { color } from "@rneui/base"
 import { makeStyles } from "@rneui/themed"
 
 export const useStyles = makeStyles(({ colors }) => ({
-  header: {
-    backgroundColor: colors.white,
-  },
-
   activityIndicatorContainer: {
     alignItems: "center",
     flex: 1,
