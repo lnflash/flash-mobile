@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from "react"
+import React, { useRef, useState, useCallback, useMemo } from "react"
 import { Modal, View, Text, TouchableOpacity } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { useNavigation } from "@react-navigation/native"
@@ -28,24 +28,28 @@ export const useRequireContactList = () => {
     navigation.navigate("NostrSettingsScreen")
   }
 
-  const ModalComponent: React.FC = () => (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <Text style={styles.title}>{LL.Nostr.Contacts.noCantacts()}</Text>
-          <Text style={styles.message}>{LL.Nostr.Contacts.noListDeepLinkMessage()}</Text>
-          <View style={styles.buttonsRow}>
-            <TouchableOpacity
-              style={[styles.button, styles.confirmButton]}
-              onPress={() => handleChoice(true)}
-            >
-              <Text style={styles.confirmText}>{LL.Nostr.common.goToSettings()}</Text>
-            </TouchableOpacity>
+  const ModalComponent = useMemo(() => {
+    return () => (
+      <Modal visible={visible} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <Text style={styles.title}>{LL.Nostr.Contacts.noCantacts()}</Text>
+            <Text style={styles.message}>
+              {LL.Nostr.Contacts.noListDeepLinkMessage()}
+            </Text>
+            <View style={styles.buttonsRow}>
+              <TouchableOpacity
+                style={[styles.button, styles.confirmButton]}
+                onPress={() => handleChoice(true)}
+              >
+                <Text style={styles.confirmText}>{LL.Nostr.common.goToSettings()}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
-  )
+      </Modal>
+    )
+  }, [visible])
 
   return { promptForContactList, ModalComponent }
 }

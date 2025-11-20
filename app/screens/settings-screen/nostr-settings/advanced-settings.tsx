@@ -112,6 +112,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
               // Refresh the context to see the new list immediately
               Alert.alert(LL.common.success(), "Contact list created successfully.")
               await refreshUserProfile()
+              setCreatingContacts(false)
             } catch (error) {
               console.error(error)
               Alert.alert(LL.common.error(), "Failed to create contact list.")

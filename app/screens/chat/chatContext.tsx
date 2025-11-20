@@ -153,6 +153,9 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       publicKey = getPublicKey(secret)
       setUserPublicKey(publicKey)
     }
+    fetchContactList(publicKey, (event: Event) => {
+      setContactsEvent(event)
+    })
     return new Promise<void>((resolve) => {
       fetchNostrUsers([publicKey], poolRef.current, (event: Event, profileCloser) => {
         setUserProfileEvent(event)
