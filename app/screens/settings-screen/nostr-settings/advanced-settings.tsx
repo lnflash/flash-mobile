@@ -137,8 +137,6 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
     ? LL.Nostr.Contacts.manageContacts()
     : LL.Nostr.Contacts.createContactList()
 
-  console.log("Contacts Section Text is", contactSectionText)
-
   return (
     <View>
       {expandAdvanced && (
@@ -176,7 +174,9 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
               )}
             </View>
             <Text style={styles.menuText}>{contactSectionText}</Text>
-            <Ionicons name="chevron-forward" size={24} color={colors.grey3} />
+            {contactsEvent ? (
+              <Ionicons name="chevron-forward" size={24} color={colors.grey3} />
+            ) : null}
           </Pressable>
 
           {/* Show Public Key */}
