@@ -2414,6 +2414,16 @@ type RootTranslation = {
 			 * I​'​m​ ​1​0​0​%​ ​s​u​r​e
 			 */
 			confirmButton: string
+			/**
+			 * Y​o​u​ ​a​r​e​ ​a​b​o​u​t​ ​t​o​ ​s​e​n​d​ ​m​o​n​e​y​ ​t​o​ ​s​o​m​e​o​n​e​ ​t​h​a​t​ ​i​s​ ​n​o​t​ ​a​ ​{​b​a​n​k​N​a​m​e​}​ ​a​c​c​o​u​n​t​.​ ​A​r​e​ ​y​o​u​ ​s​u​r​e​ ​t​h​i​s​ ​i​s​ ​t​h​e​ ​a​d​d​r​e​s​s​ ​y​o​u​ ​i​n​t​e​n​d​ ​t​o​ ​s​e​n​d​ ​t​o​?
+			 * @param {string} bankName
+			 */
+			externalWarning: RequiredParams<'bankName'>
+			/**
+			 * I​ ​c​o​n​f​i​r​m​ ​s​e​n​d​i​n​g​ ​t​o​ ​{​a​d​d​r​e​s​s​}​.
+			 * @param {string} address
+			 */
+			externalCheckBox: RequiredParams<'address'>
 		}
 		/**
 		 * E​r​r​o​r​ ​g​e​t​t​i​n​g​ ​v​a​l​u​e​ ​f​r​o​m​ ​c​l​i​p​b​o​a​r​d
@@ -2708,7 +2718,7 @@ type RootTranslation = {
 		 */
 		advanceMode: string
 		/**
-		 * K​e​y​s​ ​m​a​n​a​g​e​m​e​n​t
+		 * K​e​y​ ​m​a​n​a​g​e​m​e​n​t
 		 */
 		keysManagement: string
 		/**
@@ -4761,6 +4771,18 @@ type RootTranslation = {
 			 * U​n​f​o​l​l​o​w​ ​C​o​n​t​a​c​t
 			 */
 			unfollowContact: string
+			/**
+			 * W​e​ ​c​o​u​l​d​n​'​t​ ​f​i​n​d​ ​y​o​u​r​ ​c​o​n​t​a​c​t​ ​l​i​s​t​.​ ​T​o​ ​a​d​d​ ​f​r​i​e​n​d​s​,​ ​y​o​u​ ​n​e​e​d​ ​t​o​ ​i​n​i​t​i​a​l​i​z​e​ ​y​o​u​r​ ​c​o​n​t​a​c​t​ ​l​i​s​t​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​f​i​r​s​t​.
+			 */
+			noListDeepLinkMessage: string
+			/**
+			 * M​a​n​a​g​e​ ​C​o​n​t​a​c​t​s
+			 */
+			manageContacts: string
+			/**
+			 * C​r​e​a​t​e​ ​C​o​n​t​a​c​t​ ​L​i​s​t
+			 */
+			createContactList: string
 		}
 		common: {
 			/**
@@ -4771,6 +4793,10 @@ type RootTranslation = {
 			 * C​o​p​i​e​d
 			 */
 			copied: string
+			/**
+			 * G​o​ ​t​o​ ​s​e​t​t​i​n​g​s
+			 */
+			goToSettings: string
 		}
 	}
 }
@@ -7115,6 +7141,14 @@ export type TranslationFunctions = {
 			 * I'm 100% sure
 			 */
 			confirmButton: () => LocalizedString
+			/**
+			 * You are about to send money to someone that is not a {bankName} account. Are you sure this is the address you intend to send to?
+			 */
+			externalWarning: (arg: { bankName: string }) => LocalizedString
+			/**
+			 * I confirm sending to {address}.
+			 */
+			externalCheckBox: (arg: { address: string }) => LocalizedString
 		}
 		/**
 		 * Error getting value from clipboard
@@ -7241,23 +7275,23 @@ export type TranslationFunctions = {
 		/**
 		 * The amount you entered is less than the minimum amount required to send an on-chain transaction {amount}. Please consider sending this amount via Lightning!
 		 */
-		onchainMinAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		onchainMinAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is less than minimum required amount {amount}
 		 */
-		minAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		minAmountConvertError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is greater than maximum amount {amount}
 		 */
-		maxAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**
@@ -7401,7 +7435,7 @@ export type TranslationFunctions = {
 		 */
 		advanceMode: () => LocalizedString
 		/**
-		 * Keys management
+		 * Key management
 		 */
 		keysManagement: () => LocalizedString
 		/**
@@ -9418,6 +9452,18 @@ export type TranslationFunctions = {
 			 * Unfollow Contact
 			 */
 			unfollowContact: () => LocalizedString
+			/**
+			 * We couldn't find your contact list. To add friends, you need to initialize your contact list in Settings first.
+			 */
+			noListDeepLinkMessage: () => LocalizedString
+			/**
+			 * Manage Contacts
+			 */
+			manageContacts: () => LocalizedString
+			/**
+			 * Create Contact List
+			 */
+			createContactList: () => LocalizedString
 		}
 		common: {
 			/**
@@ -9428,6 +9474,10 @@ export type TranslationFunctions = {
 			 * Copied
 			 */
 			copied: () => LocalizedString
+			/**
+			 * Go to settings
+			 */
+			goToSettings: () => LocalizedString
 		}
 	}
 }

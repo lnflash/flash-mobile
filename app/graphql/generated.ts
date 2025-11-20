@@ -2279,6 +2279,13 @@ export type RealtimePriceUnauthedQueryVariables = Exact<{
 
 export type RealtimePriceUnauthedQuery = { readonly __typename: 'Query', readonly realtimePrice: { readonly __typename: 'RealtimePrice', readonly timestamp: number, readonly denominatorCurrency: string, readonly btcSatPrice: { readonly __typename: 'PriceOfOneSatInMinorUnit', readonly base: number, readonly offset: number }, readonly usdCentPrice: { readonly __typename: 'PriceOfOneUsdCentInMinorUnit', readonly base: number, readonly offset: number } } };
 
+export type NpubByUsernameQueryVariables = Exact<{
+  username: Scalars['Username']['input'];
+}>;
+
+
+export type NpubByUsernameQuery = { readonly __typename: 'Query', readonly npubByUsername?: { readonly __typename: 'npubByUsername', readonly npub?: string | null, readonly username?: string | null } | null };
+
 export type RealtimePriceWsSubscriptionVariables = Exact<{
   currency: Scalars['DisplayCurrency']['input'];
 }>;
@@ -4470,6 +4477,42 @@ export function useRealtimePriceUnauthedLazyQuery(baseOptions?: Apollo.LazyQuery
 export type RealtimePriceUnauthedQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedQuery>;
 export type RealtimePriceUnauthedLazyQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedLazyQuery>;
 export type RealtimePriceUnauthedQueryResult = Apollo.QueryResult<RealtimePriceUnauthedQuery, RealtimePriceUnauthedQueryVariables>;
+export const NpubByUsernameDocument = gql`
+    query npubByUsername($username: Username!) {
+  npubByUsername(username: $username) {
+    npub
+    username
+  }
+}
+    `;
+
+/**
+ * __useNpubByUsernameQuery__
+ *
+ * To run a query within a React component, call `useNpubByUsernameQuery` and pass it any options that fit your needs.
+ * When your component renders, `useNpubByUsernameQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useNpubByUsernameQuery({
+ *   variables: {
+ *      username: // value for 'username'
+ *   },
+ * });
+ */
+export function useNpubByUsernameQuery(baseOptions: Apollo.QueryHookOptions<NpubByUsernameQuery, NpubByUsernameQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<NpubByUsernameQuery, NpubByUsernameQueryVariables>(NpubByUsernameDocument, options);
+      }
+export function useNpubByUsernameLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<NpubByUsernameQuery, NpubByUsernameQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<NpubByUsernameQuery, NpubByUsernameQueryVariables>(NpubByUsernameDocument, options);
+        }
+export type NpubByUsernameQueryHookResult = ReturnType<typeof useNpubByUsernameQuery>;
+export type NpubByUsernameLazyQueryHookResult = ReturnType<typeof useNpubByUsernameLazyQuery>;
+export type NpubByUsernameQueryResult = Apollo.QueryResult<NpubByUsernameQuery, NpubByUsernameQueryVariables>;
 export const RealtimePriceWsDocument = gql`
     subscription realtimePriceWs($currency: DisplayCurrency!) {
   realtimePrice(input: {currency: $currency}) {

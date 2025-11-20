@@ -117,6 +117,7 @@ import {
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 import ContactDetailsScreen from "@app/screens/chat/contactDetailsScreen"
 import { SupportGroupChatScreen } from "@app/screens/chat/GroupChat/SupportGroupChat"
+import Contacts from "@app/screens/chat/contacts"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -337,6 +338,11 @@ export const RootStack = () => {
           title: "Social Settings",
           headerBackTitleVisible: false,
         }}
+      />
+      <RootNavigator.Screen
+        name="Contacts"
+        component={Contacts}
+        options={{ title: "Contacts" }}
       />
       <RootNavigator.Screen
         name="addressScreen"

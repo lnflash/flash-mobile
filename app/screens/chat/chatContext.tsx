@@ -30,6 +30,7 @@ type ChatContextType = {
   refreshUserProfile: () => Promise<void>
   contactsEvent: Event | undefined
   setContactsEvent: (e: Event) => void
+  getContactPubkeys: () => string[] | null
 }
 
 const publicRelays = [
@@ -56,6 +57,7 @@ const ChatContext = createContext<ChatContextType>({
   refreshUserProfile: async () => {},
   contactsEvent: undefined,
   setContactsEvent: (event: Event) => {},
+  getContactPubkeys: () => null,
 })
 
 export const useChatContext = () => useContext(ChatContext)
@@ -119,7 +121,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         .filter((r) => r !== null)
       setRumors(cachedRumors || [])
       let closer = await fetchNewGiftwraps(cachedGiftwraps, publicKey)
-      fetchContactList(getPublicKey(secret), poolRef!.current, (event: Event) => {
+      fetchContactList(getPublicKey(secret), (event: Event) => {
         setContactsEvent(event)
       })
       setCloser(closer)
@@ -151,6 +153,9 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       publicKey = getPublicKey(secret)
       setUserPublicKey(publicKey)
     }
+    fetchContactList(publicKey, (event: Event) => {
+      setContactsEvent(event)
+    })
     return new Promise<void>((resolve) => {
       fetchNostrUsers([publicKey], poolRef.current, (event: Event, profileCloser) => {
         setUserProfileEvent(event)
@@ -164,6 +169,16 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         resolve()
       })
     })
+  }
+
+  const getContactPubkeys = () => {
+    if (!contactsEvent) return null
+    return contactsEvent.tags
+      .filter((t: string[]) => {
+        if (t[0] === "p") return true
+        return false
+      })
+      .map((t: string[]) => t[1])
   }
 
   const initializeChat = async (count = 0) => {
@@ -277,6 +292,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         refreshUserProfile,
         contactsEvent,
         setContactsEvent,
+        getContactPubkeys,
       }}
     >
       {children}
