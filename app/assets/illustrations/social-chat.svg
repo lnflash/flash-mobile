@@ -1,0 +1,47 @@
+<svg width="600" height="480" viewBox="0 0 600 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Social Chat Illustration</title>
+  <desc id="desc">A stylized chat bubble illustration representing social messaging.</desc>
+
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="chatGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Main chat bubble -->
+  <g transform="translate(150, 100)">
+    <!-- Shadow -->
+    <ellipse cx="150" cy="280" rx="120" ry="15" fill="rgba(0,0,0,0.1)"/>
+
+    <!-- Large chat bubble -->
+    <rect x="30" y="60" width="240" height="180" rx="30" fill="url(#chatGradient)"/>
+    <path d="M150 240 L130 270 L170 240 Z" fill="url(#chatGradient)"/>
+
+    <!-- Chat dots inside bubble -->
+    <circle cx="100" cy="150" r="15" fill="white" opacity="0.9"/>
+    <circle cx="150" cy="150" r="15" fill="white" opacity="0.9"/>
+    <circle cx="200" cy="150" r="15" fill="white" opacity="0.9"/>
+
+    <!-- Small accent bubble top right -->
+    <g opacity="0.85">
+      <rect x="200" y="20" width="100" height="70" rx="20" fill="url(#accentGradient)"/>
+      <path d="M280 90 L290 110 L270 90 Z" fill="url(#accentGradient)"/>
+      <circle cx="225" cy="55" r="6" fill="white" opacity="0.9"/>
+      <circle cx="250" cy="55" r="6" fill="white" opacity="0.9"/>
+      <circle cx="275" cy="55" r="6" fill="white" opacity="0.9"/>
+    </g>
+
+    <!-- Sparkles -->
+    <g opacity="0.6">
+      <path d="M20 40 l4 8 l8 4 l-8 4 l-4 8 l-4 -8 l-8 -4 l8 -4 z" fill="#A78BFA"/>
+      <path d="M280 180 l5 10 l10 5 l-10 5 l-5 10 l-5 -10 l-10 -5 l10 -5 z" fill="#A78BFA"/>
+      <path d="M60 240 l3 6 l6 3 l-6 3 l-3 6 l-3 -6 l-6 -3 l6 -3 z" fill="#C4B5FD"/>
+    </g>
+  </g>
+</svg>

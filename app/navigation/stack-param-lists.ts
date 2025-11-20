@@ -106,6 +106,9 @@ export type RootStackParamList = {
   }
   phoneFlow?: NavigatorScreenParams<PhoneValidationStackParamList>
   phoneRegistrationInitiate: undefined
+  makeNostrPost: undefined
+  postSuccess: { postContent: string; userNpub: string; event: Event }
+  irisBrowser: { initialUrl?: string } | undefined
   phoneRegistrationValidate: {
     phone: string
     channel: PhoneCodeChannelType
