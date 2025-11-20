@@ -477,5 +477,3 @@ export const createContactListEvent = async (secretKey: Uint8Array) => {
   )
   console.log("Message from relays for contact list publish", messages)
 }
-
-export const pool = new SimplePool()
