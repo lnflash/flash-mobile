@@ -40,6 +40,7 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
     lud16: "",
     about: "",
     website: "",
+    banner: "",
   })
 
   let { updateNostrProfile, generateProfileImages } = useNostrProfile()
@@ -58,6 +59,7 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
           nip05: parsedContent.nip05 ?? "",
           picture: parsedContent.picture ?? "",
           lud16: parsedContent.lud16 ?? "",
+          banner: parsedContent.banner ?? "",
         })
         setIsFormVisible(true)
       } catch (error) {
@@ -208,6 +210,16 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
           placeholder="Picture URL"
           value={formData.picture}
           onChangeText={(text) => handleInputChange("picture", text)}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Banner URL</Text>
+        <Input
+          style={styles.input}
+          placeholder="Banner URL"
+          value={formData.banner}
+          onChangeText={(text) => handleInputChange("banner", text)}
         />
       </View>
 
