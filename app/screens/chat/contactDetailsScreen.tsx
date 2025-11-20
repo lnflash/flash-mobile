@@ -14,7 +14,6 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 import { useChatContext } from "./chatContext"
-import { Header } from "@rneui/base"
 import Icon from "react-native-vector-icons/Ionicons"
 import ChatIcon from "@app/assets/icons/chat.svg"
 import { nip19, getPublicKey, Event } from "nostr-tools"
@@ -212,29 +211,6 @@ const ContactDetailsScreen: React.FC = () => {
 
   return (
     <Screen preset="fixed">
-      <Header
-        leftComponent={
-          <Icon
-            name="arrow-back"
-            size={24}
-            color={colors.black}
-            onPress={() => navigation.goBack()}
-          />
-        }
-        centerComponent={{
-          text: LL.Nostr.Contacts.profile(),
-          style: { color: colors.black, fontSize: 18 },
-        }}
-        backgroundColor={colors.background}
-        containerStyle={[
-          styles.headerContainer,
-          {
-            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 20,
-          },
-        ]}
-        edges={[]}
-      />
-
       <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
         {/* Banner section - Primal style */}
         {profile?.banner &&

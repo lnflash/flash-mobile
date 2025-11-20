@@ -163,13 +163,13 @@ export const NIP17Chat: React.FC = () => {
   const statusBarHeight = Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0
 
   return (
-    <Screen style={{ ...styles.header, flex: 1 }}>
+    <Screen style={{ flex: 1 }}>
       <StatusBar translucent backgroundColor="transparent" />
       {privateKey && !showImportModal ? (
         <View style={{ flex: 1, paddingTop: statusBarHeight }}>
           <Tab.Navigator
             screenOptions={({ route }) => {
-              const label = route.name === "Profile" ? `${userProfile?.name}` : null
+              const label = "Profile"
               return {
                 // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
                 // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
@@ -188,145 +188,147 @@ export const NIP17Chat: React.FC = () => {
                   }
                   return <Icon name={iconName} size={24} color={color} />
                 },
-                tabBarShowLabel: !!label,
+                tabBarShowLabel: false,
                 tabBarActiveTintColor: colors.primary,
                 tabBarIndicatorStyle: { backgroundColor: colors.primary },
               }
             }}
             style={{ borderColor: colors.primary }}
           >
-          <Tab.Screen name="Chats">
-            {() => (
-              <View style={{ flex: 1 }}>
-                {SearchBarContent}
-                {searchedUsers.length !== 0 ? (
-                  <FlatList
-                    contentContainerStyle={styles.listContainer}
-                    data={searchedUsers}
-                    ListEmptyComponent={ListEmptyContent}
-                    renderItem={({ item }) => (
-                      <SearchListItem item={item} userPrivateKey={privateKey!} />
-                    )}
-                    keyExtractor={(item) => item.id}
-                  />
-                ) : (
-                  <View style={{ flex: 1, flexDirection: "column" }}>
-                    {/* Signed in as */}
-                    <View style={styles.usernameContainer}>
-                      <Text style={styles.usernameText} onPress={() => {}}>
-                        signed in as:{" "}
-                        <Text style={{ color: colors.primary, fontWeight: "bold" }}>
-                          {userData?.username ||
-                            nip19.npubEncode(getPublicKey(privateKey))}
+            <Tab.Screen name="Chats">
+              {() => (
+                <View style={{ flex: 1 }}>
+                  {SearchBarContent}
+                  {searchedUsers.length !== 0 ? (
+                    <FlatList
+                      contentContainerStyle={styles.listContainer}
+                      data={searchedUsers}
+                      ListEmptyComponent={ListEmptyContent}
+                      renderItem={({ item }) => (
+                        <SearchListItem item={item} userPrivateKey={privateKey!} />
+                      )}
+                      keyExtractor={(item) => item.id}
+                    />
+                  ) : (
+                    <View style={{ flex: 1, flexDirection: "column" }}>
+                      {/* Signed in as */}
+                      <View style={styles.usernameContainer}>
+                        <Text style={styles.usernameText} onPress={() => {}}>
+                          signed in as:{" "}
+                          <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                            {userData?.username ||
+                              nip19.npubEncode(getPublicKey(privateKey))}
+                          </Text>
                         </Text>
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() =>
-                        RootNavigator.navigate("Nip29GroupChat", {
-                          groupId: "support-group-id",
-                        })
-                      }
-                      style={{ marginRight: 20, marginLeft: 20, marginBottom: 4 }}
-                    >
-                      <View
-                        style={{
-                          ...styles.itemContainer,
-                          // justifyContent: "center",
-                          // alignContent: "center",
-                          // alignItems: "center",
-                          // alignSelf: "center",
-                        }}
+                      </View>
+                      <TouchableOpacity
+                        onPress={() =>
+                          RootNavigator.navigate("Nip29GroupChat", {
+                            groupId: "support-group-id",
+                          })
+                        }
+                        style={{ marginRight: 20, marginLeft: 20, marginBottom: 4 }}
                       >
                         <View
                           style={{
-                            flexDirection: "row",
-
-                            marginVertical: 4,
+                            ...styles.itemContainer,
+                            // justifyContent: "center",
+                            // alignContent: "center",
+                            // alignItems: "center",
+                            // alignSelf: "center",
                           }}
                         >
-                          <Image
-                            source={
-                              groupMetadata.picture
-                                ? { uri: groupMetadata.picture }
-                                : require("../../assets/images/Flash-Mascot.png")
-                            }
-                            style={styles.communityPicture}
-                          />
                           <View
                             style={{
-                              flexDirection: "column",
-                              maxWidth: "80%",
-                              alignItems: "flex-start",
+                              flexDirection: "row",
+
+                              marginVertical: 4,
                             }}
                           >
-                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                            <Image
+                              source={
+                                groupMetadata.picture
+                                  ? { uri: groupMetadata.picture }
+                                  : require("../../assets/images/Flash-Mascot.png")
+                              }
+                              style={styles.communityPicture}
+                            />
+                            <View
+                              style={{
+                                flexDirection: "column",
+                                maxWidth: "80%",
+                                alignItems: "flex-start",
+                              }}
+                            >
+                              <View
+                                style={{ flexDirection: "row", alignItems: "center" }}
+                              >
+                                <Text
+                                  style={{
+                                    ...styles.itemText,
+                                    fontWeight: "bold",
+                                    marginBottom: 4,
+                                    marginTop: 4,
+                                  }}
+                                >
+                                  {groupMetadata.name || "Support Group Chat"}
+                                </Text>
+                                <Icon
+                                  name="checkmark-done-circle-outline"
+                                  size={20}
+                                  style={styles.verifiedIcon}
+                                />
+                              </View>
                               <Text
                                 style={{
                                   ...styles.itemText,
-                                  fontWeight: "bold",
-                                  marginBottom: 4,
                                   marginTop: 4,
+                                  marginBottom: 5,
                                 }}
+                                numberOfLines={3} // show max 3 lines
+                                ellipsizeMode="tail" // add "..." at the end if overflowing
                               >
-                                {groupMetadata.name || "Support Group Chat"}
+                                {groupMetadata.about || "..."}
                               </Text>
-                              <Icon
-                                name="checkmark-done-circle-outline"
-                                size={20}
-                                style={styles.verifiedIcon}
-                              />
                             </View>
-                            <Text
-                              style={{
-                                ...styles.itemText,
-                                marginTop: 4,
-                                marginBottom: 5,
-                              }}
-                              numberOfLines={3} // show max 3 lines
-                              ellipsizeMode="tail" // add "..." at the end if overflowing
-                            >
-                              {groupMetadata.about || "..."}
-                            </Text>
                           </View>
                         </View>
-                      </View>
-                    </TouchableOpacity>
-                    <FlatList
-                      contentContainerStyle={styles.listContainer}
-                      data={groupIds}
-                      ListEmptyComponent={ListEmptyContent}
-                      scrollEnabled={true}
-                      renderItem={({ item }) => (
-                        <HistoryListItem
-                          item={item}
-                          userPrivateKey={privateKey!}
-                          groups={groups}
-                        />
-                      )}
-                      keyExtractor={(item) => item}
-                    />
-                  </View>
-                )}
-              </View>
-            )}
-          </Tab.Screen>
-          <Tab.Screen
-            name={`${userProfile?.name}`}
-            component={ContactDetailsScreen}
-            initialParams={{
-              contactPubkey: getPublicKey(privateKey),
-              userPrivateKey: bytesToHex(privateKey),
-            }}
-          />
-          <Tab.Screen name="Contacts">
-            {() => (
-              <View style={{ ...styles.header, height: "100%" }}>
-                <Contacts userPrivateKey={bytesToHex(privateKey)} />
-              </View>
-            )}
-          </Tab.Screen>
-        </Tab.Navigator>
+                      </TouchableOpacity>
+                      <FlatList
+                        contentContainerStyle={styles.listContainer}
+                        data={groupIds}
+                        ListEmptyComponent={ListEmptyContent}
+                        scrollEnabled={true}
+                        renderItem={({ item }) => (
+                          <HistoryListItem
+                            item={item}
+                            userPrivateKey={privateKey!}
+                            groups={groups}
+                          />
+                        )}
+                        keyExtractor={(item) => item}
+                      />
+                    </View>
+                  )}
+                </View>
+              )}
+            </Tab.Screen>
+            <Tab.Screen
+              name={`Profile: ${userProfile?.name}`}
+              component={ContactDetailsScreen}
+              initialParams={{
+                contactPubkey: getPublicKey(privateKey),
+                userPrivateKey: bytesToHex(privateKey),
+              }}
+            />
+            <Tab.Screen name="Contacts">
+              {() => (
+                <View style={{ height: "100%" }}>
+                  <Contacts userPrivateKey={bytesToHex(privateKey)} />
+                </View>
+              )}
+            </Tab.Screen>
+          </Tab.Navigator>
         </View>
       ) : (
         <Text>Loading your nostr keys...</Text>

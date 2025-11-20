@@ -22,6 +22,7 @@ type NostrProfile = {
   lud16?: string
   about?: string
   website?: string
+  banner?: string
 }
 
 interface EditProfileUIProps {
@@ -93,6 +94,7 @@ export const EditProfileUI: React.FC<EditProfileUIProps> = ({ profileEvent }) =>
         setFormData({
           ...formData,
           picture: result.picture || formData.picture,
+          banner: result.banner,
         })
         Alert.alert("Success!", "Profile picture and banner generated successfully!")
       }
