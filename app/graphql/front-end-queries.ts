@@ -282,10 +282,14 @@ gql`
       denominatorCurrency
     }
   }
-  query npubByUsername($username: Username!) {
-    npubByUsername(username: $username) {
-      npub
-      username
+
+  query invitePreview($token: String!) {
+    invitePreview(token: $token) {
+      contact
+      method
+      isValid
+      inviterUsername
+      expiresAt
     }
   }
 `
