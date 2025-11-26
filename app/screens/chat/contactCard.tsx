@@ -28,12 +28,17 @@ const ContactCard: React.FC<ContactCardProps> = ({
 
   const getContactMetadata = (contact: any) => {
     let profile = profileMap?.get(contact.pubkey || "")
-    return (
-      profile?.nip05 ||
-      profile?.name ||
-      profile?.username ||
-      nip19.npubEncode(contact.pubkey!).slice(0, 9) + ".."
-    )
+    let displayName
+    try {
+      displayName =
+        profile?.nip05 ||
+        profile?.name ||
+        profile?.username ||
+        nip19.npubEncode(contact.pubkey!).slice(0, 9) + ".."
+    } catch (e) {
+      displayName = contact.pubkey.slice(0, 9) + "..."
+    }
+    return displayName
   }
 
   return (

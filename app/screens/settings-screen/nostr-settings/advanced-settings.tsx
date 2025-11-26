@@ -1,9 +1,8 @@
 import { ActivityIndicator, Alert, Linking, Pressable, View } from "react-native"
-import { Button, Text, useTheme } from "@rneui/themed"
+import { Text, useTheme } from "@rneui/themed"
 import { useStyles } from "./styles"
 import Ionicons from "react-native-vector-icons/Ionicons"
 import { useState } from "react"
-import ReactNativeModal from "react-native-modal"
 import { hexToBytes } from "@noble/curves/abstract/utils"
 import { getPublicKey, nip19 } from "nostr-tools"
 import { useUserUpdateNpubMutation } from "@app/graphql/generated"
@@ -14,7 +13,8 @@ import { KeyModal } from "./key-modal"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { useI18nContext } from "@app/i18n/i18n-react" // <-- import i18n context
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { createContactListEvent } from "@app/utils/nostr"
 
 interface AdvancedSettingsProps {
   expandAdvanced: boolean
@@ -35,14 +35,17 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   const {
     theme: { colors },
   } = useTheme()
-  const { LL } = useI18nContext() // <-- use LL
+  const { LL } = useI18nContext()
 
-  const { resetChat, refreshUserProfile } = useChatContext()
+  // Grab contactsEvent and pool from context
+  const { resetChat, refreshUserProfile, contactsEvent, poolRef } = useChatContext()
 
   const [showSecretModal, setShowSecretModal] = useState(false)
   const [keysModalType, setKeysModalType] = useState<"public" | "private">("public")
   const [updatingNpub, setUpdatingNpub] = useState<boolean>(false)
+  const [creatingContacts, setCreatingContacts] = useState<boolean>(false)
   const [importModalVisible, setImportModalVisible] = useState(false)
+
   const [userUpdateNpub] = useUserUpdateNpubMutation()
   const { deleteNostrKeys } = useNostrProfile()
   const navigation =
@@ -88,11 +91,57 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
     ])
   }
 
+  const handleCreateContactList = () => {
+    Alert.alert(
+      LL.Nostr.Contacts.createContactList() || "Create Contact List?",
+      "WARNING: We couldn't find an existing contact list. Creating a new one may overwrite any list found later on other relays and delete those connections.\n\nOnly proceed if you are sure this is a new account or you have no contacts.",
+      [
+        {
+          text: LL.common.cancel(),
+          style: "cancel",
+        },
+        {
+          text: "Create & Overwrite",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setCreatingContacts(true)
+              // Call your utility function
+              console.log("Creating contact list")
+              await createContactListEvent(hexToBytes(secretKeyHex))
+              // Refresh the context to see the new list immediately
+              Alert.alert(LL.common.success(), "Contact list created successfully.")
+              await refreshUserProfile()
+              setCreatingContacts(false)
+            } catch (error) {
+              console.error(error)
+              Alert.alert(LL.common.error(), "Failed to create contact list.")
+            } finally {
+              setCreatingContacts(false)
+            }
+          },
+        },
+      ],
+    )
+  }
+
+  // --- NEW: Create Contact List Logic ---
+
+  const handleViewContacts = () => {
+    // Navigate to the existing Contacts screen
+    // Ensure "Contacts" is in your RootStackParamList
+    // Pass userPrivateKey as string if the screen requires it
+    navigation.navigate("Contacts", { userPrivateKey: secretKeyHex })
+  }
+  const contactSectionText = contactsEvent
+    ? LL.Nostr.Contacts.manageContacts()
+    : LL.Nostr.Contacts.createContactList()
+
   return (
     <View>
       {expandAdvanced && (
         <View style={styles.advancedContainer}>
-          {/* Show Public Key */}
+          {/* Learn More */}
           <Pressable
             style={[styles.advancedMenuItem]}
             onPress={() =>
@@ -110,6 +159,27 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
             </View>
             <Ionicons name="open-outline" size={24} color="#3366cc" />
           </Pressable>
+          <Pressable
+            style={styles.advancedMenuItem}
+            onPress={contactsEvent ? handleViewContacts : handleCreateContactList}
+          >
+            <View style={styles.menuIconContainer}>
+              {creatingContacts ? (
+                <ActivityIndicator size="small" />
+              ) : (
+                <Ionicons
+                  name={contactsEvent ? "people-outline" : "people-circle-outline"}
+                  size={24}
+                />
+              )}
+            </View>
+            <Text style={styles.menuText}>{contactSectionText}</Text>
+            {contactsEvent ? (
+              <Ionicons name="chevron-forward" size={24} color={colors.grey3} />
+            ) : null}
+          </Pressable>
+
+          {/* Show Public Key */}
           <Pressable
             style={styles.advancedMenuItem}
             onPress={() => handleShowKeys("public")}

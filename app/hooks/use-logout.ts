@@ -15,6 +15,7 @@ import { useFlashcard } from "./useFlashcard"
 // utils
 import KeyStoreWrapper from "../utils/storage/secureStorage"
 import { SCHEMA_VERSION_KEY } from "@app/config"
+import { disconnectToSDK } from "@app/utils/breez-sdk-liquid"
 
 const DEVICE_ACCOUNT_CREDENTIALS_KEY = "device-account"
 
@@ -47,6 +48,7 @@ const useLogout = () => {
   }
 
   const cleanUp = async (clearDeviceCred?: boolean) => {
+    await disconnectToSDK()
     await client.cache.reset()
     await AsyncStorage.multiRemove([SCHEMA_VERSION_KEY])
     await KeyStoreWrapper.removeIsBiometricsEnabled()

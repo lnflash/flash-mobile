@@ -75,7 +75,6 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const [selectedFee, setSelectedFee] = useState<number>()
   const [selectedFeeType, setSelectedFeeType] = useState<string>()
   const [isProcessing, setIsProcessing] = useState(false)
-
   const { data } = useSendBitcoinDetailsScreenQuery({
     fetchPolicy: "cache-first",
     returnPartialData: true,
@@ -253,10 +252,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     (paymentDetail?.sendPaymentMutation ||
       (paymentDetail?.paymentType === "lnurl" && paymentDetail?.unitOfAccountAmount)) &&
     (async () => {
-      // Prevent multiple simultaneous executions
-      if (isProcessing) {
-        return
-      }
+      if (isProcessing) return
 
       try {
         setIsProcessing(true)

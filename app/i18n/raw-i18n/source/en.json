@@ -697,7 +697,9 @@
             "body3": "Otherwise, the money will go to a {bankName: string} Account that has the “{lnAddress: string}” address.\n\nCheck the spelling of the first part of the address as well. e.g. jackie and jack1e are 2 different addresses",
             "warning": "If the {bankName: string} address is entered incorrectly, {bankName: string} can't undo the transaction.",
             "checkBox": "{lnAddress: string} is the right address.",
-            "confirmButton": "I'm 100% sure"
+            "confirmButton": "I'm 100% sure",
+            "externalWarning": "You are about to send money to someone that is not a {bankName: string} account. Are you sure this is the address you intend to send to?",
+            "externalCheckBox": "I confirm sending to {address: string}."
         },
         "clipboardError": "Error getting value from clipboard"
     },
@@ -1371,11 +1373,15 @@
             "sendPayment": "Send Payment",
             "contactInfo": "Contact Info",
             "contactManagement": "Contact Management",
-            "unfollowContact": "Unfollow Contact"
+            "unfollowContact": "Unfollow Contact",
+            "noListDeepLinkMessage": "We couldn't find your contact list. To add friends, you need to initialize your contact list in Settings first.",
+            "manageContacts": "Manage Contacts",
+            "createContactList": "Create Contact List"
         },
         "common": {
             "copy": "Copy",
-            "copied": "Copied"
+            "copied": "Copied",
+            "goToSettings": "Go to settings"
         }
     }
 }

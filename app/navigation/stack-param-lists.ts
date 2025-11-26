@@ -79,6 +79,7 @@ export type RootStackParamList = {
     unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
     walletCurrency: WalletCurrency
     invoiceAmount?: MoneyAmount<WalletCurrency>
+    onSuccessAddContact?: () => void
   }
   language: undefined
   currency: undefined
@@ -163,6 +164,7 @@ export type RootStackParamList = {
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
+  Contacts: { userPrivateKey: string }
   SignInViaQRCode: undefined
   Nip29GroupChat: { groupId: string }
   InviteFriend: undefined

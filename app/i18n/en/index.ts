@@ -753,6 +753,8 @@ const en: BaseTranslation = {
         "If the {bankName: string} address is entered incorrectly, {bankName: string} can't undo the transaction.",
       checkBox: "{lnAddress: string} is the right address.",
       confirmButton: "I'm 100% sure",
+      externalWarning: "You are about to send money to someone that is not a {bankName: string} account. Are you sure this is the address you intend to send to?",
+      externalCheckBox: "I confirm sending to {address: string}."
     },
     clipboardError: "Error getting value from clipboard",
   },
@@ -1467,11 +1469,15 @@ const en: BaseTranslation = {
       sendPayment: "Send Payment",
       contactInfo: "Contact Info",
       contactManagement: "Contact Management",
-      unfollowContact: "Unfollow Contact"
+      unfollowContact: "Unfollow Contact",
+      noListDeepLinkMessage: "We couldn't find your contact list. To add friends, you need to initialize your contact list in Settings first.",
+      manageContacts: "Manage Contacts",
+      createContactList: "Create Contact List"
     },
     common: {
       copy: "Copy",
       copied: "Copied",
+      goToSettings: "Go to settings"
     }
   }
 }
