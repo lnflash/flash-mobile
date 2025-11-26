@@ -154,6 +154,16 @@ export type RootStackParamList = {
   Contacts: { userPrivateKey: string }
   SignInViaQRCode: undefined
   Nip29GroupChat: { groupId: string }
+  AccountType: undefined
+  PersonalInformation: undefined
+  BusinessInformation: undefined
+  BankInformation: undefined
+  Validation: {
+    phone: string
+    channel: PhoneCodeChannelType
+  }
+  AccountUpgradeSuccess: undefined
+  TestTransaction: undefined
 }
 
 export type ChatStackParamList = {

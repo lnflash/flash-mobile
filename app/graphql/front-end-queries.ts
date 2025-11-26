@@ -288,4 +288,24 @@ gql`
       username
     }
   }
+
+  query businessAddressEnrich($address: String!) {
+    businessAddressEnrich(address: $address) {
+      formattedAddress
+      latitude
+      longitude
+      errors {
+        message
+        code
+      }
+    }
+  }
+
+  query accountUpgradeRequestStatus {
+    accountUpgradeRequestStatus {
+      hasPendingRequest
+      requestedLevel
+      errors
+    }
+  }
 `
