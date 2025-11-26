@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react"
 import { Alert, Linking, TouchableOpacity, View } from "react-native"
 import { Icon, Text, makeStyles } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { useCameraDevice, useCameraPermission } from "react-native-vision-camera"
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
 
@@ -135,7 +135,7 @@ export const ScanningQRCodeScreen = () => {
         }
       } catch (err: unknown) {
         if (err instanceof Error) {
-          crashlytics().recordError(err)
+          getCrashlytics().recordError(err)
           Alert.alert(err.toString(), "", [
             {
               text: LL.common.ok(),

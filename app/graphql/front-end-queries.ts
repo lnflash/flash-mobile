@@ -282,6 +282,12 @@ gql`
       denominatorCurrency
     }
   }
+  query npubByUsername($username: Username!) {
+    npubByUsername(username: $username) {
+      npub
+      username
+    }
+  }
 
   query businessAddressEnrich($address: String!) {
     businessAddressEnrich(address: $address) {

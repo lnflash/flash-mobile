@@ -5,7 +5,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { launchImageLibrary } from "react-native-image-picker"
 import Clipboard from "@react-native-clipboard/clipboard"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import RNQRGenerator from "rn-qr-generator"
 
 // utils
@@ -31,7 +31,7 @@ const ActionBtns: React.FC<Props> = ({ processInvoice, hidePaste }) => {
       processInvoice(data)
     } catch (err: unknown) {
       if (err instanceof Error) {
-        crashlytics().recordError(err)
+        getCrashlytics().recordError(err)
         Alert.alert(err.toString())
       }
     }
@@ -56,7 +56,7 @@ const ActionBtns: React.FC<Props> = ({ processInvoice, hidePaste }) => {
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        crashlytics().recordError(err)
+        getCrashlytics().recordError(err)
         Alert.alert(err.toString())
       }
     }

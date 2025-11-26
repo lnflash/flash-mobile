@@ -170,7 +170,7 @@ const Wrapper = styled.View`
 `
 
 const Container = styled.View`
-  row-gap: 10;
+  row-gap: 10px;
   padding-horizontal: 20px;
 `
 
@@ -201,7 +201,7 @@ const SeedPhraseNum = styled.View<{ selectedInOrder?: boolean }>`
 
 const SeedPhraseText = styled.View`
   flex: 1;
-  padding-horizontal: 15;
+  padding-horizontal: 15px;
   padding-vertical: 14px;
 `
 

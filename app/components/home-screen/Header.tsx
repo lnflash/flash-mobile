@@ -3,7 +3,7 @@ import { Icon, useTheme } from "@rneui/themed"
 import styled from "styled-components/native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { StackNavigationProp } from "@react-navigation/stack"
-import messaging from "@react-native-firebase/messaging"
+import { AuthorizationStatus } from "@react-native-firebase/messaging"
 
 // hooks
 import { useIsFocused, useNavigation } from "@react-navigation/native"
@@ -37,8 +37,8 @@ const Header = () => {
         async () => {
           const result = await requestNotificationPermission()
           if (
-            result === messaging.AuthorizationStatus.PROVISIONAL ||
-            result === messaging.AuthorizationStatus.AUTHORIZED
+            result === AuthorizationStatus.PROVISIONAL ||
+            result === AuthorizationStatus.AUTHORIZED
           ) {
             await addDeviceToken(client)
           }

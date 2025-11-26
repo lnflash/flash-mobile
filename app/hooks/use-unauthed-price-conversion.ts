@@ -8,7 +8,7 @@ import {
   moneyAmountIsCurrencyType,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 
 const SATS_PER_BTC = 100000000
 
@@ -92,7 +92,7 @@ export const useUnauthedPriceConversion = () => {
       ) {
         amount = NaN
 
-        crashlytics().recordError(
+        getCrashlytics().recordError(
           new Error(
             `Price conversion is out of sync with display currency. Money amount: ${moneyAmount.currencyCode}, display currency: ${displayCurrency}`,
           ),

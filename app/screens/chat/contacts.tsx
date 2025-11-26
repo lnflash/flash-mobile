@@ -1,13 +1,12 @@
-// Contacts.tsx
 import React, { useEffect, useState } from "react"
 import { FlatList, Text, View, ActivityIndicator } from "react-native"
-import { useStyles } from "./style" // Adjust the path as needed
+import { useStyles } from "./style"
 import { useChatContext } from "./chatContext"
 import { nip19, Event } from "nostr-tools"
-import { useNavigation } from "@react-navigation/native"
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native" // <-- Added useRoute, RouteProp
 import { useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
-import { ChatStackParamList } from "@app/navigation/stack-param-lists"
+import { ChatStackParamList, RootStackParamList } from "@app/navigation/stack-param-lists" // <-- Ensure RootStackParamList is imported
 import { UserSearchBar } from "./UserSearchBar"
 import { SearchListItem } from "./searchListItem"
 import { hexToBytes } from "@noble/curves/abstract/utils"
@@ -16,20 +15,30 @@ import ContactCard from "./contactCard"
 import { fetchNostrUsers } from "@app/utils/nostr"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
+// 1. Define the shape of the route params
+type ContactsRouteProp = RouteProp<RootStackParamList, "Contacts">
+
 interface ContactsProps {
-  userPrivateKey: string
+  // 2. Make this OPTIONAL so Stack.Screen doesn't yell at you
+  userPrivateKey?: string
 }
 
-const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
+const Contacts: React.FC<ContactsProps> = ({ userPrivateKey: propKey }) => {
   const baseStyles = useStyles()
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
   const { poolRef, profileMap, contactsEvent, addEventToProfiles } = useChatContext()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
+
+  // 3. Hook into the route to get params from Settings
+  const route = useRoute<ContactsRouteProp>()
   const { theme } = useTheme()
   const { LL } = useI18nContext()
   const colors = theme.colors
 
-  // State to toggle spinner size & message after 3 seconds
+  // 4. Determine the actual key to use
+  // If passed as a prop (Tabs), use it. If not, look in navigation params (Settings).
+  const realUserKey = propKey || route.params?.userPrivateKey
+
   const [showAltMessage, setShowAltMessage] = useState(false)
 
   useEffect(() => {
@@ -51,7 +60,17 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
     }
   }, [poolRef, contactsEvent])
 
-  // Merge the base styles with additional styles
+  // 5. Safety check: If we still don't have a key, handle it (optional but recommended)
+  if (!realUserKey) {
+    return (
+      <View style={[{ flex: 1 }, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  // ... The rest of your styles and logic ...
+
   const styles = {
     ...baseStyles,
     container: {
@@ -78,7 +97,7 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
   const navigateToContactDetails = (contactPubkey: string) => {
     navigation.navigate("contactDetails", {
       contactPubkey,
-      userPrivateKey,
+      userPrivateKey: realUserKey, // Use the resolved key
     })
   }
 
@@ -93,7 +112,8 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey }) => {
           renderItem={({ item }) => (
             <SearchListItem
               item={item}
-              userPrivateKey={hexToBytes(userPrivateKey) as Uint8Array}
+              // Use the resolved key here
+              userPrivateKey={hexToBytes(realUserKey) as Uint8Array}
             />
           )}
           keyExtractor={(item) => item.id}

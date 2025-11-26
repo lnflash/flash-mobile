@@ -48,5 +48,5 @@ const Wrapper = styled.View`
 `
 
 const Container = styled.View`
-  row-gap: 10;
+  row-gap: 10px;
 `

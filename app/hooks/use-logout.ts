@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import messaging from "@react-native-firebase/messaging"
+import { getMessaging } from "@react-native-firebase/messaging"
 import * as Keychain from "react-native-keychain"
 
 // store
@@ -15,6 +15,7 @@ import { useFlashcard } from "./useFlashcard"
 // utils
 import KeyStoreWrapper from "../utils/storage/secureStorage"
 import { SCHEMA_VERSION_KEY } from "@app/config"
+import { disconnectToSDK } from "@app/utils/breez-sdk-liquid"
 
 const DEVICE_ACCOUNT_CREDENTIALS_KEY = "device-account"
 
@@ -30,7 +31,7 @@ const useLogout = () => {
 
   const logout = async (clearDeviceCred?: boolean) => {
     try {
-      const deviceToken = await messaging().getToken()
+      const deviceToken = await getMessaging().getToken()
       userLogoutMutation({ variables: { input: { deviceToken } } })
         .then(async (res) => {
           console.log("USER LOGOUT MUTATION RES: ", res.data?.userLogout)
@@ -47,6 +48,7 @@ const useLogout = () => {
   }
 
   const cleanUp = async (clearDeviceCred?: boolean) => {
+    await disconnectToSDK()
     await client.cache.reset()
     await AsyncStorage.multiRemove([SCHEMA_VERSION_KEY])
     await KeyStoreWrapper.removeIsBiometricsEnabled()
