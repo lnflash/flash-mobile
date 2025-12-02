@@ -631,7 +631,9 @@ export const ChatNavigator = () => {
         name="contactDetails"
         component={ContactDetailsScreen}
         options={{
-          headerShown: false, // Since we're using our own header in the component
+          headerShown: true,
+          title: "Contact Details",
+          headerBackTitleVisible: false,
         }}
       />
     </StackChats.Navigator>
