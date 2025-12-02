@@ -10,6 +10,10 @@ PODS:
   - breez_sdk_liquidFFI (0.11.2)
   - BreezSDKLiquid (0.11.2):
     - breez_sdk_liquidFFI (= 0.11.2)
+  - breeztech-breez-sdk-spark-react-native (0.5.1):
+    - RCT-Folly (= 2021.07.22.00)
+    - React-Core
+    - uniffi-bindgen-react-native (= 0.28.3-5)
   - BVLinearGradient (2.8.3):
     - React-Core
   - DoubleConversion (1.1.6)
@@ -729,6 +733,8 @@ PODS:
     - React-Core
   - SocketRocket (0.6.1)
   - TOCropViewController (2.7.4)
+  - uniffi-bindgen-react-native (0.28.3-5):
+    - React-Core
   - VisionCamera (3.6.4):
     - React
     - React-callinvoker
@@ -741,6 +747,7 @@ PODS:
 DEPENDENCIES:
   - boost (from `../node_modules/react-native/third-party-podspecs/boost.podspec`)
   - "breez_sdk_liquid (from `../node_modules/@breeztech/react-native-breez-sdk-liquid`)"
+  - "breeztech-breez-sdk-spark-react-native (from `../node_modules/@breeztech/breez-sdk-spark-react-native`)"
   - BVLinearGradient (from `../node_modules/react-native-linear-gradient`)
   - DoubleConversion (from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
@@ -869,6 +876,7 @@ SPEC REPOS:
     - PromisesSwift
     - SocketRocket
     - TOCropViewController
+    - uniffi-bindgen-react-native
     - ZXingObjC
 
 EXTERNAL SOURCES:
@@ -876,6 +884,8 @@ EXTERNAL SOURCES:
     :podspec: "../node_modules/react-native/third-party-podspecs/boost.podspec"
   breez_sdk_liquid:
     :path: "../node_modules/@breeztech/react-native-breez-sdk-liquid"
+  breeztech-breez-sdk-spark-react-native:
+    :path: "../node_modules/@breeztech/breez-sdk-spark-react-native"
   BVLinearGradient:
     :path: "../node_modules/react-native-linear-gradient"
   DoubleConversion:
@@ -1065,6 +1075,7 @@ SPEC CHECKSUMS:
   breez_sdk_liquid: c1ca8548830cd519e7443e9358b2ea97b4cc4461
   breez_sdk_liquidFFI: 1091fe9e2d677e7c3b0296848037338b419d0405
   BreezSDKLiquid: ebab2b6ffdbf45986b193624c0b37d2a5eb65b24
+  breeztech-breez-sdk-spark-react-native: 113cfdb491314dfbed3cb9d0d2f0495c3f41d64c
   BVLinearGradient: 880f91a7854faff2df62518f0281afb1c60d49a3
   DoubleConversion: 5189b271737e1565bdce30deb4a08d647e3f5f54
   FBLazyVector: dc178b8748748c036ef9493a5d59d6d1f91a36ce
@@ -1182,6 +1193,7 @@ SPEC CHECKSUMS:
   RNVectorIcons: 64e6a523ac30a3241efa9baf1ffbcc5e76ff747a
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
   TOCropViewController: 80b8985ad794298fb69d3341de183f33d1853654
+  uniffi-bindgen-react-native: 018090e6c342b31e1189eb4d098860e9d44caa86
   VisionCamera: 1910a51e4c6f6b049650086d343090f267b4c260
   Yoga: eddf2bbe4a896454c248a8f23b4355891eb720a6
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
