@@ -10,7 +10,12 @@ import {
   StatusBar,
 } from "react-native"
 import { useTheme, makeStyles } from "@rneui/themed"
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
+import {
+  RouteProp,
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 import { useChatContext } from "./chatContext"
@@ -57,19 +62,17 @@ const ContactDetailsScreen: React.FC = () => {
   const profile = profileMap?.get(contactPubkey)
   const npub = nip19.npubEncode(contactPubkey)
 
-  // Debug: Check if banner exists
-  console.log("Profile data:", {
-    hasPicture: !!profile?.picture,
-    hasBanner: !!profile?.banner,
-    bannerUrl: profile?.banner,
-    pictureUrl: profile?.picture,
-  })
-
   // State for managing Nostr posts (kind 1) and reposts (kind 6)
   const [posts, setPosts] = useState<Event[]>([])
   const [loadingPosts, setLoadingPosts] = useState(true)
   const [repostedEvents, setRepostedEvents] = useState<Map<string, Event>>(new Map())
   const [repostedProfiles, setRepostedProfiles] = useState<Map<string, any>>(new Map())
+
+  React.useEffect(() => {
+    navigation.setOptions({
+      title: profile?.name || profile?.username || profile?.nip05 || "Nostr User",
+    })
+  }, [profile, navigation])
 
   // Detect if this contact is a business account (Level 2 or 3) by checking if their username is in businessMapMarkers
   const { data: businessMapData } = useBusinessMapMarkersQuery({
@@ -205,10 +208,12 @@ const ContactDetailsScreen: React.FC = () => {
     }
   }, [contactPubkey])
 
-  useEffect(() => {
-    fetchPosts()
-  }, [fetchPosts])
-
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log("fetching post")
+      const sub = fetchPosts()
+    }, [fetchPosts]),
+  )
   return (
     <Screen preset="fixed">
       <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
