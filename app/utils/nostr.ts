@@ -20,6 +20,7 @@ import {
 import { Alert } from "react-native"
 
 import * as Keychain from "react-native-keychain"
+import { pool } from "./nostr/pool"
 
 export const publicRelays = [
   "wss://relay.damus.io",
@@ -243,7 +244,6 @@ export const fetchContactList = async (
 }
 
 export const setPreferredRelay = async (secretKey?: Uint8Array) => {
-  let pool = new SimplePool()
   let secret: Uint8Array | null = null
   if (!secretKey) {
     secret = await getSecretKey()
@@ -477,5 +477,3 @@ export const createContactListEvent = async (secretKey: Uint8Array) => {
   )
   console.log("Message from relays for contact list publish", messages)
 }
-
-export const pool = new SimplePool()

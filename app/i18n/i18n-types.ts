@@ -4240,6 +4240,85 @@ type RootTranslation = {
 		 */
 		warning: string
 	}
+	NostrQuickStart: {
+		/**
+		 * M​a​k​e​ ​y​o​u​r​ ​f​i​r​s​t​ ​s​o​c​i​a​l​ ​p​o​s​t​!
+		 */
+		postHeading: string
+		/**
+		 * I​n​t​r​o​d​u​c​e​ ​y​o​u​r​s​e​l​f​ ​t​o​ ​t​h​e​ ​W​o​r​l​d​!
+		 */
+		postDesc: string
+	}
+	Social: {
+		/**
+		 * P​o​s​t​ ​t​o​ ​N​o​s​t​r
+		 */
+		post: string
+		/**
+		 * M​a​k​e​ ​a​ ​P​o​s​t
+		 */
+		postTitle: string
+		/**
+		 * P​o​s​t​e​d​ ​u​s​i​n​g​ ​F​l​a​s​h​!​ ​G​e​t​ ​i​t​ ​@​ ​h​t​t​p​s​:​/​/​g​e​t​f​l​a​s​h​.​i​o​/​a​p​p
+		 */
+		flashAppCredit: string
+		/**
+		 * W​r​i​t​e​ ​y​o​u​r​ ​n​o​t​e​,​ ​m​a​k​e​ ​i​t​ ​s​p​e​c​i​a​l​ ​:​)
+		 */
+		writeYourNote: string
+		/**
+		 * P​o​s​t
+		 */
+		postButton: string
+		/**
+		 * S​u​c​c​e​s​s​!​
+	​ ​Y​o​u​r​ ​n​o​t​e​ ​h​a​s​ ​b​e​e​n​ ​p​o​s​t​e​d
+		 */
+		notePosted: string
+		/**
+		 * E​r​r​o​r​!​
+	​ ​E​r​r​o​r​ ​i​n​ ​p​o​s​t​i​n​g​ ​n​o​t​e
+		 */
+		errorPostFailed: string
+		/**
+		 * E​r​r​o​r​:​ ​
+	​ ​E​m​p​t​y​ ​n​o​t​e
+		 */
+		errorEmptyNote: string
+		/**
+		 * p​o​s​t​i​n​g​.​.​.
+		 */
+		posting: string
+		/**
+		 * V​i​e​w​ ​o​n​ ​i​r​i​s​.​t​o
+		 */
+		viewOnIris: string
+		/**
+		 * W​o​u​l​d​ ​y​o​u​ ​l​i​k​e​ ​t​o​ ​v​i​e​w​ ​y​o​u​r​ ​p​o​s​t​ ​o​n​ ​i​r​i​s​.​t​o​?
+		 */
+		viewPostQuestion: string
+		/**
+		 * B​r​o​w​s​e​ ​S​o​c​i​a​l​ ​F​e​e​d
+		 */
+		browseSocialFeed: string
+		/**
+		 * S​o​c​i​a​l​ ​F​e​e​d
+		 */
+		socialFeedTitle: string
+		/**
+		 * P​o​s​t​ ​S​h​a​r​e​d​!
+		 */
+		postSuccessTitle: string
+		/**
+		 * Y​o​u​r​ ​p​o​s​t​ ​h​a​s​ ​b​e​e​n​ ​p​u​b​l​i​s​h​e​d​ ​t​o​ ​N​o​s​t​r
+		 */
+		postSuccessSubtitle: string
+		/**
+		 * S​h​o​w​ ​m​e​ ​m​o​r​e
+		 */
+		showMeMore: string
+	}
 	errors: {
 		/**
 		 * T​h​e​r​e​ ​w​a​s​ ​a​n​ ​e​r​r​o​r​.​
@@ -7275,23 +7354,23 @@ export type TranslationFunctions = {
 		/**
 		 * The amount you entered is less than the minimum amount required to send an on-chain transaction {amount}. Please consider sending this amount via Lightning!
 		 */
-		onchainMinAmountInvoiceError: (arg: { amount: number }) => LocalizedString
+		onchainMinAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
 		/**
 		 * The conversion amount is less than minimum required amount {amount}
 		 */
-		minAmountConvertError: (arg: { amount: number }) => LocalizedString
+		minAmountConvertError: (arg: { amount: number | string }) => LocalizedString
 		/**
 		 * The conversion amount is greater than maximum amount {amount}
 		 */
-		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
+		maxAmountConvertError: (arg: { amount: number | string }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**
@@ -8933,6 +9012,85 @@ export type TranslationFunctions = {
 		 * Warning
 		 */
 		warning: () => LocalizedString
+	}
+	NostrQuickStart: {
+		/**
+		 * Make your first social post!
+		 */
+		postHeading: () => LocalizedString
+		/**
+		 * Introduce yourself to the World!
+		 */
+		postDesc: () => LocalizedString
+	}
+	Social: {
+		/**
+		 * Post to Nostr
+		 */
+		post: () => LocalizedString
+		/**
+		 * Make a Post
+		 */
+		postTitle: () => LocalizedString
+		/**
+		 * Posted using Flash! Get it @ https://getflash.io/app
+		 */
+		flashAppCredit: () => LocalizedString
+		/**
+		 * Write your note, make it special :)
+		 */
+		writeYourNote: () => LocalizedString
+		/**
+		 * Post
+		 */
+		postButton: () => LocalizedString
+		/**
+		 * Success!
+	 Your note has been posted
+		 */
+		notePosted: () => LocalizedString
+		/**
+		 * Error!
+	 Error in posting note
+		 */
+		errorPostFailed: () => LocalizedString
+		/**
+		 * Error: 
+	 Empty note
+		 */
+		errorEmptyNote: () => LocalizedString
+		/**
+		 * posting...
+		 */
+		posting: () => LocalizedString
+		/**
+		 * View on iris.to
+		 */
+		viewOnIris: () => LocalizedString
+		/**
+		 * Would you like to view your post on iris.to?
+		 */
+		viewPostQuestion: () => LocalizedString
+		/**
+		 * Browse Social Feed
+		 */
+		browseSocialFeed: () => LocalizedString
+		/**
+		 * Social Feed
+		 */
+		socialFeedTitle: () => LocalizedString
+		/**
+		 * Post Shared!
+		 */
+		postSuccessTitle: () => LocalizedString
+		/**
+		 * Your post has been published to Nostr
+		 */
+		postSuccessSubtitle: () => LocalizedString
+		/**
+		 * Show me more
+		 */
+		showMeMore: () => LocalizedString
 	}
 	errors: {
 		/**
