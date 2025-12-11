@@ -5,6 +5,7 @@ import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { listRefundables } from "@breeztech/react-native-breez-sdk-liquid"
+import { useNetInfo } from "@react-native-community/netinfo"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -38,6 +39,7 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
   const styles = useStyles()
   const { colors, mode } = useTheme().theme
   const { LL } = useI18nContext()
+  const netInfo = useNetInfo()
 
   const { persistentState, updateState } = usePersistentStateContext()
 
@@ -64,10 +66,15 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
       console.log("List Refundables Err: ", err)
     }
   }
-
-  if (error || persistentState?.numOfRefundables > 0) {
+  if (!netInfo.isInternetReachable) {
     return (
-      <View style={{ marginTop: 15, marginHorizontal: 20 }}>
+      <View style={styles.wrapper}>
+        <GaloyErrorBox errorMessage={"Wallet is offline"} />
+      </View>
+    )
+  } else if (error || persistentState?.numOfRefundables > 0) {
+    return (
+      <View style={styles.wrapper}>
         {persistentState?.numOfRefundables > 0 && (
           <View style={styles.container}>
             <GaloyIcon name="warning" size={14} color={color} />
@@ -96,6 +103,10 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
 export default Info
 
 const useStyles = makeStyles(({ colors }) => ({
+  wrapper: {
+    marginTop: 5,
+    marginHorizontal: 20,
+  },
   container: {
     flexDirection: "row",
     alignItems: "center",

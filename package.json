@@ -75,6 +75,7 @@
     "@notifee/react-native": "^7.8.2",
     "@react-native-async-storage/async-storage": "^1.19.3",
     "@react-native-clipboard/clipboard": "^1.12.1",
+    "@react-native-community/netinfo": "^11.4.1",
     "@react-native-firebase/analytics": "^22.2.0",
     "@react-native-firebase/app": "^22.2.0",
     "@react-native-firebase/app-check": "^22.2.0",
