@@ -412,8 +412,8 @@ const ContactDetailsScreen: React.FC = () => {
 
           {/* Explainer video */}
           <ExplainerVideo
-            videoUrl="https://v.nostr.build/2TNtuYh8WLpWBHXV.mp4"
-            title="How to make a great post (Video Tutorial)"
+            videoUrl="https://blossom.primal.net/f0d613b379e9855f32822a7286605b0fad32d79ea5b81ed23cf9cdda1da461ef.mp4 "
+            title="What is nostr?"
             style={styles.explainerVideo}
           />
 
