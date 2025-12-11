@@ -4,12 +4,12 @@ PODS:
     - GoogleUtilities/UserDefaults (~> 8.0)
     - PromisesObjC (~> 2.4)
   - boost (1.76.0)
-  - breez_sdk_liquid (0.11.2):
-    - BreezSDKLiquid (= 0.11.2)
+  - breez_sdk_liquid (0.11.11):
+    - BreezSDKLiquid (= 0.11.11)
     - React-Core
-  - breez_sdk_liquidFFI (0.11.2)
-  - BreezSDKLiquid (0.11.2):
-    - breez_sdk_liquidFFI (= 0.11.2)
+  - breez_sdk_liquidFFI (0.11.11)
+  - BreezSDKLiquid (0.11.11):
+    - breez_sdk_liquidFFI (= 0.11.11)
   - BVLinearGradient (2.8.3):
     - React-Core
   - DoubleConversion (1.1.6)
@@ -21,111 +21,108 @@ PODS:
     - React-Core (= 0.72.9)
     - React-jsi (= 0.72.9)
     - ReactCommon/turbomodule/core (= 0.72.9)
-  - Firebase/AnalyticsWithoutAdIdSupport (11.12.0):
+  - Firebase/AppCheck (11.15.0):
     - Firebase/CoreOnly
-    - FirebaseAnalytics/WithoutAdIdSupport (~> 11.12.0)
-  - Firebase/AppCheck (11.12.0):
+    - FirebaseAppCheck (~> 11.15.0)
+  - Firebase/CoreOnly (11.15.0):
+    - FirebaseCore (~> 11.15.0)
+  - Firebase/Crashlytics (11.15.0):
     - Firebase/CoreOnly
-    - FirebaseAppCheck (~> 11.12.0)
-  - Firebase/CoreOnly (11.12.0):
-    - FirebaseCore (~> 11.12.0)
-  - Firebase/Crashlytics (11.12.0):
+    - FirebaseCrashlytics (~> 11.15.0)
+  - Firebase/Messaging (11.15.0):
     - Firebase/CoreOnly
-    - FirebaseCrashlytics (~> 11.12.0)
-  - Firebase/Messaging (11.12.0):
+    - FirebaseMessaging (~> 11.15.0)
+  - Firebase/Performance (11.15.0):
     - Firebase/CoreOnly
-    - FirebaseMessaging (~> 11.12.0)
-  - Firebase/Performance (11.12.0):
+    - FirebasePerformance (~> 11.15.0)
+  - Firebase/RemoteConfig (11.15.0):
     - Firebase/CoreOnly
-    - FirebasePerformance (~> 11.12.0)
-  - Firebase/RemoteConfig (11.12.0):
-    - Firebase/CoreOnly
-    - FirebaseRemoteConfig (~> 11.12.0)
-  - FirebaseABTesting (11.12.0):
-    - FirebaseCore (~> 11.12.0)
-  - FirebaseAnalytics/WithoutAdIdSupport (11.12.0):
-    - FirebaseCore (~> 11.12.0)
+    - FirebaseRemoteConfig (~> 11.15.0)
+  - FirebaseABTesting (11.15.0):
+    - FirebaseCore (~> 11.15.0)
+  - FirebaseAnalytics/Core (11.15.0):
+    - FirebaseCore (~> 11.15.0)
     - FirebaseInstallations (~> 11.0)
-    - GoogleAppMeasurement/WithoutAdIdSupport (= 11.12.0)
-    - GoogleUtilities/AppDelegateSwizzler (~> 8.0)
-    - GoogleUtilities/MethodSwizzler (~> 8.0)
-    - GoogleUtilities/Network (~> 8.0)
-    - "GoogleUtilities/NSData+zlib (~> 8.0)"
+    - GoogleAppMeasurement/Core (= 11.15.0)
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/MethodSwizzler (~> 8.1)
+    - GoogleUtilities/Network (~> 8.1)
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
     - nanopb (~> 3.30910.0)
-  - FirebaseAppCheck (11.12.0):
+  - FirebaseAppCheck (11.15.0):
     - AppCheckCore (~> 11.0)
     - FirebaseAppCheckInterop (~> 11.0)
-    - FirebaseCore (~> 11.12.0)
-    - GoogleUtilities/Environment (~> 8.0)
-    - GoogleUtilities/UserDefaults (~> 8.0)
+    - FirebaseCore (~> 11.15.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
   - FirebaseAppCheckInterop (11.15.0)
-  - FirebaseCore (11.12.0):
-    - FirebaseCoreInternal (~> 11.12.0)
-    - GoogleUtilities/Environment (~> 8.0)
-    - GoogleUtilities/Logger (~> 8.0)
-  - FirebaseCoreExtension (11.12.0):
-    - FirebaseCore (~> 11.12.0)
-  - FirebaseCoreInternal (11.12.0):
-    - "GoogleUtilities/NSData+zlib (~> 8.0)"
-  - FirebaseCrashlytics (11.12.0):
-    - FirebaseCore (~> 11.12.0)
+  - FirebaseCore (11.15.0):
+    - FirebaseCoreInternal (~> 11.15.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/Logger (~> 8.1)
+  - FirebaseCoreExtension (11.15.0):
+    - FirebaseCore (~> 11.15.0)
+  - FirebaseCoreInternal (11.15.0):
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
+  - FirebaseCrashlytics (11.15.0):
+    - FirebaseCore (~> 11.15.0)
     - FirebaseInstallations (~> 11.0)
     - FirebaseRemoteConfigInterop (~> 11.0)
     - FirebaseSessions (~> 11.0)
     - GoogleDataTransport (~> 10.0)
-    - GoogleUtilities/Environment (~> 8.0)
+    - GoogleUtilities/Environment (~> 8.1)
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
-  - FirebaseInstallations (11.12.0):
-    - FirebaseCore (~> 11.12.0)
-    - GoogleUtilities/Environment (~> 8.0)
-    - GoogleUtilities/UserDefaults (~> 8.0)
+  - FirebaseInstallations (11.15.0):
+    - FirebaseCore (~> 11.15.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
     - PromisesObjC (~> 2.4)
-  - FirebaseMessaging (11.12.0):
-    - FirebaseCore (~> 11.12.0)
+  - FirebaseMessaging (11.15.0):
+    - FirebaseCore (~> 11.15.0)
     - FirebaseInstallations (~> 11.0)
     - GoogleDataTransport (~> 10.0)
-    - GoogleUtilities/AppDelegateSwizzler (~> 8.0)
-    - GoogleUtilities/Environment (~> 8.0)
-    - GoogleUtilities/Reachability (~> 8.0)
-    - GoogleUtilities/UserDefaults (~> 8.0)
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/Reachability (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
     - nanopb (~> 3.30910.0)
-  - FirebasePerformance (11.12.0):
-    - FirebaseCore (~> 11.12.0)
+  - FirebasePerformance (11.15.0):
+    - FirebaseCore (~> 11.15.0)
     - FirebaseInstallations (~> 11.0)
     - FirebaseRemoteConfig (~> 11.0)
     - FirebaseSessions (~> 11.0)
     - GoogleDataTransport (~> 10.0)
-    - GoogleUtilities/Environment (~> 8.0)
-    - GoogleUtilities/MethodSwizzler (~> 8.0)
-    - GoogleUtilities/UserDefaults (~> 8.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/MethodSwizzler (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
     - nanopb (~> 3.30910.0)
-  - FirebaseRemoteConfig (11.12.0):
+  - FirebaseRemoteConfig (11.15.0):
     - FirebaseABTesting (~> 11.0)
-    - FirebaseCore (~> 11.12.0)
+    - FirebaseCore (~> 11.15.0)
     - FirebaseInstallations (~> 11.0)
     - FirebaseRemoteConfigInterop (~> 11.0)
     - FirebaseSharedSwift (~> 11.0)
-    - GoogleUtilities/Environment (~> 8.0)
-    - "GoogleUtilities/NSData+zlib (~> 8.0)"
+    - GoogleUtilities/Environment (~> 8.1)
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
   - FirebaseRemoteConfigInterop (11.15.0)
-  - FirebaseSessions (11.12.0):
-    - FirebaseCore (~> 11.12.0)
-    - FirebaseCoreExtension (~> 11.12.0)
+  - FirebaseSessions (11.15.0):
+    - FirebaseCore (~> 11.15.0)
+    - FirebaseCoreExtension (~> 11.15.0)
     - FirebaseInstallations (~> 11.0)
     - GoogleDataTransport (~> 10.0)
-    - GoogleUtilities/Environment (~> 8.0)
-    - GoogleUtilities/UserDefaults (~> 8.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
     - nanopb (~> 3.30910.0)
     - PromisesSwift (~> 2.1)
   - FirebaseSharedSwift (11.15.0)
   - fmt (6.2.1)
   - glog (0.3.5)
-  - GoogleAppMeasurement/WithoutAdIdSupport (11.12.0):
-    - GoogleUtilities/AppDelegateSwizzler (~> 8.0)
-    - GoogleUtilities/MethodSwizzler (~> 8.0)
-    - GoogleUtilities/Network (~> 8.0)
-    - "GoogleUtilities/NSData+zlib (~> 8.0)"
+  - GoogleAppMeasurement/Core (11.15.0):
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/MethodSwizzler (~> 8.1)
+    - GoogleUtilities/Network (~> 8.1)
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
     - nanopb (~> 3.30910.0)
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
@@ -473,57 +470,58 @@ PODS:
     - glog
   - react-native-aes (2.0.0):
     - React-Core
-  - react-native-config (1.5.1):
-    - react-native-config/App (= 1.5.1)
-  - react-native-config/App (1.5.1):
+  - react-native-config (1.6.1):
+    - react-native-config/App (= 1.6.1)
+  - react-native-config/App (1.6.1):
     - React-Core
-  - react-native-date-picker (5.0.7):
+  - react-native-date-picker (5.0.13):
     - React-Core
-  - react-native-document-picker (9.1.0):
+  - react-native-document-picker (9.3.1):
+    - RCT-Folly (= 2021.07.22.00)
     - React-Core
   - react-native-fingerprint-scanner (6.0.0):
     - React
   - react-native-geetest-module (0.1.5):
     - GT3Captcha-iOS
     - React-Core
-  - react-native-get-random-values (1.10.0):
+  - react-native-get-random-values (1.11.0):
     - React-Core
   - react-native-html-to-pdf (0.12.0):
     - React-Core
-  - react-native-image-picker (7.1.0):
+  - react-native-image-picker (7.2.3):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
-  - react-native-in-app-review (4.3.3):
+  - react-native-in-app-review (4.4.2):
     - React-Core
-  - react-native-maps (1.9.0):
+  - react-native-maps (1.4.0):
     - React-Core
-  - react-native-nfc-manager (3.14.12):
+  - react-native-nfc-manager (3.17.2):
     - React-Core
-  - react-native-pager-view (6.2.3):
+  - react-native-pager-view (6.9.1):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
-  - react-native-quick-crypto (0.7.4):
+  - react-native-quick-crypto (0.7.17):
     - OpenSSL-Universal
     - RCT-Folly (= 2021.07.22.00)
     - React
     - React-Core
-  - react-native-randombytes (3.6.1):
+  - react-native-randombytes (3.6.2):
     - React-Core
-  - react-native-safe-area-context (4.8.2):
+  - react-native-safe-area-context (4.14.1):
     - React-Core
   - react-native-secure-key-store (2.0.10):
     - React-Core
-  - react-native-slider (4.5.0):
+  - react-native-slider (4.5.7):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
-  - react-native-video (5.2.1):
+  - react-native-video (5.2.2):
     - React-Core
-    - react-native-video/Video (= 5.2.1)
-  - react-native-video/Video (5.2.1):
+    - react-native-video/Video (= 5.2.2)
+  - react-native-video/Video (5.2.2):
     - React-Core
   - react-native-view-shot (3.8.0):
     - React-Core
-  - react-native-webview (13.8.1):
+  - react-native-webview (13.16.0):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
   - React-NativeModulesApple (0.72.9):
@@ -638,41 +636,41 @@ PODS:
     - React-perflogger (= 0.72.9)
   - RNBootSplash (4.7.5):
     - React-Core
-  - RNCAsyncStorage (1.21.0):
+  - RNCAsyncStorage (1.24.0):
     - React-Core
-  - RNCClipboard (1.13.2):
+  - RNCClipboard (1.16.3):
     - React-Core
   - RNDateTimePicker (6.7.5):
     - React-Core
-  - RNDeviceInfo (10.12.0):
+  - RNDeviceInfo (10.14.0):
     - React-Core
-  - RNFBAnalytics (22.2.0):
-    - Firebase/AnalyticsWithoutAdIdSupport (= 11.12.0)
-    - React-Core
-    - RNFBApp
-  - RNFBApp (22.2.0):
-    - Firebase/CoreOnly (= 11.12.0)
-    - React-Core
-  - RNFBAppCheck (22.2.0):
-    - Firebase/AppCheck (= 11.12.0)
+  - RNFBAnalytics (22.4.0):
+    - FirebaseAnalytics/Core (= 11.15.0)
     - React-Core
     - RNFBApp
-  - RNFBCrashlytics (22.2.0):
-    - Firebase/Crashlytics (= 11.12.0)
+  - RNFBApp (22.4.0):
+    - Firebase/CoreOnly (= 11.15.0)
+    - React-Core
+  - RNFBAppCheck (22.4.0):
+    - Firebase/AppCheck (= 11.15.0)
+    - React-Core
+    - RNFBApp
+  - RNFBCrashlytics (22.4.0):
+    - Firebase/Crashlytics (= 11.15.0)
     - FirebaseCoreExtension
     - React-Core
     - RNFBApp
-  - RNFBMessaging (22.2.0):
-    - Firebase/Messaging (= 11.12.0)
+  - RNFBMessaging (22.4.0):
+    - Firebase/Messaging (= 11.15.0)
     - FirebaseCoreExtension
     - React-Core
     - RNFBApp
-  - RNFBPerf (22.2.0):
-    - Firebase/Performance (= 11.12.0)
+  - RNFBPerf (22.4.0):
+    - Firebase/Performance (= 11.15.0)
     - React-Core
     - RNFBApp
-  - RNFBRemoteConfig (22.2.0):
-    - Firebase/RemoteConfig (= 11.12.0)
+  - RNFBRemoteConfig (22.4.0):
+    - Firebase/RemoteConfig (= 11.15.0)
     - React-Core
     - RNFBApp
   - RNFileViewer (2.1.5):
@@ -692,28 +690,54 @@ PODS:
     - TOCropViewController
   - RNInAppBrowser (3.7.0):
     - React-Core
-  - RNKeychain (8.1.2):
+  - RNKeychain (8.2.0):
     - React-Core
   - RNLocalize (2.2.6):
     - React-Core
-  - RNNotifee (7.8.2):
+  - RNNotifee (7.9.0):
     - React-Core
-    - RNNotifee/NotifeeCore (= 7.8.2)
-  - RNNotifee/NotifeeCore (7.8.2):
+    - RNNotifee/NotifeeCore (= 7.9.0)
+  - RNNotifee/NotifeeCore (7.9.0):
     - React-Core
   - RNPermissions (4.1.5):
     - React-Core
-  - RNQrGenerator (1.4.0):
+  - RNQrGenerator (1.4.5):
     - React
     - ZXingObjC
   - RNRate (1.2.12):
     - React-Core
-  - RNReactNativeHapticFeedback (2.2.0):
-    - React-Core
-  - RNReanimated (3.6.1):
+  - RNReactNativeHapticFeedback (2.3.3):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
+  - RNReanimated (3.5.4):
+    - DoubleConversion
+    - FBLazyVector
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCTRequired
+    - RCTTypeSafety
+    - React-callinvoker
+    - React-Core
+    - React-Core/DevSupport
+    - React-Core/RCTWebSocket
+    - React-CoreModules
+    - React-cxxreact
+    - React-hermes
+    - React-jsi
+    - React-jsiexecutor
+    - React-jsinspector
+    - React-RCTActionSheet
+    - React-RCTAnimation
+    - React-RCTAppDelegate
+    - React-RCTBlob
+    - React-RCTImage
+    - React-RCTLinking
+    - React-RCTNetwork
+    - React-RCTSettings
+    - React-RCTText
     - ReactCommon/turbomodule/core
+    - Yoga
   - RNScreens (3.34.0):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
@@ -722,13 +746,13 @@ PODS:
     - React
   - RNShare (10.2.1):
     - React-Core
-  - RNSVG (14.1.0):
+  - RNSVG (14.2.0):
     - React-Core
-  - RNVectorIcons (10.0.3):
+  - RNVectorIcons (10.3.0):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
   - SocketRocket (0.6.1)
-  - TOCropViewController (2.7.4)
+  - TOCropViewController (3.1.1)
   - VisionCamera (3.6.4):
     - React
     - React-callinvoker
@@ -1062,32 +1086,32 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
   boost: 7dcd2de282d72e344012f7d6564d024930a6a440
-  breez_sdk_liquid: c1ca8548830cd519e7443e9358b2ea97b4cc4461
-  breez_sdk_liquidFFI: 1091fe9e2d677e7c3b0296848037338b419d0405
-  BreezSDKLiquid: ebab2b6ffdbf45986b193624c0b37d2a5eb65b24
+  breez_sdk_liquid: 6eb4901aaea469829e22921cd54a85928d694a33
+  breez_sdk_liquidFFI: fdae842d075a2457e16119858369bdc144b0ade2
+  BreezSDKLiquid: 05516ece52b0c5d1ed4ee542f9713a1291d443dc
   BVLinearGradient: 880f91a7854faff2df62518f0281afb1c60d49a3
   DoubleConversion: 5189b271737e1565bdce30deb4a08d647e3f5f54
   FBLazyVector: dc178b8748748c036ef9493a5d59d6d1f91a36ce
   FBReactNativeSpec: d0aaae78e93c89dc2d691d8052a4d2aeb1b461ee
-  Firebase: 735108d2d0b67827cd929bfe8254983907c4479f
-  FirebaseABTesting: 01b54808f64fda9d96adc2653bc393e88e21f0da
-  FirebaseAnalytics: 2979c21ead00c520feff30db97ebadd669442f2a
-  FirebaseAppCheck: 1b22d24ce41cf20cca9c07894b6312ab0c8ec0d0
+  Firebase: d99ac19b909cd2c548339c2241ecd0d1599ab02e
+  FirebaseABTesting: 5e9d432834aebf27ab72100d37af44dfbe8d82f7
+  FirebaseAnalytics: 6433dfd311ba78084fc93bdfc145e8cb75740eae
+  FirebaseAppCheck: 4574d7180be2a8b514f588099fc5262f032a92c7
   FirebaseAppCheckInterop: 06fe5a3799278ae4667e6c432edd86b1030fa3df
-  FirebaseCore: 9d7a0caf39ec7317fbe13b3c7864c8c2acc60da8
-  FirebaseCoreExtension: 5e42645fd3f7c2c59ea5ed7641dd58f02bc565d1
-  FirebaseCoreInternal: 480d23e21f699cc7bcbc3d8eaa301f15d1e3ffaf
-  FirebaseCrashlytics: 90ea664e2b9dcf1aa5087ec6f684e9a0035d2378
-  FirebaseInstallations: 41189d8b11007152d9e46ec844019f38a0a4282a
-  FirebaseMessaging: 3a5de79d8dce82b70815123c05dfb8825111f15d
-  FirebasePerformance: 3cc783a6257bd41b708081a15865850fbfd7bf9e
-  FirebaseRemoteConfig: f0321eeb86f5463769c413bf626cece893a0a8ef
+  FirebaseCore: efb3893e5b94f32b86e331e3bd6dadf18b66568e
+  FirebaseCoreExtension: edbd30474b5ccf04e5f001470bdf6ea616af2435
+  FirebaseCoreInternal: 9afa45b1159304c963da48addb78275ef701c6b4
+  FirebaseCrashlytics: e09d0bc19aa54a51e45b8039c836ef73f32c039a
+  FirebaseInstallations: 317270fec08a5d418fdbc8429282238cab3ac843
+  FirebaseMessaging: 3b26e2cee503815e01c3701236b020aa9b576f09
+  FirebasePerformance: 8710877e6ba0f6ca4940d10624f5302431b406ea
+  FirebaseRemoteConfig: b496646b82855e174a7f1e354c65e0e913085168
   FirebaseRemoteConfigInterop: 1c6135e8a094cc6368949f5faeeca7ee8948b8aa
-  FirebaseSessions: 2c0ea8956085570415601d64cc7ebe83c8dd5c93
+  FirebaseSessions: b9a92c1c51bbb81e78fc3142cda6d925d700f8e7
   FirebaseSharedSwift: e17c654ef1f1a616b0b33054e663ad1035c8fd40
   fmt: ff9d55029c625d3757ed641535fd4a75fedc7ce9
   glog: 04b94705f318337d7ead9e6d17c019bd9b1f6b1b
-  GoogleAppMeasurement: 6ee0ee888bb1db802c49049001adb4013d7fe41b
+  GoogleAppMeasurement: 700dce7541804bec33db590a5c496b663fbe2539
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GT3Captcha-iOS: aeb6fed2e8594099821430a89208679e5a55b740
@@ -1113,26 +1137,26 @@ SPEC CHECKSUMS:
   React-jsinspector: 54205b269da20c51417e0fc02c4cde9f29a4bf1a
   React-logger: f42d2f2bc4cbb5d19d7c0ce84b8741b1e54e88c8
   react-native-aes: c75c46aa744bef7c2415fdf7f5b2dcb75ca4364d
-  react-native-config: 86038147314e2e6d10ea9972022aa171e6b1d4d8
-  react-native-date-picker: 06a4d96ab525a163c7a90bccd68833d136b0bb13
-  react-native-document-picker: b4f4a23b73f864ce17965b284c0757648993805b
+  react-native-config: 97ffff0aec29e12269f4dd2d41c6669c0056c7aa
+  react-native-date-picker: b64721d6278b52708457292c218196b383b553b1
+  react-native-document-picker: 52eab29bbc53f45399b475b7a3f4e503260f1134
   react-native-fingerprint-scanner: ac6656f18c8e45a7459302b84da41a44ad96dbbe
   react-native-geetest-module: ed6a20774a7975640b79a2f639327c674a488cb5
-  react-native-get-random-values: 384787fd76976f5aec9465aff6fa9e9129af1e74
+  react-native-get-random-values: 21325b2244dfa6b58878f51f9aa42821e7ba3d06
   react-native-html-to-pdf: 4c5c6e26819fe202971061594058877aa9b25265
-  react-native-image-picker: 5e076db26cd81660cfb6db5bcf517cfa12054d45
-  react-native-in-app-review: db8bb167a5f238e7ceca5c242d6b36ce8c4404a4
-  react-native-maps: 084fccedd6785bd41e85a13a26e8e6252a45b594
-  react-native-nfc-manager: 2a87d561c4fa832e6597a5f2f7c197808c019ab8
-  react-native-pager-view: e26d35e382d86950c936f8917e3beb9188115ccc
-  react-native-quick-crypto: b859e7bc40b1fdd0d9f4b0a1475304fd3e2e216c
-  react-native-randombytes: 421f1c7d48c0af8dbcd471b0324393ebf8fe7846
-  react-native-safe-area-context: 0ee144a6170530ccc37a0fd9388e28d06f516a89
+  react-native-image-picker: 2f6958ad0491529269cc9ed4e185927ae9cd4433
+  react-native-in-app-review: bb863fb300f2c716479c4285201df746cf5e20a2
+  react-native-maps: 7135a33610202745d08fdf151ce6b0d01952a99c
+  react-native-nfc-manager: ef3b44c4f1975ab16d6109bb1671ab68068aba58
+  react-native-pager-view: 6fa80d2e131fdc78d428816ee81ae3f9e71fb898
+  react-native-quick-crypto: c63f09c36b5e03ee0cb6b03cc2de296fb6ff3f0f
+  react-native-randombytes: ddf6edfd3fb9091af8c6ed1b35e57c308b5f5f2c
+  react-native-safe-area-context: 141eca0fd4e4191288dfc8b96a7c7e1c2983447a
   react-native-secure-key-store: 910e6df6bc33cb790aba6ee24bc7818df1fe5898
-  react-native-slider: cc89964e1432fa31aa9db7a0fa9b21e26b5d5152
-  react-native-video: c26780b224543c62d5e1b2a7244a5cd1b50e8253
+  react-native-slider: 993db908efc1cc57f0846c516e9843c5ff25db66
+  react-native-video: 05b96aa6ab090579e2db5f3a3b81ffdb365016fd
   react-native-view-shot: 6b7ed61d77d88580fed10954d45fad0eb2d47688
-  react-native-webview: bdc091de8cf7f8397653e30182efcd9f772e03b3
+  react-native-webview: 7a02b0c8319f27ffca314f9f4e6ed4b641250096
   React-NativeModulesApple: 9f72feb8a04020b32417f768a7e1e40eec91fef4
   React-perflogger: cb433f318c6667060fc1f62e26eb58d6eb30a627
   React-RCTActionSheet: 0af3f8ac067e8a1dde902810b7ad169d0a0ec31e
@@ -1151,37 +1175,37 @@ SPEC CHECKSUMS:
   React-utils: a3ffbc321572ee91911d7bc30965abe9aa4e16af
   ReactCommon: 180205f326d59f52e12fa724f5278fcf8fb6afc3
   RNBootSplash: 85f6b879c080e958afdb4c62ee04497b05fd7552
-  RNCAsyncStorage: 618d03a5f52fbccb3d7010076bc54712844c18ef
-  RNCClipboard: 60fed4b71560d7bfe40e9d35dea9762b024da86d
+  RNCAsyncStorage: ec53e44dc3e75b44aa2a9f37618a49c3bc080a7a
+  RNCClipboard: dfeb43751adff21e588657b5b6c888c72f3aa68e
   RNDateTimePicker: 65e1d202799460b286ff5e741d8baf54695e8abd
-  RNDeviceInfo: db5c64a060e66e5db3102d041ebe3ef307a85120
-  RNFBAnalytics: 8d1705b9076df1ed0b72a165d78c303e8569807b
-  RNFBApp: fa5825b36d8362ce9b993cac8bf070d116848640
-  RNFBAppCheck: f98d1bd525efe4e22f28c6070796434c9baf6e9a
-  RNFBCrashlytics: 14dcfb073e7d9f41189400128e203d5314a8c606
-  RNFBMessaging: 32a107c0463048f1c03df06ab235bf56e976299a
-  RNFBPerf: a3f48919b73a6355113735a463f048a772fc79a4
-  RNFBRemoteConfig: f2d4de1a288ede64e777f3229c7746ed4127ccb3
+  RNDeviceInfo: 59344c19152c4b2b32283005f9737c5c64b42fba
+  RNFBAnalytics: 0e87968d73029b870f8ff8e2e324d4b8c429ea47
+  RNFBApp: d15dab17b5639fb7f95712d07c204912a534b8c6
+  RNFBAppCheck: 6141154680a4ba8b75369d9347b16ae2c98bbbe7
+  RNFBCrashlytics: 6ada8cdbb9778a55eb45bf86f75cef1b08c5d064
+  RNFBMessaging: d01e0013a9dc69e2deb747b991818f7d6dd296ca
+  RNFBPerf: f3b63dbeeb29e7d81415ffdcce9762d881fc7acf
+  RNFBRemoteConfig: 75d3335600b9d7c31522d92f72b87dde08ad7256
   RNFileViewer: ce7ca3ac370e18554d35d6355cffd7c30437c592
   RNFS: 4ac0f0ea233904cb798630b3c077808c06931688
   RNGestureHandler: c0d04458598fcb26052494ae23dda8f8f5162b13
   RNImageCropPicker: 14fe1c29298fb4018f3186f455c475ab107da332
   RNInAppBrowser: e36d6935517101ccba0e875bac8ad7b0cb655364
-  RNKeychain: a65256b6ca6ba6976132cc4124b238a5b13b3d9c
+  RNKeychain: bfe3d12bf4620fe488771c414530bf16e88f3678
   RNLocalize: d4b8af4e442d4bcca54e68fc687a2129b4d71a81
-  RNNotifee: 8e2d3df3f0e9ce8f5d1fe4c967431138190b6175
+  RNNotifee: 935f3ea8c134c88cbf8b13ea0c97c72c09ad2116
   RNPermissions: 294531ede5a64d1528463e88fffef05675842042
-  RNQrGenerator: 1676221c08bfabec978242989c733810dad20959
+  RNQrGenerator: f0290f5c21125359c7cb62888052962abfba3973
   RNRate: ef3bcff84f39bb1d1e41c5593d3eea4aab2bd73a
-  RNReactNativeHapticFeedback: ec56a5f81c3941206fd85625fa669ffc7b4545f9
-  RNReanimated: fdbaa9c964bbab7fac50c90862b6cc5f041679b9
+  RNReactNativeHapticFeedback: 35ab91df9e7a1e4513806e3c091293c97fe38c83
+  RNReanimated: ab2e96c6d5591c3dfbb38a464f54c8d17fb34a87
   RNScreens: 80369e822c4f123c3f076c9ea4141991c17770f9
   RNSecureRandom: 07efbdf2cd99efe13497433668e54acd7df49fef
   RNShare: 0fad69ae2d71de9d1f7b9a43acf876886a6cb99c
-  RNSVG: ba3e7232f45e34b7b47e74472386cf4e1a676d0a
-  RNVectorIcons: 64e6a523ac30a3241efa9baf1ffbcc5e76ff747a
+  RNSVG: 963a95f1f5d512a13d11ffd50d351c87fb5c6890
+  RNVectorIcons: 5fc79a64e2ec2468ef4d1f9d40c132e52ef37241
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
-  TOCropViewController: 80b8985ad794298fb69d3341de183f33d1853654
+  TOCropViewController: 9002a9b12d8104d7478cdc306d80f0efea7fe2c5
   VisionCamera: 1910a51e4c6f6b049650086d343090f267b4c260
   Yoga: eddf2bbe4a896454c248a8f23b4355891eb720a6
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
