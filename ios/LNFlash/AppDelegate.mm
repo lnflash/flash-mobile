@@ -28,6 +28,11 @@
 
 - (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
 {
+  return [self getBundleURL];
+}
+ 
+- (NSURL *)getBundleURL
+{
   #if DEBUG
     return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];
     //return [NSURL URLWithString:@"http://100.116.189.124:8081/index.bundle?platform=ios&dev=true"];
