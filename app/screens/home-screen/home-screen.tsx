@@ -68,7 +68,7 @@ export const HomeScreen: React.FC = () => {
       dispatch(setUserData(dataAuthed.me))
       saveDefaultWallet()
     }
-  }, [dataAuthed])
+  }, [dataAuthed?.me])
 
   const saveDefaultWallet = () => {
     const defaultWallet = getDefaultWallet(
