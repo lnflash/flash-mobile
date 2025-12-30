@@ -1208,6 +1208,14 @@ query notificationSettings {
   }
 }
 
+query npubByUsername($username: Username!) {
+  npubByUsername(username: $username) {
+    npub
+    username
+    __typename
+  }
+}
+
 query onChainTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: SatAmount!) {
   onChainTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount
@@ -1521,6 +1529,36 @@ query supportedCountries {
 query totpRegistrationScreen {
   me {
     username
+    __typename
+  }
+}
+
+query transactionDetails($input: TransactionDetailsInput!) {
+  transactionDetails(input: $input) {
+    errors {
+      message
+      __typename
+    }
+    transactionDetails {
+      id
+      accountId
+      amount
+      currency
+      status
+      type
+      createdAt
+      updatedAt
+      invoice
+      paymentHash
+      paymentPreimage
+      memo
+      address
+      txid
+      vout
+      confirmations
+      fee
+      __typename
+    }
     __typename
   }
 }

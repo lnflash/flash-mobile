@@ -10,10 +10,15 @@ export const DestinationState = {
 
 export type DestinationState = (typeof DestinationState)[keyof typeof DestinationState]
 
-export type ConfirmationType = {
-  type: "new-username"
-  username: string
-}
+export type ConfirmationType =
+  | {
+      type: "new-username"
+      username: string
+    }
+  | {
+      type: "external-destination"
+      address: string
+    }
 
 export type SendBitcoinDestinationState =
   | {

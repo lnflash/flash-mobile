@@ -7,7 +7,7 @@ import {
 } from "@app/graphql/generated"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 
 import { SettingsRow } from "../row"
 import { useBreez } from "@app/hooks"
@@ -57,7 +57,7 @@ export const ExportCsvSetting: React.FC = () => {
       })
     } catch (err: unknown) {
       if (err instanceof Error) {
-        crashlytics().recordError(err)
+        getCrashlytics().recordError(err)
       }
       console.error(err)
     }

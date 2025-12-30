@@ -4,7 +4,7 @@ import { makeStyles, useTheme } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
 
 // hooks
-import { useLevel } from "@app/graphql/level-context"
+import { AccountLevel, useLevel } from "@app/graphql/level-context"
 
 // utils
 import { toastShow } from "@app/utils/toast"
@@ -26,7 +26,7 @@ export const AddButton: React.FC<Props> = ({ handleOnPress }) => {
     })
   }
 
-  if (level === "TWO") {
+  if (level === AccountLevel.Two || level === AccountLevel.Three) {
     return (
       <TouchableOpacity style={styles.addButton} onPress={handleAddPin}>
         <Icon name="add" size={50} color={colors.white} />

@@ -6,7 +6,7 @@ import {
   SimplePool,
   finalizeEvent,
 } from "nostr-tools"
-import { getSecretKey, setPreferredRelay } from "@app/utils/nostr"
+import { createContactListEvent, getSecretKey, setPreferredRelay } from "@app/utils/nostr"
 import { useHomeAuthedQuery, useUserUpdateNpubMutation } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "./use-app-config"
@@ -78,6 +78,7 @@ const useNostrProfile = () => {
       nostrSecret,
     )
     await setPreferredRelay(secretKey)
+    await createContactListEvent(secretKey)
     return secretKey
   }
 

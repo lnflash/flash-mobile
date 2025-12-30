@@ -10,7 +10,7 @@ import {
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { TranslationFunctions } from "@app/i18n/i18n-types"
 import { logAddPhoneAttempt, logValidateAuthCodeFailure } from "@app/utils/analytics"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { RouteProp, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Input, Text, makeStyles, useTheme } from "@rneui/themed"
@@ -159,7 +159,7 @@ export const PhoneRegistrationValidateScreen: React.FC<
         }
       } catch (err) {
         if (err instanceof Error) {
-          crashlytics().recordError(err)
+          getCrashlytics().recordError(err)
           console.debug({ err })
         }
         setError(ValidatePhoneCodeErrors.UnknownError)

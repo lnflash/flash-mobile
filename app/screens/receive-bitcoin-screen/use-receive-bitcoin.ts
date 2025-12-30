@@ -32,7 +32,7 @@ import { generateFutureLocalTime, secondsToH, secondsToHMS } from "./payment/hel
 import { toastShow } from "@app/utils/toast"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { Alert, Share } from "react-native"
 import { TranslationFunctions } from "@app/i18n/i18n-types"
 import { BtcWalletDescriptor } from "@app/types/wallets"
@@ -363,7 +363,7 @@ export const useReceiveBitcoin = (initPRParams = {}) => {
         }
       } catch (err) {
         if (err instanceof Error) {
-          crashlytics().recordError(err)
+          getCrashlytics().recordError(err)
           Alert.alert(err.message)
         }
       }

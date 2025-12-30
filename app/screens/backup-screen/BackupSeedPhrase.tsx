@@ -123,7 +123,7 @@ const SeedPhraseNum = styled.View`
 
 const SeedPhraseText = styled.View`
   flex: 1;
-  padding-horizontal: 15;
+  padding-horizontal: 15px;
 `
 
 const ButtonsWrapper = styled.View`

@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from "react"
-import analytics from "@react-native-firebase/analytics"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getAnalytics } from "@react-native-firebase/analytics"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { gql } from "@apollo/client"
@@ -63,7 +62,7 @@ export const EmailLoginValidateScreen: React.FC<Props> = ({ navigation, route })
               authToken,
             })
           } else {
-            analytics().logLogin({ method: "email" })
+            getAnalytics().logLogin({ method: "email" })
             saveToken(authToken)
             navigation.reset({
               index: 0,

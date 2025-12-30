@@ -17,10 +17,10 @@ import {
   logCreatedDeviceAccount,
 } from "@app/utils/analytics"
 import * as Keychain from "react-native-keychain"
-import analytics from "@react-native-firebase/analytics"
+import { getAnalytics } from "@react-native-firebase/analytics"
 import { v4 as uuidv4 } from "uuid"
 import { generateSecureRandom } from "react-native-securerandom"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 
 const generateSecureRandomUUID = async () => {
   const randomBytes = await generateSecureRandom(16) // Generate 16 random bytes
@@ -114,7 +114,7 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
       }
 
       logCreatedDeviceAccount()
-      analytics().logLogin({ method: "device" })
+      getAnalytics().logLogin({ method: "device" })
       saveToken(authToken)
       navigation.replace("Primary")
       closeModal()
@@ -122,7 +122,7 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
       setHasError(true)
       logCreateDeviceAccountFailure()
       if (error instanceof Error) {
-        crashlytics().recordError(error)
+        getCrashlytics().recordError(error)
       }
     }
 

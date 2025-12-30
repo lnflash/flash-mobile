@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react"
 import { View } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { StackScreenProps } from "@react-navigation/stack"
 import ReactNativeHapticFeedback from "react-native-haptic-feedback"
 
@@ -33,6 +33,7 @@ import {
   ZeroUsdMoneyAmount,
 } from "@app/types/amounts"
 import {
+  useNpubByUsernameLazyQuery,
   useSendBitcoinConfirmationScreenQuery,
   WalletCurrency,
 } from "@app/graphql/generated"
@@ -42,6 +43,10 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // utils
 import { logPaymentAttempt, logPaymentResult } from "@app/utils/analytics"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { useChatContext } from "../chat/chatContext"
+import { addToContactList, getSecretKey } from "@app/utils/nostr"
+import { nip19 } from "nostr-tools"
+import { useRequireContactList } from "./require-contact-list-modal"
 
 type Props = {} & StackScreenProps<RootStackParamList, "sendBitcoinConfirmation">
 
@@ -70,6 +75,10 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   const [paymentError, setPaymentError] = useState<string>()
   const [invalidAmountErr, setInvalidAmountErr] = useState<string>()
   const [fee, setFee] = useState<FeeType>({ status: "loading" })
+  const { contactsEvent, poolRef } = useChatContext()
+  const [npubByUsernameQuery] = useNpubByUsernameLazyQuery()
+  const { promptForContactList, ModalComponent: ConfirmOverwriteModal } =
+    useRequireContactList()
 
   const { data } = useSendBitcoinConfirmationScreenQuery({ skip: !useIsAuthed() })
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
@@ -150,6 +159,39 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     }
   }
 
+  const autoAddContact = useCallback(async () => {
+    if (!flashUserAddress || !poolRef) return
+
+    try {
+      const flashUsername = flashUserAddress.split("@")[0]
+      const queryResult = await npubByUsernameQuery({
+        variables: { username: flashUsername },
+      })
+
+      const destinationNpub = queryResult.data?.npubByUsername?.npub
+      if (!destinationNpub) return
+
+      const secretKey = await getSecretKey()
+      if (!secretKey) return
+
+      await addToContactList(
+        secretKey,
+        nip19.decode(destinationNpub).data as string,
+        poolRef.current,
+        promptForContactList,
+        contactsEvent,
+      )
+    } catch (err) {
+      console.warn("Failed to auto-add flash user to contacts", err)
+    }
+  }, [
+    flashUserAddress,
+    poolRef,
+    npubByUsernameQuery,
+    promptForContactList,
+    contactsEvent,
+  ])
+
   const handleSendPayment = useCallback(async () => {
     if (sendPayment && sendingWalletDescriptor?.currency) {
       console.log("Starting animation and sending payment")
@@ -174,6 +216,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
               sendingWalletDescriptor.currency === "USD" && invoiceAmount
                 ? invoiceAmount
                 : paymentDetail.unitOfAccountAmount,
+            onSuccessAddContact: autoAddContact,
           })
           ReactNativeHapticFeedback.trigger("notificationSuccess", {
             ignoreAndroidSystemSettings: true,
@@ -191,7 +234,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         }
       } catch (err) {
         if (err instanceof Error) {
-          crashlytics().recordError(err)
+          getCrashlytics().recordError(err)
           setPaymentError(err.message || err.toString())
         }
       }
@@ -228,6 +271,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           onPress={handleSendPayment}
         />
       </View>
+      <ConfirmOverwriteModal />
     </Screen>
   )
 }

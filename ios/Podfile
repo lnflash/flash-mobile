@@ -2,7 +2,7 @@ require_relative '../node_modules/react-native/scripts/react_native_pods'
 require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
 use_modular_headers!
 
-platform :ios, '13.0'
+platform :ios, '13.4'
 prepare_react_native_project!
 # If you are using a `react-native-flipper` your iOS build will fail when `NO_FLIPPER=1` is set.
 # because `react-native-flipper` depends on (FlipperKit,...) that will be excluded
@@ -120,6 +120,21 @@ post_install do |installer|
   framework_paths.each do |framework_relative_path|
     strip_bitcode_from_framework(bitcode_strip_path, framework_relative_path)
   end
+
+  # use GoogleService-Info.dev.plist if GoogleService-Info.plist is not exits
+  app_path = File.join(Dir.pwd, 'LNFlash') 
+  google_service_plist = File.join(app_path, 'GoogleService-Info.plist')
+  google_service_dev = File.join(app_path, 'GoogleService-Info.dev.plist')
+  
+  unless File.exist?(google_service_plist) && File.size?(google_service_plist)
+    if File.exist?(google_service_dev)
+      puts "⚠️ GoogleService-Info.plist not found. Using GoogleService-Info.dev.plist instead."
+      FileUtils.cp(google_service_dev, google_service_plist)
+    else
+      puts "⚠️ Neither GoogleService-Info.plist nor GoogleService-Info.dev.plist found!"
+    end
+  end
+  # end
 end
 
 

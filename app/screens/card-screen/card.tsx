@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react"
 import { Alert } from "react-native"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
@@ -72,7 +72,7 @@ export const CardScreen = () => {
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        crashlytics().recordError(err)
+        getCrashlytics().recordError(err)
         Alert.alert(err.toString(), "", [
           {
             text: "Ok",

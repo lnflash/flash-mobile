@@ -1393,6 +1393,7 @@ export type Query = {
   readonly quizQuestions?: Maybe<ReadonlyArray<Maybe<QuizQuestion>>>;
   /** Returns 1 Sat and 1 Usd Cent price for the given currency */
   readonly realtimePrice: RealtimePrice;
+  readonly transactionDetails: TransactionDetailsPayload;
   /** @deprecated will be migrated to AccountDefaultWalletId */
   readonly userDefaultWalletId: Scalars['WalletId']['output'];
   readonly usernameAvailable?: Maybe<Scalars['Boolean']['output']>;
@@ -1456,6 +1457,11 @@ export type QueryOnChainUsdTxFeeAsBtcDenominatedArgs = {
 
 export type QueryRealtimePriceArgs = {
   currency?: InputMaybe<Scalars['DisplayCurrency']['input']>;
+};
+
+
+export type QueryTransactionDetailsArgs = {
+  input: TransactionDetailsInput;
 };
 
 
@@ -1626,6 +1632,60 @@ export type TransactionConnection = {
   readonly edges?: Maybe<ReadonlyArray<TransactionEdge>>;
   /** Information to aid in pagination. */
   readonly pageInfo: PageInfo;
+};
+
+export type TransactionDetails = {
+  readonly __typename: 'TransactionDetails';
+  /** Account ID associated with the transaction */
+  readonly accountId?: Maybe<Scalars['String']['output']>;
+  /** Bitcoin address for onchain transactions */
+  readonly address?: Maybe<Scalars['String']['output']>;
+  /** Transaction amount */
+  readonly amount?: Maybe<Scalars['Float']['output']>;
+  /** Number of confirmations for onchain transactions */
+  readonly confirmations?: Maybe<Scalars['Int']['output']>;
+  /** Transaction creation timestamp */
+  readonly createdAt?: Maybe<Scalars['String']['output']>;
+  /** Transaction currency */
+  readonly currency?: Maybe<Scalars['String']['output']>;
+  /** Transaction fee */
+  readonly fee?: Maybe<Scalars['Float']['output']>;
+  /** Transaction ID */
+  readonly id: Scalars['String']['output'];
+  /** Lightning invoice (bolt11) */
+  readonly invoice?: Maybe<Scalars['String']['output']>;
+  /** Transaction memo/description */
+  readonly memo?: Maybe<Scalars['String']['output']>;
+  /** Lightning payment hash */
+  readonly paymentHash?: Maybe<Scalars['String']['output']>;
+  /** Lightning payment preimage */
+  readonly paymentPreimage?: Maybe<Scalars['String']['output']>;
+  /** Transaction status */
+  readonly status?: Maybe<Scalars['String']['output']>;
+  /** Bitcoin transaction ID for onchain transactions */
+  readonly txid?: Maybe<Scalars['String']['output']>;
+  /** Transaction type (lightning/onchain) */
+  readonly type?: Maybe<Scalars['String']['output']>;
+  /** Transaction last update timestamp */
+  readonly updatedAt?: Maybe<Scalars['String']['output']>;
+  /** Output index for onchain transactions */
+  readonly vout?: Maybe<Scalars['Int']['output']>;
+};
+
+export type TransactionDetailsError = {
+  readonly __typename: 'TransactionDetailsError';
+  readonly message: Scalars['String']['output'];
+};
+
+export type TransactionDetailsInput = {
+  /** Transaction ID to fetch details for */
+  readonly transactionId: Scalars['String']['input'];
+};
+
+export type TransactionDetailsPayload = {
+  readonly __typename: 'TransactionDetailsPayload';
+  readonly errors: ReadonlyArray<TransactionDetailsError>;
+  readonly transactionDetails?: Maybe<TransactionDetails>;
 };
 
 /** An edge in a connection. */
@@ -2246,6 +2306,13 @@ export type RealtimePriceUnauthedQueryVariables = Exact<{
 
 export type RealtimePriceUnauthedQuery = { readonly __typename: 'Query', readonly realtimePrice: { readonly __typename: 'RealtimePrice', readonly timestamp: number, readonly denominatorCurrency: string, readonly btcSatPrice: { readonly __typename: 'PriceOfOneSatInMinorUnit', readonly base: number, readonly offset: number }, readonly usdCentPrice: { readonly __typename: 'PriceOfOneUsdCentInMinorUnit', readonly base: number, readonly offset: number } } };
 
+export type NpubByUsernameQueryVariables = Exact<{
+  username: Scalars['Username']['input'];
+}>;
+
+
+export type NpubByUsernameQuery = { readonly __typename: 'Query', readonly npubByUsername?: { readonly __typename: 'npubByUsername', readonly npub?: string | null, readonly username?: string | null } | null };
+
 export type RealtimePriceWsSubscriptionVariables = Exact<{
   currency: Scalars['DisplayCurrency']['input'];
 }>;
@@ -2629,6 +2696,13 @@ export type UserTotpRegistrationValidateMutationVariables = Exact<{
 
 
 export type UserTotpRegistrationValidateMutation = { readonly __typename: 'Mutation', readonly userTotpRegistrationValidate: { readonly __typename: 'UserTotpRegistrationValidatePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }>, readonly me?: { readonly __typename: 'User', readonly totpEnabled: boolean, readonly phone?: string | null, readonly email?: { readonly __typename: 'Email', readonly address?: string | null, readonly verified?: boolean | null } | null } | null } };
+
+export type TransactionDetailsQueryVariables = Exact<{
+  input: TransactionDetailsInput;
+}>;
+
+
+export type TransactionDetailsQuery = { readonly __typename: 'Query', readonly transactionDetails: { readonly __typename: 'TransactionDetailsPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'TransactionDetailsError', readonly message: string }>, readonly transactionDetails?: { readonly __typename: 'TransactionDetails', readonly id: string, readonly accountId?: string | null, readonly amount?: number | null, readonly currency?: string | null, readonly status?: string | null, readonly type?: string | null, readonly createdAt?: string | null, readonly updatedAt?: string | null, readonly invoice?: string | null, readonly paymentHash?: string | null, readonly paymentPreimage?: string | null, readonly memo?: string | null, readonly address?: string | null, readonly txid?: string | null, readonly vout?: number | null, readonly confirmations?: number | null, readonly fee?: number | null } | null } };
 
 export type DeviceNotificationTokenCreateMutationVariables = Exact<{
   input: DeviceNotificationTokenCreateInput;
@@ -4444,6 +4518,42 @@ export function useRealtimePriceUnauthedLazyQuery(baseOptions?: Apollo.LazyQuery
 export type RealtimePriceUnauthedQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedQuery>;
 export type RealtimePriceUnauthedLazyQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedLazyQuery>;
 export type RealtimePriceUnauthedQueryResult = Apollo.QueryResult<RealtimePriceUnauthedQuery, RealtimePriceUnauthedQueryVariables>;
+export const NpubByUsernameDocument = gql`
+    query npubByUsername($username: Username!) {
+  npubByUsername(username: $username) {
+    npub
+    username
+  }
+}
+    `;
+
+/**
+ * __useNpubByUsernameQuery__
+ *
+ * To run a query within a React component, call `useNpubByUsernameQuery` and pass it any options that fit your needs.
+ * When your component renders, `useNpubByUsernameQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useNpubByUsernameQuery({
+ *   variables: {
+ *      username: // value for 'username'
+ *   },
+ * });
+ */
+export function useNpubByUsernameQuery(baseOptions: Apollo.QueryHookOptions<NpubByUsernameQuery, NpubByUsernameQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<NpubByUsernameQuery, NpubByUsernameQueryVariables>(NpubByUsernameDocument, options);
+      }
+export function useNpubByUsernameLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<NpubByUsernameQuery, NpubByUsernameQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<NpubByUsernameQuery, NpubByUsernameQueryVariables>(NpubByUsernameDocument, options);
+        }
+export type NpubByUsernameQueryHookResult = ReturnType<typeof useNpubByUsernameQuery>;
+export type NpubByUsernameLazyQueryHookResult = ReturnType<typeof useNpubByUsernameLazyQuery>;
+export type NpubByUsernameQueryResult = Apollo.QueryResult<NpubByUsernameQuery, NpubByUsernameQueryVariables>;
 export const RealtimePriceWsDocument = gql`
     subscription realtimePriceWs($currency: DisplayCurrency!) {
   realtimePrice(input: {currency: $currency}) {
@@ -6867,6 +6977,62 @@ export function useUserTotpRegistrationValidateMutation(baseOptions?: Apollo.Mut
 export type UserTotpRegistrationValidateMutationHookResult = ReturnType<typeof useUserTotpRegistrationValidateMutation>;
 export type UserTotpRegistrationValidateMutationResult = Apollo.MutationResult<UserTotpRegistrationValidateMutation>;
 export type UserTotpRegistrationValidateMutationOptions = Apollo.BaseMutationOptions<UserTotpRegistrationValidateMutation, UserTotpRegistrationValidateMutationVariables>;
+export const TransactionDetailsDocument = gql`
+    query transactionDetails($input: TransactionDetailsInput!) {
+  transactionDetails(input: $input) {
+    errors {
+      message
+    }
+    transactionDetails {
+      id
+      accountId
+      amount
+      currency
+      status
+      type
+      createdAt
+      updatedAt
+      invoice
+      paymentHash
+      paymentPreimage
+      memo
+      address
+      txid
+      vout
+      confirmations
+      fee
+    }
+  }
+}
+    `;
+
+/**
+ * __useTransactionDetailsQuery__
+ *
+ * To run a query within a React component, call `useTransactionDetailsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTransactionDetailsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTransactionDetailsQuery({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useTransactionDetailsQuery(baseOptions: Apollo.QueryHookOptions<TransactionDetailsQuery, TransactionDetailsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<TransactionDetailsQuery, TransactionDetailsQueryVariables>(TransactionDetailsDocument, options);
+      }
+export function useTransactionDetailsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<TransactionDetailsQuery, TransactionDetailsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<TransactionDetailsQuery, TransactionDetailsQueryVariables>(TransactionDetailsDocument, options);
+        }
+export type TransactionDetailsQueryHookResult = ReturnType<typeof useTransactionDetailsQuery>;
+export type TransactionDetailsLazyQueryHookResult = ReturnType<typeof useTransactionDetailsLazyQuery>;
+export type TransactionDetailsQueryResult = Apollo.QueryResult<TransactionDetailsQuery, TransactionDetailsQueryVariables>;
 export const DeviceNotificationTokenCreateDocument = gql`
     mutation deviceNotificationTokenCreate($input: DeviceNotificationTokenCreateInput!) {
   deviceNotificationTokenCreate(input: $input) {

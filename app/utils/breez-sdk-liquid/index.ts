@@ -1,4 +1,5 @@
 import * as bip39 from "bip39"
+import RNFS from "react-native-fs"
 import * as Keychain from "react-native-keychain"
 import { PaymentType } from "@galoymoney/client"
 import {
@@ -102,9 +103,18 @@ export const disconnectToSDK = async () => {
   try {
     if (breezSDKInitialized) {
       await disconnect()
-      breezSDKInitialized = false
-      breezSDKInitializing = null
     }
+
+    await Keychain.resetInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
+
+    const config = await defaultConfig(LiquidNetwork.MAINNET, API_KEY)
+    const exists = await RNFS.exists(config.workingDir)
+    if (exists) {
+      await RNFS.unlink(config.workingDir)
+    }
+
+    breezSDKInitialized = false
+    breezSDKInitializing = null
   } catch (error) {
     console.error("Disconnect error: ", error)
     throw error

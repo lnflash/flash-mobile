@@ -8,7 +8,7 @@ import React, { memo, useCallback, useEffect, useState } from "react"
 import { PermissionsAndroid, Platform } from "react-native"
 import MapView from "react-native-maps"
 import { makeStyles } from "@rneui/themed"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 // components
@@ -139,7 +139,7 @@ export const MapScreen = memo(() => {
           }
         } catch (err: unknown) {
           if (err instanceof Error) {
-            crashlytics().recordError(err)
+            getCrashlytics().recordError(err)
           }
           console.debug(err)
         }

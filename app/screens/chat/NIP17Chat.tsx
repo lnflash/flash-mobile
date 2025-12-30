@@ -1,7 +1,7 @@
 import { useTheme } from "@rneui/themed"
 import * as React from "react"
-import { useCallback, useState } from "react"
-import { ActivityIndicator, Text, View, Alert } from "react-native"
+import { useState } from "react"
+import { ActivityIndicator, Text, View, TouchableOpacity, Image } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
@@ -11,14 +11,8 @@ import { testProps } from "../../utils/testProps"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { getPublicKey, nip19 } from "nostr-tools"
-import {
-  convertRumorsToGroups,
-  fetchNostrUsers,
-  fetchSecretFromLocalStorage,
-  getGroupId,
-} from "@app/utils/nostr"
+import { convertRumorsToGroups, fetchSecretFromLocalStorage } from "@app/utils/nostr"
 import { useStyles } from "./style"
-import { SearchListItem } from "./searchListItem"
 import { HistoryListItem } from "./historyListItem"
 import { useChatContext } from "./chatContext"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
@@ -26,11 +20,13 @@ import { useAppSelector } from "@app/store/redux"
 import { ImportNsecModal } from "../../components/import-nsec/import-nsec-modal"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
-import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
-import Contacts from "./contacts"
 import { UserSearchBar } from "./UserSearchBar"
 import { StackNavigationProp } from "@react-navigation/stack"
-import { ChatStackParamList } from "@app/navigation/stack-param-lists"
+import { ChatStackParamList, RootStackParamList } from "@app/navigation/stack-param-lists"
+import { useNostrGroupChat } from "./GroupChat/GroupChatProvider"
+import { SearchListItem } from "./searchListItem"
+import Contacts from "./contacts"
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
 
 const Tab = createMaterialTopTabNavigator()
 
@@ -55,16 +51,11 @@ export const NIP17Chat: React.FC = () => {
   const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
-
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
+  const RootNavigator =
+    useNavigation<StackNavigationProp<RootStackParamList, "Nip29GroupChat">>()
 
-  const navigateToContactDetails = (contactPubkey: string) => {
-    if (!privateKey) return
-    navigation.navigate("contactDetails", {
-      contactPubkey,
-      userPrivateKey: bytesToHex(privateKey),
-    })
-  }
+  const { groupMetadata } = useNostrGroupChat()
 
   React.useEffect(() => {
     const unsubscribe = () => {
@@ -163,7 +154,7 @@ export const NIP17Chat: React.FC = () => {
           screenOptions={({ route }) => ({
             // tabBarLabelStyle: { fontSize: 18, fontWeight: "600" },
             // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
-            tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
+            // tabBarIndicatorStyle: { backgroundColor: "#60aa55" },
             tabBarIcon: ({ color }) => {
               let iconName: string
               if (route.name === "Chats") {
@@ -180,9 +171,8 @@ export const NIP17Chat: React.FC = () => {
         >
           <Tab.Screen name="Chats">
             {() => (
-              <View style={{ flex: 1, ...styles.header }}>
+              <View style={{ flex: 1 }}>
                 {SearchBarContent}
-
                 {searchedUsers.length !== 0 ? (
                   <FlatList
                     contentContainerStyle={styles.listContainer}
@@ -202,13 +192,82 @@ export const NIP17Chat: React.FC = () => {
                         marginLeft: 20,
                         color: colors.primary3,
                       }}
-                      onPress={() => navigateToContactDetails(getPublicKey(privateKey))}
                     >
                       signed in as:{" "}
                       <Text style={{ color: colors.primary, fontWeight: "bold" }}>
                         {userData?.username || nip19.npubEncode(getPublicKey(privateKey))}
                       </Text>
                     </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        RootNavigator.navigate("Nip29GroupChat", {
+                          groupId: "support-group-id",
+                        })
+                      }
+                      style={{ marginRight: 20, marginLeft: 20, marginBottom: 4 }}
+                    >
+                      <View
+                        style={{
+                          ...styles.itemContainer,
+                          // justifyContent: "center",
+                          // alignContent: "center",
+                          // alignItems: "center",
+                          // alignSelf: "center",
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+
+                            marginVertical: 4,
+                          }}
+                        >
+                          <Image
+                            source={{
+                              uri:
+                                groupMetadata.picture || "../../assets/Flash-Mascot.png",
+                            }}
+                            style={styles.communityPicture}
+                          />
+                          <View
+                            style={{
+                              flexDirection: "column",
+                              maxWidth: "80%",
+                              alignItems: "flex-start",
+                            }}
+                          >
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                              <Text
+                                style={{
+                                  ...styles.itemText,
+                                  fontWeight: "bold",
+                                  marginBottom: 4,
+                                  marginTop: 4,
+                                }}
+                              >
+                                {groupMetadata.name || "Support Group Chat"}
+                              </Text>
+                              <Icon
+                                name="checkmark-done-circle-outline"
+                                size={20}
+                                style={styles.verifiedIcon}
+                              />
+                            </View>
+                            <Text
+                              style={{
+                                ...styles.itemText,
+                                marginTop: 4,
+                                marginBottom: 5,
+                              }}
+                              numberOfLines={3} // show max 3 lines
+                              ellipsizeMode="tail" // add "..." at the end if overflowing
+                            >
+                              {groupMetadata.about || "..."}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
                     <FlatList
                       contentContainerStyle={styles.listContainer}
                       data={groupIds}
