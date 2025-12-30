@@ -142,7 +142,7 @@ const QuickStart = () => {
     carouselData = carouselData.filter((el) => el.type !== "nonCustodialWallet")
   }
   if (
-    data?.me?.defaultAccount.level === AccountLevel.Zero ||
+    // data?.me?.defaultAccount.level === AccountLevel.Zero ||
     !!data?.me?.email?.address ||
     persistentState?.closedQuickStartTypes?.includes("email")
   ) {
