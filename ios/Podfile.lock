@@ -662,7 +662,7 @@ PODS:
     - FirebaseCoreExtension
     - React-Core
     - RNFBApp
-  - RNFBMessaging (22.4.0):
+  - RNFBMessaging (23.2.0):
     - Firebase/Messaging (= 11.15.0)
     - FirebaseCoreExtension
     - React-Core
@@ -754,7 +754,7 @@ PODS:
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
   - SocketRocket (0.6.1)
-  - TOCropViewController (3.1.1)
+  - TOCropViewController (2.6.1)
   - VisionCamera (3.6.4):
     - React
     - React-callinvoker
@@ -860,6 +860,7 @@ DEPENDENCIES:
   - RNShare (from `../node_modules/react-native-share`)
   - RNSVG (from `../node_modules/react-native-svg`)
   - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
+  - TOCropViewController (~> 2.6.0)
   - VisionCamera (from `../node_modules/react-native-vision-camera`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -1189,7 +1190,7 @@ SPEC CHECKSUMS:
   RNFBApp: d15dab17b5639fb7f95712d07c204912a534b8c6
   RNFBAppCheck: 6141154680a4ba8b75369d9347b16ae2c98bbbe7
   RNFBCrashlytics: 6ada8cdbb9778a55eb45bf86f75cef1b08c5d064
-  RNFBMessaging: d01e0013a9dc69e2deb747b991818f7d6dd296ca
+  RNFBMessaging: 9d3cdfb2f04febd3d6e2d0aa7df331729fff5b79
   RNFBPerf: f3b63dbeeb29e7d81415ffdcce9762d881fc7acf
   RNFBRemoteConfig: 75d3335600b9d7c31522d92f72b87dde08ad7256
   RNFileViewer: ce7ca3ac370e18554d35d6355cffd7c30437c592
@@ -1211,11 +1212,11 @@ SPEC CHECKSUMS:
   RNSVG: 963a95f1f5d512a13d11ffd50d351c87fb5c6890
   RNVectorIcons: 5fc79a64e2ec2468ef4d1f9d40c132e52ef37241
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
-  TOCropViewController: 9002a9b12d8104d7478cdc306d80f0efea7fe2c5
+  TOCropViewController: edfd4f25713d56905ad1e0b9f5be3fbe0f59c863
   VisionCamera: 1910a51e4c6f6b049650086d343090f267b4c260
   Yoga: eddf2bbe4a896454c248a8f23b4355891eb720a6
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: fed83b93e96c4c2f3d9c69483ced921bac08ce31
+PODFILE CHECKSUM: e78c17bb71c7389aa352dc9b2ba4a94a20934c80
 
 COCOAPODS: 1.16.2
