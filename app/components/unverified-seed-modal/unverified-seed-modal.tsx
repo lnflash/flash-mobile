@@ -11,7 +11,7 @@ import Unsecure from "@app/assets/illustrations/unsecure.svg"
 // components
 import { PrimaryBtn } from "../buttons"
 
-const DOCS_LINK = "https://docs.getflash.io"
+const DOCS_LINK = "https://documentation.getflash.io"
 
 type Props = {
   isVisible: boolean
