@@ -19,7 +19,7 @@ class MainActivity : ReactActivity() {
 
   // react-native-screens override
   override fun onCreate(savedInstanceState: Bundle?) {
-      RNBootSplash.init(this) // <- initialize the splash screen
+      RNBootSplash.init(this, R.style.BootTheme) // <- initialize the splash screen
       super.onCreate(null)
   }
 
