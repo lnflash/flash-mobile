@@ -32,7 +32,6 @@ export const AuthenticationCheckScreen: React.FC<Props> = ({ navigation }) => {
 
   const { data, loading } = useAuthQuery({
     skip: !isAuthed,
-    fetchPolicy: "network-only",
   })
 
   useEffect(() => {

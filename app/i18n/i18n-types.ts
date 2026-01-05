@@ -8094,7 +8094,7 @@ export type TranslationFunctions = {
 		 */
 		termsAndConditions: () => LocalizedString
 		/**
-		 * What is a Recovery Phase?
+		 * What is a Recovery Phrase?
 		 */
 		learnMore: () => LocalizedString
 	}
