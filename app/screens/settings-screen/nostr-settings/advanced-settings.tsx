@@ -145,9 +145,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
           <Pressable
             style={[styles.advancedMenuItem]}
             onPress={() =>
-              Linking.openURL(
-                "https://flash-docs-msp2z.ondigitalocean.app/en/guides/chat",
-              )
+              Linking.openURL("https://documentation.getflash.io/en/guides/chat")
             }
           >
             <View style={styles.menuIconContainer}>
