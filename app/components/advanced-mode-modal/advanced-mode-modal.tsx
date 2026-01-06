@@ -28,8 +28,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 const { height } = Dimensions.get("screen")
 
-const DOCS_LINK =
-  "https://flash-docs-msp2z.ondigitalocean.app/en/guides/non-custodial-wallets"
+const DOCS_LINK = "https://documentation.getflash.io/en/guides/non-custodial-wallets"
 
 type Props = {
   hasRecoveryPhrase: boolean

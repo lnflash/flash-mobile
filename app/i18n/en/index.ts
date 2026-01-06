@@ -1045,7 +1045,7 @@ const en: BaseTranslation = {
     body:
       "You should WRITE DOWN your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.\n\n",
     termsAndConditions: "\nRead the Terms & Conditions.",
-    learnMore: "What is a Recovery Phase?",
+    learnMore: "What is a Recovery Phrase?",
   },
   SplashScreen: {
     update:
