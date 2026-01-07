@@ -15,13 +15,17 @@ import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
 import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 
 // components
-import { QuickStartAdvancedMode } from "../advanced-mode-modal"
+import { AdvancedModeModal } from "../advanced-mode-modal"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { AccountLevel, useHomeAuthedQuery, useAccountUpgradeRequestStatusQuery } from "@app/graphql/generated"
+import {
+  AccountLevel,
+  useHomeAuthedQuery,
+  useAccountUpgradeRequestStatusQuery,
+} from "@app/graphql/generated"
 
 // utils
 import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
@@ -63,7 +67,8 @@ const QuickStart = () => {
   }
 
   const { data: upgradeStatusData } = useAccountUpgradeRequestStatusQuery()
-  const upgradePending = upgradeStatusData?.accountUpgradeRequestStatus?.hasPendingRequest ?? false
+  const upgradePending =
+    upgradeStatusData?.accountUpgradeRequestStatus?.hasPendingRequest ?? false
 
   let carouselData = [
     {
@@ -227,7 +232,7 @@ const QuickStart = () => {
           loop={carouselData.length !== 1}
           containerStyle={{ marginTop: 10 }}
         />
-        <QuickStartAdvancedMode
+        <AdvancedModeModal
           hasRecoveryPhrase={hasRecoveryPhrase}
           isVisible={advanceModalVisible}
           setIsVisible={setAdvanceModalVisible}
