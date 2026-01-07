@@ -20,7 +20,6 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useAccountDeleteContext } from "../account-delete-context"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useAccountDeleteMutation, useSettingsScreenQuery } from "@app/graphql/generated"
-import { deleteUser } from "@app/supabase"
 
 // utils
 import { CONTACT_EMAIL_ADDRESS } from "@app/config"
