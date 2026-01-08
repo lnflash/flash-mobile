@@ -1,10 +1,11 @@
+import { AccountLevel } from "@app/graphql/generated"
 import { createSlice } from "@reduxjs/toolkit"
 import { CountryCode } from "libphonenumber-js"
 import { Asset } from "react-native-image-picker"
 
 interface AccountUpgradeSlice {
   id?: string
-  accountType?: "personal" | "business" | "merchant"
+  accountType?: AccountLevel
   upgradeCompleted?: boolean
   personalInfo: {
     fullName?: string

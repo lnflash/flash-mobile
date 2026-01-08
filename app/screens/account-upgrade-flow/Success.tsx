@@ -18,6 +18,9 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { resetAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
 
+// gql
+import { AccountLevel } from "@app/graphql/generated"
+
 type Props = StackScreenProps<RootStackParamList, "AccountUpgradeSuccess">
 
 const Success: React.FC<Props> = ({ navigation }) => {
@@ -45,7 +48,7 @@ const Success: React.FC<Props> = ({ navigation }) => {
           })}
         </Text>
         <Account />
-        {accountType === "merchant" && (
+        {accountType === AccountLevel.Three && (
           <Text
             type="bl"
             color={colors.grey5}

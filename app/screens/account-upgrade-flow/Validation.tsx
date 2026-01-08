@@ -9,10 +9,14 @@ import { Screen } from "@app/components/screen"
 import { InputField, ProgressSteps } from "@app/components/account-upgrade-flow"
 
 // hooks
-import { useAccountUpgrade, useActivityIndicator, useAppConfig } from "@app/hooks"
-import { HomeAuthedDocument, useUserLoginUpgradeMutation } from "@app/graphql/generated"
+import { useActivityIndicator, useAppConfig } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAppSelector } from "@app/store/redux"
+import {
+  AccountLevel,
+  HomeAuthedDocument,
+  useUserLoginUpgradeMutation,
+} from "@app/graphql/generated"
 
 // utils
 import { PhoneCodeChannelToFriendlyName } from "../phone-auth-screen/request-phone-code-login"
@@ -26,7 +30,6 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
   const { toggleActivityIndicator } = useActivityIndicator()
-  const { submitAccountUpgrade, fetchAccountUpgrade } = useAccountUpgrade()
 
   const [code, setCode] = useState<string>()
   const [errorMsg, setErrorMsg] = useState<string>()
@@ -51,21 +54,16 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
           if (authToken) {
             saveToken(authToken)
           }
-          await fetchAccountUpgrade(phone)
-          if (accountType === "personal") {
-            const res = await submitAccountUpgrade()
-            if (res) navigation.replace("AccountUpgradeSuccess")
-            else alert("Something went wrong. Please, try again later.")
+          if (accountType === AccountLevel.One) {
+            navigation.replace("AccountUpgradeSuccess")
           } else {
             navigation.replace("BusinessInformation")
           }
         } else {
-          console.log(">>>>>>>>>>>>>>>>>", data?.userLoginUpgrade)
           setErrorMsg(data?.userLoginUpgrade.errors[0].message)
         }
         setCode("")
       } catch (err) {
-        console.log("ERROR>>>>>>>>>", err)
         setCode("")
       }
     },
@@ -84,7 +82,12 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <Screen>
+    <Screen
+      preset="scroll"
+      keyboardOffset="navigationHeader"
+      keyboardShouldPersistTaps="handled"
+      style={{ flexGrow: 1 }}
+    >
       <ProgressSteps numOfSteps={numOfSteps} currentStep={3} />
       <View style={styles.wrapper}>
         <Text type="p1" style={styles.header}>
@@ -99,6 +102,7 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
           value={code}
           errorMsg={errorMsg}
           onChangeText={onChangeText}
+          keyboardType="number-pad"
         />
       </View>
     </Screen>

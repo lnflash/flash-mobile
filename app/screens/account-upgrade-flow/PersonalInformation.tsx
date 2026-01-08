@@ -3,7 +3,7 @@ import { View } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { AccountLevel, PhoneCodeChannelType } from "@app/graphql/generated"
+import { AccountLevel, PhoneCodeChannelType, useAuthQuery } from "@app/graphql/generated"
 import { CountryCode } from "react-native-country-picker-modal"
 import { parsePhoneNumber } from "libphonenumber-js/mobile"
 
@@ -42,7 +42,6 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
   const [fullNameErr, setFullNameErr] = useState<string>()
   const [phoneNumberErr, setPhoneNumberErr] = useState<string>()
   const {
-    id,
     numOfSteps,
     personalInfo: { fullName, countryCode, phoneNumber, email },
   } = useAppSelector((state) => state.accountUpgrade)
@@ -61,7 +60,10 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
     setCountryCode,
   } = useRequestPhoneCodeLogin()
 
-  const [userEmailRegistrationInitiateMutation] = useUserEmailRegistrationInitiateMutation()
+  const { data } = useAuthQuery()
+
+  const [userEmailRegistrationInitiateMutation] =
+    useUserEmailRegistrationInitiateMutation()
 
   useEffect(() => {
     if (phoneNumber && countryCode) {
@@ -128,7 +130,12 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <Screen>
+    <Screen
+      preset="scroll"
+      keyboardOffset="navigationHeader"
+      keyboardShouldPersistTaps="handled"
+      style={{ flexGrow: 1 }}
+    >
       <ProgressSteps numOfSteps={numOfSteps} currentStep={2} />
       <View style={styles.container}>
         <InputField
@@ -145,7 +152,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
           countryCode={countryCode}
           phoneNumber={phoneNumber}
           errorMsg={phoneNumberErr || error}
-          disabled={!!id}
+          disabled={!!data?.me?.phone}
           supportedCountries={supportedCountries as CountryCode[]}
           setCountryCode={(val) => {
             setPhoneNumberErr(undefined)
@@ -164,6 +171,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
           placeholder="your.email@example.com"
           value={email}
           onChangeText={(val) => dispatch(setPersonalInfo({ email: val }))}
+          autoCapitalize={"none"}
         />
       </View>
       <View style={styles.btn}>

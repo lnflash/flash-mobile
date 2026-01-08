@@ -22,6 +22,9 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { setBankInfo } from "@app/store/redux/slices/accountUpgradeSlice"
 
+// gql
+import { AccountLevel } from "@app/graphql/generated"
+
 const accountTypes = [
   { label: "Select account type", value: null },
   { label: "Checking", value: "checking" },
@@ -67,7 +70,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
 
   const onPressNext = async () => {
     let hasError = false
-    if (accountType === "merchant") {
+    if (accountType === AccountLevel.Three) {
       if (!bankName || bankName.length < 2) {
         setNameErr("Bank name is required")
         hasError = true
@@ -100,7 +103,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
       else alert("Something went wrong. Please, try again later.")
     }
   }
-
+  const isOptional = accountType === AccountLevel.Two
   return (
     <Screen>
       <ProgressSteps numOfSteps={numOfSteps} currentStep={numOfSteps} />
@@ -110,22 +113,24 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           placeholder={LL.AccountUpgrade.bankNamePlaceholder()}
           value={bankName}
           errorMsg={nameErr}
-          isOptional={accountType === "business"}
+          isOptional={isOptional}
           onChangeText={(val) => {
             setNameErr(undefined)
             dispatch(setBankInfo({ bankName: val }))
           }}
+          autoCapitalize="words"
         />
         <InputField
           label={LL.AccountUpgrade.bankBranch()}
           placeholder={LL.AccountUpgrade.bankBranchPlaceholder()}
           value={bankBranch}
           errorMsg={branchErr}
-          isOptional={accountType === "business"}
+          isOptional={isOptional}
           onChangeText={(val) => {
             setBranchErr(undefined)
             dispatch(setBankInfo({ bankBranch: val }))
           }}
+          autoCapitalize="words"
         />
         <DropDownField
           label={LL.AccountUpgrade.bankAccountType()}
@@ -133,7 +138,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           data={accountTypes}
           value={bankAccountType || ""}
           errorMsg={accountTypeErr}
-          isOptional={accountType === "business"}
+          isOptional={isOptional}
           onChange={(val) => {
             setAccountTypeErr(undefined)
             dispatch(setBankInfo({ bankAccountType: val }))
@@ -145,7 +150,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           data={currencies}
           value={currency || ""}
           errorMsg={currencyErr}
-          isOptional={accountType === "business"}
+          isOptional={isOptional}
           onChange={(val) => {
             setCurrencyErr(undefined)
             dispatch(setBankInfo({ currency: val }))
@@ -156,17 +161,19 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           placeholder={LL.AccountUpgrade.accountNumPlaceholder()}
           value={accountNumber}
           errorMsg={accountNumErr}
-          isOptional={accountType === "business"}
+          isOptional={isOptional}
           onChangeText={(val) => {
             setAccountNumErr(undefined)
             dispatch(setBankInfo({ accountNumber: val }))
           }}
+          autoCapitalize="words"
+          keyboardType="number-pad"
         />
         <PhotoUploadField
           label={LL.AccountUpgrade.uploadId()}
           photo={idDocument}
           errorMsg={idDocumentErr}
-          isOptional={accountType === "business"}
+          isOptional={isOptional}
           onPhotoUpload={(val) => dispatch(setBankInfo({ idDocument: val }))}
           setErrorMsg={setIdDocumentErr}
         />

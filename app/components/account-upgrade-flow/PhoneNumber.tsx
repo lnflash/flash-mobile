@@ -78,7 +78,14 @@ const PhoneNumber: React.FC<Props> = ({
         />
         <TextInput
           placeholder={"123-456-7890"}
-          style={[styles.input, isFocused ? { borderColor: colors.primary } : {}]}
+          style={[
+            styles.input,
+            isFocused
+              ? { borderColor: colors.primary }
+              : disabled
+              ? { color: colors.grey3 }
+              : {},
+          ]}
           textContentType="telephoneNumber"
           keyboardType="phone-pad"
           value={phoneNumber}

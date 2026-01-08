@@ -51,7 +51,12 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <Screen>
+    <Screen
+      preset="scroll"
+      keyboardOffset="navigationHeader"
+      keyboardShouldPersistTaps="handled"
+      style={{ flexGrow: 1 }}
+    >
       <ProgressSteps numOfSteps={numOfSteps} currentStep={numOfSteps - 1} />
       <View style={styles.container}>
         <InputField
@@ -63,6 +68,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
             setBusinessNameErr(undefined)
             dispatch(setBusinessInfo({ businessName: val }))
           }}
+          autoCapitalize="words"
         />
         <AddressField
           label={LL.AccountUpgrade.businessAddress()}

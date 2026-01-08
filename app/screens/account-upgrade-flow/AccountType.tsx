@@ -34,7 +34,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
 
   const onPress = (accountType: string) => {
     const numOfSteps =
-      accountType === "personal" ? 3 : currentLevel === AccountLevel.Zero ? 5 : 4
+      accountType === AccountLevel.One ? 3 : currentLevel === AccountLevel.Zero ? 5 : 4
 
     dispatch(setAccountUpgrade({ accountType, numOfSteps }))
     navigation.navigate("PersonalInformation")
@@ -46,7 +46,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
     <Screen>
       <ProgressSteps numOfSteps={numOfSteps} currentStep={1} />
       {currentLevel === AccountLevel.Zero && (
-        <TouchableOpacity style={styles.card} onPress={() => onPress("personal")}>
+        <TouchableOpacity style={styles.card} onPress={() => onPress(AccountLevel.One)}>
           <Icon name={"person"} size={35} color={colors.grey1} type="ionicon" />
           <View style={styles.textWrapper}>
             <Text type="bl" bold>
@@ -60,7 +60,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       )}
       {(currentLevel === AccountLevel.Zero || currentLevel === AccountLevel.One) && (
-        <TouchableOpacity style={styles.card} onPress={() => onPress("business")}>
+        <TouchableOpacity style={styles.card} onPress={() => onPress(AccountLevel.Two)}>
           <Icon name={"briefcase"} size={35} color={colors.grey1} type="ionicon" />
           <View style={styles.textWrapper}>
             <Text type="bl" bold>
@@ -73,7 +73,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
           <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
         </TouchableOpacity>
       )}
-      <TouchableOpacity style={styles.card} onPress={() => onPress("merchant")}>
+      <TouchableOpacity style={styles.card} onPress={() => onPress(AccountLevel.Three)}>
         <Icon name={"cart"} size={35} color={colors.grey1} type="ionicon" />
         <View style={styles.textWrapper}>
           <Text type="bl" bold>

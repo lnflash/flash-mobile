@@ -15,6 +15,8 @@ const InputField: React.FC<Props> = ({
   isOptional,
   placeholder,
   value,
+  autoCapitalize,
+  keyboardType,
   onChangeText,
 }) => {
   const styles = useStyles()
@@ -41,6 +43,8 @@ const InputField: React.FC<Props> = ({
         onChangeText={onChangeText}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        autoCapitalize={autoCapitalize}
+        keyboardType={keyboardType}
       />
       {!!errorMsg && (
         <Text type="caption" color={colors.red}>
