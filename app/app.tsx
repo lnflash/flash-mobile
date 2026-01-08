@@ -36,7 +36,7 @@ import { FeatureFlagContextProvider } from "./config/feature-flags-context"
 import "./utils/logs"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { Provider } from "react-redux"
-import { store } from "./store/redux"
+import { persistor, store } from "./store/redux"
 import PolyfillCrypto from "react-native-webview-crypto"
 import { ActivityIndicatorProvider } from "./contexts/ActivityIndicatorContext"
 import { BreezProvider } from "./contexts/BreezContext"
@@ -45,6 +45,7 @@ import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { FlashcardProvider } from "./contexts/Flashcard"
 import { NostrGroupChatProvider } from "./screens/chat/GroupChat/GroupChatProvider"
+import { PersistGate } from "redux-persist/integration/react"
 
 // FIXME should we only load the currently used local?
 // this would help to make the app load faster
@@ -67,14 +68,15 @@ export const App = () => (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PolyfillCrypto />
       <Provider store={store}>
-        <PersistentStateProvider>
-          <ChatContextProvider>
-            <NostrGroupChatProvider
-              groupId={"A9lScksyYAOWNxqR"}
-              relayUrls={["wss://groups.0xchat.com"]}
-              adminPubkeys={[]}
-            >
-              <ActivityIndicatorProvider>
+        <PersistGate loading={null} persistor={persistor}>
+          <PersistentStateProvider>
+            <ChatContextProvider>
+              <NostrGroupChatProvider
+                groupId={"A9lScksyYAOWNxqR"}
+                relayUrls={["wss://groups.0xchat.com"]}
+                adminPubkeys={[]}
+              >
+                <ActivityIndicatorProvider>
                 <TypesafeI18n locale={detectDefaultLocale()}>
                   <ThemeProvider theme={theme}>
                     <GaloyClient>
@@ -101,10 +103,11 @@ export const App = () => (
                     </GaloyClient>
                   </ThemeProvider>
                 </TypesafeI18n>
-              </ActivityIndicatorProvider>
-            </NostrGroupChatProvider>
-          </ChatContextProvider>
-        </PersistentStateProvider>
+                </ActivityIndicatorProvider>
+              </NostrGroupChatProvider>
+            </ChatContextProvider>
+          </PersistentStateProvider>
+        </PersistGate>
       </Provider>
     </GestureHandlerRootView>
   </SafeAreaProvider>

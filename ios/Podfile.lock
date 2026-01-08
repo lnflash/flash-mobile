@@ -681,15 +681,6 @@ PODS:
     - React-Core
   - RNGestureHandler (2.12.1):
     - React-Core
-  - RNImageCropPicker (0.39.0):
-    - React-Core
-    - React-RCTImage
-    - RNImageCropPicker/QBImagePickerController (= 0.39.0)
-    - TOCropViewController
-  - RNImageCropPicker/QBImagePickerController (0.39.0):
-    - React-Core
-    - React-RCTImage
-    - TOCropViewController
   - RNInAppBrowser (3.7.0):
     - React-Core
   - RNKeychain (8.2.0):
@@ -754,7 +745,6 @@ PODS:
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
   - SocketRocket (0.6.1)
-  - TOCropViewController (3.1.1)
   - VisionCamera (3.6.4):
     - React
     - React-callinvoker
@@ -845,7 +835,6 @@ DEPENDENCIES:
   - RNFileViewer (from `../node_modules/react-native-file-viewer`)
   - RNFS (from `../node_modules/react-native-fs`)
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
-  - RNImageCropPicker (from `../node_modules/react-native-image-crop-picker`)
   - RNInAppBrowser (from `../node_modules/react-native-inappbrowser-reborn`)
   - RNKeychain (from `../node_modules/react-native-keychain`)
   - RNLocalize (from `../node_modules/react-native-localize`)
@@ -895,7 +884,6 @@ SPEC REPOS:
     - PromisesObjC
     - PromisesSwift
     - SocketRocket
-    - TOCropViewController
     - ZXingObjC
 
 EXTERNAL SOURCES:
@@ -1053,8 +1041,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-fs"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
-  RNImageCropPicker:
-    :path: "../node_modules/react-native-image-crop-picker"
   RNInAppBrowser:
     :path: "../node_modules/react-native-inappbrowser-reborn"
   RNKeychain:
@@ -1195,7 +1181,6 @@ SPEC CHECKSUMS:
   RNFileViewer: ce7ca3ac370e18554d35d6355cffd7c30437c592
   RNFS: 4ac0f0ea233904cb798630b3c077808c06931688
   RNGestureHandler: c0d04458598fcb26052494ae23dda8f8f5162b13
-  RNImageCropPicker: 14fe1c29298fb4018f3186f455c475ab107da332
   RNInAppBrowser: e36d6935517101ccba0e875bac8ad7b0cb655364
   RNKeychain: bfe3d12bf4620fe488771c414530bf16e88f3678
   RNLocalize: d4b8af4e442d4bcca54e68fc687a2129b4d71a81
@@ -1211,7 +1196,6 @@ SPEC CHECKSUMS:
   RNSVG: 963a95f1f5d512a13d11ffd50d351c87fb5c6890
   RNVectorIcons: 5fc79a64e2ec2468ef4d1f9d40c132e52ef37241
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
-  TOCropViewController: 9002a9b12d8104d7478cdc306d80f0efea7fe2c5
   VisionCamera: 1910a51e4c6f6b049650086d343090f267b4c260
   Yoga: eddf2bbe4a896454c248a8f23b4355891eb720a6
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
