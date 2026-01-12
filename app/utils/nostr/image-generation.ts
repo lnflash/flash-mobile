@@ -89,32 +89,7 @@ export async function generateRoboHashAvatar(pubkey: string): Promise<string> {
  * Uses RoboHash banner API which returns PNG images
  */
 export async function generateGradientBanner(pubkey: string): Promise<string> {
-  try {
-    console.log("Generating gradient banner for pubkey:", pubkey.slice(0, 16) + "...")
-
-    // Use RoboHash with set5 (abstract patterns) for banners
-    // This generates deterministic PNG images that work reliably
-    const url = `https://robohash.org/${pubkey}?set=set4&size=1500x500`
-    console.log("Fetching banner from:", url)
-
-    const tempPath = `${RNFS.CachesDirectoryPath}/banner_${Date.now()}.png`
-
-    const download = await RNFS.downloadFile({
-      fromUrl: url,
-      toFile: tempPath,
-      connectionTimeout: 30000, // 30 seconds to establish connection
-      readTimeout: 60000, // 60 seconds to download the image
-    }).promise
-
-    if (download.statusCode !== 200) {
-      throw new Error(`Failed to download banner: HTTP ${download.statusCode}`)
-    }
-
-    console.log("Banner downloaded to:", tempPath)
-    return `file://${tempPath}`
-  } catch (error) {
-    console.error("Error generating banner:", error)
-    const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to generate banner: ${message}`)
-  }
+  return Promise.resolve(
+    "https://image.nostr.build/14a735fb84b0d794c786086222b258c045b00b28321de802b54211bbe6701d1a.jpg",
+  )
 }
