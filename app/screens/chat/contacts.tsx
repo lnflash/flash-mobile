@@ -77,7 +77,6 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey: propKey }) => {
       flex: 1,
     },
     contactCardWrapper: {
-      backgroundColor: "white",
       borderRadius: 8,
       marginBottom: 10,
       shadowColor: "#000",

@@ -17,6 +17,8 @@ import { ProfileHeader } from "./profile-header"
 import { AdvancedSettings } from "./advanced-settings"
 import { bytesToHex } from "@noble/curves/abstract/utils"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useAppConfig } from "@app/hooks/use-app-config"
+import { ManualRepublishButton } from "./manual-republish-button"
 
 export const NostrSettingsScreen = () => {
   const { LL } = useI18nContext()
@@ -25,6 +27,11 @@ export const NostrSettingsScreen = () => {
   const [expandAdvanced, setExpandAdvanced] = useState(false)
 
   const { persistentState, updateState } = usePersistentStateContext()
+  const {
+    appConfig: {
+      galoyInstance: { lnAddressHostname: lnDomain },
+    },
+  } = useAppConfig()
 
   const isAuthed = useIsAuthed()
   const styles = useStyles()
@@ -69,6 +76,7 @@ export const NostrSettingsScreen = () => {
     theme: { colors },
   } = useTheme()
   const [isGenerating, setIsGenerating] = useState(false)
+  const [progressMessage, setProgressMessage] = useState("")
 
   const copyToClipboard = (copyText: string, handler?: (copied: boolean) => void) => {
     Clipboard.setString(copyText)
@@ -126,9 +134,13 @@ export const NostrSettingsScreen = () => {
             onPress={async () => {
               if (isGenerating) return
               setIsGenerating(true)
-              let newSecret = await saveNewNostrKey()
+              setProgressMessage("Creating Nostr profile...")
+              let newSecret = await saveNewNostrKey((message) => {
+                setProgressMessage(message)
+              })
               setSecretKey(newSecret)
               setIsGenerating(false)
+              setProgressMessage("")
             }}
             disabled={isGenerating}
           >
@@ -139,7 +151,7 @@ export const NostrSettingsScreen = () => {
               style={{ marginRight: 10, opacity: isGenerating ? 0.5 : 1 }}
             />
             <Text style={{ color: colors.white, fontWeight: "bold" }}>
-              {isGenerating ? LL.Nostr.creatingProfile() : LL.Nostr.createNewProfile()}
+              {isGenerating ? progressMessage || LL.Nostr.creatingProfile() : LL.Nostr.createNewProfile()}
             </Text>
           </Pressable>
         </View>
@@ -150,6 +162,18 @@ export const NostrSettingsScreen = () => {
       <View style={styles.container}>
         {/* Profile Header */}
         <ProfileHeader userProfile={userProfile} copyToClipboard={copyToClipboard} />
+
+        {/* Manual Republish Button - DEBUG TOOL */}
+        {true ? null : (
+          <ManualRepublishButton
+            username={dataAuthed?.me?.username}
+            lnDomain={lnDomain}
+            onSuccess={() => {
+              refetch()
+              console.log("Profile republished successfully")
+            }}
+          />
+        )}
 
         {/* Main Menu Items */}
         <View style={styles.menuContainer}>

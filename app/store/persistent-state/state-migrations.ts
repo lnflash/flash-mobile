@@ -78,6 +78,7 @@ type PersistentState_7 = {
   closedQuickStartTypes: string[]
   flashcardTag?: TagEvent
   flashcardHtml?: string
+  hasPostedToNostr?: boolean // true if user has made at least one Nostr post
 }
 
 type JwtPayload = {
@@ -97,8 +98,12 @@ const decodeToken = (token: string): { uid: string; network: Network } | null =>
   }
 }
 
-const migrate7ToCurrent = (state: PersistentState_7): Promise<PersistentState> =>
-  Promise.resolve(state)
+const migrate7ToCurrent = (state: PersistentState_7): Promise<PersistentState> => {
+  return Promise.resolve({
+    ...state,
+    schemaVersion: 7,
+  })
+}
 
 const migrate6ToCurrent = (state: PersistentState_6): Promise<PersistentState> => {
   return migrate7ToCurrent({

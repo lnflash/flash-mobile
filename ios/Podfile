@@ -46,6 +46,8 @@ target 'LNFlash' do
   pod 'glog', :podspec => '../node_modules/react-native/third-party-podspecs/glog.podspec', :modular_headers => false
   pod 'RNFS', :path => '../node_modules/react-native-fs'  
   pod 'FirebaseAppCheck', :modular_headers => true
+  pod 'TOCropViewController', '~> 2.6.0'
+
   # pod 'Firebase', :modular_headers => true
   # pod 'FirebaseCore', :modular_headers => true
   # pod 'GoogleUtilities', :modular_headers => true
