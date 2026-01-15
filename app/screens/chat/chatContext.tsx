@@ -10,6 +10,7 @@ import {
   loadGiftwrapsFromStorage,
   saveGiftwrapsToStorage,
 } from "@app/utils/nostr"
+import { pool } from "@app/utils/nostr/pool"
 import { Event, SimplePool, SubCloser, getPublicKey, nip19 } from "nostr-tools"
 import React from "react"
 import { PropsWithChildren, createContext, useContext, useRef, useState } from "react"
@@ -70,7 +71,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const [userProfileEvent, setUserProfileEvent] = useState<Event | null>(null)
   const [userPublicKey, setUserPublicKey] = useState<string | null>(null)
   const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
-  const poolRef = useRef(new SimplePool())
+  const poolRef = useRef(pool)
   const processedEventIds = useRef(new Set())
   const [contactsEvent, setContactsEvent] = useState<Event>()
   const {
