@@ -15,24 +15,23 @@ import Account from "@app/assets/illustrations/account.svg"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 // store
-import { useAppDispatch, useAppSelector } from "@app/store/redux"
-import { resetAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
+import { useAppSelector } from "@app/store/redux"
 
 // gql
 import { AccountLevel } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "AccountUpgradeSuccess">
 
+const accountTypeLabel = { ONE: "PERSONAL", TWO: "PRO", THREE: "MERCHANT" }
+
 const Success: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
 
-  const dispatch = useAppDispatch()
   const { accountType } = useAppSelector((state) => state.accountUpgrade)
 
   const onComplete = () => {
-    dispatch(resetAccountUpgrade())
     navigation.reset({
       index: 0,
       routes: [{ name: "Primary" }],
@@ -44,7 +43,7 @@ const Success: React.FC<Props> = ({ navigation }) => {
       <View style={styles.wrapper}>
         <Text type="h02" bold style={styles.header}>
           {LL.AccountUpgrade.successTitle({
-            accountType: accountType?.toUpperCase() || "",
+            accountType: accountTypeLabel[accountType as keyof typeof accountTypeLabel],
           })}
         </Text>
         <Account />

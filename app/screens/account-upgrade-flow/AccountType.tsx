@@ -26,11 +26,6 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
-  const { fetchAccountUpgrade } = useAccountUpgrade()
-
-  useEffect(() => {
-    fetchAccountUpgrade()
-  }, [])
 
   const onPress = (accountType: string) => {
     const numOfSteps =

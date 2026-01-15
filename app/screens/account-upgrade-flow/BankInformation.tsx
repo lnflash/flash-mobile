@@ -99,8 +99,8 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
 
     if (!hasError) {
       const res = await submitAccountUpgrade()
-      if (res) navigation.navigate("AccountUpgradeSuccess")
-      else alert("Something went wrong. Please, try again later.")
+      if (res.success) navigation.navigate("AccountUpgradeSuccess")
+      else alert(res.errors)
     }
   }
   const isOptional = accountType === AccountLevel.Two
