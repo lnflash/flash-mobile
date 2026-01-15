@@ -1,102 +1,128 @@
-import { Platform } from "react-native"
-import DeviceInfo from "react-native-device-info"
-import { parsePhoneNumber } from "libphonenumber-js"
-import RNFS from "react-native-fs"
-
-// hooks
 import { useActivityIndicator } from "./useActivityIndicator"
-
-// store
-import { useAppDispatch, useAppSelector } from "@app/store/redux"
+import { useAppSelector } from "@app/store/redux"
 import {
-  setAccountUpgrade,
-  setBankInfo,
-  setBusinessInfo,
-  setPersonalInfo,
-} from "@app/store/redux/slices/accountUpgradeSlice"
+  useBusinessAccountUpgradeRequestMutation,
+  HomeAuthedDocument,
+  useFileUploadUrlGenerateMutation,
+} from "@app/graphql/generated"
 
-import { useBusinessAccountUpgradeRequestMutation, HomeAuthedDocument } from "@app/graphql/generated"
+type UpgradeResult = {
+  success: boolean
+  errors?: string[]
+}
 
 export const useAccountUpgrade = () => {
-  const dispatch = useAppDispatch()
-  const { userData } = useAppSelector((state) => state.user)
-  const { id, accountType, personalInfo, businessInfo, bankInfo } = useAppSelector(
+  const { toggleActivityIndicator } = useActivityIndicator()
+  const { accountType, personalInfo, businessInfo, bankInfo } = useAppSelector(
     (state) => state.accountUpgrade,
   )
-  const { toggleActivityIndicator } = useActivityIndicator()
 
-  const [businessAccountUpgradeRequestMutation] = useBusinessAccountUpgradeRequestMutation({
+  const [generateFileUploadUrl] = useFileUploadUrlGenerateMutation()
+  const [requestAccountUpgrade] = useBusinessAccountUpgradeRequestMutation({
     refetchQueries: [HomeAuthedDocument],
   })
 
-  const fetchAccountUpgrade = async (phone?: string) => {
-    // Note: This function previously fetched from Supabase
-    // Now we rely on the GraphQL backend data from queries
-    // This function may no longer be needed, but keeping for compatibility
-    console.log("fetchAccountUpgrade called - functionality moved to GraphQL queries")
-  }
+  const uploadIdDocument = async (): Promise<string | null> => {
+    const { idDocument } = bankInfo
+    if (!idDocument?.fileName || !idDocument.type || !idDocument.uri) {
+      return null
+    }
 
-  const submitAccountUpgrade = async () => {
-    toggleActivityIndicator(true)
-    const readableVersion = DeviceInfo.getReadableVersion()
-    const parsedPhoneNumber = parsePhoneNumber(
-      personalInfo.phoneNumber || "",
-      personalInfo.countryCode,
+    const { data } = await generateFileUploadUrl({
+      variables: {
+        input: {
+          filename: idDocument.fileName,
+          contentType: idDocument.type,
+        },
+      },
+    })
+
+    if (!data?.fileUploadUrlGenerate.uploadUrl) {
+      throw new Error("Failed to generate upload URL to upload ID Document")
+    }
+
+    await uploadFileToS3(
+      data.fileUploadUrlGenerate.uploadUrl,
+      idDocument.uri,
+      idDocument.type,
     )
 
-    let idDocumentBase64 = undefined
-    if (accountType === "merchant" && bankInfo.idDocument) {
-      try {
-        // Convert image file to base64
-        const base64String = await RNFS.readFile(
-          bankInfo.idDocument.uri,
-          "base64",
-        )
-        idDocumentBase64 = `data:${bankInfo.idDocument.type};base64,${base64String}`
-      } catch (err) {
-        console.log("Error converting ID document to base64:", err)
-      }
-    }
+    return data.fileUploadUrlGenerate.fileUrl ?? null
+  }
 
-    const input = {
-      accountType: accountType,
-      fullName: personalInfo.fullName,
-      phone: parsedPhoneNumber.number,
-      email: personalInfo.email,
-      businessName: businessInfo.businessName,
-      businessAddress: businessInfo.businessAddress,
-      latitude: businessInfo.lat,
-      longitude: businessInfo.lng,
-      terminalRequested: businessInfo.terminalRequested,
-      bankName: bankInfo.bankName,
-      bankBranch: bankInfo.bankBranch,
-      bankAccountType: bankInfo.bankAccountType,
-      accountCurrency: bankInfo.currency,
-      bankAccountNumber: bankInfo.accountNumber,
-      idDocumentBase64: idDocumentBase64,
-      clientVersion: readableVersion,
-      deviceInfo: Platform.OS,
-    }
+  const submitAccountUpgrade = async (): Promise<UpgradeResult> => {
+    toggleActivityIndicator(true)
 
     try {
-      const { data } = await businessAccountUpgradeRequestMutation({
+      const idDocumentUrl = await uploadIdDocument()
+
+      const input = {
+        accountNumber: Number(bankInfo.accountNumber),
+        accountType: bankInfo.bankAccountType,
+        bankBranch: bankInfo.bankBranch,
+        bankName: bankInfo.bankName,
+        businessAddress: businessInfo.businessAddress,
+        businessName: businessInfo.businessName,
+        currency: bankInfo.currency,
+        email: personalInfo.email,
+        fullName: personalInfo.fullName || "",
+        idDocument: idDocumentUrl,
+        level: accountType || "ONE",
+        terminalRequested: businessInfo.terminalRequested,
+      }
+
+      const { data } = await requestAccountUpgrade({
         variables: { input },
       })
 
-      toggleActivityIndicator(false)
-
       if (data?.businessAccountUpgradeRequest?.errors?.length) {
-        console.error("Upgrade request errors:", data.businessAccountUpgradeRequest.errors)
-        return false
+        return {
+          success: false,
+          errors: data.businessAccountUpgradeRequest.errors.map((e) => e.message),
+        }
       }
 
-      return data?.businessAccountUpgradeRequest?.success ?? false
+      return {
+        success: data?.businessAccountUpgradeRequest?.success ?? false,
+      }
     } catch (err) {
-      console.log("BUSINESS ACCOUNT UPGRADE REQUEST ERR: ", err)
+      console.error("Account upgrade failed:", err)
+      return {
+        success: false,
+        errors: [err instanceof Error ? err.message : "Unknown error occurred"],
+      }
+    } finally {
       toggleActivityIndicator(false)
-      return false
     }
   }
 
-  return { fetchAccountUpgrade, submitAccountUpgrade }
+  return { submitAccountUpgrade }
+}
+
+const uploadFileToS3 = async (
+  uploadUrl: string,
+  fileUri: string,
+  contentType: string,
+): Promise<void> => {
+  const blob = await fetch(fileUri).then((res) => res.blob())
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("PUT", uploadUrl, true)
+    xhr.setRequestHeader("Content-Type", contentType)
+
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState === 4) {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve()
+        } else {
+          reject(new Error(`Upload ID Document failed with status ${xhr.status}`))
+        }
+      }
+    }
+
+    xhr.onerror = () => reject(new Error("Network error during upload"))
+
+    xhr.send(blob)
+  })
 }
