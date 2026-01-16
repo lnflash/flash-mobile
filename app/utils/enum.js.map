@@ -1,0 +1,1 @@
+{"version":3,"file":"enum.js","sourceRoot":"","sources":["enum.ts"],"names":[],"mappings":";;;AAAa,QAAA,2BAA2B,GAAG;IACzC,YAAY,EAAE,cAAc;IAC5B,oBAAoB,EAAE,sBAAsB;IAC5C,cAAc,EAAE,gBAAgB;CACxB,CAAA;AAEG,QAAA,gBAAgB,GAAG;IAC9B,eAAe,EAAE,iBAAiB;IAClC,MAAM,EAAE,QAAQ;IAChB,cAAc,EAAE,gBAAgB;IAChC,QAAQ,EAAE,UAAU;CACZ,CAAA"}
