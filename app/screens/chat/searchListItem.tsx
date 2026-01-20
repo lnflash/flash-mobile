@@ -12,6 +12,7 @@ import Icon from "react-native-vector-icons/Ionicons"
 import { getContactsFromEvent } from "./utils"
 import { useState } from "react"
 import { ActivityIndicator } from "react-native"
+import { pool } from "@app/utils/nostr/pool"
 
 interface SearchListItemProps {
   item: Chat
@@ -21,7 +22,7 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
   item,
   userPrivateKey,
 }) => {
-  const { poolRef, contactsEvent } = useChatContext()
+  const { contactsEvent } = useChatContext()
   const [isLoading, setIsLoading] = useState(false)
 
   const isUserAdded = () => {
@@ -49,13 +50,13 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
   }
 
   const handleAddContact = async () => {
-    if (isUserAdded() || !poolRef) return
+    if (isUserAdded()) return
     try {
       setIsLoading(true)
       await addToContactList(
         userPrivateKey,
         item.id,
-        poolRef.current,
+        pool,
         () => Promise.resolve(true),
         contactsEvent,
       )

@@ -6,6 +6,9 @@ export class EventStore {
   // key = canonical key, value = all physical events for that canonical object
   private events = new Map<string, Event[]>()
   private listeners = new Set<Listener>()
+  constructor() {
+    this.emit() // emit initial snapshot
+  }
 
   // Compute canonical key based on event type
   private getCanonicalKey(event: Event): string {

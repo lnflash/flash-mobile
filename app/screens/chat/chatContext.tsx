@@ -1,31 +1,26 @@
+import React, { createContext, useContext, useState, useRef } from "react"
+import { PropsWithChildren } from "react"
+import { Event, nip19, getPublicKey } from "nostr-tools"
 import { useAppConfig } from "@app/hooks"
+
 import {
   Rumor,
-  fetchContactList,
-  fetchGiftWrapsForPublicKey,
-  fetchNostrUsers,
-  fetchSecretFromLocalStorage,
   getRumorFromWrap,
-  getSecretKey,
   loadGiftwrapsFromStorage,
   saveGiftwrapsToStorage,
+  fetchSecretFromLocalStorage,
 } from "@app/utils/nostr"
-import { pool } from "@app/utils/nostr/pool"
-import { Event, SimplePool, SubCloser, getPublicKey, nip19 } from "nostr-tools"
-import React from "react"
-import { PropsWithChildren, createContext, useContext, useRef, useState } from "react"
+import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 
 type ChatContextType = {
   giftwraps: Event[]
   rumors: Rumor[]
   setGiftWraps: React.Dispatch<React.SetStateAction<Event[]>>
   setRumors: React.Dispatch<React.SetStateAction<Rumor[]>>
-  poolRef?: React.MutableRefObject<SimplePool>
-  profileMap: Map<string, NostrProfile> | undefined
+  profileMap: Map<string, any>
   addEventToProfiles: (event: Event) => void
   resetChat: () => Promise<void>
   initializeChat: (count?: number) => void
-  activeSubscription: SubCloser | null
   userProfileEvent: Event | null
   userPublicKey: string | null
   refreshUserProfile: () => Promise<void>
@@ -34,30 +29,20 @@ type ChatContextType = {
   getContactPubkeys: () => string[] | null
 }
 
-const publicRelays = [
-  "wss://relay.damus.io",
-  "wss://relay.primal.net",
-  "wss://relay.staging.flashapp.me",
-  "wss://relay.snort.social",
-  "wss//nos.lol",
-]
-
 const ChatContext = createContext<ChatContextType>({
   giftwraps: [],
   setGiftWraps: () => {},
   rumors: [],
   setRumors: () => {},
-  poolRef: undefined,
-  profileMap: undefined,
-  addEventToProfiles: (event: Event) => {},
-  resetChat: () => new Promise(() => {}),
+  profileMap: new Map(),
+  addEventToProfiles: () => {},
+  resetChat: async () => {},
   initializeChat: () => {},
-  activeSubscription: null,
   userProfileEvent: null,
   userPublicKey: null,
   refreshUserProfile: async () => {},
   contactsEvent: undefined,
-  setContactsEvent: (event: Event) => {},
+  setContactsEvent: () => {},
   getContactPubkeys: () => null,
 })
 
@@ -66,228 +51,180 @@ export const useChatContext = () => useContext(ChatContext)
 export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [giftwraps, setGiftWraps] = useState<Event[]>([])
   const [rumors, setRumors] = useState<Rumor[]>([])
-  const [_, setLastEvent] = useState<Event>()
-  const [closer, setCloser] = useState<SubCloser | null>(null)
   const [userProfileEvent, setUserProfileEvent] = useState<Event | null>(null)
   const [userPublicKey, setUserPublicKey] = useState<string | null>(null)
-  const profileMap = useRef<Map<string, NostrProfile>>(new Map<string, NostrProfile>())
-  const poolRef = useRef(pool)
-  const processedEventIds = useRef(new Set())
   const [contactsEvent, setContactsEvent] = useState<Event>()
+  const profileMap = useRef<Map<string, any>>(new Map())
+  const processedEventIds = useRef<Set<string>>(new Set())
+
   const {
     appConfig: {
       galoyInstance: { relayUrl },
     },
   } = useAppConfig()
 
-  const handleGiftWraps = (event: Event, secret: Uint8Array) => {
-    setGiftWraps((prevEvents) => [...(prevEvents || []), event])
+  // ------------------------
+  // Helper: handle new giftwrap event
+  // ------------------------
+  const handleGiftWrapEvent = async (event: Event, secret: Uint8Array) => {
+    if (processedEventIds.current.has(event.id)) return
+    processedEventIds.current.add(event.id)
+
+    setGiftWraps((prev) => {
+      const updated = [...prev, event].sort((a, b) => a.created_at - b.created_at)
+      saveGiftwrapsToStorage(updated)
+      return updated
+    })
+
     try {
-      let rumor = getRumorFromWrap(event, secret)
-      setRumors((prevRumors) => {
-        let previousRumors = prevRumors || []
-        if (!previousRumors.map((r) => r.id).includes(rumor)) {
-          return [...(prevRumors || []), rumor]
+      const rumor = getRumorFromWrap(event, secret)
+      setRumors((prev) => {
+        if (!prev.map((r) => r.id).includes(rumor.id)) {
+          return [...prev, rumor]
         }
-        return prevRumors
+        return prev
       })
     } catch (e) {
-      console.log("Error in decrypting...", e)
+      console.log("Failed to decrypt giftwrap", e)
     }
   }
 
-  React.useEffect(() => {
-    let closer: SubCloser | undefined
-    if (poolRef && !closer) initializeChat()
-    async function initialize(count = 0) {
-      let secretKeyString = await fetchSecretFromLocalStorage()
-      if (!secretKeyString) {
-        if (count >= 3) return
-        setTimeout(() => initialize(count + 1), 500)
-        return
-      }
-      let secret = nip19.decode(secretKeyString).data as Uint8Array
-      const publicKey = getPublicKey(secret)
-      const cachedGiftwraps = await loadGiftwrapsFromStorage()
-      setGiftWraps(cachedGiftwraps)
-      let cachedRumors
-      cachedRumors = cachedGiftwraps
-        .map((wrap) => {
-          try {
-            return getRumorFromWrap(wrap, secret)
-          } catch (e) {
-            return null
-          }
-        })
-        .filter((r) => r !== null)
-      setRumors(cachedRumors || [])
-      let closer = await fetchNewGiftwraps(cachedGiftwraps, publicKey)
-      fetchContactList(getPublicKey(secret), (event: Event) => {
-        setContactsEvent(event)
-      })
-      setCloser(closer)
-    }
-    if (poolRef && !closer) initialize()
-  }, [poolRef])
-
-  React.useEffect(() => {
-    const initializeUserProfile = async () => {
-      if (!poolRef.current || !userPublicKey) return
-
-      await refreshUserProfile()
-    }
-
-    if (userPublicKey) {
-      initializeUserProfile()
-    }
-  }, [userPublicKey])
-
-  const refreshUserProfile = async () => {
-    if (!poolRef.current) return
-    let publicKey = userPublicKey
-    if (!publicKey) {
-      let secret = await getSecretKey()
-      if (!secret) {
-        setUserProfileEvent(null)
-        return
-      }
-      publicKey = getPublicKey(secret)
-      setUserPublicKey(publicKey)
-    }
-    fetchContactList(publicKey, (event: Event) => {
-      setContactsEvent(event)
-    })
-    return new Promise<void>((resolve) => {
-      fetchNostrUsers([publicKey], poolRef.current, (event: Event, profileCloser) => {
-        setUserProfileEvent(event)
-        try {
-          let content = JSON.parse(event.content)
-          profileMap.current.set(event.pubkey, content)
-        } catch (e) {
-          console.log("Couldn't parse the profile", e)
-        }
-        profileCloser.close()
-        resolve()
-      })
-    })
-  }
-
-  const getContactPubkeys = () => {
-    if (!contactsEvent) return null
-    return contactsEvent.tags
-      .filter((t: string[]) => {
-        if (t[0] === "p") return true
-        return false
-      })
-      .map((t: string[]) => t[1])
-  }
-
+  // ------------------------
+  // Initialize chat (fetch secret, set pubkey)
+  // ------------------------
   const initializeChat = async (count = 0) => {
-    if (closer) closer.close()
-    let secretKeyString = await fetchSecretFromLocalStorage()
+    const secretKeyString = await fetchSecretFromLocalStorage()
     if (!secretKeyString) {
       if (count >= 3) return
       setTimeout(() => initializeChat(count + 1), 500)
       return
     }
-    let secret = nip19.decode(secretKeyString).data as Uint8Array
+
+    const secret = nip19.decode(secretKeyString).data as Uint8Array
     const publicKey = getPublicKey(secret)
     setUserPublicKey(publicKey)
+
+    // Load cached giftwraps
     const cachedGiftwraps = await loadGiftwrapsFromStorage()
     setGiftWraps(cachedGiftwraps)
-    let cachedRumors = []
-    try {
-      cachedRumors = cachedGiftwraps.map((wrap) => getRumorFromWrap(wrap, secret))
-    } catch (e) {
-      console.log("ERROR WHILE DECRYPTING RUMORS", e)
-    }
-    setRumors(cachedRumors)
-    let newCloser = await fetchNewGiftwraps(cachedGiftwraps, publicKey)
-    setCloser(newCloser)
-  }
+    setRumors(
+      cachedGiftwraps
+        .map((wrap) => {
+          try {
+            return getRumorFromWrap(wrap, secret)
+          } catch {
+            return null
+          }
+        })
+        .filter((r) => r !== null) as Rumor[],
+    )
 
-  const fetchNewGiftwraps = async (cachedGiftwraps: Event[], publicKey: string) => {
-    cachedGiftwraps = cachedGiftwraps.sort((a, b) => a.created_at - b.created_at)
-    const lastCachedEvent = cachedGiftwraps[cachedGiftwraps.length - 1]
-    let secretKeyString = await fetchSecretFromLocalStorage()
-    if (!secretKeyString) {
-      return null
-    }
-    let secret = nip19.decode(secretKeyString).data as Uint8Array
-    let closer = fetchGiftWrapsForPublicKey(
-      publicKey,
+    // ------------------------
+    // Subscribe to giftwraps via NostrRuntime
+    // ------------------------
+    nostrRuntime.ensureSubscription(
+      `giftwraps:${publicKey}`,
+      [
+        {
+          "kinds": [1059],
+          "#p": [publicKey],
+          "limit": 150,
+        },
+      ],
+      (event) => handleGiftWrapEvent(event, secret),
+    )
+
+    // Subscribe to contact list
+    nostrRuntime.ensureSubscription(
+      `contacts:${publicKey}`,
+      [
+        {
+          kinds: [3],
+          authors: [publicKey],
+        },
+      ],
       (event) => {
-        if (!processedEventIds.current.has(event.id)) {
-          processedEventIds.current.add(event.id)
-          setGiftWraps((prev) => {
-            const updatedGiftwraps = mergeGiftwraps(prev, [event])
-            saveGiftwrapsToStorage(updatedGiftwraps)
-            return updatedGiftwraps
-          })
-          let rumor = getRumorFromWrap(event, secret)
-          setRumors((prevRumors) => {
-            let previousRumors = prevRumors || []
-            if (!previousRumors.map((r) => r.id).includes(rumor)) {
-              return [...(prevRumors || []), rumor]
-            }
-            return prevRumors
-          })
+        setContactsEvent(event)
+      },
+    )
+
+    // Subscribe to user profile
+    nostrRuntime.ensureSubscription(
+      `profile:${publicKey}`,
+      [
+        {
+          kinds: [0],
+          authors: [publicKey],
+        },
+      ],
+      (event) => {
+        setUserProfileEvent(event)
+        try {
+          const content = JSON.parse(event.content)
+          profileMap.current.set(event.pubkey, content)
+        } catch {
+          console.log("Failed to parse profile content")
         }
       },
-      poolRef.current,
-      lastCachedEvent?.created_at - 20 * 60,
     )
-    return closer
   }
 
-  const mergeGiftwraps = (cachedGiftwraps: Event[], fetchedGiftwraps: Event[]) => {
-    const existingIds = new Set(cachedGiftwraps.map((wrap) => wrap.id))
-    const newGiftwraps = fetchedGiftwraps.filter((wrap) => !existingIds.has(wrap.id))
-    return [...cachedGiftwraps, ...newGiftwraps]
+  // ------------------------
+  // Refresh user profile (re-fetch from runtime)
+  // ------------------------
+  const refreshUserProfile = async () => {
+    if (!userPublicKey) return
+    return new Promise<void>((resolve) => {
+      const canonicalKey = `profile:${userPublicKey}`
+      const latest = nostrRuntime.getEventStore().getLatest(canonicalKey)
+      if (latest) {
+        setUserProfileEvent(latest)
+        try {
+          profileMap.current.set(latest.pubkey, JSON.parse(latest.content))
+        } catch {}
+      }
+      resolve()
+    })
   }
 
-  const addEventToProfiles = (event: Event) => {
-    try {
-      let content = JSON.parse(event.content)
-      profileMap.current.set(event.pubkey, content)
-      setLastEvent(event)
-    } catch (e) {
-      console.log("Couldn't parse the profile")
-    }
+  const getContactPubkeys = () => {
+    if (!contactsEvent) return null
+    return contactsEvent.tags.filter((t) => t[0] === "p").map((t) => t[1])
   }
 
+  // ------------------------
+  // Reset chat (clear events & resubscribe)
+  // ------------------------
   const resetChat = async () => {
     setGiftWraps([])
     setRumors([])
-    setUserPublicKey(null)
     setUserProfileEvent(null)
-    closer?.close()
-    let secretKeyString = await fetchSecretFromLocalStorage()
-    if (!secretKeyString) return
-    let secret = nip19.decode(secretKeyString).data as Uint8Array
-    const publicKey = getPublicKey(secret)
-    setUserPublicKey(getPublicKey(secret))
-    let newCloser = fetchGiftWrapsForPublicKey(
-      publicKey,
-      (event) => handleGiftWraps(event, secret),
-      poolRef!.current,
-    )
-    setCloser(newCloser)
+    setUserPublicKey(null)
+    processedEventIds.current.clear()
+    nostrRuntime.getEventStore().clear()
+    await initializeChat()
   }
+
+  // Initialize on mount
+  React.useEffect(() => {
+    initializeChat()
+  }, [])
 
   return (
     <ChatContext.Provider
       value={{
         giftwraps,
         setGiftWraps,
-        initializeChat,
         rumors,
         setRumors,
-        poolRef,
         profileMap: profileMap.current,
-        addEventToProfiles,
+        addEventToProfiles: (event: Event) => {
+          try {
+            profileMap.current.set(event.pubkey, JSON.parse(event.content))
+          } catch {}
+        },
         resetChat,
-        activeSubscription: closer,
+        initializeChat,
         userProfileEvent,
         userPublicKey,
         refreshUserProfile,

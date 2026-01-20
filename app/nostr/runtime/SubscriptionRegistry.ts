@@ -12,7 +12,13 @@ export class SubscriptionRegistry {
 
   constructor(private relayManager: RelayManager) {}
 
-  ensure(key: string, filters: Filter[], onEvent: (event: Event) => void) {
+  ensure(
+    key: string,
+    filters: Filter[],
+    onEvent: (event: Event) => void,
+    onEose?: () => void,
+    relays?: string[],
+  ) {
     const existing = this.subs.get(key)
 
     if (existing) {
@@ -20,12 +26,19 @@ export class SubscriptionRegistry {
       return
     }
 
-    const closer = this.relayManager.subscribe(filters, {
-      onevent: onEvent,
-      onclose: () => {
-        this.subs.delete(key)
+    const closer = this.relayManager.subscribe(
+      filters,
+      {
+        onevent: onEvent,
+        onclose: () => {
+          this.subs.delete(key)
+        },
+        oneose: () => {
+          onEose?.()
+        },
       },
-    })
+      relays,
+    )
 
     this.subs.set(key, {
       filters,

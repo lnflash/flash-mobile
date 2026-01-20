@@ -41,8 +41,10 @@ export class RelayManager {
     this.pool.close(DEFAULT_RELAYS)
   }
 
-  subscribe(filters: any[], handlers: any) {
-    return this.pool.subscribeMany(this.getReadRelays(), filters, handlers)
+  subscribe(filters: any[], handlers: any, relays?: string[]) {
+    let relaysToUse: string[] = this.getReadRelays()
+    if ((relays || []).length !== 0) relaysToUse = relays!
+    return this.pool.subscribeMany(relaysToUse, filters, handlers)
   }
 
   publish(event: any) {

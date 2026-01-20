@@ -1,12 +1,9 @@
 // ContactCard.tsx
 import React from "react"
-import { Image, Text, View } from "react-native"
+import { Image } from "react-native"
 import { ListItem } from "@rneui/themed"
 import { useTheme } from "@rneui/themed"
 import { nip19 } from "nostr-tools"
-import { GaloyIconButton } from "@app/components/atomic/galoy-icon-button"
-import ChatIcon from "@app/assets/icons/chat.svg"
-import { hexToBytes } from "@noble/curves/abstract/utils"
 
 interface ContactCardProps {
   item: any

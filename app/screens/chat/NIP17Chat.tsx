@@ -1,6 +1,6 @@
 import { useTheme } from "@rneui/themed"
 import * as React from "react"
-import { useMemo, useState, useEffect } from "react"
+import { useState } from "react"
 import {
   ActivityIndicator,
   Text,
@@ -18,16 +18,12 @@ import { bytesToHex } from "@noble/hashes/utils"
 import { testProps } from "../../utils/testProps"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { getPublicKey, nip19, Event } from "nostr-tools"
-import {
-  convertRumorsToGroups,
-  fetchSecretFromLocalStorage,
-  getRumorFromWrap,
-  Rumor,
-} from "@app/utils/nostr"
+import { getPublicKey, nip19 } from "nostr-tools"
+import { convertRumorsToGroups, fetchSecretFromLocalStorage } from "@app/utils/nostr"
 import { useStyles } from "./style"
 import { HistoryListItem } from "./historyListItem"
-import { useNavigation, useFocusEffect } from "@react-navigation/native"
+import { useChatContext } from "./chatContext"
+import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { useAppSelector } from "@app/store/redux"
 import { ImportNsecModal } from "../../components/import-nsec/import-nsec-modal"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -40,7 +36,6 @@ import { SearchListItem } from "./searchListItem"
 import Contacts from "./contacts"
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
 import ContactDetailsScreen from "./contactDetailsScreen"
-import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 
 const Tab = createMaterialTopTabNavigator()
 
@@ -56,10 +51,22 @@ export const NIP17Chat: React.FC = () => {
     errorPolicy: "all",
   })
 
-  const [privateKey, setPrivateKey] = useState<Uint8Array>()
-  const [showImportModal, setShowImportModal] = useState(false)
-  const [skipMismatchCheck, setSkipMismatchCheck] = useState(false)
+  const {
+    rumors,
+    profileMap,
+    resetChat,
+    initializeChat,
+    userProfileEvent,
+    userPublicKey,
+    contactsEvent,
+    setContactsEvent,
+  } = useChatContext()
+
+  const [initialized, setInitialized] = useState(false)
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
+  const [privateKey, setPrivateKey] = useState<Uint8Array>()
+  const [showImportModal, setShowImportModal] = useState<boolean>(false)
+  const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
   const { LL } = useI18nContext()
   const { userData } = useAppSelector((state) => state.user)
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
@@ -67,16 +74,15 @@ export const NIP17Chat: React.FC = () => {
     useNavigation<StackNavigationProp<RootStackParamList, "Nip29GroupChat">>()
   const { groupMetadata } = useNostrGroupChat()
 
-  // -------------------------------
-  // Initialize private key and check mismatch
-  // -------------------------------
-  useEffect(() => {
-    let mounted = true
-
-    async function initKey() {
+  // ------------------------
+  // Initialize on mount
+  // ------------------------
+  React.useEffect(() => {
+    async function initialize() {
+      console.log("Initializing nip17 screen use effect")
       const secretKeyString = await fetchSecretFromLocalStorage()
-      if (!mounted) return
       if (!secretKeyString) {
+        console.log("Couldn't find secret key in local storage")
         setShowImportModal(true)
         return
       }
@@ -87,64 +93,63 @@ export const NIP17Chat: React.FC = () => {
       const accountNpub = dataAuthed?.me?.npub
       const storedNpub = nip19.npubEncode(getPublicKey(secret))
       if (!skipMismatchCheck && accountNpub && storedNpub !== accountNpub) {
+        console.log("Account Info mismatch", accountNpub, storedNpub)
         setShowImportModal(true)
       }
 
-      // Ensure giftwrap subscription
-      const userPubkey = getPublicKey(secret)
-      const giftwrapFilter = [{ "kinds": [1059], "#p": [userPubkey], "limit": 150 }]
-      nostrRuntime.ensureSubscription("giftwraps", giftwrapFilter)
-    }
-
-    initKey()
-    return () => {
-      mounted = false
-      nostrRuntime.releaseSubscription("giftwraps")
-    }
-  }, [dataAuthed, skipMismatchCheck])
-
-  // -------------------------------
-  // Get decrypted rumors
-  // -------------------------------
-  const decryptedRumors = useMemo(() => {
-    if (!privateKey) return []
-
-    const allEvents: Event[] = nostrRuntime.getAllEvents()
-    const giftwraps = allEvents.filter((e) => e.kind === 1059)
-
-    const rumors: Rumor[] = []
-    for (const wrap of giftwraps) {
-      try {
-        const rumor = getRumorFromWrap(wrap, privateKey)
-        rumors.push(rumor)
-      } catch (e) {
-        console.warn("Failed to decrypt giftwrap", e)
+      if (!initialized) {
+        await initializeChat() // runtime handles all subscriptions
+        setInitialized(true)
       }
     }
 
-    return rumors
-  }, [privateKey, nostrRuntime.getAllEvents()])
+    initialize()
+  }, [dataAuthed, initialized, skipMismatchCheck])
 
-  const groups = useMemo(() => convertRumorsToGroups(decryptedRumors), [decryptedRumors])
-  const groupIds = useMemo(() => {
-    return Array.from(groups.keys()).sort((a, b) => {
-      const lastA = groups.get(a)?.at(-1)
-      const lastB = groups.get(b)?.at(-1)
-      return (lastB?.created_at || 0) - (lastA?.created_at || 0)
-    })
-  }, [groups])
+  // ------------------------
+  // Focus effect for secret key / import modal check
+  // ------------------------
+  useFocusEffect(
+    React.useCallback(() => {
+      let isMounted = true
+      async function checkSecretKey() {
+        if (!isMounted) return
+        const secretKeyString = await fetchSecretFromLocalStorage()
+        if (!secretKeyString) {
+          setShowImportModal(true)
+          return
+        }
+        const secret = nip19.decode(secretKeyString).data as Uint8Array
+        const accountNpub = dataAuthed?.me?.npub
+        const storedNpub = nip19.npubEncode(getPublicKey(secret))
+        if (!skipMismatchCheck && accountNpub && storedNpub !== accountNpub) {
+          setShowImportModal(true)
+        }
+      }
 
-  const userPublicKey = privateKey ? getPublicKey(privateKey) : null
+      if (initialized) {
+        setSearchedUsers([])
+        checkSecretKey()
+      }
 
-  // -------------------------------
-  // Status bar height for Android
-  // -------------------------------
+      return () => {
+        isMounted = false
+      }
+    }, [setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck, initialized]),
+  )
+
+  // ------------------------
+  // UI helpers
+  // ------------------------
   const statusBarHeight = Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0
 
-  // -------------------------------
-  // List empty / search content
-  // -------------------------------
-  const ListEmptyContent = (
+  const SearchBarContent = <UserSearchBar setSearchedUsers={setSearchedUsers} />
+
+  const ListEmptyContent = !initialized ? (
+    <View style={styles.activityIndicatorContainer}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </View>
+  ) : (
     <View style={styles.emptyListNoContacts}>
       <Text {...testProps(LL.ChatScreen.noChatsTitle())} style={styles.emptyListTitle}>
         {LL.ChatScreen.noChatsTitle()}
@@ -153,8 +158,22 @@ export const NIP17Chat: React.FC = () => {
     </View>
   )
 
-  const SearchBarContent = <UserSearchBar setSearchedUsers={setSearchedUsers} />
+  // ------------------------
+  // Groups derived from rumors
+  // ------------------------
+  const groups = convertRumorsToGroups(rumors || [])
+  const groupIds = Array.from(groups.keys()).sort((a, b) => {
+    const lastARumor = groups.get(a)?.at(-1)
+    const lastBRumor = groups.get(b)?.at(-1)
+    return (lastBRumor?.created_at || 0) - (lastARumor?.created_at || 0)
+  })
 
+  const currentUserPubKey = privateKey ? getPublicKey(privateKey) : null
+  const userProfile = currentUserPubKey ? profileMap?.get(currentUserPubKey) : null
+
+  // ------------------------
+  // Render
+  // ------------------------
   return (
     <Screen style={{ flex: 1 }}>
       <StatusBar translucent backgroundColor="transparent" />
@@ -177,13 +196,13 @@ export const NIP17Chat: React.FC = () => {
                 tabBarIndicatorStyle: { backgroundColor: colors.primary },
               }
             }}
+            style={{ borderColor: colors.primary }}
           >
-            {/* ------------------- Chats Tab ------------------- */}
             <Tab.Screen name="Chats">
               {() => (
                 <View style={{ flex: 1 }}>
                   {SearchBarContent}
-                  {searchedUsers.length > 0 ? (
+                  {searchedUsers.length !== 0 ? (
                     <FlatList
                       contentContainerStyle={styles.listContainer}
                       data={searchedUsers}
@@ -194,7 +213,7 @@ export const NIP17Chat: React.FC = () => {
                       keyExtractor={(item) => item.id}
                     />
                   ) : (
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, flexDirection: "column" }}>
                       {/* Signed in as */}
                       <View style={styles.usernameContainer}>
                         <Text style={styles.usernameText}>
@@ -206,14 +225,13 @@ export const NIP17Chat: React.FC = () => {
                         </Text>
                       </View>
 
-                      {/* Support Group */}
                       <TouchableOpacity
                         onPress={() =>
                           RootNavigator.navigate("Nip29GroupChat", {
                             groupId: "support-group-id",
                           })
                         }
-                        style={{ marginHorizontal: 20, marginBottom: 4 }}
+                        style={{ marginRight: 20, marginLeft: 20, marginBottom: 4 }}
                       >
                         <View style={styles.itemContainer}>
                           <View style={{ flexDirection: "row", marginVertical: 4 }}>
@@ -239,7 +257,8 @@ export const NIP17Chat: React.FC = () => {
                                   style={{
                                     ...styles.itemText,
                                     fontWeight: "bold",
-                                    marginVertical: 4,
+                                    marginBottom: 4,
+                                    marginTop: 4,
                                   }}
                                 >
                                   {groupMetadata.name || "Support Group Chat"}
@@ -251,7 +270,11 @@ export const NIP17Chat: React.FC = () => {
                                 />
                               </View>
                               <Text
-                                style={{ ...styles.itemText, marginVertical: 4 }}
+                                style={{
+                                  ...styles.itemText,
+                                  marginTop: 4,
+                                  marginBottom: 5,
+                                }}
                                 numberOfLines={3}
                                 ellipsizeMode="tail"
                               >
@@ -262,7 +285,6 @@ export const NIP17Chat: React.FC = () => {
                         </View>
                       </TouchableOpacity>
 
-                      {/* Chat Groups */}
                       <FlatList
                         contentContainerStyle={styles.listContainer}
                         data={groupIds}
@@ -283,40 +305,32 @@ export const NIP17Chat: React.FC = () => {
               )}
             </Tab.Screen>
 
-            {/* ------------------- Profile Tab ------------------- */}
             <Tab.Screen
-              name={`Profile: ${userPublicKey ? userPublicKey.slice(0, 8) : ""}`}
+              name={`Profile: ${userProfile?.name}`}
               component={ContactDetailsScreen}
               initialParams={{
-                contactPubkey: userPublicKey,
-                userPrivateKey: bytesToHex(privateKey || new Uint8Array()),
+                contactPubkey: getPublicKey(privateKey),
+                userPrivateKey: bytesToHex(privateKey),
               }}
             />
 
-            {/* ------------------- Contacts Tab ------------------- */}
             <Tab.Screen name="Contacts">
               {() => (
                 <View style={{ height: "100%" }}>
-                  <Contacts userPrivateKey={bytesToHex(privateKey || new Uint8Array())} />
+                  <Contacts userPrivateKey={bytesToHex(privateKey)} />
                 </View>
               )}
             </Tab.Screen>
           </Tab.Navigator>
         </View>
       ) : (
-        <View style={styles.activityIndicatorContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text>Loading your nostr keys...</Text>
-        </View>
+        <Text>Loading your nostr keys...</Text>
       )}
 
-      {/* ------------------- Import Modal ------------------- */}
       <ImportNsecModal
         isActive={showImportModal}
         onCancel={() => setShowImportModal(false)}
-        onSubmit={() => {
-          setShowImportModal(false)
-        }}
+        onSubmit={() => resetChat()}
       />
     </Screen>
   )

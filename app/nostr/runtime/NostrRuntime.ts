@@ -32,12 +32,25 @@ export class NostrRuntime {
     return this.events
   }
 
-  ensureSubscription(key: string, filters: Filter[], onEvent?: (event: Event) => void) {
-    return this.subscriptions.ensure(key, filters, (event: Event) => {
-      if (this.events.add(event)) {
-        onEvent?.(event)
-      }
-    })
+  ensureSubscription(
+    key: string,
+    filters: Filter[],
+    onEvent?: (event: Event) => void,
+    onEose?: () => void,
+    relays?: string[],
+  ) {
+    console.log("Got relays ensureSubscription", relays, filters)
+    return this.subscriptions.ensure(
+      key,
+      filters,
+      (event: Event) => {
+        if (this.events.add(event)) {
+          onEvent?.(event)
+        }
+      },
+      onEose,
+      relays,
+    )
   }
 
   releaseSubscription(key: string) {
