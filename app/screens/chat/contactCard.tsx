@@ -38,8 +38,16 @@ const ContactCard: React.FC<ContactCardProps> = ({
     } catch (e) {
       displayName = contact.pubkey.slice(0, 9) + "..."
     }
-    return displayName
+    return {
+      displayName:
+        profile?.name ||
+        profile?.username ||
+        nip19.npubEncode(contact.pubkey!).slice(0, 12) + "...",
+      nip05: profile?.nip05,
+    }
   }
+
+  const metadata = getContactMetadata(item)
 
   return (
     <ListItem style={style} containerStyle={containerStyle} onPress={onPress}>
@@ -51,12 +59,15 @@ const ContactCard: React.FC<ContactCardProps> = ({
         }}
         style={{ width: 40, height: 40, borderRadius: 40 / 2 }}
       />
-      <ListItem.Content
-        style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}
-      >
-        <ListItem.Subtitle style={{ fontSize: 16, marginTop: 5, marginBottom: 5 }}>
-          <Text style={{ color: colors.primary3 }}>{getContactMetadata(item)}</Text>
-        </ListItem.Subtitle>
+      <ListItem.Content>
+        <ListItem.Title style={{ fontSize: 16, fontWeight: "600", color: colors.black }}>
+          {metadata.displayName}
+        </ListItem.Title>
+        {metadata.nip05 && (
+          <ListItem.Subtitle style={{ fontSize: 13, color: colors.grey3, marginTop: 2 }}>
+            {metadata.nip05}
+          </ListItem.Subtitle>
+        )}
       </ListItem.Content>
     </ListItem>
   )

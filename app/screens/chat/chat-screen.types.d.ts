@@ -24,4 +24,5 @@ type NostrProfile = {
   lud16?: string
   about?: string
   website?: string
+  banner?: string
 }

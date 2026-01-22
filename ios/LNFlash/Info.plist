@@ -95,13 +95,17 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Activate your camera to scan QR codes</string>
+	<string>Activate your camera to scan QR codes and record videos for posts</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record audio for video posts</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save photos and videos to your library</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>$(PRODUCT_NAME) requires FaceID access for quick and secure authentication.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Find Merchant who accepts Lightning payments</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Import a screenshot with a QR code</string>
+	<string>Import a screenshot with a QR code or select photos for posts</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Ionicons.ttf</string>

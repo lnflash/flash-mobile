@@ -36,7 +36,7 @@ export type Scalars = {
   EndpointUrl: { input: string; output: string; }
   /** Feedback shared with our user */
   Feedback: { input: string; output: string; }
-  /** (Positive) Cent amount (1/100 of a dollar) as a float */
+  /** Cent amount (1/100 of a dollar) as a float, can be positive or negative */
   FractionalCentAmount: { input: number; output: number; }
   /** Hex-encoded string of 32 bytes */
   Hex32Bytes: { input: string; output: string; }
@@ -210,7 +210,7 @@ export type BtcWallet = Wallet & {
   readonly __typename: 'BTCWallet';
   readonly accountId: Scalars['ID']['output'];
   /** A balance stored in BTC. */
-  readonly balance: Scalars['SignedAmount']['output'];
+  readonly balance: Scalars['FractionalCentAmount']['output'];
   readonly id: Scalars['ID']['output'];
   readonly lnurlp?: Maybe<Scalars['Lnurl']['output']>;
   /** An unconfirmed incoming onchain balance. */
@@ -1704,7 +1704,7 @@ export type UpgradePayload = {
 export type UsdWallet = Wallet & {
   readonly __typename: 'UsdWallet';
   readonly accountId: Scalars['ID']['output'];
-  readonly balance: Scalars['SignedAmount']['output'];
+  readonly balance: Scalars['FractionalCentAmount']['output'];
   readonly id: Scalars['ID']['output'];
   readonly lnurlp?: Maybe<Scalars['Lnurl']['output']>;
   /** An unconfirmed incoming onchain balance. */
@@ -1962,7 +1962,7 @@ export type UserUpdateUsernamePayload = {
 /** A generic wallet which stores value in one of our supported currencies. */
 export type Wallet = {
   readonly accountId: Scalars['ID']['output'];
-  readonly balance: Scalars['SignedAmount']['output'];
+  readonly balance: Scalars['FractionalCentAmount']['output'];
   readonly id: Scalars['ID']['output'];
   readonly lnurlp?: Maybe<Scalars['Lnurl']['output']>;
   readonly pendingIncomingBalance: Scalars['SignedAmount']['output'];
@@ -2292,6 +2292,13 @@ export type RealtimePriceWsSubscriptionVariables = Exact<{
 
 
 export type RealtimePriceWsSubscription = { readonly __typename: 'Subscription', readonly realtimePrice: { readonly __typename: 'RealtimePricePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }>, readonly realtimePrice?: { readonly __typename: 'RealtimePrice', readonly timestamp: number, readonly denominatorCurrency: string, readonly btcSatPrice: { readonly __typename: 'PriceOfOneSatInMinorUnit', readonly base: number, readonly offset: number }, readonly usdCentPrice: { readonly __typename: 'PriceOfOneUsdCentInMinorUnit', readonly base: number, readonly offset: number } } | null } };
+
+export type TransactionDetailsQueryVariables = Exact<{
+  input: TransactionDetailsInput;
+}>;
+
+
+export type TransactionDetailsQuery = { readonly __typename: 'Query', readonly transactionDetails: { readonly __typename: 'TransactionDetailsPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'TransactionDetailsError', readonly message: string }>, readonly transactionDetails?: { readonly __typename: 'TransactionDetails', readonly id: string, readonly accountId?: string | null, readonly amount?: number | null, readonly currency?: string | null, readonly status?: string | null, readonly type?: string | null, readonly createdAt?: string | null, readonly updatedAt?: string | null, readonly invoice?: string | null, readonly paymentHash?: string | null, readonly paymentPreimage?: string | null, readonly memo?: string | null, readonly address?: string | null, readonly txid?: string | null, readonly vout?: number | null, readonly confirmations?: number | null, readonly fee?: number | null } | null } };
 
 export type NetworkQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2655,13 +2662,6 @@ export type UserTotpRegistrationValidateMutationVariables = Exact<{
 
 
 export type UserTotpRegistrationValidateMutation = { readonly __typename: 'Mutation', readonly userTotpRegistrationValidate: { readonly __typename: 'UserTotpRegistrationValidatePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }>, readonly me?: { readonly __typename: 'User', readonly totpEnabled: boolean, readonly phone?: string | null, readonly email?: { readonly __typename: 'Email', readonly address?: string | null, readonly verified?: boolean | null } | null } | null } };
-
-export type TransactionDetailsQueryVariables = Exact<{
-  input: TransactionDetailsInput;
-}>;
-
-
-export type TransactionDetailsQuery = { readonly __typename: 'Query', readonly transactionDetails: { readonly __typename: 'TransactionDetailsPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'TransactionDetailsError', readonly message: string }>, readonly transactionDetails?: { readonly __typename: 'TransactionDetails', readonly id: string, readonly accountId?: string | null, readonly amount?: number | null, readonly currency?: string | null, readonly status?: string | null, readonly type?: string | null, readonly createdAt?: string | null, readonly updatedAt?: string | null, readonly invoice?: string | null, readonly paymentHash?: string | null, readonly paymentPreimage?: string | null, readonly memo?: string | null, readonly address?: string | null, readonly txid?: string | null, readonly vout?: number | null, readonly confirmations?: number | null, readonly fee?: number | null } | null } };
 
 export type DeviceNotificationTokenCreateMutationVariables = Exact<{
   input: DeviceNotificationTokenCreateInput;
@@ -4557,6 +4557,62 @@ export function useRealtimePriceWsSubscription(baseOptions: Apollo.SubscriptionH
       }
 export type RealtimePriceWsSubscriptionHookResult = ReturnType<typeof useRealtimePriceWsSubscription>;
 export type RealtimePriceWsSubscriptionResult = Apollo.SubscriptionResult<RealtimePriceWsSubscription>;
+export const TransactionDetailsDocument = gql`
+    query transactionDetails($input: TransactionDetailsInput!) {
+  transactionDetails(input: $input) {
+    errors {
+      message
+    }
+    transactionDetails {
+      id
+      accountId
+      amount
+      currency
+      status
+      type
+      createdAt
+      updatedAt
+      invoice
+      paymentHash
+      paymentPreimage
+      memo
+      address
+      txid
+      vout
+      confirmations
+      fee
+    }
+  }
+}
+    `;
+
+/**
+ * __useTransactionDetailsQuery__
+ *
+ * To run a query within a React component, call `useTransactionDetailsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTransactionDetailsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTransactionDetailsQuery({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useTransactionDetailsQuery(baseOptions: Apollo.QueryHookOptions<TransactionDetailsQuery, TransactionDetailsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<TransactionDetailsQuery, TransactionDetailsQueryVariables>(TransactionDetailsDocument, options);
+      }
+export function useTransactionDetailsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<TransactionDetailsQuery, TransactionDetailsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<TransactionDetailsQuery, TransactionDetailsQueryVariables>(TransactionDetailsDocument, options);
+        }
+export type TransactionDetailsQueryHookResult = ReturnType<typeof useTransactionDetailsQuery>;
+export type TransactionDetailsLazyQueryHookResult = ReturnType<typeof useTransactionDetailsLazyQuery>;
+export type TransactionDetailsQueryResult = Apollo.QueryResult<TransactionDetailsQuery, TransactionDetailsQueryVariables>;
 export const NetworkDocument = gql`
     query network {
   globals {
@@ -6861,62 +6917,6 @@ export function useUserTotpRegistrationValidateMutation(baseOptions?: Apollo.Mut
 export type UserTotpRegistrationValidateMutationHookResult = ReturnType<typeof useUserTotpRegistrationValidateMutation>;
 export type UserTotpRegistrationValidateMutationResult = Apollo.MutationResult<UserTotpRegistrationValidateMutation>;
 export type UserTotpRegistrationValidateMutationOptions = Apollo.BaseMutationOptions<UserTotpRegistrationValidateMutation, UserTotpRegistrationValidateMutationVariables>;
-export const TransactionDetailsDocument = gql`
-    query transactionDetails($input: TransactionDetailsInput!) {
-  transactionDetails(input: $input) {
-    errors {
-      message
-    }
-    transactionDetails {
-      id
-      accountId
-      amount
-      currency
-      status
-      type
-      createdAt
-      updatedAt
-      invoice
-      paymentHash
-      paymentPreimage
-      memo
-      address
-      txid
-      vout
-      confirmations
-      fee
-    }
-  }
-}
-    `;
-
-/**
- * __useTransactionDetailsQuery__
- *
- * To run a query within a React component, call `useTransactionDetailsQuery` and pass it any options that fit your needs.
- * When your component renders, `useTransactionDetailsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useTransactionDetailsQuery({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useTransactionDetailsQuery(baseOptions: Apollo.QueryHookOptions<TransactionDetailsQuery, TransactionDetailsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<TransactionDetailsQuery, TransactionDetailsQueryVariables>(TransactionDetailsDocument, options);
-      }
-export function useTransactionDetailsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<TransactionDetailsQuery, TransactionDetailsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<TransactionDetailsQuery, TransactionDetailsQueryVariables>(TransactionDetailsDocument, options);
-        }
-export type TransactionDetailsQueryHookResult = ReturnType<typeof useTransactionDetailsQuery>;
-export type TransactionDetailsLazyQueryHookResult = ReturnType<typeof useTransactionDetailsLazyQuery>;
-export type TransactionDetailsQueryResult = Apollo.QueryResult<TransactionDetailsQuery, TransactionDetailsQueryVariables>;
 export const DeviceNotificationTokenCreateDocument = gql`
     mutation deviceNotificationTokenCreate($input: DeviceNotificationTokenCreateInput!) {
   deviceNotificationTokenCreate(input: $input) {

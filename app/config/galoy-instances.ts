@@ -33,6 +33,7 @@ export const possibleGaloyInstanceNames = [
   "Main",
   "Staging",
   "Test",
+  "Sandbox",
   "Development",
   "Local",
   "Custom",
@@ -40,7 +41,7 @@ export const possibleGaloyInstanceNames = [
 export type GaloyInstanceName = (typeof possibleGaloyInstanceNames)[number]
 
 export type StandardInstance = {
-  id: "Main" | "Staging" | "Test" | "Development" | "Local"
+  id: "Main" | "Staging" | "Test" | "Sandbox" | "Development" | "Local"
 }
 
 export type CustomInstance = {
@@ -120,6 +121,17 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
     lnAddressHostname: "test.flashapp.me",
     blockExplorer: "https://mempool.space/signet/tx/",
     relayUrl: "wss://relay.test.flashapp.me",
+  },
+  {
+    id: "Sandbox",
+    name: "Sandbox",
+    graphqlUri: "https://sandbox.flashapp.me/graphql",
+    graphqlWsUri: "wss://ws.sandbox.flashapp.me/graphql",
+    authUrl: "https://sandbox.flashapp.me",
+    posUrl: "http://pay.sandbox.flashapp.me",
+    lnAddressHostname: "sandbox.flashapp.me",
+    blockExplorer: "https://mempool.space/signet/tx/",
+    relayUrl: "wss://relay.staging.flashapp.me",
   },
   {
     id: "Development",

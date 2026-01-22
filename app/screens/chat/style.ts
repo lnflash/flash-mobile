@@ -2,14 +2,22 @@ import { color } from "@rneui/base"
 import { makeStyles } from "@rneui/themed"
 
 export const useStyles = makeStyles(({ colors }) => ({
-  header: {
-    backgroundColor: colors.white,
-  },
-
   activityIndicatorContainer: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
+  },
+
+  usernameContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginVertical: 10,
+  },
+
+  usernameText: {
+    fontSize: 16,
+    color: colors.primary3,
   },
 
   emptyListNoContacts: {
