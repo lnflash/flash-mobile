@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react"
+import React, { useState, useCallback, useEffect } from "react"
 import {
   View,
   Text,
@@ -6,19 +6,12 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Linking,
 } from "react-native"
 import { useTheme, makeStyles } from "@rneui/themed"
-import {
-  RouteProp,
-  useFocusEffect,
-  useNavigation,
-  useRoute,
-} from "@react-navigation/native"
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 import Icon from "react-native-vector-icons/Ionicons"
-import LinearGradient from "react-native-linear-gradient"
 import Clipboard from "@react-native-clipboard/clipboard"
 
 import { Screen } from "../../components/screen"
@@ -67,9 +60,8 @@ const ContactDetailsScreen: React.FC = () => {
       .sort((a, b) => b.created_at - a.created_at)
   })
 
-  // Posts, reposts, and profiles
-  const [posts, setPosts] = useState<Event[]>([])
-  const [loadingPosts, setLoadingPosts] = useState(true)
+  const [loadingPosts, setLoadingPosts] = useState(posts.length === 0)
+
   const [repostedEvents, setRepostedEvents] = useState<Map<string, Event>>(new Map())
   const [repostedProfiles, setRepostedProfiles] = useState<Map<string, any>>(new Map())
 
@@ -124,67 +116,52 @@ const ContactDetailsScreen: React.FC = () => {
 
   // Fetch posts and reposts using nostrRuntime
   const fetchPosts = useCallback(() => {
+    // already have posts → don't refetch
+
+    if (posts.length > 0) return
+
     setLoadingPosts(true)
+
     const fetchedEvents: Event[] = []
     const repostMap = new Map<string, Event>()
     const profilesMap = new Map<string, any>()
 
-    const subKey = `posts:${contactPubkey}`
-
     nostrRuntime.ensureSubscription(
-      subKey,
+      postsKey,
       [{ kinds: [1, 6], authors: [contactPubkey], limit: 10 }],
-      (event: Event) => {
-        if (fetchedEvents.find((e) => e.id === event.id)) return
+      (event) => {
         fetchedEvents.push(event)
 
         if (event.kind === 6) {
-          const eTag = event.tags.find((tag) => tag[0] === "e")
-          const pTag = event.tags.find((tag) => tag[0] === "p")
-
-          if (eTag && eTag[1]) {
-            try {
-              const repostedEvent = JSON.parse(event.content)
-              repostMap.set(event.id, repostedEvent)
-
-              if (pTag && pTag[1]) {
-                nostrRuntime.ensureSubscription(
-                  `profile:${pTag[1]}`,
-                  [{ kinds: [0], authors: [pTag[1]], limit: 1 }],
-                  (profileEvent) => {
-                    const profileData = JSON.parse(profileEvent.content)
-                    profilesMap.set(pTag[1], profileData)
-                    setRepostedProfiles(new Map(profilesMap))
-                  },
-                  undefined, // EOSE optional
-                )
-              }
-            } catch (err) {
-              console.error("Error parsing reposted event", err)
-            }
+          const pTag = event.tags.find((t) => t[0] === "p")?.[1]
+          if (pTag) {
+            nostrRuntime.ensureSubscription(
+              `profile:${pTag}`,
+              [{ kinds: [0], authors: [pTag], limit: 1 }],
+              (profileEvent) => {
+                profilesMap.set(pTag, JSON.parse(profileEvent.content))
+                setRepostedProfiles(new Map(profilesMap))
+              },
+            )
           }
         }
       },
       () => {
-        // On EOSE
         fetchedEvents.sort((a, b) => b.created_at - a.created_at)
         setPosts(fetchedEvents)
         setRepostedEvents(repostMap)
         setLoadingPosts(false)
       },
     )
+  }, [contactPubkey, posts.length])
 
-    // Safety timeout
-    setTimeout(() => {
-      setLoadingPosts(false)
-    }, 5000)
-  }, [contactPubkey])
+  useEffect(() => {
+    fetchPosts()
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchPosts()
-    }, [fetchPosts]),
-  )
+    return () => {
+      nostrRuntime.releaseSubscription(postsKey)
+    }
+  }, [fetchPosts])
 
   return (
     <Screen preset="fixed">
