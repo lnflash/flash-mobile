@@ -39,10 +39,7 @@ export class NostrRuntime {
     onEose?: () => void,
     relays?: string[],
   ) {
-<<<<<<< HEAD
-=======
     console.log("Got relays ensureSubscription", relays, filters)
->>>>>>> be69122f (Use NostrRuntime throughout app)
     return this.subscriptions.ensure(
       key,
       filters,
