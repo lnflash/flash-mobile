@@ -1,11 +1,10 @@
 import { useState } from "react"
 import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
-import ContactModal, {
-  SupportChannels,
-} from "@app/components/contact-modal/contact-modal"
 import { PrimaryBtn } from "@app/components/buttons"
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 import { UpgradeAccountModal } from "@app/components/upgrade-account-modal"
@@ -15,24 +14,20 @@ import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-but
 import { useShowWarningSecureAccount } from "../show-warning-secure-account-hook"
 import { AccountLevel, useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useAppConfig } from "@app/hooks"
+import { useNavigation } from "@react-navigation/native"
 
 export const UpgradeTrialAccount: React.FC = () => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
-  const { appConfig } = useAppConfig()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
   const hasBalance = useShowWarningSecureAccount()
 
   const [upgradeAccountModalVisible, setUpgradeAccountModalVisible] = useState(false)
-  const [isContactModalVisible, setIsContactModalVisible] = useState(false)
-
-  const { name: bankName } = appConfig.galoyInstance
 
   const closeUpgradeAccountModal = () => setUpgradeAccountModalVisible(false)
   const openUpgradeAccountModal = () => setUpgradeAccountModalVisible(true)
-  const toggleContactModal = () => setIsContactModalVisible(!isContactModalVisible)
 
   if (currentLevel === AccountLevel.Zero) {
     return (
@@ -63,30 +58,12 @@ export const UpgradeTrialAccount: React.FC = () => {
       </>
     )
   } else if (currentLevel === AccountLevel.One) {
-    const messageBody = LL.TransactionLimitsScreen.contactUsMessageBody({
-      bankName,
-    })
-    const messageSubject = LL.TransactionLimitsScreen.contactUsMessageSubject()
-
     return (
-      <>
-        <PrimaryBtn
-          label={LL.TransactionLimitsScreen.requestBusiness()}
-          btnStyle={{ marginTop: 10 }}
-          onPress={toggleContactModal}
-        />
-        <ContactModal
-          isVisible={isContactModalVisible}
-          toggleModal={toggleContactModal}
-          messageBody={messageBody}
-          messageSubject={messageSubject}
-          supportChannelsToHide={[
-            SupportChannels.Mattermost,
-            SupportChannels.StatusPage,
-            SupportChannels.Discord,
-          ]}
-        />
-      </>
+      <PrimaryBtn
+        label={LL.TransactionLimitsScreen.requestUpgrade()}
+        btnStyle={{ marginTop: 10 }}
+        onPress={() => navigation.navigate("AccountType")}
+      />
     )
   } else {
     return null

@@ -3491,9 +3491,9 @@ type RootTranslation = {
 		 */
 		spendingLimitsDescription: string
 		/**
-		 * R​e​q​u​e​s​t​ ​B​u​s​i​n​e​s​s​ ​A​c​c​o​u​n​t
+		 * Request Upgrade
 		 */
-		requestBusiness: string
+		requestUpgrade: string
 	}
 	TransactionScreen: {
 		/**
@@ -8515,9 +8515,9 @@ export type TranslationFunctions = {
 		 */
 		spendingLimitsDescription: () => LocalizedString
 		/**
-		 * Request Business Account
+		 * Request Upgrade
 		 */
-		requestBusiness: () => LocalizedString
+		requestUpgrade: () => LocalizedString
 	}
 	TransactionScreen: {
 		/**
