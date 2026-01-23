@@ -3,7 +3,7 @@ import { useAppSelector } from "@app/store/redux"
 import {
   useBusinessAccountUpgradeRequestMutation,
   HomeAuthedDocument,
-  useFileUploadUrlGenerateMutation,
+  useIdDocumentUploadUrlGenerateMutation,
 } from "@app/graphql/generated"
 
 type UpgradeResult = {
@@ -17,7 +17,7 @@ export const useAccountUpgrade = () => {
     (state) => state.accountUpgrade,
   )
 
-  const [generateFileUploadUrl] = useFileUploadUrlGenerateMutation()
+  const [generateIdDocumentUploadUrl] = useIdDocumentUploadUrlGenerateMutation()
   const [requestAccountUpgrade] = useBusinessAccountUpgradeRequestMutation({
     refetchQueries: [HomeAuthedDocument],
   })
@@ -28,7 +28,7 @@ export const useAccountUpgrade = () => {
       return null
     }
 
-    const { data } = await generateFileUploadUrl({
+    const { data } = await generateIdDocumentUploadUrl({
       variables: {
         input: {
           filename: idDocument.fileName,
@@ -37,24 +37,24 @@ export const useAccountUpgrade = () => {
       },
     })
 
-    if (!data?.fileUploadUrlGenerate.uploadUrl) {
+    if (!data?.idDocumentUploadUrlGenerate.uploadUrl) {
       throw new Error("Failed to generate upload URL to upload ID Document")
     }
 
     await uploadFileToS3(
-      data.fileUploadUrlGenerate.uploadUrl,
+      data.idDocumentUploadUrlGenerate.uploadUrl,
       idDocument.uri,
       idDocument.type,
     )
 
-    return data.fileUploadUrlGenerate.fileUrl ?? null
+    return data.idDocumentUploadUrlGenerate.fileKey ?? null
   }
 
   const submitAccountUpgrade = async (): Promise<UpgradeResult> => {
     toggleActivityIndicator(true)
 
     try {
-      const idDocumentUrl = await uploadIdDocument()
+      const idDocument = await uploadIdDocument()
 
       const input = {
         accountNumber: Number(bankInfo.accountNumber),
@@ -66,7 +66,7 @@ export const useAccountUpgrade = () => {
         currency: bankInfo.currency,
         email: personalInfo.email,
         fullName: personalInfo.fullName || "",
-        idDocument: idDocumentUrl,
+        idDocument: idDocument,
         level: accountType || "ONE",
         terminalRequested: businessInfo.terminalRequested,
       }

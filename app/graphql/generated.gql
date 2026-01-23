@@ -81,6 +81,19 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
+mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
+  idDocumentUploadUrlGenerate(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    fileKey
+    uploadUrl
+    __typename
+  }
+}
+
 mutation MerchantMapSuggest($input: MerchantMapSuggestInput!) {
   merchantMapSuggest(input: $input) {
     errors {
@@ -890,15 +903,6 @@ query accountScreen {
   }
 }
 
-query accountUpgradeRequestStatus {
-  accountUpgradeRequestStatus {
-    hasPendingRequest
-    requestedLevel
-    errors
-    __typename
-  }
-}
-
 query addressScreen {
   me {
     id
@@ -962,20 +966,6 @@ query btcPriceList($range: PriceGraphRange!) {
       base
       offset
       currencyUnit
-      __typename
-    }
-    __typename
-  }
-}
-
-query businessAddressEnrich($address: String!) {
-  businessAddressEnrich(address: $address) {
-    formattedAddress
-    latitude
-    longitude
-    errors {
-      message
-      code
       __typename
     }
     __typename

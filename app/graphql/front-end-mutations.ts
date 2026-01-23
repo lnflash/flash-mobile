@@ -166,9 +166,7 @@ gql`
       amount
     }
   }
-`
 
-gql`
   mutation userUpdateNpub($input: UserUpdateNpubInput!) {
     userUpdateNpub(input: $input) {
       errors {
@@ -180,9 +178,7 @@ gql`
       }
     }
   }
-`
 
-gql`
   mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
     userUpdateUsername(input: $input) {
       errors {
@@ -194,9 +190,7 @@ gql`
       }
     }
   }
-`
 
-gql`
   mutation businessAccountUpgradeRequest($input: BusinessAccountUpgradeRequestInput!) {
     businessAccountUpgradeRequest(input: $input) {
       errors {
@@ -204,6 +198,17 @@ gql`
         code
       }
       success
+    }
+  }
+
+  mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
+    idDocumentUploadUrlGenerate(input: $input) {
+      errors {
+        code
+        message
+      }
+      fileKey
+      uploadUrl
     }
   }
 `
