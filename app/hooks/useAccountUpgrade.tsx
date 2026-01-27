@@ -1,10 +1,23 @@
+import { useEffect } from "react"
+import { parsePhoneNumber } from "libphonenumber-js"
+
+// hooks
 import { useActivityIndicator } from "./useActivityIndicator"
-import { useAppSelector } from "@app/store/redux"
+import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import {
   useBusinessAccountUpgradeRequestMutation,
   HomeAuthedDocument,
   useIdDocumentUploadUrlGenerateMutation,
+  AccountLevel,
+  useAccountUpgradeRequestQuery,
 } from "@app/graphql/generated"
+
+// store
+import {
+  setAccountUpgrade,
+  setBusinessInfo,
+  setPersonalInfo,
+} from "@app/store/redux/slices/accountUpgradeSlice"
 
 type UpgradeResult = {
   success: boolean
@@ -12,15 +25,52 @@ type UpgradeResult = {
 }
 
 export const useAccountUpgrade = () => {
+  const dispatch = useAppDispatch()
   const { toggleActivityIndicator } = useActivityIndicator()
   const { accountType, personalInfo, businessInfo, bankInfo } = useAppSelector(
     (state) => state.accountUpgrade,
   )
 
+  const { data } = useAccountUpgradeRequestQuery({ fetchPolicy: "cache-and-network" })
+  const upgradeData = data?.accountUpgradeRequest.upgradeRequest
+
   const [generateIdDocumentUploadUrl] = useIdDocumentUploadUrlGenerateMutation()
   const [requestAccountUpgrade] = useBusinessAccountUpgradeRequestMutation({
     refetchQueries: [HomeAuthedDocument],
   })
+
+  useEffect(() => {
+    if (upgradeData && !personalInfo.fullName) {
+      setAccountUpgradeData()
+    }
+  }, [upgradeData])
+
+  const setAccountUpgradeData = () => {
+    if (upgradeData) {
+      const parsedPhone = upgradeData.phoneNumber
+        ? parsePhoneNumber(upgradeData.phoneNumber)
+        : undefined
+      dispatch(
+        setAccountUpgrade({
+          upgradeCompleted: upgradeData.requestedLevel === AccountLevel.Three,
+        }),
+      )
+      dispatch(
+        setPersonalInfo({
+          fullName: upgradeData.fullName,
+          countryCode: parsedPhone?.country,
+          phoneNumber: parsedPhone?.nationalNumber,
+          email: upgradeData.email,
+        }),
+      )
+      dispatch(
+        setBusinessInfo({
+          businessName: upgradeData.businessName,
+          businessAddress: upgradeData.businessAddress,
+        }),
+      )
+    }
+  }
 
   const uploadIdDocument = async (): Promise<string | null> => {
     const { idDocument } = bankInfo
@@ -81,6 +131,8 @@ export const useAccountUpgrade = () => {
           errors: data.businessAccountUpgradeRequest.errors.map((e) => e.message),
         }
       }
+      if (accountType === AccountLevel.Three)
+        dispatch(setAccountUpgrade({ upgradeCompleted: true }))
 
       return {
         success: data?.businessAccountUpgradeRequest?.success ?? false,

@@ -198,6 +198,28 @@ export type AccountUpdateNotificationSettingsPayload = {
   readonly errors: ReadonlyArray<Error>;
 };
 
+export type AccountUpgradeRequest = {
+  readonly __typename: 'AccountUpgradeRequest';
+  readonly businessAddress?: Maybe<Scalars['String']['output']>;
+  readonly businessName?: Maybe<Scalars['String']['output']>;
+  readonly currentLevel: AccountLevel;
+  readonly email?: Maybe<Scalars['String']['output']>;
+  readonly fullName: Scalars['String']['output'];
+  /** ERPNext document name */
+  readonly name: Scalars['String']['output'];
+  readonly phoneNumber?: Maybe<Scalars['String']['output']>;
+  readonly requestedLevel: AccountLevel;
+  /** Workflow status of the upgrade request */
+  readonly status: Scalars['String']['output'];
+  readonly username: Scalars['String']['output'];
+};
+
+export type AccountUpgradeRequestPayload = {
+  readonly __typename: 'AccountUpgradeRequestPayload';
+  readonly errors: ReadonlyArray<Error>;
+  readonly upgradeRequest?: Maybe<AccountUpgradeRequest>;
+};
+
 export type AuthTokenPayload = {
   readonly __typename: 'AuthTokenPayload';
   readonly authToken?: Maybe<Scalars['AuthToken']['output']>;
@@ -1385,6 +1407,7 @@ export type PublicWallet = {
 export type Query = {
   readonly __typename: 'Query';
   readonly accountDefaultWallet: PublicWallet;
+  readonly accountUpgradeRequest: AccountUpgradeRequestPayload;
   readonly beta: Scalars['Boolean']['output'];
   /** @deprecated Deprecated in favor of realtimePrice */
   readonly btcPrice?: Maybe<Price>;
@@ -2343,6 +2366,11 @@ export type NpubByUsernameQueryVariables = Exact<{
 
 
 export type NpubByUsernameQuery = { readonly __typename: 'Query', readonly npubByUsername?: { readonly __typename: 'npubByUsername', readonly npub?: string | null, readonly username?: string | null } | null };
+
+export type AccountUpgradeRequestQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly accountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly businessAddress?: string | null, readonly businessName?: string | null, readonly currentLevel: AccountLevel, readonly email?: string | null, readonly fullName: string, readonly name: string, readonly phoneNumber?: string | null, readonly requestedLevel: AccountLevel, readonly status: string, readonly username: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
 
 export type RealtimePriceWsSubscriptionVariables = Exact<{
   currency: Scalars['DisplayCurrency']['input'];
@@ -4646,6 +4674,55 @@ export function useNpubByUsernameLazyQuery(baseOptions?: Apollo.LazyQueryHookOpt
 export type NpubByUsernameQueryHookResult = ReturnType<typeof useNpubByUsernameQuery>;
 export type NpubByUsernameLazyQueryHookResult = ReturnType<typeof useNpubByUsernameLazyQuery>;
 export type NpubByUsernameQueryResult = Apollo.QueryResult<NpubByUsernameQuery, NpubByUsernameQueryVariables>;
+export const AccountUpgradeRequestDocument = gql`
+    query AccountUpgradeRequest {
+  accountUpgradeRequest {
+    upgradeRequest {
+      businessAddress
+      businessName
+      currentLevel
+      email
+      fullName
+      name
+      phoneNumber
+      requestedLevel
+      status
+      username
+    }
+    errors {
+      code
+      message
+    }
+  }
+}
+    `;
+
+/**
+ * __useAccountUpgradeRequestQuery__
+ *
+ * To run a query within a React component, call `useAccountUpgradeRequestQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAccountUpgradeRequestQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAccountUpgradeRequestQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAccountUpgradeRequestQuery(baseOptions?: Apollo.QueryHookOptions<AccountUpgradeRequestQuery, AccountUpgradeRequestQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AccountUpgradeRequestQuery, AccountUpgradeRequestQueryVariables>(AccountUpgradeRequestDocument, options);
+      }
+export function useAccountUpgradeRequestLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AccountUpgradeRequestQuery, AccountUpgradeRequestQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AccountUpgradeRequestQuery, AccountUpgradeRequestQueryVariables>(AccountUpgradeRequestDocument, options);
+        }
+export type AccountUpgradeRequestQueryHookResult = ReturnType<typeof useAccountUpgradeRequestQuery>;
+export type AccountUpgradeRequestLazyQueryHookResult = ReturnType<typeof useAccountUpgradeRequestLazyQuery>;
+export type AccountUpgradeRequestQueryResult = Apollo.QueryResult<AccountUpgradeRequestQuery, AccountUpgradeRequestQueryVariables>;
 export const RealtimePriceWsDocument = gql`
     subscription realtimePriceWs($currency: DisplayCurrency!) {
   realtimePrice(input: {currency: $currency}) {
