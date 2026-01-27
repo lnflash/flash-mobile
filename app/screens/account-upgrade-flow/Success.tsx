@@ -13,12 +13,7 @@ import Account from "@app/assets/illustrations/account.svg"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-
-// store
 import { useAppSelector } from "@app/store/redux"
-
-// gql
-import { AccountLevel } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "AccountUpgradeSuccess">
 
@@ -47,15 +42,6 @@ const Success: React.FC<Props> = ({ navigation }) => {
           })}
         </Text>
         <Account />
-        {accountType === AccountLevel.Three && (
-          <Text
-            type="bl"
-            color={colors.grey5}
-            style={{ marginHorizontal: 30, textAlign: "center" }}
-          >
-            {LL.AccountUpgrade.successDesc()}
-          </Text>
-        )}
       </View>
       <PrimaryBtn
         label="Complete"

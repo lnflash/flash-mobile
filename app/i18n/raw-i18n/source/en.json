@@ -1406,9 +1406,5 @@
         "accountNumPlaceholder": "Enter your account number",
         "uploadId": "Upload ID Document",
         "successTitle": "You successfully requested to upgrade your account to {accountType: string}",
-        "successDesc": "* Please enter the test transaction amount to confirm your bank details.",
-        "transactionVerification": "Transaction Verification",
-        "transactionTitle": "To complete upgrading your account to MERCHANT, enter the test transaction amount we sent to your bank account {accountNum: string} to confirm your bank details.",
-        "transactionAmount": "Transaction amount"
     }
 }
