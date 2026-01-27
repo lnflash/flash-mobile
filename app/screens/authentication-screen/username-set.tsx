@@ -8,7 +8,6 @@ import { PrimaryBtn } from "@app/components/buttons"
 import { Screen } from "@app/components/screen"
 
 // hooks
-import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import useLogout from "@app/hooks/use-logout"
 import { useAppConfig } from "@app/hooks"
@@ -43,8 +42,6 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const styles = useStyles()
-
-  const { updateNostrProfile } = useNostrProfile()
   const { logout } = useLogout()
   const { userProfileEvent } = useChatContext()
 
@@ -105,17 +102,6 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
           console.log("No existing profile found or failed to parse")
         }
       }
-
-      // Merge with new username data
-      await updateNostrProfile({
-        content: {
-          ...existingProfile,
-          name: lnAddress,
-          username: lnAddress,
-          lud16: `${lnAddress}@${lnAddressHostname}`,
-          nip05: `${lnAddress}@${lnAddressHostname}`,
-        },
-      })
       if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
         if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
           setError(SetAddressError.ADDRESS_UNAVAILABLE)
