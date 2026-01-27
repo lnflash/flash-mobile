@@ -50,6 +50,7 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
 
   const [error, setError] = useState<SetAddressError | undefined>()
   const [lnAddress, setLnAddress] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [updateUsername, { loading }] = useUserUpdateUsernameMutation({
     update: (cache, { data }) => {
@@ -78,6 +79,8 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
   })
 
   const onSetLightningAddress = async () => {
+    setIsSubmitting(true)
+    setError(undefined)
     const validationResult = validateLightningAddress(lnAddress)
     if (!validationResult.valid) {
       setError(validationResult.error)
@@ -104,7 +107,7 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
       }
 
       // Merge with new username data
-      updateNostrProfile({
+      await updateNostrProfile({
         content: {
           ...existingProfile,
           name: lnAddress,
@@ -119,9 +122,10 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
         } else {
           setError(SetAddressError.UNKNOWN_ERROR)
         }
+        setIsSubmitting(false)
         return
       }
-
+      setIsSubmitting(false)
       dispatch(updateUserData({ username: lnAddress }))
       navigation.reset({
         index: 0,
@@ -178,6 +182,7 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
           </Text>
           <TextInput
             autoCorrect={false}
+            editable={!isSubmitting}
             autoComplete="off"
             autoCapitalize="none"
             style={styles.textInputStyle}
@@ -190,6 +195,7 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
           {errorMessage && <GaloyErrorBox errorMessage={errorMessage} />}
         </View>
         <PrimaryBtn
+          loading={isSubmitting}
           label={LL.SetAddressModal.save()}
           disabled={lnAddress.length < 3}
           onPress={onSetLightningAddress}

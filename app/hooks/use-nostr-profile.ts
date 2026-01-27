@@ -219,6 +219,7 @@ const useNostrProfile = () => {
           [
             "wss://relay.damus.io",
             "wss://relay.primal.net",
+            "wss://nos.lol",
             "wss://relay.islandbitcoin.com",
           ],
           0,
