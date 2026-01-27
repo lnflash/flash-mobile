@@ -91,10 +91,11 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
         setAccountNumErr("Account number is required")
         hasError = true
       }
-      if (!idDocument) {
-        setIdDocumentErr("You must upload an ID document before proceeding")
-        hasError = true
-      }
+    }
+
+    if (!idDocument) {
+      setIdDocumentErr("You must upload an ID document before proceeding")
+      hasError = true
     }
 
     if (!hasError) {
@@ -173,7 +174,6 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           label={LL.AccountUpgrade.uploadId()}
           photo={idDocument}
           errorMsg={idDocumentErr}
-          isOptional={isOptional}
           onPhotoUpload={(val) => dispatch(setBankInfo({ idDocument: val }))}
           setErrorMsg={setIdDocumentErr}
         />

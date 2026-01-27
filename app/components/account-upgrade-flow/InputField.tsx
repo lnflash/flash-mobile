@@ -15,6 +15,7 @@ const InputField: React.FC<Props> = ({
   isOptional,
   placeholder,
   value,
+  editable,
   autoCapitalize,
   keyboardType,
   onChangeText,
@@ -40,6 +41,7 @@ const InputField: React.FC<Props> = ({
         placeholder={placeholder}
         placeholderTextColor={colors.placeholder}
         value={value}
+        editable={editable}
         onChangeText={onChangeText}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}

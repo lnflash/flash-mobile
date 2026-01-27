@@ -41,7 +41,10 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
 
   const [fullNameErr, setFullNameErr] = useState<string>()
   const [phoneNumberErr, setPhoneNumberErr] = useState<string>()
+  const [emailErr, setEmailErr] = useState<string>()
+
   const {
+    accountType,
     numOfSteps,
     personalInfo: { fullName, countryCode, phoneNumber, email },
   } = useAppSelector((state) => state.accountUpgrade)
@@ -102,6 +105,10 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
       }
       if (!parsedPhoneNumber?.isValid()) {
         setPhoneNumberErr("Please enter a valid phone number")
+        hasError = true
+      }
+      if (accountType !== AccountLevel.One && !email) {
+        setEmailErr("Please enter a valid email address")
         hasError = true
       }
       if (!hasError) {
@@ -167,9 +174,11 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
         />
         <InputField
           label={LL.AccountUpgrade.email()}
-          isOptional={true}
+          isOptional={accountType === AccountLevel.One}
           placeholder="your.email@example.com"
-          value={email}
+          value={data?.me?.email?.address || email}
+          errorMsg={emailErr}
+          editable={!data?.me?.email?.address}
           onChangeText={(val) => dispatch(setPersonalInfo({ email: val }))}
           autoCapitalize={"none"}
         />
