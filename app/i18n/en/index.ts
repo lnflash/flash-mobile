@@ -1500,8 +1500,9 @@ const en: BaseTranslation = {
       selectCurrency: "Select Currency",
       accountNum: "Account Number",
       accountNumPlaceholder: "Enter your account number",
-      uploadId: "Upload ID Document",
-      successTitle: "You successfully requested to upgrade your account to {accountType: string}",
+      uploadId: "Upload ID Document",      
+      successUpgrade: "You successfully upgraded your account to {accountType: string}",
+      successRequest: "You successfully requested to upgrade your account to {accountType: string}"
     }
 }
 

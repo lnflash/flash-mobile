@@ -4732,10 +4732,15 @@ type RootTranslation = {
 		 */
 		uploadId: string
 		/**
+		 * You successfully upgraded your account to {accountType} 
+		 * @param {string} accountType
+		 */
+		successUpgrade: RequiredParams<'accountType'>
+		/**
 		 * You successfully requested to upgrade your account to {accountType} 
 		 * @param {string} accountType
 		 */
-		successTitle: RequiredParams<'accountType'>
+		successRequest: RequiredParams<'accountType'>
 	}
 	Nostr: {
 		/**
@@ -9762,10 +9767,13 @@ export type TranslationFunctions = {
 		 */
 		uploadId: () => LocalizedString
 		/**
+		 * You successfully upgraded your account to {accountType} 
+		 */
+		successUpgrade:(arg: { accountType: string }) => LocalizedString
+		/**
 		 * You successfully requested to upgrade your account to {accountType}
 		 */
-		successTitle: (arg: { accountType: string }) => LocalizedString
-
+		successRequest:(arg: { accountType: string }) => LocalizedString
 	}
 }
 
