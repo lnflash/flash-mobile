@@ -15,12 +15,14 @@ import { useShowWarningSecureAccount } from "../show-warning-secure-account-hook
 import { AccountLevel, useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
+import { useAppSelector } from "@app/store/redux"
 
 export const UpgradeTrialAccount: React.FC = () => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const { upgradeCompleted } = useAppSelector((state) => state.accountUpgrade)
 
   const hasBalance = useShowWarningSecureAccount()
 
@@ -57,7 +59,7 @@ export const UpgradeTrialAccount: React.FC = () => {
         </View>
       </>
     )
-  } else if (currentLevel === AccountLevel.One) {
+  } else if (currentLevel !== AccountLevel.Three && !upgradeCompleted) {
     return (
       <PrimaryBtn
         label={LL.TransactionLimitsScreen.requestUpgrade()}

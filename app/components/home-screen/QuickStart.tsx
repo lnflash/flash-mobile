@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Dimensions, Linking, TouchableOpacity, View } from "react-native"
+import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import Carousel from "react-native-reanimated-carousel"
-import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
-import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import * as Keychain from "react-native-keychain"
 
 // assets
@@ -18,14 +18,12 @@ import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 import { AdvancedModeModal } from "../advanced-mode-modal"
 
 // hooks
+import { useAccountUpgrade } from "@app/hooks"
+import { useAppSelector } from "@app/store/redux"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import {
-  AccountLevel,
-  useHomeAuthedQuery,
-  useAccountUpgradeRequestStatusQuery,
-} from "@app/graphql/generated"
+import { AccountLevel, useHomeAuthedQuery } from "@app/graphql/generated"
 
 // utils
 import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
@@ -50,12 +48,15 @@ const QuickStart = () => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { persistentState, updateState } = usePersistentStateContext()
+  const { upgradeCompleted } = useAppSelector((state) => state.accountUpgrade)
 
   const ref = useRef(null)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
   const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
 
   const { data, loading } = useHomeAuthedQuery()
+
+  useAccountUpgrade()
 
   useEffect(() => {
     checkRecoveryPhrase()
@@ -66,9 +67,7 @@ const QuickStart = () => {
     if (credentials) setHasRecoveryPhrase(true)
   }
 
-  const { data: upgradeStatusData } = useAccountUpgradeRequestStatusQuery()
-  const upgradePending =
-    upgradeStatusData?.accountUpgradeRequestStatus?.hasPendingRequest ?? false
+  const upgradePending = false
 
   let carouselData = [
     {
@@ -79,8 +78,7 @@ const QuickStart = () => {
         : LL.HomeScreen.upgradeDesc(),
       image: Account,
       pending: upgradePending,
-      onPress: () =>
-        navigation.navigate(upgradePending ? "TestTransaction" : "AccountType"),
+      onPress: () => navigation.navigate("AccountType"),
     },
     {
       type: "currency",
@@ -132,10 +130,11 @@ const QuickStart = () => {
   ]
 
   if (
-    data?.me?.defaultAccount.level !== AccountLevel.Zero ||
+    upgradeCompleted ||
+    data?.me?.defaultAccount.level === AccountLevel.Three ||
     persistentState?.closedQuickStartTypes?.includes("upgrade")
   ) {
-    // carouselData = carouselData.filter((el) => el.type !== "upgrade")
+    carouselData = carouselData.filter((el) => el.type !== "upgrade")
   }
   if (
     persistentState.currencyChanged ||

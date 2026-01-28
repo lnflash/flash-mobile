@@ -17,6 +17,9 @@ import KeyStoreWrapper from "../utils/storage/secureStorage"
 import { SCHEMA_VERSION_KEY } from "@app/config"
 import { disconnectToSDK } from "@app/utils/breez-sdk-liquid"
 
+// store
+import { resetAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
+
 const DEVICE_ACCOUNT_CREDENTIALS_KEY = "device-account"
 
 const useLogout = () => {
@@ -55,6 +58,7 @@ const useLogout = () => {
     await KeyStoreWrapper.removePin()
     await KeyStoreWrapper.removePinAttempts()
     dispatch(resetUserSlice())
+    dispatch(resetAccountUpgrade())
     resetState()
     resetFlashcard()
 

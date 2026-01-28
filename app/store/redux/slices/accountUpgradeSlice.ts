@@ -4,7 +4,6 @@ import { CountryCode } from "libphonenumber-js"
 import { Asset } from "react-native-image-picker"
 
 interface AccountUpgradeSlice {
-  id?: string
   accountType: AccountLevel
   upgradeCompleted?: boolean
   personalInfo: {
@@ -34,7 +33,6 @@ interface AccountUpgradeSlice {
 }
 
 const initialState: AccountUpgradeSlice = {
-  id: undefined,
   accountType: "ONE",
   upgradeCompleted: undefined,
   personalInfo: {
