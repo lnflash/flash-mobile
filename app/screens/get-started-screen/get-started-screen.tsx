@@ -47,6 +47,7 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
 
   useEffect(() => {
     toggleActivityIndicator(loading || appcheckTokenLoading)
+    return () => toggleActivityIndicator(false)
   }, [loading, appcheckTokenLoading])
 
   useEffect(() => {

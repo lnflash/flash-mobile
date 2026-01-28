@@ -5,8 +5,8 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <!-- BootTheme should inherit from Theme.SplashScreen -->
-    <style name="BootTheme" parent="Theme.SplashScreen">
+    <!-- BootTheme should inherit from AppTheme and use SplashScreen attributes -->
+    <style name="BootTheme" parent="AppTheme">
         <item name="windowSplashScreenBackground">@color/bootsplash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/bootsplash_logo</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
