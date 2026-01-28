@@ -28,7 +28,6 @@ import {
 import { useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useActivityIndicator } from "@app/hooks"
-import { useUserEmailRegistrationInitiateMutation } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "PersonalInformation">
 
@@ -64,9 +63,6 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
   } = useRequestPhoneCodeLogin()
 
   const { data } = useAuthQuery()
-
-  const [userEmailRegistrationInitiateMutation] =
-    useUserEmailRegistrationInitiateMutation()
 
   useEffect(() => {
     if (phoneNumber && countryCode) {
@@ -115,17 +111,6 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
         if (currentLevel === AccountLevel.Zero && channel) {
           submitPhoneNumber(channel)
         } else {
-          // For Level 1+ users upgrading to business, save email if provided
-          if (email && email.length > 0) {
-            try {
-              await userEmailRegistrationInitiateMutation({
-                variables: { input: { email } },
-              })
-            } catch (err) {
-              console.log("Email registration error:", err)
-              // Continue to next screen even if email fails
-            }
-          }
           navigation.navigate("BusinessInformation")
         }
       }

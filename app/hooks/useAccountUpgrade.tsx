@@ -10,6 +10,8 @@ import {
   useIdDocumentUploadUrlGenerateMutation,
   AccountLevel,
   useAccountUpgradeRequestQuery,
+  useUserEmailRegistrationInitiateMutation,
+  useAuthQuery,
 } from "@app/graphql/generated"
 
 // store
@@ -31,9 +33,11 @@ export const useAccountUpgrade = () => {
     (state) => state.accountUpgrade,
   )
 
+  const { data: dataAuthed } = useAuthQuery()
   const { data } = useAccountUpgradeRequestQuery({ fetchPolicy: "cache-and-network" })
   const upgradeData = data?.accountUpgradeRequest.upgradeRequest
 
+  const [registerUserEmail] = useUserEmailRegistrationInitiateMutation()
   const [generateIdDocumentUploadUrl] = useIdDocumentUploadUrlGenerateMutation()
   const [requestAccountUpgrade] = useBusinessAccountUpgradeRequestMutation({
     refetchQueries: [HomeAuthedDocument],
@@ -114,11 +118,15 @@ export const useAccountUpgrade = () => {
         businessAddress: businessInfo.businessAddress,
         businessName: businessInfo.businessName,
         currency: bankInfo.currency,
-        email: personalInfo.email,
         fullName: personalInfo.fullName || "",
         idDocument: idDocument,
         level: accountType || "ONE",
         terminalRequested: businessInfo.terminalRequested,
+      }
+      if (!dataAuthed?.me?.email?.address && personalInfo.email) {
+        await registerUserEmail({
+          variables: { input: { email: personalInfo.email } },
+        })
       }
 
       const { data } = await requestAccountUpgrade({

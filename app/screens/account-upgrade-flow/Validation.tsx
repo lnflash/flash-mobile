@@ -15,6 +15,7 @@ import { useAppSelector } from "@app/store/redux"
 import {
   AccountLevel,
   HomeAuthedDocument,
+  useUserEmailRegistrationInitiateMutation,
   useUserLoginUpgradeMutation,
 } from "@app/graphql/generated"
 
@@ -26,14 +27,17 @@ type Props = StackScreenProps<RootStackParamList, "Validation">
 const Validation: React.FC<Props> = ({ navigation, route }) => {
   const { phone, channel } = route.params
   const styles = useStyles()
-  const { accountType, numOfSteps } = useAppSelector((state) => state.accountUpgrade)
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
   const { toggleActivityIndicator } = useActivityIndicator()
+  const { accountType, numOfSteps, personalInfo } = useAppSelector(
+    (state) => state.accountUpgrade,
+  )
 
   const [code, setCode] = useState<string>()
   const [errorMsg, setErrorMsg] = useState<string>()
 
+  const [registerUserEmail] = useUserEmailRegistrationInitiateMutation()
   const [userLoginUpgradeMutation] = useUserLoginUpgradeMutation({
     fetchPolicy: "no-cache",
     refetchQueries: [HomeAuthedDocument],
@@ -46,14 +50,19 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
         const { data } = await userLoginUpgradeMutation({
           variables: { input: { phone, code } },
         })
-        toggleActivityIndicator(false)
 
-        const success = data?.userLoginUpgrade?.success
-        const authToken = data?.userLoginUpgrade?.authToken
-        if (success) {
-          if (authToken) {
-            saveToken(authToken)
+        if (data?.userLoginUpgrade?.success) {
+          if (data?.userLoginUpgrade?.authToken) {
+            saveToken(data?.userLoginUpgrade?.authToken)
           }
+
+          // Save user email if provided
+          if (personalInfo.email && personalInfo.email.length > 0) {
+            await registerUserEmail({
+              variables: { input: { email: personalInfo.email } },
+            })
+          }
+
           if (accountType === AccountLevel.One) {
             navigation.replace("AccountUpgradeSuccess")
           } else {
@@ -65,6 +74,8 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
         setCode("")
       } catch (err) {
         setCode("")
+      } finally {
+        toggleActivityIndicator(false)
       }
     },
     [userLoginUpgradeMutation, saveToken, phone],
