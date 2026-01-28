@@ -3,38 +3,39 @@
 import "react-native-get-random-values"
 import React, { useEffect, useRef } from "react"
 import { View, Text } from "react-native"
-import { Icon, makeStyles } from "@rneui/themed"
+import { makeStyles } from "@rneui/themed"
 import { MessageType } from "@flyerhq/react-native-chat-ui"
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 import { useChatContext } from "./chatContext"
-import { fetchNostrUsers } from "@app/utils/nostr"
-import { Event, nip19, SubCloser } from "nostr-tools"
+import { Event, nip19 } from "nostr-tools"
 import { SUPPORT_AGENTS } from "@app/config/supportAgents"
+import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 
 type Props = {
   message: MessageType.Text
   nextMessage: number
   prevMessage: boolean
-  showSender?: boolean // ✅ Add this line
+  showSender?: boolean
 }
 
 const USER_COLORS = [
-  "#d32f2f", // deep red
-  "#388e3c", // dark green
-  "#1976d2", // blue
-  "#f57c00", // orange
-  "#7b1fa2", // purple
-  "#0097a7", // cyan
-  "#c2185b", // pink
-  "#512da8", // indigo
-  "#00796b", // teal
-  "#689f38", // lime green
-  "#5d4037", // brown
-  "#455a64", // blue-grey
-  "#0288d1", // sky blue
-  "#c62828", // crimson
-  "#fbc02d", // yellow (deep but readable)
+  "#d32f2f",
+  "#388e3c",
+  "#1976d2",
+  "#f57c00",
+  "#7b1fa2",
+  "#0097a7",
+  "#c2185b",
+  "#512da8",
+  "#00796b",
+  "#689f38",
+  "#5d4037",
+  "#455a64",
+  "#0288d1",
+  "#c62828",
+  "#fbc02d",
 ]
+
 function getColorForUserId(userId: string): string {
   let hash = 0
   for (let i = 0; i < userId.length; i++) {
@@ -44,34 +45,35 @@ function getColorForUserId(userId: string): string {
   return USER_COLORS[index]
 }
 
-export const ChatMessage: React.FC<Props> = ({
-  message,
-  showSender = false, // ✅ Default to false for backward compatibility
-}) => {
+export const ChatMessage: React.FC<Props> = ({ message, showSender = false }) => {
   const styles = useStyles()
   const isMounted = useRef(false)
 
-  const { profileMap, addEventToProfiles, poolRef } = useChatContext()
-
+  const { profileMap, addEventToProfiles } = useChatContext()
   const isAgent = SUPPORT_AGENTS.has(message.author.id)
 
   useEffect(() => {
     isMounted.current = true
     if (!showSender) return
     if (profileMap?.get(message.author.id)) return
-    if (!poolRef) return
-    else {
-      fetchNostrUsers([message.author.id], poolRef.current, (event: Event) => {
+
+    // ✅ Subscribe to profile event via nostrRuntime
+    const key = `profile:${message.author.id}`
+    nostrRuntime.ensureSubscription(
+      key,
+      [{ kinds: [0], authors: [message.author.id] }],
+      (event: Event) => {
         addEventToProfiles(event)
-      })
-    }
+      },
+    )
+
     return () => {
       isMounted.current = false
     }
-  }, [poolRef])
+  }, [showSender, message.author.id, addEventToProfiles, profileMap])
+
   return (
     <View style={styles.container}>
-      {/* ✅ Optional sender display */}
       {showSender && (
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
           <Text
@@ -125,7 +127,7 @@ const useStyles = makeStyles(({ colors }) => ({
     marginBottom: 6,
     paddingVertical: 2,
     borderRadius: 8,
-    backgroundColor: "#1976d2", // blue badge
+    backgroundColor: "#1976d2",
   },
   badgeText: {
     color: "white",

@@ -11,6 +11,8 @@ import { Event, finalizeEvent } from "nostr-tools"
 import { MessageType } from "@flyerhq/react-native-chat-ui"
 import { getSecretKey } from "@app/utils/nostr"
 import { useChatContext } from "../../../screens/chat/chatContext"
+import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
+import { pool } from "@app/utils/nostr/pool"
 
 // ===== Types =====
 export type NostrGroupChatProviderProps = {
@@ -56,7 +58,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   adminPubkeys,
   children,
 }) => {
-  const { poolRef, userPublicKey } = useChatContext()
+  const { userPublicKey } = useChatContext()
 
   // Internal message map ensures dedupe by id
   const [messagesMap, setMessagesMap] = useState<Map<string, MessageType.Text>>(new Map())
@@ -77,38 +79,33 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
 
   // ----- Sub: group messages (kind 9) -----
   useEffect(() => {
-    if (!poolRef?.current) return
-    const unsub = poolRef.current.subscribeMany(
-      relayUrls,
+    nostrRuntime.ensureSubscription(
+      `nip29:messages`,
       [
         {
           "#h": [groupId],
           "kinds": [9],
         },
       ],
-      {
-        onevent: (event: Event) => {
-          const msg: MessageType.Text = {
-            id: event.id,
-            author: { id: event.pubkey },
-            createdAt: event.created_at * 1000,
-            type: "text",
-            text: event.content,
-          }
-          setMessagesMap((prev) => {
-            if (prev.has(msg.id)) return prev
-            const next = new Map(prev)
-            next.set(msg.id, msg)
-            return next
-          })
-        },
+      (event: Event) => {
+        const msg: MessageType.Text = {
+          id: event.id,
+          author: { id: event.pubkey },
+          createdAt: event.created_at * 1000,
+          type: "text",
+          text: event.content,
+        }
+        setMessagesMap((prev) => {
+          if (prev.has(msg.id)) return prev
+          const next = new Map(prev)
+          next.set(msg.id, msg)
+          return next
+        })
       },
+      () => {},
+      relayUrls,
     )
-
-    return () => {
-      if (unsub) unsub.close()
-    }
-  }, [poolRef?.current, relayUrls.join("|"), groupId])
+  }, [relayUrls.join("|"), groupId])
 
   //metadata
   useEffect(() => {
@@ -122,34 +119,33 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       }
       return result
     }
-    const unsub = poolRef?.current.subscribeMany(
-      relayUrls,
+    const unsub = nostrRuntime.ensureSubscription(
+      `nip29:group_metadata`,
       [{ "kinds": [39000], "#d": [groupId] }],
-      {
-        onevent: (event) => {
-          console.log("==============GOT METADATA EVENT=============")
-          const parsed = parseGroupTags(event.tags)
-          setMetadata(parsed)
-        },
-        oneose: () => {
-          console.log("EOSE TRIGGERED FOR ", 39000)
-        },
+      (event) => {
+        console.log("==============GOT METADATA EVENT=============")
+        const parsed = parseGroupTags(event.tags)
+        setMetadata(parsed)
       },
+      () => {
+        console.log("EOSE TRIGGERED FOR ", 39000)
+      },
+      relayUrls,
     )
-    return () => unsub?.close()
-  }, [poolRef?.current, groupId])
+  }, [groupId])
 
   // ----- Sub: membership roster (kind 39002) -----
   useEffect(() => {
-    if (!poolRef?.current) return
     const filters: any = {
       "kinds": [39002],
       "#d": [groupId],
     }
     if (adminPubkeys?.length) filters.authors = adminPubkeys
 
-    const unsub = poolRef.current.subscribeMany(relayUrls, [filters], {
-      onevent: (event: any) => {
+    const unsub = nostrRuntime.ensureSubscription(
+      `nip29:membership`,
+      [filters],
+      (event: any) => {
         // Extract all `p` tags as pubkeys
         console.log("==============GOT MEMBERSHIP EVENT=============")
         const currentMembers: string[] = event.tags
@@ -202,23 +198,14 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
         // Update knownMembers state
         setKnownMembers(currentSet)
       },
-    })
-
-    return () => {
-      if (unsub) unsub.close()
-    }
-  }, [
-    poolRef?.current,
-    relayUrls.join("|"),
-    groupId,
-    userPublicKey,
-    adminPubkeys?.join("|"),
-  ])
+      () => {},
+      relayUrls,
+    )
+  }, [relayUrls.join("|"), groupId, userPublicKey, adminPubkeys?.join("|")])
 
   // ----- Actions -----
   const sendMessage = useCallback(
     async (text: string) => {
-      if (!poolRef?.current) throw Error("No PoolRef present")
       if (!userPublicKey) throw Error("No user pubkey present")
 
       const secretKey = await getSecretKey()
@@ -233,13 +220,12 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       }
 
       const signedEvent = finalizeEvent(nostrEvent as any, secretKey)
-      poolRef.current.publish(relayUrls, signedEvent)
+      pool.publish(relayUrls, signedEvent)
     },
-    [poolRef?.current, userPublicKey, groupId, relayUrls],
+    [userPublicKey, groupId, relayUrls],
   )
 
   const requestJoin = useCallback(async () => {
-    if (!poolRef?.current) throw Error("No PoolRef present")
     if (!userPublicKey) throw Error("No user pubkey present")
 
     const secretKey = await getSecretKey()
@@ -254,7 +240,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     }
 
     const signedJoinEvent = finalizeEvent(joinEvent as any, secretKey)
-    poolRef.current.publish(relayUrls, signedJoinEvent)
+    pool.publish(relayUrls, signedJoinEvent)
 
     // Optimistic system note
     setMessagesMap((prev) => {
@@ -262,7 +248,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       next.set(`sys-join-req-${Date.now()}`, makeSystemText("Join request sent"))
       return next
     })
-  }, [poolRef?.current, userPublicKey, groupId, relayUrls])
+  }, [userPublicKey, groupId, relayUrls])
 
   const value = useMemo<ContextValue>(
     () => ({
