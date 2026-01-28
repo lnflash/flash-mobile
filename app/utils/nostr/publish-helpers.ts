@@ -8,7 +8,7 @@ export async function publishEventToRelays(
   pool: SimplePool,
   event: Event,
   relays: string[],
-  eventLabel: string = "Event"
+  eventLabel: string = "Event",
 ): Promise<{
   successCount: number
   failedCount: number
@@ -117,17 +117,22 @@ export async function verifyEventOnRelays(
   pool: SimplePool,
   eventId: string,
   relays: string[],
-  eventKind?: number
+  eventKind?: number,
 ): Promise<{
   found: boolean
   foundOnRelays: string[]
   missingFromRelays: string[]
+  event: Event | null
 }> {
-  console.log(`\n🔍 Verifying ${eventKind === 0 ? "profile" : "event"} ${eventId} on ${relays.length} relays...`)
+  console.log(
+    `\n🔍 Verifying ${eventKind === 0 ? "profile" : "event"} ${eventId} on ${
+      relays.length
+    } relays...`,
+  )
 
   const foundOnRelays: string[] = []
   const missingFromRelays: string[] = []
-
+  let event: Event | null = null
   const verifyPromises = relays.map(async (relay) => {
     try {
       const filter: any = { ids: [eventId] }
@@ -135,9 +140,9 @@ export async function verifyEventOnRelays(
         filter.kinds = [eventKind]
       }
 
-      const event = await pool.get([relay], filter)
-
-      if (event && event.id === eventId) {
+      const eventFound = await pool.get([relay], filter)
+      event = eventFound
+      if (eventFound && eventFound.id === eventId) {
         console.log(`  ✅ Found on ${relay}`)
         foundOnRelays.push(relay)
       } else {
@@ -156,6 +161,7 @@ export async function verifyEventOnRelays(
     found: foundOnRelays.length > 0,
     foundOnRelays,
     missingFromRelays,
+    event,
   }
 
   console.log(`\n📊 Verification Summary:`)
@@ -171,10 +177,7 @@ export async function verifyEventOnRelays(
  * Gets the best relays for publishing based on purpose
  */
 export function getPublishingRelays(purpose: "profile" | "note" | "general"): string[] {
-  const coreRelays = [
-    "wss://relay.flashapp.me",
-    "wss://relay.islandbitcoin.com",
-  ]
+  const coreRelays = ["wss://relay.flashapp.me", "wss://relay.islandbitcoin.com"]
 
   const majorPublicRelays = [
     "wss://relay.damus.io",
@@ -182,15 +185,9 @@ export function getPublishingRelays(purpose: "profile" | "note" | "general"): st
     "wss://relay.snort.social",
   ]
 
-  const profileRelays = [
-    "wss://purplepag.es",
-    "wss://relay.nostr.band",
-  ]
+  const profileRelays = ["wss://purplepag.es", "wss://relay.nostr.band"]
 
-  const noteRelays = [
-    "wss://relay.current.fyi",
-    "wss://relay.nostrplebs.com",
-  ]
+  const noteRelays = ["wss://relay.current.fyi", "wss://relay.nostrplebs.com"]
 
   switch (purpose) {
     case "profile":
