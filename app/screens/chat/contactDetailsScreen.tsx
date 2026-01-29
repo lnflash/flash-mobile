@@ -233,7 +233,38 @@ const ContactDetailsScreen: React.FC = () => {
           {loadingPosts ? (
             <ActivityIndicator size="small" color={colors.primary} />
           ) : posts.length === 0 ? (
-            <Text>No posts yet</Text>
+            <View style={styles.emptyPostsContainer}>
+              <Icon
+                name={isBusiness ? "storefront-outline" : "chatbubble-outline"}
+                size={48}
+                color={colors.grey3}
+                style={{ marginBottom: 8 }}
+              />
+              <Text style={[styles.emptyPostsText, { color: colors.grey3 }]}>
+                {isBusiness ? "No business updates yet" : "No posts yet"}
+              </Text>
+              <TouchableOpacity
+                style={[styles.makePostCTA, { backgroundColor: colors.grey5 }]}
+                onPress={() => navigation.navigate("makeNostrPost")}
+                activeOpacity={0.7}
+              >
+                <Icon
+                  name="create-outline"
+                  size={24}
+                  color={colors.primary}
+                  style={{ marginRight: 12 }}
+                />
+                <View style={styles.makePostTextContainer}>
+                  <Text style={[styles.makePostTitle, { color: colors.black }]}>
+                    {LL.NostrQuickStart.postHeading()}
+                  </Text>
+                  <Text style={[styles.makePostDesc, { color: colors.grey3 }]}>
+                    {LL.NostrQuickStart.postDesc()}
+                  </Text>
+                </View>
+                <Icon name="chevron-forward" size={20} color={colors.grey3} />
+              </TouchableOpacity>
+            </View>
           ) : (
             posts.map((post) => (
               <FeedItem
@@ -269,6 +300,15 @@ const ContactDetailsScreen: React.FC = () => {
           onPress={handleUnfollow}
         >
           <Text style={{ color: "#FFF" }}>Unfollow</Text>
+        </TouchableOpacity>
+      )}
+      {posts.length > 0 && (
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.primary }]}
+          onPress={() => navigation.navigate("makeNostrPost")}
+          activeOpacity={0.8}
+        >
+          <Icon name="create" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       )}
     </Screen>
@@ -326,6 +366,54 @@ const useStyles = makeStyles(({ colors }) => ({
   postsSection: { padding: 12, marginTop: 8 },
   explainerVideo: { marginTop: 16, marginHorizontal: 8, marginBottom: 8 },
   unfollowButton: { padding: 16, borderRadius: 8, marginTop: 8, alignItems: "center" },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+
+  makePostCTA: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    marginHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  makePostTextContainer: { flex: 1 },
+
+  makePostTitle: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
+
+  makePostDesc: { fontSize: 13, lineHeight: 18 },
+
+  emptyPostsContainer: { alignItems: "center", paddingVertical: 20 },
+
+  emptyPostsText: { fontSize: 16, textAlign: "center", marginBottom: 16 },
+
+  postsSectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  postsCount: { fontSize: 14, fontWeight: "500" },
 }))
 
 export default ContactDetailsScreen
