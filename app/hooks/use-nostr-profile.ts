@@ -219,6 +219,7 @@ const useNostrProfile = () => {
           [
             "wss://relay.damus.io",
             "wss://relay.primal.net",
+            "wss://nos.lol",
             "wss://relay.islandbitcoin.com",
           ],
           0,
@@ -449,52 +450,6 @@ const useNostrProfile = () => {
     if (successfulRelays.length === 0) {
       console.error("❌ CRITICAL: Failed to publish profile to ANY relays!")
       throw new Error("Failed to publish profile to any relays")
-    }
-
-    console.log(`\n✨ Profile update completed with ${successCount} successful publishes`)
-
-    // Background retry for remaining failed relays
-    if (failedRelays.length > 0) {
-      console.log(
-        `⏰ Scheduling background retry for ${failedRelays.length} failed relays in 5 seconds...`,
-      )
-      setTimeout(() => {
-        console.log("🔄 Starting background retry for failed relays...")
-        retryFailedRelays(signedKind0Event, failedRelays)
-      }, 5000)
-    }
-
-    // Verify profile propagation after 3 seconds
-    if (successfulRelays.length > 0) {
-      setTimeout(async () => {
-        console.log("\n🔍 Starting profile propagation verification...")
-
-        // Use the new verification helper
-        const verifyRelays = [
-          "wss://relay.flashapp.me",
-          "wss://relay.islandbitcoin.com",
-          "wss://relay.damus.io",
-          "wss://relay.primal.net",
-        ]
-
-        const verification = await verifyEventOnRelays(
-          pool,
-          signedKind0Event.id,
-          verifyRelays,
-          0, // kind-0 for profile
-        )
-
-        if (verification.found) {
-          console.log(
-            `✅ Profile verified on ${verification.foundOnRelays.length} critical relays`,
-          )
-          console.log("Profile available on:", verification.foundOnRelays.join(", "))
-        } else {
-          console.log(
-            "⚠️ WARNING: Profile verification failed - not found on any critical relay",
-          )
-        }
-      }, 3000)
     }
 
     return { successCount, totalRelays: publicRelays.length, successfulRelays }

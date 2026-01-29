@@ -135,9 +135,17 @@ export const NostrSettingsScreen = () => {
               if (isGenerating) return
               setIsGenerating(true)
               setProgressMessage("Creating Nostr profile...")
-              let newSecret = await saveNewNostrKey((message) => {
-                setProgressMessage(message)
-              })
+              let newSecret = await saveNewNostrKey(
+                (message) => {
+                  setProgressMessage(message)
+                },
+                {
+                  name: dataAuthed?.me?.username,
+                  username: dataAuthed?.me?.username,
+                  lud16: `${dataAuthed?.me?.username}@${lnDomain}`,
+                  nip05: `${dataAuthed?.me?.username}@${lnDomain}`,
+                },
+              )
               setSecretKey(newSecret)
               setIsGenerating(false)
               setProgressMessage("")
@@ -151,7 +159,9 @@ export const NostrSettingsScreen = () => {
               style={{ marginRight: 10, opacity: isGenerating ? 0.5 : 1 }}
             />
             <Text style={{ color: colors.white, fontWeight: "bold" }}>
-              {isGenerating ? progressMessage || LL.Nostr.creatingProfile() : LL.Nostr.createNewProfile()}
+              {isGenerating
+                ? progressMessage || LL.Nostr.creatingProfile()
+                : LL.Nostr.createNewProfile()}
             </Text>
           </Pressable>
         </View>
