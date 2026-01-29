@@ -1,7 +1,8 @@
 // nostr/signer/localSigner.ts
-import { getPublicKey, signEvent, nip04, nip44 } from "nostr-tools"
+import { getPublicKey, finalizeEvent, nip04, nip44, nip19 } from "nostr-tools"
 import { EventTemplate } from "nostr-tools"
 import { NostrSigner } from "./types"
+import { bytesToHex } from "@noble/curves/abstract/utils"
 
 export class LocalSigner implements NostrSigner {
   constructor(private readonly sk: Uint8Array) {}
@@ -11,7 +12,11 @@ export class LocalSigner implements NostrSigner {
   }
 
   async signEvent(event: EventTemplate) {
-    return signEvent(event, this.sk)
+    return finalizeEvent(event, this.sk)
+  }
+
+  async getSecretKeyNsec() {
+    return nip19.nsecEncode(this.sk)
   }
 
   nip04 = {
@@ -25,7 +30,7 @@ export class LocalSigner implements NostrSigner {
   nip44 = {
     encrypt: async (pubkey: string, plaintext: string) => {
       const conversationKey = nip44.v2.utils.getConversationKey(
-        bytestToHex(this.sk),
+        bytesToHex(this.sk),
         pubkey,
       )
       return nip44.v2.encrypt(plaintext, conversationKey)
@@ -33,13 +38,10 @@ export class LocalSigner implements NostrSigner {
 
     decrypt: async (pubkey: string, ciphertext: string) => {
       const conversationKey = nip44.v2.utils.getConversationKey(
-        bytestToHex(this.sk),
+        bytesToHex(this.sk),
         pubkey,
       )
       return nip44.v2.decrypt(ciphertext, conversationKey)
     },
   }
-}
-function bytestToHex(sk: Uint8Array<ArrayBufferLike>): string {
-  throw new Error("Function not implemented.")
 }

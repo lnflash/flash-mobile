@@ -24,7 +24,17 @@ export async function getSigner(): Promise<NostrSigner> {
   return initializing
 }
 
+/**
+ * Creates a temporary signer from a secret key.
+ * Used during key generation before the key is stored.
+ */
+export function createSignerFromKey(sk: Uint8Array): NostrSigner {
+  return new LocalSigner(sk)
+}
+
 export function clearSigner() {
   signer = null
   initializing = null
 }
+
+export type { NostrSigner } from "./types"

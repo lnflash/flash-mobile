@@ -44,9 +44,11 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { logPaymentAttempt, logPaymentResult } from "@app/utils/analytics"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { useChatContext } from "../chat/chatContext"
-import { addToContactList, getSecretKey } from "@app/utils/nostr"
+import { addToContactList } from "@app/utils/nostr"
+import { pool } from "@app/utils/nostr/pool"
 import { nip19 } from "nostr-tools"
 import { useRequireContactList } from "./require-contact-list-modal"
+import { getSigner } from "@app/nostr/signer"
 
 type Props = {} & StackScreenProps<RootStackParamList, "sendBitcoinConfirmation">
 
@@ -75,7 +77,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   const [paymentError, setPaymentError] = useState<string>()
   const [invalidAmountErr, setInvalidAmountErr] = useState<string>()
   const [fee, setFee] = useState<FeeType>({ status: "loading" })
-  const { contactsEvent, poolRef } = useChatContext()
+  const { contactsEvent } = useChatContext()
   const [npubByUsernameQuery] = useNpubByUsernameLazyQuery()
   const { promptForContactList, ModalComponent: ConfirmOverwriteModal } =
     useRequireContactList()
@@ -160,7 +162,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   }
 
   const autoAddContact = useCallback(async () => {
-    if (!flashUserAddress || !poolRef) return
+    if (!flashUserAddress) return
 
     try {
       const flashUsername = flashUserAddress.split("@")[0]
@@ -171,26 +173,19 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
       const destinationNpub = queryResult.data?.npubByUsername?.npub
       if (!destinationNpub) return
 
-      const secretKey = await getSecretKey()
-      if (!secretKey) return
+      const signer = await getSigner()
 
       await addToContactList(
-        secretKey,
+        signer,
         nip19.decode(destinationNpub).data as string,
-        poolRef.current,
+        pool,
         promptForContactList,
         contactsEvent,
       )
     } catch (err) {
       console.warn("Failed to auto-add flash user to contacts", err)
     }
-  }, [
-    flashUserAddress,
-    poolRef,
-    npubByUsernameQuery,
-    promptForContactList,
-    contactsEvent,
-  ])
+  }, [flashUserAddress, npubByUsernameQuery, promptForContactList, contactsEvent])
 
   const handleSendPayment = useCallback(async () => {
     if (sendPayment && sendingWalletDescriptor?.currency) {

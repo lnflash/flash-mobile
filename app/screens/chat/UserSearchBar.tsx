@@ -1,19 +1,14 @@
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { SearchBar } from "@rneui/themed"
-import { Event, getPublicKey, nip05, nip19, SubCloser } from "nostr-tools"
-import { useCallback, useEffect, useState } from "react"
+import { Event, nip05, nip19, SubCloser } from "nostr-tools"
+import { useCallback, useState } from "react"
 import { useChatContext } from "./chatContext"
-import {
-  fetchNostrUsers,
-  fetchSecretFromLocalStorage,
-  getGroupId,
-} from "@app/utils/nostr"
-import { hexToBytes } from "@noble/curves/abstract/utils"
+import { fetchNostrUsers, getGroupId } from "@app/utils/nostr"
 import { useStyles } from "./style"
-import { Alert } from "react-native"
 import { useAppConfig } from "@app/hooks"
 import { testProps } from "@app/utils/testProps"
 import Icon from "react-native-vector-icons/Ionicons"
+import { pool } from "@app/utils/nostr/pool"
 
 interface UserSearchBarProps {
   setSearchedUsers: (q: Chat[]) => void
@@ -21,9 +16,8 @@ interface UserSearchBarProps {
 
 export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }) => {
   const [searchText, setSearchText] = useState("")
-  const { rumors, poolRef, addEventToProfiles, profileMap } = useChatContext()
+  const { addEventToProfiles, profileMap, userPublicKey } = useChatContext()
   const [refreshing, setRefreshing] = useState(false)
-  const [privateKey, setPrivateKey] = useState<Uint8Array | null>(null)
   const styles = useStyles()
   const { appConfig } = useAppConfig()
 
@@ -33,21 +27,13 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
     setRefreshing(false)
   }, [])
 
-  useEffect(() => {
-    const initialize = async () => {
-      let secretKeyString = await fetchSecretFromLocalStorage()
-      if (secretKeyString) setPrivateKey(nip19.decode(secretKeyString).data as Uint8Array)
-    }
-    initialize()
-  }, [])
-
   const { LL } = useI18nContext()
 
   const searchedUsersHandler = (event: Event, closer: SubCloser) => {
-    let nostrProfile = JSON.parse(event.content)
+    if (!userPublicKey) return
+    const nostrProfile = JSON.parse(event.content)
     addEventToProfiles(event)
-    let userPubkey = getPublicKey(privateKey!)
-    let participants = [event.pubkey, userPubkey]
+    const participants = [event.pubkey, userPublicKey]
     setSearchedUsers([
       { ...nostrProfile, id: event.pubkey, groupId: getGroupId(participants) },
     ])
@@ -56,14 +42,14 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
 
   const updateSearchResults = useCallback(
     async (newSearchText: string) => {
+      if (!userPublicKey) return
       if (newSearchText === "") reset()
       const nip05Matching = async (alias: string) => {
-        let nostrUser = await nip05.queryProfile(alias.toLocaleLowerCase())
+        const nostrUser = await nip05.queryProfile(alias.toLocaleLowerCase())
         console.log("nostr user for", alias, nostrUser)
         if (nostrUser) {
-          let nostrProfile = profileMap?.get(nostrUser.pubkey)
-          let userPubkey = getPublicKey(privateKey!)
-          let participants = [nostrUser.pubkey, userPubkey]
+          const nostrProfile = profileMap?.get(nostrUser.pubkey)
+          const participants = [nostrUser.pubkey, userPublicKey]
           setSearchedUsers([
             {
               id: nostrUser.pubkey,
@@ -72,8 +58,7 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
               groupId: getGroupId(participants),
             },
           ])
-          if (!nostrProfile)
-            fetchNostrUsers([nostrUser.pubkey], poolRef!.current, searchedUsersHandler)
+          if (!nostrProfile) fetchNostrUsers([nostrUser.pubkey], pool, searchedUsersHandler)
           return true
         }
         return false
@@ -85,11 +70,10 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
       setRefreshing(true)
       setSearchText(newSearchText)
       if (newSearchText.startsWith("npub1") && newSearchText.length == 63) {
-        let hexPubkey = nip19.decode(newSearchText).data as string
-        let userPubkey = getPublicKey(privateKey!)
-        let participants = [hexPubkey, userPubkey]
+        const hexPubkey = nip19.decode(newSearchText).data as string
+        const participants = [hexPubkey, userPublicKey]
         setSearchedUsers([{ id: hexPubkey, groupId: getGroupId(participants) }])
-        fetchNostrUsers([hexPubkey], poolRef!.current, searchedUsersHandler)
+        fetchNostrUsers([hexPubkey], pool, searchedUsersHandler)
         setRefreshing(false)
         return
       } else if (newSearchText.match(aliasPattern)) {
@@ -98,7 +82,7 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
           return
         }
       } else if (!newSearchText.includes("@")) {
-        let modifiedSearchText =
+        const modifiedSearchText =
           newSearchText + "@" + appConfig.galoyInstance.lnAddressHostname
         console.log("Searching for", modifiedSearchText)
         if (await nip05Matching(modifiedSearchText)) {
@@ -107,10 +91,10 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
         }
       }
     },
-    [privateKey],
+    [userPublicKey],
   )
 
-  return privateKey ? (
+  return userPublicKey ? (
     <SearchBar
       {...testProps(LL.common.chatSearch())}
       placeholder={LL.common.chatSearch()}

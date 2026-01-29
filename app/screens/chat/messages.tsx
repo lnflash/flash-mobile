@@ -15,24 +15,22 @@ import { isIos } from "@app/utils/helper"
 import { Chat, MessageType, defaultTheme } from "@flyerhq/react-native-chat-ui"
 import { ChatMessage } from "./chatMessage"
 import Icon from "react-native-vector-icons/Ionicons"
-import { getPublicKey, nip19, Event } from "nostr-tools"
+import { nip19, Event } from "nostr-tools"
 import { Rumor, convertRumorsToGroups, sendNip17Message } from "@app/utils/nostr"
 import { useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { updateLastSeen } from "./utils"
-import { hexToBytes } from "@noble/hashes/utils"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
-import { pool } from "@app/utils/nostr/pool"
+import { getSigner } from "@app/nostr/signer"
 
 type MessagesProps = {
   route: RouteProp<ChatStackParamList, "messages">
 }
 
 export const Messages: React.FC<MessagesProps> = ({ route }) => {
-  const userPrivateKeyBytes = hexToBytes(route.params.userPrivateKey)
-  const userPubkey = getPublicKey(userPrivateKeyBytes)
   const groupId = route.params.groupId
+  const { userPublicKey } = useChatContext()
   const [profileMap, setProfileMap] = useState<Map<string, NostrProfile>>(new Map())
   const [preferredRelaysMap, setPreferredRelaysMap] = useState<Map<string, string[]>>(
     new Map(),
@@ -58,13 +56,16 @@ export const Messages: React.FC<MessagesProps> = ({ route }) => {
     )
   }, [groupId])
 
+  if (!userPublicKey) {
+    return <ActivityIndicator />
+  }
+
   return (
     <MessagesScreen
-      userPubkey={userPubkey}
+      userPubkey={userPublicKey}
       groupId={groupId}
       profileMap={profileMap}
       preferredRelaysMap={preferredRelaysMap}
-      userPrivateKey={userPrivateKeyBytes}
     />
   )
 }
@@ -72,14 +73,12 @@ export const Messages: React.FC<MessagesProps> = ({ route }) => {
 type MessagesScreenProps = {
   groupId: string
   userPubkey: string
-  userPrivateKey: Uint8Array
   profileMap: Map<string, NostrProfile>
   preferredRelaysMap: Map<string, string[]>
 }
 
 export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   userPubkey,
-  userPrivateKey,
   groupId,
   profileMap,
   preferredRelaysMap,
@@ -136,10 +135,12 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
       }
     }
 
+    const signer = await getSigner()
     const result = await sendNip17Message(
       groupId.split(","),
       message.text,
       preferredRelaysMap,
+      signer,
       onSent,
     )
 

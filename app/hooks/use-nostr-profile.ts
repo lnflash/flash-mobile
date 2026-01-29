@@ -1,12 +1,6 @@
 import * as Keychain from "react-native-keychain"
-import {
-  nip19,
-  generateSecretKey,
-  getPublicKey,
-  SimplePool,
-  finalizeEvent,
-} from "nostr-tools"
-import { createContactListEvent, getSecretKey, setPreferredRelay } from "@app/utils/nostr"
+import { nip19, generateSecretKey, getPublicKey } from "nostr-tools"
+import { createContactListEvent, setPreferredRelay } from "@app/utils/nostr"
 import {
   publishEventToRelays,
   verifyEventOnRelays,
@@ -22,7 +16,7 @@ import {
   generateGradientBanner,
 } from "@app/utils/nostr/image-generation"
 import { uploadToNostrBuild } from "@app/utils/nostr/media-upload"
-import Config from "react-native-config"
+import { getSigner, createSignerFromKey } from "@app/nostr/signer"
 
 export interface ChatInfo {
   pubkeys: string[]
@@ -80,16 +74,19 @@ const useNostrProfile = () => {
     const username = dataAuthed?.me?.username || undefined
     let lud16
     if (username) lud16 = `${username}@${lnDomain}`
-    let secretKey = generateSecretKey()
+    const secretKey = generateSecretKey()
     const nostrSecret = nip19.nsecEncode(secretKey)
-    let newNpub = nip19.npubEncode(getPublicKey(secretKey))
+    const newNpub = nip19.npubEncode(getPublicKey(secretKey))
+
+    // Create a temporary signer for use during key generation
+    const tempSigner = createSignerFromKey(secretKey)
 
     console.log("🔑 Creating new Nostr key...")
     console.log("Username:", username || "(no username yet)")
     console.log("NPub:", newNpub)
     progressCallback?.("Creating Nostr profile...")
 
-    const { data } = await userUpdateNpubMutation({
+    await userUpdateNpubMutation({
       variables: {
         input: {
           npub: newNpub,
@@ -102,8 +99,8 @@ const useNostrProfile = () => {
       KEYCHAIN_NOSTRCREDS_KEY,
       nostrSecret,
     )
-    await setPreferredRelay(secretKey)
-    await createContactListEvent(secretKey)
+    await setPreferredRelay(tempSigner)
+    await createContactListEvent(tempSigner)
 
     // Generate profile images automatically
     let pictureUrl: string | undefined
@@ -113,7 +110,7 @@ const useNostrProfile = () => {
     progressCallback?.("Generating profile picture...")
 
     try {
-      const pubKey = getPublicKey(secretKey)
+      const pubKey = await tempSigner.getPublicKey()
 
       // Generate avatar
       console.log("Generating RoboHash avatar...")
@@ -127,13 +124,13 @@ const useNostrProfile = () => {
       // Upload avatar
       progressCallback?.("Uploading profile picture...")
       console.log("Uploading avatar to nostr.build...")
-      pictureUrl = await uploadToNostrBuild(avatarUri, nostrSecret, false)
+      pictureUrl = await uploadToNostrBuild(avatarUri, tempSigner, false)
       console.log("Avatar uploaded:", pictureUrl)
 
       // Upload banner
       progressCallback?.("Uploading banner image...")
       console.log("Uploading banner to nostr.build...")
-      bannerUrl = await uploadToNostrBuild(bannerUri, nostrSecret, false)
+      bannerUrl = await uploadToNostrBuild(bannerUri, tempSigner, false)
       console.log("Banner uploaded:", bannerUrl)
     } catch (error) {
       console.error(
@@ -180,16 +177,14 @@ const useNostrProfile = () => {
       )
 
       // Create and publish the profile event
-      const pubKey = getPublicKey(secretKey)
       const kind0Event = {
         kind: 0,
-        pubkey: pubKey,
         content: JSON.stringify(profileContent),
         tags: [],
         created_at: Math.floor(Date.now() / 1000),
       }
 
-      const signedKind0Event = finalizeEvent(kind0Event, secretKey)
+      const signedKind0Event = await tempSigner.signEvent(kind0Event)
       console.log("Profile event signed with ID:", signedKind0Event.id)
 
       // Get appropriate relays and publish
@@ -245,12 +240,8 @@ const useNostrProfile = () => {
     try {
       progressCallback?.("Generating profile picture...")
 
-      const secret = await getSecretKey()
-      if (!secret) {
-        throw new Error("No Nostr profile found. Please create a Nostr profile first.")
-      }
-
-      const pubKey = getPublicKey(secret)
+      const signer = await getSigner()
+      const pubKey = await signer.getPublicKey()
 
       // Generate images
       console.log("Generating RoboHash avatar...")
@@ -263,19 +254,11 @@ const useNostrProfile = () => {
       // Upload to nostr.build
       progressCallback?.("Uploading profile picture...")
       console.log("Uploading avatar to nostr.build...")
-      const pictureUrl = await uploadToNostrBuild(
-        avatarUri,
-        nip19.nsecEncode(secret),
-        false,
-      )
+      const pictureUrl = await uploadToNostrBuild(avatarUri, signer, false)
 
       progressCallback?.("Uploading banner image...")
       console.log("Uploading banner to nostr.build...")
-      const bannerUrl = await uploadToNostrBuild(
-        bannerUri,
-        nip19.nsecEncode(secret),
-        false,
-      )
+      const bannerUrl = await uploadToNostrBuild(bannerUri, signer, false)
 
       // Update profile with new images
       progressCallback?.("Updating profile...")
@@ -383,10 +366,12 @@ const useNostrProfile = () => {
     const publicRelays = getPublishingRelays("profile")
     console.log(`📡 Will publish to ${publicRelays.length} relays`)
 
-    let secret = await getSecretKey()
-    if (!secret) {
+    let signer
+    try {
+      signer = await getSigner()
+    } catch {
       if (dataAuthed && dataAuthed.me && !dataAuthed.me.npub) {
-        console.log("No secret key found, creating new profile with provided content...")
+        console.log("No signer found, creating new profile with provided content...")
         await saveNewNostrKey(undefined, content)
         console.log("Profile created with images and content, returning early")
         // Return early - saveNewNostrKey already published the profile with images
@@ -395,18 +380,17 @@ const useNostrProfile = () => {
         throw Error("Could not verify npub")
       }
     }
-    let pubKey = getPublicKey(secret)
+    const pubKey = await signer.getPublicKey()
     console.log(`🔑 Publishing with pubkey: ${pubKey}`)
 
     const kind0Event = {
       kind: 0,
-      pubkey: pubKey,
       content: JSON.stringify(content),
       tags: [],
       created_at: Math.floor(Date.now() / 1000),
     }
 
-    const signedKind0Event = finalizeEvent(kind0Event, secret)
+    const signedKind0Event = await signer.signEvent(kind0Event)
     console.log(`✍️ Event signed with id: ${signedKind0Event.id}`)
 
     // Use the new helper function for publishing

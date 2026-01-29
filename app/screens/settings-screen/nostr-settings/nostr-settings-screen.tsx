@@ -1,9 +1,8 @@
 import { View, Pressable } from "react-native"
 import { Switch, Text, useTheme } from "@rneui/themed"
 import { useEffect, useState } from "react"
-import { getPublicKey, nip19 } from "nostr-tools"
+import { nip19 } from "nostr-tools"
 import Ionicons from "react-native-vector-icons/Ionicons"
-import { getSecretKey } from "@app/utils/nostr"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useNavigation } from "@react-navigation/native"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
@@ -15,14 +14,15 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useStyles } from "./styles"
 import { ProfileHeader } from "./profile-header"
 import { AdvancedSettings } from "./advanced-settings"
-import { bytesToHex } from "@noble/curves/abstract/utils"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { ManualRepublishButton } from "./manual-republish-button"
+import { getSigner, NostrSigner } from "@app/nostr/signer"
 
 export const NostrSettingsScreen = () => {
   const { LL } = useI18nContext()
-  const [secretKey, setSecretKey] = useState<Uint8Array | null>(null)
+  const [signer, setSigner] = useState<NostrSigner | null>(null)
+  const [userPubkey, setUserPubkey] = useState<string | null>(null)
   const [linked, setLinked] = useState<boolean | null>(null)
   const [expandAdvanced, setExpandAdvanced] = useState(false)
 
@@ -50,27 +50,28 @@ export const NostrSettingsScreen = () => {
 
   useEffect(() => {
     const initialize = async () => {
-      let secret
-      if (!secretKey) {
-        secret = await getSecretKey()
-        setSecretKey(secret)
-      } else {
-        secret = secretKey
+      let currentSigner = signer
+      if (!currentSigner) {
+        try {
+          currentSigner = await getSigner()
+          setSigner(currentSigner)
+        } catch {
+          return
+        }
       }
-      if (secret && dataAuthed?.me?.npub === nip19.npubEncode(getPublicKey(secret))) {
+      const pubkey = await currentSigner.getPublicKey()
+      setUserPubkey(pubkey)
+      if (dataAuthed?.me?.npub === nip19.npubEncode(pubkey)) {
         setLinked(true)
       } else {
         setLinked(false)
       }
     }
     initialize()
-  }, [secretKey, dataAuthed])
+  }, [signer, dataAuthed])
 
   const { saveNewNostrKey } = useNostrProfile()
-  let nostrPubKey = ""
-  if (secretKey) {
-    nostrPubKey = nip19.npubEncode(getPublicKey(secretKey as Uint8Array))
-  }
+  const nostrPubKey = userPubkey ? nip19.npubEncode(userPubkey) : ""
 
   const {
     theme: { colors },
@@ -94,7 +95,7 @@ export const NostrSettingsScreen = () => {
   }
 
   const renderEmptyContent = () => {
-    if (!secretKey) {
+    if (!signer) {
       return (
         <View
           style={[
@@ -135,7 +136,7 @@ export const NostrSettingsScreen = () => {
               if (isGenerating) return
               setIsGenerating(true)
               setProgressMessage("Creating Nostr profile...")
-              let newSecret = await saveNewNostrKey(
+              await saveNewNostrKey(
                 (message) => {
                   setProgressMessage(message)
                 },
@@ -146,7 +147,15 @@ export const NostrSettingsScreen = () => {
                   nip05: `${dataAuthed?.me?.username}@${lnDomain}`,
                 },
               )
-              setSecretKey(newSecret)
+              // Re-initialize to get the new signer
+              try {
+                const newSigner = await getSigner()
+                setSigner(newSigner)
+                const pubkey = await newSigner.getPublicKey()
+                setUserPubkey(pubkey)
+              } catch (e) {
+                console.error("Failed to get signer after key creation", e)
+              }
               setIsGenerating(false)
               setProgressMessage("")
             }}
@@ -210,7 +219,7 @@ export const NostrSettingsScreen = () => {
           </Pressable>
           <AdvancedSettings
             expandAdvanced={expandAdvanced}
-            secretKeyHex={bytesToHex(secretKey)}
+            signer={signer}
             onReconnect={async () => {
               await refetch()
             }}

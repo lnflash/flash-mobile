@@ -2,11 +2,14 @@ import React, { useState } from "react"
 import { Pressable, ActivityIndicator, Alert } from "react-native"
 import { Text, useTheme } from "@rneui/themed"
 import Ionicons from "react-native-vector-icons/Ionicons"
-import { getSecretKey } from "@app/utils/nostr"
-import { getPublicKey, finalizeEvent } from "nostr-tools"
 import { pool } from "@app/utils/nostr/pool"
-import { publishEventToRelays, verifyEventOnRelays, getPublishingRelays } from "@app/utils/nostr/publish-helpers"
+import {
+  publishEventToRelays,
+  verifyEventOnRelays,
+  getPublishingRelays,
+} from "@app/utils/nostr/publish-helpers"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { getSigner } from "@app/nostr/signer"
 
 interface ManualRepublishButtonProps {
   username?: string | null
@@ -32,21 +35,16 @@ export const ManualRepublishButton: React.FC<ManualRepublishButtonProps> = ({
     setIsPublishing(true)
 
     try {
-      const secretKey = await getSecretKey()
-      if (!secretKey) {
-        Alert.alert("Error", "No Nostr key found. Please create a profile first.")
-        return
-      }
-
-      const pubKey = getPublicKey(secretKey)
+      const signer = await getSigner()
+      const pubKey = await signer.getPublicKey()
       const lud16 = `${username}@${lnDomain}`
-      const nip05 = `${username}@${lnDomain}`
+      const nip05Value = `${username}@${lnDomain}`
 
       console.log("\n🔄 MANUAL PROFILE REPUBLISH")
-      console.log("=" .repeat(60))
+      console.log("=".repeat(60))
       console.log("Username:", username)
       console.log("Lightning address:", lud16)
-      console.log("NIP-05:", nip05)
+      console.log("NIP-05:", nip05Value)
       console.log("Pubkey:", pubKey)
 
       // Create profile content
@@ -55,20 +53,19 @@ export const ManualRepublishButton: React.FC<ManualRepublishButtonProps> = ({
         username: username,
         flash_username: username,
         lud16: lud16,
-        nip05: nip05,
+        nip05: nip05Value,
         about: `Flash user - ${username}`,
       }
 
       // Create kind-0 event
       const kind0Event = {
         kind: 0,
-        pubkey: pubKey,
         content: JSON.stringify(profileContent),
         tags: [],
         created_at: Math.floor(Date.now() / 1000),
       }
 
-      const signedEvent = finalizeEvent(kind0Event, secretKey)
+      const signedEvent = await signer.signEvent(kind0Event)
       console.log("Event signed with ID:", signedEvent.id)
 
       // Get relays and publish
