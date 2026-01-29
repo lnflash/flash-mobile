@@ -3,36 +3,26 @@ import { FlatList, Text, View, ActivityIndicator } from "react-native"
 import { useStyles } from "./style"
 import { useChatContext } from "./chatContext"
 import { Event } from "nostr-tools"
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native"
+import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
-import { ChatStackParamList, RootStackParamList } from "@app/navigation/stack-param-lists"
+import { ChatStackParamList } from "@app/navigation/stack-param-lists"
 import { UserSearchBar } from "./UserSearchBar"
 import { SearchListItem } from "./searchListItem"
-import { hexToBytes } from "@noble/curves/abstract/utils"
 import { getContactsFromEvent } from "./utils"
 import ContactCard from "./contactCard"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 
-// Route params type
-type ContactsRouteProp = RouteProp<RootStackParamList, "Contacts">
-
-interface ContactsProps {
-  userPrivateKey?: string
-}
-
-const Contacts: React.FC<ContactsProps> = ({ userPrivateKey: propKey }) => {
+const Contacts: React.FC = () => {
   const baseStyles = useStyles()
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
-  const { profileMap, contactsEvent, addEventToProfiles } = useChatContext()
+  const { profileMap, contactsEvent, addEventToProfiles, userPublicKey } = useChatContext()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
-  const route = useRoute<ContactsRouteProp>()
   const { theme } = useTheme()
   const colors = theme.colors
   const { LL } = useI18nContext()
 
-  const realUserKey = propKey || route.params?.userPrivateKey
   const [showAltMessage, setShowAltMessage] = useState(false)
 
   // Show alternative message if loading takes too long
@@ -57,8 +47,8 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey: propKey }) => {
     )
   }, [contactsEvent])
 
-  // Safety check: if we still don't have a key
-  if (!realUserKey) {
+  // Safety check: if we still don't have a pubkey
+  if (!userPublicKey) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -89,7 +79,6 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey: propKey }) => {
   const navigateToContactDetails = (contactPubkey: string) => {
     navigation.navigate("contactDetails", {
       contactPubkey,
-      userPrivateKey: realUserKey,
     })
   }
 
@@ -102,12 +91,7 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey: propKey }) => {
           contentContainerStyle={styles.listContainer}
           data={searchedUsers}
           ListEmptyComponent={ListEmptyContent}
-          renderItem={({ item }) => (
-            <SearchListItem
-              item={item}
-              userPrivateKey={hexToBytes(realUserKey) as Uint8Array}
-            />
-          )}
+          renderItem={({ item }) => <SearchListItem item={item} />}
           keyExtractor={(item) => item.id}
         />
       ) : contactsEvent ? (

@@ -7,12 +7,12 @@ import React, {
   useRef,
   useState,
 } from "react"
-import { Event, finalizeEvent } from "nostr-tools"
+import { Event } from "nostr-tools"
 import { MessageType } from "@flyerhq/react-native-chat-ui"
-import { getSecretKey } from "@app/utils/nostr"
 import { useChatContext } from "../../../screens/chat/chatContext"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { pool } from "@app/utils/nostr/pool"
+import { getSigner } from "@app/nostr/signer"
 
 // ===== Types =====
 export type NostrGroupChatProviderProps = {
@@ -208,18 +208,16 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     async (text: string) => {
       if (!userPublicKey) throw Error("No user pubkey present")
 
-      const secretKey = await getSecretKey()
-      if (!secretKey) throw Error("Could not get Secret Key")
+      const signer = await getSigner()
 
       const nostrEvent = {
         kind: 9,
         created_at: Math.floor(Date.now() / 1000),
         tags: [["h", groupId, relayUrls[0]]], // include relay hint
         content: text,
-        pubkey: userPublicKey,
       }
 
-      const signedEvent = finalizeEvent(nostrEvent as any, secretKey)
+      const signedEvent = await signer.signEvent(nostrEvent)
       pool.publish(relayUrls, signedEvent)
     },
     [userPublicKey, groupId, relayUrls],
@@ -228,18 +226,16 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   const requestJoin = useCallback(async () => {
     if (!userPublicKey) throw Error("No user pubkey present")
 
-    const secretKey = await getSecretKey()
-    if (!secretKey) throw Error("Could not get Secret Key")
+    const signer = await getSigner()
 
     const joinEvent = {
       kind: 9021,
       created_at: Math.floor(Date.now() / 1000),
       tags: [["h", groupId]],
       content: "I'd like to join this group.",
-      pubkey: userPublicKey,
     }
 
-    const signedJoinEvent = finalizeEvent(joinEvent as any, secretKey)
+    const signedJoinEvent = await signer.signEvent(joinEvent)
     pool.publish(relayUrls, signedJoinEvent)
 
     // Optimistic system note

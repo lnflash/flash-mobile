@@ -3,8 +3,7 @@ import { Text, useTheme } from "@rneui/themed"
 import { useStyles } from "./styles"
 import Ionicons from "react-native-vector-icons/Ionicons"
 import { useState } from "react"
-import { hexToBytes } from "@noble/curves/abstract/utils"
-import { getPublicKey, nip19 } from "nostr-tools"
+import { nip19 } from "nostr-tools"
 import { useUserUpdateNpubMutation } from "@app/graphql/generated"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { ImportNsecModal } from "@app/components/import-nsec/import-nsec-modal"
@@ -15,10 +14,11 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { createContactListEvent } from "@app/utils/nostr"
+import { NostrSigner } from "@app/nostr/signer"
 
 interface AdvancedSettingsProps {
   expandAdvanced: boolean
-  secretKeyHex: string
+  signer: NostrSigner
   copyToClipboard: (text: string, onSuccess?: (copied: boolean) => void) => void
   onReconnect: () => Promise<void>
   accountLinked: boolean | null
@@ -26,7 +26,7 @@ interface AdvancedSettingsProps {
 
 export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   expandAdvanced,
-  secretKeyHex,
+  signer,
   copyToClipboard,
   onReconnect,
   accountLinked,
@@ -37,8 +37,8 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   } = useTheme()
   const { LL } = useI18nContext()
 
-  // Grab contactsEvent and pool from context
-  const { resetChat, refreshUserProfile, contactsEvent, poolRef } = useChatContext()
+  // Grab contactsEvent from context
+  const { resetChat, refreshUserProfile, contactsEvent } = useChatContext()
 
   const [showSecretModal, setShowSecretModal] = useState(false)
   const [keysModalType, setKeysModalType] = useState<"public" | "private">("public")
@@ -57,16 +57,16 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   }
 
   const handleReconnectNostr = async () => {
-    if (!secretKeyHex) {
+    if (!signer) {
       Alert.alert(LL.Nostr.noProfileIdExists())
       return
     }
-    const secretKey = hexToBytes(secretKeyHex)
     setUpdatingNpub(true)
-    const data = await userUpdateNpub({
+    const pubkey = await signer.getPublicKey()
+    await userUpdateNpub({
       variables: {
         input: {
-          npub: nip19.npubEncode(getPublicKey(secretKey)),
+          npub: nip19.npubEncode(pubkey),
         },
       },
     })
@@ -108,7 +108,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
               setCreatingContacts(true)
               // Call your utility function
               console.log("Creating contact list")
-              await createContactListEvent(hexToBytes(secretKeyHex))
+              await createContactListEvent(signer)
               // Refresh the context to see the new list immediately
               Alert.alert(LL.common.success(), "Contact list created successfully.")
               await refreshUserProfile()
@@ -129,9 +129,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
 
   const handleViewContacts = () => {
     // Navigate to the existing Contacts screen
-    // Ensure "Contacts" is in your RootStackParamList
-    // Pass userPrivateKey as string if the screen requires it
-    navigation.navigate("Contacts", { userPrivateKey: secretKeyHex })
+    navigation.navigate("Contacts")
   }
   const contactSectionText = contactsEvent
     ? LL.Nostr.Contacts.manageContacts()
@@ -264,7 +262,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
       />
       <KeyModal
         isOpen={showSecretModal}
-        secretKeyHex={secretKeyHex}
+        signer={signer}
         onClose={() => setShowSecretModal(false)}
         copyToClipboard={copyToClipboard}
         keysModalType={keysModalType}

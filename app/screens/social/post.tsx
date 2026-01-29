@@ -21,14 +21,10 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { ExplainerVideo } from "@app/components/explainer-video"
 
-import { nip19, getPublicKey, finalizeEvent, Relay, SimplePool } from "nostr-tools"
-import { getSecretKey } from "@app/utils/nostr"
+import { nip19 } from "nostr-tools"
 import { pool } from "@app/utils/nostr/pool"
-import {
-  publishEventToRelays,
-  getPublishingRelays,
-} from "@app/utils/nostr/publish-helpers"
-import Config from "react-native-config"
+import { publishEventToRelays, getPublishingRelays } from "@app/utils/nostr/publish-helpers"
+import { getSigner } from "@app/nostr/signer"
 
 // Get appropriate relays for note publishing
 const RELAYS = getPublishingRelays("note")
@@ -73,13 +69,10 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
     method: string,
   ): Promise<string> => {
     try {
-      const privateKey = await getSecretKey()
-      if (!privateKey) throw Error
-      const publicKey = getPublicKey(privateKey)
+      const signer = await getSigner()
 
       const authEvent = {
         kind: 27235, // NIP-98 HTTP Auth
-        pubkey: publicKey,
         created_at: Math.floor(Date.now() / 1000),
         tags: [
           ["u", url],
@@ -88,7 +81,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
         content: "",
       }
 
-      const signedAuthEvent = await finalizeEvent(authEvent, privateKey)
+      const signedAuthEvent = await signer.signEvent(authEvent)
       const encodedAuth = btoa(JSON.stringify(signedAuthEvent))
       return `Nostr ${encodedAuth}`
     } catch (error) {
@@ -240,12 +233,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
   const publishNostrNote = async (content: string) => {
     try {
       setLoading(true)
-      const privateKey = await getSecretKey()
-      if (!privateKey) {
-        Alert.alert("Your nostr key is not yet set.")
-        setLoading(false)
-        return
-      }
+      const signer = await getSigner()
 
       let finalContent = content
 
@@ -302,7 +290,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
         }
       }
 
-      const pubkey = getPublicKey(privateKey)
+      const pubkey = await signer.getPublicKey()
 
       // Extract hashtags and create t tags
       const hashtags = extractHashtags(finalContent)
@@ -313,13 +301,12 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
 
       const event = {
         kind: 1, // kind 1 = short text note
-        pubkey,
         created_at: Math.floor(Date.now() / 1000),
         tags: tags,
         content: finalContent,
       }
 
-      const signedEvent = await finalizeEvent(event, privateKey)
+      const signedEvent = await signer.signEvent(event)
 
       console.log("Publishing kind-1 note to relays...")
       console.log("Author pubkey:", pubkey)

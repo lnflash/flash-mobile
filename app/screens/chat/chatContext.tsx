@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useRef } from "react"
 import { PropsWithChildren } from "react"
-import { Event, nip19, getPublicKey } from "nostr-tools"
+import { Event } from "nostr-tools"
 import { useAppConfig } from "@app/hooks"
 
 import {
@@ -8,9 +8,9 @@ import {
   getRumorFromWrap,
   loadGiftwrapsFromStorage,
   saveGiftwrapsToStorage,
-  fetchSecretFromLocalStorage,
 } from "@app/utils/nostr"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
+import { getSigner, NostrSigner } from "@app/nostr/signer"
 
 type ChatContextType = {
   giftwraps: Event[]
@@ -66,7 +66,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   // ------------------------
   // Helper: handle new giftwrap event
   // ------------------------
-  const handleGiftWrapEvent = async (event: Event, secret: Uint8Array) => {
+  const handleGiftWrapEvent = async (event: Event, signer: NostrSigner) => {
     if (processedEventIds.current.has(event.id)) return
     processedEventIds.current.add(event.id)
 
@@ -77,7 +77,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     })
 
     try {
-      const rumor = getRumorFromWrap(event, secret)
+      const rumor = await getRumorFromWrap(event, signer)
       setRumors((prev) => {
         if (!prev.map((r) => r.id).includes(rumor.id)) {
           return [...prev, rumor]
@@ -90,34 +90,36 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   }
 
   // ------------------------
-  // Initialize chat (fetch secret, set pubkey)
+  // Initialize chat (fetch signer, set pubkey)
   // ------------------------
   const initializeChat = async (count = 0) => {
-    const secretKeyString = await fetchSecretFromLocalStorage()
-    if (!secretKeyString) {
+    let signer: NostrSigner
+    try {
+      signer = await getSigner()
+    } catch {
       if (count >= 3) return
       setTimeout(() => initializeChat(count + 1), 500)
       return
     }
 
-    const secret = nip19.decode(secretKeyString).data as Uint8Array
-    const publicKey = getPublicKey(secret)
+    const publicKey = await signer.getPublicKey()
     setUserPublicKey(publicKey)
 
     // Load cached giftwraps
     const cachedGiftwraps = await loadGiftwrapsFromStorage()
     setGiftWraps(cachedGiftwraps)
-    setRumors(
-      cachedGiftwraps
-        .map((wrap) => {
-          try {
-            return getRumorFromWrap(wrap, secret)
-          } catch {
-            return null
-          }
-        })
-        .filter((r) => r !== null) as Rumor[],
-    )
+
+    // Decrypt cached giftwraps
+    const decryptedRumors: Rumor[] = []
+    for (const wrap of cachedGiftwraps) {
+      try {
+        const rumor = await getRumorFromWrap(wrap, signer)
+        decryptedRumors.push(rumor)
+      } catch {
+        // Skip failed decryptions
+      }
+    }
+    setRumors(decryptedRumors)
 
     // ------------------------
     // Subscribe to giftwraps via NostrRuntime
@@ -131,7 +133,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
           "limit": 150,
         },
       ],
-      (event) => handleGiftWrapEvent(event, secret),
+      (event) => handleGiftWrapEvent(event, signer),
     )
 
     // Subscribe to contact list

@@ -16,8 +16,7 @@ import Clipboard from "@react-native-clipboard/clipboard"
 
 import { Screen } from "../../components/screen"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { nip19, getPublicKey, Event } from "nostr-tools"
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
+import { nip19, Event } from "nostr-tools"
 
 import { FeedItem } from "@app/components/nostr-feed/FeedItem"
 import { ExplainerVideo } from "@app/components/explainer-video"
@@ -47,8 +46,8 @@ const ContactDetailsScreen: React.FC = () => {
   const styles = useStyles()
   const { LL } = useI18nContext()
 
-  const { profileMap, contactsEvent, setContactsEvent } = useChatContext()
-  const { contactPubkey, userPrivateKey } = route.params
+  const { profileMap, contactsEvent, setContactsEvent, userPublicKey } = useChatContext()
+  const { contactPubkey } = route.params
   const profile = profileMap?.get(contactPubkey)
   const npub = nip19.npubEncode(contactPubkey)
   const postsKey = `posts:${contactPubkey}`
@@ -75,14 +74,8 @@ const ContactDetailsScreen: React.FC = () => {
     ? businessUsernames.includes(profile.username)
     : false
 
-  const userPrivateKeyHex =
-    typeof userPrivateKey === "string" ? userPrivateKey : bytesToHex(userPrivateKey)
-  const selfPubkey = userPrivateKey ? getPublicKey(hexToBytes(userPrivateKeyHex)) : null
-  const isOwnProfile = selfPubkey === contactPubkey
-  const userPubkey = getPublicKey(
-    typeof userPrivateKey === "string" ? hexToBytes(userPrivateKey) : userPrivateKey,
-  )
-  const groupId = [userPubkey, contactPubkey].sort().join(",")
+  const isOwnProfile = userPublicKey === contactPubkey
+  const groupId = userPublicKey ? [userPublicKey, contactPubkey].sort().join(",") : ""
 
   // Copy npub
   const handleCopy = () => {
@@ -111,7 +104,7 @@ const ContactDetailsScreen: React.FC = () => {
   }
 
   const handleStartChat = () => {
-    navigation.replace("messages", { groupId, userPrivateKey: userPrivateKeyHex })
+    navigation.replace("messages", { groupId })
   }
 
   // Fetch posts and reposts using nostrRuntime

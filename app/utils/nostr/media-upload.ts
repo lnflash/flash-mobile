@@ -1,5 +1,4 @@
-import { nip19, getPublicKey, finalizeEvent } from "nostr-tools"
-import { hexToBytes } from "@noble/hashes/utils"
+import { NostrSigner } from "@app/nostr/signer"
 
 /**
  * Generate NIP-98 HTTP Auth header for nostr.build API
@@ -7,16 +6,11 @@ import { hexToBytes } from "@noble/hashes/utils"
 async function generateNIP98AuthHeader(
   url: string,
   method: string,
-  nsec: string,
+  signer: NostrSigner,
 ): Promise<string> {
   try {
-    const decoded = nip19.decode(nsec)
-    const privateKey = decoded.data as Uint8Array
-    const publicKey = getPublicKey(privateKey)
-
     const authEvent = {
       kind: 27235, // NIP-98 HTTP Auth
-      pubkey: publicKey,
       created_at: Math.floor(Date.now() / 1000),
       tags: [
         ["u", url],
@@ -25,7 +19,7 @@ async function generateNIP98AuthHeader(
       content: "",
     }
 
-    const signedAuthEvent = await finalizeEvent(authEvent, privateKey)
+    const signedAuthEvent = await signer.signEvent(authEvent)
     const encodedAuth = btoa(JSON.stringify(signedAuthEvent))
     return `Nostr ${encodedAuth}`
   } catch (error) {
@@ -38,20 +32,20 @@ async function generateNIP98AuthHeader(
 /**
  * Upload media file to nostr.build using NIP-98 authentication
  * @param mediaUri - Local file URI (file://...)
- * @param flashNostrNsec - FLASH_NOSTR_NSEC from env config
+ * @param signer - NostrSigner instance for authentication
  * @param isVideo - Whether the file is a video (default: false)
  * @returns Uploaded media URL
  */
 export async function uploadToNostrBuild(
   mediaUri: string,
-  flashNostrNsec: string,
+  signer: NostrSigner,
   isVideo: boolean = false,
 ): Promise<string> {
   try {
     console.log("Uploading media to nostr.build:", mediaUri, "isVideo:", isVideo)
 
     const uploadUrl = "https://nostr.build/api/v2/upload/files"
-    const authHeader = await generateNIP98AuthHeader(uploadUrl, "POST", flashNostrNsec)
+    const authHeader = await generateNIP98AuthHeader(uploadUrl, "POST", signer)
 
     const formData = new FormData()
     formData.append("file", {
