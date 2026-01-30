@@ -913,23 +913,6 @@ query auth {
   }
 }
 
-query balanceHeader {
-  me {
-    id
-    defaultAccount {
-      id
-      wallets {
-        id
-        balance
-        walletCurrency
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
 query beta {
   beta @client
 }

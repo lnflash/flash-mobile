@@ -73,20 +73,6 @@ gql`
     }
   }
 
-  query balanceHeader {
-    me {
-      id
-      defaultAccount {
-        id
-        wallets {
-          id
-          balance
-          walletCurrency
-        }
-      }
-    }
-  }
-
   query setDefaultAccountModal {
     me {
       id
