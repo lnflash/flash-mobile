@@ -5,7 +5,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/display-name */
 import React, { memo, useCallback, useEffect, useState } from "react"
-import { PermissionsAndroid, Platform } from "react-native"
+import { Linking, PermissionsAndroid, Platform } from "react-native"
 import MapView from "react-native-maps"
 import { makeStyles } from "@rneui/themed"
 import { getCrashlytics } from "@react-native-firebase/crashlytics"
@@ -16,6 +16,7 @@ import { Screen } from "../../components/screen"
 import {
   AddButton,
   AddPin,
+  BusinessCardModal,
   CustomMarker,
   MerchantSuggestModal,
   RefreshButton,
@@ -26,6 +27,11 @@ import { toastShow } from "../../utils/toast"
 
 // hooks
 import { useActivityIndicator } from "@app/hooks"
+import { useNavigation } from "@react-navigation/native"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // gql
 import {
@@ -80,6 +86,12 @@ export const MapScreen = memo(() => {
     latitude: number
     longitude: number
   }>()
+  const [selectedMarker, setSelectedMarker] = useState<any>(null)
+  const [cardVisible, setCardVisible] = useState(false)
+  const isAuthed = useIsAuthed()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const { persistentState } = usePersistentStateContext()
+  const chatEnabled = persistentState?.chatEnabled ?? false
 
   const [merchantMapSuggest] = useMerchantMapSuggestMutation()
   const {
@@ -98,6 +110,39 @@ export const MapScreen = memo(() => {
   } = useBusinessMapMarkersQuery({
     fetchPolicy: "cache-first",
   })
+
+  const DOMAIN_MAP = { blink: "@blink.sv", flash: "@flashapp.me" } as const
+
+  const handleMarkerPress = useCallback((item: any) => {
+    setSelectedMarker(item)
+    setCardVisible(true)
+  }, [])
+
+  const handlePayBusiness = useCallback(() => {
+    if (!selectedMarker) return
+    setCardVisible(false)
+    const domain = DOMAIN_MAP[selectedMarker.source as keyof typeof DOMAIN_MAP]
+    const usernameWithDomain = `${selectedMarker.username}${domain}`
+    if (isAuthed && selectedMarker.username) {
+      navigation.navigate("sendBitcoinDestination", { username: usernameWithDomain })
+    } else {
+      navigation.navigate("phoneFlow")
+    }
+  }, [selectedMarker, isAuthed, navigation])
+
+  const handleGetDirections = useCallback(() => {
+    if (!selectedMarker) return
+    setCardVisible(false)
+    const { latitude, longitude } = selectedMarker.mapInfo.coordinates
+    Linking.openURL(
+      `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`,
+    )
+  }, [selectedMarker])
+
+  const handleChat = useCallback(() => {
+    if (!selectedMarker) return
+    setCardVisible(false)
+  }, [selectedMarker])
 
   useEffect(() => {
     const errorMessage = blinkError?.message || flashError?.message
@@ -198,7 +243,11 @@ export const MapScreen = memo(() => {
           longitudeDelta: 2.1,
         }}
       >
-        <CustomMarker blinkData={blinkData} flashData={flashData} />
+        <CustomMarker
+          blinkData={blinkData}
+          flashData={flashData}
+          onMarkerPress={handleMarkerPress}
+        />
       </MapView>
       {!isAddingPin && <RefreshButton onRefresh={() => refetch()} />}
       <AddPin visible={isAddingPin} />
@@ -210,6 +259,15 @@ export const MapScreen = memo(() => {
         setBusinessName={setBusinessName}
         onSubmit={handleSubmit}
         selectedLocation={selectedLocation}
+      />
+      <BusinessCardModal
+        visible={cardVisible}
+        item={selectedMarker}
+        chatEnabled={chatEnabled}
+        onClose={() => setCardVisible(false)}
+        onPayBusiness={handlePayBusiness}
+        onGetDirections={handleGetDirections}
+        onChat={handleChat}
       />
     </Screen>
   )

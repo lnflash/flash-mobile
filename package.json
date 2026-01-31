@@ -156,7 +156,7 @@
     "react-native-keychain": "^8.1.1",
     "react-native-linear-gradient": "^2.8.2",
     "react-native-localize": "^2.2.2",
-    "react-native-maps": "1.4.0",
+    "react-native-maps": "1.20.1",
     "react-native-modal": "^13.0.1",
     "react-native-nfc-manager": "^3.14.8",
     "react-native-pager-view": "6.9.1",
