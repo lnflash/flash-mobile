@@ -44,6 +44,7 @@ import { ChatContextProvider } from "./screens/chat/chatContext"
 import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { FlashcardProvider } from "./contexts/Flashcard"
+import { ModalPortalProvider } from "./components/modal-portal"
 import { NostrGroupChatProvider } from "./screens/chat/GroupChat/GroupChatProvider"
 import { useEffect } from "react"
 import { nostrRuntime } from "./nostr/runtime/NostrRuntime"
@@ -100,19 +101,21 @@ export const App = () => {
                         <FeatureFlagContextProvider>
                           <ErrorBoundary FallbackComponent={ErrorScreen}>
                             <NavigationContainerWrapper>
-                              <RootSiblingParent>
-                                <NotificationsProvider>
-                                  <AppStateWrapper />
-                                  <PushNotificationComponent />
-                                  <BreezProvider>
-                                    <FlashcardProvider>
-                                      <RootStack />
-                                    </FlashcardProvider>
-                                  </BreezProvider>
-                                  <GaloyToast />
-                                  <NetworkErrorComponent />
-                                </NotificationsProvider>
-                              </RootSiblingParent>
+                              <ModalPortalProvider>
+                                <RootSiblingParent>
+                                  <NotificationsProvider>
+                                    <AppStateWrapper />
+                                    <PushNotificationComponent />
+                                    <BreezProvider>
+                                      <FlashcardProvider>
+                                        <RootStack />
+                                      </FlashcardProvider>
+                                    </BreezProvider>
+                                    <GaloyToast />
+                                    <NetworkErrorComponent />
+                                  </NotificationsProvider>
+                                </RootSiblingParent>
+                              </ModalPortalProvider>
                             </NavigationContainerWrapper>
                           </ErrorBoundary>
                           <ThemeSyncGraphql />

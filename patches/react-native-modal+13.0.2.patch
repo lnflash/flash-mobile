@@ -1,0 +1,144 @@
+diff --git a/node_modules/react-native-modal/dist/modal.js b/node_modules/react-native-modal/dist/modal.js
+index 6d01fcc..612949d 100644
+--- a/node_modules/react-native-modal/dist/modal.js
++++ b/node_modules/react-native-modal/dist/modal.js
+@@ -43,6 +43,7 @@ const extractAnimationFromProps = (props) => ({
+     animationIn: props.animationIn,
+     animationOut: props.animationOut,
+ });
++let _portalIdCounter = 0;
+ export class ReactNativeModal extends React.Component {
+     static defaultProps = defaultProps;
+     backHandler = null;
+@@ -69,6 +70,11 @@ export class ReactNativeModal extends React.Component {
+     panResponder = null;
+     didUpdateDimensionsEmitter = null;
+     interactionHandle = null;
++    _portalId = 'rnm-portal-' + (_portalIdCounter++);
++    _portalRegistered = false;
++    _pendingPortalContent = null;
++    _portalNeedsOpen = false;
++    _portalClosing = false;
+     constructor(props) {
+         super(props);
+         const { animationIn, animationOut } = buildAnimations(extractAnimationFromProps(props));
+@@ -102,7 +108,12 @@ export class ReactNativeModal extends React.Component {
+         }
+         this.didUpdateDimensionsEmitter = DeviceEventEmitter.addListener('didUpdateDimensions', this.handleDimensionsUpdate);
+         if (this.state.isVisible) {
+-            this.open();
++            if (this._isPortalMode()) {
++                this._syncPortal();
++                this._portalNeedsOpen = true;
++            } else {
++                this.open();
++            }
+         }
+         this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.onBackButtonPress);
+     }
+@@ -118,8 +129,32 @@ export class ReactNativeModal extends React.Component {
+             InteractionManager.clearInteractionHandle(this.interactionHandle);
+             this.interactionHandle = null;
+         }
++        if (Platform.OS === 'android' && this._portalRegistered && global.__modalPortalUnregister) {
++            global.__modalPortalUnregister(this._portalId);
++            this._portalRegistered = false;
++        }
++    }
++    _isPortalMode() {
++        return Platform.OS === 'android' && !!global.__modalPortalRegister;
++    }
++    _syncPortal() {
++        if (!this._isPortalMode()) return;
++        if (this._pendingPortalContent) {
++            global.__modalPortalRegister(this._portalId, this._pendingPortalContent);
++            this._portalRegistered = true;
++        } else if (this._portalRegistered && !this._portalClosing) {
++            global.__modalPortalUnregister(this._portalId);
++            this._portalRegistered = false;
++        }
++    }
++    _portalUnregister() {
++        if (this._portalRegistered && global.__modalPortalUnregister) {
++            global.__modalPortalUnregister(this._portalId);
++            this._portalRegistered = false;
++        }
+     }
+     componentDidUpdate(prevProps) {
++        this._syncPortal();
+         // If the animations have been changed then rebuild them to make sure we're
+         // using the most up-to-date ones
+         if (this.props.animationIn !== prevProps.animationIn ||
+@@ -135,10 +170,16 @@ export class ReactNativeModal extends React.Component {
+         }
+         // On modal open request, we slide the view up and fade in the backdrop
+         if (this.props.isVisible && !prevProps.isVisible) {
+-            this.open();
++            if (this._isPortalMode()) {
++                this._portalNeedsOpen = true;
++            } else {
++                this.open();
++            }
+         }
+         else if (!this.props.isVisible && prevProps.isVisible) {
+-            // On modal close request, we slide the view down and fade out the backdrop
++            if (this._isPortalMode()) {
++                this._portalClosing = true;
++            }
+             this.close();
+         }
+     }
+@@ -453,6 +494,8 @@ export class ReactNativeModal extends React.Component {
+                     this.open();
+                 }
+                 else {
++                    this._portalClosing = false;
++                    this._portalUnregister();
+                     this.setState({
+                         showContent: false,
+                     }, () => {
+@@ -464,6 +507,15 @@ export class ReactNativeModal extends React.Component {
+                     });
+                 }
+             });
++        } else if (this._isPortalMode()) {
++            this.isTransitioning = false;
++            this._portalClosing = false;
++            this._portalUnregister();
++            this.setState({ showContent: false }, () => {
++                this.setState({ isVisible: false }, () => {
++                    this.props.onModalHide();
++                });
++            });
+         }
+     };
+     makeBackdrop = () => {
+@@ -529,7 +581,13 @@ export class ReactNativeModal extends React.Component {
+             !this.state.showContent ? (React.createElement(animatable.View, null)) : (children);
+         const containerView = (React.createElement(animatable.View, { ...panHandlers, 
+             // @ts-expect-error TODO fix it
+-            ref: ref => (this.contentRef = ref), style: [panPosition, computedStyle], pointerEvents: "box-none", useNativeDriver: useNativeDriver, ...containerProps }, _children));
++            ref: ref => {
++                this.contentRef = ref;
++                if (ref && this._portalNeedsOpen) {
++                    this._portalNeedsOpen = false;
++                    this.open();
++                }
++            }, style: [panPosition, computedStyle], pointerEvents: "box-none", useNativeDriver: useNativeDriver, ...containerProps }, _children));
+         // If coverScreen is set to false by the user
+         // we render the modal inside the parent view directly
+         if (!coverScreen && this.state.isVisible) {
+@@ -537,6 +595,13 @@ export class ReactNativeModal extends React.Component {
+                 this.makeBackdrop(),
+                 containerView));
+         }
++        // Android Fabric fix: bypass broken native RCTModalHostView by rendering via portal
++        if (Platform.OS === 'android' && global.__modalPortalRegister) {
++            this._pendingPortalContent = this.state.isVisible ? React.createElement(View, { pointerEvents: "box-none", style: [styles.backdrop, styles.containerBox] },
++                this.makeBackdrop(),
++                avoidKeyboard ? (React.createElement(KeyboardAvoidingView, { behavior: undefined, pointerEvents: "box-none", style: computedStyle.concat([{ margin: 0 }]) }, containerView)) : (containerView)) : null;
++            return null;
++        }
+         return (React.createElement(Modal, { transparent: true, animationType: 'none', visible: this.state.isVisible, onRequestClose: onBackButtonPress, ...otherProps },
+             this.makeBackdrop(),
+             avoidKeyboard ? (React.createElement(KeyboardAvoidingView, { behavior: Platform.OS === 'ios' ? 'padding' : undefined, pointerEvents: "box-none", style: computedStyle.concat([{ margin: 0 }]) }, containerView)) : (containerView)));

@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Modal } from "react-native"
+import { ModalPortal as Modal } from "@app/components/modal-portal"
 import styled from "styled-components/native"
 import { Icon, Text, useTheme } from "@rneui/themed"
 import { useSafeAreaInsets } from "react-native-safe-area-context"

@@ -1,6 +1,7 @@
 import * as React from "react"
 import { makeStyles } from "@rneui/themed"
-import { Modal, SafeAreaView } from "react-native"
+import { SafeAreaView } from "react-native"
+import { ModalPortal as Modal } from "@app/components/modal-portal"
 
 // components
 import { AmountInputScreen } from "../amount-input-screen"
