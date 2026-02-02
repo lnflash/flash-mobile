@@ -15,8 +15,8 @@ import {
   addEventListener,
   removeEventListener,
   SdkEvent,
-  SdkEventVariant,
-} from "@breeztech/react-native-breez-sdk-liquid"
+  SdkEvent_Tags,
+} from "@app/utils/breez-sdk-spark"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -89,8 +89,8 @@ const ReceiveScreen = () => {
   const addBreezEventListener = async () => {
     const listenerId = await addEventListener((e: SdkEvent) => {
       if (
-        e.type === SdkEventVariant.PAYMENT_WAITING_CONFIRMATION ||
-        e.type === SdkEventVariant.PAYMENT_SUCCEEDED
+        e.tag === SdkEvent_Tags.PaymentPending ||
+        e.tag === SdkEvent_Tags.PaymentSucceeded
       ) {
         setUpdatedPaymentState(PaymentRequestState.Paid)
       }

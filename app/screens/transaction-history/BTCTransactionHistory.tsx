@@ -19,11 +19,11 @@ import { groupTransactionsByDate } from "@app/graphql/transactions"
 
 // Breez SDK
 import {
-  listRefundables,
+  listPaymentsBreezSDK,
   Payment,
-  RefundableSwap,
-} from "@breeztech/react-native-breez-sdk-liquid"
-import { listPaymentsBreezSDK } from "@app/utils/breez-sdk-liquid"
+  listUnclaimedDeposits,
+  DepositInfo,
+} from "@app/utils/breez-sdk-spark"
 import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 
 // types
@@ -45,7 +45,7 @@ export const BTCTransactionHistory = () => {
 
   const { persistentState, updateState } = usePersistentStateContext()
 
-  const [refundables, setRefundables] = useState<RefundableSwap[]>([])
+  const [refundables, setRefundables] = useState<DepositInfo[]>([])
   const [hasMore, setHasMore] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [fetchingMore, setFetchingMore] = useState(false)
@@ -58,7 +58,7 @@ export const BTCTransactionHistory = () => {
   }, [])
 
   const fetchRefundables = async () => {
-    const refundables = (await listRefundables()) || []
+    const refundables = (await listUnclaimedDeposits()) || []
     const refundedTxs = (await loadJson("refundedTxs")) || []
     console.log("Refundable and Refunded Transactions>>>>>>>>>>", [
       ...refundables,

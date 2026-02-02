@@ -34,6 +34,7 @@ export type RootStackParamList = {
     isPinEnabled: boolean
   }
   pin: { screenPurpose: PinScreenPurpose; callback?: () => void }
+  SparkMigration: undefined
   Primary: undefined
   earnsSection: { section: EarnSectionType }
   earnsQuiz: { id: string }

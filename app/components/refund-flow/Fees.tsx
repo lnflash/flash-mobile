@@ -2,10 +2,17 @@ import React from "react"
 import { ViewStyle } from "react-native"
 import { Colors, Text, useTheme } from "@rneui/themed"
 import styled from "styled-components/native"
-import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
+
+type RecommendedFees = {
+  fastestFee: number
+  halfHourFee: number
+  hourFee: number
+  economyFee: number
+  minimumFee: number
+}
 
 type Props = {
   wrapperStyle?: ViewStyle

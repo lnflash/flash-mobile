@@ -25,7 +25,7 @@ import { testProps } from "../../utils/testProps"
 import {
   fetchBreezLightningLimits,
   fetchBreezOnChainLimits,
-} from "@app/utils/breez-sdk-liquid"
+} from "@app/utils/breez-sdk-spark"
 
 type Props = {
   selectedFee?: number

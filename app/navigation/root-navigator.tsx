@@ -11,6 +11,7 @@ import {
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
+import { SparkMigrationScreen } from "@app/screens/migration-screen/SparkMigrationScreen"
 import { ChatList } from "@app/screens/chat"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
@@ -146,8 +147,18 @@ export const RootStack = () => {
   const styles = useStyles()
   const isAuthed = useIsAuthed()
 
-  // Check if intro screen is displayed twice.
-  const initialRouteName = isAuthed ? "authenticationCheck" : "getStarted"
+  // Determine initial route: check for spark migration first, then auth
+  const shouldShowSparkMigration =
+    isAuthed &&
+    persistentState.isAdvanceMode &&
+    (persistentState.sparkMigrationStatus === "pending" ||
+      persistentState.sparkMigrationStatus === "transferring")
+
+  const initialRouteName = shouldShowSparkMigration
+    ? "SparkMigration"
+    : isAuthed
+    ? "authenticationCheck"
+    : "getStarted"
 
   return (
     <RootNavigator.Navigator
@@ -202,6 +213,11 @@ export const RootStack = () => {
         name="pin"
         component={PinScreen}
         options={{ headerShown: false }}
+      />
+      <RootNavigator.Screen
+        name="SparkMigration"
+        component={SparkMigrationScreen}
+        options={{ headerShown: false, animationEnabled: false }}
       />
       <RootNavigator.Screen
         name="Primary"

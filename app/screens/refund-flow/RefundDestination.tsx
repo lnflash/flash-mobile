@@ -4,7 +4,6 @@ import { makeStyles, Text } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { Network, parsePaymentDestination } from "@flash/client"
 import { StackScreenProps } from "@react-navigation/stack"
-import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -17,7 +16,15 @@ import { useActivityIndicator } from "@app/hooks"
 // utils
 import { LNURL_DOMAINS } from "@app/config"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { fetchRecommendedFees } from "@app/utils/breez-sdk-liquid"
+import { fetchRecommendedFees } from "@app/utils/breez-sdk-spark"
+
+type RecommendedFees = {
+  fastestFee: number
+  halfHourFee: number
+  hourFee: number
+  economyFee: number
+  minimumFee: number
+}
 
 // gql
 import {

@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { getMessaging } from "@react-native-firebase/messaging"
 import * as Keychain from "react-native-keychain"
+import RNFS from "react-native-fs"
 
 // store
 import { resetUserSlice } from "@app/store/redux/slices/userSlice"
@@ -15,9 +16,10 @@ import { useFlashcard } from "./useFlashcard"
 // utils
 import KeyStoreWrapper from "../utils/storage/secureStorage"
 import { SCHEMA_VERSION_KEY } from "@app/config"
-import { disconnectToSDK } from "@app/utils/breez-sdk-liquid"
+import { disconnectToSDK } from "@app/utils/breez-sdk-spark"
 
 const DEVICE_ACCOUNT_CREDENTIALS_KEY = "device-account"
+const SPARK_STORAGE_DIR = `${RNFS.DocumentDirectoryPath}/spark-data`
 
 const useLogout = () => {
   const client = useApolloClient()
@@ -48,7 +50,19 @@ const useLogout = () => {
   }
 
   const cleanUp = async (clearDeviceCred?: boolean) => {
+    // Clean up Spark SDK working directory
+    try {
+      const sparkExists = await RNFS.exists(SPARK_STORAGE_DIR)
+      if (sparkExists) {
+        await RNFS.unlink(SPARK_STORAGE_DIR)
+      }
+    } catch (err) {
+      console.error("Spark cleanup error:", err)
+    }
+
+    // Clean up Liquid SDK (handles disconnect, mnemonic deletion, and workdir cleanup)
     await disconnectToSDK()
+
     await client.cache.reset()
     await AsyncStorage.multiRemove([SCHEMA_VERSION_KEY])
     await KeyStoreWrapper.removeIsBiometricsEnabled()

@@ -24,16 +24,17 @@ import {
 
 // utils
 import { toBtcMoneyAmount } from "@app/types/amounts"
-import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk-liquid"
-
-// breez
 import {
+  breezSDKInitialized,
+  listPaymentsBreezSDK,
   addEventListener,
-  Payment,
   removeEventListener,
   SdkEvent,
-  SdkEventVariant,
-} from "@breeztech/react-native-breez-sdk-liquid"
+  SdkEvent_Tags,
+} from "@app/utils/breez-sdk-spark"
+
+// breez
+import { Payment } from "@app/utils/breez-sdk-spark"
 
 type Props = {
   loadingAuthed: boolean
@@ -84,7 +85,7 @@ const Transactions: React.FC<Props> = ({
 
   const addBreezEventListener = async () => {
     const listenerId = await addEventListener((e: SdkEvent) => {
-      if (e.type !== SdkEventVariant.SYNCED) {
+      if (e.tag !== SdkEvent_Tags.Synced) {
         fetchPaymentsBreez()
       }
     })

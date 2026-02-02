@@ -42,13 +42,20 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { PaymentDetail } from "./payment-details/index.types"
 import { Satoshis } from "lnurl-pay/dist/types/types"
-import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
 
 // utils
 import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { requestInvoice, utils } from "lnurl-pay"
-import { fetchBreezFee, fetchRecommendedFees } from "@app/utils/breez-sdk-liquid"
+import { fetchBreezFee, fetchRecommendedFees } from "@app/utils/breez-sdk-spark"
+
+type RecommendedFees = {
+  fastestFee: number
+  halfHourFee: number
+  hourFee: number
+  economyFee: number
+  minimumFee: number
+}
 
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 

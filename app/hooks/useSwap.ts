@@ -20,7 +20,7 @@ import {
   fetchBreezFee,
   payLightningBreez,
   receivePaymentBreezSDK,
-} from "@app/utils/breez-sdk-liquid"
+} from "@app/utils/breez-sdk-spark"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useDisplayCurrency } from "./use-display-currency"
 

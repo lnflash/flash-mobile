@@ -22,7 +22,7 @@ import DestinationIcon from "@app/assets/icons/destination.svg"
 import { testProps } from "@app/utils/testProps"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { toBtcMoneyAmount } from "@app/types/amounts"
-import { refund } from "@breeztech/react-native-breez-sdk-liquid"
+import { refundDeposit } from "@app/utils/breez-sdk-spark"
 import { loadJson, save } from "@app/utils/storage"
 import { PersistentState } from "@app/store/persistent-state/state-migrations"
 
@@ -41,18 +41,19 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
   const [errorMsg, setErrorMsg] = useState<string>()
   const [txId, setTxId] = useState<string>()
 
-  if (!convertMoneyAmount) return false
+  if (!convertMoneyAmount) return null
 
   const onConfirm = async () => {
     try {
       toggleActivityIndicator(true)
-      const refundResponse = await refund({
-        swapAddress: route.params.swapAddress,
-        refundAddress: route.params.destination,
-        feeRateSatPerVbyte: route.params.fee,
-      })
+      const refundResponse = await refundDeposit(
+        route.params.swapAddress,
+        0,
+        route.params.destination,
+        route.params.fee,
+      )
       console.log("Refund Response>>>>>>>>>>>>>>>", refundResponse)
-      if (refundResponse.refundTxId) {
+      if (refundResponse.txId) {
         updateState((state?: PersistentState) => {
           if (state)
             return {
@@ -61,7 +62,7 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
             }
           return undefined
         })
-        setTxId(refundResponse.refundTxId)
+        setTxId(refundResponse.txId)
         setModalVisible(true)
         const refundedTxs = await loadJson("refundedTxs")
         save("refundedTxs", [
@@ -70,7 +71,7 @@ const RefundConfirmation: React.FC<Props> = ({ navigation, route }) => {
             swapAddress: route.params.swapAddress,
             amountSat: route.params.amount,
             timestamp: new Date().getTime(),
-            txId: refundResponse.refundTxId,
+            txId: refundResponse.txId,
           },
         ])
       } else {

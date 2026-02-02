@@ -25,7 +25,7 @@ import {
 } from "@app/graphql/generated"
 
 // breez-sdk
-import { onRedeem } from "@app/utils/breez-sdk-liquid"
+import { onRedeem } from "@app/utils/breez-sdk-spark"
 
 type Prop = StackScreenProps<RootStackParamList, "redeemBitcoinResult">
 

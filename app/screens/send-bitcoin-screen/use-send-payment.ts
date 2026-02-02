@@ -30,7 +30,7 @@ import {
   payLightningBreez,
   payOnchainBreez,
   payLnurlBreez,
-} from "@app/utils/breez-sdk-liquid"
+} from "@app/utils/breez-sdk-spark"
 
 type UseSendPaymentResult = {
   loading: boolean

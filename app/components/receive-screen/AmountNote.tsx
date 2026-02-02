@@ -14,7 +14,7 @@ import { Invoice } from "@app/screens/receive-bitcoin-screen/payment/index.types
 import {
   fetchBreezLightningLimits,
   fetchBreezOnChainLimits,
-} from "@app/utils/breez-sdk-liquid"
+} from "@app/utils/breez-sdk-spark"
 
 type Props = {
   request: any

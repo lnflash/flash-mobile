@@ -16,7 +16,7 @@ import { bech32 } from "bech32"
 import {
   receivePaymentBreezSDK,
   receiveOnchainBreezSDK,
-} from "@app/utils/breez-sdk-liquid"
+} from "@app/utils/breez-sdk-spark"
 
 export const createPaymentRequest = (
   params: CreatePaymentRequestParams,
@@ -34,7 +34,7 @@ export const createPaymentRequest = (
   const fetchBreezOnchain = async (amount?: number) => {
     try {
       const fetchedBreezOnChain = await receiveOnchainBreezSDK(amount)
-      return fetchedBreezOnChain.destination
+      return fetchedBreezOnChain.paymentRequest
     } catch (error) {
       console.error("Error fetching breezOnChain:", error)
     }
@@ -49,12 +49,8 @@ export const createPaymentRequest = (
           errors: [],
           invoice: {
             paymentHash: fetchedBreezInvoice.paymentHash,
-            paymentRequest: fetchedBreezInvoice.bolt11,
-            paymentSecret: fetchedBreezInvoice.paymentSecret
-              ? Array.from(fetchedBreezInvoice.paymentSecret)
-                  .map((byte) => byte.toString(16))
-                  .join("")
-              : "",
+            paymentRequest: fetchedBreezInvoice.destination,
+            paymentSecret: fetchedBreezInvoice.paymentSecret || "",
           },
         },
       }

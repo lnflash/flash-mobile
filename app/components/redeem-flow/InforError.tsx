@@ -10,7 +10,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { BtcMoneyAmount, MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
 
 // utils
-import { fetchBreezLightningLimits } from "@app/utils/breez-sdk-liquid"
+import { fetchBreezLightningLimits } from "@app/utils/breez-sdk-spark"
 
 type Props = {
   unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>

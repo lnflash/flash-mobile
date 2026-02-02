@@ -23,7 +23,7 @@ import { WalletCurrency } from "@app/graphql/generated"
 import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
 // breez-sdk
-import { fetchBreezLightningLimits } from "@app/utils/breez-sdk-liquid"
+import { fetchBreezLightningLimits } from "@app/utils/breez-sdk-spark"
 
 type Props = {
   fromWalletCurrency: WalletCurrency

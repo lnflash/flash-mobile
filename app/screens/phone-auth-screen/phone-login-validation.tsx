@@ -40,7 +40,7 @@ import {
   logValidateAuthCodeFailure,
 } from "@app/utils/analytics"
 import { parseTimer } from "../../utils/timer"
-import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
+import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-spark"
 import { KEYCHAIN_NOSTRCREDS_KEY } from "@app/components/import-nsec/utils"
 
 gql`

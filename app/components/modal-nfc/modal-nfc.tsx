@@ -25,12 +25,11 @@ import { isIOS } from "@rneui/base"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 
 import { GaloySecondaryButton } from "../atomic/galoy-secondary-button"
+import { getSparkSdk } from "@app/utils/breez-sdk-spark"
 import {
-  InputTypeVariant,
-  LnUrlWithdrawResultVariant,
-  lnurlWithdraw,
-  parse,
-} from "@breeztech/react-native-breez-sdk-liquid"
+  LnurlWithdrawRequest,
+  InputType_Tags,
+} from "@breeztech/breez-sdk-spark-react-native"
 
 export const ModalNfc: React.FC<{
   isActive: boolean
@@ -179,22 +178,18 @@ export const ModalNfc: React.FC<{
         }
       } else {
         try {
-          const input = await parse(lnurl)
-          if (input.type === InputTypeVariant.LN_URL_WITHDRAW) {
-            const lnUrlWithdrawResult = await lnurlWithdraw({
-              data: input.data,
-              amountMsat: settlementAmount.amount * 1000,
-              description: note,
-            })
+          const sdk = getSparkSdk()
+          const input = await sdk.parse(lnurl)
+          if (input.tag === InputType_Tags.LnurlWithdraw) {
+            const lnUrlWithdrawResult = await sdk.lnurlWithdraw(
+              LnurlWithdrawRequest.create({
+                amountSats: BigInt(settlementAmount.amount),
+                withdrawRequest: input.inner[0],
+              }),
+            )
 
             console.log(lnUrlWithdrawResult)
-            if (lnUrlWithdrawResult.type === LnUrlWithdrawResultVariant.OK) {
-              onPaid()
-            } else {
-              alert(lnUrlWithdrawResult.data || LL.RedeemBitcoinScreen.redeemingError())
-            }
-          } else if (input.type === InputTypeVariant.LN_URL_ERROR) {
-            alert(input?.data?.reason || LL.RedeemBitcoinScreen.redeemingError())
+            onPaid()
           }
         } catch (err: any) {
           console.error(err)

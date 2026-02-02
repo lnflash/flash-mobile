@@ -14,7 +14,7 @@ import { DisplayCurrency } from "@app/types/amounts"
 
 // utils
 import { testProps } from "@app/utils/testProps"
-import { fetchBreezFee } from "@app/utils/breez-sdk-liquid"
+import { fetchBreezFee } from "@app/utils/breez-sdk-spark"
 
 // assets
 import Cash from "@app/assets/icons/cash.svg"

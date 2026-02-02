@@ -1,8 +1,9 @@
 import React, { createContext, useEffect, useState } from "react"
 import { WalletCurrency } from "@app/graphql/generated"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { initializeBreezSDK } from "@app/utils/breez-sdk-liquid"
-import { getInfo } from "@breeztech/react-native-breez-sdk-liquid"
+import { initializeBreezSDK, getSparkSdk } from "@app/utils/breez-sdk-spark"
+import { initializeBreezSDK as initializeLiquidSDK } from "@app/utils/breez-sdk-spark"
+import { GetInfoRequest } from "@breeztech/breez-sdk-spark-react-native"
 import { Alert, Platform } from "react-native"
 
 type BtcWallet = {
@@ -74,24 +75,46 @@ export const BreezProvider = ({ children }: Props) => {
   const getBreezInfo = async () => {
     try {
       setLoading(true)
+
+      // Primary: Initialize Spark SDK
       await initializeBreezSDK()
-      const { walletInfo } = await getInfo()
+      const sparkSdk = getSparkSdk()
+      const info = await sparkSdk.getInfo(
+        GetInfoRequest.create({ ensureSynced: undefined }),
+      )
+      const balanceSats = Number(info.balanceSats)
 
       setBtcWallet({
-        id: walletInfo.pubkey,
+        id: "spark",
         walletCurrency: WalletCurrency.Btc,
-        balance: walletInfo.balanceSat,
-        pendingReceiveSat: walletInfo.pendingReceiveSat,
-        pendingSendSat: walletInfo.pendingSendSat,
+        balance: balanceSats,
+        pendingReceiveSat: 0,
+        pendingSendSat: 0,
       })
       updateState((state: any) => {
         if (state)
           return {
             ...state,
-            breezBalance: walletInfo.balanceSat,
+            breezBalance: balanceSats,
+            sparkBalance: balanceSats,
+            sparkInitialized: true,
           }
         return undefined
       })
+
+      // Secondary: Also connect Liquid SDK if migration is in progress
+      const migrationStatus = persistentState.sparkMigrationStatus
+      if (
+        persistentState.isAdvanceMode &&
+        (migrationStatus === "pending" || migrationStatus === "transferring")
+      ) {
+        try {
+          await initializeLiquidSDK()
+        } catch (liquidErr) {
+          console.warn("Liquid SDK init for migration failed:", liquidErr)
+        }
+      }
+
       setLoading(false)
     } catch (err: any) {
       Alert.alert("BTC wallet initialization failed", err.toString())

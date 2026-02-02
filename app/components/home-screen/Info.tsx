@@ -4,7 +4,7 @@ import { ApolloError } from "@apollo/client"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { listRefundables } from "@breeztech/react-native-breez-sdk-liquid"
+import { listUnclaimedDeposits } from "@app/utils/breez-sdk-spark"
 import { useNetInfo } from "@react-native-community/netinfo"
 
 // hooks
@@ -22,7 +22,7 @@ import { getErrorMessages } from "@app/graphql/utils"
 
 // utils
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { breezSDKInitialized } from "@app/utils/breez-sdk-liquid"
+import { breezSDKInitialized } from "@app/utils/breez-sdk-spark"
 
 type ErrorInput =
   | readonly GraphQLError[]
@@ -53,7 +53,7 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
 
   const fetchRefundables = async () => {
     try {
-      const refundables = (await listRefundables()) || []
+      const refundables = (await listUnclaimedDeposits()) || []
       updateState((state: any) => {
         if (state)
           return {

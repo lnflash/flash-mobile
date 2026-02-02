@@ -15,7 +15,7 @@ import { useBreez } from "@app/hooks"
 import { useEffect, useState } from "react"
 import { AdvancedModeModal } from "@app/components/advanced-mode-modal"
 import * as Keychain from "react-native-keychain"
-import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
+import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-spark"
 
 export const AdvancedModeToggle: React.FC = () => {
   const { LL } = useI18nContext()

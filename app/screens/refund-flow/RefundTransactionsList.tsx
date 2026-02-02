@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, Linking } from "react-native"
 import styled from "styled-components/native"
 import { Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
-import { listRefundables, RefundableSwap } from "@breeztech/react-native-breez-sdk-liquid"
+import { listUnclaimedDeposits, DepositInfo } from "@app/utils/breez-sdk-spark"
 import { Colors } from "@rneui/base"
 
 // hooks
@@ -33,7 +33,10 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
 
   const [loading, setLoading] = useState<boolean>(false)
-  const [refundables, setRefundables] = useState<RefundableSwap[]>()
+  const [refundables, setRefundables] =
+    useState<
+      { amountSat: number; swapAddress: string; timestamp: number; txId?: string }[]
+    >()
 
   if (!convertMoneyAmount) return null
 
@@ -45,9 +48,15 @@ const RefundTransactionsList: React.FC<Props> = ({ navigation }) => {
 
   const fetchRefundables = async () => {
     setLoading(true)
-    const refundables = (await listRefundables()) || []
+    const deposits = (await listUnclaimedDeposits()) || []
+    const transformed = deposits.map((deposit) => ({
+      amountSat: Number(deposit.amountSats),
+      swapAddress: deposit.txid,
+      timestamp: 0,
+      txId: deposit.refundTxId,
+    }))
     const refundedTxs = (await loadJson("refundedTxs")) || []
-    const merged = mergeByTimestamp(refundables, refundedTxs)
+    const merged = mergeByTimestamp(transformed, refundedTxs)
     setRefundables(merged)
     setLoading(false)
   }

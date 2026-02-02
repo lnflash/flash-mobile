@@ -93,3 +93,6 @@ vendor/
 
 # Sisyphus planning files
 .sisyphus/
+
+# Spark migration test directory (local TDD only)
+__tests__/spark-migration/

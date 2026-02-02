@@ -26,7 +26,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { AccountLevel, useHomeAuthedQuery } from "@app/graphql/generated"
 
 // utils
-import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
+import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-spark"
 
 const width = Dimensions.get("window").width
 
