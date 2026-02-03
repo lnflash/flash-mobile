@@ -1,6 +1,5 @@
 import * as React from "react"
-import { Linking, useWindowDimensions, View } from "react-native"
-import { ModalPortal as Modal } from "@app/components/modal-portal"
+import { Linking, Modal, useWindowDimensions, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles, Text } from "@rneui/themed"
 import { useNavigation, NavigationProp } from "@react-navigation/native"

@@ -1,6 +1,5 @@
 import React, { useRef, useState, useCallback, useMemo } from "react"
-import { View, Text, TouchableOpacity } from "react-native"
-import { ModalPortal as Modal } from "@app/components/modal-portal"
+import { Modal, View, Text, TouchableOpacity } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { useNavigation } from "@react-navigation/native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"

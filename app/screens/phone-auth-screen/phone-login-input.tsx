@@ -1,11 +1,9 @@
 import React, { useEffect } from "react"
-import { ActivityIndicator, Platform, View } from "react-native"
+import { ActivityIndicator, TouchableOpacity, View } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
-import { TouchableOpacity } from "react-native-gesture-handler"
 import { makeStyles, useTheme, Text, Input } from "@rneui/themed"
 import CountryPicker, {
   CountryCode,
-  CountryModalProvider,
   DARK_THEME,
   DEFAULT_THEME,
   Flag,
@@ -114,40 +112,35 @@ export const PhoneLoginInitiateScreen: React.FC<Props> = ({ navigation }) => {
           {LL.PhoneLoginInitiateScreen.header()}
         </Text>
         <View style={styles.inputContainer}>
-          <CountryModalProvider>
-            <CountryPicker
-              theme={mode === "dark" ? DARK_THEME : DEFAULT_THEME}
-              countryCode={
-                (phoneInputInfo?.countryCode || DEFAULT_COUNTRY_CODE) as CountryCode
-              }
-              countryCodes={supportedCountries as CountryCode[]}
-              onSelect={(country) =>
-                setCountryCode(country.cca2 as PhoneNumberCountryCode)
-              }
-              renderFlagButton={({ countryCode, onOpen }) => {
-                return (
-                  countryCode && (
-                    <TouchableOpacity
-                      style={styles.countryPickerButtonStyle}
-                      onPress={onOpen}
-                    >
-                      <Flag countryCode={countryCode} flagSize={24} />
-                      <Text type="p1">
-                        +{getCountryCallingCode(countryCode as PhoneNumberCountryCode)}
-                      </Text>
-                    </TouchableOpacity>
-                  )
+          <CountryPicker
+            theme={mode === "dark" ? DARK_THEME : DEFAULT_THEME}
+            countryCode={
+              (phoneInputInfo?.countryCode || DEFAULT_COUNTRY_CODE) as CountryCode
+            }
+            countryCodes={supportedCountries as CountryCode[]}
+            onSelect={(country) => setCountryCode(country.cca2 as PhoneNumberCountryCode)}
+            renderFlagButton={({ countryCode, onOpen }) => {
+              return (
+                countryCode && (
+                  <TouchableOpacity
+                    style={styles.countryPickerButtonStyle}
+                    onPress={onOpen}
+                  >
+                    <Flag countryCode={countryCode} flagSize={24} />
+                    <Text type="p1">
+                      +{getCountryCallingCode(countryCode as PhoneNumberCountryCode)}
+                    </Text>
+                  </TouchableOpacity>
                 )
-              }}
-              withCallingCodeButton={true}
-              withFilter={true}
-              filterProps={{
-                autoFocus: true,
-              }}
-              withCallingCode={true}
-              disableNativeModal={Platform.OS === "android"}
-            />
-          </CountryModalProvider>
+              )
+            }}
+            withCallingCodeButton={true}
+            withFilter={true}
+            filterProps={{
+              autoFocus: true,
+            }}
+            withCallingCode={true}
+          />
           <Input
             placeholder={PLACEHOLDER_PHONE_NUMBER}
             containerStyle={styles.inputComponentContainerStyle}
@@ -212,7 +205,6 @@ const useStyles = makeStyles(({ colors }) => ({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    flex: 1,
   },
   inputComponentContainerStyle: {
     flex: 1,

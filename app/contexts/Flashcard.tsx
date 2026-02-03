@@ -1,6 +1,5 @@
 import React, { createContext, useEffect, useState } from "react"
-import { Dimensions, Platform, TouchableOpacity, View } from "react-native"
-import { ModalPortal as Modal } from "@app/components/modal-portal"
+import { Dimensions, Modal, Platform, TouchableOpacity, View } from "react-native"
 import NfcManager, { Ndef, TagEvent, NfcTech } from "react-native-nfc-manager"
 import * as Animatable from "react-native-animatable"
 import { makeStyles, Text } from "@rneui/themed"
