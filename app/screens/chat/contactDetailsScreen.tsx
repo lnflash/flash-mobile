@@ -128,7 +128,7 @@ const ContactDetailsScreen: React.FC = () => {
 
     nostrRuntime.ensureSubscription(
       postsKey,
-      [{ kinds: [1, 6], authors: [contactPubkey], limit: 10 }],
+      { kinds: [1, 6], authors: [contactPubkey], limit: 10 },
       (event) => {
         fetchedEvents.push(event)
 
@@ -137,7 +137,7 @@ const ContactDetailsScreen: React.FC = () => {
           if (pTag) {
             nostrRuntime.ensureSubscription(
               `profile:${pTag}`,
-              [{ kinds: [0], authors: [pTag], limit: 1 }],
+              { kinds: [0], authors: [pTag], limit: 1 },
               (profileEvent) => {
                 profilesMap.set(pTag, JSON.parse(profileEvent.content))
                 setRepostedProfiles(new Map(profilesMap))

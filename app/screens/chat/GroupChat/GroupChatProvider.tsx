@@ -81,12 +81,11 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   useEffect(() => {
     nostrRuntime.ensureSubscription(
       `nip29:messages`,
-      [
-        {
-          "#h": [groupId],
-          "kinds": [9],
-        },
-      ],
+
+      {
+        "#h": [groupId],
+        "kinds": [9],
+      },
       (event: Event) => {
         const msg: MessageType.Text = {
           id: event.id,
@@ -121,7 +120,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     }
     const unsub = nostrRuntime.ensureSubscription(
       `nip29:group_metadata`,
-      [{ "kinds": [39000], "#d": [groupId] }],
+      { "kinds": [39000], "#d": [groupId] },
       (event) => {
         console.log("==============GOT METADATA EVENT=============")
         const parsed = parseGroupTags(event.tags)
@@ -144,7 +143,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
 
     const unsub = nostrRuntime.ensureSubscription(
       `nip29:membership`,
-      [filters],
+      filters,
       (event: any) => {
         // Extract all `p` tags as pubkeys
         console.log("==============GOT MEMBERSHIP EVENT=============")
@@ -155,7 +154,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
         // Convert to Set for easy diff
         const currentSet = new Set(currentMembers)
 
-        // Notify self if joined
+        // Notify self if just joined (transition only – for the system message)
         if (
           userPublicKey &&
           !prevMembersRef.current.has(userPublicKey) &&
@@ -169,7 +168,11 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
             )
             return next
           })
-          setIsMember(true)
+        }
+
+        // Always sync isMember with the current roster
+        if (userPublicKey) {
+          setIsMember(currentSet.has(userPublicKey))
         }
 
         // Notify other new members
