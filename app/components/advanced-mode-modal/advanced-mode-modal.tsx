@@ -80,63 +80,65 @@ export const AdvancedModeModal: React.FC<Props> = ({
   }
 
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={isVisible}
-      onRequestClose={() => setIsVisible(false)}
-    >
-      <View style={styles.backdrop}>
-        <View style={styles.container}>
-          <TouchableOpacity style={styles.close} onPress={() => setIsVisible(false)}>
-            <Icon name={"close"} size={35} color={colors.black} type="ionicon" />
-          </TouchableOpacity>
-          <ScrollView>
-            <Text style={styles.title}>Be your own Bank</Text>
-            <Image
-              source={AdvanceModeImage}
-              style={styles.advanceModeImage}
-              resizeMode="contain"
-            />
-            <View style={styles.body}>
-              <Text style={styles.text} type={"h2"} bold>
-                {LL.AdvancedModeModal.header()}
-              </Text>
-              <Text style={styles.text} type="p2">
-                {LL.AdvancedModeModal.body()}
-              </Text>
-              <Text
-                style={styles.textBtn}
-                type="p2"
-                bold
-                onPress={() => Linking.openURL(DOCS_LINK)}
-              >
-                {LL.AdvancedModeModal.learnMore()}
-              </Text>
-              <PrimaryBtn
-                label={
-                  hasRecoveryPhrase
-                    ? LL.common.revealSeed()
-                    : LL.AdvancedModeModal.importWallet()
-                }
-                onPress={hasRecoveryPhrase ? goToBackupBTCWallet : goToImportBTCWallet}
-                btnStyle={{ marginVertical: 10 }}
+    <View>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isVisible}
+        onRequestClose={() => setIsVisible(false)}
+      >
+        <View style={styles.backdrop}>
+          <View style={styles.container}>
+            <TouchableOpacity style={styles.close} onPress={() => setIsVisible(false)}>
+              <Icon name={"close"} size={35} color={colors.black} type="ionicon" />
+            </TouchableOpacity>
+            <ScrollView>
+              <Text style={styles.title}>Be your own Bank</Text>
+              <Image
+                source={AdvanceModeImage}
+                style={styles.advanceModeImage}
+                resizeMode="contain"
               />
-              <PrimaryBtn
-                type="outline"
-                label={
-                  hasRecoveryPhrase
-                    ? LL.common.backHome()
-                    : LL.AdvancedModeModal.createWallet()
-                }
-                onPress={hasRecoveryPhrase ? acknowledgeModal : onCreateNewWallet}
-                btnStyle={{ marginBottom: bottom || 10 }}
-              />
-            </View>
-          </ScrollView>
+              <View style={styles.body}>
+                <Text style={styles.text} type={"h2"} bold>
+                  {LL.AdvancedModeModal.header()}
+                </Text>
+                <Text style={styles.text} type="p2">
+                  {LL.AdvancedModeModal.body()}
+                </Text>
+                <Text
+                  style={styles.textBtn}
+                  type="p2"
+                  bold
+                  onPress={() => Linking.openURL(DOCS_LINK)}
+                >
+                  {LL.AdvancedModeModal.learnMore()}
+                </Text>
+                <PrimaryBtn
+                  label={
+                    hasRecoveryPhrase
+                      ? LL.common.revealSeed()
+                      : LL.AdvancedModeModal.importWallet()
+                  }
+                  onPress={hasRecoveryPhrase ? goToBackupBTCWallet : goToImportBTCWallet}
+                  btnStyle={{ marginVertical: 10 }}
+                />
+                <PrimaryBtn
+                  type="outline"
+                  label={
+                    hasRecoveryPhrase
+                      ? LL.common.backHome()
+                      : LL.AdvancedModeModal.createWallet()
+                  }
+                  onPress={hasRecoveryPhrase ? acknowledgeModal : onCreateNewWallet}
+                  btnStyle={{ marginBottom: bottom || 10 }}
+                />
+              </View>
+            </ScrollView>
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+    </View>
   )
 }
 

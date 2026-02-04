@@ -90,3 +90,6 @@ android/app/src/main/assets
 .metro-health-check*
 Gemfile.lock
 vendor/
+
+# Sisyphus planning files
+.sisyphus/

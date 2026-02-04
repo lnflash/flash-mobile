@@ -7,8 +7,9 @@
 
     <!-- BootTheme should inherit from AppTheme and use SplashScreen attributes -->
     <style name="BootTheme" parent="AppTheme">
-        <item name="windowSplashScreenBackground">@color/bootsplash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/bootsplash_logo</item>
+        <item name="android:windowSplashScreenBackground">@color/bootsplash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/bootsplash_logo</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/bootsplash_background</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>
 
