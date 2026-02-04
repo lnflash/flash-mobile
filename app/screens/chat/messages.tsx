@@ -2,7 +2,7 @@ import "react-native-get-random-values"
 import * as React from "react"
 import { ActivityIndicator, Image, Platform, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
+import { RouteProp, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Screen } from "../../components/screen"
 import type {
@@ -15,61 +15,56 @@ import { isIos } from "@app/utils/helper"
 import { Chat, MessageType, defaultTheme } from "@flyerhq/react-native-chat-ui"
 import { ChatMessage } from "./chatMessage"
 import Icon from "react-native-vector-icons/Ionicons"
-import { getPublicKey, Event, nip19, SubCloser } from "nostr-tools"
-import {
-  Rumor,
-  convertRumorsToGroups,
-  fetchNostrUsers,
-  fetchPreferredRelays,
-  sendNip17Message,
-} from "@app/utils/nostr"
+import { getPublicKey, nip19, Event } from "nostr-tools"
+import { Rumor, convertRumorsToGroups, sendNip17Message } from "@app/utils/nostr"
 import { useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { updateLastSeen } from "./utils"
 import { hexToBytes } from "@noble/hashes/utils"
+import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
+import { pool } from "@app/utils/nostr/pool"
 
 type MessagesProps = {
   route: RouteProp<ChatStackParamList, "messages">
 }
 
 export const Messages: React.FC<MessagesProps> = ({ route }) => {
-  let userPubkey = getPublicKey(hexToBytes(route.params.userPrivateKey))
-  let groupId = route.params.groupId
-  const { poolRef } = useChatContext()
-  const [profileMap, setProfileMap] = useState<Map<string, NostrProfile>>()
-  const [preferredRelaysMap, setPreferredRelaysMap] = useState<Map<string, string[]>>()
+  const userPrivateKeyBytes = hexToBytes(route.params.userPrivateKey)
+  const userPubkey = getPublicKey(userPrivateKeyBytes)
+  const groupId = route.params.groupId
+  const [profileMap, setProfileMap] = useState<Map<string, NostrProfile>>(new Map())
+  const [preferredRelaysMap, setPreferredRelaysMap] = useState<Map<string, string[]>>(
+    new Map(),
+  )
 
-  function handleProfileEvent(event: Event) {
-    let profile = JSON.parse(event.content)
-    setProfileMap((profileMap) => {
-      let newProfileMap = profileMap || new Map<string, Object>()
-      newProfileMap.set(event.pubkey, profile)
-      return newProfileMap
-    })
+  // Helper for handling profile events
+  const handleProfileEvent = (event: Event) => {
+    try {
+      const profile = JSON.parse(event.content)
+      setProfileMap((prev) => new Map(prev).set(event.pubkey, profile))
+    } catch (e) {
+      console.error("Failed to parse profile event", e)
+    }
   }
 
+  // Subscribe to profiles using nostrRuntime
   useEffect(() => {
-    let closer: SubCloser
-    if (poolRef) {
-      closer = fetchNostrUsers(groupId.split(","), poolRef.current, handleProfileEvent)
-      fetchPreferredRelays(groupId.split(","), poolRef.current).then(
-        (relayMap: Map<string, string[]>) => {
-          setPreferredRelaysMap(relayMap)
-        },
-      )
-    }
-    return () => {
-      if (closer) closer.close()
-    }
-  }, [groupId, poolRef])
+    const pubkeys = groupId.split(",")
+    nostrRuntime.ensureSubscription(
+      `messagesProfiles:${pubkeys.join(",")}`,
+      [{ kinds: [0], authors: pubkeys }],
+      handleProfileEvent,
+    )
+  }, [groupId])
 
   return (
     <MessagesScreen
       userPubkey={userPubkey}
-      groupId={route.params.groupId}
+      groupId={groupId}
       profileMap={profileMap}
       preferredRelaysMap={preferredRelaysMap}
+      userPrivateKey={userPrivateKeyBytes}
     />
   )
 }
@@ -77,12 +72,14 @@ export const Messages: React.FC<MessagesProps> = ({ route }) => {
 type MessagesScreenProps = {
   groupId: string
   userPubkey: string
-  profileMap?: Map<string, NostrProfile>
-  preferredRelaysMap?: Map<string, string[]>
+  userPrivateKey: Uint8Array
+  profileMap: Map<string, NostrProfile>
+  preferredRelaysMap: Map<string, string[]>
 }
 
 export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   userPubkey,
+  userPrivateKey,
   groupId,
   profileMap,
   preferredRelaysMap,
@@ -90,19 +87,18 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   const {
     theme: { colors },
   } = useTheme()
-  let { rumors, poolRef } = useChatContext()
+  const { rumors } = useChatContext()
   const styles = useStyles()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
   const { LL } = useI18nContext()
-  const [initialized, setInitialized] = React.useState(false)
+  const [initialized, setInitialized] = useState(false)
   const [messages, setMessages] = useState<Map<string, MessageType.Text>>(new Map())
-
   const user = { id: userPubkey }
 
   const convertRumorsToMessages = (rumors: Rumor[]) => {
-    let chatSet: Map<string, MessageType.Text> = new Map<string, MessageType.Text>()
-    ;(rumors || []).forEach((r: Rumor) => {
-      chatSet.set(r.id, {
+    const chatMap = new Map<string, MessageType.Text>()
+    rumors.forEach((r) => {
+      chatMap.set(r.id, {
         author: { id: r.pubkey },
         createdAt: r.created_at * 1000,
         id: r.id,
@@ -110,175 +106,120 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
         text: r.content,
       })
     })
-    return chatSet
+    return chatMap
   }
 
-  React.useEffect(() => {
-    let isMounted = true
-    async function initialize() {
-      if (poolRef) setInitialized(true)
-    }
-    if (!initialized) initialize()
-    let chatRumors = convertRumorsToGroups(rumors).get(groupId)
-    const lastRumor = (chatRumors || []).sort((a, b) => b.created_at - a.created_at)[0]
+  // Initialize messages map & last-seen tracking
+  useEffect(() => {
+    setInitialized(true)
+    const chatRumors = convertRumorsToGroups(rumors).get(groupId) || []
+    const lastRumor = chatRumors.sort((a, b) => b.created_at - a.created_at)[0]
     if (lastRumor) updateLastSeen(groupId, lastRumor.created_at)
-    let newChatMap = new Map([...messages, ...convertRumorsToMessages(chatRumors || [])])
-    setMessages(newChatMap)
-    return () => {
-      isMounted = false
-    }
-  }, [poolRef, rumors])
+    setMessages((prev) => new Map([...prev, ...convertRumorsToMessages(chatRumors)]))
+  }, [rumors])
 
   const handleSendPress = async (message: MessageType.PartialText) => {
-    let textMessage: MessageType.Text = {
+    const textMessage: MessageType.Text = {
       author: user,
       createdAt: Date.now(),
       text: message.text,
       type: "text",
       id: message.text,
     }
+
     let sent = false
-    let onSent = (rumor: Rumor) => {
-      console.log("OnSent")
+    const onSent = (rumor: Rumor) => {
       if (!sent) {
-        console.log("On sent setting")
         textMessage.id = rumor.id
-        setMessages((prevChat) => {
-          let newChatMap = new Map(prevChat)
-          newChatMap.set(textMessage.id, textMessage)
-          return newChatMap
-        })
+        setMessages((prev) => new Map(prev).set(textMessage.id, textMessage))
         sent = true
       }
     }
-    let result = await sendNip17Message(
+
+    const result = await sendNip17Message(
       groupId.split(","),
       message.text,
-      preferredRelaysMap || new Map<string, string[]>(),
+      preferredRelaysMap,
       onSent,
     )
-    console.log("Output is", result)
-    if (
-      result.outputs.filter((output) => output.acceptedRelays.length !== 0).length === 0
-    ) {
-      console.log("inside errored message")
+
+    // Mark failed messages
+    if (result.outputs.filter((o) => o.acceptedRelays.length > 0).length === 0) {
       textMessage.metadata = { errors: true }
       textMessage.id = result.rumor.id
-
-      setMessages((prevChat) => {
-        let newChatMap = new Map(prevChat)
-        newChatMap.set(textMessage.id, textMessage)
-        return newChatMap
-      })
+      setMessages((prev) => new Map(prev).set(textMessage.id, textMessage))
     }
-    console.log("setting message with metadata", textMessage)
   }
 
   return (
     <Screen>
-      <View style={styles.aliasView} key="profileView">
+      <View style={styles.aliasView}>
         <Icon
           name="arrow-back-outline"
           onPress={navigation.goBack}
           style={styles.backButton}
-          key="backButton"
         />
-        <Text type="p1" key="displayname">
+        <Text type="p1">
           {groupId
             .split(",")
             .filter((p) => p !== userPubkey)
-            .map((user) => {
-              return (
-                profileMap?.get(user)?.name ||
-                profileMap?.get(user)?.username ||
-                profileMap?.get(user)?.lud16 ||
-                nip19.npubEncode(user).slice(0, 9) + ".."
-              )
-            })
+            .map(
+              (p) =>
+                profileMap.get(p)?.name ||
+                profileMap.get(p)?.username ||
+                profileMap.get(p)?.lud16 ||
+                nip19.npubEncode(p).slice(0, 9) + "..",
+            )
             .join(", ")}
         </Text>
-        <View style={{ display: "flex", flexDirection: "row" }} key="header">
+        <View style={{ flexDirection: "row" }}>
           <GaloyIconButton
-            name={"lightning"}
+            name="lightning"
             size="medium"
-            //text={LL.HomeScreen.pay()}
             style={{ margin: 5 }}
             onPress={() => {
-              let ids = groupId.split(",")
-              let recipientId = ids.filter((id) => id !== userPubkey)[0]
+              const recipientId = groupId.split(",").filter((id) => id !== userPubkey)[0]
               navigation.navigate("sendBitcoinDestination", {
-                username: profileMap?.get(recipientId)?.lud16,
+                username: profileMap.get(recipientId)?.lud16,
               })
             }}
-            key="lightning-button"
           />
           {groupId
             .split(",")
             .filter((p) => p !== userPubkey)
-            .map((pubkey) => {
-              return (
-                <Image
-                  source={{
-                    uri:
-                      profileMap?.get(pubkey)?.picture ||
-                      "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
-                  }}
-                  style={styles.userPic}
-                  key="profile-picture"
-                />
-              )
-            })}
+            .map((pubkey) => (
+              <Image
+                key={pubkey}
+                source={{
+                  uri:
+                    profileMap.get(pubkey)?.picture ||
+                    "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
+                }}
+                style={styles.userPic}
+              />
+            ))}
         </View>
       </View>
+
       {!initialized && <ActivityIndicator />}
-      <View style={styles.chatBodyContainer} key="chatContainer">
-        <View style={styles.chatView} key="chatView">
+
+      <View style={styles.chatBodyContainer}>
+        <View style={styles.chatView}>
           <SafeAreaProvider>
             <Chat
-              messages={Array.from(messages.values()).sort((a, b) => {
-                return b.createdAt! - a.createdAt!
-              })}
-              key="messages"
-              onPreviewDataFetched={() => {}}
-              onSendPress={handleSendPress}
-              l10nOverride={{
-                emptyChatPlaceholder: initialized
-                  ? isIos
-                    ? "No messages here yet"
-                    : "..."
-                  : isIos
-                  ? "Fetching Messages..."
-                  : "...",
-              }}
+              messages={Array.from(messages.values()).sort(
+                (a, b) => b.createdAt! - a.createdAt!,
+              )}
               user={user}
-              renderBubble={({ child, message, nextMessageInGroup }) => {
-                return (
-                  <View
-                    style={{
-                      backgroundColor:
-                        userPubkey === message.author.id ? "#8fbc8f" : "white",
-                      borderRadius: 15,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {child}
-                  </View>
-                )
-              }}
-              renderTextMessage={(message, nextMessage, prevMessage) => (
+              onSendPress={handleSendPress}
+              renderTextMessage={(msg, next, prev) => (
                 <ChatMessage
-                  key={message.id}
-                  message={message}
-                  // recipientId={userPubkey}
-                  nextMessage={nextMessage}
-                  prevMessage={prevMessage}
+                  key={msg.id}
+                  message={msg}
+                  nextMessage={next}
+                  prevMessage={prev}
                 />
               )}
-              flatListProps={{
-                contentContainerStyle: {
-                  paddingTop: messages.size ? (Platform.OS == "ios" ? 50 : 0) : 100,
-                },
-              }}
               theme={{
                 ...defaultTheme,
                 colors: {
@@ -294,6 +235,20 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
                   },
                 },
               }}
+              l10nOverride={{
+                emptyChatPlaceholder: initialized
+                  ? isIos
+                    ? "No messages here yet"
+                    : "..."
+                  : isIos
+                  ? "Fetching Messages..."
+                  : "...",
+              }}
+              flatListProps={{
+                contentContainerStyle: {
+                  paddingTop: messages.size ? (Platform.OS === "ios" ? 50 : 0) : 100,
+                },
+              }}
             />
           </SafeAreaProvider>
         </View>
@@ -303,11 +258,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
 }
 
 const useStyles = makeStyles(({ colors }) => ({
-  actionsContainer: {
-    margin: 12,
-  },
   aliasView: {
-    display: "flex",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -316,15 +267,8 @@ const useStyles = makeStyles(({ colors }) => ({
     paddingBottom: 6,
     paddingTop: isIos ? 40 : 10,
   },
-  chatBodyContainer: {
-    flex: 1,
-  },
-  chatView: {
-    flex: 1,
-    marginHorizontal: 30,
-    borderRadius: 24,
-    overflow: "hidden",
-  },
+  chatBodyContainer: { flex: 1 },
+  chatView: { flex: 1, marginHorizontal: 30, borderRadius: 24, overflow: "hidden" },
   userPic: {
     borderRadius: 50,
     height: 50,
@@ -332,8 +276,5 @@ const useStyles = makeStyles(({ colors }) => ({
     borderWidth: 1,
     borderColor: colors.green,
   },
-  backButton: {
-    fontSize: 26,
-    color: colors.primary3,
-  },
+  backButton: { fontSize: 26, color: colors.primary3 },
 }))

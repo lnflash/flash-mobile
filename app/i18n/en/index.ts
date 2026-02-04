@@ -1296,6 +1296,29 @@ const en: BaseTranslation = {
       "There was a problem with your request. Please retry in one minute. If the problem persist, we recommend that you log out and log back in. You can log out by going into Settings > Account > Log out",
     warning: "Warning",
   },
+  NostrQuickStart: {
+    postHeading: "Make your first social post!",
+    postDesc: "Introduce yourself to the World!"
+
+  },
+  Social: {
+    post: "Post to Nostr",
+    postTitle: "Make a Post",
+    flashAppCredit: "Posted using Flash! Get it @ https://getflash.io/app",
+    writeYourNote: "Write your note, make it special :)",
+    postButton: "Post",
+    notePosted: "Success!\n Your note has been posted",
+    errorPostFailed: "Error!\n Error in posting note",
+    errorEmptyNote: "Error: \n Empty note",
+    posting: "posting...",
+    viewOnIris: "View on iris.to",
+    viewPostQuestion: "Would you like to view your post on iris.to?",
+    browseSocialFeed: "Browse Social Feed",
+    socialFeedTitle: "Social Feed",
+    postSuccessTitle: "Post Shared!",
+    postSuccessSubtitle: "Your post has been published to Nostr",
+    showMeMore: "Show me more",
+  },
   errors: {
     generic: "There was an error.\nPlease try again later.",
     invalidEmail: "Invalid email",
@@ -1453,7 +1476,7 @@ const en: BaseTranslation = {
       profile: "Profile",
       nostrUser: "Nostr User",
       message: "Message",
-      sendPayment: "Send Payment",
+      sendPayment: "Send",
       contactInfo: "Contact Info",
       contactManagement: "Contact Management",
       unfollowContact: "Unfollow Contact",

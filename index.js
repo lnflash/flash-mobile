@@ -8,9 +8,17 @@
 //
 // It's easier just to leave it here.
 
+// Polyfills for Node.js core modules (React Native 0.74+)
+import "react-native-get-random-values"
+import "react-native-url-polyfill/auto"
+import { Buffer } from "buffer"
+import process from "process"
+
+global.Buffer = Buffer
+global.process = process
+
 globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true
 
-import "react-native-get-random-values"
 import { TextEncoder, TextDecoder } from "@sinonjs/text-encoding"
 import { AppRegistry, LogBox, TextInput, Text } from "react-native"
 import { App } from "./app/app.tsx"

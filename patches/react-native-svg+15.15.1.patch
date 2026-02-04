@@ -1,0 +1,1173 @@
+diff --git a/node_modules/react-native-svg/android/build/.transforms/7002cb39f61630f9b4e264ea4c9ab259/results.bin b/node_modules/react-native-svg/android/build/.transforms/7002cb39f61630f9b4e264ea4c9ab259/results.bin
+new file mode 100644
+index 0000000..0d259dd
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/.transforms/7002cb39f61630f9b4e264ea4c9ab259/results.bin
+@@ -0,0 +1 @@
++o/classes
+diff --git a/node_modules/react-native-svg/android/build/.transforms/7002cb39f61630f9b4e264ea4c9ab259/transformed/classes/classes_dex/classes.dex b/node_modules/react-native-svg/android/build/.transforms/7002cb39f61630f9b4e264ea4c9ab259/transformed/classes/classes_dex/classes.dex
+new file mode 100644
+index 0000000..665efbb
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/.transforms/7002cb39f61630f9b4e264ea4c9ab259/transformed/classes/classes_dex/classes.dex differ
+diff --git a/node_modules/react-native-svg/android/build/generated/source/buildConfig/debug/com/horcrux/svg/BuildConfig.java b/node_modules/react-native-svg/android/build/generated/source/buildConfig/debug/com/horcrux/svg/BuildConfig.java
+new file mode 100644
+index 0000000..661b676
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/generated/source/buildConfig/debug/com/horcrux/svg/BuildConfig.java
+@@ -0,0 +1,12 @@
++/**
++ * Automatically generated file. DO NOT MODIFY
++ */
++package com.horcrux.svg;
++
++public final class BuildConfig {
++  public static final boolean DEBUG = Boolean.parseBoolean("true");
++  public static final String LIBRARY_PACKAGE_NAME = "com.horcrux.svg";
++  public static final String BUILD_TYPE = "debug";
++  // Field from default config.
++  public static final boolean IS_NEW_ARCHITECTURE_ENABLED = false;
++}
+diff --git a/node_modules/react-native-svg/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml b/node_modules/react-native-svg/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml
+new file mode 100644
+index 0000000..97a239a
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="utf-8"?>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++    package="com.horcrux.svg" >
++
++    <uses-sdk android:minSdkVersion="26" />
++
++</manifest>
+\ No newline at end of file
+diff --git a/node_modules/react-native-svg/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/output-metadata.json b/node_modules/react-native-svg/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/output-metadata.json
+new file mode 100644
+index 0000000..8fa1366
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/output-metadata.json
+@@ -0,0 +1,18 @@
++{
++  "version": 3,
++  "artifactType": {
++    "type": "AAPT_FRIENDLY_MERGED_MANIFESTS",
++    "kind": "Directory"
++  },
++  "applicationId": "com.horcrux.svg",
++  "variantName": "debug",
++  "elements": [
++    {
++      "type": "SINGLE",
++      "filters": [],
++      "attributes": [],
++      "outputFile": "AndroidManifest.xml"
++    }
++  ],
++  "elementType": "File"
++}
+\ No newline at end of file
+diff --git a/node_modules/react-native-svg/android/build/intermediates/aar_metadata/debug/writeDebugAarMetadata/aar-metadata.properties b/node_modules/react-native-svg/android/build/intermediates/aar_metadata/debug/writeDebugAarMetadata/aar-metadata.properties
+new file mode 100644
+index 0000000..1211b1e
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/aar_metadata/debug/writeDebugAarMetadata/aar-metadata.properties
+@@ -0,0 +1,6 @@
++aarFormatVersion=1.0
++aarMetadataVersion=1.0
++minCompileSdk=1
++minCompileSdkExtension=0
++minAndroidGradlePluginVersion=1.0.0
++coreLibraryDesugaringEnabled=false
+diff --git a/node_modules/react-native-svg/android/build/intermediates/annotation_processor_list/debug/javaPreCompileDebug/annotationProcessors.json b/node_modules/react-native-svg/android/build/intermediates/annotation_processor_list/debug/javaPreCompileDebug/annotationProcessors.json
+new file mode 100644
+index 0000000..9e26dfe
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/annotation_processor_list/debug/javaPreCompileDebug/annotationProcessors.json
+@@ -0,0 +1 @@
++{}
+\ No newline at end of file
+diff --git a/node_modules/react-native-svg/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar b/node_modules/react-native-svg/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar
+new file mode 100644
+index 0000000..69d3363
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/compile_r_class_jar/debug/generateDebugRFile/R.jar b/node_modules/react-native-svg/android/build/intermediates/compile_r_class_jar/debug/generateDebugRFile/R.jar
+new file mode 100644
+index 0000000..2268cce
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/compile_r_class_jar/debug/generateDebugRFile/R.jar differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/compile_symbol_list/debug/generateDebugRFile/R.txt b/node_modules/react-native-svg/android/build/intermediates/compile_symbol_list/debug/generateDebugRFile/R.txt
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-svg/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-svg/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
+new file mode 100644
+index 0000000..ef1a956
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
+@@ -0,0 +1 @@
++#Mon Dec 29 09:37:45 UZT 2025
+diff --git a/node_modules/react-native-svg/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-svg/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
+new file mode 100644
+index 0000000..c1a86ad
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated" generated-set="generated$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/build/generated/res/resValues/debug"/></dataSet><mergedItems/></merger>
+\ No newline at end of file
+diff --git a/node_modules/react-native-svg/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml b/node_modules/react-native-svg/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
+new file mode 100644
+index 0000000..2a61138
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/debug/jniLibs"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/react-native-svg/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/react-native-svg/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
+new file mode 100644
+index 0000000..7892de5
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/debug/shaders"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/react-native-svg/android/build/intermediates/incremental/packageDebugAssets/merger.xml b/node_modules/react-native-svg/android/build/intermediates/incremental/packageDebugAssets/merger.xml
+new file mode 100644
+index 0000000..6921035
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/incremental/packageDebugAssets/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/assets"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/debug/assets"/></dataSet><dataSet config="generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/build/intermediates/shader_assets/debug/compileDebugShaders/out"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGCircleManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGCircleManagerDelegate.class
+new file mode 100644
+index 0000000..ded2f17
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGCircleManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGCircleManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGCircleManagerInterface.class
+new file mode 100644
+index 0000000..3b725d5
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGCircleManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGClipPathManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGClipPathManagerDelegate.class
+new file mode 100644
+index 0000000..45fa7fa
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGClipPathManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGClipPathManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGClipPathManagerInterface.class
+new file mode 100644
+index 0000000..eabab66
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGClipPathManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGDefsManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGDefsManagerDelegate.class
+new file mode 100644
+index 0000000..4488da4
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGDefsManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGDefsManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGDefsManagerInterface.class
+new file mode 100644
+index 0000000..cb80efe
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGDefsManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGEllipseManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGEllipseManagerDelegate.class
+new file mode 100644
+index 0000000..f772cb3
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGEllipseManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGEllipseManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGEllipseManagerInterface.class
+new file mode 100644
+index 0000000..b4df5e7
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGEllipseManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeBlendManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeBlendManagerDelegate.class
+new file mode 100644
+index 0000000..a588169
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeBlendManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeBlendManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeBlendManagerInterface.class
+new file mode 100644
+index 0000000..061760a
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeBlendManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeColorMatrixManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeColorMatrixManagerDelegate.class
+new file mode 100644
+index 0000000..d565b4c
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeColorMatrixManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeColorMatrixManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeColorMatrixManagerInterface.class
+new file mode 100644
+index 0000000..8024767
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeColorMatrixManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeCompositeManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeCompositeManagerDelegate.class
+new file mode 100644
+index 0000000..6dadf7a
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeCompositeManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeCompositeManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeCompositeManagerInterface.class
+new file mode 100644
+index 0000000..e8eee37
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeCompositeManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeFloodManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeFloodManagerDelegate.class
+new file mode 100644
+index 0000000..f2ac82b
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeFloodManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeFloodManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeFloodManagerInterface.class
+new file mode 100644
+index 0000000..690439d
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeFloodManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeGaussianBlurManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeGaussianBlurManagerDelegate.class
+new file mode 100644
+index 0000000..261ce0c
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeGaussianBlurManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeGaussianBlurManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeGaussianBlurManagerInterface.class
+new file mode 100644
+index 0000000..9cf8788
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeGaussianBlurManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeMergeManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeMergeManagerDelegate.class
+new file mode 100644
+index 0000000..d2115f2
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeMergeManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeMergeManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeMergeManagerInterface.class
+new file mode 100644
+index 0000000..8be27a3
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeMergeManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeOffsetManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeOffsetManagerDelegate.class
+new file mode 100644
+index 0000000..0c09227
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeOffsetManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeOffsetManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeOffsetManagerInterface.class
+new file mode 100644
+index 0000000..1303a7a
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFeOffsetManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFilterManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFilterManagerDelegate.class
+new file mode 100644
+index 0000000..0c334c4
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFilterManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFilterManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFilterManagerInterface.class
+new file mode 100644
+index 0000000..cd0a210
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGFilterManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGForeignObjectManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGForeignObjectManagerDelegate.class
+new file mode 100644
+index 0000000..5b45018
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGForeignObjectManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGForeignObjectManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGForeignObjectManagerInterface.class
+new file mode 100644
+index 0000000..6def963
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGForeignObjectManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGGroupManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGGroupManagerDelegate.class
+new file mode 100644
+index 0000000..5f3c4f0
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGGroupManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGGroupManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGGroupManagerInterface.class
+new file mode 100644
+index 0000000..e3ddc86
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGGroupManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGImageManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGImageManagerDelegate.class
+new file mode 100644
+index 0000000..548ba04
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGImageManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGImageManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGImageManagerInterface.class
+new file mode 100644
+index 0000000..961f9ad
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGImageManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLineManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLineManagerDelegate.class
+new file mode 100644
+index 0000000..6ea3a67
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLineManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLineManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLineManagerInterface.class
+new file mode 100644
+index 0000000..31c3c82
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLineManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLinearGradientManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLinearGradientManagerDelegate.class
+new file mode 100644
+index 0000000..e0e3520
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLinearGradientManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLinearGradientManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLinearGradientManagerInterface.class
+new file mode 100644
+index 0000000..43b3772
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGLinearGradientManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMarkerManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMarkerManagerDelegate.class
+new file mode 100644
+index 0000000..409fd9f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMarkerManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMarkerManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMarkerManagerInterface.class
+new file mode 100644
+index 0000000..d9959e1
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMarkerManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMaskManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMaskManagerDelegate.class
+new file mode 100644
+index 0000000..f240b73
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMaskManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMaskManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMaskManagerInterface.class
+new file mode 100644
+index 0000000..c8a9af8
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGMaskManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPathManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPathManagerDelegate.class
+new file mode 100644
+index 0000000..e0396d7
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPathManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPathManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPathManagerInterface.class
+new file mode 100644
+index 0000000..e0898a9
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPathManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPatternManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPatternManagerDelegate.class
+new file mode 100644
+index 0000000..507b3ec
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPatternManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPatternManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPatternManagerInterface.class
+new file mode 100644
+index 0000000..eb26de1
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGPatternManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRadialGradientManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRadialGradientManagerDelegate.class
+new file mode 100644
+index 0000000..dccfbc4
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRadialGradientManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRadialGradientManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRadialGradientManagerInterface.class
+new file mode 100644
+index 0000000..68cfd12
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRadialGradientManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRectManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRectManagerDelegate.class
+new file mode 100644
+index 0000000..bfb00bf
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRectManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRectManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRectManagerInterface.class
+new file mode 100644
+index 0000000..24c443e
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGRectManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSvgViewAndroidManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSvgViewAndroidManagerDelegate.class
+new file mode 100644
+index 0000000..3e1a6e1
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSvgViewAndroidManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSvgViewAndroidManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSvgViewAndroidManagerInterface.class
+new file mode 100644
+index 0000000..cb41ec6
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSvgViewAndroidManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSymbolManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSymbolManagerDelegate.class
+new file mode 100644
+index 0000000..79067dc
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSymbolManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSymbolManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSymbolManagerInterface.class
+new file mode 100644
+index 0000000..de7e244
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGSymbolManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTSpanManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTSpanManagerDelegate.class
+new file mode 100644
+index 0000000..492b520
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTSpanManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTSpanManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTSpanManagerInterface.class
+new file mode 100644
+index 0000000..88305c3
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTSpanManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextManagerDelegate.class
+new file mode 100644
+index 0000000..c7b9373
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextManagerInterface.class
+new file mode 100644
+index 0000000..61988b2
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextPathManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextPathManagerDelegate.class
+new file mode 100644
+index 0000000..8d19607
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextPathManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextPathManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextPathManagerInterface.class
+new file mode 100644
+index 0000000..c18aa6b
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGTextPathManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGUseManagerDelegate.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGUseManagerDelegate.class
+new file mode 100644
+index 0000000..a2d5ab1
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGUseManagerDelegate.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGUseManagerInterface.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGUseManagerInterface.class
+new file mode 100644
+index 0000000..6c346b0
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNSVGUseManagerInterface.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Brush$BrushType.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Brush$BrushType.class
+new file mode 100644
+index 0000000..562a5a5
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Brush$BrushType.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Brush$BrushUnits.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Brush$BrushUnits.class
+new file mode 100644
+index 0000000..439c187
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Brush$BrushUnits.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Brush.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Brush.class
+new file mode 100644
+index 0000000..6538a93
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Brush.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/BuildConfig.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/BuildConfig.class
+new file mode 100644
+index 0000000..400b181
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/BuildConfig.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/CircleView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/CircleView.class
+new file mode 100644
+index 0000000..6382624
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/CircleView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ClipPathView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ClipPathView.class
+new file mode 100644
+index 0000000..d727f4d
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ClipPathView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/CustomFilter.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/CustomFilter.class
+new file mode 100644
+index 0000000..da3d91f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/CustomFilter.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/CustomFilterFunction.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/CustomFilterFunction.class
+new file mode 100644
+index 0000000..69e2de1
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/CustomFilterFunction.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/DefinitionView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/DefinitionView.class
+new file mode 100644
+index 0000000..805f943
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/DefinitionView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/DefsView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/DefsView.class
+new file mode 100644
+index 0000000..c8cc28d
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/DefsView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ElementType.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ElementType.class
+new file mode 100644
+index 0000000..7f819eb
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ElementType.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/EllipseView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/EllipseView.class
+new file mode 100644
+index 0000000..b0ec720
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/EllipseView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeBlendView$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeBlendView$1.class
+new file mode 100644
+index 0000000..2d3dbf7
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeBlendView$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeBlendView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeBlendView.class
+new file mode 100644
+index 0000000..63f7746
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeBlendView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeColorMatrixView$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeColorMatrixView$1.class
+new file mode 100644
+index 0000000..8d69a54
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeColorMatrixView$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeColorMatrixView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeColorMatrixView.class
+new file mode 100644
+index 0000000..e6cbd1c
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeColorMatrixView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeCompositeView$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeCompositeView$1.class
+new file mode 100644
+index 0000000..58dbf33
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeCompositeView$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeCompositeView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeCompositeView.class
+new file mode 100644
+index 0000000..b9ab433
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeCompositeView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeFloodView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeFloodView.class
+new file mode 100644
+index 0000000..113fc44
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeFloodView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeGaussianBlurView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeGaussianBlurView.class
+new file mode 100644
+index 0000000..5d5fa33
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeGaussianBlurView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeMergeView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeMergeView.class
+new file mode 100644
+index 0000000..fb2954f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeMergeView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeOffsetView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeOffsetView.class
+new file mode 100644
+index 0000000..b9fd463
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FeOffsetView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterPrimitiveView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterPrimitiveView.class
+new file mode 100644
+index 0000000..350bfc2
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterPrimitiveView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$EdgeMode.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$EdgeMode.class
+new file mode 100644
+index 0000000..1ecb7c8
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$EdgeMode.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$FeBlendMode.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$FeBlendMode.class
+new file mode 100644
+index 0000000..a461146
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$FeBlendMode.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$FeColorMatrixType.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$FeColorMatrixType.class
+new file mode 100644
+index 0000000..714709a
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$FeColorMatrixType.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$FeCompositeOperator.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$FeCompositeOperator.class
+new file mode 100644
+index 0000000..25a236c
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$FeCompositeOperator.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$Units.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$Units.class
+new file mode 100644
+index 0000000..54cc725
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties$Units.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties.class
+new file mode 100644
+index 0000000..613b118
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterProperties.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterRegion.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterRegion.class
+new file mode 100644
+index 0000000..ec1a60f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterRegion.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterUtils.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterUtils.class
+new file mode 100644
+index 0000000..da0637c
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterUtils.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterView.class
+new file mode 100644
+index 0000000..8dbdebb
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FilterView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FontData$AbsoluteFontWeight.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FontData$AbsoluteFontWeight.class
+new file mode 100644
+index 0000000..dd2f1ff
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FontData$AbsoluteFontWeight.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FontData.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FontData.class
+new file mode 100644
+index 0000000..b1dd1a8
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/FontData.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ForeignObjectView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ForeignObjectView.class
+new file mode 100644
+index 0000000..d387f9d
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ForeignObjectView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/GlyphContext.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/GlyphContext.class
+new file mode 100644
+index 0000000..2436831
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/GlyphContext.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/GlyphPathBag.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/GlyphPathBag.class
+new file mode 100644
+index 0000000..84261af
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/GlyphPathBag.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/GroupView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/GroupView.class
+new file mode 100644
+index 0000000..a299d58
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/GroupView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ImageView$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ImageView$1.class
+new file mode 100644
+index 0000000..e89e940
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ImageView$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ImageView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ImageView.class
+new file mode 100644
+index 0000000..fabf6f7
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ImageView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/LineView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/LineView.class
+new file mode 100644
+index 0000000..e0d8631
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/LineView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/LinearGradientView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/LinearGradientView.class
+new file mode 100644
+index 0000000..0969dc1
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/LinearGradientView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/MarkerView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/MarkerView.class
+new file mode 100644
+index 0000000..5555066
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/MarkerView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/MaskView$MaskType.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/MaskView$MaskType.class
+new file mode 100644
+index 0000000..978f150
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/MaskView$MaskType.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/MaskView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/MaskView.class
+new file mode 100644
+index 0000000..acc3155
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/MaskView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/NativeSvgRenderableModuleSpec.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/NativeSvgRenderableModuleSpec.class
+new file mode 100644
+index 0000000..635d668
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/NativeSvgRenderableModuleSpec.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/NativeSvgViewModuleSpec.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/NativeSvgViewModuleSpec.class
+new file mode 100644
+index 0000000..e8e03fd
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/NativeSvgViewModuleSpec.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PathElement.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PathElement.class
+new file mode 100644
+index 0000000..7c06d3d
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PathElement.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PathParser.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PathParser.class
+new file mode 100644
+index 0000000..5b42564
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PathParser.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PathView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PathView.class
+new file mode 100644
+index 0000000..63b56bd
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PathView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PatternView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PatternView.class
+new file mode 100644
+index 0000000..ba80a56
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PatternView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Point.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Point.class
+new file mode 100644
+index 0000000..1c3279f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/Point.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PropHelper$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PropHelper$1.class
+new file mode 100644
+index 0000000..7b16cba
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PropHelper$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PropHelper.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PropHelper.class
+new file mode 100644
+index 0000000..bb830b7
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/PropHelper.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGMarkerPosition$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGMarkerPosition$1.class
+new file mode 100644
+index 0000000..23eb211
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGMarkerPosition$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGMarkerPosition.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGMarkerPosition.class
+new file mode 100644
+index 0000000..30bec05
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGMarkerPosition.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGMarkerType.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGMarkerType.class
+new file mode 100644
+index 0000000..2b055a1
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGMarkerType.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGRenderableManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGRenderableManager.class
+new file mode 100644
+index 0000000..ee681bb
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RNSVGRenderableManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RadialGradientView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RadialGradientView.class
+new file mode 100644
+index 0000000..8f3aa7d
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RadialGradientView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RectView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RectView.class
+new file mode 100644
+index 0000000..466b322
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RectView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableView$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableView$1.class
+new file mode 100644
+index 0000000..ef74d2c
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableView$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableView.class
+new file mode 100644
+index 0000000..9d5a221
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$1.class
+new file mode 100644
+index 0000000..ba32440
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$CircleViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$CircleViewManager.class
+new file mode 100644
+index 0000000..b127438
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$CircleViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$ClipPathViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$ClipPathViewManager.class
+new file mode 100644
+index 0000000..2736698
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$ClipPathViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$DefsViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$DefsViewManager.class
+new file mode 100644
+index 0000000..d2957ee
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$DefsViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$EllipseViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$EllipseViewManager.class
+new file mode 100644
+index 0000000..31044f1
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$EllipseViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeBlendManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeBlendManager.class
+new file mode 100644
+index 0000000..b436902
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeBlendManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeColorMatrixManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeColorMatrixManager.class
+new file mode 100644
+index 0000000..bfb811a
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeColorMatrixManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeCompositeManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeCompositeManager.class
+new file mode 100644
+index 0000000..6af4d49
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeCompositeManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeFloodManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeFloodManager.class
+new file mode 100644
+index 0000000..5ddb0ce
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeFloodManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeGaussianBlurManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeGaussianBlurManager.class
+new file mode 100644
+index 0000000..c96dfd4
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeGaussianBlurManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeMergeManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeMergeManager.class
+new file mode 100644
+index 0000000..12b6b9f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeMergeManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeOffsetManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeOffsetManager.class
+new file mode 100644
+index 0000000..3d40c2f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FeOffsetManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FilterManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FilterManager.class
+new file mode 100644
+index 0000000..a38cafa
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FilterManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FilterPrimitiveManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FilterPrimitiveManager.class
+new file mode 100644
+index 0000000..3921e2b
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$FilterPrimitiveManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$ForeignObjectManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$ForeignObjectManager.class
+new file mode 100644
+index 0000000..900a27d
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$ForeignObjectManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$GroupViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$GroupViewManager.class
+new file mode 100644
+index 0000000..92c8ec8
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$GroupViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$GroupViewManagerAbstract.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$GroupViewManagerAbstract.class
+new file mode 100644
+index 0000000..c048a7b
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$GroupViewManagerAbstract.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$ImageViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$ImageViewManager.class
+new file mode 100644
+index 0000000..09742bb
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$ImageViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$LineViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$LineViewManager.class
+new file mode 100644
+index 0000000..a699f17
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$LineViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$LinearGradientManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$LinearGradientManager.class
+new file mode 100644
+index 0000000..e5ca9b5
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$LinearGradientManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$MarkerManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$MarkerManager.class
+new file mode 100644
+index 0000000..0deb215
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$MarkerManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$MaskManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$MaskManager.class
+new file mode 100644
+index 0000000..7643ecb
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$MaskManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$PathViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$PathViewManager.class
+new file mode 100644
+index 0000000..ee76ca5
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$PathViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$PatternManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$PatternManager.class
+new file mode 100644
+index 0000000..0061aed
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$PatternManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$RadialGradientManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$RadialGradientManager.class
+new file mode 100644
+index 0000000..190ac88
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$RadialGradientManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$RectViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$RectViewManager.class
+new file mode 100644
+index 0000000..4065c9a
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$RectViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$SymbolManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$SymbolManager.class
+new file mode 100644
+index 0000000..f43f486
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$SymbolManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TSpanViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TSpanViewManager.class
+new file mode 100644
+index 0000000..9b39a3c
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TSpanViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TextPathViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TextPathViewManager.class
+new file mode 100644
+index 0000000..8ae9ce2
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TextPathViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TextViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TextViewManager.class
+new file mode 100644
+index 0000000..bff088b
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TextViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TextViewManagerAbstract.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TextViewManagerAbstract.class
+new file mode 100644
+index 0000000..69a0b52
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$TextViewManagerAbstract.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$UseViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$UseViewManager.class
+new file mode 100644
+index 0000000..9bab3b9
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager$UseViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager.class
+new file mode 100644
+index 0000000..e36c169
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/RenderableViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SVGLength$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SVGLength$1.class
+new file mode 100644
+index 0000000..719245e
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SVGLength$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SVGLength$UnitType.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SVGLength$UnitType.class
+new file mode 100644
+index 0000000..2359eea
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SVGLength$UnitType.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SVGLength.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SVGLength.class
+new file mode 100644
+index 0000000..01b6247
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SVGLength.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SegmentData.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SegmentData.class
+new file mode 100644
+index 0000000..6213a6b
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SegmentData.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$1.class
+new file mode 100644
+index 0000000..4e0b9b2
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$10.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$10.class
+new file mode 100644
+index 0000000..6f70a5b
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$10.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$11.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$11.class
+new file mode 100644
+index 0000000..f3f0792
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$11.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$12.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$12.class
+new file mode 100644
+index 0000000..741faba
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$12.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$13.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$13.class
+new file mode 100644
+index 0000000..c39892e
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$13.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$14.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$14.class
+new file mode 100644
+index 0000000..cdf16f8
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$14.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$15.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$15.class
+new file mode 100644
+index 0000000..1135e57
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$15.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$16.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$16.class
+new file mode 100644
+index 0000000..6b10011
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$16.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$17.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$17.class
+new file mode 100644
+index 0000000..2bfb72c
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$17.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$18.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$18.class
+new file mode 100644
+index 0000000..6e5b53e
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$18.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$19.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$19.class
+new file mode 100644
+index 0000000..fb08292
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$19.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$2.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$2.class
+new file mode 100644
+index 0000000..b3c7f8c
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$2.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$20.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$20.class
+new file mode 100644
+index 0000000..2f2bd65
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$20.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$21.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$21.class
+new file mode 100644
+index 0000000..1785b48
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$21.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$22.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$22.class
+new file mode 100644
+index 0000000..576ddd3
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$22.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$23.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$23.class
+new file mode 100644
+index 0000000..49ef708
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$23.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$24.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$24.class
+new file mode 100644
+index 0000000..cde0985
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$24.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$25.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$25.class
+new file mode 100644
+index 0000000..d7ce61f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$25.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$26.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$26.class
+new file mode 100644
+index 0000000..4c55181
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$26.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$27.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$27.class
+new file mode 100644
+index 0000000..8c8b09f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$27.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$28.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$28.class
+new file mode 100644
+index 0000000..5e32b84
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$28.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$29.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$29.class
+new file mode 100644
+index 0000000..ee10e17
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$29.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$3.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$3.class
+new file mode 100644
+index 0000000..3bb5dda
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$3.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$30.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$30.class
+new file mode 100644
+index 0000000..2d34d17
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$30.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$4.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$4.class
+new file mode 100644
+index 0000000..93ee0b8
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$4.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$5.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$5.class
+new file mode 100644
+index 0000000..3f82080
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$5.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$6.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$6.class
+new file mode 100644
+index 0000000..1d78a50
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$6.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$7.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$7.class
+new file mode 100644
+index 0000000..ab18dd9
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$7.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$8.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$8.class
+new file mode 100644
+index 0000000..d5b6670
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$8.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$9.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$9.class
+new file mode 100644
+index 0000000..b211c5e
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage$9.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage.class
+new file mode 100644
+index 0000000..c581797
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgPackage.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgView$Events.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgView$Events.class
+new file mode 100644
+index 0000000..b2a9461
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgView$Events.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgView.class
+new file mode 100644
+index 0000000..a544096
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewManager$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewManager$1.class
+new file mode 100644
+index 0000000..61d229b
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewManager$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewManager.class
+new file mode 100644
+index 0000000..8a0a7fe
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1$1$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1$1$1.class
+new file mode 100644
+index 0000000..1287020
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1$1$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1$1.class
+new file mode 100644
+index 0000000..43ebef0
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1$2.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1$2.class
+new file mode 100644
+index 0000000..9b42150
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1$2.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1.class
+new file mode 100644
+index 0000000..9f00dbd
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule.class
+new file mode 100644
+index 0000000..38fc42f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SvgViewModule.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SymbolView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SymbolView.class
+new file mode 100644
+index 0000000..97e5a1c
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/SymbolView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TSpanView$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TSpanView$1.class
+new file mode 100644
+index 0000000..bb18017
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TSpanView$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TSpanView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TSpanView.class
+new file mode 100644
+index 0000000..a15e788
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TSpanView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$1.class
+new file mode 100644
+index 0000000..ad9d7b6
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$1CharacterPositioningResolver.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$1CharacterPositioningResolver.class
+new file mode 100644
+index 0000000..8836237
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$1CharacterPositioningResolver.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$1TextLengthResolver.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$1TextLengthResolver.class
+new file mode 100644
+index 0000000..2c49762
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$1TextLengthResolver.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$CharacterInformation.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$CharacterInformation.class
+new file mode 100644
+index 0000000..715d0b8
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$CharacterInformation.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$LayoutInput.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$LayoutInput.class
+new file mode 100644
+index 0000000..3c79802
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm$LayoutInput.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm.class
+new file mode 100644
+index 0000000..5c858d8
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextLayoutAlgorithm.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextPathView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextPathView.class
+new file mode 100644
+index 0000000..5b04299
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextPathView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$AlignmentBaseline.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$AlignmentBaseline.class
+new file mode 100644
+index 0000000..a8727e5
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$AlignmentBaseline.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$Direction.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$Direction.class
+new file mode 100644
+index 0000000..7efa48d
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$Direction.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$FontStyle.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$FontStyle.class
+new file mode 100644
+index 0000000..3a4298a
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$FontStyle.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$FontVariantLigatures.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$FontVariantLigatures.class
+new file mode 100644
+index 0000000..ecff894
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$FontVariantLigatures.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$FontWeight.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$FontWeight.class
+new file mode 100644
+index 0000000..4a5ed88
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$FontWeight.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextAnchor.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextAnchor.class
+new file mode 100644
+index 0000000..63ad8cb
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextAnchor.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextDecoration.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextDecoration.class
+new file mode 100644
+index 0000000..51c66ce
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextDecoration.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextLengthAdjust.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextLengthAdjust.class
+new file mode 100644
+index 0000000..6bec321
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextLengthAdjust.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathMethod.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathMethod.class
+new file mode 100644
+index 0000000..42968b4
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathMethod.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathMidLine.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathMidLine.class
+new file mode 100644
+index 0000000..b5bbf1b
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathMidLine.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathSide.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathSide.class
+new file mode 100644
+index 0000000..6a3b495
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathSide.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathSpacing.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathSpacing.class
+new file mode 100644
+index 0000000..ec3e564
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties$TextPathSpacing.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties.class
+new file mode 100644
+index 0000000..4025816
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextProperties.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextView.class
+new file mode 100644
+index 0000000..2a1045b
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/TextView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/UseView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/UseView.class
+new file mode 100644
+index 0000000..ca36364
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/UseView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ViewBox.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ViewBox.class
+new file mode 100644
+index 0000000..8a12b4f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/ViewBox.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualView$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualView$1.class
+new file mode 100644
+index 0000000..c045dd0
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualView$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualView.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualView.class
+new file mode 100644
+index 0000000..ec4701d
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualView.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$1.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$1.class
+new file mode 100644
+index 0000000..dd8277f
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$1.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$2.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$2.class
+new file mode 100644
+index 0000000..a799fa0
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$2.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$RenderableShadowNode.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$RenderableShadowNode.class
+new file mode 100644
+index 0000000..d7c80e0
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$RenderableShadowNode.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$SVGClass.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$SVGClass.class
+new file mode 100644
+index 0000000..ddc1b11
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager$SVGClass.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager.class
+new file mode 100644
+index 0000000..08adced
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/VirtualViewManager.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/events/SvgLoadEvent.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/events/SvgLoadEvent.class
+new file mode 100644
+index 0000000..bedb28a
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/events/SvgLoadEvent.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/events/SvgOnLayoutEvent.class b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/events/SvgOnLayoutEvent.class
+new file mode 100644
+index 0000000..d439108
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/horcrux/svg/events/SvgOnLayoutEvent.class differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/local_only_symbol_list/debug/parseDebugLocalResources/R-def.txt b/node_modules/react-native-svg/android/build/intermediates/local_only_symbol_list/debug/parseDebugLocalResources/R-def.txt
+new file mode 100644
+index 0000000..78ac5b8
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/local_only_symbol_list/debug/parseDebugLocalResources/R-def.txt
+@@ -0,0 +1,2 @@
++R_DEF: Internal format may change without notice
++local
+diff --git a/node_modules/react-native-svg/android/build/intermediates/manifest_merge_blame_file/debug/processDebugManifest/manifest-merger-blame-debug-report.txt b/node_modules/react-native-svg/android/build/intermediates/manifest_merge_blame_file/debug/processDebugManifest/manifest-merger-blame-debug-report.txt
+new file mode 100644
+index 0000000..4ed2637
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/manifest_merge_blame_file/debug/processDebugManifest/manifest-merger-blame-debug-report.txt
+@@ -0,0 +1,7 @@
++1<?xml version="1.0" encoding="utf-8"?>
++2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++3    package="com.horcrux.svg" >
++4
++5    <uses-sdk android:minSdkVersion="26" />
++6
++7</manifest>
+diff --git a/node_modules/react-native-svg/android/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml b/node_modules/react-native-svg/android/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml
+new file mode 100644
+index 0000000..97a239a
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="utf-8"?>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++    package="com.horcrux.svg" >
++
++    <uses-sdk android:minSdkVersion="26" />
++
++</manifest>
+\ No newline at end of file
+diff --git a/node_modules/react-native-svg/android/build/intermediates/navigation_json/debug/extractDeepLinksDebug/navigation.json b/node_modules/react-native-svg/android/build/intermediates/navigation_json/debug/extractDeepLinksDebug/navigation.json
+new file mode 100644
+index 0000000..0637a08
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/navigation_json/debug/extractDeepLinksDebug/navigation.json
+@@ -0,0 +1 @@
++[]
+\ No newline at end of file
+diff --git a/node_modules/react-native-svg/android/build/intermediates/nested_resources_validation_report/debug/generateDebugResources/nestedResourcesValidationReport.txt b/node_modules/react-native-svg/android/build/intermediates/nested_resources_validation_report/debug/generateDebugResources/nestedResourcesValidationReport.txt
+new file mode 100644
+index 0000000..08f4ebe
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/nested_resources_validation_report/debug/generateDebugResources/nestedResourcesValidationReport.txt
+@@ -0,0 +1 @@
++0 Warning/Error
+\ No newline at end of file
+diff --git a/node_modules/react-native-svg/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar b/node_modules/react-native-svg/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar
+new file mode 100644
+index 0000000..9a3466b
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar differ
+diff --git a/node_modules/react-native-svg/android/build/intermediates/symbol_list_with_package_name/debug/generateDebugRFile/package-aware-r.txt b/node_modules/react-native-svg/android/build/intermediates/symbol_list_with_package_name/debug/generateDebugRFile/package-aware-r.txt
+new file mode 100644
+index 0000000..6ba6ea2
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/intermediates/symbol_list_with_package_name/debug/generateDebugRFile/package-aware-r.txt
+@@ -0,0 +1 @@
++com.horcrux.svg
+diff --git a/node_modules/react-native-svg/android/build/outputs/logs/manifest-merger-debug-report.txt b/node_modules/react-native-svg/android/build/outputs/logs/manifest-merger-debug-report.txt
+new file mode 100644
+index 0000000..e56579d
+--- /dev/null
++++ b/node_modules/react-native-svg/android/build/outputs/logs/manifest-merger-debug-report.txt
+@@ -0,0 +1,16 @@
++-- Merging decision tree log ---
++manifest
++ADDED from /Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/AndroidManifest.xml:1:1-71
++INJECTED from /Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/AndroidManifest.xml:1:1-71
++	package
++		INJECTED from /Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/AndroidManifest.xml
++	xmlns:android
++		ADDED from /Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/AndroidManifest.xml:1:11-69
++uses-sdk
++INJECTED from /Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
++INJECTED from /Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/AndroidManifest.xml
++INJECTED from /Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/AndroidManifest.xml
++	android:targetSdkVersion
++		INJECTED from /Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/AndroidManifest.xml
++	android:minSdkVersion
++		INJECTED from /Users/nodirbek/projects/flash/flash-mobile/node_modules/react-native-svg/android/src/main/AndroidManifest.xml
+diff --git a/node_modules/react-native-svg/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-svg/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
+new file mode 100644
+index 0000000..d0c1704
+Binary files /dev/null and b/node_modules/react-native-svg/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
+diff --git a/node_modules/react-native-svg/common/cpp/react/renderer/components/rnsvg/RNSVGLayoutableShadowNode.cpp b/node_modules/react-native-svg/common/cpp/react/renderer/components/rnsvg/RNSVGLayoutableShadowNode.cpp
+index e0341ec..ded9989 100644
+--- a/node_modules/react-native-svg/common/cpp/react/renderer/components/rnsvg/RNSVGLayoutableShadowNode.cpp
++++ b/node_modules/react-native-svg/common/cpp/react/renderer/components/rnsvg/RNSVGLayoutableShadowNode.cpp
+@@ -28,8 +28,8 @@ void RNSVGLayoutableShadowNode::updatePosition() {
+   auto style = yogaNode_.style();
+   style.setPositionType(yoga::PositionType::Absolute);
+   style.setPosition(yoga::Edge::All, yoga::Style::Length::points(0));
+-  style.setDimension(yoga::Dimension::Width, yoga::StyleSizeLength::percent(100));
+-  style.setDimension(yoga::Dimension::Height, yoga::StyleSizeLength::percent(100));
++  style.setDimension(yoga::Dimension::Width, yoga::StyleLength::percent(100));
++  style.setDimension(yoga::Dimension::Height, yoga::StyleLength::percent(100));
+   yogaNode_.setStyle(style);
+ }
+ 

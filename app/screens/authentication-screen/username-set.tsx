@@ -8,10 +8,10 @@ import { PrimaryBtn } from "@app/components/buttons"
 import { Screen } from "@app/components/screen"
 
 // hooks
-import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import useLogout from "@app/hooks/use-logout"
 import { useAppConfig } from "@app/hooks"
+import { useChatContext } from "../chat/chatContext"
 
 // gql
 import {
@@ -42,12 +42,12 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
   const styles = useStyles()
-
-  const { updateNostrProfile } = useNostrProfile()
   const { logout } = useLogout()
+  const { userProfileEvent } = useChatContext()
 
   const [error, setError] = useState<SetAddressError | undefined>()
   const [lnAddress, setLnAddress] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [updateUsername, { loading }] = useUserUpdateUsernameMutation({
     update: (cache, { data }) => {
@@ -76,6 +76,8 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
   })
 
   const onSetLightningAddress = async () => {
+    setIsSubmitting(true)
+    setError(undefined)
     const validationResult = validateLightningAddress(lnAddress)
     if (!validationResult.valid) {
       setError(validationResult.error)
@@ -90,23 +92,26 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
 
       console.log("Mutation response:", data?.userUpdateUsername)
 
-      updateNostrProfile({
-        content: {
-          name: lnAddress,
-          username: lnAddress,
-          lud16: `${lnAddress}@${lnAddressHostname}`,
-          nip05: `${lnAddress}@${lnAddressHostname}`,
-        },
-      })
+      // Get existing profile content to preserve picture, banner, etc.
+      let existingProfile = {}
+      if (userProfileEvent?.content) {
+        try {
+          existingProfile = JSON.parse(userProfileEvent.content)
+          console.log("Existing profile data:", existingProfile)
+        } catch (e) {
+          console.log("No existing profile found or failed to parse")
+        }
+      }
       if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
         if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
           setError(SetAddressError.ADDRESS_UNAVAILABLE)
         } else {
           setError(SetAddressError.UNKNOWN_ERROR)
         }
+        setIsSubmitting(false)
         return
       }
-
+      setIsSubmitting(false)
       dispatch(updateUserData({ username: lnAddress }))
       navigation.reset({
         index: 0,
@@ -163,6 +168,7 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
           </Text>
           <TextInput
             autoCorrect={false}
+            editable={!isSubmitting}
             autoComplete="off"
             autoCapitalize="none"
             style={styles.textInputStyle}
@@ -175,6 +181,7 @@ export const UsernameSet: React.FC<Props> = ({ navigation, route }) => {
           {errorMessage && <GaloyErrorBox errorMessage={errorMessage} />}
         </View>
         <PrimaryBtn
+          loading={isSubmitting}
           label={LL.SetAddressModal.save()}
           disabled={lnAddress.length < 3}
           onPress={onSetLightningAddress}

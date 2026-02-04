@@ -1,20 +1,42 @@
-import React from "react"
-import { View, StyleSheet, Text, Image, TouchableOpacity, ScrollView } from "react-native"
-import { useTheme } from "@rneui/themed"
+import React, { useState, useCallback, useEffect } from "react"
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native"
+import { useTheme, makeStyles } from "@rneui/themed"
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import { useChatContext } from "./chatContext"
-import { Header } from "@rneui/base"
 import Icon from "react-native-vector-icons/Ionicons"
-import ChatIcon from "@app/assets/icons/chat.svg"
-import { nip19, getPublicKey } from "nostr-tools"
-import { publicRelays } from "@app/utils/nostr"
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
+import Clipboard from "@react-native-clipboard/clipboard"
+
 import { Screen } from "../../components/screen"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { nip19, getPublicKey, Event } from "nostr-tools"
+import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
+
+import { FeedItem } from "@app/components/nostr-feed/FeedItem"
+import { ExplainerVideo } from "@app/components/explainer-video"
+import ChatIcon from "@app/assets/icons/chat.svg"
+import ArrowUp from "@app/assets/icons/arrow-up.svg"
+
+import { useChatContext } from "./chatContext"
+import { useBusinessMapMarkersQuery } from "@app/graphql/generated"
+import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
+import { pool } from "@app/utils/nostr/pool"
 
 type ContactDetailsRouteProp = RouteProp<ChatStackParamList, "contactDetails">
+
+const RELAYS = [
+  "wss://relay.damus.io",
+  "wss://relay.nostr.band",
+  "wss://nos.lol",
+  "wss://relay.snort.social",
+]
 
 const ContactDetailsScreen: React.FC = () => {
   const route = useRoute<ContactDetailsRouteProp>()
@@ -22,260 +44,295 @@ const ContactDetailsScreen: React.FC = () => {
     useNavigation<StackNavigationProp<ChatStackParamList, "contactDetails">>()
   const { theme } = useTheme()
   const colors = theme.colors
-  const { profileMap, contactsEvent, poolRef, setContactsEvent } = useChatContext()
+  const styles = useStyles()
   const { LL } = useI18nContext()
 
+  const { profileMap, contactsEvent, setContactsEvent } = useChatContext()
   const { contactPubkey, userPrivateKey } = route.params
-
   const profile = profileMap?.get(contactPubkey)
   const npub = nip19.npubEncode(contactPubkey)
+  const postsKey = `posts:${contactPubkey}`
+  // Posts, reposts, and profiles
+  const [posts, setPosts] = useState<Event[]>(() => {
+    return nostrRuntime
+      .getAllEvents()
+      .filter((e) => e.pubkey === contactPubkey && (e.kind === 1 || e.kind === 6))
+      .sort((a, b) => b.created_at - a.created_at)
+  })
+
+  const [loadingPosts, setLoadingPosts] = useState(posts.length === 0)
+
+  const [repostedEvents, setRepostedEvents] = useState<Map<string, Event>>(new Map())
+  const [repostedProfiles, setRepostedProfiles] = useState<Map<string, any>>(new Map())
+
+  // Business check
+  const { data: businessMapData } = useBusinessMapMarkersQuery({
+    fetchPolicy: "cache-first",
+  })
+  const businessUsernames =
+    businessMapData?.businessMapMarkers.map((m) => m.username) || []
+  const isBusiness = profile?.username
+    ? businessUsernames.includes(profile.username)
+    : false
 
   const userPrivateKeyHex =
     typeof userPrivateKey === "string" ? userPrivateKey : bytesToHex(userPrivateKey)
-
+  const selfPubkey = userPrivateKey ? getPublicKey(hexToBytes(userPrivateKeyHex)) : null
+  const isOwnProfile = selfPubkey === contactPubkey
   const userPubkey = getPublicKey(
     typeof userPrivateKey === "string" ? hexToBytes(userPrivateKey) : userPrivateKey,
   )
-
   const groupId = [userPubkey, contactPubkey].sort().join(",")
 
+  // Copy npub
+  const handleCopy = () => {
+    if (!npub) return
+    Clipboard.setString(npub)
+  }
+
+  // Actions
   const handleUnfollow = () => {
-    if (!poolRef || !contactsEvent) return
-
-    let profiles = contactsEvent.tags.filter((p) => p[0] === "p").map((p) => p[1])
-    let tagsWithoutProfiles = contactsEvent.tags.filter((p) => p[0] !== "p")
-    let newProfiles = profiles.filter((p) => p !== contactPubkey)
-
-    let newContactsEvent = {
+    if (!contactsEvent) return
+    const profiles = contactsEvent.tags.filter((p) => p[0] === "p").map((p) => p[1])
+    const tagsWithoutProfiles = contactsEvent.tags.filter((p) => p[0] !== "p")
+    const newProfiles = profiles.filter((p) => p !== contactPubkey)
+    const newContactsEvent = {
       ...contactsEvent,
       tags: [...tagsWithoutProfiles, ...newProfiles.map((p) => ["p", p])],
     }
-    poolRef.current.publish(publicRelays, newContactsEvent)
+    pool.publish(RELAYS, newContactsEvent)
     setContactsEvent(newContactsEvent)
     navigation.goBack()
   }
 
   const handleSendPayment = () => {
     const lud16 = profile?.lud16 || ""
-    navigation.navigate("sendBitcoinDestination", {
-      username: lud16,
-    })
+    navigation.navigate("sendBitcoinDestination", { username: lud16 })
   }
 
   const handleStartChat = () => {
-    navigation.replace("messages", {
-      groupId: groupId,
-      userPrivateKey: userPrivateKeyHex,
-    })
+    navigation.replace("messages", { groupId, userPrivateKey: userPrivateKeyHex })
   }
 
-  return (
-    <Screen>
-      <Header
-        leftComponent={
-          <Icon
-            name="arrow-back"
-            size={24}
-            color={colors.black}
-            onPress={() => navigation.goBack()}
-          />
+  // Fetch posts and reposts using nostrRuntime
+  const fetchPosts = useCallback(() => {
+    // already have posts → don't refetch
+
+    if (posts.length > 0) return
+
+    setLoadingPosts(true)
+
+    const fetchedEvents: Event[] = []
+    const repostMap = new Map<string, Event>()
+    const profilesMap = new Map<string, any>()
+
+    nostrRuntime.ensureSubscription(
+      postsKey,
+      [{ kinds: [1, 6], authors: [contactPubkey], limit: 10 }],
+      (event) => {
+        fetchedEvents.push(event)
+
+        if (event.kind === 6) {
+          const pTag = event.tags.find((t) => t[0] === "p")?.[1]
+          if (pTag) {
+            nostrRuntime.ensureSubscription(
+              `profile:${pTag}`,
+              [{ kinds: [0], authors: [pTag], limit: 1 }],
+              (profileEvent) => {
+                profilesMap.set(pTag, JSON.parse(profileEvent.content))
+                setRepostedProfiles(new Map(profilesMap))
+              },
+            )
+          }
         }
-        centerComponent={{
-          text: LL.Nostr.Contacts.profile(),
-          style: { color: colors.black, fontSize: 18 },
-        }}
-        backgroundColor={colors.background}
-        containerStyle={styles.headerContainer}
-      />
+      },
+      () => {
+        fetchedEvents.sort((a, b) => b.created_at - a.created_at)
+        setPosts(fetchedEvents)
+        setRepostedEvents(repostMap)
+        setLoadingPosts(false)
+      },
+    )
+  }, [contactPubkey, posts.length])
 
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.profileHeader}>
+  useEffect(() => {
+    fetchPosts()
+
+    return () => {
+      nostrRuntime.releaseSubscription(postsKey)
+    }
+  }, [fetchPosts])
+
+  return (
+    <Screen preset="fixed">
+      <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
+        {/* Banner */}
+        {profile?.banner && (
           <Image
-            source={
-              profile?.picture
-                ? { uri: profile.picture }
-                : {
-                    uri: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwinaero.com%2Fblog%2Fwp-content%2Fuploads%2F2017%2F12%2FUser-icon-256-blue.png&f=1&nofb=1&ipt=d8f3a13e26633e5c7fb42aed4cd2ab50e1bb3d91cfead71975713af0d1ed278c",
-                  }
-            }
-            style={styles.profileImage}
+            source={{ uri: profile.banner }}
+            style={styles.bannerImage}
+            resizeMode="cover"
           />
-          <Text style={[styles.profileName, { color: colors.black }]}>
-            {profile?.name || profile?.username || LL.Nostr.Contacts.nostrUser()}
-          </Text>
-          {profile?.nip05 && <Text style={styles.nip05}>{profile.nip05}</Text>}
-          <Text style={styles.npub}>
-            {npub.slice(0, 8)}...{npub.slice(-4)}
-          </Text>
-          {profile?.about && <Text style={styles.aboutText}>{profile.about}</Text>}
-        </View>
+        )}
 
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.grey5 }]}
-            onPress={handleStartChat}
-          >
-            <ChatIcon color={colors.primary} style={styles.actionIcon} fontSize={24} />
-            <Text style={styles.actionText}>{LL.Nostr.Contacts.message()}</Text>
-          </TouchableOpacity>
+        {/* Profile info */}
+        <View style={[styles.profileContainer, !profile?.banner && { marginTop: 40 }]}>
+          <View style={styles.profileImageWrapper}>
+            <Image
+              source={{
+                uri:
+                  profile?.picture ||
+                  "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwinaero.com%2Fblog%2Fwp-content%2Fuploads%2F2017%2F12%2FUser-icon-256-blue.png",
+              }}
+              style={styles.profileImage}
+            />
+          </View>
 
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.grey5 }]}
-            onPress={handleSendPayment}
-          >
-            <Icon name="flash" style={[styles.icon, { color: "orange" }]} />
-            <Text style={styles.actionText}>{LL.Nostr.Contacts.sendPayment()}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>{LL.Nostr.Contacts.contactInfo()}</Text>
-          {profile?.lud16 && (
-            <View style={styles.infoRow}>
-              <Icon name="flash-outline" style={styles.infoIcon} />
-              <Text style={styles.infoText}>{profile.lud16}</Text>
+          <View style={styles.profileInfoSection}>
+            <View style={styles.nameRow}>
+              <Text style={styles.profileName}>
+                {profile?.name || profile?.username || "Nostr User"}
+              </Text>
+              {isOwnProfile && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("EditNostrProfile" as any)}
+                >
+                  <Icon name="create-outline" size={16} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+              {isBusiness && (
+                <View style={styles.businessBadge}>
+                  <Icon name="storefront" size={12} color="#FFFFFF" />
+                  <Text style={styles.businessBadgeText}>Business</Text>
+                </View>
+              )}
             </View>
-          )}
-          {profile?.website && (
-            <View style={styles.infoRow}>
-              <Icon name="globe-outline" style={styles.infoIcon} />
-              <Text style={styles.infoText}>{profile.website}</Text>
-            </View>
+
+            <TouchableOpacity onPress={handleCopy} style={styles.profileNpub}>
+              <Icon name="key-outline" size={12} color={colors.grey3} />
+              <Text style={styles.npubText}>
+                {npub?.slice(0, 8)}...{npub?.slice(-6)}
+              </Text>
+            </TouchableOpacity>
+
+            {profile?.lud16 && <Text style={styles.lud16Text}>{profile.lud16}</Text>}
+            {profile?.website && (
+              <Text style={styles.websiteText}>{profile.website}</Text>
+            )}
+            {profile?.about && <Text style={styles.aboutText}>{profile.about}</Text>}
+          </View>
+        </View>
+
+        {/* Actions */}
+        {!isOwnProfile && (
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity onPress={handleStartChat} style={styles.messageButton}>
+              <ChatIcon width={30} height={30} color="#FFF" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleSendPayment} style={styles.sendButton}>
+              <ArrowUp width={30} height={30} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Posts */}
+        <View style={styles.postsSection}>
+          {loadingPosts ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : posts.length === 0 ? (
+            <Text>No posts yet</Text>
+          ) : (
+            posts.map((post) => (
+              <FeedItem
+                key={post.id}
+                event={post}
+                profile={profile}
+                compact
+                repostedEvent={post.kind === 6 ? repostedEvents.get(post.id) : undefined}
+                repostedProfile={
+                  post.kind === 6
+                    ? repostedProfiles.get(
+                        post.tags.find((tag) => tag[0] === "p")?.[1] || "",
+                      )
+                    : undefined
+                }
+              />
+            ))
           )}
         </View>
 
-        <View style={styles.dangerZoneContainer}>
-          <Text style={styles.dangerZoneTitle}>
-            {LL.Nostr.Contacts.contactManagement()}
-          </Text>
-          <TouchableOpacity
-            style={[styles.unfollowButton, { backgroundColor: colors.error }]}
-            onPress={handleUnfollow}
-          >
-            <Icon name="remove-circle" style={[styles.icon, { color: "white" }]} />
-            <Text style={[styles.actionText, { color: "white" }]}>
-              {LL.Nostr.Contacts.unfollowContact()}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Explainer video */}
+        <ExplainerVideo
+          videoUrl="https://blossom.primal.net/f0d613b379e9855f32822a7286605b0fad32d79ea5b81ed23cf9cdda1da461ef.mp4"
+          title="What is nostr?"
+          style={styles.explainerVideo}
+        />
       </ScrollView>
+
+      {/* Unfollow */}
+      {!isOwnProfile && (
+        <TouchableOpacity
+          style={[styles.unfollowButton, { backgroundColor: colors.error }]}
+          onPress={handleUnfollow}
+        >
+          <Text style={{ color: "#FFF" }}>Unfollow</Text>
+        </TouchableOpacity>
+      )}
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({
-  headerContainer: {
-    borderBottomWidth: 0,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  profileHeader: {
-    alignItems: "center",
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
+const useStyles = makeStyles(({ colors }) => ({
+  scrollView: { flex: 1 },
+  bannerImage: { width: "100%", height: 150, backgroundColor: colors.grey5 },
+  profileContainer: { paddingHorizontal: 16 },
+  profileImageWrapper: { marginTop: -40, marginBottom: 12 },
   profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 16,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 4,
+    borderColor: colors.background,
   },
-  profileName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 4,
+  profileInfoSection: { paddingBottom: 12 },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+  businessBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#60aa55",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 3,
   },
-  nip05: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 4,
-  },
-  npub: {
-    fontSize: 14,
-    color: "#888",
-    marginBottom: 16,
-  },
-  aboutText: {
-    fontSize: 16,
-    color: "#333",
-    textAlign: "center",
-    paddingHorizontal: 16,
-  },
+  businessBadgeText: { color: "#FFF", fontSize: 11, fontWeight: "600" },
+  profileName: { fontSize: 20, fontWeight: "bold", color: colors.black },
+  profileNpub: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 3 },
+  npubText: { fontSize: 12, color: "#888" },
+  lud16Text: { fontSize: 12, color: colors.grey1 },
+  websiteText: { fontSize: 12, color: colors.grey3 },
+  aboutText: { fontSize: 14, lineHeight: 20, paddingTop: 8, color: colors.grey1 },
   actionsContainer: {
-    padding: 16,
-    gap: 12,
-  },
-  actionButton: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+  },
+  messageButton: {
+    marginHorizontal: 8,
+    backgroundColor: "#60aa55",
     padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
+    borderRadius: 32,
   },
-  actionIcon: {
-    marginRight: 12,
-  },
-  icon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  actionText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  infoSection: {
+  sendButton: {
+    marginHorizontal: 8,
+    backgroundColor: "#FF8C42",
     padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderRadius: 32,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 16,
-    color: "#333",
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  infoIcon: {
-    fontSize: 20,
-    color: "#666",
-    marginRight: 12,
-  },
-  infoText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  dangerZoneContainer: {
-    padding: 16,
-    marginTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-    marginBottom: 24,
-  },
-  dangerZoneTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 16,
-    color: "#333",
-  },
-  unfollowButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-})
+  postsSection: { padding: 12, marginTop: 8 },
+  explainerVideo: { marginTop: 16, marginHorizontal: 8, marginBottom: 8 },
+  unfollowButton: { padding: 16, borderRadius: 8, marginTop: 8, alignItems: "center" },
+}))
 
 export default ContactDetailsScreen
