@@ -68,59 +68,61 @@ const CustomModal: React.FC<CustomModalProps> = ({
     theme: { mode, colors },
   } = useTheme()
   return (
-    <Modal
-      isVisible={isVisible}
-      backdropOpacity={0.8}
-      backdropColor={colors.white}
-      backdropTransitionOutTiming={0}
-      avoidKeyboard={true}
-      onBackdropPress={toggleModal}
-    >
-      <View style={styles.container}>
-        {showCloseIconButton && (
-          <TouchableOpacity style={styles.closeIcon} onPress={toggleModal}>
-            <GaloyIcon name="close" size={30} color={colors.grey0} />
-          </TouchableOpacity>
-        )}
-        <ScrollView
-          style={styles.modalCard}
-          persistentScrollbar={true}
-          indicatorStyle={mode === "dark" ? "white" : "black"}
-          bounces={false}
-          contentContainerStyle={styles.scrollViewContainer}
-        >
-          {image && <View style={styles.imageContainer}>{image}</View>}
-          <View style={styles.modalTitleContainer}>
-            <Text style={styles.modalTitleText}>{title}</Text>
-          </View>
-          <View style={styles.modalBodyContainer}>{body}</View>
-        </ScrollView>
-        {nonScrollingContent}
-        <View style={styles.modalActionsContainer}>
-          <View>
-            {primaryButtonTextAbove && (
-              <Text style={styles.primaryButtonTextAbove} type="p3">
-                {primaryButtonTextAbove}
-              </Text>
-            )}
-            <PrimaryBtn
-              label={primaryButtonTitle}
-              onPress={primaryButtonOnPress}
-              loading={primaryButtonLoading}
-              disabled={primaryButtonDisabled}
-            />
-          </View>
-          {secondaryButtonTitle && secondaryButtonOnPress && (
-            <PrimaryBtn
-              type="outline"
-              label={secondaryButtonTitle}
-              loading={secondaryButtonLoading}
-              onPress={secondaryButtonOnPress}
-            />
+    <View>
+      <Modal
+        isVisible={isVisible}
+        backdropOpacity={0.8}
+        backdropColor={colors.white}
+        backdropTransitionOutTiming={0}
+        avoidKeyboard={true}
+        onBackdropPress={toggleModal}
+      >
+        <View style={styles.container}>
+          {showCloseIconButton && (
+            <TouchableOpacity style={styles.closeIcon} onPress={toggleModal}>
+              <GaloyIcon name="close" size={30} color={colors.grey0} />
+            </TouchableOpacity>
           )}
+          <ScrollView
+            style={styles.modalCard}
+            persistentScrollbar={true}
+            indicatorStyle={mode === "dark" ? "white" : "black"}
+            bounces={false}
+            contentContainerStyle={styles.scrollViewContainer}
+          >
+            {image && <View style={styles.imageContainer}>{image}</View>}
+            <View style={styles.modalTitleContainer}>
+              <Text style={styles.modalTitleText}>{title}</Text>
+            </View>
+            <View style={styles.modalBodyContainer}>{body}</View>
+          </ScrollView>
+          {nonScrollingContent}
+          <View style={styles.modalActionsContainer}>
+            <View>
+              {primaryButtonTextAbove && (
+                <Text style={styles.primaryButtonTextAbove} type="p3">
+                  {primaryButtonTextAbove}
+                </Text>
+              )}
+              <PrimaryBtn
+                label={primaryButtonTitle}
+                onPress={primaryButtonOnPress}
+                loading={primaryButtonLoading}
+                disabled={primaryButtonDisabled}
+              />
+            </View>
+            {secondaryButtonTitle && secondaryButtonOnPress && (
+              <PrimaryBtn
+                type="outline"
+                label={secondaryButtonTitle}
+                loading={secondaryButtonLoading}
+                onPress={secondaryButtonOnPress}
+              />
+            )}
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+    </View>
   )
 }
 

@@ -138,7 +138,9 @@ const Wrapper = styled.View`
   padding-horizontal: 20px;
 `
 
-const Container = styled.View``
+const Container = styled.View`
+  flex: 1;
+`
 
 const Btn = styled.TouchableOpacity`
   flex-direction: row;

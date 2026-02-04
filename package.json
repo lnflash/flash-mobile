@@ -158,7 +158,7 @@
     "react-native-linear-gradient": "^2.8.2",
     "react-native-localize": "^2.2.2",
     "react-native-maps": "1.20.1",
-    "react-native-modal": "^13.0.1",
+    "react-native-modal": "^14.0.0-rc.1",
     "react-native-nfc-manager": "^3.14.8",
     "react-native-pager-view": "6.9.1",
     "react-native-qrcode-svg": "^6.2.0",
