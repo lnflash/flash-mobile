@@ -77,6 +77,13 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     return Array.from(messagesMap.values()).sort((a, b) => b.createdAt! - a.createdAt!)
   }, [messagesMap])
 
+  // Sync isMember when userPublicKey becomes available after membership data was already received
+  useEffect(() => {
+    if (userPublicKey && knownMembers.size > 0) {
+      setIsMember(knownMembers.has(userPublicKey))
+    }
+  }, [userPublicKey, knownMembers])
+
   // ----- Sub: group messages (kind 9) -----
   useEffect(() => {
     nostrRuntime.ensureSubscription(

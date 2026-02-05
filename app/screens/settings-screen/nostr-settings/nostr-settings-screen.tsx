@@ -67,7 +67,7 @@ export const NostrSettingsScreen = () => {
   }, [secretKey, dataAuthed])
 
   const { saveNewNostrKey } = useNostrProfile()
-  const { refreshUserProfile } = useChatContext()
+  const { refreshUserProfile, resetChat } = useChatContext()
   let nostrPubKey = ""
   if (secretKey) {
     nostrPubKey = nip19.npubEncode(getPublicKey(secretKey as Uint8Array))
@@ -150,7 +150,7 @@ export const NostrSettingsScreen = () => {
               setSecretKey(newSecret)
               setIsGenerating(false)
               setProgressMessage("")
-              await refreshUserProfile()
+              await resetChat()
             }}
             disabled={isGenerating}
           >
