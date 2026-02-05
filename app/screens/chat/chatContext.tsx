@@ -124,25 +124,23 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     // ------------------------
     nostrRuntime.ensureSubscription(
       `giftwraps:${publicKey}`,
-      [
-        {
-          "kinds": [1059],
-          "#p": [publicKey],
-          "limit": 150,
-        },
-      ],
+
+      {
+        "kinds": [1059],
+        "#p": [publicKey],
+        "limit": 150,
+      },
       (event) => handleGiftWrapEvent(event, secret),
     )
 
     // Subscribe to contact list
     nostrRuntime.ensureSubscription(
       `contacts:${publicKey}`,
-      [
-        {
-          kinds: [3],
-          authors: [publicKey],
-        },
-      ],
+
+      {
+        kinds: [3],
+        authors: [publicKey],
+      },
       (event) => {
         setContactsEvent(event)
       },
@@ -151,12 +149,11 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     // Subscribe to user profile
     nostrRuntime.ensureSubscription(
       `profile:${publicKey}`,
-      [
-        {
-          kinds: [0],
-          authors: [publicKey],
-        },
-      ],
+
+      {
+        kinds: [0],
+        authors: [publicKey],
+      },
       (event) => {
         setUserProfileEvent(event)
         try {

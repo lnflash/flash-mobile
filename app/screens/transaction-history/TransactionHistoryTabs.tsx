@@ -1,6 +1,10 @@
 import React from "react"
 import { useTheme } from "@rneui/themed"
-import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
+import {
+  createMaterialTopTabNavigator,
+  MaterialTopTabBar,
+} from "@react-navigation/material-top-tabs"
+import { TabBarItem } from "react-native-tab-view"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 

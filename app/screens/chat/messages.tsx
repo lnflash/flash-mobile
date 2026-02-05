@@ -53,7 +53,7 @@ export const Messages: React.FC<MessagesProps> = ({ route }) => {
     const pubkeys = groupId.split(",")
     nostrRuntime.ensureSubscription(
       `messagesProfiles:${pubkeys.join(",")}`,
-      [{ kinds: [0], authors: pubkeys }],
+      { kinds: [0], authors: pubkeys },
       handleProfileEvent,
     )
   }, [groupId])

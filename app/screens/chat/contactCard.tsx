@@ -1,6 +1,6 @@
 // ContactCard.tsx
 import React from "react"
-import { Image } from "react-native"
+import { Image, View, Text } from "react-native"
 import { ListItem } from "@rneui/themed"
 import { useTheme } from "@rneui/themed"
 import { nip19 } from "nostr-tools"
@@ -10,6 +10,7 @@ interface ContactCardProps {
   profileMap?: Map<string, NostrProfile>
   style?: Object
   containerStyle?: Object
+  isSelf?: boolean
   onPress: () => void
 }
 
@@ -18,6 +19,7 @@ const ContactCard: React.FC<ContactCardProps> = ({
   profileMap,
   style,
   containerStyle,
+  isSelf,
   onPress,
 }) => {
   const { theme } = useTheme()
@@ -47,7 +49,14 @@ const ContactCard: React.FC<ContactCardProps> = ({
   const metadata = getContactMetadata(item)
 
   return (
-    <ListItem style={style} containerStyle={containerStyle} onPress={onPress}>
+    <ListItem
+      style={style}
+      containerStyle={[
+        containerStyle,
+        isSelf && { backgroundColor: colors._lighterGrey },
+      ]}
+      onPress={onPress}
+    >
       <Image
         source={{
           uri:
@@ -57,9 +66,26 @@ const ContactCard: React.FC<ContactCardProps> = ({
         style={{ width: 40, height: 40, borderRadius: 40 / 2 }}
       />
       <ListItem.Content>
-        <ListItem.Title style={{ fontSize: 16, fontWeight: "600", color: colors.black }}>
-          {metadata.displayName}
-        </ListItem.Title>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <ListItem.Title
+            style={{ fontSize: 16, fontWeight: "600", color: colors.black }}
+          >
+            {metadata.displayName}
+          </ListItem.Title>
+          {isSelf && (
+            <View
+              style={{
+                backgroundColor: colors.primary,
+                borderRadius: 4,
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+                marginLeft: 8,
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: "700", color: "#fff" }}>You</Text>
+            </View>
+          )}
+        </View>
         {metadata.nip05 && (
           <ListItem.Subtitle style={{ fontSize: 13, color: colors.grey3, marginTop: 2 }}>
             {metadata.nip05}

@@ -1,8 +1,9 @@
-import { Filter, Event, SubCloser } from "nostr-tools"
+import { Filter, Event } from "nostr-tools"
 import { RelayManager } from "./RelayManager"
+import { SubCloser } from "nostr-tools/abstract-pool"
 
 type SubscriptionEntry = {
-  filters: Filter[]
+  filter: Filter
   closer: SubCloser
   refCount: number
 }
@@ -14,7 +15,7 @@ export class SubscriptionRegistry {
 
   ensure(
     key: string,
-    filters: Filter[],
+    filter: Filter,
     onEvent: (event: Event) => void,
     onEose?: () => void,
     relays?: string[],
@@ -27,7 +28,7 @@ export class SubscriptionRegistry {
     }
 
     const closer = this.relayManager.subscribe(
-      filters,
+      filter,
       {
         onevent: onEvent,
         onclose: () => {
@@ -41,7 +42,7 @@ export class SubscriptionRegistry {
     )
 
     this.subs.set(key, {
-      filters,
+      filter,
       closer,
       refCount: 1,
     })
@@ -60,7 +61,7 @@ export class SubscriptionRegistry {
 
   restore() {
     for (const [key, sub] of this.subs.entries()) {
-      const closer = this.relayManager.subscribe(sub.filters, {
+      const closer = this.relayManager.subscribe(sub.filter, {
         onevent: () => {},
       })
 

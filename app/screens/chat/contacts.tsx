@@ -25,7 +25,7 @@ interface ContactsProps {
 const Contacts: React.FC<ContactsProps> = ({ userPrivateKey: propKey }) => {
   const baseStyles = useStyles()
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
-  const { profileMap, contactsEvent, addEventToProfiles } = useChatContext()
+  const { profileMap, contactsEvent, addEventToProfiles, userPublicKey } = useChatContext()
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   const route = useRoute<ContactsRouteProp>()
   const { theme } = useTheme()
@@ -50,7 +50,7 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey: propKey }) => {
 
     nostrRuntime.ensureSubscription(
       subKey,
-      [{ kinds: [0], authors: contactPubkeys }],
+      { kinds: [0], authors: contactPubkeys },
       (event: Event) => {
         addEventToProfiles(event)
       },
@@ -113,7 +113,11 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey: propKey }) => {
       ) : contactsEvent ? (
         <FlatList
           contentContainerStyle={styles.listContainer}
-          data={getContactsFromEvent(contactsEvent)}
+          data={getContactsFromEvent(contactsEvent).sort((a, b) => {
+            if (a.pubkey === userPublicKey) return -1
+            if (b.pubkey === userPublicKey) return 1
+            return 0
+          })}
           ListEmptyComponent={<Text>{LL.Nostr.Contacts.noCantacts()}</Text>}
           renderItem={({ item }) => (
             <ContactCard
@@ -121,6 +125,7 @@ const Contacts: React.FC<ContactsProps> = ({ userPrivateKey: propKey }) => {
               profileMap={profileMap}
               containerStyle={styles.itemContainer}
               style={styles.item}
+              isSelf={item.pubkey === userPublicKey}
               onPress={() => navigateToContactDetails(item.pubkey)}
             />
           )}
