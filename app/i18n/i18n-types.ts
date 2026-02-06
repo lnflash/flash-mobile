@@ -4775,7 +4775,7 @@ type RootTranslation = {
 		 */
 		bankName: string
 		/**
-		 * Enter your bank name
+		 * Select your bank name
 		 */
 		bankNamePlaceholder: string
 		/**
@@ -9893,7 +9893,7 @@ export type TranslationFunctions = {
 		 */
 		bankName: () => LocalizedString
 		/**
-		 * Enter your bank name
+		 * Select your bank name
 		 */
 		bankNamePlaceholder: () => LocalizedString
 		/**

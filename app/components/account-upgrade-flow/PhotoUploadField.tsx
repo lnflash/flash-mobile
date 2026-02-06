@@ -213,7 +213,7 @@ export default PhotoUploadField
 
 const useStyles = makeStyles(({ colors }) => ({
   wrapper: {
-    marginBottom: 35,
+    marginBottom: 15,
   },
   container: {
     width: "100%",

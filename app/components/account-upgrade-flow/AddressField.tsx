@@ -5,6 +5,7 @@ import {
   GooglePlacesAutocomplete,
   GooglePlacesAutocompleteRef,
 } from "react-native-google-places-autocomplete"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 // components
 import { PrimaryBtn } from "../buttons"
@@ -29,6 +30,7 @@ const AddressField: React.FC<Props> = ({
 }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { bottom, top } = useSafeAreaInsets()
 
   const ref = useRef<GooglePlacesAutocompleteRef>(null)
   const [isFocused, setIsFocused] = useState(false)
@@ -61,7 +63,7 @@ const AddressField: React.FC<Props> = ({
         visible={isVisible}
         onRequestClose={() => setIsVisible(false)}
       >
-        <View style={styles.modal}>
+        <View style={[styles.modal, { paddingTop: top, paddingBottom: bottom }]}>
           <GooglePlacesAutocomplete
             ref={ref}
             listViewDisplayed="auto"
@@ -118,7 +120,7 @@ const useStyles = makeStyles(({ colors }) => ({
   modal: {
     flex: 1,
     backgroundColor: colors.white,
-    padding: 20,
+    paddingHorizontal: 20,
   },
   googlePlace: {
     height: Platform.OS === "ios" ? 51 : 60,

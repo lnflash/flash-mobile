@@ -1515,7 +1515,7 @@ const en: BaseTranslation = {
       flashTerminalTooltip: "A Flash Terminal is a smart device that can accept payment via Flash for your business and print receipts. A customer service representative will contact you if you check this box.",
       bankingInfo: "Banking Information",
       bankName: "Bank Name",
-      bankNamePlaceholder: "Enter your bank name",
+      bankNamePlaceholder: "Select your bank name",
       bankBranch: "Bank Branch",
       bankBranchPlaceholder: "Enter your bank branch",
       bankAccountType: "Account Type",

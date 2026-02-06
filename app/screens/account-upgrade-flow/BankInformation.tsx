@@ -25,6 +25,13 @@ import { setBankInfo } from "@app/store/redux/slices/accountUpgradeSlice"
 // gql
 import { AccountLevel } from "@app/graphql/generated"
 
+const banks = [
+  { label: "Select bank", value: null },
+  { label: "TBC", value: "TBC" },
+  { label: "KAPITALBANK", value: "KAPITALBANK" },
+  { label: "AGROBANK", value: "AGROBANK" },
+]
+
 const accountTypes = [
   { label: "Select account type", value: null },
   { label: "Checking", value: "checking" },
@@ -109,17 +116,24 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
     <Screen>
       <ProgressSteps numOfSteps={numOfSteps} currentStep={numOfSteps} />
       <ScrollView style={styles.container}>
-        <InputField
+        <PhotoUploadField
+          label={LL.AccountUpgrade.uploadId()}
+          photo={idDocument}
+          errorMsg={idDocumentErr}
+          onPhotoUpload={(val) => dispatch(setBankInfo({ idDocument: val }))}
+          setErrorMsg={setIdDocumentErr}
+        />
+        <DropDownField
           label={LL.AccountUpgrade.bankName()}
           placeholder={LL.AccountUpgrade.bankNamePlaceholder()}
-          value={bankName}
+          data={banks}
+          value={bankName || ""}
           errorMsg={nameErr}
           isOptional={isOptional}
-          onChangeText={(val) => {
+          onChange={(val) => {
             setNameErr(undefined)
             dispatch(setBankInfo({ bankName: val }))
           }}
-          autoCapitalize="words"
         />
         <InputField
           label={LL.AccountUpgrade.bankBranch()}
@@ -169,13 +183,6 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
           }}
           autoCapitalize="words"
           keyboardType="number-pad"
-        />
-        <PhotoUploadField
-          label={LL.AccountUpgrade.uploadId()}
-          photo={idDocument}
-          errorMsg={idDocumentErr}
-          onPhotoUpload={(val) => dispatch(setBankInfo({ idDocument: val }))}
-          setErrorMsg={setIdDocumentErr}
         />
       </ScrollView>
       <PrimaryBtn label={LL.common.next()} btnStyle={styles.btn} onPress={onPressNext} />
