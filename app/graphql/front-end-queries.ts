@@ -274,4 +274,25 @@ gql`
       username
     }
   }
+
+  query AccountUpgradeRequest {
+    accountUpgradeRequest {
+      upgradeRequest {
+        businessAddress
+        businessName
+        currentLevel
+        email
+        fullName
+        name
+        phoneNumber
+        requestedLevel
+        status
+        username
+      }
+      errors {
+        code
+        message
+      }
+    }
+  }
 `
