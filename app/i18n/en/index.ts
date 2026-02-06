@@ -1058,6 +1058,13 @@ const en: BaseTranslation = {
     sendingAccount: "Sending Account",
     txNotBroadcast:
       "Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment.",
+    swapDetails: "Swap Details",
+    destinationAddress: "Destination Address",
+    swapId: "Swap ID",
+    lockupTxId: "Lockup Transaction",
+    claimTxId: "Claim Transaction",
+    swapFees: "Swap Fees",
+    expirationBlockHeight: "Expires at Block",
   },
   TransactionLimitsScreen: {
     receive: "Receive",

@@ -17,6 +17,8 @@ import { TransactionDate } from "@app/components/transaction-date"
 import { WalletSummary } from "@app/components/wallet-summary"
 import { GaloyInfo } from "@app/components/atomic/galoy-info"
 import { Screen } from "../../components/screen"
+import { SwapDetails } from "./SwapDetails"
+import { hasSwapDetails } from "@app/types/transaction"
 
 // hooks
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
@@ -126,7 +128,7 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
         transactionId: tx?.id || "",
       },
     },
-    skip: !tx?.id,
+    skip: !tx?.id || hasSwapDetails(tx),
   })
 
   const ibexDetails = transactionDetailsData?.transactionDetails?.transactionDetails
@@ -347,22 +349,38 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
               <Row entry="Preimage" value={ibexDetails.paymentPreimage} />
             )}
 
-          {onChainTxBroadcasted && settlementVia?.transactionHash && (
-            <TouchableWithoutFeedback
-              onPress={() => viewInExplorer(settlementVia?.transactionHash || "")}
-            >
-              <View>
-                <Row
-                  entry="Hash"
-                  value={settlementVia?.transactionHash}
-                  __typename={settlementVia?.__typename}
-                />
-              </View>
-            </TouchableWithoutFeedback>
-          )}
+           {onChainTxBroadcasted && settlementVia?.transactionHash && !hasSwapDetails(tx) && (
+             <TouchableWithoutFeedback
+               onPress={() => viewInExplorer(settlementVia?.transactionHash || "")}
+             >
+               <View>
+                 <Row
+                   entry="Hash"
+                   value={settlementVia?.transactionHash}
+                   __typename={settlementVia?.__typename}
+                 />
+               </View>
+             </TouchableWithoutFeedback>
+           )}
 
-          {id && <Row entry="Transaction ID" value={id} />}
+           {id && hasSwapDetails(tx) ? (
+             <TouchableWithoutFeedback
+               onPress={() => Linking.openURL(`https://mempool.space/tx/${id}`)}
+             >
+               <View>
+                 <Row
+                   entry="Transaction ID"
+                   value={id}
+                   __typename="SettlementViaOnChain"
+                 />
+               </View>
+             </TouchableWithoutFeedback>
+           ) : (
+             id && <Row entry="Transaction ID" value={id} />
+           )}
         </Card>
+
+        {hasSwapDetails(tx) && <SwapDetails transaction={tx} />}
       </ScrollView>
     </Screen>
   )
