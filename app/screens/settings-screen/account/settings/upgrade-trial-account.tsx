@@ -59,12 +59,15 @@ export const UpgradeTrialAccount: React.FC = () => {
         </View>
       </>
     )
-  } else if (currentLevel !== AccountLevel.Three && !upgradeCompleted) {
+  } else if (currentLevel !== AccountLevel.Three) {
     return (
       <PrimaryBtn
-        label={LL.TransactionLimitsScreen.requestUpgrade()}
-        btnStyle={{ marginTop: 10 }}
+        label={
+          false ? LL.TransactionLimitsScreen.requestUpgrade() : "Upgrade Request Pending"
+        }
+        btnStyle={{ marginTop: 10, backgroundColor: "#FF7e1c" }}
         onPress={() => navigation.navigate("AccountType")}
+        disabled={true}
       />
     )
   } else {

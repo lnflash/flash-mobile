@@ -1725,11 +1725,15 @@ type RootTranslation = {
 		 */
 		upgradeTitle: string
 		/**
+		 * U​p​g​r​a​d​e​ ​request is pending
+		 */
+		upgradeTitlePending: string
+		/**
 		 * U​n​l​o​c​k​ ​y​o​u​r​ ​f​u​l​l​ ​p​o​t​e​n​t​i​a​l​!​ ​U​p​g​r​a​d​e​ ​t​o​ ​b​o​o​s​t​ ​v​i​s​i​b​i​l​i​t​y​,​ ​l​i​m​i​t​s​,​ ​a​n​d​ ​p​a​y​o​u​t​s​.
 		 */
 		upgradeDesc: string
 		/**
-		 * Enter test transaction amount to complete upgrading your account.
+		 * Your account upgrade request is under review.
 		 */
 		upgradePendingDesc: string
 		/**
@@ -6711,11 +6715,15 @@ export type TranslationFunctions = {
 		 */
 		upgradeTitle: () => LocalizedString
 		/**
+		 * Upgrade request is pending
+		 */
+		upgradeTitlePending: () => LocalizedString
+		/**
 		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
 		 */
 		upgradeDesc: () => LocalizedString
 		/**
-		 * Enter test transaction amount to complete upgrading your account.
+		 * Your account upgrade request is under review.
 		 */
 		upgradePendingDesc: () => LocalizedString
 		/**

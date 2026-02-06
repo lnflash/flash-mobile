@@ -49,7 +49,6 @@ const QuickStart = () => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { persistentState, updateState } = usePersistentStateContext()
-  const { upgradeCompleted } = useAppSelector((state) => state.accountUpgrade)
 
   const ref = useRef(null)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
@@ -73,10 +72,12 @@ const QuickStart = () => {
   let carouselData = [
     {
       type: "upgrade",
-      title: LL.HomeScreen.upgradeTitle(),
-      description: upgradePending
-        ? LL.HomeScreen.upgradePendingDesc()
-        : LL.HomeScreen.upgradeDesc(),
+      title: !upgradePending
+        ? LL.HomeScreen.upgradeTitle()
+        : LL.HomeScreen.upgradeTitlePending(),
+      description: !upgradePending
+        ? LL.HomeScreen.upgradeDesc()
+        : LL.HomeScreen.upgradePendingDesc(),
       image: Account,
       pending: upgradePending,
       onPress: () => navigation.navigate("AccountType"),
@@ -138,7 +139,6 @@ const QuickStart = () => {
   ]
 
   if (
-    upgradeCompleted ||
     data?.me?.defaultAccount.level === AccountLevel.Three ||
     persistentState?.closedQuickStartTypes?.includes("upgrade")
   ) {
@@ -206,6 +206,7 @@ const QuickStart = () => {
     return (
       <TouchableOpacity
         onPress={item.onPress}
+        disabled={item.pending}
         key={index}
         style={[
           styles.itemContainer,
@@ -214,13 +215,12 @@ const QuickStart = () => {
       >
         <Image height={width / 3} width={width / 3} />
         <View style={styles.texts}>
-          <Text type="h1" bold style={styles.title}>
+          <Text
+            type="h1"
+            bold
+            style={[styles.title, item.pending ? { color: colors._orange } : {}]}
+          >
             {item.title}
-            {item.pending && (
-              <Text type="p1" color={colors._orange}>
-                {`  (Pending)`}
-              </Text>
-            )}
           </Text>
           <Text type="bl">{item.description}</Text>
         </View>
