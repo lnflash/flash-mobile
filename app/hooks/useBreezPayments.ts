@@ -19,10 +19,11 @@ export const formatPaymentsBreezSDK = ({
     WalletCurrency.Usd,
   ).amount
 
-  const isBitcoinVariant = txDetails.details.type === PaymentDetailsVariant.BITCOIN
-  const isLightningVariant = txDetails.details.type === PaymentDetailsVariant.LIGHTNING
+  const { details } = txDetails
 
-  const bitcoinDetails = isBitcoinVariant ? txDetails.details : null
+  // Extract Bitcoin-specific details with proper type narrowing
+  const isBitcoinVariant = details.type === PaymentDetailsVariant.BITCOIN
+  const bitcoinDetails = isBitcoinVariant ? details : null
   const swapId = bitcoinDetails?.swapId
   const bitcoinAddress = bitcoinDetails?.bitcoinAddress
   const lockupTxId = bitcoinDetails?.lockupTxId
@@ -30,24 +31,30 @@ export const formatPaymentsBreezSDK = ({
   const bitcoinExpirationBlockheight = bitcoinDetails?.bitcoinExpirationBlockheight
   const swapperFeesSat = isBitcoinVariant ? txDetails.swapperFeesSat : undefined
 
-   const baseTransaction = {
-     id: txDetails.txId || "",
-     direction: txDetails.paymentType === "receive" ? "RECEIVE" : "SEND",
-     status: txDetails.status.toUpperCase(),
-     memo: txDetails.details.description,
-     settlementAmount: txDetails.amountSat,
-     settlementCurrency: "BTC",
-     settlementDisplayAmount: (settlementDisplayAmount / 100).toString(),
-     settlementDisplayCurrency: "USD",
-     settlementVia: isBitcoinVariant
-       ? {
-           __typename: "SettlementViaOnChain",
-           transactionHash: claimTxId || "",
-         }
-       : {
-           __typename: "SettlementViaLn",
-           paymentSecret: isLightningVariant ? txDetails.details.preimage : "",
-         },
+  // Extract Lightning-specific details with proper type narrowing
+  const isLightningVariant = details.type === PaymentDetailsVariant.LIGHTNING
+  const lightningDetails = isLightningVariant ? details : null
+  const preimage = lightningDetails?.preimage ?? ""
+  const paymentHash = lightningDetails?.paymentHash ?? ""
+
+  const baseTransaction = {
+    id: txDetails.txId || "",
+    direction: txDetails.paymentType === "receive" ? "RECEIVE" : "SEND",
+    status: txDetails.status.toUpperCase(),
+    memo: details.description,
+    settlementAmount: txDetails.amountSat,
+    settlementCurrency: "BTC",
+    settlementDisplayAmount: (settlementDisplayAmount / 100).toString(),
+    settlementDisplayCurrency: "USD",
+    settlementVia: isBitcoinVariant
+      ? {
+          __typename: "SettlementViaOnChain",
+          transactionHash: claimTxId || "",
+        }
+      : {
+          __typename: "SettlementViaLn",
+          paymentSecret: preimage,
+        },
     createdAt: txDetails.timestamp,
     settlementFee: txDetails.feesSat,
     settlementDisplayFee: (settlementDisplayFee / 100).toString(),
@@ -65,23 +72,23 @@ export const formatPaymentsBreezSDK = ({
         }
       : {
           __typename: "InitiationViaLn",
-          paymentHash: isLightningVariant ? txDetails.details.paymentHash || "" : "",
+          paymentHash: paymentHash,
         },
     __typename: "Transaction",
   }
 
-   // Add swap details if Bitcoin variant
-   if (isBitcoinVariant) {
-     return {
-       ...baseTransaction,
-       id: claimTxId || txDetails.txId || "",
-       swapId,
-       lockupTxId,
-       claimTxId,
-       swapperFeesSat,
-       bitcoinExpirationBlockheight,
-     } as any
-   }
+  // Add swap details if Bitcoin variant
+  if (isBitcoinVariant) {
+    return {
+      ...baseTransaction,
+      id: claimTxId || txDetails.txId || "",
+      swapId,
+      lockupTxId,
+      claimTxId,
+      swapperFeesSat,
+      bitcoinExpirationBlockheight,
+    } as any
+  }
 
   return baseTransaction as any
 }
