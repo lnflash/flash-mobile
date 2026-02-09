@@ -1,9 +1,10 @@
 import React from "react"
-import { View, TouchableOpacity, StyleSheet } from "react-native"
-import { Card, Text, useTheme } from "@rneui/themed"
+import { View, TouchableOpacity } from "react-native"
+import { Card, Text, makeStyles } from "@rneui/themed"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { TransactionWithSwapDetails } from "@app/types/transaction"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { toastShow } from "@app/utils/toast"
 
 interface SwapDetailsProps {
   transaction: TransactionWithSwapDetails
@@ -16,10 +17,16 @@ const truncate = (str: string, length: number): string => {
 
 export const SwapDetails: React.FC<SwapDetailsProps> = ({ transaction }) => {
   const { LL } = useI18nContext()
-  const { colors } = useTheme().theme
+  const styles = useStyles()
 
   const handleCopy = (value: string) => {
     Clipboard.setString(value)
+    toastShow({
+      type: "success",
+      message: (translations) => translations.common.copied(),
+      position: "top",
+      autoHide: true,
+    })
   }
 
   const CopyableRow: React.FC<{ label: string; value: string; fullValue?: boolean }> = ({
@@ -28,9 +35,9 @@ export const SwapDetails: React.FC<SwapDetailsProps> = ({ transaction }) => {
     fullValue = false,
   }) => (
     <TouchableOpacity onPress={() => handleCopy(value)} style={styles.row}>
-      <Text style={[styles.label, { color: colors.grey2 }]}>{label}</Text>
-      <View style={[styles.valueContainer, { backgroundColor: colors.grey5 }]}>
-        <Text style={[styles.value, { color: colors.black }]} selectable>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.valueContainer}>
+        <Text style={styles.value} selectable>
           {fullValue ? value : truncate(value, 20)}
         </Text>
       </View>
@@ -39,46 +46,49 @@ export const SwapDetails: React.FC<SwapDetailsProps> = ({ transaction }) => {
 
   return (
     <Card containerStyle={styles.card}>
-      <Text style={[styles.title, { color: colors.black }]}>
-        Swap Details
+      <Text style={styles.title}>
+        {LL.TransactionDetailScreen.swapDetails()}
       </Text>
-      
+
       {transaction.initiationVia.__typename === "InitiationViaOnChain" && (
         <CopyableRow
-          label="Destination Address"
+          label={LL.TransactionDetailScreen.destinationAddress()}
           value={transaction.initiationVia.address}
           fullValue
         />
       )}
-      
+
       {transaction.swapId && (
-        <CopyableRow label="Swap ID" value={transaction.swapId} />
+        <CopyableRow
+          label={LL.TransactionDetailScreen.swapId()}
+          value={transaction.swapId}
+        />
       )}
-      
+
       {transaction.lockupTxId && (
         <CopyableRow
-          label="Lockup Transaction"
+          label={LL.TransactionDetailScreen.lockupTxId()}
           value={transaction.lockupTxId}
         />
       )}
-      
+
       {transaction.claimTxId && (
         <CopyableRow
-          label="Claim Transaction"
+          label={LL.TransactionDetailScreen.claimTxId()}
           value={transaction.claimTxId}
         />
       )}
-      
+
       {transaction.swapperFeesSat !== undefined && (
         <CopyableRow
-          label="Swap Fees"
-          value={`${transaction.swapperFeesSat} sats`}
+          label={LL.TransactionDetailScreen.swapFees()}
+          value={`${transaction.swapperFeesSat} ${LL.common.sats()}`}
         />
       )}
-      
+
       {transaction.bitcoinExpirationBlockheight !== undefined && (
         <CopyableRow
-          label="Expires at Block"
+          label={LL.TransactionDetailScreen.expirationBlockHeight()}
           value={transaction.bitcoinExpirationBlockheight.toString()}
         />
       )}
@@ -86,16 +96,22 @@ export const SwapDetails: React.FC<SwapDetailsProps> = ({ transaction }) => {
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   card: {
     marginHorizontal: 16,
     marginBottom: 26,
     borderRadius: 16,
+    elevation: 2,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   title: {
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 16,
+    color: colors.black,
   },
   row: {
     marginBottom: 16,
@@ -103,14 +119,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     marginBottom: 8,
+    color: colors.grey2,
+    fontWeight: "500",
   },
   valueContainer: {
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: colors.grey5,
   },
   value: {
     fontSize: 15,
     fontWeight: "500",
+    color: colors.black,
   },
-})
+}))

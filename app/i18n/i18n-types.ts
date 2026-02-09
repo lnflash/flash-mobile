@@ -3422,6 +3422,46 @@ type RootTranslation = {
 		 */
 		txNotBroadcast: string
 		/**
+		 * N​o​ ​t​r​a​n​s​a​c​t​i​o​n​ ​f​o​u​n​d​ ​w​i​t​h​ ​t​h​i​s​ ​I​D
+		 */
+		noTransaction: string
+		/**
+		 * O​n​C​h​a​i​n
+		 */
+		typeOnChain: string
+		/**
+		 * L​i​g​h​t​n​i​n​g
+		 */
+		typeLightning: string
+		/**
+		 * I​n​t​r​a​L​e​d​g​e​r
+		 */
+		typeIntraLedger: string
+		/**
+		 * P​e​n​d​i​n​g
+		 */
+		pendingStatus: string
+		/**
+		 * C​o​n​f​i​r​m​a​t​i​o​n
+		 */
+		confirmation: string
+		/**
+		 * C​o​n​f​i​r​m​a​t​i​o​n​s
+		 */
+		confirmations: string
+		/**
+		 * H​a​s​h
+		 */
+		hash: string
+		/**
+		 * P​r​e​i​m​a​g​e
+		 */
+		preimage: string
+		/**
+		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
+		 */
+		transactionId: string
+		/**
 		 * S​w​a​p​ ​D​e​t​a​i​l​s
 		 */
 		swapDetails: string
@@ -3975,6 +4015,10 @@ type RootTranslation = {
 		 * C​o​n​f​i​r​m
 		 */
 		confirm: string
+		/**
+		 * C​o​p​i​e​d​ ​t​o​ ​c​l​i​p​b​o​a​r​d
+		 */
+		copied: string
 		/**
 		 * C​o​n​v​e​r​t
 		 */
@@ -8239,6 +8283,46 @@ export type TranslationFunctions = {
 		 */
 		txNotBroadcast: () => LocalizedString
 		/**
+		 * No transaction found with this ID
+		 */
+		noTransaction: () => LocalizedString
+		/**
+		 * OnChain
+		 */
+		typeOnChain: () => LocalizedString
+		/**
+		 * Lightning
+		 */
+		typeLightning: () => LocalizedString
+		/**
+		 * IntraLedger
+		 */
+		typeIntraLedger: () => LocalizedString
+		/**
+		 * Pending
+		 */
+		pendingStatus: () => LocalizedString
+		/**
+		 * Confirmation
+		 */
+		confirmation: () => LocalizedString
+		/**
+		 * Confirmations
+		 */
+		confirmations: () => LocalizedString
+		/**
+		 * Hash
+		 */
+		hash: () => LocalizedString
+		/**
+		 * Preimage
+		 */
+		preimage: () => LocalizedString
+		/**
+		 * Transaction ID
+		 */
+		transactionId: () => LocalizedString
+		/**
 		 * Swap Details
 		 */
 		swapDetails: () => LocalizedString
@@ -8776,6 +8860,10 @@ export type TranslationFunctions = {
 		 * Confirm
 		 */
 		confirm: () => LocalizedString
+		/**
+		 * Copied to clipboard
+		 */
+		copied: () => LocalizedString
 		/**
 		 * Convert
 		 */
