@@ -37,9 +37,9 @@ export const NostrSettingsScreen = () => {
   const styles = useStyles()
   const { data: dataAuthed, refetch } = useHomeAuthedQuery({
     skip: !isAuthed,
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-first",
     errorPolicy: "all",
-    nextFetchPolicy: "network-only",
+    nextFetchPolicy: "cache-first",
   })
 
   const { userProfileEvent } = useChatContext()
