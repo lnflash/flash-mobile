@@ -1374,10 +1374,10 @@
   dependencies:
     "@noble/curves" "^1.7.0"
 
-"@breeztech/react-native-breez-sdk-liquid@^0.11.2":
-  version "0.11.11"
-  resolved "https://registry.yarnpkg.com/@breeztech/react-native-breez-sdk-liquid/-/react-native-breez-sdk-liquid-0.11.11.tgz#f82adce1156bceddeabdd1fa7c145861a3ab6bd2"
-  integrity sha512-FVK8fYlesmwNRxGmaJXy335pDPDdwXpSw0R2QhPcWslAHLSDyeJcYpNHAcpbAotiORtnGlQdhxjjw6Ot61fBAg==
+"@breeztech/react-native-breez-sdk-liquid@^0.11.13":
+  version "0.11.13"
+  resolved "https://registry.yarnpkg.com/@breeztech/react-native-breez-sdk-liquid/-/react-native-breez-sdk-liquid-0.11.13.tgz#d294390f41c6c7965461737eabb6d22a812d024c"
+  integrity sha512-UU7nci4hbJLVFarOXu8iVRGl08suBuXCFh5FrEv/bhG0chuevwJna/04Y2A5JcLTqYB7fLw24ceU3WGqeqbYOA==
 
 "@callstack/react-theme-provider@3.0.3":
   version "3.0.3"
