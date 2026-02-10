@@ -3384,7 +3384,7 @@ type RootTranslation = {
 		 */
 		termsAndConditions: string
 		/**
-		 * W​h​a​t​ ​i​s​ ​a​ ​R​e​c​o​v​e​r​y​ ​P​h​a​s​e​?
+		 * W​h​a​t​ ​i​s​ ​a​ ​R​e​c​o​v​e​r​y​ ​P​h​r​a​s​e​?
 		 */
 		learnMore: string
 	}
@@ -3421,6 +3421,74 @@ type RootTranslation = {
 		 * Y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​c​u​r​r​e​n​t​l​y​ ​p​e​n​d​i​n​g​ ​a​n​d​ ​w​i​l​l​ ​b​e​ ​b​r​o​a​d​c​a​s​t​e​d​ ​t​o​ ​t​h​e​ ​B​i​t​c​o​i​n​ ​n​e​t​w​o​r​k​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
 		 */
 		txNotBroadcast: string
+		/**
+		 * N​o​ ​t​r​a​n​s​a​c​t​i​o​n​ ​f​o​u​n​d​ ​w​i​t​h​ ​t​h​i​s​ ​I​D
+		 */
+		noTransaction: string
+		/**
+		 * O​n​C​h​a​i​n
+		 */
+		typeOnChain: string
+		/**
+		 * L​i​g​h​t​n​i​n​g
+		 */
+		typeLightning: string
+		/**
+		 * I​n​t​r​a​L​e​d​g​e​r
+		 */
+		typeIntraLedger: string
+		/**
+		 * P​e​n​d​i​n​g
+		 */
+		pendingStatus: string
+		/**
+		 * C​o​n​f​i​r​m​a​t​i​o​n
+		 */
+		confirmation: string
+		/**
+		 * C​o​n​f​i​r​m​a​t​i​o​n​s
+		 */
+		confirmations: string
+		/**
+		 * H​a​s​h
+		 */
+		hash: string
+		/**
+		 * P​r​e​i​m​a​g​e
+		 */
+		preimage: string
+		/**
+		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
+		 */
+		transactionId: string
+		/**
+		 * S​w​a​p​ ​D​e​t​a​i​l​s
+		 */
+		swapDetails: string
+		/**
+		 * D​e​s​t​i​n​a​t​i​o​n​ ​A​d​d​r​e​s​s
+		 */
+		destinationAddress: string
+		/**
+		 * S​w​a​p​ ​I​D
+		 */
+		swapId: string
+		/**
+		 * L​o​c​k​u​p​ ​T​r​a​n​s​a​c​t​i​o​n
+		 */
+		lockupTxId: string
+		/**
+		 * C​l​a​i​m​ ​T​r​a​n​s​a​c​t​i​o​n
+		 */
+		claimTxId: string
+		/**
+		 * S​w​a​p​ ​F​e​e​s
+		 */
+		swapFees: string
+		/**
+		 * E​x​p​i​r​e​s​ ​a​t​ ​B​l​o​c​k
+		 */
+		expirationBlockHeight: string
 	}
 	TransactionLimitsScreen: {
 		/**
@@ -3947,6 +4015,10 @@ type RootTranslation = {
 		 * C​o​n​f​i​r​m
 		 */
 		confirm: string
+		/**
+		 * C​o​p​i​e​d​ ​t​o​ ​c​l​i​p​b​o​a​r​d
+		 */
+		copied: string
 		/**
 		 * C​o​n​v​e​r​t
 		 */
@@ -4835,7 +4907,7 @@ type RootTranslation = {
 			 */
 			message: string
 			/**
-			 * S​e​n​d​ ​P​a​y​m​e​n​t
+			 * S​e​n​d
 			 */
 			sendPayment: string
 			/**
@@ -7354,23 +7426,23 @@ export type TranslationFunctions = {
 		/**
 		 * The amount you entered is less than the minimum amount required to send an on-chain transaction {amount}. Please consider sending this amount via Lightning!
 		 */
-		onchainMinAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		onchainMinAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is less than minimum required amount {amount}
 		 */
-		minAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		minAmountConvertError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is greater than maximum amount {amount}
 		 */
-		maxAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**
@@ -8210,6 +8282,74 @@ export type TranslationFunctions = {
 		 * Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment.
 		 */
 		txNotBroadcast: () => LocalizedString
+		/**
+		 * No transaction found with this ID
+		 */
+		noTransaction: () => LocalizedString
+		/**
+		 * OnChain
+		 */
+		typeOnChain: () => LocalizedString
+		/**
+		 * Lightning
+		 */
+		typeLightning: () => LocalizedString
+		/**
+		 * IntraLedger
+		 */
+		typeIntraLedger: () => LocalizedString
+		/**
+		 * Pending
+		 */
+		pendingStatus: () => LocalizedString
+		/**
+		 * Confirmation
+		 */
+		confirmation: () => LocalizedString
+		/**
+		 * Confirmations
+		 */
+		confirmations: () => LocalizedString
+		/**
+		 * Hash
+		 */
+		hash: () => LocalizedString
+		/**
+		 * Preimage
+		 */
+		preimage: () => LocalizedString
+		/**
+		 * Transaction ID
+		 */
+		transactionId: () => LocalizedString
+		/**
+		 * Swap Details
+		 */
+		swapDetails: () => LocalizedString
+		/**
+		 * Destination Address
+		 */
+		destinationAddress: () => LocalizedString
+		/**
+		 * Swap ID
+		 */
+		swapId: () => LocalizedString
+		/**
+		 * Lockup Transaction
+		 */
+		lockupTxId: () => LocalizedString
+		/**
+		 * Claim Transaction
+		 */
+		claimTxId: () => LocalizedString
+		/**
+		 * Swap Fees
+		 */
+		swapFees: () => LocalizedString
+		/**
+		 * Expires at Block
+		 */
+		expirationBlockHeight: () => LocalizedString
 	}
 	TransactionLimitsScreen: {
 		/**
@@ -8720,6 +8860,10 @@ export type TranslationFunctions = {
 		 * Confirm
 		 */
 		confirm: () => LocalizedString
+		/**
+		 * Copied to clipboard
+		 */
+		copied: () => LocalizedString
 		/**
 		 * Convert
 		 */
@@ -9595,7 +9739,7 @@ export type TranslationFunctions = {
 			 */
 			message: () => LocalizedString
 			/**
-			 * Send Payment
+			 * Send
 			 */
 			sendPayment: () => LocalizedString
 			/**

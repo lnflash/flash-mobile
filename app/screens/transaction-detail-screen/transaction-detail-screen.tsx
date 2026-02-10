@@ -17,6 +17,8 @@ import { TransactionDate } from "@app/components/transaction-date"
 import { WalletSummary } from "@app/components/wallet-summary"
 import { GaloyInfo } from "@app/components/atomic/galoy-info"
 import { Screen } from "../../components/screen"
+import { SwapDetails } from "./SwapDetails"
+import { hasSwapDetails } from "@app/types/transaction"
 
 // hooks
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
@@ -96,15 +98,32 @@ const Row = ({ entry, value, __typename, content }: RowProps) => {
   )
 }
 
-const typeDisplay = (instance: SettlementVia) => {
+const typeDisplay = (
+  instance: SettlementVia,
+  LL: ReturnType<typeof useI18nContext>["LL"],
+) => {
   switch (instance.__typename) {
     case "SettlementViaOnChain":
-      return "OnChain"
+      return LL.TransactionDetailScreen.typeOnChain()
     case "SettlementViaLn":
-      return "Lightning"
+      return LL.TransactionDetailScreen.typeLightning()
     case "SettlementViaIntraLedger":
-      return "IntraLedger"
+      return LL.TransactionDetailScreen.typeIntraLedger()
   }
+}
+
+const getConfirmationIcon = (confirmations: number) => {
+  if (confirmations >= 6) return "shield-checkmark"
+  if (confirmations >= 1) return "shield"
+  return "time"
+}
+
+type ThemeColors = ReturnType<typeof useTheme>["theme"]["colors"]
+
+const getConfirmationColor = (confirmations: number, colors: ThemeColors) => {
+  if (confirmations >= 6) return colors.success
+  if (confirmations >= 1) return colors.warning
+  return colors.grey2
 }
 
 type Props = StackScreenProps<RootStackParamList, "transactionDetail">
@@ -126,13 +145,13 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
         transactionId: tx?.id || "",
       },
     },
-    skip: !tx?.id,
+    skip: !tx?.id || hasSwapDetails(tx),
   })
 
   const ibexDetails = transactionDetailsData?.transactionDetails?.transactionDetails
 
   if (!tx || Object.keys(tx).length === 0)
-    return <Text>{"No transaction found with this ID (should not happen)"}</Text>
+    return <Text>{LL.TransactionDetailScreen.noTransaction()}</Text>
 
   const {
     id,
@@ -231,43 +250,24 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
                 ibexDetails?.confirmations !== null ? (
                   <>
                     <Icon
-                      name={
-                        ibexDetails.confirmations >= 6
-                          ? "shield-checkmark"
-                          : ibexDetails.confirmations >= 1
-                          ? "shield"
-                          : "time"
-                      }
+                      name={getConfirmationIcon(ibexDetails.confirmations)}
                       size={30}
-                      color={
-                        ibexDetails.confirmations >= 6
-                          ? colors.success
-                          : ibexDetails.confirmations >= 1
-                          ? colors.warning
-                          : colors.grey2
-                      }
+                      color={getConfirmationColor(ibexDetails.confirmations, colors)}
                       style={styles.memoIcon}
                     />
                     <Text
                       type="p1"
                       style={[
                         styles.memoText,
-                        {
-                          color:
-                            ibexDetails.confirmations >= 6
-                              ? colors.success
-                              : ibexDetails.confirmations >= 1
-                              ? colors.warning
-                              : colors.grey2,
-                        },
+                        { color: getConfirmationColor(ibexDetails.confirmations, colors) },
                       ]}
                     >
                       {ibexDetails.confirmations === 0
-                        ? "Pending"
+                        ? LL.TransactionDetailScreen.pendingStatus()
                         : `${ibexDetails.confirmations} ${
                             ibexDetails.confirmations === 1
-                              ? "Confirmation"
-                              : "Confirmations"
+                              ? LL.TransactionDetailScreen.confirmation()
+                              : LL.TransactionDetailScreen.confirmations()
                           }`}
                     </Text>
                   </>
@@ -332,28 +332,28 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
             />
           )}
 
-          <Row entry={LL.common.type()} value={typeDisplay(settlementVia)} />
+          <Row entry={LL.common.type()} value={typeDisplay(settlementVia, LL)} />
 
           <View style={styles.separator} />
 
           {settlementVia?.__typename === "SettlementViaLn" &&
             initiationVia.__typename === "InitiationViaLn" &&
             initiationVia.paymentHash && (
-              <Row entry="Hash" value={initiationVia.paymentHash} />
+              <Row entry={LL.TransactionDetailScreen.hash()} value={initiationVia.paymentHash} />
             )}
 
           {settlementVia?.__typename === "SettlementViaLn" &&
             ibexDetails?.paymentPreimage && (
-              <Row entry="Preimage" value={ibexDetails.paymentPreimage} />
+              <Row entry={LL.TransactionDetailScreen.preimage()} value={ibexDetails.paymentPreimage} />
             )}
 
-          {onChainTxBroadcasted && settlementVia?.transactionHash && (
+          {onChainTxBroadcasted && settlementVia?.transactionHash && !hasSwapDetails(tx) && (
             <TouchableWithoutFeedback
               onPress={() => viewInExplorer(settlementVia?.transactionHash || "")}
             >
               <View>
                 <Row
-                  entry="Hash"
+                  entry={LL.TransactionDetailScreen.hash()}
                   value={settlementVia?.transactionHash}
                   __typename={settlementVia?.__typename}
                 />
@@ -361,8 +361,24 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
             </TouchableWithoutFeedback>
           )}
 
-          {id && <Row entry="Transaction ID" value={id} />}
+          {id && hasSwapDetails(tx) ? (
+            <TouchableWithoutFeedback
+              onPress={() => Linking.openURL(`https://mempool.space/tx/${id}`)}
+            >
+              <View>
+                <Row
+                  entry={LL.TransactionDetailScreen.transactionId()}
+                  value={id}
+                  __typename="SettlementViaOnChain"
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          ) : (
+            id && <Row entry={LL.TransactionDetailScreen.transactionId()} value={id} />
+          )}
         </Card>
+
+        {hasSwapDetails(tx) && <SwapDetails transaction={tx} />}
       </ScrollView>
     </Screen>
   )
@@ -370,7 +386,7 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
 
 const useStyles = makeStyles(({ colors }) => ({
   backButtonWrapper: {
-    backgroundColor: "white",
+    backgroundColor: colors.white,
     position: "absolute",
     zIndex: 1,
     top: 0,
@@ -487,21 +503,5 @@ const useStyles = makeStyles(({ colors }) => ({
     height: 1,
     backgroundColor: colors.grey4,
     marginVertical: 8,
-  },
-  description: {
-    marginBottom: 16,
-  },
-  entry: {
-    marginBottom: 8,
-    color: colors.grey2,
-  },
-  transactionDetailView: {
-    marginHorizontal: 20,
-    marginVertical: 15,
-  },
-  value: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: colors.black,
   },
 }))

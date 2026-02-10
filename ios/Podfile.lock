@@ -4,12 +4,12 @@ PODS:
     - GoogleUtilities/UserDefaults (~> 8.0)
     - PromisesObjC (~> 2.4)
   - boost (1.84.0)
-  - breez_sdk_liquid (0.11.11):
-    - BreezSDKLiquid (= 0.11.11)
+  - breez_sdk_liquid (0.11.13):
+    - BreezSDKLiquid (= 0.11.13)
     - React-Core
-  - breez_sdk_liquidFFI (0.11.11)
-  - BreezSDKLiquid (0.11.11):
-    - breez_sdk_liquidFFI (= 0.11.11)
+  - breez_sdk_liquidFFI (0.11.13)
+  - BreezSDKLiquid (0.11.13):
+    - breez_sdk_liquidFFI (= 0.11.13)
   - breeztech-breez-sdk-spark-react-native (0.7.14):
     - DoubleConversion
     - glog
@@ -2859,9 +2859,9 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
   boost: 1dca942403ed9342f98334bf4c3621f011aa7946
-  breez_sdk_liquid: 6eb4901aaea469829e22921cd54a85928d694a33
-  breez_sdk_liquidFFI: fdae842d075a2457e16119858369bdc144b0ade2
-  BreezSDKLiquid: 05516ece52b0c5d1ed4ee542f9713a1291d443dc
+  breez_sdk_liquid: 5c229f9ab3bcf6b648bbf2d512f6fe1eee96d121
+  breez_sdk_liquidFFI: f05fadc0611126ade76d1fe6761ed8b020aabefb
+  BreezSDKLiquid: ee6bf5a57f1b2533dc3c14c24c9773496f17b756
   breeztech-breez-sdk-spark-react-native: 0af390a27a5f95bc838cddbecead825b671f60b2
   BVLinearGradient: 880f91a7854faff2df62518f0281afb1c60d49a3
   DoubleConversion: f16ae600a246532c4020132d54af21d0ddb2a385
