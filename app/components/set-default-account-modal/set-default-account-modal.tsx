@@ -59,41 +59,43 @@ export const SetDefaultAccountModal = ({ isVisible, toggleModal }: Props) => {
   }
 
   return (
-    <Modal
-      isVisible={isVisible}
-      backdropOpacity={0.7}
-      backdropColor={colors.grey3}
-      backdropTransitionOutTiming={0}
-      avoidKeyboard={true}
-    >
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.closeIcon} onPress={toggleModal}>
-          <Icon name="close" size={30} type="ionicon" color={colors.black} />
-        </TouchableOpacity>
-        <Text type="h1" bold style={styles.text}>
-          {LL.SetAccountModal.title()}
-        </Text>
-        <Text type={"p1"} style={styles.text}>
-          {LL.SetAccountModal.description()}
-        </Text>
-        <View style={styles.modalActionsContainer}>
-          <TouchableOpacity style={styles.button} onPress={() => onPressHandler("USD")}>
-            <Cash />
-            <View style={styles.buttonText}>
-              <Text type={"h1"}>{LL.common.stablesatsUsd()}</Text>
-              <Text type={"p3"}>{LL.SetAccountModal.stablesatsTag()}</Text>
-            </View>
+    <View>
+      <Modal
+        isVisible={isVisible}
+        backdropOpacity={0.7}
+        backdropColor={colors.grey3}
+        backdropTransitionOutTiming={0}
+        avoidKeyboard={true}
+      >
+        <View style={styles.container}>
+          <TouchableOpacity style={styles.closeIcon} onPress={toggleModal}>
+            <Icon name="close" size={30} type="ionicon" color={colors.black} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={() => onPressHandler("BTC")}>
-            <Bitcoin />
-            <View style={styles.buttonText}>
-              <Text type={"h1"}>{LL.common.bitcoin()}</Text>
-              <Text type={"p3"}>{LL.SetAccountModal.bitcoinTag()}</Text>
-            </View>
-          </TouchableOpacity>
+          <Text type="h1" bold style={styles.text}>
+            {LL.SetAccountModal.title()}
+          </Text>
+          <Text type={"p1"} style={styles.text}>
+            {LL.SetAccountModal.description()}
+          </Text>
+          <View style={styles.modalActionsContainer}>
+            <TouchableOpacity style={styles.button} onPress={() => onPressHandler("USD")}>
+              <Cash />
+              <View style={styles.buttonText}>
+                <Text type={"h1"}>{LL.common.stablesatsUsd()}</Text>
+                <Text type={"p3"}>{LL.SetAccountModal.stablesatsTag()}</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={() => onPressHandler("BTC")}>
+              <Bitcoin />
+              <View style={styles.buttonText}>
+                <Text type={"h1"}>{LL.common.bitcoin()}</Text>
+                <Text type={"p3"}>{LL.SetAccountModal.bitcoinTag()}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+    </View>
   )
 }
 

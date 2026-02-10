@@ -34,45 +34,47 @@ export const UnVerifiedSeedModal: React.FC<Props> = ({ isVisible, setIsVisible }
   }
 
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={isVisible}
-      onRequestClose={() => setIsVisible(false)}
-    >
-      <View style={styles.backdrop}>
-        <View style={styles.modalCard}>
-          <Unsecure
-            style={{ alignSelf: "center" }}
-            width={width / 2}
-            height={width / 2}
-          />
-          <Text style={styles.cardTitle} type={"h2"} bold>
-            {LL.UnVerifiedSeedModal.header()}
-          </Text>
-          <Text type="p2">{LL.UnVerifiedSeedModal.body()} </Text>
-          <Text
-            style={styles.textBtn}
-            type="p2"
-            bold
-            onPress={() => Linking.openURL(DOCS_LINK)}
-          >
-            {LL.UnVerifiedSeedModal.learnMore()}
-          </Text>
-          <PrimaryBtn
-            label={LL.common.revealSeed()}
-            onPress={goToBackupBTCWallet}
-            btnStyle={styles.marginBottom}
-          />
-          <PrimaryBtn
-            type="outline"
-            label={LL.MapScreen.locationPermissionNeutral()}
-            onPress={acknowledgeModal}
-            btnStyle={styles.marginBottom}
-          />
+    <View>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isVisible}
+        onRequestClose={() => setIsVisible(false)}
+      >
+        <View style={styles.backdrop}>
+          <View style={styles.modalCard}>
+            <Unsecure
+              style={{ alignSelf: "center" }}
+              width={width / 2}
+              height={width / 2}
+            />
+            <Text style={styles.cardTitle} type={"h2"} bold>
+              {LL.UnVerifiedSeedModal.header()}
+            </Text>
+            <Text type="p2">{LL.UnVerifiedSeedModal.body()} </Text>
+            <Text
+              style={styles.textBtn}
+              type="p2"
+              bold
+              onPress={() => Linking.openURL(DOCS_LINK)}
+            >
+              {LL.UnVerifiedSeedModal.learnMore()}
+            </Text>
+            <PrimaryBtn
+              label={LL.common.revealSeed()}
+              onPress={goToBackupBTCWallet}
+              btnStyle={styles.marginBottom}
+            />
+            <PrimaryBtn
+              type="outline"
+              label={LL.MapScreen.locationPermissionNeutral()}
+              onPress={acknowledgeModal}
+              btnStyle={styles.marginBottom}
+            />
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+    </View>
   )
 }
 
