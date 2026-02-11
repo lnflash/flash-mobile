@@ -23,7 +23,7 @@ import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { setBankInfo } from "@app/store/redux/slices/accountUpgradeSlice"
 
 // gql
-import { AccountLevel } from "@app/graphql/generated"
+import { AccountLevel, useSupportedBanksQuery } from "@app/graphql/generated"
 
 const banks = [
   { label: "Select bank", value: null },
@@ -34,8 +34,8 @@ const banks = [
 
 const accountTypes = [
   { label: "Select account type", value: null },
-  { label: "Checking", value: "checking" },
-  { label: "Savings", value: "savings" },
+  { label: "Checking", value: "Checking" },
+  { label: "Savings", value: "Savings" },
 ]
 
 const currencies = [
@@ -74,6 +74,9 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
       idDocument,
     },
   } = useAppSelector((state) => state.accountUpgrade)
+
+  const { data } = useSupportedBanksQuery()
+  console.log(">>>>>>>>>>>>>", data)
 
   const onPressNext = async () => {
     let hasError = false

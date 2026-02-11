@@ -295,4 +295,10 @@ gql`
       }
     }
   }
+
+  query SupportedBanks {
+    supportedBanks {
+      name
+    }
+  }
 `

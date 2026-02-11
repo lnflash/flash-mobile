@@ -262,6 +262,11 @@ export type BtcWalletTransactionsByAddressArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type Bank = {
+  readonly __typename: 'Bank';
+  readonly name: Scalars['String']['output'];
+};
+
 export type BuildInformation = {
   readonly __typename: 'BuildInformation';
   readonly commitHash?: Maybe<Scalars['String']['output']>;
@@ -1433,6 +1438,7 @@ export type Query = {
   readonly quizQuestions?: Maybe<ReadonlyArray<Maybe<QuizQuestion>>>;
   /** Returns 1 Sat and 1 Usd Cent price for the given currency */
   readonly realtimePrice: RealtimePrice;
+  readonly supportedBanks: ReadonlyArray<Bank>;
   readonly transactionDetails: TransactionDetailsPayload;
   /** @deprecated will be migrated to AccountDefaultWalletId */
   readonly userDefaultWalletId: Scalars['WalletId']['output'];
@@ -2366,6 +2372,11 @@ export type AccountUpgradeRequestQueryVariables = Exact<{ [key: string]: never; 
 
 
 export type AccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly accountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly businessAddress?: string | null, readonly businessName?: string | null, readonly currentLevel: AccountLevel, readonly email?: string | null, readonly fullName: string, readonly name: string, readonly phoneNumber?: string | null, readonly requestedLevel: AccountLevel, readonly status: string, readonly username: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
+
+export type SupportedBanksQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SupportedBanksQuery = { readonly __typename: 'Query', readonly supportedBanks: ReadonlyArray<{ readonly __typename: 'Bank', readonly name: string }> };
 
 export type RealtimePriceWsSubscriptionVariables = Exact<{
   currency: Scalars['DisplayCurrency']['input'];
@@ -4676,6 +4687,40 @@ export function useAccountUpgradeRequestLazyQuery(baseOptions?: Apollo.LazyQuery
 export type AccountUpgradeRequestQueryHookResult = ReturnType<typeof useAccountUpgradeRequestQuery>;
 export type AccountUpgradeRequestLazyQueryHookResult = ReturnType<typeof useAccountUpgradeRequestLazyQuery>;
 export type AccountUpgradeRequestQueryResult = Apollo.QueryResult<AccountUpgradeRequestQuery, AccountUpgradeRequestQueryVariables>;
+export const SupportedBanksDocument = gql`
+    query SupportedBanks {
+  supportedBanks {
+    name
+  }
+}
+    `;
+
+/**
+ * __useSupportedBanksQuery__
+ *
+ * To run a query within a React component, call `useSupportedBanksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSupportedBanksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSupportedBanksQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useSupportedBanksQuery(baseOptions?: Apollo.QueryHookOptions<SupportedBanksQuery, SupportedBanksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SupportedBanksQuery, SupportedBanksQueryVariables>(SupportedBanksDocument, options);
+      }
+export function useSupportedBanksLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SupportedBanksQuery, SupportedBanksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SupportedBanksQuery, SupportedBanksQueryVariables>(SupportedBanksDocument, options);
+        }
+export type SupportedBanksQueryHookResult = ReturnType<typeof useSupportedBanksQuery>;
+export type SupportedBanksLazyQueryHookResult = ReturnType<typeof useSupportedBanksLazyQuery>;
+export type SupportedBanksQueryResult = Apollo.QueryResult<SupportedBanksQuery, SupportedBanksQueryVariables>;
 export const RealtimePriceWsDocument = gql`
     subscription realtimePriceWs($currency: DisplayCurrency!) {
   realtimePrice(input: {currency: $currency}) {

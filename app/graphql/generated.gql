@@ -863,6 +863,13 @@ query ExportCsvSetting($walletIds: [WalletId!]!) {
   }
 }
 
+query SupportedBanks {
+  supportedBanks {
+    name
+    __typename
+  }
+}
+
 query accountDefaultWallet($username: Username!) {
   accountDefaultWallet(username: $username) {
     id
