@@ -1,7 +1,6 @@
 import React, { useEffect } from "react"
-import { ActivityIndicator, View } from "react-native"
+import { ActivityIndicator, TouchableOpacity, View } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
-import { TouchableOpacity } from "react-native-gesture-handler"
 import { makeStyles, useTheme, Text, Input } from "@rneui/themed"
 import CountryPicker, {
   CountryCode,
@@ -206,7 +205,6 @@ const useStyles = makeStyles(({ colors }) => ({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    flex: 1,
   },
   inputComponentContainerStyle: {
     flex: 1,

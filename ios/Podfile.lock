@@ -4,12 +4,12 @@ PODS:
     - GoogleUtilities/UserDefaults (~> 8.0)
     - PromisesObjC (~> 2.4)
   - boost (1.84.0)
-  - breez_sdk_liquid (0.11.2):
-    - BreezSDKLiquid (= 0.11.2)
+  - breez_sdk_liquid (0.11.13):
+    - BreezSDKLiquid (= 0.11.13)
     - React-Core
-  - breez_sdk_liquidFFI (0.11.2)
-  - BreezSDKLiquid (0.11.2):
-    - breez_sdk_liquidFFI (= 0.11.2)
+  - breez_sdk_liquidFFI (0.11.11)
+  - BreezSDKLiquid (0.11.11):
+    - breez_sdk_liquidFFI (= 0.11.11)
   - BVLinearGradient (2.8.3):
     - React-Core
   - DoubleConversion (1.1.6)
@@ -1529,7 +1529,7 @@ PODS:
     - Yoga
   - react-native-in-app-review (4.4.2):
     - React-Core
-  - react-native-maps (1.4.0):
+  - react-native-maps (1.20.1):
     - React-Core
   - react-native-netinfo (11.4.1):
     - React-Core
@@ -2559,6 +2559,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - Yoga
   - SocketRocket (0.7.1)
+  - uniffi-bindgen-react-native (0.28.3-5):
+    - React-Core
   - VisionCamera (4.7.3):
     - VisionCamera/Core (= 4.7.3)
     - VisionCamera/React (= 4.7.3)
@@ -2573,6 +2575,7 @@ PODS:
 DEPENDENCIES:
   - boost (from `../node_modules/react-native/third-party-podspecs/boost.podspec`)
   - "breez_sdk_liquid (from `../node_modules/@breeztech/react-native-breez-sdk-liquid`)"
+  - "breeztech-breez-sdk-spark-react-native (from `../node_modules/@breeztech/breez-sdk-spark-react-native`)"
   - BVLinearGradient (from `../node_modules/react-native-linear-gradient`)
   - DoubleConversion (from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)
   - fast_float (from `../node_modules/react-native/third-party-podspecs/fast_float.podspec`)
@@ -2726,6 +2729,7 @@ SPEC REPOS:
     - PromisesObjC
     - PromisesSwift
     - SocketRocket
+    - uniffi-bindgen-react-native
     - ZXingObjC
 
 EXTERNAL SOURCES:
@@ -2733,6 +2737,8 @@ EXTERNAL SOURCES:
     :podspec: "../node_modules/react-native/third-party-podspecs/boost.podspec"
   breez_sdk_liquid:
     :path: "../node_modules/@breeztech/react-native-breez-sdk-liquid"
+  breeztech-breez-sdk-spark-react-native:
+    :path: "../node_modules/@breeztech/breez-sdk-spark-react-native"
   BVLinearGradient:
     :path: "../node_modules/react-native-linear-gradient"
   DoubleConversion:
@@ -2964,9 +2970,9 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
   boost: 1dca942403ed9342f98334bf4c3621f011aa7946
-  breez_sdk_liquid: c1ca8548830cd519e7443e9358b2ea97b4cc4461
-  breez_sdk_liquidFFI: 1091fe9e2d677e7c3b0296848037338b419d0405
-  BreezSDKLiquid: ebab2b6ffdbf45986b193624c0b37d2a5eb65b24
+  breez_sdk_liquid: 6eb4901aaea469829e22921cd54a85928d694a33
+  breez_sdk_liquidFFI: fdae842d075a2457e16119858369bdc144b0ade2
+  BreezSDKLiquid: 05516ece52b0c5d1ed4ee542f9713a1291d443dc
   BVLinearGradient: 880f91a7854faff2df62518f0281afb1c60d49a3
   DoubleConversion: f16ae600a246532c4020132d54af21d0ddb2a385
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
@@ -3035,7 +3041,7 @@ SPEC CHECKSUMS:
   react-native-html-to-pdf: 4c5c6e26819fe202971061594058877aa9b25265
   react-native-image-picker: 72009e8cf6410ab5fec3dd2ae37401b050d44ff4
   react-native-in-app-review: bb863fb300f2c716479c4285201df746cf5e20a2
-  react-native-maps: 7135a33610202745d08fdf151ce6b0d01952a99c
+  react-native-maps: ee1e65647460c3d41e778071be5eda10e3da6225
   react-native-netinfo: f0a9899081c185db1de5bb2fdc1c88c202a059ac
   react-native-nfc-manager: 2a87d561c4fa832e6597a5f2f7c197808c019ab8
   react-native-pager-view: 867ae827a2865fec3bb3dc107c6dffa5ca642456
@@ -3102,10 +3108,11 @@ SPEC CHECKSUMS:
   RNSVG: 94d7e07a850d32026796c828f6afcec7e9d2b6ce
   RNVectorIcons: 236ac67eb619ce3e7271cc1434f8120174454f08
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
+  uniffi-bindgen-react-native: 018090e6c342b31e1189eb4d098860e9d44caa86
   VisionCamera: 3ea10c46a5c612f5f89fb46a54bef4a0de8b58a7
   Yoga: feb4910aba9742cfedc059e2b2902e22ffe9954a
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: bfaf7f2d936b3b35a36be110f1a780a72cb62cf6
+PODFILE CHECKSUM: 269e86faf2fa0230045b43b36eb7e5a85636832e
 
 COCOAPODS: 1.16.2

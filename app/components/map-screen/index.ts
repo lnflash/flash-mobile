@@ -1,5 +1,6 @@
 export * from "./merchant-suggest-modal"
 export * from "./AddButton"
 export * from "./AddPin"
+export * from "./BusinessCardModal"
 export * from "./CustomMarker"
 export * from "./RefreshButton"

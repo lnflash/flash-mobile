@@ -87,23 +87,9 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
           )}
         </RowWrapper>
         {tx.memo && (
-          <RowWrapper style={{ marginTop: 4, marginBottom: 2 }}>
-            <Icon
-              name="document-text"
-              size={16}
-              color={colors.primary}
-              style={{ marginRight: 4, marginTop: 1 }}
-            />
-            <Text
-              type="bl"
-              style={{
-                color: colors.primary,
-                fontWeight: "600",
-                flex: 1,
-              }}
-              numberOfLines={2}
-              ellipsizeMode="tail"
-            >
+          <RowWrapper style={{ marginVertical: 2 }}>
+            <Icon name="document-text" size={14} color={colors.primary} />
+            <Text type="caption" color={colors.primary} numberOfLines={1}>
               {tx.memo}
             </Text>
           </RowWrapper>
