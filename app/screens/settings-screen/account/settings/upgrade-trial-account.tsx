@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
@@ -7,7 +6,6 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // components
 import { PrimaryBtn } from "@app/components/buttons"
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
-import { UpgradeAccountModal } from "@app/components/upgrade-account-modal"
 import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-button"
 
 // hooks
@@ -18,56 +16,49 @@ import { useNavigation } from "@react-navigation/native"
 import { useAppSelector } from "@app/store/redux"
 
 export const UpgradeTrialAccount: React.FC = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const { upgradeCompleted } = useAppSelector((state) => state.accountUpgrade)
+  const { status } = useAppSelector((state) => state.accountUpgrade)
+
+  const upgradePending = status === "Pending"
 
   const hasBalance = useShowWarningSecureAccount()
 
-  const [upgradeAccountModalVisible, setUpgradeAccountModalVisible] = useState(false)
-
-  const closeUpgradeAccountModal = () => setUpgradeAccountModalVisible(false)
-  const openUpgradeAccountModal = () => setUpgradeAccountModalVisible(true)
-
   if (currentLevel === AccountLevel.Zero) {
     return (
-      <>
-        <UpgradeAccountModal
-          isVisible={upgradeAccountModalVisible}
-          closeModal={closeUpgradeAccountModal}
-        />
-        <View style={styles.container}>
-          <View style={styles.sideBySide}>
-            <Text type="h2" bold>
-              {LL.common.trialAccount()}
-            </Text>
-            <GaloyIcon name="warning" size={30} />
-          </View>
-          <Text type="p3">{LL.AccountScreen.itsATrialAccount()}</Text>
-          {hasBalance && (
-            <Text type="p3">⚠️ {LL.AccountScreen.fundsMoreThan5Dollars()}</Text>
-          )}
-          <GaloySecondaryButton
-            title={LL.common.backupAccount()}
-            iconName="caret-right"
-            iconPosition="right"
-            containerStyle={styles.selfCenter}
-            onPress={openUpgradeAccountModal}
-          />
+      <View style={styles.container}>
+        <View style={styles.sideBySide}>
+          <Text type="h2" bold>
+            {LL.common.trialAccount()}
+          </Text>
+          <GaloyIcon name="warning" size={30} />
         </View>
-      </>
+        <Text type="p3">{LL.AccountScreen.itsATrialAccount()}</Text>
+        {hasBalance && (
+          <Text type="p3">⚠️ {LL.AccountScreen.fundsMoreThan5Dollars()}</Text>
+        )}
+        <GaloySecondaryButton
+          title={LL.common.backupAccount()}
+          iconName="caret-right"
+          iconPosition="right"
+          containerStyle={styles.selfCenter}
+          onPress={() => navigation.navigate("AccountType")}
+        />
+      </View>
     )
   } else if (currentLevel !== AccountLevel.Three) {
     return (
       <PrimaryBtn
         label={
-          false ? LL.TransactionLimitsScreen.requestUpgrade() : "Upgrade Request Pending"
+          !upgradePending
+            ? LL.TransactionLimitsScreen.requestUpgrade()
+            : LL.TransactionLimitsScreen.requestPending()
         }
-        btnStyle={{ marginTop: 10, backgroundColor: "#FF7e1c" }}
+        btnStyle={upgradePending ? { backgroundColor: "#FF7e1c" } : {}}
         onPress={() => navigation.navigate("AccountType")}
-        disabled={true}
+        disabled={upgradePending}
       />
     )
   } else {

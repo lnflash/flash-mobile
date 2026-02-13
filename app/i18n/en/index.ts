@@ -1097,6 +1097,7 @@ const en: BaseTranslation = {
     spendingLimits: "Spending Limits",
     spendingLimitsDescription: "The spending limits shown on this page are denominated in USD. For your convenience, we convert these limits into your local currency based on current foreign exchange rates. Please note that the displayed local currency amount may fluctuate as exchange rates are updated in real-time.",
     requestUpgrade: "Request Upgrade",
+    requestPending: "Upgrade Request Pending"
   },
   TransactionScreen: {
     noTransaction: "No transaction to show",
@@ -1542,7 +1543,8 @@ const en: BaseTranslation = {
       selectCurrency: "Select Currency",
       accountNum: "Account Number",
       accountNumPlaceholder: "Enter your account number",
-      uploadId: "Upload ID Document",      
+      uploadId: "Upload ID Document",     
+      idUploaded: "The ID document has already been uploaded. If you’d like, you can upload another one.", 
       successUpgrade: "You successfully upgraded your account to {accountType: string}",
       successRequest: "You successfully requested to upgrade your account to {accountType: string}"
     }

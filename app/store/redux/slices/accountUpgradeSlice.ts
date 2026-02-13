@@ -5,7 +5,7 @@ import { Asset } from "react-native-image-picker"
 
 interface AccountUpgradeSlice {
   accountType: AccountLevel
-  upgradeCompleted?: boolean
+  status?: "Approved" | "Pending" | "Rejected"
   personalInfo: {
     fullName?: string
     countryCode?: CountryCode
@@ -26,6 +26,7 @@ interface AccountUpgradeSlice {
     currency?: string
     accountNumber?: string
     idDocument?: Asset
+    idDocumentUploaded: boolean
   }
   numOfSteps: number
   loading: boolean
@@ -34,7 +35,7 @@ interface AccountUpgradeSlice {
 
 const initialState: AccountUpgradeSlice = {
   accountType: "ONE",
-  upgradeCompleted: undefined,
+  status: undefined,
   personalInfo: {
     fullName: undefined,
     countryCode: "JM",
@@ -55,6 +56,7 @@ const initialState: AccountUpgradeSlice = {
     currency: undefined,
     accountNumber: undefined,
     idDocument: undefined,
+    idDocumentUploaded: false,
   },
   numOfSteps: 3,
   loading: false,

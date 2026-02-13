@@ -3566,6 +3566,10 @@ type RootTranslation = {
 		 * Request Upgrade
 		 */
 		requestUpgrade: string
+		/**
+		 * Upgrade Request Pending
+		 */
+		requestPending: string
 	}
 	TransactionScreen: {
 		/**
@@ -4886,6 +4890,10 @@ type RootTranslation = {
 		 * Upload ID Document
 		 */
 		uploadId: string
+		/**
+		 * The ID document has already been uploaded. If you’d like, you can upload another one.
+		 */
+		idUploaded: string
 		/**
 		 * You successfully upgraded your account to {accountType} 
 		 * @param {string} accountType
@@ -8577,6 +8585,10 @@ export type TranslationFunctions = {
 		 * Request Upgrade
 		 */
 		requestUpgrade: () => LocalizedString
+		/**
+		 * Upgrade Request Pending
+		 */
+		requestPending: () => LocalizedString
 	}
 	TransactionScreen: {
 		/**
@@ -10076,6 +10088,10 @@ export type TranslationFunctions = {
 		 * Upload ID Document
 		 */
 		uploadId: () => LocalizedString
+		/**
+		 * The ID document has already been uploaded. If you’d like, you can upload another one.
+		 */
+		idUploaded: () => LocalizedString
 		/**
 		 * You successfully upgraded your account to {accountType} 
 		 */

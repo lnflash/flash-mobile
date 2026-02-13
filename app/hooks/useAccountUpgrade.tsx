@@ -17,6 +17,7 @@ import {
 // store
 import {
   setAccountUpgrade,
+  setBankInfo,
   setBusinessInfo,
   setPersonalInfo,
 } from "@app/store/redux/slices/accountUpgradeSlice"
@@ -29,7 +30,7 @@ type UpgradeResult = {
 export const useAccountUpgrade = () => {
   const dispatch = useAppDispatch()
   const { toggleActivityIndicator } = useActivityIndicator()
-  const { accountType, personalInfo, businessInfo, bankInfo } = useAppSelector(
+  const { accountType, status, personalInfo, businessInfo, bankInfo } = useAppSelector(
     (state) => state.accountUpgrade,
   )
 
@@ -44,7 +45,7 @@ export const useAccountUpgrade = () => {
   })
 
   useEffect(() => {
-    if (upgradeData && !personalInfo.fullName) {
+    if (upgradeData && upgradeData.status !== status) {
       setAccountUpgradeData()
     }
   }, [upgradeData])
@@ -56,7 +57,7 @@ export const useAccountUpgrade = () => {
         : undefined
       dispatch(
         setAccountUpgrade({
-          upgradeCompleted: upgradeData.requestedLevel === AccountLevel.Three,
+          status: upgradeData.status,
         }),
       )
       dispatch(
@@ -71,6 +72,12 @@ export const useAccountUpgrade = () => {
         setBusinessInfo({
           businessName: upgradeData.businessName,
           businessAddress: upgradeData.businessAddress,
+          terminalRequested: upgradeData.terminalRequested,
+        }),
+      )
+      dispatch(
+        setBankInfo({
+          idDocumentUploaded: upgradeData.idDocument,
         }),
       )
     }
@@ -140,7 +147,7 @@ export const useAccountUpgrade = () => {
         }
       }
       if (accountType === AccountLevel.Three)
-        dispatch(setAccountUpgrade({ upgradeCompleted: true }))
+        dispatch(setAccountUpgrade({ status: "Pending" }))
 
       return {
         success: data?.businessAccountUpgradeRequest?.success ?? false,

@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useMemo, useState } from "react"
 import { ScrollView } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -24,13 +24,6 @@ import { setBankInfo } from "@app/store/redux/slices/accountUpgradeSlice"
 
 // gql
 import { AccountLevel, useSupportedBanksQuery } from "@app/graphql/generated"
-
-const banks = [
-  { label: "Select bank", value: null },
-  { label: "TBC", value: "TBC" },
-  { label: "KAPITALBANK", value: "KAPITALBANK" },
-  { label: "AGROBANK", value: "AGROBANK" },
-]
 
 const accountTypes = [
   { label: "Select account type", value: null },
@@ -72,11 +65,15 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
       currency,
       accountNumber,
       idDocument,
+      idDocumentUploaded,
     },
   } = useAppSelector((state) => state.accountUpgrade)
 
   const { data } = useSupportedBanksQuery()
-  console.log(">>>>>>>>>>>>>", data)
+  const supportedBanks =
+    useMemo(() => {
+      return data?.supportedBanks.map((el) => ({ label: el.name, value: el.name }))
+    }, [data?.supportedBanks]) || []
 
   const onPressNext = async () => {
     let hasError = false
@@ -103,7 +100,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
       }
     }
 
-    if (!idDocument) {
+    if (!idDocument && !idDocumentUploaded) {
       setIdDocumentErr("You must upload an ID document before proceeding")
       hasError = true
     }
@@ -122,6 +119,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
         <PhotoUploadField
           label={LL.AccountUpgrade.uploadId()}
           photo={idDocument}
+          photoUploaded={idDocumentUploaded}
           errorMsg={idDocumentErr}
           onPhotoUpload={(val) => dispatch(setBankInfo({ idDocument: val }))}
           setErrorMsg={setIdDocumentErr}
@@ -129,7 +127,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
         <DropDownField
           label={LL.AccountUpgrade.bankName()}
           placeholder={LL.AccountUpgrade.bankNamePlaceholder()}
-          data={banks}
+          data={supportedBanks}
           value={bankName || ""}
           errorMsg={nameErr}
           isOptional={isOptional}

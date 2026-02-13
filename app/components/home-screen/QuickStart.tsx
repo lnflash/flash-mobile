@@ -49,6 +49,7 @@ const QuickStart = () => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { persistentState, updateState } = usePersistentStateContext()
+  const { status } = useAppSelector((state) => state.accountUpgrade)
 
   const ref = useRef(null)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
@@ -67,7 +68,7 @@ const QuickStart = () => {
     if (credentials) setHasRecoveryPhrase(true)
   }
 
-  const upgradePending = false
+  const upgradePending = status === "Pending"
 
   let carouselData = [
     {
