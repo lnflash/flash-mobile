@@ -34,7 +34,11 @@ import { ChatStackParamList, RootStackParamList } from "@app/navigation/stack-pa
 import { useNostrGroupChat } from "./GroupChat/GroupChatProvider"
 import { SearchListItem } from "./searchListItem"
 import Contacts from "./contacts"
-import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
+import {
+  createMaterialTopTabNavigator,
+  MaterialTopTabBar,
+} from "@react-navigation/material-top-tabs"
+import { TabBarItem } from "react-native-tab-view"
 import ContactDetailsScreen from "./contactDetailsScreen"
 
 const Tab = createMaterialTopTabNavigator()
@@ -180,6 +184,14 @@ export const NIP17Chat: React.FC = () => {
       {privateKey && !showImportModal ? (
         <View style={{ flex: 1, paddingTop: statusBarHeight }}>
           <Tab.Navigator
+            tabBar={(props) => (
+              <MaterialTopTabBar
+                {...props}
+                renderTabBarItem={({ key, ...rest }) => (
+                  <TabBarItem key={key} {...rest} />
+                )}
+              />
+            )}
             screenOptions={({ route }) => {
               return {
                 tabBarIcon: ({ color }) => {

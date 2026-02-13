@@ -34,14 +34,14 @@ export class NostrRuntime {
 
   ensureSubscription(
     key: string,
-    filters: Filter[],
+    filter: Filter,
     onEvent?: (event: Event) => void,
     onEose?: () => void,
     relays?: string[],
   ) {
     return this.subscriptions.ensure(
       key,
-      filters,
+      filter,
       (event: Event) => {
         if (this.events.add(event)) {
           onEvent?.(event)

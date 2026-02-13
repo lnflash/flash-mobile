@@ -51,7 +51,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
 
     const unsub = nostrRuntime.ensureSubscription(
       `historyProfile:${pubkeys.join(",")}`,
-      [{ kinds: [0], authors: pubkeys }],
+      { kinds: [0], authors: pubkeys },
       (event: Event) => {
         addEventToProfiles(event)
       },

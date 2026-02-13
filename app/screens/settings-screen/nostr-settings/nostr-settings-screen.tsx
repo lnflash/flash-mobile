@@ -37,9 +37,9 @@ export const NostrSettingsScreen = () => {
   const styles = useStyles()
   const { data: dataAuthed, refetch } = useHomeAuthedQuery({
     skip: !isAuthed,
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-first",
     errorPolicy: "all",
-    nextFetchPolicy: "network-only",
+    nextFetchPolicy: "cache-first",
   })
 
   const { userProfileEvent } = useChatContext()
@@ -67,6 +67,7 @@ export const NostrSettingsScreen = () => {
   }, [secretKey, dataAuthed])
 
   const { saveNewNostrKey } = useNostrProfile()
+  const { refreshUserProfile, resetChat } = useChatContext()
   let nostrPubKey = ""
   if (secretKey) {
     nostrPubKey = nip19.npubEncode(getPublicKey(secretKey as Uint8Array))
@@ -149,6 +150,7 @@ export const NostrSettingsScreen = () => {
               setSecretKey(newSecret)
               setIsGenerating(false)
               setProgressMessage("")
+              await resetChat()
             }}
             disabled={isGenerating}
           >
