@@ -81,6 +81,19 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
+mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
+  idDocumentUploadUrlGenerate(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    fileKey
+    uploadUrl
+    __typename
+  }
+}
+
 mutation MerchantMapSuggest($input: MerchantMapSuggestInput!) {
   merchantMapSuggest(input: $input) {
     errors {
@@ -231,6 +244,18 @@ mutation accountUpdateDisplayCurrency($input: AccountUpdateDisplayCurrencyInput!
       displayCurrency
       __typename
     }
+    __typename
+  }
+}
+
+mutation businessAccountUpgradeRequest($input: BusinessAccountUpgradeRequestInput!) {
+  businessAccountUpgradeRequest(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    success
     __typename
   }
 }
@@ -802,6 +827,32 @@ mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
   }
 }
 
+query AccountUpgradeRequest {
+  accountUpgradeRequest {
+    upgradeRequest {
+      businessAddress
+      businessName
+      currentLevel
+      email
+      fullName
+      name
+      phoneNumber
+      requestedLevel
+      status
+      username
+      terminalRequested
+      idDocument
+      __typename
+    }
+    errors {
+      code
+      message
+      __typename
+    }
+    __typename
+  }
+}
+
 query ExportCsvSetting($walletIds: [WalletId!]!) {
   me {
     id
@@ -810,6 +861,13 @@ query ExportCsvSetting($walletIds: [WalletId!]!) {
       csvTransactions(walletIds: $walletIds)
       __typename
     }
+    __typename
+  }
+}
+
+query SupportedBanks {
+  supportedBanks {
+    name
     __typename
   }
 }
@@ -1181,7 +1239,7 @@ query onChainTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: Sat
   }
 }
 
-query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: CentAmount!) {
+query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: FractionalCentAmount!) {
   onChainUsdTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount
     __typename
