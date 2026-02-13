@@ -840,6 +840,8 @@ query AccountUpgradeRequest {
       requestedLevel
       status
       username
+      terminalRequested
+      idDocument
       __typename
     }
     errors {
@@ -1237,7 +1239,7 @@ query onChainTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: Sat
   }
 }
 
-query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: CentAmount!) {
+query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: FractionalCentAmount!) {
   onChainUsdTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount
     __typename

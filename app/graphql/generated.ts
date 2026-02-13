@@ -205,12 +205,16 @@ export type AccountUpgradeRequest = {
   readonly currentLevel: AccountLevel;
   readonly email?: Maybe<Scalars['String']['output']>;
   readonly fullName: Scalars['String']['output'];
+  /** Whether an ID document is provided with the upgrade request */
+  readonly idDocument: Scalars['Boolean']['output'];
   /** ERPNext document name */
   readonly name: Scalars['String']['output'];
   readonly phoneNumber?: Maybe<Scalars['String']['output']>;
   readonly requestedLevel: AccountLevel;
-  /** Workflow status of the upgrade request */
+  /** Status of the upgrade request */
   readonly status: Scalars['String']['output'];
+  /** Whether a PoS terminal is requested with the upgrade */
+  readonly terminalRequested: Scalars['Boolean']['output'];
   readonly username: Scalars['String']['output'];
 };
 
@@ -1276,7 +1280,7 @@ export type OnChainUsdPaymentSendInput = {
 
 export type OnChainUsdTxFee = {
   readonly __typename: 'OnChainUsdTxFee';
-  readonly amount: Scalars['CentAmount']['output'];
+  readonly amount: Scalars['FractionalCentAmount']['output'];
 };
 
 export type OneDayAccountLimit = AccountLimit & {
@@ -1487,7 +1491,7 @@ export type QueryOnChainTxFeeArgs = {
 
 export type QueryOnChainUsdTxFeeArgs = {
   address: Scalars['OnChainAddress']['input'];
-  amount: Scalars['CentAmount']['input'];
+  amount: Scalars['FractionalCentAmount']['input'];
   speed?: InputMaybe<PayoutSpeed>;
   walletId: Scalars['WalletId']['input'];
 };
@@ -2371,7 +2375,7 @@ export type NpubByUsernameQuery = { readonly __typename: 'Query', readonly npubB
 export type AccountUpgradeRequestQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly accountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly businessAddress?: string | null, readonly businessName?: string | null, readonly currentLevel: AccountLevel, readonly email?: string | null, readonly fullName: string, readonly name: string, readonly phoneNumber?: string | null, readonly requestedLevel: AccountLevel, readonly status: string, readonly username: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
+export type AccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly accountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly businessAddress?: string | null, readonly businessName?: string | null, readonly currentLevel: AccountLevel, readonly email?: string | null, readonly fullName: string, readonly name: string, readonly phoneNumber?: string | null, readonly requestedLevel: AccountLevel, readonly status: string, readonly username: string, readonly terminalRequested: boolean, readonly idDocument: boolean } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
 
 export type SupportedBanksQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2457,7 +2461,7 @@ export type OnChainTxFeeQuery = { readonly __typename: 'Query', readonly onChain
 export type OnChainUsdTxFeeQueryVariables = Exact<{
   walletId: Scalars['WalletId']['input'];
   address: Scalars['OnChainAddress']['input'];
-  amount: Scalars['CentAmount']['input'];
+  amount: Scalars['FractionalCentAmount']['input'];
 }>;
 
 
@@ -4652,6 +4656,8 @@ export const AccountUpgradeRequestDocument = gql`
       requestedLevel
       status
       username
+      terminalRequested
+      idDocument
     }
     errors {
       code
@@ -5192,7 +5198,7 @@ export type OnChainTxFeeQueryHookResult = ReturnType<typeof useOnChainTxFeeQuery
 export type OnChainTxFeeLazyQueryHookResult = ReturnType<typeof useOnChainTxFeeLazyQuery>;
 export type OnChainTxFeeQueryResult = Apollo.QueryResult<OnChainTxFeeQuery, OnChainTxFeeQueryVariables>;
 export const OnChainUsdTxFeeDocument = gql`
-    query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: CentAmount!) {
+    query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: FractionalCentAmount!) {
   onChainUsdTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount
   }

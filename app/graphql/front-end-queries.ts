@@ -288,6 +288,8 @@ gql`
         requestedLevel
         status
         username
+        terminalRequested
+        idDocument
       }
       errors {
         code
