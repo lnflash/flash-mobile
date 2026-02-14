@@ -127,7 +127,7 @@ export type RootStackParamList = {
   emailRegistrationInitiate: undefined
   emailRegistrationValidate: { email: string; emailRegistrationId: string }
   emailLoginInitiate: undefined
-  emailLoginValidate: { email: string; emailLoginId: string }
+  emailLoginValidate: { email: string; emailFlowId: string }
   totpRegistrationInitiate: undefined
   totpRegistrationValidate: { totpRegistrationId: string }
   totpLoginValidate: { authToken: string }

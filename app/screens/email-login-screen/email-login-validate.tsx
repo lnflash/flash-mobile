@@ -2,7 +2,8 @@ import React, { useCallback, useState } from "react"
 import { getAnalytics } from "@react-native-firebase/analytics"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import axios, { isAxiosError } from "axios"
+import { gql } from "@apollo/client"
+import { useNewUserEmailRegistrationValidateMutation } from "@app/graphql/generated"
 
 // components
 import { CodeInput } from "@app/components/code-input"
@@ -11,36 +12,49 @@ import { CodeInput } from "@app/components/code-input"
 import { useAppConfig } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
+gql`
+  mutation newUserEmailRegistrationValidate($input: NewUserEmailRegistrationValidateInput!) {
+    newUserEmailRegistrationValidate(input: $input) {
+      errors {
+        message
+        code
+      }
+      authToken
+      totpRequired
+    }
+  }
+`
+
 type Props = StackScreenProps<RootStackParamList, "emailLoginValidate">
 
 export const EmailLoginValidateScreen: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
-  const { authUrl } = useAppConfig().appConfig.galoyInstance
   const { saveToken } = useAppConfig()
 
   const [errorMessage, setErrorMessage] = useState<string>("")
   const [loading, setLoading] = useState(false)
 
-  const { emailLoginId, email } = route.params
+  const { emailFlowId, email } = route.params
+
+  const [newUserEmailRegistrationValidate] = useNewUserEmailRegistrationValidateMutation()
 
   const send = useCallback(
     async (code: string) => {
       try {
         setLoading(true)
 
-        const url = `${authUrl}/auth/email/login`
-
-        const res2 = await axios({
-          url,
-          method: "POST",
-          data: {
-            code,
-            emailLoginId,
+        const { data } = await newUserEmailRegistrationValidate({
+          variables: {
+            input: {
+              code,
+              emailFlowId,
+            },
           },
         })
 
-        const authToken = res2.data.result.authToken
-        const totpRequired = res2.data.result.totpRequired
+        const authToken = data?.newUserEmailRegistrationValidate?.authToken
+        const totpRequired = data?.newUserEmailRegistrationValidate?.totpRequired
+        const errors = data?.newUserEmailRegistrationValidate?.errors
 
         if (authToken) {
           if (totpRequired) {
@@ -55,33 +69,28 @@ export const EmailLoginValidateScreen: React.FC<Props> = ({ navigation, route })
               routes: [{ name: "authenticationCheck" }],
             })
           }
+        } else if (errors && errors.length > 0) {
+          const error = errors[0]
+          if (error.code === "INVALID_CODE") {
+            setErrorMessage(LL.errors.generic())
+          } else if (error.code === "TOO_MANY_REQUEST") {
+            setErrorMessage(LL.errors.tooManyRequestsPhoneCode())
+          } else {
+            setErrorMessage(error.message || LL.errors.generic())
+          }
         } else {
-          throw new Error(LL.common.errorAuthToken())
+          setErrorMessage(LL.errors.generic())
         }
       } catch (err) {
-        console.error(err, "error axios")
-        if (isAxiosError(err)) {
-          console.log(err.message) // Gives you the basic error message
-          console.log(err.response?.data) // Gives you the response payload from the server
-          console.log(err.response?.status) // Gives you the HTTP status code
-          console.log(err.response?.headers) // Gives you the response headers
-
-          // If the request was made but no response was received
-          if (!err.response) {
-            console.log(err.request)
-          }
-
-          if (err.response?.data?.error) {
-            setErrorMessage(err.response?.data?.error)
-          } else {
-            setErrorMessage(err.message)
-          }
+        if (err instanceof Error) {
+          crashlytics().recordError(err)
         }
+        setErrorMessage(LL.errors.generic())
       } finally {
         setLoading(false)
       }
     },
-    [emailLoginId, navigation, authUrl, saveToken, LL],
+    [emailFlowId, navigation, saveToken, LL, newUserEmailRegistrationValidate],
   )
 
   const header = LL.EmailLoginValidateScreen.header({ email })

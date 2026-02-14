@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { View } from "react-native"
-import axios, { isAxiosError } from "axios"
+import crashlytics from "@react-native-firebase/crashlytics"
 import { Input, Text, makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { gql } from "@apollo/client"
+import { useNewUserEmailRegistrationInitiateMutation } from "@app/graphql/generated"
 
 // components
 import { Screen } from "../../components/screen"
@@ -12,22 +14,34 @@ import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useAppConfig } from "@app/hooks"
 
 // utils
 import { testProps } from "@app/utils/testProps"
 import validator from "validator"
+
+gql`
+  mutation newUserEmailRegistrationInitiate($input: NewUserEmailRegistrationInitiateInput!) {
+    newUserEmailRegistrationInitiate(input: $input) {
+      errors {
+        message
+        code
+      }
+      emailFlowId
+    }
+  }
+`
 
 type Props = StackScreenProps<RootStackParamList, "emailLoginInitiate">
 
 export const EmailLoginInitiateScreen: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const { authUrl } = useAppConfig().appConfig.galoyInstance
 
   const [emailInput, setEmailInput] = useState<string>("")
   const [errorMessage, setErrorMessage] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
+
+  const [newUserEmailRegistrationInitiate] = useNewUserEmailRegistrationInitiateMutation()
 
   const updateInput = (text: string) => {
     setEmailInput(text)
@@ -42,40 +56,39 @@ export const EmailLoginInitiateScreen: React.FC<Props> = ({ navigation }) => {
 
     setLoading(true)
 
-    const url = `${authUrl}/auth/email/code`
-
     try {
-      const res = await axios({
-        url,
-        method: "POST",
-        data: {
-          email: emailInput,
+      const { data } = await newUserEmailRegistrationInitiate({
+        variables: {
+          input: {
+            email: emailInput,
+          },
         },
       })
-      // TODO: manage error on ip rate limit
-      // TODO: manage error when trying the same email too often
-      const emailLoginId = res.data.result
 
-      if (emailLoginId) {
-        console.log({ emailLoginId })
-        navigation.navigate("emailLoginValidate", { emailLoginId, email: emailInput })
+      const errors = data?.newUserEmailRegistrationInitiate?.errors
+      const emailFlowId = data?.newUserEmailRegistrationInitiate?.emailFlowId
+
+      if (emailFlowId) {
+        navigation.navigate("emailLoginValidate", {
+          emailFlowId,
+          email: emailInput
+        })
+      } else if (errors && errors.length > 0) {
+        // Handle specific error codes
+        const error = errors[0]
+        if (error.code === "TOO_MANY_REQUEST") {
+          setErrorMessage(LL.errors.tooManyRequestsPhoneCode())
+        } else {
+          setErrorMessage(error.message || LL.errors.generic())
+        }
       } else {
-        console.warn("no flow returned")
+        setErrorMessage(LL.errors.generic())
       }
     } catch (err) {
-      console.error(err, "error in setEmailMutation")
-      if (isAxiosError(err)) {
-        console.log(err.message) // Gives you the basic error message
-        console.log(err.response?.data) // Gives you the response payload from the server
-        console.log(err.response?.status) // Gives you the HTTP status code
-        console.log(err.response?.headers) // Gives you the response headers
-
-        // If the request was made but no response was received
-        if (!err.response) {
-          console.log(err.request)
-        }
-        setErrorMessage(err.message)
+      if (err instanceof Error) {
+        crashlytics().recordError(err)
       }
+      setErrorMessage(LL.errors.generic())
     } finally {
       setLoading(false)
     }
