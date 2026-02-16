@@ -15,9 +15,13 @@ interface AccountUpgradeSlice {
   businessInfo: {
     businessName?: string
     businessAddress?: string
-    lat?: number
-    lng?: number
-    terminalRequested?: boolean
+    city?: string
+    country?: string
+    line1?: string
+    line2?: string
+    postalCode?: string
+    state?: string
+    terminalRequested: boolean
   }
   bankInfo: {
     bankName?: string
@@ -26,7 +30,6 @@ interface AccountUpgradeSlice {
     currency?: string
     accountNumber?: string
     idDocument?: Asset
-    idDocumentUploaded: boolean
   }
   numOfSteps: number
   loading: boolean
@@ -45,9 +48,13 @@ const initialState: AccountUpgradeSlice = {
   businessInfo: {
     businessName: undefined,
     businessAddress: undefined,
-    lat: undefined,
-    lng: undefined,
-    terminalRequested: undefined,
+    city: undefined,
+    country: undefined,
+    line1: undefined,
+    line2: undefined,
+    postalCode: undefined,
+    state: undefined,
+    terminalRequested: false,
   },
   bankInfo: {
     bankName: undefined,
@@ -56,7 +63,6 @@ const initialState: AccountUpgradeSlice = {
     currency: undefined,
     accountNumber: undefined,
     idDocument: undefined,
-    idDocumentUploaded: false,
   },
   numOfSteps: 3,
   loading: false,

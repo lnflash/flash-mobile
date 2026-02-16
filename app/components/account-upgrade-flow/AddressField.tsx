@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react"
 import { Modal, Platform, TouchableOpacity, View } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import {
+  GooglePlaceData,
+  GooglePlaceDetail,
   GooglePlacesAutocomplete,
   GooglePlacesAutocompleteRef,
 } from "react-native-google-places-autocomplete"
@@ -18,7 +20,7 @@ type Props = {
   placeholder: string
   value?: string
   errorMsg?: string
-  onAddressSelect: (address: string, lat?: number, lng?: number) => void
+  onAddressSelect: (data: GooglePlaceData, details: GooglePlaceDetail | null) => void
 }
 
 const AddressField: React.FC<Props> = ({
@@ -73,11 +75,7 @@ const AddressField: React.FC<Props> = ({
             fetchDetails={true}
             onPress={(data, details) => {
               setIsVisible(false)
-              onAddressSelect(
-                data.description,
-                details?.geometry.location.lat,
-                details?.geometry.location.lng,
-              )
+              onAddressSelect(data, details)
             }}
             query={{
               key: GOOGLE_PLACE_API_KEY,
