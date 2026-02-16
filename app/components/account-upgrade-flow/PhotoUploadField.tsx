@@ -29,7 +29,6 @@ const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/jpg", "image/heic"
 type Props = {
   label: string
   photo?: Asset
-  photoUploaded?: boolean
   errorMsg?: string
   isOptional?: boolean
   onPhotoUpload: (val: Asset) => void
@@ -39,7 +38,6 @@ type Props = {
 const PhotoUploadField: React.FC<Props> = ({
   label,
   photo,
-  photoUploaded,
   errorMsg,
   isOptional,
   onPhotoUpload,
@@ -143,11 +141,6 @@ const PhotoUploadField: React.FC<Props> = ({
       </Text>
       <TouchableOpacity style={styles.container} onPress={() => setIsCameraVisible(true)}>
         {!!photo && <Image style={styles.img} source={{ uri: photo.uri }} />}
-        {photoUploaded && !photo && (
-          <Text type="caption" style={styles.caption}>
-            {LL.AccountUpgrade.idUploaded()}
-          </Text>
-        )}
         <Icon name={"images"} size={40} color={colors.grey2} type="ionicon" />
       </TouchableOpacity>
       {!!errorMsg && (

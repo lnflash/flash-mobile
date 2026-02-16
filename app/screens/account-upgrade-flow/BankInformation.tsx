@@ -65,7 +65,6 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
       currency,
       accountNumber,
       idDocument,
-      idDocumentUploaded,
     },
   } = useAppSelector((state) => state.accountUpgrade)
 
@@ -100,7 +99,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
       }
     }
 
-    if (!idDocument && !idDocumentUploaded) {
+    if (!idDocument) {
       setIdDocumentErr("You must upload an ID document before proceeding")
       hasError = true
     }
@@ -119,7 +118,6 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
         <PhotoUploadField
           label={LL.AccountUpgrade.uploadId()}
           photo={idDocument}
-          photoUploaded={idDocumentUploaded}
           errorMsg={idDocumentErr}
           onPhotoUpload={(val) => dispatch(setBankInfo({ idDocument: val }))}
           setErrorMsg={setIdDocumentErr}

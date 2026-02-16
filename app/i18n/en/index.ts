@@ -1544,7 +1544,6 @@ const en: BaseTranslation = {
       accountNum: "Account Number",
       accountNumPlaceholder: "Enter your account number",
       uploadId: "Upload ID Document",     
-      idUploaded: "The ID document has already been uploaded. If you’d like, you can upload another one.", 
       successUpgrade: "You successfully upgraded your account to {accountType: string}",
       successRequest: "You successfully requested to upgrade your account to {accountType: string}"
     }
