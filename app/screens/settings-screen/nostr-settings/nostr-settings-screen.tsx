@@ -1,9 +1,9 @@
 import { View, Pressable } from "react-native"
 import { Switch, Text, useTheme } from "@rneui/themed"
-import { useEffect, useState } from "react"
-import { getPublicKey, nip19 } from "nostr-tools"
+import { useCallback, useEffect, useState } from "react"
+import { nip19 } from "nostr-tools"
 import Ionicons from "react-native-vector-icons/Ionicons"
-import { getSecretKey } from "@app/utils/nostr"
+import { getSigner } from "@app/nostr/signer"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { useNavigation } from "@react-navigation/native"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
@@ -15,14 +15,13 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useStyles } from "./styles"
 import { ProfileHeader } from "./profile-header"
 import { AdvancedSettings } from "./advanced-settings"
-import { bytesToHex } from "@noble/curves/abstract/utils"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { ManualRepublishButton } from "./manual-republish-button"
 
 export const NostrSettingsScreen = () => {
   const { LL } = useI18nContext()
-  const [secretKey, setSecretKey] = useState<Uint8Array | null>(null)
+  const [nostrPubKey, setNostrPubKey] = useState<string | null>(null)
   const [linked, setLinked] = useState<boolean | null>(null)
   const [expandAdvanced, setExpandAdvanced] = useState(false)
 
@@ -48,30 +47,29 @@ export const NostrSettingsScreen = () => {
     : null
   console.log("USER PROFILE IS", userProfile)
 
-  useEffect(() => {
-    const initialize = async () => {
-      let secret
-      if (!secretKey) {
-        secret = await getSecretKey()
-        setSecretKey(secret)
-      } else {
-        secret = secretKey
-      }
-      if (secret && dataAuthed?.me?.npub === nip19.npubEncode(getPublicKey(secret))) {
+  const initialize = useCallback(async () => {
+    try {
+      const signer = await getSigner()
+      const pubKey = await signer.getPublicKey()
+      const npub = nip19.npubEncode(pubKey)
+      setNostrPubKey(npub)
+      if (dataAuthed?.me?.npub === npub) {
         setLinked(true)
       } else {
         setLinked(false)
       }
+    } catch {
+      setNostrPubKey(null)
+      setLinked(false)
     }
+  }, [dataAuthed])
+
+  useEffect(() => {
     initialize()
-  }, [secretKey, dataAuthed])
+  }, [initialize])
 
   const { saveNewNostrKey } = useNostrProfile()
   const { refreshUserProfile, resetChat } = useChatContext()
-  let nostrPubKey = ""
-  if (secretKey) {
-    nostrPubKey = nip19.npubEncode(getPublicKey(secretKey as Uint8Array))
-  }
 
   const {
     theme: { colors },
@@ -95,7 +93,7 @@ export const NostrSettingsScreen = () => {
   }
 
   const renderEmptyContent = () => {
-    if (!secretKey) {
+    if (!nostrPubKey) {
       return (
         <View
           style={[
@@ -136,7 +134,7 @@ export const NostrSettingsScreen = () => {
               if (isGenerating) return
               setIsGenerating(true)
               setProgressMessage("Creating Nostr profile...")
-              let newSecret = await saveNewNostrKey(
+              await saveNewNostrKey(
                 (message) => {
                   setProgressMessage(message)
                 },
@@ -147,10 +145,10 @@ export const NostrSettingsScreen = () => {
                   nip05: `${dataAuthed?.me?.username}@${lnDomain}`,
                 },
               )
-              setSecretKey(newSecret)
               setIsGenerating(false)
               setProgressMessage("")
               await resetChat()
+              await initialize()
             }}
             disabled={isGenerating}
           >
@@ -212,7 +210,6 @@ export const NostrSettingsScreen = () => {
           </Pressable>
           <AdvancedSettings
             expandAdvanced={expandAdvanced}
-            secretKeyHex={bytesToHex(secretKey)}
             onReconnect={async () => {
               await refetch()
             }}

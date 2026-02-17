@@ -4,8 +4,7 @@ import { Image, TouchableOpacity } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import { getPublicKey, nip19 } from "nostr-tools"
-import { bytesToHex } from "@noble/hashes/utils"
+import { nip19 } from "nostr-tools"
 import { useChatContext } from "./chatContext"
 import { addToContactList } from "@app/utils/nostr"
 import Icon from "react-native-vector-icons/Ionicons"
@@ -13,16 +12,13 @@ import { getContactsFromEvent } from "./utils"
 import { useState } from "react"
 import { ActivityIndicator } from "react-native"
 import { pool } from "@app/utils/nostr/pool"
+import { getSigner } from "@app/nostr/signer"
 
 interface SearchListItemProps {
   item: Chat
-  userPrivateKey: Uint8Array
 }
-export const SearchListItem: React.FC<SearchListItemProps> = ({
-  item,
-  userPrivateKey,
-}) => {
-  const { contactsEvent } = useChatContext()
+export const SearchListItem: React.FC<SearchListItemProps> = ({ item }) => {
+  const { contactsEvent, userPublicKey } = useChatContext()
   const [isLoading, setIsLoading] = useState(false)
 
   const isUserAdded = () => {
@@ -38,9 +34,9 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
 
   const getIcon = () => {
-    let itemPubkey = item.groupId
+    const itemPubkey = item.groupId
       .split(",")
-      .filter((p) => p !== getPublicKey(userPrivateKey))[0]
+      .filter((p) => p !== userPublicKey)[0]
     if (contactsEvent)
       return getContactsFromEvent(contactsEvent).filter((c) => c.pubkey! === itemPubkey)
         .length === 0
@@ -53,8 +49,9 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
     if (isUserAdded()) return
     try {
       setIsLoading(true)
+      const signer = await getSigner()
       await addToContactList(
-        userPrivateKey,
+        signer,
         item.id,
         pool,
         () => Promise.resolve(true),
@@ -75,7 +72,6 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({
       onPress={() => {
         navigation.navigate("messages", {
           groupId: item.groupId,
-          userPrivateKey: bytesToHex(userPrivateKey),
         })
       }}
     >

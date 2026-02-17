@@ -10,8 +10,6 @@ import { useAppSelector } from "@app/store/redux"
 import LinearGradient from "react-native-linear-gradient"
 import { FeedItem } from "@app/components/nostr-feed/FeedItem"
 import { Event, nip19 } from "nostr-tools"
-import { bytesToHex } from "@noble/hashes/utils"
-import { getSecretKey } from "@app/utils/nostr"
 import { useChatContext } from "../chat/chatContext"
 
 type PostSuccessNavigationProp = StackNavigationProp<RootStackParamList, "postSuccess">
@@ -27,13 +25,10 @@ const PostSuccess = () => {
 
   const { postContent, userNpub, event } = route.params
 
-  const handleViewProfile = async () => {
-    const privateKey = await getSecretKey()
-    if (!privateKey) return
+  const handleViewProfile = () => {
     const pubkey = extractPubkey(userNpub)
     navigation.navigate("contactDetails", {
       contactPubkey: pubkey,
-      userPrivateKey: bytesToHex(privateKey),
     })
   }
 

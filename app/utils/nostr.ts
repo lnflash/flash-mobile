@@ -1,4 +1,3 @@
-import { useAppConfig } from "@app/hooks"
 import { getContactsFromEvent } from "@app/screens/chat/utils"
 import { bytesToHex } from "@noble/curves/abstract/utils"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -7,7 +6,6 @@ import {
   finalizeEvent,
   generateSecretKey,
   getEventHash,
-  getPublicKey,
   Event,
   nip19,
   nip44,
@@ -17,10 +15,10 @@ import {
   SubCloser,
   AbstractRelay,
 } from "nostr-tools"
-import { Alert } from "react-native"
 
 import * as Keychain from "react-native-keychain"
 import { pool } from "./nostr/pool"
+import type { NostrSigner } from "@app/nostr/signer/types"
 
 export const publicRelays = [
   "wss://relay.damus.io",
@@ -35,13 +33,16 @@ const now = () => Math.round(Date.now() / 1000)
 export type Rumor = UnsignedEvent & { id: string }
 export type Group = { subject: string; participants: string[] }
 
-export const createRumor = (event: Partial<UnsignedEvent>, privateKey: Uint8Array) => {
+export const createRumor = async (
+  event: Partial<UnsignedEvent>,
+  signer: NostrSigner,
+): Promise<Rumor> => {
   const rumor = {
     created_at: now(),
     content: "",
     tags: [],
     ...event,
-    pubkey: getPublicKey(privateKey),
+    pubkey: await signer.getPublicKey(),
   } as any
 
   rumor.id = getEventHash(rumor)
@@ -49,41 +50,31 @@ export const createRumor = (event: Partial<UnsignedEvent>, privateKey: Uint8Arra
   return rumor as Rumor
 }
 
-function encrypNip44Message(
-  privateKey: Uint8Array,
-  message: string,
-  receiverPublicKey: string,
-) {
-  let conversationKey = nip44.v2.utils.getConversationKey(
-    bytesToHex(privateKey),
-    receiverPublicKey,
-  )
-  let ciphertext = nip44.v2.encrypt(message, conversationKey)
-  return ciphertext
-}
-
-export const createSeal = (
+export const createSeal = async (
   rumor: Rumor,
-  privateKey: Uint8Array,
+  signer: NostrSigner,
   recipientPublicKey: string,
-) => {
-  return finalizeEvent(
-    {
-      kind: 13,
-      content: encrypNip44Message(privateKey, JSON.stringify(rumor), recipientPublicKey),
-      created_at: now(),
-      tags: [],
-    },
-    privateKey,
-  ) as Event
+): Promise<Event> => {
+  const ciphertext = await signer.nip44.encrypt(recipientPublicKey, JSON.stringify(rumor))
+  return signer.signEvent({
+    kind: 13,
+    content: ciphertext,
+    created_at: now(),
+    tags: [],
+  })
 }
 
 export const createWrap = (event: Event, recipientPublicKey: string) => {
   const randomKey = generateSecretKey()
+  const conversationKey = nip44.v2.utils.getConversationKey(
+    bytesToHex(randomKey),
+    recipientPublicKey,
+  )
+  const ciphertext = nip44.v2.encrypt(JSON.stringify(event), conversationKey)
   return finalizeEvent(
     {
       kind: 1059,
-      content: encrypNip44Message(randomKey, JSON.stringify(event), recipientPublicKey),
+      content: ciphertext,
       created_at: now(),
       tags: [["p", recipientPublicKey]],
     },
@@ -91,25 +82,14 @@ export const createWrap = (event: Event, recipientPublicKey: string) => {
   ) as Event
 }
 
-export const decryptNip44Message = (
-  cipher: string,
-  publicKey: string,
-  privateKey: Uint8Array,
-) => {
-  let conversationKey = nip44.v2.utils.getConversationKey(
-    bytesToHex(privateKey),
-    publicKey,
-  )
-  let message = nip44.v2.decrypt(cipher, conversationKey)
-  return message
-}
-
-export const getRumorFromWrap = (wrapEvent: Event, privateKey: Uint8Array) => {
-  let sealString = decryptNip44Message(wrapEvent.content, wrapEvent.pubkey, privateKey)
-  let seal = JSON.parse(sealString) as Event
-  let rumorString = decryptNip44Message(seal.content, seal.pubkey, privateKey)
-  let rumor = JSON.parse(rumorString)
-  return rumor
+export const getRumorFromWrap = async (
+  wrapEvent: Event,
+  signer: NostrSigner,
+): Promise<Rumor> => {
+  const sealString = await signer.nip44.decrypt(wrapEvent.pubkey, wrapEvent.content)
+  const seal = JSON.parse(sealString) as Event
+  const rumorString = await signer.nip44.decrypt(seal.pubkey, seal.content)
+  return JSON.parse(rumorString)
 }
 
 export const fetchSecretFromLocalStorage = async () => {
@@ -162,6 +142,7 @@ export const getGroupId = (participantsHex: string[]) => {
   return id
 }
 
+/** @deprecated Use getSigner() from @app/nostr/signer instead */
 export const getSecretKey = async () => {
   let secretKeyString = await fetchSecretFromLocalStorage()
   if (!secretKeyString) {
@@ -215,9 +196,8 @@ export const fetchPreferredRelays = async (pubKeys: string[], pool: SimplePool) 
   return relayMap
 }
 
-export const sendNIP4Message = async (message: string, recipient: string) => {
-  let privateKey = await getSecretKey()
-  let NIP4Messages = {}
+export const sendNIP4Message = async (_message: string, _recipient: string) => {
+  // TODO: implement NIP-04 via signer.nip04
 }
 
 export const fetchContactList = async (
@@ -243,19 +223,9 @@ export const fetchContactList = async (
   )
 }
 
-export const setPreferredRelay = async (secretKey?: Uint8Array) => {
-  let secret: Uint8Array | null = null
-  if (!secretKey) {
-    secret = await getSecretKey()
-    if (!secret) {
-      Alert.alert("Nostr Private Key Not Assigned")
-      return
-    }
-  } else {
-    secret = secretKey
-  }
-  const pubKey = getPublicKey(secret)
-  let relayEvent: UnsignedEvent = {
+export const setPreferredRelay = async (signer: NostrSigner) => {
+  const pubKey = await signer.getPublicKey()
+  const relayEvent: UnsignedEvent = {
     pubkey: pubKey,
     tags: [
       ["relay", "wss://relay.flashapp.me"],
@@ -266,7 +236,7 @@ export const setPreferredRelay = async (secretKey?: Uint8Array) => {
     kind: 10050,
     content: "",
   }
-  const finalEvent = finalizeEvent(relayEvent, secret)
+  const finalEvent = await signer.signEvent(relayEvent)
   let messages = await Promise.allSettled(pool.publish(publicRelays, finalEvent))
   console.log("Message from relays", messages)
   setTimeout(() => {
@@ -275,23 +245,21 @@ export const setPreferredRelay = async (secretKey?: Uint8Array) => {
 }
 
 export const addToContactList = async (
-  userPrivateKey: Uint8Array,
+  signer: NostrSigner,
   hexPubKeyToAdd: string,
   pool: SimplePool,
-  confirmOverwrite: () => Promise<boolean>, // 🔸 mandatory callback
+  confirmOverwrite: () => Promise<boolean>,
   contactsEvent?: Event,
 ) => {
-  const userPubkey = getPublicKey(userPrivateKey)
+  const userPubkey = await signer.getPublicKey()
   const existingContacts = contactsEvent ? getContactsFromEvent(contactsEvent) : []
   const tags = contactsEvent?.tags || []
 
-  // ✅ Prevent duplicates
   if (existingContacts.some((p: NostrProfile) => p.pubkey === hexPubKeyToAdd)) {
     console.log("Contact already in list.")
     return
   }
 
-  // 🟡 No existing contact list event found
   if (!contactsEvent) {
     const confirmed = await confirmOverwrite()
     if (!confirmed) {
@@ -300,7 +268,6 @@ export const addToContactList = async (
     }
   }
 
-  // 🧩 Build updated contact list event
   tags.push(["p", hexPubKeyToAdd])
   const newEvent: UnsignedEvent = {
     kind: 3,
@@ -310,7 +277,7 @@ export const addToContactList = async (
     tags,
   }
 
-  const finalNewEvent = finalizeEvent(newEvent, userPrivateKey)
+  const finalNewEvent = await signer.signEvent(newEvent)
   const messages = await Promise.allSettled(
     pool.publish(
       ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol"],
@@ -325,14 +292,11 @@ export async function sendNip17Message(
   recipients: string[],
   message: string,
   preferredRelaysMap: Map<string, string[]>,
+  signer: NostrSigner,
   onSent?: (rumor: Rumor) => void,
 ) {
-  let privateKey = await getSecretKey()
-  if (!privateKey) {
-    throw Error("Couldnt find private key in local storage")
-  }
   let p_tags = recipients.map((recipientId: string) => ["p", recipientId])
-  let rumor = createRumor({ content: message, kind: 14, tags: p_tags }, privateKey)
+  let rumor = await createRumor({ content: message, kind: 14, tags: p_tags }, signer)
   let outputs: { acceptedRelays: string[]; rejectedRelays: string[] }[] = []
   console.log("total recipients", recipients)
   await Promise.allSettled(
@@ -347,7 +311,7 @@ export async function sendNip17Message(
           "wss://nostr.oxtr.dev",
         ]),
       ]
-      let seal = createSeal(rumor, privateKey, recipientId)
+      let seal = await createSeal(rumor, signer, recipientId)
       let wrap = createWrap(seal, recipientId)
       console.log("wrap created")
       try {
@@ -459,20 +423,20 @@ export const saveGiftwrapsToStorage = async (giftwraps: Event[]) => {
   }
 }
 
-export const createContactListEvent = async (secretKey: Uint8Array) => {
-  const selfPublicKey = getPublicKey(secretKey)
-  let event: UnsignedEvent | Event = {
+export const createContactListEvent = async (signer: NostrSigner) => {
+  const selfPublicKey = await signer.getPublicKey()
+  const event: UnsignedEvent = {
     kind: 3,
     tags: [["p", selfPublicKey]],
     content: "",
     created_at: Math.floor(Date.now() / 1000),
     pubkey: selfPublicKey,
   }
-  event = finalizeEvent(event, secretKey)
+  const signedEvent = await signer.signEvent(event)
   const messages = await Promise.allSettled(
     pool.publish(
       ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol"],
-      event as Event,
+      signedEvent,
     ),
   )
   console.log("Message from relays for contact list publish", messages)

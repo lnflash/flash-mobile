@@ -44,7 +44,8 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { logPaymentAttempt, logPaymentResult } from "@app/utils/analytics"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { useChatContext } from "../chat/chatContext"
-import { addToContactList, getSecretKey } from "@app/utils/nostr"
+import { addToContactList } from "@app/utils/nostr"
+import { getSigner } from "@app/nostr/signer"
 import { nip19 } from "nostr-tools"
 import { useRequireContactList } from "./require-contact-list-modal"
 
@@ -171,11 +172,15 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
       const destinationNpub = queryResult.data?.npubByUsername?.npub
       if (!destinationNpub) return
 
-      const secretKey = await getSecretKey()
-      if (!secretKey) return
+      let signer
+      try {
+        signer = await getSigner()
+      } catch {
+        return
+      }
 
       await addToContactList(
-        secretKey,
+        signer,
         nip19.decode(destinationNpub).data as string,
         poolRef.current,
         promptForContactList,

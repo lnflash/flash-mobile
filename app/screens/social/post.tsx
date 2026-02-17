@@ -21,8 +21,8 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { ExplainerVideo } from "@app/components/explainer-video"
 
-import { nip19, getPublicKey, finalizeEvent, Relay, SimplePool } from "nostr-tools"
-import { getSecretKey } from "@app/utils/nostr"
+import { nip19 } from "nostr-tools"
+import { getSigner } from "@app/nostr/signer"
 import { pool } from "@app/utils/nostr/pool"
 import {
   publishEventToRelays,
@@ -44,7 +44,7 @@ const FIXED_TEXT_LINE_2 = "#introductions"
 const FIXED_TEXT_LINE_3 =
   "If you would like to remove the Flash credit from this post, uncheck the box below."
 
-const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
+const MakeNostrPost = () => {
   const styles = useStyles()
   const navigation = useNavigation<MakeNostrPostNavigationProp>()
   const { theme } = useTheme()
@@ -73,9 +73,8 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
     method: string,
   ): Promise<string> => {
     try {
-      const privateKey = await getSecretKey()
-      if (!privateKey) throw Error
-      const publicKey = getPublicKey(privateKey)
+      const signer = await getSigner()
+      const publicKey = await signer.getPublicKey()
 
       const authEvent = {
         kind: 27235, // NIP-98 HTTP Auth
@@ -88,7 +87,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
         content: "",
       }
 
-      const signedAuthEvent = await finalizeEvent(authEvent, privateKey)
+      const signedAuthEvent = await signer.signEvent(authEvent)
       const encodedAuth = btoa(JSON.stringify(signedAuthEvent))
       return `Nostr ${encodedAuth}`
     } catch (error) {
@@ -240,8 +239,10 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
   const publishNostrNote = async (content: string) => {
     try {
       setLoading(true)
-      const privateKey = await getSecretKey()
-      if (!privateKey) {
+      let signer
+      try {
+        signer = await getSigner()
+      } catch {
         Alert.alert("Your nostr key is not yet set.")
         setLoading(false)
         return
@@ -302,7 +303,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
         }
       }
 
-      const pubkey = getPublicKey(privateKey)
+      const pubkey = await signer.getPublicKey()
 
       // Extract hashtags and create t tags
       const hashtags = extractHashtags(finalContent)
@@ -319,7 +320,7 @@ const MakeNostrPost = ({ privateKey }: { privateKey: string }) => {
         content: finalContent,
       }
 
-      const signedEvent = await finalizeEvent(event, privateKey)
+      const signedEvent = await signer.signEvent(event)
 
       console.log("Publishing kind-1 note to relays...")
       console.log("Author pubkey:", pubkey)
