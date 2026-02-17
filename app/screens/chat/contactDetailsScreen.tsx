@@ -17,7 +17,7 @@ import Clipboard from "@react-native-clipboard/clipboard"
 
 import { Screen } from "../../components/screen"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { nip19, getPublicKey, Event } from "nostr-tools"
+import { nip19, getPublicKey, Event, finalizeEvent } from "nostr-tools"
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
 
 import { FeedItem } from "@app/components/nostr-feed/FeedItem"
@@ -31,6 +31,7 @@ import { useChatContext } from "./chatContext"
 import { useBusinessMapMarkersQuery } from "@app/graphql/generated"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { pool } from "@app/utils/nostr/pool"
+import { getSecretKey } from "@app/utils/nostr"
 
 type ContactDetailsRouteProp = RouteProp<ChatStackParamList, "contactDetails">
 
@@ -94,15 +95,22 @@ const ContactDetailsScreen: React.FC = () => {
   }
 
   // Actions
-  const handleUnfollow = () => {
+  const handleUnfollow = async () => {
     if (!contactsEvent) return
+    const secretKey = await getSecretKey()
+    if (!secretKey) return
     const profiles = contactsEvent.tags.filter((p) => p[0] === "p").map((p) => p[1])
     const tagsWithoutProfiles = contactsEvent.tags.filter((p) => p[0] !== "p")
     const newProfiles = profiles.filter((p) => p !== contactPubkey)
-    const newContactsEvent = {
-      ...contactsEvent,
-      tags: [...tagsWithoutProfiles, ...newProfiles.map((p) => ["p", p])],
-    }
+    const newContactsEvent = finalizeEvent(
+      {
+        kind: 3,
+        content: contactsEvent.content,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: [...tagsWithoutProfiles, ...newProfiles.map((p) => ["p", p])],
+      },
+      secretKey,
+    )
     pool.publish(RELAYS, newContactsEvent)
     setContactsEvent(newContactsEvent)
     navigation.goBack()
