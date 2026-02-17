@@ -1,6 +1,6 @@
 import { View, Pressable } from "react-native"
 import { Switch, Text, useTheme } from "@rneui/themed"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { nip19 } from "nostr-tools"
 import Ionicons from "react-native-vector-icons/Ionicons"
 import { getSigner } from "@app/nostr/signer"
@@ -47,25 +47,26 @@ export const NostrSettingsScreen = () => {
     : null
   console.log("USER PROFILE IS", userProfile)
 
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        const signer = await getSigner()
-        const pubKey = await signer.getPublicKey()
-        const npub = nip19.npubEncode(pubKey)
-        setNostrPubKey(npub)
-        if (dataAuthed?.me?.npub === npub) {
-          setLinked(true)
-        } else {
-          setLinked(false)
-        }
-      } catch {
-        setNostrPubKey(null)
+  const initialize = useCallback(async () => {
+    try {
+      const signer = await getSigner()
+      const pubKey = await signer.getPublicKey()
+      const npub = nip19.npubEncode(pubKey)
+      setNostrPubKey(npub)
+      if (dataAuthed?.me?.npub === npub) {
+        setLinked(true)
+      } else {
         setLinked(false)
       }
+    } catch {
+      setNostrPubKey(null)
+      setLinked(false)
     }
-    initialize()
   }, [dataAuthed])
+
+  useEffect(() => {
+    initialize()
+  }, [initialize])
 
   const { saveNewNostrKey } = useNostrProfile()
   const { refreshUserProfile, resetChat } = useChatContext()
@@ -147,6 +148,7 @@ export const NostrSettingsScreen = () => {
               setIsGenerating(false)
               setProgressMessage("")
               await resetChat()
+              await initialize()
             }}
             disabled={isGenerating}
           >
