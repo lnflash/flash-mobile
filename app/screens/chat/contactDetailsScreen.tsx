@@ -17,8 +17,7 @@ import Clipboard from "@react-native-clipboard/clipboard"
 
 import { Screen } from "../../components/screen"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { nip19, getPublicKey, Event, finalizeEvent } from "nostr-tools"
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
+import { nip19, Event } from "nostr-tools"
 
 import { FeedItem } from "@app/components/nostr-feed/FeedItem"
 import { ExplainerVideo } from "@app/components/explainer-video"
@@ -31,7 +30,7 @@ import { useChatContext } from "./chatContext"
 import { useBusinessMapMarkersQuery } from "@app/graphql/generated"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { pool } from "@app/utils/nostr/pool"
-import { getSecretKey } from "@app/utils/nostr"
+import { getSigner } from "@app/nostr/signer"
 
 type ContactDetailsRouteProp = RouteProp<ChatStackParamList, "contactDetails">
 
@@ -51,8 +50,8 @@ const ContactDetailsScreen: React.FC = () => {
   const styles = useStyles()
   const { LL } = useI18nContext()
 
-  const { profileMap, contactsEvent, setContactsEvent } = useChatContext()
-  const { contactPubkey, userPrivateKey } = route.params
+  const { profileMap, contactsEvent, setContactsEvent, userPublicKey } = useChatContext()
+  const { contactPubkey } = route.params
   const profile = profileMap?.get(contactPubkey)
   const npub = nip19.npubEncode(contactPubkey)
   const postsKey = `posts:${contactPubkey}`
@@ -79,13 +78,8 @@ const ContactDetailsScreen: React.FC = () => {
     ? businessUsernames.includes(profile.username)
     : false
 
-  const userPrivateKeyHex =
-    typeof userPrivateKey === "string" ? userPrivateKey : bytesToHex(userPrivateKey)
-  const selfPubkey = userPrivateKey ? getPublicKey(hexToBytes(userPrivateKeyHex)) : null
-  const isOwnProfile = selfPubkey === contactPubkey
-  const userPubkey = getPublicKey(
-    typeof userPrivateKey === "string" ? hexToBytes(userPrivateKey) : userPrivateKey,
-  )
+  const isOwnProfile = userPublicKey === contactPubkey
+  const userPubkey = userPublicKey || ""
   const groupId = [userPubkey, contactPubkey].sort().join(",")
 
   // Copy npub
@@ -97,20 +91,16 @@ const ContactDetailsScreen: React.FC = () => {
   // Actions
   const handleUnfollow = async () => {
     if (!contactsEvent) return
-    const secretKey = await getSecretKey()
-    if (!secretKey) return
+    const signer = await getSigner()
     const profiles = contactsEvent.tags.filter((p) => p[0] === "p").map((p) => p[1])
     const tagsWithoutProfiles = contactsEvent.tags.filter((p) => p[0] !== "p")
     const newProfiles = profiles.filter((p) => p !== contactPubkey)
-    const newContactsEvent = finalizeEvent(
-      {
-        kind: 3,
-        content: contactsEvent.content,
-        created_at: Math.floor(Date.now() / 1000),
-        tags: [...tagsWithoutProfiles, ...newProfiles.map((p) => ["p", p])],
-      },
-      secretKey,
-    )
+    const newContactsEvent = await signer.signEvent({
+      kind: 3,
+      content: contactsEvent.content,
+      created_at: Math.floor(Date.now() / 1000),
+      tags: [...tagsWithoutProfiles, ...newProfiles.map((p) => ["p", p])],
+    })
     pool.publish(RELAYS, newContactsEvent)
     setContactsEvent(newContactsEvent)
     navigation.goBack()
@@ -122,7 +112,7 @@ const ContactDetailsScreen: React.FC = () => {
   }
 
   const handleStartChat = () => {
-    navigation.replace("messages", { groupId, userPrivateKey: userPrivateKeyHex })
+    navigation.replace("messages", { groupId })
   }
 
   // Re-sync posts from runtime store when screen gains focus (e.g. after publishing a new post)

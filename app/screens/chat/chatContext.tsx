@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useRef } from "react"
 import { PropsWithChildren } from "react"
-import { Event, nip19, getPublicKey } from "nostr-tools"
+import { Event } from "nostr-tools"
 import { useAppConfig } from "@app/hooks"
 
 import {
@@ -11,6 +11,7 @@ import {
   fetchSecretFromLocalStorage,
 } from "@app/utils/nostr"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
+import { getSigner, clearSigner } from "@app/nostr/signer"
 
 type ChatContextType = {
   giftwraps: Event[]
@@ -66,7 +67,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   // ------------------------
   // Helper: handle new giftwrap event
   // ------------------------
-  const handleGiftWrapEvent = async (event: Event, secret: Uint8Array) => {
+  const handleGiftWrapEvent = async (event: Event) => {
     if (processedEventIds.current.has(event.id)) return
     processedEventIds.current.add(event.id)
 
@@ -77,7 +78,8 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     })
 
     try {
-      const rumor = getRumorFromWrap(event, secret)
+      const signer = await getSigner()
+      const rumor = await getRumorFromWrap(event, signer)
       setRumors((prev) => {
         if (!prev.map((r) => r.id).includes(rumor.id)) {
           return [...prev, rumor]
@@ -90,7 +92,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   }
 
   // ------------------------
-  // Initialize chat (fetch secret, set pubkey)
+  // Initialize chat (fetch signer, set pubkey)
   // ------------------------
   const initializeChat = async (count = 0) => {
     const secretKeyString = await fetchSecretFromLocalStorage()
@@ -100,43 +102,50 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       return
     }
 
-    const secret = nip19.decode(secretKeyString).data as Uint8Array
-    const publicKey = getPublicKey(secret)
+    let signer
+    try {
+      signer = await getSigner()
+    } catch {
+      if (count >= 3) return
+      setTimeout(() => initializeChat(count + 1), 500)
+      return
+    }
+
+    const publicKey = await signer.getPublicKey()
     setUserPublicKey(publicKey)
 
     // Load cached giftwraps
     const cachedGiftwraps = await loadGiftwrapsFromStorage()
     setGiftWraps(cachedGiftwraps)
-    setRumors(
-      cachedGiftwraps
-        .map((wrap) => {
+    const decryptedRumors = (
+      await Promise.all(
+        cachedGiftwraps.map(async (wrap) => {
           try {
-            return getRumorFromWrap(wrap, secret)
+            return await getRumorFromWrap(wrap, signer)
           } catch {
             return null
           }
-        })
-        .filter((r) => r !== null) as Rumor[],
-    )
+        }),
+      )
+    ).filter((r): r is Rumor => r !== null)
+    setRumors(decryptedRumors)
 
     // ------------------------
     // Subscribe to giftwraps via NostrRuntime
     // ------------------------
     nostrRuntime.ensureSubscription(
       `giftwraps:${publicKey}`,
-
       {
         "kinds": [1059],
         "#p": [publicKey],
         "limit": 150,
       },
-      (event) => handleGiftWrapEvent(event, secret),
+      (event) => handleGiftWrapEvent(event),
     )
 
     // Subscribe to contact list
     nostrRuntime.ensureSubscription(
       `contacts:${publicKey}`,
-
       {
         kinds: [3],
         authors: [publicKey],
@@ -149,7 +158,6 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     // Subscribe to user profile
     nostrRuntime.ensureSubscription(
       `profile:${publicKey}`,
-
       {
         kinds: [0],
         authors: [publicKey],
@@ -190,9 +198,10 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   }
 
   // ------------------------
-  // Reset chat (clear events & resubscribe)
+  // Reset chat (clear signer, events & resubscribe)
   // ------------------------
   const resetChat = async () => {
+    clearSigner()
     setGiftWraps([])
     setRumors([])
     setUserProfileEvent(null)

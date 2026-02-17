@@ -1,7 +1,7 @@
 import { ListItem } from "@rneui/themed"
 import { useStyles } from "./style"
 import { Image, Text, View } from "react-native"
-import { nip19, Event, getPublicKey } from "nostr-tools"
+import { nip19, Event } from "nostr-tools"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
@@ -9,26 +9,23 @@ import { useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { Rumor } from "@app/utils/nostr"
 import { getLastSeen } from "./utils"
-import { bytesToHex } from "@noble/hashes/utils"
 import Icon from "react-native-vector-icons/Ionicons"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 
 interface HistoryListItemProps {
   item: string
-  userPrivateKey: Uint8Array
   groups: Map<string, Rumor[]>
 }
 
 export const HistoryListItem: React.FC<HistoryListItemProps> = ({
   item,
-  userPrivateKey,
   groups,
 }) => {
-  const { profileMap, addEventToProfiles } = useChatContext()
+  const { profileMap, addEventToProfiles, userPublicKey } = useChatContext()
   const [hasUnread, setHasUnread] = useState(false)
   const [subscribedPubkeys, setSubscribedPubkeys] = useState<Set<string>>(new Set())
 
-  const userPublicKey = userPrivateKey ? getPublicKey(userPrivateKey) : ""
+  const userPublicKeyVal = userPublicKey || ""
   const selfNote = item.split(",").length === 1
 
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
@@ -79,14 +76,13 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
       onPress={() =>
         navigation.navigate("messages", {
           groupId: item,
-          userPrivateKey: bytesToHex(userPrivateKey),
         })
       }
     >
       {/* Profile Images */}
       {item
         .split(",")
-        .filter((p) => p !== userPublicKey)
+        .filter((p) => p !== userPublicKeyVal)
         .map((p) => (
           <Image
             key={p}
@@ -116,7 +112,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
           <ListItem.Subtitle style={styles.itemText} key="subheading">
             {item
               .split(",")
-              .filter((p) => p !== userPublicKey)
+              .filter((p) => p !== userPublicKeyVal)
               .map((pubkey) => {
                 const profile = profileMap?.get(pubkey)
                 return (

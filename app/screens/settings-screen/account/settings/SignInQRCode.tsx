@@ -3,7 +3,6 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { Alert, useWindowDimensions, View } from "react-native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useTheme, Text, makeStyles } from "@rneui/themed"
-import { bytesToHex } from "@noble/curves/abstract/utils"
 import * as Keychain from "react-native-keychain"
 import QRCode from "react-native-qrcode-svg"
 import { base64encode } from "byte-base64"
@@ -22,7 +21,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
 import KeyStoreWrapper from "@app/utils/storage/secureStorage"
 import { PinScreenPurpose } from "@app/utils/enum"
-import { getSecretKey } from "@app/utils/nostr"
+import { getSigner } from "@app/nostr/signer"
 
 // assets
 import Logo from "@app/assets/logo/blink-logo-icon.png"
@@ -60,9 +59,13 @@ export const SignInQRCode = () => {
       obj.mnemonicKey = mnemonicKey.password
     }
 
-    const secret = await getSecretKey()
-    if (secret) {
-      obj.nsec = bytesToHex(secret)
+    try {
+      const signer = await getSigner()
+      if (signer.getSecretKeyNsec) {
+        obj.nsec = await signer.getSecretKeyNsec()
+      }
+    } catch {
+      // no nostr key
     }
 
     setQRCodeValue(base64encode(JSON.stringify(obj)))

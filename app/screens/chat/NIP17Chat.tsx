@@ -14,11 +14,10 @@ import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
 import { Screen } from "../../components/screen"
-import { bytesToHex } from "@noble/hashes/utils"
 import { testProps } from "../../utils/testProps"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { getPublicKey, nip19 } from "nostr-tools"
+import { nip19 } from "nostr-tools"
 import { convertRumorsToGroups, fetchSecretFromLocalStorage } from "@app/utils/nostr"
 import { useStyles } from "./style"
 import { HistoryListItem } from "./historyListItem"
@@ -68,7 +67,6 @@ export const NIP17Chat: React.FC = () => {
 
   const [initialized, setInitialized] = useState(false)
   const [searchedUsers, setSearchedUsers] = useState<Chat[]>([])
-  const [privateKey, setPrivateKey] = useState<Uint8Array>()
   const [showImportModal, setShowImportModal] = useState<boolean>(false)
   const [skipMismatchCheck, setskipMismatchCheck] = useState<boolean>(false)
   const { LL } = useI18nContext()
@@ -91,18 +89,17 @@ export const NIP17Chat: React.FC = () => {
         return
       }
 
-      const secret = nip19.decode(secretKeyString).data as Uint8Array
-      setPrivateKey(secret)
-
       const accountNpub = dataAuthed?.me?.npub
-      const storedNpub = nip19.npubEncode(getPublicKey(secret))
-      if (!skipMismatchCheck && accountNpub && storedNpub !== accountNpub) {
-        console.log("Account Info mismatch", accountNpub, storedNpub)
-        setShowImportModal(true)
+      if (userPublicKey) {
+        const storedNpub = nip19.npubEncode(userPublicKey)
+        if (!skipMismatchCheck && accountNpub && storedNpub !== accountNpub) {
+          console.log("Account Info mismatch", accountNpub, storedNpub)
+          setShowImportModal(true)
+        }
       }
 
       if (!initialized) {
-        await initializeChat() // runtime handles all subscriptions
+        await initializeChat()
         setInitialized(true)
       }
     }
@@ -123,11 +120,12 @@ export const NIP17Chat: React.FC = () => {
           setShowImportModal(true)
           return
         }
-        const secret = nip19.decode(secretKeyString).data as Uint8Array
-        const accountNpub = dataAuthed?.me?.npub
-        const storedNpub = nip19.npubEncode(getPublicKey(secret))
-        if (!skipMismatchCheck && accountNpub && storedNpub !== accountNpub) {
-          setShowImportModal(true)
+        if (userPublicKey) {
+          const accountNpub = dataAuthed?.me?.npub
+          const storedNpub = nip19.npubEncode(userPublicKey)
+          if (!skipMismatchCheck && accountNpub && storedNpub !== accountNpub) {
+            setShowImportModal(true)
+          }
         }
       }
 
@@ -139,7 +137,7 @@ export const NIP17Chat: React.FC = () => {
       return () => {
         isMounted = false
       }
-    }, [setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck, initialized]),
+    }, [setSearchedUsers, dataAuthed, isAuthed, skipMismatchCheck, initialized, userPublicKey]),
   )
 
   // ------------------------
@@ -172,8 +170,7 @@ export const NIP17Chat: React.FC = () => {
     return (lastBRumor?.created_at || 0) - (lastARumor?.created_at || 0)
   })
 
-  const currentUserPubKey = privateKey ? getPublicKey(privateKey) : null
-  const userProfile = currentUserPubKey ? profileMap?.get(currentUserPubKey) : null
+  const userProfile = userPublicKey ? profileMap?.get(userPublicKey) : null
 
   // ------------------------
   // Render
@@ -181,7 +178,7 @@ export const NIP17Chat: React.FC = () => {
   return (
     <Screen style={{ flex: 1 }}>
       <StatusBar translucent backgroundColor="transparent" />
-      {privateKey && !showImportModal ? (
+      {userPublicKey && !showImportModal ? (
         <View style={{ flex: 1, paddingTop: statusBarHeight }}>
           <Tab.Navigator
             tabBar={(props) => (
@@ -220,7 +217,7 @@ export const NIP17Chat: React.FC = () => {
                       data={searchedUsers}
                       ListEmptyComponent={ListEmptyContent}
                       renderItem={({ item }) => (
-                        <SearchListItem item={item} userPrivateKey={privateKey!} />
+                        <SearchListItem item={item} />
                       )}
                       keyExtractor={(item) => item.id}
                     />
@@ -232,7 +229,7 @@ export const NIP17Chat: React.FC = () => {
                           signed in as:{" "}
                           <Text style={{ color: colors.primary, fontWeight: "bold" }}>
                             {userData?.username ||
-                              nip19.npubEncode(getPublicKey(privateKey))}
+                              nip19.npubEncode(userPublicKey)}
                           </Text>
                         </Text>
                       </View>
@@ -305,7 +302,6 @@ export const NIP17Chat: React.FC = () => {
                         renderItem={({ item }) => (
                           <HistoryListItem
                             item={item}
-                            userPrivateKey={privateKey!}
                             groups={groups}
                           />
                         )}
@@ -321,15 +317,14 @@ export const NIP17Chat: React.FC = () => {
               name={`Profile: ${userProfile?.name}`}
               component={ContactDetailsScreen}
               initialParams={{
-                contactPubkey: getPublicKey(privateKey),
-                userPrivateKey: bytesToHex(privateKey),
+                contactPubkey: userPublicKey,
               }}
             />
 
             <Tab.Screen name="Contacts">
               {() => (
                 <View style={{ height: "100%" }}>
-                  <Contacts userPrivateKey={bytesToHex(privateKey)} />
+                  <Contacts />
                 </View>
               )}
             </Tab.Screen>
