@@ -58,7 +58,6 @@ export const UpgradeTrialAccount: React.FC = () => {
         }
         btnStyle={upgradePending ? { backgroundColor: "#FF7e1c" } : {}}
         onPress={() => navigation.navigate("AccountType")}
-        disabled={upgradePending}
       />
     )
   } else {

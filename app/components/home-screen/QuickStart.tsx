@@ -207,7 +207,6 @@ const QuickStart = () => {
     return (
       <TouchableOpacity
         onPress={item.onPress}
-        disabled={item.pending}
         key={index}
         style={[
           styles.itemContainer,
