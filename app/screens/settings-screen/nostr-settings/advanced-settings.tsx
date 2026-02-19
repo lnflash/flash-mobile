@@ -38,7 +38,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   const { LL } = useI18nContext()
 
   // Grab contactsEvent and pool from context
-  const { resetChat, refreshUserProfile, contactsEvent, poolRef } = useChatContext()
+  const { resetChat, refreshUserProfile, contactsEvent } = useChatContext()
 
   const [showSecretModal, setShowSecretModal] = useState(false)
   const [keysModalType, setKeysModalType] = useState<"public" | "private">("public")
