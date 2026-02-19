@@ -173,7 +173,6 @@ export const getSecretKey = async () => {
 
 export const fetchNostrUsers = (
   pubKeys: string[],
-  pool: SimplePool,
   handleProfileEvent: (event: Event, closer: SubCloser) => void,
 ) => {
   const closer = pool.subscribeMany(
@@ -199,7 +198,7 @@ export const fetchNostrUsers = (
   return closer
 }
 
-export const fetchPreferredRelays = async (pubKeys: string[], pool: SimplePool) => {
+export const fetchPreferredRelays = async (pubKeys: string[]) => {
   let filter: Filter = {
     kinds: [10050],
     authors: pubKeys,
@@ -277,8 +276,7 @@ export const setPreferredRelay = async (secretKey?: Uint8Array) => {
 export const addToContactList = async (
   userPrivateKey: Uint8Array,
   hexPubKeyToAdd: string,
-  pool: SimplePool,
-  confirmOverwrite: () => Promise<boolean>, // 🔸 mandatory callback
+  confirmOverwrite: () => Promise<boolean>,
   contactsEvent?: Event,
 ) => {
   const userPubkey = getPublicKey(userPrivateKey)

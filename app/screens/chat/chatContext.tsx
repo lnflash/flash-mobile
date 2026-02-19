@@ -11,6 +11,9 @@ import {
   fetchSecretFromLocalStorage,
 } from "@app/utils/nostr"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
+import { loadJson, saveJson } from "@app/utils/storage"
+
+const contactsEventCacheKey = (pubkey: string) => `contacts_event:${pubkey}`
 
 type ChatContextType = {
   giftwraps: Event[]
@@ -133,7 +136,13 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       (event) => handleGiftWrapEvent(event, secret),
     )
 
-    // Subscribe to contact list
+    // Load cached contacts event so the contact list is available immediately
+    const cachedContactsEvent = await loadJson(contactsEventCacheKey(publicKey))
+    if (cachedContactsEvent) {
+      setContactsEvent(cachedContactsEvent as Event)
+    }
+
+    // Subscribe to contact list — update only if the relay returns a newer version
     nostrRuntime.ensureSubscription(
       `contacts:${publicKey}`,
 
@@ -142,7 +151,13 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         authors: [publicKey],
       },
       (event) => {
-        setContactsEvent(event)
+        setContactsEvent((prev) => {
+          if (!prev || event.created_at > prev.created_at) {
+            saveJson(contactsEventCacheKey(publicKey), event)
+            return event
+          }
+          return prev
+        })
       },
     )
 
@@ -195,6 +210,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const resetChat = async () => {
     setGiftWraps([])
     setRumors([])
+    setContactsEvent(undefined)
     setUserProfileEvent(null)
     setUserPublicKey(null)
     processedEventIds.current.clear()

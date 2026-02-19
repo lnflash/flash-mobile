@@ -1,6 +1,6 @@
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { SearchBar } from "@rneui/themed"
-import { Event, getPublicKey, nip05, nip19, SubCloser } from "nostr-tools"
+import { Event, getPublicKey, nip05, nip19 } from "nostr-tools"
 import { useCallback, useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import {
@@ -14,6 +14,7 @@ import { Alert } from "react-native"
 import { useAppConfig } from "@app/hooks"
 import { testProps } from "@app/utils/testProps"
 import Icon from "react-native-vector-icons/Ionicons"
+import { SubCloser } from "nostr-tools/abstract-pool"
 
 interface UserSearchBarProps {
   setSearchedUsers: (q: Chat[]) => void
@@ -21,7 +22,7 @@ interface UserSearchBarProps {
 
 export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }) => {
   const [searchText, setSearchText] = useState("")
-  const { rumors, poolRef, addEventToProfiles, profileMap } = useChatContext()
+  const { addEventToProfiles, profileMap } = useChatContext()
   const [refreshing, setRefreshing] = useState(false)
   const [privateKey, setPrivateKey] = useState<Uint8Array | null>(null)
   const styles = useStyles()
@@ -72,8 +73,7 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
               groupId: getGroupId(participants),
             },
           ])
-          if (!nostrProfile)
-            fetchNostrUsers([nostrUser.pubkey], poolRef!.current, searchedUsersHandler)
+          if (!nostrProfile) fetchNostrUsers([nostrUser.pubkey], searchedUsersHandler)
           return true
         }
         return false
@@ -89,7 +89,7 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
         let userPubkey = getPublicKey(privateKey!)
         let participants = [hexPubkey, userPubkey]
         setSearchedUsers([{ id: hexPubkey, groupId: getGroupId(participants) }])
-        fetchNostrUsers([hexPubkey], poolRef!.current, searchedUsersHandler)
+        fetchNostrUsers([hexPubkey], searchedUsersHandler)
         setRefreshing(false)
         return
       } else if (newSearchText.match(aliasPattern)) {
