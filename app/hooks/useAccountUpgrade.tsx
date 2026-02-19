@@ -8,10 +8,10 @@ import {
   useBusinessAccountUpgradeRequestMutation,
   HomeAuthedDocument,
   useIdDocumentUploadUrlGenerateMutation,
-  AccountLevel,
   useAccountUpgradeRequestQuery,
   useUserEmailRegistrationInitiateMutation,
   useAuthQuery,
+  BusinessAccountUpgradeRequestInput,
 } from "@app/graphql/generated"
 
 // store
@@ -58,6 +58,7 @@ export const useAccountUpgrade = () => {
       dispatch(
         setAccountUpgrade({
           status: upgradeData.status,
+          accountType: upgradeData.requestedLevel,
         }),
       )
       dispatch(
@@ -70,14 +71,24 @@ export const useAccountUpgrade = () => {
       )
       dispatch(
         setBusinessInfo({
-          businessName: upgradeData.businessName,
-          businessAddress: upgradeData.businessAddress,
-          terminalRequested: upgradeData.terminalRequested,
+          businessName: upgradeData.address.title,
+          businessAddress: upgradeData.address.line1,
+          city: upgradeData.address.city,
+          country: upgradeData.address.country,
+          line1: upgradeData.address.line1,
+          line2: upgradeData.address.line2,
+          postalCode: upgradeData.address.postalCode,
+          state: upgradeData.address.state,
+          terminalRequested: upgradeData.terminalsRequested,
         }),
       )
       dispatch(
         setBankInfo({
-          idDocumentUploaded: upgradeData.idDocument,
+          bankName: upgradeData.bankAccount?.bankName,
+          bankBranch: upgradeData.bankAccount?.branch,
+          bankAccountType: upgradeData.bankAccount?.accountType,
+          currency: upgradeData.bankAccount?.currency,
+          accountNumber: upgradeData.bankAccount?.accountNumber,
         }),
       )
     }
@@ -112,24 +123,56 @@ export const useAccountUpgrade = () => {
   }
 
   const submitAccountUpgrade = async (): Promise<UpgradeResult> => {
+    const { fullName } = personalInfo
+    const { businessName, city, country, line1, line2, postalCode, state } = businessInfo
+
+    if (!fullName) return { success: false, errors: ["Full name is required"] }
+    if (!businessName) return { success: false, errors: ["Business name is required"] }
+    if (!city || !country || !line1 || !postalCode || !state) {
+      return { success: false, errors: ["Please complete all address fields"] }
+    }
+
     toggleActivityIndicator(true)
 
     try {
       const idDocument = await uploadIdDocument()
 
-      const input = {
-        accountNumber: Number(bankInfo.accountNumber),
-        accountType: bankInfo.bankAccountType,
-        bankBranch: bankInfo.bankBranch,
-        bankName: bankInfo.bankName,
-        businessAddress: businessInfo.businessAddress,
-        businessName: businessInfo.businessName,
-        currency: bankInfo.currency,
-        fullName: personalInfo.fullName || "",
-        idDocument: idDocument,
-        level: accountType || "ONE",
-        terminalRequested: businessInfo.terminalRequested,
+      let bankAccount = undefined
+      if (
+        bankInfo.accountNumber &&
+        bankInfo.bankAccountType &&
+        bankInfo.bankBranch &&
+        bankInfo.bankName &&
+        bankInfo.currency
+      ) {
+        bankAccount = {
+          accountNumber: Number(bankInfo.accountNumber),
+          accountType: bankInfo.bankAccountType,
+          bankBranch: bankInfo.bankBranch,
+          bankName: bankInfo.bankName,
+          currency: bankInfo.currency,
+        }
       }
+
+      const input: BusinessAccountUpgradeRequestInput = {
+        address: {
+          city,
+          country,
+          line1,
+          line2: line2,
+          postalCode,
+          state,
+          title: businessName,
+        },
+        bankAccount: bankAccount,
+        level: accountType,
+        idDocument: idDocument,
+        fullName,
+        terminalsRequested: businessInfo.terminalRequested ? 1 : 0,
+      }
+
+      console.log("Account Upgrade Request Input: ", input)
+
       if (!dataAuthed?.me?.email?.address && personalInfo.email) {
         await registerUserEmail({
           variables: { input: { email: personalInfo.email } },
@@ -140,17 +183,20 @@ export const useAccountUpgrade = () => {
         variables: { input },
       })
 
-      if (data?.businessAccountUpgradeRequest?.errors?.length) {
+      const upgradeResponse = data?.businessAccountUpgradeRequest
+      const errors = upgradeResponse?.errors?.filter(Boolean) ?? []
+
+      if (errors.length) {
         return {
           success: false,
-          errors: data.businessAccountUpgradeRequest.errors.map((e) => e.message),
+          errors: errors.map((e) => e!.message),
         }
       }
-      if (accountType === AccountLevel.Three)
-        dispatch(setAccountUpgrade({ status: "Pending" }))
+
+      dispatch(setAccountUpgrade({ status: "Pending" }))
 
       return {
-        success: data?.businessAccountUpgradeRequest?.success ?? false,
+        success: !!upgradeResponse?.id,
       }
     } catch (err) {
       console.error("Account upgrade failed:", err)

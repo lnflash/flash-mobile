@@ -198,23 +198,28 @@ export type AccountUpdateNotificationSettingsPayload = {
   readonly errors: ReadonlyArray<Error>;
 };
 
+export type AccountUpgradePayload = {
+  readonly __typename: 'AccountUpgradePayload';
+  readonly errors?: Maybe<ReadonlyArray<Maybe<Error>>>;
+  readonly id?: Maybe<Scalars['String']['output']>;
+  readonly status?: Maybe<Scalars['String']['output']>;
+};
+
 export type AccountUpgradeRequest = {
   readonly __typename: 'AccountUpgradeRequest';
-  readonly businessAddress?: Maybe<Scalars['String']['output']>;
-  readonly businessName?: Maybe<Scalars['String']['output']>;
+  readonly address: Address;
+  readonly bankAccount?: Maybe<BankAccount>;
   readonly currentLevel: AccountLevel;
-  readonly email?: Maybe<Scalars['String']['output']>;
+  readonly email: Scalars['String']['output'];
   readonly fullName: Scalars['String']['output'];
-  /** Whether an ID document is provided with the upgrade request */
   readonly idDocument: Scalars['Boolean']['output'];
   /** ERPNext document name */
   readonly name: Scalars['String']['output'];
-  readonly phoneNumber?: Maybe<Scalars['String']['output']>;
+  readonly phoneNumber: Scalars['String']['output'];
   readonly requestedLevel: AccountLevel;
   /** Status of the upgrade request */
   readonly status: Scalars['String']['output'];
-  /** Whether a PoS terminal is requested with the upgrade */
-  readonly terminalRequested: Scalars['Boolean']['output'];
+  readonly terminalsRequested: Scalars['Int']['output'];
   readonly username: Scalars['String']['output'];
 };
 
@@ -222,6 +227,27 @@ export type AccountUpgradeRequestPayload = {
   readonly __typename: 'AccountUpgradeRequestPayload';
   readonly errors: ReadonlyArray<Error>;
   readonly upgradeRequest?: Maybe<AccountUpgradeRequest>;
+};
+
+export type Address = {
+  readonly __typename: 'Address';
+  readonly city: Scalars['String']['output'];
+  readonly country: Scalars['String']['output'];
+  readonly line1: Scalars['String']['output'];
+  readonly line2?: Maybe<Scalars['String']['output']>;
+  readonly postalCode?: Maybe<Scalars['String']['output']>;
+  readonly state: Scalars['String']['output'];
+  readonly title: Scalars['String']['output'];
+};
+
+export type AddressInput = {
+  readonly city: Scalars['String']['input'];
+  readonly country: Scalars['String']['input'];
+  readonly line1: Scalars['String']['input'];
+  readonly line2?: InputMaybe<Scalars['String']['input']>;
+  readonly postalCode?: InputMaybe<Scalars['String']['input']>;
+  readonly state: Scalars['String']['input'];
+  readonly title: Scalars['String']['input'];
 };
 
 export type AuthTokenPayload = {
@@ -271,6 +297,23 @@ export type Bank = {
   readonly name: Scalars['String']['output'];
 };
 
+export type BankAccount = {
+  readonly __typename: 'BankAccount';
+  readonly accountNumber: Scalars['Int']['output'];
+  readonly accountType: Scalars['String']['output'];
+  readonly bankName: Scalars['String']['output'];
+  readonly branch: Scalars['String']['output'];
+  readonly currency: Scalars['String']['output'];
+};
+
+export type BankAccountInput = {
+  readonly accountNumber: Scalars['Int']['input'];
+  readonly accountType: Scalars['String']['input'];
+  readonly bankBranch: Scalars['String']['input'];
+  readonly bankName: Scalars['String']['input'];
+  readonly currency: Scalars['String']['input'];
+};
+
 export type BuildInformation = {
   readonly __typename: 'BuildInformation';
   readonly commitHash?: Maybe<Scalars['String']['output']>;
@@ -278,19 +321,12 @@ export type BuildInformation = {
 };
 
 export type BusinessAccountUpgradeRequestInput = {
-  readonly accountNumber?: InputMaybe<Scalars['Int']['input']>;
-  readonly accountType?: InputMaybe<Scalars['String']['input']>;
-  readonly bankBranch?: InputMaybe<Scalars['String']['input']>;
-  readonly bankName?: InputMaybe<Scalars['String']['input']>;
-  readonly businessAddress?: InputMaybe<Scalars['String']['input']>;
-  readonly businessName?: InputMaybe<Scalars['String']['input']>;
-  readonly currency?: InputMaybe<Scalars['String']['input']>;
-  readonly email?: InputMaybe<Scalars['String']['input']>;
+  readonly address: AddressInput;
+  readonly bankAccount?: InputMaybe<BankAccountInput>;
   readonly fullName: Scalars['String']['input'];
   readonly idDocument?: InputMaybe<Scalars['String']['input']>;
   readonly level: AccountLevel;
-  readonly phoneNumber?: InputMaybe<Scalars['String']['input']>;
-  readonly terminalRequested?: InputMaybe<Scalars['Boolean']['input']>;
+  readonly terminalsRequested?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type CallbackEndpoint = {
@@ -799,7 +835,7 @@ export type Mutation = {
   readonly accountEnableNotificationChannel: AccountUpdateNotificationSettingsPayload;
   readonly accountUpdateDefaultWalletId: AccountUpdateDefaultWalletIdPayload;
   readonly accountUpdateDisplayCurrency: AccountUpdateDisplayCurrencyPayload;
-  readonly businessAccountUpgradeRequest: SuccessPayload;
+  readonly businessAccountUpgradeRequest: AccountUpgradePayload;
   readonly callbackEndpointAdd: CallbackEndpointAddPayload;
   readonly callbackEndpointDelete: SuccessPayload;
   readonly captchaCreateChallenge: CaptchaCreateChallengePayload;
@@ -2260,7 +2296,7 @@ export type BusinessAccountUpgradeRequestMutationVariables = Exact<{
 }>;
 
 
-export type BusinessAccountUpgradeRequestMutation = { readonly __typename: 'Mutation', readonly businessAccountUpgradeRequest: { readonly __typename: 'SuccessPayload', readonly success?: boolean | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null }> } };
+export type BusinessAccountUpgradeRequestMutation = { readonly __typename: 'Mutation', readonly businessAccountUpgradeRequest: { readonly __typename: 'AccountUpgradePayload', readonly id?: string | null, readonly status?: string | null, readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null } | null> | null } };
 
 export type IdDocumentUploadUrlGenerateMutationVariables = Exact<{
   input: IdDocumentUploadUrlGenerateInput;
@@ -2375,7 +2411,7 @@ export type NpubByUsernameQuery = { readonly __typename: 'Query', readonly npubB
 export type AccountUpgradeRequestQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly accountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly businessAddress?: string | null, readonly businessName?: string | null, readonly currentLevel: AccountLevel, readonly email?: string | null, readonly fullName: string, readonly name: string, readonly phoneNumber?: string | null, readonly requestedLevel: AccountLevel, readonly status: string, readonly username: string, readonly terminalRequested: boolean, readonly idDocument: boolean } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
+export type AccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly accountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string, readonly path?: ReadonlyArray<string | null> | null }>, readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly currentLevel: AccountLevel, readonly email: string, readonly fullName: string, readonly idDocument: boolean, readonly name: string, readonly phoneNumber: string, readonly requestedLevel: AccountLevel, readonly status: string, readonly terminalsRequested: number, readonly username: string, readonly address: { readonly __typename: 'Address', readonly city: string, readonly country: string, readonly line1: string, readonly line2?: string | null, readonly postalCode?: string | null, readonly state: string, readonly title: string }, readonly bankAccount?: { readonly __typename: 'BankAccount', readonly accountNumber: number, readonly accountType: string, readonly bankName: string, readonly branch: string, readonly currency: string } | null } | null } };
 
 export type SupportedBanksQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3800,7 +3836,8 @@ export const BusinessAccountUpgradeRequestDocument = gql`
       message
       code
     }
-    success
+    id
+    status
   }
 }
     `;
@@ -4645,23 +4682,38 @@ export type NpubByUsernameQueryResult = Apollo.QueryResult<NpubByUsernameQuery, 
 export const AccountUpgradeRequestDocument = gql`
     query AccountUpgradeRequest {
   accountUpgradeRequest {
+    errors {
+      code
+      message
+      path
+    }
     upgradeRequest {
-      businessAddress
-      businessName
+      address {
+        city
+        country
+        line1
+        line2
+        postalCode
+        state
+        title
+      }
+      bankAccount {
+        accountNumber
+        accountType
+        bankName
+        branch
+        currency
+      }
       currentLevel
       email
       fullName
+      idDocument
       name
       phoneNumber
       requestedLevel
       status
+      terminalsRequested
       username
-      terminalRequested
-      idDocument
-    }
-    errors {
-      code
-      message
     }
   }
 }

@@ -278,18 +278,32 @@ gql`
   query AccountUpgradeRequest {
     accountUpgradeRequest {
       upgradeRequest {
-        businessAddress
-        businessName
+        address {
+          city
+          country
+          line1
+          line2
+          postalCode
+          state
+          title
+        }
+        bankAccount {
+          accountNumber
+          accountType
+          bankName
+          branch
+          currency
+        }
         currentLevel
         email
         fullName
+        idDocument
         name
         phoneNumber
         requestedLevel
         status
+        terminalsRequested
         username
-        terminalRequested
-        idDocument
       }
       errors {
         code

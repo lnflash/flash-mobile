@@ -255,7 +255,8 @@ mutation businessAccountUpgradeRequest($input: BusinessAccountUpgradeRequestInpu
       code
       __typename
     }
-    success
+    id
+    status
     __typename
   }
 }
@@ -829,24 +830,41 @@ mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
 
 query AccountUpgradeRequest {
   accountUpgradeRequest {
+    errors {
+      code
+      message
+      path
+      __typename
+    }
     upgradeRequest {
-      businessAddress
-      businessName
+      address {
+        city
+        country
+        line1
+        line2
+        postalCode
+        state
+        title
+        __typename
+      }
+      bankAccount {
+        accountNumber
+        accountType
+        bankName
+        branch
+        currency
+        __typename
+      }
       currentLevel
       email
       fullName
+      idDocument
       name
       phoneNumber
       requestedLevel
       status
+      terminalsRequested
       username
-      terminalRequested
-      idDocument
-      __typename
-    }
-    errors {
-      code
-      message
       __typename
     }
     __typename

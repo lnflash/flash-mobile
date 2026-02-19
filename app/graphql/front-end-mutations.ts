@@ -197,7 +197,8 @@ gql`
         message
         code
       }
-      success
+      id
+      status
     }
   }
 
