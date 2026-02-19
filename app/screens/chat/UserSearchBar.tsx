@@ -7,7 +7,6 @@ import {
   fetchNostrUsers,
   getGroupId,
 } from "@app/utils/nostr"
-import { pool } from "@app/utils/nostr/pool"
 import { useStyles } from "./style"
 import { useAppConfig } from "@app/hooks"
 import { testProps } from "@app/utils/testProps"
@@ -19,7 +18,7 @@ interface UserSearchBarProps {
 
 export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }) => {
   const [searchText, setSearchText] = useState("")
-  const { rumors, addEventToProfiles, profileMap, userPublicKey } = useChatContext()
+  const { addEventToProfiles, profileMap, userPublicKey } = useChatContext()
   const [refreshing, setRefreshing] = useState(false)
   const styles = useStyles()
   const { appConfig } = useAppConfig()
@@ -60,7 +59,7 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
             },
           ])
           if (!nostrProfile)
-            fetchNostrUsers([nostrUser.pubkey], pool, searchedUsersHandler)
+            fetchNostrUsers([nostrUser.pubkey], searchedUsersHandler)
           return true
         }
         return false
@@ -75,7 +74,7 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
         let hexPubkey = nip19.decode(newSearchText).data as string
         let participants = [hexPubkey, userPublicKey!].filter(Boolean)
         setSearchedUsers([{ id: hexPubkey, groupId: getGroupId(participants) }])
-        fetchNostrUsers([hexPubkey], pool, searchedUsersHandler)
+        fetchNostrUsers([hexPubkey], searchedUsersHandler)
         setRefreshing(false)
         return
       } else if (newSearchText.match(aliasPattern)) {
