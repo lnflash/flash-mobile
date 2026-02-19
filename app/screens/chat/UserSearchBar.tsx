@@ -11,6 +11,7 @@ import { useStyles } from "./style"
 import { useAppConfig } from "@app/hooks"
 import { testProps } from "@app/utils/testProps"
 import Icon from "react-native-vector-icons/Ionicons"
+import { SubCloser } from "nostr-tools/abstract-pool"
 
 interface UserSearchBarProps {
   setSearchedUsers: (q: Chat[]) => void
@@ -58,8 +59,7 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
               groupId: getGroupId(participants),
             },
           ])
-          if (!nostrProfile)
-            fetchNostrUsers([nostrUser.pubkey], searchedUsersHandler)
+          if (!nostrProfile) fetchNostrUsers([nostrUser.pubkey], searchedUsersHandler)
           return true
         }
         return false
