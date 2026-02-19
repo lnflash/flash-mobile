@@ -17,8 +17,9 @@ import Clipboard from "@react-native-clipboard/clipboard"
 
 import { Screen } from "../../components/screen"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { nip19, getPublicKey, Event } from "nostr-tools"
+import { nip19, getPublicKey, Event, UnsignedEvent, finalizeEvent } from "nostr-tools"
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
+import { saveJson } from "@app/utils/storage"
 
 import { FeedItem } from "@app/components/nostr-feed/FeedItem"
 import { ExplainerVideo } from "@app/components/explainer-video"
@@ -94,17 +95,23 @@ const ContactDetailsScreen: React.FC = () => {
   }
 
   // Actions
-  const handleUnfollow = () => {
+  const handleUnfollow = async () => {
     if (!contactsEvent) return
+    const sk = hexToBytes(userPrivateKeyHex)
     const profiles = contactsEvent.tags.filter((p) => p[0] === "p").map((p) => p[1])
     const tagsWithoutProfiles = contactsEvent.tags.filter((p) => p[0] !== "p")
     const newProfiles = profiles.filter((p) => p !== contactPubkey)
-    const newContactsEvent = {
-      ...contactsEvent,
+    const unsigned: UnsignedEvent = {
+      kind: 3,
+      pubkey: getPublicKey(sk),
+      content: contactsEvent.content,
+      created_at: Math.floor(Date.now() / 1000),
       tags: [...tagsWithoutProfiles, ...newProfiles.map((p) => ["p", p])],
     }
-    pool.publish(RELAYS, newContactsEvent)
-    setContactsEvent(newContactsEvent)
+    const signed = finalizeEvent(unsigned, sk)
+    pool.publish(RELAYS, signed)
+    setContactsEvent(signed)
+    await saveJson(`contacts_event:${getPublicKey(sk)}`, signed)
     navigation.goBack()
   }
 
