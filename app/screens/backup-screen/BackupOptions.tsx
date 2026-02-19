@@ -1,7 +1,7 @@
-import React, { useState } from "react"
-import { StackScreenProps } from "@react-navigation/stack"
-import styled from "styled-components/native"
+import React from "react"
 import { Icon, Text } from "@rneui/themed"
+import styled from "styled-components/native"
+import { StackScreenProps } from "@react-navigation/stack"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -11,7 +11,6 @@ import { useTheme } from "@rneui/themed"
 
 // components
 import { PrimaryBtn } from "@app/components/buttons"
-import { UpgradeAccountModal } from "@app/components/upgrade-account-modal"
 
 // types
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -33,8 +32,6 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
   const { bottom } = useSafeAreaInsets()
   const { isAtLeastLevelZero } = useLevel()
   const { persistentState } = usePersistentStateContext()
-
-  const [upgradeAccountModalVisible, setUpgradeAccountModalVisible] = useState(false)
 
   const { data } = useAccountScreenQuery({
     fetchPolicy: "cache-and-network",
@@ -60,10 +57,6 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
         navigation.navigate("BackupShowSeedPhrase")
       }
     }
-  }
-
-  const onBackupUSDWallet = () => {
-    setUpgradeAccountModalVisible(true)
   }
 
   return (
@@ -99,7 +92,10 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
             <Icon type="ionicon" name={"chevron-forward"} size={20} />
           </Btn>
         )}
-        <Btn onPress={onBackupUSDWallet} disabled={!!data?.me?.phone}>
+        <Btn
+          onPress={() => navigation.navigate("AccountType")}
+          disabled={!!data?.me?.phone}
+        >
           <Icon
             type="ionicon"
             name={!!data?.me?.phone ? "checkmark-circle" : "checkmark-circle-outline"}
@@ -121,10 +117,6 @@ const BackupOptions: React.FC<Props> = ({ navigation }) => {
         label={LL.BackupOptions.done()}
         onPress={() => navigation.popToTop()}
         btnStyle={{ marginBottom: bottom || 10 }}
-      />
-      <UpgradeAccountModal
-        isVisible={upgradeAccountModalVisible}
-        closeModal={() => setUpgradeAccountModalVisible(false)}
       />
     </Wrapper>
   )
