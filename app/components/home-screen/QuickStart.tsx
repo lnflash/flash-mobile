@@ -38,6 +38,7 @@ type RenderItemProps = {
     description: string
     image: any
     pending?: boolean
+    disabled?: boolean
     onPress: () => void
   }
   index: number
@@ -81,6 +82,7 @@ const QuickStart = () => {
         : LL.HomeScreen.upgradePendingDesc(),
       image: Account,
       pending: upgradePending,
+      disabled: upgradePending,
       onPress: () => navigation.navigate("AccountType"),
     },
     {
@@ -207,6 +209,7 @@ const QuickStart = () => {
     return (
       <TouchableOpacity
         onPress={item.onPress}
+        disabled={item.disabled}
         key={index}
         style={[
           styles.itemContainer,
