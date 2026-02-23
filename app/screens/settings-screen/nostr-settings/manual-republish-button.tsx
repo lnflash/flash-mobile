@@ -2,8 +2,7 @@ import React, { useState } from "react"
 import { Pressable, ActivityIndicator, Alert } from "react-native"
 import { Text, useTheme } from "@rneui/themed"
 import Ionicons from "react-native-vector-icons/Ionicons"
-import { getSecretKey } from "@app/utils/nostr"
-import { getPublicKey, finalizeEvent } from "nostr-tools"
+import { getSigner } from "@app/nostr/signer"
 import { pool } from "@app/utils/nostr/pool"
 import { publishEventToRelays, verifyEventOnRelays, getPublishingRelays } from "@app/utils/nostr/publish-helpers"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -32,13 +31,15 @@ export const ManualRepublishButton: React.FC<ManualRepublishButtonProps> = ({
     setIsPublishing(true)
 
     try {
-      const secretKey = await getSecretKey()
-      if (!secretKey) {
+      let signer
+      try {
+        signer = await getSigner()
+      } catch {
         Alert.alert("Error", "No Nostr key found. Please create a profile first.")
         return
       }
 
-      const pubKey = getPublicKey(secretKey)
+      const pubKey = await signer.getPublicKey()
       const lud16 = `${username}@${lnDomain}`
       const nip05 = `${username}@${lnDomain}`
 
@@ -68,7 +69,7 @@ export const ManualRepublishButton: React.FC<ManualRepublishButtonProps> = ({
         created_at: Math.floor(Date.now() / 1000),
       }
 
-      const signedEvent = finalizeEvent(kind0Event, secretKey)
+      const signedEvent = await signer.signEvent(kind0Event)
       console.log("Event signed with ID:", signedEvent.id)
 
       // Get relays and publish

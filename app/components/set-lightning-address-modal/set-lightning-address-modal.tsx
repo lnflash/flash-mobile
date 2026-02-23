@@ -16,8 +16,8 @@ import useNostrProfile from "@app/hooks/use-nostr-profile"
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { updateUserData } from "@app/store/redux/slices/userSlice"
-import { getSecretKey, setPreferredRelay } from "@app/utils/nostr"
-import { getPublicKey } from "nostr-tools"
+import { setPreferredRelay } from "@app/utils/nostr"
+import { getSigner } from "@app/nostr/signer"
 
 gql`
   mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
@@ -58,9 +58,12 @@ export const SetLightningAddressModal = ({
 
   useEffect(() => {
     async function getNostrPubkey() {
-      let secretKey = await getSecretKey()
-      if (secretKey) setNostrPubkey(getPublicKey(secretKey))
-      else console.warn("NOSTR SECRET KEY NOT FOUND")
+      try {
+        const signer = await getSigner()
+        setNostrPubkey(await signer.getPublicKey())
+      } catch {
+        console.warn("NOSTR SECRET KEY NOT FOUND")
+      }
     }
     getNostrPubkey()
   }, [])
@@ -121,7 +124,7 @@ export const SetLightningAddressModal = ({
         nip05: lnAddress,
       },
     })
-    setPreferredRelay()
+    getSigner().then((signer) => setPreferredRelay(signer)).catch(console.warn)
     if ((data?.userUpdateUsername?.errors ?? []).length > 0) {
       if (data?.userUpdateUsername?.errors[0]?.code === "USERNAME_ERROR") {
         setError(SetAddressError.ADDRESS_UNAVAILABLE)

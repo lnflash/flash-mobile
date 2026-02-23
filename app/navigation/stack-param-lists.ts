@@ -154,7 +154,7 @@ export type RootStackParamList = {
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
-  Contacts: { userPrivateKey: string }
+  Contacts: undefined
   SignInViaQRCode: undefined
   Nip29GroupChat: { groupId: string }
 }
@@ -164,8 +164,8 @@ export type ChatStackParamList = {
   chatDetail: { chat: Chat; giftwraps: Event[] }
   sendBitcoinDestination: { username: string }
   transactionDetail: { txid: string }
-  messages: { userPrivateKey: string; groupId: string }
-  contactDetails: { contactPubkey: string; userPrivateKey: string }
+  messages: { groupId: string }
+  contactDetails: { contactPubkey: string }
 }
 
 export type ContactStackParamList = {

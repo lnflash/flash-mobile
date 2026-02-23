@@ -1,24 +1,22 @@
-import { hexToBytes } from "@noble/curves/abstract/utils"
 import { useStyles } from "./styles"
 import { getPublicKey, nip19 } from "nostr-tools"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import ReactNativeModal from "react-native-modal"
 import { Alert, TouchableOpacity, View } from "react-native"
 import { useTheme, Text } from "@rneui/themed"
 import Ionicons from "react-native-vector-icons/Ionicons"
 import { PrimaryBtn } from "@app/components/buttons"
-import { useI18nContext } from "@app/i18n/i18n-react" // <-- import i18n
+import { useI18nContext } from "@app/i18n/i18n-react"
+import { getSigner } from "@app/nostr/signer"
 
 interface KeyModalProps {
   isOpen: boolean
-  secretKeyHex: string
   keysModalType: string
   onClose: () => void
   copyToClipboard: (text: string, onSuccess?: (copied: boolean) => void) => void
 }
 export const KeyModal: React.FC<KeyModalProps> = ({
   isOpen,
-  secretKeyHex,
   keysModalType,
   onClose,
   copyToClipboard,
@@ -26,25 +24,48 @@ export const KeyModal: React.FC<KeyModalProps> = ({
   const styles = useStyles()
   const { mode } = useTheme().theme
   const [hideSecret, setHideSecret] = useState(true)
-  const secretKey = hexToBytes(secretKeyHex)
-  const nostrPubKey = nip19.npubEncode(getPublicKey(secretKey))
+  const [nostrPubKey, setNostrPubKey] = useState<string | null>(null)
+  const [nsec, setNsec] = useState<string | null>(null)
+
   const isPublic = keysModalType === "public"
-  const keyValue = isPublic
-    ? nostrPubKey
-    : hideSecret
-    ? "***************"
-    : nip19.nsecEncode(secretKey)
 
   const {
     theme: { colors },
   } = useTheme()
 
-  const { LL } = useI18nContext() // <-- use translations
+  const { LL } = useI18nContext()
 
-  const onCopy = () =>
-    copyToClipboard(isPublic ? nostrPubKey : nip19.nsecEncode(secretKey), () =>
+  useEffect(() => {
+    if (!isOpen) return
+    const load = async () => {
+      try {
+        const signer = await getSigner()
+        const pubKey = await signer.getPublicKey()
+        setNostrPubKey(nip19.npubEncode(pubKey))
+        if (!isPublic && signer.getSecretKeyNsec) {
+          setNsec(await signer.getSecretKeyNsec())
+        }
+      } catch {
+        setNostrPubKey(null)
+        setNsec(null)
+      }
+    }
+    load()
+  }, [isOpen, isPublic])
+
+  const keyValue = isPublic
+    ? (nostrPubKey ?? "")
+    : hideSecret
+    ? "***************"
+    : (nsec ?? "")
+
+  const onCopy = () => {
+    const valueToCopy = isPublic ? nostrPubKey : nsec
+    if (!valueToCopy) return
+    copyToClipboard(valueToCopy, () =>
       Alert.alert(LL.Nostr.common.copied(), LL.Nostr.KeyModal.keyCopiedToClipboard()),
     )
+  }
 
   return (
     <ReactNativeModal

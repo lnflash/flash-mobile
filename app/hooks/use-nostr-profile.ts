@@ -4,9 +4,9 @@ import {
   generateSecretKey,
   getPublicKey,
   SimplePool,
-  finalizeEvent,
 } from "nostr-tools"
-import { createContactListEvent, getSecretKey, setPreferredRelay } from "@app/utils/nostr"
+import { createContactListEvent, setPreferredRelay } from "@app/utils/nostr"
+import { getSigner, createSignerFromKey, clearSigner } from "@app/nostr/signer"
 import {
   publishEventToRelays,
   verifyEventOnRelays,
@@ -102,8 +102,11 @@ const useNostrProfile = () => {
       KEYCHAIN_NOSTRCREDS_KEY,
       nostrSecret,
     )
-    await setPreferredRelay(secretKey)
-    await createContactListEvent(secretKey)
+    // Clear the signer singleton so it reloads the newly stored key
+    clearSigner()
+    const signer = createSignerFromKey(secretKey)
+    await setPreferredRelay(signer)
+    await createContactListEvent(signer)
 
     // Generate profile images automatically
     let pictureUrl: string | undefined
@@ -189,7 +192,7 @@ const useNostrProfile = () => {
         created_at: Math.floor(Date.now() / 1000),
       }
 
-      const signedKind0Event = finalizeEvent(kind0Event, secretKey)
+      const signedKind0Event = await signer.signEvent(kind0Event)
       console.log("Profile event signed with ID:", signedKind0Event.id)
 
       // Get appropriate relays and publish
@@ -245,12 +248,9 @@ const useNostrProfile = () => {
     try {
       progressCallback?.("Generating profile picture...")
 
-      const secret = await getSecretKey()
-      if (!secret) {
-        throw new Error("No Nostr profile found. Please create a Nostr profile first.")
-      }
-
-      const pubKey = getPublicKey(secret)
+      const signer = await getSigner()
+      const pubKey = await signer.getPublicKey()
+      const nsec = signer.getSecretKeyNsec ? await signer.getSecretKeyNsec() : ""
 
       // Generate images
       console.log("Generating RoboHash avatar...")
@@ -263,19 +263,11 @@ const useNostrProfile = () => {
       // Upload to nostr.build
       progressCallback?.("Uploading profile picture...")
       console.log("Uploading avatar to nostr.build...")
-      const pictureUrl = await uploadToNostrBuild(
-        avatarUri,
-        nip19.nsecEncode(secret),
-        false,
-      )
+      const pictureUrl = await uploadToNostrBuild(avatarUri, nsec, false)
 
       progressCallback?.("Uploading banner image...")
       console.log("Uploading banner to nostr.build...")
-      const bannerUrl = await uploadToNostrBuild(
-        bannerUri,
-        nip19.nsecEncode(secret),
-        false,
-      )
+      const bannerUrl = await uploadToNostrBuild(bannerUri, nsec, false)
 
       // Update profile with new images
       progressCallback?.("Updating profile...")
@@ -383,19 +375,20 @@ const useNostrProfile = () => {
     const publicRelays = getPublishingRelays("profile")
     console.log(`📡 Will publish to ${publicRelays.length} relays`)
 
-    let secret = await getSecretKey()
-    if (!secret) {
+    let signer
+    try {
+      signer = await getSigner()
+    } catch {
       if (dataAuthed && dataAuthed.me && !dataAuthed.me.npub) {
         console.log("No secret key found, creating new profile with provided content...")
         await saveNewNostrKey(undefined, content)
         console.log("Profile created with images and content, returning early")
-        // Return early - saveNewNostrKey already published the profile with images
         return { successCount: 1, totalRelays: 1, successfulRelays: [] }
       } else {
         throw Error("Could not verify npub")
       }
     }
-    let pubKey = getPublicKey(secret)
+    const pubKey = await signer.getPublicKey()
     console.log(`🔑 Publishing with pubkey: ${pubKey}`)
 
     const kind0Event = {
@@ -406,7 +399,7 @@ const useNostrProfile = () => {
       created_at: Math.floor(Date.now() / 1000),
     }
 
-    const signedKind0Event = finalizeEvent(kind0Event, secret)
+    const signedKind0Event = await signer.signEvent(kind0Event)
     console.log(`✍️ Event signed with id: ${signedKind0Event.id}`)
 
     // Use the new helper function for publishing
