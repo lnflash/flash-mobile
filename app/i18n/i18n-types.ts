@@ -3567,9 +3567,9 @@ type RootTranslation = {
 		 */
 		requestUpgrade: string
 		/**
-		 * Upgrade Request Pending
+		 * Edit Upgrade Request
 		 */
-		requestPending: string
+		editRequest: string
 	}
 	TransactionScreen: {
 		/**
@@ -8582,9 +8582,9 @@ export type TranslationFunctions = {
 		 */
 		requestUpgrade: () => LocalizedString
 		/**
-		 * Upgrade Request Pending
+		 * Edit Upgrade Request
 		 */
-		requestPending: () => LocalizedString
+		editRequest: () => LocalizedString
 	}
 	TransactionScreen: {
 		/**

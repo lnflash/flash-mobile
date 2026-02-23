@@ -35,12 +35,12 @@ export const UpgradeTrialAccount: React.FC = () => {
           </Text>
           <GaloyIcon name="warning" size={30} />
         </View>
-        <Text type="p3">{LL.AccountScreen.itsATrialAccount()}</Text>
+        <Text type="p3">{LL.HomeScreen.upgradeDesc()}</Text>
         {hasBalance && (
           <Text type="p3">⚠️ {LL.AccountScreen.fundsMoreThan5Dollars()}</Text>
         )}
         <GaloySecondaryButton
-          title={LL.common.backupAccount()}
+          title={LL.HomeScreen.upgradeTitle()}
           iconName="caret-right"
           iconPosition="right"
           containerStyle={styles.selfCenter}
@@ -54,10 +54,10 @@ export const UpgradeTrialAccount: React.FC = () => {
         label={
           !upgradePending
             ? LL.TransactionLimitsScreen.requestUpgrade()
-            : LL.TransactionLimitsScreen.requestPending()
+            : LL.TransactionLimitsScreen.editRequest()
         }
         btnStyle={upgradePending ? { backgroundColor: "#FF7e1c" } : {}}
-        onPress={() => navigation.navigate("AccountType")}
+        onPress={() => navigation.navigate("PersonalInformation")}
       />
     )
   } else {

@@ -1097,7 +1097,7 @@ const en: BaseTranslation = {
     spendingLimits: "Spending Limits",
     spendingLimitsDescription: "The spending limits shown on this page are denominated in USD. For your convenience, we convert these limits into your local currency based on current foreign exchange rates. Please note that the displayed local currency amount may fluctuate as exchange rates are updated in real-time.",
     requestUpgrade: "Request Upgrade",
-    requestPending: "Upgrade Request Pending"
+    editRequest: "Edit Upgrade Request"
   },
   TransactionScreen: {
     noTransaction: "No transaction to show",
