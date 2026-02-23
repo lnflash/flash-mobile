@@ -34,7 +34,7 @@ const Success: React.FC<Props> = ({ navigation }) => {
     })
   }
 
-  const text = accountType === AccountLevel.Three ? "successRequest" : "successUpgrade"
+  const text = accountType === AccountLevel.One ? "successUpgrade" : "successRequest"
 
   return (
     <Screen backgroundColor={colors.accent02}>

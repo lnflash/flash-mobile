@@ -2,7 +2,7 @@ import React, { useCallback, useState } from "react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { StackScreenProps } from "@react-navigation/stack"
 import { makeStyles, Text } from "@rneui/themed"
-import { View } from "react-native"
+import { Alert, View } from "react-native"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -66,7 +66,16 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
           if (accountType === AccountLevel.One) {
             navigation.replace("AccountUpgradeSuccess")
           } else {
-            navigation.replace("BusinessInformation")
+            Alert.alert(
+              LL.PhoneRegistrationValidateScreen.successTitle(),
+              LL.AccountUpgrade.successUpgrade({ accountType: "PERSONAL" }),
+              [
+                {
+                  text: "Continue",
+                  onPress: () => navigation.replace("BusinessInformation"),
+                },
+              ],
+            )
           }
         } else {
           setErrorMsg(data?.userLoginUpgrade.errors[0].message)
