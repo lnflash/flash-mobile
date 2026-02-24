@@ -31,6 +31,7 @@ import { ErrorScreen } from "./screens/error-screen"
 import { PersistentStateProvider } from "./store/persistent-state"
 import { detectDefaultLocale } from "./utils/locale-detector"
 import { ThemeSyncGraphql } from "./utils/theme-sync"
+import NostrKeyEnsurer from "./components/nostr-key-ensurer"
 import { NetworkErrorComponent } from "./graphql/network-error-component"
 import { FeatureFlagContextProvider } from "./config/feature-flags-context"
 import "./utils/logs"
@@ -116,6 +117,7 @@ export const App = () => {
                             </NavigationContainerWrapper>
                           </ErrorBoundary>
                           <ThemeSyncGraphql />
+                          <NostrKeyEnsurer />
                         </FeatureFlagContextProvider>
                       </GaloyClient>
                     </ThemeProvider>

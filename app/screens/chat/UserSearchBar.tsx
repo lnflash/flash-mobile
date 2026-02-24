@@ -1,12 +1,9 @@
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { SearchBar } from "@rneui/themed"
-import { Event, nip05, nip19, SubCloser } from "nostr-tools"
+import { Event, nip05, nip19 } from "nostr-tools"
 import { useCallback, useState } from "react"
 import { useChatContext } from "./chatContext"
-import {
-  fetchNostrUsers,
-  getGroupId,
-} from "@app/utils/nostr"
+import { fetchNostrUsers, getGroupId } from "@app/utils/nostr"
 import { useStyles } from "./style"
 import { useAppConfig } from "@app/hooks"
 import { testProps } from "@app/utils/testProps"

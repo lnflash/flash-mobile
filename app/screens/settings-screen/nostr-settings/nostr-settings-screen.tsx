@@ -1,10 +1,11 @@
-import { View, Pressable } from "react-native"
+import { View, Pressable, ActivityIndicator } from "react-native"
 import { Switch, Text, useTheme } from "@rneui/themed"
 import { useCallback, useEffect, useState } from "react"
 import { nip19 } from "nostr-tools"
 import Ionicons from "react-native-vector-icons/Ionicons"
 import { getSigner } from "@app/nostr/signer"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
+import { setPreferredRelay } from "@app/utils/nostr"
 import { useNavigation } from "@react-navigation/native"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -18,6 +19,63 @@ import { AdvancedSettings } from "./advanced-settings"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { ManualRepublishButton } from "./manual-republish-button"
+import { ImportNsecModal } from "@app/components/import-nsec/import-nsec-modal"
+
+const PROFILE_CREATION_STEPS = [
+  "Creating Nostr profile...",
+  "Generating profile picture...",
+  "Generating banner image...",
+  "Uploading profile picture...",
+  "Uploading banner image...",
+  "Publishing profile to relays...",
+  "Profile created successfully!",
+]
+
+const ProfileCreationSteps: React.FC<{ currentMessage: string }> = ({
+  currentMessage,
+}) => {
+  const {
+    theme: { colors },
+  } = useTheme()
+  const currentIndex = PROFILE_CREATION_STEPS.indexOf(currentMessage)
+  const allDone = currentMessage === "Profile created successfully!"
+
+  return (
+    <View style={{ alignSelf: "stretch", paddingHorizontal: 32, marginTop: 16 }}>
+      {PROFILE_CREATION_STEPS.map((step, index) => {
+        const isDone = allDone || index < currentIndex
+        const isActive = !allDone && index === currentIndex
+
+        return (
+          <View
+            key={step}
+            style={{ flexDirection: "row", alignItems: "center", marginBottom: 14 }}
+          >
+            <View style={{ width: 24, alignItems: "center" }}>
+              {isDone ? (
+                <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+              ) : isActive ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="ellipse-outline" size={22} color={colors.grey4} />
+              )}
+            </View>
+            <Text
+              style={{
+                marginLeft: 12,
+                fontSize: 14,
+                color: isDone || isActive ? colors.black : colors.grey3,
+                fontWeight: isActive ? "600" : "400",
+              }}
+            >
+              {step}
+            </Text>
+          </View>
+        )
+      })}
+    </View>
+  )
+}
 
 export const NostrSettingsScreen = () => {
   const { LL } = useI18nContext()
@@ -68,14 +126,25 @@ export const NostrSettingsScreen = () => {
     initialize()
   }, [initialize])
 
-  const { saveNewNostrKey } = useNostrProfile()
+  const { saveNewNostrKey, generateProfileImages } = useNostrProfile()
   const { refreshUserProfile, resetChat } = useChatContext()
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+
+  useEffect(() => {
+    if (userProfileEvent) {
+      setIsLoadingProfile(false)
+      return
+    }
+    const timer = setTimeout(() => setIsLoadingProfile(false), 3000)
+    return () => clearTimeout(timer)
+  }, [userProfileEvent])
 
   const {
     theme: { colors },
   } = useTheme()
   const [isGenerating, setIsGenerating] = useState(false)
   const [progressMessage, setProgressMessage] = useState("")
+  const [showImportModal, setShowImportModal] = useState(false)
 
   const copyToClipboard = (copyText: string, handler?: (copied: boolean) => void) => {
     Clipboard.setString(copyText)
@@ -93,7 +162,190 @@ export const NostrSettingsScreen = () => {
   }
 
   const renderEmptyContent = () => {
+    // Conflict: backend has a registered npub but no local key was found on this device.
+    // This can happen after reinstalling or switching devices.
+    if (!nostrPubKey && dataAuthed?.me?.npub) {
+      return (
+        <View
+          style={[
+            styles.container,
+            { flex: 1, justifyContent: "center", alignItems: "center" },
+          ]}
+        >
+          <Ionicons name="warning-outline" size={80} color={colors.warning} />
+          <Text
+            style={{ fontSize: 18, fontWeight: "600", marginTop: 20, marginBottom: 8 }}
+          >
+            {LL.Nostr.keyConflictTitle()}
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: colors.grey3,
+              textAlign: "center",
+              marginBottom: 20,
+              paddingHorizontal: 24,
+            }}
+          >
+            {LL.Nostr.keyConflictDescription()}
+          </Text>
+          {isGenerating ? (
+            <ProfileCreationSteps currentMessage={progressMessage} />
+          ) : (
+            <>
+              <Pressable
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  backgroundColor: colors.black,
+                  borderRadius: 16,
+                  marginBottom: 12,
+                }}
+                onPress={() => setShowImportModal(true)}
+              >
+                <Ionicons
+                  name="key-outline"
+                  size={20}
+                  color={colors.white}
+                  style={{ marginRight: 10 }}
+                />
+                <Text style={{ color: colors.white, fontWeight: "bold" }}>
+                  {LL.Nostr.importNsecTitle()}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  backgroundColor: colors.black,
+                  borderRadius: 16,
+                }}
+                onPress={async () => {
+                  setIsGenerating(true)
+                  setProgressMessage("Creating Nostr profile...")
+                  await saveNewNostrKey(
+                    (message) => setProgressMessage(message),
+                    {
+                      name: dataAuthed?.me?.username,
+                      username: dataAuthed?.me?.username,
+                      lud16: `${dataAuthed?.me?.username}@${lnDomain}`,
+                      nip05: `${dataAuthed?.me?.username}@${lnDomain}`,
+                    },
+                  )
+                  setIsGenerating(false)
+                  setProgressMessage("")
+                  await resetChat()
+                  await initialize()
+                }}
+              >
+                <Ionicons
+                  name="person-add-outline"
+                  size={20}
+                  color={colors.white}
+                  style={{ marginRight: 10 }}
+                />
+                <Text style={{ color: colors.white, fontWeight: "bold" }}>
+                  {LL.Nostr.createNewProfile()}
+                </Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      )
+    }
+
     if (!nostrPubKey) {
+      return (
+        <View
+          style={[
+            styles.container,
+            { flex: 1, justifyContent: "center", alignItems: "center" },
+          ]}
+        >
+          <Ionicons name="person-circle-outline" size={80} color={colors.grey3} />
+          <Text
+            style={{ fontSize: 18, fontWeight: "600", marginTop: 20, marginBottom: 8 }}
+          >
+            {LL.Nostr.noProfileFound()}
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: colors.grey3,
+              textAlign: "center",
+              marginBottom: 20,
+            }}
+          >
+            {LL.Nostr.noProfileDescription()}
+          </Text>
+
+          {isGenerating ? (
+            <ProfileCreationSteps currentMessage={progressMessage} />
+          ) : (
+            <Pressable
+              style={[
+                styles.generateButton,
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  backgroundColor: colors.black,
+                  borderRadius: 16,
+                },
+              ]}
+              onPress={async () => {
+                setIsGenerating(true)
+                setProgressMessage("Creating Nostr profile...")
+                await saveNewNostrKey(
+                  (message) => setProgressMessage(message),
+                  {
+                    name: dataAuthed?.me?.username,
+                    username: dataAuthed?.me?.username,
+                    lud16: `${dataAuthed?.me?.username}@${lnDomain}`,
+                    nip05: `${dataAuthed?.me?.username}@${lnDomain}`,
+                  },
+                )
+                setIsGenerating(false)
+                setProgressMessage("")
+                await resetChat()
+                await initialize()
+              }}
+            >
+              <Ionicons
+                name="person-add-outline"
+                size={20}
+                color={colors.white}
+                style={{ marginRight: 10 }}
+              />
+              <Text style={{ color: colors.white, fontWeight: "bold" }}>
+                {LL.Nostr.createNewProfile()}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      )
+    }
+
+    if (isLoadingProfile) {
+      return (
+        <View
+          style={[
+            styles.container,
+            { flex: 1, justifyContent: "center", alignItems: "center" },
+          ]}
+        >
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      )
+    }
+
+    if (!userProfileEvent) {
       return (
         <View
           style={[
@@ -133,22 +385,25 @@ export const NostrSettingsScreen = () => {
             onPress={async () => {
               if (isGenerating) return
               setIsGenerating(true)
-              setProgressMessage("Creating Nostr profile...")
-              await saveNewNostrKey(
-                (message) => {
-                  setProgressMessage(message)
-                },
-                {
-                  name: dataAuthed?.me?.username,
-                  username: dataAuthed?.me?.username,
-                  lud16: `${dataAuthed?.me?.username}@${lnDomain}`,
-                  nip05: `${dataAuthed?.me?.username}@${lnDomain}`,
-                },
-              )
-              setIsGenerating(false)
-              setProgressMessage("")
-              await resetChat()
-              await initialize()
+              setProgressMessage("Creating profile...")
+              try {
+                const signer = await getSigner()
+                await setPreferredRelay(signer)
+                await generateProfileImages(
+                  {
+                    name: dataAuthed?.me?.username,
+                    username: dataAuthed?.me?.username,
+                    lud16: `${dataAuthed?.me?.username}@${lnDomain}`,
+                    nip05: `${dataAuthed?.me?.username}@${lnDomain}`,
+                  },
+                  (msg) => setProgressMessage(msg),
+                )
+              } finally {
+                setIsGenerating(false)
+                setProgressMessage("")
+                await resetChat()
+                await initialize()
+              }
             }}
             disabled={isGenerating}
           >
@@ -161,9 +416,21 @@ export const NostrSettingsScreen = () => {
             <Text style={{ color: colors.white, fontWeight: "bold" }}>
               {isGenerating
                 ? progressMessage || LL.Nostr.creatingProfile()
-                : LL.Nostr.createNewProfile()}
+                : LL.Nostr.generateProfile()}
             </Text>
           </Pressable>
+          {nostrPubKey && !isGenerating && (
+            <Text
+              style={{
+                marginTop: 16,
+                fontSize: 11,
+                color: colors.grey3,
+                fontFamily: "monospace",
+              }}
+            >
+              {nostrPubKey.slice(0, 12)}...{nostrPubKey.slice(-8)}
+            </Text>
+          )}
         </View>
       )
     }
@@ -243,6 +510,16 @@ export const NostrSettingsScreen = () => {
   return (
     <Screen preset="scroll" keyboardShouldPersistTaps="handled">
       {renderEmptyContent()}
+      <ImportNsecModal
+        isActive={showImportModal}
+        onCancel={() => setShowImportModal(false)}
+        onSubmit={async () => {
+          setShowImportModal(false)
+          await resetChat()
+          await initialize()
+        }}
+        descriptionText={LL.Nostr.importNsecDescription()}
+      />
     </Screen>
   )
 }
