@@ -12,10 +12,8 @@ import {
 import { testProps } from "@app/utils/testProps"
 import { AmountInputModal } from "./amount-input-modal"
 import { AmountInputButton } from "./amount-input-button"
-import { useNavigation } from "@react-navigation/native"
 
 export type AmountInputProps = {
-  request?: any
   unitOfAccountAmount?: MoneyAmount<WalletOrDisplayCurrency>
   walletCurrency: WalletCurrency
   convertMoneyAmount: ConvertMoneyAmount
@@ -31,7 +29,6 @@ export type AmountInputProps = {
 }
 
 export const AmountInput: React.FC<AmountInputProps> = ({
-  request,
   unitOfAccountAmount,
   walletCurrency,
   setAmount,
@@ -45,57 +42,15 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   newDesign = false,
   title = "Receive",
 }) => {
-  const navigation = useNavigation()
-  const [isSettingAmount, setIsSettingAmount] = React.useState(false)
+  const { LL } = useI18nContext()
   const { formatMoneyAmount, getSecondaryAmountIfCurrencyIsDifferent } =
     useDisplayCurrency()
-  const { LL } = useI18nContext()
 
-  React.useEffect(() => {
-    if (request?.receivingWalletDescriptor.currency === "BTC") {
-      if (
-        !request?.settlementAmount ||
-        !(
-          (!minAmount ||
-            (minAmount && minAmount?.amount <= request.settlementAmount.amount)) &&
-          (!maxAmount ||
-            (maxAmount && maxAmount.amount >= request.settlementAmount.amount))
-        )
-      ) {
-        setIsSettingAmount(true)
-      }
-    }
-  }, [
-    request?.type,
-    request?.receivingWalletDescriptor.currency,
-    request?.settlementAmount,
-    minAmount,
-    maxAmount,
-  ])
+  const [isSettingAmount, setIsSettingAmount] = React.useState(false)
 
   const onSetAmount = (amount: MoneyAmount<WalletOrDisplayCurrency>) => {
-    if (
-      request?.receivingWalletDescriptor.currency === "BTC" &&
-      request.type === "Lightning" &&
-      amount.amount === 0
-    ) {
-      alert(LL.AmountInputButton.enterAmount())
-    } else {
-      setAmount && setAmount(amount)
-      setIsSettingAmount(false)
-    }
-  }
-
-  const closeHandler = () => {
-    if (
-      request?.receivingWalletDescriptor.currency === "BTC" &&
-      request.type === "Lightning" &&
-      !request?.settlementAmount?.amount
-    ) {
-      navigation.goBack()
-    } else {
-      setIsSettingAmount(false)
-    }
+    setAmount && setAmount(amount)
+    setIsSettingAmount(false)
   }
 
   let formattedPrimaryAmount = undefined
@@ -163,7 +118,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         onSetAmount={onSetAmount}
         maxAmount={maxAmount}
         minAmount={minAmount}
-        close={closeHandler}
+        close={() => setIsSettingAmount(false)}
         title={title}
       />
     </>
