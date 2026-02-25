@@ -11,12 +11,8 @@ import { useAppConfig } from "@app/hooks"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // breez
-import {
-  addEventListener,
-  removeEventListener,
-  SdkEvent,
-  SdkEventVariant,
-} from "@breeztech/react-native-breez-sdk-liquid"
+import { SdkEvent, SdkEvent_Tags } from "@breeztech/breez-sdk-spark-react-native"
+import { addEventListener, removeEventListener } from "@app/utils/breez-sdk"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -89,8 +85,8 @@ const ReceiveScreen = () => {
   const addBreezEventListener = async () => {
     const listenerId = await addEventListener((e: SdkEvent) => {
       if (
-        e.type === SdkEventVariant.PAYMENT_WAITING_CONFIRMATION ||
-        e.type === SdkEventVariant.PAYMENT_SUCCEEDED
+        e.tag === SdkEvent_Tags.PaymentPending ||
+        e.tag === SdkEvent_Tags.PaymentSucceeded
       ) {
         setUpdatedPaymentState(PaymentRequestState.Paid)
       }
