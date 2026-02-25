@@ -12,11 +12,8 @@ import { BtcMoneyAmount } from "@app/types/amounts"
 import { getPaymentRequestFullUri, prToDateString } from "./helpers"
 import { bech32 } from "bech32"
 
-// Breez SDK
-import {
-  receivePaymentBreezSDK,
-  receiveOnchainBreezSDK,
-} from "@app/utils/breez-sdk-liquid"
+// breez
+import { receivePaymentBreez, receiveOnchainBreez } from "@app/utils/breez-sdk"
 
 export const createPaymentRequest = (
   params: CreatePaymentRequestParams,
@@ -28,40 +25,6 @@ export const createPaymentRequest = (
     if (state === PaymentRequestState.Loading)
       return createPaymentRequest({ ...params, state, info: undefined })
     return createPaymentRequest({ ...params, state })
-  }
-
-  // Breez SDK OnChain
-  const fetchBreezOnchain = async (amount?: number) => {
-    try {
-      const fetchedBreezOnChain = await receiveOnchainBreezSDK(amount)
-      return fetchedBreezOnChain.destination
-    } catch (error) {
-      console.error("Error fetching breezOnChain:", error)
-    }
-  }
-
-  // Breez SDK Lightning
-  const fetchBreezInvoice = async (amount?: number, memo?: string) => {
-    try {
-      const fetchedBreezInvoice = await receivePaymentBreezSDK(amount, memo)
-      const formattedBreezInvoice = {
-        lnInvoiceCreate: {
-          errors: [],
-          invoice: {
-            paymentHash: fetchedBreezInvoice.paymentHash,
-            paymentRequest: fetchedBreezInvoice.bolt11,
-            paymentSecret: fetchedBreezInvoice.paymentSecret
-              ? Array.from(fetchedBreezInvoice.paymentSecret)
-                  .map((byte) => byte.toString(16))
-                  .join("")
-              : "",
-          },
-        },
-      }
-      return formattedBreezInvoice
-    } catch (error) {
-      console.error("Error fetching breezInvoice:", error)
-    }
   }
 
   const generateQuote: () => Promise<PaymentRequest> = async () => {
@@ -145,14 +108,11 @@ export const createPaymentRequest = (
     if (creationData.receivingWalletDescriptor.currency === WalletCurrency.Btc) {
       // Handle BTC payment requests
       if (pr.type === Invoice.Lightning) {
-        const fetchedBreezInvoice: any = await fetchBreezInvoice(
-          pr.settlementAmount?.amount,
-          pr.memo,
-        )
-        info = generateLightningInfo(fetchedBreezInvoice.lnInvoiceCreate.invoice, [], [])
+        const res = await receivePaymentBreez(pr.settlementAmount?.amount, pr.memo)
+        info = generateLightningInfo(res, [], [])
       } else if (pr.type === Invoice.OnChain) {
-        const fetchedBreezOnchain = await fetchBreezOnchain(pr.settlementAmount?.amount)
-        info = generateOnChainInfo(fetchedBreezOnchain || "", [], [])
+        const res = await receiveOnchainBreez()
+        info = generateOnChainInfo(res.paymentRequest, [], [])
       }
     } else {
       // Handle USD payment requests
