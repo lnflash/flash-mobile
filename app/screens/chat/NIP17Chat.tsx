@@ -240,7 +240,7 @@ export const NIP17Chat: React.FC = () => {
                             groupId: "support-group-id",
                           })
                         }
-                        style={{ marginRight: 20, marginLeft: 20, marginBottom: 4 }}
+                        style={styles.item}
                       >
                         <View style={styles.itemContainer}>
                           <View style={{ flexDirection: "row", marginVertical: 4 }}>
