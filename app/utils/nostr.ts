@@ -127,6 +127,8 @@ export const fetchGiftWrapsForPublicKey = (
 export const convertRumorsToGroups = (rumors: Rumor[]) => {
   let groups: Map<string, Rumor[]> = new Map()
   rumors.forEach((rumor) => {
+    // Filter out kind 7 reactions — only kind 14 messages belong in conversation groups
+    if (rumor.kind !== 14) return
     let participants = rumor.tags.filter((t) => t[0] === "p").map((p) => p[1])
     let id = getGroupId([...participants, rumor.pubkey])
     groups.set(id, [...(groups.get(id) || []), rumor])
@@ -292,8 +294,12 @@ export async function sendNip17Message(
   preferredRelaysMap: Map<string, string[]>,
   signer: NostrSigner,
   onSent?: (rumor: Rumor) => void,
+  replyToId?: string,
 ) {
   let p_tags = recipients.map((recipientId: string) => ["p", recipientId])
+  if (replyToId) {
+    p_tags = [...p_tags, ["e", replyToId, "", "reply"]]
+  }
   let rumor = await createRumor({ content: message, kind: 14, tags: p_tags }, signer)
   let outputs: { acceptedRelays: string[]; rejectedRelays: string[] }[] = []
   console.log("total recipients", recipients)
@@ -335,6 +341,37 @@ export async function sendNip17Message(
   )
   console.log("Final output is", outputs)
   return { outputs, rumor }
+}
+
+export async function sendReaction(
+  originalRumorId: string,
+  originalAuthorPubkey: string,
+  emoji: string,
+  recipients: string[],
+  preferredRelaysMap: Map<string, string[]>,
+  signer: NostrSigner,
+): Promise<void> {
+  const p_tags = recipients.map((r) => ["p", r])
+  const rumor = await createRumor(
+    {
+      kind: 7,
+      content: emoji,
+      tags: [...p_tags, ["e", originalRumorId], ["p", originalAuthorPubkey]],
+    },
+    signer,
+  )
+  await Promise.allSettled(
+    recipients.map(async (recipientId) => {
+      const recipientRelays = preferredRelaysMap.get(recipientId) || [
+        "wss://relay.flashapp.me",
+        "wss://relay.damus.io",
+        "wss://nostr.oxtr.dev",
+      ]
+      const seal = await createSeal(rumor, signer, recipientId)
+      const wrap = createWrap(seal, recipientId)
+      await Promise.allSettled(customPublish(recipientRelays, wrap))
+    }),
+  )
 }
 
 export const ensureRelay = async (

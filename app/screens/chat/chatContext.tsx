@@ -17,11 +17,14 @@ import { loadJson, saveJson } from "@app/utils/storage"
 const contactsEventCacheKey = (pubkey: string) => `contacts_event:${pubkey}`
 const profileEventCacheKey = (pubkey: string) => `user_profile_event:${pubkey}`
 
+export type ReactionEntry = { emoji: string; reactor: string }
+
 type ChatContextType = {
   giftwraps: Event[]
   rumors: Rumor[]
   setGiftWraps: React.Dispatch<React.SetStateAction<Event[]>>
   setRumors: React.Dispatch<React.SetStateAction<Rumor[]>>
+  reactions: Map<string, ReactionEntry[]>
   profileMap: Map<string, any>
   addEventToProfiles: (event: Event) => void
   resetChat: () => Promise<void>
@@ -39,6 +42,7 @@ const ChatContext = createContext<ChatContextType>({
   setGiftWraps: () => {},
   rumors: [],
   setRumors: () => {},
+  reactions: new Map(),
   profileMap: new Map(),
   addEventToProfiles: () => {},
   resetChat: async () => {},
@@ -56,6 +60,7 @@ export const useChatContext = () => useContext(ChatContext)
 export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [giftwraps, setGiftWraps] = useState<Event[]>([])
   const [rumors, setRumors] = useState<Rumor[]>([])
+  const [reactions, setReactions] = useState<Map<string, ReactionEntry[]>>(new Map())
   const [userProfileEvent, setUserProfileEvent] = useState<Event | null>(null)
   const [userPublicKey, setUserPublicKey] = useState<string | null>(null)
   const [contactsEvent, setContactsEvent] = useState<Event>()
@@ -84,12 +89,28 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     try {
       const signer = await getSigner()
       const rumor = await getRumorFromWrap(event, signer)
-      setRumors((prev) => {
-        if (!prev.map((r) => r.id).includes(rumor.id)) {
-          return [...prev, rumor]
+      if (rumor.kind === 7) {
+        // NIP-25 reaction
+        const originalId = rumor.tags.find((t) => t[0] === "e")?.[1]
+        if (originalId) {
+          setReactions((prev) => {
+            const existing = prev.get(originalId) || []
+            if (existing.some((r) => r.reactor === rumor.pubkey && r.emoji === rumor.content)) {
+              return prev
+            }
+            const next = new Map(prev)
+            next.set(originalId, [...existing, { emoji: rumor.content, reactor: rumor.pubkey }])
+            return next
+          })
         }
-        return prev
-      })
+      } else {
+        setRumors((prev) => {
+          if (!prev.map((r) => r.id).includes(rumor.id)) {
+            return [...prev, rumor]
+          }
+          return prev
+        })
+      }
     } catch (e) {
       console.log("Failed to decrypt giftwrap", e)
     }
@@ -132,7 +153,14 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         }),
       )
     ).filter((r): r is Rumor => r !== null)
-    setRumors(decryptedRumors)
+    // Deduplicate by ID — multiple gift wraps can decrypt to the same rumor (sender + recipient copies)
+    const seenIds = new Set<string>()
+    const uniqueRumors = decryptedRumors.filter((r) => {
+      if (seenIds.has(r.id)) return false
+      seenIds.add(r.id)
+      return true
+    })
+    setRumors(uniqueRumors)
 
     // ------------------------
     // Subscribe to giftwraps via NostrRuntime
@@ -233,6 +261,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     setGiftWraps([])
     setRumors([])
     setContactsEvent(undefined)
+    setReactions(new Map())
     setUserProfileEvent(null)
     setUserPublicKey(null)
     processedEventIds.current.clear()
@@ -252,6 +281,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         setGiftWraps,
         rumors,
         setRumors,
+        reactions,
         profileMap: profileMap.current,
         addEventToProfiles: (event: Event) => {
           try {
