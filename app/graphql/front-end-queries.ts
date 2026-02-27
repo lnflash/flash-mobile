@@ -291,7 +291,7 @@ gql`
           accountNumber
           accountType
           bankName
-          branch
+          bankBranch
           currency
         }
         currentLevel

@@ -225,7 +225,7 @@ export type AccountUpgradeRequest = {
 
 export type AccountUpgradeRequestPayload = {
   readonly __typename: 'AccountUpgradeRequestPayload';
-  readonly errors: ReadonlyArray<Error>;
+  readonly errors?: Maybe<ReadonlyArray<Maybe<Error>>>;
   readonly upgradeRequest?: Maybe<AccountUpgradeRequest>;
 };
 
@@ -301,8 +301,8 @@ export type BankAccount = {
   readonly __typename: 'BankAccount';
   readonly accountNumber: Scalars['Int']['output'];
   readonly accountType: Scalars['String']['output'];
+  readonly bankBranch: Scalars['String']['output'];
   readonly bankName: Scalars['String']['output'];
-  readonly branch: Scalars['String']['output'];
   readonly currency: Scalars['String']['output'];
 };
 
@@ -2411,7 +2411,7 @@ export type NpubByUsernameQuery = { readonly __typename: 'Query', readonly npubB
 export type AccountUpgradeRequestQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly accountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string, readonly path?: ReadonlyArray<string | null> | null }>, readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly currentLevel: AccountLevel, readonly email: string, readonly fullName: string, readonly idDocument: boolean, readonly name: string, readonly phoneNumber: string, readonly requestedLevel: AccountLevel, readonly status: string, readonly terminalsRequested: number, readonly username: string, readonly address: { readonly __typename: 'Address', readonly city: string, readonly country: string, readonly line1: string, readonly line2?: string | null, readonly postalCode?: string | null, readonly state: string, readonly title: string }, readonly bankAccount?: { readonly __typename: 'BankAccount', readonly accountNumber: number, readonly accountType: string, readonly bankName: string, readonly branch: string, readonly currency: string } | null } | null } };
+export type AccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly accountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly currentLevel: AccountLevel, readonly email: string, readonly fullName: string, readonly idDocument: boolean, readonly name: string, readonly phoneNumber: string, readonly requestedLevel: AccountLevel, readonly status: string, readonly terminalsRequested: number, readonly username: string, readonly address: { readonly __typename: 'Address', readonly city: string, readonly country: string, readonly line1: string, readonly line2?: string | null, readonly postalCode?: string | null, readonly state: string, readonly title: string }, readonly bankAccount?: { readonly __typename: 'BankAccount', readonly accountNumber: number, readonly accountType: string, readonly bankName: string, readonly bankBranch: string, readonly currency: string } | null } | null, readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string } | null> | null } };
 
 export type SupportedBanksQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4682,11 +4682,6 @@ export type NpubByUsernameQueryResult = Apollo.QueryResult<NpubByUsernameQuery, 
 export const AccountUpgradeRequestDocument = gql`
     query AccountUpgradeRequest {
   accountUpgradeRequest {
-    errors {
-      code
-      message
-      path
-    }
     upgradeRequest {
       address {
         city
@@ -4701,7 +4696,7 @@ export const AccountUpgradeRequestDocument = gql`
         accountNumber
         accountType
         bankName
-        branch
+        bankBranch
         currency
       }
       currentLevel
@@ -4714,6 +4709,10 @@ export const AccountUpgradeRequestDocument = gql`
       status
       terminalsRequested
       username
+    }
+    errors {
+      code
+      message
     }
   }
 }

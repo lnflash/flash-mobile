@@ -85,7 +85,7 @@ export const useAccountUpgrade = () => {
       dispatch(
         setBankInfo({
           bankName: upgradeData.bankAccount?.bankName,
-          bankBranch: upgradeData.bankAccount?.branch,
+          bankBranch: upgradeData.bankAccount?.bankBranch,
           bankAccountType: upgradeData.bankAccount?.accountType,
           currency: upgradeData.bankAccount?.currency,
           accountNumber: upgradeData.bankAccount?.accountNumber,

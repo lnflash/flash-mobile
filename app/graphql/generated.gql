@@ -830,12 +830,6 @@ mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
 
 query AccountUpgradeRequest {
   accountUpgradeRequest {
-    errors {
-      code
-      message
-      path
-      __typename
-    }
     upgradeRequest {
       address {
         city
@@ -851,7 +845,7 @@ query AccountUpgradeRequest {
         accountNumber
         accountType
         bankName
-        branch
+        bankBranch
         currency
         __typename
       }
@@ -865,6 +859,11 @@ query AccountUpgradeRequest {
       status
       terminalsRequested
       username
+      __typename
+    }
+    errors {
+      code
+      message
       __typename
     }
     __typename
