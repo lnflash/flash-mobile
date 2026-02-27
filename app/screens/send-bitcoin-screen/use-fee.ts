@@ -78,7 +78,7 @@ gql`
   query onChainUsdTxFee(
     $walletId: WalletId!
     $address: OnChainAddress!
-    $amount: CentAmount!
+    $amount: FractionalCentAmount!
   ) {
     onChainUsdTxFee(walletId: $walletId, address: $address, amount: $amount) {
       amount

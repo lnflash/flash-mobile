@@ -1721,15 +1721,23 @@ type RootTranslation = {
 		 */
 		addFlashcard: string
 		/**
-		 * A​d​d​ ​y​o​u​r​ ​p​h​o​n​e​ ​n​u​m​b​e​r
+		 * U​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t
 		 */
 		upgradeTitle: string
 		/**
-		 * B​a​c​k​u​p​ ​y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​a​n​d​ ​i​n​c​r​e​a​s​e​ ​t​r​a​n​s​a​c​t​i​o​n​ ​l​i​m​i​t​s​.
+		 * U​p​g​r​a​d​e​ ​request is pending
+		 */
+		upgradeTitlePending: string
+		/**
+		 * U​n​l​o​c​k​ ​y​o​u​r​ ​f​u​l​l​ ​p​o​t​e​n​t​i​a​l​!​ ​U​p​g​r​a​d​e​ ​t​o​ ​b​o​o​s​t​ ​v​i​s​i​b​i​l​i​t​y​,​ ​l​i​m​i​t​s​,​ ​a​n​d​ ​p​a​y​o​u​t​s​.
 		 */
 		upgradeDesc: string
 		/**
-		 * C​h​a​n​g​e​ ​t​o​ ​y​o​u​r​ ​l​o​c​a​l​ ​c​u​r​r​e​n​c​y
+		 * Your account upgrade request is under review.
+		 */
+		upgradePendingDesc: string
+		/**
+		 * Change to your local currency
 		 */
 		currencyTitle: string
 		/**
@@ -3555,9 +3563,13 @@ type RootTranslation = {
 		 */
 		spendingLimitsDescription: string
 		/**
-		 * R​e​q​u​e​s​t​ ​B​u​s​i​n​e​s​s​ ​A​c​c​o​u​n​t
+		 * Request Upgrade
 		 */
-		requestBusiness: string
+		requestUpgrade: string
+		/**
+		 * Edit Upgrade Request
+		 */
+		editRequest: string
 	}
 	TransactionScreen: {
 		/**
@@ -4744,6 +4756,150 @@ type RootTranslation = {
 		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
 		 */
 		txId: string
+	},
+	AccountUpgrade: {
+		/**
+		 * Account Type
+		 */
+		accountType: string
+		/**
+		 * Personal
+		 */
+		personal: string
+		/**
+		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
+		 */
+		personalDesc: string
+		/**
+		 * Pro
+		 */
+		pro: string
+		/**
+		 * Accept payments and get discovered on the map. Requires a business name and location.
+		 */
+		proDesc: string
+		/**
+		 * Merchant
+		 */
+		merchant: string
+		/**
+		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
+		 */
+		merchantDesc: string
+		/**
+		 * Personal Information
+		 */
+		personalInfo: string
+		/**
+		 * Full name
+		 */
+		fullName: string
+		/**
+		 * Phone Number
+		 */
+		phoneNumber: string
+		/**
+		 * Email Address
+		 */
+		email: string
+		/**
+		 * Optional
+		 */
+		optional: string
+		/**
+		 * Validation
+		 */
+		validation: string
+		/**
+		 * Validation code
+		 */
+		validationCode: string
+		/**
+		 * Business Information
+		 */
+		businessInfo: string
+		/**
+		 * Business Name
+		 */
+		businessName: string
+		/**
+		 * Enter your business name
+		 */
+		businessNamePlaceholder: string
+		/**
+		 * Business Address
+		 */
+		businessAddress: string
+		/**
+		 * Enter your business address
+		 */
+		businessAddressPlaceholder: string
+		/**
+		 * Do you want a Flash terminal?
+		 */
+		flashTerminal: string
+		/**
+		 * A Flash Terminal is a smart device that can accept payment via Flash for your business and print receipts. A customer service representative will contact you if you check this box.
+		 */
+		flashTerminalTooltip: string
+		/**
+		 * Banking Information
+		 */
+		bankingInfo: string
+		/**
+		 * Bank Name
+		 */
+		bankName: string
+		/**
+		 * Select your bank name
+		 */
+		bankNamePlaceholder: string
+		/**
+		 * Bank Branch
+		 */
+		bankBranch: string
+		/**
+		 * Enter your bank branch
+		 */
+		bankBranchPlaceholder: string
+		/**
+		 * Account Type
+		 */
+		bankAccountType: string
+		/**
+		 * Select account type
+		 */
+		selectBankAccountType: string,
+		/**
+		 * Currency
+		 */
+		currency: string
+		/**
+		 * Select currency
+		 */
+		selectCurrency: string,
+		/**
+		 * Account Number
+		 */
+		accountNum: string
+		/**
+		 * Enter your account number
+		 */
+		accountNumPlaceholder: string
+		/**
+		 * Upload ID Document
+		 */
+		uploadId: string
+		/**
+		 * You successfully upgraded your account to {accountType} 
+		 * @param {string} accountType
+		 */
+		successUpgrade: RequiredParams<'accountType'>
+		/**
+		 * You successfully requested to upgrade your account to {accountType} 
+		 * @param {string} accountType
+		 */
+		successRequest: RequiredParams<'accountType'>
 	}
 	Nostr: {
 		/**
@@ -4950,7 +5106,8 @@ type RootTranslation = {
 			goToSettings: string
 		}
 	}
-}
+	}
+
 
 export type TranslationFunctions = {
 	GaloyAddressScreen: {
@@ -6630,13 +6787,21 @@ export type TranslationFunctions = {
 		 */
 		addFlashcard: () => LocalizedString
 		/**
-		 * Add your phone number
+		 * Upgrade your account
 		 */
 		upgradeTitle: () => LocalizedString
 		/**
-		 * Backup your cash wallet and increase transaction limits.
+		 * Upgrade request is pending
+		 */
+		upgradeTitlePending: () => LocalizedString
+		/**
+		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
 		 */
 		upgradeDesc: () => LocalizedString
+		/**
+		 * Your account upgrade request is under review.
+		 */
+		upgradePendingDesc: () => LocalizedString
 		/**
 		 * Change to your local currency
 		 */
@@ -8413,9 +8578,13 @@ export type TranslationFunctions = {
 		 */
 		spendingLimitsDescription: () => LocalizedString
 		/**
-		 * Request Business Account
+		 * Request Upgrade
 		 */
-		requestBusiness: () => LocalizedString
+		requestUpgrade: () => LocalizedString
+		/**
+		 * Edit Upgrade Request
+		 */
+		editRequest: () => LocalizedString
 	}
 	TransactionScreen: {
 		/**
@@ -9611,7 +9780,7 @@ export type TranslationFunctions = {
 		 */
 		createProfileButton: () => LocalizedString
 		/**
-		 * We’re looking, but we haven’t been able to find your profile.
+		 * We're looking, but we haven't been able to find your profile.
 		 */
 		profileNotFound: () => LocalizedString
 		/**
@@ -9683,7 +9852,7 @@ export type TranslationFunctions = {
 		 */
 		noProfileFound: () => LocalizedString
 		/**
-		 * You haven’t created a Nostr profile yet.
+		 * You haven't created a Nostr profile yet.
 	Tap below to create one.
 		 */
 		noProfileDescription: () => LocalizedString
@@ -9782,7 +9951,150 @@ export type TranslationFunctions = {
 			goToSettings: () => LocalizedString
 		}
 	}
+	AccountUpgrade: {
+		/**
+		 * Account Type
+		 */
+		accountType: () => LocalizedString
+		/**
+		 * Personal
+		 */
+		personal: () => LocalizedString
+		/**
+		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
+		 */
+		personalDesc: () => LocalizedString
+		/**
+		 * Pro
+		 */
+		pro: () => LocalizedString
+		/**
+		 * Accept payments and get discovered on the map. Requires a business name and location.
+		 */
+		proDesc: () => LocalizedString
+		/**
+		 * Merchant
+		 */
+		merchant: () => LocalizedString
+		/**
+		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
+		 */
+		merchantDesc: () => LocalizedString
+		/**
+		 * Personal Information
+		 */
+		personalInfo: () => LocalizedString
+		/**
+		 * Full name
+		 */
+		fullName: () => LocalizedString
+		/**
+		 * Phone Number
+		 */
+		phoneNumber: () => LocalizedString
+		/**
+		 * Email Address
+		 */
+		email: () => LocalizedString
+		/**
+		 *  (Optional)
+		 */
+		optional: () => LocalizedString
+		/**
+		 * Validation
+		 */
+		validation: () => LocalizedString
+		/**
+		 * Validation code
+		 */
+		validationCode: () => LocalizedString
+		/**
+		 * Business Information
+		 */
+		businessInfo: () => LocalizedString
+		/**
+		 * Business Name
+		 */
+		businessName: () => LocalizedString
+		/**
+		 * Enter your business name
+		 */
+		businessNamePlaceholder: () => LocalizedString
+		/**
+		 * Business Address
+		 */
+		businessAddress: () => LocalizedString
+		/**
+		 * Enter your business address
+		 */
+		businessAddressPlaceholder: () => LocalizedString
+		/**
+		 * Do you want a Flash terminal?
+		 */
+		flashTerminal: () => LocalizedString
+		/**
+		 * A Flash Terminal is a smart device that can accept payment via Flash for your business and print receipts. A customer service representative will contact you if you check this box.
+		 */
+		flashTerminalTooltip: () => LocalizedString
+		/**
+		 * Banking Information
+		 */
+		bankingInfo: () => LocalizedString
+		/**
+		 * Bank Name
+		 */
+		bankName: () => LocalizedString
+		/**
+		 * Select your bank name
+		 */
+		bankNamePlaceholder: () => LocalizedString
+		/**
+		 * Bank Branch
+		 */
+		bankBranch: () => LocalizedString
+		/**
+		 * Enter your bank branch
+		 */
+		bankBranchPlaceholder: () => LocalizedString
+		/**
+		 * Account Type
+		 */
+		bankAccountType: () => LocalizedString
+		/**
+		 * Select account type
+		 */
+		selectBankAccountType: () => LocalizedString
+		/**
+		 * Currency
+		 */
+		currency: () => LocalizedString
+		/**
+		 * Select Currency
+		 */
+		selectCurrency: () => LocalizedString
+		/**
+		 * Account Number
+		 */
+		accountNum: () => LocalizedString
+		/**
+		 * Enter your account number
+		 */
+		accountNumPlaceholder: () => LocalizedString
+		/**
+		 * Upload ID Document
+		 */
+		uploadId: () => LocalizedString
+		/**
+		 * You successfully upgraded your account to {accountType} 
+		 */
+		successUpgrade:(arg: { accountType: string }) => LocalizedString
+		/**
+		 * You successfully requested to upgrade your account to {accountType}
+		 */
+		successRequest:(arg: { accountType: string }) => LocalizedString
+	}
 }
+
 
 export type Formatters = {
 	sats: (value: unknown) => unknown

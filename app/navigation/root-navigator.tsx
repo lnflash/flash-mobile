@@ -121,6 +121,14 @@ import Contacts from "@app/screens/chat/contacts"
 import MakeNostrPost from "@app/screens/social/post"
 import PostSuccess from "@app/screens/social/post-success"
 import IrisBrowser from "@app/screens/social/iris-browser"
+import {
+  PersonalInformation,
+  BusinessInformation,
+  BankInformation,
+  AccountType,
+  Validation,
+  Success,
+} from "@app/screens/account-upgrade-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -603,6 +611,36 @@ export const RootStack = () => {
         name="Nip29GroupChat"
         component={SupportGroupChatScreen}
         options={{ title: "Group Chat" }}
+      />
+      <RootNavigator.Screen
+        name="AccountType"
+        component={AccountType}
+        options={{ title: LL.AccountUpgrade.accountType() }}
+      />
+      <RootNavigator.Screen
+        name="PersonalInformation"
+        component={PersonalInformation}
+        options={{ title: LL.AccountUpgrade.personalInfo() }}
+      />
+      <RootNavigator.Screen
+        name="BusinessInformation"
+        component={BusinessInformation}
+        options={{ title: LL.AccountUpgrade.businessInfo() }}
+      />
+      <RootNavigator.Screen
+        name="BankInformation"
+        component={BankInformation}
+        options={{ title: LL.AccountUpgrade.bankingInfo() }}
+      />
+      <RootNavigator.Screen
+        name="Validation"
+        component={Validation}
+        options={{ title: LL.AccountUpgrade.validation() }}
+      />
+      <RootNavigator.Screen
+        name="AccountUpgradeSuccess"
+        component={Success}
+        options={{ headerShown: false }}
       />
     </RootNavigator.Navigator>
   )

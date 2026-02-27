@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Dimensions, Linking, TouchableOpacity, View } from "react-native"
+import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import Carousel from "react-native-reanimated-carousel"
-import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
-import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import * as Keychain from "react-native-keychain"
 
 // assets
@@ -16,10 +16,11 @@ import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 import SocialChat from "@app/assets/illustrations/social-chat.svg"
 
 // components
-import { UpgradeAccountModal } from "../upgrade-account-modal"
 import { AdvancedModeModal } from "../advanced-mode-modal"
 
 // hooks
+import { useAccountUpgrade } from "@app/hooks"
+import { useAppSelector } from "@app/store/redux"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -36,6 +37,8 @@ type RenderItemProps = {
     title: string
     description: string
     image: any
+    pending?: boolean
+    disabled?: boolean
     onPress: () => void
   }
   index: number
@@ -47,13 +50,15 @@ const QuickStart = () => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { persistentState, updateState } = usePersistentStateContext()
+  const { status } = useAppSelector((state) => state.accountUpgrade)
 
   const ref = useRef(null)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
-  const [upgradeAccountModalVisible, setUpgradeAccountModalVisible] = useState(false)
   const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
 
   const { data, loading } = useHomeAuthedQuery()
+
+  useAccountUpgrade()
 
   useEffect(() => {
     checkRecoveryPhrase()
@@ -64,13 +69,21 @@ const QuickStart = () => {
     if (credentials) setHasRecoveryPhrase(true)
   }
 
+  const upgradePending = status === "Pending"
+
   let carouselData = [
     {
       type: "upgrade",
-      title: LL.HomeScreen.upgradeTitle(),
-      description: LL.HomeScreen.upgradeDesc(),
+      title: !upgradePending
+        ? LL.HomeScreen.upgradeTitle()
+        : LL.HomeScreen.upgradeTitlePending(),
+      description: !upgradePending
+        ? LL.HomeScreen.upgradeDesc()
+        : LL.HomeScreen.upgradePendingDesc(),
       image: Account,
-      onPress: () => setUpgradeAccountModalVisible(true),
+      pending: upgradePending,
+      disabled: upgradePending,
+      onPress: () => navigation.navigate("AccountType"),
     },
     {
       type: "currency",
@@ -129,7 +142,7 @@ const QuickStart = () => {
   ]
 
   if (
-    data?.me?.defaultAccount.level !== AccountLevel.Zero ||
+    data?.me?.defaultAccount.level === AccountLevel.Three ||
     persistentState?.closedQuickStartTypes?.includes("upgrade")
   ) {
     carouselData = carouselData.filter((el) => el.type !== "upgrade")
@@ -194,17 +207,31 @@ const QuickStart = () => {
   const renderItem = ({ item, index }: RenderItemProps) => {
     const Image = item.image
     return (
-      <TouchableOpacity onPress={item.onPress} key={index} style={styles.itemContainer}>
+      <TouchableOpacity
+        onPress={item.onPress}
+        disabled={item.disabled}
+        key={index}
+        style={[
+          styles.itemContainer,
+          item.pending ? { borderColor: colors._orange } : {},
+        ]}
+      >
         <Image height={width / 3} width={width / 3} />
         <View style={styles.texts}>
-          <Text type="h1" bold style={styles.title}>
+          <Text
+            type="h1"
+            bold
+            style={[styles.title, item.pending ? { color: colors._orange } : {}]}
+          >
             {item.title}
           </Text>
           <Text type="bl">{item.description}</Text>
         </View>
-        <TouchableOpacity style={styles.close} onPress={() => onHide(item.type)}>
-          <Icon name={"close"} type="ionicon" color={colors.black} size={35} />
-        </TouchableOpacity>
+        {!item.pending && (
+          <TouchableOpacity style={styles.close} onPress={() => onHide(item.type)}>
+            <Icon name={"close"} type="ionicon" color={colors.black} size={35} />
+          </TouchableOpacity>
+        )}
       </TouchableOpacity>
     )
   }
@@ -221,10 +248,6 @@ const QuickStart = () => {
           mode="parallax"
           loop={carouselData.length !== 1}
           containerStyle={{ marginTop: 10 }}
-        />
-        <UpgradeAccountModal
-          isVisible={upgradeAccountModalVisible}
-          closeModal={() => setUpgradeAccountModalVisible(false)}
         />
         <AdvancedModeModal
           hasRecoveryPhrase={hasRecoveryPhrase}

@@ -191,7 +191,7 @@ export const useSwap = () => {
             },
           },
         })
-        console.log(">>>>>>>>>>>>>>RES???????????????", res)
+
         const status = res.data?.lnInvoicePaymentSend.status
         if (status === "PENDING" || status === "SUCCESS") {
           return true
