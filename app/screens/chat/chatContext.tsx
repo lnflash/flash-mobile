@@ -12,6 +12,10 @@ import {
 } from "@app/utils/nostr"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { getSigner, clearSigner } from "@app/nostr/signer"
+import { loadJson, saveJson } from "@app/utils/storage"
+
+const contactsEventCacheKey = (pubkey: string) => `contacts_event:${pubkey}`
+const profileEventCacheKey = (pubkey: string) => `user_profile_event:${pubkey}`
 
 type ChatContextType = {
   giftwraps: Event[]
@@ -143,7 +147,22 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       (event) => handleGiftWrapEvent(event),
     )
 
-    // Subscribe to contact list
+    // Load cached contacts event so the contact list is available immediately
+    const cachedContactsEvent = await loadJson(contactsEventCacheKey(publicKey))
+    if (cachedContactsEvent) {
+      setContactsEvent(cachedContactsEvent as Event)
+    }
+
+    // Load cached profile event so settings screen renders immediately
+    const cachedProfile = await loadJson(profileEventCacheKey(publicKey))
+    if (cachedProfile) {
+      setUserProfileEvent(cachedProfile as Event)
+      try {
+        profileMap.current.set(publicKey, JSON.parse((cachedProfile as Event).content))
+      } catch {}
+    }
+
+    // Subscribe to contact list — update only if the relay returns a newer version
     nostrRuntime.ensureSubscription(
       `contacts:${publicKey}`,
       {
@@ -151,7 +170,13 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         authors: [publicKey],
       },
       (event) => {
-        setContactsEvent(event)
+        setContactsEvent((prev) => {
+          if (!prev || event.created_at > prev.created_at) {
+            saveJson(contactsEventCacheKey(publicKey), event)
+            return event
+          }
+          return prev
+        })
       },
     )
 
@@ -163,13 +188,16 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         authors: [publicKey],
       },
       (event) => {
-        setUserProfileEvent(event)
-        try {
-          const content = JSON.parse(event.content)
-          profileMap.current.set(event.pubkey, content)
-        } catch {
-          console.log("Failed to parse profile content")
-        }
+        setUserProfileEvent((prev) => {
+          if (!prev || event.created_at > prev.created_at) {
+            saveJson(profileEventCacheKey(publicKey), event)
+            try {
+              profileMap.current.set(event.pubkey, JSON.parse(event.content))
+            } catch {}
+            return event
+          }
+          return prev
+        })
       },
     )
   }
@@ -204,6 +232,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     clearSigner()
     setGiftWraps([])
     setRumors([])
+    setContactsEvent(undefined)
     setUserProfileEvent(null)
     setUserPublicKey(null)
     processedEventIds.current.clear()
