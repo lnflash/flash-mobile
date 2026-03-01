@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Provider } from "react-redux"
 import { MockedProvider } from "@apollo/client/testing"
 import { createCache } from "../../graphql/cache"
 import mocks from "../../graphql/mocks"
@@ -6,17 +7,38 @@ import RedeemBitcoinDetailScreen from "./redeem-bitcoin-detail-screen"
 import { Meta } from "@storybook/react"
 import { StoryScreen } from "../../../.storybook/views"
 import { IsAuthedContextProvider } from "../../graphql/is-authed-context"
+import { PersistentStateProvider } from "../../store/persistent-state"
+import { store } from "../../store/redux"
+
+const mockNavigation = {
+  navigate: (name: string, params?: any) => console.log("navigate", name, params),
+  goBack: () => console.log("goBack"),
+  dispatch: () => {},
+  setOptions: () => {},
+  addListener: () => () => {},
+  removeListener: () => {},
+  isFocused: () => true,
+  canGoBack: () => true,
+  getParent: () => undefined,
+  getState: () => ({ index: 0, routes: [] }),
+  pop: () => {},
+  replace: () => {},
+} as any
 
 export default {
-  title: "Redeem bitcoin Detail",
+  title: "Redeem Bitcoin Detail",
   component: RedeemBitcoinDetailScreen,
   decorators: [
     (Story) => (
-      <IsAuthedContextProvider value={true}>
-        <MockedProvider mocks={mocks} cache={createCache()}>
-          <StoryScreen>{Story()}</StoryScreen>
-        </MockedProvider>
-      </IsAuthedContextProvider>
+      <Provider store={store}>
+        <PersistentStateProvider>
+          <IsAuthedContextProvider value={true}>
+            <MockedProvider mocks={mocks} cache={createCache()}>
+              <StoryScreen>{Story()}</StoryScreen>
+            </MockedProvider>
+          </IsAuthedContextProvider>
+        </PersistentStateProvider>
+      </Provider>
     ),
   ],
 } as Meta<typeof RedeemBitcoinDetailScreen>
@@ -56,6 +78,10 @@ const routeDiffMinMax = {
   },
 } as const
 
-export const SetValue = () => <RedeemBitcoinDetailScreen route={routeSetValue} />
+export const SetValue = () => (
+  <RedeemBitcoinDetailScreen route={routeSetValue} navigation={mockNavigation} />
+)
 
-export const DiffMinMax = () => <RedeemBitcoinDetailScreen route={routeDiffMinMax} />
+export const DiffMinMax = () => (
+  <RedeemBitcoinDetailScreen route={routeDiffMinMax} navigation={mockNavigation} />
+)
