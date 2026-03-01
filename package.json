@@ -54,7 +54,9 @@
     "bundle-visualizer": "yarn run react-native-bundle-visualizer",
     "splash": "yarn react-native generate-bootsplash --background-color \"#000\" --logo-width 300 app/assets/logo/app-logo-dark.svg",
     "aab-android": "cd android && ./gradlew bundleRelease && cd ..",
-    "apk-android": "cd android && ./gradlew app:assembleRelease && cd .."
+    "apk-android": "cd android && ./gradlew app:assembleRelease && cd ..",
+    "storybook:test:android": "detox test --configuration android.emu.storybook",
+    "storybook:build:android": "cd android && ./gradlew assembleDebug -PreactNativeArchitectures=x86_64 -x lint --no-daemon"
   },
   "dependencies": {
     "@apollo/client": "3.9.0-alpha.5",
@@ -275,6 +277,7 @@
     "browserstack-local": "^1.5.1",
     "cross-fetch": "^3.1.6",
     "csv-parse": "^5.3.5",
+    "detox": "^20.27.0",
     "eslint": "^8.33.0",
     "eslint-config-prettier": "^8.6.0",
     "eslint-plugin-import": "^2.27.5",

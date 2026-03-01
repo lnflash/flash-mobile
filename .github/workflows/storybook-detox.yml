@@ -1,0 +1,115 @@
+name: Storybook Visual Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/**/*.stories.tsx"
+      - ".storybook/**"
+      - ".detoxrc.json"
+      - "e2e/storybook/**"
+  push:
+    branches: [main]
+    paths:
+      - "app/**/*.stories.tsx"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  storybook-android:
+    name: Android Storybook Screenshots
+    # TODO: add ios job once Mac Mini CI node is provisioned
+    runs-on: [self-hosted, linux, android]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Enable Storybook mode
+        run: |
+          sed -i "s/const SHOW_STORYBOOK = false/const SHOW_STORYBOOK = true/" index.js
+          grep SHOW_STORYBOOK index.js
+
+      - name: Build Storybook APK
+        run: |
+          cd android
+          ./gradlew assembleDebug \
+            -PjsBundleFile=index.js \
+            -PreactNativeArchitectures=x86_64 \
+            -x lint \
+            --no-daemon \
+            --build-cache
+        env:
+          ANDROID_HOME: /opt/android-sdk
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+
+      - name: Start virtual display
+        run: |
+          Xvfb :99 -screen 0 1280x800x24 &
+          echo "XVFB_PID=$!" >> $GITHUB_ENV
+        env:
+          DISPLAY: :99
+
+      - name: Start Android emulator
+        run: |
+          export DISPLAY=:99
+          $ANDROID_HOME/emulator/emulator \
+            -avd Pixel_API_34 \
+            -no-window \
+            -no-audio \
+            -gpu swiftshader_indirect \
+            -no-boot-anim \
+            -memory 3072 &
+          echo "EMU_PID=$!" >> $GITHUB_ENV
+          # Wait for full boot
+          adb wait-for-device
+          timeout 120 adb shell "while [[ -z \$(getprop sys.boot_completed) ]]; do sleep 2; done; echo BOOTED"
+        env:
+          ANDROID_HOME: /opt/android-sdk
+
+      - name: Run Detox Storybook tests
+        run: |
+          yarn detox test \
+            --configuration android.emu.storybook \
+            --take-screenshots all \
+            --artifacts-location e2e/storybook/artifacts \
+            --loglevel warn
+        env:
+          ANDROID_HOME: /opt/android-sdk
+          DISPLAY: :99
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: storybook-screenshots-${{ github.run_id }}
+          path: e2e/storybook/artifacts/
+          retention-days: 30
+
+      - name: Kill emulator
+        if: always()
+        run: |
+          kill $EMU_PID || true
+          kill $XVFB_PID || true
+          adb emu kill || true
+
+      - name: Restore index.js
+        if: always()
+        run: |
+          sed -i "s/const SHOW_STORYBOOK = true/const SHOW_STORYBOOK = false/" index.js
