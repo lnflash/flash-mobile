@@ -9,6 +9,26 @@ import {
 } from "../../graphql/generated"
 import { EmailLoginInitiateScreen } from "./email-login-initiate"
 
+// Mock navigation for StackScreenProps
+const mockNavigation = {
+  navigate: (name: string, params?: any) => console.log("navigate", name, params),
+  goBack: () => console.log("goBack"),
+  dispatch: () => {},
+  setOptions: () => {},
+  addListener: () => () => {},
+  removeListener: () => {},
+  isFocused: () => true,
+  canGoBack: () => true,
+  getParent: () => undefined,
+  getState: () => ({ index: 0, routes: [] }),
+} as any
+
+const mockRoute = {
+  key: "emailLoginInitiate",
+  name: "emailLoginInitiate" as const,
+  params: undefined,
+} as any
+
 const mocks = [
   {
     request: { query: CaptchaCreateChallengeDocument },
@@ -30,34 +50,8 @@ const mocks = [
   },
   {
     request: {
-      query: CaptchaRequestAuthCodeDocument,
-      variables: {
-        input: {
-          phone: "+50365055543",
-          challengeCode: "af073125d936ff9e5aa4c1ed44a38d5d4s",
-          validationCode: "290cc148dfb39afb5af63320469facd6|jordan",
-          secCode: "290cc148dfb39afb5af63320469facd6",
-          channel: "SMS",
-        },
-      },
-    },
-    result: {
-      data: {
-        captchaRequestAuthCode: {
-          success: true,
-          errors: [],
-        },
-      },
-    },
-  },
-  {
-    request: {
       query: UserEmailRegistrationInitiateDocument,
-      variables: {
-        input: {
-          email: "info@galoy.io",
-        },
-      },
+      variables: { input: { email: "info@galoy.io" } },
     },
     result: {
       data: {
@@ -66,10 +60,7 @@ const mocks = [
           errors: [],
           me: {
             id: "1",
-            email: {
-              address: "info@galoy.io",
-              verified: false,
-            },
+            email: { address: "info@galoy.io", verified: false },
           },
         },
       },
@@ -89,4 +80,6 @@ export default {
   ],
 }
 
-export const Default = () => <EmailLoginInitiateScreen />
+export const Default = () => (
+  <EmailLoginInitiateScreen navigation={mockNavigation} route={mockRoute} />
+)

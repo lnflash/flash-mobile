@@ -21,18 +21,12 @@ export default {
 
 export const Default = () => (
   <IsAuthedContextProvider value={true}>
-    <WalletOverview loading={false} setIsStablesatModalVisible={() => {}} />
+    <WalletOverview setIsUnverifiedSeedModalVisible={() => {}} />
   </IsAuthedContextProvider>
 )
 
 export const Unauthed = () => (
   <IsAuthedContextProvider value={false}>
-    <WalletOverview loading={false} setIsStablesatModalVisible={() => {}} />
-  </IsAuthedContextProvider>
-)
-
-export const Loading = () => (
-  <IsAuthedContextProvider value={true}>
-    <WalletOverview loading setIsStablesatModalVisible={() => {}} />
+    <WalletOverview setIsUnverifiedSeedModalVisible={() => {}} />
   </IsAuthedContextProvider>
 )
