@@ -33,79 +33,51 @@ export default {
   },
 } as Meta<typeof AmountInput>
 
-const moneyAmountInputModalDefaultProps: AmountInputProps = {
-  unitOfAccountAmount: {
-    amount: 0,
-    currency: DisplayCurrency,
-  },
+// currencyCode must be included — MoneyAmount requires { amount, currency, currencyCode }
+const mockConvertMoneyAmount: AmountInputProps["convertMoneyAmount"] = (moneyAmount, toCurrency) => ({
+  amount: moneyAmount.amount,
+  currency: toCurrency,
+  currencyCode: toCurrency === DisplayCurrency ? "USD" : toCurrency,
+})
+
+const baseProps: AmountInputProps = {
+  unitOfAccountAmount: ZeroDisplayAmount,
   walletCurrency: WalletCurrency.Btc,
   setAmount: (moneyAmount: MoneyAmount<WalletOrDisplayCurrency>) =>
-    console.log("set amount: ", moneyAmount),
-  convertMoneyAmount: (moneyAmount, toCurrency) => {
-    return {
-      amount: moneyAmount.amount,
-      currency: toCurrency,
-    }
-  },
+    console.log("set amount:", moneyAmount),
+  convertMoneyAmount: mockConvertMoneyAmount,
 }
 
 export const Default = () => {
   const [moneyAmount, setMoneyAmount] =
     React.useState<MoneyAmount<WalletOrDisplayCurrency>>(ZeroDisplayAmount)
-
   return (
-    <AmountInput
-      {...moneyAmountInputModalDefaultProps}
-      unitOfAccountAmount={moneyAmount}
-      setAmount={setMoneyAmount}
-    />
+    <AmountInput {...baseProps} unitOfAccountAmount={moneyAmount} setAmount={setMoneyAmount} />
   )
 }
 
-export const WalletCurrencyIsDisplayCurrency = () => {
+export const WalletCurrencyIsUsd = () => {
   const [moneyAmount, setMoneyAmount] =
     React.useState<MoneyAmount<WalletOrDisplayCurrency>>(ZeroDisplayAmount)
-
   return (
     <AmountInput
-      {...moneyAmountInputModalDefaultProps}
+      {...baseProps}
       walletCurrency={WalletCurrency.Usd}
       unitOfAccountAmount={moneyAmount}
       setAmount={setMoneyAmount}
-    />
-  )
-}
-
-export const WalletCurrencyIsDisplayCurrencyWithFixedSatoshiAmount = () => {
-  const [moneyAmount, setMoneyAmount] = React.useState<
-    MoneyAmount<WalletOrDisplayCurrency>
-  >({
-    amount: 1234,
-    currency: WalletCurrency.Btc,
-  })
-
-  return (
-    <AmountInput
-      {...moneyAmountInputModalDefaultProps}
-      walletCurrency={WalletCurrency.Usd}
-      unitOfAccountAmount={moneyAmount}
-      setAmount={setMoneyAmount}
-      canSetAmount={false}
     />
   )
 }
 
 export const FixedSatoshiAmount = () => {
-  const [moneyAmount, setMoneyAmount] = React.useState<
-    MoneyAmount<WalletOrDisplayCurrency>
-  >({
+  const [moneyAmount, setMoneyAmount] = React.useState<MoneyAmount<WalletOrDisplayCurrency>>({
     amount: 1234,
     currency: WalletCurrency.Btc,
+    currencyCode: WalletCurrency.Btc,
   })
-
   return (
     <AmountInput
-      {...moneyAmountInputModalDefaultProps}
+      {...baseProps}
       walletCurrency={WalletCurrency.Btc}
       unitOfAccountAmount={moneyAmount}
       setAmount={setMoneyAmount}
@@ -114,17 +86,15 @@ export const FixedSatoshiAmount = () => {
   )
 }
 
-export const AmountIsNotEditable = () => {
-  const [moneyAmount, setMoneyAmount] = React.useState<
-    MoneyAmount<WalletOrDisplayCurrency>
-  >({
-    amount: 1234,
+export const FixedUsdAmount = () => {
+  const [moneyAmount, setMoneyAmount] = React.useState<MoneyAmount<WalletOrDisplayCurrency>>({
+    amount: 100,
     currency: WalletCurrency.Usd,
+    currencyCode: "USD",
   })
-
   return (
     <AmountInput
-      {...moneyAmountInputModalDefaultProps}
+      {...baseProps}
       walletCurrency={WalletCurrency.Usd}
       unitOfAccountAmount={moneyAmount}
       setAmount={setMoneyAmount}
