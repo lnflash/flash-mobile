@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Provider } from "react-redux"
 import { StoryScreen } from "../../../.storybook/views"
 import { Meta } from "@storybook/react"
 import { createCache } from "../../graphql/cache"
@@ -7,133 +8,87 @@ import mocks from "../../graphql/mocks"
 import { AccountScreen } from "./account-screen"
 import { MockedProvider } from "@apollo/client/testing"
 import { AccountLevel, LevelContextProvider } from "../../graphql/level-context"
+import { PersistentStateProvider } from "../../store/persistent-state"
+import { store } from "../../store/redux"
 
-const mocksLevelOne = [
-  ...mocks,
-  {
-    request: {
-      query: AccountScreenDocument,
-    },
-    result: {
-      data: {
-        me: {
-          id: "70df9822-efe0-419c-b864-c9efa99872ea",
-          phone: "+50365055539",
-          email: {
-            address: "test@galoy.io",
-            verified: false,
-          },
-          defaultAccount: {
-            id: "84b26b88-89b0-5c6f-9d3d-fbead08f79d8",
-            level: "ONE",
-            wallets: [
-              {
-                id: "f79792e3-282b-45d4-85d5-7486d020def5",
-                balance: 88413,
-                walletCurrency: "BTC",
-                __typename: "BTCWallet",
-              },
-              {
-                id: "f091c102-6277-4cc6-8d81-87ebf6aaad1b",
-                balance: 158,
-                walletCurrency: "USD",
-                __typename: "UsdWallet",
-              },
-            ],
-            __typename: "ConsumerAccount",
-          },
-          __typename: "User",
+const wallets = [
+  { id: "f79792e3-282b-45d4-85d5-7486d020def5", balance: 88413, walletCurrency: "BTC", __typename: "BTCWallet" },
+  { id: "f091c102-6277-4cc6-8d81-87ebf6aaad1b", balance: 158, walletCurrency: "USD", __typename: "UsdWallet" },
+]
+
+const makeAccountMock = (overrides = {}) => ({
+  request: { query: AccountScreenDocument },
+  result: {
+    data: {
+      me: {
+        id: "70df9822-efe0-419c-b864-c9efa99872ea",
+        phone: "+50365055539",
+        totpEnabled: false,
+        email: { address: "test@getflash.io", verified: true, __typename: "Email" },
+        defaultAccount: {
+          id: "84b26b88-89b0-5c6f-9d3d-fbead08f79d8",
+          level: "ONE",
+          wallets,
+          __typename: "ConsumerAccount",
         },
+        __typename: "User",
+        ...overrides,
       },
     },
   },
-]
+})
 
-const mocksNoEmail = [
-  ...mocks,
-  {
-    request: {
-      query: AccountScreenDocument,
-    },
-    result: {
-      data: {
-        me: {
-          id: "70df9822-efe0-419c-b864-c9efa99872ea",
-          phone: "+50365055539",
-          email: {
-            address: null, // verify type returned by graphql
-            verified: false,
-          },
-          defaultAccount: {
-            id: "84b26b88-89b0-5c6f-9d3d-fbead08f79d8",
-            level: "ONE",
-            wallets: [
-              {
-                id: "f79792e3-282b-45d4-85d5-7486d020def5",
-                balance: 88413,
-                walletCurrency: "BTC",
-                __typename: "BTCWallet",
-              },
-              {
-                id: "f091c102-6277-4cc6-8d81-87ebf6aaad1b",
-                balance: 158,
-                walletCurrency: "USD",
-                __typename: "UsdWallet",
-              },
-            ],
-            __typename: "ConsumerAccount",
-          },
-          __typename: "User",
-        },
-      },
-    },
-  },
-]
+const Decorator = (Story: React.FC) => (
+  <Provider store={store}>
+    <PersistentStateProvider>
+      <StoryScreen>{Story()}</StoryScreen>
+    </PersistentStateProvider>
+  </Provider>
+)
 
 export default {
-  title: "AccountScreen",
+  title: "Account Screen",
   component: AccountScreen,
-  decorators: [(Story) => <StoryScreen>{Story()}</StoryScreen>],
+  decorators: [Decorator],
 } as Meta<typeof AccountScreen>
 
-export const Unauthed = () => (
-  <LevelContextProvider
-    value={{
-      isAtLeastLevelZero: false,
-      isAtLeastLevelOne: false,
-      currentLevel: AccountLevel.NonAuth,
-    }}
-  >
-    <MockedProvider cache={createCache()}>
+export const LevelOne = () => (
+  <MockedProvider mocks={[...mocks, makeAccountMock()]} cache={createCache()}>
+    <LevelContextProvider value={AccountLevel.One}>
       <AccountScreen />
-    </MockedProvider>
-  </LevelContextProvider>
+    </LevelContextProvider>
+  </MockedProvider>
 )
 
-export const AuthedEmailNotSet = () => (
-  <LevelContextProvider
-    value={{
-      isAtLeastLevelZero: true,
-      isAtLeastLevelOne: true,
-      currentLevel: AccountLevel.One,
-    }}
+export const LevelTwo = () => (
+  <MockedProvider
+    mocks={[...mocks, makeAccountMock({ defaultAccount: { id: "84b26b88-89b0-5c6f-9d3d-fbead08f79d8", level: "TWO", wallets, __typename: "ConsumerAccount" } })]}
+    cache={createCache()}
   >
-    <MockedProvider cache={createCache()} mocks={mocksNoEmail}>
+    <LevelContextProvider value={AccountLevel.Two}>
       <AccountScreen />
-    </MockedProvider>
-  </LevelContextProvider>
+    </LevelContextProvider>
+  </MockedProvider>
 )
 
-export const AuthedEmailSet = () => (
-  <LevelContextProvider
-    value={{
-      isAtLeastLevelZero: true,
-      isAtLeastLevelOne: true,
-      currentLevel: AccountLevel.One,
-    }}
+export const NoEmail = () => (
+  <MockedProvider
+    mocks={[...mocks, makeAccountMock({ email: null })]}
+    cache={createCache()}
   >
-    <MockedProvider cache={createCache()} mocks={mocksLevelOne}>
+    <LevelContextProvider value={AccountLevel.One}>
       <AccountScreen />
-    </MockedProvider>
-  </LevelContextProvider>
+    </LevelContextProvider>
+  </MockedProvider>
+)
+
+export const WithTOTP = () => (
+  <MockedProvider
+    mocks={[...mocks, makeAccountMock({ totpEnabled: true })]}
+    cache={createCache()}
+  >
+    <LevelContextProvider value={AccountLevel.Two}>
+      <AccountScreen />
+    </LevelContextProvider>
+  </MockedProvider>
 )

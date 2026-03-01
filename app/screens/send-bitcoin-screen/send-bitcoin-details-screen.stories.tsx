@@ -2,9 +2,12 @@ import { MockedProvider } from "@apollo/client/testing"
 import { PaymentType } from "@galoymoney/client"
 import { Meta } from "@storybook/react"
 import React from "react"
+import { Provider } from "react-redux"
 import { StoryScreen } from "../../../.storybook/views"
 import { createCache } from "../../graphql/cache"
 import { IsAuthedContextProvider } from "../../graphql/is-authed-context"
+import { PersistentStateProvider } from "../../store/persistent-state"
+import { store } from "../../store/redux"
 import SendBitcoinDetailsScreen from "./send-bitcoin-details-screen"
 import mocks from "../../graphql/mocks"
 import {
@@ -13,18 +16,40 @@ import {
   ResolvedIntraledgerPaymentDestination,
 } from "./payment-destination/index.types"
 import { createIntraledgerPaymentDetails } from "./payment-details"
-import { ZeroBtcMoneyAmount } from "@app/types/amounts"
+import { DisplayCurrency, ZeroBtcMoneyAmount } from "@app/types/amounts"
+import { WalletCurrency } from "../../graphql/generated"
+
+const mockNavigation = {
+  navigate: (name: string, params?: any) => console.log("navigate", name, params),
+  goBack: () => console.log("goBack"),
+  dispatch: () => {},
+  setOptions: () => {},
+  addListener: () => () => {},
+  removeListener: () => {},
+  isFocused: () => true,
+  canGoBack: () => true,
+  getParent: () => undefined,
+  getState: () => ({ index: 0, routes: [] }),
+  pop: () => {},
+  replace: () => {},
+  push: () => {},
+  reset: () => {},
+} as any
 
 export default {
   title: "SendBitcoinDetailsScreen",
   component: SendBitcoinDetailsScreen,
   decorators: [
     (Story) => (
-      <IsAuthedContextProvider value={true}>
-        <MockedProvider mocks={mocks} cache={createCache()}>
-          <StoryScreen>{Story()}</StoryScreen>
-        </MockedProvider>
-      </IsAuthedContextProvider>
+      <Provider store={store}>
+        <PersistentStateProvider>
+          <IsAuthedContextProvider value={true}>
+            <MockedProvider mocks={mocks} cache={createCache()}>
+              <StoryScreen>{Story()}</StoryScreen>
+            </MockedProvider>
+          </IsAuthedContextProvider>
+        </PersistentStateProvider>
+      </Provider>
     ),
   ],
 } as Meta<typeof SendBitcoinDetailsScreen>
@@ -39,32 +64,28 @@ const validDestination: ResolvedIntraledgerPaymentDestination = {
   handle,
 }
 
-/* eslint @typescript-eslint/ban-ts-comment: "off" */
-// @ts-ignore-next-line no-implicit-any error
-const createPaymentDetail = ({ convertMoneyAmount, sendingWalletDescriptor }) => {
-  return createIntraledgerPaymentDetails({
+const createPaymentDetail = ({ convertMoneyAmount, sendingWalletDescriptor }: any) =>
+  createIntraledgerPaymentDetails({
     handle,
     recipientWalletId: walletId,
     sendingWalletDescriptor,
     convertMoneyAmount,
     unitOfAccountAmount: ZeroBtcMoneyAmount,
   })
-}
 
 const paymentDestination: PaymentDestination = {
   valid: true,
   validDestination,
   destinationDirection: DestinationDirection.Send,
-  // @ts-ignore-next-line no-implicit-any error
   createPaymentDetail,
 }
 
 const route = {
   key: "sendBitcoinDetailsScreen",
   name: "sendBitcoinDetails",
-  params: {
-    paymentDestination,
-  },
+  params: { paymentDestination },
 } as const
 
-export const Intraledger = () => <SendBitcoinDetailsScreen route={route} />
+export const Intraledger = () => (
+  <SendBitcoinDetailsScreen route={route} navigation={mockNavigation} />
+)
