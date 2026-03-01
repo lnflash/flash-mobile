@@ -5,27 +5,43 @@ import { createCache } from "../../graphql/cache"
 import { StoryScreen } from "../../../.storybook/views"
 import { EmailLoginValidateScreen } from "./email-login-validate"
 
-const mocks = []
+const mockNavigation = {
+  navigate: (name: string, params?: any) => console.log("navigate", name, params),
+  goBack: () => console.log("goBack"),
+  dispatch: () => {},
+  setOptions: () => {},
+  addListener: () => () => {},
+  removeListener: () => {},
+  isFocused: () => true,
+  canGoBack: () => true,
+  getParent: () => undefined,
+  getState: () => ({ index: 0, routes: [] }),
+  reset: () => {},
+} as any
 
+// Route params fixed: emailLoginValidate expects { email, emailLoginId }
+// Previous story had wrong params: { phone, channel }
 const route = {
-  key: "EmailLoginValidateScreen",
-  name: "emailLoginValidate",
+  key: "emailLoginValidate",
+  name: "emailLoginValidate" as const,
   params: {
-    phone: "+50365055543",
-    channel: "SMS",
+    email: "test@getflash.io",
+    emailLoginId: "test-email-login-id-123",
   },
-} as const
+} as any
 
 export default {
   title: "EmailLoginValidateScreen",
   component: EmailLoginValidateScreen,
   decorators: [
     (Story) => (
-      <MockedProvider mocks={mocks} cache={createCache()}>
+      <MockedProvider mocks={[]} cache={createCache()}>
         <StoryScreen>{Story()}</StoryScreen>
       </MockedProvider>
     ),
   ],
 } as Meta<typeof EmailLoginValidateScreen>
 
-export const Main = () => <EmailLoginValidateScreen route={route} />
+export const Default = () => (
+  <EmailLoginValidateScreen navigation={mockNavigation} route={route} />
+)
