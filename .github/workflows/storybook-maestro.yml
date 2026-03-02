@@ -52,6 +52,9 @@ jobs:
           key: gradle-${{ hashFiles("android/**/*.gradle*") }}
           restore-keys: gradle-
 
+      - name: Clear JS bundle cache
+        run: rm -rf android/app/build/generated/assets/ android/app/build/intermediates/assets/ android/app/build/outputs/apk/
+
       - name: Build Storybook APK
         run: yarn storybook:build
 
