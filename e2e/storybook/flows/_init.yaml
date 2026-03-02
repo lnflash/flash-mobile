@@ -1,0 +1,5 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd

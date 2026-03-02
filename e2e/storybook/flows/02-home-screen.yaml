@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- tapOn:
+    text: "Home Screen"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Unauthed"
+- waitForAnimationToEnd
+- takeScreenshot: "02-home-screen"

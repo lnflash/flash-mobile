@@ -1,0 +1,117 @@
+name: Storybook Visual Tests (Maestro)
+
+on:
+  pull_request:
+    paths:
+      - "app/**/*.stories.tsx"
+      - ".storybook/**"
+      - "e2e/storybook/**"
+  push:
+    branches: [main]
+    paths:
+      - "app/**/*.stories.tsx"
+      - ".storybook/**"
+
+concurrency:
+  group: storybook-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  storybook-android:
+    name: Storybook Screenshots (Android)
+    runs-on: [self-hosted, linux, android]
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Patch index.js for Storybook mode
+        run: sed -i "s/const SHOW_STORYBOOK = false/const SHOW_STORYBOOK = true/" index.js
+
+      - name: Write google-services.json
+        run: echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
+
+      - name: Write .env
+        run: echo "${{ secrets.DOTENV_STORYBOOK }}" > .env
+
+      - name: Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android/.gradle
+          key: gradle-${{ hashFiles("android/**/*.gradle*") }}
+          restore-keys: gradle-
+
+      - name: Clear JS bundle cache
+        run: rm -rf android/app/build/generated/assets/ android/app/build/intermediates/assets/ android/app/build/outputs/apk/
+
+      - name: Build Storybook APK
+        run: yarn storybook:build
+
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-34-pixel6
+
+      - name: Create AVD snapshot (if not cached)
+        if: steps.avd-cache.outputs.cache-hit != true
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "AVD snapshot created"
+
+      - name: Install Maestro
+        run: |
+          export PATH="$PATH:$HOME/.maestro/bin"
+          maestro --version || curl -Ls https://get.maestro.mobile.dev | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Run Storybook Maestro tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb install -r android/app/build/outputs/apk/debug/app-x86_64-debug.apk
+            adb shell input keyevent 82
+            sleep 3
+            maestro test e2e/storybook/flows/ --format junit --output /tmp/maestro-results.xml || true
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-screenshots-${{ github.run_number }}
+          path: |
+            ~/.maestro/tests/**/*.png
+            /tmp/maestro-results.xml
+          retention-days: 30
+
+      - name: Restore index.js
+        if: always()
+        run: sed -i "s/const SHOW_STORYBOOK = true/const SHOW_STORYBOOK = false/" index.js

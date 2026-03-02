@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- tapOn:
+    text: "Wallet Summary"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Default"
+- waitForAnimationToEnd
+- takeScreenshot: "17-wallet-summary"

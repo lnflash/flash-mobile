@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- tapOn:
+    text: "Settings Screen"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "LoggedInNoUsername"
+- waitForAnimationToEnd
+- takeScreenshot: "05-settings"

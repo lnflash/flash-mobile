@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- tapOn:
+    text: "Error Screen"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Default"
+- waitForAnimationToEnd
+- takeScreenshot: "13-error-screen"

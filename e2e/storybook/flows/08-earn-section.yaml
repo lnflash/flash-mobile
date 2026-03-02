@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- tapOn:
+    text: "Earn Section"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Start"
+- waitForAnimationToEnd
+- takeScreenshot: "08-earn-section"

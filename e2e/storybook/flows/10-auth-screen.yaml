@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- tapOn:
+    text: "Authentication Screen"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Default"
+- waitForAnimationToEnd
+- takeScreenshot: "10-auth-screen"
