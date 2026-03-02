@@ -51,8 +51,7 @@ import { useRequireContactList } from "./require-contact-list-modal"
 type Props = {} & StackScreenProps<RootStackParamList, "sendBitcoinConfirmation">
 
 const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { paymentDetail, flashUserAddress, feeRateSatPerVbyte, invoiceAmount } =
-    route.params
+  const { paymentDetail, flashUserAddress, selectedFeeType, invoiceAmount } = route.params
   const {
     paymentType,
     sendingWalletDescriptor,
@@ -87,7 +86,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     loading: sendPaymentLoading,
     sendPayment,
     hasAttemptedSend,
-  } = useSendPayment(sendPaymentMutation, paymentDetail, feeRateSatPerVbyte)
+  } = useSendPayment(sendPaymentMutation, paymentDetail, selectedFeeType)
 
   useEffect(() => {
     setWalletText()
@@ -254,7 +253,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         paymentDetail={paymentDetail}
         btcWalletText={btcWalletText}
         usdWalletText={usdWalletText}
-        feeRateSatPerVbyte={feeRateSatPerVbyte}
+        selectedFeeType={selectedFeeType}
         fee={fee}
         setFee={setFee}
         setPaymentError={setPaymentError}
@@ -267,7 +266,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         <PrimaryBtn
           loading={sendPaymentLoading}
           label={LL.SendBitcoinConfirmationScreen.title()}
-          disabled={!isValidAmount || hasAttemptedSend}
+          disabled={!isValidAmount || hasAttemptedSend || !!paymentError}
           onPress={handleSendPayment}
         />
       </View>
