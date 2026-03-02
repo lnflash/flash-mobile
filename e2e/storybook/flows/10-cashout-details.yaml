@@ -2,12 +2,12 @@ appId: com.lnflash
 ---
 - launchApp:
     clearState: false
-- waitForAnimationsToEnd
+- waitForAnimationToEnd
 - tapOn:
     text: "CashoutDetails"
     optional: true
-- waitForAnimationsToEnd
+- waitForAnimationToEnd
 - tapOn:
     text: "Default"
-- waitForAnimationsToEnd
+- waitForAnimationToEnd
 - takeScreenshot: "10-cashout-details"
