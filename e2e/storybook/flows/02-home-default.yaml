@@ -2,12 +2,12 @@ appId: com.lnflash
 ---
 - launchApp:
     clearState: false
-- waitForAnimationsToEnd
+- waitForAnimationToEnd
 - tapOn:
     text: "Home"
     optional: true
-- waitForAnimationsToEnd
+- waitForAnimationToEnd
 - tapOn:
     text: "Buttons"
-- waitForAnimationsToEnd
+- waitForAnimationToEnd
 - takeScreenshot: "02-home-buttons"
