@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationsToEnd
+- tapOn:
+    text: "Transaction Detail"
+    optional: true
+- waitForAnimationsToEnd
+- tapOn:
+    text: "Settled"
+- waitForAnimationsToEnd
+- takeScreenshot: "06-tx-detail"
