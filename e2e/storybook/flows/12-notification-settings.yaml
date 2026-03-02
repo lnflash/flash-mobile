@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationsToEnd
+- tapOn:
+    text: "NotificationSettings"
+    optional: true
+- waitForAnimationsToEnd
+- tapOn:
+    text: "Default"
+- waitForAnimationsToEnd
+- takeScreenshot: "12-notifications"
