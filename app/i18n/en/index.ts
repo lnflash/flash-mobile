@@ -1478,8 +1478,12 @@ const en: BaseTranslation = {
     profileImportedSuccessfully: "Profile imported successfully",
       noProfileFound: "No Nostr Profile Found",
     noProfileDescription: "You haven’t created a Nostr profile yet.\nTap below to create one.",
+    keyConflictTitle: "Nostr Key Not Found on Device",
+    keyConflictDescription:
+      "Your account has a registered Nostr key but it was not found on this device. This can happen after reinstalling the app or switching devices. To restore access, import your nsec backup from Advanced Settings.",
     creatingProfile: "Creating Profile...",
     createNewProfile: "Create New Profile",
+    generateProfile: "Generate Profile",
     findingYou: "Finding You..",
     advancedSettings: "Advanced Nostr Settings",
     KeyModal: {

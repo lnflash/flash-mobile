@@ -18,6 +18,7 @@ import Clipboard from "@react-native-clipboard/clipboard"
 import { Screen } from "../../components/screen"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { nip19, Event } from "nostr-tools"
+import { saveJson } from "@app/utils/storage"
 
 import { FeedItem } from "@app/components/nostr-feed/FeedItem"
 import { ExplainerVideo } from "@app/components/explainer-video"
@@ -103,6 +104,8 @@ const ContactDetailsScreen: React.FC = () => {
     })
     pool.publish(RELAYS, newContactsEvent)
     setContactsEvent(newContactsEvent)
+    const pubkey = await signer.getPublicKey()
+    await saveJson(`contacts_event:${pubkey}`, newContactsEvent)
     navigation.goBack()
   }
 

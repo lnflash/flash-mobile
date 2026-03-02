@@ -1,17 +1,14 @@
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { SearchBar } from "@rneui/themed"
-import { Event, nip05, nip19, SubCloser } from "nostr-tools"
+import { Event, nip05, nip19 } from "nostr-tools"
 import { useCallback, useState } from "react"
 import { useChatContext } from "./chatContext"
-import {
-  fetchNostrUsers,
-  getGroupId,
-} from "@app/utils/nostr"
-import { pool } from "@app/utils/nostr/pool"
+import { fetchNostrUsers, getGroupId } from "@app/utils/nostr"
 import { useStyles } from "./style"
 import { useAppConfig } from "@app/hooks"
 import { testProps } from "@app/utils/testProps"
 import Icon from "react-native-vector-icons/Ionicons"
+import { SubCloser } from "nostr-tools/abstract-pool"
 
 interface UserSearchBarProps {
   setSearchedUsers: (q: Chat[]) => void
@@ -19,7 +16,7 @@ interface UserSearchBarProps {
 
 export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }) => {
   const [searchText, setSearchText] = useState("")
-  const { rumors, addEventToProfiles, profileMap, userPublicKey } = useChatContext()
+  const { addEventToProfiles, profileMap, userPublicKey } = useChatContext()
   const [refreshing, setRefreshing] = useState(false)
   const styles = useStyles()
   const { appConfig } = useAppConfig()
@@ -59,8 +56,7 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
               groupId: getGroupId(participants),
             },
           ])
-          if (!nostrProfile)
-            fetchNostrUsers([nostrUser.pubkey], pool, searchedUsersHandler)
+          if (!nostrProfile) fetchNostrUsers([nostrUser.pubkey], searchedUsersHandler)
           return true
         }
         return false
@@ -75,7 +71,7 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
         let hexPubkey = nip19.decode(newSearchText).data as string
         let participants = [hexPubkey, userPublicKey!].filter(Boolean)
         setSearchedUsers([{ id: hexPubkey, groupId: getGroupId(participants) }])
-        fetchNostrUsers([hexPubkey], pool, searchedUsersHandler)
+        fetchNostrUsers([hexPubkey], searchedUsersHandler)
         setRefreshing(false)
         return
       } else if (newSearchText.match(aliasPattern)) {

@@ -76,7 +76,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   const [paymentError, setPaymentError] = useState<string>()
   const [invalidAmountErr, setInvalidAmountErr] = useState<string>()
   const [fee, setFee] = useState<FeeType>({ status: "loading" })
-  const { contactsEvent, poolRef } = useChatContext()
+  const { contactsEvent } = useChatContext()
   const [npubByUsernameQuery] = useNpubByUsernameLazyQuery()
   const { promptForContactList, ModalComponent: ConfirmOverwriteModal } =
     useRequireContactList()
@@ -161,7 +161,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   }
 
   const autoAddContact = useCallback(async () => {
-    if (!flashUserAddress || !poolRef) return
+    if (!flashUserAddress) return
 
     try {
       const flashUsername = flashUserAddress.split("@")[0]
@@ -170,7 +170,10 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
       })
 
       const destinationNpub = queryResult.data?.npubByUsername?.npub
-      if (!destinationNpub) return
+      if (!destinationNpub) {
+        console.error("[autoAddContact] no npub found for username:", flashUsername)
+        return
+      }
 
       let signer
       try {
@@ -179,10 +182,10 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         return
       }
 
+      const hexPubkey = nip19.decode(destinationNpub).data as string
       await addToContactList(
         signer,
-        nip19.decode(destinationNpub).data as string,
-        poolRef.current,
+        hexPubkey,
         promptForContactList,
         contactsEvent,
       )
@@ -191,7 +194,6 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     }
   }, [
     flashUserAddress,
-    poolRef,
     npubByUsernameQuery,
     promptForContactList,
     contactsEvent,
