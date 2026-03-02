@@ -1,0 +1,9 @@
+# Shared init: launch app in Storybook mode and wait for sidebar
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationsToEnd
+- assertVisible:
+    label: "Storybook"
+    optional: true
