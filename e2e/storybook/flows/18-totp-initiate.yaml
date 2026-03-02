@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationsToEnd
+- tapOn:
+    text: "TotpRegistration"
+    optional: true
+- waitForAnimationsToEnd
+- tapOn:
+    text: "Initiate"
+- waitForAnimationsToEnd
+- takeScreenshot: "18-totp"
