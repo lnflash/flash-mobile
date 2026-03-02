@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- tapOn:
+    text: "QRView"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Invoices"
+- waitForAnimationToEnd
+- takeScreenshot: "18-qr-view"
