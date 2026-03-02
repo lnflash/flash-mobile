@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationsToEnd
+- tapOn:
+    text: "SwapWallets"
+    optional: true
+- waitForAnimationsToEnd
+- tapOn:
+    text: "Default"
+- waitForAnimationsToEnd
+- takeScreenshot: "17-swap"
