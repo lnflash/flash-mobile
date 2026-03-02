@@ -2,12 +2,12 @@ appId: com.lnflash
 ---
 - launchApp:
     clearState: false
-- waitForAnimationsToEnd
+- waitForAnimationToEnd
 - tapOn:
     text: "EarnSection"
     optional: true
-- waitForAnimationsToEnd
+- waitForAnimationToEnd
 - tapOn:
     text: "Default"
-- waitForAnimationsToEnd
+- waitForAnimationToEnd
 - takeScreenshot: "15-earn"
