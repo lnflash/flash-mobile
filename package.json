@@ -55,7 +55,7 @@
     "splash": "yarn react-native generate-bootsplash --background-color \"#000\" --logo-width 300 app/assets/logo/app-logo-dark.svg",
     "aab-android": "cd android && ./gradlew bundleRelease && cd ..",
     "apk-android": "cd android && ./gradlew app:assembleRelease && cd ..",
-    "storybook:build": "cd android && ./gradlew assembleDebug -PreactNativeArchitectures=x86_64 -x lint --no-daemon",
+    "storybook:build": "cd android && ./gradlew assembleDebug -PreactNativeArchitectures=x86_64 -PbundleInDebug=true -x lint --no-daemon",
     "storybook:test": "maestro test e2e/storybook/flows/ --format junit --output /tmp/maestro-results.xml"
   },
   "dependencies": {
