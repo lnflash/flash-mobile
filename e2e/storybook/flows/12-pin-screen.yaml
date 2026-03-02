@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- tapOn:
+    text: "Pin Screen"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "AuthenticatePin"
+- waitForAnimationToEnd
+- takeScreenshot: "12-pin-screen"
