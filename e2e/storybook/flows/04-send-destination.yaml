@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationsToEnd
+- tapOn:
+    text: "SendFlow"
+    optional: true
+- waitForAnimationsToEnd
+- tapOn:
+    text: "DetailDestination"
+- waitForAnimationsToEnd
+- takeScreenshot: "04-send-destination"
