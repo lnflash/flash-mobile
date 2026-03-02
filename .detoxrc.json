@@ -13,7 +13,8 @@
     "android.debug.storybook": {
       "type": "android.apk",
       "binaryPath": "android/app/build/outputs/apk/debug/app-x86_64-debug.apk",
-      "build": "cd android && ./gradlew assembleDebug -PjsBundleFile=index.js -x lint --no-daemon",
+      "testBinaryPath": "android/app/build/outputs/apk/androidTest/x86_64/debug/app-x86_64-debug-androidTest.apk",
+      "build": "cd android && ./gradlew assembleDebug assembleAndroidTest -PreactNativeArchitectures=x86_64 -x lint --no-daemon",
       "reversePorts": [9001]
     }
   },
