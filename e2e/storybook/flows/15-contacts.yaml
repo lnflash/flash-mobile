@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- tapOn:
+    text: "Contacts Screen"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Empty"
+- waitForAnimationToEnd
+- takeScreenshot: "15-contacts"
