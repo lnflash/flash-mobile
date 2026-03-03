@@ -71,7 +71,7 @@ info "AVDs" "\$ANDROID_HOME/emulator/emulator -list-avds 2>/dev/null | tr '\n' '
 
 echo ""
 echo "── Maestro mobile testing CLI ──"
-check "maestro CLI" "~/.maestro/bin/maestro --version 2>/dev/null | grep -q maestro" "curl -Ls 'https://get.maestro.mobile.dev' | bash"
+check "maestro CLI" "JAVA_HOME=/opt/homebrew/opt/openjdk@17 PATH=/opt/homebrew/opt/openjdk@17/bin:$PATH ~/.maestro/bin/maestro --version 2>&1 | grep -qE "[0-9]+\.[0-9]+"" 
 info "maestro" "~/.maestro/bin/maestro --version 2>/dev/null | grep -v STARTUP | grep -v INFO | head -1"
 
 echo ""
