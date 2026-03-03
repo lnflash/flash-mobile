@@ -1,0 +1,6 @@
+appId: com.lnflash
+---
+# Shared init: launch app and wait for it to be ready
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd

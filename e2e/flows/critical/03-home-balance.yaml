@@ -1,0 +1,17 @@
+appId: com.lnflash
+---
+# Critical path: home screen renders with balance (requires test user to be logged in)
+# Run e2e-reset and seed a test user before this flow
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- takeScreenshot: "03-home"
+# Balance area should be visible
+- assertVisible:
+    anyOf:
+      - text: "Send"
+      - text: "Receive"
+      - text: "Balance"
+      - text: "BTC"
+      - text: "USD"
+- takeScreenshot: "03-home-balance"

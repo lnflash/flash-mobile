@@ -93,3 +93,5 @@ vendor/
 
 # Sisyphus planning files
 .sisyphus/
+e2e-artifacts/
+.env.e2e

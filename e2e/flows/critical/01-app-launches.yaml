@@ -1,0 +1,16 @@
+appId: com.lnflash
+---
+# Critical path: app launches and shows welcome or home screen
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- takeScreenshot: "01-launch"
+# App should show either welcome/onboarding or the main home screen
+- assertVisible:
+    anyOf:
+      - text: "Flash"
+      - text: "Get started"
+      - text: "Welcome"
+      - text: "Send"
+      - text: "Receive"
+- takeScreenshot: "01-launch-verified"
