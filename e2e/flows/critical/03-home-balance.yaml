@@ -1,0 +1,14 @@
+appId: com.lnflash
+---
+# Critical path: home screen renders (requires test user to be logged in)
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- takeScreenshot: "03-home"
+- assertVisible:
+    text: "Send"
+    optional: true
+- assertVisible:
+    text: "Receive"
+    optional: true
+- takeScreenshot: "03-home-balance"

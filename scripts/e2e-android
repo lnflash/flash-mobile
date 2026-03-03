@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+# Flash E2E — Android ARM64 Emulator (Maestro)
+# Usage: ./scripts/e2e-android [--suite critical|storybook|all] [--avd Medium_Phone_API_36.1] [--skip-build]
+#
+# Lessons learned:
+# - NEVER use Detox — test APK build breaks with Breez SDK (libc++_shared.so conflict)
+# - ALWAYS pre-bundle JS with Metro BEFORE Gradle — Gradle's incremental build skips JS recompilation
+# - Use ARM64 AVD on M4 (not x86_64) — native ARM runs 5-10x faster
+# - Delete old APK before Gradle to force repackage with fresh bundle
+# - Use -no-snapshot-save in CI; save snapshot locally for fast iteration
+
+set -euo pipefail
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export PATH=$JAVA_HOME/bin:/opt/homebrew/bin:$HOME/.maestro/bin:$HOME/.nvm/versions/node/v22.22.0/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MOBILE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+ARTIFACTS_DIR="$MOBILE_ROOT/e2e-artifacts/$TIMESTAMP-android"
+SUITE="critical"
+AVD="Medium_Phone_API_36.1"
+SKIP_BUILD=false
+NO_SNAPSHOT_SAVE=false
+APK_PATH="$MOBILE_ROOT/android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk"
+
+# Parse args
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --suite) SUITE="$2"; shift 2 ;;
+    --avd) AVD="$2"; shift 2 ;;
+    --skip-build) SKIP_BUILD=true; shift ;;
+    --no-snapshot-save) NO_SNAPSHOT_SAVE=true; shift ;;
+    *) echo "Unknown arg: $1"; exit 1 ;;
+  esac
+done
+
+mkdir -p "$ARTIFACTS_DIR"
+LOG="$ARTIFACTS_DIR/e2e.log"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "🤖 Flash E2E — Android"
+echo "Suite: $SUITE | AVD: $AVD | $(date)"
+echo "Artifacts: $ARTIFACTS_DIR"
+echo "================================================"
+
+# ── 1. Build APK ────────────────────────────────────────────────────────────
+if [ "$SKIP_BUILD" = false ]; then
+  echo ""
+  echo "Step 1: Installing JS dependencies..."
+  cd "$MOBILE_ROOT"
+  yarn install --frozen-lockfile 2>&1 | tail -5
+
+  echo "Step 1b: Pre-bundling JS (critical: ensures SHOW_STORYBOOK and env vars compile in)..."
+  # Pre-bundle explicitly — never rely on Gradle's incremental JS compilation
+  mkdir -p android/app/src/main/assets
+  node node_modules/.bin/react-native bundle \
+    --platform android \
+    --dev true \
+    --entry-file index.js \
+    --bundle-output android/app/src/main/assets/index.android.bundle \
+    --assets-dest android/app/src/main/res \
+    --reset-cache \
+    2>&1 | tail -10
+  echo "✅ JS bundle ready"
+
+  echo "Step 1c: Building debug APK (ARM64)..."
+  # Delete old APK to force Gradle to repackage with new bundle
+  rm -f "$APK_PATH"
+  cd android
+  ./gradlew assembleDebug \
+    -PreactNativeArchitectures=arm64-v8a \
+    -x lint \
+    --no-daemon \
+    2>&1 | tail -20
+  cd ..
+
+  if [ ! -f "$APK_PATH" ]; then
+    echo "❌ APK not found: $APK_PATH"
+    ls android/app/build/outputs/apk/debug/ 2>/dev/null || echo "No APKs built"
+    exit 1
+  fi
+  echo "✅ APK built: $(ls -lh $APK_PATH | awk '{print $5}')"
+else
+  echo "Step 1: Skipping build (--skip-build)"
+  if [ ! -f "$APK_PATH" ]; then
+    echo "❌ No APK found at $APK_PATH — run without --skip-build first"
+    exit 1
+  fi
+fi
+
+# ── 2. Boot emulator ────────────────────────────────────────────────────────
+echo ""
+echo "Step 2: Booting Android emulator ($AVD)..."
+pkill -f "qemu-system" 2>/dev/null || true
+sleep 2
+rm -f "$HOME/.android/avd/${AVD}.avd/*.lock" 2>/dev/null || true
+
+EMU_FLAGS="-avd $AVD -no-window -no-audio -gpu swiftshader_indirect -no-metrics -memory 4096"
+if [ "$NO_SNAPSHOT_SAVE" = true ]; then
+  EMU_FLAGS="$EMU_FLAGS -no-snapshot-save"
+fi
+
+setsid "$ANDROID_HOME/emulator/emulator" $EMU_FLAGS > "$ARTIFACTS_DIR/emulator.log" 2>&1 &
+EMU_PID=$!
+
+echo "   Emulator PID: $EMU_PID (waiting for boot...)"
+BOOTED=false
+for i in $(seq 60); do
+  B=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r\n')
+  if [ "$B" = "1" ]; then
+    BOOTED=true
+    echo "✅ Emulator booted (${i}x5s = $((i*5))s)"
+    break
+  fi
+  sleep 5
+done
+
+if [ "$BOOTED" = false ]; then
+  echo "❌ Emulator failed to boot in 5 minutes"
+  cat "$ARTIFACTS_DIR/emulator.log" | tail -20
+  exit 1
+fi
+adb shell input keyevent 82  # unlock screen
+sleep 2
+
+# ── 3. Install APK ──────────────────────────────────────────────────────────
+echo ""
+echo "Step 3: Installing APK..."
+adb install -r "$APK_PATH" 2>&1
+echo "✅ APK installed"
+
+# ── 4. Verify JS bundle loaded (smoke test) ─────────────────────────────────
+echo ""
+echo "Step 4: Launching app (smoke test)..."
+adb shell monkey -p com.lnflash -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
+sleep 6
+# Dump UI text to verify app loaded (not red screen)
+UI_TEXT=$(adb exec-out uiautomator dump /dev/tty 2>/dev/null | grep -o 'text="[^"]*"' | head -5 || echo "")
+echo "   UI sample: $UI_TEXT"
+if echo "$UI_TEXT" | grep -qiE 'unable to connect|red box|error'; then
+  echo "❌ App shows error screen — check Metro or bundle"
+  adb exec-out screencap -p > "$ARTIFACTS_DIR/smoke-fail.png" 2>/dev/null || true
+  exit 1
+fi
+echo "✅ App launched"
+
+# ── 5. Select flows ─────────────────────────────────────────────────────────
+echo ""
+echo "Step 5: Selecting test flows (suite: $SUITE)..."
+case "$SUITE" in
+  storybook) FLOWS_DIR="$MOBILE_ROOT/e2e/storybook/flows" ;;
+  critical)  FLOWS_DIR="$MOBILE_ROOT/e2e/flows/critical" ;;
+  all)       FLOWS_DIR="$MOBILE_ROOT/e2e/flows" ;;
+  *) echo "❌ Unknown suite: $SUITE"; exit 1 ;;
+esac
+
+if [ ! -d "$FLOWS_DIR" ]; then
+  echo "❌ Flows dir not found: $FLOWS_DIR"
+  exit 1
+fi
+echo "✅ Flows: $FLOWS_DIR"
+
+# ── 6. Run Maestro ──────────────────────────────────────────────────────────
+echo ""
+echo "Step 6: Running Maestro flows..."
+MAESTRO_EXIT=0
+~/.maestro/bin/maestro test "$FLOWS_DIR" \
+  --format junit \
+  --output "$ARTIFACTS_DIR/results.xml" \
+  --env MAESTRO_CLI_NO_ANALYTICS=true \
+  2>&1 | tee "$ARTIFACTS_DIR/maestro.log" || MAESTRO_EXIT=$?
+
+# ── 7. Collect artifacts ────────────────────────────────────────────────────
+echo ""
+echo "Step 7: Collecting artifacts..."
+LATEST_TEST=$(ls -td ~/.maestro/tests/*/ 2>/dev/null | head -1)
+if [ -n "$LATEST_TEST" ]; then
+  cp -r "$LATEST_TEST" "$ARTIFACTS_DIR/screenshots/" 2>/dev/null || true
+fi
+adb exec-out screencap -p > "$ARTIFACTS_DIR/final-screen.png" 2>/dev/null || true
+adb logcat -d > "$ARTIFACTS_DIR/logcat.txt" 2>/dev/null || true
+
+# ── 8. Cleanup ──────────────────────────────────────────────────────────────
+adb emu kill 2>/dev/null || true
+# Cleanup JS bundle (restore clean state)
+rm -f "$MOBILE_ROOT/android/app/src/main/assets/index.android.bundle"
+
+echo ""
+echo "================================================"
+echo "📊 Results: $ARTIFACTS_DIR"
+if [ -f "$ARTIFACTS_DIR/results.xml" ]; then
+  FAILED=$(grep -c 'failure' "$ARTIFACTS_DIR/results.xml" 2>/dev/null || echo 0)
+  TOTAL=$(grep -c 'testcase' "$ARTIFACTS_DIR/results.xml" 2>/dev/null || echo 0)
+  echo "   Tests: $TOTAL | Failures: $FAILED"
+fi
+
+if [ "$MAESTRO_EXIT" -ne 0 ]; then
+  echo "❌ E2E tests FAILED (exit $MAESTRO_EXIT)"
+  exit "$MAESTRO_EXIT"
+fi
+echo "✅ E2E tests PASSED"

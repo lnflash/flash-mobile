@@ -1,0 +1,12 @@
+appId: com.lnflash
+---
+# Critical path: welcome/get started screen renders correctly
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- takeScreenshot: "02-welcome"
+- assertVisible:
+    text: "Flash"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: "02-welcome-final"

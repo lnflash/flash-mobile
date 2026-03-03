@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Flash dev-up — start the full local stack for E2E testing
+# Usage: ./scripts/dev-up [--backend-only] [--mobile-only]
+#
+# Starts:
+#   1. Backend Docker services (MongoDB, Redis, Apollo Router, Oathkeeper, Kratos, Price)
+#   2. Flash backend API (ts-node-dev)
+#   3. Metro bundler for flash-mobile
+#
+# Prerequisites: Docker Desktop running, repos cloned side-by-side:
+#   ~/dev/flash/          (backend)
+#   ~/dev/flash-mobile/   (mobile)
+
+set -euo pipefail
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+export PATH=/opt/homebrew/bin:$HOME/.nvm/versions/node/v22.22.0/bin:$PATH
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MOBILE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+BACKEND_ROOT="${FLASH_BACKEND_ROOT:-$HOME/dev/flash}"
+BACKEND_ONLY=false
+MOBILE_ONLY=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --backend-only) BACKEND_ONLY=true; shift ;;
+    --mobile-only) MOBILE_ONLY=true; shift ;;
+    *) echo "Unknown arg: $1"; exit 1 ;;
+  esac
+done
+
+cleanup() {
+  echo ""
+  echo "🛑 Shutting down..."
+  [ -n "${METRO_PID:-}" ] && kill "$METRO_PID" 2>/dev/null || true
+  [ -n "${BACKEND_PID:-}" ] && kill "$BACKEND_PID" 2>/dev/null || true
+  if [ "$BACKEND_ONLY" = false ] && [ "$MOBILE_ONLY" = false ]; then
+    echo "   Stopping Docker services..."
+    cd "$BACKEND_ROOT" && docker compose down 2>/dev/null || true
+  fi
+  echo "Done."
+}
+trap cleanup INT TERM
+
+echo "⚡ Flash dev-up"
+echo "Backend: $BACKEND_ROOT"
+echo "Mobile:  $MOBILE_ROOT"
+echo ""
+
+# ── Backend services ─────────────────────────────────────────────────────────
+if [ "$MOBILE_ONLY" = false ]; then
+  echo "Step 1: Starting backend Docker services..."
+  
+  if [ ! -d "$BACKEND_ROOT" ]; then
+    echo "❌ Backend not found at $BACKEND_ROOT"
+    echo "   Clone with: gh repo clone lnflash/flash $BACKEND_ROOT -- --depth=1"
+    exit 1
+  fi
+
+  if [ ! -f "$BACKEND_ROOT/.env" ]; then
+    echo "❌ No .env in $BACKEND_ROOT"
+    echo "   Copy from .env.example or ask for the dev env file"
+    exit 1
+  fi
+
+  cd "$BACKEND_ROOT"
+  docker compose up -d mongodb redis apollo-router oathkeeper kratos price otel-agent 2>&1 | tail -10
+  
+  echo "   Waiting for MongoDB..."
+  for i in $(seq 30); do
+    docker compose exec mongodb mongosh --quiet --eval "db.runCommand({ping:1})" > /dev/null 2>&1 && break || sleep 2
+  done
+  echo "✅ Docker services up"
+
+  echo "Step 2: Installing backend deps..."
+  yarn install --frozen-lockfile 2>&1 | tail -3
+
+  echo "Step 3: Starting Flash backend API..."
+  yarn watch > /tmp/flash-backend.log 2>&1 &
+  BACKEND_PID=$!
+  echo "   Backend PID: $BACKEND_PID (log: /tmp/flash-backend.log)"
+  
+  # Wait for GraphQL WS endpoint to be ready
+  echo "   Waiting for API on :4000..."
+  for i in $(seq 30); do
+    curl -sf http://localhost:4000/healthz > /dev/null 2>&1 && break || sleep 3
+  done
+  echo "✅ Flash API ready on :4000"
+fi
+
+# ── Metro bundler ─────────────────────────────────────────────────────────────
+if [ "$BACKEND_ONLY" = false ]; then
+  echo "Step 4: Starting Metro bundler..."
+  cd "$MOBILE_ROOT"
+  
+  if [ ! -d node_modules ]; then
+    echo "   Installing mobile deps..."
+    yarn install --frozen-lockfile 2>&1 | tail -3
+  fi
+
+  yarn start --reset-cache > /tmp/metro.log 2>&1 &
+  METRO_PID=$!
+  echo "   Metro PID: $METRO_PID (log: /tmp/metro.log)"
+  
+  for i in $(seq 20); do
+    lsof -i :8081 > /dev/null 2>&1 && break || sleep 3
+  done
+  echo "✅ Metro ready on :8081"
+fi
+
+echo ""
+echo "🟢 Stack is up!"
+echo "   API:   http://localhost:4000"
+echo "   Metro: http://localhost:8081"
+echo ""
+echo "Next steps:"
+echo "   iOS:     ./scripts/e2e-ios --skip-build"
+echo "   Android: ./scripts/e2e-android --skip-build"
+echo ""
+echo "Press Ctrl+C to stop all services"
+
+# Keep alive
+wait

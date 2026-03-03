@@ -1,0 +1,228 @@
+#!/usr/bin/env bash
+# Flash E2E — iOS Simulator (Maestro)
+# Usage: ./scripts/e2e-ios [--suite storybook|critical|all] [--device "iPhone 17 Pro"] [--skip-build]
+#
+# Lessons learned (hard way on vandana-dev VPS):
+# - Maestro is the right tool (no test APK needed, no Detox Breez SDK conflict)
+# - iOS Simulator on Apple Silicon is fast and reliable
+# - Metro dev server handles JS bundle at runtime — no pre-bundling needed for iOS
+# - Always boot simulator before installing app
+
+set -euo pipefail
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+export PATH=$JAVA_HOME/bin:/opt/homebrew/bin:$HOME/.maestro/bin:$HOME/.nvm/versions/node/v22.22.0/bin:$PATH
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MOBILE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+ARTIFACTS_DIR="$MOBILE_ROOT/e2e-artifacts/$TIMESTAMP-ios"
+SUITE="critical"
+DEVICE="iPhone 16 Pro"
+SKIP_BUILD=false
+APP_BUNDLE="com.lnflash"
+
+# Parse args
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --suite) SUITE="$2"; shift 2 ;;
+    --device) DEVICE="$2"; shift 2 ;;
+    --skip-build) SKIP_BUILD=true; shift ;;
+    *) echo "Unknown arg: $1"; exit 1 ;;
+  esac
+done
+
+mkdir -p "$ARTIFACTS_DIR"
+LOG="$ARTIFACTS_DIR/e2e.log"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "📱 Flash E2E — iOS"
+echo "Suite: $SUITE | Device: $DEVICE | $(date)"
+echo "Artifacts: $ARTIFACTS_DIR"
+echo "================================================"
+
+# ── 1. Find simulator UDID ──────────────────────────────────────────────────
+echo ""
+echo "Step 1: Finding iOS Simulator..."
+UDID=$(xcrun simctl list devices available -j 2>/dev/null \
+  | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+for runtime, devices in d['devices'].items():
+  for dev in devices:
+    if '$DEVICE' in dev['name'] and dev['isAvailable']:
+      print(dev['udid'])
+      exit()
+" 2>/dev/null || true)
+
+if [ -z "$UDID" ]; then
+  echo "❌ Could not find simulator: $DEVICE"
+  echo "Available simulators:"
+  xcrun simctl list devices available | grep iPhone
+  exit 1
+fi
+echo "✅ Found: $DEVICE ($UDID)"
+
+# ── 2. Build app (unless skipped) ───────────────────────────────────────────
+if [ "$SKIP_BUILD" = false ]; then
+  echo ""
+  echo "Step 2: Installing dependencies..."
+  cd "$MOBILE_ROOT"
+  # NODE_BINARY + locale must be set before yarn install.
+  # Ruby 4.0 + CocoaPods 1.16.2 throws Encoding::CompatibilityError if LANG/LC_ALL
+  # aren't UTF-8 when pod runs via the postinstall hook.
+  # We skip pod install during yarn (--ignore-scripts) and run it explicitly below.
+  export NODE_BINARY="$HOME/.nvm/versions/node/v22.22.0/bin/node"
+  export LANG=en_US.UTF-8
+  export LC_ALL=en_US.UTF-8
+  # Run install without lifecycle scripts to avoid the LANG bug in postinstall
+  yarn install --frozen-lockfile --ignore-scripts 2>&1 | tail -5
+  # Run the critical postinstall steps manually
+  yarn jetify 2>&1 | tail -3 || true
+  yarn patch-package 2>&1 | tail -3 || true
+
+  echo "Step 2b: CocoaPods..."
+  cd ios && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 NODE_BINARY="$NODE_BINARY" pod install 2>&1 | tail -20 && cd ..
+  
+  echo "Step 2c: Booting simulator (needed before xcodebuild destination lookup)..."
+  CURRENT_STATE=$(xcrun simctl list devices | grep "$UDID" | grep -o '(Booted)\|(Shutdown)' | tr -d '()')
+  if [ "$CURRENT_STATE" = "Booted" ]; then
+    echo "   Already booted"
+  else
+    xcrun simctl boot "$UDID"
+    echo "   Waiting for boot..."
+    xcrun simctl bootstatus "$UDID" -b 2>/dev/null || sleep 15
+  fi
+
+  echo "Step 2d: Building iOS app..."
+  xcodebuild \
+    -workspace ios/LNFlash.xcworkspace \
+    -scheme LNFlash \
+    -configuration Debug \
+    -sdk iphonesimulator \
+    -destination 'generic/platform=iOS Simulator' \
+    -derivedDataPath "$MOBILE_ROOT/ios/build" \
+    CODE_SIGNING_ALLOWED=NO \
+    build 2>&1 | tail -30
+  echo "✅ Build complete"
+else
+  echo "Step 2: Skipping build (--skip-build)"
+fi
+
+# Find the built .app
+APP_PATH=$(find "$MOBILE_ROOT/ios/build" -name "*.app" -not -path "*/PlugIns/*" 2>/dev/null | head -1)
+if [ -z "$APP_PATH" ]; then
+  echo "❌ No .app found in ios/build — run without --skip-build first"
+  exit 1
+fi
+echo "✅ App: $APP_PATH"
+
+# ── 3. Ensure simulator is booted ──────────────────────────────────────────
+echo ""
+echo "Step 3: Verifying simulator is booted..."
+CURRENT_STATE=$(xcrun simctl list devices | grep "$UDID" | grep -o '(Booted)\|(Shutdown)' | tr -d '()')
+if [ "$CURRENT_STATE" = "Booted" ]; then
+  echo "   Already booted ✅"
+else
+  xcrun simctl boot "$UDID" 2>/dev/null || true
+  echo "   Waiting for boot..."
+  xcrun simctl bootstatus "$UDID" -b 2>/dev/null || sleep 15
+fi
+echo "✅ Simulator booted"
+
+# ── 4. Install app ──────────────────────────────────────────────────────────
+echo ""
+echo "Step 4: Installing app..."
+xcrun simctl install "$UDID" "$APP_PATH"
+echo "✅ App installed"
+
+# ── 5. Start Metro (if not running) ─────────────────────────────────────────
+echo ""
+echo "Step 5: Starting Metro bundler..."
+METRO_PID=""
+if ! lsof -i :8081 > /dev/null 2>&1; then
+  cd "$MOBILE_ROOT"
+  yarn start --reset-cache > "$ARTIFACTS_DIR/metro.log" 2>&1 &
+  METRO_PID=$!
+  echo "   Metro PID: $METRO_PID (waiting 15s for startup...)"
+  sleep 15
+  if ! lsof -i :8081 > /dev/null 2>&1; then
+    echo "❌ Metro failed to start — check $ARTIFACTS_DIR/metro.log"
+    exit 1
+  fi
+  echo "✅ Metro started (PID $METRO_PID)"
+else
+  echo "   Metro already running on :8081"
+fi
+
+# ── 6. Select flows ─────────────────────────────────────────────────────────
+echo ""
+echo "Step 6: Selecting test flows (suite: $SUITE)..."
+case "$SUITE" in
+  storybook)
+    FLOWS_DIR="$MOBILE_ROOT/e2e/storybook/flows"
+    ;;
+  critical)
+    FLOWS_DIR="$MOBILE_ROOT/e2e/flows/critical"
+    ;;
+  all)
+    FLOWS_DIR="$MOBILE_ROOT/e2e/flows"
+    ;;
+  *)
+    echo "❌ Unknown suite: $SUITE (use storybook|critical|all)"
+    exit 1
+    ;;
+esac
+
+if [ ! -d "$FLOWS_DIR" ]; then
+  echo "❌ Flows directory not found: $FLOWS_DIR"
+  exit 1
+fi
+echo "✅ Flows: $FLOWS_DIR"
+
+# ── 7. Run Maestro ──────────────────────────────────────────────────────────
+echo ""
+echo "Step 7: Running Maestro flows..."
+MAESTRO_BIN=~/.maestro/bin/maestro
+
+MAESTRO_EXIT=0
+$MAESTRO_BIN \
+  --device "$UDID" \
+  test "$FLOWS_DIR" \
+  --format junit \
+  --output "$ARTIFACTS_DIR/results.xml" \
+  --env MAESTRO_CLI_NO_ANALYTICS=true \
+  2>&1 | tee "$ARTIFACTS_DIR/maestro.log" || MAESTRO_EXIT=$?
+
+# ── 8. Collect artifacts ────────────────────────────────────────────────────
+echo ""
+echo "Step 8: Collecting artifacts..."
+# Screenshots are saved by Maestro to ~/.maestro/tests/ — copy latest
+LATEST_TEST=$(ls -td ~/.maestro/tests/*/ 2>/dev/null | head -1)
+if [ -n "$LATEST_TEST" ]; then
+  cp -r "$LATEST_TEST" "$ARTIFACTS_DIR/screenshots/" 2>/dev/null || true
+fi
+
+# Metro log already captured
+# Print summary
+echo ""
+echo "================================================"
+echo "📊 Results: $ARTIFACTS_DIR"
+if [ -f "$ARTIFACTS_DIR/results.xml" ]; then
+  PASSED=$(grep -c 'testcase' "$ARTIFACTS_DIR/results.xml" 2>/dev/null || echo 0)
+  FAILED=$(grep -c 'failure' "$ARTIFACTS_DIR/results.xml" 2>/dev/null || echo 0)
+  echo "   Tests: $PASSED | Failures: $FAILED"
+fi
+
+# ── 9. Cleanup ──────────────────────────────────────────────────────────────
+if [ -n "$METRO_PID" ]; then
+  kill "$METRO_PID" 2>/dev/null || true
+fi
+
+if [ "$MAESTRO_EXIT" -ne 0 ]; then
+  echo "❌ E2E tests FAILED (exit $MAESTRO_EXIT)"
+  exit "$MAESTRO_EXIT"
+fi
+echo "✅ E2E tests PASSED"

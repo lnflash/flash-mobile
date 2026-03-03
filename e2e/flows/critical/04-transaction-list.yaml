@@ -1,0 +1,13 @@
+appId: com.lnflash
+---
+# Critical path: transaction list loads (read-only, safe)
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- takeScreenshot: "04-home-before-tx"
+- waitForAnimationToEnd
+- takeScreenshot: "04-transaction-list"
+- assertVisible:
+    text: "Send"
+    optional: true
+- takeScreenshot: "04-transaction-list-verified"

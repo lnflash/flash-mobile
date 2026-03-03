@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# Flash E2E Doctor — validates the testing environment on ForgeMini (M4 Mac Mini)
+# Usage: ./scripts/doctor
+
+set -euo pipefail
+
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+export PATH=$JAVA_HOME/bin:/opt/homebrew/bin:$HOME/.maestro/bin:$HOME/.nvm/versions/node/v22.22.0/bin:$HOME/Library/Android/sdk/platform-tools:$HOME/Library/Android/sdk/emulator:$PATH
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+PASS="✅"
+FAIL="❌"
+errors=0
+
+check() {
+  local label="$1" cmd="$2" fix="${3:-}"
+  if eval "$cmd" > /dev/null 2>&1; then
+    printf "%s %s\n" "$PASS" "$label"
+  else
+    printf "%s %s\n" "$FAIL" "$label"
+    [ -n "$fix" ] && echo "   → Fix: $fix"
+    errors=$((errors + 1))
+  fi
+}
+
+info() {
+  local label="$1" cmd="$2"
+  local val
+  val=$(eval "$cmd" 2>/dev/null || echo "unknown")
+  printf "   %-30s %s\n" "$label" "$val"
+}
+
+echo ""
+echo "🔬 Flash E2E Doctor"
+echo "========================================"
+
+echo ""
+echo "── System ──"
+check "Apple Silicon (arm64)" "[[ \$(uname -m) == 'arm64' ]]"
+info "macOS version" "sw_vers -productVersion"
+
+echo ""
+echo "── Node & Package Managers ──"
+check "node v22+" "node --version 2>/dev/null | grep -E 'v2[2-9]'" "nvm install 22 && nvm use 22"
+check "yarn" "yarn --version" "npm install -g yarn"
+info "node" "node --version 2>/dev/null"
+info "yarn" "yarn --version 2>/dev/null"
+
+echo ""
+echo "── Java (needed for Android builds) ──"
+check "java 17" "java -version 2>&1 | grep -E '17|18|19|20|21'" "brew install openjdk@17 && sudo ln -sfn /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-17.jdk"
+info "java" "java -version 2>&1 | head -1"
+
+echo ""
+echo "── iOS toolchain ──"
+check "Xcode installed" "[ -d /Applications/Xcode.app ]" "Install Xcode from App Store"
+check "Xcode CLI tools" "xcrun --version" "xcode-select --install"
+check "iPhone 17 simulator" "xcrun simctl list devices available 2>/dev/null | grep -q 'iPhone 17'" ""
+check "CocoaPods" "pod --version" "sudo gem install cocoapods"
+info "Xcode" "xcodebuild -version 2>/dev/null | head -1"
+
+echo ""
+echo "── Android toolchain ──"
+check "ANDROID_HOME set" "[ -d \"\$ANDROID_HOME\" ]" "Install Android Studio or SDK tools"
+check "adb" "adb version" "Install Android SDK platform-tools"
+check "Android emulator" "\$ANDROID_HOME/emulator/emulator -list-avds 2>/dev/null | grep -q ." "Create an ARM64 AVD in Android Studio (API 36, Pixel)"
+check "ARM64 system image" "ls \$ANDROID_HOME/system-images/ 2>/dev/null | grep -qE 'android-3[0-9]'" ""
+info "AVDs" "\$ANDROID_HOME/emulator/emulator -list-avds 2>/dev/null | tr '\n' ' '"
+
+echo ""
+echo "── Maestro mobile testing CLI ──"
+check "maestro CLI" "JAVA_HOME=/opt/homebrew/opt/openjdk@17 PATH=/opt/homebrew/opt/openjdk@17/bin:$PATH ~/.maestro/bin/maestro --version 2>&1 | grep -qE "[0-9]+\.[0-9]+"" 
+info "maestro" "~/.maestro/bin/maestro --version 2>/dev/null | grep -v STARTUP | grep -v INFO | head -1"
+
+echo ""
+echo "── Git & GitHub ──"
+check "git" "git --version"
+check "gh CLI" "gh --version" "brew install gh"
+check "gh auth (forge0x)" "gh auth status 2>&1 | grep -q 'forge0x'" "gh auth login"
+
+echo ""
+echo "── Docker ──"
+check "Docker daemon running" "docker info > /dev/null" "Open Docker Desktop"
+check "docker compose" "docker compose version > /dev/null" "Install Docker Desktop"
+
+echo ""
+echo "── Flash Mobile repo ──"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MOBILE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+check "package.json present" "[ -f \"\$MOBILE_ROOT/package.json\" ]"
+check "node_modules installed" "[ -d \"\$MOBILE_ROOT/node_modules\" ]" "cd flash-mobile && yarn install"
+check "iOS Pods installed" "[ -d \"\$MOBILE_ROOT/ios/Pods\" ]" "cd flash-mobile/ios && pod install"
+check "e2e flows exist" "[ -d \"\$MOBILE_ROOT/e2e/flows\" ]"
+check ".env.e2e exists" "[ -f \"\$MOBILE_ROOT/.env.e2e\" ]" "cp .env.e2e.template .env.e2e and fill in values"
+
+echo ""
+echo "========================================"
+if [ "$errors" -eq 0 ]; then
+  echo "$PASS All checks passed — ready to run E2E tests"
+  echo ""
+else
+  echo "$FAIL $errors check(s) failed — fix the issues above"
+  exit 1
+fi

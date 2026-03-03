@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# Flash e2e-reset — wipe and reseed test state for deterministic runs
+# Usage: ./scripts/e2e-reset [--hard] [--simulator-only] [--emulator-only]
+#
+# --hard:             also wipe Docker volumes (full DB reset)
+# --simulator-only:   only reset iOS simulator app state
+# --emulator-only:    only reset Android emulator app state
+
+set -euo pipefail
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+export PATH=/opt/homebrew/bin:$HOME/.nvm/versions/node/v22.22.0/bin:$HOME/Library/Android/sdk/platform-tools:$PATH
+export ANDROID_HOME=$HOME/Library/Android/sdk
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MOBILE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+BACKEND_ROOT="${FLASH_BACKEND_ROOT:-$HOME/dev/flash}"
+HARD=false
+SIM_ONLY=false
+EMU_ONLY=false
+APP_BUNDLE="com.lnflash"
+IOS_BUNDLE="com.lnflash.FlashApp"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --hard) HARD=true; shift ;;
+    --simulator-only) SIM_ONLY=true; shift ;;
+    --emulator-only) EMU_ONLY=true; shift ;;
+    *) echo "Unknown arg: $1"; exit 1 ;;
+  esac
+done
+
+echo "🔄 Flash E2E Reset"
+echo "Hard: $HARD | $(date)"
+echo ""
+
+# ── iOS Simulator ─────────────────────────────────────────────────────────────
+if [ "$EMU_ONLY" = false ]; then
+  echo "── iOS Simulator ──"
+  
+  # Find booted simulator or the default test one
+  BOOTED_UDID=$(xcrun simctl list devices booted 2>/dev/null | grep -o '[0-9A-F-]\{36\}' | head -1 || true)
+  TEST_UDID=$(xcrun simctl list devices available 2>/dev/null | grep 'iPhone 17 Pro' | grep -o '[0-9A-F-]\{36\}' | head -1 || true)
+  
+  for UDID in "$BOOTED_UDID" "$TEST_UDID"; do
+    [ -z "$UDID" ] && continue
+    echo "   Resetting app state on simulator $UDID..."
+    xcrun simctl uninstall "$UDID" "$IOS_BUNDLE" 2>/dev/null || true
+    xcrun simctl keychain "$UDID" reset 2>/dev/null || true
+    # Clear app container (user data) without full wipe
+    CONTAINER=$(xcrun simctl get_app_container "$UDID" "$IOS_BUNDLE" data 2>/dev/null || true)
+    if [ -n "$CONTAINER" ]; then
+      rm -rf "$CONTAINER/Library" "$CONTAINER/Documents" "$CONTAINER/tmp" 2>/dev/null || true
+    fi
+    break
+  done
+  echo "✅ iOS simulator state cleared"
+fi
+
+# ── Android Emulator ──────────────────────────────────────────────────────────
+if [ "$SIM_ONLY" = false ]; then
+  echo "── Android Emulator ──"
+  
+  if adb devices 2>/dev/null | grep -q 'emulator'; then
+    echo "   Clearing Android app data..."
+    adb shell pm clear "$APP_BUNDLE" 2>/dev/null && echo "✅ Android app data cleared" || echo "   (app not installed)"
+  else
+    echo "   No emulator running — skipping Android reset"
+  fi
+fi
+
+# ── Backend DB (optional hard reset) ─────────────────────────────────────────
+if [ "$HARD" = true ]; then
+  echo "── Backend DB (hard reset) ──"
+  
+  if [ ! -d "$BACKEND_ROOT" ]; then
+    echo "   ⚠️  Backend not found at $BACKEND_ROOT — skipping DB reset"
+  else
+    cd "$BACKEND_ROOT"
+    
+    # Check if MongoDB is running
+    if docker compose ps mongodb 2>/dev/null | grep -q 'running\|Up'; then
+      echo "   Wiping MongoDB test database..."
+      docker compose exec -T mongodb mongosh flash --quiet --eval "
+        db.dropDatabase();
+        print('Database dropped');
+      " 2>/dev/null || echo "   (could not connect to MongoDB)"
+      
+      echo "   Seeding test data..."
+      # Run backend seed script if it exists
+      if [ -f "$BACKEND_ROOT/dev/seed/seed-e2e.ts" ]; then
+        cd "$BACKEND_ROOT"
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        nvm use 20.18.1 2>/dev/null || true
+        export MONGODB_CON=mongodb://localhost:27017/galoy
+        set -a && source .env && set +a
+        yarn ts-node --files --project tsconfig.json -r tsconfig-paths/register           dev/seed/seed-e2e.ts --configPath ./dev/config/base-config.yaml 2>&1 | grep -v ""level":30"
+      else
+        echo "   ⚠️  No seed script found — clone lnflash/flash and run feat/e2e-seed PR"
+      fi
+    else
+      echo "   MongoDB not running — start with: ./scripts/dev-up --backend-only"
+    fi
+  fi
+fi
+
+# ── Artifacts cleanup ─────────────────────────────────────────────────────────
+echo ""
+echo "── Cleaning old artifacts (>7 days) ──"
+find "$MOBILE_ROOT/e2e-artifacts" -maxdepth 1 -type d -mtime +7 -exec rm -rf {} + 2>/dev/null || true
+echo "✅ Old artifacts cleaned"
+
+echo ""
+echo "✅ Reset complete — ready for fresh E2E run"

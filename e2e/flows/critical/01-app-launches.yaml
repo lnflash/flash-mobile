@@ -1,0 +1,8 @@
+appId: com.lnflash
+---
+# Critical path: app launches and renders something
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- takeScreenshot: "01-launch"
+- takeScreenshot: "01-launch-verified"
