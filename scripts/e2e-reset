@@ -91,12 +91,14 @@ if [ "$HARD" = true ]; then
       # Run backend seed script if it exists
       if [ -f "$BACKEND_ROOT/dev/seed/seed-e2e.ts" ]; then
         cd "$BACKEND_ROOT"
-        yarn ts-node dev/seed/seed-e2e.ts 2>&1 | tail -5
-      elif [ -f "$BACKEND_ROOT/dev/seed/seed.ts" ]; then
-        cd "$BACKEND_ROOT"
-        yarn ts-node dev/seed/seed.ts 2>&1 | tail -5
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        nvm use 20.18.1 2>/dev/null || true
+        export MONGODB_CON=mongodb://localhost:27017/galoy
+        set -a && source .env && set +a
+        yarn ts-node --files --project tsconfig.json -r tsconfig-paths/register           dev/seed/seed-e2e.ts --configPath ./dev/config/base-config.yaml 2>&1 | grep -v ""level":30"
       else
-        echo "   ⚠️  No seed script found at dev/seed/seed-e2e.ts — create one with deterministic test users"
+        echo "   ⚠️  No seed script found — clone lnflash/flash and run feat/e2e-seed PR"
       fi
     else
       echo "   MongoDB not running — start with: ./scripts/dev-up --backend-only"
