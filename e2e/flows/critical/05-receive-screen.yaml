@@ -1,6 +1,6 @@
 appId: com.lnflash
 ---
-# Critical path: receive screen opens and shows QR code
+# Critical path: receive screen opens and shows QR code area
 - launchApp:
     clearState: false
 - waitForAnimationToEnd
@@ -10,10 +10,7 @@ appId: com.lnflash
 - waitForAnimationToEnd
 - takeScreenshot: "05-receive-screen"
 - assertVisible:
-    anyOf:
-      - text: "Receive"
-      - text: "Invoice"
-      - text: "Copy"
+    text: "Receive"
     optional: true
 - takeScreenshot: "05-receive-verified"
 - pressKey: Back

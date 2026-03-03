@@ -20,7 +20,7 @@ MOBILE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 ARTIFACTS_DIR="$MOBILE_ROOT/e2e-artifacts/$TIMESTAMP-ios"
 SUITE="critical"
-DEVICE="iPhone 17 Pro"
+DEVICE="iPhone 16 Pro"
 SKIP_BUILD=false
 APP_BUNDLE="com.lnflash"
 
@@ -70,29 +70,42 @@ if [ "$SKIP_BUILD" = false ]; then
   echo ""
   echo "Step 2: Installing dependencies..."
   cd "$MOBILE_ROOT"
-  yarn install --frozen-lockfile 2>&1 | tail -5
+  # NODE_BINARY + locale must be set before yarn install.
+  # Ruby 4.0 + CocoaPods 1.16.2 throws Encoding::CompatibilityError if LANG/LC_ALL
+  # aren't UTF-8 when pod runs via the postinstall hook.
+  # We skip pod install during yarn (--ignore-scripts) and run it explicitly below.
+  export NODE_BINARY="$HOME/.nvm/versions/node/v22.22.0/bin/node"
+  export LANG=en_US.UTF-8
+  export LC_ALL=en_US.UTF-8
+  # Run install without lifecycle scripts to avoid the LANG bug in postinstall
+  yarn install --frozen-lockfile --ignore-scripts 2>&1 | tail -5
+  # Run the critical postinstall steps manually
+  yarn jetify 2>&1 | tail -3 || true
+  yarn patch-package 2>&1 | tail -3 || true
+
+  echo "Step 2b: CocoaPods..."
+  cd ios && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 NODE_BINARY="$NODE_BINARY" pod install 2>&1 | tail -20 && cd ..
   
-  echo "Step 2b: Installing CocoaPods..."
-  cd ios && pod install 2>&1 | tail -10 && cd ..
-  
-  echo "Step 2c: Building iOS app..."
+  echo "Step 2c: Booting simulator (needed before xcodebuild destination lookup)..."
+  CURRENT_STATE=$(xcrun simctl list devices | grep "$UDID" | grep -o '(Booted)\|(Shutdown)' | tr -d '()')
+  if [ "$CURRENT_STATE" = "Booted" ]; then
+    echo "   Already booted"
+  else
+    xcrun simctl boot "$UDID"
+    echo "   Waiting for boot..."
+    xcrun simctl bootstatus "$UDID" -b 2>/dev/null || sleep 15
+  fi
+
+  echo "Step 2d: Building iOS app..."
   xcodebuild \
-    -workspace ios/FlashApp.xcworkspace \
-    -scheme FlashApp \
+    -workspace ios/LNFlash.xcworkspace \
+    -scheme LNFlash \
     -configuration Debug \
     -sdk iphonesimulator \
-    -destination "id=$UDID" \
+    -destination 'generic/platform=iOS Simulator' \
     -derivedDataPath "$MOBILE_ROOT/ios/build" \
     CODE_SIGNING_ALLOWED=NO \
-    build 2>&1 | xcpretty || xcodebuild \
-    -workspace ios/FlashApp.xcworkspace \
-    -scheme FlashApp \
-    -configuration Debug \
-    -sdk iphonesimulator \
-    -destination "id=$UDID" \
-    -derivedDataPath "$MOBILE_ROOT/ios/build" \
-    CODE_SIGNING_ALLOWED=NO \
-    build 2>&1 | tail -20
+    build 2>&1 | tail -30
   echo "✅ Build complete"
 else
   echo "Step 2: Skipping build (--skip-build)"
@@ -106,16 +119,16 @@ if [ -z "$APP_PATH" ]; then
 fi
 echo "✅ App: $APP_PATH"
 
-# ── 3. Boot simulator ───────────────────────────────────────────────────────
+# ── 3. Ensure simulator is booted ──────────────────────────────────────────
 echo ""
-echo "Step 3: Booting simulator..."
+echo "Step 3: Verifying simulator is booted..."
 CURRENT_STATE=$(xcrun simctl list devices | grep "$UDID" | grep -o '(Booted)\|(Shutdown)' | tr -d '()')
 if [ "$CURRENT_STATE" = "Booted" ]; then
-  echo "   Already booted"
+  echo "   Already booted ✅"
 else
-  xcrun simctl boot "$UDID"
+  xcrun simctl boot "$UDID" 2>/dev/null || true
   echo "   Waiting for boot..."
-  xcrun simctl bootstatus "$UDID" -b 2>/dev/null || sleep 10
+  xcrun simctl bootstatus "$UDID" -b 2>/dev/null || sleep 15
 fi
 echo "✅ Simulator booted"
 

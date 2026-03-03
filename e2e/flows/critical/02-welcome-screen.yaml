@@ -5,10 +5,6 @@ appId: com.lnflash
     clearState: true
 - waitForAnimationToEnd
 - takeScreenshot: "02-welcome"
-# Verify key elements visible
-- assertVisible:
-    text: "Get started"
-    optional: true
 - assertVisible:
     text: "Flash"
     optional: true

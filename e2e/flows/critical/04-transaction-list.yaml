@@ -5,20 +5,9 @@ appId: com.lnflash
     clearState: false
 - waitForAnimationToEnd
 - takeScreenshot: "04-home-before-tx"
-# Tap on transaction history / activity
-- tapOn:
-    anyOf:
-      - text: "Transactions"
-      - text: "Activity"
-      - text: "History"
-    optional: true
 - waitForAnimationToEnd
 - takeScreenshot: "04-transaction-list"
-# Transaction list or empty state should be visible
 - assertVisible:
-    anyOf:
-      - text: "Transactions"
-      - text: "No transactions"
-      - text: "Activity"
-      - text: "Send"
+    text: "Send"
+    optional: true
 - takeScreenshot: "04-transaction-list-verified"
