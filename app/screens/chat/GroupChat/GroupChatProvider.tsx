@@ -8,48 +8,46 @@ import React, {
   useState,
 } from "react"
 import { Event } from "nostr-tools"
-import { MessageType } from "@flyerhq/react-native-chat-ui"
 import { getSigner } from "@app/nostr/signer"
 import { useChatContext } from "../../../screens/chat/chatContext"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { pool } from "@app/utils/nostr/pool"
 
 // ===== Types =====
+
+export type GroupMessage = {
+  id: string
+  authorId: string
+  createdAt: number // unix milliseconds
+  text: string
+  isSystem?: boolean
+}
+
 export type NostrGroupChatProviderProps = {
   groupId: string
   relayUrls?: string[]
-  /**
-   * Optional: limit membership/metadata events to known admin pubkeys.
-   * If omitted, provider listens to any author.
-   */
   adminPubkeys?: string[]
   children: React.ReactNode
 }
 
 type ContextValue = {
-  messages: MessageType.Text[]
-  groupMetadata: { [key: string]: string }
+  messages: GroupMessage[]
+  groupMetadata: { name?: string; about?: string; picture?: string }
   isMember: boolean
   knownMembers: Set<string>
-  /**
-   * Send a plain text message to the group
-   */
   sendMessage: (text: string) => Promise<void>
-  /**
-   * Request to join the group (NIP-29 join event)
-   */
   requestJoin: () => Promise<void>
 }
 
 const NostrGroupChatContext = createContext<ContextValue | undefined>(undefined)
 
 // ===== Helpers =====
-const makeSystemText = (text: string): MessageType.Text => ({
+const makeSystemMessage = (text: string): GroupMessage => ({
   id: `sys-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-  author: { id: "system" },
+  authorId: "system",
   createdAt: Date.now(),
-  type: "text",
   text,
+  isSystem: true,
 })
 
 export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
@@ -60,8 +58,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
 }) => {
   const { userPublicKey } = useChatContext()
 
-  // Internal message map ensures dedupe by id
-  const [messagesMap, setMessagesMap] = useState<Map<string, MessageType.Text>>(new Map())
+  const [messagesMap, setMessagesMap] = useState<Map<string, GroupMessage>>(new Map())
   const [isMember, setIsMember] = useState(false)
   const [knownMembers, setKnownMembers] = useState<Set<string>>(new Set())
   const [metadata, setMetadata] = useState<{
@@ -69,15 +66,12 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     about?: string
     picture?: string
   }>({})
-  // Track last known membership set to detect new joins for system messages
   const prevMembersRef = useRef<Set<string>>(new Set())
 
-  // Sorted messages array for the UI (newest first)
   const messages = useMemo(() => {
-    return Array.from(messagesMap.values()).sort((a, b) => b.createdAt! - a.createdAt!)
+    return Array.from(messagesMap.values()).sort((a, b) => b.createdAt - a.createdAt)
   }, [messagesMap])
 
-  // Sync isMember when userPublicKey becomes available after membership data was already received
   useEffect(() => {
     if (userPublicKey && knownMembers.size > 0) {
       setIsMember(knownMembers.has(userPublicKey))
@@ -88,17 +82,12 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   useEffect(() => {
     nostrRuntime.ensureSubscription(
       `nip29:messages`,
-
-      {
-        "#h": [groupId],
-        "kinds": [9],
-      },
+      { "#h": [groupId], "kinds": [9] },
       (event: Event) => {
-        const msg: MessageType.Text = {
+        const msg: GroupMessage = {
           id: event.id,
-          author: { id: event.pubkey },
+          authorId: event.pubkey,
           createdAt: event.created_at * 1000,
-          type: "text",
           text: event.content,
         }
         setMessagesMap((prev) => {
@@ -113,99 +102,66 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     )
   }, [relayUrls.join("|"), groupId])
 
-  //metadata
+  // ----- Sub: group metadata (kind 39000) -----
   useEffect(() => {
-    function parseGroupTags(tags: string[][]) {
-      const result: { name?: string; about?: string; picture?: string } = {}
-      for (const tag of tags) {
-        const [key, value] = tag
-        if (key === "name") result.name = value
-        else if (key === "about") result.about = value
-        else if (key === "picture") result.picture = value
-      }
-      return result
-    }
-    const unsub = nostrRuntime.ensureSubscription(
+    nostrRuntime.ensureSubscription(
       `nip29:group_metadata`,
       { "kinds": [39000], "#d": [groupId] },
-      (event) => {
-        console.log("==============GOT METADATA EVENT=============")
-        const parsed = parseGroupTags(event.tags)
-        setMetadata(parsed)
+      (event: Event) => {
+        const result: { name?: string; about?: string; picture?: string } = {}
+        for (const [key, value] of event.tags) {
+          if (key === "name") result.name = value
+          else if (key === "about") result.about = value
+          else if (key === "picture") result.picture = value
+        }
+        setMetadata(result)
       },
-      () => {
-        console.log("EOSE TRIGGERED FOR ", 39000)
-      },
+      () => {},
       relayUrls,
     )
   }, [groupId])
 
   // ----- Sub: membership roster (kind 39002) -----
   useEffect(() => {
-    const filters: any = {
-      "kinds": [39002],
-      "#d": [groupId],
-    }
+    const filters: any = { "kinds": [39002], "#d": [groupId] }
     if (adminPubkeys?.length) filters.authors = adminPubkeys
 
-    const unsub = nostrRuntime.ensureSubscription(
+    nostrRuntime.ensureSubscription(
       `nip29:membership`,
       filters,
       (event: any) => {
-        // Extract all `p` tags as pubkeys
-        console.log("==============GOT MEMBERSHIP EVENT=============")
         const currentMembers: string[] = event.tags
           .filter((tag: string[]) => tag?.[0] === "p" && tag[1])
           .map((tag: string[]) => tag[1])
 
-        // Convert to Set for easy diff
         const currentSet = new Set(currentMembers)
 
-        // Notify self if just joined (transition only – for the system message)
         if (
           userPublicKey &&
           !prevMembersRef.current.has(userPublicKey) &&
           currentSet.has(userPublicKey)
         ) {
-          setMessagesMap((prevMap) => {
-            const next = new Map(prevMap)
-            next.set(
-              `sys-joined-self-${Date.now()}`,
-              makeSystemText("You joined the group"),
-            )
+          setMessagesMap((prev) => {
+            const next = new Map(prev)
+            next.set(`sys-joined-self-${Date.now()}`, makeSystemMessage("You joined the group"))
             return next
           })
         }
 
-        // Always sync isMember with the current roster
-        if (userPublicKey) {
-          setIsMember(currentSet.has(userPublicKey))
-        }
+        if (userPublicKey) setIsMember(currentSet.has(userPublicKey))
 
-        // Notify other new members
-        // Track new members
         currentMembers.forEach((pk) => {
-          if (
-            pk !== userPublicKey &&
-            !prevMembersRef.current.has(pk) &&
-            prevMembersRef.current.size !== 0
-          ) {
+          if (pk !== userPublicKey && !prevMembersRef.current.has(pk) && prevMembersRef.current.size !== 0) {
             const short = pk.slice(0, 6) + "…" + pk.slice(-4)
-            setMessagesMap((prevMap) => {
-              const next = new Map(prevMap)
-              next.set(
-                `sys-joined-${pk}-${Date.now()}`,
-                makeSystemText(`${short} joined the group`),
-              )
+            setMessagesMap((prev) => {
+              const next = new Map(prev)
+              next.set(`sys-joined-${pk}-${Date.now()}`, makeSystemMessage(`${short} joined the group`))
               return next
             })
           }
         })
 
-        // Update prevMembersRef to exactly the current members
         prevMembersRef.current = currentSet
-
-        // Update knownMembers state
         setKnownMembers(currentSet)
       },
       () => {},
@@ -217,18 +173,14 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   const sendMessage = useCallback(
     async (text: string) => {
       if (!userPublicKey) throw Error("No user pubkey present")
-
       const signer = await getSigner()
-
-      const nostrEvent = {
+      const signedEvent = await signer.signEvent({
         kind: 9,
         created_at: Math.floor(Date.now() / 1000),
-        tags: [["h", groupId, relayUrls[0]]], // include relay hint
+        tags: [["h", groupId, relayUrls[0]]],
         content: text,
         pubkey: userPublicKey,
-      }
-
-      const signedEvent = await signer.signEvent(nostrEvent as any)
+      } as any)
       pool.publish(relayUrls, signedEvent)
     },
     [userPublicKey, groupId, relayUrls],
@@ -236,50 +188,35 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
 
   const requestJoin = useCallback(async () => {
     if (!userPublicKey) throw Error("No user pubkey present")
-
     const signer = await getSigner()
-
-    const joinEvent = {
+    const signedEvent = await signer.signEvent({
       kind: 9021,
       created_at: Math.floor(Date.now() / 1000),
       tags: [["h", groupId]],
       content: "I'd like to join this group.",
       pubkey: userPublicKey,
-    }
+    } as any)
+    pool.publish(relayUrls, signedEvent)
 
-    const signedJoinEvent = await signer.signEvent(joinEvent as any)
-    pool.publish(relayUrls, signedJoinEvent)
-
-    // Optimistic system note
     setMessagesMap((prev) => {
       const next = new Map(prev)
-      next.set(`sys-join-req-${Date.now()}`, makeSystemText("Join request sent"))
+      next.set(`sys-join-req-${Date.now()}`, makeSystemMessage("Join request sent"))
       return next
     })
   }, [userPublicKey, groupId, relayUrls])
 
   const value = useMemo<ContextValue>(
-    () => ({
-      messages,
-      isMember,
-      knownMembers,
-      sendMessage,
-      requestJoin,
-      groupMetadata: metadata,
-    }),
-    [messages, isMember, knownMembers, sendMessage, requestJoin],
+    () => ({ messages, isMember, knownMembers, sendMessage, requestJoin, groupMetadata: metadata }),
+    [messages, isMember, knownMembers, sendMessage, requestJoin, metadata],
   )
 
   return (
-    <NostrGroupChatContext.Provider value={value}>
-      {children}
-    </NostrGroupChatContext.Provider>
+    <NostrGroupChatContext.Provider value={value}>{children}</NostrGroupChatContext.Provider>
   )
 }
 
 export const useNostrGroupChat = () => {
   const ctx = useContext(NostrGroupChatContext)
-  if (!ctx)
-    throw new Error("useNostrGroupChat must be used inside NostrGroupChatProvider")
+  if (!ctx) throw new Error("useNostrGroupChat must be used inside NostrGroupChatProvider")
   return ctx
 }
