@@ -1,16 +1,14 @@
 import React, { createContext, useEffect, useState } from "react"
 import { WalletCurrency } from "@app/graphql/generated"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { initializeBreezSDK } from "@app/utils/breez-sdk-liquid"
-import { getInfo } from "@breeztech/react-native-breez-sdk-liquid"
+import { initializeBreezSDK, getInfo } from "@app/utils/breez-sdk"
 import { Alert, Platform } from "react-native"
+import { v4 as uuidv4 } from "uuid"
 
 type BtcWallet = {
   id: string
   walletCurrency: WalletCurrency
   balance: number
-  pendingReceiveSat: number
-  pendingSendSat: number
 }
 
 interface BreezInterface {
@@ -26,13 +24,11 @@ export const BreezContext = createContext<BreezInterface>({
     id: "",
     walletCurrency: "BTC",
     balance: 0,
-    pendingReceiveSat: 0,
-    pendingSendSat: 0,
   },
 })
 
 type Props = {
-  children: string | JSX.Element | JSX.Element[]
+  children: React.ReactNode
 }
 
 export const BreezProvider = ({ children }: Props) => {
@@ -42,8 +38,6 @@ export const BreezProvider = ({ children }: Props) => {
     id: "",
     walletCurrency: "BTC",
     balance: persistentState.breezBalance || 0,
-    pendingReceiveSat: 0,
-    pendingSendSat: 0,
   })
 
   useEffect(() => {
@@ -64,8 +58,6 @@ export const BreezProvider = ({ children }: Props) => {
           id: "",
           walletCurrency: "BTC",
           balance: 0,
-          pendingReceiveSat: 0,
-          pendingSendSat: 0,
         })
       }
     }
@@ -75,20 +67,18 @@ export const BreezProvider = ({ children }: Props) => {
     try {
       setLoading(true)
       await initializeBreezSDK()
-      const { walletInfo } = await getInfo()
+      const balanceSats = await getInfo()
 
       setBtcWallet({
-        id: walletInfo.pubkey,
+        id: uuidv4(),
         walletCurrency: WalletCurrency.Btc,
-        balance: walletInfo.balanceSat,
-        pendingReceiveSat: walletInfo.pendingReceiveSat,
-        pendingSendSat: walletInfo.pendingSendSat,
+        balance: balanceSats,
       })
       updateState((state: any) => {
         if (state)
           return {
             ...state,
-            breezBalance: walletInfo.balanceSat,
+            breezBalance: balanceSats,
           }
         return undefined
       })
