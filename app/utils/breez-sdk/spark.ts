@@ -207,17 +207,17 @@ const extractFeeFromPaymentMethod = (
 
 export const fetchBreezFee = async (
   paymentType: PaymentType,
-  paymentRequest?: string,
-  amountSats?: bigint,
+  paymentRequest: string,
+  amountSats: number,
   selectedFeeType?: "fast" | "medium" | "slow",
 ): Promise<{ fee: number | null; err: unknown }> => {
   try {
     const sdk = getSDKInstance()
 
-    if (paymentType === "lightning" && paymentRequest) {
+    if (paymentType === "lightning") {
       const prepareResponse = await sdk.prepareSendPayment({
         paymentRequest,
-        amount: amountSats,
+        amount: BigInt(amountSats),
         tokenIdentifier: undefined,
         conversionOptions: undefined,
       })
@@ -225,10 +225,10 @@ export const fetchBreezFee = async (
       return { fee: Number(fee), err: null }
     }
 
-    if (paymentType === "onchain" && paymentRequest && amountSats) {
+    if (paymentType === "onchain") {
       const prepareResponse = await sdk.prepareSendPayment({
         paymentRequest,
-        amount: amountSats,
+        amount: BigInt(amountSats),
         tokenIdentifier: undefined,
         conversionOptions: undefined,
       })
@@ -239,16 +239,12 @@ export const fetchBreezFee = async (
       return { fee: Number(fee), err: null }
     }
 
-    if (
-      (paymentType === "intraledger" || paymentType === "lnurl") &&
-      paymentRequest &&
-      amountSats
-    ) {
+    if (paymentType === "intraledger" || paymentType === "lnurl") {
       const parsed = await parse(paymentRequest)
 
       if (parsed.tag === InputType_Tags.LightningAddress) {
         const prepareResponse = await sdk.prepareLnurlPay({
-          amountSats,
+          amountSats: BigInt(amountSats),
           payRequest: parsed.inner[0].payRequest,
           comment: undefined,
           validateSuccessActionUrl: undefined,
@@ -262,7 +258,11 @@ export const fetchBreezFee = async (
 
     return { fee: null, err: `Wrong payment type ${paymentType}: ${paymentRequest}` }
   } catch (err) {
-    return { fee: null, err }
+    console.log("FETCH BREEZ FEE ERROR", err)
+    return {
+      fee: null,
+      err: "Failed to fetch the fee. Please make sure you have enough balance to cover the payment and the network fee.",
+    }
   }
 }
 
@@ -295,63 +295,86 @@ export const receiveOnchainBreez = async (): Promise<ReceivePaymentResponse> => 
 }
 
 // Send Payments
+
+type PayResponse = {
+  success: boolean
+  error?: string
+  payment?: SendPaymentResponse
+}
+
 export const payLightningBreez = async (
   paymentRequest: string,
-  amountSats?: bigint,
-): Promise<SendPaymentResponse> => {
-  const sdk = getSDKInstance()
+  amountSats: number,
+): Promise<PayResponse> => {
+  try {
+    const sdk = getSDKInstance()
 
-  const prepareResponse = await sdk.prepareSendPayment({
-    paymentRequest,
-    amount: amountSats,
-    tokenIdentifier: undefined,
-    conversionOptions: undefined,
-  })
+    const prepareResponse = await sdk.prepareSendPayment({
+      paymentRequest,
+      amount: BigInt(amountSats),
+      tokenIdentifier: undefined,
+      conversionOptions: undefined,
+    })
 
-  const options = new SendPaymentOptions.Bolt11Invoice({
-    preferSpark: false,
-    completionTimeoutSecs: 60,
-  })
+    const options = new SendPaymentOptions.Bolt11Invoice({
+      preferSpark: false,
+      completionTimeoutSecs: 60,
+    })
 
-  const response = await sdk.sendPayment({
-    prepareResponse,
-    options,
-    idempotencyKey: undefined,
-  })
+    const response = await sdk.sendPayment({
+      prepareResponse,
+      options,
+      idempotencyKey: undefined,
+    })
 
-  return response
+    return { success: true, payment: response }
+  } catch (err) {
+    return {
+      success: false,
+      error:
+        "Failed to pay the invoice. Please make sure you have enough balance to cover the payment and the network fee.",
+    }
+  }
 }
 
 export const payOnchainBreez = async (
   paymentRequest: string,
   amountSats: number,
   selectedFeeType: "fast" | "medium" | "slow",
-): Promise<SendPaymentResponse> => {
-  const sdk = getSDKInstance()
+): Promise<PayResponse> => {
+  try {
+    const sdk = getSDKInstance()
 
-  const prepareResponse = await sdk.prepareSendPayment({
-    paymentRequest,
-    amount: BigInt(amountSats),
-    tokenIdentifier: undefined,
-    conversionOptions: undefined,
-  })
+    const prepareResponse = await sdk.prepareSendPayment({
+      paymentRequest,
+      amount: BigInt(amountSats),
+      tokenIdentifier: undefined,
+      conversionOptions: undefined,
+    })
 
-  const confirmationSpeed =
-    selectedFeeType === "fast"
-      ? OnchainConfirmationSpeed.Fast
-      : selectedFeeType === "medium"
-      ? OnchainConfirmationSpeed.Medium
-      : OnchainConfirmationSpeed.Slow
+    const confirmationSpeed =
+      selectedFeeType === "fast"
+        ? OnchainConfirmationSpeed.Fast
+        : selectedFeeType === "medium"
+        ? OnchainConfirmationSpeed.Medium
+        : OnchainConfirmationSpeed.Slow
 
-  const options = new SendPaymentOptions.BitcoinAddress({ confirmationSpeed })
+    const options = new SendPaymentOptions.BitcoinAddress({ confirmationSpeed })
 
-  const response = await sdk.sendPayment({
-    prepareResponse,
-    options,
-    idempotencyKey: undefined,
-  })
+    const response = await sdk.sendPayment({
+      prepareResponse,
+      options,
+      idempotencyKey: undefined,
+    })
 
-  return response
+    return { success: true, payment: response }
+  } catch (err) {
+    return {
+      success: false,
+      error:
+        "Failed to pay the invoice. Please make sure you have enough balance to cover the payment and the network fee.",
+    }
+  }
 }
 
 // LNURL Payments
