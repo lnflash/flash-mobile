@@ -2,24 +2,17 @@ import React from "react"
 import { ViewStyle } from "react-native"
 import { Colors, Text, useTheme } from "@rneui/themed"
 import styled from "styled-components/native"
-import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 type Props = {
   wrapperStyle?: ViewStyle
-  recommendedFees?: RecommendedFees
-  selectedFeeType?: string
-  onSelectFee: (type: string, value?: number) => void
+  selectedFeeType?: "fast" | "medium" | "slow"
+  onSelectFee: (type: "fast" | "medium" | "slow") => void
 }
 
-const Fees: React.FC<Props> = ({
-  wrapperStyle,
-  recommendedFees,
-  selectedFeeType,
-  onSelectFee,
-}) => {
+const Fees: React.FC<Props> = ({ wrapperStyle, selectedFeeType, onSelectFee }) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
 
@@ -30,31 +23,31 @@ const Fees: React.FC<Props> = ({
         <FeeSelect
           colors={colors}
           activeOpacity={0.5}
-          selected={selectedFeeType === "Fast"}
-          onPress={() => onSelectFee("Fast", recommendedFees?.fastestFee)}
+          selected={selectedFeeType === "fast"}
+          onPress={() => onSelectFee("fast")}
         >
-          <FeeText colors={colors} selected={selectedFeeType === "Fast"}>
+          <FeeText colors={colors} selected={selectedFeeType === "fast"}>
             {LL.RefundFlow.fast()}
           </FeeText>
         </FeeSelect>
         <FeeSelect
           colors={colors}
           activeOpacity={0.5}
-          selected={selectedFeeType === "Half Hour"}
-          onPress={() => onSelectFee("Half Hour", recommendedFees?.halfHourFee)}
+          selected={selectedFeeType === "medium"}
+          onPress={() => onSelectFee("medium")}
         >
-          <FeeText colors={colors} selected={selectedFeeType === "Half Hour"}>
-            {LL.RefundFlow.halfHour()}
+          <FeeText colors={colors} selected={selectedFeeType === "medium"}>
+            {LL.RefundFlow.medium()}
           </FeeText>
         </FeeSelect>
         <FeeSelect
           colors={colors}
           activeOpacity={0.5}
-          selected={selectedFeeType === "Hour"}
-          onPress={() => onSelectFee("Hour", recommendedFees?.hourFee)}
+          selected={selectedFeeType === "slow"}
+          onPress={() => onSelectFee("slow")}
         >
-          <FeeText colors={colors} selected={selectedFeeType === "Hour"}>
-            {LL.RefundFlow.hour()}
+          <FeeText colors={colors} selected={selectedFeeType === "slow"}>
+            {LL.RefundFlow.slow()}
           </FeeText>
         </FeeSelect>
       </ButtonsWrapper>
