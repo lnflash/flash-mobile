@@ -48,7 +48,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
     if (lnInvoice) {
       try {
         toggleActivityIndicator(true)
-        const res = await swap(lnInvoice, fromWalletCurrency)
+        const res = await swap(lnInvoice, fromWalletCurrency, moneyAmount.amount)
         if (res) {
           handlePaymentSuccess()
         }
