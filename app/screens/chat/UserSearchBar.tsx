@@ -44,7 +44,6 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
       if (newSearchText === "") reset()
       const nip05Matching = async (alias: string) => {
         let nostrUser = await nip05.queryProfile(alias.toLocaleLowerCase())
-        console.log("nostr user for", alias, nostrUser)
         if (nostrUser) {
           let nostrProfile = profileMap?.get(nostrUser.pubkey)
           let participants = [nostrUser.pubkey, userPublicKey!].filter(Boolean)
@@ -82,7 +81,6 @@ export const UserSearchBar: React.FC<UserSearchBarProps> = ({ setSearchedUsers }
       } else if (!newSearchText.includes("@")) {
         let modifiedSearchText =
           newSearchText + "@" + appConfig.galoyInstance.lnAddressHostname
-        console.log("Searching for", modifiedSearchText)
         if (await nip05Matching(modifiedSearchText)) {
           setRefreshing(false)
           return

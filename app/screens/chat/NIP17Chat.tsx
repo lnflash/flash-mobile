@@ -58,7 +58,6 @@ export const NIP17Chat: React.FC = () => {
     rumors,
     profileMap,
     resetChat,
-    initializeChat,
     userProfileEvent,
     userPublicKey,
     contactsEvent,
@@ -81,10 +80,8 @@ export const NIP17Chat: React.FC = () => {
   // ------------------------
   React.useEffect(() => {
     async function initialize() {
-      console.log("Initializing nip17 screen use effect")
       const secretKeyString = await fetchSecretFromLocalStorage()
       if (!secretKeyString) {
-        console.log("Couldn't find secret key in local storage")
         setShowImportModal(true)
         return
       }
@@ -93,19 +90,15 @@ export const NIP17Chat: React.FC = () => {
       if (userPublicKey) {
         const storedNpub = nip19.npubEncode(userPublicKey)
         if (!skipMismatchCheck && accountNpub && storedNpub !== accountNpub) {
-          console.log("Account Info mismatch", accountNpub, storedNpub)
           setShowImportModal(true)
         }
       }
 
-      if (!initialized) {
-        await initializeChat()
-        setInitialized(true)
-      }
+      setInitialized(true)
     }
 
     initialize()
-  }, [dataAuthed, initialized, skipMismatchCheck])
+  }, [dataAuthed, userPublicKey, skipMismatchCheck])
 
   // ------------------------
   // Focus effect for secret key / import modal check

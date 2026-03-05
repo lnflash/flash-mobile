@@ -21,6 +21,7 @@ export type GroupMessage = {
   createdAt: number // unix milliseconds
   text: string
   isSystem?: boolean
+  replyToId?: string
 }
 
 export type NostrGroupChatProviderProps = {
@@ -35,7 +36,7 @@ type ContextValue = {
   groupMetadata: { name?: string; about?: string; picture?: string }
   isMember: boolean
   knownMembers: Set<string>
-  sendMessage: (text: string) => Promise<void>
+  sendMessage: (text: string, replyToId?: string) => Promise<void>
   requestJoin: () => Promise<void>
 }
 
@@ -84,11 +85,15 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       `nip29:messages`,
       { "#h": [groupId], "kinds": [9] },
       (event: Event) => {
+        const replyTag = event.tags.find(
+          (t: string[]) => t[0] === "e" && t[3] === "reply",
+        )
         const msg: GroupMessage = {
           id: event.id,
           authorId: event.pubkey,
           createdAt: event.created_at * 1000,
           text: event.content,
+          replyToId: replyTag?.[1],
         }
         setMessagesMap((prev) => {
           if (prev.has(msg.id)) return prev
@@ -171,13 +176,15 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
 
   // ----- Actions -----
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, replyToId?: string) => {
       if (!userPublicKey) throw Error("No user pubkey present")
       const signer = await getSigner()
+      const tags: string[][] = [["h", groupId, relayUrls[0]]]
+      if (replyToId) tags.push(["e", replyToId, relayUrls[0], "reply"])
       const signedEvent = await signer.signEvent({
         kind: 9,
         created_at: Math.floor(Date.now() / 1000),
-        tags: [["h", groupId, relayUrls[0]]],
+        tags,
         content: text,
         pubkey: userPublicKey,
       } as any)

@@ -116,7 +116,6 @@ export const fetchGiftWrapsForPublicKey = (
       onevent: eventHandler,
       onclose: () => {
         closer.close()
-        console.log("Re-establishing connection")
         closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool)
       },
     },
@@ -214,12 +213,8 @@ export const fetchContactList = async (
     [filter],
     {
       onevent: onEvent,
-      onclose: () => {
-        console.log("Closing Subscription for Contacts")
-      },
-      oneose: () => {
-        console.log("EOSE RECEIVED, DID SUBSCRIPTION CLOSE?")
-      },
+      onclose: () => {},
+      oneose: () => {},
     },
   )
 }
@@ -238,8 +233,7 @@ export const setPreferredRelay = async (signer: NostrSigner) => {
     content: "",
   }
   const finalEvent = await signer.signEvent(relayEvent)
-  let messages = await Promise.allSettled(pool.publish(publicRelays, finalEvent))
-  console.log("Message from relays", messages)
+  await Promise.allSettled(pool.publish(publicRelays, finalEvent))
   setTimeout(() => {
     pool.close(publicRelays)
   }, 5000)
@@ -256,16 +250,12 @@ export const addToContactList = async (
   const tags = contactsEvent?.tags || []
 
   if (existingContacts.some((p: NostrProfile) => p.pubkey === hexPubKeyToAdd)) {
-    console.log("Contact already in list.")
     return
   }
 
   if (!contactsEvent) {
     const confirmed = await confirmOverwrite()
-    if (!confirmed) {
-      console.log("User declined to create a new contact list.")
-      return
-    }
+    if (!confirmed) return
   }
 
   tags.push(["p", hexPubKeyToAdd])
@@ -278,14 +268,12 @@ export const addToContactList = async (
   }
 
   const finalNewEvent = await signer.signEvent(newEvent)
-  const messages = await Promise.allSettled(
+  await Promise.allSettled(
     pool.publish(
       ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol"],
       finalNewEvent,
     ),
   )
-
-  console.log("Contact Publish: Relay replies", messages)
 }
 
 export async function sendNip17Message(
@@ -302,10 +290,8 @@ export async function sendNip17Message(
   }
   let rumor = await createRumor({ content: message, kind: 14, tags: p_tags }, signer)
   let outputs: { acceptedRelays: string[]; rejectedRelays: string[] }[] = []
-  console.log("total recipients", recipients)
   await Promise.allSettled(
     recipients.map(async (recipientId: string) => {
-      console.log("sending rumor for recipient ", recipientId)
       let recipientAcceptedRelays: string[] = []
       let recipientRelays = preferredRelaysMap.get(recipientId)
       recipientRelays = [
@@ -317,29 +303,23 @@ export async function sendNip17Message(
       ]
       let seal = await createSeal(rumor, signer, recipientId)
       let wrap = createWrap(seal, recipientId)
-      console.log("wrap created")
       try {
-        let response = await Promise.allSettled(
+        await Promise.allSettled(
           customPublish(
             recipientRelays,
             wrap,
             (url: string) => {
-              console.log("Accepted relay callback triggered:", url)
               onSent?.(rumor)
               recipientAcceptedRelays.push(url)
             },
-            (url: string) => {
-              console.log("Rejected relay:", url)
-            },
           ),
         )
-      } catch (e) {
-        console.log("error in publishing", e)
+      } catch {
+        // publish failed
       }
       outputs.push({ acceptedRelays: recipientAcceptedRelays, rejectedRelays: [] })
     }),
   )
-  console.log("Final output is", outputs)
   return { outputs, rumor }
 }
 
@@ -393,14 +373,12 @@ export const customPublish = (
   onAcceptedRelays?: (url: string) => void,
   onRejectedRelays?: (url: string) => void,
 ): Promise<string>[] => {
-  console.log("Custom publish invoked ")
   const timeoutPromise = (url: string): Promise<string> =>
     new Promise((_, reject) => {
       setTimeout(() => reject(new Error(`Publish to ${url} timed out`)), 2000)
     })
 
   return relays.map(normalizeURL).map(async (url, i, arr) => {
-    console.log("trying to publish to", url)
     if (arr.indexOf(url) !== i) {
       return Promise.reject("duplicate url")
     }
@@ -409,12 +387,10 @@ export const customPublish = (
         let r = await ensureRelay(url)
         return r.publish(event).then(
           (value) => {
-            console.log("Accepted on", url)
             onAcceptedRelays?.(url)
             return value
           },
           (reason: string) => {
-            console.log("Rejected on", url)
             onRejectedRelays?.(url)
             return reason
           },
@@ -458,6 +434,47 @@ export const saveGiftwrapsToStorage = async (giftwraps: Event[]) => {
   }
 }
 
+export const loadRumorsFromStorage = async (): Promise<Rumor[]> => {
+  try {
+    const saved = await AsyncStorage.getItem("rumors_cache")
+    return saved ? (JSON.parse(saved) as Rumor[]) : []
+  } catch (e) {
+    console.error("Error loading rumors from storage:", e)
+    return []
+  }
+}
+
+export const saveRumorsToStorage = async (rumors: Rumor[]) => {
+  try {
+    await AsyncStorage.setItem("rumors_cache", JSON.stringify(rumors))
+  } catch (e) {
+    console.error("Error saving rumors to storage:", e)
+  }
+}
+
+export const loadReactionsFromStorage = async (): Promise<
+  Record<string, { emoji: string; reactor: string }[]>
+> => {
+  try {
+    const saved = await AsyncStorage.getItem("reactions_cache")
+    return saved ? JSON.parse(saved) : {}
+  } catch (e) {
+    console.error("Error loading reactions from storage:", e)
+    return {}
+  }
+}
+
+export const saveReactionsToStorage = async (
+  reactions: Map<string, { emoji: string; reactor: string }[]>,
+) => {
+  try {
+    const obj = Object.fromEntries(reactions)
+    await AsyncStorage.setItem("reactions_cache", JSON.stringify(obj))
+  } catch (e) {
+    console.error("Error saving reactions to storage:", e)
+  }
+}
+
 export const createContactListEvent = async (signer: NostrSigner) => {
   const selfPublicKey = await signer.getPublicKey()
   const event: UnsignedEvent = {
@@ -468,11 +485,10 @@ export const createContactListEvent = async (signer: NostrSigner) => {
     pubkey: selfPublicKey,
   }
   const signedEvent = await signer.signEvent(event)
-  const messages = await Promise.allSettled(
+  await Promise.allSettled(
     pool.publish(
       ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol"],
       signedEvent,
     ),
   )
-  console.log("Message from relays for contact list publish", messages)
 }
