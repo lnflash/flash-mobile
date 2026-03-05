@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
-import { View, Image, TouchableOpacity } from "react-native"
+import { Alert, View, Image, TouchableOpacity } from "react-native"
 import { makeStyles, useTheme, Text, Button } from "@rneui/themed"
 import { Screen } from "../../../components/screen"
 import { FlatList } from "react-native-gesture-handler"
@@ -14,6 +14,7 @@ import { useChatContext } from "../chatContext"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { MessageInput } from "../components/MessageInput"
 import { MessageBubble } from "../components/MessageBubble"
+import { GroupInfoModal } from "./GroupInfoModal"
 import { Rumor } from "@app/utils/nostr"
 
 type SupportGroupChatScreenProps = StackScreenProps<RootStackParamList, "Nip29GroupChat">
@@ -53,9 +54,10 @@ const InnerGroupChat: React.FC = () => {
   const { theme: { colors, mode } } = useTheme()
   const insets = useSafeAreaInsets()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const { messages, isMember, sendMessage, requestJoin, groupMetadata } = useNostrGroupChat()
+  const { messages, isMember, isAdmin, adminList, knownMembers, sendMessage, requestJoin, removeMessage, removeMember, groupMetadata } = useNostrGroupChat()
   const { userPublicKey } = useChatContext()
   const [replyTo, setReplyTo] = useState<Rumor | null>(null)
+  const [infoVisible, setInfoVisible] = useState(false)
 
   // Profile loading via EventStore (same pattern as messages.tsx)
   const subscribedPubkeys = useRef<Set<string>>(new Set())
@@ -90,6 +92,34 @@ const InnerGroupChat: React.FC = () => {
 
   const chatBg = mode === "dark" ? "#0e1a16" : "#eef5f2"
 
+  const handleAdminPress = (msg: GroupMessage) => {
+    const isOwnMessage = msg.authorId === userPublicKey
+    const options: { text: string; onPress: () => void; style?: "destructive" | "cancel" }[] = []
+
+    options.push({
+      text: "Delete Message",
+      style: "destructive",
+      onPress: () => removeMessage(msg.id),
+    })
+
+    if (!isOwnMessage) {
+      options.push({
+        text: "Remove User",
+        style: "destructive",
+        onPress: () => {
+          Alert.alert("Remove User", "Remove this user from the group?", [
+            { text: "Cancel", style: "cancel" },
+            { text: "Remove", style: "destructive", onPress: () => removeMember(msg.authorId) },
+          ])
+        },
+      })
+    }
+
+    options.push({ text: "Cancel", style: "cancel", onPress: () => {} })
+
+    Alert.alert("Admin Actions", undefined, options)
+  }
+
   // Build a map of rumor-shaped messages for parent lookup
   const rumorMap = new Map(messages.filter((m) => !m.isSystem).map((m) => [m.id, toRumor(m)]))
 
@@ -106,7 +136,7 @@ const InnerGroupChat: React.FC = () => {
         <TouchableOpacity onPress={navigation.goBack} style={styles.backBtn} hitSlop={8}>
           <Icon name="arrow-back-outline" size={24} color={colors.primary3} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.headerCenter} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.headerCenter} activeOpacity={0.7} onPress={() => setInfoVisible(true)}>
           <Image
             source={
               groupMetadata.picture
@@ -119,13 +149,12 @@ const InnerGroupChat: React.FC = () => {
             <Text style={styles.headerName} numberOfLines={1}>
               {groupMetadata.name || "Support Group"}
             </Text>
-            {groupMetadata.about && (
-              <Text style={styles.headerSubtitle} numberOfLines={1}>
-                {groupMetadata.about}
-              </Text>
-            )}
+            <Text style={styles.headerSubtitle} numberOfLines={1}>
+              {knownMembers.size} members · tap for info
+            </Text>
           </View>
         </TouchableOpacity>
+        <Icon name="information-circle-outline" size={22} color={colors.primary} style={{ marginLeft: 4 }} />
       </View>
 
       {/* Message list */}
@@ -156,6 +185,7 @@ const InnerGroupChat: React.FC = () => {
               onReply={setReplyTo}
               onReact={() => {}}
               isGroupChat
+              onAdminPress={isAdmin ? () => handleAdminPress(msg) : undefined}
             />
           )
         }}
@@ -181,6 +211,16 @@ const InnerGroupChat: React.FC = () => {
           </View>
         )}
       </View>
+
+      <GroupInfoModal
+        visible={infoVisible}
+        onClose={() => setInfoVisible(false)}
+        groupMetadata={groupMetadata}
+        adminList={adminList}
+        memberCount={knownMembers.size}
+        profileMap={profileMap}
+        isAdmin={isAdmin}
+      />
     </Screen>
   )
 }

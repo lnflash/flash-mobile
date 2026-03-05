@@ -24,6 +24,7 @@ type Props = {
   onReply: (rumor: Rumor) => void
   onReact: (emoji: string) => void
   isGroupChat?: boolean
+  onAdminPress?: () => void
 }
 
 const formatTime = (created_at: number) =>
@@ -58,6 +59,7 @@ export const MessageBubble: React.FC<Props> = ({
   onReply,
   onReact,
   isGroupChat = false,
+  onAdminPress,
 }) => {
   const { theme: { colors } } = useTheme()
   const styles = useStyles()
@@ -76,8 +78,12 @@ export const MessageBubble: React.FC<Props> = ({
   const groupedReactions = groupReactions(reactions)
 
   const handleLongPress = (e: GestureResponderEvent) => {
-    setPickerPosition({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })
-    setPickerVisible(true)
+    if (onAdminPress) {
+      onAdminPress()
+    } else {
+      setPickerPosition({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })
+      setPickerVisible(true)
+    }
   }
 
   const renderRightActions = () => (
