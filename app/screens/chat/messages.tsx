@@ -1,6 +1,6 @@
 import "react-native-get-random-values"
 import * as React from "react"
-import { ActivityIndicator, Image, View, TouchableOpacity } from "react-native"
+import { Image, View, TouchableOpacity } from "react-native"
 import { RouteProp, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Screen } from "../../components/screen"
@@ -11,8 +11,8 @@ import type {
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
 import { nip19 } from "nostr-tools"
-import { Rumor, convertRumorsToGroups, sendNip17Message, sendReaction } from "@app/utils/nostr"
-import { useEffect, useState } from "react"
+import { Rumor, getGroupId, sendNip17Message, sendReaction } from "@app/utils/nostr"
+import { useEffect, useMemo, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { updateLastSeen } from "./utils"
@@ -57,12 +57,10 @@ function readProfilesFromStore(pubkeys: string[]): Map<string, NostrProfile> {
 export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, groupId }) => {
   const { theme: { colors, mode } } = useTheme()
   const styles = useStyles()
-  const { rumors, reactions } = useChatContext()
+  const { rumors, setRumors, reactions, addOptimisticReaction } = useChatContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
   const insets = useSafeAreaInsets()
 
-  const [initialized, setInitialized] = useState(false)
-  const [chatRumors, setChatRumors] = useState<Rumor[]>([])
   const [replyTo, setReplyTo] = useState<Rumor | null>(null)
 
   const pubkeys = groupId.split(",")
@@ -89,21 +87,27 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
     return unsubStore
   }, [groupId])
 
-  // Build deduplicated chat rumor list
-  useEffect(() => {
-    setInitialized(true)
-    const groupRumors = convertRumorsToGroups(rumors).get(groupId) || []
+  // Build deduplicated chat rumor list synchronously (no extra render cycle)
+  const chatRumors = useMemo(() => {
     const seen = new Set<string>()
-    const unique = groupRumors.filter((r) => {
-      if (seen.has(r.id)) return false
-      seen.add(r.id)
-      return true
-    })
-    const sorted = unique.sort((a, b) => a.created_at - b.created_at)
-    const lastRumor = sorted[sorted.length - 1]
-    if (lastRumor) updateLastSeen(groupId, lastRumor.created_at)
-    setChatRumors(sorted)
+    return rumors
+      .filter((r) => {
+        if (r.kind !== 14) return false
+        const participants = r.tags.filter((t) => t[0] === "p").map((t) => t[1])
+        return getGroupId([...participants, r.pubkey]) === groupId
+      })
+      .filter((r) => {
+        if (seen.has(r.id)) return false
+        seen.add(r.id)
+        return true
+      })
+      .sort((a, b) => a.created_at - b.created_at)
   }, [rumors, groupId])
+
+  useEffect(() => {
+    const last = chatRumors[chatRumors.length - 1]
+    if (last) updateLastSeen(groupId, last.created_at)
+  }, [chatRumors, groupId])
 
   const getParentRumor = (rumor: Rumor): Rumor | null => {
     const replyTag = rumor.tags.find((t) => t[0] === "e" && t[3] === "reply")
@@ -119,9 +123,9 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
       new Map(),
       signer,
       (rumor) => {
-        setChatRumors((prev) => {
+        setRumors((prev) => {
           if (prev.some((r) => r.id === rumor.id)) return prev
-          return [...prev, rumor].sort((a, b) => a.created_at - b.created_at)
+          return [...prev, rumor]
         })
       },
       replyToId,
@@ -129,16 +133,16 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
 
     if (result.outputs.filter((o) => o.acceptedRelays.length > 0).length === 0) {
       const failed = { ...result.rumor, metadata: { errors: true } } as any
-      setChatRumors((prev) => {
+      setRumors((prev) => {
         if (prev.some((r) => r.id === failed.id)) return prev
-        return [...prev, failed].sort((a: Rumor, b: Rumor) => a.created_at - b.created_at)
+        return [...prev, failed]
       })
     }
   }
 
-  const handleReaction = async (rumor: Rumor, emoji: string) => {
-    const signer = await getSigner()
-    await sendReaction(rumor.id, rumor.pubkey, emoji, pubkeys, new Map(), signer)
+  const handleReaction = (rumor: Rumor, emoji: string) => {
+    if (userPubkey) addOptimisticReaction(rumor.id, emoji, userPubkey)
+    getSigner().then((signer) => sendReaction(rumor.id, rumor.pubkey, emoji, pubkeys, new Map(), signer))
   }
 
   const recipientProfile = profileMap.get(recipientPubkeys[0])
@@ -198,8 +202,6 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
         </TouchableOpacity>
       </View>
 
-      {!initialized && <ActivityIndicator color={colors.primary} />}
-
       {/* Message list */}
       <FlatList
         inverted
@@ -220,11 +222,9 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
           />
         )}
         ListEmptyComponent={
-          initialized ? (
-            <View style={styles.emptyContainer}>
-              <Text style={{ color: colors.grey2 }}>No messages yet</Text>
-            </View>
-          ) : null
+          <View style={styles.emptyContainer}>
+            <Text style={{ color: colors.grey2 }}>No messages yet</Text>
+          </View>
         }
       />
 

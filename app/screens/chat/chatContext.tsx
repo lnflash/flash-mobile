@@ -8,6 +8,10 @@ import {
   getRumorFromWrap,
   loadGiftwrapsFromStorage,
   saveGiftwrapsToStorage,
+  loadRumorsFromStorage,
+  saveRumorsToStorage,
+  loadReactionsFromStorage,
+  saveReactionsToStorage,
   fetchSecretFromLocalStorage,
 } from "@app/utils/nostr"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
@@ -17,7 +21,7 @@ import { loadJson, saveJson } from "@app/utils/storage"
 const contactsEventCacheKey = (pubkey: string) => `contacts_event:${pubkey}`
 const profileEventCacheKey = (pubkey: string) => `user_profile_event:${pubkey}`
 
-export type ReactionEntry = { emoji: string; reactor: string }
+export type ReactionEntry = { emoji: string; reactor: string; pending?: boolean }
 
 type ChatContextType = {
   giftwraps: Event[]
@@ -25,6 +29,7 @@ type ChatContextType = {
   setGiftWraps: React.Dispatch<React.SetStateAction<Event[]>>
   setRumors: React.Dispatch<React.SetStateAction<Rumor[]>>
   reactions: Map<string, ReactionEntry[]>
+  addOptimisticReaction: (messageId: string, emoji: string, reactor: string) => void
   profileMap: Map<string, any>
   addEventToProfiles: (event: Event) => void
   resetChat: () => Promise<void>
@@ -43,6 +48,7 @@ const ChatContext = createContext<ChatContextType>({
   rumors: [],
   setRumors: () => {},
   reactions: new Map(),
+  addOptimisticReaction: () => {},
   profileMap: new Map(),
   addEventToProfiles: () => {},
   resetChat: async () => {},
@@ -66,6 +72,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
   const [contactsEvent, setContactsEvent] = useState<Event>()
   const profileMap = useRef<Map<string, any>>(new Map())
   const processedEventIds = useRef<Set<string>>(new Set())
+  const rumorWrapIds = useRef<Set<string>>(new Set())
 
   const {
     appConfig: {
@@ -95,24 +102,35 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         if (originalId) {
           setReactions((prev) => {
             const existing = prev.get(originalId) || []
-            if (existing.some((r) => r.reactor === rumor.pubkey && r.emoji === rumor.content)) {
-              return prev
+            const idx = existing.findIndex(
+              (r) => r.reactor === rumor.pubkey && r.emoji === rumor.content,
+            )
+            if (idx >= 0) {
+              // Confirm an optimistic entry, or skip if already confirmed
+              if (!existing[idx].pending) return prev
+              const next = new Map(prev)
+              const updated = [...existing]
+              updated[idx] = { emoji: rumor.content, reactor: rumor.pubkey }
+              next.set(originalId, updated)
+              saveReactionsToStorage(next)
+              return next
             }
             const next = new Map(prev)
             next.set(originalId, [...existing, { emoji: rumor.content, reactor: rumor.pubkey }])
+            saveReactionsToStorage(next)
             return next
           })
         }
       } else {
         setRumors((prev) => {
-          if (!prev.map((r) => r.id).includes(rumor.id)) {
-            return [...prev, rumor]
-          }
-          return prev
+          if (prev.some((r) => r.id === rumor.id)) return prev
+          const next = [...prev, rumor]
+          saveRumorsToStorage(next)
+          return next
         })
       }
-    } catch (e) {
-      console.log("Failed to decrypt giftwrap", e)
+    } catch {
+      // giftwrap not decryptable by this key
     }
   }
 
@@ -139,28 +157,55 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     const publicKey = await signer.getPublicKey()
     setUserPublicKey(publicKey)
 
-    // Load cached giftwraps
     const cachedGiftwraps = await loadGiftwrapsFromStorage()
+    cachedGiftwraps.forEach((wrap) => processedEventIds.current.add(wrap.id))
     setGiftWraps(cachedGiftwraps)
-    const decryptedRumors = (
-      await Promise.all(
-        cachedGiftwraps.map(async (wrap) => {
-          try {
-            return await getRumorFromWrap(wrap, signer)
-          } catch {
-            return null
-          }
-        }),
-      )
-    ).filter((r): r is Rumor => r !== null)
-    // Deduplicate by ID — multiple gift wraps can decrypt to the same rumor (sender + recipient copies)
-    const seenIds = new Set<string>()
-    const uniqueRumors = decryptedRumors.filter((r) => {
-      if (seenIds.has(r.id)) return false
-      seenIds.add(r.id)
-      return true
+
+    // Load pre-decrypted rumors from cache — avoids re-decrypting all giftwraps on every startup
+    const cachedRumors = await loadRumorsFromStorage()
+    const cachedRumorIds = new Set(cachedRumors.map((r) => r.id))
+
+    // Only decrypt giftwraps that aren't already in the rumors cache
+    const uncachedWraps = cachedGiftwraps.filter((wrap) => {
+      // A giftwrap can produce a rumor we haven't cached yet; we can't know the rumor id
+      // without decrypting, so decrypt wraps whose id isn't tracked yet via a separate set.
+      return !rumorWrapIds.current.has(wrap.id)
     })
-    setRumors(uniqueRumors)
+
+    let newRumors: Rumor[] = []
+    if (uncachedWraps.length > 0) {
+      const decrypted = (
+        await Promise.all(
+          uncachedWraps.map(async (wrap) => {
+            try {
+              const r = await getRumorFromWrap(wrap, signer)
+              rumorWrapIds.current.add(wrap.id)
+              return r
+            } catch {
+              return null
+            }
+          }),
+        )
+      ).filter((r): r is Rumor => r !== null)
+
+      const seenIds = new Set(cachedRumorIds)
+      newRumors = decrypted.filter((r) => {
+        if (seenIds.has(r.id)) return false
+        seenIds.add(r.id)
+        return true
+      })
+    }
+
+    const allRumors = [...cachedRumors, ...newRumors]
+    setRumors(allRumors)
+    if (newRumors.length > 0) saveRumorsToStorage(allRumors)
+
+    // Restore cached reactions
+    const cachedReactions = await loadReactionsFromStorage()
+    const reactionsMap = new Map(
+      Object.entries(cachedReactions).map(([k, v]) => [k, v]),
+    )
+    if (reactionsMap.size > 0) setReactions(reactionsMap)
 
     // ------------------------
     // Subscribe to giftwraps via NostrRuntime
@@ -248,6 +293,16 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     })
   }
 
+  const addOptimisticReaction = (messageId: string, emoji: string, reactor: string) => {
+    setReactions((prev) => {
+      const existing = prev.get(messageId) || []
+      if (existing.some((r) => r.reactor === reactor && r.emoji === emoji)) return prev
+      const next = new Map(prev)
+      next.set(messageId, [...existing, { emoji, reactor, pending: true }])
+      return next
+    })
+  }
+
   const getContactPubkeys = () => {
     if (!contactsEvent) return null
     return contactsEvent.tags.filter((t) => t[0] === "p").map((t) => t[1])
@@ -265,6 +320,9 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
     setUserProfileEvent(null)
     setUserPublicKey(null)
     processedEventIds.current.clear()
+    rumorWrapIds.current.clear()
+    saveRumorsToStorage([])
+    saveReactionsToStorage(new Map())
     nostrRuntime.getEventStore().clear()
     await initializeChat()
   }
@@ -282,6 +340,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
         rumors,
         setRumors,
         reactions,
+        addOptimisticReaction,
         profileMap: profileMap.current,
         addEventToProfiles: (event: Event) => {
           try {

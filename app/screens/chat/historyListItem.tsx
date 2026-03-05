@@ -5,7 +5,7 @@ import { nip19, Event } from "nostr-tools"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { Rumor } from "@app/utils/nostr"
 import { getLastSeen } from "./utils"
@@ -64,17 +64,19 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
     )
   }, [profileMap, subscribedPubkeys, item])
 
-  useFocusEffect(() => {
-    const checkUnreadStatus = async () => {
-      const lastSeen = await getLastSeen(item)
-      if (lastRumor && (!lastSeen || lastSeen < lastRumor.created_at)) {
-        setHasUnread(true)
-      } else {
-        setHasUnread(false)
+  useFocusEffect(
+    useCallback(() => {
+      const checkUnreadStatus = async () => {
+        const lastSeen = await getLastSeen(item)
+        if (lastRumor && (!lastSeen || lastSeen < lastRumor.created_at)) {
+          setHasUnread(true)
+        } else {
+          setHasUnread(false)
+        }
       }
-    }
-    checkUnreadStatus()
-  })
+      checkUnreadStatus()
+    }, [item, lastRumor?.id]),
+  )
 
   return (
     <ListItem

@@ -596,7 +596,7 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="Nip29GroupChat"
         component={SupportGroupChatScreen}
-        options={{ title: "Group Chat" }}
+        options={{ headerShown: false }}
       />
     </RootNavigator.Navigator>
   )

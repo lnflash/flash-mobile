@@ -33,17 +33,19 @@ const MAX_AVATARS = 3
 
 function groupReactions(
   reactions: ReactionEntry[],
-): { emoji: string; count: number; reactors: string[] }[] {
-  const map = new Map<string, string[]>()
+): { emoji: string; count: number; reactors: string[]; pending: boolean }[] {
+  const map = new Map<string, { reactors: string[]; allPending: boolean }>()
   for (const r of reactions) {
-    const existing = map.get(r.emoji) || []
-    if (!existing.includes(r.reactor)) existing.push(r.reactor)
-    map.set(r.emoji, existing)
+    const entry = map.get(r.emoji) || { reactors: [], allPending: true }
+    if (!entry.reactors.includes(r.reactor)) entry.reactors.push(r.reactor)
+    if (!r.pending) entry.allPending = false
+    map.set(r.emoji, entry)
   }
-  return Array.from(map.entries()).map(([emoji, reactors]) => ({
+  return Array.from(map.entries()).map(([emoji, { reactors, allPending }]) => ({
     emoji,
     count: reactors.length,
     reactors,
+    pending: allPending,
   }))
 }
 
@@ -166,8 +168,8 @@ export const MessageBubble: React.FC<Props> = ({
             {/* Reaction pills */}
             {groupedReactions.length > 0 && (
               <View style={[styles.reactionsRow, isMe ? styles.reactionsRight : styles.reactionsLeft]}>
-                {groupedReactions.map(({ emoji, count, reactors }) => (
-                  <View key={emoji} style={styles.reactionPill}>
+                {groupedReactions.map(({ emoji, count, reactors, pending }) => (
+                  <View key={emoji} style={[styles.reactionPill, pending && styles.reactionPillPending]}>
                     <Text style={styles.reactionEmoji}>{emoji}</Text>
                     {/* Reactor avatars (up to MAX_AVATARS) */}
                     <View style={styles.reactorAvatars}>
@@ -301,6 +303,9 @@ const useStyles = makeStyles(({ colors }) => ({
     borderRadius: 12,
     paddingHorizontal: 6,
     paddingVertical: 2,
+  },
+  reactionPillPending: {
+    opacity: 0.45,
   },
   reactionEmoji: {
     fontSize: 14,
