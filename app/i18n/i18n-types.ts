@@ -1697,13 +1697,13 @@ type RootTranslation = {
 		 */
 		myAccounts: string
 		/**
-		 * P​l​e​a​s​e​ ​c​o​m​p​l​e​t​e​ ​o​r​ ​r​e​f​u​n​d​ ​a​l​l​ ​p​e​n​d​i​n​g​ ​t​r​a​n​s​a​c​t​i​o​n​s​ ​b​e​f​o​r​e​ ​u​n​i​n​s​t​a​l​l​i​n​g​ ​F​l​a​s​h​ ​o​r​ ​p​e​n​d​i​n​g​ ​f​u​n​d​s​ ​w​i​l​l​ ​b​e​ ​l​o​s​t​.
+		 * P​l​e​a​s​e​ ​c​o​m​p​l​e​t​e​ ​o​r​ claim ​a​l​l​ unclaimed deposits ​b​e​f​o​r​e​ ​u​n​i​n​s​t​a​l​l​i​n​g​ ​F​l​a​s​h​ ​o​r​ unclaimed deposits ​w​i​l​l​ ​b​e​ ​l​o​s​t​.
 		 */
-		refundableWarning: string
+		unclaimedDepositsWarning: string
 		/**
-		 * R​e​f​u​n​d​a​b​l​e​s
+		 * Unclaimed Deposits
 		 */
-		refundables: string
+		unclaimedDeposits: string
 		/**
 		 * C​a​s​h
 		 */
@@ -2082,6 +2082,10 @@ type RootTranslation = {
 		 * P​a​y​c​o​d​e​ ​/​ ​L​N​U​R​L
 		 */
 		payCodeOrLNURL: string
+		/**
+		 * You cannot receive a zero sats. Please enter an amount corresponding to 1 or more sats.
+		 */
+		cantReceiveZeroSats: string
 		/**
 		 * *​ ​I​n​i​t​i​a​l​ ​d​e​p​o​s​i​t​ ​o​f​ ​$​5​ ​r​e​c​o​m​m​e​n​d​e​d​ ​f​o​r​ ​c​h​a​n​n​e​l​ ​s​e​t​u​p​.​ ​~​$​1​ ​w​i​l​l​ ​b​e​ ​p​a​i​d​ ​a​s​ ​s​e​t​u​p​ ​f​e​e​.
 		 */
@@ -4048,6 +4052,10 @@ type RootTranslation = {
 		 */
 		description: string
 		/**
+		 * Details
+		 */
+		details: string
+		/**
 		 * D​o​m​a​i​n
 		 */
 		domain: string
@@ -4693,9 +4701,17 @@ type RootTranslation = {
 	}
 	RefundFlow: {
 		/**
-		 * R​e​f​u​n​d​a​b​l​e​ ​T​r​a​n​s​a​c​t​i​o​n​s
+		 * Unclaimed Deposits
 		 */
 		refundListTitle: string
+		/**
+		 * Deposit Details
+		 */
+		depositDetails: string
+		/**
+		 * Refund Deposit
+		 */
+		refundTitle: string
 		/**
 		 * D​e​s​t​i​n​a​t​i​o​n
 		 */
@@ -4733,17 +4749,65 @@ type RootTranslation = {
 		 */
 		fast: string
 		/**
-		 * H​a​l​f​ ​H​o​u​r
+		 * Medium
 		 */
-		halfHour: string
+		medium: string
 		/**
-		 * H​o​u​r
+		 * Slow
 		 */
-		hour: string
+		slow: string
 		/**
 		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
 		 */
 		txId: string
+		/**
+		 * Refunded
+		 */
+		refunded: string
+		/**
+		 * Pending
+		 */
+		pending: string
+		/**
+		 * Fee too high
+		 */
+		feeExceeded: string
+		/**
+		 * Claim failed
+		 */
+		claimFailed: string
+		/**
+		 * This deposit will be claimed automatically when network fees are lower.
+		 */
+		automaticClaim: string
+		/**
+		 * Approve to claim this deposit with the fee shown above, or reject to process a refund to an external wallet.
+		 */
+		approveFee: string
+		/**
+		 * Enter your Bitcoin address to receive the refund
+		 */
+		enterAddress: string
+		/**
+		 * Select a network fee for your refund
+		 */
+		selectFee: string
+		/**
+		 * Review and confirm your refund
+		 */
+		confirmRefund: string
+		/**
+		 * Processing refund...
+		 */
+		processing: string
+		/**
+		 * Success!
+		 */
+		success: string
+		/**
+		 * Your refund has been broadcast to the Bitcoin network
+		 */
+		refundSuccess: string
 	}
 	Nostr: {
 		/**
@@ -6606,13 +6670,13 @@ export type TranslationFunctions = {
 		 */
 		myAccounts: () => LocalizedString
 		/**
-		 * Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.
+		 * P​l​e​a​s​e​ ​c​o​m​p​l​e​t​e​ ​o​r​ claim ​a​l​l​ unclaimed deposits ​b​e​f​o​r​e​ ​u​n​i​n​s​t​a​l​l​i​n​g​ ​F​l​a​s​h​ ​o​r​ unclaimed deposits ​w​i​l​l​ ​b​e​ ​l​o​s​t​.
 		 */
-		refundableWarning: () => LocalizedString
+		unclaimedDepositsWarning: () => LocalizedString
 		/**
-		 * Refundables
+		 * Unclaimed Deposits
 		 */
-		refundables: () => LocalizedString
+		unclaimedDeposits: () => LocalizedString
 		/**
 		 * Cash
 		 */
@@ -6985,6 +7049,10 @@ export type TranslationFunctions = {
 		 * Paycode / LNURL
 		 */
 		payCodeOrLNURL: () => LocalizedString
+		/**
+		 * You cannot receive a zero sats. Please enter an amount corresponding to 1 or more sats.
+		 */
+		cantReceiveZeroSats: () => LocalizedString
 		/**
 		 * * Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee.
 		 */
@@ -8893,6 +8961,10 @@ export type TranslationFunctions = {
 		 */
 		description: () => LocalizedString
 		/**
+		 * Details
+		 */
+		details: () => LocalizedString
+		/**
 		 * Domain
 		 */
 		domain: () => LocalizedString
@@ -9525,9 +9597,17 @@ export type TranslationFunctions = {
 	}
 	RefundFlow: {
 		/**
-		 * Refundable Transactions
+		 * Unclaimed Deposits
 		 */
 		refundListTitle: () => LocalizedString
+		/**
+		 * Deposit Details
+		 */
+		depositDetails: () => LocalizedString
+		/**
+		 * Refund Deposit
+		 */
+		refundTitle: () => LocalizedString
 		/**
 		 * Destination
 		 */
@@ -9565,17 +9645,65 @@ export type TranslationFunctions = {
 		 */
 		fast: () => LocalizedString
 		/**
-		 * Half Hour
+		 * Medium
 		 */
-		halfHour: () => LocalizedString
+		medium: () => LocalizedString
 		/**
-		 * Hour
+		 * Slow
 		 */
-		hour: () => LocalizedString
+		slow: () => LocalizedString
 		/**
 		 * Transaction ID
 		 */
 		txId: () => LocalizedString
+		/**
+		 * Refunded
+		 */
+		refunded: () => LocalizedString
+		/**
+		 * Pending
+		 */
+		pending: () => LocalizedString
+		/**
+		 * Fee too high
+		 */
+		feeExceeded: () => LocalizedString
+		/**
+		 * Claim failed
+		 */
+		claimFailed: () => LocalizedString
+		/**
+		 * This deposit will be claimed automatically when network fees are lower.
+		 */
+		automaticClaim: () => LocalizedString
+		/**
+		 * Approve to claim this deposit with the fee shown above, or reject to process a refund to an external wallet.
+		 */
+		approveFee: () => LocalizedString
+		/**
+		 * Enter your Bitcoin address to receive the refund
+		 */
+		enterAddress: () => LocalizedString
+		/**
+		 * Select a network fee for your refund
+		 */
+		selectFee: () => LocalizedString
+		/**
+		 * Review and confirm your refund
+		 */
+		confirmRefund: () => LocalizedString
+		/**
+		 * Processing refund...
+		 */
+		processing: () => LocalizedString
+		/**
+		 * Success!
+		 */
+		success: () => LocalizedString
+		/**
+		 * Your refund has been broadcast to the Bitcoin network
+		 */
+		refundSuccess: () => LocalizedString
 	}
 	Nostr: {
 		/**
