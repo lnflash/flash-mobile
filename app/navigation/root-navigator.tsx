@@ -10,7 +10,7 @@ import {
 } from "../screens/authentication-screen"
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
-import { CardScreen, FlashcardTopup } from "../screens/card-screen"
+import { CardScreen, FlashcardTopup, CashuTopup } from "../screens/card-screen"
 import { ChatList } from "@app/screens/chat"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
@@ -267,6 +267,13 @@ export const RootStack = () => {
         component={FlashcardTopup}
         options={{
           title: LL.ReceiveScreen.topupFlashcard(),
+        }}
+      />
+      <RootNavigator.Screen
+        name="cashuTopup"
+        component={CashuTopup}
+        options={{
+          title: "Flash Card Top-Up",
         }}
       />
       <RootNavigator.Screen

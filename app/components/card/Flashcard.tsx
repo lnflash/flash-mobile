@@ -28,9 +28,10 @@ import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 type Props = {
   onReload: () => void
   onTopup: () => void
+  onCashuTopup?: () => void
 }
 
-const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
+const Flashcard: React.FC<Props> = ({ onReload, onTopup, onCashuTopup }) => {
   const isAuthed = useIsAuthed()
   const styles = useStyles()
   const { colors } = useTheme().theme
@@ -72,6 +73,14 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
         <View style={styles.btns}>
           <IconBtn type="clear" icon="down" label={`Reload\nCard`} onPress={onReload} />
           <IconBtn type="clear" icon="qr" label={`Topup via\nQR`} onPress={onTopup} />
+          {onCashuTopup && (
+            <IconBtn
+              type="clear"
+              icon="cardAdd"
+              label={`Flash\nTop-Up`}
+              onPress={onCashuTopup}
+            />
+          )}
           <IconBtn
             type="clear"
             icon={"cardRemove"}
