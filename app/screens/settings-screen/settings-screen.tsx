@@ -107,7 +107,7 @@ export const SettingsScreen: React.FC = () => {
       {(currentLevel === AccountLevel.Two || currentLevel === AccountLevel.Three) && (
         <SettingsGroup name="Reports" items={items.reports} />
       )}
-      <SettingsGroup name="Experimental" items={items.experimental} />
+      <SettingsGroup name="Chat" items={items.experimental} />
       <SettingsGroup name={LL.SettingsScreen.keysManagement()} items={items.wallet} />
       <SettingsGroup name={LL.common.preferences()} items={items.preferences} />
       <SettingsGroup
