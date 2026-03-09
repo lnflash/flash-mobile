@@ -13,28 +13,16 @@ import { TxItem } from "@app/components/transaction-item"
 import { Loading } from "@app/contexts/ActivityIndicatorContext"
 import { PrimaryBtn } from "@app/components/buttons"
 
-// graphql
-import { WalletCurrency } from "@app/graphql/generated"
-import { groupTransactionsByDate } from "@app/graphql/transactions"
-
-// Breez SDK
-import {
-  listRefundables,
-  Payment,
-  RefundableSwap,
-} from "@breeztech/react-native-breez-sdk-liquid"
-import { listPaymentsBreezSDK } from "@app/utils/breez-sdk-liquid"
-import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
-
 // types
-import { toBtcMoneyAmount } from "@app/types/amounts"
+import { DepositInfo } from "@breeztech/breez-sdk-spark-react-native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { BreezTransaction, getTransactionId } from "@app/types/transactions"
 
-// store
-import { usePersistentStateContext } from "@app/store/persistent-state"
-import { loadJson } from "@app/utils/storage"
+// utils
+import { listPaymentsBreezSDK, listUnclaimedDeposits } from "@app/utils/breez-sdk"
+import { groupByDate, formatBreezPayments } from "@app/utils/transactions"
 
-type NavigationProp = StackNavigationProp<RootStackParamList, "USDTransactionHistory">
+type NavigationProp = StackNavigationProp<RootStackParamList, "BTCTransactionHistory">
 
 export const BTCTransactionHistory = () => {
   const navigation = useNavigation<NavigationProp>()
@@ -43,47 +31,34 @@ export const BTCTransactionHistory = () => {
   const { LL, locale } = useI18nContext()
   const { convertMoneyAmount } = usePriceConversion()
 
-  const { persistentState, updateState } = usePersistentStateContext()
-
-  const [refundables, setRefundables] = useState<RefundableSwap[]>([])
+  const [deposits, setDeposits] = useState<DepositInfo[]>([])
   const [hasMore, setHasMore] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [fetchingMore, setFetchingMore] = useState(false)
   const [breezLoading, setBreezLoading] = useState(false)
-  const [txsList, setTxsList] = useState<any[]>(persistentState.btcTransactions || [])
+  const [txsList, setTxsList] = useState<BreezTransaction[]>([])
 
   useEffect(() => {
     fetchPaymentsBreez(0)
-    fetchRefundables()
+    fetchUnclaimedDeposits()
   }, [])
 
-  const fetchRefundables = async () => {
-    const refundables = (await listRefundables()) || []
-    const refundedTxs = (await loadJson("refundedTxs")) || []
-    console.log("Refundable and Refunded Transactions>>>>>>>>>>", [
-      ...refundables,
-      ...refundedTxs,
-    ])
-    setRefundables([...refundables, ...refundedTxs])
+  const fetchUnclaimedDeposits = async () => {
+    const unclaimedDeposits = (await listUnclaimedDeposits()) || []
+    setDeposits(unclaimedDeposits)
   }
 
   const fetchPaymentsBreez = async (offset: number) => {
+    if (!convertMoneyAmount) return
+
     setBreezLoading(true)
 
     const payments = await listPaymentsBreezSDK(offset, 15)
 
-    let formattedBreezTxs = await formatBreezTransactions(payments)
+    const formattedBreezTxs = formatBreezPayments({ payments, convertMoneyAmount })
 
     if (offset === 0) {
       setTxsList(formattedBreezTxs)
-      updateState((state: any) => {
-        if (state)
-          return {
-            ...state,
-            btcTransactions: formattedBreezTxs,
-          }
-        return undefined
-      })
     } else {
       setTxsList([...txsList, ...formattedBreezTxs])
     }
@@ -98,19 +73,9 @@ export const BTCTransactionHistory = () => {
     }
   }
 
-  const formatBreezTransactions = async (txs: Payment[]) => {
-    if (!convertMoneyAmount || !txs) {
-      return []
-    }
-    const formattedTxs = txs?.map((txDetails) =>
-      formatPaymentsBreezSDK({ txDetails, convertMoneyAmount }),
-    )
-
-    return formattedTxs?.filter(Boolean) ?? []
-  }
-
-  const transactionSections = groupTransactionsByDate({
-    txs: txsList ?? [],
+  const transactionSections = groupByDate({
+    items: txsList ?? [],
+    getTimestamp: (tx) => Number(tx.payment.timestamp),
     LL,
     locale,
   })
@@ -136,7 +101,7 @@ export const BTCTransactionHistory = () => {
       <Screen>
         <SectionList
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => <TxItem key={item.id} tx={item} />}
+          renderItem={({ item }) => <TxItem key={getTransactionId(item)} tx={item} />}
           initialNumToRender={20}
           renderSectionHeader={({ section: { title } }) => (
             <View style={styles.sectionHeaderContainer}>
@@ -161,7 +126,7 @@ export const BTCTransactionHistory = () => {
             )
           }
           sections={transactionSections}
-          keyExtractor={(item, index) => item.id + index}
+          keyExtractor={(item, index) => getTransactionId(item) + index}
           onEndReachedThreshold={0.5}
           onEndReached={onEndReached}
           refreshControl={
@@ -174,12 +139,14 @@ export const BTCTransactionHistory = () => {
           }
           contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 20 }}
         />
-        {refundables.length > 0 && (
+        {deposits.length > 0 && (
           <View style={styles.floatingButtonWrapper}>
             <View style={styles.floatingButton}>
               <PrimaryBtn
-                label={LL.RefundFlow.pendingTransactions()}
-                onPress={() => navigation.navigate("RefundTransactionList")}
+                label={`${deposits.length} Unclaimed Deposit${
+                  deposits.length === 1 ? "" : "s"
+                }`}
+                onPress={() => navigation.navigate("UnclaimedDepositsList")}
               />
             </View>
           </View>
