@@ -8,7 +8,7 @@ import {
   useBusinessAccountUpgradeRequestMutation,
   HomeAuthedDocument,
   useIdDocumentUploadUrlGenerateMutation,
-  useAccountUpgradeRequestQuery,
+  useLatestAccountUpgradeRequestQuery,
   useUserEmailRegistrationInitiateMutation,
   useAuthQuery,
   BusinessAccountUpgradeRequestInput,
@@ -35,8 +35,10 @@ export const useAccountUpgrade = () => {
   )
 
   const { data: dataAuthed } = useAuthQuery()
-  const { data } = useAccountUpgradeRequestQuery({ fetchPolicy: "cache-and-network" })
-  const upgradeData = data?.accountUpgradeRequest.upgradeRequest
+  const { data } = useLatestAccountUpgradeRequestQuery({
+    fetchPolicy: "cache-and-network",
+  })
+  const upgradeData = data?.latestAccountUpgradeRequest.upgradeRequest
 
   const [registerUserEmail] = useUserEmailRegistrationInitiateMutation()
   const [generateIdDocumentUploadUrl] = useIdDocumentUploadUrlGenerateMutation()

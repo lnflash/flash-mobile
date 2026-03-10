@@ -210,7 +210,7 @@ export type AccountUpgradeRequest = {
   readonly address: Address;
   readonly bankAccount?: Maybe<BankAccount>;
   readonly currentLevel: AccountLevel;
-  readonly email: Scalars['String']['output'];
+  readonly email?: Maybe<Scalars['String']['output']>;
   readonly fullName: Scalars['String']['output'];
   readonly idDocument: Scalars['Boolean']['output'];
   /** ERPNext document name */
@@ -1452,7 +1452,6 @@ export type PublicWallet = {
 export type Query = {
   readonly __typename: 'Query';
   readonly accountDefaultWallet: PublicWallet;
-  readonly accountUpgradeRequest: AccountUpgradeRequestPayload;
   readonly beta: Scalars['Boolean']['output'];
   /** @deprecated Deprecated in favor of realtimePrice */
   readonly btcPrice?: Maybe<Price>;
@@ -1466,6 +1465,7 @@ export type Query = {
   readonly hiddenBalanceToolTip: Scalars['Boolean']['output'];
   readonly hideBalance: Scalars['Boolean']['output'];
   readonly isFlashNpub?: Maybe<IsFlashNpubPayload>;
+  readonly latestAccountUpgradeRequest: AccountUpgradeRequestPayload;
   readonly lnInvoicePaymentStatus: LnInvoicePaymentStatusPayload;
   readonly me?: Maybe<User>;
   readonly mobileVersions?: Maybe<ReadonlyArray<Maybe<MobileVersions>>>;
@@ -2408,10 +2408,10 @@ export type NpubByUsernameQueryVariables = Exact<{
 
 export type NpubByUsernameQuery = { readonly __typename: 'Query', readonly npubByUsername?: { readonly __typename: 'npubByUsername', readonly npub?: string | null, readonly username?: string | null } | null };
 
-export type AccountUpgradeRequestQueryVariables = Exact<{ [key: string]: never; }>;
+export type LatestAccountUpgradeRequestQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly accountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly currentLevel: AccountLevel, readonly email: string, readonly fullName: string, readonly idDocument: boolean, readonly name: string, readonly phoneNumber: string, readonly requestedLevel: AccountLevel, readonly status: string, readonly terminalsRequested: number, readonly username: string, readonly address: { readonly __typename: 'Address', readonly city: string, readonly country: string, readonly line1: string, readonly line2?: string | null, readonly postalCode?: string | null, readonly state: string, readonly title: string }, readonly bankAccount?: { readonly __typename: 'BankAccount', readonly accountNumber: number, readonly accountType: string, readonly bankName: string, readonly bankBranch: string, readonly currency: string } | null } | null, readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string } | null> | null } };
+export type LatestAccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly latestAccountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string } | null> | null, readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly currentLevel: AccountLevel, readonly fullName: string, readonly terminalsRequested: number, readonly status: string, readonly requestedLevel: AccountLevel, readonly phoneNumber: string, readonly email?: string | null, readonly idDocument: boolean, readonly address: { readonly __typename: 'Address', readonly city: string, readonly country: string, readonly line1: string, readonly line2?: string | null, readonly postalCode?: string | null, readonly state: string, readonly title: string }, readonly bankAccount?: { readonly __typename: 'BankAccount', readonly accountNumber: number, readonly accountType: string, readonly bankBranch: string, readonly bankName: string, readonly currency: string } | null } | null } };
 
 export type SupportedBanksQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4679,9 +4679,13 @@ export function useNpubByUsernameLazyQuery(baseOptions?: Apollo.LazyQueryHookOpt
 export type NpubByUsernameQueryHookResult = ReturnType<typeof useNpubByUsernameQuery>;
 export type NpubByUsernameLazyQueryHookResult = ReturnType<typeof useNpubByUsernameLazyQuery>;
 export type NpubByUsernameQueryResult = Apollo.QueryResult<NpubByUsernameQuery, NpubByUsernameQueryVariables>;
-export const AccountUpgradeRequestDocument = gql`
-    query AccountUpgradeRequest {
-  accountUpgradeRequest {
+export const LatestAccountUpgradeRequestDocument = gql`
+    query LatestAccountUpgradeRequest {
+  latestAccountUpgradeRequest {
+    errors {
+      code
+      message
+    }
     upgradeRequest {
       address {
         city
@@ -4695,55 +4699,49 @@ export const AccountUpgradeRequestDocument = gql`
       bankAccount {
         accountNumber
         accountType
-        bankName
         bankBranch
+        bankName
         currency
       }
       currentLevel
-      email
       fullName
-      idDocument
-      name
-      phoneNumber
-      requestedLevel
-      status
       terminalsRequested
-      username
-    }
-    errors {
-      code
-      message
+      status
+      requestedLevel
+      phoneNumber
+      email
+      idDocument
     }
   }
 }
     `;
 
 /**
- * __useAccountUpgradeRequestQuery__
+ * __useLatestAccountUpgradeRequestQuery__
  *
- * To run a query within a React component, call `useAccountUpgradeRequestQuery` and pass it any options that fit your needs.
- * When your component renders, `useAccountUpgradeRequestQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useLatestAccountUpgradeRequestQuery` and pass it any options that fit your needs.
+ * When your component renders, `useLatestAccountUpgradeRequestQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useAccountUpgradeRequestQuery({
+ * const { data, loading, error } = useLatestAccountUpgradeRequestQuery({
  *   variables: {
  *   },
  * });
  */
-export function useAccountUpgradeRequestQuery(baseOptions?: Apollo.QueryHookOptions<AccountUpgradeRequestQuery, AccountUpgradeRequestQueryVariables>) {
+export function useLatestAccountUpgradeRequestQuery(baseOptions?: Apollo.QueryHookOptions<LatestAccountUpgradeRequestQuery, LatestAccountUpgradeRequestQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<AccountUpgradeRequestQuery, AccountUpgradeRequestQueryVariables>(AccountUpgradeRequestDocument, options);
+        return Apollo.useQuery<LatestAccountUpgradeRequestQuery, LatestAccountUpgradeRequestQueryVariables>(LatestAccountUpgradeRequestDocument, options);
       }
-export function useAccountUpgradeRequestLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AccountUpgradeRequestQuery, AccountUpgradeRequestQueryVariables>) {
+export function useLatestAccountUpgradeRequestLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<LatestAccountUpgradeRequestQuery, LatestAccountUpgradeRequestQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<AccountUpgradeRequestQuery, AccountUpgradeRequestQueryVariables>(AccountUpgradeRequestDocument, options);
+          return Apollo.useLazyQuery<LatestAccountUpgradeRequestQuery, LatestAccountUpgradeRequestQueryVariables>(LatestAccountUpgradeRequestDocument, options);
         }
-export type AccountUpgradeRequestQueryHookResult = ReturnType<typeof useAccountUpgradeRequestQuery>;
-export type AccountUpgradeRequestLazyQueryHookResult = ReturnType<typeof useAccountUpgradeRequestLazyQuery>;
-export type AccountUpgradeRequestQueryResult = Apollo.QueryResult<AccountUpgradeRequestQuery, AccountUpgradeRequestQueryVariables>;
+export type LatestAccountUpgradeRequestQueryHookResult = ReturnType<typeof useLatestAccountUpgradeRequestQuery>;
+export type LatestAccountUpgradeRequestLazyQueryHookResult = ReturnType<typeof useLatestAccountUpgradeRequestLazyQuery>;
+export type LatestAccountUpgradeRequestQueryResult = Apollo.QueryResult<LatestAccountUpgradeRequestQuery, LatestAccountUpgradeRequestQueryVariables>;
 export const SupportedBanksDocument = gql`
     query SupportedBanks {
   supportedBanks {

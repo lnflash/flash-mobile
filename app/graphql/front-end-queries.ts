@@ -275,8 +275,12 @@ gql`
     }
   }
 
-  query AccountUpgradeRequest {
-    accountUpgradeRequest {
+  query LatestAccountUpgradeRequest {
+    latestAccountUpgradeRequest {
+      errors {
+        code
+        message
+      }
       upgradeRequest {
         address {
           city
@@ -290,24 +294,18 @@ gql`
         bankAccount {
           accountNumber
           accountType
-          bankName
           bankBranch
+          bankName
           currency
         }
         currentLevel
-        email
         fullName
-        idDocument
-        name
-        phoneNumber
-        requestedLevel
-        status
         terminalsRequested
-        username
-      }
-      errors {
-        code
-        message
+        status
+        requestedLevel
+        phoneNumber
+        email
+        idDocument
       }
     }
   }
