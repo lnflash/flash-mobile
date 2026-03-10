@@ -35,6 +35,9 @@ const useLogout = () => {
       userLogoutMutation({ variables: { input: { deviceToken } } })
         .then(async (res) => {
           console.log("USER LOGOUT MUTATION RES: ", res.data?.userLogout)
+          if (res.data?.userLogout.success) {
+            await cleanUp(clearDeviceCred)
+          }
         })
         .catch((err) => {
           console.log("USER LOGOUT MUTATION ERR: ", err)
@@ -42,7 +45,6 @@ const useLogout = () => {
     } catch (err: unknown) {
       console.log("USER LOGOUT MUTATION ERR CATCH: ", err)
     }
-    await cleanUp(clearDeviceCred)
   }
 
   const cleanUp = async (clearDeviceCred?: boolean) => {
