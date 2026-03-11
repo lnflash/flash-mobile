@@ -14,7 +14,7 @@ import { DestinationField, Fees, SuccessModal } from "@app/components/refund-flo
 
 // utils
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { toBtcMoneyAmount } from "@app/types/amounts"
+import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 import { refundDeposit, fetchRecommendedFees } from "@app/utils/breez-sdk"
 
 type Props = StackScreenProps<RootStackParamList, "RefundDeposit">
@@ -63,7 +63,6 @@ const RefundDeposit: React.FC<Props> = ({ navigation, route }) => {
       })
     } catch (err) {
       console.error("Failed to load recommended fees:", err)
-      // Use fallback values already set in initial state
     }
   }
 
@@ -73,20 +72,18 @@ const RefundDeposit: React.FC<Props> = ({ navigation, route }) => {
     setError(undefined)
   }
 
-  const validateDestination = () => {
-    if (!destination.trim()) {
+  const validateDestination = (): boolean => {
+    const trimmed = destination.trim()
+    if (!trimmed) {
       setDestinationStatus("invalid")
-      setError("Please enter a destination address")
+      setError(LL.RefundFlow.enterDestinationAddress())
       return false
     }
-
-    const trimmedAddress = destination.trim()
-    if (trimmedAddress.length < 26 || trimmedAddress.length > 90) {
+    if (trimmed.length < 26 || trimmed.length > 90) {
       setDestinationStatus("invalid")
-      setError("Invalid Bitcoin address format")
+      setError(LL.RefundFlow.invalidBitcoinAddress())
       return false
     }
-
     setDestinationStatus("valid")
     setError(undefined)
     return true
@@ -96,15 +93,8 @@ const RefundDeposit: React.FC<Props> = ({ navigation, route }) => {
     navigation.navigate("scanningQRCode")
   }
 
-  const handleSelectFee = (feeType: FeeType) => {
-    setSelectedFeeType(feeType)
-  }
-
   const handleRefund = async () => {
-    // Validate destination before proceeding
-    if (!validateDestination()) {
-      return
-    }
+    if (!validateDestination()) return
 
     setIsProcessing(true)
     setError(undefined)
@@ -121,53 +111,51 @@ const RefundDeposit: React.FC<Props> = ({ navigation, route }) => {
         setRefundTxId(result.txId)
         setShowSuccessModal(true)
       } else {
-        setError(result.error || "Refund failed")
+        setError(result.error || LL.RefundFlow.refundFailed())
       }
     } catch (err) {
       console.error("Refund error:", err)
-      setError(err instanceof Error ? err.message : "Unknown error occurred")
+      setError(err instanceof Error ? err.message : LL.RefundFlow.unknownError())
     } finally {
       setIsProcessing(false)
     }
   }
 
+  // --- Formatted values ---
+
   const formattedAmount = formatDisplayAndWalletAmount({
     displayAmount: convertMoneyAmount(
       toBtcMoneyAmount(Number(deposit.amountSats)),
-      "USD" as any,
+      DisplayCurrency,
     ),
     walletAmount: toBtcMoneyAmount(Number(deposit.amountSats)),
   })
 
-  // Estimate fee (rough estimate: ~200 vbytes for a refund tx)
   const selectedFeeRate = feeRates[selectedFeeType]
-  const estimatedFeeSats = selectedFeeRate * 200
+  const ESTIMATED_TX_VBYTES = 140
+  const estimatedFeeSats = selectedFeeRate * ESTIMATED_TX_VBYTES
   const receivableAmount = Math.max(0, Number(deposit.amountSats) - estimatedFeeSats)
 
   const formattedFee = formatDisplayAndWalletAmount({
-    displayAmount: convertMoneyAmount(toBtcMoneyAmount(estimatedFeeSats), "USD" as any),
+    displayAmount: convertMoneyAmount(
+      toBtcMoneyAmount(estimatedFeeSats),
+      DisplayCurrency,
+    ),
     walletAmount: toBtcMoneyAmount(estimatedFeeSats),
   })
 
   const formattedReceivable = formatDisplayAndWalletAmount({
-    displayAmount: convertMoneyAmount(toBtcMoneyAmount(receivableAmount), "USD" as any),
+    displayAmount: convertMoneyAmount(
+      toBtcMoneyAmount(receivableAmount),
+      DisplayCurrency,
+    ),
     walletAmount: toBtcMoneyAmount(receivableAmount),
   })
-
-  const isFormValid = destinationStatus === "valid" && !isProcessing
 
   return (
     <Screen preset="scroll" style={styles.screenStyle}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>
-          {LL.RefundFlow.refundTitle?.() || "Refund Deposit"}
-        </Text>
-        <Text style={styles.subtitle}>
-          {LL.RefundFlow.enterAddress?.() ||
-            "Enter your Bitcoin address to receive the refund"}
-        </Text>
-
-        {/* Destination Field */}
+        {/* Destination */}
         <View style={styles.section}>
           <DestinationField
             destination={destination}
@@ -179,7 +167,7 @@ const RefundDeposit: React.FC<Props> = ({ navigation, route }) => {
           />
         </View>
 
-        {/* Amount Display */}
+        {/* Amount */}
         <View style={styles.section}>
           <Text style={styles.label}>{LL.SendBitcoinScreen.amount()}</Text>
           <View style={styles.amountContainer}>
@@ -189,61 +177,47 @@ const RefundDeposit: React.FC<Props> = ({ navigation, route }) => {
 
         {/* Fee Selection */}
         <View style={styles.section}>
-          <Fees selectedFeeType={selectedFeeType} onSelectFee={handleSelectFee} />
+          <Fees
+            wrapperStyle={styles.feesWrapper}
+            selectedFeeType={selectedFeeType}
+            onSelectFee={setSelectedFeeType}
+          />
         </View>
 
-        {/* Confirmation Card with Fee Breakdown */}
-        <View style={styles.confirmationCard}>
-          <Text style={styles.confirmationTitle}>
-            {LL.RefundFlow.confirmRefund?.() || "Confirm Refund"}
-          </Text>
-          <View style={styles.feeBreakdown}>
-            <View style={styles.feeRow}>
-              <Text style={styles.feeRowLabel}>Deposit Amount</Text>
-              <Text style={styles.feeRowValue}>{formattedAmount}</Text>
-            </View>
-            <View style={styles.feeRow}>
-              <Text style={styles.feeRowLabel}>
-                Network Fee ({selectedFeeRate} sat/vB)
-              </Text>
-              <Text style={styles.feeRowValue}>-{formattedFee}</Text>
-            </View>
-            <View style={[styles.feeRow, styles.totalRow]}>
-              <Text style={styles.feeRowLabelBold}>You'll Receive</Text>
-              <Text style={styles.feeRowValueBold}>{formattedReceivable}</Text>
-            </View>
+        {/* Fee Breakdown */}
+        <View style={styles.feeBreakdown}>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeRowLabel}>{LL.SendBitcoinScreen.amount()}</Text>
+            <Text style={styles.feeRowValue}>{formattedAmount}</Text>
+          </View>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeRowLabel}>
+              {LL.RefundFlow.estimatedFee({ feeRate: String(selectedFeeRate) })}
+            </Text>
+            <Text style={styles.feeRowValue}>~{formattedFee}</Text>
+          </View>
+          <View style={[styles.feeRow, styles.totalRow]}>
+            <Text style={styles.feeRowLabelBold}>{LL.RefundFlow.estimatedReceive()}</Text>
+            <Text style={styles.feeRowValueBold}>~{formattedReceivable}</Text>
           </View>
         </View>
+
+        <Text style={styles.disclaimerText}>{LL.RefundFlow.feeEstimateDisclaimer()}</Text>
+
+        <PrimaryBtn
+          label={LL.RefundFlow.confirmRefund()}
+          onPress={handleRefund}
+          loading={isProcessing}
+          disabled={isProcessing}
+        />
 
         {!!error && (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
-
-        {/* Submit Button */}
-        <View style={styles.buttonContainer}>
-          <PrimaryBtn
-            label={
-              isProcessing
-                ? LL.RefundFlow.processing?.() || "Processing..."
-                : LL.RefundFlow.confirmRefund?.() || "Confirm Refund"
-            }
-            onPress={handleRefund}
-            loading={isProcessing}
-            disabled={!isFormValid}
-          />
-          <View style={{ height: 12 }} />
-          <PrimaryBtn
-            type="outline"
-            label={LL.common.cancel()}
-            onPress={() => navigation.goBack()}
-            disabled={isProcessing}
-          />
-        </View>
       </ScrollView>
 
-      {/* Success Modal */}
       <SuccessModal
         txId={refundTxId}
         isVisible={showSuccessModal}
@@ -264,19 +238,12 @@ const useStyles = makeStyles(({ colors }) => ({
     padding: 20,
     flexGrow: 1,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: colors.black,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.grey1,
-    marginBottom: 24,
-  },
   section: {
     marginBottom: 20,
+  },
+  feesWrapper: {
+    marginTop: 0,
+    marginBottom: 0,
   },
   label: {
     fontSize: 14,
@@ -287,40 +254,29 @@ const useStyles = makeStyles(({ colors }) => ({
   amountContainer: {
     backgroundColor: colors.grey5,
     padding: 16,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: "center",
   },
   amountText: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
     color: colors.black,
-  },
-  confirmationCard: {
-    backgroundColor: colors.grey5,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-  },
-  confirmationTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: colors.black,
-    marginBottom: 12,
   },
   feeBreakdown: {
-    backgroundColor: colors.white,
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: colors.grey5,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
   },
   feeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   totalRow: {
     borderTopWidth: 1,
     borderTopColor: colors.grey3,
-    paddingTop: 8,
+    paddingTop: 12,
     marginTop: 4,
     marginBottom: 0,
   },
@@ -342,11 +298,18 @@ const useStyles = makeStyles(({ colors }) => ({
     fontWeight: "bold",
     color: colors.black,
   },
+  disclaimerText: {
+    fontSize: 12,
+    color: colors.grey1,
+    textAlign: "center",
+    marginBottom: 20,
+  },
   errorBox: {
     backgroundColor: colors.error + "20",
     padding: 16,
     borderRadius: 12,
     marginBottom: 20,
+    marginTop: 20,
   },
   errorText: {
     fontSize: 14,
@@ -356,5 +319,8 @@ const useStyles = makeStyles(({ colors }) => ({
   buttonContainer: {
     marginTop: "auto",
     paddingTop: 20,
+  },
+  spacer: {
+    height: 12,
   },
 }))

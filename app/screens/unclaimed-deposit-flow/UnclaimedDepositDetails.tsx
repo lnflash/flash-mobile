@@ -13,7 +13,7 @@ import { PrimaryBtn } from "@app/components/buttons"
 
 // utils
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { toBtcMoneyAmount } from "@app/types/amounts"
+import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 import { claimDeposit } from "@app/utils/breez-sdk"
 
 type Props = StackScreenProps<RootStackParamList, "UnclaimedDepositDetails">
@@ -33,8 +33,9 @@ const UnclaimedDepositDetails: React.FC<Props> = ({ navigation, route }) => {
 
   const claimError = deposit.claimError
   const isFeeError = claimError?.tag === "MaxDepositClaimFeeExceeded"
-  const requiredFeeSats =
-    isFeeError && claimError ? (claimError.inner as any).requiredFeeSats as bigint : undefined
+  const requiredFeeSats = isFeeError
+    ? ((claimError.inner as any).requiredFeeSats as bigint)
+    : undefined
 
   const handleClaim = async () => {
     if (!requiredFeeSats) return
@@ -46,30 +47,26 @@ const UnclaimedDepositDetails: React.FC<Props> = ({ navigation, route }) => {
       const result = await claimDeposit(deposit, requiredFeeSats)
 
       if (result.success) {
-        // Success! Navigate back and refresh list
         navigation.goBack()
       } else {
-        setError(result.error || "Failed to claim deposit")
+        setError(result.error || LL.RefundFlow.failedToClaim())
       }
     } catch (err) {
       console.error("Claim error:", err)
-      setError(err instanceof Error ? err.message : "Unknown error occurred")
+      setError(err instanceof Error ? err.message : LL.RefundFlow.unknownError())
     } finally {
       setIsProcessing(false)
     }
   }
 
-  const handleReject = () => {
-    // Navigate to refund flow
-    navigation.navigate("RefundDeposit", {
-      deposit,
-    })
+  const handleRefund = () => {
+    navigation.navigate("RefundDeposit", { deposit })
   }
 
   const formattedAmount = formatDisplayAndWalletAmount({
     displayAmount: convertMoneyAmount(
       toBtcMoneyAmount(Number(deposit.amountSats)),
-      "USD" as any,
+      DisplayCurrency,
     ),
     walletAmount: toBtcMoneyAmount(Number(deposit.amountSats)),
   })
@@ -78,7 +75,7 @@ const UnclaimedDepositDetails: React.FC<Props> = ({ navigation, route }) => {
     ? formatDisplayAndWalletAmount({
         displayAmount: convertMoneyAmount(
           toBtcMoneyAmount(Number(requiredFeeSats)),
-          "USD" as any,
+          DisplayCurrency,
         ),
         walletAmount: toBtcMoneyAmount(Number(requiredFeeSats)),
       })
@@ -89,21 +86,26 @@ const UnclaimedDepositDetails: React.FC<Props> = ({ navigation, route }) => {
     : Number(deposit.amountSats)
 
   const formattedReceivable = formatDisplayAndWalletAmount({
-    displayAmount: convertMoneyAmount(
-      toBtcMoneyAmount(receivableAmount),
-      "USD" as any,
-    ),
+    displayAmount: convertMoneyAmount(toBtcMoneyAmount(receivableAmount), DisplayCurrency),
     walletAmount: toBtcMoneyAmount(receivableAmount),
   })
+
+  const getErrorExplanation = () => {
+    if (claimError?.tag === "MissingUtxo") {
+      return LL.RefundFlow.missingUtxo()
+    }
+    if (claimError?.tag === "Generic" && claimError.inner?.message) {
+      return claimError.inner.message
+    }
+    return LL.RefundFlow.couldNotClaimAutomatically()
+  }
 
   return (
     <Screen preset="fixed" style={styles.screenStyle}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Deposit Amount */}
+        {/* Amount */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {LL.SendBitcoinScreen.amount()}
-          </Text>
+          <Text style={styles.sectionTitle}>{LL.SendBitcoinScreen.amount()}</Text>
           <View style={styles.amountContainer}>
             <Text style={styles.amountText}>{formattedAmount}</Text>
           </View>
@@ -111,7 +113,7 @@ const UnclaimedDepositDetails: React.FC<Props> = ({ navigation, route }) => {
 
         {/* Transaction ID */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Transaction ID</Text>
+          <Text style={styles.sectionTitle}>{LL.RefundFlow.txId()}</Text>
           <View style={styles.fieldBackground}>
             <Text style={styles.txIdText} numberOfLines={1} ellipsizeMode="middle">
               {deposit.txid}
@@ -119,45 +121,42 @@ const UnclaimedDepositDetails: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Fee too high — user can approve or reject */}
+        {/* Scenario: Fee too high — Approve or Reject */}
         {isFeeError && requiredFeeSats !== undefined && (
           <>
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Fee Breakdown</Text>
               <View style={styles.feeBreakdown}>
                 <View style={styles.feeRow}>
-                  <Text style={styles.feeLabel}>Deposit Amount</Text>
+                  <Text style={styles.feeLabel}>{LL.SendBitcoinScreen.amount()}</Text>
                   <Text style={styles.feeValue}>{formattedAmount}</Text>
                 </View>
                 <View style={styles.feeRow}>
-                  <Text style={styles.feeLabel}>Network Fee</Text>
+                  <Text style={styles.feeLabel}>{LL.RefundFlow.networkFee()}</Text>
                   <Text style={styles.feeValue}>-{formattedFee}</Text>
                 </View>
                 <View style={[styles.feeRow, styles.totalRow]}>
-                  <Text style={styles.feeLabelBold}>You'll Receive</Text>
+                  <Text style={styles.feeLabelBold}>{LL.RefundFlow.youReceive()}</Text>
                   <Text style={styles.feeValueBold}>{formattedReceivable}</Text>
                 </View>
               </View>
             </View>
 
-            <View style={styles.warningBox}>
-              <Text style={styles.warningText}>
-                {LL.RefundFlow.approveFee()}
-              </Text>
+            <View style={styles.infoBox}>
+              <Text style={styles.infoText}>{LL.RefundFlow.approveFee()}</Text>
             </View>
 
             <View style={styles.buttonRow}>
               <View style={styles.halfButton}>
                 <PrimaryBtn
                   type="outline"
-                  label={LL.common.cancel()}
-                  onPress={handleReject}
+                  label={LL.RefundFlow.refund()}
+                  onPress={handleRefund}
                   disabled={isProcessing}
                 />
               </View>
               <View style={styles.halfButton}>
                 <PrimaryBtn
-                  label={"Approve"}
+                  label={LL.RefundFlow.approve()}
                   onPress={handleClaim}
                   loading={isProcessing}
                   disabled={isProcessing}
@@ -167,27 +166,18 @@ const UnclaimedDepositDetails: React.FC<Props> = ({ navigation, route }) => {
           </>
         )}
 
-        {/* Other claim errors — user can only refund */}
-        {!isFeeError && (
+        {/* Scenario: Generic / MissingUtxo — show error + Refund */}
+        {!!claimError && !isFeeError && (
           <>
-            <View style={styles.errorBox}>
-              <Text style={styles.errorTitle}>
-                {LL.RefundFlow.claimFailed()}
-              </Text>
-              <Text style={styles.errorText}>
-                {deposit.claimError?.tag === "MissingUtxo"
-                  ? "The deposit UTXO is missing. The transaction may not be confirmed yet."
-                  : deposit.claimError?.tag === "Generic" && deposit.claimError?.inner?.message
-                  ? deposit.claimError.inner.message
-                  : "This deposit could not be claimed automatically. You can refund it to an external wallet."}
+            <View style={styles.warningBox}>
+              <Text style={styles.warningTitle}>{LL.RefundFlow.claimFailed()}</Text>
+              <Text style={styles.warningText}>{getErrorExplanation()}</Text>
+              <Text style={[styles.warningText, { marginTop: 5 }]}>
+                {LL.RefundFlow.refundToExternalWallet()}
               </Text>
             </View>
 
-            <PrimaryBtn
-              label={LL.RefundFlow.refund()}
-              onPress={handleReject}
-              disabled={isProcessing}
-            />
+            <PrimaryBtn label={LL.RefundFlow.refund()} onPress={handleRefund} />
           </>
         )}
 
@@ -277,32 +267,44 @@ const useStyles = makeStyles(({ colors }) => ({
     fontWeight: "bold",
     color: colors.black,
   },
+  infoBox: {
+    backgroundColor: colors.primary + "20",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  infoText: {
+    fontSize: 14,
+    color: colors.black,
+    textAlign: "center",
+  },
   warningBox: {
     backgroundColor: colors.warning + "20",
     padding: 16,
     borderRadius: 12,
     marginBottom: 20,
   },
+  warningTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: colors.warning,
+    marginBottom: 8,
+  },
   warningText: {
     fontSize: 14,
     color: colors.black,
-    textAlign: "center",
   },
   errorBox: {
     backgroundColor: colors.error + "20",
     padding: 16,
     borderRadius: 12,
     marginBottom: 20,
-  },
-  errorTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: colors.error,
-    marginBottom: 8,
+    marginTop: 20,
   },
   errorText: {
     fontSize: 14,
     color: colors.error,
+    textAlign: "center",
   },
   buttonRow: {
     flexDirection: "row",
