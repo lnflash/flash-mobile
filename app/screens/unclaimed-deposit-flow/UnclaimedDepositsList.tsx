@@ -43,15 +43,60 @@ const UnclaimedDepositsList: React.FC<Props> = ({ navigation }) => {
   const fetchUnclaimedDeposits = async () => {
     setLoading(true)
     try {
-      const allDeposits = (await listUnclaimedDeposits()) || []
-      const filtered = allDeposits.filter((d: DepositInfo) => !d.refundTxId)
-      setDeposits(filtered)
+      const result = (await listUnclaimedDeposits()) || []
+      setDeposits(result)
     } catch (error) {
       console.error("Failed to fetch unclaimed deposits:", error)
       setDeposits([])
     } finally {
       setLoading(false)
     }
+  }
+
+  const getDepositState = (item: DepositInfo) => {
+    // 1. Already has a refund tx broadcast
+    if (item.refundTxId) {
+      return {
+        statusText: LL.RefundFlow.broadcasting(),
+        statusColor: colors.grey1,
+        disabled: true,
+        showPulse: true,
+      }
+    }
+
+    // 2. No claim error — SDK will auto-claim
+    if (!item.claimError) {
+      return {
+        statusText: LL.RefundFlow.autoClaiming(),
+        statusColor: colors.grey1,
+        disabled: true,
+        showPulse: true,
+      }
+    }
+
+    // 3. Fee exceeded — needs user approval
+    if (item.claimError.tag === "MaxDepositClaimFeeExceeded") {
+      return {
+        statusText: LL.RefundFlow.approvalRequired(),
+        statusColor: colors.warning,
+        disabled: false,
+        showPulse: false,
+      }
+    }
+
+    // 4. Generic / MissingUtxo — claim failed
+    return {
+      statusText: LL.RefundFlow.claimFailed(),
+      statusColor: colors.error,
+      disabled: false,
+      showPulse: false,
+    }
+  }
+
+  const handlePress = (item: DepositInfo) => {
+    if (!item.claimError || item.refundTxId) return
+    // All deposits with a claimError go to details screen first
+    navigation.navigate("UnclaimedDepositDetails", { deposit: item })
   }
 
   const renderItem = ({ item }: RenderItemProps) => {
@@ -63,24 +108,22 @@ const UnclaimedDepositsList: React.FC<Props> = ({ navigation }) => {
       walletAmount: toBtcMoneyAmount(Number(item.amountSats)),
     })
 
-    const statusText =
-      item.claimError?.tag === "MaxDepositClaimFeeExceeded"
-        ? LL.RefundFlow.feeExceeded()
-        : LL.RefundFlow.claimFailed()
+    const { statusText, statusColor, disabled, showPulse } = getDepositState(item)
 
     return (
       <Item colors={colors}>
         <ColumnWrapper>
           <Amount>{formattedAmount}</Amount>
-          <StatusText color={colors.error}>{statusText}</StatusText>
+          <StatusRow>
+            {showPulse && <PulseIndicator color={statusColor} />}
+            <StatusText color={statusColor}>{statusText}</StatusText>
+          </StatusRow>
         </ColumnWrapper>
-        <BtnWrapper
-          onPress={() =>
-            navigation.navigate("UnclaimedDepositDetails", { deposit: item })
-          }
-        >
-          <BtnText color={colors.white}>{LL.common.details()}</BtnText>
-        </BtnWrapper>
+        {!disabled && (
+          <BtnWrapper onPress={() => handlePress(item)}>
+            <BtnText color={colors.white}>{LL.common.details()}</BtnText>
+          </BtnWrapper>
+        )}
       </Item>
     )
   }
@@ -92,6 +135,7 @@ const UnclaimedDepositsList: React.FC<Props> = ({ navigation }) => {
       </EmptyWrapper>
     )
   }
+
   if (loading) {
     return (
       <LoadingWrapper>
@@ -133,6 +177,21 @@ const Amount = styled(Text)`
   font-size: 15px;
   margin-bottom: 5px;
 `
+
+const StatusRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+`
+
+const PulseIndicator = styled.View<{ color: string }>`
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background-color: ${({ color }) => color};
+  margin-right: 6px;
+  opacity: 0.7;
+`
+
 const StatusText = styled(Text)`
   font-size: 15px;
 `
