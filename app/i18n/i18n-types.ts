@@ -4044,6 +4044,10 @@ type RootTranslation = {
 		 */
 		csvExport: string
 		/**
+		 * E​x​p​o​r​t​ ​l​o​g​s
+		 */
+		exportSparkLogs: string
+		/**
 		 * D​a​t​e
 		 */
 		date: string
@@ -4769,7 +4773,7 @@ type RootTranslation = {
 		 */
 		pending: string
 		/**
-		 * A​u​t​o​-​c​l​a​i​m​i​n​g​.​.​.
+		 * This transfer will be claimed automatically
 		 */
 		autoClaiming: string
 		/**
@@ -4824,6 +4828,64 @@ type RootTranslation = {
 		 * R​e​f​u​n​d​ ​F​a​i​l​e​d
 		 */
 		refundFailed: string
+		/**
+		 * F​a​i​l​e​d​ ​t​o​ ​c​l​a​i​m​ ​d​e​p​o​s​i​t
+		 */
+		failedToClaim: string
+		/**
+		 * U​n​k​n​o​w​n​ ​e​r​r​o​r​ ​o​c​c​u​r​r​e​d
+		 */
+		unknownError: string
+		/**
+		 * T​h​e​ ​d​e​p​o​s​i​t​ ​U​T​X​O​ ​i​s​ ​m​i​s​s​i​n​g​.​ ​T​h​e​ ​t​r​a​n​s​a​c​t​i​o​n​ ​m​a​y​ ​n​o​t​ ​b​e​ ​c​o​n​f​i​r​m​e​d​ ​y​e​t​.
+		 */
+		missingUtxo: string
+		/**
+		 * T​h​i​s​ ​d​e​p​o​s​i​t​ ​c​o​u​l​d​ ​n​o​t​ ​b​e​ ​c​l​a​i​m​e​d​ ​a​u​t​o​m​a​t​i​c​a​l​l​y​.
+		 */
+		couldNotClaimAutomatically: string
+		/**
+		 * N​e​t​w​o​r​k​ ​F​e​e
+		 */
+		networkFee: string
+		/**
+		 * @param {string} feeRate
+		 * N​e​t​w​o​r​k​ ​F​e​e​ ​(​{​f​e​e​R​a​t​e​}​ ​s​a​t​/​v​B​)
+		 */
+		networkFeeWithRate: RequiredParams<'feeRate'>
+		/**
+		 * Y​o​u​ ​R​e​c​e​i​v​e
+		 */
+		youReceive: string
+		/**
+		 * A​p​p​r​o​v​e
+		 */
+		approve: string
+		/**
+		 * Y​o​u​ ​c​a​n​ ​r​e​f​u​n​d​ ​i​t​ ​t​o​ ​a​n​ ​e​x​t​e​r​n​a​l​ ​w​a​l​l​e​t​.
+		 */
+		refundToExternalWallet: string
+		/**
+		 * P​l​e​a​s​e​ ​e​n​t​e​r​ ​a​ ​d​e​s​t​i​n​a​t​i​o​n​ ​a​d​d​r​e​s​s
+		 */
+		enterDestinationAddress: string
+		/**
+		 * I​n​v​a​l​i​d​ ​B​i​t​c​o​i​n​ ​a​d​d​r​e​s​s​ ​f​o​r​m​a​t
+		 */
+		invalidBitcoinAddress: string
+		/**
+		 * @param {string} feeRate
+		 * E​s​t​.​ ​N​e​t​w​o​r​k​ ​F​e​e​ ​(​{​f​e​e​R​a​t​e​}​ ​s​a​t​/​v​B​)
+		 */
+		estimatedFee: RequiredParams<'feeRate'>
+		/**
+		 * E​s​t​.​ ​Y​o​u​ ​R​e​c​e​i​v​e
+		 */
+		estimatedReceive: string
+		/**
+		 * F​e​e​s​ ​a​r​e​ ​e​s​t​i​m​a​t​e​d​.​ ​T​h​e​ ​a​c​t​u​a​l​ ​f​e​e​ ​w​i​l​l​ ​b​e​ ​c​a​l​c​u​l​a​t​e​d​ ​a​t​ ​b​r​o​a​d​c​a​s​t​.
+		 */
+		feeEstimateDisclaimer: string
 	}
 	Nostr: {
 		/**
@@ -8969,6 +9031,10 @@ export type TranslationFunctions = {
 		 */
 		csvExport: () => LocalizedString
 		/**
+		 * Export Logs
+		 */
+		exportSparkLogs: () => LocalizedString
+		/**
 		 * Date
 		 */
 		date: () => LocalizedString
@@ -9397,7 +9463,7 @@ export type TranslationFunctions = {
 	}
 	reports: {
 		/**
-		 * Generate Reports
+		 * Export Transactions
 		 */
 		title: () => LocalizedString
 		/**
@@ -9681,7 +9747,7 @@ export type TranslationFunctions = {
 		 */
 		pending: () => LocalizedString
 		/**
-		 * Auto-claiming...
+		 * This transfer will be claimed automatically
 		 */
 		autoClaiming: () => LocalizedString
 		/**
@@ -9736,6 +9802,62 @@ export type TranslationFunctions = {
 		 * Refund Failed
 		 */
 		refundFailed: () => LocalizedString
+		/**
+		 * Failed to claim deposit
+		 */
+		failedToClaim: () => LocalizedString
+		/**
+		 * Unknown error occurred
+		 */
+		unknownError: () => LocalizedString
+		/**
+		 * The deposit UTXO is missing. The transaction may not be confirmed yet.
+		 */
+		missingUtxo: () => LocalizedString
+		/**
+		 * This deposit could not be claimed automatically.
+		 */
+		couldNotClaimAutomatically: () => LocalizedString
+		/**
+		 * Network Fee
+		 */
+		networkFee: () => LocalizedString
+		/**
+		 * Network Fee ({feeRate} sat/vB)
+		 */
+		networkFeeWithRate: (arg: { feeRate: string }) => LocalizedString
+		/**
+		 * You Receive
+		 */
+		youReceive: () => LocalizedString
+		/**
+		 * Approve
+		 */
+		approve: () => LocalizedString
+		/**
+		 * You can refund it to an external wallet.
+		 */
+		refundToExternalWallet: () => LocalizedString
+		/**
+		 * Please enter a destination address
+		 */
+		enterDestinationAddress: () => LocalizedString
+		/**
+		 * Invalid Bitcoin address format
+		 */
+		invalidBitcoinAddress: () => LocalizedString
+		/**
+		 * Est. Network Fee ({feeRate} sat/vB)
+		 */
+		estimatedFee: (arg: { feeRate: string }) => LocalizedString
+		/**
+		 * Est. You Receive
+		 */
+		estimatedReceive: () => LocalizedString
+		/**
+		 * Fees are estimated. The actual fee will be calculated at broadcast.
+		 */
+		feeEstimateDisclaimer: () => LocalizedString
 	}
 	Nostr: {
 		/**
