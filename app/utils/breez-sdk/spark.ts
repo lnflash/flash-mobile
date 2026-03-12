@@ -14,6 +14,7 @@ import {
   OnchainConfirmationSpeed,
   MaxFee,
   Fee,
+  initLogging,
 } from "@breeztech/breez-sdk-spark-react-native"
 import type {
   BreezSdkInterface,
@@ -28,8 +29,11 @@ import type {
   SendPaymentMethod,
   LnurlPayResponse,
   Payment,
+  Logger,
+  LogEntry,
 } from "@breeztech/breez-sdk-spark-react-native"
 import { API_KEY } from "@env"
+import { appendLog, initLogBuffer } from "./log-buffer"
 
 // Constants
 export const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
@@ -95,7 +99,22 @@ const retry = <T>(fn: () => Promise<T>, delayMs = 5000, maxRetries = 3): Promise
     tryFn()
   })
 
+const breezLogger: Logger = {
+  log(l: LogEntry) {
+    console.log(`[BreezSDK-Spark][${l.level}]: ${l.line}`)
+    appendLog(l.level, l.line)
+  },
+}
+
+let loggingInitialized = false
+
 const connectToSDK = async (): Promise<void> => {
+  if (!loggingInitialized) {
+    await initLogBuffer()
+    initLogging(undefined, breezLogger, undefined)
+    loggingInitialized = true
+  }
+
   const mnemonic = await getMnemonic()
 
   const seed = new Seed.Mnemonic({ mnemonic, passphrase: undefined })
@@ -423,8 +442,6 @@ export const lnurlWithdraw = async (
       completionTimeoutSecs: 30,
     })
 
-    console.log(`Payment: ${JSON.stringify(response)}`)
-
     return { success: true }
   }
   return { success: false, error: "Invalid LNURL type" }
@@ -432,7 +449,7 @@ export const lnurlWithdraw = async (
 
 export const onRedeem = async (
   lnurl: string,
-  amountSats: bigint,
+  amountSats: number,
   memo: string,
 ): Promise<{ success: boolean; error?: string }> => {
   try {
@@ -441,7 +458,7 @@ export const onRedeem = async (
     const input = await sdk.parse(lnurl)
     if (input.tag === InputType_Tags.LnurlWithdraw) {
       const response = await sdk.lnurlWithdraw({
-        amountSats,
+        amountSats: BigInt(amountSats),
         withdrawRequest: input.inner[0],
         completionTimeoutSecs: 30,
       })
@@ -453,7 +470,7 @@ export const onRedeem = async (
 
     if (input.tag === InputType_Tags.LightningAddress) {
       const prepareResponse = await sdk.prepareLnurlPay({
-        amountSats,
+        amountSats: BigInt(amountSats),
         payRequest: input.inner[0].payRequest,
         comment: memo,
         validateSuccessActionUrl: true,
