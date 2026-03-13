@@ -1,5 +1,4 @@
 import { getContactsFromEvent } from "@app/screens/chat/utils"
-import { bytesToHex } from "@noble/curves/abstract/utils"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
   UnsignedEvent,
@@ -12,9 +11,9 @@ import {
   Relay,
   SimplePool,
   Filter,
-  SubCloser,
-  AbstractRelay,
 } from "nostr-tools"
+import { SubCloser } from "nostr-tools/abstract-pool"
+import { AbstractRelay } from "nostr-tools/abstract-relay"
 
 import * as Keychain from "react-native-keychain"
 import { pool } from "./nostr/pool"
@@ -66,11 +65,8 @@ export const createSeal = async (
 
 export const createWrap = (event: Event, recipientPublicKey: string) => {
   const randomKey = generateSecretKey()
-  const conversationKey = nip44.v2.utils.getConversationKey(
-    bytesToHex(randomKey),
-    recipientPublicKey,
-  )
-  const ciphertext = nip44.v2.encrypt(JSON.stringify(event), conversationKey)
+  const conversationKey = nip44.getConversationKey(randomKey, recipientPublicKey)
+  const ciphertext = nip44.encrypt(JSON.stringify(event), conversationKey)
   return finalizeEvent(
     {
       kind: 1059,
@@ -111,7 +107,7 @@ export const fetchGiftWrapsForPublicKey = (
   if (since) filter.since = since
   let closer = pool.subscribeMany(
     ["wss://relay.flashapp.me", "wss://relay.damus.io", "wss://nostr.oxtr.dev"],
-    [filter],
+    filter,
     {
       onevent: eventHandler,
       onclose: () => {
@@ -158,12 +154,10 @@ export const fetchNostrUsers = (
 ) => {
   const closer = pool.subscribeMany(
     publicRelays,
-    [
-      {
-        kinds: [0],
-        authors: pubKeys,
-      },
-    ],
+    {
+      kinds: [0],
+      authors: pubKeys,
+    },
     {
       onevent: (event: Event) => {
         handleProfileEvent(event, closer)
@@ -209,7 +203,7 @@ export const fetchContactList = async (
   }
   pool.subscribeMany(
     ["wss://relay.damus.io", "wss://relay.prmal.net", "wss://nos.lol"],
-    [filter],
+    filter,
     {
       onevent: onEvent,
       onclose: () => {

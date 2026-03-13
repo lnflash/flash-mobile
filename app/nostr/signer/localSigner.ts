@@ -1,7 +1,6 @@
 import { getPublicKey, finalizeEvent, nip04, nip44, nip19 } from "nostr-tools"
 import { EventTemplate } from "nostr-tools"
 import { NostrSigner } from "./types"
-import { bytesToHex } from "@noble/curves/abstract/utils"
 
 export class LocalSigner implements NostrSigner {
   constructor(private readonly sk: Uint8Array) {}
@@ -28,19 +27,13 @@ export class LocalSigner implements NostrSigner {
 
   nip44 = {
     encrypt: async (pubkey: string, plaintext: string) => {
-      const conversationKey = nip44.v2.utils.getConversationKey(
-        bytesToHex(this.sk),
-        pubkey,
-      )
-      return nip44.v2.encrypt(plaintext, conversationKey)
+      const conversationKey = nip44.getConversationKey(this.sk, pubkey)
+      return nip44.encrypt(plaintext, conversationKey)
     },
 
     decrypt: async (pubkey: string, ciphertext: string) => {
-      const conversationKey = nip44.v2.utils.getConversationKey(
-        bytesToHex(this.sk),
-        pubkey,
-      )
-      return nip44.v2.decrypt(ciphertext, conversationKey)
+      const conversationKey = nip44.getConversationKey(this.sk, pubkey)
+      return nip44.decrypt(ciphertext, conversationKey)
     },
   }
 }
