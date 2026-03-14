@@ -7,9 +7,9 @@ import React, {
   useRef,
   useState,
 } from "react"
-import { Event, finalizeEvent } from "nostr-tools"
+import { Event } from "nostr-tools"
 import { MessageType } from "@flyerhq/react-native-chat-ui"
-import { getSecretKey } from "@app/utils/nostr"
+import { getSigner } from "@app/nostr/signer"
 import { useChatContext } from "../../../screens/chat/chatContext"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { pool } from "@app/utils/nostr/pool"
@@ -77,16 +77,22 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     return Array.from(messagesMap.values()).sort((a, b) => b.createdAt! - a.createdAt!)
   }, [messagesMap])
 
+  // Sync isMember when userPublicKey becomes available after membership data was already received
+  useEffect(() => {
+    if (userPublicKey && knownMembers.size > 0) {
+      setIsMember(knownMembers.has(userPublicKey))
+    }
+  }, [userPublicKey, knownMembers])
+
   // ----- Sub: group messages (kind 9) -----
   useEffect(() => {
     nostrRuntime.ensureSubscription(
       `nip29:messages`,
-      [
-        {
-          "#h": [groupId],
-          "kinds": [9],
-        },
-      ],
+
+      {
+        "#h": [groupId],
+        "kinds": [9],
+      },
       (event: Event) => {
         const msg: MessageType.Text = {
           id: event.id,
@@ -121,7 +127,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     }
     const unsub = nostrRuntime.ensureSubscription(
       `nip29:group_metadata`,
-      [{ "kinds": [39000], "#d": [groupId] }],
+      { "kinds": [39000], "#d": [groupId] },
       (event) => {
         console.log("==============GOT METADATA EVENT=============")
         const parsed = parseGroupTags(event.tags)
@@ -144,7 +150,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
 
     const unsub = nostrRuntime.ensureSubscription(
       `nip29:membership`,
-      [filters],
+      filters,
       (event: any) => {
         // Extract all `p` tags as pubkeys
         console.log("==============GOT MEMBERSHIP EVENT=============")
@@ -155,7 +161,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
         // Convert to Set for easy diff
         const currentSet = new Set(currentMembers)
 
-        // Notify self if joined
+        // Notify self if just joined (transition only – for the system message)
         if (
           userPublicKey &&
           !prevMembersRef.current.has(userPublicKey) &&
@@ -169,7 +175,11 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
             )
             return next
           })
-          setIsMember(true)
+        }
+
+        // Always sync isMember with the current roster
+        if (userPublicKey) {
+          setIsMember(currentSet.has(userPublicKey))
         }
 
         // Notify other new members
@@ -208,8 +218,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     async (text: string) => {
       if (!userPublicKey) throw Error("No user pubkey present")
 
-      const secretKey = await getSecretKey()
-      if (!secretKey) throw Error("Could not get Secret Key")
+      const signer = await getSigner()
 
       const nostrEvent = {
         kind: 9,
@@ -219,7 +228,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
         pubkey: userPublicKey,
       }
 
-      const signedEvent = finalizeEvent(nostrEvent as any, secretKey)
+      const signedEvent = await signer.signEvent(nostrEvent as any)
       pool.publish(relayUrls, signedEvent)
     },
     [userPublicKey, groupId, relayUrls],
@@ -228,8 +237,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   const requestJoin = useCallback(async () => {
     if (!userPublicKey) throw Error("No user pubkey present")
 
-    const secretKey = await getSecretKey()
-    if (!secretKey) throw Error("Could not get Secret Key")
+    const signer = await getSigner()
 
     const joinEvent = {
       kind: 9021,
@@ -239,7 +247,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       pubkey: userPublicKey,
     }
 
-    const signedJoinEvent = finalizeEvent(joinEvent as any, secretKey)
+    const signedJoinEvent = await signer.signEvent(joinEvent as any)
     pool.publish(relayUrls, signedJoinEvent)
 
     // Optimistic system note

@@ -4998,6 +4998,14 @@ type RootTranslation = {
 		 */
 		noProfileDescription: string
 		/**
+		 * N​o​s​t​r​ ​K​e​y​ ​N​o​t​ ​F​o​u​n​d​ ​o​n​ ​D​e​v​i​c​e
+		 */
+		keyConflictTitle: string
+		/**
+		 * Y​o​u​r​ ​a​c​c​o​u​n​t​ ​h​a​s​ ​a​ ​r​e​g​i​s​t​e​r​e​d​ ​N​o​s​t​r​ ​k​e​y​ ​b​u​t​ ​i​t​ ​w​a​s​ ​n​o​t​ ​f​o​u​n​d​ ​o​n​ ​t​h​i​s​ ​d​e​v​i​c​e​.
+		 */
+		keyConflictDescription: string
+		/**
 		 * C​r​e​a​t​i​n​g​ ​P​r​o​f​i​l​e​.​.​.
 		 */
 		creatingProfile: string
@@ -5005,6 +5013,10 @@ type RootTranslation = {
 		 * C​r​e​a​t​e​ ​N​e​w​ ​P​r​o​f​i​l​e
 		 */
 		createNewProfile: string
+		/**
+		 * G​e​n​e​r​a​t​e​ ​P​r​o​f​i​l​e
+		 */
+		generateProfile: string
 		/**
 		 * F​i​n​d​i​n​g​ ​Y​o​u​.​.
 		 */
@@ -9970,6 +9982,14 @@ export type TranslationFunctions = {
 		 */
 		noProfileDescription: () => LocalizedString
 		/**
+		 * Nostr Key Not Found on Device
+		 */
+		keyConflictTitle: () => LocalizedString
+		/**
+		 * Your account has a registered Nostr key but it was not found on this device.
+		 */
+		keyConflictDescription: () => LocalizedString
+		/**
 		 * Creating Profile...
 		 */
 		creatingProfile: () => LocalizedString
@@ -9977,6 +9997,10 @@ export type TranslationFunctions = {
 		 * Create New Profile
 		 */
 		createNewProfile: () => LocalizedString
+		/**
+		 * Generate Profile
+		 */
+		generateProfile: () => LocalizedString
 		/**
 		 * Finding You..
 		 */

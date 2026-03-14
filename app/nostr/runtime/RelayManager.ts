@@ -1,4 +1,5 @@
-import { SimplePool, AbstractRelay } from "nostr-tools"
+import { Filter, SimplePool } from "nostr-tools"
+import { AbstractRelay } from "nostr-tools/abstract-relay"
 
 const DEFAULT_RELAYS = [
   "wss://relay.damus.io",
@@ -41,10 +42,10 @@ export class RelayManager {
     this.pool.close(DEFAULT_RELAYS)
   }
 
-  subscribe(filters: any[], handlers: any, relays?: string[]) {
+  subscribe(filter: Filter, handlers: any, relays?: string[]) {
     let relaysToUse: string[] = this.getReadRelays()
     if ((relays || []).length !== 0) relaysToUse = relays!
-    return this.pool.subscribeMany(relaysToUse, filters, handlers)
+    return this.pool.subscribeMany(relaysToUse, filter, handlers)
   }
 
   publish(event: any) {

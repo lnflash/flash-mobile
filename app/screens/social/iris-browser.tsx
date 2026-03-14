@@ -5,8 +5,6 @@ import { makeStyles, useTheme, Icon } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useNavigation } from "@react-navigation/native"
-import { getPublicKey } from "nostr-tools"
-import { getSecretKey } from "@app/utils/nostr"
 
 type IrisBrowserNavigationProp = StackNavigationProp<RootStackParamList, "irisBrowser">
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { View, FlatList, RefreshControl, ActivityIndicator } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
-import { Event } from "nostr-tools"
+import { Event, Filter } from "nostr-tools"
 import { pool } from "@app/utils/nostr/pool"
 import { FeedItem } from "./FeedItem"
 
@@ -36,12 +36,12 @@ export const NostrFeed: React.FC<NostrFeedProps> = ({ userPubkey }) => {
       const uniquePubkeys = [...new Set(pubkeys)]
       const sub = pool.subscribeMany(
         RELAYS,
-        [
-          {
-            kinds: [0],
-            authors: uniquePubkeys,
-          },
-        ],
+
+        {
+          kinds: [0],
+          authors: uniquePubkeys,
+        },
+
         {
           onevent(event) {
             try {
@@ -73,7 +73,7 @@ export const NostrFeed: React.FC<NostrFeedProps> = ({ userPubkey }) => {
 
         const fetchedEvents: Event[] = []
 
-        const filter: any = {
+        const filter: Filter = {
           kinds: [1],
           limit: 50,
           since: isRefresh ? Math.floor(Date.now() / 1000) - 3600 : since,
@@ -83,7 +83,7 @@ export const NostrFeed: React.FC<NostrFeedProps> = ({ userPubkey }) => {
           filter.authors = [userPubkey]
         }
 
-        const sub = pool.subscribeMany(RELAYS, [filter], {
+        const sub = pool.subscribeMany(RELAYS, filter, {
           onevent(event) {
             if (!fetchedEvents.find((e) => e.id === event.id)) {
               fetchedEvents.push(event)
@@ -98,7 +98,8 @@ export const NostrFeed: React.FC<NostrFeedProps> = ({ userPubkey }) => {
               setEvents((prev) => {
                 const combined = [...fetchedEvents, ...prev]
                 const unique = combined.filter(
-                  (event, index, self) => index === self.findIndex((e) => e.id === event.id),
+                  (event, index, self) =>
+                    index === self.findIndex((e) => e.id === event.id),
                 )
                 return unique.sort((a, b) => b.created_at - a.created_at)
               })

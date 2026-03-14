@@ -61,7 +61,7 @@ export const ChatMessage: React.FC<Props> = ({ message, showSender = false }) =>
     const key = `profile:${message.author.id}`
     nostrRuntime.ensureSubscription(
       key,
-      [{ kinds: [0], authors: [message.author.id] }],
+      { kinds: [0], authors: [message.author.id] },
       (event: Event) => {
         addEventToProfiles(event)
       },
