@@ -18,7 +18,7 @@ import { useSettingsScreenQuery } from "@app/graphql/generated"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
 
 // utils
-import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
+import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk"
 import KeyStoreWrapper from "@app/utils/storage/secureStorage"
 import { PinScreenPurpose } from "@app/utils/enum"
 import { getSigner } from "@app/nostr/signer"

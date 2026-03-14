@@ -28,6 +28,7 @@ import { AdvancedModeToggle } from "./settings/advanced-mode-toggle"
 import { ExportCsvSetting } from "./settings/advanced-export-csv"
 import { ApiAccessSetting } from "./settings/advanced-api-access"
 import { GenerateReportsSetting } from "./settings/generate-reports"
+import { ExportSparkLogsSetting } from "./settings/export-spark-logs"
 import { SettingsGroup } from "./group"
 import { EmailSetting } from "./account/settings/email"
 import { ChatSetting } from "./chat-setting"
@@ -79,6 +80,7 @@ const items = {
   advanced: [
     AdvancedModeToggle,
     ExportCsvSetting,
+    ExportSparkLogsSetting,
     //  ApiAccessSetting
   ],
   community: [JoinCommunitySetting],

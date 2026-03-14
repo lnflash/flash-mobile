@@ -71,11 +71,11 @@ const DestinationField: React.FC<Props> = ({
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <TouchableWithoutFeedback onPress={navigateToScanning}>
+        {/* <TouchableWithoutFeedback onPress={navigateToScanning}>
           <View style={styles.iconContainer}>
             <ScanIcon fill={colors.primary} />
           </View>
-        </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback> */}
         <TouchableWithoutFeedback onPress={onPaste}>
           <View style={styles.iconContainer}>
             <Icon name="clipboard-outline" color={colors.primary} size={22} />

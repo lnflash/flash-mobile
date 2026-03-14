@@ -10,30 +10,32 @@ import { TxItem } from "../../components/transaction-item"
 
 // hooks
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { formatPaymentsBreezSDK } from "@app/hooks/useBreezPayments"
 import { useBreez, usePriceConversion } from "@app/hooks"
+
+// utils
+import { formatBreezPayments } from "@app/utils/transactions"
 import { useNavigation } from "@react-navigation/native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 // gql
-import {
-  TransactionEdge,
-  TransactionFragment,
-  WalletCurrency,
-} from "@app/graphql/generated"
-
-// utils
-import { toBtcMoneyAmount } from "@app/types/amounts"
-import { breezSDKInitialized, listPaymentsBreezSDK } from "@app/utils/breez-sdk-liquid"
+import { TransactionEdge } from "@app/graphql/generated"
 
 // breez
 import {
   addEventListener,
-  Payment,
+  breezSDKInitialized,
+  listPaymentsBreezSDK,
   removeEventListener,
-  SdkEvent,
-  SdkEventVariant,
-} from "@breeztech/react-native-breez-sdk-liquid"
+} from "@app/utils/breez-sdk"
+import { Payment, SdkEvent, SdkEvent_Tags } from "@breeztech/breez-sdk-spark-react-native"
+
+// types
+import {
+  UnifiedTransaction,
+  IbexTransaction,
+  getTransactionId,
+  getTransactionTimestamp,
+} from "@app/types/transactions"
 
 type Props = {
   loadingAuthed: boolean
@@ -49,16 +51,14 @@ const Transactions: React.FC<Props> = ({
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
-  const { persistentState, updateState } = usePersistentStateContext()
+  const { persistentState } = usePersistentStateContext()
   const { convertMoneyAmount } = usePriceConversion()
   const { refreshBreez } = useBreez()
 
   const [breezListenerId, setBreezListenerId] = useState<string>()
   const [breezTxsLoading, setBreezTxsLoading] = useState(false)
-  const [breezTransactions, setBreezTransactions] = useState<Payment[]>([])
-  const [mergedTransactions, setMergedTransactions] = useState<TransactionFragment[]>(
-    persistentState?.mergedTransactions || [],
-  )
+  const [breezPayments, setBreezPayments] = useState<Payment[]>([])
+  const [mergedTransactions, setMergedTransactions] = useState<UnifiedTransaction[]>([])
 
   useEffect(() => {
     if (persistentState.isAdvanceMode && breezSDKInitialized) {
@@ -68,15 +68,15 @@ const Transactions: React.FC<Props> = ({
 
   useEffect(() => {
     if (!loadingAuthed && !breezTxsLoading) {
-      mergeTransactions(breezTransactions)
+      mergeTransactions(breezPayments)
     }
-  }, [transactionsEdges, breezTransactions, loadingAuthed, breezTxsLoading])
+  }, [transactionsEdges, breezPayments, loadingAuthed, breezTxsLoading])
 
   useEffect(() => {
     if (persistentState.isAdvanceMode && breezSDKInitialized && !breezListenerId) {
       addBreezEventListener()
     } else if (!persistentState.isAdvanceMode) {
-      setBreezTransactions([])
+      setBreezPayments([])
       setBreezListenerId(undefined)
     }
     return removeBreezEventListener
@@ -84,7 +84,7 @@ const Transactions: React.FC<Props> = ({
 
   const addBreezEventListener = async () => {
     const listenerId = await addEventListener((e: SdkEvent) => {
-      if (e.type !== SdkEventVariant.SYNCED) {
+      if (e.tag !== SdkEvent_Tags.Synced && e.tag !== SdkEvent_Tags.Optimization) {
         fetchPaymentsBreez()
       }
     })
@@ -104,7 +104,7 @@ const Transactions: React.FC<Props> = ({
         setBreezTxsLoading(true)
         refreshBreez()
         const payments = await listPaymentsBreezSDK(0, 3)
-        setBreezTransactions(payments)
+        setBreezPayments(payments)
         setBreezTxsLoading(false)
       }
     } catch (err) {
@@ -112,57 +112,28 @@ const Transactions: React.FC<Props> = ({
     }
   }
 
-  const mergeTransactions = async (breezTxs: Payment[]) => {
-    const mergedTransactions: TransactionFragment[] = []
-    const formattedBreezTxs = await formatBreezTransactions(breezTxs)
+  const mergeTransactions = (breezTxs: Payment[]) => {
+    if (!convertMoneyAmount) return
 
-    let i = 0
-    let j = 0
-    while (transactionsEdges.length != i && formattedBreezTxs.length != j) {
-      if (transactionsEdges[i].node?.createdAt > formattedBreezTxs[j]?.createdAt) {
-        mergedTransactions.push(transactionsEdges[i].node)
-        i++
-      } else {
-        mergedTransactions.push(formattedBreezTxs[j])
-        j++
-      }
-    }
+    // Convert Ibex transactions to UnifiedTransaction
+    const ibexTxs: IbexTransaction[] = transactionsEdges.map((edge) => ({
+      source: "ibex" as const,
+      transaction: edge.node,
+    }))
 
-    while (transactionsEdges.length !== i) {
-      mergedTransactions.push(transactionsEdges[i].node)
-      i++
-    }
+    // Convert Breez payments to UnifiedTransaction
+    const breezTransactions = formatBreezPayments({
+      payments: breezTxs,
+      convertMoneyAmount,
+    })
 
-    while (formattedBreezTxs.length !== j) {
-      mergedTransactions.push(formattedBreezTxs[j])
-      j++
-    }
-
-    updateMergedTransactions(mergedTransactions)
-  }
-
-  const formatBreezTransactions = async (txs: Payment[]) => {
-    if (!convertMoneyAmount || !txs) {
-      return []
-    }
-    const formattedTxs = txs?.map((txDetails) =>
-      formatPaymentsBreezSDK({ txDetails, convertMoneyAmount }),
+    // Merge and sort by timestamp (newest first)
+    const merged: UnifiedTransaction[] = [...ibexTxs, ...breezTransactions].sort(
+      (a, b) => getTransactionTimestamp(b) - getTransactionTimestamp(a),
     )
 
-    return formattedTxs?.filter(Boolean) ?? []
-  }
-
-  const updateMergedTransactions = (txs: TransactionFragment[]) => {
-    if (txs.length > 0) {
-      setMergedTransactions(txs.slice(0, 3))
-      updateState((state: any) => {
-        if (state)
-          return {
-            ...state,
-            mergedTransactions: txs.slice(0, 3),
-          }
-        return undefined
-      })
+    if (merged.length > 0) {
+      setMergedTransactions(merged.slice(0, 3))
     }
   }
 
@@ -180,8 +151,8 @@ const Transactions: React.FC<Props> = ({
             {LL.TransactionScreen.title()}
           </Text>
         </RecentActivity>
-        {mergedTransactions.map((item, index) => (
-          <TxItem key={item.id} tx={item} />
+        {mergedTransactions.map((item) => (
+          <TxItem key={getTransactionId(item)} tx={item} />
         ))}
       </Wrapper>
     )

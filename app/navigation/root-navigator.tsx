@@ -67,6 +67,7 @@ import { SettingsScreen } from "../screens/settings-screen"
 import { LanguageScreen } from "../screens/settings-screen/language-screen"
 import { SecurityScreen } from "../screens/settings-screen/security-screen"
 import { TransactionDetailScreen } from "../screens/transaction-detail-screen"
+import { BreezTransactionDetailScreen } from "../screens/transaction-detail-screen/breez-transaction-detail-screen"
 import {
   ChatStackParamList,
   ContactStackParamList,
@@ -93,10 +94,10 @@ import { NotificationSettingsScreen } from "@app/screens/settings-screen/notific
 import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { ReconciliationReport } from "@app/screens/reports"
 import {
-  RefundConfirmation,
-  RefundDestination,
-  RefundTransactionsList,
-} from "@app/screens/refund-flow"
+  UnclaimedDepositsList,
+  UnclaimedDepositDetails,
+  RefundDeposit,
+} from "@app/screens/unclaimed-deposit-flow"
 import { Messages } from "@app/screens/chat/messages"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
@@ -421,6 +422,14 @@ export const RootStack = () => {
           cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
         }}
       />
+      <RootNavigator.Screen
+        name="breezTransactionDetail"
+        component={BreezTransactionDetailScreen}
+        options={{
+          headerShown: false,
+          cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+        }}
+      />
 
       <RootNavigator.Screen
         name="priceHistory"
@@ -552,19 +561,19 @@ export const RootStack = () => {
         options={{ title: LL.TransactionScreen.transactionHistoryTitle() }}
       />
       <RootNavigator.Screen
-        name="RefundTransactionList"
-        component={RefundTransactionsList}
+        name="UnclaimedDepositsList"
+        component={UnclaimedDepositsList}
         options={{ title: LL.RefundFlow.refundListTitle() }}
       />
       <RootNavigator.Screen
-        name="RefundDestination"
-        component={RefundDestination}
-        options={{ title: LL.RefundFlow.destinationTitle() }}
+        name="UnclaimedDepositDetails"
+        component={UnclaimedDepositDetails}
+        options={{ title: "Deposit Details" }}
       />
       <RootNavigator.Screen
-        name="RefundConfirmation"
-        component={RefundConfirmation}
-        options={{ title: LL.RefundFlow.confirmationTitle() }}
+        name="RefundDeposit"
+        component={RefundDeposit}
+        options={{ title: "Refund Deposit" }}
       />
       <RootNavigator.Screen
         name="Card"
