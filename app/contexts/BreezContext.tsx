@@ -1,9 +1,10 @@
-import React, { createContext, useEffect, useState } from "react"
+import React, { createContext, useEffect, useRef, useState } from "react"
 import { WalletCurrency } from "@app/graphql/generated"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { initializeBreezSDK, getInfo } from "@app/utils/breez-sdk"
 import { Alert, Platform } from "react-native"
 import { v4 as uuidv4 } from "uuid"
+import { initializeBreezSDK, getInfo, handleSparkMigration } from "@app/utils/breez-sdk"
+import SparkMigrationModal from "@app/components/spark-migration-modal"
 
 type BtcWallet = {
   id: string
@@ -39,6 +40,30 @@ export const BreezProvider = ({ children }: Props) => {
     walletCurrency: "BTC",
     balance: persistentState.breezBalance || 0,
   })
+  const initializingRef = useRef(false)
+  const updatingBalanceRef = useRef(false)
+  const [migrating, setMigrating] = useState(false)
+  const [migrationModal, setMigrationModal] = useState(false)
+  const [migrationErr, setMigrationErr] = useState<string | undefined>()
+
+  const onMigrate = async () => {
+    setMigrating(true)
+    const res = await handleSparkMigration(() => setMigrationModal(true))
+    console.log("MIGRATION RESPONSE: ", res)
+    if (res.success) {
+      updateState((state: any) => {
+        if (state)
+          return {
+            ...state,
+            sparkMigrationCompleted: true,
+          }
+        return undefined
+      })
+    } else {
+      setMigrationErr(res.err)
+    }
+    setMigrating(false)
+  }
 
   useEffect(() => {
     if (Platform.OS === "ios" && Number(Platform.Version) < 13) {
@@ -63,12 +88,11 @@ export const BreezProvider = ({ children }: Props) => {
     }
   }, [persistentState.isAdvanceMode])
 
-  const getBreezInfo = async () => {
+  const updateBalance = async () => {
+    if (updatingBalanceRef.current) return
+    updatingBalanceRef.current = true
     try {
-      setLoading(true)
-      await initializeBreezSDK()
       const balanceSats = await getInfo()
-
       setBtcWallet({
         id: uuidv4(),
         walletCurrency: WalletCurrency.Btc,
@@ -82,19 +106,47 @@ export const BreezProvider = ({ children }: Props) => {
           }
         return undefined
       })
-      setLoading(false)
-    } catch (err: any) {
-      Alert.alert("BTC wallet initialization failed", err.toString())
+    } finally {
+      updatingBalanceRef.current = false
     }
   }
 
-  const refreshBreez = () => {
-    if (persistentState.isAdvanceMode) getBreezInfo()
+  const getBreezInfo = async () => {
+    if (initializingRef.current) return
+    initializingRef.current = true
+    try {
+      setLoading(true)
+      await initializeBreezSDK()
+      await updateBalance()
+      setLoading(false)
+
+      // Trigger migration after Spark SDK is ready
+      if (!persistentState.sparkMigrationCompleted) {
+        await onMigrate()
+        await updateBalance()
+      }
+    } catch (err: any) {
+      Alert.alert("BTC wallet initialization failed", err.toString())
+    } finally {
+      initializingRef.current = false
+    }
+  }
+
+  const refreshBreez = async () => {
+    if (persistentState.isAdvanceMode) {
+      await updateBalance()
+    }
   }
 
   return (
     <BreezContext.Provider value={{ btcWallet, loading, refreshBreez }}>
       {children}
+      <SparkMigrationModal
+        isVisible={migrationModal}
+        loading={migrating}
+        err={migrationErr}
+        closeModal={() => setMigrationModal(false)}
+      />
     </BreezContext.Provider>
   )
 }
