@@ -79,6 +79,7 @@ type PersistentState_7 = {
   flashcardTag?: TagEvent
   flashcardHtml?: string
   hasPostedToNostr?: boolean // true if user has made at least one Nostr post
+  sparkMigrationCompleted?: boolean
 }
 
 type JwtPayload = {

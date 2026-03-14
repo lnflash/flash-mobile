@@ -101,7 +101,6 @@ const retry = <T>(fn: () => Promise<T>, delayMs = 5000, maxRetries = 3): Promise
 
 const breezLogger: Logger = {
   log(l: LogEntry) {
-    console.log(`[BreezSDK-Spark][${l.level}]: ${l.line}`)
     appendLog(l.level, l.line)
   },
 }
@@ -441,7 +440,7 @@ export const lnurlWithdraw = async (
       withdrawRequest: input.inner[0],
       completionTimeoutSecs: 30,
     })
-
+    console.log("lnurlWithdraw Response: ", response)
     return { success: true }
   }
   return { success: false, error: "Invalid LNURL type" }
