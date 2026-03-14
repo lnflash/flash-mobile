@@ -9,3 +9,6 @@ export const openWhatsApp: (number: string, message: string) => Promise<void> = 
       message,
     )}`,
   )
+
+export const openWhatsAppUrl: (url: string) => Promise<void> = async (url: string) =>
+  Linking.openURL(url)

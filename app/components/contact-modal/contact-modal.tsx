@@ -2,9 +2,9 @@ import React from "react"
 import { Linking } from "react-native"
 import ReactNativeModal from "react-native-modal"
 
-import { CONTACT_EMAIL_ADDRESS, WHATSAPP_CONTACT_NUMBER } from "@app/config"
+import { CONTACT_EMAIL_ADDRESS, WHATSAPP_SUPPORT_URL } from "@app/config"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { openWhatsApp } from "@app/utils/external"
+import { openWhatsApp, openWhatsAppUrl } from "@app/utils/external"
 import { Icon, ListItem, makeStyles, useTheme } from "@rneui/themed"
 
 
@@ -141,7 +141,7 @@ const ContactModal: React.FC<Props> = ({
 export default ContactModal
 
 export const openWhatsAppAction = (message: string) => {
-  openWhatsApp(WHATSAPP_CONTACT_NUMBER, message)
+  openWhatsAppUrl(WHATSAPP_SUPPORT_URL)
 }
 
 const useStyles = makeStyles(({ colors }) => ({
