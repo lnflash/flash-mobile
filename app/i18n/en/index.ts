@@ -1108,9 +1108,9 @@ const en: BaseTranslation = {
   },
   UpgradeAccountModal: {
     title: "Upgrade your account",
-    backUpFunds: "Back up your funds",
-    higherLimits: "Increase your transaction limits",
-    receiveOnchain: "Earn rewards",
+    backUpFunds: "Protect your balance if you lose your phone",
+    higherLimits: "Increase your send and receive limits",
+    receiveOnchain: "Unlock cashback at Flashpoints",
     onlyAPhoneNumber: "Quick and easy phone number verification",
     letsGo: "Let's go!",
     stayInTrialMode: "Maybe later",
