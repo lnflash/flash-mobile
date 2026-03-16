@@ -45,7 +45,7 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
           : LL.ImportWalletOptions.loginOptions()}
       </Text>
 
-      {isAdvanceMode && (
+      {isAdvanceMode && insideApp && (
         <Btn onPress={onImportBTCWallet}>
           <Icon type="ionicon" size={40} name={"apps"} color={colors.icon02} />
           <BtnTextWrapper>
@@ -60,7 +60,12 @@ const ImportWalletOptions: React.FC<Props> = ({ navigation, route }) => {
       {!insideApp && (
         <>
           <Btn onPress={onLoginWithPhone}>
-            <Icon type="ionicon" name={"mail"} color={colors.icon02} size={40} />
+            <Icon
+              type="ionicon"
+              name={"chatbubbles-outline"}
+              color={colors.icon02}
+              size={40}
+            />
             <BtnTextWrapper>
               <Text type="p1">{LL.ImportWalletOptions.phone()}</Text>
               <Text type="p3" color={colors.grey2}>
