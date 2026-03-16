@@ -873,7 +873,7 @@ const en: BaseTranslation = {
     level: "Level {level: string}",
     accountLevel: "Account Level",
     upgrade: "Upgrade your account",
-    logOutAndDeleteLocalData: "Log out and clear all local data",
+    logOutAndDeleteLocalData: "Log out",
     IUnderstand: "I understand. Please log me out.",
     logoutAlertTitle: "Are you sure you want to log out and delete all local data?",
     logoutAlertContentPhone: "You will need to re-enter your phone number to log back in.\nyour phone number is {phoneNumber: string} so make sure you have access to it to log back in",

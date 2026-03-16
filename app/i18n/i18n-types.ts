@@ -7708,7 +7708,7 @@ export type TranslationFunctions = {
 		 */
 		upgrade: () => LocalizedString
 		/**
-		 * Log out and clear all local data
+		 * Log out
 		 */
 		logOutAndDeleteLocalData: () => LocalizedString
 		/**

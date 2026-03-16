@@ -656,7 +656,7 @@
         "accountLevel": "Nivell de compte",
         "logIn": "Iniciar sessió",
         "upgrade": "Millora el teu compte",
-        "logOutAndDeleteLocalData": "Log out and clear all local data",
+        "logOutAndDeleteLocalData": "Log out",
         "IUnderstand": "Ho entenc. Siusplau tanca la sessió.",
         "logoutAlertTitle": "Are you sure you want to log out and delete all local data?",
         "logoutAlertContent": "You will need to re-enter your phone number to log back in.\nyour phone number is {phoneNumber: string} so make sure to have access to it to log back in",
