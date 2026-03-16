@@ -23,7 +23,6 @@ export type RootStackParamList = {
   getStarted: undefined
   UsernameSet?: { insideApp?: boolean }
   Welcome: undefined
-  welcomeFirst: undefined
   liteDeviceAccount: {
     appCheckToken: string
   }

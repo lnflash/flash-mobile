@@ -90,7 +90,6 @@ import {
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
-import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { ReconciliationReport } from "@app/screens/reports"
 import {
   RefundConfirmation,
@@ -182,11 +181,6 @@ export const RootStack = () => {
         name="Welcome"
         component={Welcome}
         options={{ headerShown: false, animationEnabled: false }}
-      />
-      <RootNavigator.Screen
-        name="welcomeFirst"
-        component={WelcomeFirstScreen}
-        options={{ headerShown: false }}
       />
       <RootNavigator.Screen
         name="authenticationCheck"
