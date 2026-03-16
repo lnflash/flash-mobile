@@ -1,6 +1,7 @@
 import { AndroidMarket } from "react-native-rate"
 
 export const WHATSAPP_CONTACT_NUMBER = "+18762909250"
+export const WHATSAPP_SUPPORT_URL = "https://wa.flashapp.me"
 export const CONTACT_EMAIL_ADDRESS = "support@getflash.io"
 export const APP_STORE_LINK =
   "https://apps.apple.com/jm/app/flash-send-spend-and-save/id6451129095"

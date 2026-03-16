@@ -11,8 +11,8 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 
 // utils
 import { isIos } from "@app/utils/helper"
-import { openWhatsApp } from "@app/utils/external"
-import { CONTACT_EMAIL_ADDRESS, WHATSAPP_CONTACT_NUMBER } from "@app/config"
+import { openWhatsAppUrl } from "@app/utils/external"
+import { CONTACT_EMAIL_ADDRESS, WHATSAPP_SUPPORT_URL } from "@app/config"
 
 export const NeedHelpSetting: React.FC = () => {
   const { LL } = useI18nContext()
@@ -49,7 +49,7 @@ const WhatsApp = () => {
     <SettingsRow
       title={LL.support.whatsapp()}
       leftIcon="logo-whatsapp"
-      action={() => openWhatsApp(WHATSAPP_CONTACT_NUMBER, contactMessageBody)}
+      action={() => openWhatsAppUrl(WHATSAPP_SUPPORT_URL)}
     />
   )
 }
