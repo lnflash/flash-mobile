@@ -3200,7 +3200,7 @@ type RootTranslation = {
 		 */
 		email: string
 		/**
-		 * I​m​p​o​r​t​ ​y​o​u​r​ ​C​a​s​h​ ​W​a​l​l​e​t​ ​u​s​i​n​g​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s
+		 * I​m​p​o​r​t​ ​o​r​ ​C​r​e​a​t​e​ ​y​o​u​r​ ​C​a​s​h​ ​w​a​l​l​e​t​ ​u​s​i​n​g​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s
 		 */
 		importUsingEmail: string
 		/**
@@ -8073,7 +8073,7 @@ export type TranslationFunctions = {
 		 */
 		email: () => LocalizedString
 		/**
-		 * Import your Cash Wallet using email address
+		 * Import or Create your Cash wallet using email address
 		 */
 		importUsingEmail: () => LocalizedString
 		/**
