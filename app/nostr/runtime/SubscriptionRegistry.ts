@@ -6,6 +6,7 @@ type SubscriptionEntry = {
   filter: Filter
   closer: SubCloser
   refCount: number
+  onEvent: (event: Event) => void
 }
 
 export class SubscriptionRegistry {
@@ -45,6 +46,7 @@ export class SubscriptionRegistry {
       filter,
       closer,
       refCount: 1,
+      onEvent,
     })
   }
 
@@ -62,7 +64,7 @@ export class SubscriptionRegistry {
   restore() {
     for (const [key, sub] of this.subs.entries()) {
       const closer = this.relayManager.subscribe(sub.filter, {
-        onevent: () => {},
+        onevent: sub.onEvent,
       })
 
       sub.closer = closer

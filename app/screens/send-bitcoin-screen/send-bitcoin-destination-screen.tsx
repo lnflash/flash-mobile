@@ -243,14 +243,13 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
           return
         }
       } else {
-        // 🚨 any NON-intraledger destination
         dispatchDestinationStateAction({
           type: SendBitcoinActions.SetRequiresConfirmation,
           payload: {
             validDestination: destination,
             unparsedDestination: rawInput,
             confirmationType: {
-              type: "external-destination", // you can define this in your reducer/types
+              type: "external-destination",
               address: rawInput,
             },
           },

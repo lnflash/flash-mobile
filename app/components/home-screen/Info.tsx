@@ -66,7 +66,7 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
       console.log("List Refundables Err: ", err)
     }
   }
-  if (!netInfo.isInternetReachable) {
+  if (netInfo.isInternetReachable === false) {
     return (
       <View style={styles.wrapper}>
         <GaloyErrorBox errorMessage={"Wallet is offline"} />
