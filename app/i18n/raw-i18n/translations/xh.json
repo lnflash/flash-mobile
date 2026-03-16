@@ -634,7 +634,7 @@
         "accountLevel": "Account Level",
         "logIn": "Log in",
         "upgrade": "Upgrade your account",
-        "logOutAndDeleteLocalData": "Log out and clear all local data",
+        "logOutAndDeleteLocalData": "Log out",
         "IUnderstand": "I understand. Please log me out.",
         "logoutAlertTitle": "Are you sure you want to log out and delete all local data?",
         "logoutAlertContent": "You will need to re-enter your phone number to log back in.\nyour phone number is {phoneNumber: string} so make sure to have access to it to log back in",

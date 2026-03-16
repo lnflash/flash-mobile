@@ -17,10 +17,8 @@ export const DangerZoneSettings: React.FC = () => {
 
   return (
     <View style={styles.verticalSpacing}>
-      <Text type="p2" bold>
-        {LL.AccountScreen.dangerZone()}
-      </Text>
       {isAtLeastLevelOne && <SignInQRCode />}
+      <View style={{ height: 10 }} />
       {isAtLeastLevelOne && <LogOut />}
       {currentLevel !== AccountLevel.NonAuth && <Delete />}
     </View>

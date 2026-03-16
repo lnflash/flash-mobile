@@ -6526,7 +6526,7 @@ export type TranslationFunctions = {
 		 */
 		locationPermissionNegative: () => LocalizedString
 		/**
-		 * Ask Me Later
+		 * Remind me later
 		 */
 		locationPermissionNeutral: () => LocalizedString
 		/**
@@ -7708,7 +7708,7 @@ export type TranslationFunctions = {
 		 */
 		upgrade: () => LocalizedString
 		/**
-		 * Log out and clear all local data
+		 * Log out
 		 */
 		logOutAndDeleteLocalData: () => LocalizedString
 		/**
@@ -8242,11 +8242,11 @@ export type TranslationFunctions = {
 	}
 	UnVerifiedSeedModal: {
 		/**
-		 * YOUR BITCOIN IS NOT SECURE!
+		 * Secure Your Bitcoin Wallet
 		 */
 		header: () => LocalizedString
 		/**
-		 * You should WRITE DOWN your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.
+		 * You should write down your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.
 
 
 		 */
@@ -8825,7 +8825,7 @@ export type TranslationFunctions = {
 		 */
 		backHome: () => LocalizedString
 		/**
-		 * Show Recovery Phrase
+		 * Write down recovery phrase
 		 */
 		revealSeed: () => LocalizedString
 		/**

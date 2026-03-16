@@ -520,7 +520,7 @@ const en: BaseTranslation = {
     locationPermissionMessage:
       "Activate your location so you know where you are on the map",
     locationPermissionNegative: "Cancel",
-    locationPermissionNeutral: "Ask Me Later",
+    locationPermissionNeutral: "Remind me later",
     locationPermissionPositive: "OK",
     locationPermissionTitle: "Locate yourself on the map",
     payBusiness: "Pay this Business",
@@ -873,7 +873,7 @@ const en: BaseTranslation = {
     level: "Level {level: string}",
     accountLevel: "Account Level",
     upgrade: "Upgrade your account",
-    logOutAndDeleteLocalData: "Log out and clear all local data",
+    logOutAndDeleteLocalData: "Log out",
     IUnderstand: "I understand. Please log me out.",
     logoutAlertTitle: "Are you sure you want to log out and delete all local data?",
     logoutAlertContentPhone: "You will need to re-enter your phone number to log back in.\nyour phone number is {phoneNumber: string} so make sure you have access to it to log back in",
@@ -1040,9 +1040,9 @@ const en: BaseTranslation = {
     learnMore: "Your pin request will be processed within 24 hours.",
   },
   UnVerifiedSeedModal: {
-    header: "YOUR BITCOIN IS NOT SECURE!",
+    header: "Secure Your Bitcoin Wallet",
     body:
-      "You should WRITE DOWN your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.\n\n",
+      "You should write down your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.\n\n",
     termsAndConditions: "\nRead the Terms & Conditions.",
     learnMore: "What is a Recovery Phrase?",
   },
@@ -1225,7 +1225,7 @@ const en: BaseTranslation = {
     amountRequired: "Amount is required",
     back: "Back",
     backHome: "Back Home",
-    revealSeed: "Show Recovery Phrase",
+    revealSeed: "Write down recovery phrase",
     bank: "Bank",
     bankAccount: "Cash Account",
     bankAdvice: "{bankName: string} Advice",
