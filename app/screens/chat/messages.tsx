@@ -1,6 +1,6 @@
 import "react-native-get-random-values"
 import * as React from "react"
-import { Image, View, TouchableOpacity } from "react-native"
+import { Image, View, TouchableOpacity, Platform } from "react-native"
 import { RouteProp, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Screen } from "../../components/screen"
@@ -161,7 +161,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
   return (
     <Screen>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View style={[styles.header, { paddingTop: Platform.OS === "android" ? insets.top : 0 }]}>
         <TouchableOpacity onPress={navigation.goBack} style={styles.backBtn} hitSlop={8}>
           <Icon name="arrow-back-outline" size={24} color={colors.primary3} />
         </TouchableOpacity>
@@ -229,7 +229,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
       />
 
       {/* Input */}
-      <View style={{ paddingBottom: insets.bottom }}>
+      <View style={{ paddingBottom: Platform.OS === "android" ? insets.bottom : 0 }}>
         <MessageInput
           replyTo={replyTo}
           profileMap={profileMap}
