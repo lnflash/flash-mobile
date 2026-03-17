@@ -27,19 +27,15 @@ const Header: React.FC<Props> = ({ request, setDisplayReceiveNfc }) => {
   const { persistentState } = usePersistentStateContext()
 
   useEffect(() => {
-    if (persistentState.isAdvanceMode) {
-      switch (request?.type) {
-        case Invoice.OnChain:
-          navigation.setOptions({ title: LL.ReceiveScreen.receiveViaOnchain() })
-          break
-        case Invoice.Lightning:
-          navigation.setOptions({ title: LL.ReceiveScreen.receiveViaInvoice() })
-          break
-        case Invoice.PayCode:
-          navigation.setOptions({ title: LL.ReceiveScreen.receiveViaPaycode() })
-      }
-    } else {
-      navigation.setOptions({ title: LL.ReceiveScreen.receive() })
+    switch (request?.type) {
+      case Invoice.OnChain:
+        navigation.setOptions({ title: LL.ReceiveScreen.receiveViaOnchain() })
+        break
+      case Invoice.Lightning:
+        navigation.setOptions({ title: LL.ReceiveScreen.receiveViaInvoice() })
+        break
+      case Invoice.PayCode:
+        navigation.setOptions({ title: LL.ReceiveScreen.receiveViaPaycode() })
     }
   }, [request?.type])
 

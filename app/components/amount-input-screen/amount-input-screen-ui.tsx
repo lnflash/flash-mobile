@@ -80,9 +80,14 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
     >
       <View style={styles.topContainer}>
         <View style={styles.header}>
-          <Text type={"h01"} style={styles.headerTxt}>
-            {balanceText}
-          </Text>
+          <View style={styles.balance}>
+            <Text type="p1" bold>
+              Balance
+            </Text>
+            <Text type="p1" bold>
+              {balanceText}
+            </Text>
+          </View>
           <TouchableOpacity style={styles.close} onPress={goBack}>
             <Icon type="ionicon" name={"close"} size={40} />
           </TouchableOpacity>
@@ -131,9 +136,10 @@ const useStyles = makeStyles(() => ({
     alignItems: "center",
     marginTop: 10,
   },
-  headerTxt: {
+  balance: {
     flex: 1,
-    textAlign: "center",
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: 80,
   },
   close: {
