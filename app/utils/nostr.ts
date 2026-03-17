@@ -19,6 +19,12 @@ import * as Keychain from "react-native-keychain"
 import { pool } from "./nostr/pool"
 import type { NostrSigner } from "@app/nostr/signer/types"
 
+export type RelayDeliveryResult = {
+  url: string
+  status: "accepted" | "relay_error" | "timeout" | "connection_error"
+  error?: string
+}
+
 export const publicRelays = [
   "wss://relay.damus.io",
   "wss://relay.primal.net",
@@ -277,13 +283,14 @@ export async function sendNip17Message(
   signer: NostrSigner,
   onSent?: (rumor: Rumor) => void,
   replyToId?: string,
-) {
+): Promise<{ outputs: { acceptedRelays: string[]; rejectedRelays: string[] }[]; rumor: Rumor; relayDetails: RelayDeliveryResult[] }> {
   let p_tags = recipients.map((recipientId: string) => ["p", recipientId])
   if (replyToId) {
     p_tags = [...p_tags, ["e", replyToId, "", "reply"]]
   }
   let rumor = await createRumor({ content: message, kind: 14, tags: p_tags }, signer)
   let outputs: { acceptedRelays: string[]; rejectedRelays: string[] }[] = []
+  const allRelayResults = new Map<string, RelayDeliveryResult>()
   await Promise.allSettled(
     recipients.map(async (recipientId: string) => {
       let recipientAcceptedRelays: string[] = []
@@ -297,24 +304,55 @@ export async function sendNip17Message(
       ]
       let seal = await createSeal(rumor, signer, recipientId)
       let wrap = createWrap(seal, recipientId)
-      try {
-        await Promise.allSettled(
-          customPublish(
-            recipientRelays,
-            wrap,
-            (url: string) => {
-              onSent?.(rumor)
-              recipientAcceptedRelays.push(url)
-            },
-          ),
-        )
-      } catch {
-        // publish failed
-      }
+      const settled = await Promise.allSettled(
+        customPublish(
+          recipientRelays,
+          wrap,
+          (url: string) => {
+            onSent?.(rumor)
+            recipientAcceptedRelays.push(url)
+          },
+        ),
+      )
+
+      settled.forEach((result, i) => {
+        const url = normalizeURL(recipientRelays![i] ?? "")
+        if (!url) return
+        // customPublish immediately rejects duplicates — skip them
+        if (result.status === "rejected" && String(result.reason) === "duplicate url") return
+        // Don't overwrite a result we already have for this URL from another recipient
+        if (allRelayResults.has(url)) {
+          // Upgrade to accepted if this recipient got it accepted
+          if (recipientAcceptedRelays.includes(url)) {
+            allRelayResults.set(url, { url, status: "accepted" })
+          }
+          return
+        }
+
+        if (result.status === "rejected") {
+          const errMsg = String(result.reason).replace(/^Error: /, "")
+          const isTimeout = errMsg.toLowerCase().includes("timed out")
+          allRelayResults.set(url, {
+            url,
+            status: isTimeout ? "timeout" : "connection_error",
+            error: errMsg,
+          })
+        } else if (recipientAcceptedRelays.includes(url)) {
+          allRelayResults.set(url, { url, status: "accepted" })
+        } else {
+          const errVal = typeof result.value === "string" ? result.value : undefined
+          allRelayResults.set(url, {
+            url,
+            status: "relay_error",
+            error: errVal ?? "Rejected by relay",
+          })
+        }
+      })
+
       outputs.push({ acceptedRelays: recipientAcceptedRelays, rejectedRelays: [] })
     }),
   )
-  return { outputs, rumor }
+  return { outputs, rumor, relayDetails: Array.from(allRelayResults.values()) }
 }
 
 export async function sendReaction(
@@ -369,7 +407,7 @@ export const customPublish = (
 ): Promise<string>[] => {
   const timeoutPromise = (url: string): Promise<string> =>
     new Promise((_, reject) => {
-      setTimeout(() => reject(new Error(`Publish to ${url} timed out`)), 2000)
+      setTimeout(() => reject(new Error(`Publish to ${url} timed out`)), 5000)
     })
 
   return relays.map(normalizeURL).map(async (url, i, arr) => {

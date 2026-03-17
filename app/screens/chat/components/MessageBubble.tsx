@@ -5,6 +5,8 @@ import {
   Image,
   TouchableOpacity,
   GestureResponderEvent,
+  Modal,
+  ScrollView,
 } from "react-native"
 import { Swipeable } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
@@ -14,6 +16,7 @@ import { ReactionPicker } from "./ReactionPicker"
 import type { ReactionEntry } from "../chatContext"
 import { makeStyles, useTheme } from "@rneui/themed"
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
+import type { DeliveryInfo } from "@app/screens/chat/messages"
 
 type Props = {
   rumor: Rumor
@@ -25,6 +28,7 @@ type Props = {
   onReact: (emoji: string) => void
   isGroupChat?: boolean
   onAdminPress?: () => void
+  deliveryInfo?: DeliveryInfo
 }
 
 const formatTime = (created_at: number) =>
@@ -60,11 +64,13 @@ export const MessageBubble: React.FC<Props> = ({
   onReact,
   isGroupChat = false,
   onAdminPress,
+  deliveryInfo,
 }) => {
   const { theme: { colors } } = useTheme()
   const styles = useStyles()
   const [pickerVisible, setPickerVisible] = useState(false)
   const [pickerPosition, setPickerPosition] = useState({ x: 0, y: 0 })
+  const [deliveryModalVisible, setDeliveryModalVisible] = useState(false)
   const swipeableRef = useRef<Swipeable>(null)
 
   const senderProfile = profileMap.get(rumor.pubkey)
@@ -125,7 +131,7 @@ export const MessageBubble: React.FC<Props> = ({
             />
           )}
 
-          <View style={styles.bubbleWrapper}>
+          <View style={[styles.bubbleWrapper, deliveryInfo?.pending && styles.bubblePending]}>
             {/* Sender name in group chats */}
             {!isMe && isGroupChat && (
               <Text style={styles.senderName}>{senderName}</Text>
@@ -165,9 +171,26 @@ export const MessageBubble: React.FC<Props> = ({
                     {rumor.content}
                   </Text>
                 </View>
-                <Text style={[styles.timestamp, isMe && styles.timestampSent]}>
-                  {formatTime(rumor.created_at)}
-                </Text>
+                <View style={styles.timestampRow}>
+                  <Text style={[styles.timestamp, isMe && styles.timestampSent]}>
+                    {formatTime(rumor.created_at)}
+                  </Text>
+                  {isMe && deliveryInfo && (
+                    <TouchableOpacity
+                      onPress={() => setDeliveryModalVisible(true)}
+                      hitSlop={8}
+                      style={styles.deliveryIcon}
+                    >
+                      {deliveryInfo.pending ? (
+                        <Icon name="time-outline" size={11} color="rgba(255,255,255,0.6)" />
+                      ) : deliveryInfo.results.some((r) => r.status === "accepted") ? (
+                        <Icon name="checkmark-done-outline" size={11} color="rgba(255,255,255,0.7)" />
+                      ) : (
+                        <Icon name="alert-circle-outline" size={11} color="rgba(255,200,0,0.9)" />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </TouchableOpacity>
 
@@ -208,6 +231,59 @@ export const MessageBubble: React.FC<Props> = ({
         onClose={() => setPickerVisible(false)}
         position={pickerPosition}
       />
+
+      {isMe && deliveryInfo && (
+        <Modal
+          visible={deliveryModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setDeliveryModalVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setDeliveryModalVisible(false)}
+          >
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Delivery Status</Text>
+              {deliveryInfo.pending ? (
+                <Text style={styles.modalPending}>Sending…</Text>
+              ) : deliveryInfo.results.length === 0 ? (
+                <Text style={styles.modalPending}>No relay info available</Text>
+              ) : (
+                <ScrollView>
+                  {deliveryInfo.results.map((r) => (
+                    <View key={r.url} style={styles.relayRow}>
+                      <Icon
+                        name={
+                          r.status === "accepted"
+                            ? "checkmark-circle-outline"
+                            : r.status === "timeout"
+                            ? "timer-outline"
+                            : "close-circle-outline"
+                        }
+                        size={16}
+                        color={r.status === "accepted" ? "#4caf50" : r.status === "timeout" ? "#ff9800" : "#f44336"}
+                        style={{ marginRight: 8 }}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.relayUrl} numberOfLines={1}>
+                          {r.url.replace("wss://", "")}
+                        </Text>
+                        {r.error && r.status !== "accepted" && (
+                          <Text style={styles.relayError} numberOfLines={2}>
+                            {r.error}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
     </>
   )
 }
@@ -234,6 +310,9 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   bubbleWrapper: {
     maxWidth: "75%",
+  },
+  bubblePending: {
+    opacity: 0.5,
   },
   senderName: {
     fontSize: 11,
@@ -281,7 +360,6 @@ const useStyles = makeStyles(({ colors }) => ({
     fontSize: 10,
     color: colors.grey2,
     alignSelf: "flex-end",
-    marginTop: 2,
   },
   timestampSent: {
     color: "rgba(255,255,255,0.7)",
@@ -337,5 +415,57 @@ const useStyles = makeStyles(({ colors }) => ({
     alignItems: "center",
     width: 60,
     paddingHorizontal: 12,
+  },
+  timestampRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    marginTop: 2,
+  },
+  deliveryIcon: {
+    marginLeft: 3,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalCard: {
+    backgroundColor: colors.white,
+    borderRadius: 14,
+    padding: 16,
+    width: "100%",
+    maxHeight: 320,
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.black,
+    marginBottom: 12,
+  },
+  modalPending: {
+    fontSize: 13,
+    color: colors.grey2,
+    textAlign: "center",
+    paddingVertical: 8,
+  },
+  relayRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 6,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.grey4,
+  },
+  relayUrl: {
+    fontSize: 13,
+    color: colors.black,
+    fontWeight: "500",
+  },
+  relayError: {
+    fontSize: 11,
+    color: colors.grey2,
+    marginTop: 2,
   },
 }))

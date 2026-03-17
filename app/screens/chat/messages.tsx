@@ -11,7 +11,7 @@ import type {
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
 import { nip19 } from "nostr-tools"
-import { Rumor, getGroupId, sendNip17Message, sendReaction } from "@app/utils/nostr"
+import { Rumor, RelayDeliveryResult, getGroupId, sendNip17Message, sendReaction } from "@app/utils/nostr"
 import { useEffect, useMemo, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -21,6 +21,11 @@ import { getSigner } from "@app/nostr/signer"
 import { FlatList } from "react-native-gesture-handler"
 import { MessageBubble } from "./components/MessageBubble"
 import { MessageInput } from "./components/MessageInput"
+
+export type DeliveryInfo = {
+  pending: boolean
+  results: RelayDeliveryResult[]
+}
 
 type MessagesProps = {
   route: RouteProp<ChatStackParamList, "messages">
@@ -62,6 +67,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
   const insets = useSafeAreaInsets()
 
   const [replyTo, setReplyTo] = useState<Rumor | null>(null)
+  const [deliveryStatus, setDeliveryStatus] = useState<Map<string, DeliveryInfo>>(new Map())
 
   const pubkeys = groupId.split(",")
   const isGroupChat = pubkeys.length > 2
@@ -117,6 +123,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
 
   const handleSend = async (text: string, replyToId?: string) => {
     const signer = await getSigner()
+    let sendSettled = false
     const result = await sendNip17Message(
       pubkeys,
       text,
@@ -127,8 +134,17 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
           if (prev.some((r) => r.id === rumor.id)) return prev
           return [...prev, rumor]
         })
+        // Guard against late callbacks firing after sendNip17Message has returned
+        if (!sendSettled) {
+          setDeliveryStatus((prev) => new Map(prev).set(rumor.id, { pending: true, results: [] }))
+        }
       },
       replyToId,
+    )
+
+    sendSettled = true
+    setDeliveryStatus((prev) =>
+      new Map(prev).set(result.rumor.id, { pending: false, results: result.relayDetails }),
     )
 
     if (result.outputs.filter((o) => o.acceptedRelays.length > 0).length === 0) {
@@ -219,6 +235,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
             onReply={(r) => setReplyTo(r)}
             onReact={(emoji) => handleReaction(item, emoji)}
             isGroupChat={isGroupChat}
+            deliveryInfo={deliveryStatus.get(item.id)}
           />
         )}
         ListEmptyComponent={

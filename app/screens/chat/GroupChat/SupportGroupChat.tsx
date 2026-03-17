@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
-import { Alert, View, Image, TouchableOpacity } from "react-native"
+import { Alert, View, Image, TouchableOpacity, Platform } from "react-native"
 import { makeStyles, useTheme, Text, Button } from "@rneui/themed"
 import { Screen } from "../../../components/screen"
 import { FlatList } from "react-native-gesture-handler"
@@ -132,7 +132,7 @@ const InnerGroupChat: React.FC = () => {
   return (
     <Screen>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View style={[styles.header, { paddingTop: Platform.OS === "android" ? insets.top : 0 }]}>
         <TouchableOpacity onPress={navigation.goBack} style={styles.backBtn} hitSlop={8}>
           <Icon name="arrow-back-outline" size={24} color={colors.primary3} />
         </TouchableOpacity>
@@ -197,7 +197,7 @@ const InnerGroupChat: React.FC = () => {
       />
 
       {/* Input or Join button */}
-      <View style={{ paddingBottom: insets.bottom }}>
+      <View style={{ paddingBottom: Platform.OS === "android" ? insets.bottom : 0 }}>
         {isMember ? (
           <MessageInput
             replyTo={replyTo}
