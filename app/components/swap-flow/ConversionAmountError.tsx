@@ -147,7 +147,6 @@ const ConversionAmountError: React.FC<Props> = ({
         convertMoneyAmount={convertMoneyAmount as keyof typeof convertMoneyAmount}
         minAmount={minAmount}
         maxAmount={maxAmount}
-        title="Convert"
       />
       {errorMsg && (
         <Text style={styles.errMsg} color={colors.error}>

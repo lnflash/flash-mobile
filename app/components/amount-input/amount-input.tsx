@@ -27,7 +27,6 @@ export type AmountInputProps = {
   showValuesIfDisabled?: boolean
   big?: boolean
   newDesign?: boolean
-  title?: string
 }
 
 export const AmountInput: React.FC<AmountInputProps> = ({
@@ -43,7 +42,6 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   showValuesIfDisabled = true,
   big = true,
   newDesign = false,
-  title = "Receive",
 }) => {
   const navigation = useNavigation()
   const [isSettingAmount, setIsSettingAmount] = React.useState(false)
@@ -164,7 +162,6 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         maxAmount={maxAmount}
         minAmount={minAmount}
         close={closeHandler}
-        title={title}
       />
     </>
   )
