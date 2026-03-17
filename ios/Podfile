@@ -24,6 +24,8 @@ target 'LNFlash' do
   )
   pod 'glog', :podspec => '../node_modules/react-native/third-party-podspecs/glog.podspec', :modular_headers => false
   pod 'RNFS', :path => '../node_modules/react-native-fs'
+  # Use xcframework variant for arm64 simulator (iOS 26+) support
+  pod 'GT3Captcha-iOS-xcframework'
 
   # Firebase pods with modular headers
   pod 'FirebaseCore', :modular_headers => true
@@ -47,6 +49,8 @@ target 'LNFlash-Alt' do
   )
   pod 'glog', :podspec => '../node_modules/react-native/third-party-podspecs/glog.podspec', :modular_headers => false
   pod 'RNFS', :path => '../node_modules/react-native-fs'
+  # Use xcframework variant for arm64 simulator (iOS 26+) support
+  pod 'GT3Captcha-iOS-xcframework'
 
   # Firebase pods with modular headers
   pod 'FirebaseCore', :modular_headers => true
@@ -81,9 +85,6 @@ post_install do |installer|
     end
   end
 
-  installer.pods_project.build_configurations.each do |config|
-    config.build_settings["EXCLUDED_ARCHS[sdk=iphonesimulator*]"] = "arm64"
-  end
 
   bitcode_strip_path = `xcrun --find bitcode_strip`.chop!
   def strip_bitcode_from_framework(bitcode_strip_path, framework_relative_path)
