@@ -7,6 +7,7 @@ import {
   Wallet,
   WalletCurrency,
 } from "@app/graphql/generated"
+import type { Payment, DepositInfo } from "@breeztech/breez-sdk-spark-react-native"
 import { EarnSectionType } from "@app/screens/earns-screen/sections"
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
 import {
@@ -57,7 +58,7 @@ export type RootStackParamList = {
   sendBitcoinConfirmation: {
     paymentDetail: PaymentDetail<WalletCurrency>
     flashUserAddress?: string
-    feeRateSatPerVbyte?: number
+    selectedFeeType?: "fast" | "medium" | "slow"
     invoiceAmount?: MoneyAmount<WalletCurrency>
   }
   conversionDetails: undefined
@@ -113,6 +114,7 @@ export type RootStackParamList = {
     channel: PhoneCodeChannelType
   }
   transactionDetail: { tx: TransactionFragment }
+  breezTransactionDetail: { payment: Payment }
   TransactionHistoryTabs?: { initialRouteName?: string } | undefined
   USDTransactionHistory: undefined
   BTCTransactionHistory: undefined
@@ -139,15 +141,9 @@ export type RootStackParamList = {
   BackupShowSeedPhrase: undefined
   ImportWallet: { insideApp?: boolean }
   ImportWalletOptions: { insideApp?: boolean } | undefined
-  RefundTransactionList: undefined
-  RefundDestination: { swapAddress: string; amount: number }
-  RefundConfirmation: {
-    swapAddress: string
-    amount: number
-    destination: string
-    fee: number
-    feeType: string
-  }
+  UnclaimedDepositsList: undefined
+  UnclaimedDepositDetails: { deposit: DepositInfo }
+  RefundDeposit: { deposit: DepositInfo }
   CashoutDetails: undefined
   CashoutConfirmation: { offer: CashoutOffer }
   CashoutSuccess: undefined

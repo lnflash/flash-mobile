@@ -4,13 +4,9 @@ import { makeStyles, Text } from "@rneui/themed"
 // hooks
 import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // types
 import { BtcMoneyAmount, MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
-
-// utils
-import { fetchBreezLightningLimits } from "@app/utils/breez-sdk-liquid"
 
 type Props = {
   unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
@@ -29,7 +25,6 @@ const InforError: React.FC<Props> = ({
 }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const { persistentState } = usePersistentStateContext()
   const { formatMoneyAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
 
@@ -40,42 +35,20 @@ const InforError: React.FC<Props> = ({
   }, [unitOfAccountAmount])
 
   const fetchLimits = async () => {
-    if (
-      persistentState.defaultWallet?.walletCurrency === "BTC" &&
-      persistentState.isAdvanceMode
-    ) {
-      const limits = await fetchBreezLightningLimits()
-
-      if (limits.receive.minSat > unitOfAccountAmount.amount) {
+    if (convertMoneyAmount) {
+      const convertedAmount = convertMoneyAmount(unitOfAccountAmount, "USD")
+      if (convertedAmount.amount < 1) {
         setHasError(true)
         setErrorMsg(
-          LL.SendBitcoinScreen.minAmountInvoiceError({ amount: limits.receive.minSat }),
-        )
-      } else if (limits.receive.maxSat < unitOfAccountAmount.amount) {
-        setHasError(true)
-        setErrorMsg(
-          LL.SendBitcoinScreen.maxAmountInvoiceError({ amount: limits.receive.maxSat }),
+          LL.SendBitcoinScreen.minAmountInvoiceError({
+            amount: formatMoneyAmount({
+              moneyAmount: { amount: 1, currency: "USD", currencyCode: "USD" },
+            }),
+          }),
         )
       } else {
         setHasError(false)
         setErrorMsg("")
-      }
-    } else {
-      if (convertMoneyAmount) {
-        const convertedAmount = convertMoneyAmount(unitOfAccountAmount, "USD")
-        if (convertedAmount.amount < 1) {
-          setHasError(true)
-          setErrorMsg(
-            LL.SendBitcoinScreen.minAmountInvoiceError({
-              amount: formatMoneyAmount({
-                moneyAmount: { amount: 1, currency: "USD", currencyCode: "USD" },
-              }),
-            }),
-          )
-        } else {
-          setHasError(false)
-          setErrorMsg("")
-        }
       }
     }
   }

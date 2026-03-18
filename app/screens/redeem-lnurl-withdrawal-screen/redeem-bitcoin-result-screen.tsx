@@ -25,7 +25,7 @@ import {
 } from "@app/graphql/generated"
 
 // breez-sdk
-import { onRedeem } from "@app/utils/breez-sdk-liquid"
+import { onRedeem } from "@app/utils/breez-sdk"
 
 type Prop = StackScreenProps<RootStackParamList, "redeemBitcoinResult">
 
@@ -148,7 +148,7 @@ const RedeemBitcoinResultScreen: React.FC<Prop> = ({ route, navigation }) => {
   )
 
   const redeemToBTCWallet = async () => {
-    const res = await onRedeem(lnurl, settlementAmount, defaultDescription)
+    const res = await onRedeem(lnurl, settlementAmount.amount, defaultDescription)
     if (res.success) {
       setSuccess(true)
     } else {
