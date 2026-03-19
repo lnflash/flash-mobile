@@ -23,7 +23,6 @@ import { logGetStartedAction } from "@app/utils/analytics"
 // assets
 import AppLogoLightMode from "../../assets/logo/app-logo-light.png"
 import AppLogoDarkMode from "../../assets/logo/app-logo-dark.png"
-import Help from "@app/assets/icons/help.png"
 import Nfc from "@app/assets/icons/nfc.png"
 
 const width = Dimensions.get("screen").width
@@ -94,8 +93,6 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
 
   const onPressLogo = () => setSecretMenuCounter(secretMenuCounter + 1)
 
-  const onPressHelp = () => navigation.navigate("welcomeFirst")
-
   const onPressCard = () => readFlashcard()
 
   return (
@@ -106,19 +103,6 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
         </Pressable>
       </LogoWrapper>
       <IconsWrapper>
-        <TouchableOpacity
-          onPress={onPressHelp}
-          style={{ padding: 20 }}
-          activeOpacity={0.5}
-        >
-          <Icon
-            source={Help}
-            animation="pulse"
-            easing="ease-out"
-            iterationCount="infinite"
-            color={colors.button01}
-          />
-        </TouchableOpacity>
         <TouchableOpacity
           onPress={onPressCard}
           style={{ padding: 20 }}

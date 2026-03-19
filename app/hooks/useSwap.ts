@@ -19,10 +19,11 @@ import {
 import {
   fetchBreezFee,
   payLightningBreez,
-  receivePaymentBreezSDK,
-} from "@app/utils/breez-sdk-liquid"
+  receivePaymentBreez,
+} from "@app/utils/breez-sdk"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useDisplayCurrency } from "./use-display-currency"
+import { PaymentType } from "@galoymoney/client"
 
 export const useSwap = () => {
   const { LL } = useI18nContext()
@@ -71,17 +72,19 @@ export const useSwap = () => {
         variables: {
           input: {
             walletId: usdWallet.id,
-            amount: convertedAmount.amount,
+            amount: 0,
             memo: "Swap BTC to USD",
           },
         },
       })
       console.log("INVOICE RES>>>>>>>>", invoiceRes.data?.lnUsdInvoiceCreate)
+
       if (invoiceRes.data?.lnUsdInvoiceCreate.invoice) {
         // get the sending fee probe
         const feeRes = await fetchBreezFee(
-          "lightning",
+          PaymentType.Lightning,
           invoiceRes.data?.lnUsdInvoiceCreate.invoice?.paymentRequest,
+          settlementSendAmount.amount,
         )
         console.log("FEE RES>>>>>>>>", feeRes)
         if (!feeRes.err) {
@@ -130,24 +133,23 @@ export const useSwap = () => {
       // fetch breez(BTC) invoice
       // @ts-ignore: Unreachable code error
       const convertedAmount = convertMoneyAmount(settlementSendAmount, "BTC")
-      const invoiceRes = await receivePaymentBreezSDK(
+      const invoiceRes = await receivePaymentBreez(
         convertedAmount.amount,
         "Swap USD to BTC",
       )
       console.log("INVOICE RES>>>>>>>>", invoiceRes)
-      if (invoiceRes.bolt11) {
+      if (invoiceRes.paymentRequest) {
         // get the sending fee probe
         const feeRes = await lnUsdInvoiceFeeProbe({
           variables: {
             input: {
-              paymentRequest: invoiceRes.bolt11,
+              paymentRequest: invoiceRes.paymentRequest,
               walletId: usdWallet?.id,
             },
           },
         })
         console.log("FEE RES>>>>>>>>", feeRes.data?.lnUsdInvoiceFeeProbe)
-        // if (feeRes.data?.lnUsdInvoiceFeeProbe.errors.length === 0) {
-        // check if (amount + fee) is larger than balance
+
         const sendingFee = feeRes.data?.lnUsdInvoiceFeeProbe.amount || 0
         if (sendingFee + settlementSendAmount.amount > usdBalance.amount) {
           return {
@@ -162,15 +164,12 @@ export const useSwap = () => {
             data: {
               moneyAmount: settlementSendAmount, // @ts-ignore: Unreachable code error
               sendingFee: convertMoneyAmount(toUsdMoneyAmount(sendingFee), "BTC").amount,
-              receivingFee: invoiceRes.fee,
-              lnInvoice: invoiceRes.bolt11,
+              receivingFee: Number(invoiceRes.fee),
+              lnInvoice: invoiceRes.paymentRequest,
             },
             err: null,
           }
         }
-        // } else {
-        //   return { data: null, err: feeRes.data?.lnUsdInvoiceFeeProbe.errors[0].message }
-        // }
       } else {
         return { data: null, err: "Something went wrong. Please, try again later." }
       }
@@ -179,7 +178,11 @@ export const useSwap = () => {
     }
   }
 
-  const swap = async (lnInvoice: string, fromWalletCurrency: WalletCurrency) => {
+  const swap = async (
+    lnInvoice: string,
+    fromWalletCurrency: WalletCurrency,
+    amount: number,
+  ) => {
     if (lnInvoice && usdWallet) {
       if (fromWalletCurrency === "USD") {
         const res = await lnInvoicePaymentSend({
@@ -202,9 +205,9 @@ export const useSwap = () => {
           throw new Error(error || "Something went wrong")
         }
       } else {
-        const res = await payLightningBreez(lnInvoice)
+        const res = await payLightningBreez(lnInvoice, amount)
         console.log(">>>>>>>>>?????????", res.payment)
-        if (res.payment.status === "pending") {
+        if (res.success) {
           return true
         }
       }

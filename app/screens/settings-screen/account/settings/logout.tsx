@@ -61,7 +61,7 @@ export const LogOut = () => {
   return (
     <SettingsButton
       title={LL.AccountScreen.logOutAndDeleteLocalData()}
-      variant="warning"
+      variant="danger"
       onPress={logoutAlert}
     />
   )

@@ -27,3 +27,14 @@ index 2807ece..c348d66 100644
          versionCode 1
          versionName "1.0"
  
+diff --git a/node_modules/@galoymoney/react-native-geetest-module/react-native-geetest-module.podspec b/node_modules/@galoymoney/react-native-geetest-module/react-native-geetest-module.podspec
+index 32fc9fc..5fceeb8 100644
+--- a/node_modules/@galoymoney/react-native-geetest-module/react-native-geetest-module.podspec
++++ b/node_modules/@galoymoney/react-native-geetest-module/react-native-geetest-module.podspec
+@@ -16,5 +16,5 @@ Pod::Spec.new do |s|
+   s.source_files = "ios/**/*.{h,m,mm}"
+ 
+   s.dependency "React-Core"
+-  s.dependency "GT3Captcha-iOS"
++  s.dependency "GT3Captcha-iOS-xcframework"
+ end

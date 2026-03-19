@@ -1697,13 +1697,13 @@ type RootTranslation = {
 		 */
 		myAccounts: string
 		/**
-		 * P​l​e​a​s​e​ ​c​o​m​p​l​e​t​e​ ​o​r​ ​r​e​f​u​n​d​ ​a​l​l​ ​p​e​n​d​i​n​g​ ​t​r​a​n​s​a​c​t​i​o​n​s​ ​b​e​f​o​r​e​ ​u​n​i​n​s​t​a​l​l​i​n​g​ ​F​l​a​s​h​ ​o​r​ ​p​e​n​d​i​n​g​ ​f​u​n​d​s​ ​w​i​l​l​ ​b​e​ ​l​o​s​t​.
+		 * ⚠​️​ ​P​​​l​​​e​​​a​​​s​​​e​​​ ​​​c​​​o​​​m​​​p​​​l​​​e​​​t​​​e​​​ ​​​o​​​r​​​ ​c​l​a​i​m​ ​​​a​​​l​​​l​​​ ​u​n​c​l​a​i​m​e​d​ ​d​e​p​o​s​i​t​s​ ​​​b​​​e​​​f​​​o​​​r​​​e​​​ ​​​u​​​n​​​i​​​n​​​s​​​t​​​a​​​l​​​l​​​i​​​n​​​g​​​ ​​​F​​​l​​​a​​​s​​​h​​​ ​​​o​​​r​​​ ​u​n​c​l​a​i​m​e​d​ ​d​e​p​o​s​i​t​s​ ​​​w​​​i​​​l​​​l​​​ ​​​b​​​e​​​ ​​​l​​​o​​​s​​​t​​​.
 		 */
-		refundableWarning: string
+		unclaimedDepositsWarning: string
 		/**
-		 * R​e​f​u​n​d​a​b​l​e​s
+		 * U​n​c​l​a​i​m​e​d​ ​D​e​p​o​s​i​t​s
 		 */
-		refundables: string
+		unclaimedDeposits: string
 		/**
 		 * C​a​s​h
 		 */
@@ -2090,6 +2090,10 @@ type RootTranslation = {
 		 * P​a​y​c​o​d​e​ ​/​ ​L​N​U​R​L
 		 */
 		payCodeOrLNURL: string
+		/**
+		 * Y​o​u​ ​c​a​n​n​o​t​ ​r​e​c​e​i​v​e​ ​a​ ​z​e​r​o​ ​s​a​t​s​.​ ​P​l​e​a​s​e​ ​e​n​t​e​r​ ​a​n​ ​a​m​o​u​n​t​ ​c​o​r​r​e​s​p​o​n​d​i​n​g​ ​t​o​ ​1​ ​o​r​ ​m​o​r​e​ ​s​a​t​s​.
+		 */
+		cantReceiveZeroSats: string
 		/**
 		 * *​ ​I​n​i​t​i​a​l​ ​d​e​p​o​s​i​t​ ​o​f​ ​$​5​ ​r​e​c​o​m​m​e​n​d​e​d​ ​f​o​r​ ​c​h​a​n​n​e​l​ ​s​e​t​u​p​.​ ​~​$​1​ ​w​i​l​l​ ​b​e​ ​p​a​i​d​ ​a​s​ ​s​e​t​u​p​ ​f​e​e​.
 		 */
@@ -4052,6 +4056,10 @@ type RootTranslation = {
 		 */
 		csvExport: string
 		/**
+		 * E​x​p​o​r​t​ ​l​o​g​s
+		 */
+		exportSparkLogs: string
+		/**
 		 * D​a​t​e
 		 */
 		date: string
@@ -4059,6 +4067,10 @@ type RootTranslation = {
 		 * D​e​s​c​r​i​p​t​i​o​n
 		 */
 		description: string
+		/**
+		 * D​e​t​a​i​l​s
+		 */
+		details: string
 		/**
 		 * D​o​m​a​i​n
 		 */
@@ -4705,9 +4717,17 @@ type RootTranslation = {
 	}
 	RefundFlow: {
 		/**
-		 * R​e​f​u​n​d​a​b​l​e​ ​T​r​a​n​s​a​c​t​i​o​n​s
+		 * U​n​c​l​a​i​m​e​d​ ​D​e​p​o​s​i​t​s
 		 */
 		refundListTitle: string
+		/**
+		 * D​e​p​o​s​i​t​ ​D​e​t​a​i​l​s
+		 */
+		depositDetails: string
+		/**
+		 * R​e​f​u​n​d​ ​D​e​p​o​s​i​t
+		 */
+		refundTitle: string
 		/**
 		 * D​e​s​t​i​n​a​t​i​o​n
 		 */
@@ -4721,7 +4741,7 @@ type RootTranslation = {
 		 */
 		pendingTransactions: string
 		/**
-		 * N​o​ ​r​e​f​u​n​d​a​b​l​e​ ​t​r​a​n​s​a​c​t​i​o​n​s​ ​f​o​u​n​d
+		 * N​o​ ​u​n​c​l​a​i​m​e​d​ ​d​e​p​o​s​i​t​s​ ​f​o​u​n​d
 		 */
 		noRefundables: string
 		/**
@@ -4745,17 +4765,139 @@ type RootTranslation = {
 		 */
 		fast: string
 		/**
-		 * H​a​l​f​ ​H​o​u​r
+		 * M​e​d​i​u​m
 		 */
-		halfHour: string
+		medium: string
 		/**
-		 * H​o​u​r
+		 * S​l​o​w
 		 */
-		hour: string
+		slow: string
 		/**
 		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
 		 */
 		txId: string
+		/**
+		 * R​e​f​u​n​d​e​d
+		 */
+		refunded: string
+		/**
+		 * P​e​n​d​i​n​g
+		 */
+		pending: string
+		/**
+		 * This transfer will be claimed automatically
+		 */
+		autoClaiming: string
+		/**
+		 * A​p​p​r​o​v​a​l​ ​R​e​q​u​i​r​e​d
+		 */
+		approvalRequired: string
+		/**
+		 * B​r​o​a​d​c​a​s​t​i​n​g
+		 */
+		broadcasting: string
+		/**
+		 * F​e​e​ ​t​o​o​ ​h​i​g​h
+		 */
+		feeExceeded: string
+		/**
+		 * C​l​a​i​m​ ​f​a​i​l​e​d
+		 */
+		claimFailed: string
+		/**
+		 * T​h​i​s​ ​d​e​p​o​s​i​t​ ​w​i​l​l​ ​b​e​ ​c​l​a​i​m​e​d​ ​a​u​t​o​m​a​t​i​c​a​l​l​y​ ​w​h​e​n​ ​n​e​t​w​o​r​k​ ​f​e​e​s​ ​a​r​e​ ​l​o​w​e​r​.
+		 */
+		automaticClaim: string
+		/**
+		 * A​p​p​r​o​v​e​ ​t​o​ ​c​l​a​i​m​ ​t​h​i​s​ ​t​r​a​n​s​f​e​r​,​ ​o​r​ ​r​e​j​e​c​t​ ​t​o​ ​p​r​o​c​e​s​s​ ​a​ ​r​e​f​u​n​d​.
+		 */
+		approveFee: string
+		/**
+		 * E​n​t​e​r​ ​t​h​e​ ​B​i​t​c​o​i​n​ ​a​d​d​r​e​s​s​ ​w​h​e​r​e​ ​y​o​u​ ​w​a​n​t​ ​t​o​ ​r​e​c​e​i​v​e​ ​t​h​e​ ​r​e​f​u​n​d​.
+		 */
+		enterAddress: string
+		/**
+		 * S​e​l​e​c​t​ ​a​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​f​o​r​ ​y​o​u​r​ ​r​e​f​u​n​d
+		 */
+		selectFee: string
+		/**
+		 * C​o​n​f​i​r​m​ ​&​ ​R​e​f​u​n​d
+		 */
+		confirmRefund: string
+		/**
+		 * P​r​o​c​e​s​s​i​n​g​ ​r​e​f​u​n​d​.​.​.
+		 */
+		processing: string
+		/**
+		 * R​e​f​u​n​d​ ​B​r​o​a​d​c​a​s​t
+		 */
+		success: string
+		/**
+		 * Y​o​u​r​ ​r​e​f​u​n​d​ ​h​a​s​ ​b​e​e​n​ ​s​e​n​t​ ​t​o​ ​t​h​e​ ​B​i​t​c​o​i​n​ ​n​e​t​w​o​r​k​.
+		 */
+		refundSuccess: string
+		/**
+		 * R​e​f​u​n​d​ ​F​a​i​l​e​d
+		 */
+		refundFailed: string
+		/**
+		 * F​a​i​l​e​d​ ​t​o​ ​c​l​a​i​m​ ​d​e​p​o​s​i​t
+		 */
+		failedToClaim: string
+		/**
+		 * U​n​k​n​o​w​n​ ​e​r​r​o​r​ ​o​c​c​u​r​r​e​d
+		 */
+		unknownError: string
+		/**
+		 * T​h​e​ ​d​e​p​o​s​i​t​ ​U​T​X​O​ ​i​s​ ​m​i​s​s​i​n​g​.​ ​T​h​e​ ​t​r​a​n​s​a​c​t​i​o​n​ ​m​a​y​ ​n​o​t​ ​b​e​ ​c​o​n​f​i​r​m​e​d​ ​y​e​t​.
+		 */
+		missingUtxo: string
+		/**
+		 * T​h​i​s​ ​d​e​p​o​s​i​t​ ​c​o​u​l​d​ ​n​o​t​ ​b​e​ ​c​l​a​i​m​e​d​ ​a​u​t​o​m​a​t​i​c​a​l​l​y​.
+		 */
+		couldNotClaimAutomatically: string
+		/**
+		 * N​e​t​w​o​r​k​ ​F​e​e
+		 */
+		networkFee: string
+		/**
+		 * @param {string} feeRate
+		 * N​e​t​w​o​r​k​ ​F​e​e​ ​(​{​f​e​e​R​a​t​e​}​ ​s​a​t​/​v​B​)
+		 */
+		networkFeeWithRate: RequiredParams<'feeRate'>
+		/**
+		 * Y​o​u​ ​R​e​c​e​i​v​e
+		 */
+		youReceive: string
+		/**
+		 * A​p​p​r​o​v​e
+		 */
+		approve: string
+		/**
+		 * Y​o​u​ ​c​a​n​ ​r​e​f​u​n​d​ ​i​t​ ​t​o​ ​a​n​ ​e​x​t​e​r​n​a​l​ ​w​a​l​l​e​t​.
+		 */
+		refundToExternalWallet: string
+		/**
+		 * P​l​e​a​s​e​ ​e​n​t​e​r​ ​a​ ​d​e​s​t​i​n​a​t​i​o​n​ ​a​d​d​r​e​s​s
+		 */
+		enterDestinationAddress: string
+		/**
+		 * I​n​v​a​l​i​d​ ​B​i​t​c​o​i​n​ ​a​d​d​r​e​s​s​ ​f​o​r​m​a​t
+		 */
+		invalidBitcoinAddress: string
+		/**
+		 * @param {string} feeRate
+		 * E​s​t​.​ ​N​e​t​w​o​r​k​ ​F​e​e​ ​(​{​f​e​e​R​a​t​e​}​ ​s​a​t​/​v​B​)
+		 */
+		estimatedFee: RequiredParams<'feeRate'>
+		/**
+		 * E​s​t​.​ ​Y​o​u​ ​R​e​c​e​i​v​e
+		 */
+		estimatedReceive: string
+		/**
+		 * F​e​e​s​ ​a​r​e​ ​e​s​t​i​m​a​t​e​d​.​ ​T​h​e​ ​a​c​t​u​a​l​ ​f​e​e​ ​w​i​l​l​ ​b​e​ ​c​a​l​c​u​l​a​t​e​d​ ​a​t​ ​b​r​o​a​d​c​a​s​t​.
+		 */
+		feeEstimateDisclaimer: string
 	}
 	Nostr: {
 		/**
@@ -6682,7 +6824,7 @@ export type TranslationFunctions = {
 		 */
 		locationPermissionNegative: () => LocalizedString
 		/**
-		 * Ask Me Later
+		 * Remind me later
 		 */
 		locationPermissionNeutral: () => LocalizedString
 		/**
@@ -6774,13 +6916,13 @@ export type TranslationFunctions = {
 		 */
 		myAccounts: () => LocalizedString
 		/**
-		 * Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.
+		 * ⚠️ P​l​e​a​s​e​ ​c​o​m​p​l​e​t​e​ ​o​r​ claim ​a​l​l​ unclaimed deposits ​b​e​f​o​r​e​ ​u​n​i​n​s​t​a​l​l​i​n​g​ ​F​l​a​s​h​ ​o​r​ unclaimed deposits ​w​i​l​l​ ​b​e​ ​l​o​s​t​.
 		 */
-		refundableWarning: () => LocalizedString
+		unclaimedDepositsWarning: () => LocalizedString
 		/**
-		 * Refundables
+		 * Unclaimed Deposits
 		 */
-		refundables: () => LocalizedString
+		unclaimedDeposits: () => LocalizedString
 		/**
 		 * Cash
 		 */
@@ -7161,6 +7303,10 @@ export type TranslationFunctions = {
 		 * Paycode / LNURL
 		 */
 		payCodeOrLNURL: () => LocalizedString
+		/**
+		 * You cannot receive a zero sats. Please enter an amount corresponding to 1 or more sats.
+		 */
+		cantReceiveZeroSats: () => LocalizedString
 		/**
 		 * * Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee.
 		 */
@@ -7872,7 +8018,7 @@ export type TranslationFunctions = {
 		 */
 		upgrade: () => LocalizedString
 		/**
-		 * Log out and clear all local data
+		 * Log out
 		 */
 		logOutAndDeleteLocalData: () => LocalizedString
 		/**
@@ -8406,11 +8552,11 @@ export type TranslationFunctions = {
 	}
 	UnVerifiedSeedModal: {
 		/**
-		 * YOUR BITCOIN IS NOT SECURE!
+		 * Secure Your Bitcoin Wallet
 		 */
 		header: () => LocalizedString
 		/**
-		 * You should WRITE DOWN your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.
+		 * You should write down your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.
 
 
 		 */
@@ -8993,7 +9139,7 @@ export type TranslationFunctions = {
 		 */
 		backHome: () => LocalizedString
 		/**
-		 * Show Recovery Phrase
+		 * Write down recovery phrase
 		 */
 		revealSeed: () => LocalizedString
 		/**
@@ -9065,6 +9211,10 @@ export type TranslationFunctions = {
 		 */
 		csvExport: () => LocalizedString
 		/**
+		 * Export Logs
+		 */
+		exportSparkLogs: () => LocalizedString
+		/**
 		 * Date
 		 */
 		date: () => LocalizedString
@@ -9072,6 +9222,10 @@ export type TranslationFunctions = {
 		 * Description
 		 */
 		description: () => LocalizedString
+		/**
+		 * Details
+		 */
+		details: () => LocalizedString
 		/**
 		 * Domain
 		 */
@@ -9489,7 +9643,7 @@ export type TranslationFunctions = {
 	}
 	reports: {
 		/**
-		 * Generate Reports
+		 * Export Transactions
 		 */
 		title: () => LocalizedString
 		/**
@@ -9705,9 +9859,17 @@ export type TranslationFunctions = {
 	}
 	RefundFlow: {
 		/**
-		 * Refundable Transactions
+		 * Unclaimed Deposits
 		 */
 		refundListTitle: () => LocalizedString
+		/**
+		 * Deposit Details
+		 */
+		depositDetails: () => LocalizedString
+		/**
+		 * Refund Deposit
+		 */
+		refundTitle: () => LocalizedString
 		/**
 		 * Destination
 		 */
@@ -9721,7 +9883,7 @@ export type TranslationFunctions = {
 		 */
 		pendingTransactions: () => LocalizedString
 		/**
-		 * No refundable transactions found
+		 * No unclaimed deposits found
 		 */
 		noRefundables: () => LocalizedString
 		/**
@@ -9745,17 +9907,137 @@ export type TranslationFunctions = {
 		 */
 		fast: () => LocalizedString
 		/**
-		 * Half Hour
+		 * Medium
 		 */
-		halfHour: () => LocalizedString
+		medium: () => LocalizedString
 		/**
-		 * Hour
+		 * Slow
 		 */
-		hour: () => LocalizedString
+		slow: () => LocalizedString
 		/**
 		 * Transaction ID
 		 */
 		txId: () => LocalizedString
+		/**
+		 * Refunded
+		 */
+		refunded: () => LocalizedString
+		/**
+		 * Pending
+		 */
+		pending: () => LocalizedString
+		/**
+		 * This transfer will be claimed automatically
+		 */
+		autoClaiming: () => LocalizedString
+		/**
+		 * Approval Required
+		 */
+		approvalRequired: () => LocalizedString
+		/**
+		 * Broadcasting
+		 */
+		broadcasting: () => LocalizedString
+		/**
+		 * Fee too high
+		 */
+		feeExceeded: () => LocalizedString
+		/**
+		 * Claim failed
+		 */
+		claimFailed: () => LocalizedString
+		/**
+		 * This deposit will be claimed automatically when network fees are lower.
+		 */
+		automaticClaim: () => LocalizedString
+		/**
+		 * Approve to claim this transfer, or reject to process a refund.
+		 */
+		approveFee: () => LocalizedString
+		/**
+		 * Enter the Bitcoin address where you want to receive the refund.
+		 */
+		enterAddress: () => LocalizedString
+		/**
+		 * Select a network fee for your refund
+		 */
+		selectFee: () => LocalizedString
+		/**
+		 * Confirm & Refund
+		 */
+		confirmRefund: () => LocalizedString
+		/**
+		 * Processing refund...
+		 */
+		processing: () => LocalizedString
+		/**
+		 * Refund Broadcast
+		 */
+		success: () => LocalizedString
+		/**
+		 * Your refund has been sent to the Bitcoin network.
+		 */
+		refundSuccess: () => LocalizedString
+		/**
+		 * Refund Failed
+		 */
+		refundFailed: () => LocalizedString
+		/**
+		 * Failed to claim deposit
+		 */
+		failedToClaim: () => LocalizedString
+		/**
+		 * Unknown error occurred
+		 */
+		unknownError: () => LocalizedString
+		/**
+		 * The deposit UTXO is missing. The transaction may not be confirmed yet.
+		 */
+		missingUtxo: () => LocalizedString
+		/**
+		 * This deposit could not be claimed automatically.
+		 */
+		couldNotClaimAutomatically: () => LocalizedString
+		/**
+		 * Network Fee
+		 */
+		networkFee: () => LocalizedString
+		/**
+		 * Network Fee ({feeRate} sat/vB)
+		 */
+		networkFeeWithRate: (arg: { feeRate: string }) => LocalizedString
+		/**
+		 * You Receive
+		 */
+		youReceive: () => LocalizedString
+		/**
+		 * Approve
+		 */
+		approve: () => LocalizedString
+		/**
+		 * You can refund it to an external wallet.
+		 */
+		refundToExternalWallet: () => LocalizedString
+		/**
+		 * Please enter a destination address
+		 */
+		enterDestinationAddress: () => LocalizedString
+		/**
+		 * Invalid Bitcoin address format
+		 */
+		invalidBitcoinAddress: () => LocalizedString
+		/**
+		 * Est. Network Fee ({feeRate} sat/vB)
+		 */
+		estimatedFee: (arg: { feeRate: string }) => LocalizedString
+		/**
+		 * Est. You Receive
+		 */
+		estimatedReceive: () => LocalizedString
+		/**
+		 * Fees are estimated. The actual fee will be calculated at broadcast.
+		 */
+		feeEstimateDisclaimer: () => LocalizedString
 	}
 	Nostr: {
 		/**

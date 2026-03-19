@@ -215,13 +215,13 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
 
   return (
     <Screen unsafe preset="fixed">
-      <View style={styles.backButtonWrapper}>
+      <View style={styles.closeButtonWrapper}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={styles.closeButton}
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
-          <Icon name="arrow-back" size={24} color={colors.black} />
+          <Icon name="close" size={24} color={colors.black} />
         </TouchableOpacity>
       </View>
       <ScrollView style={styles.scrollContent}>
@@ -385,7 +385,7 @@ export const TransactionDetailScreen: React.FC<Props> = ({ route }) => {
 }
 
 const useStyles = makeStyles(({ colors }) => ({
-  backButtonWrapper: {
+  closeButtonWrapper: {
     backgroundColor: colors.white,
     position: "absolute",
     zIndex: 1,
@@ -393,8 +393,9 @@ const useStyles = makeStyles(({ colors }) => ({
     left: 0,
     right: 0,
     padding: 15,
+    alignItems: "flex-end",
   },
-  backButton: {
+  closeButton: {
     zIndex: 100,
     width: 44,
     height: 44,

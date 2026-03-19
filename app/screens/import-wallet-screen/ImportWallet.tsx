@@ -18,7 +18,7 @@ import { Text, useTheme, useThemeMode } from "@rneui/themed"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // utils
-import { disconnectToSDK, initializeBreezSDK } from "@app/utils/breez-sdk-liquid"
+import { disconnectToSDK, initializeBreezSDK } from "@app/utils/breez-sdk"
 
 type Props = StackScreenProps<RootStackParamList, "ImportWallet">
 
@@ -51,11 +51,9 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
           mnemonicKey,
         )
         await initializeBreezSDK()
-        setTimeout(() => {
-          updateStateHandler(true)
-          setLoading(false)
-          navigation.reset({ index: 0, routes: [{ name: "Primary" }] })
-        }, 5000)
+        updateStateHandler(true)
+        setLoading(false)
+        navigation.reset({ index: 0, routes: [{ name: "Primary" }] })
       } else {
         // const token: any = await createDeviceAccountAndLogin()
         // if (route.params?.onComplete) {
@@ -78,6 +76,7 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
           btcBalance: undefined,
           convertedBtcBalance: undefined,
           isAdvanceMode,
+          sparkMigrationCompleted: false,
         }
       return undefined
     })
