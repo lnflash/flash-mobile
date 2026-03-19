@@ -15,7 +15,7 @@ import { useFlashcard } from "./useFlashcard"
 // utils
 import KeyStoreWrapper from "../utils/storage/secureStorage"
 import { SCHEMA_VERSION_KEY } from "@app/config"
-import { disconnectToSDK } from "@app/utils/breez-sdk-liquid"
+import { disconnectToSDK } from "@app/utils/breez-sdk"
 
 const DEVICE_ACCOUNT_CREDENTIALS_KEY = "device-account"
 

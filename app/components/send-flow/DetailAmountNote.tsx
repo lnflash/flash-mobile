@@ -22,28 +22,22 @@ import {
 
 // utils
 import { testProps } from "../../utils/testProps"
-import {
-  fetchBreezLightningLimits,
-  fetchBreezOnChainLimits,
-} from "@app/utils/breez-sdk-liquid"
 
 type Props = {
-  selectedFee?: number
+  selectedFeeType?: "fast" | "medium" | "slow"
   usdWallet: any
   paymentDetail: PaymentDetail<WalletCurrency>
   setPaymentDetail: (val: PaymentDetail<WalletCurrency>) => void
   setAsyncErrorMessage: (val: string) => void
-  isFromFlashcard?: boolean
   invoiceAmount?: MoneyAmount<WalletCurrency>
 }
 
 const DetailAmountNote: React.FC<Props> = ({
-  selectedFee,
+  selectedFeeType,
   usdWallet,
   paymentDetail,
   setPaymentDetail,
   setAsyncErrorMessage,
-  isFromFlashcard,
   invoiceAmount,
 }) => {
   const styles = useStyles()
@@ -54,118 +48,19 @@ const DetailAmountNote: React.FC<Props> = ({
 
   const { sendingWalletDescriptor } = paymentDetail
 
-  const [minAmount, setMinAmount] = useState<MoneyAmount<WalletCurrency>>()
-  const [maxAmount, setMaxAmount] = useState<MoneyAmount<WalletCurrency>>()
-
   useEffect(() => {
-    if (paymentDetail.isSendingMax && selectedFee) {
+    if (paymentDetail.isSendingMax && selectedFeeType) {
       sendAll()
     }
-  }, [selectedFee, paymentDetail.isSendingMax])
-
-  useEffect(() => {
-    fetchBtcMinMaxAmount()
-  }, [paymentDetail.sendingWalletDescriptor.currency])
-
-  const fetchBtcMinMaxAmount = async () => {
-    if (paymentDetail.sendingWalletDescriptor.currency === "BTC") {
-      let limits
-      if (paymentDetail.paymentType === "lightning") {
-        limits = await fetchBreezLightningLimits()
-      } else if (paymentDetail.paymentType === "onchain") {
-        limits = await fetchBreezOnChainLimits()
-      } else {
-        limits = await fetchBreezLightningLimits()
-        if (paymentDetail?.paymentType === "lnurl") {
-          limits = {
-            send: {
-              minSat:
-                limits.send.minSat < paymentDetail?.lnurlParams.min
-                  ? paymentDetail?.lnurlParams.min
-                  : limits.send.minSat,
-              maxSat:
-                limits.send.maxSat > paymentDetail?.lnurlParams.max
-                  ? paymentDetail?.lnurlParams.max
-                  : limits.send.maxSat,
-            },
-          }
-        }
-      }
-
-      const defaultMinSat = limits?.send.minSat || 0
-      const flashcardMinSat = isFromFlashcard ? 100 : 0
-      const minSat = Math.max(defaultMinSat, flashcardMinSat)
-
-      setMinAmount({
-        amount: minSat,
-        currency: "BTC",
-        currencyCode: "SAT",
-      })
-      setMaxAmount({
-        amount: limits?.send.maxSat || 0,
-        currency: "BTC",
-        currencyCode: "SAT",
-      })
-    } else {
-      setMinAmount({
-        amount: 1,
-        currency: "USD",
-        currencyCode: "USD",
-      })
-      setMaxAmount(undefined)
-    }
-  }
+  }, [selectedFeeType, paymentDetail.isSendingMax])
 
   useEffect(() => {
     checkErrorMessage()
-  }, [paymentDetail, minAmount, maxAmount])
+  }, [paymentDetail])
 
   const checkErrorMessage = () => {
     if (!convertMoneyAmount) return null
-    if (paymentDetail?.sendingWalletDescriptor.currency === "BTC") {
-      if (paymentDetail.paymentType === "lightning" && paymentDetail.canSetAmount) {
-        setAsyncErrorMessage(LL.SendBitcoinScreen.noAmountInvoiceError())
-      } else if (
-        minAmount &&
-        paymentDetail.settlementAmount.amount &&
-        paymentDetail.settlementAmount.amount < minAmount?.amount
-      ) {
-        const convertedBTCAmount = convertMoneyAmount(minAmount, "DisplayCurrency")
-        const formattedBTCAmount = formatDisplayAndWalletAmount({
-          displayAmount: convertedBTCAmount,
-          walletAmount: minAmount,
-        })
-        if (paymentDetail.paymentType === "onchain") {
-          setAsyncErrorMessage(
-            LL.SendBitcoinScreen.onchainMinAmountInvoiceError({
-              amount: formattedBTCAmount,
-            }),
-          )
-        } else {
-          setAsyncErrorMessage(
-            LL.SendBitcoinScreen.minAmountInvoiceError({
-              amount: formattedBTCAmount,
-            }),
-          )
-        }
-      } else if (
-        maxAmount &&
-        paymentDetail.settlementAmount.amount &&
-        paymentDetail.settlementAmount.amount > maxAmount?.amount
-      ) {
-        const convertedBTCAmount = convertMoneyAmount(maxAmount, "DisplayCurrency")
-        setAsyncErrorMessage(
-          LL.SendBitcoinScreen.maxAmountInvoiceError({
-            amount: formatDisplayAndWalletAmount({
-              displayAmount: convertedBTCAmount,
-              walletAmount: maxAmount,
-            }),
-          }),
-        )
-      } else {
-        setAsyncErrorMessage("")
-      }
-    } else {
+    if (paymentDetail?.sendingWalletDescriptor.currency === "USD") {
       if (paymentDetail?.paymentType === "lnurl") {
         if (
           paymentDetail.canSetAmount &&
@@ -180,10 +75,12 @@ const DetailAmountNote: React.FC<Props> = ({
           const convertedUSDAmount = convertMoneyAmount(minAmount, "DisplayCurrency")
           setAsyncErrorMessage(
             LL.SendBitcoinScreen.minAmountInvoiceError({
-              amount: formatDisplayAndWalletAmount({
-                displayAmount: convertedUSDAmount,
-                walletAmount: minAmount,
-              }),
+              amount: Number(
+                formatDisplayAndWalletAmount({
+                  displayAmount: convertedUSDAmount,
+                  walletAmount: minAmount,
+                }),
+              ),
             }),
           )
         } else if (
@@ -199,10 +96,12 @@ const DetailAmountNote: React.FC<Props> = ({
           const convertedUSDAmount = convertMoneyAmount(maxAmount, "DisplayCurrency")
           setAsyncErrorMessage(
             LL.SendBitcoinScreen.maxAmountInvoiceError({
-              amount: formatDisplayAndWalletAmount({
-                displayAmount: convertedUSDAmount,
-                walletAmount: maxAmount,
-              }),
+              amount: Number(
+                formatDisplayAndWalletAmount({
+                  displayAmount: convertedUSDAmount,
+                  walletAmount: maxAmount,
+                }),
+              ),
             }),
           )
         } else {
@@ -239,6 +138,7 @@ const DetailAmountNote: React.FC<Props> = ({
   }
 
   const setAmount = (moneyAmount: MoneyAmount<WalletOrDisplayCurrency>) => {
+    setAsyncErrorMessage("")
     setPaymentDetail(
       paymentDetail?.setAmount ? paymentDetail.setAmount(moneyAmount) : paymentDetail,
     )
@@ -271,8 +171,6 @@ const DetailAmountNote: React.FC<Props> = ({
             walletCurrency={sendingWalletDescriptor.currency}
             canSetAmount={paymentDetail.canSetAmount}
             isSendingMax={paymentDetail.isSendingMax}
-            maxAmount={maxAmount}
-            minAmount={minAmount}
           />
         </View>
       </View>
