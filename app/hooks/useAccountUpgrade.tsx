@@ -49,8 +49,18 @@ export const useAccountUpgrade = () => {
   useEffect(() => {
     if (upgradeData && upgradeData.status !== status) {
       setAccountUpgradeData()
+    } else if (dataAuthed?.me?.phone) {
+      const parsed = parsePhoneNumber(dataAuthed.me.phone)
+      if (parsed?.country && parsed?.nationalNumber) {
+        dispatch(
+          setPersonalInfo({
+            countryCode: parsed.country,
+            phoneNumber: parsed.nationalNumber,
+          }),
+        )
+      }
     }
-  }, [upgradeData])
+  }, [upgradeData, dataAuthed?.me?.phone])
 
   const setAccountUpgradeData = () => {
     if (upgradeData) {

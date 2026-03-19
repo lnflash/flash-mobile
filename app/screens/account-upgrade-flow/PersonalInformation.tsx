@@ -68,7 +68,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
       setPhoneNumber(phoneNumber)
       setCountryCode(countryCode)
     }
-  }, [])
+  }, [phoneNumber, countryCode])
 
   useEffect(() => {
     if (
