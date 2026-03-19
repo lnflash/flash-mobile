@@ -1,9 +1,9 @@
-import * as React from "react"
+import React, { useMemo } from "react"
 import { TouchableOpacity, View } from "react-native"
 import { Text, Icon, makeStyles, useTheme } from "@rneui/themed"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { WalletCurrency } from "@app/graphql/generated"
+import { useWalletOverviewScreenQuery, WalletCurrency } from "@app/graphql/generated"
 
 // components
 import { GaloyErrorBox } from "../atomic/galoy-error-box"
@@ -11,8 +11,15 @@ import { CurrencyKeyboard } from "../currency-keyboard"
 import { Key } from "./number-pad-reducer"
 import { PrimaryBtn } from "../buttons"
 
+// hooks
+import { useBreez, useDisplayCurrency } from "@app/hooks"
+
 // assets
 import Sync from "@app/assets/icons/sync.svg"
+
+// utils
+import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import { getUsdWallet } from "@app/graphql/wallets-utils"
 
 export type AmountInputScreenUIProps = {
   walletCurrency: WalletCurrency
@@ -29,7 +36,6 @@ export type AmountInputScreenUIProps = {
   onClearAmount: () => void
   onSetAmountPress?: () => void
   goBack: () => void
-  title: string
 }
 
 export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
@@ -46,12 +52,27 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
   onSetAmountPress,
   setAmountDisabled,
   goBack,
-  title,
 }) => {
+  const styles = useStyles()
   const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
-  const styles = useStyles()
+  const { btcWallet } = useBreez()
+  const { moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
+
+  const { data } = useWalletOverviewScreenQuery({ fetchPolicy: "cache-only" })
+
+  const balanceText = useMemo(() => {
+    if (walletCurrency === WalletCurrency.Btc) {
+      return moneyAmountToDisplayCurrencyString({
+        moneyAmount: toBtcMoneyAmount(btcWallet?.balance ?? 0),
+      })
+    }
+    const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+    return moneyAmountToDisplayCurrencyString({
+      moneyAmount: toUsdMoneyAmount(usdWallet?.balance ?? 0),
+    })
+  }, [walletCurrency, btcWallet?.balance, data, moneyAmountToDisplayCurrencyString])
 
   return (
     <View
@@ -59,9 +80,14 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
     >
       <View style={styles.topContainer}>
         <View style={styles.header}>
-          <Text type={"h01"} style={styles.headerTxt}>
-            {title}
-          </Text>
+          <View style={styles.balance}>
+            <Text type="p1" bold>
+              Balance
+            </Text>
+            <Text type="p1" bold>
+              {balanceText}
+            </Text>
+          </View>
           <TouchableOpacity style={styles.close} onPress={goBack}>
             <Icon type="ionicon" name={"close"} size={40} />
           </TouchableOpacity>
@@ -110,9 +136,10 @@ const useStyles = makeStyles(() => ({
     alignItems: "center",
     marginTop: 10,
   },
-  headerTxt: {
+  balance: {
     flex: 1,
-    textAlign: "center",
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: 80,
   },
   close: {

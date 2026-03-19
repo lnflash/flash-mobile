@@ -76,7 +76,6 @@ const ConversionAmountError: React.FC<Props> = ({
         walletCurrency={fromWalletCurrency}
         setAmount={setMoneyAmount}
         convertMoneyAmount={convertMoneyAmount as keyof typeof convertMoneyAmount}
-        title="Convert"
       />
       {errorMsg && (
         <Text style={styles.errMsg} color={colors.error}>

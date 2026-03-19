@@ -171,7 +171,6 @@ const DetailAmountNote: React.FC<Props> = ({
             walletCurrency={sendingWalletDescriptor.currency}
             canSetAmount={paymentDetail.canSetAmount}
             isSendingMax={paymentDetail.isSendingMax}
-            title="Send"
           />
         </View>
       </View>
