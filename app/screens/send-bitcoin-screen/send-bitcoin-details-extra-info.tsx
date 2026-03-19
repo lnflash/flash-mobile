@@ -1,7 +1,6 @@
-import React, { useState } from "react"
+import React from "react"
 import { AmountInvalidReason, AmountStatus } from "./payment-details"
 import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
-import { UpgradeAccountModal } from "@app/components/upgrade-account-modal"
 import { Text, makeStyles } from "@rneui/themed"
 import { AccountLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -9,6 +8,7 @@ import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useNavigation } from "@react-navigation/native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { StackNavigationProp } from "@react-navigation/stack"
+import { toBtcMoneyAmount } from "@app/types/amounts"
 
 export type SendBitcoinDetailsExtraInfoProps = {
   errorMessage?: string
@@ -21,17 +21,12 @@ export const SendBitcoinDetailsExtraInfo = ({
   amountStatus,
   currentLevel,
 }: SendBitcoinDetailsExtraInfoProps) => {
-  const [isUpgradeAccountModalVisible, setIsUpgradeAccountModalVisible] = useState(false)
-  const closeModal = () => setIsUpgradeAccountModalVisible(false)
-  const openModal = () => setIsUpgradeAccountModalVisible(true)
+  const styles = useStyles()
   const { LL } = useI18nContext()
   const { formatMoneyAmount } = useDisplayCurrency()
-  const styles = useStyles()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
-  const navigateToTransactionLimits = () => {
-    navigation.navigate("transactionLimitsScreen")
-  }
+  const onAccountUpgrade = () => navigation.navigate("AccountType")
 
   if (errorMessage) {
     return <GaloyErrorBox errorMessage={errorMessage} />
@@ -52,24 +47,11 @@ export const SendBitcoinDetailsExtraInfo = ({
               }),
             })}
           />
-          <UpgradeAccountModal
-            closeModal={closeModal}
-            isVisible={isUpgradeAccountModalVisible}
-          />
-          {currentLevel === "ZERO" ? (
-            <Text type="p2" style={styles.upgradeAccountText} onPress={openModal}>
+          {currentLevel !== AccountLevel.Three && (
+            <Text type="p2" style={styles.upgradeAccountText} onPress={onAccountUpgrade}>
               {LL.SendBitcoinScreen.upgradeAccountToIncreaseLimit()}
             </Text>
-          ) : null}
-          {currentLevel === "ONE" ? (
-            <Text
-              type="p2"
-              style={styles.upgradeAccountText}
-              onPress={navigateToTransactionLimits}
-            >
-              {LL.TransactionLimitsScreen.contactSupportToPerformKyc()}
-            </Text>
-          ) : null}
+          )}
         </>
       )
     case AmountInvalidReason.InsufficientBalance:

@@ -1721,13 +1721,21 @@ type RootTranslation = {
 		 */
 		addFlashcard: string
 		/**
-		 * A​d​d​ ​y​o​u​r​ ​p​h​o​n​e​ ​n​u​m​b​e​r
+		 * U​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t
 		 */
 		upgradeTitle: string
 		/**
-		 * B​a​c​k​u​p​ ​y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​a​n​d​ ​i​n​c​r​e​a​s​e​ ​t​r​a​n​s​a​c​t​i​o​n​ ​l​i​m​i​t​s​.
+		 * U​p​g​r​a​d​e​ ​r​e​q​u​e​s​t​ ​i​s​ ​p​e​n​d​i​n​g
+		 */
+		upgradeTitlePending: string
+		/**
+		 * U​n​l​o​c​k​ ​y​o​u​r​ ​f​u​l​l​ ​p​o​t​e​n​t​i​a​l​!​ ​U​p​g​r​a​d​e​ ​t​o​ ​b​o​o​s​t​ ​v​i​s​i​b​i​l​i​t​y​,​ ​l​i​m​i​t​s​,​ ​a​n​d​ ​p​a​y​o​u​t​s​.
 		 */
 		upgradeDesc: string
+		/**
+		 * Y​o​u​r​ ​a​c​c​o​u​n​t​ ​u​p​g​r​a​d​e​ ​r​e​q​u​e​s​t​ ​i​s​ ​u​n​d​e​r​ ​r​e​v​i​e​w​.
+		 */
+		upgradePendingDesc: string
 		/**
 		 * C​h​a​n​g​e​ ​t​o​ ​y​o​u​r​ ​l​o​c​a​l​ ​c​u​r​r​e​n​c​y
 		 */
@@ -3559,9 +3567,13 @@ type RootTranslation = {
 		 */
 		spendingLimitsDescription: string
 		/**
-		 * R​e​q​u​e​s​t​ ​B​u​s​i​n​e​s​s​ ​A​c​c​o​u​n​t
+		 * R​e​q​u​e​s​t​ ​U​p​g​r​a​d​e
 		 */
-		requestBusiness: string
+		requestUpgrade: string
+		/**
+		 * E​d​i​t​ ​U​p​g​r​a​d​e​ ​R​e​q​u​e​s​t
+		 */
+		editRequest: string
 	}
 	TransactionScreen: {
 		/**
@@ -4921,7 +4933,7 @@ type RootTranslation = {
 		 */
 		createProfileButton: string
 		/**
-		 * W​e​’​r​e​ ​l​o​o​k​i​n​g​,​ ​b​u​t​ ​w​e​ ​h​a​v​e​n​’​t​ ​b​e​e​n​ ​a​b​l​e​ ​t​o​ ​f​i​n​d​ ​y​o​u​r​ ​p​r​o​f​i​l​e​.
+		 * W​e​'​r​e​ ​l​o​o​k​i​n​g​,​ ​b​u​t​ ​w​e​ ​h​a​v​e​n​'​t​ ​b​e​e​n​ ​a​b​l​e​ ​t​o​ ​f​i​n​d​ ​y​o​u​r​ ​p​r​o​f​i​l​e​.
 		 */
 		profileNotFound: string
 		/**
@@ -4993,7 +5005,7 @@ type RootTranslation = {
 		 */
 		noProfileFound: string
 		/**
-		 * Y​o​u​ ​h​a​v​e​n​’​t​ ​c​r​e​a​t​e​d​ ​a​ ​N​o​s​t​r​ ​p​r​o​f​i​l​e​ ​y​e​t​.​
+		 * Y​o​u​ ​h​a​v​e​n​'​t​ ​c​r​e​a​t​e​d​ ​a​ ​N​o​s​t​r​ ​p​r​o​f​i​l​e​ ​y​e​t​.​
 	​T​a​p​ ​b​e​l​o​w​ ​t​o​ ​c​r​e​a​t​e​ ​o​n​e​.
 		 */
 		noProfileDescription: string
@@ -5103,6 +5115,150 @@ type RootTranslation = {
 			 */
 			goToSettings: string
 		}
+	}
+	AccountUpgrade: {
+		/**
+		 * A​c​c​o​u​n​t​ ​T​y​p​e
+		 */
+		accountType: string
+		/**
+		 * P​e​r​s​o​n​a​l
+		 */
+		personal: string
+		/**
+		 * S​e​c​u​r​e​ ​y​o​u​r​ ​w​a​l​l​e​t​ ​w​i​t​h​ ​p​h​o​n​e​ ​a​n​d​ ​e​m​a​i​l​.​ ​S​t​a​y​ ​s​a​f​e​ ​a​n​d​ ​r​e​c​o​v​e​r​ ​e​a​s​i​l​y​ ​i​f​ ​n​e​e​d​e​d
+		 */
+		personalDesc: string
+		/**
+		 * P​r​o
+		 */
+		pro: string
+		/**
+		 * A​c​c​e​p​t​ ​p​a​y​m​e​n​t​s​ ​a​n​d​ ​g​e​t​ ​d​i​s​c​o​v​e​r​e​d​ ​o​n​ ​t​h​e​ ​m​a​p​.​ ​R​e​q​u​i​r​e​s​ ​a​ ​b​u​s​i​n​e​s​s​ ​n​a​m​e​ ​a​n​d​ ​l​o​c​a​t​i​o​n​.
+		 */
+		proDesc: string
+		/**
+		 * M​e​r​c​h​a​n​t
+		 */
+		merchant: string
+		/**
+		 * G​i​v​e​ ​r​e​w​a​r​d​s​,​ ​a​p​p​e​a​r​ ​o​n​ ​t​h​e​ ​m​a​p​,​ ​a​n​d​ ​s​e​t​t​l​e​ ​t​o​ ​y​o​u​r​ ​b​a​n​k​.​ ​I​D​ ​a​n​d​ ​b​a​n​k​ ​i​n​f​o​ ​r​e​q​u​i​r​e​d​.
+		 */
+		merchantDesc: string
+		/**
+		 * P​e​r​s​o​n​a​l​ ​I​n​f​o​r​m​a​t​i​o​n
+		 */
+		personalInfo: string
+		/**
+		 * F​u​l​l​ ​n​a​m​e
+		 */
+		fullName: string
+		/**
+		 * P​h​o​n​e​ ​N​u​m​b​e​r
+		 */
+		phoneNumber: string
+		/**
+		 * E​m​a​i​l​ ​A​d​d​r​e​s​s
+		 */
+		email: string
+		/**
+		 *  ​(​O​p​t​i​o​n​a​l​)
+		 */
+		optional: string
+		/**
+		 * V​a​l​i​d​a​t​i​o​n
+		 */
+		validation: string
+		/**
+		 * V​a​l​i​d​a​t​i​o​n​ ​c​o​d​e
+		 */
+		validationCode: string
+		/**
+		 * B​u​s​i​n​e​s​s​ ​I​n​f​o​r​m​a​t​i​o​n
+		 */
+		businessInfo: string
+		/**
+		 * B​u​s​i​n​e​s​s​ ​N​a​m​e
+		 */
+		businessName: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​n​a​m​e
+		 */
+		businessNamePlaceholder: string
+		/**
+		 * B​u​s​i​n​e​s​s​ ​A​d​d​r​e​s​s
+		 */
+		businessAddress: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​a​d​d​r​e​s​s
+		 */
+		businessAddressPlaceholder: string
+		/**
+		 * D​o​ ​y​o​u​ ​w​a​n​t​ ​a​ ​F​l​a​s​h​ ​t​e​r​m​i​n​a​l​?
+		 */
+		flashTerminal: string
+		/**
+		 * A​ ​F​l​a​s​h​ ​T​e​r​m​i​n​a​l​ ​i​s​ ​a​ ​s​m​a​r​t​ ​d​e​v​i​c​e​ ​t​h​a​t​ ​c​a​n​ ​a​c​c​e​p​t​ ​p​a​y​m​e​n​t​ ​v​i​a​ ​F​l​a​s​h​ ​f​o​r​ ​y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​a​n​d​ ​p​r​i​n​t​ ​r​e​c​e​i​p​t​s​.​ ​A​ ​c​u​s​t​o​m​e​r​ ​s​e​r​v​i​c​e​ ​r​e​p​r​e​s​e​n​t​a​t​i​v​e​ ​w​i​l​l​ ​c​o​n​t​a​c​t​ ​y​o​u​ ​i​f​ ​y​o​u​ ​c​h​e​c​k​ ​t​h​i​s​ ​b​o​x​.
+		 */
+		flashTerminalTooltip: string
+		/**
+		 * B​a​n​k​i​n​g​ ​I​n​f​o​r​m​a​t​i​o​n
+		 */
+		bankingInfo: string
+		/**
+		 * B​a​n​k​ ​N​a​m​e
+		 */
+		bankName: string
+		/**
+		 * S​e​l​e​c​t​ ​y​o​u​r​ ​b​a​n​k​ ​n​a​m​e
+		 */
+		bankNamePlaceholder: string
+		/**
+		 * B​a​n​k​ ​B​r​a​n​c​h
+		 */
+		bankBranch: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​b​a​n​k​ ​b​r​a​n​c​h
+		 */
+		bankBranchPlaceholder: string
+		/**
+		 * A​c​c​o​u​n​t​ ​T​y​p​e
+		 */
+		bankAccountType: string
+		/**
+		 * S​e​l​e​c​t​ ​a​c​c​o​u​n​t​ ​t​y​p​e
+		 */
+		selectBankAccountType: string
+		/**
+		 * C​u​r​r​e​n​c​y
+		 */
+		currency: string
+		/**
+		 * S​e​l​e​c​t​ ​C​u​r​r​e​n​c​y
+		 */
+		selectCurrency: string
+		/**
+		 * A​c​c​o​u​n​t​ ​N​u​m​b​e​r
+		 */
+		accountNum: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​n​u​m​b​e​r
+		 */
+		accountNumPlaceholder: string
+		/**
+		 * U​p​l​o​a​d​ ​I​D​ ​D​o​c​u​m​e​n​t
+		 */
+		uploadId: string
+		/**
+		 * Y​o​u​ ​s​u​c​c​e​s​s​f​u​l​l​y​ ​u​p​g​r​a​d​e​d​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​{​a​c​c​o​u​n​t​T​y​p​e​}
+		 * @param {string} accountType
+		 */
+		successUpgrade: RequiredParams<'accountType'>
+		/**
+		 * Y​o​u​ ​s​u​c​c​e​s​s​f​u​l​l​y​ ​r​e​q​u​e​s​t​e​d​ ​t​o​ ​u​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​{​a​c​c​o​u​n​t​T​y​p​e​}
+		 * @param {string} accountType
+		 */
+		successRequest: RequiredParams<'accountType'>
 	}
 }
 
@@ -6784,13 +6940,21 @@ export type TranslationFunctions = {
 		 */
 		addFlashcard: () => LocalizedString
 		/**
-		 * Add your phone number
+		 * Upgrade your account
 		 */
 		upgradeTitle: () => LocalizedString
 		/**
-		 * Backup your cash wallet and increase transaction limits.
+		 * Upgrade request is pending
+		 */
+		upgradeTitlePending: () => LocalizedString
+		/**
+		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
 		 */
 		upgradeDesc: () => LocalizedString
+		/**
+		 * Your account upgrade request is under review.
+		 */
+		upgradePendingDesc: () => LocalizedString
 		/**
 		 * Change to your local currency
 		 */
@@ -8571,9 +8735,13 @@ export type TranslationFunctions = {
 		 */
 		spendingLimitsDescription: () => LocalizedString
 		/**
-		 * Request Business Account
+		 * Request Upgrade
 		 */
-		requestBusiness: () => LocalizedString
+		requestUpgrade: () => LocalizedString
+		/**
+		 * Edit Upgrade Request
+		 */
+		editRequest: () => LocalizedString
 	}
 	TransactionScreen: {
 		/**
@@ -9905,7 +10073,7 @@ export type TranslationFunctions = {
 		 */
 		createProfileButton: () => LocalizedString
 		/**
-		 * We’re looking, but we haven’t been able to find your profile.
+		 * We're looking, but we haven't been able to find your profile.
 		 */
 		profileNotFound: () => LocalizedString
 		/**
@@ -9977,7 +10145,7 @@ export type TranslationFunctions = {
 		 */
 		noProfileFound: () => LocalizedString
 		/**
-		 * You haven’t created a Nostr profile yet.
+		 * You haven't created a Nostr profile yet.
 	Tap below to create one.
 		 */
 		noProfileDescription: () => LocalizedString
@@ -10087,6 +10255,148 @@ export type TranslationFunctions = {
 			 */
 			goToSettings: () => LocalizedString
 		}
+	}
+	AccountUpgrade: {
+		/**
+		 * Account Type
+		 */
+		accountType: () => LocalizedString
+		/**
+		 * Personal
+		 */
+		personal: () => LocalizedString
+		/**
+		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
+		 */
+		personalDesc: () => LocalizedString
+		/**
+		 * Pro
+		 */
+		pro: () => LocalizedString
+		/**
+		 * Accept payments and get discovered on the map. Requires a business name and location.
+		 */
+		proDesc: () => LocalizedString
+		/**
+		 * Merchant
+		 */
+		merchant: () => LocalizedString
+		/**
+		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
+		 */
+		merchantDesc: () => LocalizedString
+		/**
+		 * Personal Information
+		 */
+		personalInfo: () => LocalizedString
+		/**
+		 * Full name
+		 */
+		fullName: () => LocalizedString
+		/**
+		 * Phone Number
+		 */
+		phoneNumber: () => LocalizedString
+		/**
+		 * Email Address
+		 */
+		email: () => LocalizedString
+		/**
+		 *  (Optional)
+		 */
+		optional: () => LocalizedString
+		/**
+		 * Validation
+		 */
+		validation: () => LocalizedString
+		/**
+		 * Validation code
+		 */
+		validationCode: () => LocalizedString
+		/**
+		 * Business Information
+		 */
+		businessInfo: () => LocalizedString
+		/**
+		 * Business Name
+		 */
+		businessName: () => LocalizedString
+		/**
+		 * Enter your business name
+		 */
+		businessNamePlaceholder: () => LocalizedString
+		/**
+		 * Business Address
+		 */
+		businessAddress: () => LocalizedString
+		/**
+		 * Enter your business address
+		 */
+		businessAddressPlaceholder: () => LocalizedString
+		/**
+		 * Do you want a Flash terminal?
+		 */
+		flashTerminal: () => LocalizedString
+		/**
+		 * A Flash Terminal is a smart device that can accept payment via Flash for your business and print receipts. A customer service representative will contact you if you check this box.
+		 */
+		flashTerminalTooltip: () => LocalizedString
+		/**
+		 * Banking Information
+		 */
+		bankingInfo: () => LocalizedString
+		/**
+		 * Bank Name
+		 */
+		bankName: () => LocalizedString
+		/**
+		 * Select your bank name
+		 */
+		bankNamePlaceholder: () => LocalizedString
+		/**
+		 * Bank Branch
+		 */
+		bankBranch: () => LocalizedString
+		/**
+		 * Enter your bank branch
+		 */
+		bankBranchPlaceholder: () => LocalizedString
+		/**
+		 * Account Type
+		 */
+		bankAccountType: () => LocalizedString
+		/**
+		 * Select account type
+		 */
+		selectBankAccountType: () => LocalizedString
+		/**
+		 * Currency
+		 */
+		currency: () => LocalizedString
+		/**
+		 * Select Currency
+		 */
+		selectCurrency: () => LocalizedString
+		/**
+		 * Account Number
+		 */
+		accountNum: () => LocalizedString
+		/**
+		 * Enter your account number
+		 */
+		accountNumPlaceholder: () => LocalizedString
+		/**
+		 * Upload ID Document
+		 */
+		uploadId: () => LocalizedString
+		/**
+		 * You successfully upgraded your account to {accountType}
+		 */
+		successUpgrade: (arg: { accountType: string }) => LocalizedString
+		/**
+		 * You successfully requested to upgrade your account to {accountType}
+		 */
+		successRequest: (arg: { accountType: string }) => LocalizedString
 	}
 }
 

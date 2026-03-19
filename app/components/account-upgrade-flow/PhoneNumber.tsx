@@ -1,0 +1,139 @@
+import React, { useState } from "react"
+import { TextInput, View } from "react-native"
+import { makeStyles, useTheme, Text } from "@rneui/themed"
+import { TouchableOpacity } from "react-native-gesture-handler"
+import { FlagButtonProps } from "react-native-country-picker-modal/lib/FlagButton"
+import {
+  CountryCode as PhoneNumberCountryCode,
+  getCountryCallingCode,
+} from "libphonenumber-js/mobile"
+import CountryPicker, {
+  CountryCode,
+  DARK_THEME,
+  DEFAULT_THEME,
+  Flag,
+} from "react-native-country-picker-modal"
+
+// hooks
+import { useI18nContext } from "@app/i18n/i18n-react"
+
+type Props = {
+  countryCode?: string
+  phoneNumber?: string
+  errorMsg?: string
+  disabled?: boolean
+  supportedCountries: CountryCode[]
+  setPhoneNumber: (number: string) => void
+  setCountryCode: (countryCode: PhoneNumberCountryCode) => void
+}
+
+const PhoneNumber: React.FC<Props> = ({
+  countryCode,
+  phoneNumber,
+  errorMsg,
+  disabled,
+  supportedCountries,
+  setPhoneNumber,
+  setCountryCode,
+}) => {
+  const styles = useStyles()
+  const { mode, colors } = useTheme().theme
+  const { LL } = useI18nContext()
+
+  const [isFocused, setIsFocused] = useState(false)
+
+  const renderCountryCode = ({ countryCode, onOpen }: FlagButtonProps) => {
+    return (
+      countryCode && (
+        <TouchableOpacity
+          style={styles.countryPicker}
+          disabled={disabled}
+          onPress={onOpen}
+        >
+          <Flag countryCode={countryCode} flagSize={16} />
+          <Text type="bl" color={disabled ? colors.grey3 : colors.black}>
+            +{getCountryCallingCode(countryCode as PhoneNumberCountryCode)}
+          </Text>
+        </TouchableOpacity>
+      )
+    )
+  }
+
+  return (
+    <View style={styles.wrapper}>
+      <Text type="bl" bold>
+        {LL.AccountUpgrade.phoneNumber()}
+      </Text>
+      <View style={styles.container}>
+        <CountryPicker
+          theme={mode === "dark" ? DARK_THEME : DEFAULT_THEME}
+          countryCode={countryCode as CountryCode}
+          countryCodes={supportedCountries as CountryCode[]}
+          onSelect={(country) => setCountryCode(country.cca2 as PhoneNumberCountryCode)}
+          renderFlagButton={renderCountryCode}
+          withCallingCodeButton={true}
+          withFilter={true}
+          filterProps={{ autoFocus: true }}
+          withCallingCode={true}
+        />
+        <TextInput
+          placeholder={"123-456-7890"}
+          style={[
+            styles.input,
+            isFocused
+              ? { borderColor: colors.primary }
+              : disabled
+              ? { color: colors.grey3 }
+              : {},
+          ]}
+          textContentType="telephoneNumber"
+          keyboardType="phone-pad"
+          value={phoneNumber}
+          editable={!disabled}
+          onChangeText={setPhoneNumber}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+        />
+      </View>
+      {!!errorMsg && (
+        <Text type="caption" color={colors.red}>
+          {errorMsg}
+        </Text>
+      )}
+    </View>
+  )
+}
+
+export default PhoneNumber
+
+const useStyles = makeStyles(({ colors }) => ({
+  wrapper: {
+    marginBottom: 15,
+  },
+  container: {
+    flexDirection: "row",
+    marginTop: 5,
+    marginBottom: 2,
+  },
+  countryPicker: {
+    flex: 1,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.grey4,
+    backgroundColor: colors.grey5,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  input: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.grey4,
+    backgroundColor: colors.grey5,
+    fontSize: 16,
+    fontFamily: "Sora-Regular",
+    marginLeft: 10,
+  },
+}))
