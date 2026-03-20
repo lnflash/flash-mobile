@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { CardStyleInterpolators, createStackNavigator } from "@react-navigation/stack"
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native"
 import * as React from "react"
 
 import {
@@ -605,7 +606,7 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="Nip29GroupChat"
         component={SupportGroupChatScreen}
-        options={{ title: "Group Chat" }}
+        options={{ headerShown: false }}
       />
     </RootNavigator.Navigator>
   )
@@ -729,16 +730,20 @@ export const PrimaryNavigator = () => {
         <Tab.Screen
           name="Chat"
           component={ChatNavigator}
-          options={{
+          options={({ route }) => ({
             headerShown: false,
             title: LL.ChatScreen.title(),
+            tabBarStyle:
+              getFocusedRouteNameFromRoute(route) === "messages"
+                ? { display: "none" }
+                : styles.bottomNavigatorStyle,
             tabBarIcon: ({ color }) => (
               <View>
                 <ChatIcon color={color} />
                 <NotificationBadge />
               </View>
             ),
-          }}
+          })}
         />
       ) : null}
       <Tab.Screen

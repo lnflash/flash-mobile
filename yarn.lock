@@ -2227,29 +2227,6 @@
   version "0.3.0"
   resolved "git+https://github.com/lnflash/flash-client.git#5c96550fea9124eb7a7c6a0b716c3f1ada7586a9"
 
-"@flyerhq/react-native-chat-ui@^1.4.3":
-  version "1.4.3"
-  resolved "https://registry.yarnpkg.com/@flyerhq/react-native-chat-ui/-/react-native-chat-ui-1.4.3.tgz#1a2cbf382080ab76099ba155ad7a4014e53eb31e"
-  integrity sha512-qrk6qQbvLXQruIQcHBWbf7FEyz6Sq0E+1man740VydBcvx5DuUlCwQwS2c7FMVKsvpOwmtxxFlKXdwPbOpZtnA==
-  dependencies:
-    "@flyerhq/react-native-keyboard-accessory-view" "^2.3.3"
-    "@flyerhq/react-native-link-preview" "^1.5.2"
-    dayjs "^1.10.7"
-    react-native-image-viewing "^0.2.1"
-    react-native-parsed-text "^0.0.22"
-
-"@flyerhq/react-native-keyboard-accessory-view@^2.3.3":
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/@flyerhq/react-native-keyboard-accessory-view/-/react-native-keyboard-accessory-view-2.4.0.tgz#27fe52f77e2b0ee324bf74154eda79bfebba608f"
-  integrity sha512-LF2WdkMk23bTTpsXPQIyVjWttfo+6DcG0HcgE4kp+ozbVRv2Z1S+K1IRd1CR1LAuvHPnVax3DjrJqsGFTavqvA==
-
-"@flyerhq/react-native-link-preview@^1.5.2", "@flyerhq/react-native-link-preview@^1.6.0":
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/@flyerhq/react-native-link-preview/-/react-native-link-preview-1.6.0.tgz#c7285ab93a133328edc5d69b011822581bb4414b"
-  integrity sha512-MY2Kxlf3SzLVUAuGU2LXhDU0a2icNBWL7MDCA8BNpmKqsWI+tHjX3mHm5nGpsLweYG5wsajzBd5XS0KCXNPkJA==
-  dependencies:
-    html-entities "^2.3.2"
-
 "@formatjs/ecma402-abstract@1.18.3":
   version "1.18.3"
   resolved "https://registry.yarnpkg.com/@formatjs/ecma402-abstract/-/ecma402-abstract-1.18.3.tgz#274a563964ef5bfb76dc6a477329f52ce9d5b18d"
@@ -11318,7 +11295,7 @@ date-fns@^3.6.0:
   resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-3.6.0.tgz#f20ca4fe94f8b754951b24240676e8618c0206bf"
   integrity sha512-fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww==
 
-dayjs@^1.10.7, dayjs@^1.8.15:
+dayjs@^1.8.15:
   version "1.11.19"
   resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.11.19.tgz#15dc98e854bb43917f12021806af897c58ae2938"
   integrity sha512-t5EcLVS6QPBNqM2z8fakk/NKel+Xzshgt8FFKAn+qwlD1pzZWxh0nVCrvFK7ZDb6XucZeF9z8C7CBWTRIVApAw==
@@ -14646,7 +14623,7 @@ hosted-git-info@^7.0.0:
   dependencies:
     lru-cache "^10.0.1"
 
-html-entities@^2.1.0, html-entities@^2.3.2:
+html-entities@^2.1.0:
   version "2.6.0"
   resolved "https://registry.yarnpkg.com/html-entities/-/html-entities-2.6.0.tgz#7c64f1ea3b36818ccae3d3fb48b6974208e984f8"
   integrity sha512-kig+rMn/QOVRvr7c86gQ8lWXq+Hkv6CbAH1hLu+RG338StTpE8Z0b44SDVaqVu7HGKf27frdmUYEs9hTUX/cLQ==
@@ -20702,7 +20679,7 @@ prop-types@15.7.2:
     object-assign "^4.1.1"
     react-is "^16.8.1"
 
-prop-types@^15.0.0, prop-types@^15.5.10, prop-types@^15.5.8, prop-types@^15.6.0, prop-types@^15.6.1, prop-types@^15.6.2, prop-types@^15.7.2, prop-types@^15.7.x, prop-types@^15.8.0, prop-types@^15.8.1:
+prop-types@^15.0.0, prop-types@^15.5.10, prop-types@^15.5.8, prop-types@^15.6.0, prop-types@^15.6.1, prop-types@^15.6.2, prop-types@^15.7.2, prop-types@^15.8.0, prop-types@^15.8.1:
   version "15.8.1"
   resolved "https://registry.yarnpkg.com/prop-types/-/prop-types-15.8.1.tgz#67d87bf1a694f48435cf332c24af10214a3140b5"
   integrity sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==
@@ -21315,11 +21292,6 @@ react-native-image-picker@^8.2.1:
   resolved "https://registry.yarnpkg.com/react-native-image-picker/-/react-native-image-picker-8.2.1.tgz#1ac7826563cbaa5d5298d9f2acc53c69805e5393"
   integrity sha512-FBeGYJGFDjMdGCcyubDJgBAPCQ4L1D3hwLXyUU91jY9ahOZMTbluceVvRmrEKqnDPFJ0gF1NVhJ0nr1nROFLdg==
 
-react-native-image-viewing@^0.2.1:
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/react-native-image-viewing/-/react-native-image-viewing-0.2.2.tgz#fb26e57d7d3d9ce4559a3af3d244387c0367242b"
-  integrity sha512-osWieG+p/d2NPbAyonOMubttajtYEYiRGQaJA54slFxZ69j1V4/dCmcrVQry47ktVKy8/qpFwCpW1eT6MH5T2Q==
-
 react-native-in-app-review@^4.4.2:
   version "4.4.2"
   resolved "https://registry.yarnpkg.com/react-native-in-app-review/-/react-native-in-app-review-4.4.2.tgz#eaa908cdc7adee26158903a0e6f22ca6af415f7b"
@@ -21410,13 +21382,6 @@ react-native-pager-view@6.9.1:
   version "6.9.1"
   resolved "https://registry.yarnpkg.com/react-native-pager-view/-/react-native-pager-view-6.9.1.tgz#a9e6d9323935cc2ae1d46d7816b66f76dc3eff8e"
   integrity sha512-uUT0MMMbNtoSbxe9pRvdJJKEi9snjuJ3fXlZhG8F2vVMOBJVt/AFtqMPUHu9yMflmqOr08PewKzj9EPl/Yj+Gw==
-
-react-native-parsed-text@^0.0.22:
-  version "0.0.22"
-  resolved "https://registry.yarnpkg.com/react-native-parsed-text/-/react-native-parsed-text-0.0.22.tgz#a23c756eaa5d6724296814755085127f9072e5f5"
-  integrity sha512-hfD83RDXZf9Fvth3DowR7j65fMnlqM9PpxZBGWkzVcUTFtqe6/yPcIoIAgrJbKn6YmtzkivmhWE2MCE4JKBXrQ==
-  dependencies:
-    prop-types "^15.7.x"
 
 react-native-qrcode-svg@^6.2.0:
   version "6.3.21"
