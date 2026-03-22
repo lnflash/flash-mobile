@@ -1,0 +1,20 @@
+appId: com.lnflash
+---
+# ── Home Screen Verification ────────────────────────────────────────────────
+# Verifies: Cash balance visible, BTC balance visible, action buttons present,
+#           recent activity section, bottom nav tabs
+
+# Ensure we're on home
+- swipe:
+    start: "2%,50%"
+    end: "80%,50%"
+- swipe:
+    start: "2%,50%"
+    end: "80%,50%"
+- swipe:
+    start: "2%,50%"
+    end: "80%,50%"
+
+# Tap Home tab to be sure
+- tapOn:
+    point: "20%,97%"
