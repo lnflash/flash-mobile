@@ -93,3 +93,4 @@ vendor/
 
 # Sisyphus planning files
 .sisyphus/
+results/
