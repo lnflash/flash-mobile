@@ -37,7 +37,6 @@ export const UpgradeAccountModal: React.FC<UpgradeAccountModalProps> = ({
         <View>
           <AccountBenefit text={LL.UpgradeAccountModal.backUpFunds()} />
           <AccountBenefit text={LL.UpgradeAccountModal.higherLimits()} />
-          <AccountBenefit text={LL.UpgradeAccountModal.receiveOnchain()} />
         </View>
       }
       primaryButtonTextAbove={LL.UpgradeAccountModal.onlyAPhoneNumber()}

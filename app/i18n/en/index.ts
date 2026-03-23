@@ -1110,7 +1110,6 @@ const en: BaseTranslation = {
     title: "Upgrade your account",
     backUpFunds: "Back up your funds",
     higherLimits: "Increase your transaction limits",
-    receiveOnchain: "Earn rewards",
     onlyAPhoneNumber: "Quick and easy phone number verification",
     letsGo: "Let's go!",
     stayInTrialMode: "Maybe later",
