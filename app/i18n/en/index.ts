@@ -701,7 +701,7 @@ const en: BaseTranslation = {
     confirmPayment: "Confirm payment",
     confirmPaymentQuestion: "Do you want to confirm this payment?",
     destinationLabel: "To:",
-    feeLabel: "Fee",
+    feeLabel: "Flash fee:",
     memoLabel: "Note:",
     paymentFinal: "Payments are final.",
     stalePrice:

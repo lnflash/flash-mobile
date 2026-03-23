@@ -5,12 +5,12 @@ import { makeStyles, Text } from "@rneui/themed"
 
 // hooks
 import useFee, { FeeType } from "@app/screens/send-bitcoin-screen/use-fee"
-import { useDisplayCurrency } from "@app/hooks/use-display-currency"
+import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
 // types
 import { WalletCurrency } from "@app/graphql/generated"
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
-import { DisplayCurrency } from "@app/types/amounts"
+import { DisplayCurrency, toUsdMoneyAmount } from "@app/types/amounts"
 
 // utils
 import { testProps } from "@app/utils/testProps"
@@ -41,11 +41,21 @@ const ConfirmationWalletFee: React.FC<Props> = ({
   setFee,
   setPaymentError,
 }) => {
-  const { sendingWalletDescriptor, getFee, settlementAmount, paymentType } = paymentDetail
+  const { sendingWalletDescriptor, getFee, settlementAmount, paymentType, convertMoneyAmount } =
+    paymentDetail
   const { LL } = useI18nContext()
   const styles = useStyles()
   const getLightningFee = useFee(getFee ? getFee : null)
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
+  const { convertMoneyAmount: globalConvert } = usePriceConversion()
+
+  // Check if transfer exceeds $10 USD equivalent for WU comparison line
+  const showWuComparison = (() => {
+    if (!globalConvert) return false
+    const usdAmount = globalConvert(settlementAmount, WalletCurrency.Usd)
+    // settlementAmount for USD is in cents, so $10 = 1000 cents
+    return usdAmount.amount >= 1000
+  })()
 
   useEffect(() => {
     getSendingFee()
@@ -127,19 +137,34 @@ const ConfirmationWalletFee: React.FC<Props> = ({
           {LL.SendBitcoinConfirmationScreen.feeLabel()}
         </Text>
         <View style={styles.fieldBackground}>
-          {fee.status === "loading" && <ActivityIndicator />}
-          {fee.status === "set" && (
-            <Text {...testProps("Successful Fee")}>{feeDisplayText}</Text>
-          )}
-          {fee.status === "error" && Boolean(fee.amount) && (
-            <Text>{feeDisplayText} *</Text>
-          )}
-          {fee.status === "error" && !fee.amount && (
-            <Text>{LL.SendBitcoinConfirmationScreen.feeError()}</Text>
-          )}
-          {fee.status === "unset" && !fee.amount && (
-            <Text>{LL.SendBitcoinConfirmationScreen.breezFeeText()}</Text>
-          )}
+          <View style={styles.feeContentContainer}>
+            <View style={styles.feeValueRow}>
+              {fee.status === "loading" && <ActivityIndicator />}
+              {fee.status === "set" && (
+                <Text style={styles.feeValueText} {...testProps("Successful Fee")}>
+                  {feeDisplayText}
+                </Text>
+              )}
+              {fee.status === "error" && Boolean(fee.amount) && (
+                <Text style={styles.feeValueText}>{feeDisplayText} *</Text>
+              )}
+              {fee.status === "error" && !fee.amount && (
+                <Text style={styles.feeValueText}>
+                  {LL.SendBitcoinConfirmationScreen.feeError()}
+                </Text>
+              )}
+              {fee.status === "unset" && !fee.amount && (
+                <Text style={styles.feeValueText}>
+                  {LL.SendBitcoinConfirmationScreen.breezFeeText()}
+                </Text>
+              )}
+            </View>
+            {showWuComparison && (
+              <Text style={styles.wuComparisonText}>
+                Western Union charges ~J$1,800 for this transfer
+              </Text>
+            )}
+          </View>
         </View>
         {fee.status === "error" && Boolean(fee.amount) && (
           <Text style={styles.maxFeeWarningText}>
@@ -189,6 +214,25 @@ const useStyles = makeStyles(({ colors }) => ({
   walletSelectorBalanceContainer: {
     flex: 1,
     flexDirection: "row",
+  },
+  feeContentContainer: {
+    flex: 1,
+    flexDirection: "column",
+    justifyContent: "center",
+  },
+  feeValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  feeValueText: {
+    color: "#3ab54a",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  wuComparisonText: {
+    color: colors.grey3,
+    fontSize: 12,
+    marginTop: 2,
   },
   maxFeeWarningText: {
     color: colors.warning,
