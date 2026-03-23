@@ -3,7 +3,17 @@ import { WalletCurrency } from "@app/graphql/generated"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { Alert, Platform } from "react-native"
 import { v4 as uuidv4 } from "uuid"
-import { initializeBreezSDK, getInfo, handleSparkMigration } from "@app/utils/breez-sdk"
+import {
+  initializeBreezSDK,
+  getInfo,
+  handleSparkMigration,
+  registerLightningAddress,
+  getLightningAddress,
+  checkLightningAddressAvailable,
+} from "@app/utils/breez-sdk"
+import { useAppConfig } from "@app/hooks/use-app-config"
+import { useAddressScreenQuery } from "@app/graphql/generated"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
 import SparkMigrationModal from "@app/components/spark-migration-modal"
 
 type BtcWallet = {
@@ -34,6 +44,12 @@ type Props = {
 
 export const BreezProvider = ({ children }: Props) => {
   const { persistentState, updateState } = usePersistentStateContext()
+  const { appConfig } = useAppConfig()
+  const isAuthed = useIsAuthed()
+  const { data: meData } = useAddressScreenQuery({
+    fetchPolicy: "cache-first",
+    skip: !isAuthed,
+  })
   const [loading, setLoading] = useState(false)
   const [btcWallet, setBtcWallet] = useState<BtcWallet>({
     id: "",
@@ -116,9 +132,25 @@ export const BreezProvider = ({ children }: Props) => {
     initializingRef.current = true
     try {
       setLoading(true)
-      await initializeBreezSDK()
+      await initializeBreezSDK(appConfig.galoyInstance.lnAddressHostname)
       await updateBalance()
       setLoading(false)
+
+      // Register Lightning address if user has a username
+      const username = meData?.me?.username
+      if (username) {
+        try {
+          const available = await checkLightningAddressAvailable(meData.me.username)
+          console.log(`Is username ${meData.me.username} available: ${available}`)
+          const existing = await getLightningAddress()
+          console.log(`Username ${meData.me.username} is registered`)
+          if (available && !existing) {
+            await registerLightningAddress(username)
+          }
+        } catch (err) {
+          console.warn("Failed to register Lightning address:", err)
+        }
+      }
 
       // Trigger migration after Spark SDK is ready
       if (!persistentState.sparkMigrationCompleted) {
