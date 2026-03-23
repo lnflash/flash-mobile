@@ -28,6 +28,7 @@ import type {
   RecommendedFees,
   SendPaymentMethod,
   LnurlPayResponse,
+  LightningAddressInfo,
   Payment,
   Logger,
   LogEntry,
@@ -56,7 +57,7 @@ export const getSDKInstance = (): BreezSdkInterface => {
 }
 
 // SDK Initialization
-export const initializeBreezSDK = async (): Promise<boolean> => {
+export const initializeBreezSDK = async (lnurlDomain?: string): Promise<boolean> => {
   if (breezSDKInitialized) {
     return false
   }
@@ -67,7 +68,7 @@ export const initializeBreezSDK = async (): Promise<boolean> => {
 
   breezSDKInitializing = (async () => {
     try {
-      await retry(connectToSDK, 5000, 3)
+      await retry(() => connectToSDK(lnurlDomain), 5000, 3)
       breezSDKInitialized = true
       return true
     } catch (error: unknown) {
@@ -107,7 +108,7 @@ const breezLogger: Logger = {
 
 let loggingInitialized = false
 
-const connectToSDK = async (): Promise<void> => {
+const connectToSDK = async (lnurlDomain?: string): Promise<void> => {
   if (!loggingInitialized) {
     await initLogBuffer()
     initLogging(undefined, breezLogger, undefined)
@@ -123,6 +124,9 @@ const connectToSDK = async (): Promise<void> => {
   config.maxDepositClaimFee = new MaxFee.NetworkRecommended({
     leewaySatPerVbyte: BigInt(1),
   })
+  if (lnurlDomain) {
+    config.lnurlDomain = lnurlDomain
+  }
 
   const storageDir = `${RNFS.DocumentDirectoryPath}/${STORAGE_DIR}`
   const builder = new SdkBuilder(config, seed)
@@ -611,4 +615,32 @@ export const refundDeposit = async (
     console.error("Failed to refund deposit:", message)
     return { success: false, error: message }
   }
+}
+
+// Lightning Address (LNURL-Pay)
+export const checkLightningAddressAvailable = async (
+  username: string,
+): Promise<boolean> => {
+  const sdk = getSDKInstance()
+  return sdk.checkLightningAddressAvailable({ username })
+}
+
+export const registerLightningAddress = async (
+  username: string,
+  description?: string,
+): Promise<LightningAddressInfo> => {
+  const sdk = getSDKInstance()
+  return sdk.registerLightningAddress({ username, description })
+}
+
+export const getLightningAddress = async (): Promise<
+  LightningAddressInfo | undefined
+> => {
+  const sdk = getSDKInstance()
+  return sdk.getLightningAddress()
+}
+
+export const deleteLightningAddress = async (): Promise<void> => {
+  const sdk = getSDKInstance()
+  await sdk.deleteLightningAddress()
 }
