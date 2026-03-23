@@ -96,7 +96,9 @@ export const usePriceConversion = () => {
       let amount =
         moneyAmount.amount * priceOfCurrencyInCurrency(moneyAmount.currency, toCurrency)
 
-      if (toCurrency === "BTC") {
+      // Round all currency conversions to avoid sending floats to the API
+      // (API expects integer cents for USD, integer sats for BTC)
+      if (toCurrency === "BTC" || toCurrency === "USD") {
         amount = Math.round(amount)
       }
 
