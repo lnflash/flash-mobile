@@ -85,7 +85,9 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
 
     if (settlementDisplay && settlementDisplayCurrency) {
       // Use the locked-in display amount from settlement time
-      primaryAmount = `${settlementDisplayCurrency === "USD" ? "$" : ""}${settlementDisplay} ${settlementDisplayCurrency}`
+      const currencySymbol =
+        settlementDisplayCurrency === "USD" ? "$" : ""
+      primaryAmount = `${currencySymbol}${settlementDisplay} ${settlementDisplayCurrency}`
     } else {
       // Fallback: convert from settlement amount (already in cents)
       const moneyAmount = toUsdMoneyAmount(tx.transaction.settlementAmount ?? NaN)
