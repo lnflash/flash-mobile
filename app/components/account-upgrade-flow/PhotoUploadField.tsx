@@ -24,7 +24,7 @@ import PhotoAdd from "@app/assets/icons/photo-add.svg"
 import { toastShow } from "@app/utils/toast"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // File size limit in bytes (5MB)
-const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/jpg", "image/heic"]
+const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/jpg"]
 
 type Props = {
   label: string
@@ -90,7 +90,7 @@ const PhotoUploadField: React.FC<Props> = ({
         result.assets[0].fileSize
       ) {
         if (!ALLOWED_FILE_TYPES.includes(result.assets[0].type)) {
-          setErrorMsg("Please upload a valid image (JPG, PNG, or HEIC)")
+          setErrorMsg("Please upload a valid image (JPG or PNG)")
         } else if (result?.assets[0]?.fileSize > MAX_FILE_SIZE) {
           setErrorMsg("File size exceeds 5MB limit")
         } else {
@@ -112,7 +112,7 @@ const PhotoUploadField: React.FC<Props> = ({
         const data = await result.blob()
 
         if (!ALLOWED_FILE_TYPES.includes(data.type)) {
-          setErrorMsg("Please upload a valid image (JPG, PNG, or HEIC)")
+          setErrorMsg("Please upload a valid image (JPG or PNG)")
         } else if (data.size > MAX_FILE_SIZE) {
           setErrorMsg("File size exceeds 5MB limit")
         } else {

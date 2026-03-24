@@ -106,8 +106,16 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
 
     if (!hasError) {
       const res = await submitAccountUpgrade()
-      if (res.success) navigation.navigate("AccountUpgradeSuccess")
-      else alert(res.errors)
+      if (res.success) {
+        navigation.navigate("AccountUpgradeSuccess")
+      } else if (res.errors?.length) {
+        const errorMsg = res.errors.join(", ")
+        if (errorMsg.toLowerCase().includes("file") || errorMsg.toLowerCase().includes("upload")) {
+          setIdDocumentErr(errorMsg)
+        } else {
+          alert(errorMsg)
+        }
+      }
     }
   }
   const isOptional = accountType === AccountLevel.Two

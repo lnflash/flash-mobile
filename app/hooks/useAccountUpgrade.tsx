@@ -112,14 +112,24 @@ export const useAccountUpgrade = () => {
       return null
     }
 
-    const { data } = await generateIdDocumentUploadUrl({
-      variables: {
-        input: {
-          filename: idDocument.fileName,
-          contentType: idDocument.type,
+    let data
+    try {
+      const result = await generateIdDocumentUploadUrl({
+        variables: {
+          input: {
+            filename: idDocument.fileName,
+            contentType: idDocument.type,
+          },
         },
-      },
-    })
+      })
+      data = result.data
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ""
+      if (message.includes("InvalidFileType")) {
+        throw new Error("Unsupported file type. Please upload a JPG or PNG image.")
+      }
+      throw new Error("Failed to upload ID document. Please try again.")
+    }
 
     if (!data?.idDocumentUploadUrlGenerate.uploadUrl) {
       throw new Error("Failed to generate upload URL to upload ID Document")
