@@ -370,55 +370,55 @@ export const NostrSettingsScreen = () => {
             {LL.Nostr.noProfileDescription()}
           </Text>
 
-          <Pressable
-            style={[
-              styles.generateButton,
-              {
-                flexDirection: "row",
-                alignItems: "center",
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                backgroundColor: colors.black,
-                borderRadius: 16,
-              },
-            ]}
-            onPress={async () => {
-              if (isGenerating) return
-              setIsGenerating(true)
-              setProgressMessage("Creating profile...")
-              try {
-                const signer = await getSigner()
-                await setPreferredRelay(signer)
-                await generateProfileImages(
-                  {
-                    name: dataAuthed?.me?.username,
-                    username: dataAuthed?.me?.username,
-                    lud16: `${dataAuthed?.me?.username}@${lnDomain}`,
-                    nip05: `${dataAuthed?.me?.username}@${lnDomain}`,
-                  },
-                  (msg) => setProgressMessage(msg),
-                )
-              } finally {
-                setIsGenerating(false)
-                setProgressMessage("")
-                await resetChat()
-                await initialize()
-              }
-            }}
-            disabled={isGenerating}
-          >
-            <Ionicons
-              name="person-add-outline"
-              size={20}
-              color={colors.white}
-              style={{ marginRight: 10, opacity: isGenerating ? 0.5 : 1 }}
-            />
-            <Text style={{ color: colors.white, fontWeight: "bold" }}>
-              {isGenerating
-                ? progressMessage || LL.Nostr.creatingProfile()
-                : LL.Nostr.generateProfile()}
-            </Text>
-          </Pressable>
+          {isGenerating ? (
+            <ProfileCreationSteps currentMessage={progressMessage} />
+          ) : (
+            <Pressable
+              style={[
+                styles.generateButton,
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  backgroundColor: colors.black,
+                  borderRadius: 16,
+                },
+              ]}
+              onPress={async () => {
+                setIsGenerating(true)
+                setProgressMessage("Creating profile...")
+                try {
+                  const signer = await getSigner()
+                  await setPreferredRelay(signer)
+                  await generateProfileImages(
+                    {
+                      name: dataAuthed?.me?.username,
+                      username: dataAuthed?.me?.username,
+                      lud16: `${dataAuthed?.me?.username}@${lnDomain}`,
+                      nip05: `${dataAuthed?.me?.username}@${lnDomain}`,
+                    },
+                    (msg) => setProgressMessage(msg),
+                  )
+                } finally {
+                  setIsGenerating(false)
+                  setProgressMessage("")
+                  await resetChat()
+                  await initialize()
+                }
+              }}
+            >
+              <Ionicons
+                name="person-add-outline"
+                size={20}
+                color={colors.white}
+                style={{ marginRight: 10 }}
+              />
+              <Text style={{ color: colors.white, fontWeight: "bold" }}>
+                {LL.Nostr.generateProfile()}
+              </Text>
+            </Pressable>
+          )}
           {nostrPubKey && !isGenerating && (
             <Text
               style={{

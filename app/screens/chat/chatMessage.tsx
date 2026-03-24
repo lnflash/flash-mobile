@@ -4,7 +4,6 @@ import "react-native-get-random-values"
 import React, { useEffect, useRef } from "react"
 import { View, Text } from "react-native"
 import { makeStyles } from "@rneui/themed"
-import { MessageType } from "@flyerhq/react-native-chat-ui"
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 import { useChatContext } from "./chatContext"
 import { Event, nip19 } from "nostr-tools"
@@ -12,7 +11,7 @@ import { SUPPORT_AGENTS } from "@app/config/supportAgents"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 
 type Props = {
-  message: MessageType.Text
+  message: { id: string; author: { id: string }; text: string; metadata?: { errors?: boolean } }
   nextMessage: number
   prevMessage: boolean
   showSender?: boolean

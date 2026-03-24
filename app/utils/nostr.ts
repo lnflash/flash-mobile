@@ -19,6 +19,12 @@ import * as Keychain from "react-native-keychain"
 import { pool } from "./nostr/pool"
 import type { NostrSigner } from "@app/nostr/signer/types"
 
+export type RelayDeliveryResult = {
+  url: string
+  status: "accepted" | "relay_error" | "timeout" | "connection_error"
+  error?: string
+}
+
 export const publicRelays = [
   "wss://relay.damus.io",
   "wss://relay.primal.net",
@@ -112,7 +118,6 @@ export const fetchGiftWrapsForPublicKey = (
       onevent: eventHandler,
       onclose: () => {
         closer.close()
-        console.log("Re-establishing connection")
         closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool)
       },
     },
@@ -123,6 +128,8 @@ export const fetchGiftWrapsForPublicKey = (
 export const convertRumorsToGroups = (rumors: Rumor[]) => {
   let groups: Map<string, Rumor[]> = new Map()
   rumors.forEach((rumor) => {
+    // Filter out kind 7 reactions — only kind 14 messages belong in conversation groups
+    if (rumor.kind !== 14) return
     let participants = rumor.tags.filter((t) => t[0] === "p").map((p) => p[1])
     let id = getGroupId([...participants, rumor.pubkey])
     groups.set(id, [...(groups.get(id) || []), rumor])
@@ -206,12 +213,8 @@ export const fetchContactList = async (
     filter,
     {
       onevent: onEvent,
-      onclose: () => {
-        console.log("Closing Subscription for Contacts")
-      },
-      oneose: () => {
-        console.log("EOSE RECEIVED, DID SUBSCRIPTION CLOSE?")
-      },
+      onclose: () => {},
+      oneose: () => {},
     },
   )
 }
@@ -230,8 +233,7 @@ export const setPreferredRelay = async (signer: NostrSigner) => {
     content: "",
   }
   const finalEvent = await signer.signEvent(relayEvent)
-  let messages = await Promise.allSettled(pool.publish(publicRelays, finalEvent))
-  console.log("Message from relays", messages)
+  await Promise.allSettled(pool.publish(publicRelays, finalEvent))
   setTimeout(() => {
     pool.close(publicRelays)
   }, 5000)
@@ -248,16 +250,12 @@ export const addToContactList = async (
   const tags = contactsEvent?.tags || []
 
   if (existingContacts.some((p: NostrProfile) => p.pubkey === hexPubKeyToAdd)) {
-    console.log("Contact already in list.")
     return
   }
 
   if (!contactsEvent) {
     const confirmed = await confirmOverwrite()
-    if (!confirmed) {
-      console.log("User declined to create a new contact list.")
-      return
-    }
+    if (!confirmed) return
   }
 
   tags.push(["p", hexPubKeyToAdd])
@@ -270,14 +268,12 @@ export const addToContactList = async (
   }
 
   const finalNewEvent = await signer.signEvent(newEvent)
-  const messages = await Promise.allSettled(
+  await Promise.allSettled(
     pool.publish(
       ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol"],
       finalNewEvent,
     ),
   )
-
-  console.log("Contact Publish: Relay replies", messages)
 }
 
 export async function sendNip17Message(
@@ -286,14 +282,17 @@ export async function sendNip17Message(
   preferredRelaysMap: Map<string, string[]>,
   signer: NostrSigner,
   onSent?: (rumor: Rumor) => void,
-) {
+  replyToId?: string,
+): Promise<{ outputs: { acceptedRelays: string[]; rejectedRelays: string[] }[]; rumor: Rumor; relayDetails: RelayDeliveryResult[] }> {
   let p_tags = recipients.map((recipientId: string) => ["p", recipientId])
+  if (replyToId) {
+    p_tags = [...p_tags, ["e", replyToId, "", "reply"]]
+  }
   let rumor = await createRumor({ content: message, kind: 14, tags: p_tags }, signer)
   let outputs: { acceptedRelays: string[]; rejectedRelays: string[] }[] = []
-  console.log("total recipients", recipients)
+  const allRelayResults = new Map<string, RelayDeliveryResult>()
   await Promise.allSettled(
     recipients.map(async (recipientId: string) => {
-      console.log("sending rumor for recipient ", recipientId)
       let recipientAcceptedRelays: string[] = []
       let recipientRelays = preferredRelaysMap.get(recipientId)
       recipientRelays = [
@@ -305,30 +304,86 @@ export async function sendNip17Message(
       ]
       let seal = await createSeal(rumor, signer, recipientId)
       let wrap = createWrap(seal, recipientId)
-      console.log("wrap created")
-      try {
-        let response = await Promise.allSettled(
-          customPublish(
-            recipientRelays,
-            wrap,
-            (url: string) => {
-              console.log("Accepted relay callback triggered:", url)
-              onSent?.(rumor)
-              recipientAcceptedRelays.push(url)
-            },
-            (url: string) => {
-              console.log("Rejected relay:", url)
-            },
-          ),
-        )
-      } catch (e) {
-        console.log("error in publishing", e)
-      }
+      const settled = await Promise.allSettled(
+        customPublish(
+          recipientRelays,
+          wrap,
+          (url: string) => {
+            onSent?.(rumor)
+            recipientAcceptedRelays.push(url)
+          },
+        ),
+      )
+
+      settled.forEach((result, i) => {
+        const url = normalizeURL(recipientRelays![i] ?? "")
+        if (!url) return
+        // customPublish immediately rejects duplicates — skip them
+        if (result.status === "rejected" && String(result.reason) === "duplicate url") return
+        // Don't overwrite a result we already have for this URL from another recipient
+        if (allRelayResults.has(url)) {
+          // Upgrade to accepted if this recipient got it accepted
+          if (recipientAcceptedRelays.includes(url)) {
+            allRelayResults.set(url, { url, status: "accepted" })
+          }
+          return
+        }
+
+        if (result.status === "rejected") {
+          const errMsg = String(result.reason).replace(/^Error: /, "")
+          const isTimeout = errMsg.toLowerCase().includes("timed out")
+          allRelayResults.set(url, {
+            url,
+            status: isTimeout ? "timeout" : "connection_error",
+            error: errMsg,
+          })
+        } else if (recipientAcceptedRelays.includes(url)) {
+          allRelayResults.set(url, { url, status: "accepted" })
+        } else {
+          const errVal = typeof result.value === "string" ? result.value : undefined
+          allRelayResults.set(url, {
+            url,
+            status: "relay_error",
+            error: errVal ?? "Rejected by relay",
+          })
+        }
+      })
+
       outputs.push({ acceptedRelays: recipientAcceptedRelays, rejectedRelays: [] })
     }),
   )
-  console.log("Final output is", outputs)
-  return { outputs, rumor }
+  return { outputs, rumor, relayDetails: Array.from(allRelayResults.values()) }
+}
+
+export async function sendReaction(
+  originalRumorId: string,
+  originalAuthorPubkey: string,
+  emoji: string,
+  recipients: string[],
+  preferredRelaysMap: Map<string, string[]>,
+  signer: NostrSigner,
+): Promise<void> {
+  const p_tags = recipients.map((r) => ["p", r])
+  const rumor = await createRumor(
+    {
+      kind: 7,
+      content: emoji,
+      tags: [...p_tags, ["e", originalRumorId], ["p", originalAuthorPubkey]],
+    },
+    signer,
+  )
+  await Promise.allSettled(
+    recipients.map(async (recipientId) => {
+      const recipientRelays = preferredRelaysMap.get(recipientId) || [
+        "wss://relay.flashapp.me",
+        "wss://relay.damus.io",
+        "wss://nostr.oxtr.dev",
+      ]
+      const seal = await createSeal(rumor, signer, recipientId)
+      const wrap = createWrap(seal, recipientId)
+      await Promise.allSettled(customPublish(recipientRelays, wrap))
+    }),
+  )
 }
 
 export const ensureRelay = async (
@@ -350,14 +405,12 @@ export const customPublish = (
   onAcceptedRelays?: (url: string) => void,
   onRejectedRelays?: (url: string) => void,
 ): Promise<string>[] => {
-  console.log("Custom publish invoked ")
   const timeoutPromise = (url: string): Promise<string> =>
     new Promise((_, reject) => {
-      setTimeout(() => reject(new Error(`Publish to ${url} timed out`)), 2000)
+      setTimeout(() => reject(new Error(`Publish to ${url} timed out`)), 5000)
     })
 
   return relays.map(normalizeURL).map(async (url, i, arr) => {
-    console.log("trying to publish to", url)
     if (arr.indexOf(url) !== i) {
       return Promise.reject("duplicate url")
     }
@@ -366,12 +419,10 @@ export const customPublish = (
         let r = await ensureRelay(url)
         return r.publish(event).then(
           (value) => {
-            console.log("Accepted on", url)
             onAcceptedRelays?.(url)
             return value
           },
           (reason: string) => {
-            console.log("Rejected on", url)
             onRejectedRelays?.(url)
             return reason
           },
@@ -415,6 +466,47 @@ export const saveGiftwrapsToStorage = async (giftwraps: Event[]) => {
   }
 }
 
+export const loadRumorsFromStorage = async (): Promise<Rumor[]> => {
+  try {
+    const saved = await AsyncStorage.getItem("rumors_cache")
+    return saved ? (JSON.parse(saved) as Rumor[]) : []
+  } catch (e) {
+    console.error("Error loading rumors from storage:", e)
+    return []
+  }
+}
+
+export const saveRumorsToStorage = async (rumors: Rumor[]) => {
+  try {
+    await AsyncStorage.setItem("rumors_cache", JSON.stringify(rumors))
+  } catch (e) {
+    console.error("Error saving rumors to storage:", e)
+  }
+}
+
+export const loadReactionsFromStorage = async (): Promise<
+  Record<string, { emoji: string; reactor: string }[]>
+> => {
+  try {
+    const saved = await AsyncStorage.getItem("reactions_cache")
+    return saved ? JSON.parse(saved) : {}
+  } catch (e) {
+    console.error("Error loading reactions from storage:", e)
+    return {}
+  }
+}
+
+export const saveReactionsToStorage = async (
+  reactions: Map<string, { emoji: string; reactor: string }[]>,
+) => {
+  try {
+    const obj = Object.fromEntries(reactions)
+    await AsyncStorage.setItem("reactions_cache", JSON.stringify(obj))
+  } catch (e) {
+    console.error("Error saving reactions to storage:", e)
+  }
+}
+
 export const createContactListEvent = async (signer: NostrSigner) => {
   const selfPublicKey = await signer.getPublicKey()
   const event: UnsignedEvent = {
@@ -425,11 +517,10 @@ export const createContactListEvent = async (signer: NostrSigner) => {
     pubkey: selfPublicKey,
   }
   const signedEvent = await signer.signEvent(event)
-  const messages = await Promise.allSettled(
+  await Promise.allSettled(
     pool.publish(
       ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol"],
       signedEvent,
     ),
   )
-  console.log("Message from relays for contact list publish", messages)
 }
