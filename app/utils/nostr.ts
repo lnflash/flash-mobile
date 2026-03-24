@@ -99,31 +99,6 @@ export const fetchSecretFromLocalStorage = async () => {
   return credentials ? credentials.password : null
 }
 
-export const fetchGiftWrapsForPublicKey = (
-  pubkey: string,
-  eventHandler: (event: Event) => void,
-  pool: SimplePool,
-  since?: number,
-) => {
-  let filter: Filter = {
-    "kinds": [1059],
-    "#p": [pubkey],
-    "limit": 150,
-  }
-  if (since) filter.since = since
-  let closer = pool.subscribeMany(
-    ["wss://relay.flashapp.me", "wss://relay.damus.io", "wss://nostr.oxtr.dev"],
-    filter,
-    {
-      onevent: eventHandler,
-      onclose: () => {
-        closer.close()
-        closer = fetchGiftWrapsForPublicKey(pubkey, eventHandler, pool)
-      },
-    },
-  )
-  return closer
-}
 
 export const convertRumorsToGroups = (rumors: Rumor[]) => {
   let groups: Map<string, Rumor[]> = new Map()
