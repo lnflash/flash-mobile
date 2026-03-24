@@ -1,1040 +1,1492 @@
 {
-    "GaloyAddressScreen": {
-        "title": "Ontvang betalings deur gebruik van jou:",
-        "buttonTitle": "Stel jou adres",
-        "yourAddress": "{bankName: string}-adres",
-        "notAbleToChange": "Jy sal nie later jou {bankName: string}-adres kan verander nie.",
-        "addressNotAvailable": "Hierdie {bankName: string}-adres is reeds in gebruik",
-        "somethingWentWrong": "Iets het verkeerd geloop. Probeer asseblief later weer.",
-        "merchantTitle": "Vir handelaars",
-        "yourCashRegister": "Lightning-kasregister",
-        "yourPaycode": "Jou LNURL",
-        "copiedAddressToClipboard": "{bankName: string}-adres is na knipbord oorgedra",
-        "copiedPaycodeToClipboard": "LNURL na knipbord",
-        "copiedCashRegisterLinkToClipboard": "Dra kasregisterskakel oor na knipbord",
-        "howToUseIt": "Hoe werk dit?",
-        "howToUseYourAddress": "Hoe om 'n Lightning-adres te gebruik",
-        "howToUseYourPaycode": "Hoe om jou LNURL te gebruik",
-        "howToUseYourCashRegister": "Hoe om jou Kasregister te gebruik",
-        "howToUseYourAddressExplainer": "Deel met iemand wat 'n versoenbare beursie het soos:",
-        "howToUseYourPaycodeExplainer": "Jy kan jou LNURL uitdruk op papier (dit is tegnies 'n lnurl-pay adres) en dit in jou besigheid vertoon om betalings te ontvang. Individue kan jou betaal deur dit te skandeer met enige Lightning-beursie. \n\nWees egter bewus dat seker beursies nie 'n LNURL kan skandeer nie.",
-        "howToUseYourCashRegisterExplainer": "Laat mense toe om betalings namens jou te aanvaar via die Kasregister skakel sonder om hulle toegang te gee tot die beursie. \n\nHulle kan dan self fakature genereer en betalings sal direk na jou {bankName: string} beursie gaan. "
-    },
-    "SetAccountModal": {
-        "title": "Stel jou verstekrekening",
-        "description": "Die rekening sal voorlopig gekies word om betalings te stuur en ontvang. Dit kan enige tyd verander word.",
-        "stablesatsTag": "Kies die om 'n konstante USD-waarde te behou.",
-        "bitcoinTag": "Kies die om op 'n Bitcoin-standaard te wees."
-    },
-    "NoteInput": {
-        "addNote": "Voeg nota by"
-    },
-    "AuthenticationScreen": {
-        "authenticationDescription": "Bevestig om voort te gaan",
-        "setUp": "Opstel van biometriese verifikasie",
-        "setUpAuthenticationDescription": "Gebruik boimetriese verifikasie",
-        "skip": "Gaan verby",
-        "unlock": "Ontsluit",
-        "usePin": "Gebruik PIN"
-    },
-    "ContactsScreen": {
-        "noContactsTitle": "Geen kontakte gevind nie",
-        "noContactsYet": "Stuur of ontvang betalings deur van gebruikersname of kontakte gebruik te maak sal outomaties hier bygevoeg word",
-        "noMatchingContacts": "Geen kontakte wat ooreenstem met jou soektog nie",
-        "title": "Kontakte"
-    },
-    "ContactDetailsScreen": {
-        "title": "Transaksies met {username:string}"
-    },
-    "ConversionDetailsScreen": {
-        "title": "Ruil",
-        "percentageToConvert": "% om te ruil"
-    },
-    "ConversionConfirmationScreen": {
-        "title": "Hersien omskakeling",
-        "youreConverting": "Jy ruil",
-        "receivingAccount": "Ontvangsrekening"
-    },
-    "ConversionSuccessScreen": {
-        "title": "Omskakeling sukses",
-        "message": "Omskakeling suksesvol"
-    },
-    "EarnScreen": {
-        "earnSats": "Verdien {formattedNumber|sats}",
-        "earnSections": {
-            "bitcoinWhatIsIt": {
-                "title": "Bitcoin: Wat is dit?",
-                "questions": {
-                    "whatIsBitcoin": {
-                        "answers": [
-                            "Digitale geld",
-                            "'n Rekenaarspeletjie ",
-                            "'n Nuwe tekenprentkarakter "
-                        ],
-                        "feedback": [
-                            "Korrek! Jy het pas 1 \"sat\" verdien!",
-                            "Verkeerd, probeer asseblief weer.",
-                            "Nee, ten minste nie waarvan ons weet nie!"
-                        ],
-                        "question": "So, wat presies is Bitcoin? ",
-                        "text": "Bitcoin is digitale geld.\n\nDit kan baie veilig gestuur word binne oomblikke na enigeiemand in die wêreld sonder om van 'n bank of ander finansiële instelling gebruik te maak. ",
-                        "title": "So, wat presies is Bitcoin? "
-                    },
-                    "sat": {
-                        "answers": [
-                            "Die kleinste eenheid van Bitcoin",
-                            "'n Klein satelliet ",
-                            "'n Ruimtekat 🐱🚀"
-                        ],
-                        "feedback": [
-                            "Jy's reg. Jy het sopas nog twee sats verdien!!",
-                            "Miskien... maar dit is nie die regte antwoord in hierdie opsig nie 🙂",
-                            "Ummm... nie heeltemal nie!"
-                        ],
-                        "question": "Ek het sopas 'n \"Sat\" verdien. Wat is dit ?",
-                        "text": "Een \"Sat\" is die kleinste eenheid van 'n Bitcoin.\n\nOns almal weet dat een Rand in 100 sente verdeel kan word. Soortgelyk kan een Bitcoin in 100,000,000 sats verdeel word. \n\nJy het nie 'n hele Bitcoin nodig om dit te gebruik nie, jy kan so min sats stuur as wat jy wil, 20 sats, 3000 of 100,000,000 (een volle bitcoin). Dit maak nie saak nie. ",
-                        "title": "Ek het sopas 'n \"Sat\" verdien. Wat is dit ?"
-                    },
-                    "whereBitcoinExist": {
-                        "answers": [
-                            "Op die Internet",
-                            "Op die maan",
-                            "In 'n Amptelike bankrekening "
-                        ],
-                        "feedback": [
-                            "Korrek. Jy het sopas nog 5 sats verdien. ",
-                            "Verkeerd. Wel, ten minste nog nie ;)",
-                            "Verkeerd, probeer asseblief weer."
-                        ],
-                        "question": "Waar bestaan die Bitcoins? ",
-                        "text": "Bitcoin is 'n nuwe vorm van geld. Dit kan deur enigeiemand op enige plek in die wêreld gebruik word.\n\nDit is onafhanklik van enige regering of land (soos Rande of Dollars), daar is ook geen note of munte nie. Dit is 100% digitaal.\n\nBitcoin is 'n netwerk van rekenaars wat op die internet kommunikeer.\n\nJy kan maklik jou Bitcoin beheer en gebruik met 'n slimfoon of rekenaar. ",
-                        "title": "Waar bestaan die Bitcoins? "
-                    },
-                    "whoControlsBitcoin": {
-                        "answers": [
-                            "'n Wêreldwye gemeenskap van vrywilligers",
-                            "Mnr Burns van \"The Simpsons\" ",
-                            "Die regering van Frankryk "
-                        ],
-                        "feedback": [
-                            "Dit is reg, Bitcoin word moontlik gemaak deur mense van reg oor die wêreld wat die Bitcoin-sagteware op hulle rekenaars en slimfone hardloop. ",
-                            "'n Interessante idee, maar nie reg nie. ",
-                            "Verkeerd, daar is geen besigheid of regering wat Bitcoin beheer nie. "
-                        ],
-                        "question": "Wie beheer Bitcoin? ",
-                        "text": "Bitcoin word deur geen besigheid of regering beheer nie.\n\nDit word deur die gemeenskap van vrywilligers van regoor die wêreld beheer wat die sagteware op hulle rekenaars hardloop. ",
-                        "title": "Wie beheer Bitcoin? "
-                    },
-                    "copyBitcoin": {
-                        "answers": [
-                            "Nee- dit is onmoontlik om die waarde van Bitcoin te dupliseer of na te maak. ",
-                            "Ja, jy kan Bitcoins net so maklik soos 'n digitale foto kopieër ",
-                            "Ja, maar die kopieër van Bitcoins vereis baie gespesialiseerde rekenaars"
-                        ],
-                        "feedback": [
-                            "Dit is absoluut korrek! ",
-                            "Jy weet dat dit nie die waarheid is nie, probeer weer. ",
-                            "Verkeerd, daar is geen manier vir enigeiemand om Bitcoin te kopieër, vervals of dupliseer nie. "
-                        ],
-                        "question": "As Bitcoin net digitale geld is, kan iemand dit nie net eenvoudig namaak en verniet geld maak nie? ",
-                        "text": "Die waarde van 'n Bitcoin kan nooit nagemaak word nie. Dit is juis die rede hoekom Bitcoin so 'n kragtige nuwe tegnologie is.\n\nMeeste digitale dokumente soos fotos, 'n mp3 liedjie of 'n Microsoft Word-dokument kan maklik gekopieër en versprei word.\n\nDie Bitcoin-sagteware is uniek in die opsig dat dit juis die \"dubbelspandeer\" probleem aanspreek en oplos. Ons kyk later in meer detail hierna. ",
-                        "title": "As Bitcoin net digitale geld is, kan iemand dit nie net eenvoudig namaak en verniet geld maak nie? "
-                    }
-                }
-            },
-            "WhatIsMoney": {
-                "title": "Wat is geld? ",
-                "questions": {
-                    "moneySocialAggrement": {
-                        "answers": [
-                            "Want mense vertrou dat ander mense die geld ook waardeer, of dieselfde waarde daaraan koppel",
-                            "Want jou ma het so gesê",
-                            "Want 'n honderd rand noot is sy gewig in goud werd. "
-                        ],
-                        "feedback": [
-                            "Korrek. Dit is wat toelaat dat geld werk! ",
-                            "Sy het dalk, maar dit is nie die regte antwoord nie. ",
-                            "Nee, in die verlede kon jy note vir goud verruil, maar dit is nie meer so nie. "
-                        ],
-                        "question": "Hoekom het geld waarde? ",
-                        "text": "Geld vereis dat mense die geldeenheid vertrou.\n\nMense vertrou die note in hulle sakke. Hulle vertrou die nommers op die skerm van hulle bankrekening. Mense vertrou die balans wat 'n winkel vir hulle op rekening gee of wat op 'n geskenkbewys is.\n\nOm geld te hê laat mense toe om dit onmiddelik en maklik vir 'n diens of goedere te verruil. ",
-                        "title": "Geld is 'n sosiale ooreenkoms"
-                    },
-                    "coincidenceOfWants": {
-                        "answers": [
-                            "Toevallige ooreenstemming van behoeftes ",
-                            "Toevalligheid van dag en nag",
-                            "Toevalligheid van die maan wat die son blok"
-                        ],
-                        "feedback": [
-                            "Dit is reg. Geld laat jou toe om maklik iets te koop sonder om die tipe geldeenheid te beredeneer. ",
-                            "Nee grapgat, jy weet dit is nie die antwoord nie. ",
-                            "Nee, ons noem dit 'n sonsverduistering. "
-                        ],
-                        "question": "Watter toevalligheid los geld op? ",
-                        "text": "Eeue gelede voordat mense geld gehad het het hulle deur middel van ruilhandel gekoop en verkoop en hulle moes elke keer die waarde van die item wat hulle wou koop en die waarde van die item wat hulle wou verruil bespreek.\n\nKom ons veronderstel jy wou 'n ete by die restaurant koop en jy bied die restaurant as betaling 'n besem aan. Die eienaar van die restaurant kon sê nee vir die besem maar dat hy 3 hoede as betaling sal aanvaar. Nou moet jy eers 3 hoede gaan kry. \n\nVerbeel jou hoe gekompliseerd so 'n ruilhandelekonomie kan word. \nIn teenstelling hiermee, dink net hoe maklik is dit om 'n R20 noot te ruil vir dit wat jy wil koop en jy weet dat die restaurant note gaan aanvaar. ",
-                        "title": "Geld is 'n oplossing vir die toevalligheid van ooreenstemming van behoeftes."
-                    },
-                    "moneyEvolution": {
-                        "answers": [
-                            "Klippies, skulpe en goud",
-                            "Klein plastiek huisies van Monopoly",
-                            "Munte wat van sjokolade gemaak is."
-                        ],
-                        "feedback": [
-                            "Dis reg. Items wat skaars is en moeilik was om te vervals was al as geld gebruik.",
-                            "Verkeerd. Dit mag dalk waarde hê in die speletjie, maar nie in die regte wêreld nie. ",
-                            "Nee. Hulle is lekker, maar nie bruikbaar as geld nie. "
-                        ],
-                        "question": "Watter tipe items was al in die verlede as 'n geldeenheid gebruik? ",
-                        "text": "Duisende jare gelede het 'n samelewing in Mikronesia baie groot skaars klippe gebruik as geldeenheid. \n\nVanaf die 1500's was skaars cowrie skulpe (wat uit die see uit kom) as 'n geldeenheid gebruik in baie lande. \n\nEn vir baie duisende jare is goud as geld gebruik regoor die wêreld, Amerika ingesluit (tot 1971).",
-                        "title": "Geld het nog altyd ontwikkel, omtrent vanaf die begin van tyd. "
-                    },
-                    "whyStonesShellGold": {
-                        "answers": [
-                            "Want dit het karaktereienskappe soos dat dit duursaam, eenvormig en onderverdeelbaar is. ",
-                            "Want dit is mooi en blink. ",
-                            "Want dit pas lekker in jou broeksak. "
-                        ],
-                        "feedback": [
-                            "Korrek. Sleutelkenmerke sluit in om skaars en draagbaar te wees. ",
-                            "Verkeerd. Dit mag dalk waar wees, maar dit alleen is nie goeie karaktereienskappe van geld nie. ",
-                            "Nie heeltemal nie. Alhoewel hierdie items draagbaar was is dit nie wat hulle goeie geld gemaak het nie. "
-                        ],
-                        "question": "Hoekom was goud, skulpe en klippies gebruik as geldeenhede?",
-                        "text": "Wel, hierdie items het sommige van die karaktereienskappe van geld, maar nie alles nie.\n\nSo watter karaktereienskappe maak \"goeie geld\"? \nSkaars: Nie algemeen beskikbaar nie, moeilik om te vervals.\nAanvaarbaar: Maklik vir mense om die egtheid na te gaan.\nDuursaam: Maklik om te onderhou, beskadig nie maklik nie. \nUnivorm: Alle eenhede is dieselfde in vorm en waarde. \nDraagbaar: Maklik om te vervoer. \nOnderverdeelbaar: kan in kleiner gelyke eenhede verdeel word.",
-                        "title": "Hoekom was skulpe, klippies en goud algemeen in die verlede as geld gebruik? "
-                    },
-                    "moneyIsImportant": {
-                        "answers": [
-                            "Geld laat mense toe om goedere en dienste te koop, vandag en in die toekoms. ",
-                            "Geld stel jou in staat om maan toe te gaan. ",
-                            "Geld is die oplossing vir alle probleme. "
-                        ],
-                        "feedback": [
-                            "Dis reg! ",
-                            "Verkeerd, maar dit mag dalk verander in die toekoms ;) ",
-                            "Nie heeltemal nie. Alhoewel sekere mense dit mag glo, spreek dit nie die primêre doel van geld aan nie. "
-                        ],
-                        "question": "Wat is die primêre rede dat geld belangrik is? ",
-                        "text": "Almal weet dat geld saak maak.\n\nMeeste mense verruil hulle tyd en energie - in die vorm van werk - vir geld. Mense doen dit juis om nou en in die toekoms goedere en dienste te kan koop. ",
-                        "title": "Geld is belangrik vir individue"
-                    },
-                    "moneyImportantGovernement": {
-                        "answers": [
-                            "Die Amerikaanse Sentrale Bank (The Federal Reserve)",
-                            "Mnr Burns van \"The Simpsons\" ",
-                            "'n Man met 'n drukpers in sy kelder. "
-                        ],
-                        "feedback": [
-                            "Korrek. Die Amerikaanse Regering kan ter enige tyd soveel geld druk as wat hulle wil. ",
-                            "Verkeerd, dit het wel gelyk asof hy altyd baie geld gehad het. ",
-                            "Nee. Sommige mense maak vervalste note, maar dit is beslis nie wettig nie. "
-                        ],
-                        "question": "Wie kan enige tyd wettige geld druk as hulle wil? ",
-                        "text": "Moderne ekonomieë word deur nasies georganiseer soos Amerika, Japan, Switzerland, Brazilië, Noorwee, China ens.\n\nIn Amerika kan die Sentrale bank (die Federal Reserve of Fed) op enige tyd soveel geld druk as wat hulle wil. \n\nDie \"Fed\" benodig geen toestemming vanaf die president, die kabinet en verseker nie die burgers van die land om dit te doen nie. \n\nVerbeel jou as jy die vermoë gehad het om enige tyd jou eie geld te druk, wat sou jy gedoen het?",
-                        "title": "Geld is ook belangrik vir regerings. "
-                    }
-                }
-            },
-            "HowDoesMoneyWork": {
-                "title": "Hoe werk geld? ",
-                "questions": {
-                    "WhatIsFiat": {
-                        "answers": [
-                            "Dit word vrygestel deur opdrag van die nasionale regering van 'n land. ",
-                            "Deur die bestuurder van die plaaslike banktak. ",
-                            "Die Monopoly-geldmannetjie."
-                        ],
-                        "feedback": [
-                            "Korrek, die Sentrale bank van 'n regering \"maak\" die geld.\nIn ons geval is dit die Suid Afrikaanse Reserwebank. ",
-                            "Verkeerd, 'n Nuwe bank kan net geld bestuur wat vantevore deur die regering gemaak is. ",
-                            "Nee. Probeer weer!"
-                        ],
-                        "question": "Wie maak fiat-geld, soos Rande, Dollars en Franke? ",
-                        "text": "Alle nasionale geldeenhede wat huidiglik in sirkulasie is word \"fiat\"-geld genoem. Dit sluit in die Amerikaanse Dollar, Japanese Yen, Switzerse Frank ensovoorts.\n\nDie woord \"fiat\" is latyns vir \"by opdrag van\" wat beteken dit is 'n offisiele opdrag. \n\nDit beteken dat alle fiat-geld - insluitend die Rand - eenvoudig vervaardig word deur die nasionale regering. ",
-                        "title": "Fiat-geld: Wat is dit? "
-                    },
-                    "whyCareAboutFiatMoney": {
-                        "answers": [
-                            "Alle fiat-geld word uiteindelik deur regerings misbruik. ",
-                            "Plaaslike banke mag dalk nie genoeg ruimte hê in hulle kluise om al die note te hou nie. ",
-                            "Daar mag dalk nie genoeg bome wees vir papier om al die ekstra geld te maak nie. "
-                        ],
-                        "feedback": [
-                            "Dis reg. Regdeur die geskiedenis kon regerings nog nooit hulself weerhou van die opsie om ekstra geld te druk nie, juis omdat hulle onder geen druk is om hierdie geld terug te betaal nie. ",
-                            "Glad nie die geval nie.",
-                            "Verkeerd, probeer asseblief weer."
-                        ],
-                        "question": "Hoekom moet ek omgee dat die regering die geld beheer? ",
-                        "text": "Soos in 'n vorige vraag bespreek, die Amerikaanse  reserwebank is die \"Federal Reserve\", of die \"Fed\".\n\nDie Fed kan soveel geld druk as wat hulle wil en het geen toestemming van die regering, die kabinet of landsburgers nodig nie. \n\nOm beheer van die geld te hê is vreeslik aanloklik vir owerhede, dit lei gereeld tot misibruik en inflasie. Dit steel ook die koopkrag van geld wat reeds in sirkulasie is. \n\nAlan Greenspan, beroemde voorsitter van die Fed het eens gesê: \"Amerika kan al hulle skuld maklik betaal want hulle kan altyd ekstra geld druk om dit te doen\". ",
-                        "title": "Ek vertrou my regering, hoekom moet ek omgee oor fiat-geld? "
-                    },
-                    "GovernementCanPrintMoney": {
-                        "answers": [
-                            "Die druk van addisionele geld lei tot inflasie. ",
-                            "Mense moet ou note elke jaar by die bank gaan verruil. ",
-                            "Die voorkoms van die noot verander. "
-                        ],
-                        "feedback": [
-                            "Korrek. Dit beteken dat dienste en goedere meer sal kos in die toekoms. ",
-                            "Nee, ouer note is net so geldig as nuwe note. ",
-                            "Verkeerd. Alhoewel die regering die prentjies op note kan verander het dit niks met die vermeerdering van die geldvoorraad te doen nie. "
-                        ],
-                        "question": "Wat beteken dit wanneer die regering geld druk? ",
-                        "text": "Wel, almal moet omgee.\n\nDie druk van ekstra geld beinvloed almal se geldwaarde en lei tot inflasie. \n\nInflasie is die styging van pryse op goedere en dienste, met ander woorde, dinge gaan duurder wees in die toekoms. \n\nSo wat beteken inflasie vir landsburgers? \n\nIn die Verenigde Koninkryk het die Britse Pond al 99.5% van sy waarde verloor oor die laaste 300 jaar.\n\nIn Amerika het die Dollar al ongeveer 97% van sy waarde verloor oor die laaste 100 jaar. \n\nDit beteken dat 'n biefstuk wat $0.30 gekos het in 1920, in 1990 $3.00 sou gekos het en nou al by die $15 kos in 2020!",
-                        "title": "Wie moet omgee dat die regering oneindig baie geld kan druk? "
-                    },
-                    "FiatLosesValueOverTime": {
-                        "answers": [
-                            "Elke fiat-geldeenheid wat ooit bestaan het, het verskriklik baie waarde verloor. ",
-                            "Die waarde bly vir altyd dieselfde.",
-                            "Die voorkoms en ontwerp van die noot word ongeveer elke 10 jaar verander. "
-                        ],
-                        "feedback": [
-                            "Dis reg. Dit is selfs waar vir die Amerikaanse Dollar wat al 97% van sy waarde verloor het oor die laaste 100 jaar.",
-                            "Verkeerd. Probeer asseblief weer. ",
-                            "Nee wat. Alhoewel die ontwerp van papiergeld mag verander, het dit niks te make met die waarde daarvan nie."
-                        ],
-                        "question": "Wat gebeur met die waarde van alle fiat-geld met die verloop van tyd? ",
-                        "text": "Hierdie is korrek.\n\nDaar was al 775 fiat-geldeenhede in die geskiedenis van die wêreld. Meeste bestaan lankal nie meer nie, die gemiddelde leeftyd van 'n fiat-geldeenheid is 27jaar.\n\nDie Britse Pond is tans die oudste fiat-geld en het al 99% van sy waarde verloor sedert 1694.\n\nDaar is geen voorbeelde van fiat-geld wat sy waarde behou oor 'n lang tyd nie. Dit is inflasie. Dit is so goed soos diefstal, die waarde van jou geld waarvoor jy hard gewerk het verdwyn! ",
-                        "title": "Beteken dit dat alle fiat-geld waarde verloor met die verloop van tyd?"
-                    },
-                    "OtherIssues": {
-                        "answers": [
-                            "Geld is baie moeilik om oor landsgrense rond te skuif, en kan ook dopgehou word.",
-                            "Geld is nie meer nodig in die 21ste eeu nie. ",
-                            "Geld is die wortel van alle kwaad. "
-                        ],
-                        "feedback": [
-                            "Dis reg. Ons sal meer hiervan verduidelik in die daaropvolgende vasvra-modules. Hou aan om meer te leer! ",
-                            "Verkeerde antwoord. Jy weet dit is nie waar nie. ",
-                            "Alhoewel sommiges glo dat dit so is, is dit nie die antwoord wat ons in gedagte het nie. "
-                        ],
-                        "question": "Watter ander probleme is daar met fiat-geld? ",
-                        "text": "Ja, daar is baie probleme met moderne fiat geld.\n\nEerstens is dit verskriklik moeilik om oor landsgrense te stuur. Regerings sal gereeld die oorplaas van geld verban of selfs geld konfiskeer as jy nie 'n geldige rede het om dit te stuur nie. Selfs wanneer dit moontlik is, is transaksiekoste baie duur.\n\nTweedens, in Amerika en oral in die wêreld is daar 'n totale gebrek aan privaatheid deur debiet- en kredietkaarttransaksies te gebruik. Dit geld ook vir dienste soos PayPal en Apple Pay.\n\nHet jy al ooit opgelet hoe geteikende advertensies in jou Facebook of sosiale media verskyn oomblikke nadat jy vir iets aanlyn gesoek het? Hierdie staan bekend as \"Toesigkapitalisme\", en is gebasseer op besighede wat jou persoonlike inligting verkoop. ",
-                        "title": "Goed dan, so fiat-geld verloor waarde met die verloop van tyd. Is daar enige ander probleme? "
-                    }
-                }
-            },
-            "BitcoinWhySpecial": {
-                "title": "Bitcoin: Hoekom is dit spesiaal? ",
-                "questions": {
-                    "LimitedSupply": {
-                        "answers": [
-                            "Daar kan nooit meer as 21 miljoen bitcoin gemaak word nie.",
-                            "Nee. Die regering kan op enige stadium ekstra Bitcoin maak.",
-                            "Nee. Die Bitcoin-sagteware kan verander word om meer Bitcoins te maak."
-                        ],
-                        "feedback": [
-                            "Korrek, deur die hoeveelheid wat gemaak kan word te beperk, is Bitcoin ontwerp om mettertyd in waarde te verhoog. ",
-                            "Verkeerde antwoord. Die regering het geen beheer oor Bitcoin nie. ",
-                            "Verkeerd. Een van Bitcoin se eienskappe is dat daar nooit meer as die maksimum limiet gemaak kan word nie. "
-                        ],
-                        "question": "Is die geldvoorraad van Bitcoin vir ewig beperk? ",
-                        "text": "Regerings kan soveel fiat geld druk as wat hulle wil. \n\nIn teenstelling hiermee kan Bitcoin nooit meer as 21 miljoen eenhede oorskry nie. \n\n'n Voortdurende toename in die aanbod van die geldvoorraad veroorsaak inflasie. Dit beteken dat geld wat jy vandag het minder werd is in die toekoms.\n\n'n Eenvoudige voorbeeld: \n'n Brood wat 8c gekos het in 1920, het in 1990 R10.00 gekos en kos nou amper R30.00! \n\nDie beperkte aanbod van Bitcoin het die teenoorgestelde effek, ons noem dit deflasie. \n\nDit beteken dat die Bitcoin wat jy vandag besit meer werd sal word in die toekoms - want dit is skaars. ",
-                        "title": "Spesiale Eienskap #1:\nBeperkte aanbod"
-                    },
-                    "Decentralized": {
-                        "answers": [
-                            "Nee. Bitcoin is heeltemal gedesentraliseer.",
-                            "Ja. Dit word sentraal beheer deur die Verenigde Nasies. ",
-                            "Ja. Dit word sentraal beheer deur die wêreld se grootste banke."
-                        ],
-                        "feedback": [
-                            "Dis reg. Daar is geen maatskappy, regering of owerheid wat Bitcoin beheer nie. Enige iemand kan Bitcoin gebruik, al wat jy benodig is 'n slimfoon en 'n internetverbinding. ",
-                            "Verkeerde antwoord. Probeer asseblief weer. ",
-                            "Verkeerd. Jy weet reeds dis nie waar is nie! "
-                        ],
-                        "question": "Is Bitcoin gesentraliseerd? ",
-                        "text": "Fiat-geld word deur banke en regerings beheer -- dit is hoekom ons dit 'n \"gesentraliseerde\" geldeenheid noem.\n\nBitcoin word nie deur enige persoon, regering of besigheid beheer nie -- Ons noem dit dus \"gedesentraliseerd\"\n\nDeur nie van banke afhantlik te wees nie, beteken dit dat niemand jou toegang tot Bitcoin kan verbied op grond van jou geslag, ras, inkomste, kredietrekord, politiese oortuigings, geografiese area of enige ander faktor nie.\n\nEnige iemand -- enige plek op aarde -- kan op enige tyd Bitcoin gebruik en toegang tot die netwerk verkry. Al wat jy benodig is 'n rekenaar of slimfoon met 'n internetverbinding!",
-                        "title": "Spesiale Eienskap #2: Gedesentraliseerd "
-                    },
-                    "NoCounterfeitMoney": {
-                        "answers": [
-                            "Nee, dit is onmoontlik om Bitcoin te vervals.",
-                            "Ja, maar om Bitcoins te vervals vereis baie gespesialiseerde rekenaars. ",
-                            "Ja, die regering kan soveel Bitcoin druk as wat hulle wil. "
-                        ],
-                        "feedback": [
-                            "Dit is die regte antwoord. In 'n volgende vraag sal Ratel verduidelik hoekom dit so is. ",
-                            "Verkeerd. Daar is geen manier vir iemand om die waarde van 'n Bitcoin na te maak nie. ",
-                            "Verkeerd, alhoewel die regering soveel fiat geld kan druk as wat hulle wil, kan hulle nie Bitcoin druk nie. "
-                        ],
-                        "question": "Kan mens Bitcoin vervals? ",
-                        "text": "Papiergeld, tjeks en kredietkaarttransakaies kan almal relatief maklik vervals word.\n\nDie unieke sagteware wat Bitcoin moontlik maak elimineer die moontlikheid om Bitcion te vervals of te dupliseer.\n\nNuwe Bitcoin kan slegs vrygestel word as daar ooreenstemming is tussen al die deelnemers op die netwerk wat deur vrywilligers op hulle rekenaars en slimfone gehardloop word. \n\nHierdie eienskap verseker dat dit onmoontlik is om Bitcoin te vervals. ",
-                        "title": "Spesiale Eienskap #3:\nGeen vervalste geld"
-                    },
-                    "HighlyDivisible": {
-                        "answers": [
-                            "0.00000001 BTC",
-                            "Een hele Bitcoin, dit is onmoontlik om minder as dit te gebruik.",
-                            "0.01 BTC"
-                        ],
-                        "feedback": [
-                            "Ja, jy kan een Bitcoin in 100,000,000 kleiner dele verdeel, soos jy reeds weet. Dit is die kleinste onderverdeling van 'n Bitcoin -- B0.00000001 -- en staan bekend as a \"sat\". ",
-                            "Verkeerd. Bitcoin is onderverdeelbaar. Jy kan maklik 'n klein fraksie van 'n Bitcoin gebruik. ",
-                            "Verkeerd. Die kleinste eenheid van 'n Rand of 'n Dollar is 'n sent, maar 'n bitcoin kan in baie kleiner deeltjies as 100 verdeel word. "
-                        ],
-                        "question": "Wat is die kleinste eenheid van 'n Bitcoin wat iemand kan besit of gebruik? ",
-                        "text": "Ouderwetse fiat geld kan slegs in die kleinste eenhede van een sent spandeer word. \n\nIn teenstelling kan Bitcoin in 100,000,000 dele verdeel word. Dit beteken dat jy so min as ₿0.00000001 kan spandeer. Let op dat die \"₿\" simbool hier gebruik word soos die $ simbool. Soms word BTC ook gebruik. \n\nDit beteken dus dat baie klein betalings met Bitcoin gemaak kan word, selfs minder as een sent! ",
-                        "title": "Spesiale Eienskap #4:\nHoogs onderverdeelbaar"
-                    },
-                    "securePartOne": {
-                        "answers": [
-                            "Ja, die Bitcoin-netwerk is baie veilig. ",
-                            "Miskien, dit hang af van die dag van die week. ",
-                            "Nee, dit is \"open source\" sagteware en kan maklik aangeval word. "
-                        ],
-                        "feedback": [
-                            "Dis reg. Om die waarheid te sê, die Bitcoin-netwerk was nog nooit suksesvol deur kuberkrakers aangeval nie. Beantwoord die volgende vraag om meer te leer! ",
-                            "Goeie probeerslag, maar verkeerd. Die Bitcoin-netwerk is baie veilig - 24 uur per dag, 365 dae 'n jaar. ",
-                            "Verkeerd. Alhoewel Bitcoin \"open source\" sagteware is en toeganklik is vir die publiek is dit ongelooflik veilig. "
-                        ],
-                        "question": "Is die Bitcoin-netwerk veilig om te gebruik? ",
-                        "text": "Die Bitcoin-netwerk is goed oor 'n $100 miljard werd. Daarom is dit nodig dat die netwerk baie sekuur is, sodat geld nie gesteel kan word nie. \n\nBitcoin is bekend as die wêreld se eerste kuber-geldeenheid of \"crypto\". \n\nDie \"crypto\" gedeelte kom van die woord kriptografie. Eenvoudig gestel, die inligting word deur middel van kriptografie en wiskunde beveilig.\n\nMeeste mense besef dit nie, maar Bitcoin is die mees sekure rekenaarnetwerk ter wêreld! \n\nJy het dalk al gehoor van Bitcoin \"hacks\" wat ons in die volgende afdeling sal aanspreek. ",
-                        "title": "Spesiale Eienskap#5\nGoed Beveilig -- Deel I"
-                    },
-                    "securePartTwo": {
-                        "answers": [
-                            "Nee. Bitcoin is nog nooit suksesvol deur kuberkrakers aangeval nie. ",
-                            "Ja. Bitcoin word gereeld suksesvol deur kuberkrakers aangeval. ",
-                            "Ja. Bitcoin word meestal op vakansiedae aangeval wanneer gewone banke toe is. "
-                        ],
-                        "feedback": [
-                            "Dit is reg. Die Bitcoin-netwerk was nog nooit suksesvol aangeval nie. Dit is wel baie belangrik om net veilige digitale Bitcoin-beursies te gebruik om jou Bitcoin ten alle tye veilig te hou. ",
-                            "Verkeerd, probeer asseblief weer.",
-                            "Nee, jy weet dit is nie die regte antwoord nie. "
-                        ],
-                        "question": "Is Bitcoin al ooit suksesvol aangeval deur kuberkrakers? ",
-                        "text": "Om dit direk te stel, die Bitcoin-netwerk is nog nooit, nie eers een keer suksesvol aangeval deur kuberkrakers nie.\n\nMaar wat was al suksesvol aangeval?\n\nSekere digitale Bitcoin-beursies is al aangeval omdat hulle nie die regte sekuriteit in plek gehad het nie.\n\nNet soos regte beursies geld hou (in die vorm van kontant munte en note), hou digitale Bitcoin-beursies 'n bedrag Bitcoin.\n\nIn die regte wêreld beroof kriminele banke en loop weg met fiat geld, maar die feit dat iemand 'n bank beroof het, het geen invloed op die sekuriteit of stabiliteit van die fiat geldeenheid nie.\n\nSoortgelyk hieraan het sekere kuberkrakers al geld uit digitale beursies gesteel, die aanlyn ekwivalent van 'n bankrooftog.\n\nDit is wel baie belangrik om te besef dat die Bitcoin-netwerk op protokolvlak nog nooit suksesvol aangeval is nie. ",
-                        "title": "Spesiale Eienskap #5:\nGoed beveilig - Deel II"
-                    }
-                }
-            }
-        },
-        "finishText": "Dit is al vir nou, ons sal jou laat weet as daar meer is om to ontdek. ",
-        "getRewardNow": "Antwoord vasvra",
-        "keepDigging": "Hou aan ondersoek doen!",
-        "phoneNumberNeeded": "Selfoonnommer benodig",
-        "quizComplete": "Vasvra voltooi en {amount:number} sats verdien",
-        "reviewQuiz": "Hersien vasvra",
-        "satAccumulated": "Sats bymekaargemaak",
-        "satsEarned": "{formattedNumber|sats} verdien",
-        "sectionsCompleted": "Jy het dit voltooi",
-        "title": "Verdien",
-        "unlockQuestion": "Om te ontsluit moet jy die vraag beantwoord:",
-        "youEarned": "Jy het verdien: ",
-        "registerTitle": "Opgradeer jou rekening",
-        "registerContent": "Registreer met jou selfoonnommer om sats te ontvang"
-    },
-    "GetStartedScreen": {
-        "logInCreateAccount": "Teken in / Skep rekening",
-        "createAccount": "Skep 'n nuwe rekening",
-        "exploreWallet": "Verken beursie",
-        "logBackInWith": "Teken weer in met",
-        "headline": "Beursie deur Galoy gebou",
-        "startTrialAccount": "Begin met 'n proefrekening",
-        "startWithTrialAccount": "Begin met 'n proefrekening",
-        "registerPhoneAccount": "Registreer 'n selfoonrekening",
-        "trialAccountCreationFailed": "Proefrekening skeppingsfout",
-        "trialAccountCreationFailedMessage": "Ongelukkig kon ons nie jou proefrekening skep nie. Probeer later weer of skep 'n rekening met 'n selfoonnommer.",
-        "trialAccountHasLimits": "Proefrekening het limiete",
-        "trialAccountLimits": {
-            "noBackup": "Geen rugsteen opsie",
-            "sendingLimit": "Verlaagde daaglikse spandeerbare limiet",
-            "noOnchain": "Geen ontvang van Bitcoin-opketting"
+  "GaloyAddressScreen": {
+    "title": "Ontvang betalings deur gebruik van jou:",
+    "buttonTitle": "Stel jou adres",
+    "yourAddress": "{bankName: string}-adres",
+    "notAbleToChange": "Jy sal nie later jou {bankName: string}-adres kan verander nie.",
+    "addressNotAvailable": "Hierdie {bankName: string}-adres is reeds in gebruik",
+    "somethingWentWrong": "Iets het verkeerd geloop. Probeer asseblief later weer.",
+    "merchantTitle": "Vir handelaars",
+    "yourCashRegister": "Lightning-kasregister",
+    "yourPaycode": "Jou LNURL",
+    "copiedAddressToClipboard": "{bankName: string}-adres is na knipbord oorgedra",
+    "copiedPaycodeToClipboard": "LNURL na knipbord",
+    "copiedCashRegisterLinkToClipboard": "Dra kasregisterskakel oor na knipbord",
+    "howToUseIt": "Hoe werk dit?",
+    "howToUseYourAddress": "Hoe om 'n Lightning-adres te gebruik",
+    "howToUseYourPaycode": "Hoe om jou LNURL te gebruik",
+    "howToUseYourCashRegister": "Hoe om jou Kasregister te gebruik",
+    "howToUseYourAddressExplainer": "Deel met iemand wat 'n versoenbare beursie het soos:",
+    "howToUseYourPaycodeExplainer": "Jy kan jou LNURL uitdruk op papier (dit is tegnies 'n lnurl-pay adres) en dit in jou besigheid vertoon om betalings te ontvang. Individue kan jou betaal deur dit te skandeer met enige Lightning-beursie. \n\nWees egter bewus dat seker beursies nie 'n LNURL kan skandeer nie.",
+    "howToUseYourCashRegisterExplainer": "Laat mense toe om betalings namens jou te aanvaar via die Kasregister skakel sonder om hulle toegang te gee tot die beursie. \n\nHulle kan dan self fakature genereer en betalings sal direk na jou {bankName: string} beursie gaan. ",
+    "copiedLightningAddressToClipboard": "Ek het Lightning-adres na clipboard gekopieer",
+    "yourLightningAddress": "Jou Lightning-adres"
+  },
+  "SetAccountModal": {
+    "title": "Stel jou verstekrekening",
+    "description": "Die rekening sal voorlopig gekies word om betalings te stuur en ontvang. Dit kan enige tyd verander word.",
+    "stablesatsTag": "Kies die om 'n konstante USD-waarde te behou.",
+    "bitcoinTag": "Kies die om op 'n Bitcoin-standaard te wees."
+  },
+  "NoteInput": {
+    "addNote": "Voeg nota by"
+  },
+  "AuthenticationScreen": {
+    "authenticationDescription": "Bevestig om voort te gaan",
+    "setUp": "Opstel van biometriese verifikasie",
+    "setUpAuthenticationDescription": "Gebruik boimetriese verifikasie",
+    "skip": "Gaan verby",
+    "unlock": "Ontsluit",
+    "usePin": "Gebruik PIN"
+  },
+  "ContactsScreen": {
+    "noContactsTitle": "Geen kontakte gevind nie",
+    "noContactsYet": "Stuur of ontvang betalings deur van gebruikersname of kontakte gebruik te maak sal outomaties hier bygevoeg word",
+    "noMatchingContacts": "Geen kontakte wat ooreenstem met jou soektog nie",
+    "title": "Kontakte"
+  },
+  "ContactDetailsScreen": {
+    "title": "Transaksies met {username:string}"
+  },
+  "ConversionDetailsScreen": {
+    "title": "Ruil",
+    "percentageToConvert": "% om te ruil"
+  },
+  "ConversionConfirmationScreen": {
+    "title": "Hersien omskakeling",
+    "youreConverting": "Jy ruil",
+    "receivingAccount": "Ontvangsrekening",
+    "conversionFee": "Omskakelingskoste",
+    "sendingAccount": "Sending rekening"
+  },
+  "ConversionSuccessScreen": {
+    "title": "Omskakeling sukses",
+    "message": "Omskakeling suksesvol"
+  },
+  "EarnScreen": {
+    "earnSats": "Verdien {formattedNumber|sats}",
+    "earnSections": {
+      "bitcoinWhatIsIt": {
+        "title": "Bitcoin: Wat is dit?",
+        "questions": {
+          "whatIsBitcoin": {
+            "answers": [
+              "Digitale geld",
+              "'n Rekenaarspeletjie ",
+              "'n Nuwe tekenprentkarakter "
+            ],
+            "feedback": [
+              "Korrek! Jy het pas 1 \"sat\" verdien!",
+              "Verkeerd, probeer asseblief weer.",
+              "Nee, ten minste nie waarvan ons weet nie!"
+            ],
+            "question": "So, wat presies is Bitcoin? ",
+            "text": "Bitcoin is digitale geld.\n\nDit kan baie veilig gestuur word binne oomblikke na enigeiemand in die wêreld sonder om van 'n bank of ander finansiële instelling gebruik te maak. ",
+            "title": "So, wat presies is Bitcoin? "
+          },
+          "sat": {
+            "answers": [
+              "Die kleinste eenheid van Bitcoin",
+              "'n Klein satelliet ",
+              "'n Ruimtekat 🐱🚀"
+            ],
+            "feedback": [
+              "Jy's reg. Jy het sopas nog twee sats verdien!!",
+              "Miskien... maar dit is nie die regte antwoord in hierdie opsig nie 🙂",
+              "Ummm... nie heeltemal nie!"
+            ],
+            "question": "Ek het sopas 'n \"Sat\" verdien. Wat is dit ?",
+            "text": "Een \"Sat\" is die kleinste eenheid van 'n Bitcoin.\n\nOns almal weet dat een Rand in 100 sente verdeel kan word. Soortgelyk kan een Bitcoin in 100,000,000 sats verdeel word. \n\nJy het nie 'n hele Bitcoin nodig om dit te gebruik nie, jy kan so min sats stuur as wat jy wil, 20 sats, 3000 of 100,000,000 (een volle bitcoin). Dit maak nie saak nie. ",
+            "title": "Ek het sopas 'n \"Sat\" verdien. Wat is dit ?"
+          },
+          "whereBitcoinExist": {
+            "answers": [
+              "Op die Internet",
+              "Op die maan",
+              "In 'n Amptelike bankrekening "
+            ],
+            "feedback": [
+              "Korrek. Jy het sopas nog 5 sats verdien. ",
+              "Verkeerd. Wel, ten minste nog nie ;)",
+              "Verkeerd, probeer asseblief weer."
+            ],
+            "question": "Waar bestaan die Bitcoins? ",
+            "text": "Bitcoin is 'n nuwe vorm van geld. Dit kan deur enigeiemand op enige plek in die wêreld gebruik word.\n\nDit is onafhanklik van enige regering of land (soos Rande of Dollars), daar is ook geen note of munte nie. Dit is 100% digitaal.\n\nBitcoin is 'n netwerk van rekenaars wat op die internet kommunikeer.\n\nJy kan maklik jou Bitcoin beheer en gebruik met 'n slimfoon of rekenaar. ",
+            "title": "Waar bestaan die Bitcoins? "
+          },
+          "whoControlsBitcoin": {
+            "answers": [
+              "'n Wêreldwye gemeenskap van vrywilligers",
+              "Mnr Burns van \"The Simpsons\" ",
+              "Die regering van Frankryk "
+            ],
+            "feedback": [
+              "Dit is reg, Bitcoin word moontlik gemaak deur mense van reg oor die wêreld wat die Bitcoin-sagteware op hulle rekenaars en slimfone hardloop. ",
+              "'n Interessante idee, maar nie reg nie. ",
+              "Verkeerd, daar is geen besigheid of regering wat Bitcoin beheer nie. "
+            ],
+            "question": "Wie beheer Bitcoin? ",
+            "text": "Bitcoin word deur geen besigheid of regering beheer nie.\n\nDit word deur die gemeenskap van vrywilligers van regoor die wêreld beheer wat die sagteware op hulle rekenaars hardloop. ",
+            "title": "Wie beheer Bitcoin? "
+          },
+          "copyBitcoin": {
+            "answers": [
+              "Nee- dit is onmoontlik om die waarde van Bitcoin te dupliseer of na te maak. ",
+              "Ja, jy kan Bitcoins net so maklik soos 'n digitale foto kopieër ",
+              "Ja, maar die kopieër van Bitcoins vereis baie gespesialiseerde rekenaars"
+            ],
+            "feedback": [
+              "Dit is absoluut korrek! ",
+              "Jy weet dat dit nie die waarheid is nie, probeer weer. ",
+              "Verkeerd, daar is geen manier vir enigeiemand om Bitcoin te kopieër, vervals of dupliseer nie. "
+            ],
+            "question": "As Bitcoin net digitale geld is, kan iemand dit nie net eenvoudig namaak en verniet geld maak nie? ",
+            "text": "Die waarde van 'n Bitcoin kan nooit nagemaak word nie. Dit is juis die rede hoekom Bitcoin so 'n kragtige nuwe tegnologie is.\n\nMeeste digitale dokumente soos fotos, 'n mp3 liedjie of 'n Microsoft Word-dokument kan maklik gekopieër en versprei word.\n\nDie Bitcoin-sagteware is uniek in die opsig dat dit juis die \"dubbelspandeer\" probleem aanspreek en oplos. Ons kyk later in meer detail hierna. ",
+            "title": "As Bitcoin net digitale geld is, kan iemand dit nie net eenvoudig namaak en verniet geld maak nie? "
+          }
         }
-    },
-    "MapScreen": {
-        "locationPermissionMessage": "Aktiveer jou ligging sodat ons weet waar jy is op die kaart",
-        "locationPermissionNegative": "Kanselleer ",
-        "locationPermissionNeutral": "Vra my later",
-        "locationPermissionPositive": "OK",
-        "locationPermissionTitle": "Vind jou ligging op die kaart",
-        "payBusiness": "betaal hierdie besigheid",
-        "title": "Kaart"
-    },
-    "HomeScreen": {
-        "receive": "Ontvang",
-        "send": "Stuur",
-        "title": "Tuis",
-        "scan": "Skandeer",
-        "updateAvailable": "'n Opdatering is beskikbaar.\nTik om nou op te dateer",
-        "useLightning": "Ons gebruik die Lightning-network - Bliksemnet ",
-        "myAccounts": "My Rekeninge"
-    },
-    "PinScreen": {
-        "attemptsRemaining": "Verkeerde PIN. {attemptsRemaining: number} probeerslae oor. ",
-        "oneAttemptRemaining": "Verkeerde PIN, 1 probeerslag oor.",
-        "setPin": "Stel jou PIN-kode in",
-        "setPinFailedMatch": "PINs stem nie ooreen nie - Stel jou PIN-kode in",
-        "storePinFailed": "Kan nie nou jou PIN stoor nie.",
-        "tooManyAttempts": "Te veel verkeerde probeerslae. Teken uit. ",
-        "verifyPin": "Bevestig jou PIN-kode"
-    },
-    "PriceHistoryScreen": {
-        "oneDay": "1D",
-        "oneMonth": "1M",
-        "oneWeek": "1W",
-        "oneYear": "1J",
-        "fiveYears": "5J",
-        "satPrice": "Prys van 100,000 sats:",
-        "last24Hours": "Afgelope 24 uur",
-        "lastWeek": "Afgelope week",
-        "lastMonth": "Afgelope maand",
-        "lastYear": "Afgelope jaar",
-        "lastFiveYears": "Die afgelope vyf jaar"
-    },
-    "PrimaryScreen": {
-        "title": "Tuis"
-    },
-    "ReceiveScreen": {
-        "nfc": "NFC",
-        "enterAmountFirst": "Please enter an amount first",
-        "activateNotifications": "Wil jy kennisgewings aktiveer en kennisgewings ontvang wanneer die betaling arriveer het? ",
-        "copyClipboard": "Faktuur is na die knipbord oorgedra",
-        "copyClipboardBitcoin": "Bitcoin-adres is na die knipbord oorgedra",
-        "copyClipboardPaycode": "Betaalkode/LNURL is oorgedra na knipbord",
-        "invoicePaid": "Hierdie faktuur is betaal",
-        "setNote": "maak 'n nota",
-        "tapQrCodeCopy": "Tik op die QR kode om oor te dra",
-        "title": "Ontvang Bitcoin",
-        "usdTitle": "Ontvang USD",
-        "error": "Kon nie faktuur genereer nie. Kontak asseblief ondersteuning as hierdie probleem voortduur.",
-        "copyInvoice": "Dra oor",
-        "shareInvoice": "Deel",
-        "addAmount": "Vra spesifieke bedrag",
-        "expired": "Hierdie faktuur het verval",
-        "expiresIn": "Verval in",
-        "updateInvoice": "Dateer faktuur op",
-        "flexibleAmountInvoice": "Veranderbare faktuur",
-        "copyAddress": "Dra adres oor",
-        "shareAddress": "Deel Adres",
-        "generatingInvoice": "Genereer faktuur",
-        "regenerateInvoice": "Hergenereer faktuur",
-        "useABitcoinOnchainAddress": "Gebruik 'n Bitcoin-opkettingadres. ",
-        "useALightningInvoice": "Gebruik 'n Lightning-faktuur. ",
-        "setANote": "Maak 'n nota",
-        "invoiceAmount": "Faktuur bedrag",
-        "fees": "325\n{minBankFee: string} sats fooie vir opketting betaling minder as {minBankFeeThreshold: string} sats",
-        "lightning": "Lightning",
-        "paycode": "LNURL",
-        "onchain": "Op-ketting",
-        "bitcoin": "Bitcoin",
-        "stablesats": "Stablesats",
-        "regenerateInvoiceButtonTitle": "Hergenereer Faktuur",
-        "setUsernameButtonTitle": "Stel gebruikersnaam",
-        "invoiceHasExpired": "Faktuur het verval",
-        "setUsernameToAcceptViaPaycode": "Stel jou gebruikersnaam om te untvang via QR betaalkode (LNURL) en Lightning-adres",
-        "singleUse": "Enkelgebruik",
-        "invoiceExpired": "Vervalde faktuur",
-        "invoiceValidity": {
-            "validFor1Day": "Geldig vir 1 dag",
-            "validForNext": "Geldig vir die volgende {duration: string}",
-            "validBefore": "Geldig voor {time: string}",
-            "expiresIn": "Verval in {duration: string}",
-            "expiresNow": "Verval nou"
-        },
-        "invoiceHasBeenPaid": "Faktuur is betaal",
-        "yourBitcoinOnChainAddress": "Jou Bitcoin-opkettingadres",
-        "receiveViaInvoice": "Ontvang met Lightning",
-        "receiveViaPaycode": "Ontvang met LNURL",
-        "receiveViaOnchain": "Ontvang opketting",
-        "payCodeOrLNURL": "Betaalkode / LNURL",
-        "initialDeposit": "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee."
-    },
-    "RedeemBitcoinScreen": {
-        "title": "Verkry Bitcoin",
-        "usdTitle": "Verruil vir USD",
-        "error": "Kon nie faktuur genereer nie. Kontak asseblief ondersteuning as hierdie probleem voortduur.",
-        "redeemingError": "Kon nie Bitcoin verkry nie. Kontak asseblief ondersteuning as hierdie probleem voortduur. ",
-        "submissionError": "Kon nie onttrekking aanvraag indien nie. Kontak asseblief ondersteuning as die probleem voortduur.",
-        "minMaxRange": "Min: {minimumAmount: string}, Maks: {maximumAmount: string}",
-        "redeemBitcoin": "Verkry Bitcoin",
-        "amountToRedeemFrom": "Bedrag om te verkry vanaf {domain:string}",
-        "redeemAmountFrom": "Verkry {amountToRedeem: string} van {domain: string}"
-    },
-    "ScanningQRCodeScreen": {
-        "invalidContent": "Ons kry:\n\n{found: string}\n\nHierdie is nie 'n geldige Bitcoin-adres of Lightningfaktuur nie",
-        "expiredContent": "Ons het gevind: \n\n{found: string}\n\nHierdie faktuur het reeds verval",
-        "invalidTitle": "Ongeldige QR kode",
-        "noQrCode": "Ons kon nie 'n QR kode in die prent opspoor nie",
-        "title": "Skandeer",
-        "invalidContentLnurl": "Ons kon opspoor:\n\n{found: string}\n\nword nie huidiglik ondersteun nie."
-    },
-    "SecurityScreen": {
-        "biometricDescription": "Kry toegang met vingerafdruk of gesigsherkenning",
-        "biometricTitle": "Biometriese",
-        "biometryNotAvailable": "Biometriese sensor is nie beskikbaar nie.",
-        "biometryNotEnrolled": "Kies asseblief ten minste een biometriese sensor om biometriese verifikasie te aktiveer. ",
-        "hideBalanceDescription": "Verberg die saldo op jou tuisblad sodat niemand wat na jou skerm kyk dit kan sien nie.",
-        "hideBalanceTitle": "Verberg balans",
-        "pinDescription": "PIN word as 'n rugsteenstawingsmetode gebruik vir biometriese verifikasie.",
-        "pinTitle": "PIN-Kode",
-        "setPin": "Stel PIN in"
-    },
-    "SendBitcoinConfirmationScreen": {
-        "amountLabel": "Bedrag:",
-        "confirmPayment": "Bevestig betaling",
-        "confirmPaymentQuestion": "Wil jy hierdie betaling bevestig?",
-        "destinationLabel": "Aan:",
-        "feeLabel": "Fooi",
-        "memoLabel": "Nota:",
-        "paymentFinal": "Betalings is finaal en onomkeerbaar.",
-        "stalePrice": "Jou Bitcoin prys is oud en was {timePeriod} gelede laas hersien. Herlaai asseblief die toepassing voordat jy betalngs maak.",
-        "title": "Bevestig Betaling ",
-        "totalLabel": "Totaal:",
-        "totalExceed": "Die totaal is meer as jou saldo van {balance: string}",
-        "maxFeeSelected": "Hierdie is die maksimum fooi wat jy sal betaal vir hierdie transaksie. Dit mag dalk minder wees as die betaling voltooi is.",
-        "feeError": "Kon nie fooi bereken nie",
-        "breezFeeText": "There may be a small fee for routing"
-    },
-    "SendBitcoinDestinationScreen": {
-        "usernameNowAddress": "{bankName: string} gebruikersname is nou {bankName: string} adresse. ",
-        "usernameNowAddressInfo": "Wanneer jy 'n {bankName: string} gebruikersnaam invul, las ons \"@{lnDomain:string}\" by. Jou gebruikersnaam is nou 'n {bankName: string} adres. \n\nGaan na die {bankName: string} adres blad van verstellings af om te sien hoe om dit te gebruik om betalings te ontvang. ",
-        "enterValidDestination": "Verskaf asseblief 'n geldige bestemming",
-        "destinationOptions": "Jy kan na 'n {bankName: string} adres, LN adres, LN faktuur of BTC adres stuur. ",
-        "expiredInvoice": "Hierdie faktuur het verval. Genereer asseblief 'n nuwe faktuur.",
-        "wrongNetwork": "Hierdie faktuur is vir 'n verskillende netwerk. Genereer asseblief 'n nuwe faktuur. ",
-        "invalidAmount": "Hierdie bevat 'n ongeldige bedrag. Hersien asseblief met 'n geldige bedrag. ",
-        "usernameDoesNotExist": "{lnAddress: string} blyk nie 'n {bankName: string}  adres te wees wat bestaan nie.",
-        "usernameDoesNotExistAdvice": "Maak seker die spelling is reg of vra die ontvanger vir 'n LN-faktuur of BTC-adres. ",
-        "selfPaymentError": "{lnAddress: string} is jou {bankName: string} adres. ",
-        "selfPaymentAdvice": "As jy geld wil stuur na 'n ander rekening wat jy besit kan jy gebruik maak van 'n LN-faktuur of BTC-adres. ",
-        "lnAddressError": "Ons sukkel om hierdie adres te bereik. As jy seker is dat dit korrek is en bestaan kan jy weer later probeer. ",
-        "lnAddressAdvice": "Maak seker die spelling is reg of vra die onvanger eerder vir 'n BTC-adres. ",
-        "unknownLightning": "Ons kan nie hierdie Lightning-adres verwerk nie. Probeer asseblief weer. ",
-        "unknownOnchain": "Ons kan nie hierdie Bitcoin-adres verwerk nie. Probeer asseblief weer. ",
-        "newBankAddressUsername": "{lnAddress:string} bestaan as 'n {bankName:string}-adres, maar jy het nog nooit geld daarheen oorgeplaas nie. ",
-        "confirmModal": {
-            "title": "Jy het nog nooit fondse na die adres gestuur nie",
-            "body1": "Maak asseblief seker die ontvanger het vir jou 'n {bankName: adres} gegee",
-            "bold2bold": "nie 'n gebruikersnaam van 'n ander beursie nie.",
-            "body3": "Anders gaan die geld na 'n {bankName: string} rekening wat die \"{lnAddress: string}\"-adres bevat.\n\nBevestig die spelling van die eerste deel van die adres ook bv. fanie en fan1e is 2 verskillende adresse.",
-            "warning": "As die {bankName: string}-adres verkeerd ingevul word, kan {bankName: string} nie die transaksie regstel of verander nie. ",
-            "checkBox": "{lnAddress:string} is die regte adres. ",
-            "confirmButton": "Ek is 100% seker"
-        },
-        "clipboardError": "Fout - Kon nie die waarde van die knipbord kry nie. "
-    },
-    "SendBitcoinScreen": {
-        "amount": "Bedrag",
-        "amountExceed": "Bedrag oorskry jou saldo van {balance:string}",
-        "amountExceedsLimit": "Bedrag oorskry jou oorblywende daaglikse limiet van {limit: string}",
-        "upgradeAccountToIncreaseLimit": "Opgradeer jou rekening om jou limiet te verhoog",
-        "amountIsRequired": "Bedrag word benodig",
-        "cost": "Koste",
-        "destination": "Bestemming",
-        "destinationIsRequired": "Bestemming word benodig",
-        "fee": "netwerkfooi",
-        "feeCalculationUnsuccessful": "Berekening onsuksesvol ⚠",
-        "placeholder": "Gebruikersnaam, faktuur of adres",
-        "invalidUsername": "Ongeldige gebruikersnaam",
-        "noAmount": "Hierdie faktuur het nie 'n bedrag nie, jy moet dus self die bedrag wat jy wil stuur spesifiseer",
-        "notConfirmed": "Betaling is gestuur\nmaar nog nie bevestig nie\n\nJy kan die vordering van die betaling\nopvolg in Transaksies. ",
-        "note": "Nota of beskrywing",
-        "success": "Betaling was suksesvol gestuur",
-        "suggestionInput": "Voer jou voorstelle in",
-        "max": "Maksimum",
-        "maxAmount": "Maksimum bedrag",
-        "title": "Stuur Bitcoin",
-        "failedToFetchLnurlInvoice": "Kon nie LNURL-faktuur verkry nie",
-        "lnurlInvoiceIncorrectAmount": "Die LNURL-bediener het reageer met 'n faktuur vir 'n verkeerde bedrag. ",
-        "lnurlInvoiceIncorrectDescription": "Die LNURL-bediener het reageer met 'n faktuur met 'n verkeerde transaksie-hash"
-    },
-    "SettingsScreen": {
-        "activated": "Geaktiveer ",
-        "addressScreen": "Maniere om betaal te word",
-        "tapUserName": "Tik om gebruikersnaam te verander ",
-        "title": "Verstellings",
-        "darkMode": "Donker agtergrond",
-        "setToDark": "Modus: donker.",
-        "setToLight": "Modus: lig.",
-        "darkDefault": "Modus: donker, (verstek). ",
-        "lightDefault": "Modus: lig, (verstek)",
-        "csvTransactionsError": "Kan nie nou die transaksielys na csv uitvoer nie. Iets het verkeerd geloop. As die probleem voortduur, kontak asseblief ondersteuning. ",
-        "lnurlNoUsername": "Om 'n LNURL-adres te genereer moet jy eers 'n gebruikersnaak kies. Wil jy dit nou doen? ",
-        "copyClipboardLnurl": "LNURL-adres is na die klipbord oorgedra",
-        "defaultWallet": "Verstekrekening",
-        "rateUs": "Gradeer ons op {storeName: string}",
-        "theme": "Tema",
-        "nfc": "Ontvang van NFC",
-        "nfcError": "Leesfout met NFC-etiket. Probeer asb weer",
-        "nfcNotCompatible": "Die inligting verkry van die kaart is nie 'n korekte lnurl-ontrekkingskakel nie",
-        "nfcOnlyReceive": "Slegs ontvang van 'n NFC is tans vir u beskikbaar ",
-        "nfcScanNow": "Skandeer nou NFC",
-        "nfcNotSupported": "NFC word nie ondersteun op die toestel nie",
-        "logInOrCreateAccount": "Teken in of skep 'n rekening"
-    },
-    "NotificationSettingsScreen": {
-        "title": "Notaverstellings",
-        "pushNotifications": "Belangrike notas",
-        "notificationCategories": {
-            "Circles": {
-                "title": "Sirkels",
-                "description": "Notas oor jou sirkels"
-            },
-            "Payments": {
-                "title": "Betalings",
-                "description": "Notas ivm stuur en ontvang van betlings"
-            }
+      },
+      "WhatIsMoney": {
+        "title": "Wat is geld? ",
+        "questions": {
+          "moneySocialAggrement": {
+            "answers": [
+              "Want mense vertrou dat ander mense die geld ook waardeer, of dieselfde waarde daaraan koppel",
+              "Want jou ma het so gesê",
+              "Want 'n honderd rand noot is sy gewig in goud werd. "
+            ],
+            "feedback": [
+              "Korrek. Dit is wat toelaat dat geld werk! ",
+              "Sy het dalk, maar dit is nie die regte antwoord nie. ",
+              "Nee, in die verlede kon jy note vir goud verruil, maar dit is nie meer so nie. "
+            ],
+            "question": "Hoekom het geld waarde? ",
+            "text": "Geld vereis dat mense die geldeenheid vertrou.\n\nMense vertrou die note in hulle sakke. Hulle vertrou die nommers op die skerm van hulle bankrekening. Mense vertrou die balans wat 'n winkel vir hulle op rekening gee of wat op 'n geskenkbewys is.\n\nOm geld te hê laat mense toe om dit onmiddelik en maklik vir 'n diens of goedere te verruil. ",
+            "title": "Geld is 'n sosiale ooreenkoms"
+          },
+          "coincidenceOfWants": {
+            "answers": [
+              "Toevallige ooreenstemming van behoeftes ",
+              "Toevalligheid van dag en nag",
+              "Toevalligheid van die maan wat die son blok"
+            ],
+            "feedback": [
+              "Dit is reg. Geld laat jou toe om maklik iets te koop sonder om die tipe geldeenheid te beredeneer. ",
+              "Nee grapgat, jy weet dit is nie die antwoord nie. ",
+              "Nee, ons noem dit 'n sonsverduistering. "
+            ],
+            "question": "Watter toevalligheid los geld op? ",
+            "text": "Eeue gelede voordat mense geld gehad het het hulle deur middel van ruilhandel gekoop en verkoop en hulle moes elke keer die waarde van die item wat hulle wou koop en die waarde van die item wat hulle wou verruil bespreek.\n\nKom ons veronderstel jy wou 'n ete by die restaurant koop en jy bied die restaurant as betaling 'n besem aan. Die eienaar van die restaurant kon sê nee vir die besem maar dat hy 3 hoede as betaling sal aanvaar. Nou moet jy eers 3 hoede gaan kry. \n\nVerbeel jou hoe gekompliseerd so 'n ruilhandelekonomie kan word. \nIn teenstelling hiermee, dink net hoe maklik is dit om 'n R20 noot te ruil vir dit wat jy wil koop en jy weet dat die restaurant note gaan aanvaar. ",
+            "title": "Geld is 'n oplossing vir die toevalligheid van ooreenstemming van behoeftes."
+          },
+          "moneyEvolution": {
+            "answers": [
+              "Klippies, skulpe en goud",
+              "Klein plastiek huisies van Monopoly",
+              "Munte wat van sjokolade gemaak is."
+            ],
+            "feedback": [
+              "Dis reg. Items wat skaars is en moeilik was om te vervals was al as geld gebruik.",
+              "Verkeerd. Dit mag dalk waarde hê in die speletjie, maar nie in die regte wêreld nie. ",
+              "Nee. Hulle is lekker, maar nie bruikbaar as geld nie. "
+            ],
+            "question": "Watter tipe items was al in die verlede as 'n geldeenheid gebruik? ",
+            "text": "Duisende jare gelede het 'n samelewing in Mikronesia baie groot skaars klippe gebruik as geldeenheid. \n\nVanaf die 1500's was skaars cowrie skulpe (wat uit die see uit kom) as 'n geldeenheid gebruik in baie lande. \n\nEn vir baie duisende jare is goud as geld gebruik regoor die wêreld, Amerika ingesluit (tot 1971).",
+            "title": "Geld het nog altyd ontwikkel, omtrent vanaf die begin van tyd. "
+          },
+          "whyStonesShellGold": {
+            "answers": [
+              "Want dit het karaktereienskappe soos dat dit duursaam, eenvormig en onderverdeelbaar is. ",
+              "Want dit is mooi en blink. ",
+              "Want dit pas lekker in jou broeksak. "
+            ],
+            "feedback": [
+              "Korrek. Sleutelkenmerke sluit in om skaars en draagbaar te wees. ",
+              "Verkeerd. Dit mag dalk waar wees, maar dit alleen is nie goeie karaktereienskappe van geld nie. ",
+              "Nie heeltemal nie. Alhoewel hierdie items draagbaar was is dit nie wat hulle goeie geld gemaak het nie. "
+            ],
+            "question": "Hoekom was goud, skulpe en klippies gebruik as geldeenhede?",
+            "text": "Wel, hierdie items het sommige van die karaktereienskappe van geld, maar nie alles nie.\n\nSo watter karaktereienskappe maak \"goeie geld\"? \nSkaars: Nie algemeen beskikbaar nie, moeilik om te vervals.\nAanvaarbaar: Maklik vir mense om die egtheid na te gaan.\nDuursaam: Maklik om te onderhou, beskadig nie maklik nie. \nUnivorm: Alle eenhede is dieselfde in vorm en waarde. \nDraagbaar: Maklik om te vervoer. \nOnderverdeelbaar: kan in kleiner gelyke eenhede verdeel word.",
+            "title": "Hoekom was skulpe, klippies en goud algemeen in die verlede as geld gebruik? "
+          },
+          "moneyIsImportant": {
+            "answers": [
+              "Geld laat mense toe om goedere en dienste te koop, vandag en in die toekoms. ",
+              "Geld stel jou in staat om maan toe te gaan. ",
+              "Geld is die oplossing vir alle probleme. "
+            ],
+            "feedback": [
+              "Dis reg! ",
+              "Verkeerd, maar dit mag dalk verander in die toekoms ;) ",
+              "Nie heeltemal nie. Alhoewel sekere mense dit mag glo, spreek dit nie die primêre doel van geld aan nie. "
+            ],
+            "question": "Wat is die primêre rede dat geld belangrik is? ",
+            "text": "Almal weet dat geld saak maak.\n\nMeeste mense verruil hulle tyd en energie - in die vorm van werk - vir geld. Mense doen dit juis om nou en in die toekoms goedere en dienste te kan koop. ",
+            "title": "Geld is belangrik vir individue"
+          },
+          "moneyImportantGovernement": {
+            "answers": [
+              "Die Amerikaanse Sentrale Bank (The Federal Reserve)",
+              "Mnr Burns van \"The Simpsons\" ",
+              "'n Man met 'n drukpers in sy kelder. "
+            ],
+            "feedback": [
+              "Korrek. Die Amerikaanse Regering kan ter enige tyd soveel geld druk as wat hulle wil. ",
+              "Verkeerd, dit het wel gelyk asof hy altyd baie geld gehad het. ",
+              "Nee. Sommige mense maak vervalste note, maar dit is beslis nie wettig nie. "
+            ],
+            "question": "Wie kan enige tyd wettige geld druk as hulle wil? ",
+            "text": "Moderne ekonomieë word deur nasies georganiseer soos Amerika, Japan, Switzerland, Brazilië, Noorwee, China ens.\n\nIn Amerika kan die Sentrale bank (die Federal Reserve of Fed) op enige tyd soveel geld druk as wat hulle wil. \n\nDie \"Fed\" benodig geen toestemming vanaf die president, die kabinet en verseker nie die burgers van die land om dit te doen nie. \n\nVerbeel jou as jy die vermoë gehad het om enige tyd jou eie geld te druk, wat sou jy gedoen het?",
+            "title": "Geld is ook belangrik vir regerings. "
+          }
         }
-    },
-    "AccountScreen": {
-        "accountLevel": "Rekeningvlak",
-        "upgrade": "Opgradeer jou rekening",
-        "logOutAndDeleteLocalData": "Teken uit en verwyder alle plaaslike data",
-        "IUnderstand": "Ek verstaan, teken my asseblief uit. ",
-        "logoutAlertTitle": "Is jy seker jy wil uitteken en alle data verwyder?",
-        "logoutAlertContentPhone": "Jy sal jou selfoonnommer weer moet invoer om in te teken. \nJou nommer is {phoneNumber: string} so maak seker jy het toegang daartoe om weer in te teken",
-        "logoutAlertContentEmail": "Jy sal weer jou epos moet invul om in te teken. \nJou epos is {email: string} so maak seker jy het toegang daartoe om weer in te teken",
-        "logoutAlertContentPhoneEmail": "Jy sal jou selfonnommer of epos weer moet invoer om in te teken.\nJou nommer is {phoneNumber: string} en jou epos is {email: string} so maak seker jy het toegang daartoe om weer in te teken",
-        "usdBalanceWarning": "Jy het 'n Stablesats-saldo van {balance: string}s",
-        "btcBalanceWarning": "Jy het 'n Bitcoin-saldo van {balance: string}",
-        "secureYourAccount": "Registreer om jou rekening sekuur te maak",
-        "tapToAdd": "Tik om by te voeg",
-        "deleteEmailPromptTitle": "Vee epos uit",
-        "deleteEmailPromptContent": "Is jy seker jy wil jou epos uitvee? Jy sal net kan inteken met jou selfoonnommer",
-        "deletePhonePromptTitle": "Vee selfoonnommer uit",
-        "deletePhonePromptContent": "Is jy seker jy wil jou selfoonnommer uitvee? Jy sal net kan inteken met jou epos",
-        "addEmailFirst": "Voeg eers 'n epos by",
-        "addPhoneFirst": "Voeg eers 'n selfoonnommer by",
-        "phoneNumberAuthentication": "Selfoonnommer (om in te teken)",
-        "emailAuthentication": "Epos (om in te teken)",
-        "removePhone": "Verwyder selfoonnommer",
-        "removeEmail": "Verwyder epos",
-        "unverified": "Epos is ongeverifieerd",
-        "unverifiedContent": "Beveilig jou rekening deur jou epos te verifieer",
-        "confirmEmail": "Bevestig epos",
-        "emailUnverified": "Jou epos is ongeverifieerd",
-        "emailUnverifiedContent": "Maak seker dat jy kan inteken in jou rekening deur jou epos te verifieer. Wil jy dit nou doen?",
-        "totp": "Twee-faktor-verifikasie",
-        "totpDeactivated": "Twee-faktor-verifikasie is gedeaktiveer",
-        "totpDeleteAlertTitle": "Verwyder twee-faktor-verifikasie",
-        "totpDeleteAlertContent": "Is jy seker jy wil twee-faktor-verifikasie verwyder?"
-    },
-    "TotpRegistrationInitiateScreen": {
-        "title": "Twee-faktor-verifikasie",
-        "content": "Skandeer die QR-kode met jou \"authenticator app\". Jy kan ook die kode self invul in die toepassing"
-    },
-    "TotpRegistrationValidateScreen": {
-        "title": "Twee-faktor-verifikasie",
-        "enter6digitCode": "Voer die 6-getal kode van jou \"authenticator app\" in om te verifieer",
-        "success": "Twee-faktor-verifikasie is in werking. Jy sal nou slegs kan inteken met jou selfoon of epos EN jou twee-faktor-verifikasie.\n\nSlegs volledige KYC-rekeninge kan herstel word indien die gebruiker nie meer toegang tot twee-faktor-verifikasie het nie."
-    },
-    "TotpLoginValidateScreen": {
-        "title": "Twee-faktor-verifikasie",
-        "content": "Voer die 6-getal kode van jou \"authenticator app\" in om in te teken. Die kode verander elke 30 sekondes"
-    },
-    "CopySecretComponent": {
-        "button": "Dra geheim oor",
-        "toastMessage": "Geheim na knipbord!"
-    },
-    "DefaultWalletScreen": {
-        "title": "Verstek-rekening",
-        "info": "Kies jou verstekrekening vir Stuur en Ontvang. Jy kan die stuur- en ontvangrekening vir aparte transaksies in die mobiele toepassing verander. Betalings wat deur die kasregister of Lightning-adres ontvang word gaan altyd na jou verstekrekening.\n\nOm wisselvalligheid te vermy kan jy Stablesats kies. Dit help om 'n stabiele bedrag te behou en steeds te stuur en ontvang. \n\nJy kan die verstelling enige tyd verander en dit sal nie jou huidige saldo veander nie."
-    },
-    "ThemeScreen": {
-        "title": "Tema",
-        "info": "Kies jou tema van voorkeur om Flash te gebruik, of kies om dit met jou stelselverstellingste te sinchroniseer.",
-        "system": "Gebruik Stelselverstelling ",
-        "light": "Gebruik Ligtemodus",
-        "dark": "Gebruik Donkermodus"
-    },
-    "Languages": {
-        "DEFAULT": "Verstek (OS)"
-    },
-    "StablesatsModal": {
-        "header": "Met Stablesats het jy nou 'n USD-rekening by jou beursie gevoeg!",
-        "body": "Jy kan dit gebruik om Bitcoin te stuur of ontvang, en om onmiddelik fondse tussen jou BTC- en USD-rekening te verskuif. Die waarde van die USD-rekening sal nie wissel saam met die prys van Bitcoin nie. Hierdie funksie kan nie met die tradisionele bankstelsel gebruik word nie. ",
-        "termsAndConditions": "Lees die Terme en Voorwaardes",
-        "learnMore": "Leer meer van Stablesats"
-    },
-    "SplashScreen": {
-        "update": "Jou toepassing is lanklaas opgedateer. Dateer asseblief die toepassing op voordat jy dit kan gebruik.\n\nDit kan gedoen word by die Android of google Playstore of Apple App store vir IOS."
-    },
-    "TransactionDetailScreen": {
-        "paid": "Betaal aan/van",
-        "received": "Jy het ontvang",
-        "spent": "Jy het spandeer",
-        "receivingAccount": "Rekening waarin onvang word",
-        "sendingAccount": "Rekening waaruit gestuur word",
-        "txNotBroadcast": "Jou transaksie is hangend en sal na die BItcoin-netwerk uitgesaai word binne oomblikke."
-    },
-    "TransactionLimitsScreen": {
-        "receive": "Ontvang",
-        "withdraw": "Onttrekking",
-        "perDay": "per dag",
-        "perWeek": "per week",
-        "unlimited": "Onbeperk",
-        "remaining": "Oorblywend",
-        "stablesatTransfers": "Stablesat Oorbetalings",
-        "internalSend": "Stuur na {bankName: string} gebruiker",
-        "error": "Kan nie nou limiete verkry nie",
-        "contactUsMessageBody": "Hi, ek wil graag die transaksielimiete van my {bankName: string} verhoog.",
-        "contactUsMessageSubject": "Versoek om Transaksielimiete te Verhoog",
-        "contactSupportToPerformKyc": "Kontak ondersteuning om te KYC en jou daaglikse limiete te verhoog. ",
-        "increaseLimits": "Verhoog jou limiete"
-    },
-    "TransactionScreen": {
-        "noTransaction": "Geen transaksies om te wys nie",
-        "title": "Transaksies",
-        "recentTransactions": "Onlangse transaksies",
-        "transactionHistoryTitle": "Transaksiegeskiedenis"
-    },
-    "TransferScreen": {
-        "title": "Plaas Oor",
-        "percentageToConvert": "% om te ruil"
-    },
-    "UpgradeAccountModal": {
-        "title": "Opgradeer jou rekening",
-        "backUpFunds": "Rugsteen jou fondse",
-        "higherLimits": "Verhoog jou transaksielimiet",
-        "receiveOnchain": "Ontvang Bitcoin-opketting",
-        "onlyAPhoneNumber": "Maklike selfoonnommer verifikasie",
-        "letsGo": "Hier gaat ons!",
-        "stayInTrialMode": "Bly in die proefopsie"
-    },
-    "SetAddressModal": {
-        "title": "486\nStel {bankName: string} adres",
-        "Errors": {
-            "tooShort": "Adres moet minstens 3 karakters lank wees",
-            "tooLong": "Adres kan nie meer as 50 karakters lank wees nie",
-            "invalidCharacter": "Adres kan net letters, nommers en 'n onderstreep bevat",
-            "addressUnavailable": "Jammer, die adres is reeds geneem",
-            "unknownError": "'n Onbekende fout het voorgekom, probeer asseblief later weer"
-        },
-        "receiveMoney": "Ontvang geld van ander lightningbeursies en {bankName: string}-gebruikers met die adres",
-        "itCannotBeChanged": "Dit kan nie later verander word nie."
-    },
-    "WelcomeFirstScreen": {
-        "bank": "Bitcoin is ontwerp om jou toe te laat om geld te spaar, stuur en ontvang sonder om op 'n bank of kredietkaartinstelling staat te maak. ",
-        "before": "Voor Bitcoin moes mense staatmaak op banke en kredietverskaffers om geld te spandeer, stuur en ontvang. ",
-        "care": "Hoekom moet ek omgee? ",
-        "learn": "Ek wil jou nie pla nie, maar daar is nog baie om te leer. Kom ons kyk...",
-        "learnToEarn": "Leer en verdien"
-    },
-    "PhoneLoginInitiateScreen": {
-        "title": "Rekeningopstelling",
-        "header": "Tik jou selfoonnommer in en ons sal vir jou 'n toegangskode per sms stuur.",
-        "headerVerify": "Verifieër dat jy 'n mens is",
-        "errorRequestingCaptcha": "Iets het skeefgeloop gedurende die verifikasie om te bepaal of jy 'n mens is, probeer asseblief weer. ",
-        "errorRequestingCode": "Iets het verkeerd gegaan terwyl ons die foonkode probeer aanvra het, probeer asseblief later weer. ",
-        "errorInvalidPhoneNumber": "Ongeldige selfoonnommer. Is jy seker dat jy die regte nommer ingesleutel het? ",
-        "errorUnsupportedCountry": "Ons kan ongelukkig nie gebruikers in jou land ondersteun nie. ",
-        "placeholder": "Selfoonnommer ",
-        "verify": "Kliek om te verifieër",
-        "sms": "Stuur via SMS",
-        "whatsapp": "Stuur per WhatsApp"
-    },
-    "PhoneLoginValidationScreen": {
-        "errorLoggingIn": "Intekeningsfout. Het jy die regte kode gebruik? ",
-        "errorTooManyAttempts": "Te veel probeerslae. Probeer asseblief later weer. ",
-        "errorCannotUpgradeToExistingAccount": "Hierdie foonrekening bestaan alreeds. Teken asseblief uit jou toetsrekening en teken in met jou selfoonnommer.",
-        "header": "Om jou selfoonnommer te bevestig, tik die kode in wat pas aan jou gestuur is by {channel: string} op {phoneNumber: string}",
-        "placeholder": "6-Karakter kode",
-        "sendAgain": "Stuur weer",
-        "tryAgain": "Probeer weer",
-        "sendViaOtherChannel": "Jy het gekies om die kode te ontvang per {channel: string}. Jy kan probeer om dit eerder per {other: string} te ontvang. "
-    },
-    "PhoneRegistrationInitiateScreen": {
-        "title": "Selfoonopstelling",
-        "header": "Tik jou selfoonnommer in en ons sal vir jou 'n toegangskode per sms stuur.",
-        "headerVerify": "Verifieër dat jy 'n mens is",
-        "errorRequestingCode": "Iets het verkeerd gegaan terwyl ons die selfoonkode probeer aanvra het, probeer asseblief later weer. ",
-        "errorInvalidPhoneNumber": "Ongeldige selfoonnommer. Is jy seker dat jy die regte nommer ingesleutel het? ",
-        "errorUnsupportedCountry": "Ons kan ongelukkig nie gebruikers in jou land ondersteun nie. ",
-        "placeholder": "Selfoonnommer ",
-        "verify": "Kliek om te verifieër",
-        "sms": "Stuur via SMS",
-        "whatsapp": "Stuur per WhatsApp"
-    },
-    "PhoneRegistrationValidateScreen": {
-        "successTitle": "Selfoonnommer bevestig"
-    },
-    "EmailRegistrationInitiateScreen": {
-        "title": "Voeg jou epos by",
-        "header": "Voer jou epos in en ons sal 'n toegangskode stuur",
-        "invalidEmail": "Ongeldige epos. Is jy seker die epos is korek?",
-        "send": "Stuur kode",
-        "missingEmailRegistrationId": "Vermis epos-registrasie id",
-        "placeholder": "hal@finney.org"
-    },
-    "EmailRegistrationValidateScreen": {
-        "header": "Om jou epos te bevestig, tik die kode in wat ons gestuur het na {email: string}",
-        "success": "Epos {email: string} suksesvol bevestig"
-    },
-    "EmailLoginInitiateScreen": {
-        "title": "Teken in per epos",
-        "header": "Voer jou epos in en ons sal 'n toegangskode stuur",
-        "invalidEmail": "Ongeldige epos. Is jy seker die epos is die regte een?",
-        "send": "Stuur kode"
-    },
-    "EmailLoginValidateScreen": {
-        "header": "Indien daar 'n rekening verbind is aan {email: string}, sou jy 'n 6-syfer kode ontvang het om onder in te voer.\n\nIndien jy niks ontvang het nie, mag die epos foutief wees of dis dalk in jou \"spam folder\"",
-        "success": "Epos {email: string} suksesvol bevestig"
-    },
-    "common": {
-        "account": "Rekening",
-        "transactionLimits": "Transaksielimiete ",
-        "activateWallet": "Aktiveer beursie",
-        "amountRequired": "Bedrag word benodig",
-        "back": "Terug ",
-        "backHome": "Terug na Tuisblad",
-        "bank": "Bank",
-        "bankAccount": "Kontantrekening",
-        "bankAdvice": "{bank:Name:string} Advies",
-        "bankInfo": "{bankName:string} Inligting",
-        "beta": "beta",
-        "bitcoin": "Bitcoin",
-        "bitcoinPrice": "Bitcoin-prys ",
-        "btcAccount": "BTC-rekening",
-        "cancel": "Kanselleer ",
-        "close": "Maak toe",
-        "confirm": "Bevestig",
-        "convert": "Ruil",
-        "codeConfirmation": "Kode bevestiging",
-        "currency": "Geldeenheid",
-        "currencySyncIssue": "Wisselkoers probleem. Herlaai asb.",
-        "csvExport": "Voer transaksies as CSV uit",
-        "date": "Datum",
-        "description": "Beskrywing",
-        "domain": "Domein",
-        "email": "E-pos",
-        "error": "Fout",
-        "fatal": "Fataal",
-        "fee": "fooi",
-        "Fee": "Fooi",
-        "fees": "Fooie",
-        "firstName": "Noemnaam",
-        "from": "Van",
-        "hour": "uur",
-        "hours": "ure",
-        "invoice": "Faktuur",
-        "language": "Taal",
-        "languagePreference": "Taalvoorkeur",
-        "lastName": "Van",
-        "later": "Later",
-        "loggedOut": "Jy is uitgeteken",
-        "logout": "Teken uit",
-        "minutes": "minute",
-        "errorAuthToken": "Ontbrekende \"auth token\"",
-        "needWallet": "Teken in om 'n rekening oop te maak en om toegang tot jou beursie te kry. ",
-        "next": "Volgende",
-        "No": "Nee",
-        "note": "Nota",
-        "notification": "Kennisgewing",
-        "ok": "OK",
-        "or": "of",
-        "openWallet": "Maak beursie oop",
-        "phone": "Selfoon",
-        "phoneNumber": "Selfoonnommer ",
-        "rate": "Koers",
-        "reauth": "Jou sessie het verstryk. Teken asseblief weer in.",
-        "restart": "Herlaai",
-        "sats": "sats",
-        "search": "Soek",
-        "security": "Sekuriteit",
-        "send": "Stuur",
-        "setAnAmount": "kies 'n bedrag",
-        "share": "Deel",
-        "shareBitcoin": "Deel Bitcoin-adres",
-        "shareLightning": "Deel Lightning-faktuur",
-        "soon": "Binnekort oppad! ",
-        "submit": "Stuur",
-        "success": "Sukses!",
-        "stablesatsUsd": "Cash (USD)",
-        "to": "Aan",
-        "total": "Totaal",
-        "transactions": "Transaksies",
-        "transactionsError": "Fout - kan nie transaksies laai nie",
-        "tryAgain": "Probeer weer",
-        "type": "Tipe",
-        "usdAccount": "USD-rekening ",
-        "username": "Gebruikersnaam",
-        "usernameRequired": "Gebruikersnaam word vereis",
-        "backupAccount": "Rugsteen/opgradeer rekening",
-        "viewTransaction": "Bekyk transaksie",
-        "yes": "Ja",
-        "pending": "hangend",
-        "today": "Vandag",
-        "yesterday": "Gister",
-        "thisMonth": "Hierdie maand",
-        "prevMonths": "Vorige maande",
-        "problemMaybeReauth": "Daar was 'n probleem met jou versoek. Probeer asseblief weer oor 1 minuut. Indien die probleem voortduur, beveel ons aan dat jy uitteken en dan weer intteken. Gaan na Verstellings > Rekening > Teken uit",
-        "warning": "Waarskuwing"
-    },
-    "errors": {
-        "generic": "Daar was 'n fout.\nProbeer asseblief later weer.",
-        "invalidEmail": "Ongeldige epos",
-        "invalidPhoneNumber": "is nie 'n geldige selfoonnommer nie",
-        "tooManyRequestsPhoneCode": "Te veel aanvrae. Wag asseblief voordat jy nog 'n SMS aanvra.",
-        "network": {
-            "server": "Bediener fout. Probeer asseblief later weer. ",
-            "request": "Aanvraag probleem.\nKontak ondersteuning as die fout aanhou. ",
-            "connection": "Verbindingsprobleme. Verifieer asseblief jou internetverbinding."
-        },
-        "unexpectedError": "Onverwagte fout het voorgekom",
-        "restartApp": "Herlaai asseblief die toepassing. ",
-        "problemPersists": "As die fout aanhou opduik, kontak asseblief ondersteuning. ",
-        "fatalError": "Jammer, dit lyk of ons probleme het met die toepassing se data. As die probleem voortduur, kontak asseblief ondersteuning.",
-        "showError": "Wys Fout",
-        "clearAppData": "Vee Toepassingdata skoon en Teken Uit"
-    },
-    "notifications": {
-        "payment": {
-            "body": "Jy het sopas {value:string} sats ontvang",
-            "title": "Betaling ontvang"
+      },
+      "HowDoesMoneyWork": {
+        "title": "Hoe werk geld? ",
+        "questions": {
+          "WhatIsFiat": {
+            "answers": [
+              "Dit word vrygestel deur opdrag van die nasionale regering van 'n land. ",
+              "Deur die bestuurder van die plaaslike banktak. ",
+              "Die Monopoly-geldmannetjie."
+            ],
+            "feedback": [
+              "Korrek, die Sentrale bank van 'n regering \"maak\" die geld.\nIn ons geval is dit die Suid Afrikaanse Reserwebank. ",
+              "Verkeerd, 'n Nuwe bank kan net geld bestuur wat vantevore deur die regering gemaak is. ",
+              "Nee. Probeer weer!"
+            ],
+            "question": "Wie maak fiat-geld, soos Rande, Dollars en Franke? ",
+            "text": "Alle nasionale geldeenhede wat huidiglik in sirkulasie is word \"fiat\"-geld genoem. Dit sluit in die Amerikaanse Dollar, Japanese Yen, Switzerse Frank ensovoorts.\n\nDie woord \"fiat\" is latyns vir \"by opdrag van\" wat beteken dit is 'n offisiele opdrag. \n\nDit beteken dat alle fiat-geld - insluitend die Rand - eenvoudig vervaardig word deur die nasionale regering. ",
+            "title": "Fiat-geld: Wat is dit? "
+          },
+          "whyCareAboutFiatMoney": {
+            "answers": [
+              "Alle fiat-geld word uiteindelik deur regerings misbruik. ",
+              "Plaaslike banke mag dalk nie genoeg ruimte hê in hulle kluise om al die note te hou nie. ",
+              "Daar mag dalk nie genoeg bome wees vir papier om al die ekstra geld te maak nie. "
+            ],
+            "feedback": [
+              "Dis reg. Regdeur die geskiedenis kon regerings nog nooit hulself weerhou van die opsie om ekstra geld te druk nie, juis omdat hulle onder geen druk is om hierdie geld terug te betaal nie. ",
+              "Glad nie die geval nie.",
+              "Verkeerd, probeer asseblief weer."
+            ],
+            "question": "Hoekom moet ek omgee dat die regering die geld beheer? ",
+            "text": "Soos in 'n vorige vraag bespreek, die Amerikaanse  reserwebank is die \"Federal Reserve\", of die \"Fed\".\n\nDie Fed kan soveel geld druk as wat hulle wil en het geen toestemming van die regering, die kabinet of landsburgers nodig nie. \n\nOm beheer van die geld te hê is vreeslik aanloklik vir owerhede, dit lei gereeld tot misibruik en inflasie. Dit steel ook die koopkrag van geld wat reeds in sirkulasie is. \n\nAlan Greenspan, beroemde voorsitter van die Fed het eens gesê: \"Amerika kan al hulle skuld maklik betaal want hulle kan altyd ekstra geld druk om dit te doen\". ",
+            "title": "Ek vertrou my regering, hoekom moet ek omgee oor fiat-geld? "
+          },
+          "GovernementCanPrintMoney": {
+            "answers": [
+              "Die druk van addisionele geld lei tot inflasie. ",
+              "Mense moet ou note elke jaar by die bank gaan verruil. ",
+              "Die voorkoms van die noot verander. "
+            ],
+            "feedback": [
+              "Korrek. Dit beteken dat dienste en goedere meer sal kos in die toekoms. ",
+              "Nee, ouer note is net so geldig as nuwe note. ",
+              "Verkeerd. Alhoewel die regering die prentjies op note kan verander het dit niks met die vermeerdering van die geldvoorraad te doen nie. "
+            ],
+            "question": "Wat beteken dit wanneer die regering geld druk? ",
+            "text": "Wel, almal moet omgee.\n\nDie druk van ekstra geld beinvloed almal se geldwaarde en lei tot inflasie. \n\nInflasie is die styging van pryse op goedere en dienste, met ander woorde, dinge gaan duurder wees in die toekoms. \n\nSo wat beteken inflasie vir landsburgers? \n\nIn die Verenigde Koninkryk het die Britse Pond al 99.5% van sy waarde verloor oor die laaste 300 jaar.\n\nIn Amerika het die Dollar al ongeveer 97% van sy waarde verloor oor die laaste 100 jaar. \n\nDit beteken dat 'n biefstuk wat $0.30 gekos het in 1920, in 1990 $3.00 sou gekos het en nou al by die $15 kos in 2020!",
+            "title": "Wie moet omgee dat die regering oneindig baie geld kan druk? "
+          },
+          "FiatLosesValueOverTime": {
+            "answers": [
+              "Elke fiat-geldeenheid wat ooit bestaan het, het verskriklik baie waarde verloor. ",
+              "Die waarde bly vir altyd dieselfde.",
+              "Die voorkoms en ontwerp van die noot word ongeveer elke 10 jaar verander. "
+            ],
+            "feedback": [
+              "Dis reg. Dit is selfs waar vir die Amerikaanse Dollar wat al 97% van sy waarde verloor het oor die laaste 100 jaar.",
+              "Verkeerd. Probeer asseblief weer. ",
+              "Nee wat. Alhoewel die ontwerp van papiergeld mag verander, het dit niks te make met die waarde daarvan nie."
+            ],
+            "question": "Wat gebeur met die waarde van alle fiat-geld met die verloop van tyd? ",
+            "text": "Hierdie is korrek.\n\nDaar was al 775 fiat-geldeenhede in die geskiedenis van die wêreld. Meeste bestaan lankal nie meer nie, die gemiddelde leeftyd van 'n fiat-geldeenheid is 27jaar.\n\nDie Britse Pond is tans die oudste fiat-geld en het al 99% van sy waarde verloor sedert 1694.\n\nDaar is geen voorbeelde van fiat-geld wat sy waarde behou oor 'n lang tyd nie. Dit is inflasie. Dit is so goed soos diefstal, die waarde van jou geld waarvoor jy hard gewerk het verdwyn! ",
+            "title": "Beteken dit dat alle fiat-geld waarde verloor met die verloop van tyd?"
+          },
+          "OtherIssues": {
+            "answers": [
+              "Geld is baie moeilik om oor landsgrense rond te skuif, en kan ook dopgehou word.",
+              "Geld is nie meer nodig in die 21ste eeu nie. ",
+              "Geld is die wortel van alle kwaad. "
+            ],
+            "feedback": [
+              "Dis reg. Ons sal meer hiervan verduidelik in die daaropvolgende vasvra-modules. Hou aan om meer te leer! ",
+              "Verkeerde antwoord. Jy weet dit is nie waar nie. ",
+              "Alhoewel sommiges glo dat dit so is, is dit nie die antwoord wat ons in gedagte het nie. "
+            ],
+            "question": "Watter ander probleme is daar met fiat-geld? ",
+            "text": "Ja, daar is baie probleme met moderne fiat geld.\n\nEerstens is dit verskriklik moeilik om oor landsgrense te stuur. Regerings sal gereeld die oorplaas van geld verban of selfs geld konfiskeer as jy nie 'n geldige rede het om dit te stuur nie. Selfs wanneer dit moontlik is, is transaksiekoste baie duur.\n\nTweedens, in Amerika en oral in die wêreld is daar 'n totale gebrek aan privaatheid deur debiet- en kredietkaarttransaksies te gebruik. Dit geld ook vir dienste soos PayPal en Apple Pay.\n\nHet jy al ooit opgelet hoe geteikende advertensies in jou Facebook of sosiale media verskyn oomblikke nadat jy vir iets aanlyn gesoek het? Hierdie staan bekend as \"Toesigkapitalisme\", en is gebasseer op besighede wat jou persoonlike inligting verkoop. ",
+            "title": "Goed dan, so fiat-geld verloor waarde met die verloop van tyd. Is daar enige ander probleme? "
+          }
         }
+      },
+      "BitcoinWhySpecial": {
+        "title": "Bitcoin: Hoekom is dit spesiaal? ",
+        "questions": {
+          "LimitedSupply": {
+            "answers": [
+              "Daar kan nooit meer as 21 miljoen bitcoin gemaak word nie.",
+              "Nee. Die regering kan op enige stadium ekstra Bitcoin maak.",
+              "Nee. Die Bitcoin-sagteware kan verander word om meer Bitcoins te maak."
+            ],
+            "feedback": [
+              "Korrek, deur die hoeveelheid wat gemaak kan word te beperk, is Bitcoin ontwerp om mettertyd in waarde te verhoog. ",
+              "Verkeerde antwoord. Die regering het geen beheer oor Bitcoin nie. ",
+              "Verkeerd. Een van Bitcoin se eienskappe is dat daar nooit meer as die maksimum limiet gemaak kan word nie. "
+            ],
+            "question": "Is die geldvoorraad van Bitcoin vir ewig beperk? ",
+            "text": "Regerings kan soveel fiat geld druk as wat hulle wil. \n\nIn teenstelling hiermee kan Bitcoin nooit meer as 21 miljoen eenhede oorskry nie. \n\n'n Voortdurende toename in die aanbod van die geldvoorraad veroorsaak inflasie. Dit beteken dat geld wat jy vandag het minder werd is in die toekoms.\n\n'n Eenvoudige voorbeeld: \n'n Brood wat 8c gekos het in 1920, het in 1990 R10.00 gekos en kos nou amper R30.00! \n\nDie beperkte aanbod van Bitcoin het die teenoorgestelde effek, ons noem dit deflasie. \n\nDit beteken dat die Bitcoin wat jy vandag besit meer werd sal word in die toekoms - want dit is skaars. ",
+            "title": "Spesiale Eienskap #1:\nBeperkte aanbod"
+          },
+          "Decentralized": {
+            "answers": [
+              "Nee. Bitcoin is heeltemal gedesentraliseer.",
+              "Ja. Dit word sentraal beheer deur die Verenigde Nasies. ",
+              "Ja. Dit word sentraal beheer deur die wêreld se grootste banke."
+            ],
+            "feedback": [
+              "Dis reg. Daar is geen maatskappy, regering of owerheid wat Bitcoin beheer nie. Enige iemand kan Bitcoin gebruik, al wat jy benodig is 'n slimfoon en 'n internetverbinding. ",
+              "Verkeerde antwoord. Probeer asseblief weer. ",
+              "Verkeerd. Jy weet reeds dis nie waar is nie! "
+            ],
+            "question": "Is Bitcoin gesentraliseerd? ",
+            "text": "Fiat-geld word deur banke en regerings beheer -- dit is hoekom ons dit 'n \"gesentraliseerde\" geldeenheid noem.\n\nBitcoin word nie deur enige persoon, regering of besigheid beheer nie -- Ons noem dit dus \"gedesentraliseerd\"\n\nDeur nie van banke afhantlik te wees nie, beteken dit dat niemand jou toegang tot Bitcoin kan verbied op grond van jou geslag, ras, inkomste, kredietrekord, politiese oortuigings, geografiese area of enige ander faktor nie.\n\nEnige iemand -- enige plek op aarde -- kan op enige tyd Bitcoin gebruik en toegang tot die netwerk verkry. Al wat jy benodig is 'n rekenaar of slimfoon met 'n internetverbinding!",
+            "title": "Spesiale Eienskap #2: Gedesentraliseerd "
+          },
+          "NoCounterfeitMoney": {
+            "answers": [
+              "Nee, dit is onmoontlik om Bitcoin te vervals.",
+              "Ja, maar om Bitcoins te vervals vereis baie gespesialiseerde rekenaars. ",
+              "Ja, die regering kan soveel Bitcoin druk as wat hulle wil. "
+            ],
+            "feedback": [
+              "Dit is die regte antwoord. In 'n volgende vraag sal Ratel verduidelik hoekom dit so is. ",
+              "Verkeerd. Daar is geen manier vir iemand om die waarde van 'n Bitcoin na te maak nie. ",
+              "Verkeerd, alhoewel die regering soveel fiat geld kan druk as wat hulle wil, kan hulle nie Bitcoin druk nie. "
+            ],
+            "question": "Kan mens Bitcoin vervals? ",
+            "text": "Papiergeld, tjeks en kredietkaarttransakaies kan almal relatief maklik vervals word.\n\nDie unieke sagteware wat Bitcoin moontlik maak elimineer die moontlikheid om Bitcion te vervals of te dupliseer.\n\nNuwe Bitcoin kan slegs vrygestel word as daar ooreenstemming is tussen al die deelnemers op die netwerk wat deur vrywilligers op hulle rekenaars en slimfone gehardloop word. \n\nHierdie eienskap verseker dat dit onmoontlik is om Bitcoin te vervals. ",
+            "title": "Spesiale Eienskap #3:\nGeen vervalste geld"
+          },
+          "HighlyDivisible": {
+            "answers": [
+              "0.00000001 BTC",
+              "Een hele Bitcoin, dit is onmoontlik om minder as dit te gebruik.",
+              "0.01 BTC"
+            ],
+            "feedback": [
+              "Ja, jy kan een Bitcoin in 100,000,000 kleiner dele verdeel, soos jy reeds weet. Dit is die kleinste onderverdeling van 'n Bitcoin -- B0.00000001 -- en staan bekend as a \"sat\". ",
+              "Verkeerd. Bitcoin is onderverdeelbaar. Jy kan maklik 'n klein fraksie van 'n Bitcoin gebruik. ",
+              "Verkeerd. Die kleinste eenheid van 'n Rand of 'n Dollar is 'n sent, maar 'n bitcoin kan in baie kleiner deeltjies as 100 verdeel word. "
+            ],
+            "question": "Wat is die kleinste eenheid van 'n Bitcoin wat iemand kan besit of gebruik? ",
+            "text": "Ouderwetse fiat geld kan slegs in die kleinste eenhede van een sent spandeer word. \n\nIn teenstelling kan Bitcoin in 100,000,000 dele verdeel word. Dit beteken dat jy so min as ₿0.00000001 kan spandeer. Let op dat die \"₿\" simbool hier gebruik word soos die $ simbool. Soms word BTC ook gebruik. \n\nDit beteken dus dat baie klein betalings met Bitcoin gemaak kan word, selfs minder as een sent! ",
+            "title": "Spesiale Eienskap #4:\nHoogs onderverdeelbaar"
+          },
+          "securePartOne": {
+            "answers": [
+              "Ja, die Bitcoin-netwerk is baie veilig. ",
+              "Miskien, dit hang af van die dag van die week. ",
+              "Nee, dit is \"open source\" sagteware en kan maklik aangeval word. "
+            ],
+            "feedback": [
+              "Dis reg. Om die waarheid te sê, die Bitcoin-netwerk was nog nooit suksesvol deur kuberkrakers aangeval nie. Beantwoord die volgende vraag om meer te leer! ",
+              "Goeie probeerslag, maar verkeerd. Die Bitcoin-netwerk is baie veilig - 24 uur per dag, 365 dae 'n jaar. ",
+              "Verkeerd. Alhoewel Bitcoin \"open source\" sagteware is en toeganklik is vir die publiek is dit ongelooflik veilig. "
+            ],
+            "question": "Is die Bitcoin-netwerk veilig om te gebruik? ",
+            "text": "Die Bitcoin-netwerk is goed oor 'n $100 miljard werd. Daarom is dit nodig dat die netwerk baie sekuur is, sodat geld nie gesteel kan word nie. \n\nBitcoin is bekend as die wêreld se eerste kuber-geldeenheid of \"crypto\". \n\nDie \"crypto\" gedeelte kom van die woord kriptografie. Eenvoudig gestel, die inligting word deur middel van kriptografie en wiskunde beveilig.\n\nMeeste mense besef dit nie, maar Bitcoin is die mees sekure rekenaarnetwerk ter wêreld! \n\nJy het dalk al gehoor van Bitcoin \"hacks\" wat ons in die volgende afdeling sal aanspreek. ",
+            "title": "Spesiale Eienskap#5\nGoed Beveilig -- Deel I"
+          },
+          "securePartTwo": {
+            "answers": [
+              "Nee. Bitcoin is nog nooit suksesvol deur kuberkrakers aangeval nie. ",
+              "Ja. Bitcoin word gereeld suksesvol deur kuberkrakers aangeval. ",
+              "Ja. Bitcoin word meestal op vakansiedae aangeval wanneer gewone banke toe is. "
+            ],
+            "feedback": [
+              "Dit is reg. Die Bitcoin-netwerk was nog nooit suksesvol aangeval nie. Dit is wel baie belangrik om net veilige digitale Bitcoin-beursies te gebruik om jou Bitcoin ten alle tye veilig te hou. ",
+              "Verkeerd, probeer asseblief weer.",
+              "Nee, jy weet dit is nie die regte antwoord nie. "
+            ],
+            "question": "Is Bitcoin al ooit suksesvol aangeval deur kuberkrakers? ",
+            "text": "Om dit direk te stel, die Bitcoin-netwerk is nog nooit, nie eers een keer suksesvol aangeval deur kuberkrakers nie.\n\nMaar wat was al suksesvol aangeval?\n\nSekere digitale Bitcoin-beursies is al aangeval omdat hulle nie die regte sekuriteit in plek gehad het nie.\n\nNet soos regte beursies geld hou (in die vorm van kontant munte en note), hou digitale Bitcoin-beursies 'n bedrag Bitcoin.\n\nIn die regte wêreld beroof kriminele banke en loop weg met fiat geld, maar die feit dat iemand 'n bank beroof het, het geen invloed op die sekuriteit of stabiliteit van die fiat geldeenheid nie.\n\nSoortgelyk hieraan het sekere kuberkrakers al geld uit digitale beursies gesteel, die aanlyn ekwivalent van 'n bankrooftog.\n\nDit is wel baie belangrik om te besef dat die Bitcoin-netwerk op protokolvlak nog nooit suksesvol aangeval is nie. ",
+            "title": "Spesiale Eienskap #5:\nGoed beveilig - Deel II"
+          }
+        }
+      }
     },
-    "support": {
-        "contactUs": "Benodig jy hulp? Kontak ons. ",
-        "joinTheCommunity": "Sluit aan by die gemeenskap",
-        "whatsapp": "WhatsApp",
-        "email": "E-pos",
-        "enjoyingApp": "Geniet jy die toep?",
-        "statusPage": "Statusbladsy",
-        "telegram": "Telegram",
-        "mattermost": "Mattermost",
-        "thankYouText": "Dankie vir die terugvoer, wil jy 'n verbetering voorstel?",
-        "defaultEmailSubject": "{bankName: string} - Ondersteuning",
-        "defaultSupportMessage": "Hi daar! Ek benodig hulp met {bankName: string}, ek gebruik weergawe {version: string} op {os: string}. ",
-        "emailCopied": "e-pos {email:string} oorgedra na knipbord",
-        "deleteAccount": "Skrap rekening",
-        "delete": "Vee uit",
-        "typeDelete": "Tik asseblief \"{delete: string}\" om rekeningskrap te bevestig",
-        "finalConfirmationAccountDeletionTitle": "Finale bevestiging word vereis",
-        "finalConfirmationAccountDeletionMessage": "Is jy seker jy wil jou rekening skrap? Hierdie aksie is onomkeerbaar.",
-        "deleteAccountBalanceWarning": "Deur jou rekening uit te vee sal jy toegang tot jou fondse verloor. Is jy seker jy wil voortgaan? ",
-        "deleteAccountConfirmation": "Jou rekening is nou in die proses om uitgevee te word. \n\nWanneer die wagperiode verstryk het soos bepaal deur die relevante owerheid sal alle oorblywende data met betrekking tot hierdie rekening permanent verwyder word. ",
-        "deleteAccountFromPhone": "Hallo daar, vee asseblief my rekening uit. My selfonnommer is {phoneNumber: string}.",
-        "deleteAccountError": "Iets het foutgegaan. Kontak asseblief {email: string} vir verdere hulp. ",
-        "bye": "Totsiens!"
+    "finishText": "Dit is al vir nou, ons sal jou laat weet as daar meer is om to ontdek. ",
+    "getRewardNow": "Antwoord vasvra",
+    "keepDigging": "Hou aan ondersoek doen!",
+    "phoneNumberNeeded": "Selfoonnommer benodig",
+    "quizComplete": "Vasvra voltooi en {amount:number} sats verdien",
+    "reviewQuiz": "Hersien vasvra",
+    "satAccumulated": "Sats bymekaargemaak",
+    "satsEarned": "{formattedNumber|sats} verdien",
+    "sectionsCompleted": "Jy het dit voltooi",
+    "title": "Verdien",
+    "unlockQuestion": "Om te ontsluit moet jy die vraag beantwoord:",
+    "youEarned": "Jy het verdien: ",
+    "registerTitle": "Opgradeer jou rekening",
+    "registerContent": "Registreer met jou selfoonnommer om sats te ontvang"
+  },
+  "GetStartedScreen": {
+    "logInCreateAccount": "Teken in / Skep rekening",
+    "createAccount": "Skep 'n nuwe rekening",
+    "exploreWallet": "Verken beursie",
+    "logBackInWith": "Teken weer in met",
+    "headline": "Beursie deur Galoy gebou",
+    "startTrialAccount": "Begin met 'n proefrekening",
+    "startWithTrialAccount": "Begin met 'n proefrekening",
+    "registerPhoneAccount": "Registreer 'n selfoonrekening",
+    "trialAccountCreationFailed": "Proefrekening skeppingsfout",
+    "trialAccountCreationFailedMessage": "Ongelukkig kon ons nie jou proefrekening skep nie. Probeer later weer of skep 'n rekening met 'n selfoonnommer.",
+    "trialAccountHasLimits": "Proefrekening het limiete",
+    "trialAccountLimits": {
+      "noBackup": "Geen rugsteen opsie",
+      "sendingLimit": "Verlaagde daaglikse spandeerbare limiet",
+      "noOnchain": "Geen ontvang van Bitcoin-opketting"
     },
-    "lnurl": {
-        "overLimit": "Jy kan nie meer as die maksimum bedrag stuur nie",
-        "underLimit": "Jy kan nie minder as die minimum bedrag stuur nie",
-        "commentRequired": "Kommentaar benodig ",
-        "viewPrintable": "Besigtig drukbare weergawe"
+    "chooseAccountType": "Kies rekeningtipe",
+    "exploreWalletInstead": "Verken die beursie in plaas daarvan",
+    "quickStart": "Begin  Begin ",
+    "restoreWallet": "Login ",
+    "setupBusinessAccount": "Stel 'n besigheidsrekening op"
+  },
+  "MapScreen": {
+    "locationPermissionMessage": "Aktiveer jou ligging sodat ons weet waar jy is op die kaart",
+    "locationPermissionNegative": "Kanselleer ",
+    "locationPermissionNeutral": "Vra my later",
+    "locationPermissionPositive": "OK",
+    "locationPermissionTitle": "Vind jou ligging op die kaart",
+    "payBusiness": "betaal hierdie besigheid",
+    "title": "Kaart",
+    "addPin": "Klik op enige plek om 'n pen toe te voeg",
+    "getDirections": "Aantreklikhede Kry rigtings",
+    "selectedCoordinates": "Jou Flashpoint Koördinate: ",
+    "viewInGoogleMaps": "Sien in Google Maps"
+  },
+  "HomeScreen": {
+    "receive": "Ontvang",
+    "send": "Stuur",
+    "title": "Tuis",
+    "scan": "Skandeer",
+    "updateAvailable": "'n Opdatering is beskikbaar.\nTik om nou op te dateer",
+    "useLightning": "Ons gebruik die Lightning-network - Bliksemnet ",
+    "myAccounts": "My Rekeninge",
+    "addFlashcard": "Flashcard Add",
+    "backupDesc": "Rugsteun en beveilig jou Bitcoin-beursie met behulp van die herstel frase.",
+    "backupTitle": "Maak 'n rugsteun van jou BTC-beursie",
+    "balance": "Verfrissingsbalans",
+    "bitcoin": "Bitcoin",
+    "btcWalletDesc": "Maklik om groter bedrae in Bitcoin oor te dra.",
+    "btcWalletTitle": "Aktiveer BTC-beursie",
+    "cash": "Kontant  Kontant ",
+    "cashout": "Kontant Uit",
+    "currencyDesc": "Kyk na ons beskikbare geldeenheid lys en kies jou geldeenheid.",
+    "currencyTitle": "Verander na jou plaaslike geldeenheid",
+    "emailDesc": "Voeg u e-posadres by om u rekening te beveilig en aan te meld met behulp van 'n e-posadres.",
+    "emailTitle": "E-pos adres",
+    "flashcard": "Flashcard",
+    "flashcardDesc": "Vind 'n Flashpoint en kry 'n Flashcard om in die daaglikse lewe te gebruik.",
+    "flashcardTitle": "Kry 'n Flashcard",
+    "nonCustodialWalletDesc": "Leer meer oor nie-bewaarbare beursies.",
+    "nonCustodialWalletTitle": "Nie-bewaarbare beursies",
+    "pay": "Betaal  Betaal ",
+    "reload": "Reload Card",
+    "showQrCode": "Topup via QR",
+    "sweep": "Sweep to Wallet",
+    "unclaimedDeposits": "Ongevraagde deposito's",
+    "unclaimedDepositsWarning": "️ P l e a s e c o m p l e e o r claim a l l l unclaimed deposits b e f o r e n n s t a l i n g F l a s o r unclaimed deposits w i l l l b e l o s t .",
+    "upgradeDesc": "Ontsluit jou volle potensiaal!  Opgradeer om sigbaarheid, limiete en uitbetalings te verhoog.",
+    "upgradePendingDesc": "U rekeningopgraderingsaanvraag word hersien.",
+    "upgradeTitle": "Opgradeer jou rekening",
+    "upgradeTitlePending": "'n Opgraderingsaanvraag is aan die gang"
+  },
+  "PinScreen": {
+    "attemptsRemaining": "Verkeerde PIN. {attemptsRemaining: number} probeerslae oor. ",
+    "oneAttemptRemaining": "Verkeerde PIN, 1 probeerslag oor.",
+    "setPin": "Stel jou PIN-kode in",
+    "setPinFailedMatch": "PINs stem nie ooreen nie - Stel jou PIN-kode in",
+    "storePinFailed": "Kan nie nou jou PIN stoor nie.",
+    "tooManyAttempts": "Te veel verkeerde probeerslae. Teken uit. ",
+    "verifyPin": "Bevestig jou PIN-kode"
+  },
+  "PriceHistoryScreen": {
+    "oneDay": "1D",
+    "oneMonth": "1M",
+    "oneWeek": "1W",
+    "oneYear": "1J",
+    "fiveYears": "5J",
+    "satPrice": "Prys van 100,000 sats:",
+    "last24Hours": "Afgelope 24 uur",
+    "lastWeek": "Afgelope week",
+    "lastMonth": "Afgelope maand",
+    "lastYear": "Afgelope jaar",
+    "lastFiveYears": "Die afgelope vyf jaar"
+  },
+  "PrimaryScreen": {
+    "title": "Tuis"
+  },
+  "ReceiveScreen": {
+    "nfc": "NFC",
+    "enterAmountFirst": "Please enter an amount first",
+    "activateNotifications": "Wil jy kennisgewings aktiveer en kennisgewings ontvang wanneer die betaling arriveer het? ",
+    "copyClipboard": "Faktuur is na die knipbord oorgedra",
+    "copyClipboardBitcoin": "Bitcoin-adres is na die knipbord oorgedra",
+    "copyClipboardPaycode": "Betaalkode/LNURL is oorgedra na knipbord",
+    "invoicePaid": "Hierdie faktuur is betaal",
+    "setNote": "maak 'n nota",
+    "tapQrCodeCopy": "Tik op die QR kode om oor te dra",
+    "title": "Ontvang Bitcoin",
+    "usdTitle": "Ontvang USD",
+    "error": "Kon nie faktuur genereer nie. Kontak asseblief ondersteuning as hierdie probleem voortduur.",
+    "copyInvoice": "Dra oor",
+    "shareInvoice": "Deel",
+    "addAmount": "Vra spesifieke bedrag",
+    "expired": "Hierdie faktuur het verval",
+    "expiresIn": "Verval in",
+    "updateInvoice": "Dateer faktuur op",
+    "flexibleAmountInvoice": "Veranderbare faktuur",
+    "copyAddress": "Dra adres oor",
+    "shareAddress": "Deel Adres",
+    "generatingInvoice": "Genereer faktuur",
+    "regenerateInvoice": "Hergenereer faktuur",
+    "useABitcoinOnchainAddress": "Gebruik 'n Bitcoin-opkettingadres. ",
+    "useALightningInvoice": "Gebruik 'n Lightning-faktuur. ",
+    "setANote": "Maak 'n nota",
+    "invoiceAmount": "Faktuur bedrag",
+    "fees": "325\n{minBankFee: string} sats fooie vir opketting betaling minder as {minBankFeeThreshold: string} sats",
+    "lightning": "Lightning",
+    "paycode": "LNURL",
+    "onchain": "Op-ketting",
+    "bitcoin": "Bitcoin",
+    "stablesats": "Stablesats",
+    "regenerateInvoiceButtonTitle": "Hergenereer Faktuur",
+    "setUsernameButtonTitle": "Stel gebruikersnaam",
+    "invoiceHasExpired": "Faktuur het verval",
+    "setUsernameToAcceptViaPaycode": "Stel jou gebruikersnaam om te untvang via QR betaalkode (LNURL) en Lightning-adres",
+    "singleUse": "Enkelgebruik",
+    "invoiceExpired": "Vervalde faktuur",
+    "invoiceValidity": {
+      "validFor1Day": "Geldig vir 1 dag",
+      "validForNext": "Geldig vir die volgende {duration: string}",
+      "validBefore": "Geldig voor {time: string}",
+      "expiresIn": "Verval in {duration: string}",
+      "expiresNow": "Verval nou"
     },
-    "DisplayCurrencyScreen": {
-        "errorLoading": "Fout om lys van geldeenhede te laai"
+    "invoiceHasBeenPaid": "Faktuur is betaal",
+    "yourBitcoinOnChainAddress": "Jou Bitcoin-opkettingadres",
+    "receiveViaInvoice": "Ontvang met Lightning",
+    "receiveViaPaycode": "Ontvang met LNURL",
+    "receiveViaOnchain": "Ontvang opketting",
+    "payCodeOrLNURL": "Betaalkode / LNURL",
+    "initialDeposit": "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee.",
+    "cantReceiveZeroSats": "Jy kan nie 'n nul sats ontvang nie. Gee asseblief 'n bedrag wat ooreenstem met 1 of meer sats.",
+    "flashcardInstructions": "Skandeer die QR-kode of tik op die ikoon om dit op whatsapp, e-pos, ens. te deel.",
+    "receive": "Ontvang  Ontvang ",
+    "selectPaymentMethod": "Kies Betalingsmetode",
+    "selectWallet": "Kies Wallet",
+    "topupFlashcard": "Topup Flashcard"
+  },
+  "RedeemBitcoinScreen": {
+    "title": "Verkry Bitcoin",
+    "usdTitle": "Verruil vir USD",
+    "error": "Kon nie faktuur genereer nie. Kontak asseblief ondersteuning as hierdie probleem voortduur.",
+    "redeemingError": "Kon nie Bitcoin verkry nie. Kontak asseblief ondersteuning as hierdie probleem voortduur. ",
+    "submissionError": "Kon nie onttrekking aanvraag indien nie. Kontak asseblief ondersteuning as die probleem voortduur.",
+    "minMaxRange": "Min: {minimumAmount: string}, Maks: {maximumAmount: string}",
+    "redeemBitcoin": "Verkry Bitcoin",
+    "amountToRedeemFrom": "Bedrag om te verkry vanaf {domain:string}",
+    "redeemAmountFrom": "Verkry {amountToRedeem: string} van {domain: string}"
+  },
+  "ScanningQRCodeScreen": {
+    "invalidContent": "Ons kry:\n\n{found: string}\n\nHierdie is nie 'n geldige Bitcoin-adres of Lightningfaktuur nie",
+    "expiredContent": "Ons het gevind: \n\n{found: string}\n\nHierdie faktuur het reeds verval",
+    "invalidTitle": "Ongeldige QR kode",
+    "noQrCode": "Ons kon nie 'n QR kode in die prent opspoor nie",
+    "title": "Skandeer",
+    "invalidContentLnurl": "Ons kon opspoor:\n\n{found: string}\n\nword nie huidiglik ondersteun nie.",
+    "imageLibraryPermissionsNotGranted": "Ons het nie toestemming om toegang tot die beeldbiblioteek te verkry nie.",
+    "noCamera": "Geen kamera gevind nie",
+    "openSettings": "Open Settings",
+    "permissionCamera": "Ons het toestemming nodig om jou kamera te gebruik",
+    "unableToOpenSettings": "Nie in staat om instellings oop te maak nie"
+  },
+  "SecurityScreen": {
+    "biometricDescription": "Kry toegang met vingerafdruk of gesigsherkenning",
+    "biometricTitle": "Biometriese",
+    "biometryNotAvailable": "Biometriese sensor is nie beskikbaar nie.",
+    "biometryNotEnrolled": "Kies asseblief ten minste een biometriese sensor om biometriese verifikasie te aktiveer. ",
+    "hideBalanceDescription": "Verberg die saldo op jou tuisblad sodat niemand wat na jou skerm kyk dit kan sien nie.",
+    "hideBalanceTitle": "Verberg balans",
+    "pinDescription": "PIN word as 'n rugsteenstawingsmetode gebruik vir biometriese verifikasie.",
+    "pinTitle": "PIN-Kode",
+    "setPin": "Stel PIN in",
+    "backupDescription": "Om 'n PIN-kode in te stel, rugsteun asseblief u rekening deur 'n telefoonnommer by te voeg."
+  },
+  "SendBitcoinConfirmationScreen": {
+    "amountLabel": "Bedrag:",
+    "confirmPayment": "Bevestig betaling",
+    "confirmPaymentQuestion": "Wil jy hierdie betaling bevestig?",
+    "destinationLabel": "Aan:",
+    "feeLabel": "Fooi",
+    "memoLabel": "Nota:",
+    "paymentFinal": "Betalings is finaal en onomkeerbaar.",
+    "stalePrice": "Jou Bitcoin prys is oud en was {timePeriod} gelede laas hersien. Herlaai asseblief die toepassing voordat jy betalngs maak.",
+    "title": "Bevestig Betaling ",
+    "totalLabel": "Totaal:",
+    "totalExceed": "Die totaal is meer as jou saldo van {balance: string}",
+    "maxFeeSelected": "Hierdie is die maksimum fooi wat jy sal betaal vir hierdie transaksie. Dit mag dalk minder wees as die betaling voltooi is.",
+    "feeError": "Kon nie fooi bereken nie",
+    "breezFeeText": "There may be a small fee for routing"
+  },
+  "SendBitcoinDestinationScreen": {
+    "usernameNowAddress": "{bankName: string} gebruikersname is nou {bankName: string} adresse. ",
+    "usernameNowAddressInfo": "Wanneer jy 'n {bankName: string} gebruikersnaam invul, las ons \"@{lnDomain:string}\" by. Jou gebruikersnaam is nou 'n {bankName: string} adres. \n\nGaan na die {bankName: string} adres blad van verstellings af om te sien hoe om dit te gebruik om betalings te ontvang. ",
+    "enterValidDestination": "Verskaf asseblief 'n geldige bestemming",
+    "destinationOptions": "Jy kan na 'n {bankName: string} adres, LN adres, LN faktuur of BTC adres stuur. ",
+    "expiredInvoice": "Hierdie faktuur het verval. Genereer asseblief 'n nuwe faktuur.",
+    "wrongNetwork": "Hierdie faktuur is vir 'n verskillende netwerk. Genereer asseblief 'n nuwe faktuur. ",
+    "invalidAmount": "Hierdie bevat 'n ongeldige bedrag. Hersien asseblief met 'n geldige bedrag. ",
+    "usernameDoesNotExist": "{lnAddress: string} blyk nie 'n {bankName: string}  adres te wees wat bestaan nie.",
+    "usernameDoesNotExistAdvice": "Maak seker die spelling is reg of vra die ontvanger vir 'n LN-faktuur of BTC-adres. ",
+    "selfPaymentError": "{lnAddress: string} is jou {bankName: string} adres. ",
+    "selfPaymentAdvice": "As jy geld wil stuur na 'n ander rekening wat jy besit kan jy gebruik maak van 'n LN-faktuur of BTC-adres. ",
+    "lnAddressError": "Ons sukkel om hierdie adres te bereik. As jy seker is dat dit korrek is en bestaan kan jy weer later probeer. ",
+    "lnAddressAdvice": "Maak seker die spelling is reg of vra die onvanger eerder vir 'n BTC-adres. ",
+    "unknownLightning": "Ons kan nie hierdie Lightning-adres verwerk nie. Probeer asseblief weer. ",
+    "unknownOnchain": "Ons kan nie hierdie Bitcoin-adres verwerk nie. Probeer asseblief weer. ",
+    "newBankAddressUsername": "{lnAddress:string} bestaan as 'n {bankName:string}-adres, maar jy het nog nooit geld daarheen oorgeplaas nie. ",
+    "confirmModal": {
+      "title": "Jy het nog nooit fondse na die adres gestuur nie",
+      "body1": "Maak asseblief seker die ontvanger het vir jou 'n {bankName: adres} gegee",
+      "bold2bold": "nie 'n gebruikersnaam van 'n ander beursie nie.",
+      "body3": "Anders gaan die geld na 'n {bankName: string} rekening wat die \"{lnAddress: string}\"-adres bevat.\n\nBevestig die spelling van die eerste deel van die adres ook bv. fanie en fan1e is 2 verskillende adresse.",
+      "warning": "As die {bankName: string}-adres verkeerd ingevul word, kan {bankName: string} nie die transaksie regstel of verander nie. ",
+      "checkBox": "{lnAddress:string} is die regte adres. ",
+      "confirmButton": "Ek is 100% seker",
+      "externalCheckBox": "Ek bevestig die stuur na {address: string}.",
+      "externalWarning": "Jy is op die punt om geld na iemand te stuur wat nie 'n {bankName: string}-rekening is nie."
     },
-    "AmountInputScreen": {
-        "enterAmount": "Voer bedrag in",
-        "setAmount": "Stel bedrag",
-        "maxAmountExceeded": "Bedrag mag nie {maxAmount: string} oorskry nie.",
-        "minAmountNotMet": "Bedrag moet minstens {minAmount: string} wees."
-    },
-    "AmountInputButton": {
-        "tapToSetAmount": "Tik om bedrag te stel"
-    },
-    "AppUpdate": {
-        "needToUpdateSupportMessage": "Ek moet opgradeer na die nuutste weergawe. Ek gebruik tans die {os: string} toepassing met die weergawe {version: string}.",
-        "versionNotSupported": "Die sellulêre weergawe word nie meer ondersteun nie. ",
-        "updateMandatory": "Opgradering is verpligtent ",
-        "tapHereUpdate": "Tik hier om op te gradeer",
-        "contactSupport": "Kontak Ondersteuning"
+    "clipboardError": "Fout - Kon nie die waarde van die knipbord kry nie. "
+  },
+  "SendBitcoinScreen": {
+    "amount": "Bedrag",
+    "amountExceed": "Bedrag oorskry jou saldo van {balance:string}",
+    "amountExceedsLimit": "Bedrag oorskry jou oorblywende daaglikse limiet van {limit: string}",
+    "upgradeAccountToIncreaseLimit": "Opgradeer jou rekening om jou limiet te verhoog",
+    "amountIsRequired": "Bedrag word benodig",
+    "cost": "Koste",
+    "destination": "Bestemming",
+    "destinationIsRequired": "Bestemming word benodig",
+    "fee": "netwerkfooi",
+    "feeCalculationUnsuccessful": "Berekening onsuksesvol ⚠",
+    "placeholder": "Gebruikersnaam, faktuur of adres",
+    "invalidUsername": "Ongeldige gebruikersnaam",
+    "noAmount": "Hierdie faktuur het nie 'n bedrag nie, jy moet dus self die bedrag wat jy wil stuur spesifiseer",
+    "notConfirmed": "Betaling is gestuur\nmaar nog nie bevestig nie\n\nJy kan die vordering van die betaling\nopvolg in Transaksies. ",
+    "note": "Nota of beskrywing",
+    "success": "Betaling was suksesvol gestuur",
+    "suggestionInput": "Voer jou voorstelle in",
+    "max": "Maksimum",
+    "maxAmount": "Maksimum bedrag",
+    "title": "Stuur Bitcoin",
+    "failedToFetchLnurlInvoice": "Kon nie LNURL-faktuur verkry nie",
+    "lnurlInvoiceIncorrectAmount": "Die LNURL-bediener het reageer met 'n faktuur vir 'n verkeerde bedrag. ",
+    "lnurlInvoiceIncorrectDescription": "Die LNURL-bediener het reageer met 'n faktuur met 'n verkeerde transaksie-hash",
+    "MinFlashcardLimit": "Minimum bedrag wanneer herlaai van flitskaart is 100 sats",
+    "MinOnChainLimit": "Die minimum bedrag vir hierdie transaksie is US$2.00",
+    "MinOnChainSatLimit": "Die minimum bedrag vir hierdie transaksie is 5,500 sats",
+    "maxAmountConvertError": "Die omskakelingsbedrag is groter as die maksimum bedrag {amount: number}",
+    "maxAmountInvoiceError": "Die bedrag op die faktuur is groter as die maksimum bedrag {amount: number}",
+    "minAmountConvertError": "Die omskakelingsbedrag is minder as die minimum vereiste bedrag {amount: number}",
+    "minAmountInvoiceError": "Die bedrag op die faktuur is minder as die minimum bedrag {amount: number}",
+    "noAmountInvoiceError": "Geen faktuurbedrag word in die BTC-beursie ondersteun nie, gaan asseblief terug en scan of voer 'n faktuur in met 'n bygevoegde bedrag.",
+    "onchainMinAmountInvoiceError": "Die bedrag wat u ingevoer het, is minder as die minimum bedrag wat nodig is om 'n aanlyntransaksie {amount: number} te stuur.",
+    "send": "Stuur  Stuur "
+  },
+  "SettingsScreen": {
+    "activated": "Geaktiveer ",
+    "addressScreen": "Maniere om betaal te word",
+    "tapUserName": "Tik om gebruikersnaam te verander ",
+    "title": "Verstellings",
+    "darkMode": "Donker agtergrond",
+    "setToDark": "Modus: donker.",
+    "setToLight": "Modus: lig.",
+    "darkDefault": "Modus: donker, (verstek). ",
+    "lightDefault": "Modus: lig, (verstek)",
+    "csvTransactionsError": "Kan nie nou die transaksielys na csv uitvoer nie. Iets het verkeerd geloop. As die probleem voortduur, kontak asseblief ondersteuning. ",
+    "lnurlNoUsername": "Om 'n LNURL-adres te genereer moet jy eers 'n gebruikersnaak kies. Wil jy dit nou doen? ",
+    "copyClipboardLnurl": "LNURL-adres is na die klipbord oorgedra",
+    "defaultWallet": "Verstekrekening",
+    "rateUs": "Gradeer ons op {storeName: string}",
+    "theme": "Tema",
+    "nfc": "Ontvang van NFC",
+    "nfcError": "Leesfout met NFC-etiket. Probeer asb weer",
+    "nfcNotCompatible": "Die inligting verkry van die kaart is nie 'n korekte lnurl-ontrekkingskakel nie",
+    "nfcOnlyReceive": "Slegs ontvang van 'n NFC is tans vir u beskikbaar ",
+    "nfcScanNow": "Skandeer nou NFC",
+    "nfcNotSupported": "NFC word nie ondersteun op die toestel nie",
+    "logInOrCreateAccount": "Teken in of skep 'n rekening",
+    "advanceMode": "Aktiveer Bitcoin-rekening (Advanced Mode) ",
+    "apiAcess": "Toegang  API API",
+    "backup": "Rugsteun  Backup",
+    "beginnerMode": "Skakel Bitcoin-rekening uit",
+    "hideBtcAccount": "Verberg Bitcoin rekening",
+    "importWallet": "Importeer Wallet",
+    "keysManagement": "Beveiliging van die beursie ",
+    "pos": "Die verkoopspunt",
+    "posCopied": "Jou verkoopspunt-skakel is gekopieër",
+    "setByOs": "Stel deur OS",
+    "setYourLightningAddress": "Stel jou gebruikersnaam ",
+    "showBtcAccount": "Wys Bitcoin rekening",
+    "showNostrSecret": "Chat-instellings",
+    "showSeedPhrase": "Reveal recovery phrase",
+    "staticQr": "Printable Statiese QR Kode",
+    "staticQrCopied": "Jou statiese QR-kode-skakel is gekopieër"
+  },
+  "NotificationSettingsScreen": {
+    "title": "Notaverstellings",
+    "pushNotifications": "Belangrike notas",
+    "notificationCategories": {
+      "Circles": {
+        "title": "Sirkels",
+        "description": "Notas oor jou sirkels"
+      },
+      "Payments": {
+        "title": "Betalings",
+        "description": "Notas ivm stuur en ontvang van betlings"
+      },
+      "Marketing": {
+        "description": "Kennisgewings oor nuwe funksies en opdaterings.",
+        "title": "Kenmerke en opdaterings"
+      },
+      "Price": {
+        "description": "Kennisgewings oor die prys van Bitcoin.",
+        "title": "Prysveranderinge  Prysveranderinge"
+      }
     }
+  },
+  "AccountScreen": {
+    "accountLevel": "Rekeningvlak",
+    "upgrade": "Opgradeer jou rekening",
+    "logOutAndDeleteLocalData": "Teken uit en verwyder alle plaaslike data",
+    "IUnderstand": "Ek verstaan, teken my asseblief uit. ",
+    "logoutAlertTitle": "Is jy seker jy wil uitteken en alle data verwyder?",
+    "logoutAlertContentPhone": "Jy sal jou selfoonnommer weer moet invoer om in te teken. \nJou nommer is {phoneNumber: string} so maak seker jy het toegang daartoe om weer in te teken",
+    "logoutAlertContentEmail": "Jy sal weer jou epos moet invul om in te teken. \nJou epos is {email: string} so maak seker jy het toegang daartoe om weer in te teken",
+    "logoutAlertContentPhoneEmail": "Jy sal jou selfonnommer of epos weer moet invoer om in te teken.\nJou nommer is {phoneNumber: string} en jou epos is {email: string} so maak seker jy het toegang daartoe om weer in te teken",
+    "usdBalanceWarning": "Jy het 'n Stablesats-saldo van {balance: string}s",
+    "btcBalanceWarning": "Jy het 'n Bitcoin-saldo van {balance: string}",
+    "secureYourAccount": "Registreer om jou rekening sekuur te maak",
+    "tapToAdd": "Tik om by te voeg",
+    "deleteEmailPromptTitle": "Vee epos uit",
+    "deleteEmailPromptContent": "Is jy seker jy wil jou epos uitvee? Jy sal net kan inteken met jou selfoonnommer",
+    "deletePhonePromptTitle": "Vee selfoonnommer uit",
+    "deletePhonePromptContent": "Is jy seker jy wil jou selfoonnommer uitvee? Jy sal net kan inteken met jou epos",
+    "addEmailFirst": "Voeg eers 'n epos by",
+    "addPhoneFirst": "Voeg eers 'n selfoonnommer by",
+    "phoneNumberAuthentication": "Selfoonnommer (om in te teken)",
+    "emailAuthentication": "Epos (om in te teken)",
+    "removePhone": "Verwyder selfoonnommer",
+    "removeEmail": "Verwyder epos",
+    "unverified": "Epos is ongeverifieerd",
+    "unverifiedContent": "Beveilig jou rekening deur jou epos te verifieer",
+    "confirmEmail": "Bevestig epos",
+    "emailUnverified": "Jou epos is ongeverifieerd",
+    "emailUnverifiedContent": "Maak seker dat jy kan inteken in jou rekening deur jou epos te verifieer. Wil jy dit nou doen?",
+    "totp": "Twee-faktor-verifikasie",
+    "totpDeactivated": "Twee-faktor-verifikasie is gedeaktiveer",
+    "totpDeleteAlertTitle": "Verwyder twee-faktor-verifikasie",
+    "totpDeleteAlertContent": "Is jy seker jy wil twee-faktor-verifikasie verwyder?",
+    "accountBeingDeleted": "Jou rekening word geskrap, wag asseblief...",
+    "accountId": "Rekening ID",
+    "copiedAccountId": "Kopieer jou rekening-ID na clipboard",
+    "copy": "Kopieer  Kopieer",
+    "dangerZone": "Gevaarlike sone",
+    "email": "E-pos  E-pos",
+    "emailDeletedSuccessfully": "E-pos is suksesvol geskrap",
+    "fundsMoreThan5Dollars": "Jou rekening het meer as $5",
+    "itsATrialAccount": "Toetsrekeninge het verminderde transaksielimiete en geen herstelmetode gehad nie, en as jy jou selfoon verloor of die app uitstel, sal jou fondse onherstelbaar wees.",
+    "level": "Vlak {level: string}",
+    "loginMethods": "Aanmeldingsmetodes",
+    "phoneDeletedSuccessfully": "Telefoon is suksesvol geskrap",
+    "phoneNumber": "Telefoonnommer ",
+    "tapToAddEmail": "Tik op om e-pos by te voeg",
+    "tapToAddPhoneNumber": "Tik om 'n telefoonnommer by te voeg",
+    "unverifiedEmail": "E-pos (onbevestigde) ",
+    "unverifiedEmailAdvice": "Ongverifieerde e-posse kan nie gebruik word om aan te meld nie.",
+    "yourAccountId": "Jou rekening ID"
+  },
+  "TotpRegistrationInitiateScreen": {
+    "title": "Twee-faktor-verifikasie",
+    "content": "Skandeer die QR-kode met jou \"authenticator app\". Jy kan ook die kode self invul in die toepassing"
+  },
+  "TotpRegistrationValidateScreen": {
+    "title": "Twee-faktor-verifikasie",
+    "enter6digitCode": "Voer die 6-getal kode van jou \"authenticator app\" in om te verifieer",
+    "success": "Twee-faktor-verifikasie is in werking. Jy sal nou slegs kan inteken met jou selfoon of epos EN jou twee-faktor-verifikasie.\n\nSlegs volledige KYC-rekeninge kan herstel word indien die gebruiker nie meer toegang tot twee-faktor-verifikasie het nie."
+  },
+  "TotpLoginValidateScreen": {
+    "title": "Twee-faktor-verifikasie",
+    "content": "Voer die 6-getal kode van jou \"authenticator app\" in om in te teken. Die kode verander elke 30 sekondes"
+  },
+  "CopySecretComponent": {
+    "button": "Dra geheim oor",
+    "toastMessage": "Geheim na knipbord!"
+  },
+  "DefaultWalletScreen": {
+    "title": "Verstek-rekening",
+    "info": "Kies jou verstekrekening vir Stuur en Ontvang. Jy kan die stuur- en ontvangrekening vir aparte transaksies in die mobiele toepassing verander. Betalings wat deur die kasregister of Lightning-adres ontvang word gaan altyd na jou verstekrekening.\n\nOm wisselvalligheid te vermy kan jy Stablesats kies. Dit help om 'n stabiele bedrag te behou en steeds te stuur en ontvang. \n\nJy kan die verstelling enige tyd verander en dit sal nie jou huidige saldo veander nie."
+  },
+  "ThemeScreen": {
+    "title": "Tema",
+    "info": "Kies jou tema van voorkeur om Flash te gebruik, of kies om dit met jou stelselverstellingste te sinchroniseer.",
+    "system": "Gebruik Stelselverstelling ",
+    "light": "Gebruik Ligtemodus",
+    "dark": "Gebruik Donkermodus",
+    "setToDark": "Donker modus  Donker modus",
+    "setToLight": "Ligmodus "
+  },
+  "Languages": {
+    "DEFAULT": "Verstek (OS)"
+  },
+  "StablesatsModal": {
+    "header": "Met Stablesats het jy nou 'n USD-rekening by jou beursie gevoeg!",
+    "body": "Jy kan dit gebruik om Bitcoin te stuur of ontvang, en om onmiddelik fondse tussen jou BTC- en USD-rekening te verskuif. Die waarde van die USD-rekening sal nie wissel saam met die prys van Bitcoin nie. Hierdie funksie kan nie met die tradisionele bankstelsel gebruik word nie. ",
+    "termsAndConditions": "Lees die Terme en Voorwaardes",
+    "learnMore": "Leer meer van Stablesats"
+  },
+  "SplashScreen": {
+    "update": "Jou toepassing is lanklaas opgedateer. Dateer asseblief die toepassing op voordat jy dit kan gebruik.\n\nDit kan gedoen word by die Android of google Playstore of Apple App store vir IOS."
+  },
+  "TransactionDetailScreen": {
+    "paid": "Betaal aan/van",
+    "received": "Jy het ontvang",
+    "spent": "Jy het spandeer",
+    "receivingAccount": "Rekening waarin onvang word",
+    "sendingAccount": "Rekening waaruit gestuur word",
+    "txNotBroadcast": "Jou transaksie is hangend en sal na die BItcoin-netwerk uitgesaai word binne oomblikke.",
+    "claimTxId": "Claim Transaction",
+    "confirmation": "Bevestiging",
+    "confirmations": "Bevestigings",
+    "destinationAddress": "Bestemming Adres",
+    "expirationBlockHeight": "Verval op Block",
+    "hash": "Hash Hash",
+    "lockupTxId": "Lockup Transaksie Lockup Transaksie",
+    "noTransaction": "Geen transaksie met hierdie ID gevind nie",
+    "pendingStatus": "Pending Pending",
+    "preimage": "Voorbeeld ",
+    "swapDetails": "Swap Details",
+    "swapFees": "Swap Fees",
+    "swapId": "Swap ID",
+    "transactionId": "Transaksie-ID",
+    "typeIntraLedger": "IntraLedger",
+    "typeLightning": "Lightning",
+    "typeOnChain": "OnChain"
+  },
+  "TransactionLimitsScreen": {
+    "receive": "Ontvang",
+    "withdraw": "Onttrekking",
+    "perDay": "per dag",
+    "perWeek": "per week",
+    "unlimited": "Onbeperk",
+    "remaining": "Oorblywend",
+    "stablesatTransfers": "Stablesat Oorbetalings",
+    "internalSend": "Stuur na {bankName: string} gebruiker",
+    "error": "Kan nie nou limiete verkry nie",
+    "contactUsMessageBody": "Hi, ek wil graag die transaksielimiete van my {bankName: string} verhoog.",
+    "contactUsMessageSubject": "Versoek om Transaksielimiete te Verhoog",
+    "contactSupportToPerformKyc": "Kontak ondersteuning om te KYC en jou daaglikse limiete te verhoog. ",
+    "increaseLimits": "Verhoog jou limiete",
+    "editRequest": "Wysig die opgraderingsaanvraag",
+    "requestUpgrade": "Versoek vir opgradering Versoek vir opgradering",
+    "spendingLimits": "Uitgaweslimiete",
+    "spendingLimitsDescription": "Die uitgaweslimiete wat op hierdie bladsy vertoon word, word in USD gedemonstreer. Vir u gerief omskakel ons hierdie limiete in u plaaslike geldeenheid op grond van die huidige buitelandse wisselkoerse."
+  },
+  "TransactionScreen": {
+    "noTransaction": "Geen transaksies om te wys nie",
+    "title": "Transaksies",
+    "recentTransactions": "Onlangse transaksies",
+    "transactionHistoryTitle": "Transaksiegeskiedenis"
+  },
+  "TransferScreen": {
+    "title": "Plaas Oor",
+    "percentageToConvert": "% om te ruil"
+  },
+  "UpgradeAccountModal": {
+    "title": "Opgradeer jou rekening",
+    "backUpFunds": "Rugsteen jou fondse",
+    "higherLimits": "Verhoog jou transaksielimiet",
+    "receiveOnchain": "Ontvang Bitcoin-opketting",
+    "onlyAPhoneNumber": "Maklike selfoonnommer verifikasie",
+    "letsGo": "Hier gaat ons!",
+    "stayInTrialMode": "Bly in die proefopsie"
+  },
+  "SetAddressModal": {
+    "title": "486\nStel {bankName: string} adres",
+    "Errors": {
+      "tooShort": "Adres moet minstens 3 karakters lank wees",
+      "tooLong": "Adres kan nie meer as 50 karakters lank wees nie",
+      "invalidCharacter": "Adres kan net letters, nommers en 'n onderstreep bevat",
+      "addressUnavailable": "Jammer, die adres is reeds geneem",
+      "unknownError": "'n Onbekende fout het voorgekom, probeer asseblief later weer",
+      "startsWithNumber": "Jou gebruikersnaam moet begin met 'n groot of klein letter."
+    },
+    "receiveMoney": "Ontvang geld van ander lightningbeursies en {bankName: string}-gebruikers met die adres",
+    "itCannotBeChanged": "Dit kan nie later verander word nie.",
+    "helloText": "Hallo!",
+    "placeholder": "Gee jou gebruikersnaam in",
+    "save": "Bespaar  Save ",
+    "usernameHint": "Dit sal jou {bankName: string}-gebruikersnaam wees",
+    "whoAreYou": "Hoe moet ons jou noem?"
+  },
+  "WelcomeFirstScreen": {
+    "bank": "Bitcoin is ontwerp om jou toe te laat om geld te spaar, stuur en ontvang sonder om op 'n bank of kredietkaartinstelling staat te maak. ",
+    "before": "Voor Bitcoin moes mense staatmaak op banke en kredietverskaffers om geld te spandeer, stuur en ontvang. ",
+    "care": "Hoekom moet ek omgee? ",
+    "learn": "Ek wil jou nie pla nie, maar daar is nog baie om te leer. Kom ons kyk...",
+    "learnToEarn": "Leer en verdien"
+  },
+  "PhoneLoginInitiateScreen": {
+    "title": "Rekeningopstelling",
+    "header": "Tik jou selfoonnommer in en ons sal vir jou 'n toegangskode per sms stuur.",
+    "headerVerify": "Verifieër dat jy 'n mens is",
+    "errorRequestingCaptcha": "Iets het skeefgeloop gedurende die verifikasie om te bepaal of jy 'n mens is, probeer asseblief weer. ",
+    "errorRequestingCode": "Iets het verkeerd gegaan terwyl ons die foonkode probeer aanvra het, probeer asseblief later weer. ",
+    "errorInvalidPhoneNumber": "Ongeldige selfoonnommer. Is jy seker dat jy die regte nommer ingesleutel het? ",
+    "errorUnsupportedCountry": "Ons kan ongelukkig nie gebruikers in jou land ondersteun nie. ",
+    "placeholder": "Selfoonnommer ",
+    "verify": "Kliek om te verifieër",
+    "sms": "Stuur via SMS",
+    "whatsapp": "Stuur per WhatsApp"
+  },
+  "PhoneLoginValidationScreen": {
+    "errorLoggingIn": "Intekeningsfout. Het jy die regte kode gebruik? ",
+    "errorTooManyAttempts": "Te veel probeerslae. Probeer asseblief later weer. ",
+    "errorCannotUpgradeToExistingAccount": "Hierdie foonrekening bestaan alreeds. Teken asseblief uit jou toetsrekening en teken in met jou selfoonnommer.",
+    "header": "Om jou selfoonnommer te bevestig, tik die kode in wat pas aan jou gestuur is by {channel: string} op {phoneNumber: string}",
+    "placeholder": "6-Karakter kode",
+    "sendAgain": "Stuur weer",
+    "tryAgain": "Probeer weer",
+    "sendViaOtherChannel": "Jy het gekies om die kode te ontvang per {channel: string}. Jy kan probeer om dit eerder per {other: string} te ontvang. "
+  },
+  "PhoneRegistrationInitiateScreen": {
+    "title": "Selfoonopstelling",
+    "header": "Tik jou selfoonnommer in en ons sal vir jou 'n toegangskode per sms stuur.",
+    "headerVerify": "Verifieër dat jy 'n mens is",
+    "errorRequestingCode": "Iets het verkeerd gegaan terwyl ons die selfoonkode probeer aanvra het, probeer asseblief later weer. ",
+    "errorInvalidPhoneNumber": "Ongeldige selfoonnommer. Is jy seker dat jy die regte nommer ingesleutel het? ",
+    "errorUnsupportedCountry": "Ons kan ongelukkig nie gebruikers in jou land ondersteun nie. ",
+    "placeholder": "Selfoonnommer ",
+    "verify": "Kliek om te verifieër",
+    "sms": "Stuur via SMS",
+    "whatsapp": "Stuur per WhatsApp"
+  },
+  "PhoneRegistrationValidateScreen": {
+    "successTitle": "Selfoonnommer bevestig"
+  },
+  "EmailRegistrationInitiateScreen": {
+    "title": "Voeg jou epos by",
+    "header": "Voer jou epos in en ons sal 'n toegangskode stuur",
+    "invalidEmail": "Ongeldige epos. Is jy seker die epos is korek?",
+    "send": "Stuur kode",
+    "missingEmailRegistrationId": "Vermis epos-registrasie id",
+    "placeholder": "hal@finney.org"
+  },
+  "EmailRegistrationValidateScreen": {
+    "header": "Om jou epos te bevestig, tik die kode in wat ons gestuur het na {email: string}",
+    "success": "Epos {email: string} suksesvol bevestig"
+  },
+  "EmailLoginInitiateScreen": {
+    "title": "Teken in per epos",
+    "header": "Voer jou epos in en ons sal 'n toegangskode stuur",
+    "invalidEmail": "Ongeldige epos. Is jy seker die epos is die regte een?",
+    "send": "Stuur kode"
+  },
+  "EmailLoginValidateScreen": {
+    "header": "Indien daar 'n rekening verbind is aan {email: string}, sou jy 'n 6-syfer kode ontvang het om onder in te voer.\n\nIndien jy niks ontvang het nie, mag die epos foutief wees of dis dalk in jou \"spam folder\"",
+    "success": "Epos {email: string} suksesvol bevestig"
+  },
+  "common": {
+    "account": "Rekening",
+    "transactionLimits": "Transaksielimiete ",
+    "activateWallet": "Aktiveer beursie",
+    "amountRequired": "Bedrag word benodig",
+    "back": "Terug ",
+    "backHome": "Terug na Tuisblad",
+    "bank": "Bank",
+    "bankAccount": "Kontantrekening",
+    "bankAdvice": "{bank:Name:string} Advies",
+    "bankInfo": "{bankName:string} Inligting",
+    "beta": "beta",
+    "bitcoin": "Bitcoin",
+    "bitcoinPrice": "Bitcoin-prys ",
+    "btcAccount": "BTC-rekening",
+    "cancel": "Kanselleer ",
+    "close": "Maak toe",
+    "confirm": "Bevestig",
+    "convert": "Ruil",
+    "codeConfirmation": "Kode bevestiging",
+    "currency": "Geldeenheid",
+    "currencySyncIssue": "Wisselkoers probleem. Herlaai asb.",
+    "csvExport": "Voer transaksies as CSV uit",
+    "date": "Datum",
+    "description": "Beskrywing",
+    "domain": "Domein",
+    "email": "E-pos",
+    "error": "Fout",
+    "fatal": "Fataal",
+    "fee": "fooi",
+    "Fee": "Fooi",
+    "fees": "Fooie",
+    "firstName": "Noemnaam",
+    "from": "Van",
+    "hour": "uur",
+    "hours": "ure",
+    "invoice": "Faktuur",
+    "language": "Taal",
+    "languagePreference": "Taalvoorkeur",
+    "lastName": "Van",
+    "later": "Later",
+    "loggedOut": "Jy is uitgeteken",
+    "logout": "Teken uit",
+    "minutes": "minute",
+    "errorAuthToken": "Ontbrekende \"auth token\"",
+    "needWallet": "Teken in om 'n rekening oop te maak en om toegang tot jou beursie te kry. ",
+    "next": "Volgende",
+    "No": "Nee",
+    "note": "Nota",
+    "notification": "Kennisgewing",
+    "ok": "OK",
+    "or": "of",
+    "openWallet": "Maak beursie oop",
+    "phone": "Selfoon",
+    "phoneNumber": "Selfoonnommer ",
+    "rate": "Koers",
+    "reauth": "Jou sessie het verstryk. Teken asseblief weer in.",
+    "restart": "Herlaai",
+    "sats": "sats",
+    "search": "Soek",
+    "security": "Sekuriteit",
+    "send": "Stuur",
+    "setAnAmount": "kies 'n bedrag",
+    "share": "Deel",
+    "shareBitcoin": "Deel Bitcoin-adres",
+    "shareLightning": "Deel Lightning-faktuur",
+    "soon": "Binnekort oppad! ",
+    "submit": "Stuur",
+    "success": "Sukses!",
+    "stablesatsUsd": "Cash (USD)",
+    "to": "Aan",
+    "total": "Totaal",
+    "transactions": "Transaksies",
+    "transactionsError": "Fout - kan nie transaksies laai nie",
+    "tryAgain": "Probeer weer",
+    "type": "Tipe",
+    "usdAccount": "USD-rekening ",
+    "username": "Gebruikersnaam",
+    "usernameRequired": "Gebruikersnaam word vereis",
+    "backupAccount": "Rugsteen/opgradeer rekening",
+    "viewTransaction": "Bekyk transaksie",
+    "yes": "Ja",
+    "pending": "hangend",
+    "today": "Vandag",
+    "yesterday": "Gister",
+    "thisMonth": "Hierdie maand",
+    "prevMonths": "Vorige maande",
+    "problemMaybeReauth": "Daar was 'n probleem met jou versoek. Probeer asseblief weer oor 1 minuut. Indien die probleem voortduur, beveel ons aan dat jy uitteken en dan weer intteken. Gaan na Verstellings > Rekening > Teken uit",
+    "warning": "Waarskuwing",
+    "advanced": " Gevorderde Gevorderde",
+    "chatSearch": "gebruikersnaam of nostr pubkey",
+    "community": "Gemeenskap  Gemeenskap  Gemeenskap ",
+    "copied": "Gekopieer na clipboard",
+    "details": "Besonderhede",
+    "enabled": "Geaktiveer",
+    "exportSparkLogs": "Uitvoer logs",
+    "flashUser": "Flash Gebruiker",
+    "notifications": "Kennisgewings",
+    "onDeviceSecurity": "On-Device Sekuriteit",
+    "preferences": "Voorkeure",
+    "request": "Versoek Pin",
+    "revealSeed": "Skryf die herstel frase neer",
+    "securityAndPrivacy": "Veiligheid en privaatheid",
+    "trialAccount": "Proefrekening"
+  },
+  "errors": {
+    "generic": "Daar was 'n fout.\nProbeer asseblief later weer.",
+    "invalidEmail": "Ongeldige epos",
+    "invalidPhoneNumber": "is nie 'n geldige selfoonnommer nie",
+    "tooManyRequestsPhoneCode": "Te veel aanvrae. Wag asseblief voordat jy nog 'n SMS aanvra.",
+    "network": {
+      "server": "Bediener fout. Probeer asseblief later weer. ",
+      "request": "Aanvraag probleem.\nKontak ondersteuning as die fout aanhou. ",
+      "connection": "Verbindingsprobleme. Verifieer asseblief jou internetverbinding."
+    },
+    "unexpectedError": "Onverwagte fout het voorgekom",
+    "restartApp": "Herlaai asseblief die toepassing. ",
+    "problemPersists": "As die fout aanhou opduik, kontak asseblief ondersteuning. ",
+    "fatalError": "Jammer, dit lyk of ons probleme het met die toepassing se data. As die probleem voortduur, kontak asseblief ondersteuning.",
+    "showError": "Wys Fout",
+    "clearAppData": "Vee Toepassingdata skoon en Teken Uit"
+  },
+  "notifications": {
+    "payment": {
+      "body": "Jy het sopas {value:string} sats ontvang",
+      "title": "Betaling ontvang"
+    }
+  },
+  "support": {
+    "contactUs": "Benodig jy hulp? Kontak ons. ",
+    "joinTheCommunity": "Sluit aan by die gemeenskap",
+    "whatsapp": "WhatsApp",
+    "email": "E-pos",
+    "enjoyingApp": "Geniet jy die toep?",
+    "statusPage": "Statusbladsy",
+    "telegram": "Telegram",
+    "mattermost": "Mattermost",
+    "thankYouText": "Dankie vir die terugvoer, wil jy 'n verbetering voorstel?",
+    "defaultEmailSubject": "{bankName: string} - Ondersteuning",
+    "defaultSupportMessage": "Hi daar! Ek benodig hulp met {bankName: string}, ek gebruik weergawe {version: string} op {os: string}. ",
+    "emailCopied": "e-pos {email:string} oorgedra na knipbord",
+    "deleteAccount": "Skrap rekening",
+    "delete": "Vee uit",
+    "typeDelete": "Tik asseblief \"{delete: string}\" om rekeningskrap te bevestig",
+    "finalConfirmationAccountDeletionTitle": "Finale bevestiging word vereis",
+    "finalConfirmationAccountDeletionMessage": "Is jy seker jy wil jou rekening skrap? Hierdie aksie is onomkeerbaar.",
+    "deleteAccountBalanceWarning": "Deur jou rekening uit te vee sal jy toegang tot jou fondse verloor. Is jy seker jy wil voortgaan? ",
+    "deleteAccountConfirmation": "Jou rekening is nou in die proses om uitgevee te word. \n\nWanneer die wagperiode verstryk het soos bepaal deur die relevante owerheid sal alle oorblywende data met betrekking tot hierdie rekening permanent verwyder word. ",
+    "deleteAccountFromPhone": "Hallo daar, vee asseblief my rekening uit. My selfonnommer is {phoneNumber: string}.",
+    "deleteAccountError": "Iets het foutgegaan. Kontak asseblief {email: string} vir verdere hulp. ",
+    "bye": "Totsiens!",
+    "discord": "Discord Discord",
+    "switchToBeginnerMode": "Deur na Beginner-modus oor te skakel, sal jy nie toegang tot jou BTC-beursie-fondse verloor nie, maar die beursie sal verborge wees."
+  },
+  "lnurl": {
+    "overLimit": "Jy kan nie meer as die maksimum bedrag stuur nie",
+    "underLimit": "Jy kan nie minder as die minimum bedrag stuur nie",
+    "commentRequired": "Kommentaar benodig ",
+    "viewPrintable": "Besigtig drukbare weergawe"
+  },
+  "DisplayCurrencyScreen": {
+    "errorLoading": "Fout om lys van geldeenhede te laai"
+  },
+  "AmountInputScreen": {
+    "enterAmount": "Voer bedrag in",
+    "setAmount": "Stel bedrag",
+    "maxAmountExceeded": "Bedrag mag nie {maxAmount: string} oorskry nie.",
+    "minAmountNotMet": "Bedrag moet minstens {minAmount: string} wees."
+  },
+  "AmountInputButton": {
+    "tapToSetAmount": "Tik om bedrag te stel",
+    "enterAmount": "Gee asseblief die bedrag in om voort te gaan",
+    "tapToSetOnChainAmount": "Voeg 'n bedrag by"
+  },
+  "AppUpdate": {
+    "needToUpdateSupportMessage": "Ek moet opgradeer na die nuutste weergawe. Ek gebruik tans die {os: string} toepassing met die weergawe {version: string}.",
+    "versionNotSupported": "Die sellulêre weergawe word nie meer ondersteun nie. ",
+    "updateMandatory": "Opgradering is verpligtent ",
+    "tapHereUpdate": "Tik hier om op te gradeer",
+    "contactSupport": "Kontak Ondersteuning"
+  },
+  "AccountUpgrade": {
+    "accountNum": "Rekeningnommer ",
+    "accountNumPlaceholder": "Gee jou rekeningnommer in",
+    "accountType": "Rekening Tipe ",
+    "bankAccountType": "Rekening Tipe ",
+    "bankBranch": "Banktak  Banktak ",
+    "bankBranchPlaceholder": "Gee jou bankrekening in",
+    "bankName": "Banknaam Banknaam",
+    "bankNamePlaceholder": "Kies jou banknaam",
+    "bankingInfo": "Bankinligting",
+    "businessAddress": "Besigheidsadres",
+    "businessAddressPlaceholder": "Gee jou besigheidsadres in",
+    "businessInfo": "Besigheidsinligting",
+    "businessName": "Besigheidsnaam",
+    "businessNamePlaceholder": "Gee jou besigheidsnaam in",
+    "currency": "Geldeenheid",
+    "email": "E-pos adres",
+    "flashTerminal": "Wil jy 'n Flash-terminaal hê?",
+    "flashTerminalTooltip": "'N Flash-terminal is 'n slim toestel wat betaling via Flash vir jou besigheid kan aanvaar en kwitansies kan afdruk. 'n Kliëntediensverteenwoordiger sal jou kontak as jy hierdie boks inskryf.",
+    "fullName": "Volledige naam",
+    "merchant": "Handelaar",
+    "merchantDesc": "Gee belonings, verskyn op die kaart en betaal by jou bank.",
+    "optional": "(Optional) ",
+    "personal": "Persoonlike Persoonlike",
+    "personalDesc": "Beveilig jou beursie met telefoon en e-pos.",
+    "personalInfo": "Persoonlike inligting",
+    "phoneNumber": "Telefoonnommer ",
+    "pro": "Pro Pro",
+    "proDesc": "Aanvaar betalings en word op die kaart ontdek.  Vereis 'n besigheidsnaam en ligging.",
+    "selectBankAccountType": "Kies die tipe rekening",
+    "selectCurrency": "Kies geldeenheid",
+    "successRequest": "U het suksesvol versoek om u rekening op te gradeer na {accountType: string}",
+    "successUpgrade": "U het u rekening suksesvol opgegradeer na {accountType: string}",
+    "uploadId": "Laai ID-dokument op",
+    "validation": "Validering",
+    "validationCode": "Valideringskode"
+  },
+  "AdvancedModeModal": {
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "createWallet": "Wallet  Skep 'n beursie",
+    "header": "Welkom by die Gevorderde Modus!",
+    "importWallet": "Importeer Wallet",
+    "learnMore": "Wat is 'n nie-bewaarbare beursie?",
+    "termsAndConditions": "Lees die bepalings en voorwaardes."
+  },
+  "BackupComplete": {
+    "complete": "Volledige Volledige",
+    "description": "U moet nou u herstel frase en wagwoord vir toekomstige verwysing neerskryf.",
+    "title": "Jou rugsteun is voltooi"
+  },
+  "BackupDoubleCheck": {
+    "continue": " Gaan voort  Gaan voort",
+    "description1": "Laat ons nou seker maak dat jy jou herstel frase korrek neergeskryf het.",
+    "description2": "Ja, dit is so belangrik.",
+    "title": "Kom ons maak 'n dubbele tjek"
+  },
+  "BackupOptions": {
+    "done": "       ",
+    "phone": "Telefoon  Telefoon ",
+    "phoneDesc": "Backup Cash Wallet met behulp van telefoonnommer",
+    "recoveryPhrase": "Recovery Phrase  Recovery Phrase ",
+    "recoveryPhraseDesc": "Rugsteun Bitcoin Wallet met behulp van herstel frase",
+    "revealRecoveryPhrase": "Reveal Recovery Phrase",
+    "revealRecoveryPhraseDesc": "Gebruik jou herstel frase om Bitcoin Wallet te invoer",
+    "title": "Rugsteun opsies",
+    "usePhoneNumber": "Gebruik jou telefoonnommer om Cash Wallet in te voer"
+  },
+  "BackupSeedPhrase": {
+    "backupToGoogleDrive": "Rugsteun na Google Drive",
+    "backupToICloud": "Rugsteun na iCloud",
+    "description": "Maak seker dat jy dit neerskryf soos hier getoon, jy moet dit later verifieer.",
+    "title": "Dit is jou herstel frase",
+    "verify": "Verifieer"
+  },
+  "BackupShowSeedPhrase": {
+    "description": "Maak seker dat jy dit neerskryf soos hier getoon, want jy sal jou beursie moet herstel.",
+    "done": "       ",
+    "title": "Dit is jou herstel frase"
+  },
+  "BackupStart": {
+    "continue": " Gaan voort  Gaan voort",
+    "description": "'n Herstel frase is 'n reeks van 12 woorde in 'n spesifieke volgorde. hierdie woordkombinasie is uniek vir jou beursie. maak seker dat jy pen en papier gereed het sodat jy dit kan neerskryf.",
+    "title": "Eerstens, kom ons skep jou herstel frase"
+  },
+  "BackupVerify": {
+    "continue": " Gaan voort  Gaan voort",
+    "correctTitle": "Maak seker dat jy jou herstel frase veilig stoor.",
+    "title": "Tik op die woorde in die korrekte volgorde.",
+    "tryAgain": "Probeer weer",
+    "wrongTitle": "Jammer, dit is nie die regte derde woord nie."
+  },
+  "CardScreen": {
+    "noCardsTitle": "Geen kaarte gevind nie",
+    "noCardsYet": "Tik op 'n Flashcard om dit hier by te voeg",
+    "noMatchingCards": "Geen kaarte wat ooreenstem met jou soektog is gevind nie.",
+    "noNDEFMessage": "NDEF-boodskap nie gevind nie. Maak asseblief seker dat jy 'n flitskaart gebruik.",
+    "noTag": "Maak asseblief seker dat jy 'n flitskaart gebruik.",
+    "notEnabled": "NFC is nie geaktiveer op hierdie toestel nie.",
+    "notFlashcard": "Ondersteun nie NFC-kaart. Maak asseblief seker dat jy 'n flitskaart gebruik.",
+    "notSupported": "NFC word nie op hierdie toestel ondersteun nie.",
+    "title": "Flashcard"
+  },
+  "Cashout": {
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n",
+    "exchangeRate": "Ruilkoers wisselkoers",
+    "fee": "Fee Fee",
+    "percentageToCashout": "Om te vestig %",
+    "receiveAmount": "Ontvang bedrag",
+    "sendAmount": "Stuur die bedrag",
+    "success": "Die versoek om besleging is suksesvol geïnisieer.",
+    "title": "Settle Settle",
+    "valid": "Geldig vir {time: string}"
+  },
+  "ChatDetailsScreen": {
+    "title": "Chat met {username: string}"
+  },
+  "ChatScreen": {
+    "noChatsTitle": "Geen geselsies gevind nie",
+    "noChatsYet": "Gee 'n Flash gebruikersnaam of nostr pubkey in om 'n chat te begin",
+    "noMatchingChats": "Geen geselsies wat ooreenstem met u soektog is gevind nie.",
+    "title": "Chat  Chat "
+  },
+  "ImportWallet": {
+    "complete": "Volledige Volledige",
+    "description": "Dit is 'n 12-woord frase wat jy gekry het toe jy jou vorige beursie geskep het.",
+    "importTitle": "Importeer jou beursie met 'n herstel frase",
+    "title": "Teken in met 'n herstel frase"
+  },
+  "ImportWalletOptions": {
+    "done": "       ",
+    "email": "E-pos  E-pos",
+    "importBTCWallet": "Importeer Bitcoin Wallet met behulp van herstel frase",
+    "importOptions": "Importeer beursie opsies",
+    "importUsingEmail": "Importeer jou kontantbeursie met behulp van 'n e-posadres",
+    "importUsingPhone": "Importeer of skep jou kontantbeursie met behulp van telefoonnommer",
+    "login": "Teken in/Skep",
+    "loginOptions": "Inskrywing opsies",
+    "phone": "Telefoon  Telefoon ",
+    "recoveryPhrase": "Recovery Phrase  Recovery Phrase "
+  },
+  "MerchantSuggestModal": {
+    "body": "Flash-gebruikers sal jou op die kaart kan vind en betalings aan jou kan stuur deur op jou kaartknoppie te klik.",
+    "header": "Flashpoint Add",
+    "learnMore": "Jou PIN-versoek sal binne 24 uur verwerk word.",
+    "termsAndConditions": "Lees die bepalings en voorwaardes."
+  },
+  "Nostr": {
+    "Contacts": {
+      "contactInfo": "Kontak Info Kontak Info",
+      "contactManagement": "Kontakbestuur  Kontakbestuur",
+      "createContactList": "Kontaklys  Skep 'n Kontaklys  Skep 'n Kontaklys ",
+      "manageContacts": "Bestuur Kontakte",
+      "message": "Boodskap  Boodskap ",
+      "noCantacts": "Geen kontakte beskikbaar nie",
+      "noListDeepLinkMessage": "Om vriende by te voeg, moet jy eers jou kontaklys in Instellings inisieer.",
+      "nostrUser": "Nostr Gebruiker",
+      "profile": "Profiel Profiel",
+      "sendPayment": "Stuur  Stuur ",
+      "stillLoading": "Het jy probleme om jou kontaklys te vind, het jy al iemand gevolg?",
+      "unfollowContact": "Unfollow Kontak"
+    },
+    "KeyModal": {
+      "keyCopiedToClipboard": "Sleutel gekopieer na clipboard",
+      "yourPrivateProfileKey": "Jou Privaat Profiel Sleutel",
+      "yourPublicProfileId": "Jou Openbare Profiel-ID"
+    },
+    "advancedSettings": "Nostr-instellings Gevorderde instellings",
+    "common": {
+      "copied": "Copied",
+      "copy": "Kopieer  Kopieer",
+      "goToSettings": "Gaan na instellings"
+    },
+    "createNewProfile": "Skep 'n nuwe profiel",
+    "createProfileButton": "Skep 'n profiel Skep 'n profiel",
+    "createProfilePrompt": "Wil jy voortgaan om te skep?",
+    "createProfilePubkeyMessage": "Ons kon nie 'n profielgebeurtenis by hierdie pubkey vind nie.",
+    "createProfileTitle": "Skep 'n profiel Skep 'n profiel",
+    "createProfileWarning": "As u voortgaan, sal enige bestaande profieldata oorskryf word.",
+    "creatingProfile": "Die skep van 'n profiel...",
+    "deleteProfile": "Verwyder jou profiel",
+    "deleteWarningMessage": "As u die sleutels van u profiel verwyder, sal u rekening van hierdie toestel verwyder word.  Sonder 'n rugsteun sal u nie weer toegang tot hierdie profiel kry nie.",
+    "deleteWarningTitle": "Waarskuwing ",
+    "editProfile": "Bewerk jou profiel",
+    "findingYou": "Op soek na jou..",
+    "generateProfile": "Generate Profile",
+    "importExistingProfile": "Importeer bestaande profiel",
+    "importNsecDefaultDescription": "Invoer asseblief jou nsec van die ander toestel om voort te gaan met die gebruik van die chat-funksie.",
+    "importNsecDescription": "As jy jou eie nsec wil gebruik, plak dit hieronder.",
+    "importNsecTitle": "Importeer jou Nostr Secret Key",
+    "keyConflictDescription": "U rekening het 'n geregistreerde Nostr-sleutel, maar dit is nie op hierdie toestel gevind nie. Dit kan gebeur nadat u die app weer geïnstalleer het of toestelle geskakel het. Om toegang te herstel, moet u u nsec-rugsteun vanaf Gevorderde instellings invoer.",
+    "keyConflictTitle": "Nostr Key Not Found on Device",
+    "learnAboutNostr": "Leer meer oor Nostr",
+    "learnAboutNostrSubtext": "Verken hierdie gids om die meeste uit nostr chat te kry",
+    "noProfileDescription": "Jy het nog nie 'n Nostr-profiel geskep nie, tik hieronder om een te skep.",
+    "noProfileFound": "Geen Nostr-profiel gevind nie",
+    "noProfileIdExists": "Geen profiel-ID bestaan nie",
+    "profileConnected": "Profiel gekoppel",
+    "profileImportedSuccessfully": "Profiel suksesvol ingevoer",
+    "profileNotFound": "Ons soek, maar ons kan nie u profiel vind nie.",
+    "profileReconnected": "Jou profiel is suksesvol herverbind",
+    "promptToCreateProfile": "Wil jy nou een skep?",
+    "reconnectProfile": "Herverbind jou profiel",
+    "showPrivateKey": "Wys private sleutel",
+    "showPublicKey": "Wys openbare sleutel",
+    "tapToRefreshConnection": "Tik om die verbinding te verfris"
+  },
+  "NostrQuickStart": {
+    "postDesc": "Stel jouself voor in die wêreld!",
+    "postHeading": "Maak jou eerste sosiale boodskap!"
+  },
+  "RefundFlow": {
+    "approvalRequired": "Goedkeuring vereis",
+    "approve": "Goedgekeur",
+    "approveFee": "Goedkeur om hierdie oordrag te eis, of weier om 'n terugbetaling te verwerk.",
+    "autoClaiming": "Hierdie oordrag sal outomaties geëis word",
+    "automaticClaim": "Hierdie deposito sal outomaties geëis word wanneer netwerkfooie laer is.",
+    "broadcasting": "Uitsaai  Uitsaai ",
+    "claimFailed": "Claim failed",
+    "confirmRefund": "Bevestig en terugbetaal",
+    "confirmationTitle": "Bevestiging",
+    "couldNotClaimAutomatically": "Hierdie deposito kon nie outomaties geëis word nie.",
+    "depositDetails": "Deposito-besonderhede",
+    "destinationTitle": "Bestemming",
+    "enterAddress": "Gee die Bitcoin-adres waar jy die terugbetaling wil ontvang.",
+    "enterDestinationAddress": "Gee asseblief 'n bestemmingsadres in",
+    "estimatedFee": "Netwerkfooi ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Jy ontvang  Est.",
+    "failedToClaim": "Hy het nie 'n deposito geëis nie",
+    "fast": "Vinnig Vinnig  Vinnig ",
+    "feeEstimateDisclaimer": "Die werklike fooi sal by die uitsending bereken word.",
+    "feeExceeded": "Die fooi is te hoog",
+    "invalidBitcoinAddress": "Ongeldige Bitcoin-adresformaat",
+    "medium": "Medium Medium",
+    "missingUtxo": "Die deposito UTXO ontbreek, en die transaksie is dalk nog nie bevestig nie.",
+    "networkFee": "Netwerkfooi ",
+    "networkFeeWithRate": "Netwerkfooi ({feeRate: string} sat/vB)",
+    "noRefundables": "Geen ongevraagde deposito's gevind nie",
+    "pending": "Pending Pending",
+    "pendingTransactions": "Pending Transactions",
+    "processing": "Terugbetaling van verwerking...",
+    "recommendedFees": "Aanbevole fooie",
+    "refund": "Terugbetaling",
+    "refundFailed": "Terugbetaling misluk",
+    "refundListTitle": "Ongevraagde deposito's",
+    "refundSuccess": "Jou terugbetaling is na die Bitcoin-netwerk gestuur.",
+    "refundTitle": "Terugbetaling van die deposito",
+    "refundTo": "Terugbetaling aan USD-beursie",
+    "refundToExternalWallet": "Jy kan dit terugbetaal aan 'n eksterne beursie.",
+    "refunded": "Terugbetaal",
+    "selectFee": "Kies 'n netwerkfooi vir jou terugbetaling",
+    "slow": "Stadig  Stadig ",
+    "success": "Terugbetaling Uitsaai",
+    "txId": "Transaksie-ID",
+    "unknownError": "Onbekende fout het plaasgevind",
+    "view": "View View",
+    "youReceive": "Jy ontvang"
+  },
+  "Social": {
+    "browseSocialFeed": "Blaai deur sosiale feed",
+    "errorEmptyNote": "Fout: Empty note",
+    "errorPostFailed": "Fout! Fout in die plasing van 'n aantekening",
+    "flashAppCredit": "Geplaas met behulp van Flash! Kry dit @ https://getflash.io/app",
+    "notePosted": "Sukses! jou nota is geplaas",
+    "post": "Stuur dit na Nostr",
+    "postButton": "Post Post",
+    "postSuccessSubtitle": "Jou boodskap is aan Nostr gepubliseer.",
+    "postSuccessTitle": "Post gedeel!",
+    "postTitle": "Maak 'n boodskap",
+    "posting": "Die plasing van...",
+    "showMeMore": "Wys my meer ",
+    "socialFeedTitle": "Sosiale Feed",
+    "viewOnIris": "Sien op iris.to",
+    "viewPostQuestion": "Wil jy graag jou boodskap oor iris.to sien?",
+    "writeYourNote": "Skryf jou aantekening, maak dit spesiaal :)"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
+  "UnVerifiedSeedModal": {
+    "body": "As jy jou selfoon verloor of die app ontsluit sonder om jou herstel frase neer te skryf, sal jy toegang tot jou fondse verloor. ",
+    "header": "Beveilig jou Bitcoin-beursie",
+    "learnMore": "Wat is 'n herstel frase?",
+    "termsAndConditions": "Lees die bepalings en voorwaardes."
+  },
+  "reports": {
+    "aggregation": "Aggregasieverslag",
+    "fromDate": " Van  Van ",
+    "reconciliation": "Versoeningsverslag",
+    "selectFromDate": "Kies vanaf datum",
+    "selectToDate": "Kies tot datum",
+    "title": "Genereer verslae",
+    "toDate": "Om  Om ",
+    "topRecipients": "Top ontvangersverslag",
+    "topSenders": "Top Senders Report",
+    "total": " Totaal  Totaal  Totaal "
+  }
 }
