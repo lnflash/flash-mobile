@@ -10,7 +10,7 @@ import * as Keychain from "react-native-keychain"
 import Account from "@app/assets/illustrations/account.svg"
 import Dollar from "@app/assets/illustrations/dollar.svg"
 import Flashcard from "@app/assets/icons/empty-flashcard.svg"
-import NonCustodialWallet from "@app/assets/illustrations/non-custodial-wallet.svg"
+import WhatsBitcoin from "@app/assets/illustrations/non-custodial-wallet.svg"
 import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
 import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 import SocialChat from "@app/assets/illustrations/social-chat.svg"
@@ -87,14 +87,14 @@ const QuickStart = () => {
       onPress: () => navigation.navigate("Map"),
     },
     {
-      type: "nonCustodialWallet",
-      title: LL.HomeScreen.nonCustodialWalletTitle(),
-      description: LL.HomeScreen.nonCustodialWalletDesc(),
-      image: NonCustodialWallet,
+      type: "whatsBitcoin",
+      title: LL.HomeScreen.whatsBitcoinTitle ? LL.HomeScreen.whatsBitcoinTitle() : "What's Bitcoin?",
+      description: LL.HomeScreen.whatsBitcoinDesc ? LL.HomeScreen.whatsBitcoinDesc() : "Learn the basics of Bitcoin - the world's first decentralized digital currency.",
+      image: WhatsBitcoin,
       onPress: () => {
-        onHide("nonCustodialWallet")
+        onHide("whatsBitcoin")
         Linking.openURL(
-          "https://documentation.getflash.io/en/guides/non-custodial-wallets",
+          "https://documentation.getflash.io/en/guides/bitcoin-basics",
         )
       },
     },
@@ -146,8 +146,8 @@ const QuickStart = () => {
   ) {
     carouselData = carouselData.filter((el) => el.type !== "flashcard")
   }
-  if (persistentState?.closedQuickStartTypes?.includes("nonCustodialWallet")) {
-    carouselData = carouselData.filter((el) => el.type !== "nonCustodialWallet")
+  if (persistentState?.closedQuickStartTypes?.includes("whatsBitcoin")) {
+    carouselData = carouselData.filter((el) => el.type !== "whatsBitcoin")
   }
   if (
     data?.me?.defaultAccount.level === AccountLevel.Zero ||
