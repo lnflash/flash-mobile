@@ -44,7 +44,7 @@ const DropDownField: React.FC<Props> = ({
         search={false}
         maxHeight={300}
         labelField="label"
-        valueField={value}
+        valueField="value"
         placeholder={placeholder}
         value={value}
         onChange={(item) => onChange(item.value)}
