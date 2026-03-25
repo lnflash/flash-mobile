@@ -274,4 +274,45 @@ gql`
       username
     }
   }
+
+  query LatestAccountUpgradeRequest {
+    latestAccountUpgradeRequest {
+      errors {
+        code
+        message
+      }
+      upgradeRequest {
+        address {
+          city
+          country
+          line1
+          line2
+          postalCode
+          state
+          title
+        }
+        bankAccount {
+          accountNumber
+          accountType
+          bankBranch
+          bankName
+          currency
+        }
+        currentLevel
+        fullName
+        terminalsRequested
+        status
+        requestedLevel
+        phoneNumber
+        email
+        idDocument
+      }
+    }
+  }
+
+  query SupportedBanks {
+    supportedBanks {
+      name
+    }
+  }
 `
