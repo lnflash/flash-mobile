@@ -60,7 +60,7 @@ const drainLiquidWallet = async (
     const estimatedFee = prepareResponse.feesSat || 50
 
     invoiceRes = await receivePaymentBreez(
-      walletInfo.balanceSat - Math.round(estimatedFee + estimatedFee / 2),
+      walletInfo.balanceSat - Math.round(estimatedFee * 2),
       "Liquid to Spark wallet migration",
     )
 
@@ -73,8 +73,8 @@ const drainLiquidWallet = async (
     console.log("Send Payment:  ", sendResponse)
 
     return { sendResponse, estimatedFee }
-  } catch {
-    throw `Failed to migrate your liquid wallet to spark wallet. Please, try later! Your liquid wallet balance is ${walletInfo.balanceSat} sats.`
+  } catch (err) {
+    throw `Failed to migrate your liquid wallet to spark wallet. Please, try later! Your liquid wallet balance is ${walletInfo.balanceSat} sats. \n ${err}`
   }
 }
 
@@ -83,18 +83,18 @@ const feeReimbursement = async (estimatedFee: number): Promise<boolean> => {
     console.log(
       "LNURL WITHDRAW PARAMS: ",
       MIGRATION_FEE_LNURL_W,
-      Math.round(estimatedFee + estimatedFee / 2),
+      Math.round(estimatedFee * 2),
     )
 
     const lnurwRespons = await lnurlWithdraw(
       MIGRATION_FEE_LNURL_W,
-      Math.round(estimatedFee + estimatedFee / 2),
+      Math.round(estimatedFee * 2),
     )
 
     return lnurwRespons.success
   } catch (err) {
     throw `Fee reimbursement failed. The amount to reimburse is ${Math.round(
-      estimatedFee + estimatedFee / 2,
+      estimatedFee * 2,
     )} sats. Please, take a screenshot of this and contact flash support team!`
   }
 }
@@ -140,7 +140,7 @@ export const handleSparkMigration = async (
           return {
             success: true,
             err: `Fee reimbursement failed. The amount to reimburse is ${Math.round(
-              estimatedFee + estimatedFee / 2,
+              estimatedFee * 2,
             )} sats. Please, take a screenshot of this and contact flash support team!`,
           }
         }
