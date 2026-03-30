@@ -33,7 +33,7 @@ import type {
   Logger,
   LogEntry,
 } from "@breeztech/breez-sdk-spark-react-native"
-import { API_KEY } from "@env"
+import { API_KEY, BREEZ_LNURL_DOMAIN } from "@env"
 import { appendLog, initLogBuffer } from "./log-buffer"
 
 // Constants
@@ -57,7 +57,7 @@ export const getSDKInstance = (): BreezSdkInterface => {
 }
 
 // SDK Initialization
-export const initializeBreezSDK = async (lnurlDomain?: string): Promise<boolean> => {
+export const initializeBreezSDK = async (): Promise<boolean> => {
   if (breezSDKInitialized) {
     return false
   }
@@ -68,7 +68,7 @@ export const initializeBreezSDK = async (lnurlDomain?: string): Promise<boolean>
 
   breezSDKInitializing = (async () => {
     try {
-      await retry(() => connectToSDK(lnurlDomain), 5000, 3)
+      await retry(() => connectToSDK(), 5000, 3)
       breezSDKInitialized = true
       return true
     } catch (error: unknown) {
@@ -108,7 +108,7 @@ const breezLogger: Logger = {
 
 let loggingInitialized = false
 
-const connectToSDK = async (lnurlDomain?: string): Promise<void> => {
+const connectToSDK = async (): Promise<void> => {
   if (!loggingInitialized) {
     await initLogBuffer()
     initLogging(undefined, breezLogger, undefined)
@@ -121,12 +121,10 @@ const connectToSDK = async (lnurlDomain?: string): Promise<void> => {
 
   const config = defaultConfig(Network.Mainnet)
   config.apiKey = API_KEY
+  config.lnurlDomain = BREEZ_LNURL_DOMAIN
   config.maxDepositClaimFee = new MaxFee.NetworkRecommended({
     leewaySatPerVbyte: BigInt(1),
   })
-  if (lnurlDomain) {
-    config.lnurlDomain = lnurlDomain
-  }
 
   const storageDir = `${RNFS.DocumentDirectoryPath}/${STORAGE_DIR}`
   const builder = new SdkBuilder(config, seed)
@@ -242,6 +240,7 @@ export const fetchBreezFee = async (
         amount: BigInt(amountSats),
         tokenIdentifier: undefined,
         conversionOptions: undefined,
+        feePolicy: undefined,
       })
       const fee = extractFeeFromPaymentMethod(prepareResponse.paymentMethod)
       return { fee: Number(fee), err: null }
@@ -253,6 +252,7 @@ export const fetchBreezFee = async (
         amount: BigInt(amountSats),
         tokenIdentifier: undefined,
         conversionOptions: undefined,
+        feePolicy: undefined,
       })
       const fee = extractFeeFromPaymentMethod(
         prepareResponse.paymentMethod,
@@ -270,6 +270,8 @@ export const fetchBreezFee = async (
           payRequest: parsed.inner[0].payRequest,
           comment: undefined,
           validateSuccessActionUrl: undefined,
+          conversionOptions: undefined,
+          feePolicy: undefined,
         })
 
         return { fee: Number(prepareResponse.feeSats), err: null }
@@ -300,6 +302,7 @@ export const receivePaymentBreez = async (
       description: description || "",
       amountSats: BigInt(amountSats || 0),
       expirySecs: undefined,
+      paymentHash: undefined,
     }),
   })
 
@@ -336,6 +339,7 @@ export const payLightningBreez = async (
       amount: BigInt(amountSats),
       tokenIdentifier: undefined,
       conversionOptions: undefined,
+      feePolicy: undefined,
     })
 
     const options = new SendPaymentOptions.Bolt11Invoice({
@@ -372,6 +376,7 @@ export const payOnchainBreez = async (
       amount: BigInt(amountSats),
       tokenIdentifier: undefined,
       conversionOptions: undefined,
+      feePolicy: undefined,
     })
 
     const confirmationSpeed =
@@ -415,6 +420,8 @@ export const payLnurlBreez = async (
         payRequest: input.inner[0].payRequest,
         comment: memo,
         validateSuccessActionUrl: true,
+        conversionOptions: undefined,
+        feePolicy: undefined,
       })
 
       const response = await sdk.lnurlPay({
@@ -477,6 +484,8 @@ export const onRedeem = async (
         payRequest: input.inner[0].payRequest,
         comment: memo,
         validateSuccessActionUrl: true,
+        conversionOptions: undefined,
+        feePolicy: undefined,
       })
 
       const response = await sdk.lnurlPay({
