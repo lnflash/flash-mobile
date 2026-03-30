@@ -127,30 +127,38 @@ export const BreezProvider = ({ children }: Props) => {
     }
   }
 
+  const ensureLightningAddress = async () => {
+    const username = meData?.me?.username
+    if (!username) return
+
+    try {
+      const existing = await getLightningAddress()
+      console.log("BREEZ LIGHTNING ADDRESS: ", existing)
+      if (existing) return
+
+      // Register with username as the Lightning address
+      const lightningAddress = username + uuidv4()
+      const res = await registerLightningAddress(
+        lightningAddress,
+        `Pay to ${username}@${appConfig.galoyInstance.lnAddressHostname}`,
+      )
+      console.log("BREEZ LIGHTNING ADDRESS RES: ", res)
+    } catch (err) {
+      console.warn("Failed to register Lightning address:", err)
+    }
+  }
+
   const getBreezInfo = async () => {
     if (initializingRef.current) return
     initializingRef.current = true
     try {
       setLoading(true)
-      await initializeBreezSDK(appConfig.galoyInstance.lnAddressHostname)
+      await initializeBreezSDK()
       await updateBalance()
       setLoading(false)
 
-      // Register Lightning address if user has a username
-      const username = meData?.me?.username
-      if (username) {
-        try {
-          const available = await checkLightningAddressAvailable(meData.me.username)
-          console.log(`Is username ${meData.me.username} available: ${available}`)
-          const existing = await getLightningAddress()
-          console.log(`Username ${meData.me.username} is registered`)
-          if (available && !existing) {
-            await registerLightningAddress(username)
-          }
-        } catch (err) {
-          console.warn("Failed to register Lightning address:", err)
-        }
-      }
+      // Register Lightning address
+      await ensureLightningAddress()
 
       // Trigger migration after Spark SDK is ready
       if (!persistentState.sparkMigrationCompleted) {

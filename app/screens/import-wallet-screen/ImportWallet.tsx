@@ -52,7 +52,7 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
           KEYCHAIN_MNEMONIC_KEY,
           mnemonicKey,
         )
-        await initializeBreezSDK(appConfig.galoyInstance.lnAddressHostname)
+        await initializeBreezSDK()
         updateStateHandler(true)
         setLoading(false)
         navigation.reset({ index: 0, routes: [{ name: "Primary" }] })
