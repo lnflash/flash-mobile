@@ -59,7 +59,8 @@ export const BreezProvider = ({ children }: Props) => {
           }
         return undefined
       })
-    } else {
+    }
+    if (res.err) {
       setMigrationErr(res.err)
     }
     setMigrating(false)
