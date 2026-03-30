@@ -3,7 +3,17 @@ import { WalletCurrency } from "@app/graphql/generated"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { Alert, Platform } from "react-native"
 import { v4 as uuidv4 } from "uuid"
-import { initializeBreezSDK, getInfo, handleSparkMigration } from "@app/utils/breez-sdk"
+import {
+  initializeBreezSDK,
+  getInfo,
+  handleSparkMigration,
+  registerLightningAddress,
+  getLightningAddress,
+  checkLightningAddressAvailable,
+} from "@app/utils/breez-sdk"
+import { useAppConfig } from "@app/hooks/use-app-config"
+import { useAddressScreenQuery } from "@app/graphql/generated"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
 import SparkMigrationModal from "@app/components/spark-migration-modal"
 
 type BtcWallet = {
@@ -34,6 +44,12 @@ type Props = {
 
 export const BreezProvider = ({ children }: Props) => {
   const { persistentState, updateState } = usePersistentStateContext()
+  const { appConfig } = useAppConfig()
+  const isAuthed = useIsAuthed()
+  const { data: meData } = useAddressScreenQuery({
+    fetchPolicy: "cache-first",
+    skip: !isAuthed,
+  })
   const [loading, setLoading] = useState(false)
   const [btcWallet, setBtcWallet] = useState<BtcWallet>({
     id: "",
@@ -111,6 +127,27 @@ export const BreezProvider = ({ children }: Props) => {
     }
   }
 
+  const ensureLightningAddress = async () => {
+    const username = meData?.me?.username
+    if (!username) return
+
+    try {
+      const existing = await getLightningAddress()
+      console.log("BREEZ LIGHTNING ADDRESS: ", existing)
+      if (existing) return
+
+      // Register with username as the Lightning address
+      const lightningAddress = username + uuidv4()
+      const res = await registerLightningAddress(
+        lightningAddress,
+        `Pay to ${username}@${appConfig.galoyInstance.lnAddressHostname}`,
+      )
+      console.log("BREEZ LIGHTNING ADDRESS RES: ", res)
+    } catch (err) {
+      console.warn("Failed to register Lightning address:", err)
+    }
+  }
+
   const getBreezInfo = async () => {
     if (initializingRef.current) return
     initializingRef.current = true
@@ -119,6 +156,9 @@ export const BreezProvider = ({ children }: Props) => {
       await initializeBreezSDK()
       await updateBalance()
       setLoading(false)
+
+      // Register Lightning address
+      await ensureLightningAddress()
 
       // Trigger migration after Spark SDK is ready
       if (!persistentState.sparkMigrationCompleted) {

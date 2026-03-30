@@ -32,4 +32,5 @@ declare module "@env" {
   export const GREENLIGHT_PARTNER_KEY: string
   export const GOOGLE_PLACE_API_KEY: string
   export const MIGRATION_FEE_LNURL_W: string
+  export const BREEZ_LNURL_DOMAIN: string
 }

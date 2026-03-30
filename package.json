@@ -59,7 +59,7 @@
   "dependencies": {
     "@apollo/client": "3.9.0-alpha.5",
     "@bitcoinerlab/secp256k1": "^1.0.5",
-    "@breeztech/breez-sdk-spark-react-native": "^0.7.14",
+    "@breeztech/breez-sdk-spark-react-native": "^0.12.2-dev1",
     "@breeztech/react-native-breez-sdk-liquid": "^0.11.13",
     "@flash/client": "git+https://github.com/lnflash/flash-client.git",
     "@formatjs/intl-getcanonicallocales": "^2.3.0",
