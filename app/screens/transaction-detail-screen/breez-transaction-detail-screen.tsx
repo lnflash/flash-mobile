@@ -1,5 +1,11 @@
 import React from "react"
-import { Linking, TouchableWithoutFeedback, View, TouchableOpacity, ScrollView } from "react-native"
+import {
+  Linking,
+  TouchableWithoutFeedback,
+  View,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native"
 import { makeStyles, Text, useTheme, Card } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import Icon from "react-native-vector-icons/Ionicons"
@@ -167,8 +173,8 @@ export const BreezTransactionDetailScreen: React.FC<Props> = ({ route }) => {
   if (details) {
     if (details.tag === PaymentDetails_Tags.Lightning) {
       description = details.inner.description ?? undefined
-      paymentHash = details.inner.paymentHash
-      preimage = details.inner.preimage ?? undefined
+      paymentHash = details.inner.htlcDetails.paymentHash
+      preimage = details.inner.htlcDetails.preimage ?? undefined
       invoice = details.inner.invoice
       destinationPubkey = details.inner.destinationPubkey
     } else if (details.tag === PaymentDetails_Tags.Spark) {
