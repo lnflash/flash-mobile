@@ -49,7 +49,6 @@ export const BreezProvider = ({ children }: Props) => {
   const onMigrate = async () => {
     setMigrating(true)
     const res = await handleSparkMigration(() => setMigrationModal(true))
-    console.log("MIGRATION RESPONSE: ", res)
     if (res.success) {
       updateState((state: any) => {
         if (state)
@@ -59,8 +58,10 @@ export const BreezProvider = ({ children }: Props) => {
           }
         return undefined
       })
-    }
-    if (res.err) {
+      if (res.err?.includes("Fee reimbursement failed")) {
+        setMigrationErr(res.err)
+      }
+    } else if (res.err) {
       setMigrationErr(res.err)
     }
     setMigrating(false)
