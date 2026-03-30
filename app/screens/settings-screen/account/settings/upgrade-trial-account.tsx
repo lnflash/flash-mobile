@@ -1,92 +1,64 @@
-import { useState } from "react"
 import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
+import { StackNavigationProp } from "@react-navigation/stack"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
-import ContactModal, {
-  SupportChannels,
-} from "@app/components/contact-modal/contact-modal"
 import { PrimaryBtn } from "@app/components/buttons"
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
-import { UpgradeAccountModal } from "@app/components/upgrade-account-modal"
 import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-button"
 
 // hooks
 import { useShowWarningSecureAccount } from "../show-warning-secure-account-hook"
 import { AccountLevel, useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useAppConfig } from "@app/hooks"
+import { useNavigation } from "@react-navigation/native"
+import { useAppSelector } from "@app/store/redux"
 
 export const UpgradeTrialAccount: React.FC = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
-  const { appConfig } = useAppConfig()
+  const { status } = useAppSelector((state) => state.accountUpgrade)
+
+  const upgradePending = status === "Pending"
 
   const hasBalance = useShowWarningSecureAccount()
 
-  const [upgradeAccountModalVisible, setUpgradeAccountModalVisible] = useState(false)
-  const [isContactModalVisible, setIsContactModalVisible] = useState(false)
-
-  const { name: bankName } = appConfig.galoyInstance
-
-  const closeUpgradeAccountModal = () => setUpgradeAccountModalVisible(false)
-  const openUpgradeAccountModal = () => setUpgradeAccountModalVisible(true)
-  const toggleContactModal = () => setIsContactModalVisible(!isContactModalVisible)
-
   if (currentLevel === AccountLevel.Zero) {
     return (
-      <>
-        <UpgradeAccountModal
-          isVisible={upgradeAccountModalVisible}
-          closeModal={closeUpgradeAccountModal}
-        />
-        <View style={styles.container}>
-          <View style={styles.sideBySide}>
-            <Text type="h2" bold>
-              {LL.common.trialAccount()}
-            </Text>
-            <GaloyIcon name="warning" size={30} />
-          </View>
-          <Text type="p3">{LL.AccountScreen.itsATrialAccount()}</Text>
-          {hasBalance && (
-            <Text type="p3">⚠️ {LL.AccountScreen.fundsMoreThan5Dollars()}</Text>
-          )}
-          <GaloySecondaryButton
-            title={LL.common.backupAccount()}
-            iconName="caret-right"
-            iconPosition="right"
-            containerStyle={styles.selfCenter}
-            onPress={openUpgradeAccountModal}
-          />
+      <View style={styles.container}>
+        <View style={styles.sideBySide}>
+          <Text type="h2" bold>
+            {LL.common.trialAccount()}
+          </Text>
+          <GaloyIcon name="warning" size={30} />
         </View>
-      </>
+        <Text type="p3">{LL.HomeScreen.upgradeDesc()}</Text>
+        {hasBalance && (
+          <Text type="p3">⚠️ {LL.AccountScreen.fundsMoreThan5Dollars()}</Text>
+        )}
+        <GaloySecondaryButton
+          title={LL.HomeScreen.upgradeTitle()}
+          iconName="caret-right"
+          iconPosition="right"
+          containerStyle={styles.selfCenter}
+          onPress={() => navigation.navigate("AccountType")}
+        />
+      </View>
     )
-  } else if (currentLevel === AccountLevel.One) {
-    const messageBody = LL.TransactionLimitsScreen.contactUsMessageBody({
-      bankName,
-    })
-    const messageSubject = LL.TransactionLimitsScreen.contactUsMessageSubject()
-
+  } else if (currentLevel !== AccountLevel.Three) {
     return (
-      <>
-        <PrimaryBtn
-          label={LL.TransactionLimitsScreen.requestBusiness()}
-          btnStyle={{ marginTop: 10 }}
-          onPress={toggleContactModal}
-        />
-        <ContactModal
-          isVisible={isContactModalVisible}
-          toggleModal={toggleContactModal}
-          messageBody={messageBody}
-          messageSubject={messageSubject}
-          supportChannelsToHide={[
-            SupportChannels.Mattermost,
-            SupportChannels.StatusPage,
-            SupportChannels.Discord,
-          ]}
-        />
-      </>
+      <PrimaryBtn
+        label={
+          !upgradePending
+            ? LL.TransactionLimitsScreen.requestUpgrade()
+            : LL.TransactionLimitsScreen.editRequest()
+        }
+        btnStyle={upgradePending ? { backgroundColor: "#FF7e1c" } : {}}
+        onPress={() => navigation.navigate("PersonalInformation")}
+      />
     )
   } else {
     return null

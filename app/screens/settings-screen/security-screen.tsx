@@ -183,7 +183,7 @@ export const SecurityScreen: React.FC<Props> = ({ route, navigation }) => {
         primaryButtonTextAbove={LL.UpgradeAccountModal.onlyAPhoneNumber()}
         primaryButtonTitle={LL.UpgradeAccountModal.letsGo()}
         primaryButtonOnPress={() => {
-          navigation.navigate("phoneFlow")
+          navigation.navigate("AccountType")
           setBackupVisible(false)
         }}
         secondaryButtonTitle={LL.UpgradeAccountModal.stayInTrialMode()}

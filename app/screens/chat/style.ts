@@ -46,7 +46,21 @@ export const useStyles = makeStyles(({ colors }) => ({
 
   item: {
     marginHorizontal: 20,
-    marginVertical: 4,
+    marginVertical: 3,
+  },
+
+  listItemHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 2,
+  },
+
+  timestamp: {
+    fontSize: 11,
+    color: "#888",
+    flexShrink: 0,
+    marginLeft: 8,
   },
 
   unreadItem: {
@@ -64,17 +78,17 @@ export const useStyles = makeStyles(({ colors }) => ({
   },
 
   itemContainer: {
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: colors.grey5,
-    // borderColor: colors.grey2,
-    // borderWidth: 0.5,
-    minHeight: 50,
-    margin: 5,
+    minHeight: 60,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginVertical: 3,
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
 
   listContainer: { flexGrow: 1 },
@@ -83,7 +97,7 @@ export const useStyles = makeStyles(({ colors }) => ({
     backgroundColor: colors.grey5,
     borderBottomColor: colors.grey5,
     borderTopColor: colors.grey5,
-    marginHorizontal: 12,
+    marginHorizontal: 20,
     marginVertical: 8,
   },
 

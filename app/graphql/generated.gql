@@ -81,6 +81,19 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
+mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
+  idDocumentUploadUrlGenerate(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    fileKey
+    uploadUrl
+    __typename
+  }
+}
+
 mutation MerchantMapSuggest($input: MerchantMapSuggestInput!) {
   merchantMapSuggest(input: $input) {
     errors {
@@ -231,6 +244,19 @@ mutation accountUpdateDisplayCurrency($input: AccountUpdateDisplayCurrencyInput!
       displayCurrency
       __typename
     }
+    __typename
+  }
+}
+
+mutation businessAccountUpgradeRequest($input: BusinessAccountUpgradeRequestInput!) {
+  businessAccountUpgradeRequest(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    id
+    status
     __typename
   }
 }
@@ -814,6 +840,53 @@ query ExportCsvSetting($walletIds: [WalletId!]!) {
   }
 }
 
+query LatestAccountUpgradeRequest {
+  latestAccountUpgradeRequest {
+    errors {
+      code
+      message
+      __typename
+    }
+    upgradeRequest {
+      address {
+        city
+        country
+        line1
+        line2
+        postalCode
+        state
+        title
+        __typename
+      }
+      bankAccount {
+        accountNumber
+        accountType
+        bankBranch
+        bankName
+        currency
+        __typename
+      }
+      currentLevel
+      fullName
+      terminalsRequested
+      status
+      requestedLevel
+      phoneNumber
+      email
+      idDocument
+      __typename
+    }
+    __typename
+  }
+}
+
+query SupportedBanks {
+  supportedBanks {
+    name
+    __typename
+  }
+}
+
 query accountDefaultWallet($username: Username!) {
   accountDefaultWallet(username: $username) {
     id
@@ -1181,7 +1254,7 @@ query onChainTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: Sat
   }
 }
 
-query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: CentAmount!) {
+query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: FractionalCentAmount!) {
   onChainUsdTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount
     __typename

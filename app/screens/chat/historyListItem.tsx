@@ -5,7 +5,7 @@ import { nip19, Event } from "nostr-tools"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList } from "@app/navigation/stack-param-lists"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { Rumor } from "@app/utils/nostr"
 import { getLastSeen } from "./utils"
@@ -15,6 +15,17 @@ import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 interface HistoryListItemProps {
   item: string
   groups: Map<string, Rumor[]>
+}
+
+function formatRelativeTime(created_at: number): string {
+  const now = Math.floor(Date.now() / 1000)
+  const diff = now - created_at
+  if (diff < 60) return "now"
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  if (diff < 172800) return "Yesterday"
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`
+  return new Date(created_at * 1000).toLocaleDateString([], { month: "short", day: "numeric" })
 }
 
 export const HistoryListItem: React.FC<HistoryListItemProps> = ({
@@ -31,12 +42,10 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   const styles = useStyles()
 
-  // Last message in this conversation
   const lastRumor = (groups.get(item) || []).sort(
     (a, b) => b.created_at - a.created_at,
   )[0]
 
-  // Subscribe to profiles using nostrRuntime
   useEffect(() => {
     const pubkeys = item
       .split(",")
@@ -46,7 +55,7 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
     pubkeys.forEach((pubkey) => subscribedPubkeys.add(pubkey))
     setSubscribedPubkeys(new Set(subscribedPubkeys))
 
-    const unsub = nostrRuntime.ensureSubscription(
+    nostrRuntime.ensureSubscription(
       `historyProfile:${pubkeys.join(",")}`,
       { kinds: [0], authors: pubkeys },
       (event: Event) => {
@@ -55,18 +64,19 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
     )
   }, [profileMap, subscribedPubkeys, item])
 
-  // Check unread messages
-  useFocusEffect(() => {
-    const checkUnreadStatus = async () => {
-      const lastSeen = await getLastSeen(item)
-      if (lastRumor && (!lastSeen || lastSeen < lastRumor.created_at)) {
-        setHasUnread(true)
-      } else {
-        setHasUnread(false)
+  useFocusEffect(
+    useCallback(() => {
+      const checkUnreadStatus = async () => {
+        const lastSeen = await getLastSeen(item)
+        if (lastRumor && (!lastSeen || lastSeen < lastRumor.created_at)) {
+          setHasUnread(true)
+        } else {
+          setHasUnread(false)
+        }
       }
-    }
-    checkUnreadStatus()
-  })
+      checkUnreadStatus()
+    }, [item, lastRumor?.id]),
+  )
 
   return (
     <ListItem
@@ -95,7 +105,6 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
           />
         ))}
 
-      {/* Self note indicator */}
       {selfNote && (
         <Image
           key="self-note-image"
@@ -107,41 +116,46 @@ export const HistoryListItem: React.FC<HistoryListItemProps> = ({
       )}
 
       {/* Names and last message */}
-      <View style={{ flexDirection: "column", maxWidth: "80%" }}>
-        <ListItem.Content key="heading">
-          <ListItem.Subtitle style={styles.itemText} key="subheading">
-            {item
-              .split(",")
-              .filter((p) => p !== userPublicKeyVal)
-              .map((pubkey) => {
-                const profile = profileMap?.get(pubkey)
-                return (
-                  profile?.nip05 ||
-                  profile?.name ||
-                  profile?.username ||
-                  nip19.npubEncode(pubkey).slice(0, 9) + ".."
-                )
-              })
-              .join(", ")}
-            {selfNote && (
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ ...styles.itemText, fontWeight: "bold" }}>
-                  Note to Self
-                </Text>
-                <Icon
-                  name="checkmark-done-circle-outline"
-                  size={20}
-                  style={styles.verifiedIcon}
-                />
-              </View>
-            )}
-          </ListItem.Subtitle>
-        </ListItem.Content>
+      <View style={{ flexDirection: "column", flex: 1 }}>
+        <View style={styles.listItemHeader}>
+          <ListItem.Content key="heading">
+            <ListItem.Subtitle style={styles.itemText} key="subheading">
+              {item
+                .split(",")
+                .filter((p) => p !== userPublicKeyVal)
+                .map((pubkey) => {
+                  const profile = profileMap?.get(pubkey)
+                  return (
+                    profile?.nip05 ||
+                    profile?.name ||
+                    profile?.username ||
+                    nip19.npubEncode(pubkey).slice(0, 9) + ".."
+                  )
+                })
+                .join(", ")}
+              {selfNote && (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={{ ...styles.itemText, fontWeight: "bold" }}>
+                    Note to Self
+                  </Text>
+                  <Icon
+                    name="checkmark-done-circle-outline"
+                    size={20}
+                    style={styles.verifiedIcon}
+                  />
+                </View>
+              )}
+            </ListItem.Subtitle>
+          </ListItem.Content>
+          {lastRumor && (
+            <Text style={styles.timestamp}>{formatRelativeTime(lastRumor.created_at)}</Text>
+          )}
+        </View>
 
         <ListItem.Content key="last message">
           <View style={{ flexWrap: "wrap", flexDirection: "row" }}>
             {lastRumor && (
-              <Text style={styles.itemText}>
+              <Text style={styles.itemText} numberOfLines={1}>
                 {(profileMap?.get(lastRumor.pubkey)?.name ||
                   profileMap?.get(lastRumor.pubkey)?.nip05 ||
                   profileMap?.get(lastRumor.pubkey)?.username ||

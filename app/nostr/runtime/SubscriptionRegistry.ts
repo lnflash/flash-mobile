@@ -2,11 +2,17 @@ import { Filter, Event } from "nostr-tools"
 import { RelayManager } from "./RelayManager"
 import { SubCloser } from "nostr-tools/abstract-pool"
 
+// NIP-17 allows gift wrap created_at to be randomized up to 2 days in the past,
+// so on reconnect we backfill this full window to avoid missing any events.
+const RECONNECT_SINCE_WINDOW = 2 * 24 * 60 * 60
+
 type SubscriptionEntry = {
   filter: Filter
   closer: SubCloser
   refCount: number
   onEvent: (event: Event) => void
+  onEose?: () => void
+  relays?: string[]
 }
 
 export class SubscriptionRegistry {
@@ -28,26 +34,16 @@ export class SubscriptionRegistry {
       return
     }
 
-    const closer = this.relayManager.subscribe(
+    const entry: SubscriptionEntry = {
       filter,
-      {
-        onevent: onEvent,
-        onclose: () => {
-          this.subs.delete(key)
-        },
-        oneose: () => {
-          onEose?.()
-        },
-      },
-      relays,
-    )
-
-    this.subs.set(key, {
-      filter,
-      closer,
+      closer: null as unknown as SubCloser, // set immediately by _subscribe below
       refCount: 1,
       onEvent,
-    })
+      onEose,
+      relays,
+    }
+    this.subs.set(key, entry)
+    this._subscribe(key, entry)
   }
 
   release(key: string) {
@@ -56,23 +52,48 @@ export class SubscriptionRegistry {
 
     sub.refCount--
     if (sub.refCount <= 0) {
-      sub.closer.close()
+      // Delete before close so the onclose handler does not trigger a reconnect
       this.subs.delete(key)
+      sub.closer.close()
     }
   }
 
   restore() {
-    for (const [key, sub] of this.subs.entries()) {
-      const closer = this.relayManager.subscribe(sub.filter, {
-        onevent: sub.onEvent,
-      })
-
-      sub.closer = closer
+    for (const [key, entry] of this.subs.entries()) {
+      this._subscribe(key, entry, true)
     }
   }
 
   clear() {
-    this.subs.forEach((s) => s.closer.close())
+    // Clear map before closing so onclose handlers do not trigger reconnects
+    const entries = Array.from(this.subs.values())
     this.subs.clear()
+    entries.forEach((s) => s.closer.close())
+  }
+
+  private _subscribe(key: string, entry: SubscriptionEntry, isReconnect = false) {
+    // On reconnect, backfill the past 2 days to cover NIP-17's created_at randomization window
+    const filter: Filter = isReconnect
+      ? { ...entry.filter, since: Math.floor(Date.now() / 1000) - RECONNECT_SINCE_WINDOW }
+      : entry.filter
+
+    const closer = this.relayManager.subscribe(
+      filter,
+      {
+        onevent: entry.onEvent,
+        onclose: () => {
+          // Only reconnect if this was an unexpected drop, not an intentional release/clear
+          if (this.subs.has(key)) {
+            this._subscribe(key, entry, true)
+          }
+        },
+        oneose: () => {
+          entry.onEose?.()
+        },
+      },
+      entry.relays,
+    )
+
+    entry.closer = closer
   }
 }
