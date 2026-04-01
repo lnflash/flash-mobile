@@ -1901,10 +1901,10 @@
     "@noble/hashes" "^1.1.5"
     "@noble/secp256k1" "^1.7.1"
 
-"@breeztech/breez-sdk-spark-react-native@^0.7.14":
-  version "0.7.14"
-  resolved "https://registry.yarnpkg.com/@breeztech/breez-sdk-spark-react-native/-/breez-sdk-spark-react-native-0.7.14.tgz#b8914719e67620aa6b85178d7a903d7efcaedbac"
-  integrity sha512-xHhcwD0/aDQAGg6mJM1K1Wepp3bmf3SnuK7tIC2jSX7VA308lB92u6ag3vIQMvAtz6mZptu+8Le+br9sr2u4/w==
+"@breeztech/breez-sdk-spark-react-native@^0.7.21":
+  version "0.7.21"
+  resolved "https://registry.yarnpkg.com/@breeztech/breez-sdk-spark-react-native/-/breez-sdk-spark-react-native-0.7.21.tgz#f29e0d76f0c092217a537ffd76b0b5e59c53252e"
+  integrity sha512-r1fNGg8w4LGZXyJdXCWnLIu1wVhXkTpACo03kA8uGtYp6m4bf8MvrW6UtGrcjtWYpc7I2yH78hTqXTFvGqyQNQ==
   dependencies:
     uniffi-bindgen-react-native "^0.28.3-5"
 
