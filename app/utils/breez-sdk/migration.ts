@@ -23,7 +23,6 @@ let liquidWalletInitialized = false
 
 const initLiquidWallet = async () => {
   if (liquidWalletInitialized) return
-  console.log("INIT LIQUID WALLET")
   const credentials = await Keychain.getInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
   if (!credentials) {
     throw "Mnemonic Key not found on the Keychain to connect to liquid wallet"
@@ -60,41 +59,32 @@ const drainLiquidWallet = async (
     const estimatedFee = prepareResponse.feesSat || 50
 
     invoiceRes = await receivePaymentBreez(
-      walletInfo.balanceSat - Math.round(estimatedFee + estimatedFee / 2),
+      walletInfo.balanceSat - Math.round(estimatedFee * 2),
       "Liquid to Spark wallet migration",
     )
 
     prepareResponse = await prepareSendPayment({
       destination: invoiceRes.paymentRequest,
     })
-    console.log("Prepare Send Payment: ", prepareResponse)
 
     const sendResponse = await sendPayment({ prepareResponse })
-    console.log("Send Payment:  ", sendResponse)
-
     return { sendResponse, estimatedFee }
-  } catch {
-    throw `Failed to migrate your liquid wallet to spark wallet. Please, try later! Your liquid wallet balance is ${walletInfo.balanceSat} sats.`
+  } catch (err) {
+    throw `Failed to migrate your liquid wallet to spark wallet. Please, try later! Your liquid wallet balance is ${walletInfo.balanceSat} sats. \n ${err}`
   }
 }
 
 const feeReimbursement = async (estimatedFee: number): Promise<boolean> => {
   try {
-    console.log(
-      "LNURL WITHDRAW PARAMS: ",
-      MIGRATION_FEE_LNURL_W,
-      Math.round(estimatedFee + estimatedFee / 2),
-    )
-
     const lnurwRespons = await lnurlWithdraw(
       MIGRATION_FEE_LNURL_W,
-      Math.round(estimatedFee + estimatedFee / 2),
+      Math.round(estimatedFee * 2),
     )
 
     return lnurwRespons.success
   } catch (err) {
     throw `Fee reimbursement failed. The amount to reimburse is ${Math.round(
-      estimatedFee + estimatedFee / 2,
+      estimatedFee * 2,
     )} sats. Please, take a screenshot of this and contact flash support team!`
   }
 }
@@ -111,15 +101,8 @@ export const handleSparkMigration = async (
     await initLiquidWallet()
     await sync()
 
-    console.log("SPARK MIGRATION STARTED")
-
     const { walletInfo } = await getInfo()
     const limits = await fetchLightningLimits()
-
-    console.log(">>>>>>>>>>>>")
-    console.log(walletInfo)
-    console.log(limits)
-    console.log(">>>>>>>>>>>>")
 
     if (walletInfo.balanceSat > Math.max(limits.send.minSat, 100)) {
       openModal()
@@ -140,7 +123,7 @@ export const handleSparkMigration = async (
           return {
             success: true,
             err: `Fee reimbursement failed. The amount to reimburse is ${Math.round(
-              estimatedFee + estimatedFee / 2,
+              estimatedFee * 2,
             )} sats. Please, take a screenshot of this and contact flash support team!`,
           }
         }
@@ -203,7 +186,6 @@ export const disconnectLiquidSdk = async () => {
       await RNFS.unlink(config.workingDir)
     }
     liquidWalletInitialized = false
-    console.log("DISCONNECT TO BREEZ LIQUID SDK")
   } catch (err) {
     console.log("DISCONNECT LIQUID SDK: ", err)
   }
