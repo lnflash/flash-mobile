@@ -94,6 +94,18 @@ mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) 
   }
 }
 
+mutation InitiateCashout($input: InitiateCashoutInput!) {
+  initiateCashout(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    journalId
+    __typename
+  }
+}
+
 mutation MerchantMapSuggest($input: MerchantMapSuggestInput!) {
   merchantMapSuggest(input: $input) {
     errors {
@@ -113,6 +125,28 @@ mutation MerchantMapSuggest($input: MerchantMapSuggestInput!) {
       title
       username
       validated
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation RequestCashout($input: RequestCashoutInput!) {
+  requestCashout(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    offer {
+      exchangeRate
+      expiresAt
+      flashFee
+      offerId
+      receiveJmd
+      receiveUsd
+      send
+      walletId
       __typename
     }
     __typename
