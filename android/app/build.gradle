@@ -95,7 +95,7 @@ android {
         applicationId "com.lnflash"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 69
+        versionCode 70
         versionName "0.5.0"
 
         // use google-service.dev.json if google-service.json is not exits
