@@ -123,7 +123,7 @@ export const createPaymentRequest = (
             variables: {
               input: {
                 walletId: pr.receivingWalletDescriptor.id,
-                amount: pr.settlementAmount.amount,
+                amount: Math.round(pr.settlementAmount.amount),
                 memo: pr.memo,
               },
             },

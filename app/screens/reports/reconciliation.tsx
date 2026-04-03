@@ -68,7 +68,7 @@ export const ReconciliationReport: React.FC<Props> = ({ route }) => {
       const totalAmount = calculateTotalAmount(filteredTransactions)
       setBalance(
         formatMoneyAmount({
-          moneyAmount: toUsdMoneyAmount(totalAmount * 100),
+          moneyAmount: toUsdMoneyAmount(totalAmount),
           noSymbol: false,
         }),
       )
