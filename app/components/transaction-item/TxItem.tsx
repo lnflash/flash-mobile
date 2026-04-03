@@ -44,7 +44,7 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { colors } = useTheme().theme
 
-  const { formatMoneyAmount, moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
+  const { formatMoneyAmount, moneyAmountToDisplayCurrencyString, formatCurrency } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
 
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
@@ -77,13 +77,13 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
     })
     secondaryAmount = formatMoneyAmount({ moneyAmount })
   } else {
-    // Ibex transaction - always USD
-    const amount = tx.transaction.settlementAmount * 100
-    const moneyAmount = toUsdMoneyAmount(amount ?? NaN)
-    primaryAmount = moneyAmountToDisplayCurrencyString({
-      moneyAmount,
+    // Ibex transaction
+    primaryAmount = formatCurrency({
+      amountInMajorUnits: tx.transaction.settlementDisplayAmount,
+      currency: tx.transaction.settlementDisplayCurrency,
     })
     if (convertMoneyAmount) {
+      const moneyAmount = toUsdMoneyAmount(Math.abs(tx.transaction.settlementAmount))
       secondaryAmount = formatMoneyAmount({
         moneyAmount: convertMoneyAmount(moneyAmount, "BTC"),
       })
@@ -91,7 +91,7 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
   }
 
   // Get currency label - Breez is BTC, Ibex is USD
-  const currencyLabel = isBreezTransaction(tx) ? "BTC" : "USD"
+  const currencyLabel = isBreezTransaction(tx) ? "BTC" : (tx.transaction.settlementDisplayCurrency || "USD")
 
   const onPress = () => {
     if (isIbexTransaction(tx)) {

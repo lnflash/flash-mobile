@@ -38,7 +38,7 @@ const convertToDisplayCurrency = (
   convertMoneyAmount?: ConvertMoneyAmount,
 ) =>
   convertMoneyAmount &&
-  convertMoneyAmount(toUsdMoneyAmount(totalAmount * 100), DisplayCurrency)
+  convertMoneyAmount(toUsdMoneyAmount(totalAmount), DisplayCurrency)
 
 const formatDate = (date: string) => format(new Date(date), "dd-MMM-yyyy hh:mm a")
 
@@ -53,7 +53,7 @@ const orderAndConvertTransactionsByDate = (
   return orderedTransactions.map((tx) => {
     const displayAmount = tx.settlementAmount
     const convertedAmount = convertMoneyAmount?.(
-      toUsdMoneyAmount(displayAmount * 100),
+      toUsdMoneyAmount(displayAmount),
       DisplayCurrency,
     )
 
