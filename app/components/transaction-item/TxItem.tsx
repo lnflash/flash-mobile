@@ -77,12 +77,26 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
     })
     secondaryAmount = formatMoneyAmount({ moneyAmount })
   } else {
-    // Ibex transaction - always USD
-    const amount = tx.transaction.settlementAmount * 100
-    const moneyAmount = toUsdMoneyAmount(amount ?? NaN)
-    primaryAmount = moneyAmountToDisplayCurrencyString({
-      moneyAmount,
-    })
+    // Ibex transaction — use the historical settlementDisplayAmount from the API
+    // instead of re-computing from the live BTC price (which changes over time).
+    // settlementAmount is already in cents — do NOT multiply by 100.
+    const settlementDisplay = tx.transaction.settlementDisplayAmount
+    const settlementDisplayCurrency = tx.transaction.settlementDisplayCurrency
+
+    if (settlementDisplay && settlementDisplayCurrency) {
+      // Use the locked-in display amount from settlement time
+      const currencySymbol =
+        settlementDisplayCurrency === "USD" ? "$" : ""
+      primaryAmount = `${currencySymbol}${settlementDisplay} ${settlementDisplayCurrency}`
+    } else {
+      // Fallback: convert from settlement amount (already in cents)
+      const moneyAmount = toUsdMoneyAmount(tx.transaction.settlementAmount ?? NaN)
+      primaryAmount = moneyAmountToDisplayCurrencyString({
+        moneyAmount,
+      })
+    }
+
+    const moneyAmount = toUsdMoneyAmount(tx.transaction.settlementAmount ?? NaN)
     if (convertMoneyAmount) {
       secondaryAmount = formatMoneyAmount({
         moneyAmount: convertMoneyAmount(moneyAmount, "BTC"),

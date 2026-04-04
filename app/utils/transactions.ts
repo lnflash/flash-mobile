@@ -2,7 +2,7 @@ import type { Payment } from "@breeztech/breez-sdk-spark-react-native"
 import { TranslationFunctions } from "@app/i18n/i18n-types"
 import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details"
 import { WalletCurrency } from "@app/graphql/generated"
-import { toBtcMoneyAmount } from "@app/types/amounts"
+import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 import type { BreezTransaction } from "@app/types/transactions"
 
 const getUserTimezoneDate = (date: Date): Date => {
@@ -96,14 +96,15 @@ export const formatBreezPayment = ({
   payment: Payment
   convertMoneyAmount: ConvertMoneyAmount
 }): BreezTransaction => {
+  // Convert to the user's display currency (e.g. JMD), not hardcoded USD
   const displayAmount = convertMoneyAmount(
     toBtcMoneyAmount(Number(payment.amount)),
-    WalletCurrency.Usd,
+    DisplayCurrency,
   )
 
   const displayFee = convertMoneyAmount(
     toBtcMoneyAmount(Number(payment.fees)),
-    WalletCurrency.Usd,
+    DisplayCurrency,
   )
 
   return {
