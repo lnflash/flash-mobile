@@ -97,13 +97,21 @@ export const CardScreen = () => {
       })
   }
 
+  const onCashuTopup = () => {
+    navigation.navigate("cashuTopup")
+  }
+
   return (
     <Screen
       keyboardOffset="navigationHeader"
       keyboardShouldPersistTaps="handled"
       backgroundColor={colors.background}
     >
-      {lnurl ? <Flashcard onReload={onReload} onTopup={onTopup} /> : <EmptyCard />}
+      {lnurl ? (
+        <Flashcard onReload={onReload} onTopup={onTopup} onCashuTopup={onCashuTopup} />
+      ) : (
+        <EmptyCard onCashuTopup={onCashuTopup} />
+      )}
     </Screen>
   )
 }

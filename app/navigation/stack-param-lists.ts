@@ -87,6 +87,7 @@ export type RootStackParamList = {
   priceHistory: undefined
   receiveBitcoin: undefined
   flashcardTopup: { flashcardLnurl: string }
+  cashuTopup: undefined
   redeemBitcoinDetail: {
     receiveDestination: ReceiveDestination
   }

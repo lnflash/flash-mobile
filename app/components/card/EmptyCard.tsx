@@ -17,7 +17,11 @@ import EmptyFlashcard from "@app/assets/icons/empty-flashcard.svg"
 
 const width = Dimensions.get("screen").width
 
-const EmptyCard = () => {
+type EmptyCardProps = {
+  onCashuTopup?: () => void
+}
+
+const EmptyCard = ({ onCashuTopup }: EmptyCardProps) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
   const { LL } = useI18nContext()
@@ -39,6 +43,13 @@ const EmptyCard = () => {
         onPress={() => readFlashcard(false)}
         btnStyle={{ marginBottom: 10 }}
       />
+      {onCashuTopup && (
+        <PrimaryBtn
+          label="💳  Top Up Flash Card"
+          onPress={onCashuTopup}
+          btnStyle={{ marginBottom: 10 }}
+        />
+      )}
       <PrimaryBtn type="outline" label="Find a Flashpoint" onPress={findFlashpoint} />
     </View>
   )

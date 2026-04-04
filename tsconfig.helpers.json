@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig",
+  "compilerOptions": {
+    "jsx": "react",
+    "types": ["@types/jest"]
+  },
+  "include": ["app", "__tests__/card"],
+  "exclude": ["node_modules"]
+}
