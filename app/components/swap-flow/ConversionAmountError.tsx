@@ -51,10 +51,19 @@ const ConversionAmountError: React.FC<Props> = ({
 
   useEffect(() => {
     checkErrorMessage()
-  }, [fromWalletCurrency, settlementSendAmount.amount])
+  }, [fromWalletCurrency, settlementSendAmount.amount, btcBalance.amount, usdBalance.amount])
 
   const checkErrorMessage = () => {
     if (!convertMoneyAmount) return null
+
+    // Check if source wallet has zero balance - show error immediately
+    const sourceBalance = fromWalletCurrency === "BTC" ? btcBalance.amount : usdBalance.amount
+    if (sourceBalance === 0 || Number.isNaN(sourceBalance)) {
+      const balanceText = fromWalletCurrency === "BTC" ? formattedBtcBalance : formattedUsdBalance
+      setErrorMsg(LL.SendBitcoinScreen.amountExceed({ balance: balanceText || "0" }))
+      return
+    }
+
     let amountFieldError: string | undefined = undefined
     if (
       lessThan({
