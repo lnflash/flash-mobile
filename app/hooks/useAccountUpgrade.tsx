@@ -173,7 +173,8 @@ export const useAccountUpgrade = () => {
         bankInfo.currency
       ) {
         bankAccount = {
-          accountNumber: Number(bankInfo.accountNumber),
+          // accountNumber is a String in GraphQL (identifiers can exceed Int32)
+          accountNumber: bankInfo.accountNumber,
           accountType: bankInfo.bankAccountType,
           bankBranch: bankInfo.bankBranch,
           bankName: bankInfo.bankName,
