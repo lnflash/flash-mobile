@@ -3,6 +3,7 @@ import { parsePhoneNumber } from "libphonenumber-js"
 
 // hooks
 import { useActivityIndicator } from "./useActivityIndicator"
+import { normalizeContentType } from "@app/utils/image-content-type"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import {
   useBusinessAccountUpgradeRequestMutation,
@@ -112,13 +113,17 @@ export const useAccountUpgrade = () => {
       return null
     }
 
+    // Normalize content type: Android returns "image/jpg" for some JPEGs,
+    // but the backend only accepts "image/jpeg" (ENG-291)
+    const normalizedContentType = normalizeContentType(idDocument.type)
+
     let data
     try {
       const result = await generateIdDocumentUploadUrl({
         variables: {
           input: {
             filename: idDocument.fileName,
-            contentType: idDocument.type,
+            contentType: normalizedContentType,
           },
         },
       })
@@ -138,7 +143,7 @@ export const useAccountUpgrade = () => {
     await uploadFileToS3(
       data.idDocumentUploadUrlGenerate.uploadUrl,
       idDocument.uri,
-      idDocument.type,
+      normalizedContentType,
     )
 
     return data.idDocumentUploadUrlGenerate.fileKey ?? null
