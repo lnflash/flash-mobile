@@ -17,6 +17,7 @@ type ShuffledPhraseType = {
   key: string
   order: number
   selectedInOrder?: boolean
+  displayOrder?: number
 }
 
 const BackupVerify: React.FC<Props> = ({ navigation }) => {
@@ -59,18 +60,23 @@ const BackupVerify: React.FC<Props> = ({ navigation }) => {
       ]
     }
     setSelectOrder(0)
-    setShuffledSeedPhrase(array.map((el) => ({ ...el, selectedInOrder: undefined })))
+    setShuffledSeedPhrase(
+      array.map((el) => ({ ...el, selectedInOrder: undefined, displayOrder: undefined })),
+    )
   }
 
   const onSelect = (item: ShuffledPhraseType, index: number) => {
     const updatedShuffledSeedPhrase = [...shuffledSeedPhrase]
     let updatedSelectOrder = selectOrder
 
-    if (item.order === selectOrder) {
+    const expectedItem = shuffledSeedPhrase.find((el) => el.order === selectOrder)
+    if (expectedItem && item.key === expectedItem.key) {
       updatedShuffledSeedPhrase[index].selectedInOrder = true
+      updatedShuffledSeedPhrase[index].displayOrder = selectOrder + 1
       updatedSelectOrder++
     } else {
       updatedShuffledSeedPhrase[index].selectedInOrder = false
+      updatedShuffledSeedPhrase[index].displayOrder = selectOrder + 1
       updatedSelectOrder++
     }
 
@@ -109,11 +115,7 @@ const BackupVerify: React.FC<Props> = ({ navigation }) => {
           selectedInOrder={item.selectedInOrder}
         >
           <Text type="p1" bold>
-            {item.selectedInOrder !== undefined
-              ? item.selectedInOrder
-                ? item.order + 1
-                : selectOrder
-              : ""}
+            {item.displayOrder ?? ""}
           </Text>
         </SeedPhraseNum>
         <SeedPhraseText>
