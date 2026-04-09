@@ -322,14 +322,14 @@ type PayResponse = {
 
 export const payLightningBreez = async (
   paymentRequest: string,
-  amountSats: number,
+  amountSats?: number,
 ): Promise<PayResponse> => {
   try {
     const sdk = getSDKInstance()
 
     const prepareResponse = await sdk.prepareSendPayment({
       paymentRequest,
-      amount: BigInt(amountSats),
+      amount: amountSats !== undefined ? BigInt(amountSats) : undefined,
       tokenIdentifier: undefined,
       conversionOptions: undefined,
     })
@@ -347,11 +347,9 @@ export const payLightningBreez = async (
 
     return { success: true, payment: response }
   } catch (err) {
-    return {
-      success: false,
-      error:
-        "Failed to pay the invoice. Please make sure you have enough balance to cover the payment and the network fee.",
-    }
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("payLightningBreez error:", message)
+    return { success: false, error: message }
   }
 }
 
