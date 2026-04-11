@@ -9,16 +9,13 @@ const ZAP_RELAYS = [
 /**
  * Resolve the LNURL pay-params URL for a lud16 address.
  *
- * Flash/ibex users (domain matches lnAddressHostname) use the ibex endpoint
- * which is derived from the galoy instance config so it works across all
- * environments (main, staging, test, etc.).
- *
- * All other users use the NIP-57 well-known endpoint.
+ * Always use the standard NIP-57 well-known endpoint — for Flash/ibex users,
+ * this returns a payRequest whose callback points to the ibex endpoint.
+ * Using the ibex callback URL directly as pay-params was incorrect: it
+ * returns {"error":"amount is required"} when fetched without query params.
+ * See ENG-303.
  */
-const lnurlParamsUrl = (user: string, domain: string, lnAddressHostname: string): string => {
-  if (domain === lnAddressHostname) {
-    return `https://ibex.${lnAddressHostname}/pay/lnurl/${user}`
-  }
+const lnurlParamsUrl = (user: string, domain: string, _lnAddressHostname: string): string => {
   return `https://${domain}/.well-known/lnurlp/${user}`
 }
 
