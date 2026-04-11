@@ -228,7 +228,10 @@ export const addToContactList = async (
     return
   }
 
-  if (!contactsEvent) {
+  // ENG-302: If the user has no existing kind-3 contact list, create one silently
+  // instead of prompting — there is nothing to overwrite, so the modal is wrong here.
+  // The confirmOverwrite prompt is only appropriate when replacing an existing list.
+  if (contactsEvent) {
     const confirmed = await confirmOverwrite()
     if (!confirmed) return
   }
