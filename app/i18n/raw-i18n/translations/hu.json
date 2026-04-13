@@ -3,6 +3,7 @@
     "title": "Fizetés fogadása így:",
     "buttonTitle": "Állítsd be a címed",
     "yourLightningAddress": "A Lightning címed",
+    "yourAddress": "A {bankName: string} címed",
     "notAbleToChange": "Beállítás után a {bankName: string} címet nem fogod tudni megváltoztatni.",
     "addressNotAvailable": "{bankName: string} címet már másvalaki használja.",
     "somethingWentWrong": "Valami nem sikerült. Kérlek próbáld újra.",
@@ -10,6 +11,7 @@
     "yourCashRegister": "A Lightning Pénztárad",
     "yourPaycode": "Fizetési Kódod",
     "copiedLightningAddressToClipboard": "Lightning címed a vágólapra került",
+    "copiedAddressToClipboard": "{bankName: string} címét másolatban tették ki a clipboardra",
     "copiedPaycodeToClipboard": "Fizetési Kód a vágólapra másolva",
     "copiedCashRegisterLinkToClipboard": "Pénztár link a vágólapra másolva",
     "howToUseIt": "Hogyan használd?",
@@ -20,7 +22,6 @@
     "howToUseYourPaycodeExplainer": "A Fizetési Kódod (technikailag ez egy LNURLpay cím) kinyomtathatod és ki is helyezheted az üzletedben, hogy fizetéseket fogadhass. Bárki fizethet Neked úgy, hogy beszkenneli a Fizetési Kódod egy mobil Lightning tárca alkalmazással.\n\nAzonban tartsd szem előtt, hogy nem minden tárca alkalmazás tudja azt beolvasni, például:",
     "howToUseYourCashRegisterExplainer": "A Pénztár Link segítségével bárki kezdeményezhet fizetést a tárcádba való bejelentkezés nélkül.\n\nKiállíthat fizetési kérelmeket és azok alapján, a fizetések egyből a Te {bankName: string} tárcádba fognak érkezni."
   },
-  "AcceptTermsAndConditionsScreen": {},
   "SetAccountModal": {
     "title": "Alapértelmezett számla beállítása",
     "description": "A kezdetben ez a számla lesz kiválasztva a fizetések küldéséhez és fogadásához. Bármikor megváltoztatható.",
@@ -38,9 +39,45 @@
     "unlock": "Feloldás",
     "usePin": "PIN kód használata"
   },
-  "PeopleScreen": {},
+  "ContactsScreen": {
+    "noContactsTitle": "Nem találtak kapcsolatokat",
+    "noContactsYet": "A fizetést egy felhasználónevet használva küldeni vagy fogadni, és itt automatikusan hozzáadják a kapcsolatokat.",
+    "noMatchingContacts": "Nem találtak kapcsolatokat, amelyek megfelelnének a keresésednek.",
+    "title": "A kapcsolatok"
+  },
   "ContactDetailsScreen": {
     "title": "Tranzakciók {username: string} felhasználóval"
+  },
+  "ChatScreen": {
+    "noChatsTitle": "Nem találtak cátokat",
+    "noChatsYet": "Jelentse be a Flash felhasználónevet vagy a nostr pubkeyet, hogy kezdje el a csevegést",
+    "noMatchingChats": "Nem találtak olyan csevegéseket, amelyek megfelelnének a keresésednek.",
+    "title": "Chat Chat Chat"
+  },
+  "ChatDetailsScreen": {
+    "title": "Csatlakozz {username: string}-tel!"
+  },
+  "CardScreen": {
+    "noCardsTitle": "Nem találtak kártyákat",
+    "noCardsYet": "Nyomja meg egy Flashcard-t, hogy itt hozzáadja.",
+    "noMatchingCards": "Nem találtak olyan kártyákat, amelyek megfelelnének a keresésednek.",
+    "title": "Flashcard",
+    "notFlashcard": "Támogatatlan NFC-kártya. Kérjük, győződjön meg róla, hogy egy flashkártyát használja.",
+    "noNDEFMessage": "NDEF üzenet nem talált. Kérjük, győződjön meg róla, hogy egy flashkártyát használja.",
+    "notSupported": "A NFC nem támogatott ebben a készülékben.",
+    "notEnabled": "Az NFC nem engedélyezett ezen a készüléken.",
+    "noTag": "Kérjük, győződjön meg róla, hogy egy flashkártyát használja."
+  },
+  "Cashout": {
+    "title": "Settle",
+    "percentageToCashout": "Össze kell rendezni %-ot.",
+    "valid": "Az {time: string} esetében érvényes.",
+    "exchangeRate": "Változási ráta",
+    "sendAmount": "Küldje el a mennyiséget",
+    "receiveAmount": "Kapjon összeget",
+    "fee": "A díj",
+    "success": "A rendezési kérelem sikeresen indult.",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
   },
   "ConversionDetailsScreen": {
     "title": "Átváltás",
@@ -49,7 +86,9 @@
   "ConversionConfirmationScreen": {
     "title": "Átváltás ellenörzése",
     "youreConverting": "Átváltasz",
-    "receivingAccount": "Fogadó számla"
+    "sendingAccount": "Küldő fiók",
+    "receivingAccount": "Fogadó számla",
+    "conversionFee": "A konverziós díj"
   },
   "ConversionSuccessScreen": {
     "title": "Sikeres átváltás",
@@ -141,7 +180,21 @@
       "WhatIsMoney": {
         "title": "Mi a Pénz?",
         "questions": {
-          "moneySocialAgreement": {},
+          "moneySocialAggrement": {
+            "answers": [
+              "Because people trust that other people will value money similarly",
+              "Because your mother told you so",
+              "Because a dollar bill is worth its weight in gold"
+            ],
+            "feedback": [
+              "Correct. This is what allows money to work!",
+              "She may well have. But that is not the correct answer here!",
+              "Nope. In the past you could exchange US dollars for gold. But this is no longer the case."
+            ],
+            "question": "Miért van értéke a pénznek?",
+            "text": "Money requires people to trust. \n\nPeople trust the paper dollar bills in their pocket. They trust the digits in their online bank account. They trust the balance on a store gift card will be redeemable. \n\nHaving money allows people to easy trade it immediately for a good, or a service.",
+            "title": "A pénz egy társadalmi megállapodás."
+          },
           "coincidenceOfWants": {
             "answers": [
               "Akaratok véletlen egybeesése",
@@ -393,165 +446,6 @@
             "title": "Különleges Jellemző #5: \nBiztonságos -- II. rész"
           }
         }
-      },
-      "TheOriginsOfMoney": {
-        "questions": {
-          "originsOfMoney": {},
-          "primitiveMoney": {},
-          "anticipatingDemand": {},
-          "nashEquilibrium": {},
-          "singleStoreOfValue": {}
-        }
-      },
-      "AttributesOfAGoodStoreOfValue": {
-        "questions": {
-          "whatIsGoodSOV": {},
-          "durability": {},
-          "portability": {},
-          "fungibility": {},
-          "verifiability": {},
-          "divisibility": {},
-          "scarce": {},
-          "establishedHistory": {},
-          "censorshipResistance": {}
-        }
-      },
-      "TheEvolutionOfMoneyI": {
-        "questions": {
-          "evolutionMoney": {},
-          "collectible": {},
-          "storeOfValue": {},
-          "mediumOfExchange": {},
-          "unitOfAccount": {},
-          "partlyMonetized": {},
-          "monetizationStage": {}
-        }
-      },
-      "TheEvolutionOfMoneyII": {
-        "questions": {
-          "notFromGovernment": {},
-          "primaryFunction": {},
-          "monetaryMetals": {},
-          "stockToFlow": {},
-          "hardMoney": {}
-        }
-      },
-      "TheEvolutionOfMoneyIII": {
-        "questions": {
-          "convergingOnGold": {},
-          "originsOfPaperMoney": {},
-          "fractionalReserve": {},
-          "bankRun": {},
-          "modernCentralBanking": {},
-          "goldBacked": {},
-          "brettonWoods": {},
-          "globalReserve": {}
-        }
-      },
-      "TheEvolutionOfMoneyIV": {
-        "questions": {
-          "nixonShock": {},
-          "fiatEra": {},
-          "digitalFiat": {},
-          "plasticCredit": {},
-          "doubleSpendProblem": {},
-          "satoshisBreakthrough": {},
-          "nativelyDigital": {},
-          "CBDCs": {}
-        }
-      },
-      "BitcoinWhyWasItCreated": {
-        "questions": {
-          "rootProblem": {},
-          "bitcoinCreator": {},
-          "fiatRequiresTrust": {},
-          "moneyPrinting": {},
-          "genesisBlock": {},
-          "cypherpunks": {}
-        }
-      },
-      "BitcoinHowDoesItWork": {
-        "questions": {
-          "peer2Peer": {},
-          "blockchain": {},
-          "privateKey": {},
-          "publicKey": {},
-          "mining": {},
-          "proofOfWork": {},
-          "difficultyAdjustment": {},
-          "halving": {}
-        }
-      },
-      "LightningWhatDoesItSolve": {
-        "questions": {
-          "bitcoinDrawbacks": {},
-          "blocksizeWars": {},
-          "lightningNetwork": {},
-          "instantPayments": {},
-          "micropayments": {},
-          "scalability": {},
-          "paymentChannels": {},
-          "routing": {}
-        }
-      },
-      "BitcoinCriticismsFallaciesI": {
-        "questions": {
-          "itsaBubble": {},
-          "itstooVolatile": {},
-          "itsnotBacked": {},
-          "willbecomeObsolete": {},
-          "toomuchEnergy": {},
-          "strandedEnergy": {}
-        }
-      },
-      "BitcoinCriticismsFallaciesII": {
-        "questions": {
-          "internetDependent": {},
-          "forcrimeOnly": {},
-          "ponziScheme": {},
-          "bitcoinisTooSlow": {},
-          "supplyLimit": {},
-          "governmentBan": {}
-        }
-      },
-      "BitcoinCriticismsFallaciesIII": {
-        "questions": {
-          "concentratedOwnership": {},
-          "centralizedMining": {},
-          "tooExpensive": {},
-          "prohibitivelyHigh": {},
-          "willBeHoarded": {},
-          "canBeDuplicated": {}
-        }
-      },
-      "BitcoinAndEconomicsI": {
-        "questions": {
-          "scarcity": {},
-          "monetaryPremium": {},
-          "greshamsLaw": {},
-          "thiersLaw": {},
-          "cantillonEffect": {},
-          "schellingPoint": {}
-        }
-      },
-      "BitcoinAndEconomicsII": {
-        "questions": {
-          "opportunityCost": {},
-          "timePreference": {},
-          "impossibleTrinity": {},
-          "jevonsParadox": {},
-          "powerLaws": {},
-          "winnerTakeAll": {}
-        }
-      },
-      "BitcoinAndEconomicsIII": {
-        "questions": {
-          "unitBias": {},
-          "veblenGood": {},
-          "malinvestment": {},
-          "asymmetricPayoff": {},
-          "ansoffMatrix": {}
-        }
       }
     },
     "finishText": "Egyelőre ennyi. Értesítünk, amint lesz lehetőség a folytatásra.",
@@ -571,6 +465,10 @@
   },
   "GetStartedScreen": {
     "logInCreateAccount": "Bejelentkezés / felhasználói fiók létrehozása",
+    "quickStart": "Kezdés Kezdés Kezdés",
+    "restoreWallet": "Login",
+    "exploreWalletInstead": "Helyettesítsd a pénztárcát!",
+    "setupBusinessAccount": "Üzleti fiók létrehozása",
     "createAccount": "Új fiók létrehozása",
     "exploreWallet": "Tárca felfedezése",
     "logBackInWith": "Újra bejelentkezés ezzel:",
@@ -585,20 +483,58 @@
       "noBackup": "Nincs biztonsági másolat opció",
       "sendingLimit": "Csökkentett napi küldési korlát",
       "noOnchain": "Nincs onchain Bitcoin fogadás"
-    }
+    },
+    "chooseAccountType": "Válassza ki a Számlatípusot"
   },
   "MapScreen": {
+    "locationPermissionMessage": "Aktiválja a helyezkedést, hogy tudja, hol van a térképen",
+    "locationPermissionNegative": "Törölni Törölni",
+    "locationPermissionNeutral": "Emlékezz rá később!",
+    "locationPermissionPositive": "OK",
+    "locationPermissionTitle": "Helyezze meg magát a térképen",
     "payBusiness": "Fizess ennek az üzletnek",
-    "title": "Térkép"
+    "title": "Térkép",
+    "addPin": "Kattintson bárhol, hogy hozzáadjon egy pinet",
+    "selectedCoordinates": "Az Flashpoint koordinátája: ",
+    "viewInGoogleMaps": "Megtekintés a Google Maps-ban",
+    "getDirections": "iránymutatások Get Directions"
   },
   "HomeScreen": {
+    "cashout": "A készpénz kimaradt",
     "receive": "Fogadás",
+    "reload": "Reload Card Reload Card",
+    "balance": "Megfrissítő egyensúly",
+    "showQrCode": "Topup a QR-en keresztül",
     "send": "Küldés",
+    "sweep": "\"Sweep to Wallet\"-re törölj a pénztárcát.",
+    "pay": "Fizetés  Fizetés ",
     "title": "Kezdőlap",
     "scan": "Beolvasás",
     "updateAvailable": "Frissítés elérhető.\nKoppints a frissítéshez most",
     "useLightning": "Mi a Lightning Hálózatot használjuk.",
-    "myAccounts": "Számláim"
+    "myAccounts": "Számláim",
+    "unclaimedDepositsWarning": "️ Pl e a s e c o m p l e t e o r claim a l l l unclaimed deposits b e f o r e n i n s t a l i n g Fl a s o r unclaimed deposits w i l l l b e l o s t .",
+    "unclaimedDeposits": "Nem igényelt betétek",
+    "cash": "A készpénz a készpénzben.",
+    "bitcoin": "Bitcoin",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Add",
+    "upgradeTitle": "Felkészítse fel a fiókját",
+    "upgradeTitlePending": "A frissítés iránti kérelem várakozásban van",
+    "upgradeDesc": "Felkészítse fel a teljes potenciálját, hogy növelje a láthatóságot, a határokat és a kifizetéseket.",
+    "upgradePendingDesc": "A fiókja felújítási kérése felülvizsgálat alatt áll.",
+    "currencyTitle": "Cserélj a helyi pénznemben",
+    "currencyDesc": "Tekintse át a rendelkezésre álló valuták listáját, és válassza ki a pénznemeit.",
+    "flashcardTitle": "Kapjon egy Flashcard",
+    "flashcardDesc": "Találj egy Flashpoint-t, és szerezz egy Flashcard-t a mindennapi életben.",
+    "nonCustodialWalletTitle": "Nem őrizetbeli pénztárcák",
+    "nonCustodialWalletDesc": "Tudjon meg többet a nem őrizetbeli pénztárcákról.",
+    "emailTitle": "E-mail cím",
+    "emailDesc": "Adja hozzá az e-mail címét, hogy biztosítsa a fiókját, és lépjen be az e-mail cím használatával.",
+    "btcWalletTitle": "Az BTC pénztárca engedélyezése",
+    "btcWalletDesc": "Könnyen átruházza a nagyobb összegeket Bitcoin-ben.",
+    "backupTitle": "A BTC pénztárcáját biztonsági mentse meg.",
+    "backupDesc": "Támogatja és biztosítsa a Bitcoin pénztárcáját a Recovery phrase használatával."
   },
   "PinScreen": {
     "attemptsRemaining": "Helytelen PIN. {attemptsRemaining: number} próbálkozás maradt.",
@@ -626,6 +562,7 @@
     "title": "Kezdőlap"
   },
   "ReceiveScreen": {
+    "flashcardInstructions": "Ellenőrizd az QR kódot, vagy kapcsold meg az ikont, hogy ezt megosszad a whatsapp-on, az e-mailben, stb.",
     "nfc": "NFC",
     "enterAmountFirst": "Kérlek először add meg az összeget",
     "activateNotifications": "Szeretnéd aktiválni az értesítéseket, hogy értesülj, amikor megérkezik a fizetés?",
@@ -654,6 +591,11 @@
     "setANote": "Jegyzet beállítása",
     "invoiceAmount": "Fizetési kérelem összege",
     "fees": "{minBankFee: string} sats díjak az onchain fizetéshez {minBankFeeThreshold: string} sats alatt",
+    "lightning": "Lightning",
+    "paycode": "Paycode",
+    "onchain": "Az Onchain",
+    "bitcoin": "Bitcoin",
+    "stablesats": "A készpénz a készpénzben.",
     "regenerateInvoiceButtonTitle": "Fizetési kérelem újragenerálása",
     "setUsernameButtonTitle": "Felhasználónév beállítása",
     "invoiceHasExpired": "A fizetési kérelem lejárt",
@@ -668,11 +610,17 @@
       "expiresNow": "Most jár le"
     },
     "invoiceHasBeenPaid": "A fizetési kérelem kifizetésre került",
+    "yourBitcoinOnChainAddress": "Az Ön Bitcoin Onchain Címe",
+    "receive": "Kapjon, kapjon!",
     "receiveViaInvoice": "Fogadás Lightningon",
     "receiveViaPaycode": "Fogadás Paycode-al",
+    "topupFlashcard": "Topup Flashcard",
     "receiveViaOnchain": "Fogadás Onchain",
     "payCodeOrLNURL": "Paycode / LNURL",
-    "cantReceiveZeroSats": "Nem fogadhatsz el nulla satoshit. Kérlek, adj meg olyan összeget, ami legalább 1 vagy annál több sat."
+    "cantReceiveZeroSats": "Nem fogadhatsz el nulla satoshit. Kérlek, adj meg olyan összeget, ami legalább 1 vagy annál több sat.",
+    "initialDeposit": "* A csatorna beállításához ajánlott 5 dolláros kezdeti befizetés. ~$1 kerül a beállítás díjaként kifizetésre.",
+    "selectPaymentMethod": "Válassza ki a fizetési módot",
+    "selectWallet": "Válassza ki a pénztárcát"
   },
   "RedeemBitcoinScreen": {
     "title": "Bitcoin beváltása",
@@ -707,7 +655,8 @@
     "hideBalanceTitle": "Egyenleg elrejtése",
     "pinDescription": "A PIN kód másodlagos azonosítási módként szolgál a biometrikus azonosításhoz mellett.",
     "pinTitle": "PIN kód",
-    "setPin": "PIN beállítása"
+    "setPin": "PIN beállítása",
+    "backupDescription": "Ha egy PIN kódot állítanak be, kérjük, biztonsági mentse a fiókját egy telefonszám hozzáadásával."
   },
   "SendBitcoinConfirmationScreen": {
     "amountLabel": "Összeg:",
@@ -722,7 +671,8 @@
     "totalLabel": "Összesen:",
     "totalExceed": "Az összeg meghaladja az egyenleged, amely {balance: string}",
     "maxFeeSelected": "Ez a maximális díj, amit ezen tranzakcióért felszámíthatunk. Lehet, hogy kevesebb lesz, miután a fizetés megtörtént.",
-    "feeError": "Nem sikerült kiszámítani a díjat"
+    "feeError": "Nem sikerült kiszámítani a díjat",
+    "breezFeeText": "Lehet, hogy egy kis díj van a útvonalért"
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "Mostantól a {bankName: string} felhasználónevek {bankName: string} címek is.",
@@ -741,11 +691,24 @@
     "unknownLightning": "Nem tudjuk értelmezni ezt a Lightning címet. Kérjük, próbáld újra.",
     "unknownOnchain": "Nem tudjuk értelmezni ezt a Bitcoin címet. Kérjük, próbáld újra.",
     "newBankAddressUsername": "{lnAddress: string} létezik {bankName: string} címként, de még sosem küldtél pénzt oda.",
-    "confirmUsernameModal": {},
+    "confirmModal": {
+      "title": "Sosem küldtél pénzt erre a címre.",
+      "body1": "Kérjük, győződjön meg róla, hogy a címzett {bankName: string} címet adott neked,",
+      "bold2bold": "Nem egy másik tárcából származó felhasználói név.",
+      "body3": "Ellenkező esetben a pénz egy {bankName: string} számlába kerül, amely a {lnAddress: string} címet tartalmazza.",
+      "warning": "Ha a {bankName: string} címet helytelenül írják be, a {bankName: string} nem törölheti vissza a tranzakciót.",
+      "checkBox": "{lnAddress: string} a megfelelő cím.",
+      "confirmButton": "100%-ban biztos vagyok benne.",
+      "externalWarning": "Ha pénzt akarsz küldeni valakinek, aki nem egy {bankName: string} számla, biztos vagy benne, hogy ez a cím, ahová akarsz küldeni?",
+      "externalCheckBox": "Megerősítem a {address: string} küldetését."
+    },
     "clipboardError": "Hiba a vágólap tartalmának lekérésekor"
   },
   "SendBitcoinScreen": {
     "amount": "Összeg",
+    "MinOnChainLimit": "Ennek a tranzakciónak a minimális összege 2,00 dollár.",
+    "MinOnChainSatLimit": "Ennek a tranzakciónak a minimális összege 5 500 sats.",
+    "MinFlashcardLimit": "A flashkártyából történő újratöltés esetén a minimális összeg 100 sats.",
     "amountExceed": "Az összeg meghaladja az egyenlegedet: {balance: string}",
     "amountExceedsLimit": "Az összeg meghaladja a napi limitet: {limit: string}",
     "upgradeAccountToIncreaseLimit": "Magasabb tranzakciós limithez magasabb szintű felhasználói fiókra váltás szükséges",
@@ -765,9 +728,16 @@
     "max": "Max",
     "maxAmount": "Max. összeg",
     "title": "Bitcoin küldése",
+    "send": "Küldj el!",
     "failedToFetchLnurlInvoice": "Nem sikerült lekérni az LNURL fizetési kérelmet",
     "lnurlInvoiceIncorrectAmount": "Az LNURL szerver helytelen összegű fizetési kérelemmel válaszolt.",
-    "confirmFeesModal": {}
+    "lnurlInvoiceIncorrectDescription": "Az lnurl szerver egy számlával válaszolt, amely helytelen leírást tartalmazott.",
+    "noAmountInvoiceError": "A BTC pénztárcában nem támogatott számlázási összeg. Kérjük, menjen vissza és szkenneljen vagy írjon be egy számlát egy hozzáadott összeggel.",
+    "onchainMinAmountInvoiceError": "A bejegyzett összeg kevesebb, mint a {amount: number} láncokon lévő tranzakció elküldéséhez szükséges minimális összeg. Kérjük, fontolja meg, hogy ezt az összeget Lightning-en keresztül küldje!",
+    "minAmountInvoiceError": "A számlán szereplő összeg kevesebb, mint a minimális {amount: number} összeg.",
+    "maxAmountInvoiceError": "A számlán szereplő összeg nagyobb, mint a maximális {amount: number} összeg.",
+    "minAmountConvertError": "A konverziós összeg kevesebb, mint a minimális összeg {amount: number}",
+    "maxAmountConvertError": "A konverziós összeg nagyobb, mint a maximális {amount: number} összeg."
   },
   "SettingsScreen": {
     "staticQr": "Nyomtatható statikus QR-kód",
@@ -798,7 +768,16 @@
     "nfcOnlyReceive": "Egyelőre csak NFC-ből való fogadás érhető el",
     "nfcScanNow": "NFC beolvasása most",
     "nfcNotSupported": "Az NFC nem támogatott ezen a készüléken",
-    "logInOrCreateAccount": "Bejelentkezés vagy fiók létrehozása"
+    "logInOrCreateAccount": "Bejelentkezés vagy fiók létrehozása",
+    "backup": "Backup",
+    "importWallet": "Import portfóliót",
+    "showSeedPhrase": "Reveal recovery phrase",
+    "showNostrSecret": "Csatlakozási beállítások",
+    "beginnerMode": "Tiltsa be a Bitcoin fiókját!",
+    "advanceMode": "Lehetővé tegye az Bitcoin fiókot (Advanced Mode)",
+    "keysManagement": "Cseppártyás biztonsági mentés",
+    "showBtcAccount": "Mutasd meg a Bitcoin fiókot",
+    "hideBtcAccount": "Elrejtse az Bitcoin fiókot"
   },
   "NotificationSettingsScreen": {
     "title": "Értesítési beállítások",
@@ -886,6 +865,74 @@
     "title": "Kétlépcsős azonosítás",
     "content": "A bejelentkezéshez, írd be az azonosító alkalmazásodból származó 6 jegyű kódot. Ez a kód minden 30 másodpercben változik."
   },
+  "BackupOptions": {
+    "title": "Visszaállítási lehetőségek",
+    "recoveryPhrase": "A Recovery Phrase",
+    "recoveryPhraseDesc": "Támogatás Bitcoin Wallet using recovery phrase",
+    "revealRecoveryPhrase": "Reveal Recovery Phrase",
+    "revealRecoveryPhraseDesc": "Használd a helyreállítási kifejezést a Bitcoin Wallet importálására",
+    "phone": "Telefon Telefon Telefon",
+    "phoneDesc": "Backup Cash Wallet telefonszámot használva",
+    "usePhoneNumber": "Használd a telefonszámodat a Cash Wallet importálására",
+    "done": "    "
+  },
+  "BackupStart": {
+    "title": "Először is, hozzuk létre a helyreállítási kifejezést",
+    "description": "A helyreállítási kifejezés egy bizonyos sorrendben 12 szóból álló sorozat. Ez a szókombináció egyedülálló a pénztárcádban. Győződjön meg róla, hogy készen áll a toll és a papír, hogy le tudjon írni.",
+    "continue": "Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás"
+  },
+  "BackupSeedPhrase": {
+    "title": "Ez a helyreállítási kifejezésed",
+    "description": "Győződjön meg róla, hogy leírja, ahogy itt látható, ezt később ellenőriznie kell.",
+    "backupToICloud": "A iCloud-hez való biztonsági mentés.",
+    "backupToGoogleDrive": "A Google Drive-hez való biztonsági mentés",
+    "verify": "Ellenőrizze"
+  },
+  "BackupDoubleCheck": {
+    "title": "Vegyük a kétszeres ellenőrzést",
+    "description1": "Most ellenőrizjük, hogy helyesen írtad le a helyreállítási kifejezést.",
+    "description2": "Igen, ez annyira fontos.",
+    "continue": "Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás"
+  },
+  "BackupVerify": {
+    "title": "Nyomja meg a szavakat a helyes sorrendben.",
+    "correctTitle": "Győződjön meg róla, hogy biztonságosan tárolja a helyreállítási kifejezést.",
+    "wrongTitle": "Sajnálom, de ez nem a megfelelő harmadik szó.",
+    "tryAgain": "Próbáld meg újra!",
+    "continue": "Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás Folytatás"
+  },
+  "BackupComplete": {
+    "title": "A biztonsági mentés befejeződött",
+    "description": "Most már meg kell írnia a helyreállítási kifejezést és jelszót a jövőbeli hivatkozásra.",
+    "complete": "Complete Complete"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "Ez a helyreállítási kifejezésed",
+    "description": "Biztosítsd, hogy felírod, ahogy itt látható, mert vissza kell kapnod a pénztárcádat.",
+    "done": "    "
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "Jelentkezési lehetőségek",
+    "importOptions": "Import portfólió lehetőségek",
+    "recoveryPhrase": "A Recovery Phrase",
+    "importBTCWallet": "Import Bitcoin Wallet using recovery phrase",
+    "phone": "Telefon Telefon Telefon",
+    "importUsingPhone": "Importáld vagy készítsd be a készpénz pénztárcádat a telefonszám használatával",
+    "email": "E-mail",
+    "importUsingEmail": "Importáld a készpénz pénztárcádat az e-mail cím segítségével",
+    "login": "Login/Create",
+    "done": "    "
+  },
+  "ImportWallet": {
+    "title": "Jelentkezzen be egy helyreállítási kifejezéssel",
+    "importTitle": "Importáld a pénztárcádat egy helyreállítási kifejezéssel",
+    "description": "Ez egy 12 szót tartalmazó kifejezés, amit akkor kaptál, amikor megteremtetted az előző pénztárcádat.",
+    "complete": "Complete Complete"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
   "CopySecretComponent": {
     "button": "Titok másolása",
     "toastMessage": "Titok másolva a vágólapra!"
@@ -912,6 +959,26 @@
     "termsAndConditions": "Olvassa el az Általános Szerződési Feltételeket.",
     "learnMore": "Tudj meg többet a Stablesatsról"
   },
+  "AdvancedModeModal": {
+    "header": "Üdvözöljük a fejlett móddal!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "Olvassa el a Feltételeket és Feltételeket.",
+    "learnMore": "Mi az a nem őrizetbeli pénztárca?",
+    "importWallet": "Import portfóliót",
+    "createWallet": "Cseppártyát Create Create Create"
+  },
+  "MerchantSuggestModal": {
+    "header": "Flashpoint Add",
+    "body": "A Flash felhasználók megtalálhatják Önt a térképen, és kifizetéseket küldhetnek Önnek a térképi gombot kattintva.",
+    "termsAndConditions": "Olvassa el a Feltételeket és Feltételeket.",
+    "learnMore": "A pin kérelem 24 órán belül elkészül."
+  },
+  "UnVerifiedSeedModal": {
+    "header": "Az Bitcoin tárcája biztonságban van.",
+    "body": "Ha elveszíti a telefonját vagy eltávolítja az alkalmazást anélkül, hogy leírná a visszaállítási kifejezést, elveszíti a pénzhez való hozzáférést. ",
+    "termsAndConditions": "Olvassa el a Feltételeket és Feltételeket.",
+    "learnMore": "Mi a Recovery Phrase?"
+  },
   "SplashScreen": {
     "update": "Az alkalmazása elavult. Az alkalmazás használatához frissítés szükséges.\n\nAndroid esetén a Play Áruházból, iOS esetén pedig a Testflight alkalmazáson keresztül tudod elvégezni."
   },
@@ -921,7 +988,24 @@
     "spent": "Elköltött",
     "receivingAccount": "Fogadó számla",
     "sendingAccount": "Küldő számla",
-    "txNotBroadcast": "Az Ön tranzakciója sorban áll. Meg fog jelenni a mempoolban {countdown: string}."
+    "txNotBroadcast": "Az Ön tranzakciója sorban áll. Meg fog jelenni a mempoolban {countdown: string}.",
+    "noTransaction": "Nem találtak tranzakciókat ezzel az azonosítónál",
+    "typeOnChain": "Az OnChain",
+    "typeLightning": "Lightning",
+    "typeIntraLedger": "IntraLedger",
+    "pendingStatus": "Kint várakozik.",
+    "confirmation": "Bizonyítás",
+    "confirmations": "Biztosanítók",
+    "hash": "Hash Hash",
+    "preimage": "A préimázs",
+    "transactionId": "A tranzakciós ID",
+    "swapDetails": "Swap Details",
+    "destinationAddress": "Célpont cím",
+    "swapId": "Swap ID",
+    "lockupTxId": "Lockup tranzakció Lockup tranzakció",
+    "claimTxId": "A követelés tranzakciója",
+    "swapFees": "Swap Fees",
+    "expirationBlockHeight": "A blokkban lejárt időtartama"
   },
   "TransactionLimitsScreen": {
     "receive": "Fogadás",
@@ -933,7 +1017,14 @@
     "stablesatTransfers": "Stablesat Tranzakciók",
     "internalSend": "Küldés {bankName: string} felhasználónak",
     "error": "Jelenleg nem lehet lekérdezni a limitet",
-    "increaseLimits": "Növelje a limitet"
+    "contactUsMessageBody": "Üdvözlöm, szeretnék a fiókomat {bankName: string} Business fiókra frissíteni.",
+    "contactUsMessageSubject": "Flash Business Upgrade Request",
+    "contactSupportToPerformKyc": "Kérjük, lépjen kapcsolatba a kézikönyvi KYC végrehajtással és a {bankName: string} Businesshez való frissítéssel kapcsolatban.",
+    "increaseLimits": "Növelje a limitet",
+    "spendingLimits": "A kiadások korláta",
+    "spendingLimitsDescription": "Az ezen a oldalon feltüntetett kiadási határértékeket USD-ben jelöljük ki. A kényelmük érdekében ezeket a határértékeket a jelenlegi devizaárfolyamok alapján a helyi pénznemben átalakítjuk. Kérjük, vegye figyelembe, hogy a megjelenített helyi valuta összegének változásai lehetnek, mivel a devizaárfolyamokat valós idejűleg frissítik.",
+    "requestUpgrade": "Kérdés Upgrade Request Upgrade",
+    "editRequest": "Edit Upgrade Request"
   },
   "TransactionScreen": {
     "noTransaction": "Nincs megjeleníthető tranzakció",
@@ -955,11 +1046,17 @@
     "stayInTrialMode": "Maradj próbaverzióban"
   },
   "SetAddressModal": {
+    "helloText": "Helló!",
+    "whoAreYou": "Hogy hívjuk Önt?",
+    "usernameHint": "Ez lesz a {bankName: string} felhasználóneve.",
+    "placeholder": "Írd be a felhasználónevet",
     "title": "{bankName: string} cím beállítása",
+    "save": "A Save és a Save között.",
     "Errors": {
       "tooShort": "A cím legalább 3 karakter hosszú kell legyen",
       "tooLong": "A cím legfeljebb 50 karakter hosszú lehet",
       "invalidCharacter": "A cím csak betűket, számokat és aláhúzásjeleket tartalmazhat",
+      "startsWithNumber": "A felhasználónevének nagy vagy kis betűvel kell kezdődnie.",
       "addressUnavailable": "Sajnáljuk, ez a cím már foglalt",
       "unknownError": "Ismeretlen hiba történt, kérjük, próbálja újra később"
     },
@@ -1043,11 +1140,13 @@
     "community": "Közösség",
     "account": "Fiók",
     "trialAccount": "Próba felhasználói fiók",
+    "flashUser": "Flash felhasználó",
     "transactionLimits": "Tranzakciós Limitek",
     "activateWallet": "Tárca Aktiválása",
     "amountRequired": "Összeg szükséges",
     "back": "Vissza",
     "backHome": "Vissza a főoldalra",
+    "revealSeed": "Írd le a helyreállítási kifejezést",
     "bank": "Bank",
     "bankAccount": "Készpénz Számla",
     "bankAdvice": "{bankName: string} Tanács",
@@ -1059,13 +1158,16 @@
     "cancel": "Mégse",
     "close": "Bezárás",
     "confirm": "Megerősítés",
+    "copied": "Képzelték a clipboardra",
     "convert": "Átváltás",
     "codeConfirmation": "Kód Megerősítése",
     "currency": "Pénznem",
     "currencySyncIssue": "Pénznem probléma. Frissítés szükséges",
     "csvExport": "Tranzakciók exportálása CSV formátumban",
+    "exportSparkLogs": "Export Logs",
     "date": "Dátum",
     "description": "Leírás",
+    "details": "Részletesebben",
     "domain": "Domain",
     "email": "Email",
     "error": "Hiba",
@@ -1098,9 +1200,11 @@
     "phoneNumber": "Telefonszám",
     "rate": "Árfolyam",
     "reauth": "A munkamenet lejárt. Kérlek jelentkezz be újra.",
+    "request": "Kérésszállat Pin",
     "restart": "Újraindítás",
     "sats": "satoshi",
     "search": "Keresés",
+    "chatSearch": "felhasználónevet vagy nostr pubkey",
     "security": "Biztonság",
     "send": "Küldés",
     "setAnAmount": "Összeg beállítása",
@@ -1131,6 +1235,28 @@
     "problemMaybeReauth": "Probléma merült fel a kérés során. Kérjük, próbáld újra egy perc múlva. Ha a probléma továbbra is fennáll, javasoljuk, hogy jelentkezz ki, majd jelentkezz be újra. Kijelentkezni a Beállítások > Számla > Kijelentkezés menüpontban tudsz.",
     "warning": "Figyelmeztetés"
   },
+  "NostrQuickStart": {
+    "postHeading": "Írd meg az első közösségi posztodat!",
+    "postDesc": "Mutassa be magát a világnak!"
+  },
+  "Social": {
+    "post": "Post to Nostr",
+    "postTitle": "Készíts egy posztot",
+    "flashAppCredit": "Posted using Flash! Get it @ https://getflash.io/app",
+    "writeYourNote": "Írd le a jegyzédet, hogy különleges legyen!",
+    "postButton": "Post Post",
+    "notePosted": "Sikeres! A megjegyzésedet közzétették",
+    "errorPostFailed": "Tévedés! hiba a közzétételben",
+    "errorEmptyNote": "Tévedés: Üres megjegyzés",
+    "posting": "postározás... postározás...",
+    "viewOnIris": "A iris.to nézőpontja.",
+    "viewPostQuestion": "Szeretnéd megnézni a posztodat a iris.to-ről?",
+    "browseSocialFeed": "Nézzön át a közösségi oldalt",
+    "socialFeedTitle": "Szociális Feed",
+    "postSuccessTitle": "Post Shared!",
+    "postSuccessSubtitle": "Az Ön bejegyzése Nostr-ra került közzé.",
+    "showMeMore": "Mutasd meg többet!"
+  },
   "errors": {
     "generic": "Hiba történt.\nKérjük, próbáld újra később.",
     "invalidEmail": "Érvénytelen email",
@@ -1154,6 +1280,18 @@
       "title": "Fizetés érkezett"
     }
   },
+  "reports": {
+    "title": "Jelentések generálása",
+    "reconciliation": "A megbékélésről szóló jelentés",
+    "aggregation": "Aggregációs jelentés",
+    "topRecipients": "Top Recipients Report",
+    "topSenders": "A Top Senders Report",
+    "selectFromDate": "Válassza ki a dátumtól",
+    "selectToDate": "Válassza ki a dátumot",
+    "fromDate": "        ",
+    "toDate": "A To A To",
+    "total": "Összesen, teljesen, teljesen."
+  },
   "support": {
     "contactUs": "Segítségre van szükséged? Írj nekünk.",
     "joinTheCommunity": "Csatlakozz a közösséghez",
@@ -1161,6 +1299,7 @@
     "email": "Email",
     "enjoyingApp": "Tetszik az alkalmazás?",
     "statusPage": "Állapotoldal",
+    "discord": "Discord Discord",
     "mattermost": "Mattermost",
     "thankYouText": "Köszönjük a visszajelzést! Szeretnél javaslatot tenni a fejlesztésre?",
     "defaultEmailSubject": "{bankName: string} - Támogatás",
@@ -1175,7 +1314,8 @@
     "deleteAccountConfirmation": "A fiókod törlésre került.\n\nAmikor a szabályozási követelmények szerinti próbaidőszak lejár, a fiókhoz kapcsolódó fennmaradó adatok véglegesen törlődnek.",
     "deleteAccountFromPhone": "Szia! Kérem a fiókom törlését. A telefonszámom: {phoneNumber: string}.",
     "deleteAccountError": "Valami hiba történt. További segítségért lépj kapcsolatba az alábbi email címen: {email: string}.",
-    "bye": "Viszlát!"
+    "bye": "Viszlát!",
+    "switchToBeginnerMode": "A kezdő üzemmódba való átállással nem veszíted el a BTC pénztárcádhoz való hozzáférést, de a pénztárcád rejtve marad."
   },
   "lnurl": {
     "overLimit": "Nem küldhetsz többet, mint a maximális összeg",
@@ -1193,7 +1333,9 @@
     "minAmountNotMet": "Az összeg legalább ennyi kell legyen: {minAmount: string}."
   },
   "AmountInputButton": {
-    "tapToSetAmount": "Összeg beállítása"
+    "tapToSetAmount": "Összeg beállítása",
+    "tapToSetOnChainAmount": "Add an amount",
+    "enterAmount": "Kérjük, adja be az összeget, hogy folytassa a folyamatot."
   },
   "AppUpdate": {
     "needToUpdateSupportMessage": "Frissítenem kell az alkalmazásomat a legújabb verzióra. A(z) {os: string} alkalmazást használom, verziószáma: {version: string}.",
@@ -1202,12 +1344,148 @@
     "tapHereUpdate": "Kattintson ide a frissítéshez",
     "contactSupport": "Vegye fel a kapcsolatot az ügyfélszolgálattal"
   },
-  "Circles": {
-    "circlesGrowingSatsExplainer": {},
-    "mayChallenge": {},
-    "juneChallenge": {}
+  "RefundFlow": {
+    "refundListTitle": "Nem igényelt betétek",
+    "depositDetails": "Tárgyalási részletek",
+    "refundTitle": "Visszafizetés a betéthez",
+    "destinationTitle": "Célpont",
+    "confirmationTitle": "Bizonyítás",
+    "pendingTransactions": "A várakozó tranzakciók",
+    "noRefundables": "Nem találtak követelés nélküli betéteket",
+    "view": "A View nézőpont.",
+    "refund": "Visszafizetés",
+    "refundTo": "Visszaküldjük a USD pénztárcának.",
+    "recommendedFees": "Az ajánlott díjak",
+    "fast": "Fast Fast Fast",
+    "medium": "Medium",
+    "slow": "Lassan Lassan",
+    "txId": "A tranzakciós ID",
+    "refunded": "Visszatérve a pénzt",
+    "pending": "Kint várakozik.",
+    "autoClaiming": "Ezt az átruházást automatikusan igényeljük",
+    "approvalRequired": "A jóváhagyás szükséges",
+    "broadcasting": "A műsorszolgáltatás",
+    "feeExceeded": "A díj túlságosan magas.",
+    "claimFailed": "A követelés nem sikerült",
+    "automaticClaim": "Ezt a befizetést automatikusan igényeljük, ha a hálózati díjak alacsonyabbak.",
+    "approveFee": "Engedje meg, hogy igényelje ezt a átruházást, vagy utasítsa el, hogy feldolgozza a visszatérítést.",
+    "enterAddress": "Írja be a Bitcoin címet, ahol a visszatérítést szeretne kapni.",
+    "selectFee": "Válassza ki egy hálózati díjat a visszatérítéshez",
+    "confirmRefund": "A megerősítés és a visszafizetés.",
+    "processing": "A feldolgozási visszatérítés...",
+    "success": "Visszatérési sugárzás",
+    "refundSuccess": "A visszatérítését az Bitcoin hálózatnak küldték.",
+    "refundFailed": "Nem sikerült visszaküldeni a pénzt",
+    "failedToClaim": "Nem tudott igénybe venni a betétet",
+    "unknownError": "Nem ismert hiba történt",
+    "missingUtxo": "A UTXO betét hiányzik, és a tranzakció még nem erősült meg.",
+    "couldNotClaimAutomatically": "Ezt a betétet nem lehetett automatikusan igénybe venni.",
+    "networkFee": "A hálózati díj",
+    "networkFeeWithRate": "Hálózati díj ({feeRate: string} sat/vB)",
+    "youReceive": "Ön megkapja",
+    "approve": "Helyesítse meg a jóváhagyást.",
+    "refundToExternalWallet": "Vissza lehet fizetni egy külső tárcába.",
+    "enterDestinationAddress": "Kérjük, adja be a célcímet",
+    "invalidBitcoinAddress": "Invalid Bitcoin cím formátum",
+    "estimatedFee": "A hálózati díj ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Est. You Receive",
+    "feeEstimateDisclaimer": "A tényleges díjat a sugárzáskor számítják ki."
   },
-  "FullOnboarding": {},
-  "NotificationHistory": {},
-  "SupportChat": {}
+  "Nostr": {
+    "editProfile": "Edit Profil",
+    "importNsecTitle": "Importáld meg a Nostr Secret kulcsaidat.",
+    "importNsecDefaultDescription": "Kérjük, importálja a nsec-ét a másik készülékről, hogy továbbra is használja a csevegő funkciót.",
+    "createProfileTitle": "Profil létrehozás Profil létrehozás",
+    "createProfileWarning": "Ha tovább haladsz, minden meglévő profiladatot felülírni fogunk.",
+    "createProfilePubkeyMessage": "Nem találtunk profileseményt, amelyhez ehhez a pubkeyhez kapcsolódott.",
+    "createProfilePrompt": "Szeretnél tovább alkotni?",
+    "createProfileButton": "Profil létrehozás Profil létrehozás",
+    "profileNotFound": "Megkerestük, de nem találtuk meg a profilodat.",
+    "promptToCreateProfile": "Szeretne most létrehozni egyet?",
+    "learnAboutNostr": "Tudjon meg Nostráról!",
+    "learnAboutNostrSubtext": "Fedezze fel ezt a útmutatót, hogy a legtöbbet kihozza az nostr csevegésből",
+    "showPublicKey": "Mutasd meg a nyilvános kulcsot",
+    "showPrivateKey": "Mutasd meg a privát kulcsot",
+    "profileConnected": "Profil Connected",
+    "reconnectProfile": "Újrahálózatos Profil",
+    "tapToRefreshConnection": "Nyomja meg, hogy frissítse a kapcsolatot",
+    "importExistingProfile": "Importáld meg a meglévő profilot",
+    "deleteProfile": "Törölje a profilot",
+    "noProfileIdExists": "Profil ID nem létezik",
+    "profileReconnected": "A profilod sikeresen kapcsolódott vissza.",
+    "deleteWarningTitle": "Figyelmeztetés",
+    "deleteWarningMessage": "A profilkulcsok törlése eltávolítja a fiókját a készülékről.",
+    "importNsecDescription": "Ha a saját nsec-t szeretnéd használni, nyomd le az alábbiakban.",
+    "profileImportedSuccessfully": "Profil sikeresen importált",
+    "noProfileFound": "No Nostr Profile Found",
+    "noProfileDescription": "Még nem hoztál létre Nostr profilot.",
+    "keyConflictTitle": "Nostr Key Nem talált eszközön",
+    "keyConflictDescription": "A fiókodnak regisztrált Nostr kulcsa van, de nem találták meg ezen a készülékben. Ez megtörténhet az alkalmazás újra telepítését követően vagy az eszközök átváltását követően. A hozzáférés helyreállításához az nsec biztonsági mentést az Advanced Settings-ből importáld.",
+    "creatingProfile": "Profil létrehozása...",
+    "createNewProfile": "Új profilot hozz létre",
+    "generateProfile": "Generálj profilot",
+    "findingYou": "Megtalálva téged..",
+    "advancedSettings": "Nostr Advanced Settings",
+    "KeyModal": {
+      "yourPublicProfileId": "Az Ön nyilvános profiljának azonosítója",
+      "yourPrivateProfileKey": "A magánszemélyes profil kulcsa",
+      "keyCopiedToClipboard": "Key copied to clipboard"
+    },
+    "Contacts": {
+      "stillLoading": "Nehéz megtalálni a kapcsolattartási listáját, követett már valakit?",
+      "noCantacts": "Nincs elérhetőség a kapcsolatokra",
+      "profile": "Profil Profil",
+      "nostrUser": "Nostr felhasználó",
+      "message": "Üzenet Üzenet",
+      "sendPayment": "Küldj el!",
+      "contactInfo": "A kapcsolatfelvételi információ",
+      "contactManagement": "A kapcsolattartási menedzsment.",
+      "unfollowContact": "Kiderítse a kapcsolattartást",
+      "noListDeepLinkMessage": "Ahhoz, hogy barátokat hozzon hozzá, először be kell indítania a kapcsolattartási listát a beállításokon.",
+      "manageContacts": "Kezdd kezelni a kapcsolatokat",
+      "createContactList": "A kapcsolattartási lista Create Contact List"
+    },
+    "common": {
+      "copy": "Copy Copy",
+      "copied": "Koppíált",
+      "goToSettings": "Menjen a beállításokra"
+    }
+  },
+  "AccountUpgrade": {
+    "accountType": "Számlatípus",
+    "personal": "Személyes",
+    "personalDesc": "Teljesítsd a pénztárcádat telefonon és e-mailben.",
+    "pro": "Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro",
+    "proDesc": "Elfogadja a kifizetéseket, és felfedezi magát a térképen. Szükséges egy üzleti név és hely.",
+    "merchant": "Kereskedő",
+    "merchantDesc": "Adjon jutalmat, jelenjen meg a térképen, és rendezzen a bankjával.",
+    "personalInfo": "Személyes adatok",
+    "fullName": "Teljes név",
+    "phoneNumber": "Hívási szám",
+    "email": "E-mail cím",
+    "optional": "(Felvétel)",
+    "validation": "Validáció",
+    "validationCode": "A hitelesítési kód",
+    "businessInfo": "Üzleti információk",
+    "businessName": "Üzleti név",
+    "businessNamePlaceholder": "Jelentse be az üzleti nevét",
+    "businessAddress": "Üzleti cím",
+    "businessAddressPlaceholder": "Jelentse be az üzleti címét",
+    "flashTerminal": "Szeretnél egy Flash terminált?",
+    "flashTerminalTooltip": "Az Flash Terminál egy olyan okos eszköz, amely elfogadja a fizetést az Flash-en keresztül az Ön üzleti és nyomtatási számláira.Egy ügyfélszolgálati képviselő lép kapcsolatba Önnel, ha ezt a dobozt feltünteted.",
+    "bankingInfo": "Bankinformációk  Bankinformációk ",
+    "bankName": "Banknév Banknév",
+    "bankNamePlaceholder": "Válassza ki a banki nevét",
+    "bankBranch": "A Bank Fiókja",
+    "bankBranchPlaceholder": "Jelentse be a bankfiókját",
+    "bankAccountType": "Számlatípus",
+    "selectBankAccountType": "Válassza ki a számla típusát",
+    "currency": "Változás",
+    "selectCurrency": "Válassza ki a valutát",
+    "accountNum": "Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszámla",
+    "accountNumPlaceholder": "Írd be a számláid számát",
+    "uploadId": "Upload ID Document",
+    "successUpgrade": "Sikeresen frissítette a fiókját {accountType: string}-re.",
+    "successRequest": "Sikeresen kérte, hogy frissítse a fiókját {accountType: string}-re."
+  }
 }

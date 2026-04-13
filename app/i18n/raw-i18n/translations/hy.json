@@ -2,6 +2,7 @@
   "GaloyAddressScreen": {
     "title": "Ստացեք վճարում՝ օգտագործելով",
     "buttonTitle": "Գրանցեք Ձեր հասցեն",
+    "yourLightningAddress": "Ձեր Lightning հասցեն",
     "yourAddress": "Ձեր {bankName: string} հասցեն",
     "notAbleToChange": "Դուք չեք կարողանա փոխել Ձեր {bankName: string} հասցեն այն հաստատելուց հետո",
     "addressNotAvailable": "Այս {bankName: string} հասցեն արդեն կիրառվում է։ ",
@@ -9,6 +10,7 @@
     "merchantTitle": "Առևտրականների համար",
     "yourCashRegister": "Վճարումներ ստանալու Ձեր Lightning ծրագիրը ",
     "yourPaycode": "Ձեր վճարման ծածկագիրը",
+    "copiedLightningAddressToClipboard": "Copied Lightning address to clipboard",
     "copiedAddressToClipboard": "Հասցեն {bankName: string} պատճենվեց ժամանակավոր շտեմարանում",
     "copiedPaycodeToClipboard": "Վճարման ծածկագիրը պատճենվեց ժամանակավոր շտեմարանում",
     "copiedCashRegisterLinkToClipboard": "Վճարումներ ստանալու ծրագրի հղումը պատճենվեց ժամանակավոր շտեմարանում",
@@ -46,6 +48,37 @@
   "ContactDetailsScreen": {
     "title": "Գործառնություններ {username: string}"
   },
+  "ChatScreen": {
+    "noChatsTitle": "Չատներ չեն հայտնաբերվել",
+    "noChatsYet": "Գտեք Flash օգտատերական անուն կամ nostr pubkey ՝ զրույց սկսելու համար",
+    "noMatchingChats": "Ոչ մի զրույց չի գտնվել, որը համապատասխանում է ձեր որոնմանը:",
+    "title": "Քննարկում Chat"
+  },
+  "ChatDetailsScreen": {
+    "title": "Խոսեք {username: string}-ի հետ"
+  },
+  "CardScreen": {
+    "noCardsTitle": "Ոչ մի քարտ չի հայտնաբերվել",
+    "noCardsYet": "Կտտացրեք Flashcard-ի վրա, որպեսզի այն ավելացնեք այստեղ",
+    "noMatchingCards": "Ոչ մի քարտ չի գտնվել, որը համապատասխանում է ձեր որոնմանը:",
+    "title": "Flashcard",
+    "notFlashcard": "Աջակցված NFC քարտը: Խնդրում ենք համոզվել, որ օգտագործում եք ֆլաշքարտ:",
+    "noNDEFMessage": "NDEF հաղորդագրությունը չի գտնվել: Խնդրում ենք համոզվեք, որ օգտագործում եք ֆլանշքարտ:",
+    "notSupported": "NFC-ը չի աջակցվում այս սարքում:",
+    "notEnabled": "NFC-ը չի ակտիվացվել այս սարքում:",
+    "noTag": "Ոչ մի տեգ չի գտնվել: Խնդրում ենք համոզվեք, որ օգտագործում եք ֆլանշքարտ:"
+  },
+  "Cashout": {
+    "title": "Settle",
+    "percentageToCashout": "Հասարակություն հաստատելու համար %",
+    "valid": "Վավեր է {time: string}-ի համար",
+    "exchangeRate": "Փոխանակման տոկոսադրույքը",
+    "sendAmount": "Հեռացրեք գումարը",
+    "receiveAmount": "Ստացված գումարը",
+    "fee": "Վճարումը",
+    "success": "Կարգավորման խնդրանքն հաջողությամբ է նախաձեռնվել:",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
+  },
   "ConversionDetailsScreen": {
     "title": "Փոխակերպել",
     "percentageToConvert": "փոխակերպելու %"
@@ -53,7 +86,9 @@
   "ConversionConfirmationScreen": {
     "title": "Ստուգել փոխակերպումը",
     "youreConverting": "Դուք փոխակերպում եք",
-    "receivingAccount": "Ստացող հաշիվ "
+    "sendingAccount": "Ուղարկման հաշիվ",
+    "receivingAccount": "Ստացող հաշիվ ",
+    "conversionFee": "Փոխարկման վճար"
   },
   "ConversionSuccessScreen": {
     "title": "Հաջող փոխակերպում",
@@ -430,6 +465,10 @@
   },
   "GetStartedScreen": {
     "logInCreateAccount": "Մուտք գործել / ստեղծել հաշիվ",
+    "quickStart": "Սկիզբ Սկիզբ Սկիզբ",
+    "restoreWallet": "Login",
+    "exploreWalletInstead": "Փոխարենը ուսումնասիրեք դրամապանակը",
+    "setupBusinessAccount": "Ստեղծեք բիզնես հաշիվ",
     "createAccount": "Ստեղծել նոր հաշիվ",
     "exploreWallet": "Բացահայտել դրամապանակը",
     "logBackInWith": "Մուտք գործել գործածելով",
@@ -444,7 +483,8 @@
       "noBackup": "Չկա պահուստավորման հնարավորություն ",
       "sendingLimit": "Օրական բիթքոյն ուղարկելու նվազեցված սահմանաչափ",
       "noOnchain": "Չկա բիթքոյնների ստացում բլոկչեյնում"
-    }
+    },
+    "chooseAccountType": "Ընտրեք հաշիվի տեսակ"
   },
   "MapScreen": {
     "locationPermissionMessage": "Ակտիվացրեք Ձեր տեղորոշման տվյալները, որպեսզի իմանաք քարտեզի վրա Ձեր դիրքի մասին ",
@@ -453,16 +493,48 @@
     "locationPermissionPositive": "OK ",
     "locationPermissionTitle": "Ընտրեք Ձեր գտնվելու վայրը քարտեզի վրա",
     "payBusiness": "վճարել այս բիզնեսը",
-    "title": "Քարտեզ"
+    "title": "Քարտեզ",
+    "addPin": "Կտտացրեք ցանկացած վայրում, որպեսզի ավելացնեք փայտիկ",
+    "selectedCoordinates": "Ձեր Flashpoint համակարգիչները. ",
+    "viewInGoogleMaps": "Նայեք Google Maps-ում",
+    "getDirections": "Ուղղումներ Get Directions"
   },
   "HomeScreen": {
+    "cashout": "Cash Out  Cash Out ",
     "receive": "Ստանալ",
+    "reload": "Reload Card  Reload Card ",
+    "balance": "Թարմացնել հավասարակշռությունը",
+    "showQrCode": "Topup- ը QR- ի միջոցով",
     "send": "Ուղարկել",
+    "sweep": "Sweep to Wallet",
+    "pay": "Pay Pay Pay",
     "title": "Ընդհանուր",
     "scan": "Սկանավորել",
     "updateAvailable": "Թարմացումը հասանելի է։\nՍեղմել թարմացման համար",
     "useLightning": "Մենք օգտագործում ենք Lightning ցանցը։",
-    "myAccounts": "Իմ հաշիվները"
+    "myAccounts": "Իմ հաշիվները",
+    "unclaimedDepositsWarning": "️ Pl e a s e c o m p l e t e r պնդում a l l l unclaimed deposits b e f o r e u n i n s t a l i n g Fl a s h r unclaimed deposits w i l l l b e l l o s t ",
+    "unclaimedDeposits": "Unclaimed Deposits",
+    "cash": "Գույքային  Cash",
+    "bitcoin": "Bitcoin",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Add",
+    "upgradeTitle": "Բարձրացրեք ձեր հաշիվը",
+    "upgradeTitlePending": "Վերանորոգման խնդրանք է սպասվում",
+    "upgradeDesc": "Բացահայտեք ձեր լիարժեք ներուժը! Բարձրացրեք տեսանելիությունը, սահմանները եւ վճարումները:",
+    "upgradePendingDesc": "Ձեր հաշիվի թարմացման խնդրանքն վերանայվում է:",
+    "currencyTitle": "Փոխեք ձեր տեղական արժույթը",
+    "currencyDesc": "Վերանայեք մեր մատչելի արժույթի ցուցակը եւ ընտրեք ձեր արժույթը:",
+    "flashcardTitle": "Ստացեք Flashcard",
+    "flashcardDesc": "Գտեք Flashpoint եւ ձեռք բերեք Flashcard, որը կօգտագործեք ամենօրյա կյանքում:",
+    "nonCustodialWalletTitle": "Ոչ խնամակալական դրամապանակները",
+    "nonCustodialWalletDesc": "Կարդացեք ավելին ոչ խնամակալական դրամապանակների մասին:",
+    "emailTitle": "Էլեկտրոնային հասցեն",
+    "emailDesc": "Ավելացրեք ձեր էլ.փոստի հասցեն, որպեսզի ապահովեք ձեր հաշիվը եւ մուտք գործեք էլ.փոստի հասցեն օգտագործելով:",
+    "btcWalletTitle": "Հնարավորացնել BTC դրամապանակ",
+    "btcWalletDesc": "Հեշտությամբ փոխանցեք ավելի մեծ գումարներ Bitcoin- ում:",
+    "backupTitle": "Պահպանեք ձեր BTC թղթադրամը",
+    "backupDesc": "Կառուցեք եւ ապահովեք ձեր Bitcoin դրամապանակը վերականգնման արտահայտությունը օգտագործելով:"
   },
   "PinScreen": {
     "attemptsRemaining": "Սխալ PIN: {attemptsRemaining: number} փորձեր են մնացել։ ",
@@ -490,6 +562,7 @@
     "title": "Ընդհանուր"
   },
   "ReceiveScreen": {
+    "flashcardInstructions": "Սկանիր QR կոդը, կամ սեղմիր պատկերակը, որպեսզի կիսվես այն WhatsApp- ում, էլփոստում եւ այլն:",
     "nfc": "NFC",
     "enterAmountFirst": "Please enter an amount first",
     "activateNotifications": "Դուք ցանկանու՞մ եք ուտել ակտիվացնել ծանուցումները, որպեսզի տեղեկացվեք վճարման կատարման մասին։ ",
@@ -538,11 +611,16 @@
     },
     "invoiceHasBeenPaid": "Վճարման հարցումը կատարվել է",
     "yourBitcoinOnChainAddress": "Ձեր բլոկչեյնում Ձեր Բիթքոյն հասցեն",
+    "receive": "Receive  Ստանալ",
     "receiveViaInvoice": "Ստանալ Lightning-ի միջոցով",
     "receiveViaPaycode": "Ստանալ վճարման ծածկագրի միջոցով",
+    "topupFlashcard": "Topup Flashcard",
     "receiveViaOnchain": "Ստանալ Բլոկչեյնի միջոցով",
     "payCodeOrLNURL": "Վճարման ծածկագիրը/LNURL",
-    "initialDeposit": "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee."
+    "cantReceiveZeroSats": "Դուք չեք կարող ստանալ զրոյական sats: Խնդրում ենք մուտք գործել գումարը, որը համապատասխանում է 1 կամ ավելի sats- ին:",
+    "initialDeposit": "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee.",
+    "selectPaymentMethod": "Ընտրեք վճարման մեթոդ",
+    "selectWallet": "Ընտրեք Wallet"
   },
   "RedeemBitcoinScreen": {
     "title": "Հետ գնել Բիթքոյն",
@@ -561,7 +639,12 @@
     "invalidTitle": "Անվավեր QR ծածկագիր",
     "noQrCode": "Չհաջողվեց գտնել QR ծածկագիր նկարում",
     "title": "Սկանավորել QR",
-    "invalidContentLnurl": "Գտնվել է\n\n{found: string}\n\nայս պահին չի աջակցվում։ "
+    "permissionCamera": "Մեզ անհրաժեշտ է թույլտվություն ձեր տեսախցիկի օգտագործման համար:",
+    "noCamera": "Ոչ մի տեսախցիկ չի հայտնաբերվել",
+    "openSettings": "Բաց կարգավորումներ",
+    "unableToOpenSettings": "Անհնար է բացել պարամետրերը",
+    "invalidContentLnurl": "Գտնվել է\n\n{found: string}\n\nայս պահին չի աջակցվում։ ",
+    "imageLibraryPermissionsNotGranted": "Մենք թույլտվություններ չունենք պատկերների գրադարան մուտք գործելու համար: Խնդրում ենք ստուգել ձեր հարթակի հավելվածի կարգավորումները:"
   },
   "SecurityScreen": {
     "biometricDescription": "Բացել մատնահետքով կամ դիմային ճանաչման համակարգով։ ",
@@ -572,7 +655,8 @@
     "hideBalanceTitle": "Թաքցնել հաշվեկշիռը",
     "pinDescription": "PIN-ն օգտագործվում է որպես պահուստավորման նույնականացման մեթոդ բիոմետրիկ նույնականացման համար։ ",
     "pinTitle": "PIN ծածկագիր",
-    "setPin": "Սահմանել PIN"
+    "setPin": "Սահմանել PIN",
+    "backupDescription": "PIN կոդը սահմանելու համար խնդրում ենք պահեստավորել ձեր հաշիվը' ավելացնելով հեռախոսահամար:"
   },
   "SendBitcoinConfirmationScreen": {
     "amountLabel": "Չափը․",
@@ -614,12 +698,17 @@
       "body3": "Հակառակ դեպքում գումարը կփոխանցվի {bankName: string} հաշվին, որն ունի «{lnAddress: string}» հասցե:\n\nՍտուգեք նաև հասցեի առաջին մասի ուղղագրությունը։ օր. jackie-ն և jack1e-ն 2 տարբեր հասցեներ են",
       "warning": "Եթե {bankName: string} հասցեն սխալ է մուտքագրվել, {bankName: string}-ը չի կարող հետարկել գործառնությունը։ ",
       "checkBox": "{lnAddress: string} ճիշտ հասցեն է։ ",
-      "confirmButton": "Ես 100% վստահ եմ"
+      "confirmButton": "Ես 100% վստահ եմ",
+      "externalWarning": "Դուք պատրաստվում եք գումար ուղարկել որեւէ մեկին, ով ոչ թե {bankName: string} հաշիվ է: Համոզված եք, որ սա այն հասցեն է, որ ցանկանում եք ուղարկել:",
+      "externalCheckBox": "Ես հաստատում եմ ուղարկումը {address: string}-ին:"
     },
     "clipboardError": "Չհաջողվեց արժեք ստանալ ժամանակավոր շտեմարանից"
   },
   "SendBitcoinScreen": {
     "amount": "Չափ",
+    "MinOnChainLimit": "Այս գործարքի համար նվազագույն գումարը 2.00 ԱՄՆ դոլար է:",
+    "MinOnChainSatLimit": "Այս գործարքի համար նվազագույն գումարը 5.500 sats է:",
+    "MinFlashcardLimit": "Ֆլանշքարտից վերբեռնելու դեպքում նվազագույն գումարը 100 sats է:",
     "amountExceed": "Գումարի չափը գերազանցում է Ձեր {balance: string} հաշվեկշիռը",
     "amountExceedsLimit": "Գումարի չափը գերազանցում է {limit: string}ի Ձեր օրական սահմանաչափը",
     "upgradeAccountToIncreaseLimit": "Թարմացրեք Ձեր հաշիվը Ձեր սահմանաչափը բարձրացնելու համար",
@@ -639,11 +728,25 @@
     "max": "Առավելագույն",
     "maxAmount": "Գումարի առավելագույն չափը",
     "title": "Ուղարկել Բիթքոյն",
+    "send": "Ուղարկեք ",
     "failedToFetchLnurlInvoice": "Չհաջողվեց ստանալ Inurl վճարման հարցումը",
     "lnurlInvoiceIncorrectAmount": "Inurl սերվերը պատասխանել է սխալ չափի գումարով վճարման հարցմամբ:",
-    "lnurlInvoiceIncorrectDescription": "Inurl սերվերը պատասխանել է սխալ մեթատվյալ պարունակով հեշով վճարման հարցմամբ։"
+    "lnurlInvoiceIncorrectDescription": "Inurl սերվերը պատասխանել է սխալ մեթատվյալ պարունակով հեշով վճարման հարցմամբ։",
+    "noAmountInvoiceError": "BTC թղթադրամում չի աջակցվում որեւէ հաշիվի գումարը: Խնդրում ենք վերադառնալ եւ ստուգել կամ մուտք գործել հաշիվ, որտեղ ավելացված գումար կա:",
+    "onchainMinAmountInvoiceError": "Ձեր մուտք գործած գումարը պակաս է այն նվազագույն գումարի, որը անհրաժեշտ է շղթայի վրա գործարք ուղարկելու համար {amount: number}: Խնդրում ենք հաշվի առնել այդ գումարի ուղարկումը Lightning-ի միջոցով:",
+    "minAmountInvoiceError": "Բաքսի գումարը պակաս է նվազագույն գումարի {amount: number}",
+    "maxAmountInvoiceError": "Բաքսի գումարը գերազանցում է առավելագույն գումարը {amount: number}",
+    "minAmountConvertError": "Փոխակերպման գումարը պակաս է նվազագույն պահանջվող գումարի {amount: number}",
+    "maxAmountConvertError": "Փոխակերպման գումարը գերազանցում է առավելագույն գումարը {amount: number}"
   },
   "SettingsScreen": {
+    "staticQr": "Տպագրելի ստատիկ QR կոդ",
+    "staticQrCopied": "Ձեր ստատիկ QR կոդային հղումը կոպեացվել է",
+    "setByOs": "Կազմված է OS- ից",
+    "apiAcess": "Access API API-ը",
+    "pos": "Վաճառքի կետ",
+    "posCopied": "Ձեր վաճառքի կետի հղումը կրկնօրինակվել է",
+    "setYourLightningAddress": "Սահմանեք ձեր օգտվողի անունը",
     "activated": "Ակտիվացված է",
     "addressScreen": "Վճարվելու միջոցներ",
     "tapUserName": "Սեղմել՝ օգտանուն սահմանելու համար",
@@ -665,7 +768,16 @@
     "nfcOnlyReceive": "Հիմա հասանելի են միայն NFC-ից ստացումները",
     "nfcScanNow": "Սկանավորել NFC-ն հիմա",
     "nfcNotSupported": "NFC-ին չունի աջակցություն այս սարքի վրա",
-    "logInOrCreateAccount": "Մուտք գործել կամ ստեղծել հաշիվ"
+    "logInOrCreateAccount": "Մուտք գործել կամ ստեղծել հաշիվ",
+    "backup": "Backup",
+    "importWallet": "Ներկրեք դրամապանակ",
+    "showSeedPhrase": "Reveal recovery phrase",
+    "showNostrSecret": "Խոսքի կարգավորումները",
+    "beginnerMode": "Անջատեք Bitcoin հաշիվը",
+    "advanceMode": "Աջակցեք Bitcoin հաշիվը (Ադվանսացված ռեժիմ) ",
+    "keysManagement": "Հարցաթղթադրամների կրկնօրինակում",
+    "showBtcAccount": "Ցույց տուր Bitcoin հաշիվ",
+    "hideBtcAccount": "Թաքցնել Bitcoin հաշիվ"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -678,10 +790,27 @@
       "Payments": {
         "title": "Payments",
         "description": "Notifications related to sending and receiving payments."
+      },
+      "Marketing": {
+        "title": "Մատակումներն ու թարմացումները",
+        "description": "Նոր առանձնահատկությունների եւ թարմացումների մասին ծանուցումներ:"
+      },
+      "Price": {
+        "title": "Գնի փոփոխություններ",
+        "description": "Bitcoin-ի գնի մասին ծանուցումներ:"
       }
     }
   },
   "AccountScreen": {
+    "fundsMoreThan5Dollars": "Ձեր հաշիվը ունի ավելի քան 5 դոլար:",
+    "itsATrialAccount": "Փորձարկման հաշիվները նվազեցրել են գործարքի սահմանափակումները եւ վերականգնման մեթոդ չունեն: Եթե կորցնում եք ձեր հեռախոսը կամ անբեռնում եք հավելվածը, ձեր միջոցները չեն կարող վերականգնվել:",
+    "accountBeingDeleted": "Ձեր հաշիվը ջնջվում է, խնդրում եմ սպասեք...",
+    "dangerZone": "Վտանգային գոտի",
+    "phoneDeletedSuccessfully": "Հեռախոսը հաջողությամբ ջնջվել է",
+    "phoneNumber": "Հեռախոսահամար ",
+    "tapToAddPhoneNumber": "Պտտացրեք սեղմեք, որպեսզի ավելացնեք հեռախոսահամարը",
+    "loginMethods": "Մուտքագրման մեթոդներ",
+    "level": "{level: string} մակարդակը",
     "accountLevel": "Հաշվի մակարդակ",
     "upgrade": "Թարմացրել Ձեր հաշիվը",
     "logOutAndDeleteLocalData": "Դուրս գալ և ջնջել բոլոր տվյալները",
@@ -694,6 +823,11 @@
     "btcBalanceWarning": "Դուք ունեք {balance: string} բիթքոյն հաշվեկշիռ։ ",
     "secureYourAccount": "Գրանցվեք՝ Ձեր հաշիվն անվտանգ դարձնելու համար ",
     "tapToAdd": "Սեղմեք՝ ավելացնելու համար",
+    "tapToAddEmail": "Պտտացրեք սեղմեք, որպեսզի ավելացնեք էլեկտրոնային փոստը",
+    "unverifiedEmail": "Email (Unverified) ",
+    "email": "Էլեկտրոնային փոստը",
+    "emailDeletedSuccessfully": "Էմեյլը ջնջվել է հաջողությամբ",
+    "unverifiedEmailAdvice": "Անհաստատված էլ.փոստերը չեն կարող օգտագործվել մուտք գործելու համար: Դուք պետք է կրկին հաստատեք ձեր էլ.փոստի հասցեն:",
     "deleteEmailPromptTitle": "Ջնջել էլ․հասցեն",
     "deleteEmailPromptContent": "Դուք համոզվա՞ծ եք, որ ցանկանում եք ջնջել Ձեր էլ․ հասցեն։ Դուք միայն կկարորողանաք մուտք գործել Ձեր հեռախոսահամարի միջոցով։ ",
     "deletePhonePromptTitle": "Ջնջել հեռախոսահամարը ",
@@ -712,7 +846,11 @@
     "totp": "Երկգործոն նույնականացում",
     "totpDeactivated": "Երկգործոն նույնականացումը դեակտիվացվել է",
     "totpDeleteAlertTitle": "Ջնջել երկգործոն նույնականացումը",
-    "totpDeleteAlertContent": "Դուք վստա՞հ եք, որ ցանկանում եք ջնջել Ձեր երկգործոն նույնականացումը։ "
+    "totpDeleteAlertContent": "Դուք վստա՞հ եք, որ ցանկանում եք ջնջել Ձեր երկգործոն նույնականացումը։ ",
+    "copiedAccountId": "Քննեք ձեր հաշիվի ID-ն կլիպբորդ",
+    "yourAccountId": "Ձեր հաշիվի ID-ն",
+    "accountId": "Հաշվի ID",
+    "copy": "Կոպի Կոպի"
   },
   "TotpRegistrationInitiateScreen": {
     "title": "Երկգործոն նույնականացում",
@@ -727,6 +865,74 @@
     "title": "Երկգործոն նույնականացում",
     "content": "Մուտք գործելու համար մուտքագրեք Ձեր նույնականացման հավելվածի 6-անիշծածկագիրը։ Այս ծածկագիրը փոխվում է յուրաքանչյուր 30 վայրկյանը մեկ:"
   },
+  "BackupOptions": {
+    "title": "Պահպանման տարբերակները",
+    "recoveryPhrase": "Recovery Phrase",
+    "recoveryPhraseDesc": "Backup Bitcoin Wallet using recovery phrase",
+    "revealRecoveryPhrase": "Reveal Recovery Phrase",
+    "revealRecoveryPhraseDesc": "Օգտագործեք ձեր վերականգնման արտահայտությունը ներմուծելու համար Bitcoin Wallet",
+    "phone": "Հեռախոս Հեռախոս",
+    "phoneDesc": "Backup Cash Wallet using phone number",
+    "usePhoneNumber": "Օգտագործեք ձեր հեռախոսահամարը, որպեսզի ներմուծեք Cash Wallet",
+    "done": "                                                    "
+  },
+  "BackupStart": {
+    "title": "Նախ, եկեք ստեղծենք ձեր վերականգնման արտահայտությունը",
+    "description": "Վերականգնման արտահայտությունը կոնկրետ կարգով 12 բառից բաղկացած շարք է: Այս բառերի համադրությունը եզակի է ձեր դրամապանակի համար: Համոզվեք, որ պատրաստ եք թուղթ եւ թուղթ, որպեսզի կարողանաք այն գրել:",
+    "continue": " Շարունակեք Շարունակել"
+  },
+  "BackupSeedPhrase": {
+    "title": "Սա ձեր վերականգնման արտահայտությունն է",
+    "description": "Համոզվեք, որ գրում եք այն, ինչպես ցույց է տրվում այստեղ: Դուք պետք է հաստատեք դա ավելի ուշ:",
+    "backupToICloud": "iCloud-ի պահեստային ապահովում",
+    "backupToGoogleDrive": "Google Drive-ի պահեստային ապահովում",
+    "verify": "Վավերացրեք"
+  },
+  "BackupDoubleCheck": {
+    "title": "Եկեք կրկնակի ստուգենք",
+    "description1": "Այժմ եկեք ստուգենք, որ դուք ճիշտ եք գրել ձեր վերականգնման արտահայտությունը:",
+    "description2": "Այո, դա այնքան կարեւոր է:",
+    "continue": " Շարունակեք Շարունակել"
+  },
+  "BackupVerify": {
+    "title": "Տեղարկեք բառերը ճիշտ կարգով:",
+    "correctTitle": "Հիանալի է: Համոզվեք, որ ձեր վերականգնման արտահայտությունը ապահով պահվում է:",
+    "wrongTitle": "Կներեք, սա ճիշտ երրորդ բառը չէ: Մեկ անգամ եւս փորձեք:",
+    "tryAgain": "Փորձեք կրկին",
+    "continue": " Շարունակեք Շարունակել"
+  },
+  "BackupComplete": {
+    "title": "Ձեր կրկնօրինակը ավարտված է",
+    "description": "Այժմ դուք պետք է գրեք ձեր վերականգնման արտահայտությունը եւ գաղտնաբառը ապագա հղման համար:",
+    "complete": "Complete Complete"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "Սա ձեր վերականգնման արտահայտությունն է",
+    "description": "Համոզվեք, որ գրեք այն, ինչպես ցույց է տրվում այստեղ: Դուք պետք է վերականգնեք ձեր դրամապանակը:",
+    "done": "                                                    "
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "Մուտքագրման տարբերակները",
+    "importOptions": "Ներմուծել դրամապանակի տարբերակներ",
+    "recoveryPhrase": "Recovery Phrase",
+    "importBTCWallet": "Ներմուծել Bitcoin Wallet using recovery phrase",
+    "phone": "Հեռախոս Հեռախոս",
+    "importUsingPhone": "Ներկրեք կամ ստեղծեք ձեր Cash Wallet- ը' օգտագործելով հեռախոսահամար",
+    "email": "Էլեկտրոնային փոստը",
+    "importUsingEmail": "Ներմուծեք ձեր Cash Wallet- ը ՝ օգտագործելով էլփոստի հասցե",
+    "login": "Login/Create",
+    "done": "                                                    "
+  },
+  "ImportWallet": {
+    "title": "Գրանցվեք վերականգնման արտահայտությամբ",
+    "importTitle": "Ներմուծեք ձեր դրամապանակը վերականգնման արտահայտությամբ",
+    "description": "Սա 12 բառի արտահայտություն է, որը ձեզ տրվել է նախորդ դրամապանակի ստեղծման ժամանակ:",
+    "complete": "Complete Complete"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
   "CopySecretComponent": {
     "button": "Պատճենել գաղտնաբառը",
     "toastMessage": "Գաղտնաբառը պատճենվել է ժամանակավոր շտեմարանում։ "
@@ -740,7 +946,9 @@
     "info": "Ընտրել Ձեր նախընտրած ոճը՝ Blink-ն օգտագործելու համար, կամ այն համաժամեցված պահել Ձեր համակարգի կարգավորումների հետ:",
     "system": "Օգտագործել համակարգի կարգավորումներ",
     "light": "Օգտագործել ցերեկային ռեժիմ",
-    "dark": "Օգտագործել գիշերային ռեժիմ"
+    "dark": "Օգտագործել գիշերային ռեժիմ",
+    "setToDark": "Սեւ մոդում Dark Mode",
+    "setToLight": "Լույսի ռեժիմ"
   },
   "Languages": {
     "DEFAULT": "Սկզբնադիր (օպերատիվ համակարգ)"
@@ -751,6 +959,26 @@
     "termsAndConditions": "Կարդալ պայմաններն ու դրույթները:",
     "learnMore": "Իմանալ ավելին Stableսատերի մասին։ "
   },
+  "AdvancedModeModal": {
+    "header": "Բարի գալուստ առաջադեմ ռեժիմի!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "Կարդացեք պայմանները եւ պայմանները:",
+    "learnMore": "Ի՞նչ է ոչ խնամակալական դրամապանակը:",
+    "importWallet": "Ներկրեք դրամապանակ",
+    "createWallet": "Wallet Ստեղծեք Create Wallet"
+  },
+  "MerchantSuggestModal": {
+    "header": "Flashpoint Add",
+    "body": "Flash-ի օգտատերերը կկարողանան ձեզ գտնել քարտեզի վրա եւ վճարումներ ուղարկել սեղմելով քարտեզի պին:",
+    "termsAndConditions": "Կարդացեք պայմանները եւ պայմանները:",
+    "learnMore": "Ձեր PIN-ի խնդրանքը կվերամշակվի 24 ժամվա ընթացքում:"
+  },
+  "UnVerifiedSeedModal": {
+    "header": "Պաշտպանեք ձեր Bitcoin Wallet- ը",
+    "body": "Դուք պետք է գրեք ձեր վերականգնման արտահայտությունը անվտանգ վայրում, որպեսզի պաշտպանեք ձեր գումարը: Եթե կորցնեք ձեր հեռախոսը կամ անբեռնել հավելվածը առանց գրելու ձեր վերականգնման արտահայտությունը, դուք կկորցնեք ձեր միջոցների մուտքը: ",
+    "termsAndConditions": "Կարդացեք պայմանները եւ պայմանները:",
+    "learnMore": "Ի՞նչ է վերականգնման արտահայտությունը:"
+  },
   "SplashScreen": {
     "update": "Ձեր հավելվածը ունի թարմացման կարիք: Հավելվածն օգտագործելուց առաջ անհրաժեշտ է թարմացում:\n\nԴա կարելի է անել PlayStore-ից՝ Android-ի և Testflight-ից՝ iOS-ի համար"
   },
@@ -760,7 +988,24 @@
     "spent": "Դուք ծախսեցիք",
     "receivingAccount": "Ստացողի հաշիվ",
     "sendingAccount": "Ողւարկողի հաշիվ",
-    "txNotBroadcast": "Ձեր գործառնությունն այս պահին ընթացքի մեջ է և հաջորդիվ կհհաղորդվի Բիթքոյնի ցանցին:"
+    "txNotBroadcast": "Ձեր գործառնությունն այս պահին ընթացքի մեջ է և հաջորդիվ կհհաղորդվի Բիթքոյնի ցանցին:",
+    "noTransaction": "Այս ID-ի հետ ոչ մի գործարք չի հայտնաբերվել",
+    "typeOnChain": "OnChain",
+    "typeLightning": "Lightning",
+    "typeIntraLedger": "IntraLedger",
+    "pendingStatus": "Պենդինգ",
+    "confirmation": "Հաստատում",
+    "confirmations": "Հաստատություններ",
+    "hash": "Hash Hash",
+    "preimage": "Նախապատկերություն",
+    "transactionId": "Գործարքի ID- ն",
+    "swapDetails": "Swap Details",
+    "destinationAddress": "Դեստինացիոն հասցե",
+    "swapId": "Swap ID- ը",
+    "lockupTxId": "Lockup գործարքը Lockup գործարքը",
+    "claimTxId": "Հայցի գործարքը",
+    "swapFees": "Շվեյցարիայի փոխարժեքները",
+    "expirationBlockHeight": "Սկսում է ժամկետը Block"
   },
   "TransactionLimitsScreen": {
     "receive": "Ստանալ",
@@ -775,7 +1020,11 @@
     "contactUsMessageBody": "Ողջույն, ես ցանկանում եմ մեծացնել իմ {bankName: string} հաշվի գործառնության սահմանները։",
     "contactUsMessageSubject": "Հարցում արել գործառնության սահմանների մեծացման վերաբերյալ",
     "contactSupportToPerformKyc": "Կապ հաստատել աջակցության ծառաության հետ՝ ձեռքով KWC կատարելու համար՝ Ձեր գործառնությունների չափը մեծացնելու համար",
-    "increaseLimits": "Մեծացնել գործառնության չափերը"
+    "increaseLimits": "Մեծացնել գործառնության չափերը",
+    "spendingLimits": "Ծախսման սահմանափակումներ",
+    "spendingLimitsDescription": "Այս էջում ցուցադրված ծախսերի սահմանները նշված են USD-ով: Ձեր հարմարավետության համար մենք այդ սահմանները փոխակերպում ենք ձեր տեղական արժույթին ՝ հիմնվելով ընթացիկ արժույթի վրա: Խնդրում ենք նկատի ունենալ, որ ցուցադրված տեղական արժույթի գումարը կարող է տատանվել, քանի որ փոխարժեքները թարմացվում են իրական ժամանակում:",
+    "requestUpgrade": "Հաղորդում կատարելագործել Request Upgrade",
+    "editRequest": "Թարգմանեք վերանորոգման խնդրանք"
   },
   "TransactionScreen": {
     "noTransaction": "Չկա որևէ գործառնություն",
@@ -797,11 +1046,17 @@
     "stayInTrialMode": "Մնալ փորձնական ռեժիմում"
   },
   "SetAddressModal": {
+    "helloText": "Բարի գալուստ!",
+    "whoAreYou": "Ինչպե՞ս պետք է ձեզ անվանենք:",
+    "usernameHint": "Սա կլինի ձեր {bankName: string} օգտվողի անունը",
+    "placeholder": "Գտեք ձեր օգտվողի անունը",
     "title": "Սահմանել {bankName: string} հասցե",
+    "save": "Պահպանեք Save",
     "Errors": {
       "tooShort": "Հասցեն պետք է ունենա առնվազն 3 նիշ",
       "tooLong": "Հասցեն պետք է ունենա առնվազն 50 նիշ",
       "invalidCharacter": "րՀասցեն կարող է ունենալ միայն նամակներ, թվեր, և ստորագծեր",
+      "startsWithNumber": "Ձեր օգտվողի անունը պետք է սկսվի մեծ կամ փոքր տառով:",
       "addressUnavailable": "Ներողություն, այս հասցեն արդեն կիրառվում է",
       "unknownError": "Անհայտ սխալ։ Խնդրում ենք կրկին փորձել ավելի ուշ"
     },
@@ -876,12 +1131,22 @@
     "success": "Էլ․ հասցեն {email: string} հաջողությամբ հաստատվել է"
   },
   "common": {
+    "enabled": "Enabled",
+    "notifications": "Տեղեկատվություններ",
+    "preferences": "Նախընտրություններ",
+    "onDeviceSecurity": "On-Device Անվտանգություն",
+    "securityAndPrivacy": "Անվտանգություն եւ գաղտնիություն",
+    "advanced": " Advanced Advanced",
+    "community": " Համայնք  Համայնք ",
     "account": "Հաշիվ",
+    "trialAccount": "Փորձաքննության հաշիվ",
+    "flashUser": "Flash Օգտագործող XTERMX",
     "transactionLimits": "Գործառնության սահմաններ",
     "activateWallet": "Ակտիվացնել դրամապանակը",
     "amountRequired": "Չափ է հարկավոր",
     "back": "Ետ",
     "backHome": "Ետ դեպի ընհանուր",
+    "revealSeed": "Write down recovery phrase",
     "bank": "Բանկ",
     "bankAccount": "Կանխիկ հաշիվ",
     "bankAdvice": "{bankName: string} Խորհուրդ",
@@ -893,13 +1158,16 @@
     "cancel": "Չեղարկել ",
     "close": "Փակել",
     "confirm": "Հաստատել",
+    "copied": "Copied to clipboard",
     "convert": "Փոխակերպել",
     "codeConfirmation": "Ծածկագրի հաստատում",
     "currency": "Արժույթ",
     "currencySyncIssue": "Արժույթի խնդիր։ Հարկավոր է թարմացում",
     "csvExport": "Դուրս բերել գործառնությունները որպես CSV",
+    "exportSparkLogs": "Արտահանման օրագրերը",
     "date": "Տարեթիվ",
     "description": "Տվյալ",
+    "details": "Մանրամասներ",
     "domain": "Տիրույթ",
     "email": "էլ․ հասցե",
     "error": "Սխալ",
@@ -932,9 +1200,11 @@
     "phoneNumber": "Հեռախոսահամար",
     "rate": "Գնահատել",
     "reauth": "Ձեր ժամանակը սպառվել է։ Խնդրում ենք մուտք գործել կրկին։ ",
+    "request": "Հաղորդում Pin  Request Pin",
     "restart": "Վերաթողարկել",
     "sats": "սատոշիներ",
     "search": "Փնտրել",
+    "chatSearch": "օգտագործողի անունը կամ nostr pubkey",
     "security": "Անվտանգություն",
     "send": "Ուղարկել",
     "setAnAmount": "սահմանել գումարի չափ",
@@ -965,6 +1235,28 @@
     "problemMaybeReauth": "Չհաջողվեց հաստատել Ձեր հարցումը։ Խնդրում ենք փորձել մեկ րոպե հետո։ Խնդրի չվերանալու դեպքում մենք առաջարկում ենք, որ դուրս դուրս գաք համակարգից և կրկին մուտք գործեք։ դուք կարող եք դուրս գալ գնալով Կարգավորումներ > Հաշիվ > Դորս գալ ",
     "warning": "Զգուշացում"
   },
+  "NostrQuickStart": {
+    "postHeading": "Կատարեք ձեր առաջին սոցիալական գրառումը:",
+    "postDesc": "Ներկայացրեք ինքներդ ձեզ աշխարհին!"
+  },
+  "Social": {
+    "post": "Պատվիրեք Nostr-ին",
+    "postTitle": "Make a Post",
+    "flashAppCredit": "Posted using Flash! Get it @ https://getflash.io/app",
+    "writeYourNote": "Գրեք ձեր գրառումը, դարձեք այն հատուկ::)",
+    "postButton": "Պոստ Պոստ",
+    "notePosted": "Հաջողություն! Ձեր գրառումը հրապարակվել է",
+    "errorPostFailed": "Սխալ! Սխալ է արձանագրել գրառումը",
+    "errorEmptyNote": "Սխալ. Հեռուստ գրառում",
+    "posting": "Հրապարակվել է...",
+    "viewOnIris": "View on iris.to",
+    "viewPostQuestion": "Ցանկանում եք դիտել ձեր գրառումը iris.to-ի վերաբերյալ:",
+    "browseSocialFeed": "Browse Social Feed",
+    "socialFeedTitle": "Սոցիալական սնունդ",
+    "postSuccessTitle": "Փոստը կիսվել է!",
+    "postSuccessSubtitle": "Ձեր գրառումը հրապարակվել է Nostr",
+    "showMeMore": "Ցույց տվեք ինձ ավելին"
+  },
   "errors": {
     "generic": "Սխալ\nՓորձեք կրկին ավելի ուշ։ ",
     "invalidEmail": "Անվավեր էլ․ հասցե",
@@ -988,6 +1280,18 @@
       "title": "Վճարումը ստացվել է"
     }
   },
+  "reports": {
+    "title": "Հաղորդագրություններ ստեղծեք",
+    "reconciliation": "Հաշտեցման զեկույցը",
+    "aggregation": "Գլխավոր զեկույց",
+    "topRecipients": "Top Recipients Report",
+    "topSenders": "Top Senders Report  Top Senders Report",
+    "selectFromDate": "Ընտրեք ամսաթվից",
+    "selectToDate": "Ընտրեք մինչեւ ամսաթիվ",
+    "fromDate": "                                          ♂                                                                                                                                                       ",
+    "toDate": "Մինչեւ ",
+    "total": " Ամբողջական  Ամբողջական "
+  },
   "support": {
     "contactUs": "Օգնության կարիք ունե՞ք։ Կապ հաստատեք մեզ հետ։ ",
     "joinTheCommunity": "Միանալ համայնքին",
@@ -995,6 +1299,7 @@
     "email": "էլ․ հասցե",
     "enjoyingApp": "Հավանու՞մ եք հավելվածը։ ",
     "statusPage": "Status Page",
+    "discord": "Discord Discord",
     "mattermost": "Mattermost",
     "thankYouText": "Շնորհակալություն Ձեր արձագանքի համար, կցանկանայի՞ք առաջարկել բարելավում։ ",
     "defaultEmailSubject": "{bankName: string} - Աջակցություն",
@@ -1009,7 +1314,8 @@
     "deleteAccountConfirmation": "Ձեր հաշիվը ուղարկվել է ջնջման։\n\nԵրբ կարգավորող պահանջների հետ կապված փորձաշրջանն ավարտվի, Ձեր հաշվի հետ կապված մնացած տվյալները ընդմիշտ կջնջվեն:",
     "deleteAccountFromPhone": "Ողջու՛յն, խնդրում եմ ջնջել իմ հաշիվը։ Իմ հեռախոսահամարն է {phoneNumber: string}։ ",
     "deleteAccountError": "Սխալ։ Կապ հաստատեք {email: string} հետագա աջակցության համար։ ",
-    "bye": "Հաջողությու՛ն։ "
+    "bye": "Հաջողությու՛ն։ ",
+    "switchToBeginnerMode": "Սկզբնական ռեժիմում անցնելուց հետո դուք չեք կորցնի ձեր BTC դրամապանակի միջոցների մուտքը, բայց դրամապանակը կթաքնվի: Դուք կարող եք ցանկացած պահի կրկին անցնել առաջադեմ ռեժիմում: Համոզված եք, որ ցանկանում եք շարունակել:"
   },
   "lnurl": {
     "overLimit": "Դուք չեք կարող առավելագույն չափը գերազանցող գումար ուղարկել",
@@ -1027,7 +1333,9 @@
     "minAmountNotMet": "Գումարի չափը պետք է լինի առնվազն  {minAmount: string}։ "
   },
   "AmountInputButton": {
-    "tapToSetAmount": "Սեղմել՝ գումարի չափը սահմանելու համար"
+    "tapToSetAmount": "Սեղմել՝ գումարի չափը սահմանելու համար",
+    "tapToSetOnChainAmount": "Add an amount",
+    "enterAmount": "Խնդրում ենք մուտք գործել գումարը, որպեսզի շարունակենք:"
   },
   "AppUpdate": {
     "needToUpdateSupportMessage": "Ես պետք է թարմացնել հավելվածը։ Ես օգտագործում եմ {os: string} հավելվածը {version: string} տարբերակով։ ",
@@ -1035,5 +1343,149 @@
     "updateMandatory": "Թարմացումը պարտադիր է",
     "tapHereUpdate": "Սեղմել՝ հիմա թարմացնելու համար",
     "contactSupport": "Կապ հաստատել աջակցության ծառայության հետ"
+  },
+  "RefundFlow": {
+    "refundListTitle": "Unclaimed Deposits",
+    "depositDetails": "Վճարման մանրամասներ",
+    "refundTitle": "Պատվաստման վերադարձ",
+    "destinationTitle": "Գետնավոր վայրը",
+    "confirmationTitle": "Հաստատում",
+    "pendingTransactions": "Պահանջվող գործարքներ",
+    "noRefundables": "No unclaimed deposits found Ոչ մի անհետ կորած ավանդույթ չի հայտնաբերվել",
+    "view": "View View",
+    "refund": "Վերադարձ ",
+    "refundTo": "Վերադարձ դեպի USD թղթադրամ",
+    "recommendedFees": "Առաջարկվող վճարները",
+    "fast": "Արագ արագ",
+    "medium": "Միջնակարգ",
+    "slow": "Հանգիստ",
+    "txId": "Գործարքի ID- ն",
+    "refunded": "Վերադարձ է վերադարձվել",
+    "pending": "Պենդինգ",
+    "autoClaiming": "Այս փոխանցումը պահանջվելու է ավտոմատ կերպով",
+    "approvalRequired": "Անհրաժեշտ է հավանություն ստանալ",
+    "broadcasting": "Հեռարձակումը",
+    "feeExceeded": "Հարկը չափազանց բարձր է",
+    "claimFailed": "Պնդումը ձախողվել է",
+    "automaticClaim": "Այս ավանդը ավտոմատ կերպով կպահանջվի, երբ ցանցային վճարները ավելի ցածր են:",
+    "approveFee": "Ընդունեք այս փոխանցման պահանջը կամ մերժեք փոխհատուցման գործընթացը:",
+    "enterAddress": "Նշեք Bitcoin հասցեն, որտեղ ցանկանում եք ստանալ փոխհատուցումը:",
+    "selectFee": "Ընտրեք ձեր վերադարձի համար ցանցային վճար",
+    "confirmRefund": "Կոնֆերմ & Վերադարձ ",
+    "processing": "Պրոցեսինգի վերադարձը...",
+    "success": "Վերադարձ հեռարձակումը",
+    "refundSuccess": "Ձեր վերադարձը ուղարկվել է Bitcoin ցանցին:",
+    "refundFailed": "Վերադարձ անհաջողություն ",
+    "failedToClaim": "Չկարողացավ պահանջել ավանդ:",
+    "unknownError": "Անհայտ սխալ է տեղի ունեցել",
+    "missingUtxo": "UTXO ավանդը բացակայում է: Գործարքը կարող է դեռեւս հաստատված չլինել:",
+    "couldNotClaimAutomatically": "Այս ավանդը չէր կարող ավտոմատ կերպով պահանջվել:",
+    "networkFee": "Համացանցային վճար",
+    "networkFeeWithRate": "Համացանցի վճար ({feeRate: string} sat/vB)",
+    "youReceive": "Դուք ստանում եք",
+    "approve": "Անդրադառնալու համար հավանություն տվեք:",
+    "refundToExternalWallet": "Դուք կարող եք այն վերադարձնել արտաքին դրամապանակի:",
+    "enterDestinationAddress": "Խնդրում ենք մուտք գործել նպատակակետի հասցե",
+    "invalidBitcoinAddress": "Անvalid Bitcoin հասցեային ձեւաչափ",
+    "estimatedFee": "Համացանցի վճար ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Էստ. Դուք ստանում եք",
+    "feeEstimateDisclaimer": "Հաշվարկվում են վճարները, իսկ իրական վճարը հաշվարկվում է հեռարձակման ժամանակ:"
+  },
+  "Nostr": {
+    "editProfile": "Պրոֆիլը Edit Profile",
+    "importNsecTitle": "Ներմուծել ձեր Nostr Secret Key-ը",
+    "importNsecDefaultDescription": "Խնդրում ենք ներմուծել ձեր nsec- ը մյուս սարքից, որպեսզի շարունակեք օգտագործել զրուցային գործառույթը:",
+    "createProfileTitle": "Պրոֆիլ Create Profile",
+    "createProfileWarning": "Եթե շարունակեք, բոլոր առկա պրոֆիլային տվյալները կփոխհատուցվեն:",
+    "createProfilePubkeyMessage": "Մենք չենք կարողացել գտնել այս խանութի հետ կապված պրոֆիլային իրադարձություն:",
+    "createProfilePrompt": "Ցանկանում եք շարունակել ստեղծագործել:",
+    "createProfileButton": "Պրոֆիլ Create Profile",
+    "profileNotFound": "Մենք փնտրում ենք, բայց չենք կարողացել գտնել ձեր պրոֆիլը:",
+    "promptToCreateProfile": "Կցանկանայի՞ք ստեղծել մեկը հիմա:",
+    "learnAboutNostr": "Սովորեք Nostr-ի մասին:",
+    "learnAboutNostrSubtext": "Գնահատեք այս ուղեցույցը, որպեսզի առավելագույնս օգտվեք nostr զրույցից",
+    "showPublicKey": "Ցույց տվեք հանրային բանալին",
+    "showPrivateKey": "Ցույց տվեք մասնավոր բանալին",
+    "profileConnected": "Profile Connected",
+    "reconnectProfile": "Reconnect Profile",
+    "tapToRefreshConnection": "Կտտացրեք կապը թարմացնելու համար",
+    "importExistingProfile": "Ներկրեք գոյություն ունեցող պրոֆիլ",
+    "deleteProfile": "Հեռացրեք պրոֆիլը",
+    "noProfileIdExists": "No Profile ID գոյություն չունի",
+    "profileReconnected": "Ձեր պրոֆիլը հաջողությամբ վերականգնվել է",
+    "deleteWarningTitle": "Զգուշացում",
+    "deleteWarningMessage": "Ձեր պրոֆիլի բանալիները ջնջելը կհեռացնի ձեր հաշիվը այս սարքից: Առանց կրկնօրինակի, դուք այլեւս չեք կարող մուտք գործել այս պրոֆիլը: Համոզված եք:",
+    "importNsecDescription": "Եթե ցանկանում եք օգտագործել ձեր սեփական nsec-ը, ապա սեղմեք այն ստորեւ:",
+    "profileImportedSuccessfully": "Պրոֆիլը հաջողությամբ ներմուծվել է",
+    "noProfileFound": "No Nostr Profile Found",
+    "noProfileDescription": "Դուք դեռ չեք ստեղծել Nostr պրոֆիլ: Կտտացրեք ստորեւ ՝ մեկը ստեղծելու համար:",
+    "keyConflictTitle": "Nostr Key Not Found on Device",
+    "keyConflictDescription": "Ձեր հաշիվն ունի գրանցված Nostr բանալին, բայց այն չի գտնվել այս սարքում: Դա կարող է տեղի ունենալ հավելվածը վերին տեղադրելուց կամ սարքերը փոխելուց հետո: Հասանելիությունը վերականգնելու համար ներմուծեք ձեր nsec կրկնօրինակը Advanced Settings-ից:",
+    "creatingProfile": "Ստեղծելով պրոֆիլ...",
+    "createNewProfile": "Ստեղծեք նոր պրոֆիլ",
+    "generateProfile": "Ստեղծեք պրոֆիլ",
+    "findingYou": "Փնտրելով քեզ..",
+    "advancedSettings": "Nostr Կարգավորումները Advanced Settings",
+    "KeyModal": {
+      "yourPublicProfileId": "Ձեր հանրային պրոֆիլ ID-ն",
+      "yourPrivateProfileKey": "Ձեր մասնավոր պրոֆիլի բանալին",
+      "keyCopiedToClipboard": "Key copied to clipboard"
+    },
+    "Contacts": {
+      "stillLoading": "Դժվար է գտնել ձեր կոնտակտային ցուցակը: Արդյո՞ք արդեն հետեւել եք որեւէ մեկին:",
+      "noCantacts": "Ոչ մի կոնտակտներ չի հասանելի",
+      "profile": "Պրոֆիլ",
+      "nostrUser": "Nostr User",
+      "message": "Հաղորդագրություն",
+      "sendPayment": "Ուղարկեք ",
+      "contactInfo": "Կոնտակտային տեղեկատվություն",
+      "contactManagement": "Հաղորդակցության կառավարում",
+      "unfollowContact": "Անհետեւեք շփմանը",
+      "noListDeepLinkMessage": "Ընկերներ ավելացնելու համար նախ պետք է նախապես նախաձեռնել ձեր կոնտակտների ցուցակը Սահմանումներում:",
+      "manageContacts": "Կոնտակտների կառավարում",
+      "createContactList": "Հաղորդակցության ցուցակ Ստեղծեք Create Contact List"
+    },
+    "common": {
+      "copy": "Կոպի Կոպի",
+      "copied": "Կոպիացված",
+      "goToSettings": "Գնացեք պարամետրեր"
+    }
+  },
+  "AccountUpgrade": {
+    "accountType": "Հաշվի տեսակ",
+    "personal": "Անձնական",
+    "personalDesc": "Պաշտպանեք ձեր դրամապանակը հեռախոսով եւ էլեկտրոնային փոստով: Պաշտպանեք ձեր անվտանգությունը եւ անհրաժեշտության դեպքում հեշտությամբ վերականգնվեք:",
+    "pro": "Պրո",
+    "proDesc": "Ընդունեք վճարումներ եւ հայտնվեք քարտեզի վրա: Այն պահանջում է բիզնեսի անուն եւ վայր:",
+    "merchant": "Առեւտրի",
+    "merchantDesc": "Տվեք պարգեւներ, հայտնվեք քարտեզում եւ կարգավորվեք ձեր բանկի հետ: Անհրաժեշտ է անձնագիր եւ բանկային տեղեկություններ:",
+    "personalInfo": "Անձնական տվյալներ",
+    "fullName": "Ամբողջական անունը",
+    "phoneNumber": "Հեռախոսահամար ",
+    "email": "Էլեկտրոնային հասցեն",
+    "optional": "(Ընտրական)",
+    "validation": "Վավերացում",
+    "validationCode": "Վավերացման կոդ",
+    "businessInfo": "Բիզնես տեղեկատվություն",
+    "businessName": "Բիզնես անուն",
+    "businessNamePlaceholder": "Գրեք ձեր բիզնեսի անունը",
+    "businessAddress": "Բիզնես հասցե",
+    "businessAddressPlaceholder": "Նշեք ձեր բիզնեսի հասցեն",
+    "flashTerminal": "Ցանկանում եք Flash տերմինալ:",
+    "flashTerminalTooltip": "Flash տերմինալը խելացի սարք է, որը կարող է ընդունել վճարումներ Flash-ի միջոցով ձեր բիզնեսի եւ տպագրության համար ստուգումների համար: Հաճախորդների սպասարկման ներկայացուցիչը կապ կհաստատի ձեզ հետ, եթե նշեք այս տուփը:",
+    "bankingInfo": "Բանկային տեղեկատվություն",
+    "bankName": "Բանկի անունը",
+    "bankNamePlaceholder": "Ընտրեք ձեր բանկի անունը",
+    "bankBranch": "Բանկի մասնաճյուղը",
+    "bankBranchPlaceholder": "Մուտքագրեք ձեր բանկային մասնաճյուղը",
+    "bankAccountType": "Հաշվի տեսակ",
+    "selectBankAccountType": "Ընտրեք հաշիվի տեսակը",
+    "currency": "Վարժույթ",
+    "selectCurrency": "Ընտրեք արժույթ",
+    "accountNum": "Բաժնորդագրության թիվը",
+    "accountNumPlaceholder": "Տեղադրել ձեր հաշիվի համարը",
+    "uploadId": "Բեռնել ID փաստաթուղթ",
+    "successUpgrade": "Դուք հաջողությամբ կատարելագործել եք ձեր հաշիվը մինչեւ {accountType: string}",
+    "successRequest": "Դուք հաջողությամբ խնդրել եք թարմացնել ձեր հաշիվը մինչեւ {accountType: string}"
   }
 }

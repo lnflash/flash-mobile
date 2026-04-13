@@ -2759,7 +2759,30 @@
   resolved "https://registry.yarnpkg.com/@formatjs/ecma402-abstract/-/ecma402-abstract-1.18.0.tgz#e2120e7101020140661b58430a7ff4262705a2f2"
   integrity sha512-PEVLoa3zBevWSCZzPIM/lvPCi8P5l4G+NXQMc/CjEiaCWgyHieUoo0nM7Bs0n/NbuQ6JpXEolivQ9pKSBHaDlA==
   dependencies:
-    "@formatjs/intl-localematcher" "0.5.2"
+    "@flyerhq/react-native-keyboard-accessory-view" "^2.3.3"
+    "@flyerhq/react-native-link-preview" "^1.5.2"
+    dayjs "^1.10.7"
+    react-native-image-viewing "^0.2.1"
+    react-native-parsed-text "^0.0.22"
+
+"@flyerhq/react-native-keyboard-accessory-view@^2.3.3":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@flyerhq/react-native-keyboard-accessory-view/-/react-native-keyboard-accessory-view-2.4.0.tgz#27fe52f77e2b0ee324bf74154eda79bfebba608f"
+  integrity sha512-LF2WdkMk23bTTpsXPQIyVjWttfo+6DcG0HcgE4kp+ozbVRv2Z1S+K1IRd1CR1LAuvHPnVax3DjrJqsGFTavqvA==
+
+"@flyerhq/react-native-link-preview@^1.5.2", "@flyerhq/react-native-link-preview@^1.6.0":
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/@flyerhq/react-native-link-preview/-/react-native-link-preview-1.6.0.tgz#c7285ab93a133328edc5d69b011822581bb4414b"
+  integrity sha512-MY2Kxlf3SzLVUAuGU2LXhDU0a2icNBWL7MDCA8BNpmKqsWI+tHjX3mHm5nGpsLweYG5wsajzBd5XS0KCXNPkJA==
+  dependencies:
+    html-entities "^2.3.2"
+
+"@formatjs/ecma402-abstract@1.18.3":
+  version "1.18.3"
+  resolved "https://registry.yarnpkg.com/@formatjs/ecma402-abstract/-/ecma402-abstract-1.18.3.tgz#274a563964ef5bfb76dc6a477329f52ce9d5b18d"
+  integrity sha512-J961RbhyjHWeCIv+iOceNxpoZ/qomJOs5lH+rUJCeKNa59gME4KC0LJVMeWODjHsnv/hTH8Hvd6sevzcAzjuaQ==
+  dependencies:
+    "@formatjs/intl-localematcher" "0.5.4"
     tslib "^2.4.0"
 
 "@formatjs/intl-enumerator@1.4.3":
@@ -11691,7 +11714,7 @@ date-fns@^3.6.0:
   resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-3.6.0.tgz#f20ca4fe94f8b754951b24240676e8618c0206bf"
   integrity sha512-fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww==
 
-dayjs@^1.8.15:
+dayjs@^1.10.7, dayjs@^1.8.15:
   version "1.11.19"
   resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.11.19.tgz#15dc98e854bb43917f12021806af897c58ae2938"
   integrity sha512-t5EcLVS6QPBNqM2z8fakk/NKel+Xzshgt8FFKAn+qwlD1pzZWxh0nVCrvFK7ZDb6XucZeF9z8C7CBWTRIVApAw==
@@ -15156,7 +15179,7 @@ hosted-git-info@^7.0.0:
   dependencies:
     lru-cache "^10.0.1"
 
-html-entities@^2.1.0:
+html-entities@^2.1.0, html-entities@^2.3.2:
   version "2.6.0"
   resolved "https://registry.yarnpkg.com/html-entities/-/html-entities-2.6.0.tgz#7c64f1ea3b36818ccae3d3fb48b6974208e984f8"
   integrity sha512-kig+rMn/QOVRvr7c86gQ8lWXq+Hkv6CbAH1hLu+RG338StTpE8Z0b44SDVaqVu7HGKf27frdmUYEs9hTUX/cLQ==

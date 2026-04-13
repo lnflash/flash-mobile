@@ -2,6 +2,7 @@
   "GaloyAddressScreen": {
     "title": "Přijměte platbu pomocí:",
     "buttonTitle": "Nastavte svou adresu",
+    "yourLightningAddress": "Váš Lightning adresy",
     "yourAddress": "Vaše {bankName} adresa",
     "notAbleToChange": "Po nastavení adresy {bankName} ji nebudete moci změnit.",
     "addressNotAvailable": "Tato adresa {bankName} je již obsazena.",
@@ -9,6 +10,7 @@
     "merchantTitle": "Pro obchodníky",
     "yourCashRegister": "Vaše Lightningová pokladna",
     "yourPaycode": "Váš platební kód",
+    "copiedLightningAddressToClipboard": "Kopíroval adresu Lightning na klipovku",
     "copiedAddressToClipboard": "Adresa {bankName} zkopírovaná do schránky",
     "copiedPaycodeToClipboard": "Kód platby byl zkopírován do schránky",
     "copiedCashRegisterLinkToClipboard": "Adresa pokladny zkopírována do schránky",
@@ -46,6 +48,37 @@
   "ContactDetailsScreen": {
     "title": "Transakce s {username}"
   },
+  "ChatScreen": {
+    "noChatsTitle": "Žádné chaty nebyly nalezeny",
+    "noChatsYet": "Vložte uživatelské jméno Flash nebo nostr pubkey, abyste mohli začít chat.",
+    "noMatchingChats": "Žádné chaty odpovídající vaší vyhledávání nebyly nalezeny.",
+    "title": "Chat  Chat "
+  },
+  "ChatDetailsScreen": {
+    "title": "Chat s {username: string}"
+  },
+  "CardScreen": {
+    "noCardsTitle": "Žádné karty nebyly nalezeny",
+    "noCardsYet": "Klepněte na Flashcard, abyste ho přidali zde",
+    "noMatchingCards": "Žádné karty odpovídající vašemu vyhledávání nebyly nalezeny.",
+    "title": "Flashcard",
+    "notFlashcard": "Nepodporovaná karta NFC. Ujistěte se, že používáte flash kartu.",
+    "noNDEFMessage": "Zpráva NDEF nebyla nalezená. Ujistěte se, že používáte flashcard.",
+    "notSupported": "NFC není na tomto zařízení podporován.",
+    "notEnabled": "NFC není aktivován na tomto zařízení.",
+    "noTag": "Žádná značka nebyla nalezená. Ujistěte se, že používáte flashcard."
+  },
+  "Cashout": {
+    "title": "Settle",
+    "percentageToCashout": "% k urovnání % k urovnání",
+    "valid": "Platný pro {time: string}",
+    "exchangeRate": "Měnový kurz",
+    "sendAmount": "Pošlete částku",
+    "receiveAmount": "Obdržíme částku",
+    "fee": "Poplatky",
+    "success": "Žádost o urovnání byla úspěšně zahájena.",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
+  },
   "ConversionDetailsScreen": {
     "title": "Převod",
     "percentageToConvert": "% k převodu"
@@ -53,7 +86,9 @@
   "ConversionConfirmationScreen": {
     "title": "Přezkoumat převod",
     "youreConverting": "Převádíte",
-    "receivingAccount": "Přijímací účet"
+    "sendingAccount": "Posílání účtu",
+    "receivingAccount": "Přijímací účet",
+    "conversionFee": "Konverzní poplatek"
   },
   "ConversionSuccessScreen": {
     "title": "Úspěšný převod",
@@ -430,6 +465,10 @@
   },
   "GetStartedScreen": {
     "logInCreateAccount": "Přihlásit se / vytvořit účet",
+    "quickStart": "Start Start Start",
+    "restoreWallet": "Login",
+    "exploreWalletInstead": "Místo toho prozkoumejte peněženku",
+    "setupBusinessAccount": "Nastavte obchodní účet",
     "createAccount": "Vytvořit nový účet",
     "exploreWallet": "Prozkoumat peněženku",
     "logBackInWith": "Přihlaste se zpět pomocí",
@@ -444,7 +483,8 @@
       "noBackup": "Není možnost zálohování",
       "sendingLimit": "Snížený denní limit odesílání",
       "noOnchain": "Nelze přijímat bitcoin onchain"
-    }
+    },
+    "chooseAccountType": "Vyberte typ účtu"
   },
   "MapScreen": {
     "locationPermissionMessage": "Aktivujte svou polohu, abyste věděli, kde se na mapě nacházíte.",
@@ -453,16 +493,48 @@
     "locationPermissionPositive": "OK",
     "locationPermissionTitle": "Vyhledejte se na mapě",
     "payBusiness": "zaplatit tomuto obchod",
-    "title": "Mapa"
+    "title": "Mapa",
+    "addPin": "Klikněte kdekoliv, abyste přidali pin.",
+    "selectedCoordinates": "Vaše Flashpoint souřadnice: ",
+    "viewInGoogleMaps": "Zobrazit v mapách Google",
+    "getDirections": "Směřování Získejte směry"
   },
   "HomeScreen": {
+    "cashout": "Vyplacená hotovost",
     "receive": "Přijmout",
+    "reload": "Reload Card",
+    "balance": "Refresh Balance",
+    "showQrCode": "Topup prostřednictvím QR",
     "send": "Odeslat",
+    "sweep": "Sweep to Wallet",
+    "pay": "Pay Pay",
     "title": "Domů",
     "scan": "Naskenovat",
     "updateAvailable": "K dispozici je aktualizace.\nKlepnutím aktualizujte",
     "useLightning": "Používáme Lightning Network. ",
-    "myAccounts": "Moje účty"
+    "myAccounts": "Moje účty",
+    "unclaimedDepositsWarning": "️ Pl e a s e c o m p l e e o r claim a l l l unclaimed deposits b e f o r e n i s t a l i n g Fl a s h r unclaimed deposits w i l l b e l o s t .",
+    "unclaimedDeposits": "Nedokládané vklady",
+    "cash": "Peníze Cash",
+    "bitcoin": "Bitcoin",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Add",
+    "upgradeTitle": "Vylepšte svůj účet",
+    "upgradeTitlePending": "Žádost o aktualizaci je v přihlédnutí",
+    "upgradeDesc": "Vylepšujte, abyste zvýšili viditelnost, limity a výplaty.",
+    "upgradePendingDesc": "Vaše žádost o aktualizaci účtu je přezkoumána.",
+    "currencyTitle": "Změňte měnu na svou místní měnu",
+    "currencyDesc": "Podívejte se na náš seznam dostupných měn a vyberte si svou měnu.",
+    "flashcardTitle": "Získejte Flashcard",
+    "flashcardDesc": "Najděte Flashpoint a získejte Flashcard k použití v každodenním životě.",
+    "nonCustodialWalletTitle": "Non-custodial peněženky",
+    "nonCustodialWalletDesc": "Přečtěte si více o peněženkách, které nejsou ve vazbě.",
+    "emailTitle": "E-mailová adresa",
+    "emailDesc": "Přidejte svou e-mailovou adresu k zajištění vašeho účtu a přihlaste se pomocí e-mailové adresy.",
+    "btcWalletTitle": "Aktivovat peněženku BTC",
+    "btcWalletDesc": "V Bitcoin lze snadno přenést větší částky.",
+    "backupTitle": "Zálohujte si peněženku BTC",
+    "backupDesc": "Záloha a zabezpečení peněženky Bitcoin pomocí recovery phrase."
   },
   "PinScreen": {
     "attemptsRemaining": "Nesprávný kód PIN. {attemptsRemaining} zbývající pokusy.",
@@ -490,11 +562,13 @@
     "title": "Domů"
   },
   "ReceiveScreen": {
+    "flashcardInstructions": "Skenujte kód QR, nebo klikněte na ikonu, abyste to sdíleli na whatsapp, e-mailu atd.",
     "nfc": "NFC",
     "enterAmountFirst": "Please enter an amount first",
     "activateNotifications": "Chcete aktivovat oznámení, abyste byli informováni o příchozích platbách?",
     "copyClipboard": "Faktura byla zkopírována do schránky",
     "copyClipboardBitcoin": "Bitcoinová adresa byla zkopírována do schránky",
+    "copyClipboardPaycode": "Paycode/LNURL byl skopírován do desky",
     "invoicePaid": "Tato faktura byla uhrazena",
     "setNote": "nastavit poznámku",
     "tapQrCodeCopy": "Klepnutím na QR kód ho zkopírujete",
@@ -537,10 +611,16 @@
     },
     "invoiceHasBeenPaid": "Faktura byla uhrazena",
     "yourBitcoinOnChainAddress": "Vaše Onchain Bitcoin adresa",
+    "receive": "Receive Receive",
     "receiveViaInvoice": "Příjem přes Lightning",
     "receiveViaPaycode": "Příjem přes Paycode",
+    "topupFlashcard": "Topup Flashcard",
     "receiveViaOnchain": "Příjem přes Onchain",
-    "initialDeposit": "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee."
+    "payCodeOrLNURL": "Paycode / LNURL",
+    "cantReceiveZeroSats": "Nemůžete získat nulový sats. Prosím zadávejte částku odpovídající 1 nebo více sats.",
+    "initialDeposit": "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee.",
+    "selectPaymentMethod": "Vyberte způsob platby",
+    "selectWallet": "Vyberte peněženku"
   },
   "RedeemBitcoinScreen": {
     "title": "Směnit Bitcoin",
@@ -559,7 +639,12 @@
     "invalidTitle": "Neplatný QR kód",
     "noQrCode": "Na obrázku se nám nepodařilo najít QR kód.",
     "title": "Sken QR kódu",
-    "invalidContentLnurl": "Našli jsme:\n\n{found}\n\nnení v současné době podporováno"
+    "permissionCamera": "Potřebujeme povolení k použití vašeho fotoaparátu",
+    "noCamera": "Žádný fotoaparát nebyl nalezen",
+    "openSettings": "Otevřete nastavení",
+    "unableToOpenSettings": "Nedokázal otevřít nastavení",
+    "invalidContentLnurl": "Našli jsme:\n\n{found}\n\nnení v současné době podporováno",
+    "imageLibraryPermissionsNotGranted": "Nemáme povolení k přístupu k knihovně snímků.Prosím ověřte nastavení aplikace pro vaši platformu."
   },
   "SecurityScreen": {
     "biometricDescription": "Odemykání pomocí otisku prstu nebo rozpoznání obličeje.",
@@ -570,7 +655,8 @@
     "hideBalanceTitle": "Skryj zůstatek",
     "pinDescription": "PIN se používá jako záložní metoda ověřování pro biometrické ověřování.",
     "pinTitle": "PIN kód",
-    "setPin": "Nastavit PIN"
+    "setPin": "Nastavit PIN",
+    "backupDescription": "Pokud chcete nastavit kód PIN, zálohte si svůj účet přidáním telefonního čísla."
   },
   "SendBitcoinConfirmationScreen": {
     "amountLabel": "Částka:",
@@ -612,12 +698,17 @@
       "body3": "V opačném případě budou peníze převedeny na {bankName: string}. Účet, který má adresu \"{lnAddress: string}\".\n\nZkontrolujte také možné překlepy v první části adresy. např. jackie a jack1e jsou 2 různé adresy.",
       "warning": "Pokud je adresa {bankName} zadána špatně, {bankName} nemůže transakci vrátit zpět.",
       "checkBox": "{lnAddress} je správná adresa.",
-      "confirmButton": "Jsem si 100% jistý."
+      "confirmButton": "Jsem si 100% jistý.",
+      "externalWarning": "Chystáte se poslat peníze někomu, kdo není účtem {bankName: string}. Jste si jistí, že to je adresa, na kterou chcete poslat?",
+      "externalCheckBox": "Potvrzuji vysílání na {address: string}."
     },
     "clipboardError": "Chyba při získávání hodnoty ze schránky"
   },
   "SendBitcoinScreen": {
     "amount": "Částka",
+    "MinOnChainLimit": "Minimální částka pro tuto transakci je 2,00 dolarů.",
+    "MinOnChainSatLimit": "Minimální částka pro tuto transakci je 5 500 sats",
+    "MinFlashcardLimit": "Minimální částka při přepínání z karty je 100 sats.",
     "amountExceed": "Částka přesahuje váš zůstatek ve výši {balance}",
     "amountExceedsLimit": "Částka přesahuje váš zbývající denní limit {limit: string}",
     "upgradeAccountToIncreaseLimit": "Upgradujte svůj účet a zvyšte svůj limit",
@@ -637,11 +728,25 @@
     "max": "Maximum",
     "maxAmount": "Maximální částka",
     "title": "Odeslat Bitcoin",
+    "send": "Poslat Poslat",
     "failedToFetchLnurlInvoice": "Nepodařilo se načíst lnurl fakturu",
     "lnurlInvoiceIncorrectAmount": "Server lnurl odpověděl fakturou s nesprávnou částkou.",
-    "lnurlInvoiceIncorrectDescription": "Server lnurl odpověděl fakturou s nesprávným hashem popisu."
+    "lnurlInvoiceIncorrectDescription": "Server lnurl odpověděl fakturou s nesprávným hashem popisu.",
+    "noAmountInvoiceError": "V peněžence BTC není podpořena žádná faktura o částce.Prosíme, abyste se vrátili a prozkoumali nebo zadaly fakturu s přidanou částkou.",
+    "onchainMinAmountInvoiceError": "Množství, které jste zadal, je nižší než minimální částka potřebná k zasílání transakce {amount: number} na řetězci. Prosím, zvážíte možnost poslat tuto částku prostřednictvím Lightning!",
+    "minAmountInvoiceError": "Výše na fakturě je menší než minimální částka {amount: number}",
+    "maxAmountInvoiceError": "Výše na fakturě je větší než maximální částka {amount: number}",
+    "minAmountConvertError": "Výše konverze je menší než minimální požadovaná částka {amount: number}",
+    "maxAmountConvertError": "Výše konverze je větší než maximální částka {amount: number}"
   },
   "SettingsScreen": {
+    "staticQr": "Tiskovatelný statický kód QR Code",
+    "staticQrCopied": "Váš statický kódový odkaz QR byl skopírován",
+    "setByOs": "Nastavte OS",
+    "apiAcess": "Access API",
+    "pos": "Bod prodeje",
+    "posCopied": "Váš odkaz na prodejní místo byl skopírován",
+    "setYourLightningAddress": "Nastavte své uživatelské jméno",
     "activated": "Aktivováno",
     "addressScreen": "Způsoby platby",
     "tapUserName": "Klepnutím na nastavíte uživatelské jméno",
@@ -663,7 +768,16 @@
     "nfcOnlyReceive": "Prozatím je k dispozici pouze přijmutí platby skrze NFC",
     "nfcScanNow": "Skenování NFC",
     "nfcNotSupported": "Toto zařízení nepodporuje technologii NFC",
-    "logInOrCreateAccount": "Přihlášení nebo vytvoření účtu"
+    "logInOrCreateAccount": "Přihlášení nebo vytvoření účtu",
+    "backup": "Záložní záloha",
+    "importWallet": "Importovat peněženku",
+    "showSeedPhrase": "Reveal recovery phrase",
+    "showNostrSecret": "Chatové nastavení",
+    "beginnerMode": "Vypněte účet Bitcoin",
+    "advanceMode": "Aktivujte účet Bitcoin (pokročilý režim)",
+    "keysManagement": "Záložní záloha peněženky",
+    "showBtcAccount": "Zobrazit Bitcoin účet",
+    "hideBtcAccount": "Schovat účet Bitcoin"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -676,10 +790,27 @@
       "Payments": {
         "title": "Payments",
         "description": "Notifications related to sending and receiving payments."
+      },
+      "Marketing": {
+        "title": "Funkce a aktualizace",
+        "description": "Oznámení o nových funkcích a aktualizacích."
+      },
+      "Price": {
+        "title": "Ceny se mění",
+        "description": "Oznámení o ceně Bitcoin."
       }
     }
   },
   "AccountScreen": {
+    "fundsMoreThan5Dollars": "Váš účet má více než 5 dolarů",
+    "itsATrialAccount": "Zkušební účty mají snížené transakční limity a žádnou metodu obnovy.Pokud ztratíte telefon nebo odinstalujete aplikaci, vaše prostředky nebudou možné získat zpět.",
+    "accountBeingDeleted": "Váš účet je vymazán, počkejte prosím...",
+    "dangerZone": "Zóně nebezpečí",
+    "phoneDeletedSuccessfully": "Telefon byl úspěšně odstraněn",
+    "phoneNumber": "Telefonní číslo",
+    "tapToAddPhoneNumber": "Klepněte na tlačítko k přidání telefonního čísla.",
+    "loginMethods": "Login Metody",
+    "level": "Úroveň {level: string}",
     "accountLevel": "Úroveň účtu",
     "upgrade": "Upgradujte svůj účet",
     "logOutAndDeleteLocalData": "Odhlásit se a vymazat všechna místní data",
@@ -692,6 +823,11 @@
     "btcBalanceWarning": "Váš zůstatek bitcoinů je {balance: string}.",
     "secureYourAccount": "Zaregistrujte se pro zabezpečení svého účtu",
     "tapToAdd": "Klepnutím přidáte",
+    "tapToAddEmail": "Klepněte na tlačítko k přidání e-mailu",
+    "unverifiedEmail": "E-mail (neověřený)",
+    "email": "E-mail ",
+    "emailDeletedSuccessfully": "E-mail byl úspěšně odstraněn",
+    "unverifiedEmailAdvice": "Neověřené e-maily nelze použít k přihlášení. Měli byste znovu ověřit svou e-mailovou adresu.",
     "deleteEmailPromptTitle": "Smazat e-mail",
     "deleteEmailPromptContent": "Jste si jisti, že chcete odstranit svou e-mailovou adresu? Budete se moci znovu přihlásit pouze pomocí svého telefonního čísla.",
     "deletePhonePromptTitle": "Smazat telefon",
@@ -706,7 +842,100 @@
     "unverifiedContent": "Zabezpečte svůj účet ověřením emailu.",
     "confirmEmail": "Potvrďte email",
     "emailUnverified": "Váš e-mail je neověřený",
-    "emailUnverifiedContent": "Ověřením e-mailu zajistěte, abyste se mohli znovu přihlásit ke svému účtu. Chcete provést ověření nyní?"
+    "emailUnverifiedContent": "Ověřením e-mailu zajistěte, abyste se mohli znovu přihlásit ke svému účtu. Chcete provést ověření nyní?",
+    "totp": "Dvou-faktorová autentizace",
+    "totpDeactivated": "Dvoufaktorová autentizace byla deaktivována",
+    "totpDeleteAlertTitle": "Delete two-factor authentication",
+    "totpDeleteAlertContent": "Jste si jistí, že chcete vymazat svou dvoufaktorovou ověření?",
+    "copiedAccountId": "Kopíroval svůj účet ID na desku",
+    "yourAccountId": "Vaše ID účtu",
+    "accountId": "ID účtu ",
+    "copy": "Kopírovat Kopírovat"
+  },
+  "TotpRegistrationInitiateScreen": {
+    "title": "Dvou-faktorová autentizace",
+    "content": "Skenujte tento kód QR pomocí aplikace autentifikátor.Alternativně můžete manuálně kopírovat/pásat tajemství do aplikace autentifikátor."
+  },
+  "TotpRegistrationValidateScreen": {
+    "title": "Dvou-faktorová autentizace",
+    "enter6digitCode": "Uveďte šestciferný kód z aplikace autentifikátoru, který potvrdí vaši dvoufaktorovou autentifikaci.",
+    "success": "Dvoufaktorová autentizace byla aktivována. Nyní se můžete přihlásit pouze se svým telefonem nebo e-mailem A dvoufaktorovou autentizací. Mohou být obnoveny pouze plné účty KYC v případě, že uživatel ztratil přístup ke své dvoufaktorové autentizaci."
+  },
+  "TotpLoginValidateScreen": {
+    "title": "Dvou-faktorová autentizace",
+    "content": "K přihlášení zadávejte šesticiferný kód z aplikace autentifikátoru, který se mění každých 30 sekund."
+  },
+  "BackupOptions": {
+    "title": "Možnosti zálohování",
+    "recoveryPhrase": "Phrase Recovery  Recovery Phrase",
+    "recoveryPhraseDesc": "Záloha Bitcoin Wallet using recovery phrase",
+    "revealRecoveryPhrase": "Reveal Recovery Phrase",
+    "revealRecoveryPhraseDesc": "Použijte svou frazu obnovení, abyste importovali peněženku Bitcoin.",
+    "phone": "Telefon  Telefon ",
+    "phoneDesc": "Záložní hotovostní peněženku pomocí telefonního čísla",
+    "usePhoneNumber": "Použijte svůj telefonní číslo k importování hotovostního peněžence",
+    "done": "                                                                                                                                                                                 "
+  },
+  "BackupStart": {
+    "title": "Nejdřív vytvořme vaši frazu obnovení.",
+    "description": "Závěrečná fráze je řada dvanácti slov v určitém pořadí. Tato kombinace slov je jedinečná pro vaši peněženku. Ujistěte se, že máte připravený pero a papír, abyste si je mohli zapsat.",
+    "continue": " Pokračovat  Pokračovat  Pokračovat"
+  },
+  "BackupSeedPhrase": {
+    "title": "Toto je vaše fraze obnovy",
+    "description": "Ujistěte se, že si to zapíšete, jak je zde zobrazeno.Musíte to ověřit později.",
+    "backupToICloud": "Záloha do iCloud",
+    "backupToGoogleDrive": "Záloha do Google Drive",
+    "verify": "Verify"
+  },
+  "BackupDoubleCheck": {
+    "title": "Pojďme si dvakrát prohlédnout",
+    "description1": "Dobrá práce, teď se ujistěte, že jste správně napsal svou frázi o obnovení.",
+    "description2": "Ano, je to tak důležité.",
+    "continue": " Pokračovat  Pokračovat  Pokračovat"
+  },
+  "BackupVerify": {
+    "title": "Klepněte na slova ve správném pořadí.",
+    "correctTitle": "Dokonale. Ujistěte se, že bezpečně ukládáte svou frazu obnovení.",
+    "wrongTitle": "Omlouvám se, ale to není správné třetí slovo.",
+    "tryAgain": "Zkuste to znovu",
+    "continue": " Pokračovat  Pokračovat  Pokračovat"
+  },
+  "BackupComplete": {
+    "title": "Vaše záloha je kompletní",
+    "description": "Nyní byste měli mít na paměti svou frazu obnovení a heslo pro budoucí referenci.",
+    "complete": "Complete Complete"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "Toto je vaše fraze obnovy",
+    "description": "Ujistěte se, že si to zapíšete, jak je zde zobrazeno, budete muset svůj peněženku získat zpět.",
+    "done": "                                                                                                                                                                                 "
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "Možnosti přihlašování",
+    "importOptions": "Možnosti na importování peněženky",
+    "recoveryPhrase": "Phrase Recovery  Recovery Phrase",
+    "importBTCWallet": "Import Bitcoin Wallet using recovery phrase",
+    "phone": "Telefon  Telefon ",
+    "importUsingPhone": "Importovat nebo vytvořit svůj hotovostní peněženku pomocí telefonního čísla",
+    "email": "E-mail ",
+    "importUsingEmail": "Importovat svůj hotovostní peněženku pomocí e-mailové adresy",
+    "login": "Login/Create",
+    "done": "                                                                                                                                                                                 "
+  },
+  "ImportWallet": {
+    "title": "Přihlašujte se se slovy o obnovení",
+    "importTitle": "Importovat peněženku se slovem recovery",
+    "description": "Toto je 12 slovní fráze, kterou jste dostali, když jste vytvořili svou předchozí peněženku.",
+    "complete": "Complete Complete"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
+  "CopySecretComponent": {
+    "button": "Kopírovat tajemství",
+    "toastMessage": "Tajemství kopírované na desku!"
   },
   "DefaultWalletScreen": {
     "title": "Výchozí účet",
@@ -717,7 +946,9 @@
     "info": "Vyberte si preferovaný motiv vzhledu aplikace Flash nebo si zvolte synchronizaci s nastavením systému.",
     "system": "Použít nastavení systému",
     "light": "Použít Světlý režim",
-    "dark": "Použít Tmavý režim"
+    "dark": "Použít Tmavý režim",
+    "setToDark": "Temný režim",
+    "setToLight": "Světlový režim"
   },
   "Languages": {
     "DEFAULT": "Výchozí nastavení (OS)"
@@ -728,6 +959,26 @@
     "termsAndConditions": "Přečtěte si smluvní podmínky.",
     "learnMore": "Zjistěte více o Stablesats"
   },
+  "AdvancedModeModal": {
+    "header": "Vítejte v pokročilém režimu!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "Přečtěte si podmínky.",
+    "learnMore": "Co je to non-custodial peněženka?",
+    "importWallet": "Importovat peněženku",
+    "createWallet": "Peněženka Vytvořte vytvořit peněženku."
+  },
+  "MerchantSuggestModal": {
+    "header": "Flashpoint Add",
+    "body": "Uživatelé Flash vás na mapě najdou a pošlou vám platby kliknutím na vašeho mapového šňůru.",
+    "termsAndConditions": "Přečtěte si podmínky.",
+    "learnMore": "Vaše žádost o PIN bude zpracovávána do 24 hodin."
+  },
+  "UnVerifiedSeedModal": {
+    "header": "Zabezpečte si peněženku Bitcoin",
+    "body": "Pokud ztratíte telefon nebo odinstalujete aplikaci bez toho, abyste si zapsali tuto frazu, ztratíte přístup ke svým finančním prostředkům. ",
+    "termsAndConditions": "Přečtěte si podmínky.",
+    "learnMore": "Co je Recovery Phrase?"
+  },
   "SplashScreen": {
     "update": "Vaše aplikace je zastaralá. Před použitím aplikace je nutná aktualizace.\n\nTo lze provést v obchodě PlayStore pro systém Android a Testflight pro systém iOS."
   },
@@ -737,7 +988,24 @@
     "spent": "Utratili jste",
     "receivingAccount": "Přijímací účet",
     "sendingAccount": "Odesílající účet",
-    "txNotBroadcast": "Vaše transakce právě probíhá a za chvíli bude odeslána do Bitcoinové sítě."
+    "txNotBroadcast": "Vaše transakce právě probíhá a za chvíli bude odeslána do Bitcoinové sítě.",
+    "noTransaction": "Žádná transakce s tímto identifikátorem nebyla nalezená",
+    "typeOnChain": "OnChain",
+    "typeLightning": "Lightning",
+    "typeIntraLedger": "IntraLedger",
+    "pendingStatus": "Čeká na vás.",
+    "confirmation": "Potvrzení",
+    "confirmations": "Potvrzení",
+    "hash": "Hash Hash",
+    "preimage": "Preimage",
+    "transactionId": "ID transakce",
+    "swapDetails": "Swap Details",
+    "destinationAddress": "Destination Address",
+    "swapId": "Swap ID",
+    "lockupTxId": "Lockupová transakce",
+    "claimTxId": "Tvrzení o transakci",
+    "swapFees": "Swap poplatky",
+    "expirationBlockHeight": "Vyprší v bloku"
   },
   "TransactionLimitsScreen": {
     "receive": "Přijmout",
@@ -752,7 +1020,11 @@
     "contactUsMessageBody": "Zdravím, chtěl bych si nechat zvýšit transakční limit na svém {bankName: string} účtu.",
     "contactUsMessageSubject": "Požádat o zvýšení transakčního limitu",
     "contactSupportToPerformKyc": "Kontaktujte podporu a proveďte manuální KYC pro zvýšení limitu.",
-    "increaseLimits": "Zvýšení transakčních limitů"
+    "increaseLimits": "Zvýšení transakčních limitů",
+    "spendingLimits": "Omezení výdajů",
+    "spendingLimitsDescription": "Limity výdajů zobrazené na této stránce jsou denominovány v USD. Pro vaši pohodlí tyto limity přeměňujeme na vaši místní měnu na základě aktuálních měnových kurzů. Upozorňujeme, že zobrazená částka místní měny se může pohybovat, protože měnové kurzy jsou aktualizovány v reálném čase.",
+    "requestUpgrade": "Žádost o vylepšení",
+    "editRequest": "Edit Upgrade Request"
   },
   "TransactionScreen": {
     "noTransaction": "Žádná transakce k zobrazení",
@@ -774,11 +1046,17 @@
     "stayInTrialMode": "Zůstat ve zkušebním režimu"
   },
   "SetAddressModal": {
+    "helloText": "Zdravím!",
+    "whoAreYou": "Jak bychom vám měli říkat?",
+    "usernameHint": "Toto bude vaše uživatelské jméno {bankName: string}",
+    "placeholder": "Vezměte si uživatelské jméno",
     "title": "Vaše {bankName} adresa",
+    "save": "Save Save",
     "Errors": {
       "tooShort": "Adresa musí mít alespoň 3 znaky",
       "tooLong": "Adresa může mít maximálně 50 znaků",
       "invalidCharacter": "Adresa může obsahovat pouze písmena, číslice a podtržítka.",
+      "startsWithNumber": "Vaše uživatelské jméno musí začít velkým nebo malým písmenem.",
       "addressUnavailable": "Tato adresa je již obsazena",
       "unknownError": "Došlo k neznámé chybě, zkuste to prosím později"
     },
@@ -853,12 +1131,22 @@
     "success": "E-mail {email: string} úspěšně potvrzen"
   },
   "common": {
+    "enabled": "Enabled",
+    "notifications": "Oznámení",
+    "preferences": "Preference",
+    "onDeviceSecurity": "Bezpečnost na zařízení",
+    "securityAndPrivacy": "Bezpečnost a soukromí",
+    "advanced": " Pokročilý Pokročilý",
+    "community": "Společnost  Společnost  Společenství  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost  Společnost",
     "account": "Účet",
+    "trialAccount": "Zkušební účet",
+    "flashUser": "Flash Uživatel ",
     "transactionLimits": "Transakční limity",
     "activateWallet": "Aktivovat peněženku",
     "amountRequired": "Je požadována částka",
     "back": "Zpět",
     "backHome": "Zpět domů",
+    "revealSeed": "Zpomeňte na obnovení fráze",
     "bank": "Banka",
     "bankAccount": "Peněžní účet",
     "bankAdvice": "{bankName} Poradna",
@@ -870,13 +1158,16 @@
     "cancel": "Zrušit",
     "close": "Zavřít",
     "confirm": "Potvrdit",
+    "copied": "Kopírované na desku",
     "convert": "Převést",
     "codeConfirmation": "Potvrzovací kód",
     "currency": "Měna",
     "currencySyncIssue": "Problém s měnou. Obnovte stránku",
     "csvExport": "Exportovat transakce ve formátu CSV",
+    "exportSparkLogs": "Exportní záznamy",
     "date": "Datum",
     "description": "Popis",
+    "details": "Detaily",
     "domain": "Doména",
     "email": "Email",
     "error": "Chyba",
@@ -896,6 +1187,7 @@
     "loggedOut": "Byl jste odhlášen.",
     "logout": "Odhlásit",
     "minutes": "minuty",
+    "errorAuthToken": "Chybí auth token",
     "needWallet": "Přihlašte se nebo si založte účet pro přístup k vaší peněžence",
     "next": "Další",
     "No": "Ne",
@@ -908,9 +1200,11 @@
     "phoneNumber": "Telefonní číslo",
     "rate": "Sazba",
     "reauth": "Vaše relace vypršela. Přihlaste se znovu.",
+    "request": "Pin pro žádost",
     "restart": "Restartovat",
     "sats": "sats",
     "search": "Hledat",
+    "chatSearch": "uživatelské jméno nebo nostr pubkey",
     "security": "Bezpěčnost",
     "send": "Odeslat",
     "setAnAmount": "nastavit částku",
@@ -941,6 +1235,28 @@
     "problemMaybeReauth": "Ve vašem požadavku se vyskytl problém. Zkuste to prosím znovu za minutu. Pokud problém přetrvává, doporučujeme se odhlásit a znovu přihlásit. Odhlásit se můžete v Nastavení > Účet > Odhlásit se.",
     "warning": "Upozornění"
   },
+  "NostrQuickStart": {
+    "postHeading": "Udělejte svůj první sociální příspěvek!",
+    "postDesc": "Představte se světu!"
+  },
+  "Social": {
+    "post": "Post to Nostr",
+    "postTitle": "Udělejte příspěvek",
+    "flashAppCredit": "Posted using Flash! Get it @ https://getflash.io/app",
+    "writeYourNote": "Napište si svůj vzkaz, udělejte z něj speciální :)",
+    "postButton": "Post Post",
+    "notePosted": "Vaše poznámka byla zveřejněna",
+    "errorPostFailed": "Chybu při zveřejnění poznámky",
+    "errorEmptyNote": "Chybu: Prázdná poznámka",
+    "posting": "Posílání...",
+    "viewOnIris": "Pohled na iris.to",
+    "viewPostQuestion": "Chtěli byste si prohlédnout svůj článek o iris.to?",
+    "browseSocialFeed": "Prohledejte sociální krmení",
+    "socialFeedTitle": "Sociální krmení",
+    "postSuccessTitle": "Post Shared!",
+    "postSuccessSubtitle": "Váš příspěvek byl zveřejněn na Nostr",
+    "showMeMore": "Ukaž mi víc"
+  },
   "errors": {
     "generic": "Došlo k chybě.\nZkuste to prosím později.",
     "invalidEmail": "Neplatný email",
@@ -964,6 +1280,18 @@
       "title": "Přijatá platba"
     }
   },
+  "reports": {
+    "title": "Generovat zprávy",
+    "reconciliation": "Zpráva o smíření",
+    "aggregation": "Aggregační zpráva",
+    "topRecipients": "Top Recipients Report",
+    "topSenders": "Top Senders Report",
+    "selectFromDate": "Vyberte od data",
+    "selectToDate": "Vyberte aktuální datum",
+    "fromDate": " Od  Od ",
+    "toDate": " Do Do",
+    "total": " Celkový výběr  Celkový výběr "
+  },
   "support": {
     "contactUs": "Potřebujete poradit? Kontaktujte nás.",
     "joinTheCommunity": "Připojte se ke komunitě",
@@ -971,6 +1299,7 @@
     "email": "Email",
     "enjoyingApp": "Líbí se vám aplikace?",
     "statusPage": "Stav",
+    "discord": "Discord Discord",
     "mattermost": "Mattermost",
     "thankYouText": "Děkujeme za zpětnou vazbu, chcete nám nechat podnět k vylepšení?",
     "defaultEmailSubject": "{bankName: string} - Podpora",
@@ -985,7 +1314,8 @@
     "deleteAccountConfirmation": "Váš účet byl zapsán ke smazání.\n\nPo uplynutí čekací doby související s regulačním požadavkem budou zbývající údaje týkající se vašeho účtu trvale vymazány.",
     "deleteAccountFromPhone": "Ahoj!, prosím, smažte můj účet. Moje telefonní číslo je {phoneNumber: string}.",
     "deleteAccountError": "Něco se pokazilo. Pro další pomoc kontaktujte {email: string}.",
-    "bye": "Nashledanou!"
+    "bye": "Nashledanou!",
+    "switchToBeginnerMode": "Přepnutím na režim začátečníků neztratíte přístup k peněženkám BTC, ale peněženka bude skryta. Můžete znovu přepnout na pokročilý režim kdykoliv. Jste si jistí, že chcete pokračovat?"
   },
   "lnurl": {
     "overLimit": "Nemůžete poslat více než maximální částku",
@@ -1003,7 +1333,9 @@
     "minAmountNotMet": "Částka musí být alespoň {minAmount: string}."
   },
   "AmountInputButton": {
-    "tapToSetAmount": "Klepnutím nastavte částku"
+    "tapToSetAmount": "Klepnutím nastavte částku",
+    "tapToSetOnChainAmount": "Přidejte částku",
+    "enterAmount": "Prosím zadávejte částku, abychom pokračovali."
   },
   "AppUpdate": {
     "needToUpdateSupportMessage": "Potřebuji aktualizovat aplikaci na nejnovější verzi. Používám aplikaci {os: string} s verzí {version: string}.",
@@ -1011,5 +1343,149 @@
     "updateMandatory": "Aktualizace je povinná",
     "tapHereUpdate": "Klepněte zde pro aktualizaci",
     "contactSupport": "Kontaktovat podporu"
+  },
+  "RefundFlow": {
+    "refundListTitle": "Nedokládané vklady",
+    "depositDetails": "Deposit Details",
+    "refundTitle": "Refund Deposit",
+    "destinationTitle": "Destination",
+    "confirmationTitle": "Potvrzení",
+    "pendingTransactions": "Pending Transactions",
+    "noRefundables": "Žádné nevyžádané vklady nebyly nalezeny",
+    "view": "View View",
+    "refund": "Vrátit peníze",
+    "refundTo": "Zpět peníze na peněženku USD",
+    "recommendedFees": "Doporučené poplatky",
+    "fast": "Rychle  Rychle ",
+    "medium": "Medium",
+    "slow": "Pomalu",
+    "txId": "ID transakce",
+    "refunded": "Vrátil se zpět",
+    "pending": "Čeká na vás.",
+    "autoClaiming": "Tento převod bude požádán automaticky",
+    "approvalRequired": "Potřeba schválení",
+    "broadcasting": "Vysílání",
+    "feeExceeded": "Poplatky jsou příliš vysoké",
+    "claimFailed": "Požadavek selhal",
+    "automaticClaim": "Tento vklad bude automaticky požadován, když jsou poplatky za síť nižší.",
+    "approveFee": "Souhlasit s nárokem na tento převod, nebo odmítnout zpracovat vrácení peněz.",
+    "enterAddress": "Uveďte adresu Bitcoin, kde chcete získat vrácení peněz.",
+    "selectFee": "Vyberte si síťový poplatek za vrácení peněz",
+    "confirmRefund": "Potvrzení a vrácení peněz",
+    "processing": "Závrat zpracování...",
+    "success": "Refund Broadcast",
+    "refundSuccess": "Vaše vrácení peněz bylo zasláno do sítě Bitcoin.",
+    "refundFailed": "Neúspěšné vrácení peněz",
+    "failedToClaim": "Nedokázal požádat o vklad",
+    "unknownError": "Přišlo k neznámému chybě",
+    "missingUtxo": "Zbytek UTXO chybí, transakce nemusí být ještě potvrzena.",
+    "couldNotClaimAutomatically": "Tento vklad nemohl být automaticky uplatněn.",
+    "networkFee": "Síťový poplatek",
+    "networkFeeWithRate": "Síťový poplatek ({feeRate: string} sat/vB)",
+    "youReceive": "Ty přijímáš",
+    "approve": "Schválit schvalování",
+    "refundToExternalWallet": "Můžete ji vrátit do externí peněženky.",
+    "enterDestinationAddress": "Prosím zadávejte cílovou adresu",
+    "invalidBitcoinAddress": "Neoprávněný formát adres Bitcoin",
+    "estimatedFee": "Síťový poplatek ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Est. You Receive",
+    "feeEstimateDisclaimer": "Skutečný poplatek bude vypočítán při vysílání."
+  },
+  "Nostr": {
+    "editProfile": "Edit Profil",
+    "importNsecTitle": "Importovat svůj Nostr Secret Key",
+    "importNsecDefaultDescription": "Jste přihlášeni do jiného zařízení.Prosíme, abyste si svůj nsec importovali z jiného zařízení, abyste mohli pokračovat v používání chatové funkce.",
+    "createProfileTitle": "Vytvořte profil",
+    "createProfileWarning": "Pokud budete pokračovat, všechny existující údaje o profilu budou přepsané.",
+    "createProfilePubkeyMessage": "Nemohli jsme najít profilovou událost připojenou k této pubkey.",
+    "createProfilePrompt": "Chcete dál tvořit?",
+    "createProfileButton": "Vytvořte profil",
+    "profileNotFound": "Hledáme, ale nemohli jsme najít váš profil.",
+    "promptToCreateProfile": "Chtěli byste si ho vytvořit nyní?",
+    "learnAboutNostr": "Zjistěte více o Nostr",
+    "learnAboutNostrSubtext": "Prozkoumejte tento průvodce, abyste se co nejvíce těšili z chatu nostr",
+    "showPublicKey": "Ukažte veřejný klíč",
+    "showPrivateKey": "Ukažte soukromý klíč",
+    "profileConnected": "Profil připojený",
+    "reconnectProfile": "Reconnect Profile",
+    "tapToRefreshConnection": "Klepněte na to, abyste obnovili spojení",
+    "importExistingProfile": "Import stávajícího profilu",
+    "deleteProfile": "Odstraňte profil",
+    "noProfileIdExists": "Žádný profil ID neexistuje",
+    "profileReconnected": "Váš profil byl úspěšně znovu připojen",
+    "deleteWarningTitle": "Varování",
+    "deleteWarningMessage": "Smazání klíčů profilu odstraní váš účet z tohoto zařízení.Bez zálohování nebudete moci znovu získat přístup k tomuto profilu.Jste si jisti?",
+    "importNsecDescription": "Pokud chcete použít svůj vlastní nsec, vložte ho níže.",
+    "profileImportedSuccessfully": "Profil byl úspěšně importován",
+    "noProfileFound": "Žádný Nostr Profile Found",
+    "noProfileDescription": "Ještě jste si nevytvořili Nostr profil. Klepněte níže, abyste si ho vytvořili.",
+    "keyConflictTitle": "Nostr Key Not Found on Device",
+    "keyConflictDescription": "Váš účet má registrovaný Nostr klíč, ale nebyl nalezen na tomto zařízení. To se může stát po znovuinstalaci aplikace nebo změně zařízení.",
+    "creatingProfile": "Vytváření profilu...",
+    "createNewProfile": "Vytvořte nový profil",
+    "generateProfile": "Generovat profil",
+    "findingYou": "Hledám tě..",
+    "advancedSettings": "Nostr Advanced Settings",
+    "KeyModal": {
+      "yourPublicProfileId": "Vaše ID veřejného profilu",
+      "yourPrivateProfileKey": "Váš klíč k soukromému profilu",
+      "keyCopiedToClipboard": "Klíč kopírovaný na desku"
+    },
+    "Contacts": {
+      "stillLoading": "Máte potíže s nalezením seznamu kontaktů, sledujete už někoho?",
+      "noCantacts": "Nejsou k dispozici žádné kontakty",
+      "profile": "Profil",
+      "nostrUser": "Uživatel Nostr",
+      "message": "Poselství",
+      "sendPayment": "Poslat Poslat",
+      "contactInfo": "Kontaktní informace",
+      "contactManagement": "Kontaktní řízení ",
+      "unfollowContact": "Unfollow Contact",
+      "noListDeepLinkMessage": "Pokud chcete přidat přátele, musíte nejdříve iniciativizovat seznam kontaktů v nastaveních.",
+      "manageContacts": "Manage Contacts",
+      "createContactList": "Kontaktní seznam Create Contact List"
+    },
+    "common": {
+      "copy": "Kopírovat Kopírovat",
+      "copied": "Kopírované",
+      "goToSettings": "Jděte do nastavení"
+    }
+  },
+  "AccountUpgrade": {
+    "accountType": "Typ účtu",
+    "personal": "Osobní",
+    "personalDesc": "Zabezpečte si peněženku telefonem a e-mailem.",
+    "pro": "Pro Pro",
+    "proDesc": "Přijměte platby a objevte se na mapě.Potřebuje obchodní název a umístění.",
+    "merchant": "Obchodník",
+    "merchantDesc": "Dejte odměny, ukažte se na mapě a vyrovnejte se s vaší bankou.",
+    "personalInfo": "Osobní údaje",
+    "fullName": "Plné jméno",
+    "phoneNumber": "Telefonní číslo",
+    "email": "E-mailová adresa",
+    "optional": "(Optionální)",
+    "validation": "Validace",
+    "validationCode": "Validační kód",
+    "businessInfo": "Obchodní informace",
+    "businessName": "Obchodní jméno",
+    "businessNamePlaceholder": "Vezměte své obchodní jméno",
+    "businessAddress": "Obchodní adresa",
+    "businessAddressPlaceholder": "Vezměte si firemní adresu",
+    "flashTerminal": "Chcete terminál Flash?",
+    "flashTerminalTooltip": "Terminál Flash je inteligentní zařízení, které může přijmout platbu prostřednictvím Flash pro vaše podnikání a tiskové potvrzení.",
+    "bankingInfo": "Informace o bankovnictví",
+    "bankName": "Jméno banky",
+    "bankNamePlaceholder": "Vyberte si své bankovní jméno",
+    "bankBranch": "Banková pobočka ",
+    "bankBranchPlaceholder": "Vstupte do svého bankovního oddělení",
+    "bankAccountType": "Typ účtu",
+    "selectBankAccountType": "Vyberte typ účtu",
+    "currency": "Měna",
+    "selectCurrency": "Vyberte měnu",
+    "accountNum": "Počet účtu ",
+    "accountNumPlaceholder": "Vezměte si číslo účtu",
+    "uploadId": "Upload ID Document",
+    "successUpgrade": "Úspěšně jste vylepšili svůj účet na {accountType: string}",
+    "successRequest": "Úspěšně jste požádali o aktualizaci svého účtu na {accountType: string}"
   }
 }

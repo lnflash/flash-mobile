@@ -2,6 +2,7 @@
   "GaloyAddressScreen": {
     "title": "Λάβετε πληρωμή χρησιμοποιώντας:",
     "buttonTitle": "Ορίστε την διεύθυνσή σας",
+    "yourLightningAddress": "Η διεύθυνση Lightning σας",
     "yourAddress": "Η διεύθυνσή σας {bankName: string}",
     "notAbleToChange": "Δεν θα μπορείτε ν' αλλάξετε τη διεύθυνσή σας {bankName: string} αφού οριστεί.",
     "addressNotAvailable": "Αυτή η διεύθυνση {bankName: string} χρησιμοποιείται ήδη.",
@@ -9,6 +10,7 @@
     "merchantTitle": "Για εμπόρους ",
     "yourCashRegister": "Αυτό είναι το Cash Register του Lightning",
     "yourPaycode": "Ο Κωδικός Πληρωμής σας",
+    "copiedLightningAddressToClipboard": "Αντιγράφησε τη διεύθυνση Lightning στο clipboard",
     "copiedAddressToClipboard": "Αντιγράφηκε {bankName: string} η διεύθυνση στο πρόχειρο ",
     "copiedPaycodeToClipboard": "Ο Κωδικός Πληρωμής σας αντιγράφηκε στο πρόχειρο",
     "copiedCashRegisterLinkToClipboard": "Το Cash Register αντιγράφηκε στο πρόχειρο",
@@ -46,6 +48,37 @@
   "ContactDetailsScreen": {
     "title": "Συναλλαγές με {username: string}"
   },
+  "ChatScreen": {
+    "noChatsTitle": "Δεν βρέθηκαν καμιά συνομιλία",
+    "noChatsYet": "Εισάγετε ένα όνομα χρήστη Flash ή pubkey nostr για να ξεκινήσετε μια συνομιλία",
+    "noMatchingChats": "Δεν βρέθηκαν συνομιλίες που να ταιριάζουν με την αναζήτηση σας.",
+    "title": "Το Chat Chat"
+  },
+  "ChatDetailsScreen": {
+    "title": "Μιλήστε με τον {username: string}"
+  },
+  "CardScreen": {
+    "noCardsTitle": "Δεν βρέθηκαν κάρτες",
+    "noCardsYet": "Χτυπήστε ένα Flashcard για να το προσθέσετε εδώ",
+    "noMatchingCards": "Δεν βρέθηκαν κάρτες που να ταιριάζουν με την αναζήτηση σας.",
+    "title": "Flashcard",
+    "notFlashcard": "Μη υποστηριζόμενη κάρτα NFC. Παρακαλούμε βεβαιωθείτε ότι χρησιμοποιείτε μια καρτέλα.",
+    "noNDEFMessage": "Το μήνυμα NDEF δεν βρέθηκε. Παρακαλούμε βεβαιωθείτε ότι χρησιμοποιείτε μια καρτέλα.",
+    "notSupported": "Το NFC δεν υποστηρίζεται σε αυτή τη συσκευή.",
+    "notEnabled": "Το NFC δεν έχει ενεργοποιηθεί σε αυτή τη συσκευή.",
+    "noTag": "Παρακαλούμε βεβαιωθείτε ότι χρησιμοποιείτε μια καρτέλα."
+  },
+  "Cashout": {
+    "title": "Settle Settle",
+    "percentageToCashout": "Το % για να διευθετηθεί",
+    "valid": "Ισχύει για το {time: string}",
+    "exchangeRate": "Αξία ανταλλαγής ",
+    "sendAmount": "Στείλτε το ποσό",
+    "receiveAmount": "Το ποσό που θα λάβετε",
+    "fee": "Χρέωση",
+    "success": "Το αίτημα διευθέτησης ξεκίνησε με επιτυχία.",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
+  },
   "ConversionDetailsScreen": {
     "title": "Μετατρέψτε ",
     "percentageToConvert": "% για μετατροπή"
@@ -53,7 +86,9 @@
   "ConversionConfirmationScreen": {
     "title": "Έλεγχος μετατροπής",
     "youreConverting": "Γίνεται μετατροπή",
-    "receivingAccount": "Λογαριασμός λήψης"
+    "sendingAccount": "Το λογαριασμό αποστολής",
+    "receivingAccount": "Λογαριασμός λήψης",
+    "conversionFee": "Χρέωση μετατροπής"
   },
   "ConversionSuccessScreen": {
     "title": "Επιτυχία Μετατροπής",
@@ -430,6 +465,10 @@
   },
   "GetStartedScreen": {
     "logInCreateAccount": "Είσοδος / δημιουργία λογαριασμού",
+    "quickStart": "Ξεκινήστε Ξεκινήστε",
+    "restoreWallet": "Το Login",
+    "exploreWalletInstead": "Αντ' αυτού, εξερευνήστε το πορτοφόλι",
+    "setupBusinessAccount": "Εγκατάσταση επιχειρηματικού λογαριασμού",
     "createAccount": "Δημιουργήστε καινούργιο λογαριασμό",
     "exploreWallet": "Εξερευνήστε το πορτοφόλι ",
     "logBackInWith": "Συνδεθείτε ξανά με",
@@ -444,7 +483,8 @@
       "noBackup": "Δεν υπάρχει η επιλογή δημιουργίας αντιγράφων",
       "sendingLimit": "Μειωμένο ημερήσιο όριο αποστολής",
       "noOnchain": "Καμία λήψη bitcoin on-chain"
-    }
+    },
+    "chooseAccountType": "Επιλέξτε Τύπο Λογαριασμού"
   },
   "MapScreen": {
     "locationPermissionMessage": "Ενεργοποιήστε την τοποθεσία σας για να ξέρετε πού βρίσκεστε στο χάρτη",
@@ -453,16 +493,48 @@
     "locationPermissionPositive": "Εντάξει",
     "locationPermissionTitle": "Εντοπίστε τον εαυτό σας στο χάρτη",
     "payBusiness": "πληρώστε αυτήν την επιχείρηση",
-    "title": "Χάρτης"
+    "title": "Χάρτης",
+    "addPin": "Κάντε κλικ οπουδήποτε για να προσθέσετε ένα καρφί",
+    "selectedCoordinates": "Τα συντεταγμένα του Flashpoint σας: ",
+    "viewInGoogleMaps": "Δείτε στο Google Maps",
+    "getDirections": "Οι κατευθύνσεις Get Directions"
   },
   "HomeScreen": {
+    "cashout": "Χρηματοπιστωτικά έξοδα",
     "receive": "Λήψη",
+    "reload": "Η κάρτα Reload Card",
+    "balance": "Αναζωογονητική ισορροπία",
+    "showQrCode": "Τοποθέτηση μέσω QR",
     "send": "Αποστολή",
+    "sweep": "Ψάξτε στο πορτοφόλι",
+    "pay": "Πληρωμή  Πληρωμή",
     "title": "Αρχική Σελίδα",
     "scan": "Σκανάρετε",
     "updateAvailable": "Μια ενημέρωση είναι διαθέσιμη.\nΠατήστε για ενημέρωση τώρα",
     "useLightning": "Χρησιμοποιούμε το Lightning Network.",
-    "myAccounts": "Οι Λογαριασμοί μου"
+    "myAccounts": "Οι Λογαριασμοί μου",
+    "unclaimedDepositsWarning": "️ Πληροφορίες για μη απαγγελθέντα καταθέματα ",
+    "unclaimedDeposits": "Ανεκδικημένες καταθέσεις",
+    "cash": "Χρηματοπιστωτικά",
+    "bitcoin": "Το Bitcoin",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Add",
+    "upgradeTitle": "Αναβαθμίστε το λογαριασμό σας",
+    "upgradeTitlePending": "Ένα αίτημα αναβάθμισης βρίσκεται σε εξέλιξη",
+    "upgradeDesc": "Αναβαθμίστε για να αυξήσετε την ορατότητα, τα όρια και τις πληρωμές.",
+    "upgradePendingDesc": "Το αίτημα αναβάθμισης του λογαριασμού σας εξετάζεται.",
+    "currencyTitle": "Αλλαγή σε τοπικό νόμισμα",
+    "currencyDesc": "Εξετάστε τη λίστα των διαθέσιμων νομισμάτων και επιλέξτε το νόμισμά σας.",
+    "flashcardTitle": "Πάρτε ένα Flashcard",
+    "flashcardDesc": "Βρείτε ένα Flashpoint και πάρετε ένα Flashcard για να το χρησιμοποιήσετε στην καθημερινή σας ζωή.",
+    "nonCustodialWalletTitle": "Τα μη φυλακισμένα πορτοφόλια",
+    "nonCustodialWalletDesc": "Μάθετε περισσότερα σχετικά με τα μη φυλακισμένα πορτοφόλια.",
+    "emailTitle": "Η διεύθυνση ηλεκτρονικού ταχυδρομείου",
+    "emailDesc": "Προσθέστε τη διεύθυνση ηλεκτρονικού ταχυδρομείου σας για να προστατεύσετε το λογαριασμό σας και να συνδεθείτε χρησιμοποιώντας τη διεύθυνση ηλεκτρονικού ταχυδρομείου.",
+    "btcWalletTitle": "Επιτρέψτε το BTC wallet",
+    "btcWalletDesc": "Ελαφρύ μεταφορά μεγαλύτερων ποσών σε Bitcoin.",
+    "backupTitle": "Κάντε αντίγραφο ασφαλείας στο πορτοφόλι σας BTC",
+    "backupDesc": "Κάντε αντίγραφο ασφαλείας και ασφαλίστε το πορτοφόλι σας Bitcoin χρησιμοποιώντας τη φράση recovery."
   },
   "PinScreen": {
     "attemptsRemaining": "Λανθασμένο PIN. {attemptsRemaining: number} προσπάθειες που απομένουν.",
@@ -490,6 +562,7 @@
     "title": "Αρχική Σελίδα "
   },
   "ReceiveScreen": {
+    "flashcardInstructions": "Σκανάρετε τον κώδικα QR, ή πατήστε το εικονίδιο για να το μοιραστείτε στο whatsapp, το email κλπ.",
     "nfc": "NFC",
     "enterAmountFirst": "Please enter an amount first",
     "activateNotifications": "Θέλετε να ενεργοποιήσετε τις ειδοποιήσεις για να ενημερώνεστε όταν ολοκληρωθεί η πληρωμή;",
@@ -538,11 +611,16 @@
     },
     "invoiceHasBeenPaid": "Το τιμολόγιο έχει πληρωθεί ",
     "yourBitcoinOnChainAddress": "Η διεύθυνση Bitcoin On-chain",
+    "receive": "Receive Receive",
     "receiveViaInvoice": "Λήψη μέσω Lightning",
     "receiveViaPaycode": "Λήψη μέσω Paycode",
+    "topupFlashcard": "Το Topup Flashcard",
     "receiveViaOnchain": "Λήψη μέσω On-chain",
     "payCodeOrLNURL": "Paycode / LNURL",
-    "initialDeposit": "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee."
+    "cantReceiveZeroSats": "Δεν μπορείτε να λάβετε ένα μηδέν sats. Παρακαλούμε εισάγετε ένα ποσό που αντιστοιχεί σε 1 ή περισσότερα sats.",
+    "initialDeposit": "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee.",
+    "selectPaymentMethod": "Επιλέξτε μέθοδο πληρωμής",
+    "selectWallet": "Επιλέξτε Wallet"
   },
   "RedeemBitcoinScreen": {
     "title": "Εξαργύρωση Bitcoin",
@@ -561,7 +639,12 @@
     "invalidTitle": "Μη Έγκυρος Κωδικός QR",
     "noQrCode": "Δεν μπορέσαμε να βρούμε κωδικό QR στην εικόνα",
     "title": "Σκανάρετε τον κωδικό QR",
-    "invalidContentLnurl": "Βρήκαμε:\n\n{found: string}\n\nαυτό δεν υποστηρίζεται προς το παρόν"
+    "permissionCamera": "Χρειαζόμαστε άδεια για να χρησιμοποιήσουμε την κάμερα σας.",
+    "noCamera": "Δεν βρέθηκε καμία κάμερα",
+    "openSettings": "Άνοιξε τις ρυθμίσεις",
+    "unableToOpenSettings": "Δεν είναι σε θέση να ανοίξει τις ρυθμίσεις",
+    "invalidContentLnurl": "Βρήκαμε:\n\n{found: string}\n\nαυτό δεν υποστηρίζεται προς το παρόν",
+    "imageLibraryPermissionsNotGranted": "Δεν έχουμε δικαιώματα πρόσβασης στη βιβλιοθήκη εικόνων. Παρακαλούμε ελέγξτε τις ρυθμίσεις της εφαρμογής για την πλατφόρμα σας."
   },
   "SecurityScreen": {
     "biometricDescription": "Ξεκλείδωμα με αναγνώριση δακτυλικού αποτυπώματος ή προσώπου.",
@@ -572,7 +655,8 @@
     "hideBalanceTitle": "Απόκρυψη Υπολοίπου",
     "pinDescription": "Το PIN χρησιμοποιείται ως εφεδρική μέθοδος πιστοποίησης για τον βιομετρικό έλεγχο ταυτότητας.",
     "pinTitle": "Κωδικός PIN",
-    "setPin": "Ορίστε τον κωδικό PIN"
+    "setPin": "Ορίστε τον κωδικό PIN",
+    "backupDescription": "Για να ορίσετε έναν κωδικό PIN, παρακαλούμε κάντε αντίγραφο ασφαλείας του λογαριασμού σας προσθέτοντας έναν αριθμό τηλεφώνου."
   },
   "SendBitcoinConfirmationScreen": {
     "amountLabel": "Ποσό:",
@@ -614,12 +698,17 @@
       "body3": "Διαφορετικά, τα χρήματα θα πάνε σε έναν {bankName: string} Λογαριασμό που έχει αυτή τη διεύθυνση \"{lnAddress: string}\".\n\nΕλέγξτε επίσης την ορθογραφία του πρώτου μέρους της διεύθυνσης. π.χ. οι διευθύνσεις jackie και jack1e είναι 2 διαφορετικές διευθύνσεις",
       "warning": "Εάν η διεύθυνση {bankName: string} εισαχθεί εσφαλμένα, η {bankName: string} δεν μπορεί να αναιρέσει τη συναλλαγή.",
       "checkBox": "{lnAddress: string} είναι η σωστή διεύθυνση.",
-      "confirmButton": "Είμαι 100% σίγουρος/η"
+      "confirmButton": "Είμαι 100% σίγουρος/η",
+      "externalWarning": "Είστε έτοιμοι να στείλετε χρήματα σε κάποιον που δεν είναι λογαριασμός {bankName: string}. Είστε σίγουροι ότι αυτή είναι η διεύθυνση στην οποία σκοπεύετε να στείλετε;",
+      "externalCheckBox": "Επιβεβαιώνω την αποστολή στο {address: string}."
     },
     "clipboardError": "Σφάλμα λήψης τιμής από το πρόχειρο"
   },
   "SendBitcoinScreen": {
     "amount": "Ποσό",
+    "MinOnChainLimit": "Το ελάχιστο ποσό για αυτή τη συναλλαγή είναι 2,00 δολάρια.",
+    "MinOnChainSatLimit": "Το ελάχιστο ποσό για αυτή τη συναλλαγή είναι 5.500 sats",
+    "MinFlashcardLimit": "Το ελάχιστο ποσό κατά την επαναφόρτιση από το flashcard είναι 100 sats",
     "amountExceed": "Το ποσό υπερβαίνει το υπόλοιπό σας {balance: string}",
     "amountExceedsLimit": "Το ποσό υπερβαίνει το εναπομένον όριο των {limit: string}",
     "upgradeAccountToIncreaseLimit": "Αναβαθμίστε τον λογαριασμό σας για να αυξήσετε το όριο σας ",
@@ -639,11 +728,25 @@
     "max": "Μέγιστο",
     "maxAmount": "Μέγιστο Ποσό",
     "title": "Αποστολή Bitcoin",
+    "send": "Στείλτε Στείλτε",
     "failedToFetchLnurlInvoice": "Απέτυχε η λήψη τιμολογίου lnurl",
     "lnurlInvoiceIncorrectAmount": "Ο διακομιστής lnurl απάντησε με ένα τιμολόγιο με λανθασμένο ποσό.",
-    "lnurlInvoiceIncorrectDescription": "Ο διακομιστής lnurl απάντησε με ένα τιμολόγιο με λανθασμένο hash περιγραφής."
+    "lnurlInvoiceIncorrectDescription": "Ο διακομιστής lnurl απάντησε με ένα τιμολόγιο με λανθασμένο hash περιγραφής.",
+    "noAmountInvoiceError": "Κανένα ποσό τιμολογίου δεν υποστηρίζεται στο πορτοφόλι BTC. Παρακαλούμε πηγαίνετε πίσω και σαρώστε ή εισάγετε ένα τιμολόγιο με πρόσθετο ποσό.",
+    "onchainMinAmountInvoiceError": "Το ποσό που εισήγαγες είναι μικρότερο από το ελάχιστο ποσό που απαιτείται για την αποστολή μιας συναλλαγής στην αλυσίδα {amount: number}. Παρακαλούμε σκεφτείτε να στείλετε αυτό το ποσό μέσω Lightning!",
+    "minAmountInvoiceError": "Το ποσό στο τιμολόγιο είναι μικρότερο από το ελάχιστο ποσό {amount: number}",
+    "maxAmountInvoiceError": "Το ποσό στο τιμολόγιο είναι μεγαλύτερο από το μέγιστο ποσό {amount: number}",
+    "minAmountConvertError": "Το ποσό μετατροπής είναι μικρότερο από το ελάχιστο απαιτούμενο ποσό {amount: number}",
+    "maxAmountConvertError": "Το ποσό μετατροπής είναι μεγαλύτερο από το μέγιστο ποσό {amount: number}"
   },
   "SettingsScreen": {
+    "staticQr": "Τυπώσιμο Στατικό Κώδικα QR",
+    "staticQrCopied": "Ο στατικός σύνδεσμος κώδικας QR σας έχει αντιγραφεί.",
+    "setByOs": "Τοποθετήθηκε από το OS",
+    "apiAcess": "Πρόσβαση API API",
+    "pos": "Το σημείο πώλησης",
+    "posCopied": "Ο σύνδεσμος του σημείου πώλησης σας έχει αντιγραφεί.",
+    "setYourLightningAddress": "Τοποθετήστε το όνομα χρήστη σας",
     "activated": "Ενεργοποιήθηκε ",
     "addressScreen": "Τρόποι για να πληρωθείτε ",
     "tapUserName": "Πατήστε για να ορίσετε το όνομα χρήστη",
@@ -665,7 +768,16 @@
     "nfcOnlyReceive": "Προς το παρόν είναι διαθέσιμη μόνο η λήψη από NFC",
     "nfcScanNow": "Τώρα Σαρώστε NFC ",
     "nfcNotSupported": "Η λειτουργία NFC δεν υποστιρίζεται από αυτήν την συσκευή",
-    "logInOrCreateAccount": "Είσοδος ή δημιουργία λογαριασμού"
+    "logInOrCreateAccount": "Είσοδος ή δημιουργία λογαριασμού",
+    "backup": "Το Backup",
+    "importWallet": "Εισαγωγή Wallet",
+    "showSeedPhrase": "Ανακαλύψτε τη φράση αποκατάστασης αποκατάστασης",
+    "showNostrSecret": "Συγκρίσεις Τσάτ",
+    "beginnerMode": "Απενεργοποιήστε το λογαριασμό Bitcoin",
+    "advanceMode": "Επιτρέψτε το λογαριασμό Bitcoin (Advanced Mode)",
+    "keysManagement": "Υποστήριξη του πορτοφόλι",
+    "showBtcAccount": "Δείξτε λογαριασμό Bitcoin",
+    "hideBtcAccount": "Κρύψτε το λογαριασμό Bitcoin"
   },
   "NotificationSettingsScreen": {
     "title": "Ρυθμίσεις ειδοποιήσεων",
@@ -690,6 +802,15 @@
     }
   },
   "AccountScreen": {
+    "fundsMoreThan5Dollars": "Ο λογαριασμός σας έχει περισσότερα από 5 δολάρια.",
+    "itsATrialAccount": "Οι δοκιμαστικοί λογαριασμοί έχουν μειωμένα όρια συναλλαγών και δεν υπάρχει μέθοδο ανάκτησης.Αν χάσετε το τηλέφωνό σας ή αφαιρέσετε την εφαρμογή, τα κεφάλαιά σας θα είναι μη ανακτήσιμα.",
+    "accountBeingDeleted": "Το λογαριασμό σας διαγράφεται, παρακαλούμε περιμένετε...",
+    "dangerZone": "Ζώνη κινδύνου",
+    "phoneDeletedSuccessfully": "Το τηλέφωνο διαγράφηκε με επιτυχία",
+    "phoneNumber": "Αριθμός τηλεφώνου",
+    "tapToAddPhoneNumber": "Χτυπήστε για να προσθέσετε αριθμό τηλεφώνου",
+    "loginMethods": "Μέθοδοι καταχώρισης",
+    "level": "Επίπεδο {level: string}",
     "accountLevel": "Επίπεδο Λογαριασμού",
     "upgrade": "Αναβαθμίστε τον λογαριασμό σας",
     "logOutAndDeleteLocalData": "Αποσυνδέσου και Καθάρισε όλα τα Τοπικά Δεδομένα",
@@ -702,6 +823,11 @@
     "btcBalanceWarning": "Έχετε υπόλοιπο σε bitcoin  {balance: string}.",
     "secureYourAccount": "Εγγραφείτε για την ασφάλεια του λογαριασμού σας",
     "tapToAdd": "Πατήστε για να συμπληρώσετε",
+    "tapToAddEmail": "Χτυπήστε για να προσθέσετε email",
+    "unverifiedEmail": "Ηλεκτρονικό ταχυδρομείο (Απαβεβαιωμένο)",
+    "email": "Το ηλεκτρονικό ταχυδρομείο",
+    "emailDeletedSuccessfully": "Το ηλεκτρονικό ταχυδρομείο διαγράφηκε με επιτυχία",
+    "unverifiedEmailAdvice": "Τα μη επαληθευμένα μηνύματα ηλεκτρονικού ταχυδρομείου δεν μπορούν να χρησιμοποιηθούν για να συνδεθείτε.Πρέπει να επαληθεύσετε ξανά τη διεύθυνση ηλεκτρονικού ταχυδρομείου σας.",
     "deleteEmailPromptTitle": "Διαγραφή email",
     "deleteEmailPromptContent": "Είσαστε σίγουροι για την διαγραφή του email; θα μπορείτε να συνδεθείτε ξανά μόνο με τον αριθμό του τηλεφώνου σας.",
     "deletePhonePromptTitle": "Διαγραφή τηλεφώνου",
@@ -720,7 +846,11 @@
     "totp": "Έλεγχος ταυτότητας δύο παραγόντων",
     "totpDeactivated": "Ο έλεγχος ταυτότητας δύο παραγόντων έχει απενεργοποιηθεί",
     "totpDeleteAlertTitle": "Διαγραφή ελέγχου ταυτότητας δύο παραγόντων",
-    "totpDeleteAlertContent": "Είσαστε σίγουροι πως θέλετε να διαγράψετε τον έλεγχο ταυτότητας δύο παραγόντων;"
+    "totpDeleteAlertContent": "Είσαστε σίγουροι πως θέλετε να διαγράψετε τον έλεγχο ταυτότητας δύο παραγόντων;",
+    "copiedAccountId": "Αντιγράψατε την ταυτότητα του λογαριασμού σας στο clipboard",
+    "yourAccountId": "Το ID του λογαριασμού σας",
+    "accountId": "Ομοσπονδιακό αναγνωριστικό λογαριασμού",
+    "copy": "Αντιγράψτε "
   },
   "TotpRegistrationInitiateScreen": {
     "title": "Έλεγχος ταυτότητας δύο παραγόντων",
@@ -735,6 +865,74 @@
     "title": "Έλεγχος ταυτότητας δύο παραγόντων",
     "content": "Εισάγετε τον 6ψήφιο κωδικό από την εφαρμογή ελέγχου ταυτότητας για να συνδεθείτε. Αυτός ο κωδικός αλλάξει κάθε 30 δευτερόλεπτα."
   },
+  "BackupOptions": {
+    "title": "Επιλογές ασφαλείας",
+    "recoveryPhrase": "Φράση ανάκαμψης",
+    "recoveryPhraseDesc": "Αποθήκευση Bitcoin Wallet using recovery phrase",
+    "revealRecoveryPhrase": "Ανακαλύψτε τη Φράση Αποκατάστασης Αποκάλυψης",
+    "revealRecoveryPhraseDesc": "Χρησιμοποιήστε τη φράση αποκατάστασης σας για να εισαγάγετε Bitcoin Wallet",
+    "phone": "Τηλεφώνημα Τηλεφώνημα",
+    "phoneDesc": "Αποθήκευση μετρητού πορτοφόλι χρησιμοποιώντας αριθμό τηλεφώνου",
+    "usePhoneNumber": "Χρησιμοποιήστε τον αριθμό τηλεφώνου σας για να εισαγάγετε Cash Wallet",
+    "done": "             "
+  },
+  "BackupStart": {
+    "title": "Πρώτα, ας δημιουργήσουμε τη φράση ανάκτησής σας.",
+    "description": "Μια φράση ανάκτησης είναι μια σειρά από 12 λέξεις σε μια συγκεκριμένη σειρά.Αυτό το συνδυασμό λέξεων είναι μοναδικό για το πορτοφόλι σας.Ασφαλίστε ότι έχετε έτοιμο στυλό και χαρτί ώστε να μπορείτε να το γράψετε.",
+    "continue": " Συνεχίστε Συνεχίστε"
+  },
+  "BackupSeedPhrase": {
+    "title": "Αυτή είναι η φράση αποκατάστασης σας",
+    "description": "Βεβαιωθείτε ότι το καταγράφετε όπως φαίνεται εδώ.Πρέπει να το επιβεβαιώσετε αργότερα.",
+    "backupToICloud": "Αποθήκευση στο iCloud",
+    "backupToGoogleDrive": "Αποθήκευση στο Google Drive",
+    "verify": "Επιβεβαιώστε"
+  },
+  "BackupDoubleCheck": {
+    "title": "Ας κάνουμε διπλό έλεγχο",
+    "description1": "Τώρα ας επιβεβαιώσουμε ότι έχετε καταγράψει σωστά τη φράση ανάκτησης.",
+    "description2": "Ναι, είναι τόσο σημαντικό.",
+    "continue": " Συνεχίστε Συνεχίστε"
+  },
+  "BackupVerify": {
+    "title": "Τραβήξτε τις λέξεις με τη σωστή σειρά.",
+    "correctTitle": "Βεβαιωθείτε ότι αποθηκεύετε με ασφάλεια τη φράση αποκατάστασης σας.",
+    "wrongTitle": "Συγνώμη, δεν είναι η σωστή τρίτη λέξη.",
+    "tryAgain": "Δοκίμασε ξανά",
+    "continue": " Συνεχίστε Συνεχίστε"
+  },
+  "BackupComplete": {
+    "title": "Το αντίγραφο ασφαλείας σας έχει ολοκληρωθεί",
+    "description": "Τώρα θα πρέπει να έχετε τη φράση ανάκτησης και το κωδικό πρόσβασης σας γραμμένο για μελλοντική αναφορά.",
+    "complete": "Complete Complete"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "Αυτή είναι η φράση αποκατάστασης σας",
+    "description": "Βεβαιωθείτε ότι το καταγράφετε όπως φαίνεται εδώ.Θα χρειαστεί να ανακτήσετε το πορτοφόλι σας.",
+    "done": "             "
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "Επιλογές σύνδεσης",
+    "importOptions": "Εισαγωγή επιλογών πορτοφόλι",
+    "recoveryPhrase": "Φράση ανάκαμψης",
+    "importBTCWallet": "Εισαγωγή Bitcoin Wallet using recovery phrase",
+    "phone": "Τηλεφώνημα Τηλεφώνημα",
+    "importUsingPhone": "Εισαγωγήστε ή Δημιουργήστε το Χρηματοπιστωτικό Πορτοφόλι σας χρησιμοποιώντας αριθμό τηλεφώνου",
+    "email": "Το ηλεκτρονικό ταχυδρομείο",
+    "importUsingEmail": "Εισαγάγετε το Cash Wallet σας χρησιμοποιώντας τη διεύθυνση ηλεκτρονικού ταχυδρομείου",
+    "login": "Login/Create",
+    "done": "             "
+  },
+  "ImportWallet": {
+    "title": "Συμπληρώστε με μια φράση ανάκτησης",
+    "importTitle": "Εισαγάγετε το πορτοφόλι σας με φράση αποκατάστασης",
+    "description": "Αυτή είναι μια φράση 12 λέξεων που σου δόθηκε όταν δημιούργησες το προηγούμενο πορτοφόλι σου.",
+    "complete": "Complete Complete"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "Το BTC",
+    "titleUSD": "Το USD"
+  },
   "CopySecretComponent": {
     "button": "Αντιγραφή μυστικού κωδικού",
     "toastMessage": "Ο μυστικός κωδικός αντιγράφηκε στο πρόχειρο!"
@@ -748,7 +946,9 @@
     "info": "Επιλέξτε το θέμα που προτιμάτε για τη χρήση του Flash ή επιλέξτε να το διατηρήσετε συγχρονισμένο με τις ρυθμίσεις του συστήματός σας.",
     "system": "Χρησιμοποιείστε τις ρυθμίσεις του συστήματος",
     "light": "Φωτεινή λειτουργία",
-    "dark": "Σκοτεινή λειτουργία"
+    "dark": "Σκοτεινή λειτουργία",
+    "setToDark": "Το Dark Mode",
+    "setToLight": "Η λειτουργία φωτός"
   },
   "Languages": {
     "DEFAULT": "Προεπιλογή (OS)"
@@ -759,6 +959,26 @@
     "termsAndConditions": "Διαβάστε τους Όρους & Προϋποθέσεις.",
     "learnMore": "Μάθετε περισσότερα σχετικά με τα Stablesats"
   },
+  "AdvancedModeModal": {
+    "header": "Καλώς ήρθατε στην προηγμένη λειτουργία!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "Διαβάστε τους Όρους & Προϋποθέσεις.",
+    "learnMore": "Τι είναι ένα μη φυλακισμένο πορτοφόλι;",
+    "importWallet": "Εισαγωγή Wallet",
+    "createWallet": "Το πορτοφόλι Δημιουργήστε Create Wallet"
+  },
+  "MerchantSuggestModal": {
+    "header": "Το Flashpoint Add",
+    "body": "Οι χρήστες του Flash θα μπορούν να σας βρουν στον χάρτη και να σας στείλουν πληρωμές κάνοντας κλικ στο καρτέλο του χάρτη.",
+    "termsAndConditions": "Διαβάστε τους Όρους & Προϋποθέσεις.",
+    "learnMore": "Το αίτημά σας για pin θα αντιμετωπιστεί εντός 24 ωρών."
+  },
+  "UnVerifiedSeedModal": {
+    "header": "Ασφαλίστε το πορτοφόλι σας Bitcoin",
+    "body": "Αν χάσετε το τηλέφωνό σας ή αφαιρέσετε την εφαρμογή χωρίς να γράψετε τη φράση ανάκτησης, θα χάσετε την πρόσβαση στα κεφάλαιά σας.",
+    "termsAndConditions": "Διαβάστε τους Όρους & Προϋποθέσεις.",
+    "learnMore": "Τι είναι μια φράση αποκατάστασης;"
+  },
   "SplashScreen": {
     "update": "Η εφαρμογή σας είναι ξεπερασμένη. Χρειάζεται ενημέρωση για να μπορέσετε να χρησιμοποιήσετε την εφαρμογή.\n\nΑυτό μπορεί να γίνει από το PlayStore για Android και το Testflight για iOS."
   },
@@ -768,7 +988,24 @@
     "spent": "Έχετε ξοδέψει",
     "receivingAccount": "Λογαριασμός λήψης",
     "sendingAccount": "Λογαριασμός Αποστολής",
-    "txNotBroadcast": "Η συναλλαγή σας εκκρεμεί προς το παρόν και θα μεταδοθεί στο δίκτυο Bitcoin σε λίγο."
+    "txNotBroadcast": "Η συναλλαγή σας εκκρεμεί προς το παρόν και θα μεταδοθεί στο δίκτυο Bitcoin σε λίγο.",
+    "noTransaction": "Δεν βρέθηκε καμία συναλλαγή με αυτό το αναγνωριστικό.",
+    "typeOnChain": "Το OnChain",
+    "typeLightning": "Το Lightning",
+    "typeIntraLedger": "Το IntraLedger",
+    "pendingStatus": "Πεντάμενοι",
+    "confirmation": "Επιβεβαίωση",
+    "confirmations": "Επιβεβαίωση",
+    "hash": "Το Hash",
+    "preimage": "Προειδοποίηση",
+    "transactionId": "Το ID συναλλαγών",
+    "swapDetails": "Αναλυτικότητα Swap Details",
+    "destinationAddress": "Διεύθυνση προορισμού",
+    "swapId": "Το Swap ID",
+    "lockupTxId": "Το Lockup Transaction",
+    "claimTxId": "Η απαίτηση για συναλλαγή",
+    "swapFees": "Τα έξοδα ανταλλαγής ",
+    "expirationBlockHeight": "Τερματίζεται στο Block"
   },
   "TransactionLimitsScreen": {
     "receive": "Λήψη",
@@ -783,7 +1020,11 @@
     "contactUsMessageBody": "Γεια σας, θα ήθελα να αυξήσω τα όρια συναλλαγών του λογαριασμού μου {bankName: string}.",
     "contactUsMessageSubject": "Αίτημα Για Αύξηση Ορίων Συναλλαγών",
     "contactSupportToPerformKyc": "Επικοινωνήστε με την υποστήριξη για να εκτελέσετε χειροκίνητα KYC για να αυξήσετε το όριό σας",
-    "increaseLimits": "Αυξήστε τα όρια σας"
+    "increaseLimits": "Αυξήστε τα όρια σας",
+    "spendingLimits": "Περιορισμοί δαπανών",
+    "spendingLimitsDescription": "Για την ευκολία σας, μετατρέπουμε αυτά τα όρια σε τοπικό νόμισμα σας με βάση τις τρέχουσες συναλλαγματικές ισοτιμίες. Παρακαλούμε σημειώστε ότι το ποσό που εμφανίζεται σε τοπικό νόμισμα μπορεί να διακυβεύεται καθώς οι συναλλαγματικές ισοτιμίες ενημερώνονται σε πραγματικό χρόνο.",
+    "requestUpgrade": "Ζητήστε αναβάθμιση",
+    "editRequest": "Τροποποιήστε την αίτηση αναβάθμισης"
   },
   "TransactionScreen": {
     "noTransaction": "Δεν υπάρχει συναλλαγή για να εμφανιστεί",
@@ -805,11 +1046,17 @@
     "stayInTrialMode": "Μείνετε σε δοκιμαστική λειτουργία"
   },
   "SetAddressModal": {
+    "helloText": "Γεια σας!",
+    "whoAreYou": "Πώς θα σε φωνάξουμε;",
+    "usernameHint": "Αυτό θα είναι το όνομα χρήστη σας {bankName: string}",
+    "placeholder": "Εισάγετε το όνομα χρήστη σας",
     "title": "Ορίστε {bankName: string} την διεύθυνση",
+    "save": "Το Save Save",
     "Errors": {
       "tooShort": "Η διεύθυνση πρέπει να έχει τουλάχιστον 3 χαρακτήρες ",
       "tooLong": "Η διεύθυνση πρέπει να είναι μέχρι 50 χαρακτήσρες",
       "invalidCharacter": "Η διεύθυνση μπορεί να περιέχει μόνο γράμματα, αριθμούς και κάτω παύλες",
+      "startsWithNumber": "Το όνομα χρήστη σας πρέπει να αρχίζει με ένα μεγάλο ή μικρό γράμμα.",
       "addressUnavailable": "Λυπούμαστε, αυτή η διεύθυνση είναι κατειλημμένη ",
       "unknownError": "Προέκυψε άγνωστο σφάλμα, παρακαλούμε δοκιμάστε ξανά αργότερα "
     },
@@ -884,12 +1131,22 @@
     "success": "Email {email: string} επιτυχής επιβεβαίωση "
   },
   "common": {
+    "enabled": "Ενεργοποιημένο",
+    "notifications": "Πληροφορίες",
+    "preferences": "Προτιμήσεις",
+    "onDeviceSecurity": "Ασφάλεια On-Device",
+    "securityAndPrivacy": "Ασφάλεια και ιδιωτικότητα",
+    "advanced": " Προχωρημένη Προχωρημένη",
+    "community": "Κοινωνική κοινότητα",
     "account": "Λογαριασμός",
+    "trialAccount": "Το Trial Account",
+    "flashUser": "Flash Χρήστης Flash",
     "transactionLimits": "Όρια Συναλλαγών",
     "activateWallet": "Ενεργοποίηση Πορτοφολιού",
     "amountRequired": "Απαιτείται ποσό",
     "back": "Επιστροφή",
     "backHome": "Επιστροφή στην αρχική σελίδα",
+    "revealSeed": "Γράψτε τη φράση ανάκαμψης.",
     "bank": "Τράπεζα",
     "bankAccount": "Λογαριασμός Μετρητών",
     "bankAdvice": "{bankName: string} Συμβουλή",
@@ -901,13 +1158,16 @@
     "cancel": "Ακύρωση",
     "close": "Κλείσιμο",
     "confirm": "Επιβεβαιώστε ",
+    "copied": "Αντικαταστάθηκε στο clipboard",
     "convert": "Μετατρέψτε ",
     "codeConfirmation": "Επιβεβαίωση κωδικού",
     "currency": "Νόμισμα",
     "currencySyncIssue": "Πρόβλημα νομίσματος. Απαιτείται ανανέωση",
     "csvExport": "Εξαγωγή συναλλαγών σε μορφή CSV",
+    "exportSparkLogs": "Τα ημερολόγια εξαγωγής ",
     "date": "Ημερομηνία",
     "description": "Περιγραφή",
+    "details": "Ειδικές λεπτομέρειες",
     "domain": "Τομέας",
     "email": "Email",
     "error": "Σφάλμα",
@@ -940,9 +1200,11 @@
     "phoneNumber": "Αριθμός Τηλεφώνου",
     "rate": "Ποσοστό",
     "reauth": "Η σύνδεσή σας έχει λήξει. Παρακαλώ ξανασυνδεθείτε.",
+    "request": "Πιν Απαιτήσεων ",
     "restart": "Επανεκκίνηση ",
     "sats": "sats",
     "search": "Εύρεση",
+    "chatSearch": "όνομα χρήστη ή nostr pubkey",
     "security": "Ασφάλεια",
     "send": "Αποστολή",
     "setAnAmount": "ορίστε ένα ποσό",
@@ -973,6 +1235,28 @@
     "problemMaybeReauth": "Υπήρξε πρόβλημα με το αίτημά σας. Επαναλάβετε την προσπάθεια σε ένα λεπτό. Εάν το πρόβλημα επιμένει, σας συνιστούμε να αποσυνδεθείτε και να συνδεθείτε ξανά. Μπορείτε να αποσυνδεθείτε πηγαίνοντας στις Ρυθμίσεις > Λογαριασμός > Αποσύνδεση",
     "warning": "Προσοχή"
   },
+  "NostrQuickStart": {
+    "postHeading": "Κάντε την πρώτη σας κοινωνική δημοσίευση!",
+    "postDesc": "Προσφέρετε τον εαυτό σας στον κόσμο!"
+  },
+  "Social": {
+    "post": "Ταχυδρομήστε στο Nostr",
+    "postTitle": "Κάντε ένα Τύπο",
+    "flashAppCredit": "Αναρτήθηκε χρησιμοποιώντας Flash! Get it @ https://getflash.io/app",
+    "writeYourNote": "Γράψτε το σημείωμα σας, κάντε το ξεχωριστό.",
+    "postButton": "Ταχυδρομείο",
+    "notePosted": "Επιτυχία! Το σημείωμα σας έχει δημοσιευθεί",
+    "errorPostFailed": "Λάθος στην ανακοίνωση σημείωσης",
+    "errorEmptyNote": "Λάθος: Χωρίς σημείωμα",
+    "posting": "Δημοσίευση...",
+    "viewOnIris": "Δείτε στο iris.to",
+    "viewPostQuestion": "Θα θέλατε να δείτε τη δημοσίευσή σας στο iris.to;",
+    "browseSocialFeed": "Ανακαλύψτε το κοινωνικό ρεύμα",
+    "socialFeedTitle": "Το Social Feed",
+    "postSuccessTitle": "Μοιράστηκαν τα άρθρα!",
+    "postSuccessSubtitle": "Η ανακοίνωση σας έχει δημοσιευθεί στο Nostr",
+    "showMeMore": "Δείξε μου περισσότερα"
+  },
   "errors": {
     "generic": "Υπήρξε ένα σφάλμα. \nΠαρακαλούμε δοκιμάστε πάλι αργότερα. ",
     "invalidEmail": "Μη έγκυρο email",
@@ -996,6 +1280,18 @@
       "title": " Λήψη Πληρωμής"
     }
   },
+  "reports": {
+    "title": "Δημιουργήστε Αναφορές",
+    "reconciliation": "Έκθεση Ειρηνευτικής Συμφωνίας",
+    "aggregation": "Έκθεση Συγκέντρωσης",
+    "topRecipients": "Το Top Recipients Report",
+    "topSenders": "Το Top Senders Report",
+    "selectFromDate": "Επιλέξτε από την ημερομηνία",
+    "selectToDate": "Επιλέξτε μέχρι την ημερομηνία",
+    "fromDate": "Από Από",
+    "toDate": "Για να ",
+    "total": "Συνολικά Συνολικά Συνολικά"
+  },
   "support": {
     "contactUs": "Χρειαζόσατε βοήθεια; Επικοινωνήστε μαζί μας.",
     "joinTheCommunity": "Γίνετε μέλος της κοινότητας",
@@ -1003,6 +1299,7 @@
     "email": "Email",
     "enjoyingApp": "Σας αρέσει η εφαρμογή;",
     "statusPage": "Σελίδα Κατάστασης",
+    "discord": "Διαφωνία Discord",
     "mattermost": "Mattermost",
     "thankYouText": "Σας ευχαριστούμε για τα σχόλιά σας, θα θέλατε να προτείνετε κάποια βελτίωση;",
     "defaultEmailSubject": "{bankName: string} - Υποστήριξη",
@@ -1017,7 +1314,8 @@
     "deleteAccountConfirmation": "Ο λογαριασμός σας προχωράει προς διαγραφή.\n\nΌταν λήξει η δοκιμαστική περίοδος που σχετίζεται με την κανονιστική απαίτηση, τα υπόλοιπα δεδομένα που σχετίζονται με τον λογαριασμό σας θα διαγραφούν οριστικά.",
     "deleteAccountFromPhone": "Γεια σας!, παρακαλώ διαγράψτε το λογαριασμό μου. Ο αριθμός τηλεφώνου μου είναι {Αρ.Τηλεφώνου: string}.",
     "deleteAccountError": "Κάτι πήγε στραβά. Επικοινωνήστε με το {email: string} για περαιτέρω βοήθεια.",
-    "bye": "Αντίο!"
+    "bye": "Αντίο!",
+    "switchToBeginnerMode": "Με το να αλλάξετε στη λειτουργία αρχάριου δεν θα χάσετε την πρόσβαση στα κονδύλια του πορτοφόλι BTC σας, αλλά το πορτοφόλι θα είναι κρυμμένο.Μπορείτε να αλλάξετε ξανά στην προηγμένη λειτουργία ανά πάσα στιγμή.Είστε σίγουροι ότι θέλετε να συνεχίσετε;"
   },
   "lnurl": {
     "overLimit": "Δεν μπορείτε να στείλετε περισσότερα από το μέγιστο ποσό",
@@ -1035,7 +1333,9 @@
     "minAmountNotMet": "Το ποσό πρέπει να είναι τουλάχιστον {minAmount: string}."
   },
   "AmountInputButton": {
-    "tapToSetAmount": "Πατήστε για να ορίσετε ποσό"
+    "tapToSetAmount": "Πατήστε για να ορίσετε ποσό",
+    "tapToSetOnChainAmount": "Προσθέστε ένα ποσό",
+    "enterAmount": "Παρακαλούμε εισάγετε το ποσό για να προχωρήσετε."
   },
   "AppUpdate": {
     "needToUpdateSupportMessage": "Πρέπει να ενημερώσω την εφαρμογή μου με την τελευταία έκδοση. Χρησιμοποιώ την εφαρμογή {os: string} με έκδοση {version: string}.",
@@ -1043,5 +1343,149 @@
     "updateMandatory": "Η Ενημέρωση είναι υποχρεωτική",
     "tapHereUpdate": "Πατήστε εδώ για να ανανεώσετε τώρα",
     "contactSupport": "Επικοινωνήστε με την Υποστήριξη"
+  },
+  "RefundFlow": {
+    "refundListTitle": "Ανεκδικημένες καταθέσεις",
+    "depositDetails": "Πληροφορίες κατάθεσης",
+    "refundTitle": "Επιστροφή του καταθέματος",
+    "destinationTitle": "Ο προορισμός",
+    "confirmationTitle": "Επιβεβαίωση",
+    "pendingTransactions": "Υποκείμενες συναλλαγές",
+    "noRefundables": "Δεν έχουν βρεθεί αξιώσιμα καταθέματα.",
+    "view": "Το View View",
+    "refund": "Επιστροφή χρημάτων",
+    "refundTo": "Επιστροφή χρημάτων στο πορτοφόλι USD",
+    "recommendedFees": "Συνιστώμενοι Χρεώσεις",
+    "fast": "Γρήγορα Γρήγορα",
+    "medium": "Μεσοπρόθεσμα",
+    "slow": "Αργά  Αργά ",
+    "txId": "Το ID συναλλαγών",
+    "refunded": "Επιστροφή χρημάτων",
+    "pending": "Πεντάμενοι",
+    "autoClaiming": "Αυτή η μεταφορά θα διεκδικηθεί αυτόματα",
+    "approvalRequired": "Απαιτείται έγκριση",
+    "broadcasting": "Η ραδιοτηλεοπτική",
+    "feeExceeded": "Η αμοιβή είναι πολύ υψηλή",
+    "claimFailed": "Ο ισχυρισμός απέτυχε",
+    "automaticClaim": "Αυτή η καταβολή θα απαιτείται αυτόματα όταν τα τέλη του δικτύου είναι χαμηλότερα.",
+    "approveFee": "Συμφωνείτε να απαιτήσετε αυτή τη μεταφορά, ή να αρνηθείτε να επεξεργαστείτε την επιστροφή χρημάτων.",
+    "enterAddress": "Εισάγετε τη διεύθυνση Bitcoin όπου θέλετε να λάβετε την επιστροφή χρημάτων.",
+    "selectFee": "Επιλέξτε ένα τέλη δικτύου για την επιστροφή χρημάτων",
+    "confirmRefund": "Επιβεβαίωση & Επιστροφή χρημάτων",
+    "processing": "Επιστροφή χρημάτων για την επεξεργασία...",
+    "success": "Επιστροφή Επιστροφής Δήλωσης",
+    "refundSuccess": "Η επιστροφή χρημάτων σας έχει αποσταλεί στο δίκτυο Bitcoin.",
+    "refundFailed": "Αποτυχημένη επιστροφή χρημάτων",
+    "failedToClaim": "Επέτυχε να διεκδικήσει κατάθεση",
+    "unknownError": "Έγινε ένα άγνωστο σφάλμα",
+    "missingUtxo": "Η καταβολή UTXO λείπει και η συναλλαγή μπορεί να μην έχει επιβεβαιωθεί ακόμα.",
+    "couldNotClaimAutomatically": "Αυτή η κατάθεση δεν μπορούσε να διεκδικηθεί αυτόματα.",
+    "networkFee": "Το δίκτυο χρέους δικτύου",
+    "networkFeeWithRate": "Χρέωση δικτύου ({feeRate: string} sat/vB)",
+    "youReceive": "Εσείς λαμβάνετε",
+    "approve": "Επιτρέψτε μου να εγκρίνω.",
+    "refundToExternalWallet": "Μπορείτε να το επιστρέψετε σε εξωτερικό πορτοφόλι.",
+    "enterDestinationAddress": "Παρακαλούμε εισάγετε μια διεύθυνση προορισμού",
+    "invalidBitcoinAddress": "Ακυρωμένο Bitcoin μορφή διευθύνσεων",
+    "estimatedFee": "Δικτυακό τέλος ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Εσείς λαμβάνετε.",
+    "feeEstimateDisclaimer": "Η πραγματική αμοιβή θα υπολογιστεί κατά τη διάρκεια της μετάδοσης."
+  },
+  "Nostr": {
+    "editProfile": "Τραβήξτε προφίλ",
+    "importNsecTitle": "Εισαγωγήστε το μυστικό κλειδί του Nostr Secret σας.",
+    "importNsecDefaultDescription": "Παρακαλούμε εισάγετε το nsec σας από την άλλη συσκευή για να συνεχίσετε να χρησιμοποιείτε τη δυνατότητα συνομιλίας.",
+    "createProfileTitle": "Δημιουργήστε προφίλ",
+    "createProfileWarning": "Εάν προχωρήσετε, όλα τα υπάρχοντα δεδομένα προφίλ θα καταγραφούν.",
+    "createProfilePubkeyMessage": "Δεν μπορούσαμε να βρούμε ένα γεγονός προφίλ που να συνδέεται με αυτό το pubkey.",
+    "createProfilePrompt": "Θέλετε να συνεχίσετε να δημιουργείτε;",
+    "createProfileButton": "Δημιουργήστε προφίλ",
+    "profileNotFound": "Ψάχνουμε, αλλά δεν μπορέσαμε να βρούμε το προφίλ σας.",
+    "promptToCreateProfile": "Θα θέλατε να δημιουργήσετε ένα τώρα;",
+    "learnAboutNostr": "Μάθετε περισσότερα για το Nostr",
+    "learnAboutNostrSubtext": "Εξερευνήστε αυτό το οδηγό για να επωφεληθείτε στο έπακρο από το chat nostr",
+    "showPublicKey": "Δείξτε δημόσιο κλειδί",
+    "showPrivateKey": "Δείξτε ιδιωτικό κλειδί",
+    "profileConnected": "Προφίλ Συνδεδεμένο",
+    "reconnectProfile": "Ανασύνδεσε ξανά το προφίλ",
+    "tapToRefreshConnection": "Χτυπήστε για να ανανεώσετε τη σύνδεση",
+    "importExistingProfile": "Εισαγωγή υφιστάμενου προφίλ",
+    "deleteProfile": "Διαγράψτε το προφίλ",
+    "noProfileIdExists": "Δεν υπάρχει αναγνωριστικό προφίλ",
+    "profileReconnected": "Το προφίλ σας έχει επανασυνδεθεί με επιτυχία",
+    "deleteWarningTitle": "Προειδοποίηση",
+    "deleteWarningMessage": "Η διαγραφή των κλειδιών του προφίλ σας θα αφαιρέσει το λογαριασμό σας από αυτή τη συσκευή.Χωρίς αντίγραφο ασφαλείας, δεν θα μπορείτε να έχετε πρόσβαση σε αυτό το προφίλ ξανά.",
+    "importNsecDescription": "Αν θέλετε να χρησιμοποιήσετε το δικό σας nsec, κόψτε το παρακάτω.",
+    "profileImportedSuccessfully": "Προφίλ εισαγόμενο με επιτυχία",
+    "noProfileFound": "Δεν βρέθηκε το προφίλ Nostr",
+    "noProfileDescription": "Δεν έχετε δημιουργήσει ακόμα ένα προφίλ Nostr. Κάντε κλικ παρακάτω για να δημιουργήσετε ένα.",
+    "keyConflictTitle": "Nostr Key Not Found on Device",
+    "keyConflictDescription": "Το λογαριασμό σας έχει εγγεγραμμένο κλειδί Nostr αλλά δεν βρέθηκε σε αυτή τη συσκευή. Αυτό μπορεί να συμβεί μετά την επανεγκατάσταση της εφαρμογής ή μετά την αλλαγή συσκευών.",
+    "creatingProfile": "Δημιουργώντας Προφίλ...",
+    "createNewProfile": "Δημιουργήστε νέο προφίλ",
+    "generateProfile": "Δημιουργήστε προφίλ",
+    "findingYou": "Σε βρίσκω..",
+    "advancedSettings": "Το Nostr Advanced Settings",
+    "KeyModal": {
+      "yourPublicProfileId": "Το Public Profile ID σας",
+      "yourPrivateProfileKey": "Το κλειδί ιδιωτικού προφίλ σας",
+      "keyCopiedToClipboard": "Κλειδί που αντιγράφεται στο clipboard"
+    },
+    "Contacts": {
+      "stillLoading": "Έχοντας πρόβλημα να βρείτε τη λίστα επαφών σας, έχετε ακολουθήσει κανέναν ακόμα;",
+      "noCantacts": "Δεν υπάρχουν επαφές διαθέσιμες",
+      "profile": "Προφίλ",
+      "nostrUser": "Ο χρήστης Nostr",
+      "message": "Το μήνυμα",
+      "sendPayment": "Στείλτε Στείλτε",
+      "contactInfo": "Πληροφορίες Επικοινωνιών",
+      "contactManagement": "Διαχείριση Επικοινωνιών",
+      "unfollowContact": "Ανεπάκολουθήστε Επικοινωνία",
+      "noListDeepLinkMessage": "Για να προσθέσετε φίλους, πρέπει πρώτα να αρχιερωτήσετε τη λίστα επαφών σας στις ρυθμίσεις.",
+      "manageContacts": "Διαχειρίστε επαφές",
+      "createContactList": "Κατάλογος Επικοινωνιών Create Contact List"
+    },
+    "common": {
+      "copy": "Αντιγράψτε ",
+      "copied": "Αντικαταστάθηκε",
+      "goToSettings": "Πηγαίνετε στις ρυθμίσεις"
+    }
+  },
+  "AccountUpgrade": {
+    "accountType": "Τύπος Λογαριασμού",
+    "personal": "Προσωπικό Προσωπικό",
+    "personalDesc": "Κρατήστε το πορτοφόλι σας ασφαλές με το τηλέφωνο και το ηλεκτρονικό ταχυδρομείο.",
+    "pro": "Το Pro Pro",
+    "proDesc": "Απαιτεί όνομα και τοποθεσία της επιχείρησης.",
+    "merchant": "Εμπορεύτης Εμπορεύτης",
+    "merchantDesc": "Δώστε ανταμοιβές, εμφανιστείτε στον χάρτη και διευθετήστε με την τράπεζά σας.",
+    "personalInfo": "Προσωπικές πληροφορίες",
+    "fullName": "Ολόκληρο το όνομα",
+    "phoneNumber": "Αριθμός τηλεφώνου",
+    "email": "Η διεύθυνση ηλεκτρονικού ταχυδρομείου",
+    "optional": "(Επιλογικό)",
+    "validation": "Επιβεβαίωση",
+    "validationCode": "Κώδικας επαλήθευσης",
+    "businessInfo": "Επιχειρηματικές Πληροφορίες",
+    "businessName": "Ονομασία Επιχειρήσεων",
+    "businessNamePlaceholder": "Εισάγετε το όνομα της επιχείρησής σας",
+    "businessAddress": "Επιχειρηματική διεύθυνση",
+    "businessAddressPlaceholder": "Εισάγετε την επιχειρηματική σας διεύθυνση",
+    "flashTerminal": "Θέλετε ένα τερματικό Flash;",
+    "flashTerminalTooltip": "Ένα Flash Terminal είναι μια έξυπνη συσκευή που μπορεί να αποδεχθεί πληρωμή μέσω Flash για την επιχείρησή σας και να εκτυπώσει αποδείξεις.",
+    "bankingInfo": "Πληροφορίες Τραπεζικής Πληροφορίας",
+    "bankName": "Όνομα Τράπεζας",
+    "bankNamePlaceholder": "Επιλέξτε το όνομα της τράπεζας σας",
+    "bankBranch": "Τμήμα Τραπεζικής Τράπεζας",
+    "bankBranchPlaceholder": "Εισάγετε το τραπεζικό σας τμήμα",
+    "bankAccountType": "Τύπος Λογαριασμού",
+    "selectBankAccountType": "Επιλέξτε τον τύπο λογαριασμού",
+    "currency": "Χρηματοδότηση",
+    "selectCurrency": "Επιλέξτε Ελλάδα",
+    "accountNum": "Ο αριθμός λογαριασμού ",
+    "accountNumPlaceholder": "Εισάγετε τον αριθμό του λογαριασμού σας",
+    "uploadId": "Ανεβάστε το αναγνωριστικό έγγραφο.",
+    "successUpgrade": "Αναβαθμίσατε με επιτυχία το λογαριασμό σας σε {accountType: string}",
+    "successRequest": "Ζήτησες με επιτυχία να αναβαθμίσεις το λογαριασμό σου σε {accountType: string}"
   }
 }

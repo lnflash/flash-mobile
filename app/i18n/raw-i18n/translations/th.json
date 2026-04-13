@@ -2,6 +2,7 @@
   "GaloyAddressScreen": {
     "title": "Receive payment by using:",
     "buttonTitle": "Set your address",
+    "yourLightningAddress": "ที่อยู่ Lightning ของคุณ",
     "yourAddress": "แอดเดรส {bankName: string} ของคุณ",
     "notAbleToChange": "เมื่อคุณตั้งชื่อแอดเดรส {bankName: string} ของตัวเองไปแล้ว จะไม่สามารถเปลี่ยนแปลงได้อีก",
     "addressNotAvailable": "แอดเดรส {bankName: string} นี้ มีผู้ใช้ไปแล้ว",
@@ -9,6 +10,7 @@
     "merchantTitle": "สำหรับพ่อค้าแม่ขาย",
     "yourCashRegister": "Your Lightning Cash Register",
     "yourPaycode": "โค้ดรับเงิน",
+    "copiedLightningAddressToClipboard": "สําเนาที่อยู่ Lightning ไปยังคลิปบอร์ด",
     "copiedAddressToClipboard": "คัดลอกแอดเดรส {bankName: string} ไปยังคลิปบอร์ดแล้ว",
     "copiedPaycodeToClipboard": "คัดลอกโค้ดรับเงินไปยังคลิปบอร์ดแล้ว",
     "copiedCashRegisterLinkToClipboard": "Copied Cash Register Link to clipboard",
@@ -19,6 +21,15 @@
     "howToUseYourAddressExplainer": "Share with someone that has a compatible wallet, such as:",
     "howToUseYourPaycodeExplainer": "You can print your Paycode (technically, this is an lnurl-pay address) and display it in your business to receive payments. Individuals can pay you by scanning it with a Lightning-enabled wallet.\n\nHowever, be aware that some wallets can’t scan a Paycode such as:",
     "howToUseYourCashRegisterExplainer": "Allow people to collect payments via the Cash Register link, without accessing your wallet.\n\nThey can create invoices and payments will be sent directly to your {bankName: string} Wallet."
+  },
+  "SetAccountModal": {
+    "title": "กําหนดบัญชีโดยปกติ",
+    "description": "บัญชีนี้จะถูกเลือกในตอนแรกเพื่อส่งและรับการชําระเงิน ซึ่งสามารถเปลี่ยนได้ตลอดเวลา",
+    "stablesatsTag": "เลือกนี้เพื่อรักษาค่า USD ที่มั่นคง",
+    "bitcoinTag": "เลือกให้ใช้มาตรฐาน Bitcoin"
+  },
+  "NoteInput": {
+    "addNote": "เพิ่มเติมข้อความ..."
   },
   "AuthenticationScreen": {
     "authenticationDescription": "ยืนยันตัวตนเพื่อดำเนินการต่อ",
@@ -37,6 +48,37 @@
   "ContactDetailsScreen": {
     "title": "ทำธุรกรรมกับ {username: string}"
   },
+  "ChatScreen": {
+    "noChatsTitle": "ไม่มีแชทที่พบ",
+    "noChatsYet": "กรอกชื่อผู้ใช้ Flash หรือ ป๊อบคี nostr เพื่อเริ่มแชท",
+    "noMatchingChats": "ไม่พบการแชทที่ตรงกับการค้นหาของคุณ",
+    "title": "แชท Chat"
+  },
+  "ChatDetailsScreen": {
+    "title": "แชทกับ {username: string}"
+  },
+  "CardScreen": {
+    "noCardsTitle": "ไม่มีการ์ดพบ",
+    "noCardsYet": "กด Flashcard เพื่อเพิ่มมันที่นี่",
+    "noMatchingCards": "ไม่มีการ์ดที่ตรงกับการค้นหาของคุณถูกพบ",
+    "title": "Flashcard",
+    "notFlashcard": "การ์ด NFC ไม่สนับสนุน ขอให้แน่ใจว่าคุณกําลังใช้การ์ดฟันช์",
+    "noNDEFMessage": "ข้อความ NDEF ไม่พบ ขอให้แน่ใจว่าคุณกําลังใช้ฟันช์การ์ด",
+    "notSupported": "NFC ไม่สนับสนุนในอุปกรณ์นี้",
+    "notEnabled": "NFC ไม่เปิดให้ใช้ในอุปกรณ์นี้",
+    "noTag": "ไม่มีแท็กพบ ขอให้แน่ใจว่าคุณกําลังใช้ฟันช์การ์ด"
+  },
+  "Cashout": {
+    "title": "Settle ครับ",
+    "percentageToCashout": "ลงทุนเพื่อการปรับเงินบาท  %",
+    "valid": "ใช้ได้สําหรับ {time: string}",
+    "exchangeRate": "อัตราแลกเปลี่ยน",
+    "sendAmount": "ส่งจํานวนเงิน",
+    "receiveAmount": "ได้รับจํานวนเงิน",
+    "fee": "ค่าธรรมเนียม",
+    "success": "การขอชําระสินค้าเริ่มต้นสําเร็จ.",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
+  },
   "ConversionDetailsScreen": {
     "title": "แลกเปลี่ยน",
     "percentageToConvert": "% ที่ต้องการแลกเปลี่ยน"
@@ -44,7 +86,9 @@
   "ConversionConfirmationScreen": {
     "title": "ตรวจสอบการแลกเปลี่ยน",
     "youreConverting": "กำลังแลกเปลี่ยน",
-    "receivingAccount": "บัญชีรับเงิน"
+    "sendingAccount": "การส่งบัญชี",
+    "receivingAccount": "บัญชีรับเงิน",
+    "conversionFee": "ค่าธรรมเนียมการแปลง"
   },
   "ConversionSuccessScreen": {
     "title": "แลกเปลี่ยนเสร็จสิ้น",
@@ -421,7 +465,13 @@
   },
   "GetStartedScreen": {
     "logInCreateAccount": "Log in / create account",
+    "quickStart": "เริ่มต้น เริ่มต้น",
+    "restoreWallet": "เข้าสู่ระบบ Login",
     "exploreWalletInstead": "Explore wallet instead",
+    "setupBusinessAccount": "การตั้งบัญชีธุรกิจ",
+    "createAccount": "สร้างบัญชีใหม่",
+    "exploreWallet": "ค้นหากระเป๋าเปลือก",
+    "logBackInWith": "ลงทะเบียนอีกครั้งกับ",
     "headline": "สนับสนุนโดย Galoy",
     "startTrialAccount": "Start with a trial account",
     "startWithTrialAccount": "Start with trial account",
@@ -433,7 +483,8 @@
       "noBackup": "No backup option",
       "sendingLimit": "Reduced daily sending limit",
       "noOnchain": "No receiving bitcoin onchain"
-    }
+    },
+    "chooseAccountType": "เลือกประเภทบัญชี"
   },
   "MapScreen": {
     "locationPermissionMessage": "เปิดใช้งานการระบุตำแหน่ง เพื่อให้คุณรู้ว่าคุณอยู่ตรงไหนของบนแผนที่",
@@ -442,16 +493,48 @@
     "locationPermissionPositive": "ตกลง",
     "locationPermissionTitle": "หาตำแหน่งของคุณบนแผนที่",
     "payBusiness": "จ่ายเงินให้ร้านนี้",
-    "title": "แผนที่"
+    "title": "แผนที่",
+    "addPin": "คลิกที่ไหนก็ได้ เพิ่มปิน",
+    "selectedCoordinates": "Your Flashpoint Coordinates: ",
+    "viewInGoogleMaps": "ดูใน Google Maps ",
+    "getDirections": "แนวทาง Get Directions"
   },
   "HomeScreen": {
+    "cashout": "เก็บเงินปลายทาง",
     "receive": "รับเงิน",
+    "reload": "การ์ด Reload Card ",
+    "balance": "ความสมดุลของความสะดวกสบาย",
+    "showQrCode": "Topup ผ่าน QR",
     "send": "ส่ง",
+    "sweep": "สวีปไปยัง Wallet ",
+    "pay": "เงินชําระ  เงินชําระ",
     "title": "หน้าหลัก",
     "scan": "Scan QR",
     "updateAvailable": "ตรวจพบเวอร์ชั่นอัพเดต\nกดเพื่ออัปเดตตอนนี้",
     "useLightning": "เราใช้ ไลท์นิ่ง เน็ตเวิร์ก",
-    "myAccounts": "My Accounts"
+    "myAccounts": "My Accounts",
+    "unclaimedDepositsWarning": "️ ฝากสินค้าที่ไม่ได้ยึดถือเป็นสิทธิขั้นต่ํา ️ ฝากสินค้าที่ไม่ได้ยึดถือเป็นสิทธิขั้นต่ํา ️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
+    "unclaimedDeposits": "เงินฝากที่ไม่ได้รับการสรรหา",
+    "cash": "เงินสด",
+    "bitcoin": "Bitcoin ",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Add",
+    "upgradeTitle": "ปรับปรุงบัญชีของคุณ",
+    "upgradeTitlePending": "การขอรับการปรับปรุงกําลังรอการดําเนินงาน",
+    "upgradeDesc": "เปิดเผยความสามารถทั้งหมดของคุณ! ปรับปรุงเพื่อเพิ่มความเห็น, ขั้นต่ํา, และการจ่ายเงิน.",
+    "upgradePendingDesc": "การขอปรับปรุงบัญชีของคุณกําลังถูกพิจารณา",
+    "currencyTitle": "เปลี่ยนไปยังเงินของท้องถิ่นของคุณ",
+    "currencyDesc": "ตรวจสอบรายการสกุลเงินที่เรามี และเลือกสกุลเงินของคุณ",
+    "flashcardTitle": "รับ Flashcard",
+    "flashcardDesc": "ค้นหา Flashpoint และใช้ Flashcard ในชีวิตประจําวัน",
+    "nonCustodialWalletTitle": "กระเป๋าเปลือกที่ไม่ใช่ของฝ่ายปกครอง",
+    "nonCustodialWalletDesc": "เรียนรู้เพิ่มเติมเกี่ยวกับกระเป๋าเปลือกที่ไม่ใช่ของฝ่ายปกครอง",
+    "emailTitle": "ที่อยู่อีเมล",
+    "emailDesc": "เพิ่มเติมที่อยู่อีเมลของคุณเพื่อคุ้มครองบัญชี และเข้าใช้บริการด้วยที่อยู่อีเมล",
+    "btcWalletTitle": "Enable BTC wallet",
+    "btcWalletDesc": "การโอนเงินจํานวนมากขึ้นง่ายใน Bitcoin",
+    "backupTitle": "ทําสํารองกระเป๋าเงิน BTC ของคุณ",
+    "backupDesc": "แบ็กคัพและคุ้มครองกระเป๋าเป้ Bitcoin ของคุณ โดยใช้ประโยคการฟื้นฟู."
   },
   "PinScreen": {
     "attemptsRemaining": "พินนี้ผิด มีโอกาสใส่พินอีก {attemptsRemaining: number} ครั้ง",
@@ -479,11 +562,13 @@
     "title": "หน้าหลัก"
   },
   "ReceiveScreen": {
+    "flashcardInstructions": "สแกนโค้ด QR หรือแตะสัญลักษณ์เพื่อแบ่งปันใน whatsapp อีเมล์ ฯลฯ",
     "nfc": "NFC",
     "enterAmountFirst": "Please enter an amount first",
     "activateNotifications": "คุณต้องการเปิดการแจ้งเตือนเมื่อธุรกรรมเข้ามาหรือไม่?",
     "copyClipboard": "Invoice ได้ทำการคัดลอกไว้ในคลิปบอร์ดแล้ว",
     "copyClipboardBitcoin": "คัดลอก Bitcoin address ไว้ในคลิปบอร์ดแล้ว",
+    "copyClipboardPaycode": "เงินเดือน / LNURL ได้ถูกสําเนาไว้ในกระดานคลิปบอร์ด",
     "invoicePaid": "Invoiceนี้ ได้รับการชำระแล้ว",
     "setNote": "เขียนโน้ต",
     "tapQrCodeCopy": "กดที่ QR Code เพื่อคัดลอก",
@@ -505,7 +590,37 @@
     "useALightningInvoice": "ใช้ Lightning invoice ",
     "setANote": "เขียนโน้ต",
     "invoiceAmount": "จำนวน invoice",
-    "fees": "{minBankFee: string} sats fees for onchain payment below {minBankFeeThreshold: string} sats"
+    "fees": "{minBankFee: string} sats fees for onchain payment below {minBankFeeThreshold: string} sats",
+    "lightning": "Lightning ",
+    "paycode": "เงินเดือนรหัสการจ่ายเงิน",
+    "onchain": "ออนเชน",
+    "bitcoin": "Bitcoin ",
+    "stablesats": "เงินสด",
+    "regenerateInvoiceButtonTitle": "ค่าเบี้ยบํารุงใหม่",
+    "setUsernameButtonTitle": "กําหนด Username ",
+    "invoiceHasExpired": "บัญชีชําระได้หมดอายุ",
+    "setUsernameToAcceptViaPaycode": "กําหนดชื่อผู้ใช้ของคุณให้ยอมรับผ่าน Paycode QR (LNURL) และ Lightning Address",
+    "singleUse": "การใช้งานเพียงครั้งเดียว",
+    "invoiceExpired": "ค่าเบี้ยหมดอายุ",
+    "invoiceValidity": {
+      "validFor1Day": "มีผลเป็นเวลา 1 วัน",
+      "validForNext": "มีค่าใช้จ่ายสําหรับครั้งต่อไป {duration: string}",
+      "validBefore": "ถูกต้องก่อน {time: string}",
+      "expiresIn": "หมดอายุในปี {duration: string}",
+      "expiresNow": "หมดอายุในตอนนี้"
+    },
+    "invoiceHasBeenPaid": "บัญชีได้ชําระแล้ว",
+    "yourBitcoinOnChainAddress": "Your Bitcoin Onchain Address",
+    "receive": "รับการรับ",
+    "receiveViaInvoice": "รับผ่าน Lightning",
+    "receiveViaPaycode": "รับผ่าน Paycode",
+    "topupFlashcard": "Topup Flashcard ",
+    "receiveViaOnchain": "รับผ่านทาง Onchain",
+    "payCodeOrLNURL": "เงินเดือน / LNURL",
+    "cantReceiveZeroSats": "คุณไม่สามารถรับค่า sats เศรษะได้ครับ กรุณาใส่จํานวนที่ตรงกับ 1 หรือมากกว่า sats",
+    "initialDeposit": "* ฝากเงินเริ่มต้น $5 แนะนําสําหรับการจัดตั้งช่องทาง ~$1 จะถูกจ่ายเป็นค่าจัดตั้ง",
+    "selectPaymentMethod": "เลือกวิธีการชําระเงิน",
+    "selectWallet": "เลือก Wallet "
   },
   "RedeemBitcoinScreen": {
     "title": "แลกรับบิตคอยน์",
@@ -524,7 +639,12 @@
     "invalidTitle": "QR Code ไม่ถูกต้อง",
     "noQrCode": "ไม่พบ QR Code ในรูป",
     "title": "Scan QR",
-    "invalidContentLnurl": "เราพบว่า:\n\n{found: string}\n\nยังไม่รองรับในตอนนี้\n"
+    "permissionCamera": "เราต้องการอนุญาตในการใช้กล้องของคุณ",
+    "noCamera": "ไม่มีกล้องพบ",
+    "openSettings": "เปิดการตั้งค่า เปิดการตั้งค่า",
+    "unableToOpenSettings": "ไม่สามารถเปิดการตั้งค่าได้",
+    "invalidContentLnurl": "เราพบว่า:\n\n{found: string}\n\nยังไม่รองรับในตอนนี้\n",
+    "imageLibraryPermissionsNotGranted": "เราไม่มีอนุญาตในการเข้าถึงห้องสมุดภาพ โปรดตรวจสอบการตั้งค่าแอพสําหรับเว็บไซต์ของคุณ"
   },
   "SecurityScreen": {
     "biometricDescription": "ปลดล็อกด้วยลายนิ้วมือหรือการจดจำใบหน้า",
@@ -535,7 +655,8 @@
     "hideBalanceTitle": "Hide Balance",
     "pinDescription": "พินเป็นวิธีสำรองของการยืนยันตัวตนด้วยไบโอเมทริกซ์",
     "pinTitle": "พินโค้ด",
-    "setPin": "ตั้งค่าพิน"
+    "setPin": "ตั้งค่าพิน",
+    "backupDescription": "สําหรับการตั้งรหัส PIN กรุณาทําสํารองบัญชีของคุณโดยการเพิ่มเบอร์โทรศัพท์"
   },
   "SendBitcoinConfirmationScreen": {
     "amountLabel": "จำนวน:",
@@ -577,12 +698,17 @@
       "body3": "Otherwise, the money will go to a {bankName: string} Account that has the “{lnAddress: string}” address.\n\nCheck the spelling of the first part of the address as well. e.g. jackie and jack1e are 2 different addresses",
       "warning": "หากแอดเดรส {bankName: string} ที่ระบุมาไม่ถูกต้อง {bankName: string} ไม่สามารถยกเลิกธุรกรรมได้",
       "checkBox": "{lnAddress: string} เป็นแอดเดรสที่ถูกต้อง",
-      "confirmButton": "ฉันมั่นใจ 100%"
+      "confirmButton": "ฉันมั่นใจ 100%",
+      "externalWarning": "คุณกําลังจะส่งเงินไปยังใครบางคนที่ไม่ใช่บัญชี {bankName: string} คุณแน่ใจไหมว่านี่คือที่อยู่ที่คุณตั้งใจจะส่งไป?",
+      "externalCheckBox": "ผมยืนยันการส่งไปยัง {address: string}"
     },
     "clipboardError": "เกิดข้อผิดพลาดในการรับค่าจากคลิปบอร์ด"
   },
   "SendBitcoinScreen": {
     "amount": "จำนวนเงิน",
+    "MinOnChainLimit": "เงินขั้นต่ําสําหรับธุรกิจนี้คือ 2.00 ดอลลาร์สหรัฐอเมริกัน",
+    "MinOnChainSatLimit": "เงินขั้นต่ําสําหรับธุรกิจนี้คือ 5,500 sats",
+    "MinFlashcardLimit": "ขั้นต่ําในการโหลดจากฟลชคาร์ด คือ 100 sats",
     "amountExceed": "จำนวนมากกว่ายอดคงเหลือ {balance: string} ของคุณ",
     "amountExceedsLimit": "Amount exceeds your remaining daily limit of {limit: string}",
     "upgradeAccountToIncreaseLimit": "Upgrade your account to increase your limit",
@@ -592,19 +718,35 @@
     "destinationIsRequired": "กรุณาระบุปลายทาง",
     "fee": "ค่าธรรมเนียมของเครือข่าย",
     "feeCalculationUnsuccessful": "คำนวณไม่สำเร็จ ⚠️",
+    "placeholder": "ชื่อผู้ใช้งาน บัญชี หรือที่อยู่",
     "invalidUsername": "ชื่อผู้ใช้ไม่ถูกต้อง",
     "noAmount": "อินวอยซ์นี้ไม่ได้ระบุจำนวน คุณต้องระบุจำนวนเงินที่ต้องการจะส่งด้วยตัวเอง",
     "notConfirmed": "การชำระเงินถูกส่งไปแล้ว\nแต่ยังไม่ได้รับการยืนยัน\n\nคุณสามารถตรวจสอบสถานะ\nของการชำระเงินได้ในหน้า 'ธุรกรรม'",
     "note": "บันทึกช่วยจำ",
     "success": "ทำการชำระเงินเรียบร้อยแล้ว",
+    "suggestionInput": "กรอกข้อเสนอของคุณ",
     "max": "Max",
     "maxAmount": "Max Amount",
     "title": "ส่งบิตคอยน์",
+    "send": "ส่ง  ส่ง",
     "failedToFetchLnurlInvoice": "ไม่สามารถดึง lnurl invoice มาได้",
     "lnurlInvoiceIncorrectAmount": "เซิร์ฟเวอร์ lnurl ตอบสนองกับ invoice ด้วยจำนวนเงินที่ไม่ถูกต้อง",
-    "lnurlInvoiceIncorrectDescription": "เซิร์ฟเวอร์ lnurl ตอบสนองกับ invoice ที่มี Description hash ไม่ถูกต้อง"
+    "lnurlInvoiceIncorrectDescription": "เซิร์ฟเวอร์ lnurl ตอบสนองกับ invoice ที่มี Description hash ไม่ถูกต้อง",
+    "noAmountInvoiceError": "เงินชําระไม่สนับสนุนในกระเป๋าเปลือก BTC โปรดกลับไปสแกนหรือเอกสารชําระด้วย เงินที่เพิ่มขึ้น",
+    "onchainMinAmountInvoiceError": "เงินที่คุณใส่ลงน้อยกว่ายอดขั้นต่ําที่ต้องการในการส่งธุรกิจในโซ่ {amount: number} โปรดพิจารณาส่งจํานวนนี้ผ่าน Lightning!",
+    "minAmountInvoiceError": "เงินที่ติดตาม Faktura นั้นน้อยกว่า เงินขั้นต่ํา {amount: number}",
+    "maxAmountInvoiceError": "เงินใน Faktura กว่าจํานวนสูงสุด {amount: number}",
+    "minAmountConvertError": "เงินแปลงน้อยกว่า เงินขั้นต่ําที่ต้องการ {amount: number}",
+    "maxAmountConvertError": "เงินแปลงที่ใหญ่กว่า เงินสูงสุด {amount: number}"
   },
   "SettingsScreen": {
+    "staticQr": "พิมพ์ได้ Static QR Code",
+    "staticQrCopied": "ลิงค์รหัส QR สถานที่ของคุณถูกสําเนา",
+    "setByOs": "กําหนดโดย OS",
+    "apiAcess": "การเข้าถึง API",
+    "pos": "จุดขาย",
+    "posCopied": "ลิงค์จุดขายของท่านถูกสําเนา",
+    "setYourLightningAddress": "เตรียมชื่อผู้ใช้ของคุณ",
     "activated": "เปิดใช้งานเป็นที่เรียบร้อย",
     "addressScreen": "Ways to get paid",
     "tapUserName": "กดเพื่อตั้งชื่อผู้ใช้",
@@ -625,7 +767,17 @@
     "nfcNotCompatible": "The information fetch from the card is not a compatible lnurl-withdraw link.",
     "nfcOnlyReceive": "Only receive from NFC is available for now",
     "nfcScanNow": "Scan NFC Now",
-    "nfcNotSupported": "NFC is not supported on this device"
+    "nfcNotSupported": "NFC is not supported on this device",
+    "logInOrCreateAccount": "สมัครสมาชิก หรือสร้างบัญชี",
+    "backup": "แบ็กเก๊ป",
+    "importWallet": "การนําเข้า Wallet ",
+    "showSeedPhrase": "Reveal recovery phrase",
+    "showNostrSecret": "การตั้งค่าจอ Chat Settings",
+    "beginnerMode": "ปิดการใช้งาน Bitcoin Account",
+    "advanceMode": "Enable Bitcoin Account (Advanced Mode) ",
+    "keysManagement": "การสํารอง Wallet ",
+    "showBtcAccount": "แสดงบัญชี Bitcoin",
+    "hideBtcAccount": "ซ่อนบัญชี Bitcoin"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -638,18 +790,152 @@
       "Payments": {
         "title": "Payments",
         "description": "Notifications related to sending and receiving payments."
+      },
+      "Marketing": {
+        "title": "คุณสมบัติและอัพเดท",
+        "description": "ข่าวสารเกี่ยวกับคุณสมบัติใหม่และอัพเดท"
+      },
+      "Price": {
+        "title": "การเปลี่ยนแปลงราคา",
+        "description": "ประกาศเกี่ยวกับราคาของ Bitcoin"
       }
     }
   },
   "AccountScreen": {
+    "fundsMoreThan5Dollars": "บัญชีของคุณมีมากกว่า 5 เหรียญ",
+    "itsATrialAccount": "บัญชีทดลองมีขีดขั้นต่ําในการเทรนซัค และไม่มีวิธีการฟื้นฟู หากคุณสูญเสียมือถือหรือถอดแอพนั้น เงินของคุณจะไม่สามารถฟื้นฟูได้",
+    "accountBeingDeleted": "บัญชีของคุณกําลังถูกลบ, โปรดรอ...",
+    "dangerZone": "เขตอันตราย",
+    "phoneDeletedSuccessfully": "โทรศัพท์ถูกลบอย่างสําเร็จ",
+    "phoneNumber": "เบอร์โทรศัพท์",
+    "tapToAddPhoneNumber": "แท๊ปเพื่อเพิ่มหมายเลขโทรศัพท์",
+    "loginMethods": "วิธีการเข้าใช้งาน",
+    "level": "ระดับ {level: string}",
     "accountLevel": "Account Level",
     "upgrade": "Upgrade your account",
     "logOutAndDeleteLocalData": "Log out",
     "IUnderstand": "I understand. Please log me out.",
     "logoutAlertTitle": "Are you sure you want to log out and delete all local data?",
+    "logoutAlertContentPhone": "คุณจําเป็นต้องใส่เบอร์โทรศัพท์ของคุณอีกครั้งเพื่อเข้าสู่ระบบใหม่ของคุณเบอร์โทรศัพท์ของคุณคือ {phoneNumber: string} ดังนั้นให้แน่ใจว่าคุณมีการเข้าถึงมันเพื่อเข้าสู่ระบบใหม่",
+    "logoutAlertContentEmail": "คุณจําเป็นต้องใส่อีเมลของคุณอีกครั้งเพื่อเข้าสู่ระบบใหม่ อีเมลของคุณคือ {email: string} ดังนั้นให้แน่ใจว่าคุณมีการเข้าถึงมันเพื่อเข้าสู่ระบบใหม่",
+    "logoutAlertContentPhoneEmail": "คุณจะต้องใส่เบอร์โทรศัพท์หรืออีเมลใหม่เพื่อเข้าระบบใหม่ เลขโทรศัพท์ของคุณคือ {phoneNumber: string} และอีเมลของคุณคือ {email: string} ดังนั้นให้แน่ใจว่าคุณมีการเข้าถึงคนที่สามารถเข้าระบบใหม่",
     "usdBalanceWarning": "You have a Stablesats balance of {balance: string}.",
     "btcBalanceWarning": "You have a bitcoin balance of {balance: string}.",
-    "secureYourAccount": "Register to secure your account"
+    "secureYourAccount": "Register to secure your account",
+    "tapToAdd": "แท๊ปเพื่อเพิ่มเติม",
+    "tapToAddEmail": "กดปุ่มเพื่อเพิ่มอีเมล",
+    "unverifiedEmail": "อีเมล์ (ไม่ตรวจสอบ) ",
+    "email": "อีเมล์",
+    "emailDeletedSuccessfully": "อีเมลถูกลบอย่างสําเร็จ",
+    "unverifiedEmailAdvice": "อีเมล์ที่ยังไม่ถูกตรวจสอบไม่สามารถใช้ในการเข้าระบบได้ คุณควรตรวจสอบที่อยู่อีเมลของคุณอีกครั้ง",
+    "deleteEmailPromptTitle": "ยกเลิกอีเมล",
+    "deleteEmailPromptContent": "คุณแน่ใจไหมว่าต้องการลบที่อยู่อีเมลของคุณ?คุณจะสามารถเข้าระบบใหม่ได้เพียงด้วยหมายเลขโทรศัพท์ของคุณเท่านั้น",
+    "deletePhonePromptTitle": "ยกเลิกโทรศัพท์",
+    "deletePhonePromptContent": "คุณแน่ใจไหมว่าต้องการลบเบอร์โทรศัพท์ของคุณ?คุณจะสามารถลงทะเบียนอีกครั้งได้เพียงด้วยอีเมลของคุณ",
+    "addEmailFirst": "เพิ่มอีเมลก่อน",
+    "addPhoneFirst": "เพิ่มโทรศัพท์ก่อน",
+    "phoneNumberAuthentication": "เลขโทรศัพท์ (สําหรับการเข้าใช้งาน)",
+    "emailAuthentication": "อีเมล (สําหรับการเข้าใช้งาน) ",
+    "removePhone": "Remove phone",
+    "removeEmail": "ยกเลิกอีเมล",
+    "unverified": "อีเมลยังไม่ได้ตรวจสอบ",
+    "unverifiedContent": "ปลอดภัยบัญชีของคุณโดยการยืนยันอีเมลของคุณ",
+    "confirmEmail": "ยืนยันอีเมล",
+    "emailUnverified": "อีเมล์ของคุณยังไม่ถูกตรวจสอบ",
+    "emailUnverifiedContent": "ยืนยันว่าคุณสามารถเข้าสู่บัญชีของคุณอีกครั้งโดยการยืนยันอีเมลของคุณ คุณต้องการที่จะทําการยืนยันตอนนี้หรือไม่?",
+    "totp": "การรับรองความเป็นจริงสองปัจจัย",
+    "totpDeactivated": "การรับรองความเป็นจริงสองปัจจัยถูกปิดประสิทธิภาพ",
+    "totpDeleteAlertTitle": "ยกเลิกการรับรองสองปัจจัย",
+    "totpDeleteAlertContent": "คุณแน่ใจนะว่า คุณต้องการลบการรับรองสองปัจจัยของคุณหรือไม่?",
+    "copiedAccountId": "สําเนาบัตรประชาชนบัญชีของคุณไปยังกระดานกระดาน",
+    "yourAccountId": "บัตรประชาชนบัญชีของคุณ",
+    "accountId": "บัตรประชาชนบัญชี",
+    "copy": "Copy Copy"
+  },
+  "TotpRegistrationInitiateScreen": {
+    "title": "การรับรองความเป็นจริงสองปัจจัย",
+    "content": "ตรวจสอบรหัส QR นี้ด้วยแอปพลิเคชั่นผู้รับรองตัวตนของคุณ หรือคุณสามารถเลียน / เล่นความลับด้วยมือในแอปพลิเคชั่นผู้รับรองตัวตนของคุณได้"
+  },
+  "TotpRegistrationValidateScreen": {
+    "title": "การรับรองความเป็นจริงสองปัจจัย",
+    "enter6digitCode": "กรอกรหัส 6 หลักจากแอพลิเคชั่น Authenticator เพื่อยืนยันการรับรองตัวตนสองปัจจัยของคุณ",
+    "success": "การรับรองตัวตนสองปัจจัยถูกเปิดให้บริการ ตอนนี้คุณจะสามารถลงทะเบียนใหม่ได้เพียงด้วยโทรศัพท์หรืออีเมล และการรับรองตัวตนสองปัจจัยเท่านั้น มีโอกาสฟื้นฟูบัญชี KYC ทั้งหมดเท่านั้น หากผู้ใช้ได้สูญเสียการเข้าถึงการรับรองตัวตนสองปัจจัย"
+  },
+  "TotpLoginValidateScreen": {
+    "title": "การรับรองความเป็นจริงสองปัจจัย",
+    "content": "กรอกรหัส 6 หลักจากแอปพลิเคชันการอ้างอิงของคุณเพื่อเข้าใช้งานรหัสนี้เปลี่ยนทุก 30 วินาที"
+  },
+  "BackupOptions": {
+    "title": "ตัวเลือกสํารอง",
+    "recoveryPhrase": "การฟื้นฟูประโยค Recovery Phrase",
+    "recoveryPhraseDesc": "การสํารอง Bitcoin Wallet using recovery phrase",
+    "revealRecoveryPhrase": "Reveal Recovery Phrase รายงานการฟื้นฟู",
+    "revealRecoveryPhraseDesc": "ใช้ประโยคการฟื้นฟูของคุณเพื่อนําเข้า Bitcoin Wallet ",
+    "phone": "โทรศัพท์มือถือ",
+    "phoneDesc": "การสํารองกระเป๋าเป้เงินสด โดยใช้เบอร์โทรศัพท์",
+    "usePhoneNumber": "ใช้เบอร์โทรศัพท์ของคุณเพื่อนําเข้า Cash Wallet",
+    "done": " เสร็จแล้ว เสร็จแล้ว"
+  },
+  "BackupStart": {
+    "title": "ก่อนอื่น, let's create your recovery phrase",
+    "description": "ประโยคการฟื้นฟู เป็นประโยคที่ประกอบด้วย 12 คําตามลําดับที่คัดเลือก โดยการรวมคํานี้เป็นพิเศษสําหรับกระเป๋าเปลือกของท่าน ตรวจสอบให้แน่ใจว่ามีปากกาและกระดาษพร้อม เพื่อให้คุณสามารถเขียนมันลง",
+    "continue": " อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต"
+  },
+  "BackupSeedPhrase": {
+    "title": "นี่คือประโยคการฟื้นฟูของคุณ",
+    "description": "จดมันไว้อย่างแน่นอน ตามที่แสดงไว้ที่นี่ คุณจะต้องตรวจสอบเรื่องนี้ในภายหลัง",
+    "backupToICloud": "การสํารอง iCloud ",
+    "backupToGoogleDrive": "การสํารอง Google Drive ",
+    "verify": "ยืนยัน"
+  },
+  "BackupDoubleCheck": {
+    "title": "ลอง double-check ครับ",
+    "description1": "ดีแล้ว ตอนนี้ขอตรวจสอบว่าคุณเขียนประโยคการฟื้นฟูได้ถูกต้องหรือไม่",
+    "description2": "ใช่ มันสําคัญขนาดนั้น",
+    "continue": " อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต"
+  },
+  "BackupVerify": {
+    "title": "กดคําดังกล่าวตามลําดับที่เหมาะสม",
+    "correctTitle": "สมบูรณ์แบบ ให้แน่ใจว่าเก็บประโยคการฟื้นฟูของคุณไว้ได้อย่างปลอดภัย",
+    "wrongTitle": "ขอโทษนะครับ นั่นไม่ใช่คําที่สามที่เหมาะสม ลองอีกครั้งนะครับ",
+    "tryAgain": "ทดลองอีกครั้ง",
+    "continue": " อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต อนาคต"
+  },
+  "BackupComplete": {
+    "title": "การสํารองของท่านเสร็จแล้ว",
+    "description": "ตอนนี้คุณควรจะเขียนประโยคการฟื้นฟูและรหัสผ่านของคุณไว้เพื่ออ้างอิงในอนาคต",
+    "complete": "Complete Complete"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "นี่คือประโยคการฟื้นฟูของคุณ",
+    "description": "จดมันไว้อย่างแน่นอน ตามที่แสดงไว้ที่นี่ คุณจะต้องฟื้นฟูกระเป๋าเงินของคุณ",
+    "done": " เสร็จแล้ว เสร็จแล้ว"
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "เลือกทางเข้า Login ",
+    "importOptions": "การนําเข้าทางเลือก wallet ",
+    "recoveryPhrase": "การฟื้นฟูประโยค Recovery Phrase",
+    "importBTCWallet": "นําเข้า Bitcoin Wallet using recovery phrase",
+    "phone": "โทรศัพท์มือถือ",
+    "importUsingPhone": "นําเข้าหรือสร้างกระเป๋าเปลือกเงินสดของคุณ โดยใช้เบอร์โทรศัพท์",
+    "email": "อีเมล์",
+    "importUsingEmail": "นําเข้ากระเป๋าเปลือกเงินสดของคุณ โดยใช้ที่อยู่อีเมล",
+    "login": "เข้าสู่ระบบ Login/Create",
+    "done": " เสร็จแล้ว เสร็จแล้ว"
+  },
+  "ImportWallet": {
+    "title": "สมัครสมาชิกด้วยประโยค Recovery ",
+    "importTitle": "นําเข้ากระเป๋าเปลือกด้วยประโยคการฟื้นฟู",
+    "description": "นี่คือประโยค 12 คําที่คุณได้รับเมื่อคุณสร้างกระเป๋าเปลือกก่อนหน้านี้",
+    "complete": "Complete Complete"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
+  "CopySecretComponent": {
+    "button": "สําเนาความลับ",
+    "toastMessage": "เซ็กร็อตถูกสําเนาเป็นคลิปบอร์ด!"
   },
   "DefaultWalletScreen": {
     "title": "Default Account",
@@ -660,7 +946,9 @@
     "info": "Pick your preferred theme for using Flash, or choose to keep it synced with your system settings.",
     "system": "Use System setting",
     "light": "Use Light Mode",
-    "dark": "Use Dark Mode"
+    "dark": "Use Dark Mode",
+    "setToDark": "รูปแบบมืดมิด",
+    "setToLight": "รูปแบบแสง "
   },
   "Languages": {
     "DEFAULT": "ค่าเริ่มต้น(OS)"
@@ -671,6 +959,26 @@
     "termsAndConditions": "อ่านข้อกำหนดและเงื่อนไข",
     "learnMore": "เรียนรู้เพิ่มเติมเกี่ยวกับ Stablesats"
   },
+  "AdvancedModeModal": {
+    "header": "ยินดีต้อนรับสู่โหมดยอดเยี่ยม!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "อ่านเงื่อนไขและเงื่อนไข",
+    "learnMore": "กระเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป๋าเป้",
+    "importWallet": "การนําเข้า Wallet ",
+    "createWallet": "กระเป๋าเปลือก Create Wallet"
+  },
+  "MerchantSuggestModal": {
+    "header": "Flashpoint Add",
+    "body": "คุณได้เลือกสถานที่สําหรับธุรกิจของคุณบนแผนที่ ผู้ใช้งาน Flash จะสามารถหาคุณบนแผนที่ และส่งเงินให้คุณด้วยการคลิกปินแผนที่ของคุณ",
+    "termsAndConditions": "อ่านเงื่อนไขและเงื่อนไข",
+    "learnMore": "การขอ PIN ของคุณจะถูกแก้ไขภายใน 24 ชั่วโมง"
+  },
+  "UnVerifiedSeedModal": {
+    "header": "ปลอดภัยกระเป๋าเงิน Bitcoin ของคุณ",
+    "body": "หากคุณสูญเสียมือถือหรือถอดแอพพลิเคชันโดยไม่เขียนประโยคการฟื้นฟูของคุณลง คุณก็จะสูญเสียการเข้าถึงทุนของคุณ",
+    "termsAndConditions": "อ่านเงื่อนไขและเงื่อนไข",
+    "learnMore": "คําว่า Recovery Phrase คืออะไร?"
+  },
   "SplashScreen": {
     "update": "แอปของคุณเป็นเวอร์ชั่นที่เก่าเกินไป จะต้องอัพเดทก่อนจึงจะใช้งานได้\n\nหากใช้แอนดรอยด์ คุณสามารถอัพเดทได้ที่ PlayStore หรือหากใช้ iOS สามารถอัพเดทได้ที่ Testflight"
   },
@@ -680,7 +988,24 @@
     "spent": "คุณใช้เงินไป",
     "receivingAccount": "Receiving Account",
     "sendingAccount": "Sending Account",
-    "txNotBroadcast": "Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment."
+    "txNotBroadcast": "Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment.",
+    "noTransaction": "ไม่มีธุรกิจใด ๆ ที่พบกับบัตรประชาชนนี้",
+    "typeOnChain": "OnChain ครับ",
+    "typeLightning": "Lightning ",
+    "typeIntraLedger": "IntraLedger ",
+    "pendingStatus": "รอรับการดําเนินงาน",
+    "confirmation": "การยืนยัน",
+    "confirmations": "การยืนยัน",
+    "hash": "แฮช Hash",
+    "preimage": "Preimage",
+    "transactionId": "ID การซื้อขาย",
+    "swapDetails": "รายละเอียดการแลกเปลี่ยน",
+    "destinationAddress": "ที่อยู่ปลายทาง",
+    "swapId": "Swap ID ",
+    "lockupTxId": "การทําธุรกิจล็อกคัพ",
+    "claimTxId": "การดําเนินธุรกิจข้อกล่าวหาข้อกล่าวหา",
+    "swapFees": "ค่าอํานวยการแลกเปลี่ยน",
+    "expirationBlockHeight": "ระยะเวลาหมดอายุใน Block"
   },
   "TransactionLimitsScreen": {
     "receive": "รับเงิน",
@@ -695,7 +1020,11 @@
     "contactUsMessageBody": "Hi, I will like to increase the transaction limits of my {bankName: string} account.",
     "contactUsMessageSubject": "Request To Increase Transaction Limits",
     "contactSupportToPerformKyc": "Contact support to perform manual KYC to increase your limit",
-    "increaseLimits": "Increase your limits"
+    "increaseLimits": "Increase your limits",
+    "spendingLimits": "ขั้นต่ําการใช้จ่าย",
+    "spendingLimitsDescription": "ขั้นต่ําการใช้จ่ายที่แสดงบนหน้านี้ถูกระบุเป็น USD เพื่อความสะดวกสบายของเรา เราแปลงขั้นต่ําเหล่านี้เป็นสกุลเงินท้องถิ่นของท่าน โดยขึ้นอยู่กับอัตราแลกเปลี่ยนต่างประเทศปัจจุบัน โปรดระบุว่าปริมาณสกุลเงินท้องถิ่นที่แสดงอาจปรับเปลี่ยนตามอัตราแลกเปลี่ยนที่อัพเดทในเวลาจริง",
+    "requestUpgrade": "ขออัพเดทการอัพเดท  Request Upgrade",
+    "editRequest": "ปรับปรุงการขอปรับปรุง Edit Upgrade Request"
   },
   "TransactionScreen": {
     "noTransaction": "ไม่มีธุรกรรมให้แสดง",
@@ -717,11 +1046,17 @@
     "stayInTrialMode": "Maybe later"
   },
   "SetAddressModal": {
+    "helloText": "สวัสดีครับ!",
+    "whoAreYou": "เราควรเรียกคุณว่าอะไร?",
+    "usernameHint": "นี่คือชื่อผู้ใช้ของคุณ {bankName: string}",
+    "placeholder": "กรอกชื่อผู้ใช้ของคุณ",
     "title": "Set {bankName: string} address",
+    "save": "เก็บ Save",
     "Errors": {
       "tooShort": "Username must be at least 3 characters long",
       "tooLong": "Address must be at most 50 characters long",
       "invalidCharacter": "Address can only contain letters, numbers, and underscores",
+      "startsWithNumber": "ชื่อผู้ใช้ของคุณต้องเริ่มด้วยตัวอักษรใหญ่หรือตัวเล็ก",
       "addressUnavailable": "Sorry, this address is already taken",
       "unknownError": "An unknown error occurred, please try again later"
     },
@@ -758,13 +1093,60 @@
     "tryAgain": "โปรดลองใหม่อีกครั้ง",
     "sendViaOtherChannel": "You selected to receive the code via {channel: string}. You can try receiving via {other: string} instead"
   },
+  "PhoneRegistrationInitiateScreen": {
+    "title": "ติดตั้งโทรศัพท์",
+    "header": "กรอกเบอร์โทรศัพท์ของคุณ แล้วเราจะส่งรหัสการเข้าถึง",
+    "headerVerify": "ยืนยันว่าคุณเป็นมนุษย์",
+    "errorRequestingCode": "มีบางอย่างผิดพลาดในการขอรหัสโทรศัพท์, กรุณาลองอีกครั้งในอนาคต",
+    "errorInvalidPhoneNumber": "เลขโทรศัพท์ไม่ถูกต้อง คุณแน่ใจนะว่าคุณใส่เลขที่ถูกต้องไหม?",
+    "errorUnsupportedCountry": "เราไม่สามารถสนับสนุนลูกค้าในประเทศของคุณได้",
+    "placeholder": "เบอร์โทรศัพท์",
+    "verify": "คลิกเพื่อยืนยัน",
+    "sms": "ส่งผ่าน SMS",
+    "whatsapp": "ส่งผ่าน WhatsApp "
+  },
+  "PhoneRegistrationValidateScreen": {
+    "successTitle": "เลขโทรศัพท์ที่ได้รับการยืนยัน"
+  },
+  "EmailRegistrationInitiateScreen": {
+    "title": "เพิ่มอีเมลของคุณ",
+    "header": "กรอกที่อยู่อีเมลของคุณ แล้วเราจะส่งรหัสการเข้าถึงให้คุณ",
+    "invalidEmail": "ที่อยู่อีเมลไร้สาระ คุณแน่ใจนะว่าคุณใส่อีเมลที่เหมาะสมหรือเปล่า?",
+    "send": "ส่งรหัส",
+    "missingEmailRegistrationId": "อีเมล์ที่หายไป ID ลงทะเบียน",
+    "placeholder": "hal@finney.org"
+  },
+  "EmailRegistrationValidateScreen": {
+    "header": "เพื่อยืนยันที่อยู่อีเมลของคุณ กรอกรหัสที่เราเพิ่งส่งให้กับคุณที่ {email: string}",
+    "success": "อีเมล์ {email: string} ได้รับการยืนยันสําเร็จ"
+  },
+  "EmailLoginInitiateScreen": {
+    "title": "ลงทะเบียนผ่านอีเมล",
+    "header": "กรอกที่อยู่อีเมลของคุณ แล้วเราจะส่งรหัสการเข้าถึงให้คุณ",
+    "invalidEmail": "ที่อยู่อีเมลไร้สาระ คุณแน่ใจนะว่าคุณใส่อีเมลที่เหมาะสมหรือเปล่า?",
+    "send": "ส่งรหัส"
+  },
+  "EmailLoginValidateScreen": {
+    "header": "หากมีบัญชีที่ติดต่อกับ {email: string} คุณควรได้รับรหัส 6 หลัก เพื่อใส่ด้านล่าง หากคุณไม่ได้รับอะไร อาจเป็นเพราะว่านี้ไม่ใช่อีเมลที่เหมาะสม อีเมลนั้นอยู่ในโฟลเดอร์สปามของคุณ",
+    "success": "อีเมล์ {email: string} ได้รับการยืนยันสําเร็จ"
+  },
   "common": {
+    "enabled": "Enabled",
+    "notifications": "การแจ้งความ",
+    "preferences": "Preferences  ความชอบ",
+    "onDeviceSecurity": "การรักษาความปลอดภัยในอุปกรณ์",
+    "securityAndPrivacy": "ความปลอดภัยและความเป็นส่วนตัว",
+    "advanced": " Advanced Advanced",
+    "community": "สังคม สังคม",
     "account": "บัญชี",
+    "trialAccount": "บัญชีทดลอง",
+    "flashUser": "Flash ผู้ใช้ Flash",
     "transactionLimits": "จำกัดธุรกรรม",
     "activateWallet": "เปิดใช้งานกระเป๋า",
     "amountRequired": "ต้องใส่จำนวนเงิน",
     "back": "กลับ",
     "backHome": "กลับหน้าหลัก",
+    "revealSeed": "เขียนประโยคการฟื้นฟู",
     "bank": "ธนาคาร",
     "bankAccount": "บัญชีเงินสด",
     "bankAdvice": "คำแนะนำจาก {bankName: string}",
@@ -776,12 +1158,16 @@
     "cancel": "ยกเลิก",
     "close": "ปิด",
     "confirm": "ยืนยัน",
+    "copied": "สําเนาไปยังกระดาษฉีดป้าย",
     "convert": "แลกเปลี่ยน",
+    "codeConfirmation": "รหัสการยืนยัน",
     "currency": "Currency",
     "currencySyncIssue": "Currency issue. Refresh needed",
     "csvExport": "ดาวน์โหลดประวัติธุรกรรมเป็นไฟล์ CSV",
+    "exportSparkLogs": "ลงทะเบียนส่งออก ลงทะเบียนส่งออก",
     "date": "วันที่",
     "description": "คำอธิบาย",
+    "details": "รายละเอียด รายละเอียด",
     "domain": "โดเมน",
     "email": "อีเมล",
     "error": "ผิดพลาด",
@@ -801,19 +1187,24 @@
     "loggedOut": "คุณได้ออกจากระบบแล้ว",
     "logout": "ออกจากระบบ",
     "minutes": "นาที",
+    "errorAuthToken": "เสียตัวของ auth token ",
     "needWallet": "Create an account to access your wallet",
     "next": "ต่อไป",
     "No": "ไม่",
     "note": "โน้ต",
     "notification": "การแจ้งเตือน",
     "ok": "ตกลง",
+    "or": "หรือ ",
     "openWallet": "เปิดกระเป๋า",
+    "phone": "โทรศัพท์มือถือ",
     "phoneNumber": "เบอร์โทรศัพท์",
     "rate": "ให้คะแนน",
     "reauth": "หมดเวลา โปรดล็อคอินใหม่อีกครั้ง",
+    "request": "การขอ Pin ",
     "restart": "เริ่มต้นการทำงานใหม่",
     "sats": "sats",
     "search": "ค้นหา",
+    "chatSearch": "username หรือ nostr pubkey",
     "security": "ความปลอดภัย",
     "send": "ส่ง",
     "setAnAmount": "ใส่จำนวนเงิน",
@@ -821,7 +1212,9 @@
     "shareBitcoin": "แชร์แอดเดรสบิตคอยน์",
     "shareLightning": "แชร์ Lightning Invoice",
     "soon": "เร็วๆนี้!",
+    "submit": "การส่ง รายงาน",
     "success": "สำเร็จ!",
+    "stablesatsUsd": "เงินสด (USD)",
     "to": "ถึง",
     "total": "รวม",
     "transactions": "ธุรกรรม",
@@ -841,6 +1234,28 @@
     "prevMonths": "เดือนที่ผ่านมา",
     "problemMaybeReauth": "There was a problem with your request. Please retry in one minute. If the problem persist, we recommend that you log out and log back in. You can log out by going into Settings > Account > Log out",
     "warning": "Warning"
+  },
+  "NostrQuickStart": {
+    "postHeading": "ทําโพสต์ทางสังคมครั้งแรกของคุณ!",
+    "postDesc": "เปิดตัวตัวเองให้กับโลก!"
+  },
+  "Social": {
+    "post": "โพสต์ไปยัง Nostr",
+    "postTitle": "สร้างโพสต์",
+    "flashAppCredit": "โพสต์โดยใช้ Flash!Get it @ https://getflash.io/app",
+    "writeYourNote": "เขียนข้อความของคุณ, ทําให้มันเป็นพิเศษ :) ",
+    "postButton": "โพสต์ โพสต์",
+    "notePosted": "ประสบความสําเร็จ!หมายเหตุของคุณถูกโพสต์แล้ว",
+    "errorPostFailed": "ความผิดพลาด! ความผิดพลาดในการโพสต์หมายเหตุ",
+    "errorEmptyNote": "ความผิดพลาด: หมายเหตุว่างๆ",
+    "posting": "การโพสต์...",
+    "viewOnIris": "ดูใน iris.to",
+    "viewPostQuestion": "คุณต้องการดูโพสต์ของคุณเกี่ยวกับ iris.to ไหม?",
+    "browseSocialFeed": "บราว์ซ์ฟีดโซเชียล",
+    "socialFeedTitle": "ฟีดโซเชียล",
+    "postSuccessTitle": "โพสต์แบ่งปัน!",
+    "postSuccessSubtitle": "Your post has been published to Nostr โพสต์ของคุณถูกเผยแพร่ไปยัง Nostr",
+    "showMeMore": "แสดงให้ฉันเห็นเพิ่มเติม"
   },
   "errors": {
     "generic": "มีขความผิดพลาดเกิดขึ้น\nโปรดลองอีกครั้งในภายหลัง",
@@ -865,13 +1280,28 @@
       "title": "ได้รับเงินแล้ว"
     }
   },
+  "reports": {
+    "title": "สร้างรายงาน",
+    "reconciliation": "รายงานประนีประนอม",
+    "aggregation": "รายงานการประกอบการ",
+    "topRecipients": "รายงานผู้รับรายการชั้นนํา",
+    "topSenders": "รายงานของ Senders Report รายงานของ Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report รายงานของ Top Senders Report",
+    "selectFromDate": "เลือกจากวันที่",
+    "selectToDate": "เลือกวันที่ตั้งค่า",
+    "fromDate": "จาก  จาก",
+    "toDate": "ไปยัง  ไปยัง ",
+    "total": "รวมทั้งสิ้น"
+  },
   "support": {
     "contactUs": "Need help? Contact us.",
     "joinTheCommunity": "Join the community",
     "whatsapp": "WhatsApp",
     "email": "อีเมล",
+    "enjoyingApp": "เพลิดเพลินกับแอพลิเคชั่นเหรอ?",
     "statusPage": "Status Page",
+    "discord": "Discord ลงทะเบียนฟรี",
     "mattermost": "Mattermost",
+    "thankYouText": "ขอบคุณสําหรับความคิดเห็น คุณอยากจะแนะนําการปรับปรุงบ้างไหม?",
     "defaultEmailSubject": "{bankName: string} - Support",
     "defaultSupportMessage": "Hey there! I need some help with {bankName: string}, I'm using the version {version: string} on {os: string}.",
     "emailCopied": "email {email: string} ปยังคลิปบอร์ดแล้ว",
@@ -884,7 +1314,8 @@
     "deleteAccountConfirmation": "Your account has been written for deletion.\n\nWhen the probation period related to regulatory requirement is over, the remaining data related to your account will be permanently deleted.",
     "deleteAccountFromPhone": "Hey there!, please delete my account. My phone number is {phoneNumber: string}.",
     "deleteAccountError": "Something went wrong. Contact {email: string} for further assistance.",
-    "bye": "Bye!"
+    "bye": "Bye!",
+    "switchToBeginnerMode": "โดยการเปลี่ยนไปสู่โหมดผู้เริ่มต้น คุณจะไม่สูญเสียการเข้าถึงทุนกระเป๋าเป้ BTC ของคุณ แต่กระเป๋าเป้จะซ่อนอยู่ คุณสามารถเปลี่ยนไปยังโหมดยอดเยี่ยมอีกครั้งได้ตลอดเวลา คุณแน่ใจไหมว่าคุณต้องการที่จะดําเนินการต่อไป?"
   },
   "lnurl": {
     "overLimit": "คุณไม่สามารถส่งเงินได้เกินกว่านี้",
@@ -902,7 +1333,9 @@
     "minAmountNotMet": "Amount must be at least {minAmount: string}."
   },
   "AmountInputButton": {
-    "tapToSetAmount": "Add an amount"
+    "tapToSetAmount": "Add an amount",
+    "tapToSetOnChainAmount": "เติมเงินไทยฟรี เติมเงินไทยฟรี เติมเงินไทยฟรี เติมเงินไทยฟรี เติมเงินไทยฟรี",
+    "enterAmount": "กรุณาบันทึกจํานวนเงิน เพื่อดําเนินการต่อไป"
   },
   "AppUpdate": {
     "needToUpdateSupportMessage": "I need to update my app to the latest version. I'm using the {os: string} app with version {version: string}.",
@@ -910,5 +1343,149 @@
     "updateMandatory": "Update is mandatory",
     "tapHereUpdate": "Tap here to update now",
     "contactSupport": "Contact Support"
+  },
+  "RefundFlow": {
+    "refundListTitle": "เงินฝากที่ไม่ได้รับการสรรหา",
+    "depositDetails": "รายละเอียดการฝากเงิน",
+    "refundTitle": "การคืนเงินฝาก",
+    "destinationTitle": "จุดหมายปลายทาง",
+    "confirmationTitle": "การยืนยัน",
+    "pendingTransactions": "การซื้อขายที่รออยู่",
+    "noRefundables": "ไม่มียอดฝากที่ไม่ได้รับประกาศพบ",
+    "view": "View View",
+    "refund": "เงินคืนเงิน",
+    "refundTo": "ยืนยันเงินไปยังกระเป๋าเงิน USD ",
+    "recommendedFees": "ค่าธรรมเนียมที่แนะนํา",
+    "fast": "เร็วๆ เร็วๆ เร็วๆ",
+    "medium": "ปานกลาง",
+    "slow": "เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด เกลียด",
+    "txId": "ID การซื้อขาย",
+    "refunded": "ยืนยันเงิน",
+    "pending": "รอรับการดําเนินงาน",
+    "autoClaiming": "การโอนเงินนี้จะเรียกร้องโดยอัตโนมัติ",
+    "approvalRequired": "ต้องการอนุมัติ",
+    "broadcasting": "การออกอากาศ",
+    "feeExceeded": "ค่าบริการสูงเกินไป",
+    "claimFailed": "การอ้างอิงล้มเหลว",
+    "automaticClaim": "เงินฝากนี้จะถอยอัตโนมัติเมื่อค่าบริการเครือข่ายต่ํากว่า",
+    "approveFee": "ยอมรับการเรียกร้องการโอนเงินครั้งนี้ หรือปฏิเสธการรับเงินคืนเงิน",
+    "enterAddress": "กรอกที่อยู่ Bitcoin ที่คุณต้องการรับเงินคืนเงิน",
+    "selectFee": "เลือกค่าบริการเครือข่ายสําหรับการคืนเงินของคุณ",
+    "confirmRefund": "ยืนยันและคืนเงิน",
+    "processing": "ยืนยันค่าใช้จ่ายในการแปรรูปการแปรรูป...",
+    "success": "เงินคืนการออกอากาศ",
+    "refundSuccess": "การคืนเงินของคุณถูกส่งไปยังเครือข่าย Bitcoin",
+    "refundFailed": "การคืนเงินที่ล้มเหลว",
+    "failedToClaim": "ไม่สามารถเรียกร้องการฝากเงินได้",
+    "unknownError": "เกิดความผิดพลาดที่ไม่ทราบกัน",
+    "missingUtxo": "เงินฝาก UTXO หายไป ธุรกิจอาจยังไม่ได้รับการยืนยัน",
+    "couldNotClaimAutomatically": "เงินฝากนี้ไม่สามารถเรียกได้โดยอัตโนมัติ",
+    "networkFee": "ค่าเครือข่ายเครือข่าย",
+    "networkFeeWithRate": "ค่าเครือข่าย ({feeRate: string} sat/vB)",
+    "youReceive": "คุณได้รับ",
+    "approve": "อนุมัติ",
+    "refundToExternalWallet": "คุณสามารถคืนเงินไปยังกระเป๋าเปลือกภายนอกได้",
+    "enterDestinationAddress": "กรุณาใส่ที่อยู่ที่หมายปลายทาง",
+    "invalidBitcoinAddress": "รูปแบบที่จดหมาย Bitcoin ผิดกฎหมาย",
+    "estimatedFee": "เงินเครือข่าย ({feeRate: string} sat/vB)",
+    "estimatedReceive": "อีสต์ คุณได้รับ",
+    "feeEstimateDisclaimer": "ค่าธรรมเนียมถูกประเมิน ค่าธรรมเนียมจริงจะถูกคํานวณตอนถ่ายทอด"
+  },
+  "Nostr": {
+    "editProfile": "ปรับปรุงรายละเอียด Profile ",
+    "importNsecTitle": "นําเข้ากุญแจ Nostr Secret ของคุณ",
+    "importNsecDefaultDescription": "คุณเข้าใช้งานในอุปกรณ์อื่น โปรดนําเข้า nsec ของคุณจากอุปกรณ์อื่น ๆ เพื่อที่จะใช้ฟังก์ชันการแชทต่อไป",
+    "createProfileTitle": "สร้างรายละเอียด Profile",
+    "createProfileWarning": "หากคุณดําเนินการต่อไป, ข้อมูลโปรไฟล์ที่มีอยู่ทั้งหมดจะถูก overwritten.",
+    "createProfilePubkeyMessage": "เราไม่สามารถหาเหตุการณ์รายละเอียดที่เกี่ยวข้องกับ pubkey นี้ได้",
+    "createProfilePrompt": "คุณต้องการที่จะต่อเนื่องสร้างสรรค์หรือไม่?",
+    "createProfileButton": "สร้างรายละเอียด Profile",
+    "profileNotFound": "เรากําลังมองหา แต่เรายังไม่สามารถพบโปรไฟล์ของคุณได้",
+    "promptToCreateProfile": "คุณอยากจะสร้างชิ้นหนึ่งในขณะนี้ไหม?",
+    "learnAboutNostr": "เรียนรู้เกี่ยวกับ Nostr",
+    "learnAboutNostrSubtext": "ตรวจสอบแนวทางนี้เพื่อให้ได้ประโยชน์จาก nostr chat ",
+    "showPublicKey": "แสดงกุญแจสาธารณะ",
+    "showPrivateKey": "แสดงกุญแจส่วนตัว",
+    "profileConnected": "Profile Connected",
+    "reconnectProfile": "ติดต่อใหม่ Profile ",
+    "tapToRefreshConnection": "แท๊ปเพื่ออํานวยความสะดวกต่อการเชื่อมต่อ",
+    "importExistingProfile": "นําเข้าโปรไฟล์ที่มีอยู่ปัจจุบัน",
+    "deleteProfile": "ยกโปรไฟล์ Delete profile ",
+    "noProfileIdExists": "ไม่มีโปรไฟล์ ID มีอยู่",
+    "profileReconnected": "โปรไฟล์ของคุณได้รับการเชื่อมต่อใหม่อย่างสําเร็จ",
+    "deleteWarningTitle": "เตือนเตือน",
+    "deleteWarningMessage": "การลบกุญแจโปรไฟล์ของคุณ จะลบบัญชีของคุณจากอุปกรณ์นี้ โดยไม่มีการสํารอง คุณจะไม่สามารถเข้าถึงโปรไฟล์นี้ได้อีกครั้ง คุณแน่ใจไหม?",
+    "importNsecDescription": "หากคุณต้องการใช้ nsec ของตัวเอง โปรดติดตามด้านล่าง",
+    "profileImportedSuccessfully": "โปรไฟล์นําเข้าสําเร็จ",
+    "noProfileFound": "ไม่มีโครงการ Nostr Profile Found",
+    "noProfileDescription": "คุณยังไม่ได้สร้างโปรไฟล์ Nostr ครับ กดด้านล่างเพื่อสร้างโปรไฟล์ Nostr ครับ",
+    "keyConflictTitle": "Nostr Key Not Found บนอุปกรณ์",
+    "keyConflictDescription": "บัญชีของคุณมีกุญแจ Nostr ที่ลงทะเบียน แต่ไม่ได้พบในอุปกรณ์นี้ นี่อาจเกิดขึ้นหลังจากติดตั้งใหม่แอพ หรือเปลี่ยนอุปกรณ์ เพื่อฟื้นฟูการเข้าใช้งาน นําเข้าสํารอง nsec จาก Advanced Settings",
+    "creatingProfile": "การสร้างโปรไฟล์...",
+    "createNewProfile": "สร้างโปรไฟล์ใหม่",
+    "generateProfile": "Generate Profile ครับ",
+    "findingYou": "ค้นหาคุณ..",
+    "advancedSettings": "Nostr Settings Advanced ครับ",
+    "KeyModal": {
+      "yourPublicProfileId": "บันทึกประชาชนของคุณ ID Profile",
+      "yourPrivateProfileKey": "คีย์โปรไฟล์ส่วนตัวของคุณ",
+      "keyCopiedToClipboard": "Key copied to clipboard ครับ"
+    },
+    "Contacts": {
+      "stillLoading": "มีปัญหาในการหารายการติดต่อของคุณ คุณเคยติดตามใครบ้างไหม?",
+      "noCantacts": "ไม่มีสมาชิกที่สามารถติดต่อได้",
+      "profile": "รายละเอียด Profile",
+      "nostrUser": "Nostr User ลงทะเบียนฟรี",
+      "message": "ข้อความ Message",
+      "sendPayment": "ส่ง  ส่ง",
+      "contactInfo": "ข้อมูลการติดต่อ",
+      "contactManagement": "การจัดการติดต่อ",
+      "unfollowContact": "ติดต่อไม่ติดตาม",
+      "noListDeepLinkMessage": "เราหารายการติดต่อของคุณไม่ได้ เพื่อเพิ่มเพื่อน คุณจําเป็นต้องเริ่มต้นรายการติดต่อของคุณใน Settings ก่อน",
+      "manageContacts": "การจัดการติดต่อ",
+      "createContactList": "รายการติดต่อ  สร้าง Create Contact List"
+    },
+    "common": {
+      "copy": "Copy Copy",
+      "copied": "คopied",
+      "goToSettings": "ไปยังการตั้งค่า"
+    }
+  },
+  "AccountUpgrade": {
+    "accountType": "ประเภทบัญชี",
+    "personal": "รายละเอียดส่วนตัว",
+    "personalDesc": "ปลอดภัยกระเป๋าเปลือกของคุณด้วยโทรศัพท์และอีเมล ปลอดภัยและฟื้นฟูได้อย่างง่ายดายถ้าต้องการ",
+    "pro": "โปร โปร",
+    "proDesc": "ยอมรับการชําระเงินและได้รับการค้นพบบนแผนที่ จําเป็นต้องมีชื่อและสถานที่ของธุรกิจ",
+    "merchant": "นักค้า",
+    "merchantDesc": "แจกรางวัล ปรากฏบนแผนที่ และชําระเงินกับธนาคารของคุณ จําเป็นต้องมีบัตรประชาชนและข้อมูลธนาคาร",
+    "personalInfo": "ข้อมูลส่วนตัว",
+    "fullName": "ชื่อเต็ม",
+    "phoneNumber": "เบอร์โทรศัพท์",
+    "email": "ที่อยู่อีเมล",
+    "optional": "(ทางเลือก) ",
+    "validation": "การยืนยัน",
+    "validationCode": "รหัสการยืนยัน",
+    "businessInfo": "ข้อมูลธุรกิจ",
+    "businessName": "ชื่อธุรกิจ",
+    "businessNamePlaceholder": "กรอกชื่อธุรกิจของคุณ",
+    "businessAddress": "ที่อยู่ธุรกิจ",
+    "businessAddressPlaceholder": "กรอกที่อยู่ทางธุรกิจของคุณ",
+    "flashTerminal": "คุณต้องการเครื่อง Flash?",
+    "flashTerminalTooltip": "Flash Terminal เป็นอุปกรณ์ฉลาดที่สามารถยอมรับการชําระเงินผ่าน Flash สําหรับธุรกิจและการพิมพ์ใบรับสินค้าของคุณ โดยตัวแทนบริการลูกค้าจะติดต่อกับคุณ หากคุณเช็คกล่องนี้",
+    "bankingInfo": "ข้อมูลทางธนาคาร",
+    "bankName": "ชื่อธนาคาร",
+    "bankNamePlaceholder": "เลือกชื่อธนาคารของคุณ",
+    "bankBranch": "สาขาธนาคาร",
+    "bankBranchPlaceholder": "กรอกทางสาขาธนาคารของคุณ",
+    "bankAccountType": "ประเภทบัญชี",
+    "selectBankAccountType": "เลือกประเภทบัญชี",
+    "currency": "เงินการเงิน",
+    "selectCurrency": "เลือกเงิน",
+    "accountNum": "เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี",
+    "accountNumPlaceholder": "กรอกหมายเลขบัญชีของคุณ",
+    "uploadId": "อัพโหลด ID Document",
+    "successUpgrade": "คุณได้ปรับปรุงบัญชีของคุณเป็น {accountType: string} ได้สําเร็จ",
+    "successRequest": "คุณขอให้อัพเกรดบัญชีของคุณเป็น {accountType: string} ได้สําเร็จ"
   }
 }

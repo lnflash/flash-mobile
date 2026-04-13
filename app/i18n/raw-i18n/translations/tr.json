@@ -2,6 +2,7 @@
   "GaloyAddressScreen": {
     "title": "Şunu kullanarak ödeme alın:",
     "buttonTitle": "Adresinizi belirleyin",
+    "yourLightningAddress": "Lightning adresiniz",
     "yourAddress": "Senin {bankName: string} adresin",
     "notAbleToChange": "Adresin ayarlandıktan sonra {bankName: string} bir daha değiştirilemeyecek.",
     "addressNotAvailable": "Bu {bankName: string} adres zaten alınmış.",
@@ -9,6 +10,7 @@
     "merchantTitle": "Tüccarlar için",
     "yourCashRegister": "Lightning Yazar Kasanız",
     "yourPaycode": "Ödeme kodun",
+    "copiedLightningAddressToClipboard": "Clipboard'a Lightning adresini kopyaladı",
     "copiedAddressToClipboard": "Adres {bankName: string} panoya kopyalandı",
     "copiedPaycodeToClipboard": "Ödeme kodun panoya kopyalandı",
     "copiedCashRegisterLinkToClipboard": "Yazar Kasa Bağlantısı panoya kopyalandı",
@@ -46,6 +48,37 @@
   "ContactDetailsScreen": {
     "title": "{username: string} ile olan işlemler"
   },
+  "ChatScreen": {
+    "noChatsTitle": "Hiç sohbet bulunamadı",
+    "noChatsYet": "Bir sohbet başlatmak için bir Flash kullanıcı adını veya nostr pubkey'i girin",
+    "noMatchingChats": "Aramalarınızla eşleşen sohbetler bulunamadı.",
+    "title": "Chat  Chat "
+  },
+  "ChatDetailsScreen": {
+    "title": "{username: string} ile sohbet edin"
+  },
+  "CardScreen": {
+    "noCardsTitle": "Hiçbir kart bulunamadı",
+    "noCardsYet": "Burada eklemek için bir Flashcard'e dokunun",
+    "noMatchingCards": "Aramalarınızla eşleşen hiçbir kart bulunamadı.",
+    "title": "Flashcard",
+    "notFlashcard": "Desteklenmeyen NFC kartı. Lütfen bir flaş kartı kullandığınızdan emin olun.",
+    "noNDEFMessage": "NDEF mesajı bulunamadı. Lütfen bir flaş kartı kullandığınızdan emin olun.",
+    "notSupported": "NFC bu cihazda desteklenmiyor.",
+    "notEnabled": "NFC bu cihazda etkinleştirilmemiştir.",
+    "noTag": "Hiçbir etiket bulunamadı. Lütfen bir flaş kartı kullandığınızdan emin olun."
+  },
+  "Cashout": {
+    "title": "Settle",
+    "percentageToCashout": " % to settle % to settle % to settle % to settle % to settle % to settle % to settle % to settle % to settle % to settle % to settle % to settle % to settle",
+    "valid": "{time: string} için geçerlidir",
+    "exchangeRate": "Değişim oranı ",
+    "sendAmount": "Gönderme miktarı",
+    "receiveAmount": "Alım miktarı",
+    "fee": "Fee Fee",
+    "success": "Yatırım talebi başarılı bir şekilde başlatıldı.",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
+  },
   "ConversionDetailsScreen": {
     "title": "Çevir",
     "percentageToConvert": "Çevirmek için % seç"
@@ -53,7 +86,9 @@
   "ConversionConfirmationScreen": {
     "title": "Çevirmeyi incele",
     "youreConverting": "Çeviriliyor",
-    "receivingAccount": "Alınacak miktar"
+    "sendingAccount": "Gönderme hesabı",
+    "receivingAccount": "Alınacak miktar",
+    "conversionFee": "Değişiklik Ödemesi Ödülü"
   },
   "ConversionSuccessScreen": {
     "title": "Çevirme başarısı",
@@ -430,6 +465,10 @@
   },
   "GetStartedScreen": {
     "logInCreateAccount": "Giriş yap / hesap oluştur",
+    "quickStart": "Başlangıç  Başlangıç  Başlangıç",
+    "restoreWallet": "Login",
+    "exploreWalletInstead": "Bunun yerine cüzdanı keşfedin",
+    "setupBusinessAccount": "İşletme hesabı oluşturun",
     "createAccount": "Yeni bir hesap oluştur",
     "exploreWallet": "Cüzdanı keşfet",
     "logBackInWith": "Şununla tekrar giriş yap",
@@ -444,7 +483,8 @@
       "noBackup": "Yedekleme imkanı bulunmuyor",
       "sendingLimit": "Günlük gönderim limitinin kısaltılması",
       "noOnchain": "Zincir üzerinde bitcoin alımı yok"
-    }
+    },
+    "chooseAccountType": "Hesap Tipini Seçin"
   },
   "MapScreen": {
     "locationPermissionMessage": "Haritada nerede olduğunu görebilmemiz için konum servislerini aktifleştir",
@@ -453,16 +493,48 @@
     "locationPermissionPositive": "Tamam",
     "locationPermissionTitle": "Kendini haritada göster",
     "payBusiness": "bu işletmeye öde",
-    "title": "Harita"
+    "title": "Harita",
+    "addPin": "Bir pin eklemek için herhangi bir yere tıklayın",
+    "selectedCoordinates": "Flashpoint Koordinatlarınız: ",
+    "viewInGoogleMaps": "Google Haritaları'nda görünüm",
+    "getDirections": "Yönlendirmeler  Get Directions"
   },
   "HomeScreen": {
+    "cashout": "Nakit Çıkışı",
     "receive": "Al",
+    "reload": "Reload Card ",
+    "balance": "Refresh Balance ",
+    "showQrCode": "Topup üzerinden QR",
     "send": "Gönder",
+    "sweep": "Cüzdanı karıştır ",
+    "pay": "Ödeme  Ödeme ",
     "title": "Ev",
     "scan": "Tara",
     "updateAvailable": "Bir güncelleme mevcut\nGüncellemek için dokun",
     "useLightning": "Lightning ağını kullanıyoruz. ",
-    "myAccounts": "Hesabım"
+    "myAccounts": "Hesabım",
+    "unclaimedDepositsWarning": "️ P l e a s e c o m p l e t e o r claim a l l unclaimed deposits b e f o r e n i n s t a l i n g F l a s o r unclaimed deposits w i l l l b e l o s t .",
+    "unclaimedDeposits": "İddia edilmeyen Para Yatırımları",
+    "cash": "Nakit  Nakit",
+    "bitcoin": "Bitcoin",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Add",
+    "upgradeTitle": "Hesabınızı yükseltin",
+    "upgradeTitlePending": "Uygulama talebi beklenmektedir",
+    "upgradeDesc": "Görselliği, limitleri ve ödemelerini artırmak için yükselt.",
+    "upgradePendingDesc": "Hesap yükseltme talebiniz gözden geçiriliyor.",
+    "currencyTitle": "Yerel para birimine değişin",
+    "currencyDesc": "Kullanılabilir para birimi listesini inceleyin ve para birimini seçin.",
+    "flashcardTitle": "Bir Flashcard alın",
+    "flashcardDesc": "Bir Flashpoint bulun ve günlük yaşamda kullanabileceğiniz bir Flashcard alın.",
+    "nonCustodialWalletTitle": "Koruma dışı cüzdanlar",
+    "nonCustodialWalletDesc": "Koruma dışı cüzdanlar hakkında daha fazla bilgi edinin.",
+    "emailTitle": "E-posta adresi",
+    "emailDesc": "Hesabınızı güvence altına almak ve e-posta adresini kullanarak giriş yapmak için e-posta adresinizi ekleyin.",
+    "btcWalletTitle": "BTC cüzdanı etkinleştirin",
+    "btcWalletDesc": "Bitcoin'de daha büyük miktarlar kolayca aktarılır.",
+    "backupTitle": "BTC cüzdanınızı yedekleyin",
+    "backupDesc": "Recovery phrase kullanılarak Bitcoin cüzdanınızı yedekleyin ve koruyun."
   },
   "PinScreen": {
     "attemptsRemaining": "Yanlış PIN kodu. Kalan deneme hakkınız: {attemptsRemaining: number}",
@@ -490,6 +562,7 @@
     "title": "Ev"
   },
   "ReceiveScreen": {
+    "flashcardInstructions": "QR kodunu tarayın veya whatsapp, e-posta vb'de paylaşmak için simgeyi tıklayın.",
     "nfc": "NFC",
     "enterAmountFirst": "Please enter an amount first",
     "activateNotifications": "Ödeme geldiğinde haberdar olmak için bildirimleri açmak istiyor musunuz?",
@@ -538,11 +611,16 @@
     },
     "invoiceHasBeenPaid": "Fatura ödendi",
     "yourBitcoinOnChainAddress": "Bitcoin Onchain Adresin",
+    "receive": "Alım  Alım ",
     "receiveViaInvoice": "Lightning aracılığı ile al",
     "receiveViaPaycode": "Ödeme Kodu ile al",
+    "topupFlashcard": "Topup Flashcard",
     "receiveViaOnchain": "Onchain ile al",
     "payCodeOrLNURL": "Ödeme Kodu / LNURL",
-    "initialDeposit": "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee."
+    "cantReceiveZeroSats": "Bir sıfır sats alamazsınız. Lütfen 1 veya daha fazla sats'e karşılık gelen bir miktar girin.",
+    "initialDeposit": "* Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee.",
+    "selectPaymentMethod": "Ödeme yöntemi seçin",
+    "selectWallet": "Cüzdanı seçin"
   },
   "RedeemBitcoinScreen": {
     "title": "Bitcoin olarak kullan",
@@ -561,7 +639,12 @@
     "invalidTitle": "Geçersiz QR kodu",
     "noQrCode": "Görselde QR kodu bulamadık",
     "title": "QR Kodunu Tara",
-    "invalidContentLnurl": "Şunu bulduk:\n\n{found: string}\n\nşu anda desteklenmiyor"
+    "permissionCamera": "Fotoğraf makinenizi kullanmak için izin almamız gerekiyor.",
+    "noCamera": "Hiçbir kamera bulunamadı",
+    "openSettings": "Açık Ayarlar  Açık Ayarlar ",
+    "unableToOpenSettings": "Ayarları açamadı",
+    "invalidContentLnurl": "Şunu bulduk:\n\n{found: string}\n\nşu anda desteklenmiyor",
+    "imageLibraryPermissionsNotGranted": "Resim kütüphanesine erişmek için izinlerimiz yok. Lütfen platformunuzun uygulama ayarlarını kontrol edin."
   },
   "SecurityScreen": {
     "biometricDescription": "Parmak izi veya yüz tanıma kullanarak kilidi aç. ",
@@ -572,7 +655,8 @@
     "hideBalanceTitle": "Bakiyeyi Gizle",
     "pinDescription": "PIN, biyometrik kimlik doğrulama için yedek kimlik doğrulama yöntemi olarak kullanılır.",
     "pinTitle": "PIN Kodu",
-    "setPin": "PIN ayarla"
+    "setPin": "PIN ayarla",
+    "backupDescription": "Bir PIN kodu ayarlamak için, lütfen bir telefon numarası ekleyerek hesabınızı yedekleyin."
   },
   "SendBitcoinConfirmationScreen": {
     "amountLabel": "Miktar:",
@@ -614,12 +698,17 @@
       "body3": "Aksi takdirde, para bir {bankName: string} adresine gidecektir. \"{lnAddress: string}\" adresine sahip hesap.\n\nAdresin ilk kısmının yazılışını da kontrol edin. örneğin jackie ve jack1e 2 farklı adrestir",
       "warning": "Eğer {bankName: string} adresi yanlış girilirse, {bankName: string} işlemi geri alamaz.",
       "checkBox": "{lnAddress: string} doğru adres. ",
-      "confirmButton": "%100 eminim"
+      "confirmButton": "%100 eminim",
+      "externalWarning": "{bankName: string} hesabı olmayan birine para göndermek üzere olduğunuzda, göndermek istediğiniz adresin bu olduğundan emin misiniz?",
+      "externalCheckBox": "{address: string}'e gönderilmesini onaylıyorum."
     },
     "clipboardError": "Panodan değeri alırken sorun yaşandı"
   },
   "SendBitcoinScreen": {
     "amount": "Miktar",
+    "MinOnChainLimit": "Bu işlem için en az miktar 2.00 ABD Doları'dır.",
+    "MinOnChainSatLimit": "Bu işlem için en az miktar 5,500 sats'dir.",
+    "MinFlashcardLimit": "Flashcard'dan yeniden yüklendiğinde minimum miktar 100 sats'dir.",
     "amountExceed": "Göndermek istediğin miktar, bakiyenin {balance: string} üstünde.",
     "amountExceedsLimit": "Tutar, kalan günlük {limit: string} limitinizi aşıyor",
     "upgradeAccountToIncreaseLimit": "Limitinizi artırmak için hesabınızı yükseltin",
@@ -639,11 +728,25 @@
     "max": "En Fazla",
     "maxAmount": "En Fazla Miktar",
     "title": "Bitcoin Gönder",
+    "send": "Gönder  Gönder ",
     "failedToFetchLnurlInvoice": "LnUrl adresini alırken hata oluştu. ",
     "lnurlInvoiceIncorrectAmount": "lnurl sunucusu yanlış tutarlı bir fatura ile yanıt verdi.",
-    "lnurlInvoiceIncorrectDescription": "Lnurl sunucusu yanlış bir açıklama karmasına sahip bir fatura ile yanıt verdi."
+    "lnurlInvoiceIncorrectDescription": "Lnurl sunucusu yanlış bir açıklama karmasına sahip bir fatura ile yanıt verdi.",
+    "noAmountInvoiceError": "BTC cüzdanında herhangi bir fatura miktarı desteklenmiyor. Lütfen geri dönüp tarayın veya eklenen bir miktarla bir fatura girin.",
+    "onchainMinAmountInvoiceError": "Girdiğiniz miktar, zincir üzerindeki bir işlem {amount: number} göndermek için gerekli olan minimum miktardan daha azdır. Lütfen bu miktarı Lightning üzerinden göndermeyi düşünün!",
+    "minAmountInvoiceError": "Faturadaki miktar en az {amount: number}'den daha azdır.",
+    "maxAmountInvoiceError": "Faturadaki miktar, maksimum {amount: number}'den büyüktür.",
+    "minAmountConvertError": "Değişiklik miktarı en az gerekli miktardan daha azdır {amount: number}",
+    "maxAmountConvertError": "Değişiklik miktarı maksimum miktarı {amount: number}'den büyüktür."
   },
   "SettingsScreen": {
+    "staticQr": "Yazdırılabilir Statik QR Code",
+    "staticQrCopied": "Statik QR kodu bağlantınız kopyalandı",
+    "setByOs": "OS tarafından ayarlanmıştır",
+    "apiAcess": "Access API'si",
+    "pos": "Satış Noktası",
+    "posCopied": "Satış noktasınız bağlantısı kopyalandı",
+    "setYourLightningAddress": "Kullanıcı Adınızı Ayarlayın",
     "activated": "Aktive edildi",
     "addressScreen": "Ödeme alma yolları",
     "tapUserName": "Kullanıcı adını ayarlamak için tıkla",
@@ -665,7 +768,16 @@
     "nfcOnlyReceive": "Şimdilik, sadece NFC hazır olduğunda ödeme al",
     "nfcScanNow": "Şimdi NFC'yi Tara",
     "nfcNotSupported": "NFC bu cihazda desteklenmiyor",
-    "logInOrCreateAccount": "Giriş yap ya da hesap oluştur"
+    "logInOrCreateAccount": "Giriş yap ya da hesap oluştur",
+    "backup": "Destekleme  Destekleme ",
+    "importWallet": "Cüzdanı İçe Aktar ",
+    "showSeedPhrase": "Reveal recovery phrase",
+    "showNostrSecret": "Çat Ayarları ",
+    "beginnerMode": "Bitcoin Hesabını Engelle",
+    "advanceMode": "Bitcoin Hesabını (Gelişmiş Mod) etkinleştirin",
+    "keysManagement": "Cüzdan yedekleme",
+    "showBtcAccount": "Bitcoin hesabını göster",
+    "hideBtcAccount": "Bitcoin hesabını gizleyin"
   },
   "NotificationSettingsScreen": {
     "title": "Bildirim Ayarları",
@@ -690,6 +802,15 @@
     }
   },
   "AccountScreen": {
+    "fundsMoreThan5Dollars": "Hesabınızda 5 dolardan fazla paranız var.",
+    "itsATrialAccount": "Deneme hesaplarında işlem sınırları azalmıştır ve kurtarma yöntemi yoktur.Eğer telefonunuzu kaybederseniz veya uygulamayı kaldırırsanız, paranız geri alınamayacaktır.",
+    "accountBeingDeleted": "Hesabınız siliniyor, lütfen bekleyin...",
+    "dangerZone": "Tehlike Bölgesi ",
+    "phoneDeletedSuccessfully": "Telefon başarıyla silindi",
+    "phoneNumber": "Telefon numarası ",
+    "tapToAddPhoneNumber": "Telefon numarasını eklemek için basın.",
+    "loginMethods": "Giriş yöntemleri",
+    "level": "{level: string} seviyesi",
     "accountLevel": "Hesap Seviyesi",
     "upgrade": "Hesabını güncelle",
     "logOutAndDeleteLocalData": "Çıkış yap ve yerel tüm dosyaları sil",
@@ -702,6 +823,11 @@
     "btcBalanceWarning": "Bitcoin bakiyeniz {balance: string}.",
     "secureYourAccount": "Hesabınızı korumak almak için kaydolun",
     "tapToAdd": "Eklemek için dokunun",
+    "tapToAddEmail": "E-posta eklemek için basın ",
+    "unverifiedEmail": "E-posta (anlatılmamış) ",
+    "email": "E-posta ",
+    "emailDeletedSuccessfully": "E-posta başarıyla silindi",
+    "unverifiedEmailAdvice": "Doğrulanmamış e-postalar giriş için kullanılamaz.E-posta adresinizi yeniden doğrultmalısınız.",
     "deleteEmailPromptTitle": "E-posta'yı sil",
     "deleteEmailPromptContent": "E-posta adresinizi silmek istediğinizden emin misiniz? Sadece telefon numaranızla tekrar giriş yapabileceksiniz.",
     "deletePhonePromptTitle": "Telefonu sil",
@@ -720,7 +846,11 @@
     "totp": "İki aşamalı doğrulama",
     "totpDeactivated": "İki aşamalı doğrulama kapatıldı",
     "totpDeleteAlertTitle": "İki aşamalı doğrulamayı sil",
-    "totpDeleteAlertContent": "İki aşamalı doğrulamanızı silmek istediğinize emin misiniz?"
+    "totpDeleteAlertContent": "İki aşamalı doğrulamanızı silmek istediğinize emin misiniz?",
+    "copiedAccountId": "Hesap kimliğinizi clipboard'a kopyaladınız",
+    "yourAccountId": "Hesap Kimliğiniz",
+    "accountId": "Hesap Kimliği ",
+    "copy": "Copy Copy"
   },
   "TotpRegistrationInitiateScreen": {
     "title": "İki aşamalı doğrulama",
@@ -735,6 +865,74 @@
     "title": "İki aşamalı doğrulama",
     "content": "Oturum açmak için kimlik doğrulayıcı uygulamanızdaki 6 haneli kodu girin. Bu kod her 30 saniyede bir değişir."
   },
+  "BackupOptions": {
+    "title": "yedekleme seçenekleri",
+    "recoveryPhrase": "Recovery Phrase",
+    "recoveryPhraseDesc": "Bitcoin Cüzdanı yedekleme recovery phrase kullanılarak yedeklenir.",
+    "revealRecoveryPhrase": "Reveal Recovery Phrase ",
+    "revealRecoveryPhraseDesc": "Bitcoin Cüzdanı ithal etmek için kurtarma cümlesinizi kullanın.",
+    "phone": "Telefon  Telefon ",
+    "phoneDesc": "Telefon numarasını kullanarak yedek nakit cüzdanı",
+    "usePhoneNumber": "Telefon numaranızı kullanarak nakit cüzdanı ithal edebilirsiniz.",
+    "done": "                                                                                                                                                                "
+  },
+  "BackupStart": {
+    "title": "Öncelikle, kurtarma cümlenizi yaratalım",
+    "description": "Bir kurtarma cümlesi, belirli bir sırada 12 kelimeden oluşan bir dizi sözcüktür.Bu kelime kombinasyonu cüzdanınıza özgüdür.",
+    "continue": " Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et "
+  },
+  "BackupSeedPhrase": {
+    "title": "Bu senin iyileşme cümlesin",
+    "description": "Burada gösterildiği gibi yazın, bunu daha sonra doğrulamanız gerekiyor.",
+    "backupToICloud": "iCloud'e yedekleme",
+    "backupToGoogleDrive": "Google Drive'e yedekleme",
+    "verify": "Verify"
+  },
+  "BackupDoubleCheck": {
+    "title": "Hadi iki kez kontrol edelim",
+    "description1": "Şimdi, kurtarma cümlesini doğru yazdığınıza emin olalım.",
+    "description2": "Evet, bu kadar önemli.",
+    "continue": " Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et "
+  },
+  "BackupVerify": {
+    "title": "Sözcükleri doğru sırada tıklayın.",
+    "correctTitle": "Tam bir şekilde kurtarma cümlesini güvenli bir şekilde sakladığınızdan emin olun.",
+    "wrongTitle": "Üzgünüm, bu doğru üçüncü kelime değil.",
+    "tryAgain": "Yeniden deneyin",
+    "continue": " Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et  Devam et "
+  },
+  "BackupComplete": {
+    "title": "Destek yedeklemeniz tamamlandı",
+    "description": "Artık kurtarma ifadesini ve şifrenizi gelecekteki referans için yazmalısınız.",
+    "complete": "Complete Complete"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "Bu senin iyileşme cümlesin",
+    "description": "Burada gösterildiği gibi yazın, cüzdanınızı kurtarmanız gerekecek.",
+    "done": "                                                                                                                                                                "
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "Login seçenekleri",
+    "importOptions": "Import cüzdan seçenekleri",
+    "recoveryPhrase": "Recovery Phrase",
+    "importBTCWallet": "Recovery phrase kullanarak Bitcoin Cüzdanı ithal edin.",
+    "phone": "Telefon  Telefon ",
+    "importUsingPhone": "Telefon numarasını kullanarak nakit cüzdanınızı ithal veya oluşturun",
+    "email": "E-posta ",
+    "importUsingEmail": "E-posta adresini kullanarak nakit cüzdanınızı ithal edin",
+    "login": "Login/Create",
+    "done": "                                                                                                                                                                "
+  },
+  "ImportWallet": {
+    "title": "Bir kurtarma cümlesi ile giriş yapın",
+    "importTitle": "recovery phrase ile cüzdanınızı ithal edin",
+    "description": "Bu, önceki cüzdanınızı oluşturduğunuzda size verilen 12 kelime bir cümledir.",
+    "complete": "Complete Complete"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
   "CopySecretComponent": {
     "button": "Sırrı kopyala",
     "toastMessage": "Sır panoya kopyalandı"
@@ -748,7 +946,9 @@
     "info": "Blink'i kullanmak için tercih ettiğiniz temayı seçin veya sistem ayarlarınızla senkronize kalmasını sağlayın.",
     "system": "Sistem ayarlarını kullan",
     "light": "Açık modu kullan",
-    "dark": "Karanlık modu kullan"
+    "dark": "Karanlık modu kullan",
+    "setToDark": "Karanlık Mod  Karanlık Mod",
+    "setToLight": "Işık Modu"
   },
   "Languages": {
     "DEFAULT": "Varsayılan (OS)"
@@ -759,6 +959,26 @@
     "termsAndConditions": "Hükümler ve koşulları oku. ",
     "learnMore": "Stablesats'i öğrenin"
   },
+  "AdvancedModeModal": {
+    "header": "Gelişmiş Mod'a Hoşgeldiniz!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "Şartları ve Koşulları okuyun.",
+    "learnMore": "Koruma dışı cüzdan nedir?",
+    "importWallet": "Cüzdanı İçe Aktar ",
+    "createWallet": "Cüzdan  Create Wallet"
+  },
+  "MerchantSuggestModal": {
+    "header": "Flashpoint Add",
+    "body": "Flash kullanıcıları sizi haritada bulabilecek ve haritadaki pininizi tıklayarak size ödeme gönderebilecekler.",
+    "termsAndConditions": "Şartları ve Koşulları okuyun.",
+    "learnMore": "Pin istekiniz 24 saat içinde işlenir."
+  },
+  "UnVerifiedSeedModal": {
+    "header": "Bitcoin Cüzdanınızı Koruyun",
+    "body": "Paralarınızı korumak için kurtarma cümlesini güvenli bir yere yazmalısınız.Eğer telefonunuzu kaybederseniz veya kurtarma cümlesini yazmadan uygulamayı kaldırırsanız, fonlarınızın erişimini kaybedeceksiniz. ",
+    "termsAndConditions": "Şartları ve Koşulları okuyun.",
+    "learnMore": "Bir kurtarma ifadesi nedir?"
+  },
   "SplashScreen": {
     "update": "Uygulamanızın modası geçmiş. Uygulamanın kullanılabilmesi için bir güncelleme gereklidir.\n\nBu, Android için PlayStore'dan ve iOS için Testflight'tan yapılabilir"
   },
@@ -768,7 +988,24 @@
     "spent": "Harcadınız",
     "receivingAccount": "Ödeme Alacak Hesap",
     "sendingAccount": "Gönderen Hesap",
-    "txNotBroadcast": "İşleminiz şu anda beklemede ve birazdan Bitcoin ağında yayınlanacak."
+    "txNotBroadcast": "İşleminiz şu anda beklemede ve birazdan Bitcoin ağında yayınlanacak.",
+    "noTransaction": "Bu kimlik ile yapılan hiçbir işlem bulunamadı.",
+    "typeOnChain": "OnChain",
+    "typeLightning": "Lightning",
+    "typeIntraLedger": "İntraLedger",
+    "pendingStatus": "Pending Pending",
+    "confirmation": "Kanıtlama ",
+    "confirmations": "Tesdiqler",
+    "hash": "Hash Hash",
+    "preimage": "Preimage",
+    "transactionId": "İşlem kimliği ",
+    "swapDetails": "Swap Details",
+    "destinationAddress": "Destination Address",
+    "swapId": "Swap ID",
+    "lockupTxId": "Lockup Transaction",
+    "claimTxId": "Claim Transaction ",
+    "swapFees": "Swap Ücreti ",
+    "expirationBlockHeight": "Block'da geçerliliği sona erer"
   },
   "TransactionLimitsScreen": {
     "receive": "Al",
@@ -783,7 +1020,11 @@
     "contactUsMessageBody": "Merhaba, {bankName: string} hesabımın işlem limitlerini artırmak istiyorum.",
     "contactUsMessageSubject": "İşlem Limitlerinin Artırma Talebi",
     "contactSupportToPerformKyc": "Limitinizi artırmak için manuel KYC gerçekleştirmek üzere destekle iletişime geçin",
-    "increaseLimits": "Limitinizi artırın"
+    "increaseLimits": "Limitinizi artırın",
+    "spendingLimits": "Harcama Sınırları",
+    "spendingLimitsDescription": "Bu sayfada gösterilen harcama limitleri USD'de belirlenir.Kolaylığınız için, bu limitleri mevcut döviz oranlarına dayanarak yerel para birimine dönüştürüyoruz. Lütfen gösterilen yerel para birimi miktarının döviz oranları gerçek zamanlı olarak güncellenirken değişebileceğini unutmayın.",
+    "requestUpgrade": "Uygulama talebi  Request Upgrade",
+    "editRequest": "Uygulama Talepini Düzenle"
   },
   "TransactionScreen": {
     "noTransaction": "Gösterilecek işlem bulunamadı",
@@ -805,11 +1046,17 @@
     "stayInTrialMode": "Deneme modunda kal"
   },
   "SetAddressModal": {
+    "helloText": "Merhabalar!",
+    "whoAreYou": "Sana ne diyelim?",
+    "usernameHint": "Bu sizin {bankName: string} kullanıcı adınız olacak",
+    "placeholder": "Kullanıcı adınızı girin",
     "title": "{bankName: string} adresini belirle",
+    "save": "Save  Save ",
     "Errors": {
       "tooShort": "Adres en azından 3 karakter uzunluğunda olabilir",
       "tooLong": "Adres en fazla 50 karakter uzunluğunda olabilir",
       "invalidCharacter": "Adres yalnızca harf, sayı ve alttan çizgi içerebilir",
+      "startsWithNumber": "Kullanıcı adınız büyük ya da küçük harflerle başlamalıdır",
       "addressUnavailable": "Üzgünüm, bu adres çoktan alındı",
       "unknownError": "Bilinmeyen bir hata yaşandı, lütfen daha sonra tekrar deneyin"
     },
@@ -884,12 +1131,22 @@
     "success": "E-posta {email: string} başarıyla onaylandı"
   },
   "common": {
+    "enabled": "Enabled",
+    "notifications": "Bildirimler",
+    "preferences": "Tercihleri ",
+    "onDeviceSecurity": "On-Device Güvenliği",
+    "securityAndPrivacy": "Güvenlik ve Gizlilik ",
+    "advanced": " Gelişmiş Gelişmiş",
+    "community": " Topluluk Topluluğu  Topluluk Topluluğu",
     "account": "Hesap",
+    "trialAccount": "Deneme Hesabı",
+    "flashUser": "Flash Kullanıcı  Flash",
     "transactionLimits": "İşlem Limitleri",
     "activateWallet": "Cüzdanı aktive et",
     "amountRequired": "Miktar girmeniz gerekli",
     "back": "Geri",
     "backHome": "Anasayfaya dön",
+    "revealSeed": "İyileşme cümlesini yaz ",
     "bank": "Banka",
     "bankAccount": "Nakit hesabı",
     "bankAdvice": "{bankName: string} Tavsiye",
@@ -901,13 +1158,16 @@
     "cancel": "İptal et",
     "close": "Kapat",
     "confirm": "Onayla",
+    "copied": "Clipboard'a kopyalandı",
     "convert": "Çevir",
     "codeConfirmation": "Kod Onayı",
     "currency": "Para Birimi",
     "currencySyncIssue": "Para birimi sorunu. Yenileme gerekli",
     "csvExport": "İşlemleri CSV olarak dışa aktar",
+    "exportSparkLogs": "İhracat Günlükleri",
     "date": "Tarih",
     "description": "Tanım",
+    "details": "Ayrıntılar ",
     "domain": "Alan adı",
     "email": "E-posta",
     "error": "Hata",
@@ -940,9 +1200,11 @@
     "phoneNumber": "Telefon numarası",
     "rate": "Puanla",
     "reauth": "Oturumunuz kapandı. Lütfen tekrar giriş yapın.",
+    "request": "Request Pin",
     "restart": "Resetle",
     "sats": "sats",
     "search": "Ara",
+    "chatSearch": "kullanıcı adı veya nostr pubkey",
     "security": "Güvenlik",
     "send": "Gönder",
     "setAnAmount": "miktarı belirle",
@@ -973,6 +1235,28 @@
     "problemMaybeReauth": "İsteğinizle ilgili bir sorun oluştu. Lütfen bir dakika içinde tekrar deneyin. Sorun devam ederse, oturumu kapatıp tekrar giriş yapmanızı öneririz. Ayarlar > Hesap > Oturumu kapat seçeneğine giderek oturumu kapatabilirsiniz",
     "warning": "Uyarı"
   },
+  "NostrQuickStart": {
+    "postHeading": "İlk sosyal yayınınızı yapın!",
+    "postDesc": "Kendinizi dünyaya tanıtın!"
+  },
+  "Social": {
+    "post": "Nostr'a gönder.",
+    "postTitle": "Make a Post",
+    "flashAppCredit": "Flash kullanılarak yayınlandı! Get it @ https://getflash.io/app",
+    "writeYourNote": "Notunuzu yazın, özel yapın :)",
+    "postButton": "Post Post",
+    "notePosted": "Notunuz yayınlandı",
+    "errorPostFailed": "Not gönderme hatası! Not gönderme hatası",
+    "errorEmptyNote": "Hata: Boş not",
+    "posting": "Gösterme... ",
+    "viewOnIris": "iris.to'de görünüm",
+    "viewPostQuestion": "iris.to'deki yazınızı görmek ister misiniz?",
+    "browseSocialFeed": "Sosyal beslenmeyi tarayın",
+    "socialFeedTitle": "Sosyal beslenme ",
+    "postSuccessTitle": "Post Paylaşıldı!",
+    "postSuccessSubtitle": "Yazdığınız yazı Nostr'a yayınlandı.",
+    "showMeMore": "Bana daha fazlasını göster"
+  },
   "errors": {
     "generic": "Bir hata oluştu.\nLütfen daha sonra tekrar deneyin.",
     "invalidEmail": "Geçersiz e-posta ",
@@ -996,6 +1280,18 @@
       "title": "Ödeme alındı. "
     }
   },
+  "reports": {
+    "title": "Raporları Oluştur ",
+    "reconciliation": "Barıştırma Raporu",
+    "aggregation": "Toplantı Raporu ",
+    "topRecipients": "Top Alıcılar Raporu",
+    "topSenders": "Top Gönderenler Raporu Top Gönderenler Raporu",
+    "selectFromDate": "Tarihteki tarihten seçin",
+    "selectToDate": "Tarih için seçin",
+    "fromDate": "                                                                                                                                                         ",
+    "toDate": "        ",
+    "total": "Toplam  Toplam  Toplam "
+  },
   "support": {
     "contactUs": "Yardıma mı ihtiyacınız var? Bize ulaşın.",
     "joinTheCommunity": "Topluluğa katılın",
@@ -1003,6 +1299,7 @@
     "email": "E-posta",
     "enjoyingApp": "Uygulamayı beğendiniz mi?",
     "statusPage": "Durum Sayfası",
+    "discord": "Discord Discord",
     "mattermost": "Mattermost",
     "thankYouText": "Geri bildiriminiz için teşekkür ederiz, bir iyileştirme önermek ister misiniz?",
     "defaultEmailSubject": "{bankName: string}  - Destek",
@@ -1017,7 +1314,8 @@
     "deleteAccountConfirmation": "Hesabınız silinmek üzere yazılmıştır.\n\nYasal gereklilikle ilgili deneme süresi sona erdiğinde, hesabınızla ilgili kalan veriler kalıcı olarak silinecektir.",
     "deleteAccountFromPhone": "Merhaba!, lütfen hesabımı silin. Telefon numaram {phoneNumber: string}.",
     "deleteAccountError": "Bir şeyler yanlış gitti. Daha fazla yardım için {email: string} ile iletişime geçin.",
-    "bye": "Güle güle!"
+    "bye": "Güle güle!",
+    "switchToBeginnerMode": "Başlangıç Moduna geçerek, BTC cüzdan fonlarına erişimi kaybetmeyeceksiniz, ancak cüzdan gizli kalacaktır."
   },
   "lnurl": {
     "overLimit": "Maksimum miktarın üzerinde gönderemezsiniz",
@@ -1035,7 +1333,9 @@
     "minAmountNotMet": "Tutar en az {minAmount: string} olmalıdır."
   },
   "AmountInputButton": {
-    "tapToSetAmount": "Tutarı ayarlamak için dokunun"
+    "tapToSetAmount": "Tutarı ayarlamak için dokunun",
+    "tapToSetOnChainAmount": "Bir miktar ekle",
+    "enterAmount": "Lütfen devam etmek için miktarı girin."
   },
   "AppUpdate": {
     "needToUpdateSupportMessage": "Uygulamamı en son sürüme güncellemem gerekiyor. {os: string} uygulamasının {version: string} sürümünü kullanıyorum.",
@@ -1043,5 +1343,149 @@
     "updateMandatory": "Güncelleme gerekli",
     "tapHereUpdate": "Güncellemek için buraya tıkla",
     "contactSupport": "Desteğe danışınız"
+  },
+  "RefundFlow": {
+    "refundListTitle": "İddia edilmeyen Para Yatırımları",
+    "depositDetails": "Yatırım Ayrıntıları",
+    "refundTitle": "Para Yatırımı Geri Dönüşüm",
+    "destinationTitle": "Destination",
+    "confirmationTitle": "Kanıtlama ",
+    "pendingTransactions": "Pending Transactions ",
+    "noRefundables": "Hiçbir talep edilmemiş para yatırımı bulunamadı.",
+    "view": "View View",
+    "refund": "Geri ödeme ",
+    "refundTo": "USD cüzdanına geri ödeme yapın",
+    "recommendedFees": "Önerilen ücretler",
+    "fast": "Fast Fast Fast",
+    "medium": "Ortalama  Ortalama ",
+    "slow": "Yavaş  Yavaş ",
+    "txId": "İşlem kimliği ",
+    "refunded": "Geri ödendi",
+    "pending": "Pending Pending",
+    "autoClaiming": "Bu transfer otomatik olarak talep edilecek",
+    "approvalRequired": "Onaylama Gereklidir",
+    "broadcasting": "Yayınlama Yayınlama",
+    "feeExceeded": "Ücreti çok yüksek ",
+    "claimFailed": "İddia başarısız oldu",
+    "automaticClaim": "Bu para yatırma, ağ ücretleri daha düşük olduğunda otomatik olarak talep edilir.",
+    "approveFee": "Bu transferin talep edilmesini onaylayın veya geri ödeme işlemini reddedin.",
+    "enterAddress": "Geri ödemeyi almak istediğiniz Bitcoin adresini girin.",
+    "selectFee": "Geri dönüşünüz için bir ağ ücreti seçin",
+    "confirmRefund": "Confirm & Refund ",
+    "processing": "İşleme geri dönüşü...",
+    "success": "Refund Broadcast ",
+    "refundSuccess": "Geri ödeme işleminiz Bitcoin ağına gönderildi.",
+    "refundFailed": "Geri ödeme başarısız oldu",
+    "failedToClaim": "Depozit talep etmeyi başaramadı",
+    "unknownError": "Bilinmeyen bir hata oluştu",
+    "missingUtxo": "Depozit UTXO kayıp, işlem henüz onaylanmamış olabilir.",
+    "couldNotClaimAutomatically": "Bu para yatırma otomatik olarak talep edilemezdi.",
+    "networkFee": "Network Fee Network Fee ",
+    "networkFeeWithRate": "Ağ Ücreti ({feeRate: string} sat/vB)",
+    "youReceive": "Siz Alıyorsunuz",
+    "approve": "Onaylayın",
+    "refundToExternalWallet": "Bunu bir dış cüzdanına geri verebilirsiniz.",
+    "enterDestinationAddress": "Lütfen bir hedef adresi girin",
+    "invalidBitcoinAddress": "Geçersiz Bitcoin adres biçimi",
+    "estimatedFee": "Network Fee ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Est. You Receive",
+    "feeEstimateDisclaimer": "Ücretler tahmin ediliyor.Gerçek ücret yayın sırasında hesaplanacak."
+  },
+  "Nostr": {
+    "editProfile": "Edit Profile",
+    "importNsecTitle": "Nostr Secret anahtarınızı ithal edin",
+    "importNsecDefaultDescription": "Lütfen sohbet özelliğini kullanmaya devam etmek için nsec'inizi diğer cihazdan ithal edin.",
+    "createProfileTitle": "Profil Oluşturun Profil Oluşturun",
+    "createProfileWarning": "Eğer devam ederseniz, mevcut profil verileri yazılacak.",
+    "createProfilePubkeyMessage": "Bu pubkeye bağlı bir profil olayı bulamadık.",
+    "createProfilePrompt": "Yaratmaya devam etmek ister misiniz?",
+    "createProfileButton": "Profil Oluşturun Profil Oluşturun",
+    "profileNotFound": "Arıyoruz ama profilinizi bulamadık.",
+    "promptToCreateProfile": "Şimdi bir tane oluşturmak ister misiniz?",
+    "learnAboutNostr": "Nostr hakkında bilgi edinin.",
+    "learnAboutNostrSubtext": "nostr sohbetinden en iyi şekilde yararlanmak için bu kılavuzu keşfedin.",
+    "showPublicKey": "Açık anahtarı göster ",
+    "showPrivateKey": "Özel anahtarı göster ",
+    "profileConnected": "Profile Connected",
+    "reconnectProfile": "Reconnect Profile",
+    "tapToRefreshConnection": "Bağlantıyı yenilemek için vurun",
+    "importExistingProfile": "Mevcut profilleri ithal edin",
+    "deleteProfile": "Profilinizi silin",
+    "noProfileIdExists": "Profil kimliği yoktur",
+    "profileReconnected": "Profiliniz başarılı bir şekilde yeniden bağlandı",
+    "deleteWarningTitle": "Uyarı  Uyarı ",
+    "deleteWarningMessage": "Profil anahtarlarınızı silmek, hesabınızı bu cihazdan silecek.Bir yedekleme olmadan, bu profile tekrar erişemeyeceksiniz.",
+    "importNsecDescription": "Kendi nsec'inizi kullanmak istiyorsanız, aşağıda yapıştırın.",
+    "profileImportedSuccessfully": "Profil başarıyla ithal edildi",
+    "noProfileFound": "No Nostr Profile Found",
+    "noProfileDescription": "Henüz Nostr profilini oluşturmadınız.Bir tane oluşturmak için aşağıda tıklayın.",
+    "keyConflictTitle": "Nostr Key Device'de bulunamadı",
+    "keyConflictDescription": "Hesabınızda kayıtlı bir Nostr anahtarı var, ancak bu cihazda bulunamadı.Bu, uygulamayı yeniden yükledikten veya cihazları değiştirdikten sonra gerçekleşebilir.Kelişimi geri kazanmak için, gelişmiş ayarlardan nsec yedeklerinizi ithal edin.",
+    "creatingProfile": "Profil Oluşturma...",
+    "createNewProfile": "Yeni Bir Profil Oluşturun",
+    "generateProfile": "Profil Oluştur  Profil Oluştur ",
+    "findingYou": "Seni bulmak..",
+    "advancedSettings": "Nostr Ayarları  Gelişmiş Ayarlar ",
+    "KeyModal": {
+      "yourPublicProfileId": "İctimai Profil Kimliğiniz",
+      "yourPrivateProfileKey": "Özel Profil anahtarınız",
+      "keyCopiedToClipboard": "Key copied to clipboard"
+    },
+    "Contacts": {
+      "stillLoading": "İletişim listesini bulmakta zorluk çekiyorsunuz, şimdiye kadar birini takip ettiniz mi?",
+      "noCantacts": "Hiçbir İletişim Oluşamadı",
+      "profile": "Profile Profile",
+      "nostrUser": "Nostr User",
+      "message": "Mesaj  Mesaj ",
+      "sendPayment": "Gönder  Gönder ",
+      "contactInfo": "İletişim Bilgisi İletişim Bilgisi",
+      "contactManagement": "İletişim Yönetimi İletişim Yönetimi",
+      "unfollowContact": "Unfollow Contact",
+      "noListDeepLinkMessage": "Arkadaşlar eklemek için öncelikle Ayarlar'da iletişim listesini initialize etmelisiniz.",
+      "manageContacts": "İletişimleri Yönetin",
+      "createContactList": "İletişim Listesi Oluştur  İletişim Listesi Oluştur "
+    },
+    "common": {
+      "copy": "Copy Copy",
+      "copied": "Kopyalandı",
+      "goToSettings": "Ayarlara gidin"
+    }
+  },
+  "AccountUpgrade": {
+    "accountType": "Hesap Tipi",
+    "personal": "Kişisel  Kişisel ",
+    "personalDesc": "Cüzdanınızı telefon ve e-posta ile koruyun.",
+    "pro": "Pro Pro",
+    "proDesc": "Ödemeleri kabul edin ve haritada keşfedilsin.",
+    "merchant": "Ticaretçi Ticaretçi",
+    "merchantDesc": "Ödüller verin, haritada görün ve banka hesabınıza ödeme yapın.",
+    "personalInfo": "Kişisel Bilgiler",
+    "fullName": "Tam adı",
+    "phoneNumber": "Telefon numarası ",
+    "email": "E-posta adresi",
+    "optional": "(İsteğe bağlı)",
+    "validation": "Doğrulama",
+    "validationCode": "Doğrulama kodu",
+    "businessInfo": "İşletme Bilgisi ",
+    "businessName": "İşletme Adı",
+    "businessNamePlaceholder": "İşletme adınızı girin",
+    "businessAddress": "İşletme Adresi",
+    "businessAddressPlaceholder": "İşletme adresinizi girin",
+    "flashTerminal": "Bir Flash terminali ister misiniz?",
+    "flashTerminalTooltip": "Flash Terminal, işiniz için Flash aracılığıyla ödeme ve baskı makbuzlarını kabul edebilen akıllı bir cihazdır.Bu kutuyu işaretlediğinizde bir müşteri hizmeti temsilcisi sizinle iletişime geçecek.",
+    "bankingInfo": "Bankacılık Bilgisi",
+    "bankName": "Banka Adı",
+    "bankNamePlaceholder": "Banka adınızı seçin",
+    "bankBranch": "Banka Şubesi Bankası Şubesi",
+    "bankBranchPlaceholder": "Banka branşınızı girin.",
+    "bankAccountType": "Hesap Tipi",
+    "selectBankAccountType": "Hesap türünü seçin",
+    "currency": "Para birimi ",
+    "selectCurrency": "Para birimi seçin",
+    "accountNum": "Hesap numarası ",
+    "accountNumPlaceholder": "Hesap numaranızı girin",
+    "uploadId": "Yükleme Kimliği Belgesini ",
+    "successUpgrade": "Hesabınızı {accountType: string}'e başarılı bir şekilde yükseltmişsiniz.",
+    "successRequest": "Hesabınızı {accountType: string}'e yükseltmeyi başarıyla istediniz."
   }
 }

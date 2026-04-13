@@ -2,6 +2,7 @@
   "GaloyAddressScreen": {
     "title": "Receive payment by using:",
     "buttonTitle": "Set your address",
+    "yourLightningAddress": "Địa chỉ Lightning của bạn",
     "yourAddress": "Địa chỉ {bankName: string} của bạn",
     "notAbleToChange": "Bạn không thể thay đổi địa chỉ {bankName: string} của bạn sau khi nó đã được đặt. ",
     "addressNotAvailable": "Địa chỉ {bankName: string} này đã được sử dụng",
@@ -9,6 +10,7 @@
     "merchantTitle": "Cho nhà cung cấp ",
     "yourCashRegister": "Your Lightning Cash Register",
     "yourPaycode": "Paycode của bạn",
+    "copiedLightningAddressToClipboard": "Copied Lightning address to clipboard",
     "copiedAddressToClipboard": "Đã sao chép địa chỉ {bankName: string} vào bộ nhớ tạm",
     "copiedPaycodeToClipboard": "Đã sao chép Paycode vào bộ nhớ tạm",
     "copiedCashRegisterLinkToClipboard": "Copied Cash Register Link to clipboard",
@@ -19,6 +21,15 @@
     "howToUseYourAddressExplainer": "Share with someone that has a compatible wallet, such as:",
     "howToUseYourPaycodeExplainer": "You can print your Paycode (technically, this is an lnurl-pay address) and display it in your business to receive payments. Individuals can pay you by scanning it with a Lightning-enabled wallet.\n\nHowever, be aware that some wallets can’t scan a Paycode such as:",
     "howToUseYourCashRegisterExplainer": "Allow people to collect payments via the Cash Register link, without accessing your wallet.\n\nThey can create invoices and payments will be sent directly to your {bankName: string} Wallet."
+  },
+  "SetAccountModal": {
+    "title": "Đặt tài khoản mặc định",
+    "description": "Tài khoản này ban đầu sẽ được chọn để gửi và nhận thanh toán, nó có thể được thay đổi bất cứ lúc nào.",
+    "stablesatsTag": "Chọn điều này để duy trì giá trị USD ổn định.",
+    "bitcoinTag": "Chọn điều này là trên tiêu chuẩn Bitcoin."
+  },
+  "NoteInput": {
+    "addNote": "Thêm chú ý..."
   },
   "AuthenticationScreen": {
     "authenticationDescription": "Xác thực để tiếp tục",
@@ -37,6 +48,37 @@
   "ContactDetailsScreen": {
     "title": "Các giao dịch với {username: string}"
   },
+  "ChatScreen": {
+    "noChatsTitle": "Không có trò chuyện được tìm thấy",
+    "noChatsYet": "Nhập một tên người dùng Flash hoặc nostr pubkey để bắt đầu trò chuyện",
+    "noMatchingChats": "Không có trò chuyện nào phù hợp với tìm kiếm của bạn được tìm thấy.",
+    "title": "Chat Chat"
+  },
+  "ChatDetailsScreen": {
+    "title": "Nói chuyện với {username: string}"
+  },
+  "CardScreen": {
+    "noCardsTitle": "Không có thẻ nào được tìm thấy",
+    "noCardsYet": "Nhấn vào Flashcard để thêm nó ở đây",
+    "noMatchingCards": "Không có thẻ nào phù hợp với tìm kiếm của bạn được tìm thấy.",
+    "title": "Flashcard",
+    "notFlashcard": "Thẻ NFC không được hỗ trợ, hãy chắc chắn rằng bạn đang sử dụng thẻ flash.",
+    "noNDEFMessage": "Thông điệp NDEF không được tìm thấy.Vui lòng đảm bảo rằng bạn đang sử dụng flashcard.",
+    "notSupported": "NFC không được hỗ trợ trên thiết bị này.",
+    "notEnabled": "NFC không được bật trên thiết bị này.",
+    "noTag": "Không có thẻ nào được tìm thấy.Vui lòng đảm bảo rằng bạn đang sử dụng flashcard."
+  },
+  "Cashout": {
+    "title": "Settle",
+    "percentageToCashout": "Để giải quyết vấn đề  %",
+    "valid": "Được sử dụng cho {time: string}",
+    "exchangeRate": "Tỷ lệ hối đoái",
+    "sendAmount": "Gửi số tiền",
+    "receiveAmount": "Số tiền nhận được",
+    "fee": "Phí ",
+    "success": "Các yêu cầu giải quyết đã được khởi động thành công.",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
+  },
   "ConversionDetailsScreen": {
     "title": "Chuyển đổi",
     "percentageToConvert": "% chuyển đổi"
@@ -44,7 +86,9 @@
   "ConversionConfirmationScreen": {
     "title": "Xem lại sự chuyển đổi",
     "youreConverting": "Bạn đang chuyển đổi",
-    "receivingAccount": "Tài khoản nhận"
+    "sendingAccount": "Tài khoản gửi ",
+    "receivingAccount": "Tài khoản nhận",
+    "conversionFee": "Thu phí chuyển đổi"
   },
   "ConversionSuccessScreen": {
     "title": "Chuyển đổi thành công",
@@ -421,7 +465,13 @@
   },
   "GetStartedScreen": {
     "logInCreateAccount": "Log in / create account",
+    "quickStart": "Start Start",
+    "restoreWallet": "Login",
     "exploreWalletInstead": "Explore wallet instead",
+    "setupBusinessAccount": "Thiết lập tài khoản kinh doanh",
+    "createAccount": "Tạo tài khoản mới",
+    "exploreWallet": "Khám phá ví ",
+    "logBackInWith": "Nhập lại đăng nhập với",
     "headline": "Ví được cung cấp bởi Galoy",
     "startTrialAccount": "Start with a trial account",
     "startWithTrialAccount": "Start with trial account",
@@ -433,7 +483,8 @@
       "noBackup": "No backup option",
       "sendingLimit": "Reduced daily sending limit",
       "noOnchain": "No receiving bitcoin onchain"
-    }
+    },
+    "chooseAccountType": "Chọn loại tài khoản"
   },
   "MapScreen": {
     "locationPermissionMessage": "Kích hoạt vị trí của bạn để bạn biết mình đang ở đâu trên bản đồ",
@@ -442,16 +493,48 @@
     "locationPermissionPositive": "OK",
     "locationPermissionTitle": "Xác định vị trí của bạn trên bản đồ",
     "payBusiness": "trả tiền cho doanh nghiệp này",
-    "title": "Bản đồ"
+    "title": "Bản đồ",
+    "addPin": "Nhấp vào bất cứ nơi nào để thêm pin",
+    "selectedCoordinates": "Các định vị Flashpoint của bạn: ",
+    "viewInGoogleMaps": "Xem trong Google Maps",
+    "getDirections": "Các hướng dẫn Get Directions"
   },
   "HomeScreen": {
+    "cashout": "Cash Out ",
     "receive": "Nhận",
+    "reload": "Thẻ Reload Card",
+    "balance": "Refresh Balance ",
+    "showQrCode": "Topup thông qua QR",
     "send": "Gửi",
+    "sweep": "Sweep to Wallet",
+    "pay": "Pay Pay",
     "title": "Nhà",
     "scan": "Scan QR",
     "updateAvailable": "Bản cập nhật mới đã có.\nNhấn để cập nhật ngay",
     "useLightning": "Chúng tôi sử dụng Lightning Network.",
-    "myAccounts": "My Accounts"
+    "myAccounts": "My Accounts",
+    "unclaimedDepositsWarning": "️ P l e a s e c o m p l e t e o r yêu cầu tiền gửi không được yêu cầu b e f o r e n i n s t a l i n g F l a s h o r tiền gửi không được yêu cầu b e l e l o s t .",
+    "unclaimedDeposits": "Các khoản tiền gửi không được yêu cầu",
+    "cash": "Tiền mặt ",
+    "bitcoin": "Bitcoin",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Add",
+    "upgradeTitle": "Tăng cấp tài khoản của bạn",
+    "upgradeTitlePending": "Một yêu cầu nâng cấp đang chờ đợi.",
+    "upgradeDesc": "Khởi mở tiềm năng đầy đủ của bạn! nâng cấp để tăng khả năng hiển thị, giới hạn và thanh toán.",
+    "upgradePendingDesc": "Yêu cầu nâng cấp tài khoản của bạn đang được xem xét.",
+    "currencyTitle": "Thay đổi sang tiền tệ địa phương của bạn",
+    "currencyDesc": "Xem lại danh sách tiền tệ có sẵn của chúng tôi và chọn tiền tệ của bạn.",
+    "flashcardTitle": "Nhận được một Flashcard",
+    "flashcardDesc": "Tìm một chiếc Flashpoint và mua một chiếc Flashcard để sử dụng trong cuộc sống hàng ngày.",
+    "nonCustodialWalletTitle": "Những ví không có quyền bảo vệ",
+    "nonCustodialWalletDesc": "Tìm hiểu thêm về ví không có quyền bảo vệ.",
+    "emailTitle": "Địa chỉ email",
+    "emailDesc": "Thêm địa chỉ email của bạn để bảo mật tài khoản và đăng nhập bằng địa chỉ email.",
+    "btcWalletTitle": "Enable BTC wallet",
+    "btcWalletDesc": "Dễ dàng chuyển tiền lớn hơn bằng Bitcoin.",
+    "backupTitle": "Bản sao lưu ví BTC của bạn",
+    "backupDesc": "Sao lưu và bảo mật ví Bitcoin của bạn bằng cách sử dụng recovery phrase."
   },
   "PinScreen": {
     "attemptsRemaining": "Mã PIN không chính xác. Còn lại {attemptsRemaining: number} lần thử.",
@@ -479,11 +562,13 @@
     "title": "Nhà"
   },
   "ReceiveScreen": {
+    "flashcardInstructions": "Hãy quét mã QR, hoặc nhấn vào biểu tượng để chia sẻ trên whatsapp, email, v.v.",
     "nfc": "NFC",
     "enterAmountFirst": "Please enter an amount first",
     "activateNotifications": "Bạn có muốn kích hoạt thông báo để được thông báo khi nhận được thanh toán không?",
     "copyClipboard": "Hóa đơn đã được sao chép vào bộ nhớ tạm",
     "copyClipboardBitcoin": "Địa chỉ bitcoin đã được sao chép vào bộ nhớ tạm",
+    "copyClipboardPaycode": "Paycode/LNURL đã được sao chép vào clipboard",
     "invoicePaid": "Hóa đơn này đã được thanh toán",
     "setNote": "Viết ghi chú",
     "tapQrCodeCopy": "Nhấn Mã QR để sao chép",
@@ -505,7 +590,37 @@
     "useALightningInvoice": "Sử dụng hóa đơn Lightning ",
     "setANote": "Viết ghi chú",
     "invoiceAmount": "Số tiền hóa đơn",
-    "fees": "{minBankFee: string} sats fees for onchain payment below {minBankFeeThreshold: string} sats"
+    "fees": "{minBankFee: string} sats fees for onchain payment below {minBankFeeThreshold: string} sats",
+    "lightning": "Lightning",
+    "paycode": "Paycode",
+    "onchain": "Onchain",
+    "bitcoin": "Bitcoin",
+    "stablesats": "Tiền mặt ",
+    "regenerateInvoiceButtonTitle": "Regenerate Invoice",
+    "setUsernameButtonTitle": "Set Username",
+    "invoiceHasExpired": "Hóa đơn đã hết hạn",
+    "setUsernameToAcceptViaPaycode": "Đặt tên người dùng của bạn để chấp nhận thông qua Paycode QR (LNURL) và Lightning Address",
+    "singleUse": "Single Use",
+    "invoiceExpired": "Hóa đơn đã hết hạn",
+    "invoiceValidity": {
+      "validFor1Day": "Được sử dụng trong 1 ngày",
+      "validForNext": "Được sử dụng cho {duration: string} tiếp theo.",
+      "validBefore": "Được sử dụng trước khi {time: string}",
+      "expiresIn": "Thời hạn hết hạn trong {duration: string}",
+      "expiresNow": "Thời hạn hết hạn ngay bây giờ"
+    },
+    "invoiceHasBeenPaid": "Hóa đơn đã được thanh toán",
+    "yourBitcoinOnChainAddress": "Your Bitcoin Onchain Address",
+    "receive": "Receive Receive",
+    "receiveViaInvoice": "Nhận thông qua Lightning",
+    "receiveViaPaycode": "Nhận thông qua Paycode",
+    "topupFlashcard": "Topup Flashcard",
+    "receiveViaOnchain": "Nhận thông qua Onchain",
+    "payCodeOrLNURL": "Paycode / LNURL",
+    "cantReceiveZeroSats": "Bạn không thể nhận được số sats không.Vui lòng nhập số tiền tương ứng với 1 hoặc nhiều số sats.",
+    "initialDeposit": "* Tiền gửi ban đầu $5 được khuyến cáo cho việc thiết lập kênh. ~$1 sẽ được thanh toán như phí thiết lập.",
+    "selectPaymentMethod": "Chọn phương thức thanh toán",
+    "selectWallet": "Chọn Wallet"
   },
   "RedeemBitcoinScreen": {
     "title": "Đổi lấy Bitcoin",
@@ -524,7 +639,12 @@
     "invalidTitle": "Mã QR không hợp lệ",
     "noQrCode": "Chúng tôi không thể tìm thấy mã QR trong hình ảnh",
     "title": "Scan QR",
-    "invalidContentLnurl": "Chúng tôi đã tìm thấy:\n\n{found: string}\n\nhiện không được hỗ trợ"
+    "permissionCamera": "Chúng tôi cần sự cho phép để sử dụng máy ảnh của bạn.",
+    "noCamera": "Không tìm thấy máy ảnh ",
+    "openSettings": "Open Settings",
+    "unableToOpenSettings": "Không thể mở cài đặt",
+    "invalidContentLnurl": "Chúng tôi đã tìm thấy:\n\n{found: string}\n\nhiện không được hỗ trợ",
+    "imageLibraryPermissionsNotGranted": "Chúng tôi không có quyền truy cập vào thư viện hình ảnh.Vui lòng kiểm tra cài đặt ứng dụng cho nền tảng của bạn."
   },
   "SecurityScreen": {
     "biometricDescription": "Mở khóa bằng vân tay hoặc nhận dạng khuôn mặt.",
@@ -535,7 +655,8 @@
     "hideBalanceTitle": "Hide Balance",
     "pinDescription": "Mã PIN được sử dụng làm phương thức xác thực dự phòng cho xác thực vân tay.",
     "pinTitle": "Mã PIN",
-    "setPin": "Đặt mã PIN"
+    "setPin": "Đặt mã PIN",
+    "backupDescription": "Để đặt mã PIN, vui lòng sao lưu tài khoản của bạn bằng cách thêm một số điện thoại."
   },
   "SendBitcoinConfirmationScreen": {
     "amountLabel": "Số tiền",
@@ -577,12 +698,17 @@
       "body3": "Otherwise, the money will go to a {bankName: string} Account that has the “{lnAddress: string}” address.\n\nCheck the spelling of the first part of the address as well. e.g. jackie and jack1e are 2 different addresses",
       "warning": "Nếu địa chỉ {bankName: string} được nhập không chính xác, {bankName: string} không thể hủy giao dịch.",
       "checkBox": "{lnAddress: string} là địa chỉ phù hợp.",
-      "confirmButton": "Tôi chắc chắn 100%"
+      "confirmButton": "Tôi chắc chắn 100%",
+      "externalWarning": "Bạn sắp gửi tiền cho ai đó không phải là tài khoản {bankName: string}. Bạn có chắc rằng đây là địa chỉ mà bạn có ý định gửi?",
+      "externalCheckBox": "Tôi xác nhận gửi đến {address: string}."
     },
     "clipboardError": "Lỗi lấy giá trị từ bộ nhớ tạm"
   },
   "SendBitcoinScreen": {
     "amount": "Số tiền",
+    "MinOnChainLimit": "Số tiền tối thiểu cho giao dịch này là 2,00 đô la Mỹ.",
+    "MinOnChainSatLimit": "Số tiền tối thiểu cho giao dịch này là 5.500 sats",
+    "MinFlashcardLimit": "Số lượng tối thiểu khi tải lại từ thẻ flash là 100 sats",
     "amountExceed": "Số tiền vượt quá số dư {balance: string} của bạn",
     "amountExceedsLimit": "Amount exceeds your remaining daily limit of {limit: string}",
     "upgradeAccountToIncreaseLimit": "Upgrade your account to increase your limit",
@@ -592,19 +718,35 @@
     "destinationIsRequired": "Điểm đến là bắt buộc",
     "fee": "Phí mạng lưới",
     "feeCalculationUnsuccessful": "Tính toán không thành công ⚠️",
+    "placeholder": "Tên người dùng, hóa đơn hoặc địa chỉ",
     "invalidUsername": "Tên người dùng không hợp lệ",
     "noAmount": "Hóa đơn này không có số tiền, vì vậy bạn cần chỉ định số tiền bạn muốn gửi theo cách thủ công",
     "notConfirmed": "Thanh toán đã được gửi\nnhưng vẫn chưa được xác nhận\n\nBạn có thể kiểm tra trạng thái\nthanh toán trong Các giao dịch",
     "note": "Chú thích hay nhãn mác",
     "success": "Thanh toán đã được gửi thành công",
+    "suggestionInput": "Nhập đề xuất của bạn",
     "max": "Max",
     "maxAmount": "Max Amount",
     "title": "Gửi Bitcoin",
+    "send": "Sending Sending Sending Sending Sending",
     "failedToFetchLnurlInvoice": "Không lấy được hóa đơn lnurl",
     "lnurlInvoiceIncorrectAmount": "Máy chủ LNURL phản hồi với một hóa đơn có số tiền không chính xác.",
-    "lnurlInvoiceIncorrectDescription": "Máy chủ LNURL đã phản hồi với một hóa đơn có phần mô tả không chính xác."
+    "lnurlInvoiceIncorrectDescription": "Máy chủ LNURL đã phản hồi với một hóa đơn có phần mô tả không chính xác.",
+    "noAmountInvoiceError": "Không có khoản hóa đơn nào được hỗ trợ trong ví BTC. Xin vui lòng quay lại và quét hoặc nhập hóa đơn với số tiền được thêm vào.",
+    "onchainMinAmountInvoiceError": "Số tiền bạn nhập là ít hơn số tiền tối thiểu cần thiết để gửi giao dịch trên chuỗi {amount: number}. Xin vui lòng xem xét gửi số tiền này qua Lightning!",
+    "minAmountInvoiceError": "Số tiền trên hóa đơn là ít hơn số tiền tối thiểu {amount: number}",
+    "maxAmountInvoiceError": "Số tiền trên hóa đơn lớn hơn số tiền tối đa {amount: number}",
+    "minAmountConvertError": "Số tiền chuyển đổi nhỏ hơn số tiền tối thiểu cần thiết {amount: number}",
+    "maxAmountConvertError": "Số tiền chuyển đổi lớn hơn số tiền tối đa {amount: number}"
   },
   "SettingsScreen": {
+    "staticQr": "Có thể in được Static QR Code",
+    "staticQrCopied": "Liên kết mã QR tĩnh của bạn đã được sao chép",
+    "setByOs": "Set by OS",
+    "apiAcess": "Access API của Access",
+    "pos": "Điểm bán hàng",
+    "posCopied": "Kết nối điểm bán hàng của bạn đã được sao chép",
+    "setYourLightningAddress": "Set Your Username",
     "activated": "Đã kích hoạt",
     "addressScreen": "Ways to get paid",
     "tapUserName": "Nhấn để đặt tên người dùng",
@@ -625,7 +767,17 @@
     "nfcNotCompatible": "The information fetch from the card is not a compatible lnurl-withdraw link.",
     "nfcOnlyReceive": "Only receive from NFC is available for now",
     "nfcScanNow": "Scan NFC Now",
-    "nfcNotSupported": "NFC is not supported on this device"
+    "nfcNotSupported": "NFC is not supported on this device",
+    "logInOrCreateAccount": "Nhập vào hoặc tạo tài khoản",
+    "backup": "Backup",
+    "importWallet": "Import Wallet Import Wallet",
+    "showSeedPhrase": "Reveal recovery phrase",
+    "showNostrSecret": "Chat Settings",
+    "beginnerMode": "Thiết lập tài khoản Bitcoin",
+    "advanceMode": "Enable Bitcoin Account (Advanced Mode)",
+    "keysManagement": "Căn khoán dự phòng ví",
+    "showBtcAccount": "Xem tài khoản Bitcoin",
+    "hideBtcAccount": "ẩn tài khoản Bitcoin"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -638,18 +790,152 @@
       "Payments": {
         "title": "Payments",
         "description": "Notifications related to sending and receiving payments."
+      },
+      "Marketing": {
+        "title": "Các tính năng và cập nhật",
+        "description": "Thông báo về các tính năng mới và cập nhật."
+      },
+      "Price": {
+        "title": "Sự thay đổi giá cả",
+        "description": "Thông báo về giá của Bitcoin."
       }
     }
   },
   "AccountScreen": {
+    "fundsMoreThan5Dollars": "Tài khoản của bạn có hơn $5",
+    "itsATrialAccount": "Tài khoản thử nghiệm đã giảm giới hạn giao dịch và không có phương pháp phục hồi.Nếu bạn mất điện thoại hoặc gỡ cài đặt ứng dụng, tiền của bạn sẽ không thể phục hồi được.",
+    "accountBeingDeleted": "Tài khoản của bạn đang bị xóa, vui lòng chờ...",
+    "dangerZone": "Khu vực nguy hiểm ",
+    "phoneDeletedSuccessfully": "Phone deleted successfully",
+    "phoneNumber": "Số điện thoại ",
+    "tapToAddPhoneNumber": "Nhấp vào để thêm số điện thoại",
+    "loginMethods": "Các phương pháp đăng nhập",
+    "level": "Mức độ {level: string}",
     "accountLevel": "Account Level",
     "upgrade": "Upgrade your account",
     "logOutAndDeleteLocalData": "Log out",
     "IUnderstand": "I understand. Please log me out.",
     "logoutAlertTitle": "Are you sure you want to log out and delete all local data?",
+    "logoutAlertContentPhone": "Bạn sẽ cần phải nhập lại số điện thoại của mình để đăng nhập lại. số điện thoại của bạn là {phoneNumber: string} vì vậy hãy chắc chắn rằng bạn có quyền truy cập vào nó để đăng nhập lại.",
+    "logoutAlertContentEmail": "Bạn sẽ cần phải nhập lại email của mình để đăng nhập lại. email của bạn là {email: string} vì vậy hãy chắc chắn rằng bạn có quyền truy cập vào nó để đăng nhập lại.",
+    "logoutAlertContentPhoneEmail": "Bạn sẽ cần phải nhập lại hoặc số điện thoại hoặc email của mình để đăng nhập lại. số điện thoại của bạn là {phoneNumber: string} và email của bạn là {email: string} vì vậy hãy chắc chắn rằng bạn có quyền truy cập vào những người có thể đăng nhập lại",
     "usdBalanceWarning": "You have a Stablesats balance of {balance: string}.",
     "btcBalanceWarning": "You have a bitcoin balance of {balance: string}.",
-    "secureYourAccount": "Register to secure your account"
+    "secureYourAccount": "Register to secure your account",
+    "tapToAdd": "Nhấp vào để thêm",
+    "tapToAddEmail": "Nhấp vào để thêm email",
+    "unverifiedEmail": "Email (Không xác minh)",
+    "email": "Email",
+    "emailDeletedSuccessfully": "Email đã được xóa thành công",
+    "unverifiedEmailAdvice": "Các email chưa được xác minh không thể được sử dụng để đăng nhập. Bạn nên xác minh lại địa chỉ email của mình.",
+    "deleteEmailPromptTitle": "Xóa email",
+    "deleteEmailPromptContent": "Bạn có chắc rằng bạn muốn xóa địa chỉ email của mình không? bạn sẽ chỉ có thể đăng nhập lại bằng số điện thoại của mình.",
+    "deletePhonePromptTitle": "Xóa điện thoại",
+    "deletePhonePromptContent": "Bạn có chắc rằng bạn muốn xóa số điện thoại của mình không? bạn sẽ chỉ có thể đăng nhập lại bằng email.",
+    "addEmailFirst": "Add an email first",
+    "addPhoneFirst": "Add a phone first",
+    "phoneNumberAuthentication": "Số điện thoại (để đăng nhập)",
+    "emailAuthentication": "Email (để đăng nhập)",
+    "removePhone": "Remove phone",
+    "removeEmail": "Remove email",
+    "unverified": "Email là không xác minh",
+    "unverifiedContent": "Bảo vệ tài khoản của bạn bằng cách xác minh email của bạn.",
+    "confirmEmail": "Hãy xác nhận email ",
+    "emailUnverified": "Email của bạn không được xác minh",
+    "emailUnverifiedContent": "Hãy chắc chắn rằng bạn có thể đăng nhập lại vào tài khoản của mình bằng cách xác minh email của mình.",
+    "totp": "Truyền xác thực hai yếu tố",
+    "totpDeactivated": "Sự xác thực hai yếu tố đã bị vô hiệu hóa",
+    "totpDeleteAlertTitle": "Delete two-factor authentication",
+    "totpDeleteAlertContent": "Bạn có chắc rằng bạn muốn xóa xác thực hai yếu tố của mình không?",
+    "copiedAccountId": "Copied your account ID to clipboard",
+    "yourAccountId": "ID tài khoản của bạn",
+    "accountId": "ID Tài khoản",
+    "copy": "Copy Copy"
+  },
+  "TotpRegistrationInitiateScreen": {
+    "title": "Truyền xác thực hai yếu tố",
+    "content": "Quét mã QR này bằng ứng dụng xác thực viên của bạn."
+  },
+  "TotpRegistrationValidateScreen": {
+    "title": "Truyền xác thực hai yếu tố",
+    "enter6digitCode": "Nhập mã 6 chữ số từ ứng dụng xác thực viên của bạn để xác nhận xác thực hai yếu tố của bạn.",
+    "success": "Việc xác thực hai yếu tố đã được kích hoạt, bây giờ bạn sẽ chỉ có thể đăng nhập lại bằng điện thoại hoặc email và xác thực hai yếu tố của bạn, chỉ có tài khoản KYC đầy đủ có thể được phục hồi trong trường hợp người dùng đã mất quyền truy cập vào xác thực hai yếu tố của họ."
+  },
+  "TotpLoginValidateScreen": {
+    "title": "Truyền xác thực hai yếu tố",
+    "content": "Nhập mã 6 chữ số từ ứng dụng xác thực viên của bạn để đăng nhập. mã này thay đổi mỗi 30 giây."
+  },
+  "BackupOptions": {
+    "title": "Các tùy chọn sao lưu",
+    "recoveryPhrase": "Recovery Phrase  Recovery Phrase",
+    "recoveryPhraseDesc": "Backup Bitcoin Wallet using recovery phrase",
+    "revealRecoveryPhrase": "Reveal Recovery Phrase",
+    "revealRecoveryPhraseDesc": "Sử dụng cụm từ phục hồi của bạn để nhập Bitcoin Wallet",
+    "phone": "Điện thoại  Điện thoại",
+    "phoneDesc": "Backup Cash Wallet sử dụng số điện thoại",
+    "usePhoneNumber": "Sử dụng số điện thoại của bạn để nhập khẩu Cổ phiếu tiền mặt",
+    "done": "        "
+  },
+  "BackupStart": {
+    "title": "Đầu tiên, chúng ta hãy tạo ra cụm từ phục hồi của bạn",
+    "description": "Một cụm từ phục hồi là một loạt 12 từ theo một thứ tự cụ thể, kết hợp từ này là duy nhất cho ví của bạn, hãy chắc chắn rằng bạn có bút và giấy sẵn sàng để bạn có thể ghi lại nó.",
+    "continue": "                                                                                                                                                                                                                                                              "
+  },
+  "BackupSeedPhrase": {
+    "title": "Đây là cụm từ phục hồi của bạn",
+    "description": "Hãy chắc chắn để ghi lại nó như được hiển thị ở đây. Bạn phải xác minh điều này sau này.",
+    "backupToICloud": "Bản sao lưu cho iCloud",
+    "backupToGoogleDrive": "Bản sao lưu cho Google Drive",
+    "verify": "Verify"
+  },
+  "BackupDoubleCheck": {
+    "title": "Chúng ta hãy kiểm tra hai lần",
+    "description1": "Bây giờ hãy kiểm tra xem bạn đã ghi lại cụm từ phục hồi của mình đúng không.",
+    "description2": "Vâng, nó rất quan trọng.",
+    "continue": "                                                                                                                                                                                                                                                              "
+  },
+  "BackupVerify": {
+    "title": "Nhập vào các từ theo thứ tự chính xác.",
+    "correctTitle": "Hãy chắc chắn lưu trữ cụm từ phục hồi của bạn một cách an toàn.",
+    "wrongTitle": "Xin lỗi, đó không phải là từ thứ ba chính xác.",
+    "tryAgain": "Hãy thử một lần nữa",
+    "continue": "                                                                                                                                                                                                                                                              "
+  },
+  "BackupComplete": {
+    "title": "Bản sao lưu của bạn đã hoàn thành",
+    "description": "Bây giờ bạn nên có câu trả lời phục hồi và mật khẩu của mình được ghi lại để tham khảo trong tương lai.",
+    "complete": "Complete Complete"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "Đây là cụm từ phục hồi của bạn",
+    "description": "Hãy chắc chắn ghi lại nó như được hiển thị ở đây, bạn sẽ cần phải lấy lại ví của mình.",
+    "done": "        "
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "Các tùy chọn đăng nhập",
+    "importOptions": "Import wallet options Import wallet options",
+    "recoveryPhrase": "Recovery Phrase  Recovery Phrase",
+    "importBTCWallet": "Import Bitcoin Wallet using recovery phrase",
+    "phone": "Điện thoại  Điện thoại",
+    "importUsingPhone": "Import or Create your Cash Wallet bằng cách sử dụng số điện thoại",
+    "email": "Email",
+    "importUsingEmail": "Import your Cash Wallet using email address",
+    "login": "Login/Create",
+    "done": "        "
+  },
+  "ImportWallet": {
+    "title": "Log in with a recovery phrase",
+    "importTitle": "Import your wallet with a recovery phrase",
+    "description": "Đây là một cụm từ 12 từ mà bạn đã nhận được khi tạo ra ví trước đó.",
+    "complete": "Complete Complete"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
+  "CopySecretComponent": {
+    "button": "Copy secret",
+    "toastMessage": "Secret được sao chép lên clipboard!"
   },
   "DefaultWalletScreen": {
     "title": "Default Account",
@@ -660,7 +946,9 @@
     "info": "Pick your preferred theme for using Flash, or choose to keep it synced with your system settings.",
     "system": "Use System setting",
     "light": "Use Light Mode",
-    "dark": "Use Dark Mode"
+    "dark": "Use Dark Mode",
+    "setToDark": "Chế độ Dark Mode",
+    "setToLight": "Chế độ ánh sáng "
   },
   "Languages": {
     "DEFAULT": "Mặc định (OS)"
@@ -671,6 +959,26 @@
     "termsAndConditions": "Đọc các Điều khoản & Điều kiện.",
     "learnMore": "Tìm hiểu thêm về Stablesats"
   },
+  "AdvancedModeModal": {
+    "header": "Chào mừng đến với chế độ nâng cao!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "Đọc các Điều khoản & Điều kiện.",
+    "learnMore": "Một ví không bảo vệ là gì?",
+    "importWallet": "Import Wallet Import Wallet",
+    "createWallet": "Thư cổng Create Create Wallet"
+  },
+  "MerchantSuggestModal": {
+    "header": "Flashpoint Add",
+    "body": "Bạn đã chọn một địa điểm cho doanh nghiệp của mình trên bản đồ.Người dùng Flash sẽ có thể tìm thấy bạn trên bản đồ, và gửi cho bạn thanh toán bằng cách nhấp vào pin bản đồ của bạn.",
+    "termsAndConditions": "Đọc các Điều khoản & Điều kiện.",
+    "learnMore": "Các yêu cầu pin của bạn sẽ được xử lý trong vòng 24 giờ."
+  },
+  "UnVerifiedSeedModal": {
+    "header": "Bảo vệ ví Bitcoin của bạn",
+    "body": "Nếu bạn mất điện thoại hoặc gỡ cài đặt ứng dụng mà không ghi lại cụm từ phục hồi của mình, bạn sẽ mất quyền truy cập vào quỹ của mình. ",
+    "termsAndConditions": "Đọc các Điều khoản & Điều kiện.",
+    "learnMore": "Thuật ngữ phục hồi là gì?"
+  },
   "SplashScreen": {
     "update": "Ứng dụng của bạn đã lỗi thời. Cần cập nhật ứng dụng để chạy ứng dụng.\n\nĐiều này có thể được thực hiện từ PlayStore cho Android và Testflight cho iOS"
   },
@@ -680,7 +988,24 @@
     "spent": "Bạn đã chi",
     "receivingAccount": "Receiving Account",
     "sendingAccount": "Sending Account",
-    "txNotBroadcast": "Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment."
+    "txNotBroadcast": "Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment.",
+    "noTransaction": "Không có giao dịch nào được tìm thấy với ID này",
+    "typeOnChain": "OnChain",
+    "typeLightning": "Lightning",
+    "typeIntraLedger": "IntraLedger",
+    "pendingStatus": "Pending Pending",
+    "confirmation": "Sự xác nhận",
+    "confirmations": "Các sự xác nhận",
+    "hash": "Hash Hash",
+    "preimage": "Preimage",
+    "transactionId": "Transaction ID",
+    "swapDetails": "Swap Details",
+    "destinationAddress": "Địa chỉ Destination Address",
+    "swapId": "Swap ID",
+    "lockupTxId": "Transaction Lockup Transaction",
+    "claimTxId": "Transaction Claim Transaction",
+    "swapFees": "Swap Fees",
+    "expirationBlockHeight": "Thời hạn hết hạn tại Block"
   },
   "TransactionLimitsScreen": {
     "receive": "Nhận",
@@ -695,7 +1020,11 @@
     "contactUsMessageBody": "Hi, I will like to increase the transaction limits of my {bankName: string} account.",
     "contactUsMessageSubject": "Request To Increase Transaction Limits",
     "contactSupportToPerformKyc": "Contact support to perform manual KYC to increase your limit",
-    "increaseLimits": "Increase your limits"
+    "increaseLimits": "Increase your limits",
+    "spendingLimits": "Giới hạn chi tiêu",
+    "spendingLimitsDescription": "Các giới hạn chi tiêu được hiển thị trên trang này được định nghĩa bằng USD. Để thuận tiện cho bạn, chúng tôi chuyển đổi các giới hạn này thành tiền tệ địa phương của bạn dựa trên tỷ giá ngoại hối hiện tại. Xin lưu ý rằng số tiền tiền địa phương được hiển thị có thể dao động khi tỷ giá ngoại hối được cập nhật theo thời gian thực.",
+    "requestUpgrade": "Request Upgrade Request Upgrade",
+    "editRequest": "Edit Upgrade Request"
   },
   "TransactionScreen": {
     "noTransaction": "Không có giao dịch để hiển thị",
@@ -717,11 +1046,17 @@
     "stayInTrialMode": "Maybe later"
   },
   "SetAddressModal": {
+    "helloText": "Xin chào!",
+    "whoAreYou": "Chúng ta nên gọi bạn là gì?",
+    "usernameHint": "Đây sẽ là tên người dùng {bankName: string} của bạn",
+    "placeholder": "Nhập tên người dùng của bạn",
     "title": "Set {bankName: string} address",
+    "save": "Save Save",
     "Errors": {
       "tooShort": "Username must be at least 3 characters long",
       "tooLong": "Address must be at most 50 characters long",
       "invalidCharacter": "Address can only contain letters, numbers, and underscores",
+      "startsWithNumber": "Tên người dùng của bạn phải bắt đầu bằng chữ cái lớn hoặc chữ cái nhỏ",
       "addressUnavailable": "Sorry, this address is already taken",
       "unknownError": "An unknown error occurred, please try again later"
     },
@@ -758,13 +1093,60 @@
     "tryAgain": "Vui lòng thử lại",
     "sendViaOtherChannel": "You selected to receive the code via {channel: string}. You can try receiving via {other: string} instead"
   },
+  "PhoneRegistrationInitiateScreen": {
+    "title": "Điện thoại được thiết lập",
+    "header": "Nhập số điện thoại của bạn, và chúng tôi sẽ nhắn tin cho bạn một mã truy cập.",
+    "headerVerify": "Hãy xác minh rằng bạn là con người.",
+    "errorRequestingCode": "Có gì đó sai khi yêu cầu mã điện thoại, vui lòng thử lại sau đó.",
+    "errorInvalidPhoneNumber": "Số điện thoại không hợp lệ, bạn có chắc mình đã nhập đúng số không?",
+    "errorUnsupportedCountry": "Chúng tôi không thể hỗ trợ khách hàng ở đất nước của bạn.",
+    "placeholder": "Số điện thoại ",
+    "verify": "Click to Verify",
+    "sms": "Gửi qua SMS",
+    "whatsapp": "Gửi qua WhatsApp"
+  },
+  "PhoneRegistrationValidateScreen": {
+    "successTitle": "Số điện thoại đã được xác nhận"
+  },
+  "EmailRegistrationInitiateScreen": {
+    "title": "Add your email",
+    "header": "Nhập địa chỉ email của bạn, và chúng tôi sẽ gửi cho bạn một mã truy cập.",
+    "invalidEmail": "Địa chỉ email không hợp lệ. Bạn có chắc chắn rằng bạn đã nhập đúng email không?",
+    "send": "Sending code",
+    "missingEmailRegistrationId": "Không có ID đăng ký email ",
+    "placeholder": "hal@finney.org"
+  },
+  "EmailRegistrationValidateScreen": {
+    "header": "Để xác nhận địa chỉ email của bạn, hãy nhập mã mà chúng tôi vừa gửi cho bạn trên {email: string}",
+    "success": "Email {email: string} được xác nhận thành công"
+  },
+  "EmailLoginInitiateScreen": {
+    "title": "Đăng nhập qua email",
+    "header": "Nhập địa chỉ email của bạn, và chúng tôi sẽ gửi cho bạn một mã truy cập.",
+    "invalidEmail": "Địa chỉ email không hợp lệ. Bạn có chắc chắn rằng bạn đã nhập đúng email không?",
+    "send": "Sending code"
+  },
+  "EmailLoginValidateScreen": {
+    "header": "Nếu có một tài khoản được gắn vào {email: string}, bạn nên đã nhận được mã 6 chữ số để nhập dưới đây.Nếu bạn không nhận được bất cứ điều gì, có lẽ đó là bởi vì đây không phải là email đúng, email nằm trong thư mục spam của bạn.",
+    "success": "Email {email: string} được xác nhận thành công"
+  },
   "common": {
+    "enabled": "Enabled",
+    "notifications": "Thông báo thông báo",
+    "preferences": "Preferences  Ưu tiên",
+    "onDeviceSecurity": "An ninh trên thiết bị",
+    "securityAndPrivacy": "An ninh và quyền riêng tư",
+    "advanced": "                                                                                                                                                                                                                                                              ",
+    "community": "Cộng đồng Cộng đồng",
     "account": "Tài khoản",
+    "trialAccount": "Tài khoản thử nghiệm",
+    "flashUser": "Flash User",
     "transactionLimits": "Giới hạn giao dịch",
     "activateWallet": "Kích hoạt ví",
     "amountRequired": "Yêu cầu là bắt buộc",
     "back": "Quay lại",
     "backHome": "Về trang chủ",
+    "revealSeed": "Write down recovery phrase",
     "bank": "Ngân hàng",
     "bankAccount": "Tài khoản tiền mặt",
     "bankAdvice": "{bankName: string} Khuyến cáo",
@@ -776,12 +1158,16 @@
     "cancel": "Hủy",
     "close": "Đóng",
     "confirm": "Xác nhận",
+    "copied": "Copied to clipboard",
     "convert": "Chuyển đổi",
+    "codeConfirmation": "Code Confirmation",
     "currency": "Currency",
     "currencySyncIssue": "Currency issue. Refresh needed",
     "csvExport": "Xuất các giao dịch ra CSV",
+    "exportSparkLogs": "Các nhật ký xuất khẩu",
     "date": "Ngày",
     "description": "Mô tả",
+    "details": "Chi tiết ",
     "domain": "Tên miền",
     "email": "Email",
     "error": "Lỗi",
@@ -801,19 +1187,24 @@
     "loggedOut": "Bạn đã đăng xuất.",
     "logout": "Đăng xuất",
     "minutes": "Những phút",
+    "errorAuthToken": "Trình hiệu tác giả bị mất tích",
     "needWallet": "Create an account to access your wallet",
     "next": "Tiếp theo",
     "No": "Không",
     "note": "Ghi chú",
     "notification": "Thông báo",
     "ok": "OK",
+    "or": "hay ",
     "openWallet": "Mở ví",
+    "phone": "Điện thoại  Điện thoại",
     "phoneNumber": "Số điện thoại",
     "rate": "Tỉ giá",
     "reauth": "Phiên của bạn đã hết hạn. Xin vui lòng đăng nhập lại.",
+    "request": "Pin yêu cầu ",
     "restart": "Khởi động lại",
     "sats": "những sat",
     "search": "Tìm kiếm",
+    "chatSearch": "Username or nostr pubkey",
     "security": "An ninh",
     "send": "Gửi",
     "setAnAmount": "Đặt số tiền",
@@ -821,7 +1212,9 @@
     "shareBitcoin": "Chia sẻ Địa chỉ Bitcoin",
     "shareLightning": "Chia sẻ hóa đơn Lighting",
     "soon": "Ra mắt sớm!",
+    "submit": "Submit Submit",
     "success": "Thành công!",
+    "stablesatsUsd": "Tiền mặt (USD)",
     "to": "Tới",
     "total": "Tổng cộng",
     "transactions": "Các giao dịch",
@@ -841,6 +1234,28 @@
     "prevMonths": "Những tháng trước",
     "problemMaybeReauth": "There was a problem with your request. Please retry in one minute. If the problem persist, we recommend that you log out and log back in. You can log out by going into Settings > Account > Log out",
     "warning": "Warning"
+  },
+  "NostrQuickStart": {
+    "postHeading": "Hãy thực hiện bài đăng xã hội đầu tiên của bạn!",
+    "postDesc": "Hãy giới thiệu bản thân với thế giới!"
+  },
+  "Social": {
+    "post": "Post to Nostr",
+    "postTitle": "Make a Post",
+    "flashAppCredit": "Posted using Flash! Get it @ https://getflash.io/app",
+    "writeYourNote": "Viết ghi chú của bạn, làm cho nó đặc biệt :)",
+    "postButton": "Post Post",
+    "notePosted": "Thành công! ghi chú của bạn đã được đăng ",
+    "errorPostFailed": "Trận lỗi! Trận lỗi trong việc đăng chú ý",
+    "errorEmptyNote": "Lỗi: Lưu ý trống ",
+    "posting": "Posting...",
+    "viewOnIris": "Xem trên iris.to",
+    "viewPostQuestion": "Bạn có muốn xem bài đăng của mình về iris.to không?",
+    "browseSocialFeed": "Quá trình duyệt nguồn cấp dữ liệu xã hội",
+    "socialFeedTitle": "Đánh giá xã hội",
+    "postSuccessTitle": "Post Shared!",
+    "postSuccessSubtitle": "Bài đăng của bạn đã được công bố cho Nostr",
+    "showMeMore": "Hãy cho tôi xem nhiều hơn nữa"
   },
   "errors": {
     "generic": "Đã có lỗi.\nVui lòng thử lại sau.",
@@ -865,13 +1280,28 @@
       "title": "Đã nhận thanh toán"
     }
   },
+  "reports": {
+    "title": "Generate Reports",
+    "reconciliation": "Báo cáo hòa giải ",
+    "aggregation": "Báo cáo tổng hợp",
+    "topRecipients": "Top Recipients Report",
+    "topSenders": "Top Senders Report",
+    "selectFromDate": "Chọn Từ Ngày",
+    "selectToDate": "Chọn To Date",
+    "fromDate": "Từ  Từ ",
+    "toDate": "Để Để",
+    "total": "Total Total Total"
+  },
   "support": {
     "contactUs": "Need help? Contact us.",
     "joinTheCommunity": "Join the community",
     "whatsapp": "WhatsApp",
     "email": "Email",
+    "enjoyingApp": "Bạn đang tận hưởng ứng dụng?",
     "statusPage": "Status Page",
+    "discord": "Discord Discord",
     "mattermost": "Mattermost",
+    "thankYouText": "Cảm ơn bạn đã đưa ra phản hồi, bạn có muốn đề xuất sự cải thiện không?",
     "defaultEmailSubject": "{bankName: string} - Support",
     "defaultSupportMessage": "Hey there! I need some help with {bankName: string}, I'm using the version {version: string} on {os: string}.",
     "emailCopied": "email {Email: String} đã sao chép vào bộ nhớ tạm",
@@ -884,7 +1314,8 @@
     "deleteAccountConfirmation": "Your account has been written for deletion.\n\nWhen the probation period related to regulatory requirement is over, the remaining data related to your account will be permanently deleted.",
     "deleteAccountFromPhone": "Hey there!, please delete my account. My phone number is {phoneNumber: string}.",
     "deleteAccountError": "Something went wrong. Contact {email: string} for further assistance.",
-    "bye": "Bye!"
+    "bye": "Bye!",
+    "switchToBeginnerMode": "Bằng cách chuyển sang chế độ người mới bắt đầu, bạn sẽ không mất quyền truy cập vào tiền ví BTC của mình, nhưng ví sẽ bị ẩn. Bạn có thể chuyển sang chế độ nâng cao một lần nữa bất cứ lúc nào."
   },
   "lnurl": {
     "overLimit": "Bạn không thể gửi quá mức tiền tối đa",
@@ -902,7 +1333,9 @@
     "minAmountNotMet": "Amount must be at least {minAmount: string}."
   },
   "AmountInputButton": {
-    "tapToSetAmount": "Add an amount"
+    "tapToSetAmount": "Add an amount",
+    "tapToSetOnChainAmount": "Thêm một số tiền",
+    "enterAmount": "Vui lòng nhập số tiền để tiếp tục."
   },
   "AppUpdate": {
     "needToUpdateSupportMessage": "I need to update my app to the latest version. I'm using the {os: string} app with version {version: string}.",
@@ -910,5 +1343,149 @@
     "updateMandatory": "Update is mandatory",
     "tapHereUpdate": "Tap here to update now",
     "contactSupport": "Contact Support"
+  },
+  "RefundFlow": {
+    "refundListTitle": "Các khoản tiền gửi không được yêu cầu",
+    "depositDetails": "Chi tiết tiền gửi",
+    "refundTitle": "Khôi phục tiền gửi ",
+    "destinationTitle": "Destination",
+    "confirmationTitle": "Sự xác nhận",
+    "pendingTransactions": "Các giao dịch đang chờ đợi",
+    "noRefundables": "Không có tiền gửi chưa được yêu cầu được tìm thấy",
+    "view": "View View",
+    "refund": "Quản tiền hoàn lại ",
+    "refundTo": "Trả tiền cho ví USD",
+    "recommendedFees": "Các khoản phí được khuyến cáo",
+    "fast": "Fast Fast Fast",
+    "medium": "Đường trung bình",
+    "slow": "Slow Slow",
+    "txId": "Transaction ID",
+    "refunded": "Được hoàn trả lại",
+    "pending": "Pending Pending",
+    "autoClaiming": "Việc chuyển nhượng này sẽ được yêu cầu tự động",
+    "approvalRequired": "Ưu tiên chấp thuận được yêu cầu",
+    "broadcasting": "Truyền thông ",
+    "feeExceeded": "Thu phí quá cao",
+    "claimFailed": "Claim failed",
+    "automaticClaim": "Đặt tiền này sẽ được yêu cầu tự động khi phí mạng thấp hơn.",
+    "approveFee": "Hãy chấp nhận yêu cầu chuyển khoản này, hoặc từ chối xử lý hoàn tiền.",
+    "enterAddress": "Nhập địa chỉ Bitcoin nơi bạn muốn nhận tiền hoàn lại.",
+    "selectFee": "Chọn một khoản phí mạng để hoàn lại tiền",
+    "confirmRefund": "Confirm & Refund",
+    "processing": "Việc hoàn lại tiền xử lý...",
+    "success": "Khôi phục chương trình phát sóng ",
+    "refundSuccess": "Quản tiền hoàn lại của bạn đã được gửi đến mạng Bitcoin.",
+    "refundFailed": "Thu hồi thất bại",
+    "failedToClaim": "Không thể yêu cầu tiền gửi",
+    "unknownError": "Một lỗi không rõ đã xảy ra",
+    "missingUtxo": "Số tiền gửi UTXO bị mất tích, giao dịch có thể chưa được xác nhận.",
+    "couldNotClaimAutomatically": "Đặt tiền này không thể được đòi hỏi tự động.",
+    "networkFee": "Thuế mạng lưới mạng ",
+    "networkFeeWithRate": "Thuế mạng ({feeRate: string} sat/vB)",
+    "youReceive": "Bạn nhận được",
+    "approve": "                                                                                                                                                                                                                                                              ",
+    "refundToExternalWallet": "Bạn có thể hoàn lại nó cho một ví bên ngoài.",
+    "enterDestinationAddress": "Vui lòng nhập địa chỉ đích ",
+    "invalidBitcoinAddress": "Các định dạng địa chỉ Bitcoin không hợp lệ",
+    "estimatedFee": "Phí mạng ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Est. You Receive",
+    "feeEstimateDisclaimer": "Các khoản phí được ước tính, và khoản phí thực tế sẽ được tính vào thời điểm phát sóng."
+  },
+  "Nostr": {
+    "editProfile": "Edit Profile",
+    "importNsecTitle": "Nhập khẩu chìa khóa bí mật Nostr Secret của bạn.",
+    "importNsecDefaultDescription": "Bạn đã đăng nhập vào một thiết bị khác.Vui lòng nhập nsec của bạn từ thiết bị khác để tiếp tục sử dụng tính năng trò chuyện.",
+    "createProfileTitle": "Create Profile Tạo hồ sơ",
+    "createProfileWarning": "Nếu bạn tiếp tục, bất kỳ dữ liệu hồ sơ hiện có nào sẽ bị ghi đè.",
+    "createProfilePubkeyMessage": "Chúng tôi không thể tìm thấy một sự kiện hồ sơ gắn liền với pubkey này.",
+    "createProfilePrompt": "Bạn có muốn tiếp tục sáng tạo không?",
+    "createProfileButton": "Create Profile Tạo hồ sơ",
+    "profileNotFound": "Chúng tôi đang tìm kiếm, nhưng không thể tìm thấy hồ sơ của bạn.",
+    "promptToCreateProfile": "Bạn có muốn tạo ra một cái ngay bây giờ không?",
+    "learnAboutNostr": "Tìm hiểu về Nostr",
+    "learnAboutNostrSubtext": "Hãy khám phá hướng dẫn này để tận dụng tối đa các trò chuyện nostr",
+    "showPublicKey": "Show public key",
+    "showPrivateKey": "Show private key",
+    "profileConnected": "Profile Connected",
+    "reconnectProfile": "Reconnect Profile",
+    "tapToRefreshConnection": "Nhấp vào để làm mới kết nối",
+    "importExistingProfile": "Nhập khẩu hồ sơ hiện có",
+    "deleteProfile": "Delete profile",
+    "noProfileIdExists": "No Profile ID exists",
+    "profileReconnected": "Profile của bạn đã được kết nối lại thành công.",
+    "deleteWarningTitle": "Cảnh báo ",
+    "deleteWarningMessage": "Việc xóa chìa khóa hồ sơ của bạn sẽ xóa tài khoản của bạn khỏi thiết bị này.Nếu không có bản sao lưu, bạn sẽ không thể truy cập vào hồ sơ này nữa.",
+    "importNsecDescription": "Nếu bạn muốn sử dụng nsec của riêng bạn, hãy dán nó dưới đây.",
+    "profileImportedSuccessfully": "Profile được nhập khẩu thành công",
+    "noProfileFound": "Không có hồ sơ Nostr được tìm thấy",
+    "noProfileDescription": "Bạn chưa tạo ra một hồ sơ Nostr, hãy nhấn dưới đây để tạo ra một hồ sơ.",
+    "keyConflictTitle": "Nostr Key Not Found on Device",
+    "keyConflictDescription": "Tài khoản của bạn có một khóa Nostr đã đăng ký nhưng nó không được tìm thấy trên thiết bị này.Điều này có thể xảy ra sau khi cài đặt lại ứng dụng hoặc chuyển thiết bị.Để khôi phục quyền truy cập, hãy nhập sao lưu nsec của bạn từ cài đặt nâng cao.",
+    "creatingProfile": "Tạo hồ sơ...",
+    "createNewProfile": "Tạo hồ sơ mới",
+    "generateProfile": "Generate Profile",
+    "findingYou": "Tìm kiếm bạn..",
+    "advancedSettings": "Nostr Advanced Settings",
+    "KeyModal": {
+      "yourPublicProfileId": "ID hồ sơ công cộng của bạn",
+      "yourPrivateProfileKey": "Chìa khóa hồ sơ cá nhân của bạn",
+      "keyCopiedToClipboard": "Key copied to clipboard"
+    },
+    "Contacts": {
+      "stillLoading": "Bạn gặp khó khăn trong việc tìm thấy danh sách liên hệ của mình, bạn đã theo dõi bất cứ ai chưa?",
+      "noCantacts": "Không có liên lạc có sẵn",
+      "profile": "Profile Profile",
+      "nostrUser": "Nostr User",
+      "message": "Message Message",
+      "sendPayment": "Sending Sending Sending Sending Sending",
+      "contactInfo": "Thông tin liên lạc Contact Info",
+      "contactManagement": "Quản lý liên lạc",
+      "unfollowContact": "Unfollow Contact",
+      "noListDeepLinkMessage": "Chúng tôi không thể tìm thấy danh sách liên hệ của bạn. Để thêm bạn bè, bạn cần phải khởi tạo danh sách liên hệ của mình trong Settings trước.",
+      "manageContacts": "Quản lý liên lạc",
+      "createContactList": "Danh sách liên lạc Create Contact List"
+    },
+    "common": {
+      "copy": "Copy Copy",
+      "copied": "Copied",
+      "goToSettings": "Đi đến cài đặt"
+    }
+  },
+  "AccountUpgrade": {
+    "accountType": "Loại tài khoản",
+    "personal": "Cá nhân",
+    "personalDesc": "Bảo vệ ví của bạn bằng điện thoại và email.",
+    "pro": "Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro",
+    "proDesc": "Chấp nhận thanh toán và được khám phá trên bản đồ.",
+    "merchant": "Thương nhân",
+    "merchantDesc": "Cung cấp phần thưởng, xuất hiện trên bản đồ và thanh toán với ngân hàng của bạn.",
+    "personalInfo": "Thông tin cá nhân",
+    "fullName": "Tên đầy đủ",
+    "phoneNumber": "Số điện thoại ",
+    "email": "Địa chỉ email",
+    "optional": "(Được lựa chọn)",
+    "validation": "Sự xác thực",
+    "validationCode": "Mã xác thực ",
+    "businessInfo": "Thông tin kinh doanh ",
+    "businessName": "Tên doanh nghiệp",
+    "businessNamePlaceholder": "Nhập tên doanh nghiệp của bạn",
+    "businessAddress": "Địa chỉ kinh doanh",
+    "businessAddressPlaceholder": "Nhập địa chỉ kinh doanh của bạn",
+    "flashTerminal": "Bạn có muốn một thiết bị cuối Flash không?",
+    "flashTerminalTooltip": "Flash Terminal là một thiết bị thông minh có thể chấp nhận thanh toán thông qua Flash cho doanh nghiệp của bạn và in hóa đơn.Một đại diện dịch vụ khách hàng sẽ liên hệ với bạn nếu bạn đánh dấu hộp này.",
+    "bankingInfo": "Thông tin ngân hàng",
+    "bankName": "Tên ngân hàng",
+    "bankNamePlaceholder": "Chọn tên ngân hàng của bạn",
+    "bankBranch": "Chi nhánh ngân hàng",
+    "bankBranchPlaceholder": "Nhập vào chi nhánh ngân hàng của bạn",
+    "bankAccountType": "Loại tài khoản",
+    "selectBankAccountType": "Chọn loại tài khoản",
+    "currency": "Tiền tệ",
+    "selectCurrency": "Chọn Tiền tệ",
+    "accountNum": "Số tài khoản ",
+    "accountNumPlaceholder": "Nhập số tài khoản của bạn",
+    "uploadId": "Upload ID Document",
+    "successUpgrade": "Bạn đã nâng cấp thành công tài khoản của mình lên {accountType: string}",
+    "successRequest": "Bạn đã yêu cầu thành công nâng cấp tài khoản của mình lên {accountType: string}"
   }
 }

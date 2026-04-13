@@ -2,6 +2,7 @@
   "GaloyAddressScreen": {
     "title": "Primi plaćanje koristeći:",
     "buttonTitle": "Set your address",
+    "yourLightningAddress": "Vaš Lightning adresa",
     "yourAddress": "Vaša {bankName: string} adresa",
     "notAbleToChange": "Nećete moći promijeniti svoju {bankName: string} adresu nakon što je postavite.",
     "addressNotAvailable": "Ova {bankName: string} adresa je već zauzeta.",
@@ -9,6 +10,7 @@
     "merchantTitle": "Za trgovce",
     "yourCashRegister": "Vaša Lightning blagajna",
     "yourPaycode": "Vaš kod za plaćanja",
+    "copiedLightningAddressToClipboard": "Kopirao je Lightning adresu na klipbord",
     "copiedAddressToClipboard": "{bankName: string} adresa kopirana je u međuspremnik",
     "copiedPaycodeToClipboard": "Kopiran kod u međuspremnik",
     "copiedCashRegisterLinkToClipboard": "Poveznica blagajne kopirana u međuspremnik",
@@ -19,6 +21,15 @@
     "howToUseYourAddressExplainer": "Podijelite s nekim tko ima kompatibilan novčanik, kao što su:",
     "howToUseYourPaycodeExplainer": "Možete ispisati svoj Paycode (tehnički, ovo je lnurl-pay adresa) i prikazati ga u svojoj tvrtki za primanje uplata. Pojedinci vam mogu platiti skeniranjem pomoću novčanika koji podržava Lightning.\n\nMeđutim, imajte na umu da neki novčanici ne mogu skenirati Paycode kao što su:",
     "howToUseYourCashRegisterExplainer": "Omogućite ljudima da prikupljaju uplate putem poveznice na blagajnu, bez pristupa vašem novčaniku.\n\nOni mogu izraditi fakture i uplate će se slati izravno u vaš novčanik {bankName: string}."
+  },
+  "SetAccountModal": {
+    "title": "Nastavite podrazumevan račun",
+    "description": "Ovaj račun će se prvobitno odabrati za slanje i primanje plaćanja.",
+    "stablesatsTag": "Izaberite ovo kako biste održali stabilnu vrijednost USD.",
+    "bitcoinTag": "Izaberite ovo da bude na Bitcoin standardu."
+  },
+  "NoteInput": {
+    "addNote": "Dodaj napomenu..."
   },
   "AuthenticationScreen": {
     "authenticationDescription": "Autentificirajte se za nastavak",
@@ -37,6 +48,37 @@
   "ContactDetailsScreen": {
     "title": "Transakcije s {username: string}"
   },
+  "ChatScreen": {
+    "noChatsTitle": "Nema čata pronađen",
+    "noChatsYet": "Unesite Flash korisničko ime ili nostr pubkey da biste započeli razgovor",
+    "noMatchingChats": "Nije pronađen ni jedan chat koji odgovara vašoj pretraživanju.",
+    "title": "Chat  Chat "
+  },
+  "ChatDetailsScreen": {
+    "title": "Razgovarajte s {username: string}"
+  },
+  "CardScreen": {
+    "noCardsTitle": "Nisu pronađene kartice",
+    "noCardsYet": "Kliknite na Flashcard kako biste ga dodali ovdje",
+    "noMatchingCards": "Nije pronađena nikakva kartica koja odgovara vašem pretraživanju.",
+    "title": "Flashcard",
+    "notFlashcard": "Nepodržana NFC kartica.Prosimo se osigurati da koristite flash karticu.",
+    "noNDEFMessage": "NDEF poruka nije pronađena.Prosimo se osigurati da koristite flash karticu.",
+    "notSupported": "NFC nije podržan na ovom uređaju.",
+    "notEnabled": "NFC nije uključen na ovom uređaju.",
+    "noTag": "Molim vas, provjerite da koristite flash karticu."
+  },
+  "Cashout": {
+    "title": "Settle",
+    "percentageToCashout": "Da se poravnaju %",
+    "valid": "Važi za {time: string}",
+    "exchangeRate": "Razmena stopa razmjene ",
+    "sendAmount": "Pošaljite iznos",
+    "receiveAmount": "Prihvaćeni iznos",
+    "fee": "Plaćanje ",
+    "success": "Zahtjev za raspolaganje uspješno je pokrenut.",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
+  },
   "ConversionDetailsScreen": {
     "title": "Konvertiraj",
     "percentageToConvert": "% za konverziju"
@@ -44,7 +86,9 @@
   "ConversionConfirmationScreen": {
     "title": "Pregled konverzije",
     "youreConverting": "Konvertirate",
-    "receivingAccount": "Račun za primanje"
+    "sendingAccount": "Slanje računa",
+    "receivingAccount": "Račun za primanje",
+    "conversionFee": "Konverzijska pristojba"
   },
   "ConversionSuccessScreen": {
     "title": "Uspjeh konverzije",
@@ -421,7 +465,13 @@
   },
   "GetStartedScreen": {
     "logInCreateAccount": "Prijavi se / kreiraj račun",
+    "quickStart": "Start Start Start",
+    "restoreWallet": "Login",
     "exploreWalletInstead": "Umjesto toga istražite novčanik",
+    "setupBusinessAccount": "Uspostavljanje poslovnog računa",
+    "createAccount": "Stvorite novi račun",
+    "exploreWallet": "Istražite novčanik",
+    "logBackInWith": "Ponovno se prijavite s",
     "headline": "Novčanik koji pokreće Galoy",
     "startTrialAccount": "Započni s probnim računom",
     "startWithTrialAccount": "Start with trial account",
@@ -433,7 +483,8 @@
       "noBackup": "Nema sigurnosne kopije",
       "sendingLimit": "Smanjeno dnevno ograničenje slanja",
       "noOnchain": "Nema primanja bitcoina na lancu"
-    }
+    },
+    "chooseAccountType": "Izaberite tip računa"
   },
   "MapScreen": {
     "locationPermissionMessage": "Aktivirajte svoju lokaciju kako biste znali gdje se nalazite na karti",
@@ -442,16 +493,48 @@
     "locationPermissionPositive": "OK",
     "locationPermissionTitle": "Locirajte se na karti",
     "payBusiness": "plati ovu radnju",
-    "title": "Karta"
+    "title": "Karta",
+    "addPin": "Kliknite bilo gdje da biste dodali pin",
+    "selectedCoordinates": "Vaše Flashpoint koordinate: ",
+    "viewInGoogleMaps": "Pogledajte u Google Maps",
+    "getDirections": "Smjernice Dobijte smjernice"
   },
   "HomeScreen": {
+    "cashout": "Izlazi iz gotovine",
     "receive": "Primi",
+    "reload": "Reload Card",
+    "balance": "Održavanje ravnoteže",
+    "showQrCode": "Topup putem QR",
     "send": "Šalji",
+    "sweep": "Prebacite se u novčanik",
+    "pay": "Plaćanje  Plaćanje ",
     "title": "Doma",
     "scan": "Scan QR",
     "updateAvailable": "Ažuriranje je dostupno.\nDodirnite za ažuriranje sada",
     "useLightning": "Koristimo Lightning Network.",
-    "myAccounts": "Moji računi"
+    "myAccounts": "Moji računi",
+    "unclaimedDepositsWarning": "️ P l e a s e c o m p l e t e o r claim a l l l unclaimed deposits b e f o r e u n i n s t a l i n g F l a s o r unclaimed deposits w i l l b e l o s t .",
+    "unclaimedDeposits": "Unclaimed Deposits",
+    "cash": "Gotovinski  Gotovinski ",
+    "bitcoin": "Bitcoin",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Add",
+    "upgradeTitle": "Nadogradite svoj račun",
+    "upgradeTitlePending": "Zahtjev za nadogradnju je čekao",
+    "upgradeDesc": "Nadgradite kako biste povećali vidljivost, granice i izplate.",
+    "upgradePendingDesc": "Vaš zahtjev za nadogradnju računa je pod razmatranjem.",
+    "currencyTitle": "Promjenite se u lokalnu valutu",
+    "currencyDesc": "Provjerite naš popis raspoloživih valuta i odaberite svoju valutu.",
+    "flashcardTitle": "Uzmi Flashcard",
+    "flashcardDesc": "Nađi Flashpoint i nabavi Flashcard za korištenje u svakodnevnom životu.",
+    "nonCustodialWalletTitle": "Ne-zadužnički novčaniki",
+    "nonCustodialWalletDesc": "Saznajte više o novčanicama koje nisu u pritvoru.",
+    "emailTitle": "E-mail adresa",
+    "emailDesc": "Dodajte svoju e-mail adresu kako biste osigurali svoj račun i prijavljivali se koristeći e-mail adresu.",
+    "btcWalletTitle": "Aktivirajte BTC novčanik",
+    "btcWalletDesc": "Jednostavno prebacite veće količine u Bitcoin.",
+    "backupTitle": "Zaštitite svoj BTC novčanik.",
+    "backupDesc": "Zaštitite i osigurajte svoj Bitcoin novčanik koristeći frazu recovery."
   },
   "PinScreen": {
     "attemptsRemaining": "Netočan PIN. {attemptsRemaining: number} preostalih pokušaja.",
@@ -479,11 +562,13 @@
     "title": "Doma"
   },
   "ReceiveScreen": {
+    "flashcardInstructions": "Skenirajte kod QR ili kliknite na ikonu kako biste ga podijelili na whatsapp, e-pošti itd.",
     "nfc": "NFC",
     "enterAmountFirst": "Please enter an amount first",
     "activateNotifications": "Želite li aktivirati obavijesti kako biste bili obaviješteni kada uplata stigne?",
     "copyClipboard": "Faktura je kopirana u međuspremnik",
     "copyClipboardBitcoin": "Bitcoin adresa je kopirana u međuspremnik",
+    "copyClipboardPaycode": "Paycode/LNURL je kopiran u ploču",
     "invoicePaid": "Ova faktura je plaćena",
     "setNote": "postavi bilješku",
     "tapQrCodeCopy": "Dodirnite QR kod za kopiranje",
@@ -505,7 +590,37 @@
     "useALightningInvoice": "Koristi Lightning fakturu",
     "setANote": "Postavi bilješku",
     "invoiceAmount": "Iznos fakture",
-    "fees": "{minBankFee: string} sats fees for onchain payment below {minBankFeeThreshold: string} sats"
+    "fees": "{minBankFee: string} sats fees for onchain payment below {minBankFeeThreshold: string} sats",
+    "lightning": "Lightning",
+    "paycode": "Paycode",
+    "onchain": "Onchain",
+    "bitcoin": "Bitcoin",
+    "stablesats": "Gotovinski  Gotovinski ",
+    "regenerateInvoiceButtonTitle": "Regenerate Invoice",
+    "setUsernameButtonTitle": "Nastavi korisničko ime",
+    "invoiceHasExpired": "Faktura je istekla",
+    "setUsernameToAcceptViaPaycode": "Nastavite svoje korisničko ime da prihvati putem Paycode QR (LNURL) i Lightning Address",
+    "singleUse": "Jedinstveno korištenje",
+    "invoiceExpired": "Isplaćena faktura",
+    "invoiceValidity": {
+      "validFor1Day": "Važi za jedan dan",
+      "validForNext": "Valid za sljedeći {duration: string}",
+      "validBefore": "Validan prije {time: string}",
+      "expiresIn": "Izgodi u {duration: string}",
+      "expiresNow": "Izgodi sada"
+    },
+    "invoiceHasBeenPaid": "Račun je plaćen",
+    "yourBitcoinOnChainAddress": "Vaš Bitcoin Onchain Address",
+    "receive": "Receive Receive",
+    "receiveViaInvoice": "Dobijte preko Lightning",
+    "receiveViaPaycode": "Dobijte putem Paycode",
+    "topupFlashcard": "Topup Flashcard",
+    "receiveViaOnchain": "Prihvatite preko Onchain",
+    "payCodeOrLNURL": "Paycode / LNURL",
+    "cantReceiveZeroSats": "Ne možete dobiti nula sats. Molimo unesite iznos koji odgovara 1 ili više sats.",
+    "initialDeposit": "* Priporočan je početni depozit od $5 za postavljanje kanala. ~$1 će se platiti kao naknada za postavljanje.",
+    "selectPaymentMethod": "Izaberite način plaćanja",
+    "selectWallet": "Izaberite novčanik"
   },
   "RedeemBitcoinScreen": {
     "title": "Povuci bitcoin",
@@ -524,7 +639,12 @@
     "invalidTitle": "Nevažeći QR kod",
     "noQrCode": "Nismo mogli pronaći QR kod na slici",
     "title": "Skeniraj QR",
-    "invalidContentLnurl": "Našli smo:\n\n{found: string}\n\ntrenutno nije podržano"
+    "permissionCamera": "Trebamo dozvolu za korištenje vašeg fotoaparata",
+    "noCamera": "Nije pronađen fotoaparat",
+    "openSettings": "Otvorite postavke",
+    "unableToOpenSettings": "Nemoguće je otvoriti postavke",
+    "invalidContentLnurl": "Našli smo:\n\n{found: string}\n\ntrenutno nije podržano",
+    "imageLibraryPermissionsNotGranted": "Nemamo ovlaštenja za pristup knjižnici slika.Prosimo provjerite postavke aplikacije za vašu platformu."
   },
   "SecurityScreen": {
     "biometricDescription": "Otključajte otiskom prsta ili prepoznavanjem lica.",
@@ -535,7 +655,8 @@
     "hideBalanceTitle": "Sakrij stanje",
     "pinDescription": "PIN se koristi kao rezervna metoda autentifikacije za biometrijsku autentifikaciju.",
     "pinTitle": "PIN kod",
-    "setPin": "Postavi PIN"
+    "setPin": "Postavi PIN",
+    "backupDescription": "Za postavljanje PIN koda, molimo vas da se zauzmete pomoću dodavanja telefonskog broja."
   },
   "SendBitcoinConfirmationScreen": {
     "amountLabel": "Iznos:",
@@ -577,12 +698,17 @@
       "body3": "U suprotnom, novac će ići na račun {bankName: string} koji ima adresu “{lnAddress: string}”.\n\nProvjerite i pravopis prvog dijela adrese. npr. jackie i jack1e su 2 različite adrese",
       "warning": "Ako je adresa {bankName: string} netočno unesena, {bankName: string} ne može poništiti transakciju.",
       "checkBox": "{lnAddress: niz} je prava adresa.",
-      "confirmButton": "100% sam siguran"
+      "confirmButton": "100% sam siguran",
+      "externalWarning": "Uskoro ćete poslati novac nekome tko nije {bankName: string} račun.",
+      "externalCheckBox": "Potvrdim slanje na {address: string}."
     },
     "clipboardError": "Pogreška prilikom preuzimanja vrijednosti iz međuspremnika"
   },
   "SendBitcoinScreen": {
     "amount": "Iznos",
+    "MinOnChainLimit": "Minimalni iznos za ovu transakciju je 2,00 dolara.",
+    "MinOnChainSatLimit": "Minimalni iznos za ovu transakciju je 5.500 sats",
+    "MinFlashcardLimit": "Minimalni iznos pri ponovnom punjenju s flash kartice je 100 sats",
     "amountExceed": "Iznos premašuje vaš saldo od {balance: string}",
     "amountExceedsLimit": "Iznos premašuje vaše preostalo dnevno ograničenje od {limit: string}",
     "upgradeAccountToIncreaseLimit": "Nadogradite svoj račun kako biste povećali svoje ograničenje",
@@ -592,19 +718,35 @@
     "destinationIsRequired": "Odredište je obavezno",
     "fee": "mrežna naknada",
     "feeCalculationUnsuccessful": "Izračun neuspješan ⚠️",
+    "placeholder": "Korisničko ime, faktura ili adresa",
     "invalidUsername": "Nevažeće korisničko ime",
     "noAmount": "Ova faktura nema iznos, pa morate ručno odrediti koliko novca želite poslati",
     "notConfirmed": "Uplata je poslana\nali još nije potvrđena\n\nMožete provjeriti status\nplaćanja u Transakcijama",
     "note": "Napomena ili oznaka",
     "success": "Uplata je uspješno poslana",
+    "suggestionInput": "Unesite svoj prijedlog",
     "max": "Max",
     "maxAmount": "Max Amount",
     "title": "Šalji Bitcoin",
+    "send": "Poslati  Poslati ",
     "failedToFetchLnurlInvoice": "Nije uspjelo dohvaćanje lnurl fakture",
     "lnurlInvoiceIncorrectAmount": "lnurl poslužitelj je odgovorio fakturom s netočnim iznosom.",
-    "lnurlInvoiceIncorrectDescription": "lnurl poslužitelj je odgovorio fakturom s netočnim hashom opisa."
+    "lnurlInvoiceIncorrectDescription": "lnurl poslužitelj je odgovorio fakturom s netočnim hashom opisa.",
+    "noAmountInvoiceError": "U novčaniku BTC nije podržan nijedan iznos fakture.Prosimo, vratite se i skenirate ili unesite fakturu s dodatnim iznosom.",
+    "onchainMinAmountInvoiceError": "Iznos koji ste ušli je manji od minimalnog iznosa koji je potreban za slanje transakcije na lancu {amount: number}. Molimo razmislite o slanju tog iznosa putem Lightning!",
+    "minAmountInvoiceError": "Iznos na računu je manji od minimalnog iznosa {amount: number}",
+    "maxAmountInvoiceError": "Iznos na računu je veći od maksimalnog iznosa {amount: number}",
+    "minAmountConvertError": "Iznos konverzije je manji od minimalnog potrebnog iznosa {amount: number}",
+    "maxAmountConvertError": "Iznos konverzije je veći od maksimalnog iznosa {amount: number}"
   },
   "SettingsScreen": {
+    "staticQr": "Statikno štampanje QR Code",
+    "staticQrCopied": "Vaš statički link za kod QR-a je kopiran",
+    "setByOs": "Nastavio je OS",
+    "apiAcess": "Access API API",
+    "pos": "Tačka prodaje",
+    "posCopied": "Vaš link na prodajnu točku je kopiran",
+    "setYourLightningAddress": "Nastavite svoje korisničko ime",
     "activated": "Aktivirano",
     "addressScreen": "Načini plaćanja",
     "tapUserName": "Dodirnite za postavljanje korisničkog imena",
@@ -625,7 +767,17 @@
     "nfcNotCompatible": "Dohvaćanje informacija s kartice nije kompatibilna veza lnurl-withdraw.",
     "nfcOnlyReceive": "Za sada je dostupno samo primanje od NFC-a",
     "nfcScanNow": "Skeniraj NFC sada",
-    "nfcNotSupported": "NFC nije podržan na ovom uređaju"
+    "nfcNotSupported": "NFC nije podržan na ovom uređaju",
+    "logInOrCreateAccount": "Lognite se ili kreirate račun",
+    "backup": "Backup",
+    "importWallet": "Importni novčanik",
+    "showSeedPhrase": "Reveal recovery phrase",
+    "showNostrSecret": "Chat Settings",
+    "beginnerMode": "Disable Bitcoin Account",
+    "advanceMode": "Aktivirajte Bitcoin račun (napredni način)",
+    "keysManagement": "Zaštita novčanika ",
+    "showBtcAccount": "Pokažite Bitcoin račun",
+    "hideBtcAccount": "Sakrij račun Bitcoin"
   },
   "NotificationSettingsScreen": {
     "title": "Postavke obavijesti",
@@ -638,18 +790,152 @@
       "Payments": {
         "title": "Plaćanja",
         "description": "Obavijesti vezane uz slanje i primanje uplata."
+      },
+      "Marketing": {
+        "title": "Karakteristike i ažuriranja",
+        "description": "Obaveštenja o novim funkcijama i ažuriranjima."
+      },
+      "Price": {
+        "title": "Promjene cijena",
+        "description": "Obaveštenja o cijeni Bitcoin-a."
       }
     }
   },
   "AccountScreen": {
+    "fundsMoreThan5Dollars": "Vaš račun ima više od $5",
+    "itsATrialAccount": "Probavi računi imaju smanjene ograničenja transakcija i ne postoje metode oporavka.Ako izgubite telefon ili deinstalirate aplikaciju, vaša sredstva će biti nepovratna.",
+    "accountBeingDeleted": "Vaš račun se briše, molim vas, sačekajte...",
+    "dangerZone": "Zona opasnosti",
+    "phoneDeletedSuccessfully": "Telefon je uspješno izbrisan",
+    "phoneNumber": "Telefonski broj ",
+    "tapToAddPhoneNumber": "Kliknite na to da biste dodali telefonski broj",
+    "loginMethods": "Metode prijavljivanja",
+    "level": "Stupanj {level: string}",
     "accountLevel": "Razina računa",
     "upgrade": "Nadogradite svoj račun",
     "logOutAndDeleteLocalData": "Odjavi se i izbriši sve lokalne podatke",
     "IUnderstand": "Razumijem. Molim odjavi me.",
     "logoutAlertTitle": "Jeste li sigurni da se želite odjaviti i izbrisati sve lokalne podatke?",
+    "logoutAlertContentPhone": "Potrebno će vam je ponovno ući svoj telefonski broj kako biste se ponovno prijavili. Vaš je telefonski broj {phoneNumber: string} pa se pobrinite da imate pristup njemu kako biste se ponovno prijavili",
+    "logoutAlertContentEmail": "Moraćete ponovo ući u svoj e-mail kako biste se ponovno prijavili. e-mail vam je {email: string} pa se pobrinite da imate pristup njemu kako biste se ponovno prijavili",
+    "logoutAlertContentPhoneEmail": "Potrebno će vam je ponovno uneti ili svoj telefonski broj ili e-mail da biste se ponovno prijavili. Vaš telefonski broj je {phoneNumber: string} i vaš e-mail je {email: string} pa se pobrinite da imate pristup onima kojima se možete ponovno prijaviti",
     "usdBalanceWarning": "You have a Stablesats balance of {balance: string}.",
     "btcBalanceWarning": "You have a bitcoin balance of {balance: string}.",
-    "secureYourAccount": "Register to secure your account"
+    "secureYourAccount": "Register to secure your account",
+    "tapToAdd": "Kliknite na dodatak",
+    "tapToAddEmail": "Kliknite na dodatak e-pošte",
+    "unverifiedEmail": "E-mail (neovjereno)",
+    "email": "E-mail",
+    "emailDeletedSuccessfully": "E-mail je uspješno izbrisan",
+    "unverifiedEmailAdvice": "Neovjerene e-pošte ne mogu se koristiti za prijavljivanje.Morate ponovno potvrditi svoju e-poštnu adresu.",
+    "deleteEmailPromptTitle": "Izbrišite e-mail",
+    "deleteEmailPromptContent": "Jeste li sigurni da želite izbrisati svoju e-mail adresu? moći ćete se vratiti samo svojim telefonskim brojem.",
+    "deletePhonePromptTitle": "Izbrišite telefon",
+    "deletePhonePromptContent": "Jeste li sigurni da želite izbrisati svoj broj telefona? moći ćete se vratiti samo putem e-pošte.",
+    "addEmailFirst": "Dodaj prvo e-mail",
+    "addPhoneFirst": "Add a phone first",
+    "phoneNumberAuthentication": "Telefonski broj (za prijavljivanje)",
+    "emailAuthentication": "E-mail (za prijavljivanje)",
+    "removePhone": "Uklonite telefon",
+    "removeEmail": "Uklonite e-mail",
+    "unverified": "E-mail nije potvrđen",
+    "unverifiedContent": "Obezbedi svoj račun provjerom e-pošte.",
+    "confirmEmail": "Potvrdi e-mail",
+    "emailUnverified": "Vaš e-mail nije potvrđen",
+    "emailUnverifiedContent": "Pobrinite se da se možete vratiti u svoj račun provjerom e-pošte.",
+    "totp": "Dva faktora autentifikacije",
+    "totpDeactivated": "Dvostruka autentifikacija bila je deaktivirana",
+    "totpDeleteAlertTitle": "Delete two-factor authentication",
+    "totpDeleteAlertContent": "Jeste li sigurni da želite izbrisati dvostruku autentifikaciju?",
+    "copiedAccountId": "Kopirao si ID računa na klipbord",
+    "yourAccountId": "Vaš ID računa",
+    "accountId": "ID računa ",
+    "copy": "Copy Copy"
+  },
+  "TotpRegistrationInitiateScreen": {
+    "title": "Dva faktora autentifikacije",
+    "content": "Skenirajte ovaj QR kod pomoću svoje autentifikatorske aplikacije."
+  },
+  "TotpRegistrationValidateScreen": {
+    "title": "Dva faktora autentifikacije",
+    "enter6digitCode": "Unesite šestcifreni kod iz vaše aplikacije za autentifikaciju kako bi potvrdili vašu dvostruku autentifikaciju.",
+    "success": "Dvostruka autentifikacija je omogućena, a sada ćete se moći prijaviti samo svojim telefonom ili e-poštom I dvostrukom autentifikacijom, a mogu se vratiti samo puni KYC računi u slučaju da je korisnik izgubio pristup dvostruku autentifikaciji."
+  },
+  "TotpLoginValidateScreen": {
+    "title": "Dva faktora autentifikacije",
+    "content": "Unesite šestcifreni kod iz svoje autentifikatorske aplikacije kako biste se prijavili, a taj se kod mijenja svakih 30 sekundi."
+  },
+  "BackupOptions": {
+    "title": "Opcije za kopiranje ",
+    "recoveryPhrase": "Phrase Recovery Phrase",
+    "recoveryPhraseDesc": "Zaštita Bitcoin novčanik koristeći frazu oporavak",
+    "revealRecoveryPhrase": "Reveal Recovery Phrase",
+    "revealRecoveryPhraseDesc": "Koristite svoju frazu oporavka za uvoz Bitcoin novčanika",
+    "phone": "Telefon  Telefon ",
+    "phoneDesc": "Backup Cash Wallet pomoću telefonskog broja",
+    "usePhoneNumber": "Koristite svoj telefonski broj za uvoz gotovog novčanika",
+    "done": "     "
+  },
+  "BackupStart": {
+    "title": "Prvo, kreiramo vašu frazu oporavka",
+    "description": "Recuperativna fraza je niz od 12 riječi u određenom redoslijedu.Ova je kombinacija riječi jedinstvena za vaš novčanik.Osigurajte se da imate olovku i papir spremni kako biste ga mogli zapisati.",
+    "continue": " Nastavite Nastavite"
+  },
+  "BackupSeedPhrase": {
+    "title": "Ovo je tvoja fraza oporavka",
+    "description": "Obavezno ga zapisi kao što je prikazano ovdje.Morate to provjeriti kasnije.",
+    "backupToICloud": "Backup na iCloud",
+    "backupToGoogleDrive": "Backup na Google Drive",
+    "verify": "Verify"
+  },
+  "BackupDoubleCheck": {
+    "title": "Idemo dvostruko provjeriti",
+    "description1": "Sada provjerimo da ste ispravno napisali frazu o oporavku.",
+    "description2": "Da, to je tako važno.",
+    "continue": " Nastavite Nastavite"
+  },
+  "BackupVerify": {
+    "title": "Kliknite na riječi u pravom redoslijedu.",
+    "correctTitle": "Pobrinite se da sigurno čuvate frazu za oporavak.",
+    "wrongTitle": "Žao mi je, ali to nije tačna treća riječ.",
+    "tryAgain": "Pokušajte opet",
+    "continue": " Nastavite Nastavite"
+  },
+  "BackupComplete": {
+    "title": "Vaš je backup završen",
+    "description": "Sada biste trebali imati svoju frazu oporavka i lozinku zapisane za buduću uputstvo.",
+    "complete": "Kompletni"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "Ovo je tvoja fraza oporavka",
+    "description": "Zapisi to kako je prikazano ovdje, bit će vam potrebno vratiti novčanik.",
+    "done": "     "
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "Opcije za prijavljivanje",
+    "importOptions": "Uvoz opcija za novčanik",
+    "recoveryPhrase": "Phrase Recovery Phrase",
+    "importBTCWallet": "Uvoz Bitcoin novčanik koristeći frazu oporavak",
+    "phone": "Telefon  Telefon ",
+    "importUsingPhone": "Uvozite ili kreirate svoj novčanik koristeći telefonski broj",
+    "email": "E-mail",
+    "importUsingEmail": "Uvezite svoj gotovinski novčanik koristeći e-mail adresu",
+    "login": "Login/Create",
+    "done": "     "
+  },
+  "ImportWallet": {
+    "title": "Potpišite se sa frazom oporavka",
+    "importTitle": "Uvezite svoj novčanik sa frazom oporavka",
+    "description": "Ovo je fraza od 12 riječi koju ste dobili kada ste kreirali svoj prethodni novčanik.",
+    "complete": "Kompletni"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
+  "CopySecretComponent": {
+    "button": "Copy secret",
+    "toastMessage": "Tajna kopija na ploču!"
   },
   "DefaultWalletScreen": {
     "title": "Zadani račun",
@@ -660,7 +946,9 @@
     "info": "Odaberite željenu temu za korištenje Blinka ili odaberite da bude sinkronizirana s postavkama vašeg sustava.",
     "system": "Koristi postavke sustava",
     "light": "Koristi svjetli način",
-    "dark": "Koristi tamni način"
+    "dark": "Koristi tamni način",
+    "setToDark": "U tamnom načinu",
+    "setToLight": "U svjetlosnom načinu"
   },
   "Languages": {
     "DEFAULT": "Zadano (OS)"
@@ -671,6 +959,26 @@
     "termsAndConditions": "Pročitajte Uvjete i odredbe.",
     "learnMore": "Saznajte više o Stablesats-u"
   },
+  "AdvancedModeModal": {
+    "header": "Dobrodošli u napredni način!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "Pročitajte uvjete.",
+    "learnMore": "Što je nečuvanni novčanik?",
+    "importWallet": "Importni novčanik",
+    "createWallet": "Novčanik Create Create Create"
+  },
+  "MerchantSuggestModal": {
+    "header": "Flashpoint Add",
+    "body": "Korisnici Flash-a moći će vas pronaći na mapi i poslati vam plaćanja klikom na vaš PIN.",
+    "termsAndConditions": "Pročitajte uvjete.",
+    "learnMore": "Vaš zahtjev za pin će biti obrađen u roku od 24 sata."
+  },
+  "UnVerifiedSeedModal": {
+    "header": "Zaštićite svoj Bitcoin novčanik",
+    "body": "Ako izgubite telefon ili deinstalirate aplikaciju bez napisanja fraze o oporavku, izgubit ćete pristup svojim sredstvima. ",
+    "termsAndConditions": "Pročitajte uvjete.",
+    "learnMore": "Što je fraza oporavka?"
+  },
   "SplashScreen": {
     "update": "Vaša je aplikacija zastarjela. Prije upotrebe aplikacije potrebno je ažuriranje.\n\nTo se može učiniti iz PlayStorea za Android i Testflighta za iOS"
   },
@@ -680,7 +988,24 @@
     "spent": "Potrošili ste",
     "receivingAccount": "Račun primatelj",
     "sendingAccount": "Račun pošiljatelj",
-    "txNotBroadcast": "Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment."
+    "txNotBroadcast": "Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment.",
+    "noTransaction": "Nijedna transakcija nije pronađena s ovim ID-om",
+    "typeOnChain": "OnChain",
+    "typeLightning": "Lightning",
+    "typeIntraLedger": "IntraLedger",
+    "pendingStatus": "Pending",
+    "confirmation": "Potvrda",
+    "confirmations": "Potvrda",
+    "hash": "Hash Hash",
+    "preimage": "Preimage",
+    "transactionId": "ID transakcije",
+    "swapDetails": "Swap Details",
+    "destinationAddress": "Destination Address",
+    "swapId": "Swap ID",
+    "lockupTxId": "Lockup Transaction",
+    "claimTxId": "Zahtjevna transakcija",
+    "swapFees": "Swap naknade",
+    "expirationBlockHeight": "Izlazi u trajanju u Block"
   },
   "TransactionLimitsScreen": {
     "receive": "Primi",
@@ -695,7 +1020,11 @@
     "contactUsMessageBody": "Bok, želio bih povećati ograničenja transakcija mog računa {bankName: string}.",
     "contactUsMessageSubject": "Zahtjev za povećanje ograničenja transakcije",
     "contactSupportToPerformKyc": "Obratite se podršci za ručni KYC kako biste povećali svoje ograničenje",
-    "increaseLimits": "Increase your limits"
+    "increaseLimits": "Increase your limits",
+    "spendingLimits": "Ograničenja potrošnje",
+    "spendingLimitsDescription": "Limiti potrošnje prikazani na ovoj stranici izraženi su u USD. Za vašu pogodnost, mi ih pretvaravamo u lokalnu valutu na temelju trenutnih valutnih kursa.",
+    "requestUpgrade": "Zahtjev za nadogradnju",
+    "editRequest": "Edit Upgrade Request"
   },
   "TransactionScreen": {
     "noTransaction": "Nema transakcija za prikaz",
@@ -717,11 +1046,17 @@
     "stayInTrialMode": "Ostani u probnom načinu rada"
   },
   "SetAddressModal": {
+    "helloText": "Zdravo!",
+    "whoAreYou": "Kako bismo te trebali zvati?",
+    "usernameHint": "Ovo će biti vaše {bankName: string} korisničko ime",
+    "placeholder": "Unesite svoje korisničko ime",
     "title": "Set {bankName: string} address",
+    "save": "Čuvajte Save",
     "Errors": {
       "tooShort": "Username must be at least 3 characters long",
       "tooLong": "Address must be at most 50 characters long",
       "invalidCharacter": "Address can only contain letters, numbers, and underscores",
+      "startsWithNumber": "Vaše korisničko ime mora početi velikim ili manjim slovima.",
       "addressUnavailable": "Sorry, this address is already taken",
       "unknownError": "An unknown error occurred, please try again later"
     },
@@ -758,13 +1093,60 @@
     "tryAgain": "Pokušajte ponovno",
     "sendViaOtherChannel": "Odabrali ste primanje koda putem {channel: string}. Umjesto toga možete pokušati primiti putem {other: string}"
   },
+  "PhoneRegistrationInitiateScreen": {
+    "title": "Telefon je postavljen",
+    "header": "Unesite svoj telefonski broj, a mi ćemo vam poslati pristupni kod.",
+    "headerVerify": "Provjerite da ste ljudi",
+    "errorRequestingCode": "Nešto nije u redu pri traženju telefonskog koda, molim vas pokušajte opet kasnije.",
+    "errorInvalidPhoneNumber": "Jeste li sigurni da ste ušli u pravi broj?",
+    "errorUnsupportedCountry": "Nismo u mogućnosti podržati klijente u vašoj zemlji.",
+    "placeholder": "Telefonski broj ",
+    "verify": "Kliknite da potvrdite",
+    "sms": "Pošaljite preko SMS",
+    "whatsapp": "Pošaljite preko WhatsApp-a"
+  },
+  "PhoneRegistrationValidateScreen": {
+    "successTitle": "Telefonski broj potvrđen"
+  },
+  "EmailRegistrationInitiateScreen": {
+    "title": "Dodajte svoj e-mail",
+    "header": "Unesite svoju e-mail adresu, a mi ćemo vam poslati pristupni kod.",
+    "invalidEmail": "Neispravni e-mail adresa.Da li ste sigurni da ste ušli u pravu e-mail adresu?",
+    "send": "Pošalji šifru",
+    "missingEmailRegistrationId": "Nedostatak e-mail registracije id",
+    "placeholder": "hal@finney.org"
+  },
+  "EmailRegistrationValidateScreen": {
+    "header": "Da biste potvrdili svoj e-mail naslov, unesite kod koji smo vam upravo poslali na {email: string}",
+    "success": "E-mail {email: string} je uspješno potvrđen"
+  },
+  "EmailLoginInitiateScreen": {
+    "title": "Lognite se putem e-pošte",
+    "header": "Unesite svoju e-mail adresu, a mi ćemo vam poslati pristupni kod.",
+    "invalidEmail": "Neispravni e-mail adresa.Da li ste sigurni da ste ušli u pravu e-mail adresu?",
+    "send": "Pošalji šifru"
+  },
+  "EmailLoginValidateScreen": {
+    "header": "Ako postoji nalog povezan s {email: string}-om, trebao bi dobiti šestcifreni kod koji bi se ušao ispod.Ako ništa ne primaš, vjerojatno je to bilo zato što ovo nije prava e-pošta, e-pošta je u tvom spam folderu.",
+    "success": "E-mail {email: string} je uspješno potvrđen"
+  },
   "common": {
+    "enabled": "Aktivirano",
+    "notifications": "Obaveštenja",
+    "preferences": "Preferencije",
+    "onDeviceSecurity": "Sigurnost na uređaju",
+    "securityAndPrivacy": "Sigurnost i privatnost",
+    "advanced": " Advanced Advanced",
+    "community": "Zajednica  Zajednica  Zajednica ",
     "account": "Račun",
+    "trialAccount": "Procesni račun",
+    "flashUser": "Flash Korisnik Flash",
     "transactionLimits": "Transakcijska ograničenja",
     "activateWallet": "Aktiviraj novčanik",
     "amountRequired": "Potreban je iznos",
     "back": "Natrag",
     "backHome": "Natrag doma",
+    "revealSeed": "Napišite frazu oporavka",
     "bank": "Banka",
     "bankAccount": "Novčani račun",
     "bankAdvice": "{bankName: string} Savjet",
@@ -776,12 +1158,16 @@
     "cancel": "Poništi",
     "close": "Zatvori",
     "confirm": "Potvrdi",
+    "copied": "Kopiran na klipbord",
     "convert": "Pretvori",
+    "codeConfirmation": "Kode potvrde",
     "currency": "Valuta",
     "currencySyncIssue": "Problem s valutom. Potrebno osvježiti",
     "csvExport": "Izvoz transakcija kao CSV",
+    "exportSparkLogs": "Export Logs",
     "date": "Datum",
     "description": "Opis",
+    "details": "Detalji",
     "domain": "Domena",
     "email": "Email",
     "error": "greška",
@@ -801,19 +1187,24 @@
     "loggedOut": "Odjavljeni ste.",
     "logout": "Odjavi se",
     "minutes": "minute",
+    "errorAuthToken": "Nedostajući auth token",
     "needWallet": "Prijavite se ili kreirajte račun za pristup svom novčaniku",
     "next": "Sljedeće",
     "No": "Ne",
     "note": "Bilješka",
     "notification": "Obavijest",
     "ok": "OK",
+    "or": "Ili ",
     "openWallet": "Otvori Novčanik",
+    "phone": "Telefon  Telefon ",
     "phoneNumber": "Broj telefona",
     "rate": "Tečaj",
     "reauth": "Vaša sesija je istekla. Molimo prijavite se ponovo.",
+    "request": "Pin zahtjeva",
     "restart": "Ponovno pokretanje",
     "sats": "sats",
     "search": "Traži",
+    "chatSearch": "korisničko ime ili nostr pubkey",
     "security": "Sigurnost",
     "send": "Šalji",
     "setAnAmount": "postavi iznos",
@@ -821,7 +1212,9 @@
     "shareBitcoin": "Podijeli Bitcoin adresu",
     "shareLightning": "Podijeli Lightning fakturu",
     "soon": "Dolazi uskoro!",
+    "submit": "Podnesite ",
     "success": "Uspjeh!",
+    "stablesatsUsd": "Novac (USD)",
     "to": "Za",
     "total": "Ukupno",
     "transactions": "Transakcije",
@@ -841,6 +1234,28 @@
     "prevMonths": "Prethodni mjeseci",
     "problemMaybeReauth": "Došlo je do problema s vašim zahtjevom. Pokušajte ponovno za jednu minutu. Ako se problem nastavi, preporučujemo da se odjavite i ponovno prijavite. Možete se odjaviti tako da odete u Postavke > Račun > Odjava",
     "warning": "Warning"
+  },
+  "NostrQuickStart": {
+    "postHeading": "Napravi svoj prvi društveni post!",
+    "postDesc": "Upoznajte se s svijetom!"
+  },
+  "Social": {
+    "post": "Pošaljite u Nostr",
+    "postTitle": "Napravi post",
+    "flashAppCredit": "Objavljeno korištenjem Flash!",
+    "writeYourNote": "Napiši svoj bilježnik, učini ga posebnim :)",
+    "postButton": "Post Post",
+    "notePosted": "Uspješno! Vaše pismo je objavljeno",
+    "errorPostFailed": "Greška u objavljivanju napomena",
+    "errorEmptyNote": "Greška: Prazna napomena",
+    "posting": "Postavljanje...",
+    "viewOnIris": "Pogled na iris.to",
+    "viewPostQuestion": "Želite li pogledati svoj post o iris.to-u?",
+    "browseSocialFeed": "Pretražite društveni feed",
+    "socialFeedTitle": "Socijalni feed",
+    "postSuccessTitle": "Post je podijeljen!",
+    "postSuccessSubtitle": "Vaš post je objavljen u Nostr",
+    "showMeMore": "Pokaži mi više"
   },
   "errors": {
     "generic": "Dogodila se greška.\nMolimo pokušajte ponovo kasnije.",
@@ -865,13 +1280,28 @@
       "title": "Primljena uplata"
     }
   },
+  "reports": {
+    "title": "Generate Reports",
+    "reconciliation": "Izvješće o pomirenju",
+    "aggregation": "Izvješće o agregaciji",
+    "topRecipients": "Top Recipients Report",
+    "topSenders": "Top Senders Report",
+    "selectFromDate": "Izaberite Iz datuma",
+    "selectToDate": "Izaberite Do datuma",
+    "fromDate": "Od  Od ",
+    "toDate": " Do Do",
+    "total": " Ukupno  Ukupno "
+  },
   "support": {
     "contactUs": "Need help? Contact us.",
     "joinTheCommunity": "Join the community",
     "whatsapp": "WhatsApp",
     "email": "Email",
+    "enjoyingApp": "Uživate li u aplikaciji?",
     "statusPage": "Stranica statusa",
+    "discord": "Discord Discord",
     "mattermost": "Mattermost",
+    "thankYouText": "Hvala na povratnom mišljenju, želite li predložiti poboljšanje?",
     "defaultEmailSubject": "{bankName: string} - Podrška",
     "defaultSupportMessage": "Bok! Trebam pomoć s {bankName: string}, koristim verziju {version: string} na {os: string}.",
     "emailCopied": "e-pošta {email: string} kopirana u međuspremnik",
@@ -884,7 +1314,8 @@
     "deleteAccountConfirmation": "Your account has been written for deletion.\n\nWhen the probation period related to regulatory requirement is over, the remaining data related to your account will be permanently deleted.",
     "deleteAccountFromPhone": "Hey there!, please delete my account. My phone number is {phoneNumber: string}.",
     "deleteAccountError": "Something went wrong. Contact {email: string} for further assistance.",
-    "bye": "Bye!"
+    "bye": "Bye!",
+    "switchToBeginnerMode": "Prilikom prelaska na početnički način nećete izgubiti pristup novčaniku BTC, ali novčanik će biti skriven."
   },
   "lnurl": {
     "overLimit": "Ne možete poslati više od maksimalnog iznosa",
@@ -902,7 +1333,9 @@
     "minAmountNotMet": "Iznos mora biti najmanje {minAmount: string}."
   },
   "AmountInputButton": {
-    "tapToSetAmount": "Dodirni za postavljanje iznosa"
+    "tapToSetAmount": "Dodirni za postavljanje iznosa",
+    "tapToSetOnChainAmount": "Dodajte iznos",
+    "enterAmount": "Molim vas, unesite iznos kako biste nastavili."
   },
   "AppUpdate": {
     "needToUpdateSupportMessage": "Moram ažurirati svoju aplikaciju na najnoviju verziju. Koristim aplikaciju {os: string} s verzijom {version: string}.",
@@ -910,5 +1343,149 @@
     "updateMandatory": "Ažuriranje je obavezno",
     "tapHereUpdate": "Dodirnite ovdje za ažuriranje sada",
     "contactSupport": "Obratite se podršci"
+  },
+  "RefundFlow": {
+    "refundListTitle": "Unclaimed Deposits",
+    "depositDetails": "Depozitni detalji",
+    "refundTitle": "Refund Deposit",
+    "destinationTitle": "Destination",
+    "confirmationTitle": "Potvrda",
+    "pendingTransactions": "Pending Transactions",
+    "noRefundables": "Nema nepovjerenih depozita pronađen",
+    "view": "View View",
+    "refund": "Povratak novca",
+    "refundTo": "Povratak novca USD novčaniku",
+    "recommendedFees": "Preporučene naknade",
+    "fast": "Fast Fast Fast",
+    "medium": "Srednja ",
+    "slow": "Polako",
+    "txId": "ID transakcije",
+    "refunded": "Povratak novca",
+    "pending": "Pending",
+    "autoClaiming": "Ovaj prijenos će se zahtijevati automatski",
+    "approvalRequired": "Potrebno je odobrenje",
+    "broadcasting": " Prikaz ",
+    "feeExceeded": "Plaćanje je previše visoko",
+    "claimFailed": "Zahtjev neuspješan",
+    "automaticClaim": "Ovaj depozit će se automatski zahtijevati kada su pristojbe za mrežu niže.",
+    "approveFee": "Slažem se s zahtjevom za ovaj prijenos ili odbijam obrađivati povrat novca.",
+    "enterAddress": "Unesite Bitcoin adresu na kojoj želite dobiti povrat novca.",
+    "selectFee": "Izaberite mrežnu naknadu za povrat novca",
+    "confirmRefund": "Potvrdi i vraćaj novca",
+    "processing": "Povratak obrade...",
+    "success": "Refund Broadcast",
+    "refundSuccess": "Vaš povrat novca poslat je na Bitcoin mrežu.",
+    "refundFailed": "Neuspješno vraćanje novca",
+    "failedToClaim": "Nije uspio zahtijevati depozit",
+    "unknownError": "Došlo je do nepoznatog grešaka",
+    "missingUtxo": "Depozit UTXO nedostaje, a transakcija možda još nije potvrđena.",
+    "couldNotClaimAutomatically": "Ovaj depozit se nije mogao automatski zahtijevati.",
+    "networkFee": "Mrežna pristojba za mrežu",
+    "networkFeeWithRate": "Mrežni troškovi ({feeRate: string} sat/vB)",
+    "youReceive": "Ti dobijate",
+    "approve": "Odobravajte",
+    "refundToExternalWallet": "Možete ga vratiti vanjskom novčaniku.",
+    "enterDestinationAddress": "Molimo vas da unesete adresu odredišta",
+    "invalidBitcoinAddress": "Invalidni format Bitcoin adresa",
+    "estimatedFee": "Est. mrežna pristojba ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Ist. Dobijate ",
+    "feeEstimateDisclaimer": "Zapravo će se izračunati prilikom emitiranja."
+  },
+  "Nostr": {
+    "editProfile": "Edit Profile",
+    "importNsecTitle": "Importirati svoj Nostr tajni ključ",
+    "importNsecDefaultDescription": "Molimo uvozite svoj nsec s drugog uređaja kako biste nastavili koristiti chat funkciju.",
+    "createProfileTitle": "Stvorite profil",
+    "createProfileWarning": "Ako nastavite, svi postojeći podaci o profilu bit će prekriveni.",
+    "createProfilePubkeyMessage": "Nismo mogli pronaći profilni događaj povezan s ovim pubkejem.",
+    "createProfilePrompt": "Želite li nastaviti kreirati?",
+    "createProfileButton": "Stvorite profil",
+    "profileNotFound": "Tražimo, ali nismo uspjeli pronaći vaš profil.",
+    "promptToCreateProfile": "Želite li ga sada stvoriti?",
+    "learnAboutNostr": "Saznajte više o Nostr",
+    "learnAboutNostrSubtext": "Provjerite ovaj vodič kako biste dobili najviše od nostr chat",
+    "showPublicKey": "Pokažite javni ključ",
+    "showPrivateKey": "Pokažite privatni ključ",
+    "profileConnected": "Profil povezan",
+    "reconnectProfile": "Reconnect Profile",
+    "tapToRefreshConnection": "Kliknite na to da osvježite povezivanje",
+    "importExistingProfile": "Import postojećeg profila",
+    "deleteProfile": "Izbrišite profil",
+    "noProfileIdExists": "Ne postoji profil ID",
+    "profileReconnected": "Vaš profil je uspješno ponovno povezan",
+    "deleteWarningTitle": "Upozorenje",
+    "deleteWarningMessage": "Ukidanje ključeva vašeg profila uklonit će vaš nalog sa ovog uređaja.Bez rezervne kopije više nećete moći pristupiti ovom profilu.",
+    "importNsecDescription": "Ako želite koristiti svoj vlastiti nsec, pastite ga ispod.",
+    "profileImportedSuccessfully": "Profil je uspješno uvezena",
+    "noProfileFound": "No Nostr Profile Found",
+    "noProfileDescription": "Još niste stvorili Nostr profil, pa kliknite ispod kako biste stvorili jedan.",
+    "keyConflictTitle": "Nostr Key Not Found on Device",
+    "keyConflictDescription": "Vaš račun ima registriran Nostr ključ, ali on nije pronađen na ovom uređaju.To se može dogoditi nakon što ponovno instalirate aplikaciju ili promijenite uređaje.Da biste obnovili pristup, uvozite svoj nsec backup iz naprednih postavki.",
+    "creatingProfile": "Stvaranje profila...",
+    "createNewProfile": "Stvorite novi profil",
+    "generateProfile": "Generirajte profil",
+    "findingYou": "Naći vas..",
+    "advancedSettings": "Nostr Advanced Settings",
+    "KeyModal": {
+      "yourPublicProfileId": "Vaš ID javnog profila",
+      "yourPrivateProfileKey": "Vaš ključ privatnog profila",
+      "keyCopiedToClipboard": "Ključ kopiran na klipbord"
+    },
+    "Contacts": {
+      "stillLoading": "Imajući poteškoće u pronalaženju svoje liste kontakata, jesi li već slijedio nekoga?",
+      "noCantacts": "Nema dostupnih kontakata",
+      "profile": "Profil",
+      "nostrUser": "Nostr korisnik",
+      "message": "Poruka",
+      "sendPayment": "Poslati  Poslati ",
+      "contactInfo": "Kontaktna informacija",
+      "contactManagement": "Kontaktni menadžment",
+      "unfollowContact": "Unfollow Contact",
+      "noListDeepLinkMessage": "Da biste dodali prijatelje, prvo morate inicializirati popis kontakata u postavkama.",
+      "manageContacts": "Upravljajte kontaktima",
+      "createContactList": "Kontaktni popis Create Contact List"
+    },
+    "common": {
+      "copy": "Copy Copy",
+      "copied": "Kopirani",
+      "goToSettings": "Idi u postavke"
+    }
+  },
+  "AccountUpgrade": {
+    "accountType": "Vrsta računa",
+    "personal": "Osobni",
+    "personalDesc": "Obezbedite svoj novčanik telefonom i e-poštom.",
+    "pro": "Pro Pro",
+    "proDesc": "Prihvaćanje plaćanja i otkrivanje na mapi zahtijeva poslovno ime i lokaciju.",
+    "merchant": "trgovac trgovac",
+    "merchantDesc": "Dajte nagrade, pojavite se na mapi i poravnite se u svojoj banci.",
+    "personalInfo": "Osobni podaci",
+    "fullName": "Potpuno ime",
+    "phoneNumber": "Telefonski broj ",
+    "email": "E-mail adresa",
+    "optional": "(Optionalno)",
+    "validation": "Validacija",
+    "validationCode": "Validacijski kod",
+    "businessInfo": "Poslovne informacije",
+    "businessName": "Poslovno ime",
+    "businessNamePlaceholder": "Unesite svoje poslovno ime",
+    "businessAddress": "Poslovni naslov",
+    "businessAddressPlaceholder": "Unesite svoj poslovni adres",
+    "flashTerminal": "Želite li Flash terminal?",
+    "flashTerminalTooltip": "Flash Terminal je pametan uređaj koji može prihvatiti plaćanje putem Flash-a za vaše poslovanje i štampanje kviteta.",
+    "bankingInfo": "Informacije o bankarstvu",
+    "bankName": "Ime banke",
+    "bankNamePlaceholder": "Izaberite svoje ime banke",
+    "bankBranch": "Podružnica Banke ",
+    "bankBranchPlaceholder": "Uđite u svoj bankarski podružnicu",
+    "bankAccountType": "Vrsta računa",
+    "selectBankAccountType": "Izaberite tip računa",
+    "currency": "Valuta",
+    "selectCurrency": "Izaberite Valuta",
+    "accountNum": "Računovodstvo ",
+    "accountNumPlaceholder": "Unesite svoj broj računa",
+    "uploadId": "Upload ID Document",
+    "successUpgrade": "Uspješno ste nadogradili svoj račun na {accountType: string}",
+    "successRequest": "Uspješno ste zatražili nadogradnju računa na {accountType: string}"
   }
 }

@@ -2,6 +2,7 @@
   "GaloyAddressScreen": {
     "title": "Ricevi il pagamento utilizzando:",
     "buttonTitle": "Set your address",
+    "yourLightningAddress": "Il tuo indirizzo Lightning",
     "yourAddress": "Il tuo {bankName: string} indirizzo",
     "notAbleToChange": "Non potrai modificare il tuo indirizzo {bankName: string} dopo averlo impostato",
     "addressNotAvailable": "Questo indirizzo {bankName: string} è già in uso",
@@ -9,6 +10,7 @@
     "merchantTitle": "Per i commercianti",
     "yourCashRegister": "Il tuo Registratore di Cassa Lightning",
     "yourPaycode": "Il tuo Paycode",
+    "copiedLightningAddressToClipboard": "Copiato Lightning indirizzo a clipboard",
     "copiedAddressToClipboard": "Indirizzo {bankName: string} copiato negli appunti",
     "copiedPaycodeToClipboard": "Paycode copiato negli appunti",
     "copiedCashRegisterLinkToClipboard": "Link del Registratore di Cassa copiato negli appunti",
@@ -19,6 +21,15 @@
     "howToUseYourAddressExplainer": "Condividi con qualcuno che ha un wallet compatibile, come ad esempio:",
     "howToUseYourPaycodeExplainer": "You can print your Paycode (technically, this is an lnurl-pay address) and display it in your business to receive payments. Individuals can pay you by scanning it with a Lightning-enabled wallet.\n\nHowever, be aware that some wallets can’t scan a Paycode such as:",
     "howToUseYourCashRegisterExplainer": "Allow people to collect payments via the Cash Register link, without accessing your wallet.\n\nThey can create invoices and payments will be sent directly to your {bankName: string} Wallet."
+  },
+  "SetAccountModal": {
+    "title": "Imposta l'account predefinito",
+    "description": "Questo account sarà inizialmente selezionato per l'invio e la ricezione dei pagamenti, e può essere modificato in qualsiasi momento.",
+    "stablesatsTag": "Scegliere questo per mantenere un valore stabile di USD.",
+    "bitcoinTag": "Scegliere questo per essere su uno standard Bitcoin."
+  },
+  "NoteInput": {
+    "addNote": "Aggiungi nota..."
   },
   "AuthenticationScreen": {
     "authenticationDescription": "Autenticati per continuare",
@@ -37,6 +48,37 @@
   "ContactDetailsScreen": {
     "title": "Transazioni con {username: string}"
   },
+  "ChatScreen": {
+    "noChatsTitle": "Nessun Chats trovato",
+    "noChatsYet": "Immettere un nome utente Flash o nostr pubkey per avviare una chat",
+    "noMatchingChats": "Non sono stati trovati chat che corrispondano alla tua ricerca.",
+    "title": "Chat  Chat "
+  },
+  "ChatDetailsScreen": {
+    "title": "Chat con {username: string}"
+  },
+  "CardScreen": {
+    "noCardsTitle": "Non sono state trovate carte",
+    "noCardsYet": "Toccare un Flashcard per aggiungerlo qui",
+    "noMatchingCards": "Non sono state trovate carte che corrispondano alla tua ricerca.",
+    "title": "Flashcard",
+    "notFlashcard": "La scheda NFC non è supportata.Si prega di assicurarsi di utilizzare una scheda flash.",
+    "noNDEFMessage": "Il messaggio NDEF non è stato trovato.Si prega di assicurarsi di utilizzare una scheda flash.",
+    "notSupported": "NFC non è supportato su questo dispositivo.",
+    "notEnabled": "NFC non è abilitato su questo dispositivo.",
+    "noTag": "Nessun tag trovato.Si prega di assicurarsi di utilizzare una scheda flash."
+  },
+  "Cashout": {
+    "title": "Settle",
+    "percentageToCashout": "Per risolvere il problema %.",
+    "valid": "Valido per {time: string}",
+    "exchangeRate": "Rate di scambio ",
+    "sendAmount": "Invia la quantità",
+    "receiveAmount": "Receive Amount",
+    "fee": "Fee",
+    "success": "La richiesta di regolamento è stata avviata con successo.",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
+  },
   "ConversionDetailsScreen": {
     "title": "Convertire",
     "percentageToConvert": "% da convertire"
@@ -44,7 +86,9 @@
   "ConversionConfirmationScreen": {
     "title": "Esamina la conversione",
     "youreConverting": "Stai convertendo",
-    "receivingAccount": "Conto deposito"
+    "sendingAccount": "Conto di spedizione",
+    "receivingAccount": "Conto deposito",
+    "conversionFee": "Fee di conversione"
   },
   "ConversionSuccessScreen": {
     "title": "Successo della conversione",
@@ -421,7 +465,13 @@
   },
   "GetStartedScreen": {
     "logInCreateAccount": "Log in / crea un account",
+    "quickStart": "Start Start Start",
+    "restoreWallet": "Login",
     "exploreWalletInstead": "Explore wallet instead",
+    "setupBusinessAccount": "Configurazione di un account aziendale",
+    "createAccount": "Crea un nuovo account",
+    "exploreWallet": "Esplora il portafoglio",
+    "logBackInWith": "Ritorna a entrare con",
     "headline": "Wallet creato da Galoy",
     "startTrialAccount": "Inizia con un conto di prova",
     "startWithTrialAccount": "Start with trial account",
@@ -433,7 +483,8 @@
       "noBackup": "Nessuna opzione di backup",
       "sendingLimit": "Reduced daily sending limit",
       "noOnchain": "Non è possibile ricevere bitcoin onchain"
-    }
+    },
+    "chooseAccountType": "Scegliete il tipo di account"
   },
   "MapScreen": {
     "locationPermissionMessage": "Attiva la localizzazione in modo da vedere la tua posizione sulla mappa",
@@ -442,16 +493,48 @@
     "locationPermissionPositive": "OK",
     "locationPermissionTitle": "Localizzati sulla mappa",
     "payBusiness": "paga questo business",
-    "title": "Mappa"
+    "title": "Mappa",
+    "addPin": "Clicca ovunque per aggiungere un pin",
+    "selectedCoordinates": "I tuoi coordinati Flashpoint: ",
+    "viewInGoogleMaps": "Visualizzazione in Google Maps",
+    "getDirections": "Direzioni Get Directions"
   },
   "HomeScreen": {
+    "cashout": "Cash Out",
     "receive": "Ricevi",
+    "reload": "Reload Card Reload Card",
+    "balance": "Refresh Balance ",
+    "showQrCode": "Topup tramite QR",
     "send": "Invia",
+    "sweep": "Spazzare al portafoglio",
+    "pay": "Pay Pay",
     "title": "Home",
     "scan": "Scan QR",
     "updateAvailable": "É disponibile un aggiornamento.\nClicca per aggiornare",
     "useLightning": "Usiamo il Lightning Network",
-    "myAccounts": "Il mio conto"
+    "myAccounts": "Il mio conto",
+    "unclaimedDepositsWarning": "️ Pl e a s e c o m p l e e o r rivendicare i depositi non rivendicati b e f o r e u n i n s t a l i n g Fl a s o r depositi non rivendicati b e l e l o s t .",
+    "unclaimedDeposits": "I depositi non rivendicati",
+    "cash": "Il Cash Cash",
+    "bitcoin": "Bitcoin",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Add",
+    "upgradeTitle": "Aggrada il tuo account",
+    "upgradeTitlePending": "La richiesta di aggiornamento è in sospeso",
+    "upgradeDesc": "Sblocca il tuo pieno potenziale! Aggrada per aumentare la visibilità, i limiti e i pagamenti.",
+    "upgradePendingDesc": "La tua richiesta di aggiornamento dell'account è in fase di revisione.",
+    "currencyTitle": "Cambia la tua valuta locale",
+    "currencyDesc": "Rivedi la nostra lista delle valute disponibili e seleziona la tua valuta.",
+    "flashcardTitle": "Ottieni un Flashcard",
+    "flashcardDesc": "Trova una Flashpoint e prendi una Flashcard da usare nella vita quotidiana.",
+    "nonCustodialWalletTitle": "Portafogli non custodiali",
+    "nonCustodialWalletDesc": "Scopri di più sui portafogli non custodiali.",
+    "emailTitle": "Indirizzo e-mail",
+    "emailDesc": "Aggiungi il tuo indirizzo e-mail per proteggere il tuo account e accedere utilizzando l'indirizzo e-mail.",
+    "btcWalletTitle": "Abilitare il portafoglio BTC",
+    "btcWalletDesc": "Trasferire facilmente quantità maggiori in Bitcoin.",
+    "backupTitle": "Fare un backup del tuo portafoglio BTC",
+    "backupDesc": "Backup e proteggere il tuo portafoglio Bitcoin utilizzando la frase recovery."
   },
   "PinScreen": {
     "attemptsRemaining": "PIN errato. Hai {attemptsRemaining: number} tentativi rimanenti.",
@@ -479,11 +562,13 @@
     "title": "Home"
   },
   "ReceiveScreen": {
+    "flashcardInstructions": "Scansione il codice QR, o tocca l'icona per condividere questo su whatsapp, email, ecc.",
     "nfc": "NFC",
     "enterAmountFirst": "Please enter an amount first",
     "activateNotifications": "Vuoi attivare le notifiche per essere avvisato quando ricevi un pagamento?",
     "copyClipboard": "L'invoice è stata copiata negli appunti",
     "copyClipboardBitcoin": "L'indirizzo Bitcoin è stato copiato negli appunti",
+    "copyClipboardPaycode": "Il Paycode/LNURL è stato copiato nel clipboard",
     "invoicePaid": "L'invoice è stata pagata",
     "setNote": "Imposta una nota",
     "tapQrCodeCopy": "Clicca il QR code per copiare",
@@ -505,7 +590,37 @@
     "useALightningInvoice": "Usa una Lightning Invoice",
     "setANote": "Imposta una nota",
     "invoiceAmount": "Importo dell'invoice",
-    "fees": "{minBankFee: string} sats fees for onchain payment below {minBankFeeThreshold: string} sats"
+    "fees": "{minBankFee: string} sats fees for onchain payment below {minBankFeeThreshold: string} sats",
+    "lightning": "Lightning",
+    "paycode": "Paycode",
+    "onchain": "Onchain Onchain",
+    "bitcoin": "Bitcoin",
+    "stablesats": "Il Cash Cash",
+    "regenerateInvoiceButtonTitle": "Regenerate Invoice",
+    "setUsernameButtonTitle": "Set Username",
+    "invoiceHasExpired": "La fattura è scaduta",
+    "setUsernameToAcceptViaPaycode": "Imposta il tuo nome utente per accettare tramite il Paycode QR (LNURL) e Lightning Address",
+    "singleUse": "Uso singolo",
+    "invoiceExpired": "La fattura scaduta",
+    "invoiceValidity": {
+      "validFor1Day": "Valido per 1 giorno",
+      "validForNext": "Valido per il prossimo {duration: string}",
+      "validBefore": "Valido prima del {time: string}",
+      "expiresIn": "Espira in {duration: string}",
+      "expiresNow": "Scade ora"
+    },
+    "invoiceHasBeenPaid": "La fattura è stata pagata",
+    "yourBitcoinOnChainAddress": "Il tuo Bitcoin Onchain Address",
+    "receive": "Receive Receive",
+    "receiveViaInvoice": "Ricevi tramite Lightning",
+    "receiveViaPaycode": "Ricevi tramite Paycode",
+    "topupFlashcard": "Topup Flashcard",
+    "receiveViaOnchain": "Ricevi tramite Onchain",
+    "payCodeOrLNURL": "Paycode / LNURL",
+    "cantReceiveZeroSats": "Non si può ricevere uno zero sats. Si prega di inserire un importo corrispondente a 1 o più sats.",
+    "initialDeposit": "* Un deposito iniziale di $5 raccomandato per la configurazione del canale. ~$1 sarà pagato come commissione di configurazione.",
+    "selectPaymentMethod": "Selezionare il metodo di pagamento",
+    "selectWallet": "Selezionare Wallet"
   },
   "RedeemBitcoinScreen": {
     "title": "Riscatta Bitcoin",
@@ -524,7 +639,12 @@
     "invalidTitle": "QR code non valido",
     "noQrCode": "Non riesco a trovare un QR valido nell'immagine",
     "title": "Scan QR",
-    "invalidContentLnurl": "Hai inserito:\n\n{found: string}\n\n non è al momento supportato"
+    "permissionCamera": "Abbiamo bisogno di un permesso per usare la tua fotocamera",
+    "noCamera": "Nessuna fotocamera trovata",
+    "openSettings": "Apri le impostazioni",
+    "unableToOpenSettings": "Non è stato possibile aprire le impostazioni",
+    "invalidContentLnurl": "Hai inserito:\n\n{found: string}\n\n non è al momento supportato",
+    "imageLibraryPermissionsNotGranted": "Non abbiamo permessi per accedere alla libreria di immagini.Si prega di controllare le impostazioni dell'app per la vostra piattaforma."
   },
   "SecurityScreen": {
     "biometricDescription": "Sblocca il riconoscimento facciale o con impronta digitale.",
@@ -535,7 +655,8 @@
     "hideBalanceTitle": "Hide Balance",
     "pinDescription": "Il PIN è utilizzato come metodo di autenticazione di backup per l'autenticazione biometrica.",
     "pinTitle": "Codice PIN",
-    "setPin": "Imposta PIN"
+    "setPin": "Imposta PIN",
+    "backupDescription": "Per impostare un codice PIN, si prega di fare un backup dell'account aggiungendo un numero di telefono."
   },
   "SendBitcoinConfirmationScreen": {
     "amountLabel": "Importo:",
@@ -577,12 +698,17 @@
       "body3": "In caso contrario, il denaro andrà a un conto {bankName: string} con l'indirizzo \"{lnAddress: string}\".\n\nControlla anche l'ortografia della prima parte dell'indirizzo. Per esempio.  jackie e jack1e sono 2 indirizzi diversi",
       "warning": "Se l'indirizzo di {bankName: string} è stato inserito in modo errato, {bankName: string} non può annullare la transazione.",
       "checkBox": "{lnAddress: string} è l'indirizzo corretto.",
-      "confirmButton": "Sono sicuro al 100%"
+      "confirmButton": "Sono sicuro al 100%",
+      "externalWarning": "Stai per inviare denaro a qualcuno che non è un conto {bankName: string}. Sei sicuro che questo sia l'indirizzo al quale intendi inviare?",
+      "externalCheckBox": "Confirmo l'invio a {address: string}."
     },
     "clipboardError": "Errore nel recupero dati dagli appunti"
   },
   "SendBitcoinScreen": {
     "amount": "Importo",
+    "MinOnChainLimit": "L'importo minimo per questa transazione è di 2,00 dollari USA.",
+    "MinOnChainSatLimit": "L'importo minimo per questa transazione è di 5.500 sats.",
+    "MinFlashcardLimit": "L'importo minimo di ricarica da una scheda flash è di 100 sats.",
     "amountExceed": "L'importo supera il saldo di {balance: string}",
     "amountExceedsLimit": "Amount exceeds your remaining daily limit of {limit: string}",
     "upgradeAccountToIncreaseLimit": "Upgrade your account to increase your limit",
@@ -592,19 +718,35 @@
     "destinationIsRequired": "La destinazione è richiesta",
     "fee": "commissioni di rete",
     "feeCalculationUnsuccessful": "Calcolo non riuscito ⚠️",
+    "placeholder": "Nome utente, fattura o indirizzo",
     "invalidUsername": "Username non valido",
     "noAmount": "Questa invoice non ha un importo, quindi è necessario specificare manualmente l'importo che si desidera inviare.",
     "notConfirmed": "Il pagamento è stato inviato\nma non è ancora confermato\n\nÈ possibile verificare lo stato\ndel pagamento in Transazioni",
     "note": "Nota o etichetta",
     "success": "Il pagamento è stato inviato con successo",
+    "suggestionInput": "Inserisci il tuo suggerimento",
     "max": "Max",
     "maxAmount": "Max Amount",
     "title": "Invia Bitcoin",
+    "send": "Invio  Invio ",
     "failedToFetchLnurlInvoice": "Impossibile recuperare l'invoice lnurl",
     "lnurlInvoiceIncorrectAmount": "Il server lnurl ha risposto con un'invoice di importo errato.",
-    "lnurlInvoiceIncorrectDescription": "Il server lnurl ha risposto con un'invoice contenente un hash di descrizione errato."
+    "lnurlInvoiceIncorrectDescription": "Il server lnurl ha risposto con un'invoice contenente un hash di descrizione errato.",
+    "noAmountInvoiceError": "Nessun importo di fattura non è supportato nel portafoglio BTC. Si prega di tornare indietro e scansionare o inserire una fattura con un importo aggiunto.",
+    "onchainMinAmountInvoiceError": "L'importo che hai inserito è inferiore all'importo minimo necessario per inviare una transazione in catena {amount: number}. Si prega di considerare l'invio di questo importo tramite Lightning!",
+    "minAmountInvoiceError": "L'importo della fattura è inferiore all'importo minimo {amount: number}",
+    "maxAmountInvoiceError": "L'importo della fattura è maggiore dell'importo massimo {amount: number}",
+    "minAmountConvertError": "L'importo di conversione è inferiore all'importo minimo richiesto {amount: number}",
+    "maxAmountConvertError": "L'importo di conversione è maggiore dell'importo massimo {amount: number}"
   },
   "SettingsScreen": {
+    "staticQr": "Statico stampabile QR Code",
+    "staticQrCopied": "Il tuo link di codice QR statico è stato copiato.",
+    "setByOs": "Set by OS",
+    "apiAcess": "Access API API",
+    "pos": "Punto di vendita",
+    "posCopied": "Il link del tuo punto di vendita è stato copiato.",
+    "setYourLightningAddress": "Set Your Username",
     "activated": "Attivato",
     "addressScreen": "Ways to get paid",
     "tapUserName": "Tocca per impostare l'username",
@@ -625,7 +767,17 @@
     "nfcNotCompatible": "The information fetch from the card is not a compatible lnurl-withdraw link.",
     "nfcOnlyReceive": "Only receive from NFC is available for now",
     "nfcScanNow": "Scan NFC Now",
-    "nfcNotSupported": "NFC is not supported on this device"
+    "nfcNotSupported": "NFC is not supported on this device",
+    "logInOrCreateAccount": "Accedere o creare un account",
+    "backup": "Backup",
+    "importWallet": "Importare il portafoglio Importare il portafoglio",
+    "showSeedPhrase": "Reveal recovery phrase",
+    "showNostrSecret": "Impostazioni di chat",
+    "beginnerMode": "Disabilitare l'account Bitcoin",
+    "advanceMode": "Abilita l'account Bitcoin (Modo avanzato)",
+    "keysManagement": "Backup del portafoglio",
+    "showBtcAccount": "Mostra l'account Bitcoin",
+    "hideBtcAccount": "Nascondere un account Bitcoin"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -638,18 +790,152 @@
       "Payments": {
         "title": "Payments",
         "description": "Notifications related to sending and receiving payments."
+      },
+      "Marketing": {
+        "title": "Caratteristiche e aggiornamenti",
+        "description": "Notifiche sulle nuove funzionalità e gli aggiornamenti."
+      },
+      "Price": {
+        "title": "Cambiamenti di prezzo",
+        "description": "Notifiche sul prezzo di Bitcoin."
       }
     }
   },
   "AccountScreen": {
+    "fundsMoreThan5Dollars": "Il tuo account ha più di $5",
+    "itsATrialAccount": "Gli account di prova hanno ridotto i limiti delle transazioni e non hanno alcun metodo di recupero.Se perdi il telefono o disinstalla l'app, i tuoi fondi non saranno recuperabili.",
+    "accountBeingDeleted": "Il tuo account viene cancellato, ti preghiamo di aspettare...",
+    "dangerZone": "Zona di pericolo",
+    "phoneDeletedSuccessfully": "Il telefono è stato cancellato con successo",
+    "phoneNumber": "Numero di telefono ",
+    "tapToAddPhoneNumber": "Tocca per aggiungere il numero di telefono.",
+    "loginMethods": "Metodi di accesso",
+    "level": "Livello {level: string}",
     "accountLevel": "Account Level",
     "upgrade": "Upgrade your account",
     "logOutAndDeleteLocalData": "Log out",
     "IUnderstand": "I understand. Please log me out.",
     "logoutAlertTitle": "Are you sure you want to log out and delete all local data?",
+    "logoutAlertContentPhone": "Dovrai riinserire il tuo numero di telefono per effettuare il login di nuovo. il tuo numero di telefono è {phoneNumber: string} quindi assicurati di avere accesso a esso per effettuare il login di nuovo",
+    "logoutAlertContentEmail": "Dovrai riinserire la tua e-mail per effettuare il login. la tua e-mail è {email: string} quindi assicurati di avere accesso a essa per effettuare il login.",
+    "logoutAlertContentPhoneEmail": "Dovrai riinserire il tuo numero di telefono o l'e-mail per effettuare il login. il tuo numero di telefono è {phoneNumber: string} e l'e-mail è {email: string} quindi assicurati di avere accesso a quelli per effettuare il login.",
     "usdBalanceWarning": "You have a Stablesats balance of {balance: string}.",
     "btcBalanceWarning": "You have a bitcoin balance of {balance: string}.",
-    "secureYourAccount": "Register to secure your account"
+    "secureYourAccount": "Register to secure your account",
+    "tapToAdd": "Toccare per aggiungere",
+    "tapToAddEmail": "Toccare per aggiungere email",
+    "unverifiedEmail": "E-mail (non verificato)",
+    "email": "E-mail",
+    "emailDeletedSuccessfully": "L'email è stata cancellata con successo",
+    "unverifiedEmailAdvice": "Le e-mail non verificate non possono essere utilizzate per accedere.",
+    "deleteEmailPromptTitle": "Cancellare l'e-mail",
+    "deleteEmailPromptContent": "Sei sicuro di voler cancellare il tuo indirizzo e-mail? sarete in grado di effettuare un nuovo login solo con il tuo numero di telefono.",
+    "deletePhonePromptTitle": "Cancellare il telefono",
+    "deletePhonePromptContent": "Sei sicuro di voler cancellare il tuo numero di telefono? sarai in grado di effettuare il nuovo login solo con l'email.",
+    "addEmailFirst": "Aggiungi un'email prima",
+    "addPhoneFirst": "Aggiungi un telefono prima",
+    "phoneNumberAuthentication": "Numero di telefono (per il login)",
+    "emailAuthentication": "E-mail (per il login)",
+    "removePhone": "Rimuovere il telefono",
+    "removeEmail": "Rimuovere l'email",
+    "unverified": "L'email non è stata verificata",
+    "unverifiedContent": "Proteggi il tuo account verificando la tua email.",
+    "confirmEmail": "Confirma l'e-mail",
+    "emailUnverified": "Il tuo e-mail non è stato verificato",
+    "emailUnverifiedContent": "Assicurati di poter tornare al tuo account verificando la tua email.",
+    "totp": "L'autenticazione a due fattori",
+    "totpDeactivated": "L'autenticazione a due fattori è stata disattivata.",
+    "totpDeleteAlertTitle": "Elimina l'autenticazione a due fattori",
+    "totpDeleteAlertContent": "Sei sicuro di voler cancellare l'autenticazione a due fattori?",
+    "copiedAccountId": "Ha copiato l'ID dell'account a clipboard",
+    "yourAccountId": "Il tuo account ID",
+    "accountId": "ID dell'account",
+    "copy": "Copia Copia"
+  },
+  "TotpRegistrationInitiateScreen": {
+    "title": "L'autenticazione a due fattori",
+    "content": "Scansione questo codice QR con la tua app autenticatore.In alternativa, puoi copiare / incollare manualmente il segreto nella tua app autenticatore."
+  },
+  "TotpRegistrationValidateScreen": {
+    "title": "L'autenticazione a due fattori",
+    "enter6digitCode": "Inserisci il codice a 6 cifre della tua app autenticatore per convalidare l'autenticazione a due fattori.",
+    "success": "L'autenticazione a due fattori è stata abilitata, ora potrai effettuare un nuovo login solo con il tuo telefono o la tua e-mail E con l'autenticazione a due fattori, solo gli account KYC completi possono essere recuperati nel caso in cui un utente abbia perso l'accesso all'autenticazione a due fattori."
+  },
+  "TotpLoginValidateScreen": {
+    "title": "L'autenticazione a due fattori",
+    "content": "Inserisci il codice a 6 cifre della tua app autenticatore per accedere, che cambia ogni 30 secondi."
+  },
+  "BackupOptions": {
+    "title": "Opzioni di backup",
+    "recoveryPhrase": "Phrase Recovery Phrase",
+    "recoveryPhraseDesc": "Backup Bitcoin Wallet using recovery phrase",
+    "revealRecoveryPhrase": "Reveal Recovery Phrase",
+    "revealRecoveryPhraseDesc": "Usa la tua frase di recupero per importare il portafoglio Bitcoin",
+    "phone": "Telefono Telefono Telefono",
+    "phoneDesc": "Backup Cash Wallet utilizzando il numero di telefono",
+    "usePhoneNumber": "Usa il tuo numero di telefono per importare Cash Wallet",
+    "done": "                                                                                                                                                "
+  },
+  "BackupStart": {
+    "title": "Prima di tutto, creiamo la tua frase di recupero",
+    "description": "Una frase di recupero è una serie di 12 parole in un ordine specifico. Questa combinazione di parole è unica per il tuo portafoglio.",
+    "continue": " Continuare Continuare"
+  },
+  "BackupSeedPhrase": {
+    "title": "Questa è la tua frase di recupero",
+    "description": "Assicurati di scriverlo come mostrato qui, devi verificarlo più tardi.",
+    "backupToICloud": "Backup a iCloud",
+    "backupToGoogleDrive": "Backup a Google Drive",
+    "verify": "Verificare"
+  },
+  "BackupDoubleCheck": {
+    "title": "Facciamo un doppio controllo",
+    "description1": "Bene fatto. Ora verifichiamo che tu abbia scritto correttamente la tua frase di recupero.",
+    "description2": "Sì, è così importante.",
+    "continue": " Continuare Continuare"
+  },
+  "BackupVerify": {
+    "title": "Tocca le parole nell'ordine corretto.",
+    "correctTitle": "Perfetto, assicurati di memorizzare in modo sicuro la tua frase di recupero.",
+    "wrongTitle": "Scusa, non è la terza parola corretta.",
+    "tryAgain": "Prova di nuovo",
+    "continue": " Continuare Continuare"
+  },
+  "BackupComplete": {
+    "title": "Il tuo backup è completo",
+    "description": "Dovresti ora avere la tua frase di recupero e la tua password scritte per futuri riferimenti.",
+    "complete": "Complete Complete"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "Questa è la tua frase di recupero",
+    "description": "Assicurati di scriverlo come mostrato qui, dovrai recuperare il tuo portafoglio.",
+    "done": "                                                                                                                                                "
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "Opzioni di login",
+    "importOptions": "Importare opzioni di portafoglio",
+    "recoveryPhrase": "Phrase Recovery Phrase",
+    "importBTCWallet": "Importare Bitcoin Wallet usando la frase di recupero",
+    "phone": "Telefono Telefono Telefono",
+    "importUsingPhone": "Importare o creare il tuo Cash Wallet utilizzando il numero di telefono",
+    "email": "E-mail",
+    "importUsingEmail": "Importare il tuo Cash Wallet utilizzando l'indirizzo e-mail",
+    "login": "Login/Create",
+    "done": "                                                                                                                                                "
+  },
+  "ImportWallet": {
+    "title": "Iscriviti con una frase di recupero",
+    "importTitle": "Importare il tuo portafoglio con una frase di recupero",
+    "description": "Questa è una frase di 12 parole che ti è stata data quando hai creato il tuo precedente portafoglio.",
+    "complete": "Complete Complete"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
+  "CopySecretComponent": {
+    "button": "Copia il segreto.",
+    "toastMessage": "Secret copiato su clipboard!"
   },
   "DefaultWalletScreen": {
     "title": "Default Account",
@@ -660,7 +946,9 @@
     "info": "Pick your preferred theme for using Flash, or choose to keep it synced with your system settings.",
     "system": "Use System setting",
     "light": "Use Light Mode",
-    "dark": "Use Dark Mode"
+    "dark": "Use Dark Mode",
+    "setToDark": "Modalità oscura",
+    "setToLight": "Modalità Luce"
   },
   "Languages": {
     "DEFAULT": "Default (OS)"
@@ -671,6 +959,26 @@
     "termsAndConditions": "Leggi i Terms & Conditions.",
     "learnMore": "Scopri di più su Stablesats"
   },
+  "AdvancedModeModal": {
+    "header": "Benvenuti nella modalità avanzata!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "Leggi i termini e le condizioni.",
+    "learnMore": "Che cos'è un portafoglio non custodiale?",
+    "importWallet": "Importare il portafoglio Importare il portafoglio",
+    "createWallet": "Portafoglio Create Create"
+  },
+  "MerchantSuggestModal": {
+    "header": "Flashpoint Add",
+    "body": "Gli utenti di Flash saranno in grado di trovarti sulla mappa e inviarti pagamenti facendo clic sul tuo pin della mappa.",
+    "termsAndConditions": "Leggi i termini e le condizioni.",
+    "learnMore": "La tua richiesta di pin sarà elaborata entro 24 ore."
+  },
+  "UnVerifiedSeedModal": {
+    "header": "Assicurare il tuo portafoglio Bitcoin",
+    "body": "Se perdi il telefono o disinstalla l'app senza scrivere la frase di recupero, perderai l'accesso ai tuoi fondi. ",
+    "termsAndConditions": "Leggi i termini e le condizioni.",
+    "learnMore": "Che cos'è una frase di recupero?"
+  },
   "SplashScreen": {
     "update": "L'applicazione è obsoleta. È necessario un aggiornamento prima di poter utilizzare l'app.\n\nL'aggiornamento può essere effettuato dal PlayStore per Android e da Testflight per iOS."
   },
@@ -680,7 +988,24 @@
     "spent": "Hai speso",
     "receivingAccount": "Receiving Account",
     "sendingAccount": "Sending Account",
-    "txNotBroadcast": "Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment."
+    "txNotBroadcast": "Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment.",
+    "noTransaction": "Nessuna transazione trovata con questo ID",
+    "typeOnChain": "OnChain",
+    "typeLightning": "Lightning",
+    "typeIntraLedger": "IntraLedger",
+    "pendingStatus": "In attesa",
+    "confirmation": "Confirmazione",
+    "confirmations": "Confirmazioni",
+    "hash": "Hash Hash",
+    "preimage": "Preimmagine",
+    "transactionId": "L'ID della transazione",
+    "swapDetails": "Swap Details",
+    "destinationAddress": "Indirizzo di destinazione",
+    "swapId": "Swap ID",
+    "lockupTxId": "Lockup Transaction Lockup Transaction",
+    "claimTxId": "Transazione di rivendicazione",
+    "swapFees": "Le tasse di cambio",
+    "expirationBlockHeight": "Espira a Block"
   },
   "TransactionLimitsScreen": {
     "receive": "Ricevi",
@@ -695,7 +1020,11 @@
     "contactUsMessageBody": "Hi, I will like to increase the transaction limits of my {bankName: string} account.",
     "contactUsMessageSubject": "Request To Increase Transaction Limits",
     "contactSupportToPerformKyc": "Contact support to perform manual KYC to increase your limit",
-    "increaseLimits": "Increase your limits"
+    "increaseLimits": "Increase your limits",
+    "spendingLimits": "Limiti di spesa",
+    "spendingLimitsDescription": "I limiti di spesa mostrati in questa pagina sono denominati in USD. Per la vostra comodità, li convertiamo nella vostra valuta locale in base ai tassi di cambio attuali.Si prega di notare che l'importo della valuta locale visualizzata può fluctuarsi mentre i tassi di cambio vengono aggiornati in tempo reale.",
+    "requestUpgrade": "Richiesta di aggiornamento Richiesta di aggiornamento",
+    "editRequest": "Edit Upgrade Request"
   },
   "TransactionScreen": {
     "noTransaction": "Non ci sono transazioni da mostrare",
@@ -717,11 +1046,17 @@
     "stayInTrialMode": "Maybe later"
   },
   "SetAddressModal": {
+    "helloText": "Ciao!",
+    "whoAreYou": "Come ti chiamiamo?",
+    "usernameHint": "Questo sarà il tuo nome utente {bankName: string}",
+    "placeholder": "Inserisci il tuo nome utente",
     "title": "Set {bankName: string} address",
+    "save": "Salvare Save",
     "Errors": {
       "tooShort": "Username must be at least 3 characters long",
       "tooLong": "Address must be at most 50 characters long",
       "invalidCharacter": "Address can only contain letters, numbers, and underscores",
+      "startsWithNumber": "Il tuo nome utente deve iniziare con una lettera maiuscola o minuscola.",
       "addressUnavailable": "Sorry, this address is already taken",
       "unknownError": "An unknown error occurred, please try again later"
     },
@@ -758,13 +1093,60 @@
     "tryAgain": "Riprova",
     "sendViaOtherChannel": "You selected to receive the code via {channel: string}. You can try receiving via {other: string} instead"
   },
+  "PhoneRegistrationInitiateScreen": {
+    "title": "Telefono impostato",
+    "header": "Inserisci il tuo numero di telefono e ti manderemo un codice di accesso.",
+    "headerVerify": "Verificate di essere umani",
+    "errorRequestingCode": "Qualcosa è andato storto richiedendo il codice del telefono, per favore prova di nuovo più tardi.",
+    "errorInvalidPhoneNumber": "Sei sicuro di aver inserito il numero giusto?",
+    "errorUnsupportedCountry": "Non siamo in grado di supportare i clienti nel vostro paese.",
+    "placeholder": "Numero di telefono ",
+    "verify": "Clicca per verificare",
+    "sms": "Invia via SMS",
+    "whatsapp": "Invia via WhatsApp"
+  },
+  "PhoneRegistrationValidateScreen": {
+    "successTitle": "Numero di telefono confermato"
+  },
+  "EmailRegistrationInitiateScreen": {
+    "title": "Aggiungi il tuo e-mail",
+    "header": "Inserisci il tuo indirizzo e-mail e ti invieremo un codice di accesso.",
+    "invalidEmail": "È sicuro di aver inserito la corretta e-mail?",
+    "send": "Invia il codice",
+    "missingEmailRegistrationId": "Manca l'id di registrazione dell'email",
+    "placeholder": "hal@finney.org"
+  },
+  "EmailRegistrationValidateScreen": {
+    "header": "Per confermare il tuo indirizzo e-mail, inserisci il codice che ti abbiamo appena inviato su {email: string}",
+    "success": "L'email {email: string} è stata confermata con successo"
+  },
+  "EmailLoginInitiateScreen": {
+    "title": "Login via e-mail",
+    "header": "Inserisci il tuo indirizzo e-mail e ti invieremo un codice di accesso.",
+    "invalidEmail": "È sicuro di aver inserito la corretta e-mail?",
+    "send": "Invia il codice"
+  },
+  "EmailLoginValidateScreen": {
+    "header": "Se c'è un account collegato a {email: string}, dovresti aver ricevuto un codice a 6 cifre per inserire qui sotto.Se non ricevi nulla, probabilmente è perché questa non è la posta elettronica giusta, l'email è nella tua cartella di spam.",
+    "success": "L'email {email: string} è stata confermata con successo"
+  },
   "common": {
+    "enabled": "Abilitato",
+    "notifications": "Notifiche",
+    "preferences": "Preferenze",
+    "onDeviceSecurity": "Sicurezza sul dispositivo",
+    "securityAndPrivacy": "Sicurezza e privacy",
+    "advanced": " Avanzato Avanzato",
+    "community": "Comunità  Comunità  Comunità  Comunità ",
     "account": "Conto",
+    "trialAccount": "Conto di prova",
+    "flashUser": "Flash Utente XTERMX",
     "transactionLimits": "Limiti di transazione",
     "activateWallet": "Attiva il wallet",
     "amountRequired": "L'importo è richiesto",
     "back": "Indietro",
     "backHome": "Torna alla Home",
+    "revealSeed": "Scrivi la frase di recupero",
     "bank": "Banca",
     "bankAccount": "Conto Cash",
     "bankAdvice": "{bankName: string} Consigli",
@@ -776,12 +1158,16 @@
     "cancel": "Cancella",
     "close": "Chiudi",
     "confirm": "Conferma",
+    "copied": "Copiato su clipboard",
     "convert": "Converti",
+    "codeConfirmation": "Il codice di conferma",
     "currency": "Valuta",
     "currencySyncIssue": "Currency issue. Refresh needed",
     "csvExport": "Esporta le transazioni come CSV",
+    "exportSparkLogs": "Logs di esportazione",
     "date": "Data",
     "description": "Descrizione",
+    "details": "Dettagli ",
     "domain": "Dominio",
     "email": "Email",
     "error": "Errore",
@@ -801,19 +1187,24 @@
     "loggedOut": "È stato effettuato il logout.",
     "logout": "Log Out",
     "minutes": "minuti",
+    "errorAuthToken": "Manca un auth token",
     "needWallet": "Create an account to access your wallet",
     "next": "Avanti",
     "No": "No",
     "note": "Nota",
     "notification": "Notifica",
     "ok": "OK",
+    "or": "o o",
     "openWallet": "Apri wallet",
+    "phone": "Telefono Telefono Telefono",
     "phoneNumber": "Numero di telefono",
     "rate": "Tasso",
     "reauth": "La sessione è scaduta. Si prega di effettuare nuovamente il login.",
+    "request": "Pin di richiesta",
     "restart": "Riavvio",
     "sats": "sats",
     "search": "Cerca",
+    "chatSearch": "nome utente o nostr pubkey",
     "security": "Sicurezza",
     "send": "Invia",
     "setAnAmount": "Imposta un importo",
@@ -821,7 +1212,9 @@
     "shareBitcoin": "Condividi l'indirizzo Bitcoin",
     "shareLightning": "Condividi la Lightning Invoice",
     "soon": "Prossimamente!",
+    "submit": "Submit Submit",
     "success": "Successo!",
+    "stablesatsUsd": "Contanti (USD)",
     "to": "A",
     "total": "Totale",
     "transactions": "Transazioni",
@@ -841,6 +1234,28 @@
     "prevMonths": "Mesi precedenti",
     "problemMaybeReauth": "There was a problem with your request. Please retry in one minute. If the problem persist, we recommend that you log out and log back in. You can log out by going into Settings > Account > Log out",
     "warning": "Warning"
+  },
+  "NostrQuickStart": {
+    "postHeading": "Fai il tuo primo post sociale!",
+    "postDesc": "Presentati al mondo!"
+  },
+  "Social": {
+    "post": "Postare a Nostr",
+    "postTitle": "Make a Post",
+    "flashAppCredit": "Postato utilizzando Flash! Get it @ https://getflash.io/app",
+    "writeYourNote": "Scrivi il tuo biglietto, rendilo speciale :)",
+    "postButton": "Post Post",
+    "notePosted": "Successo! il tuo biglietto è stato pubblicato",
+    "errorPostFailed": "Errore! errore nel postare nota",
+    "errorEmptyNote": "Errore: Nota vuota",
+    "posting": "Postare... ",
+    "viewOnIris": "Vista su iris.to",
+    "viewPostQuestion": "Vuoi vedere il tuo post su iris.to?",
+    "browseSocialFeed": "Scorrere il social feed",
+    "socialFeedTitle": "Social Feed",
+    "postSuccessTitle": "Post condiviso!",
+    "postSuccessSubtitle": "Il tuo post è stato pubblicato su Nostr",
+    "showMeMore": "Fammi vedere di più"
   },
   "errors": {
     "generic": "Si è verificato un errore.\nPer favore riprova più tardi.",
@@ -865,13 +1280,28 @@
       "title": "Pagamento ricevuto"
     }
   },
+  "reports": {
+    "title": "Generare rapporti",
+    "reconciliation": "Rapporto di riconciliazione",
+    "aggregation": "Rapporto di aggregazione",
+    "topRecipients": "Top Recipients Report",
+    "topSenders": "Top Senders Report",
+    "selectFromDate": "Selezionare dal giorno",
+    "selectToDate": "Selezionare Per la data",
+    "fromDate": "Da Da Da",
+    "toDate": "Per Per Per",
+    "total": "Total TotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotalTotal"
+  },
   "support": {
     "contactUs": "Need help? Contact us.",
     "joinTheCommunity": "Join the community",
     "whatsapp": "WhatsApp",
     "email": "Email",
+    "enjoyingApp": "Godetevi l'app?",
     "statusPage": "Status Page",
+    "discord": "Discord Discord",
     "mattermost": "Mattermost",
+    "thankYouText": "Grazie per il feedback, volete suggerire un miglioramento?",
     "defaultEmailSubject": "{bankName: string} - Support",
     "defaultSupportMessage": "Hey there! I need some help with {bankName: string}, I'm using the version {version: string} on {os: string}.",
     "emailCopied": "email {email: string} copiata negli appunti",
@@ -884,7 +1314,8 @@
     "deleteAccountConfirmation": "Your account has been written for deletion.\n\nWhen the probation period related to regulatory requirement is over, the remaining data related to your account will be permanently deleted.",
     "deleteAccountFromPhone": "Hey there!, please delete my account. My phone number is {phoneNumber: string}.",
     "deleteAccountError": "Something went wrong. Contact {email: string} for further assistance.",
-    "bye": "Bye!"
+    "bye": "Bye!",
+    "switchToBeginnerMode": "Passando al modo principiante non perderai l'accesso ai tuoi fondi del portafoglio BTC, ma il portafoglio sarà nascosto.Puoi passare nuovamente al modo avanzato in qualsiasi momento.Sei sicuro di voler procedere?"
   },
   "lnurl": {
     "overLimit": "Non è possibile inviare più dell'importo massimo",
@@ -902,7 +1333,9 @@
     "minAmountNotMet": "Amount must be at least {minAmount: string}."
   },
   "AmountInputButton": {
-    "tapToSetAmount": "Add an amount"
+    "tapToSetAmount": "Add an amount",
+    "tapToSetOnChainAmount": "Aggiungi un importo",
+    "enterAmount": "Si prega di inserire l'importo per procedere."
   },
   "AppUpdate": {
     "needToUpdateSupportMessage": "I need to update my app to the latest version. I'm using the {os: string} app with version {version: string}.",
@@ -910,5 +1343,149 @@
     "updateMandatory": "Update is mandatory",
     "tapHereUpdate": "Tap here to update now",
     "contactSupport": "Contact Support"
+  },
+  "RefundFlow": {
+    "refundListTitle": "I depositi non rivendicati",
+    "depositDetails": "Dettagli del deposito",
+    "refundTitle": "Refund Deposit",
+    "destinationTitle": "Destination",
+    "confirmationTitle": "Confirmazione",
+    "pendingTransactions": "Transazioni in sospeso",
+    "noRefundables": "Nessun deposito non rivendicato trovato",
+    "view": "View View",
+    "refund": "Rimborso di denaro",
+    "refundTo": "Rimborso al portafoglio USD",
+    "recommendedFees": "Tasse raccomandate",
+    "fast": "Fast Fast Fast",
+    "medium": "Medium Medium",
+    "slow": "Lentamente lentamente lentamente",
+    "txId": "L'ID della transazione",
+    "refunded": "Rimborsato",
+    "pending": "In attesa",
+    "autoClaiming": "Questo trasferimento sarà richiesto automaticamente",
+    "approvalRequired": "Accettazione richiesta",
+    "broadcasting": "La radiodiffusione",
+    "feeExceeded": "Fee troppo elevati",
+    "claimFailed": "La rivendicazione è fallita",
+    "automaticClaim": "Questo deposito verrà richiesto automaticamente quando le commissioni di rete saranno inferiori.",
+    "approveFee": "Acconsentire a richiedere questo trasferimento, o rifiutare di elaborare un rimborso.",
+    "enterAddress": "Inserisci l'indirizzo Bitcoin dove vuoi ricevere il rimborso.",
+    "selectFee": "Selezionare una tassa di rete per il tuo rimborso",
+    "confirmRefund": "Confirm & Refund",
+    "processing": "Il rimborso del trattamento...",
+    "success": "Refund Broadcast",
+    "refundSuccess": "Il tuo rimborso è stato inviato alla rete Bitcoin.",
+    "refundFailed": "Rimborso fallito",
+    "failedToClaim": "Non è riuscito a rivendicare il deposito",
+    "unknownError": "Si è verificato un errore sconosciuto",
+    "missingUtxo": "Manca il deposito UTXO, la transazione potrebbe non essere ancora confermata.",
+    "couldNotClaimAutomatically": "Questo deposito non poteva essere rivendicato automaticamente.",
+    "networkFee": "Fee di rete ",
+    "networkFeeWithRate": "Fee di rete ({feeRate: string} sat/vB)",
+    "youReceive": "Tu ricevi",
+    "approve": "Approva",
+    "refundToExternalWallet": "Potete rimborsarlo in un portafoglio esterno.",
+    "enterDestinationAddress": "Si prega di inserire un indirizzo di destinazione",
+    "invalidBitcoinAddress": "Invalido formato di indirizzo Bitcoin",
+    "estimatedFee": "Fee di rete ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Est. Tu ricevi",
+    "feeEstimateDisclaimer": "Le tasse sono stimate, le tasse effettive saranno calcolate al momento della trasmissione."
+  },
+  "Nostr": {
+    "editProfile": "Edit Profile",
+    "importNsecTitle": "Importare la tua chiave segreta Nostr Secret",
+    "importNsecDefaultDescription": "Vi preghiamo di importare la vostra nsec dall'altro dispositivo per continuare a utilizzare la funzione di chat.",
+    "createProfileTitle": "Create Profile Create Profile",
+    "createProfileWarning": "Se prosegui, tutti i dati dei profili esistenti saranno sovrascritti.",
+    "createProfilePubkeyMessage": "Non siamo riusciti a trovare un evento di profilo collegato a questo pubkey.",
+    "createProfilePrompt": "Vuoi continuare a creare?",
+    "createProfileButton": "Create Profile Create Profile",
+    "profileNotFound": "Stiamo cercando, ma non siamo stati in grado di trovare il tuo profilo.",
+    "promptToCreateProfile": "Vorresti crearne uno adesso?",
+    "learnAboutNostr": "Scopri di più su Nostr",
+    "learnAboutNostrSubtext": "Esplora questa guida per trarre il massimo dal chat nostr",
+    "showPublicKey": "Mostra chiave pubblica",
+    "showPrivateKey": "Mostri la chiave privata",
+    "profileConnected": "Profile Connected",
+    "reconnectProfile": "Riconnettere il profilo",
+    "tapToRefreshConnection": "Tocca per aggiornare la connessione",
+    "importExistingProfile": "Importare un profilo esistente",
+    "deleteProfile": "Cancellare il profilo",
+    "noProfileIdExists": "No Profile ID esiste",
+    "profileReconnected": "Il tuo profilo è stato riconnesso con successo",
+    "deleteWarningTitle": "Avvertimento  Avvertimento",
+    "deleteWarningMessage": "L'eliminazione delle chiavi del tuo profilo rimuoverà il tuo account da questo dispositivo.Senza un backup, non sarai più in grado di accedere a questo profilo.Sei sicuro?",
+    "importNsecDescription": "Se vuoi usare la tua nsec, incollala qui sotto.",
+    "profileImportedSuccessfully": "Profile importato con successo",
+    "noProfileFound": "No Nostr Profile Found",
+    "noProfileDescription": "Non hai ancora creato un profilo Nostr, tocca qui sotto per crearne uno.",
+    "keyConflictTitle": "Nostr Key Not Found on Device",
+    "keyConflictDescription": "Il tuo account ha una chiave Nostr registrata ma non è stata trovata su questo dispositivo. Questo può accadere dopo aver reinstallato l'app o aver cambiato dispositivi.Per ripristinare l'accesso, importa il tuo backup nsec da Impostazioni avanzate.",
+    "creatingProfile": "Creando un profilo...",
+    "createNewProfile": "Crea un nuovo profilo",
+    "generateProfile": "Generare un profilo",
+    "findingYou": "Ti trovo..",
+    "advancedSettings": "Le impostazioni avanzate di Nostr",
+    "KeyModal": {
+      "yourPublicProfileId": "Il tuo ID di profilo pubblico",
+      "yourPrivateProfileKey": "La chiave del tuo profilo privato",
+      "keyCopiedToClipboard": "Key copied to clipboard"
+    },
+    "Contacts": {
+      "stillLoading": "Avendo difficoltà a trovare il tuo elenco di contatti, hai già seguito qualcuno?",
+      "noCantacts": "Nessun contatto disponibile",
+      "profile": "Profile Profile",
+      "nostrUser": "Nostr User",
+      "message": "Message Message",
+      "sendPayment": "Invio  Invio ",
+      "contactInfo": "Informazioni di contatto",
+      "contactManagement": "Contact Management ",
+      "unfollowContact": "Non seguire il contatto",
+      "noListDeepLinkMessage": "Per aggiungere amici, è necessario inizializzare la tua lista dei contatti nelle impostazioni prima.",
+      "manageContacts": "Gestire i contatti",
+      "createContactList": "Lista di contatti Create Contact List"
+    },
+    "common": {
+      "copy": "Copia Copia",
+      "copied": "Copiato",
+      "goToSettings": "Vai alle impostazioni"
+    }
+  },
+  "AccountUpgrade": {
+    "accountType": "Tipo di conto",
+    "personal": "Personal Personal",
+    "personalDesc": "Assicurare il portafoglio con telefono e e-mail, rimanere al sicuro e recuperare facilmente se necessario",
+    "pro": "Pro Pro",
+    "proDesc": "Accettare pagamenti e farsi scoprire sulla mappa richiede un nome aziendale e una posizione.",
+    "merchant": "Commerciante Commerciante",
+    "merchantDesc": "Dare ricompense, apparire sulla mappa, e regolare con la vostra banca. ID e informazioni bancarie richieste.",
+    "personalInfo": "Informazioni personali",
+    "fullName": "Nome completo",
+    "phoneNumber": "Numero di telefono ",
+    "email": "Indirizzo e-mail",
+    "optional": "(Optional)",
+    "validation": "Validazione",
+    "validationCode": "Codice di validazione",
+    "businessInfo": "Informazioni commerciali ",
+    "businessName": "Nome aziendale",
+    "businessNamePlaceholder": "Inserisci il tuo nome aziendale",
+    "businessAddress": "Indirizzo aziendale",
+    "businessAddressPlaceholder": "Inserisci il tuo indirizzo aziendale",
+    "flashTerminal": "Vuoi un terminale Flash?",
+    "flashTerminalTooltip": "Un Terminal Flash è un dispositivo intelligente che può accettare il pagamento tramite Flash per il tuo business e ricevute di stampa.Un rappresentante del servizio clienti ti contatterà se contrassegnerai questa casella.",
+    "bankingInfo": "Informazioni bancarie",
+    "bankName": "Nome della banca",
+    "bankNamePlaceholder": "Selezionare il nome della banca",
+    "bankBranch": "Branch Bank Branch ",
+    "bankBranchPlaceholder": "Entrate nella vostra filiale bancaria",
+    "bankAccountType": "Tipo di conto",
+    "selectBankAccountType": "Selezionare il tipo di account",
+    "currency": "Moneta",
+    "selectCurrency": "Selezionare Currency",
+    "accountNum": "Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto",
+    "accountNumPlaceholder": "Inserisci il tuo numero di conto",
+    "uploadId": "Upload ID Document",
+    "successUpgrade": "Hai aggiornato con successo il tuo account a {accountType: string}",
+    "successRequest": "Hai richiesto con successo di aggiornare il tuo account a {accountType: string}"
   }
 }

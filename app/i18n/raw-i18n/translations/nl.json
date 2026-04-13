@@ -2,6 +2,7 @@
   "GaloyAddressScreen": {
     "title": "Betaling ontvangen door gebruik te maken van:",
     "buttonTitle": "Set your address",
+    "yourLightningAddress": "Uw Lightning adres",
     "yourAddress": "Jouw  {bankName: string} adres",
     "notAbleToChange": "Je kunt je  {bankName: string} adres niet veranderen nadat je het hebt ingesteld.",
     "addressNotAvailable": "Dit  {bankName: string} adres is al in gebruik.",
@@ -9,6 +10,7 @@
     "merchantTitle": "Voor winkeliers",
     "yourCashRegister": "Uw Lightning Kassa",
     "yourPaycode": "Jouw betaalcode",
+    "copiedLightningAddressToClipboard": "Ik heb Lightning-adres naar clipboard gekopieerd",
     "copiedAddressToClipboard": " {bankName: string} naar het klembord gekopieerd",
     "copiedPaycodeToClipboard": "Betaalcode naar het klembord gekopieerd",
     "copiedCashRegisterLinkToClipboard": "Kassalink Gekopieerd naar Klembord",
@@ -19,6 +21,15 @@
     "howToUseYourAddressExplainer": "Deel met iemand die een compatibele wallet heeft, zoals:",
     "howToUseYourPaycodeExplainer": "U kunt uw betaalcode afdrukken (technisch gezien is dit een lnurl-pay-adres) en deze weergeven in uw bedrijf om betalingen te ontvangen. Particulieren kunnen u betalen door het te scannen met een Lightning-compatibele wallet.\n\nHoud er echter rekening mee dat sommige wallets geen Paycode kunnen scannen, zoals:",
     "howToUseYourCashRegisterExplainer": "Laat mensen betalingen incasseren via de Kassa-link, zonder toegang tot uw portemonnee.\n\nZe kunnen facturen maken en betalingen worden rechtstreeks naar uw {bankName: string} Wallet gestuurd."
+  },
+  "SetAccountModal": {
+    "title": "Stel een standaard account op",
+    "description": "Dit account wordt aanvankelijk geselecteerd voor het verzenden en ontvangen van betalingen en kan op elk moment worden gewijzigd.",
+    "stablesatsTag": "Kies dit om een stabiele USD-waarde te behouden.",
+    "bitcoinTag": "Kies dit op een Bitcoin-standaard."
+  },
+  "NoteInput": {
+    "addNote": "Voeg een opmerking toe..."
   },
   "AuthenticationScreen": {
     "authenticationDescription": "Authenticeer om verder te gaan",
@@ -37,6 +48,37 @@
   "ContactDetailsScreen": {
     "title": "Transacties met  {username: string}"
   },
+  "ChatScreen": {
+    "noChatsTitle": "Geen chats gevonden",
+    "noChatsYet": "Voer een Flash-gebruikersnaam of nostr-pubkey in om een chat te starten",
+    "noMatchingChats": "Er zijn geen chats gevonden die overeenkomen met uw zoekopdracht.",
+    "title": "Chat  Chat "
+  },
+  "ChatDetailsScreen": {
+    "title": "Chat met {username: string}"
+  },
+  "CardScreen": {
+    "noCardsTitle": "Geen kaarten gevonden",
+    "noCardsYet": "Tik op een Flashcard om het hier toe te voegen",
+    "noMatchingCards": "Er zijn geen kaarten gevonden die overeenkomen met uw zoektocht.",
+    "title": "Flashcard",
+    "notFlashcard": "Ondersteunde NFC-kaart, zorg ervoor dat je een flashkaart gebruikt.",
+    "noNDEFMessage": "Zorg ervoor dat u een flashcard gebruikt.",
+    "notSupported": "NFC wordt niet ondersteund op dit apparaat.",
+    "notEnabled": "NFC is niet ingeschakeld op dit apparaat.",
+    "noTag": "Geen tag gevonden, zorg ervoor dat je een flashcard gebruikt."
+  },
+  "Cashout": {
+    "title": "Settle  Settle ",
+    "percentageToCashout": "Om te regelen  %",
+    "valid": "Geldig voor {time: string}",
+    "exchangeRate": "Wisselkoers ",
+    "sendAmount": "Stuur een bedrag",
+    "receiveAmount": "Ontvangen bedrag",
+    "fee": "Fee",
+    "success": "Het verzoekschrift om afwikkeling is succesvol gestart.",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
+  },
   "ConversionDetailsScreen": {
     "title": "Wisselen",
     "percentageToConvert": "% om te wisselen"
@@ -44,7 +86,9 @@
   "ConversionConfirmationScreen": {
     "title": "Bevestig wissel",
     "youreConverting": "Uw wissel wordt verwerkt",
-    "receivingAccount": "Ontvanger"
+    "sendingAccount": "Het verzenden van een account",
+    "receivingAccount": "Ontvanger",
+    "conversionFee": "Conversion Fee"
   },
   "ConversionSuccessScreen": {
     "title": "Wissel geslaagd",
@@ -422,8 +466,12 @@
   "GetStartedScreen": {
     "logInCreateAccount": "Inloggen / account aanmaken",
     "quickStart": "Start",
+    "restoreWallet": "Login",
     "exploreWalletInstead": "Verken in plaats daarvan wallet",
     "setupBusinessAccount": "Zakelijk account instellen",
+    "createAccount": "Maak een nieuw account",
+    "exploreWallet": "Verken je portemonnee",
+    "logBackInWith": "Log terug in met",
     "headline": "Wallet mogelijk gemaakt door Galoy",
     "startTrialAccount": "Begin met een proefaccount",
     "startWithTrialAccount": "Start with trial account",
@@ -435,7 +483,8 @@
       "noBackup": "Geen back-up mogelijkheid",
       "sendingLimit": "Verlaagde dagelijkse verzendlimiet",
       "noOnchain": "Geen ontvangen van bitcoin onchain"
-    }
+    },
+    "chooseAccountType": "Kies Account Type"
   },
   "MapScreen": {
     "locationPermissionMessage": "Activeer je locatie zodat je weet waar je bent op de kaart",
@@ -444,16 +493,48 @@
     "locationPermissionPositive": "OK",
     "locationPermissionTitle": "Zoek jezelf op de kaart",
     "payBusiness": "betaal dit bedrijf",
-    "title": "Map"
+    "title": "Map",
+    "addPin": "Klik ergens op om een pin toe te voegen",
+    "selectedCoordinates": "Uw Flashpoint coördinaten: ",
+    "viewInGoogleMaps": "Bekijk in Google Maps",
+    "getDirections": "Directies Get Directions"
   },
   "HomeScreen": {
+    "cashout": "Cash Out ",
     "receive": "Ontvang",
+    "reload": "Reload Card",
+    "balance": "Verfrissingsbalans",
+    "showQrCode": "Topup via QR",
     "send": "Verzend",
+    "sweep": "Sweep to Wallet ",
+    "pay": "Betaal  Betaal ",
     "title": "Thuisscherm",
     "scan": "Scan QR",
     "updateAvailable": "Een update is beschikbaar. \nClick om nu te updaten",
     "useLightning": "We gebruiken het Lightning Netwerk.",
-    "myAccounts": "Mijn accounts"
+    "myAccounts": "Mijn accounts",
+    "unclaimedDepositsWarning": "️ P l e a s e c o m p l e e o r claim a l l l onclaimed deposits b e f o r e n i n s t a l i n g F l a s o r onclaimed deposits w i l l l b e l o s t .",
+    "unclaimedDeposits": "Unclaimed Deposits",
+    "cash": "Cash  Cash ",
+    "bitcoin": "Bitcoin",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Add",
+    "upgradeTitle": "Upgrade je account",
+    "upgradeTitlePending": "Een upgrade aanvraag is in afwachting",
+    "upgradeDesc": "Upgrade om zichtbaarheid, limieten en uitbetalingen te vergroten.",
+    "upgradePendingDesc": "Uw account upgrade aanvraag is onder review.",
+    "currencyTitle": "Verander naar uw lokale valuta",
+    "currencyDesc": "Bekijk onze beschikbare valutalijst en selecteer uw valuta.",
+    "flashcardTitle": "Krijg een Flashcard",
+    "flashcardDesc": "Zoek een Flashpoint en krijg een Flashcard om in het dagelijks leven te gebruiken.",
+    "nonCustodialWalletTitle": "Niet-custodiële portemonnees",
+    "nonCustodialWalletDesc": "Leer meer over niet-verzorgingsbeurzen.",
+    "emailTitle": "E-mailadres",
+    "emailDesc": "Voeg uw e-mailadres toe om uw account te beveiligen en login met behulp van een e-mailadres.",
+    "btcWalletTitle": "Enable BTC wallet",
+    "btcWalletDesc": "Makkelijk overbrengen van grotere bedragen in Bitcoin.",
+    "backupTitle": "Backup je BTC-portemonnee.",
+    "backupDesc": "Backup en beveiligen van uw Bitcoin portemonnee met behulp van recovery phrase."
   },
   "PinScreen": {
     "attemptsRemaining": "Onjuiste pincode. {attemptsRemaining: number} resterende pogingen.",
@@ -481,11 +562,13 @@
     "title": "Thuisscherm"
   },
   "ReceiveScreen": {
+    "flashcardInstructions": "Scan de QR code, of tik op het icoon om dit te delen op whatsapp, e-mail, etc.",
     "nfc": "NFC",
     "enterAmountFirst": "Please enter an amount first",
     "activateNotifications": "Wil je notificaties activeren om op de hoogte te worden gehouden wanneer de betaling is binnengekomen?",
     "copyClipboard": "Factuur is gekopieerd naar het klembord",
     "copyClipboardBitcoin": "Bitcoin-adres is gekopieerd naar het klembord",
+    "copyClipboardPaycode": "De Paycode/LNURL is in het clipboard gekopieerd",
     "invoicePaid": "Deze factuur is betaald",
     "setNote": "zet een noot",
     "tapQrCodeCopy": "Tik op QR-code om te kopiëren",
@@ -507,7 +590,37 @@
     "useALightningInvoice": "Gebruik een Lightning Factuur",
     "setANote": "Stel een Notitie",
     "invoiceAmount": "Factuur Bedrag",
-    "fees": "{minBankFee: string} sats fees for onchain payment below {minBankFeeThreshold: string} sats"
+    "fees": "{minBankFee: string} sats fees for onchain payment below {minBankFeeThreshold: string} sats",
+    "lightning": "Lightning",
+    "paycode": "Paycode",
+    "onchain": "Onchain",
+    "bitcoin": "Bitcoin",
+    "stablesats": "Cash  Cash ",
+    "regenerateInvoiceButtonTitle": "Regenerate Invoice",
+    "setUsernameButtonTitle": "Set Username",
+    "invoiceHasExpired": "De factuur is verlopen",
+    "setUsernameToAcceptViaPaycode": "Stel uw gebruikersnaam in om te accepteren via Paycode QR (LNURL) en Lightning Address",
+    "singleUse": "Single Use",
+    "invoiceExpired": "Verlopen factuur",
+    "invoiceValidity": {
+      "validFor1Day": "Geldig voor 1 dag",
+      "validForNext": "Geldig voor volgende {duration: string}",
+      "validBefore": "Geldig voor {time: string}",
+      "expiresIn": "Vervalt in {duration: string}",
+      "expiresNow": "Vervalt nu"
+    },
+    "invoiceHasBeenPaid": "De factuur is betaald",
+    "yourBitcoinOnChainAddress": "Uw Bitcoin Onchain Address",
+    "receive": "Ontvangen  Ontvangen ",
+    "receiveViaInvoice": "Ontvang via Lightning",
+    "receiveViaPaycode": "Ontvang via Paycode",
+    "topupFlashcard": "Topup Flashcard",
+    "receiveViaOnchain": "Ontvang via Onchain",
+    "payCodeOrLNURL": "Paycode / LNURL",
+    "cantReceiveZeroSats": "U kunt geen nul sats ontvangen.Gelieve een bedrag in te voeren dat overeenkomt met 1 of meer sats.",
+    "initialDeposit": "* Aanvankelijke storting van $5 wordt aanbevolen voor de opstelling van het kanaal. ~$1 wordt betaald als opstellingskosten.",
+    "selectPaymentMethod": "Selecteer Betalingsmethode",
+    "selectWallet": "Selecteer Wallet"
   },
   "RedeemBitcoinScreen": {
     "title": "Wissel Bitcoin",
@@ -526,7 +639,12 @@
     "invalidTitle": "Ongeldige QR-code",
     "noQrCode": "We konden geen QR-code in de afbeelding vinden",
     "title": "Scan QR",
-    "invalidContentLnurl": "We hebben gevonden:\n\n{found: string}\n\nwordt momenteel niet ondersteund"
+    "permissionCamera": "We hebben toestemming nodig om uw camera te gebruiken",
+    "noCamera": "Geen camera gevonden",
+    "openSettings": "Open instellingen",
+    "unableToOpenSettings": "Onmogelijk om instellingen te openen",
+    "invalidContentLnurl": "We hebben gevonden:\n\n{found: string}\n\nwordt momenteel niet ondersteund",
+    "imageLibraryPermissionsNotGranted": "We hebben geen toestemming om toegang te krijgen tot de beeldbibliotheek."
   },
   "SecurityScreen": {
     "biometricDescription": "Ontgrendel met vingerafdruk of gezichtsherkenning.",
@@ -537,7 +655,8 @@
     "hideBalanceTitle": "Hide Balance",
     "pinDescription": "De pincode wordt gebruikt als back-up authenticatie methode voor biometrische authenticatie.",
     "pinTitle": "PIN Code",
-    "setPin": "Stel PIN in"
+    "setPin": "Stel PIN in",
+    "backupDescription": "Als u een PIN-code hebt ingesteld, moet u uw account back-up maken door een telefoonnummer toe te voegen."
   },
   "SendBitcoinConfirmationScreen": {
     "amountLabel": "Bedrag:",
@@ -579,12 +698,17 @@
       "body3": "Anders gaat het geld naar een {bankName: string}-rekening met het adres \"{lnAddress: string}\".\n\nControleer ook de spelling van het eerste deel van het adres. bijv. jackie en jack1e zijn 2 verschillende adressen.",
       "warning": "Als het adres van {bankName: string} onjuist is ingevoerd, kan {bankName: string} de transactie niet ongedaan maken.",
       "checkBox": "{lnAdres: string} is het juiste adres.",
-      "confirmButton": "Ik ben 100% zeker"
+      "confirmButton": "Ik ben 100% zeker",
+      "externalWarning": "Je bent op het punt om geld te sturen naar iemand die geen {bankName: string}-account heeft.",
+      "externalCheckBox": "Ik bevestig de verzending naar {address: string}."
     },
     "clipboardError": "Fout bij ophalen waarde van klembord"
   },
   "SendBitcoinScreen": {
     "amount": "Bedrag",
+    "MinOnChainLimit": "Het minimumbedrag voor deze transactie is US$ 2,00",
+    "MinOnChainSatLimit": "Het minimumbedrag voor deze transactie is 5.500 sats",
+    "MinFlashcardLimit": "Het minimale bedrag bij herladen van een flashcard is 100 sats.",
     "amountExceed": "Bedrag overschrijdt uw saldo van {balance: string}",
     "amountExceedsLimit": "Bedrag overschrijdt uw resterende dagelijkse limiet van {limit: string}",
     "upgradeAccountToIncreaseLimit": "Upgrade uw account om uw limiet te verhogen",
@@ -594,19 +718,35 @@
     "destinationIsRequired": "Bestemming is vereist",
     "fee": "netwerk kosten",
     "feeCalculationUnsuccessful": "Berekening mislukt ⚠️",
+    "placeholder": "Gebruikersnaam, factuur of adres",
     "invalidUsername": "Ongeldige gebruikersnaam",
     "noAmount": "Deze factuur heeft geen bedrag, dus u moet handmatig opgeven hoeveel geld u wilt verzenden",
     "notConfirmed": "De betaling is verzonden\nmaar is nog niet bevestigd\n\nU kunt de status controleren\nvan de betaling in Transacties",
     "note": "Noot of label",
     "success": "De betaling is succesvol verzonden",
+    "suggestionInput": "Voer uw suggestie in",
     "max": "Max",
     "maxAmount": "Max Amount",
     "title": "Verzend Bitcoin",
+    "send": "Stuur  Stuur ",
     "failedToFetchLnurlInvoice": "Kan ln-url factuur niet ophalen",
     "lnurlInvoiceIncorrectAmount": "De ln-url server reageerde met een factuur met een onjuist bedrag.",
-    "lnurlInvoiceIncorrectDescription": "De ln-url server reageerde met een factuur met een onjuiste hash-beschrijving."
+    "lnurlInvoiceIncorrectDescription": "De ln-url server reageerde met een factuur met een onjuiste hash-beschrijving.",
+    "noAmountInvoiceError": "Geen enkele factuur wordt ondersteund in de BTC-portemonnee, dus ga terug en scan of voer een factuur in met een toegevoegd bedrag.",
+    "onchainMinAmountInvoiceError": "Het door u ingevoerde bedrag is minder dan het minimumbedrag dat nodig is om een transactie op de keten {amount: number} te verzenden.",
+    "minAmountInvoiceError": "Het bedrag op de factuur is minder dan het minimum bedrag {amount: number}",
+    "maxAmountInvoiceError": "Het bedrag op de factuur is groter dan het maximale bedrag {amount: number}",
+    "minAmountConvertError": "Het conversiebedrag is minder dan het minimale vereiste bedrag {amount: number}.",
+    "maxAmountConvertError": "Het conversiebedrag is groter dan het maximale bedrag {amount: number}"
   },
   "SettingsScreen": {
+    "staticQr": "Printable Static QR Code",
+    "staticQrCopied": "Uw statische QR code link is gekopieerd",
+    "setByOs": "Set by OS",
+    "apiAcess": "Access  API API",
+    "pos": "Point of Sale ",
+    "posCopied": "De link naar uw point of sale is gekopieerd.",
+    "setYourLightningAddress": "Stel je gebruikersnaam op",
     "activated": "Geactiveerd",
     "addressScreen": "Manieren om betaald te krijgen",
     "tapUserName": "Click om gebruikersnaam in te stellen",
@@ -627,7 +767,17 @@
     "nfcNotCompatible": "The information fetch from the card is not a compatible lnurl-withdraw link.",
     "nfcOnlyReceive": "Only receive from NFC is available for now",
     "nfcScanNow": "Scan NFC Now",
-    "nfcNotSupported": "NFC is not supported on this device"
+    "nfcNotSupported": "NFC is not supported on this device",
+    "logInOrCreateAccount": "Log in of maak een account",
+    "backup": "Backup  Backup",
+    "importWallet": "Import portemonnee",
+    "showSeedPhrase": "Reveal recovery phrase",
+    "showNostrSecret": "Chat-instellingen",
+    "beginnerMode": "De Bitcoin-account is uitgeschakeld.",
+    "advanceMode": "Enable Bitcoin Account (Advanced Mode) ",
+    "keysManagement": "Back-up van het portemonnee",
+    "showBtcAccount": "Toon Bitcoin-account",
+    "hideBtcAccount": "Hide Bitcoin account"
   },
   "NotificationSettingsScreen": {
     "title": "Notificatie instellingen",
@@ -640,18 +790,152 @@
       "Payments": {
         "title": "Betalingen",
         "description": "Meldingen met betrekking tot het verzenden en ontvangen van betalingen."
+      },
+      "Marketing": {
+        "title": "Features en updates",
+        "description": "Kennisgevingen over nieuwe functies en updates."
+      },
+      "Price": {
+        "title": "Prijswijzigingen",
+        "description": "Kennisgevingen over de prijs van Bitcoin."
       }
     }
   },
   "AccountScreen": {
+    "fundsMoreThan5Dollars": "Uw account heeft meer dan $5",
+    "itsATrialAccount": "Als je je telefoon verliest of de app verwijdert, zijn je fondsen onherstelbaar.",
+    "accountBeingDeleted": "Uw account wordt verwijderd, wacht alsjeblieft...",
+    "dangerZone": "Gevaar Zone",
+    "phoneDeletedSuccessfully": "Telefoon is met succes verwijderd",
+    "phoneNumber": "Telefoonnummer ",
+    "tapToAddPhoneNumber": "Tik aan om een telefoonnummer toe te voegen",
+    "loginMethods": "Login Methoden",
+    "level": "Niveaus {level: string}",
     "accountLevel": "Account Niveau",
     "upgrade": "Je account upgraden",
     "logOutAndDeleteLocalData": "Log uit en wis alle lokale gegevens",
     "IUnderstand": "Ik begrijp. Gelieve mij uit te loggen.",
     "logoutAlertTitle": "Weet u zeker dat u wilt uitloggen en alle lokale gegevens wilt verwijderen?",
+    "logoutAlertContentPhone": "Uw telefoonnummer is {phoneNumber: string}, dus zorg ervoor dat u er toegang tot hebt om opnieuw in te loggen.",
+    "logoutAlertContentEmail": "U zult uw e-mail opnieuw moeten invoeren om opnieuw in te loggen. uw e-mail is {email: string} dus zorg ervoor dat u toegang heeft tot deze om opnieuw in te loggen",
+    "logoutAlertContentPhoneEmail": "Uw telefoonnummer is {phoneNumber: string} en uw e-mail is {email: string}, dus zorg ervoor dat u toegang heeft tot die personen om terug in te loggen.",
     "usdBalanceWarning": "You have a Stablesats balance of {balance: string}.",
     "btcBalanceWarning": "You have a bitcoin balance of {balance: string}.",
-    "secureYourAccount": "Register to secure your account"
+    "secureYourAccount": "Register to secure your account",
+    "tapToAdd": "Tik aan om toe te voegen",
+    "tapToAddEmail": "Tik aan om e-mail toe te voegen",
+    "unverifiedEmail": "E-mail (niet geverifieerd) ",
+    "email": "E-mail ",
+    "emailDeletedSuccessfully": "E-mail is met succes verwijderd",
+    "unverifiedEmailAdvice": "Niet-geverifieerde e-mails kunnen niet worden gebruikt om in te loggen. je moet je e-mailadres opnieuw verifiëren.",
+    "deleteEmailPromptTitle": "Verwijder je e-mail",
+    "deleteEmailPromptContent": "Weet je zeker dat je je e-mailadres wilt verwijderen? je kunt alleen opnieuw inloggen met je telefoonnummer.",
+    "deletePhonePromptTitle": "Verwijder je telefoon",
+    "deletePhonePromptContent": "Weet je zeker dat je je telefoonnummer wilt verwijderen? je kunt alleen opnieuw inloggen met je e-mail.",
+    "addEmailFirst": "Voeg eerst een e-mail toe",
+    "addPhoneFirst": "Voeg eerst een telefoon toe",
+    "phoneNumberAuthentication": "Telefoonnummer (voor inlog)",
+    "emailAuthentication": "E-mail (voor inlog)",
+    "removePhone": "Verwijder je telefoon",
+    "removeEmail": "Verwijder een e-mail",
+    "unverified": "E-mail is niet geverifieerd",
+    "unverifiedContent": "Beveilig uw account door uw e-mail te verifiëren.",
+    "confirmEmail": "Bevestig mijn e-mail",
+    "emailUnverified": "Uw e-mail is niet geverifieerd",
+    "emailUnverifiedContent": "Zorg ervoor dat u zich terug kunt aanmelden bij uw account door uw e-mail te verifiëren.",
+    "totp": "Tweefactor-authenticatie",
+    "totpDeactivated": "Tweefactor-authenticatie is uitgeschakeld",
+    "totpDeleteAlertTitle": "Verwijder tweefaktor-authenticatie",
+    "totpDeleteAlertContent": "Weet je zeker dat je je tweefaktor-authenticatie wilt verwijderen?",
+    "copiedAccountId": "Ik heb je account-ID naar clipboard gekopieerd",
+    "yourAccountId": "Uw account-ID",
+    "accountId": "Account ID",
+    "copy": "Copy Copy"
+  },
+  "TotpRegistrationInitiateScreen": {
+    "title": "Tweefactor-authenticatie",
+    "content": "Als alternatief kunt u het geheim handmatig kopiëren/plakken in uw authenticator app."
+  },
+  "TotpRegistrationValidateScreen": {
+    "title": "Tweefactor-authenticatie",
+    "enter6digitCode": "Voer de 6-cijferige code in van uw authenticator app om uw tweefaktor-authenticatie te valideren.",
+    "success": "Tweefactor-authenticatie is ingeschakeld.Je kunt nu alleen opnieuw inloggen met je telefoon of e-mail EN je tweefactor-authenticatie.Alleen volledige KYC-accounts kunnen worden hersteld in het geval dat een gebruiker de toegang tot zijn tweefactor-authenticatie heeft verloren."
+  },
+  "TotpLoginValidateScreen": {
+    "title": "Tweefactor-authenticatie",
+    "content": "Voer de 6-cijferige code van uw authenticator app in om in te loggen. Deze code verandert elke 30 seconden."
+  },
+  "BackupOptions": {
+    "title": "Backup opties",
+    "recoveryPhrase": "Recovery Phrase  Recovery Phrase ",
+    "recoveryPhraseDesc": "Backup Bitcoin Wallet using recovery phrase",
+    "revealRecoveryPhrase": "Reveal Recovery Phrase ",
+    "revealRecoveryPhraseDesc": "Gebruik je recovery phrase om Bitcoin Wallet te importeren.",
+    "phone": "Telefoon  Telefoon ",
+    "phoneDesc": "Backup Cash Wallet met behulp van telefoonnummer",
+    "usePhoneNumber": "Gebruik je telefoonnummer om Cash Wallet te importeren.",
+    "done": "      "
+  },
+  "BackupStart": {
+    "title": "Eerst maken we je recovery phrase",
+    "description": "Een recovery phrase is een reeks van 12 woorden in een bepaalde volgorde.Deze woordcombinatie is uniek voor je portemonnee.Zorg ervoor dat je pen en papier klaar hebt zodat je het kunt opschrijven.",
+    "continue": " Continue  Continue "
+  },
+  "BackupSeedPhrase": {
+    "title": "Dit is je herstel frase",
+    "description": "Zorg ervoor dat u het opschrijft zoals hier getoond, u moet dit later verifiëren.",
+    "backupToICloud": "Backup naar iCloud",
+    "backupToGoogleDrive": "Backup naar Google Drive",
+    "verify": "Verifieer"
+  },
+  "BackupDoubleCheck": {
+    "title": "Laten we het dubbel controleren",
+    "description1": "Goed gedaan, laten we nu controleren of je je herstelzin correct hebt neergeschreven.",
+    "description2": "Ja, het is zo belangrijk.",
+    "continue": " Continue  Continue "
+  },
+  "BackupVerify": {
+    "title": "Tik op de woorden in de juiste volgorde.",
+    "correctTitle": "Zorg ervoor dat je je recovery phrase veilig opslaat.",
+    "wrongTitle": "Sorry, dat is niet het juiste derde woord.",
+    "tryAgain": "Probeer het nog eens.",
+    "continue": " Continue  Continue "
+  },
+  "BackupComplete": {
+    "title": "Uw back-up is voltooid",
+    "description": "U moet nu uw herstel frase en wachtwoord opschrijven voor toekomstige referentie.",
+    "complete": "Complete Complete"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "Dit is je herstel frase",
+    "description": "Zorg ervoor dat je het opschrijft zoals hier getoond, want je moet je portemonnee terugvinden.",
+    "done": "      "
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "Login opties",
+    "importOptions": "Import portemonnee opties",
+    "recoveryPhrase": "Recovery Phrase  Recovery Phrase ",
+    "importBTCWallet": "Importeer Bitcoin Wallet met behulp van recovery phrase",
+    "phone": "Telefoon  Telefoon ",
+    "importUsingPhone": "Importeer of maak je Cash Wallet met behulp van telefoonnummer",
+    "email": "E-mail ",
+    "importUsingEmail": "Importeer je Cash Wallet met behulp van een e-mailadres",
+    "login": "Login/Create",
+    "done": "      "
+  },
+  "ImportWallet": {
+    "title": "Teken in met een recovery phrase",
+    "importTitle": "Importeer je portemonnee met een recovery phrase",
+    "description": "Dit is een 12-woordenzin die je kreeg toen je je vorige portemonnee maakte.",
+    "complete": "Complete Complete"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
+  "CopySecretComponent": {
+    "button": "Kopieer het geheim.",
+    "toastMessage": "Geheim gekopieerd op clipboard!"
   },
   "DefaultWalletScreen": {
     "title": "Standaard Account",
@@ -662,7 +946,9 @@
     "info": "Pick your preferred theme for using Flash, or choose to keep it synced with your system settings.",
     "system": "Use System setting",
     "light": "Use Light Mode",
-    "dark": "Use Dark Mode"
+    "dark": "Use Dark Mode",
+    "setToDark": "De donkere modus",
+    "setToLight": "Lichtmodus"
   },
   "Languages": {
     "DEFAULT": "Standaard (OS)"
@@ -673,6 +959,26 @@
     "termsAndConditions": "Lees de Algemene voorwaarden.",
     "learnMore": "Meer informatie over Stablesats"
   },
+  "AdvancedModeModal": {
+    "header": "Welkom in de geavanceerde modus!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "Lees de Algemene Voorwaarden.",
+    "learnMore": "Wat is een Non-Custodial Wallet?",
+    "importWallet": "Import portemonnee",
+    "createWallet": "Wallet Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren Creëren"
+  },
+  "MerchantSuggestModal": {
+    "header": "Flashpoint Add",
+    "body": "Flash-gebruikers kunnen u op de kaart vinden en u betalingen sturen door op uw kaart pin te klikken.",
+    "termsAndConditions": "Lees de Algemene Voorwaarden.",
+    "learnMore": "Uw pinverzoek wordt binnen 24 uur verwerkt."
+  },
+  "UnVerifiedSeedModal": {
+    "header": "Beveilig je Bitcoin-portemonnee.",
+    "body": "Als je je telefoon verliest of de app verwijdert zonder je herstelzin op te schrijven, verlies je toegang tot je fondsen. ",
+    "termsAndConditions": "Lees de Algemene Voorwaarden.",
+    "learnMore": "Wat is een Recovery Phrase?"
+  },
   "SplashScreen": {
     "update": "Je app is verouderd. Er is een update nodig voordat de app kan worden gebruikt.\n\nDit kan vanuit de PlayStore voor Android en AppStore voor iOS"
   },
@@ -682,7 +988,24 @@
     "spent": "Je hebt uitgegeven",
     "receivingAccount": "Account voor Ontvangsten",
     "sendingAccount": "Account voor Verzendingen",
-    "txNotBroadcast": "Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment."
+    "txNotBroadcast": "Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment.",
+    "noTransaction": "Er is geen transactie gevonden met deze ID",
+    "typeOnChain": "OnChain",
+    "typeLightning": "Lightning",
+    "typeIntraLedger": "IntraLedger",
+    "pendingStatus": "Pending Pending",
+    "confirmation": "Confirmation",
+    "confirmations": "Confirmaties",
+    "hash": "Hash Hash",
+    "preimage": "Preimage",
+    "transactionId": "Transaktie-ID",
+    "swapDetails": "Swap Details",
+    "destinationAddress": "Destinatie Adres",
+    "swapId": "Swap ID",
+    "lockupTxId": "Lockup Transaction",
+    "claimTxId": "Claim Transaction ",
+    "swapFees": "Swap Fees",
+    "expirationBlockHeight": "Vervalt bij Block"
   },
   "TransactionLimitsScreen": {
     "receive": "Ontvang",
@@ -697,7 +1020,11 @@
     "contactUsMessageBody": "Hallo, ik wil graag de transactielimieten van mijn {bankName: string}-rekening verhogen.",
     "contactUsMessageSubject": "Verzoek om transactielimieten te verhogen",
     "contactSupportToPerformKyc": "Neem contact op met de ondersteuning om handmatige KYC uit te voeren om uw limiet te verhogen",
-    "increaseLimits": "Increase your limits"
+    "increaseLimits": "Increase your limits",
+    "spendingLimits": "Uitgavenlimieten",
+    "spendingLimitsDescription": "De uitgavenlimieten die op deze pagina worden weergegeven zijn gedefinieerd in USD. Voor uw gemak zetten we deze limieten om in uw lokale valuta op basis van de huidige wisselkoersen.",
+    "requestUpgrade": "Request Upgrade Request Upgrade",
+    "editRequest": "Edit Upgrade Request"
   },
   "TransactionScreen": {
     "noTransaction": "Geen transactie om weer te geven",
@@ -719,11 +1046,17 @@
     "stayInTrialMode": "Blijf in proefmodus"
   },
   "SetAddressModal": {
+    "helloText": "Hallo!",
+    "whoAreYou": "Hoe zouden we je moeten noemen?",
+    "usernameHint": "Dit zal uw {bankName: string}-gebruikersnaam zijn.",
+    "placeholder": "Voer uw gebruikersnaam in",
     "title": "Set {bankName: string} address",
+    "save": "Save  Save  Save ",
     "Errors": {
       "tooShort": "Username must be at least 3 characters long",
       "tooLong": "Address must be at most 50 characters long",
       "invalidCharacter": "Address can only contain letters, numbers, and underscores",
+      "startsWithNumber": "Uw gebruikersnaam moet beginnen met een groot- of kleinletter.",
       "addressUnavailable": "Sorry, this address is already taken",
       "unknownError": "An unknown error occurred, please try again later"
     },
@@ -760,13 +1093,60 @@
     "tryAgain": "Probeer opnieuw",
     "sendViaOtherChannel": "Je hebt ervoor gekozen om de code te ontvangen via {channel: string}. U kunt in plaats daarvan proberen te ontvangen via {other: string}"
   },
+  "PhoneRegistrationInitiateScreen": {
+    "title": "Telefoon ingesteld",
+    "header": "Geef je telefoonnummer in en we sms'en je een toegangscode.",
+    "headerVerify": "Bevestig dat je een mens bent",
+    "errorRequestingCode": "Er is iets mis gegaan met het vragen van de telefoonnummer, probeer het alsjeblieft later nog eens.",
+    "errorInvalidPhoneNumber": "Weet je zeker dat je het juiste telefoonnummer hebt ingevoerd?",
+    "errorUnsupportedCountry": "We zijn niet in staat om klanten in uw land te ondersteunen.",
+    "placeholder": "Telefoonnummer ",
+    "verify": "Klik om te verifiëren",
+    "sms": "Stuur via SMS",
+    "whatsapp": "Stuur via WhatsApp"
+  },
+  "PhoneRegistrationValidateScreen": {
+    "successTitle": "Telefoonnummer bevestigd"
+  },
+  "EmailRegistrationInitiateScreen": {
+    "title": "Voeg uw e-mail toe",
+    "header": "Geef je e-mailadres in en we sturen je een toegangscode.",
+    "invalidEmail": "Weet je zeker dat je de juiste e-mailadres hebt ingevoerd?",
+    "send": "Stuur een code",
+    "missingEmailRegistrationId": "Ontbrekende e-mailregistratie-id",
+    "placeholder": "hal@finney.org"
+  },
+  "EmailRegistrationValidateScreen": {
+    "header": "Om uw e-mailadres te bevestigen, voer het code in dat we u net hebben gestuurd op {email: string}.",
+    "success": "E-mail {email: string} is met succes bevestigd"
+  },
+  "EmailLoginInitiateScreen": {
+    "title": "Login via e-mail",
+    "header": "Geef je e-mailadres in en we sturen je een toegangscode.",
+    "invalidEmail": "Weet je zeker dat je de juiste e-mailadres hebt ingevoerd?",
+    "send": "Stuur een code"
+  },
+  "EmailLoginValidateScreen": {
+    "header": "Als er een account aan {email: string} is gehecht, zou je een 6-cijferige code moeten hebben ontvangen om hieronder in te voeren.Als je niets ontvangt, is het waarschijnlijk omdat dit niet de juiste e-mail is, de e-mail in je spammap zit.",
+    "success": "E-mail {email: string} is met succes bevestigd"
+  },
   "common": {
+    "enabled": "Enabled",
+    "notifications": "Kennisgevingen",
+    "preferences": "Voorkeuren",
+    "onDeviceSecurity": "On-Device Security",
+    "securityAndPrivacy": "Beveiliging en privacy",
+    "advanced": " Advanced Advanced",
+    "community": " Gemeenschap  Gemeenschap  Gemeenschap ",
     "account": "Rekening",
+    "trialAccount": "Proefrekening",
+    "flashUser": "Flash Gebruiker",
     "transactionLimits": "Transactie Limieten",
     "activateWallet": "Activeer Wallet",
     "amountRequired": "Bedrag is vereist",
     "back": "Terug",
     "backHome": "Terug naar Thuisscherm",
+    "revealSeed": "Schrijf de herstelzin neer",
     "bank": "Bank",
     "bankAccount": "Cash Rekening",
     "bankAdvice": "{bankName: string} Advies",
@@ -778,12 +1158,16 @@
     "cancel": "Annuleer",
     "close": "Sluit",
     "confirm": "Bevestig",
+    "copied": "Copied to clipboard",
     "convert": "Omrekenen",
+    "codeConfirmation": "Code Confirmation",
     "currency": "Valuta",
     "currencySyncIssue": "Valuta kwestie. Verversen nodig",
     "csvExport": "Exporteer transacties als CSV",
+    "exportSparkLogs": "Exportlogs",
     "date": "Datum",
     "description": "Omschrijving",
+    "details": "Details Details",
     "domain": "Domein",
     "email": "Email",
     "error": "Fout",
@@ -803,19 +1187,24 @@
     "loggedOut": "Je bent uitgelogd.",
     "logout": "Log Uit",
     "minutes": "minuten",
+    "errorAuthToken": "Ontbrekende auth token",
     "needWallet": "Log in of maak een account aan om toegang te krijgen tot uw wallet",
     "next": "Volgende",
     "No": "Nee",
     "note": "Noot",
     "notification": "Melding",
     "ok": "OK",
+    "or": "of of",
     "openWallet": "Open Wallet",
+    "phone": "Telefoon  Telefoon ",
     "phoneNumber": "Telefoonnummer",
     "rate": "Tarief",
     "reauth": "Uw sessie is verlopen. Log alsjeblieft nogmaals in.",
+    "request": "Request Pin",
     "restart": "Herstarten",
     "sats": "sats",
     "search": "Zoek",
+    "chatSearch": "Gebruikersnaam of nostr pubkey",
     "security": "Beveiliging",
     "send": "Verzend",
     "setAnAmount": "stel een bedrag vast",
@@ -823,7 +1212,9 @@
     "shareBitcoin": "Deel Bitcoin Adres",
     "shareLightning": "Deel Lightning Factuur",
     "soon": "Binnenkort beschikbaar!",
+    "submit": "Submit Submit",
     "success": "Success!",
+    "stablesatsUsd": "Cash (USD)",
     "to": "Naar",
     "total": "Totaal",
     "transactions": "Transacties",
@@ -843,6 +1234,28 @@
     "prevMonths": "Vorige maanden",
     "problemMaybeReauth": "Er was een probleem met je verzoek. Probeer het over een minuut opnieuw. Als het probleem zich blijft voordoen, raden we u aan uit te loggen en weer in te loggen. U kunt uitloggen door naar Instellingen > Account > Uitloggen te gaan.",
     "warning": "Warning"
+  },
+  "NostrQuickStart": {
+    "postHeading": "Maak je eerste sociale bericht!",
+    "postDesc": "Stel jezelf voor in de wereld!"
+  },
+  "Social": {
+    "post": "Post naar Nostr",
+    "postTitle": "Maak een Post",
+    "flashAppCredit": "Geplaatst met behulp van Flash! Get it @ https://getflash.io/app",
+    "writeYourNote": "Schrijf je briefje, maak het speciaal :)",
+    "postButton": "Post Post Post",
+    "notePosted": "Succes! je briefje is geplaatst",
+    "errorPostFailed": "Fout bij het plaatsen van een bericht",
+    "errorEmptyNote": "Fout: Leegste opmerking",
+    "posting": "Het plaatsen van...",
+    "viewOnIris": "Bekijk op iris.to",
+    "viewPostQuestion": "Wilt u uw bericht over iris.to bekijken?",
+    "browseSocialFeed": "Browse Social Feed",
+    "socialFeedTitle": "Social Feed ",
+    "postSuccessTitle": "Post gedeeld!",
+    "postSuccessSubtitle": "Uw bericht is gepubliceerd aan Nostr",
+    "showMeMore": "Laat me meer zien"
   },
   "errors": {
     "generic": "Er is een fout opgetreden.\nProbeer het later opnieuw.",
@@ -867,13 +1280,28 @@
       "title": "Betaling ontvangen"
     }
   },
+  "reports": {
+    "title": "Genereren van rapporten",
+    "reconciliation": "Verslag over de verzoening ",
+    "aggregation": "Aggregatieverslag",
+    "topRecipients": "Top Recipients Report",
+    "topSenders": "Top Senders Report",
+    "selectFromDate": "Selecteer Vanaf Datum",
+    "selectToDate": "Selecteer tot datum",
+    "fromDate": "                                                                                                                                                                ",
+    "toDate": " Tot  Tot ",
+    "total": " Total  Total  Total "
+  },
   "support": {
     "contactUs": "Need help? Contact us.",
     "joinTheCommunity": "Join the community",
     "whatsapp": "WhatsApp",
     "email": "Email",
+    "enjoyingApp": "Geniet u van de app?",
     "statusPage": "Status Pagina",
+    "discord": "Discord Discord",
     "mattermost": "Mattermost",
+    "thankYouText": "Bedankt voor de feedback, wil je een verbetering voorstellen?",
     "defaultEmailSubject": "{bankName: string} - Klantenservice",
     "defaultSupportMessage": "Hallo daar! Ik heb hulp nodig met {bankName: string}, ik gebruik de versie {version: string} op {os: string}.",
     "emailCopied": "email {email: string} gekopieerd naar klembord",
@@ -886,7 +1314,8 @@
     "deleteAccountConfirmation": "Your account has been written for deletion.\n\nWhen the probation period related to regulatory requirement is over, the remaining data related to your account will be permanently deleted.",
     "deleteAccountFromPhone": "Hey there!, please delete my account. My phone number is {phoneNumber: string}.",
     "deleteAccountError": "Something went wrong. Contact {email: string} for further assistance.",
-    "bye": "Bye!"
+    "bye": "Bye!",
+    "switchToBeginnerMode": "Door over te schakelen naar beginnersmodus verliest u geen toegang tot uw BTC portemonneefondsen, maar de portemonnee zal verborgen zijn."
   },
   "lnurl": {
     "overLimit": "U kunt niet meer dan het maximale bedrag verzenden",
@@ -904,7 +1333,9 @@
     "minAmountNotMet": "Bedrag moet minimaal {minAmount: string} zijn."
   },
   "AmountInputButton": {
-    "tapToSetAmount": "Tik om het bedrag in te stellen"
+    "tapToSetAmount": "Tik om het bedrag in te stellen",
+    "tapToSetOnChainAmount": "Voeg een bedrag toe",
+    "enterAmount": "Geef het bedrag in om verder te gaan."
   },
   "AppUpdate": {
     "needToUpdateSupportMessage": "Ik moet mijn app bijwerken naar de nieuwste versie. Ik gebruik de app {os: string} met versie {version: string}.",
@@ -912,5 +1343,149 @@
     "updateMandatory": "Updaten is verplicht",
     "tapHereUpdate": "Click hier om te updaten",
     "contactSupport": "Contact Klantenservice"
+  },
+  "RefundFlow": {
+    "refundListTitle": "Unclaimed Deposits",
+    "depositDetails": "Deposito Details",
+    "refundTitle": "Terugbetaling van het deposito",
+    "destinationTitle": "Bestemming",
+    "confirmationTitle": "Confirmation",
+    "pendingTransactions": "Pending Transactions",
+    "noRefundables": "No unclaimed deposits found",
+    "view": "View View",
+    "refund": "Terugbetaling",
+    "refundTo": "Terugbetaling aan USD portemonnee",
+    "recommendedFees": "Aanbevolen kosten",
+    "fast": "Fast Fast Fast",
+    "medium": "Medium",
+    "slow": "Langzaam",
+    "txId": "Transaktie-ID",
+    "refunded": "Terugbetaald",
+    "pending": "Pending Pending",
+    "autoClaiming": "Deze overdracht wordt automatisch geëist",
+    "approvalRequired": "Goedkeuring vereist",
+    "broadcasting": "Broadcasting",
+    "feeExceeded": "Het tarief is te hoog",
+    "claimFailed": "Claim failed",
+    "automaticClaim": "Deze storting wordt automatisch opgeëist wanneer de netwerkkosten lager zijn.",
+    "approveFee": "Goedkeuren om deze overdracht te eisen, of weigeren om een terugbetaling te verwerken.",
+    "enterAddress": "Voer het Bitcoin-adres in waar u de terugbetaling wilt ontvangen.",
+    "selectFee": "Selecteer een netwerkvergoeding voor uw terugbetaling",
+    "confirmRefund": "Confirm & Refund",
+    "processing": "Terugbetaling van de verwerking...",
+    "success": "Refund Broadcast ",
+    "refundSuccess": "Uw terugbetaling is naar het Bitcoin-netwerk gestuurd.",
+    "refundFailed": "Terugbetaling mislukt",
+    "failedToClaim": "Het is niet gelukt om een storting te claimen",
+    "unknownError": "Onbekende fout opgetreden",
+    "missingUtxo": "De depositum UTXO ontbreekt en de transactie is mogelijk nog niet bevestigd.",
+    "couldNotClaimAutomatically": "Deze storting kon niet automatisch worden opgeëist.",
+    "networkFee": "Netwerkkosten ",
+    "networkFeeWithRate": "Network Fee ({feeRate: string} sat/vB)",
+    "youReceive": "Je ontvangt ",
+    "approve": "Approve",
+    "refundToExternalWallet": "Je kunt het teruggeven aan een externe portemonnee.",
+    "enterDestinationAddress": "Vul een bestemming adres in",
+    "invalidBitcoinAddress": "Invalid Bitcoin adresformaat",
+    "estimatedFee": "Est. Network Fee ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Est. je ontvangt ",
+    "feeEstimateDisclaimer": "De werkelijke vergoeding wordt berekend bij de uitzending."
+  },
+  "Nostr": {
+    "editProfile": "Bewerk je profiel",
+    "importNsecTitle": "Importeer je Nostr Secret Key",
+    "importNsecDefaultDescription": "U bent ingelogd op een ander apparaat. import uw nsec van het andere apparaat om de chatfunctie te blijven gebruiken.",
+    "createProfileTitle": "Maak een profiel Create Profile",
+    "createProfileWarning": "Als je verder gaat, worden alle bestaande profieldata overschreven.",
+    "createProfilePubkeyMessage": "We konden geen profielgebeurtenis vinden bij deze pubkey.",
+    "createProfilePrompt": "Wilt u doorgaan met het creëren?",
+    "createProfileButton": "Maak een profiel Create Profile",
+    "profileNotFound": "We zijn op zoek, maar we hebben uw profiel niet kunnen vinden.",
+    "promptToCreateProfile": "Wilt u er nu een maken?",
+    "learnAboutNostr": "Leer meer over Nostr",
+    "learnAboutNostrSubtext": "Verken deze gids om het meeste uit nostr chat te halen",
+    "showPublicKey": "Toon een publieke sleutel",
+    "showPrivateKey": "Toon een privé-sleutel",
+    "profileConnected": "Profiel verbonden",
+    "reconnectProfile": "Reconnect Profile",
+    "tapToRefreshConnection": "Tik aan om de verbinding te vernieuwen",
+    "importExistingProfile": "Het importeren van een bestaand profiel",
+    "deleteProfile": "Verwijder je profiel",
+    "noProfileIdExists": "Er bestaat geen profiel-ID",
+    "profileReconnected": "Uw profiel is met succes hergebonden",
+    "deleteWarningTitle": "Waarschuwing",
+    "deleteWarningMessage": "Als je je profiel sleutels verwijdert, wordt je account van dit apparaat verwijderd.Zonder een back-up, zul je nooit meer toegang tot dit profiel krijgen.",
+    "importNsecDescription": "Als u uw eigen nsec wilt gebruiken, plakt u het hieronder.",
+    "profileImportedSuccessfully": "Profiel succesvol ingevoerd",
+    "noProfileFound": "No Nostr Profile Found",
+    "noProfileDescription": "Je hebt nog geen Nostr-profiel gemaakt, klik hieronder om er een te maken.",
+    "keyConflictTitle": "Nostr Key Not Found on Device",
+    "keyConflictDescription": "Uw account heeft een geregistreerde Nostr-sleutel, maar deze is niet gevonden op dit apparaat.Dit kan gebeuren na het opnieuw installeren van de app of het schakelen van apparaten.Om de toegang te herstellen, moet u uw nsec-backup uit Advanced Settings importeren.",
+    "creatingProfile": "Creating Profile...",
+    "createNewProfile": "Creëer een nieuw profiel",
+    "generateProfile": "Genereren van een profiel",
+    "findingYou": "Je vinden..",
+    "advancedSettings": "Nostr-instellingen Advanced Settings",
+    "KeyModal": {
+      "yourPublicProfileId": "Uw Public Profile ID",
+      "yourPrivateProfileKey": "Je Privé Profiel Sleutel",
+      "keyCopiedToClipboard": "Key copied to clipboard"
+    },
+    "Contacts": {
+      "stillLoading": "Heb je moeite om je contactlijst te vinden, heb je iemand al gevolgd?",
+      "noCantacts": "Geen contacten beschikbaar",
+      "profile": "Profiel Profiel",
+      "nostrUser": "Gebruiker Nostr",
+      "message": "Message Message",
+      "sendPayment": "Stuur  Stuur ",
+      "contactInfo": "Contact Info",
+      "contactManagement": "Contact Management  Contact Management ",
+      "unfollowContact": "Unfollow Contact",
+      "noListDeepLinkMessage": "Om vrienden toe te voegen, moet je eerst je contactlijst initiaaliseren in Instellingen.",
+      "manageContacts": "Beheer contacten",
+      "createContactList": "Contactlijst  Create Contact List "
+    },
+    "common": {
+      "copy": "Copy Copy",
+      "copied": "Copied",
+      "goToSettings": "Ga naar instellingen"
+    }
+  },
+  "AccountUpgrade": {
+    "accountType": "Accountstype",
+    "personal": "Persoonlijk Persoonlijk",
+    "personalDesc": "Beveilig je portemonnee met telefoon en e-mail.",
+    "pro": "Pro Pro",
+    "proDesc": "Accepteer betalingen en word ontdekt op de kaart.Het vereist een bedrijfsnaam en locatie.",
+    "merchant": "Handelaar",
+    "merchantDesc": "Geef beloningen, verschijn op de kaart en maak een afrekening bij je bank.",
+    "personalInfo": "Persoonlijke informatie",
+    "fullName": "Volledige naam",
+    "phoneNumber": "Telefoonnummer ",
+    "email": "E-mailadres",
+    "optional": "(Optional) ",
+    "validation": "Validering",
+    "validationCode": "Validatiecode",
+    "businessInfo": "Bedrijfsinformatie",
+    "businessName": "Bedrijfsnaam",
+    "businessNamePlaceholder": "Voer uw bedrijfsnaam in",
+    "businessAddress": "Bedrijfsadres",
+    "businessAddressPlaceholder": "Voer uw bedrijfsadres in",
+    "flashTerminal": "Wil je een Flash-terminal?",
+    "flashTerminalTooltip": "Een Flash Terminal is een slimme apparaat dat betaling via Flash kan accepteren voor uw bedrijf en afdrukken van ontvangsten.",
+    "bankingInfo": "Bankinformatie",
+    "bankName": "Banknaam Banknaam",
+    "bankNamePlaceholder": "Selecteer uw banknaam",
+    "bankBranch": "Bankbranche  Bankbranche ",
+    "bankBranchPlaceholder": "Voer uw bankrekening in",
+    "bankAccountType": "Accountstype",
+    "selectBankAccountType": "Selecteer het type account.",
+    "currency": "Monetair ",
+    "selectCurrency": "Selecteer Currency",
+    "accountNum": "Accountsummer  Accountsummer ",
+    "accountNumPlaceholder": "Voer uw accountnummer in",
+    "uploadId": "Upload ID Document",
+    "successUpgrade": "U hebt uw account met succes bijgewerkt naar {accountType: string}",
+    "successRequest": "U heeft met succes verzocht om uw account te upgraden naar {accountType: string}"
   }
 }

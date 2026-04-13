@@ -2,6 +2,7 @@
   "GaloyAddressScreen": {
     "title": "Modtag betaling via:",
     "buttonTitle": "Indtast din adresse",
+    "yourLightningAddress": "Din Lightning adresse",
     "yourAddress": "Din {bankName: string} adresse",
     "notAbleToChange": "Du vil ikke kunne ændre din {bankName: string} adresse efter at denne er indtastet.",
     "addressNotAvailable": "Denne {bankName: string} adresse er allerede taget.",
@@ -9,6 +10,7 @@
     "merchantTitle": "For erhvervsdrivende",
     "yourCashRegister": "Dit Lightning kasseapparat",
     "yourPaycode": "Din betalingskode",
+    "copiedLightningAddressToClipboard": "Kopieret Lightning adresse til clipboard",
     "copiedAddressToClipboard": "{bankName: string} kopieret til clipboard",
     "copiedPaycodeToClipboard": "Betalingskode kopieret til clipboard",
     "copiedCashRegisterLinkToClipboard": "Kasseapparat link kopieret til clipboard",
@@ -37,9 +39,45 @@
     "unlock": "Lås op",
     "usePin": "Brug PIN"
   },
-  "PeopleScreen": {},
+  "ContactsScreen": {
+    "noContactsTitle": "Ingen kontakter fundet",
+    "noContactsYet": "Sende eller modtage en betaling ved hjælp af et brugernavn og kontakter vil automatisk blive tilføjet her",
+    "noMatchingContacts": "Ingen kontakter, der matcher din søgning, blev fundet.",
+    "title": "Kontakter"
+  },
   "ContactDetailsScreen": {
     "title": "Transaktioner med {username: string}"
+  },
+  "ChatScreen": {
+    "noChatsTitle": "Ingen chats fundet",
+    "noChatsYet": "Indtast et Flash brugernavn eller nostr pubkey for at starte en chat",
+    "noMatchingChats": "Ingen chats, der matcher din søgning, blev fundet.",
+    "title": "Chat Chat"
+  },
+  "ChatDetailsScreen": {
+    "title": "Chat med {username: string}"
+  },
+  "CardScreen": {
+    "noCardsTitle": "Ingen kort fundet",
+    "noCardsYet": "Tryk på en Flashcard for at tilføje den her",
+    "noMatchingCards": "Ingen kort, der matcher din søgning, blev fundet.",
+    "title": "Flashcard",
+    "notFlashcard": "Ustøttet NFC-kort, så sørg for at du bruger et flashkort.",
+    "noNDEFMessage": "NDEF-meddelelsen blev ikke fundet, så sørg for, at du bruger et flashkort.",
+    "notSupported": "NFC understøttes ikke på denne enhed.",
+    "notEnabled": "NFC er ikke aktiveret på denne enhed.",
+    "noTag": "Ingen tag fundet. Sørg for, at du bruger et flashkort."
+  },
+  "Cashout": {
+    "title": "Settle Settle",
+    "percentageToCashout": "% til at blive afgjort",
+    "valid": "Valid for {time: string}",
+    "exchangeRate": "Vekslingskursen",
+    "sendAmount": "Send et beløb",
+    "receiveAmount": "Modtagelsesbeløbet",
+    "fee": "Fee",
+    "success": "Begrænsningsanmodningen blev indledt med succes.",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
   },
   "ConversionDetailsScreen": {
     "title": "Konverter",
@@ -48,7 +86,9 @@
   "ConversionConfirmationScreen": {
     "title": "Gennemgå konvertering",
     "youreConverting": "Du konverterer nu",
-    "receivingAccount": "Modtager konto"
+    "sendingAccount": "Sending account",
+    "receivingAccount": "Modtager konto",
+    "conversionFee": "Konversionsgebyr"
   },
   "ConversionSuccessScreen": {
     "title": "Konvertering lykkedes",
@@ -140,7 +180,21 @@
       "WhatIsMoney": {
         "title": "Hvad er penge?",
         "questions": {
-          "moneySocialAgreement": {},
+          "moneySocialAggrement": {
+            "answers": [
+              "Because people trust that other people will value money similarly",
+              "Because your mother told you so",
+              "Because a dollar bill is worth its weight in gold"
+            ],
+            "feedback": [
+              "Correct. This is what allows money to work!",
+              "She may well have. But that is not the correct answer here!",
+              "Nope. In the past you could exchange US dollars for gold. But this is no longer the case."
+            ],
+            "question": "Hvorfor har penge værdi?",
+            "text": "Money requires people to trust. \n\nPeople trust the paper dollar bills in their pocket. They trust the digits in their online bank account. They trust the balance on a store gift card will be redeemable. \n\nHaving money allows people to easy trade it immediately for a good, or a service.",
+            "title": "Penge er en social aftale."
+          },
           "coincidenceOfWants": {
             "answers": [
               "Sammenfald af ønsker",
@@ -392,165 +446,6 @@
             "title": "Særlig Egenskab #5: \nSikkerhed – Del II"
           }
         }
-      },
-      "TheOriginsOfMoney": {
-        "questions": {
-          "originsOfMoney": {},
-          "primitiveMoney": {},
-          "anticipatingDemand": {},
-          "nashEquilibrium": {},
-          "singleStoreOfValue": {}
-        }
-      },
-      "AttributesOfAGoodStoreOfValue": {
-        "questions": {
-          "whatIsGoodSOV": {},
-          "durability": {},
-          "portability": {},
-          "fungibility": {},
-          "verifiability": {},
-          "divisibility": {},
-          "scarce": {},
-          "establishedHistory": {},
-          "censorshipResistance": {}
-        }
-      },
-      "TheEvolutionOfMoneyI": {
-        "questions": {
-          "evolutionMoney": {},
-          "collectible": {},
-          "storeOfValue": {},
-          "mediumOfExchange": {},
-          "unitOfAccount": {},
-          "partlyMonetized": {},
-          "monetizationStage": {}
-        }
-      },
-      "TheEvolutionOfMoneyII": {
-        "questions": {
-          "notFromGovernment": {},
-          "primaryFunction": {},
-          "monetaryMetals": {},
-          "stockToFlow": {},
-          "hardMoney": {}
-        }
-      },
-      "TheEvolutionOfMoneyIII": {
-        "questions": {
-          "convergingOnGold": {},
-          "originsOfPaperMoney": {},
-          "fractionalReserve": {},
-          "bankRun": {},
-          "modernCentralBanking": {},
-          "goldBacked": {},
-          "brettonWoods": {},
-          "globalReserve": {}
-        }
-      },
-      "TheEvolutionOfMoneyIV": {
-        "questions": {
-          "nixonShock": {},
-          "fiatEra": {},
-          "digitalFiat": {},
-          "plasticCredit": {},
-          "doubleSpendProblem": {},
-          "satoshisBreakthrough": {},
-          "nativelyDigital": {},
-          "CBDCs": {}
-        }
-      },
-      "BitcoinWhyWasItCreated": {
-        "questions": {
-          "rootProblem": {},
-          "bitcoinCreator": {},
-          "fiatRequiresTrust": {},
-          "moneyPrinting": {},
-          "genesisBlock": {},
-          "cypherpunks": {}
-        }
-      },
-      "BitcoinHowDoesItWork": {
-        "questions": {
-          "peer2Peer": {},
-          "blockchain": {},
-          "privateKey": {},
-          "publicKey": {},
-          "mining": {},
-          "proofOfWork": {},
-          "difficultyAdjustment": {},
-          "halving": {}
-        }
-      },
-      "LightningWhatDoesItSolve": {
-        "questions": {
-          "bitcoinDrawbacks": {},
-          "blocksizeWars": {},
-          "lightningNetwork": {},
-          "instantPayments": {},
-          "micropayments": {},
-          "scalability": {},
-          "paymentChannels": {},
-          "routing": {}
-        }
-      },
-      "BitcoinCriticismsFallaciesI": {
-        "questions": {
-          "itsaBubble": {},
-          "itstooVolatile": {},
-          "itsnotBacked": {},
-          "willbecomeObsolete": {},
-          "toomuchEnergy": {},
-          "strandedEnergy": {}
-        }
-      },
-      "BitcoinCriticismsFallaciesII": {
-        "questions": {
-          "internetDependent": {},
-          "forcrimeOnly": {},
-          "ponziScheme": {},
-          "bitcoinisTooSlow": {},
-          "supplyLimit": {},
-          "governmentBan": {}
-        }
-      },
-      "BitcoinCriticismsFallaciesIII": {
-        "questions": {
-          "concentratedOwnership": {},
-          "centralizedMining": {},
-          "tooExpensive": {},
-          "prohibitivelyHigh": {},
-          "willBeHoarded": {},
-          "canBeDuplicated": {}
-        }
-      },
-      "BitcoinAndEconomicsI": {
-        "questions": {
-          "scarcity": {},
-          "monetaryPremium": {},
-          "greshamsLaw": {},
-          "thiersLaw": {},
-          "cantillonEffect": {},
-          "schellingPoint": {}
-        }
-      },
-      "BitcoinAndEconomicsII": {
-        "questions": {
-          "opportunityCost": {},
-          "timePreference": {},
-          "impossibleTrinity": {},
-          "jevonsParadox": {},
-          "powerLaws": {},
-          "winnerTakeAll": {}
-        }
-      },
-      "BitcoinAndEconomicsIII": {
-        "questions": {
-          "unitBias": {},
-          "veblenGood": {},
-          "malinvestment": {},
-          "asymmetricPayoff": {},
-          "ansoffMatrix": {}
-        }
       }
     },
     "finishText": "Det er alt for nu, vi giver besked, når der er mere at opdage.",
@@ -570,6 +465,10 @@
   },
   "GetStartedScreen": {
     "logInCreateAccount": "Log in / opret konto",
+    "quickStart": "Start Start Start",
+    "restoreWallet": "Login",
+    "exploreWalletInstead": "Udforsk tegnebogen i stedet",
+    "setupBusinessAccount": "Opstilling af en forretningskonto",
     "createAccount": "Opret ny konto",
     "exploreWallet": "Udforsk tegnebog",
     "logBackInWith": "Log ind igen med",
@@ -584,20 +483,58 @@
       "noBackup": "Ingen backupmulighed.",
       "sendingLimit": "Nedsat daglig afsendelsesgrænse.",
       "noOnchain": "Ingen modtagelse af bitcoin onchain."
-    }
+    },
+    "chooseAccountType": "Vælg kontotype"
   },
   "MapScreen": {
+    "locationPermissionMessage": "Aktiver dit placering, så du ved, hvor du er på kortet",
+    "locationPermissionNegative": "Afbestilling Afbestilling",
+    "locationPermissionNeutral": "Husk mig senere",
+    "locationPermissionPositive": "OK",
+    "locationPermissionTitle": "Find dig selv på kortet",
     "payBusiness": "Betal denne forretning",
-    "title": "Kort"
+    "title": "Kort",
+    "addPin": "Klik hvor som helst for at tilføje en pin",
+    "selectedCoordinates": "Din Flashpoint koordinater: ",
+    "viewInGoogleMaps": "Se i Google Maps",
+    "getDirections": "Direktioner Få retninger"
   },
   "HomeScreen": {
+    "cashout": "Cash Out",
     "receive": "Modtag",
+    "reload": "Reload Card",
+    "balance": "Refresh Balance",
+    "showQrCode": "Topup via QR",
     "send": "Send",
+    "sweep": "Sweep to Wallet",
+    "pay": "Pay Pay",
     "title": "Hjem",
     "scan": "Scan",
     "updateAvailable": "Der er en opdatering tilgængelig.\nTryk for at opdatere nu",
     "useLightning": "Vi bruger Lightning-netværket.",
-    "myAccounts": "Mine konti"
+    "myAccounts": "Mine konti",
+    "unclaimedDepositsWarning": "️ P l e a s e c o m p l e e o r krav på ubekræftede indskud b e f o r e n i n s t a l i n g F l a s o r ubekræftede indskud b e l e l o s t .",
+    "unclaimedDeposits": "Unclaimed Deposits",
+    "cash": "Cash Cash Cash",
+    "bitcoin": "Bitcoin",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Add",
+    "upgradeTitle": "Opgradere dit konto",
+    "upgradeTitlePending": "Opgraderingsanmodning er på hold",
+    "upgradeDesc": "Opgradér til at øge synligheden, grænser og udbetalinger.",
+    "upgradePendingDesc": "Din kontoopgraderingsanmodning er under gennemgang.",
+    "currencyTitle": "Skift til din lokale valuta",
+    "currencyDesc": "Gennemgå vores liste over tilgængelige valutaer og vælg din valuta.",
+    "flashcardTitle": "Få en Flashcard",
+    "flashcardDesc": "Find en Flashpoint og få en Flashcard til brug i dagligdagen.",
+    "nonCustodialWalletTitle": "Ikke-custodial tegnebøger",
+    "nonCustodialWalletDesc": "Læs mere om ikke-bevaringsmæssige tegnebøger.",
+    "emailTitle": "E-mailadresse",
+    "emailDesc": "Tilføj din e-mailadresse for at sikre din konto og log in ved hjælp af en e-mailadresse.",
+    "btcWalletTitle": "Aktiver BTC tegnebog",
+    "btcWalletDesc": "Det er nemt at overføre større beløb i Bitcoin.",
+    "backupTitle": "Backup din BTC tegnebog",
+    "backupDesc": "Backup og sikre din Bitcoin tegnebog ved hjælp af recovery phrase."
   },
   "PinScreen": {
     "attemptsRemaining": "Forkert PIN-kode. {attemptsRemaining: number} forsøg tilbage.",
@@ -625,6 +562,7 @@
     "title": "Hjem"
   },
   "ReceiveScreen": {
+    "flashcardInstructions": "Scan QR-koden, eller træk på ikonet for at dele dette på whatsapp, e-mail osv.",
     "nfc": "NFC",
     "enterAmountFirst": "Indtast venligst et beløb først",
     "activateNotifications": "Ønsker du at aktivere notifikationer for at blive underrettet, når betalingen er modtaget?",
@@ -653,6 +591,11 @@
     "setANote": "Tilføj en note",
     "invoiceAmount": "Fakturabeløb",
     "fees": "\"{minBankFee: string} sats gebyr for onchain-betaling under {minBankFeeThreshold: string} sats",
+    "lightning": "Lightning",
+    "paycode": "Paycode",
+    "onchain": "Onchain",
+    "bitcoin": "Bitcoin",
+    "stablesats": "Cash Cash Cash",
     "regenerateInvoiceButtonTitle": "Generér faktura igen",
     "setUsernameButtonTitle": "Vælg brugernavn",
     "invoiceHasExpired": "Fakturaen er udløbet",
@@ -667,11 +610,17 @@
       "expiresNow": "Udløber nu"
     },
     "invoiceHasBeenPaid": "Fakturaen er blevet betalt",
+    "yourBitcoinOnChainAddress": "Din Bitcoin Onchain Adresse",
+    "receive": "Receive Receive",
     "receiveViaInvoice": "Modtag via Lightning",
     "receiveViaPaycode": "Modtag via Paycode",
+    "topupFlashcard": "Topup Flashcard",
     "receiveViaOnchain": "Modtag via Onchain",
     "payCodeOrLNURL": "Paycode / LNURL",
-    "cantReceiveZeroSats": "Du kan ikke modtage nul sats. Indtast venligst et beløb svarende til 1 eller flere sats."
+    "cantReceiveZeroSats": "Du kan ikke modtage nul sats. Indtast venligst et beløb svarende til 1 eller flere sats.",
+    "initialDeposit": "* Indledende indskud på $5 anbefales til kanalopstilling. ~$1 vil blive betalt som opstillingsafgift.",
+    "selectPaymentMethod": "Vælg betalingsmetode",
+    "selectWallet": "Vælg Wallet"
   },
   "RedeemBitcoinScreen": {
     "title": "Indløs Bitcoin",
@@ -706,7 +655,8 @@
     "hideBalanceTitle": "Skjul saldo",
     "pinDescription": "PIN-koden bruges som backup-godkendelsesmetode for biometrisk godkendelse.",
     "pinTitle": "PIN-kode",
-    "setPin": "Indstil PIN-kode"
+    "setPin": "Indstil PIN-kode",
+    "backupDescription": "Til at indstille en PIN-kode, skal du sikkerhedskopiere din konto ved at tilføje et telefonnummer."
   },
   "SendBitcoinConfirmationScreen": {
     "amountLabel": "Beløb:",
@@ -721,7 +671,8 @@
     "totalLabel": "Total:",
     "totalExceed": "Totalen overstiger din saldo på {balance: string}",
     "maxFeeSelected": "Dette er det maksimale gebyr, du vil blive opkrævet for denne transaktion. Det kan ende med at være mindre, når betalingen er foretaget.",
-    "feeError": "Kunne ikke beregne gebyr"
+    "feeError": "Kunne ikke beregne gebyr",
+    "breezFeeText": "Der kan være et lille gebyr for routing"
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "{bankName: string} brugernavne er nu {bankName: string} adresser.",
@@ -740,11 +691,24 @@
     "unknownLightning": "Vi kan ikke tyde denne Lightning-adresse. Prøv venligst igen.",
     "unknownOnchain": "Vi kan ikke tyde denne Bitcoin-adresse. Prøv venligst igen.",
     "newBankAddressUsername": "{lnAddress: string} eksisterer som en {bankName: string} adresse, men du har aldrig sendt penge til den.",
-    "confirmUsernameModal": {},
+    "confirmModal": {
+      "title": "Du har aldrig sendt penge til denne adresse.",
+      "body1": "Sørg for, at modtageren har givet dig en {bankName: string} adresse,",
+      "bold2bold": "Ikke et brugernavn fra en anden tegnebog.",
+      "body3": "Ellers vil pengene gå til en {bankName: string}-konto, der har adressen {lnAddress: string}. Tjek også stavningen af den første del af adressen. f.eks. jackie og jack1e er 2 forskellige adresser.",
+      "warning": "Hvis {bankName: string}-adressen er indtastet forkert, kan {bankName: string} ikke ophæve transaktionen.",
+      "checkBox": "{lnAddress: string} er den rigtige adresse.",
+      "confirmButton": "Jeg er 100% sikker",
+      "externalWarning": "Du er i færd med at sende penge til nogen, der ikke er en {bankName: string}-konto. Er du sikker på, at dette er adressen, du har til hensigt at sende til?",
+      "externalCheckBox": "Jeg bekræfter at sende til {address: string}."
+    },
     "clipboardError": "Fejl ved at hente værdi fra udklipsholderen."
   },
   "SendBitcoinScreen": {
     "amount": "Beløb",
+    "MinOnChainLimit": "Minimumbeløbet for denne transaktion er US$ 2,00",
+    "MinOnChainSatLimit": "Minimumbeløbet for denne transaktion er 5.500 sats",
+    "MinFlashcardLimit": "Minimumbeløbet ved reloading fra flashcard er 100 sats",
     "amountExceed": "Beløbet overstiger din saldo på {balance: string}",
     "amountExceedsLimit": "Beløbet overstiger din resterende daglige grænse på {limit: string}",
     "upgradeAccountToIncreaseLimit": "Opgrader din konto for at øge din grænse",
@@ -764,11 +728,25 @@
     "max": "Maks",
     "maxAmount": "Maks beløb",
     "title": "Send Bitcoin",
+    "send": "Send Send",
     "failedToFetchLnurlInvoice": "Fejl ved hentning af LNURL faktura",
     "lnurlInvoiceIncorrectAmount": "LNURL-serveren svarede med en faktura med en forkert beløbsangivelse.",
-    "confirmFeesModal": {}
+    "lnurlInvoiceIncorrectDescription": "lnurl-serveren svarede med en faktura med en forkert beskrivelse hash.",
+    "noAmountInvoiceError": "Intet fakturabeløb understøttes ikke i BTC-plånbogen.Vær venlig at gå tilbage og scanne eller indtaste en faktura med et tilføjet beløb.",
+    "onchainMinAmountInvoiceError": "Det beløb, du har indtastet, er mindre end det minimumsbeløb, der kræves for at sende en transaktion på kæden {amount: number}. Vær venlig at overveje at sende dette beløb via Lightning!",
+    "minAmountInvoiceError": "Beløbet på fakturaen er mindre end minimumsbeløbet {amount: number}",
+    "maxAmountInvoiceError": "Beløbet på fakturaen er større end det maksimale beløb {amount: number}",
+    "minAmountConvertError": "Konverteringsbeløbet er mindre end det mindste krævede beløb {amount: number}",
+    "maxAmountConvertError": "Konverteringsbeløbet er større end det maksimale beløb {amount: number}"
   },
   "SettingsScreen": {
+    "staticQr": "Printable Static QR Code",
+    "staticQrCopied": "Din statiske QR kode link er blevet kopieret",
+    "setByOs": "Set by OS",
+    "apiAcess": "Access API API",
+    "pos": "Point of Sale",
+    "posCopied": "Dit point of sale link er blevet kopieret",
+    "setYourLightningAddress": "Sæt dit brugernavn",
     "activated": "Aktiveret",
     "addressScreen": "Måder at modtage betaling",
     "tapUserName": "Tryk for at indstille brugernavn",
@@ -790,7 +768,16 @@
     "nfcOnlyReceive": "Kun modtagelse fra NFC er tilgængelig for nu",
     "nfcScanNow": "Scan NFC nu",
     "nfcNotSupported": "NFC understøttes ikke på denne enhed",
-    "logInOrCreateAccount": "Log ind eller opret konto"
+    "logInOrCreateAccount": "Log ind eller opret konto",
+    "backup": "Backup",
+    "importWallet": "Import Wallet",
+    "showSeedPhrase": "Reveal recovery phrase",
+    "showNostrSecret": "Chatindstillinger",
+    "beginnerMode": "Deaktiver Bitcoin konto",
+    "advanceMode": "Aktiver Bitcoin Account (Advanced Mode)",
+    "keysManagement": "Bankmandskabs sikkerhedskopiering",
+    "showBtcAccount": "Vis Bitcoin konto",
+    "hideBtcAccount": "Hide Bitcoin konto"
   },
   "NotificationSettingsScreen": {
     "title": "Notifikationsindstillinger",
@@ -803,10 +790,27 @@
       "Payments": {
         "title": "Betalinger",
         "description": "Notifikationer relateret til at sende og modtage betalinger."
+      },
+      "Marketing": {
+        "title": "Funktioner og opdateringer",
+        "description": "Meddelelser om nye funktioner og opdateringer."
+      },
+      "Price": {
+        "title": "Prisændringer",
+        "description": "Meddelelser om prisen på Bitcoin."
       }
     }
   },
   "AccountScreen": {
+    "fundsMoreThan5Dollars": "Din konto har mere end $5",
+    "itsATrialAccount": "Hvis du mister din telefon eller uninstallerer appen, vil dine midler være uopnåelige.",
+    "accountBeingDeleted": "Din konto bliver slettet, vent venligst...",
+    "dangerZone": "Danger Zone er et farligt område.",
+    "phoneDeletedSuccessfully": "Telefon slettet succesfuldt",
+    "phoneNumber": "Telefonnummer",
+    "tapToAddPhoneNumber": "Tryk på for at tilføje telefonnummer.",
+    "loginMethods": "Login metoder",
+    "level": "Nivå {level: string}",
     "accountLevel": "Kontoniveau",
     "upgrade": "Opgrader din konto",
     "logOutAndDeleteLocalData": "Log ud og slet alle lokale data",
@@ -819,6 +823,11 @@
     "btcBalanceWarning": "Du har en bitcoin saldo på {balance: string}.",
     "secureYourAccount": "Registrer for at sikre din konto",
     "tapToAdd": "Tryk for at tilføje",
+    "tapToAddEmail": "Tryk på for at tilføje e-mail",
+    "unverifiedEmail": "E-mail (ikke bekræftet)",
+    "email": "E-mail",
+    "emailDeletedSuccessfully": "E-mail slettet med succes",
+    "unverifiedEmailAdvice": "Uverificerede e-mails kan ikke bruges til at logge ind. Du bør bekræfte din e-mailadresse igen.",
     "deleteEmailPromptTitle": "Slet e-mail",
     "deleteEmailPromptContent": "Er du sikker på, at du vil slette din e-mailadresse? Du vil kun kunne logge ind med dit telefonnummer.",
     "deletePhonePromptTitle": "Slet telefon",
@@ -840,6 +849,7 @@
     "totpDeleteAlertContent": "Er du sikker på, at du vil slette din to-faktor godkendelse?",
     "copiedAccountId": "Dit konto ID er kopieret til udklipsholderen",
     "yourAccountId": "Dit konto ID",
+    "accountId": "Konto-ID",
     "copy": "Kopier"
   },
   "TotpRegistrationInitiateScreen": {
@@ -855,6 +865,74 @@
     "title": "To-faktor godkendelse",
     "content": "Indtast den 6-cifrede kode fra din autentificeringsapp for at logge ind. Denne kode ændres hver 30. sekund."
   },
+  "BackupOptions": {
+    "title": "Backup muligheder",
+    "recoveryPhrase": "Recovery Phrase Recovery Phrase",
+    "recoveryPhraseDesc": "Backup Bitcoin Wallet ved hjælp af recovery phrase",
+    "revealRecoveryPhrase": "Reveal Recovery Phrase",
+    "revealRecoveryPhraseDesc": "Brug din genoprettelsesfrase til at importere Bitcoin Wallet",
+    "phone": "Telefon Telefon",
+    "phoneDesc": "Backup Cash Wallet ved hjælp af telefonnummer",
+    "usePhoneNumber": "Brug dit telefonnummer til at importere Cash Wallet",
+    "done": "    "
+  },
+  "BackupStart": {
+    "title": "For det første skal vi lave vores recovery phrase.",
+    "description": "En genoprettelsesfrase er en serie af 12 ord i en bestemt rækkefølge. Denne ordkombination er unik for din tegnebog. Sørg for at have pen og papir klar, så du kan skrive det ned.",
+    "continue": " Fortsæt Fortsæt Fortsæt"
+  },
+  "BackupSeedPhrase": {
+    "title": "Dette er din genopretning fraze",
+    "description": "Sørg for at skrive det ned som vist her. du skal bekræfte dette senere.",
+    "backupToICloud": "Backup til iCloud",
+    "backupToGoogleDrive": "Backup til Google Drive",
+    "verify": "Verify"
+  },
+  "BackupDoubleCheck": {
+    "title": "Lad os double-check",
+    "description1": "Godt gjort. Lad os nu kontrollere, at du har nedskrevet din genoprettelsesfrase korrekt.",
+    "description2": "Ja, det er så vigtigt.",
+    "continue": " Fortsæt Fortsæt Fortsæt"
+  },
+  "BackupVerify": {
+    "title": "Tryk på ordene i den rigtige rækkefølge.",
+    "correctTitle": "Pass på at gemme din genoprettelsesfrase sikkert.",
+    "wrongTitle": "Undskyld, det er ikke det rigtige tredje ord.",
+    "tryAgain": "Prøv igen",
+    "continue": " Fortsæt Fortsæt Fortsæt"
+  },
+  "BackupComplete": {
+    "title": "Din backup er fuldendt",
+    "description": "Du skal nu have din genoprettelsesfrase og adgangskode skrevet ned til fremtidig reference.",
+    "complete": "Complete Complete"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "Dette er din genopretning fraze",
+    "description": "Sørg for at skrive det ned som vist her. Du skal få din tegnebog tilbage.",
+    "done": "    "
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "Login muligheder",
+    "importOptions": "Import portefølje muligheder",
+    "recoveryPhrase": "Recovery Phrase Recovery Phrase",
+    "importBTCWallet": "Import Bitcoin Wallet ved hjælp af recovery phrase",
+    "phone": "Telefon Telefon",
+    "importUsingPhone": "Import eller oprett dit Cash Wallet ved hjælp af telefonnummer",
+    "email": "E-mail",
+    "importUsingEmail": "Import dit Cash Wallet ved hjælp af e-mailadresse",
+    "login": "Login/Create",
+    "done": "    "
+  },
+  "ImportWallet": {
+    "title": "Log in med en recovery phrase",
+    "importTitle": "Import dit tegnebog med en recovery phrase",
+    "description": "Dette er en 12-ordsprog, du fik, da du oprettede din tidligere tegnebog.",
+    "complete": "Complete Complete"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
   "CopySecretComponent": {
     "button": "Kopier hemmelig nøgle",
     "toastMessage": "Hemmelig nøgle kopieret til udklipsholderen!"
@@ -868,7 +946,9 @@
     "info": "Vælg dit foretrukne tema for brug af Blink, eller lad det være synkroniseret med dine systemindstillinger.",
     "system": "Brug System indstilling",
     "light": "Brug lyst tema",
-    "dark": "Brug mørkt tema"
+    "dark": "Brug mørkt tema",
+    "setToDark": "Mødet er mørkt.",
+    "setToLight": "Lystilstand"
   },
   "Languages": {
     "DEFAULT": "Standard (OS)"
@@ -879,6 +959,26 @@
     "termsAndConditions": "Læs vilkårene.",
     "learnMore": "Læs mere om Stablesats"
   },
+  "AdvancedModeModal": {
+    "header": "Velkommen til Advanced Mode!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "Læs vilkårene og betingelserne.",
+    "learnMore": "Hvad er en Non-Custodial Wallet?",
+    "importWallet": "Import Wallet",
+    "createWallet": "Wallet  Create Create Wallet"
+  },
+  "MerchantSuggestModal": {
+    "header": "Flashpoint Add",
+    "body": "Flash-brugere vil kunne finde dig på kortet og sende dig betalinger ved at klikke på din mappin.",
+    "termsAndConditions": "Læs vilkårene og betingelserne.",
+    "learnMore": "Din pin anmodning vil blive behandlet inden for 24 timer."
+  },
+  "UnVerifiedSeedModal": {
+    "header": "Sikre dit Bitcoin tegnebog",
+    "body": "Hvis du mister din telefon eller afinstallerer appen uden at skrive ned din genoprettelsesfrase, vil du miste adgang til dine midler. ",
+    "termsAndConditions": "Læs vilkårene og betingelserne.",
+    "learnMore": "Hvad er en Recovery Phrase?"
+  },
   "SplashScreen": {
     "update": "Din app er forældet. En opdatering er nødvendig, før appen kan bruges.\n\nDette kan gøres fra PlayStore for Android og Testflight for iOS"
   },
@@ -888,7 +988,24 @@
     "spent": "Du brugte",
     "receivingAccount": "Modtagelseskonto",
     "sendingAccount": "Afsendelseskonto",
-    "txNotBroadcast": "Din transaktion er i kø. Den bør vises i mempoolen om {countdown: string}."
+    "txNotBroadcast": "Din transaktion er i kø. Den bør vises i mempoolen om {countdown: string}.",
+    "noTransaction": "Ingen transaktion fundet med denne ID",
+    "typeOnChain": "OnChain",
+    "typeLightning": "Lightning",
+    "typeIntraLedger": "IntraLedger",
+    "pendingStatus": "Pending Pending",
+    "confirmation": "Bekræftelse",
+    "confirmations": "Bekræftelser",
+    "hash": "Hash Hash",
+    "preimage": "Preimage",
+    "transactionId": "Transaktions-ID",
+    "swapDetails": "Swap Details",
+    "destinationAddress": "Destination Adresse",
+    "swapId": "Swap ID",
+    "lockupTxId": "Lockup-transaktionen",
+    "claimTxId": "Claim Transaction",
+    "swapFees": "Swap gebyrer",
+    "expirationBlockHeight": "Udløber på Block"
   },
   "TransactionLimitsScreen": {
     "receive": "Modtag",
@@ -900,7 +1017,14 @@
     "stablesatTransfers": "Stablesat Overførsler",
     "internalSend": "Send til {bankName: string} Bruger",
     "error": "Kunne ikke hente grænser i øjeblikket",
-    "increaseLimits": "Øg dine grænser"
+    "contactUsMessageBody": "Hej, jeg vil gerne opgradere min konto til en {bankName: string} Business-konto.",
+    "contactUsMessageSubject": "Flash Business Upgrade Request",
+    "contactSupportToPerformKyc": "Kontakt support til at udføre manuel KYC og opgradere til {bankName: string} Business",
+    "increaseLimits": "Øg dine grænser",
+    "spendingLimits": "Udgiftsgrænser",
+    "spendingLimitsDescription": "De udgiftsgrænser, der vises på denne side, er denomineret i USD. For din bekvemmelighed konverterer vi disse grænser til din lokale valuta baseret på aktuelle valutakurser. Vær opmærksom på, at det viste lokale valutabeløb kan variere, da valutakurserne opdateres i realtid.",
+    "requestUpgrade": "Anmodning om opgradering Anmodning om opgradering",
+    "editRequest": "Edit Upgrade Request"
   },
   "TransactionScreen": {
     "noTransaction": "Ingen transaktion at vise",
@@ -922,11 +1046,17 @@
     "stayInTrialMode": "Bliv i prøvetilstand"
   },
   "SetAddressModal": {
+    "helloText": "Hej!",
+    "whoAreYou": "Hvad skal vi kalde dig?",
+    "usernameHint": "Dette bliver dit {bankName: string} brugernavn",
+    "placeholder": "Indtast dit brugernavn",
     "title": "Indstil {bankName: string} adresse",
+    "save": "Save Save",
     "Errors": {
       "tooShort": "Adressen skal være mindst 3 tegn lang",
       "tooLong": "Adressen må maksimalt være 50 tegn lang",
       "invalidCharacter": "Adressen kan kun indeholde bogstaver, tal og understregninger",
+      "startsWithNumber": "Dit brugernavn skal begynde med et større eller mindre bogstaver.",
       "addressUnavailable": "Beklager, denne adresse er allerede taget",
       "unknownError": "Der opstod en ukendt fejl, prøv igen senere"
     },
@@ -1001,12 +1131,22 @@
     "success": "E-mail {email: string} bekræftet med succes"
   },
   "common": {
+    "enabled": "Aktiveret",
+    "notifications": "Meddelelser",
+    "preferences": "Preferencer",
+    "onDeviceSecurity": "On-Device Security",
+    "securityAndPrivacy": "Sikkerhed og privatlivets fred",
+    "advanced": " Advanced Advanced",
+    "community": "Community Community er et fællesskab.",
     "account": "Konto",
+    "trialAccount": "Trial Account",
+    "flashUser": "Flash bruger Flash",
     "transactionLimits": "Transaktionsgrænser",
     "activateWallet": "Aktiver Tegnebog",
     "amountRequired": "Beløb påkrævet",
     "back": "Tilbage",
     "backHome": "Tilbage til startsiden",
+    "revealSeed": "Skriv ned recovery phrase",
     "bank": "Bank",
     "bankAccount": "Kontantkonto",
     "bankAdvice": "{bankName: string} Hjælp",
@@ -1018,13 +1158,16 @@
     "cancel": "Annuller",
     "close": "Luk",
     "confirm": "Bekræft",
+    "copied": "Kopieret til clipboard",
     "convert": "Konverter",
     "codeConfirmation": "Kode Bekræftelse",
     "currency": "Valuta",
     "currencySyncIssue": "Valutaproblem. Forsøg at opdater",
     "csvExport": "Eksportér transaktioner som CSV",
+    "exportSparkLogs": "Eksportlogs",
     "date": "Dato",
     "description": "Beskrivelse",
+    "details": "Detaljer",
     "domain": "Domæne",
     "email": "Email",
     "error": "Fejl",
@@ -1057,9 +1200,11 @@
     "phoneNumber": "Telefonnummer",
     "rate": "Rate",
     "reauth": "Din session er udløbet. Log ind igen.",
+    "request": "Request Pin",
     "restart": "Genstart",
     "sats": "sats",
     "search": "Søg",
+    "chatSearch": "brugernavn eller nostr pubkey",
     "security": "Sikkerhed",
     "send": "Send",
     "setAnAmount": "vælg et beløb",
@@ -1090,6 +1235,28 @@
     "problemMaybeReauth": "Der opstod et problem med din anmodning. Prøv igen om et minut. Hvis problemet fortsætter, anbefaler vi, at du logger ud og logger ind igen. Du kan logge ud ved at gå til Indstillinger > Konto > Log ud",
     "warning": "Advarsel"
   },
+  "NostrQuickStart": {
+    "postHeading": "Gør dit første sociale indlæg!",
+    "postDesc": "Indfør dig selv for verden!"
+  },
+  "Social": {
+    "post": "Post til Nostr",
+    "postTitle": "Gør et indlæg",
+    "flashAppCredit": "Postet ved hjælp af Flash! Få det @ https://getflash.io/app",
+    "writeYourNote": "Skriv din note, gør det specielt :)",
+    "postButton": "Post Post",
+    "notePosted": "Din note er blevet lagt ud",
+    "errorPostFailed": "Fejl! Fejl i at skrive note",
+    "errorEmptyNote": "Fejl: Fuld note",
+    "posting": "Posting...",
+    "viewOnIris": "Se på iris.to",
+    "viewPostQuestion": "Vil du se dit indlæg om iris.to?",
+    "browseSocialFeed": "Browse Social Feed",
+    "socialFeedTitle": "Social Feed",
+    "postSuccessTitle": "Post Shared!",
+    "postSuccessSubtitle": "Dit indlæg er blevet offentliggjort til Nostr",
+    "showMeMore": "Vis mig mere"
+  },
   "errors": {
     "generic": "Der opstod en fejl.\nPrøv igen senere.",
     "invalidEmail": "Ugyldig email",
@@ -1113,6 +1280,18 @@
       "title": "Betaling modtaget"
     }
   },
+  "reports": {
+    "title": "Generere rapporter",
+    "reconciliation": "Forsoningsrapporten",
+    "aggregation": "Aggregationsrapporten",
+    "topRecipients": "Top Recipients Report",
+    "topSenders": "Top Senders Report",
+    "selectFromDate": "Vælg fra dato",
+    "selectToDate": "Vælg til dato",
+    "fromDate": "Fra Fra",
+    "toDate": "Til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til til",
+    "total": "Total Total Total"
+  },
   "support": {
     "contactUs": "Brug for hjælp? Kontakt os.",
     "joinTheCommunity": "Bliv en del af fællesskabet",
@@ -1120,6 +1299,7 @@
     "email": "Email",
     "enjoyingApp": "Er du glad for at bruge appen?",
     "statusPage": "Statusside",
+    "discord": "Discord Discord",
     "mattermost": "Mattermost",
     "thankYouText": "Tak for feedbacket, vil du foreslå en forbedring?",
     "defaultEmailSubject": "{bankName: string} - Support",
@@ -1134,7 +1314,8 @@
     "deleteAccountConfirmation": "Din konto er blevet sendt til sletning.\n\nNår prøvetidsperioden i forbindelse med lovgivningsmæssige krav er slut, vil de resterende data relateret til din konto blive slettet permanent.",
     "deleteAccountFromPhone": "Hej der!, venligst slet min konto. Mit telefonnummer er {phoneNumber: string}.",
     "deleteAccountError": "Noget gik galt. Kontakt {email: string} for yderligere assistance.",
-    "bye": "Farvel!"
+    "bye": "Farvel!",
+    "switchToBeginnerMode": "Hvis du skifter til nybegyndermodus, vil du ikke miste adgang til dine BTC tegnebogmidler, men tegnebogen vil være skjult. Du kan skifte til avanceret modus igen når som helst."
   },
   "lnurl": {
     "overLimit": "Du kan ikke sende mere end maks beløbet",
@@ -1152,7 +1333,9 @@
     "minAmountNotMet": "Beløbet skal være mindst {minAmount: string}."
   },
   "AmountInputButton": {
-    "tapToSetAmount": "Vælg beløb"
+    "tapToSetAmount": "Vælg beløb",
+    "tapToSetOnChainAmount": "Tilføj et beløb",
+    "enterAmount": "Vennligst indtast beløbet for at fortsætte."
   },
   "AppUpdate": {
     "needToUpdateSupportMessage": "Jeg skal opdatere min app til den nyeste version. Jeg bruger {os: string} app med version {version: string}.",
@@ -1161,11 +1344,148 @@
     "tapHereUpdate": "Tryk her for at opdatere nu",
     "contactSupport": "Kontakt support"
   },
-  "Circles": {
-    "circlesGrowingSatsExplainer": {},
-    "decemberChallenge": {},
-    "januaryChallenge": {},
-    "februaryChallenge": {}
+  "RefundFlow": {
+    "refundListTitle": "Unclaimed Deposits",
+    "depositDetails": "Deposit Details",
+    "refundTitle": "Tilbagebetaling af indskud",
+    "destinationTitle": "Destination",
+    "confirmationTitle": "Bekræftelse",
+    "pendingTransactions": "Pending Transactions",
+    "noRefundables": "Ingen ubesvarede indskud fundet",
+    "view": "View View",
+    "refund": "Tilbagebetaling",
+    "refundTo": "Tilbagebetaling til USD tegnebog",
+    "recommendedFees": "Rekommenderede gebyrer",
+    "fast": "Fast Fast Fast",
+    "medium": "Medium",
+    "slow": "Langsomt",
+    "txId": "Transaktions-ID",
+    "refunded": "Refunderet",
+    "pending": "Pending Pending",
+    "autoClaiming": "Denne overførsel vil blive påkrævet automatisk",
+    "approvalRequired": "Godkendelse kræves",
+    "broadcasting": "Broadcasting",
+    "feeExceeded": "Gebyret er for højt",
+    "claimFailed": "Claim failed",
+    "automaticClaim": "Denne indbetaling kræves automatisk, når netgebyrene er lavere.",
+    "approveFee": "Godkende at kræve denne overførsel, eller afvise at behandle en tilbagebetaling.",
+    "enterAddress": "Vælg Bitcoin-adressen, hvor du ønsker at modtage pengene tilbage.",
+    "selectFee": "Vælg et netværksgebyr for din refundering",
+    "confirmRefund": "Confirm & Refund",
+    "processing": "Tilbagebetaling af behandling...",
+    "success": "Refund Broadcast",
+    "refundSuccess": "Din tilbagebetaling er blevet sendt til Bitcoin-netværket.",
+    "refundFailed": "Tilbagebetaling mislykkedes",
+    "failedToClaim": "Det lykkedes ikke at kræve et depositum",
+    "unknownError": "Unknown error occurred",
+    "missingUtxo": "Indtægten UTXO mangler, og transaktionen er muligvis endnu ikke blevet bekræftet.",
+    "couldNotClaimAutomatically": "Denne indbetaling kunne ikke kræves automatisk.",
+    "networkFee": "Netværksgebyr",
+    "networkFeeWithRate": "Netværksgebyr ({feeRate: string} sat/vB)",
+    "youReceive": "Du modtager",
+    "approve": "Godkende",
+    "refundToExternalWallet": "Du kan refundere den til en ekstern tegnebog.",
+    "enterDestinationAddress": "Vennligst indtast en bestemmelsesadresse",
+    "invalidBitcoinAddress": "Invalid Bitcoin adresseformat",
+    "estimatedFee": "Est. Netværksgebyr ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Est. du modtager",
+    "feeEstimateDisclaimer": "Det faktiske gebyr beregnes ved udsendelsen."
   },
-  "FullOnboarding": {}
+  "Nostr": {
+    "editProfile": "Edit Profile",
+    "importNsecTitle": "Import din Nostr Secret Key",
+    "importNsecDefaultDescription": "Du er logget ind på en anden enhed.Vær venlig at importere din nsec fra den anden enhed for at fortsætte med at bruge chatfunktionen.",
+    "createProfileTitle": "Skriv profil",
+    "createProfileWarning": "Hvis du fortsætter, vil alle eksisterende profildata blive overskrevet.",
+    "createProfilePubkeyMessage": "Vi kunne ikke finde en profil begivenhed knyttet til denne pubkey.",
+    "createProfilePrompt": "Vil du fortsætte med at skabe?",
+    "createProfileButton": "Skriv profil",
+    "profileNotFound": "Vi leder efter, men har ikke kunnet finde din profil.",
+    "promptToCreateProfile": "Ønsker du at oprette en nu?",
+    "learnAboutNostr": "Lær mere om Nostr",
+    "learnAboutNostrSubtext": "Udforsk denne vejledning for at få mest muligt ud af nostr chat",
+    "showPublicKey": "Vis offentlig nøgle",
+    "showPrivateKey": "Vis privat nøgle",
+    "profileConnected": "Profil Connected",
+    "reconnectProfile": "Reconnect Profile",
+    "tapToRefreshConnection": "Tryk på for at opdatere forbindelsen",
+    "importExistingProfile": "Import af eksisterende profil",
+    "deleteProfile": "Slet profil",
+    "noProfileIdExists": "Der findes ingen profil-id",
+    "profileReconnected": "Din profil er blevet genkoblet med succes",
+    "deleteWarningTitle": "Advarsel",
+    "deleteWarningMessage": "Hvis du sletter dine profilnøgler, fjerner du din konto fra denne enhed.Uden en backup, vil du ikke kunne få adgang til denne profil igen.",
+    "importNsecDescription": "Hvis du ønsker at bruge din egen nsec, skal du indsætte den nedenfor.",
+    "profileImportedSuccessfully": "Profil importeret med succes",
+    "noProfileFound": "No Nostr Profile Found",
+    "noProfileDescription": "Du har endnu ikke oprettet en Nostr-profil, så tryk nedenfor for at oprette en.",
+    "keyConflictTitle": "Nostr Key Not Found on Device",
+    "keyConflictDescription": "Din konto har en registreret Nostr-nøgle, men den blev ikke fundet på denne enhed. Dette kan ske efter at have installeret appen igen eller skiftet enheder. For at genoprette adgangen, import din nsec backup fra Advanced Settings.",
+    "creatingProfile": "Creating Profile...",
+    "createNewProfile": "Skriv et nyt profil",
+    "generateProfile": "Generere profil",
+    "findingYou": "Jeg finder dig..",
+    "advancedSettings": "Nostr's avancerede indstillinger",
+    "KeyModal": {
+      "yourPublicProfileId": "Din Public Profile ID",
+      "yourPrivateProfileKey": "Din private profil nøgle",
+      "keyCopiedToClipboard": "Key copied to clipboard"
+    },
+    "Contacts": {
+      "stillLoading": "Har du svært ved at finde din kontaktliste, har du allerede fulgt nogen?",
+      "noCantacts": "Ingen kontakter tilgængelige",
+      "profile": "Profil",
+      "nostrUser": "Nostr bruger",
+      "message": "Message Message",
+      "sendPayment": "Send Send",
+      "contactInfo": "Kontakt info",
+      "contactManagement": "Kontaktledelse Kontaktledelse",
+      "unfollowContact": "Unfollow Contact",
+      "noListDeepLinkMessage": "For at tilføje venner skal du først initialisere din kontaktliste i Indstillinger.",
+      "manageContacts": "Manage Contacts",
+      "createContactList": "Kontaktliste  Create Contact List"
+    },
+    "common": {
+      "copy": "Copy Copy",
+      "copied": "Kopieret",
+      "goToSettings": "Gå til indstillinger"
+    }
+  },
+  "AccountUpgrade": {
+    "accountType": "Kontotype",
+    "personal": "Personligt Personligt",
+    "personalDesc": "Sikre din tegnebog med telefon og e-mail.",
+    "pro": "Pro Pro",
+    "proDesc": "Accepter betalinger og blive opdaget på kortet.",
+    "merchant": "Handlende",
+    "merchantDesc": "Giv belønninger, vises på kortet og afregnes hos din bank. ID og bankoplysninger kræves.",
+    "personalInfo": "Personlige oplysninger",
+    "fullName": "Fuldnavn",
+    "phoneNumber": "Telefonnummer",
+    "email": "E-mailadresse",
+    "optional": "(Optional)",
+    "validation": "Validering",
+    "validationCode": "Valideringskode",
+    "businessInfo": "Virksomhedsinformation",
+    "businessName": "Virksomhedens navn",
+    "businessNamePlaceholder": "Indtast dit forretningsnavn",
+    "businessAddress": "Virksomhedsadresse",
+    "businessAddressPlaceholder": "Indtast dit forretningsadresse",
+    "flashTerminal": "Vil du have en Flash-terminal?",
+    "flashTerminalTooltip": "En Flash Terminal er en smart enhed, der kan acceptere betaling via Flash for din virksomhed og udskrive kvitteringer.",
+    "bankingInfo": "Bankoplysninger",
+    "bankName": "Banknavn Banknavn",
+    "bankNamePlaceholder": "Vælg dit banknavn",
+    "bankBranch": "Bankbranche  Bankbranche ",
+    "bankBranchPlaceholder": "Gå ind i dit bankkontor",
+    "bankAccountType": "Kontotype",
+    "selectBankAccountType": "Vælg kontotype",
+    "currency": "Valuta",
+    "selectCurrency": "Vælg valuta",
+    "accountNum": "Konto nummer ",
+    "accountNumPlaceholder": "Indtast dit kontonummer",
+    "uploadId": "Upload ID Document",
+    "successUpgrade": "Du har succesfuldt opgraderet dit konto til {accountType: string}",
+    "successRequest": "Du har succesfuldt anmodet om at opgradere dit konto til {accountType: string}"
+  }
 }
