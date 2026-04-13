@@ -108,7 +108,7 @@ const breezLogger: Logger = {
 let loggingInitialized = false
 
 const connectToSDK = async (): Promise<void> => {
-  if (!loggingInitialized) {
+  if (!loggingInitialized && !__DEV__) {
     await initLogBuffer()
     initLogging(undefined, breezLogger, undefined)
     loggingInitialized = true
