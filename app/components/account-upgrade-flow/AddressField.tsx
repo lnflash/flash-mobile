@@ -90,6 +90,7 @@ const AddressField: React.FC<Props> = ({
             textInputProps={{
               onFocus: () => setIsFocused(true),
               onBlur: () => setIsFocused(false),
+              autoFocus: true,
             }}
           />
           <PrimaryBtn label="Cancel" onPress={() => setIsVisible(false)} />

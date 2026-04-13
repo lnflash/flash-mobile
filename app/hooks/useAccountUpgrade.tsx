@@ -3,6 +3,7 @@ import { parsePhoneNumber } from "libphonenumber-js"
 
 // hooks
 import { useActivityIndicator } from "./useActivityIndicator"
+import { normalizeContentType } from "@app/utils/image-content-type"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import {
   useBusinessAccountUpgradeRequestMutation,
@@ -112,14 +113,28 @@ export const useAccountUpgrade = () => {
       return null
     }
 
-    const { data } = await generateIdDocumentUploadUrl({
-      variables: {
-        input: {
-          filename: idDocument.fileName,
-          contentType: idDocument.type,
+    // Normalize content type: Android returns "image/jpg" for some JPEGs,
+    // but the backend only accepts "image/jpeg" (ENG-291)
+    const normalizedContentType = normalizeContentType(idDocument.type)
+
+    let data
+    try {
+      const result = await generateIdDocumentUploadUrl({
+        variables: {
+          input: {
+            filename: idDocument.fileName,
+            contentType: normalizedContentType,
+          },
         },
-      },
-    })
+      })
+      data = result.data
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ""
+      if (message.includes("InvalidFileType")) {
+        throw new Error("Unsupported file type. Please upload a JPG or PNG image.")
+      }
+      throw new Error("Failed to upload ID document. Please try again.")
+    }
 
     if (!data?.idDocumentUploadUrlGenerate.uploadUrl) {
       throw new Error("Failed to generate upload URL to upload ID Document")
@@ -128,7 +143,7 @@ export const useAccountUpgrade = () => {
     await uploadFileToS3(
       data.idDocumentUploadUrlGenerate.uploadUrl,
       idDocument.uri,
-      idDocument.type,
+      normalizedContentType,
     )
 
     return data.idDocumentUploadUrlGenerate.fileKey ?? null
@@ -158,7 +173,8 @@ export const useAccountUpgrade = () => {
         bankInfo.currency
       ) {
         bankAccount = {
-          accountNumber: Number(bankInfo.accountNumber),
+          // accountNumber is a String in GraphQL (identifiers can exceed Int32)
+          accountNumber: bankInfo.accountNumber,
           accountType: bankInfo.bankAccountType,
           bankBranch: bankInfo.bankBranch,
           bankName: bankInfo.bankName,

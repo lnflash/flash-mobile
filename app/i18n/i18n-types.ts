@@ -321,6 +321,11 @@ type RootTranslation = {
 		 * %​ ​t​o​ ​c​o​n​v​e​r​t
 		 */
 		percentageToConvert: string
+		/**
+		 * Y​o​u​r​ ​{​w​a​l​l​e​t​N​a​m​e​}​ ​h​a​s​ ​n​o​ ​f​u​n​d​s​ ​t​o​ ​s​w​a​p
+		 * @param {string} walletName
+		 */
+		emptyWallet: RequiredParams<'walletName'>
 	}
 	ConversionConfirmationScreen: {
 		/**
@@ -5543,6 +5548,10 @@ export type TranslationFunctions = {
 		 * % to convert
 		 */
 		percentageToConvert: () => LocalizedString
+		/**
+		 * Your {walletName} has no funds to swap
+		 */
+		emptyWallet: (arg: { walletName: string }) => LocalizedString
 	}
 	ConversionConfirmationScreen: {
 		/**
