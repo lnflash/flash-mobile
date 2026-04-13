@@ -105,8 +105,6 @@ import EditNostrProfileScreen from "@app/screens/edit-nostr-profile/edit-nostr-p
 
 import HomeActive from "@app/assets/icons/home-active.svg"
 import HomeInactive from "@app/assets/icons/home-inactive.svg"
-import CardActive from "@app/assets/icons/card-active.svg"
-import CardInactive from "@app/assets/icons/card-inactive.svg"
 import MapActive from "@app/assets/icons/map-active.svg"
 import MapInactive from "@app/assets/icons/map-inactive.svg"
 import ScanQR from "@app/assets/icons/scan-qr.svg"
@@ -778,7 +776,7 @@ export const PrimaryNavigator = () => {
           title: LL.HomeScreen.title(),
           tabBarAccessibilityLabel: LL.HomeScreen.title(),
           tabBarTestID: LL.HomeScreen.title(),
-          tabBarIcon: ({ focused }) => (focused ? <HomeActive /> : <HomeInactive />),
+          tabBarIcon: ({ focused, color }) => (focused ? <HomeActive color={color} /> : <HomeInactive color={color} />),
         }}
       />
       {/* <Tab.Screen
@@ -822,7 +820,7 @@ export const PrimaryNavigator = () => {
           headerShown: false,
           tabBarAccessibilityLabel: LL.MapScreen.title(),
           tabBarTestID: LL.MapScreen.title(),
-          tabBarIcon: ({ focused }) => (focused ? <MapActive /> : <MapInactive />),
+          tabBarIcon: ({ focused, color }) => (focused ? <MapActive color={color} /> : <MapInactive color={color} />),
         }}
       />
       <Tab.Screen

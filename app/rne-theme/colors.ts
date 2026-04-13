@@ -138,7 +138,7 @@ const dark = {
   button01: "#FFFFFF",
   button02: "#212121",
   buttonInverse: "#002118",
-  tabActive: "#002118",
+  tabActive: "#FFFFFF",
   tabInactive: "#83899B",
 }
 
