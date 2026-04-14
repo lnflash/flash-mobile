@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Átváltás",
-    "percentageToConvert": "% átváltása"
+    "percentageToConvert": "% átváltása",
+    "emptyWallet": "A {walletName:string} tárcádban nincs egyenleg a cseréhez"
   },
   "ConversionConfirmationScreen": {
     "title": "Átváltás ellenörzése",

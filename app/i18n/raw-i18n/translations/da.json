@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Konverter",
-    "percentageToConvert": "% som skal konverteres"
+    "percentageToConvert": "% som skal konverteres",
+    "emptyWallet": "Din {walletName:string} har ingen midler at veksle"
   },
   "ConversionConfirmationScreen": {
     "title": "Gennemgå konvertering",

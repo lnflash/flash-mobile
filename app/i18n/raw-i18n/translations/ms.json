@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Penukaran",
-    "percentageToConvert": "% untuk penukaran"
+    "percentageToConvert": "% untuk penukaran",
+    "emptyWallet": "Tiada dana dalam {walletName:string} anda untuk ditukar"
   },
   "ConversionConfirmationScreen": {
     "title": "Semak penukaran",

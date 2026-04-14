@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Konvertiraj",
-    "percentageToConvert": "% za konverziju"
+    "percentageToConvert": "% za konverziju",
+    "emptyWallet": "Vaš {walletName:string} nema sredstava za zamjenu"
   },
   "ConversionConfirmationScreen": {
     "title": "Pregled konverzije",

@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Wisselen",
-    "percentageToConvert": "% om te wisselen"
+    "percentageToConvert": "% om te wisselen",
+    "emptyWallet": "Uw {walletName:string} heeft geen saldo om te wisselen"
   },
   "ConversionConfirmationScreen": {
     "title": "Bevestig wissel",

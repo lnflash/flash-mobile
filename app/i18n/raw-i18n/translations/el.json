@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Μετατρέψτε ",
-    "percentageToConvert": "% για μετατροπή"
+    "percentageToConvert": "% για μετατροπή",
+    "emptyWallet": "Το {walletName:string} σας δεν έχει κεφάλαια για ανταλλαγή"
   },
   "ConversionConfirmationScreen": {
     "title": "Έλεγχος μετατροπής",

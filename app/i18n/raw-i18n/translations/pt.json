@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Converter",
-    "percentageToConvert": "% de conversão"
+    "percentageToConvert": "% de conversão",
+    "emptyWallet": "O seu {walletName:string} não tem fundos para trocar"
   },
   "ConversionConfirmationScreen": {
     "title": "Revisar conversa",

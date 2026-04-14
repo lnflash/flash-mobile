@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Umtauschen",
-    "percentageToConvert": "% umtauschen"
+    "percentageToConvert": "% umtauschen",
+    "emptyWallet": "Ihr {walletName:string} hat keine Mittel zum Tauschen"
   },
   "ConversionConfirmationScreen": {
     "title": "Umtausch prüfen",

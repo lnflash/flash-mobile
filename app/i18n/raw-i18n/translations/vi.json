@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Chuyển đổi",
-    "percentageToConvert": "% chuyển đổi"
+    "percentageToConvert": "% chuyển đổi",
+    "emptyWallet": "{walletName:string} của bạn không có tiền để hoán đổi"
   },
   "ConversionConfirmationScreen": {
     "title": "Xem lại sự chuyển đổi",

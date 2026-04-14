@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Tukuyta",
-    "percentageToConvert": "Tukuyta llump'an kay %"
+    "percentageToConvert": "Tukuyta llump'an kay %",
+    "emptyWallet": "{walletName:string} nisqaykipi mana qullqi kanchu hukchanapaq"
   },
   "ConversionConfirmationScreen": {
     "title": "Tukuyta unanchay",
