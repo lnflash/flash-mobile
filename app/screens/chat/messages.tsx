@@ -1,6 +1,6 @@
 import "react-native-get-random-values"
 import * as React from "react"
-import { Image, View, TouchableOpacity, Platform } from "react-native"
+import { ActivityIndicator, Image, View, TouchableOpacity, Platform } from "react-native"
 import { RouteProp, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Screen } from "../../components/screen"
@@ -11,8 +11,14 @@ import type {
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
 import { nip19 } from "nostr-tools"
-import { Rumor, RelayDeliveryResult, getGroupId, sendNip17Message, sendReaction } from "@app/utils/nostr"
-import { useEffect, useMemo, useState } from "react"
+import {
+  Rumor,
+  RelayDeliveryResult,
+  getGroupId,
+  sendNip17Message,
+  sendReaction,
+} from "@app/utils/nostr"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { updateLastSeen } from "./utils"
@@ -21,6 +27,17 @@ import { getSigner } from "@app/nostr/signer"
 import { FlatList } from "react-native-gesture-handler"
 import { MessageBubble } from "./components/MessageBubble"
 import { MessageInput } from "./components/MessageInput"
+import { QuickZapModal } from "@app/components/zaps/quick-zap-modal"
+import { sendZap } from "@app/utils/nostr/zap"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { useAppConfig } from "@app/hooks/use-app-config"
+import {
+  HomeAuthedDocument,
+  useHomeAuthedQuery,
+  useLnInvoicePaymentSendMutation,
+} from "@app/graphql/generated"
+import { breezSDKInitialized, payLightningBreez } from "@app/utils/breez-sdk/spark"
+import { toastShow } from "@app/utils/toast"
 
 export type DeliveryInfo = {
   pending: boolean
@@ -34,10 +51,7 @@ type MessagesProps = {
 export const Messages: React.FC<MessagesProps> = ({ route }) => {
   const { userPublicKey } = useChatContext()
   return (
-    <MessagesScreen
-      userPubkey={userPublicKey || ""}
-      groupId={route.params.groupId}
-    />
+    <MessagesScreen userPubkey={userPublicKey || ""} groupId={route.params.groupId} />
   )
 }
 
@@ -59,15 +73,61 @@ function readProfilesFromStore(pubkeys: string[]): Map<string, NostrProfile> {
   return map
 }
 
-export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, groupId }) => {
-  const { theme: { colors, mode } } = useTheme()
+export const MessagesScreen: React.FC<MessagesScreenProps> = ({
+  userPubkey,
+  groupId,
+}) => {
+  const {
+    theme: { colors, mode },
+  } = useTheme()
   const styles = useStyles()
   const { rumors, setRumors, reactions, addOptimisticReaction } = useChatContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
   const insets = useSafeAreaInsets()
+  const { appConfig } = useAppConfig()
+  const lnAddressHostname = appConfig.galoyInstance.lnAddressHostname
+
+  const { data: authedData } = useHomeAuthedQuery({ fetchPolicy: "cache-only" })
+  const defaultWalletId = authedData?.me?.defaultAccount?.defaultWalletId
+
+  const [lnInvoicePaymentSend] = useLnInvoicePaymentSendMutation({
+    refetchQueries: [HomeAuthedDocument],
+  })
+
+  // Picks the right payment method at call time — no hardcoding needed.
+  // Breez/Spark (advance mode) takes priority when it's already running;
+  // otherwise falls back to the Galoy custodial wallet via GraphQL.
+  const payInvoice = async (pr: string): Promise<{ success: boolean; error?: string }> => {
+    if (breezSDKInitialized) {
+      return payLightningBreez(pr)
+    }
+    if (!defaultWalletId) {
+      return { success: false, error: "No wallet found" }
+    }
+    const result = await lnInvoicePaymentSend({
+      variables: { input: { paymentRequest: pr, walletId: defaultWalletId } },
+    })
+    const errors = result.data?.lnInvoicePaymentSend.errors ?? []
+    if (errors.length > 0) {
+      return { success: false, error: errors[0].message }
+    }
+    return { success: true }
+  }
 
   const [replyTo, setReplyTo] = useState<Rumor | null>(null)
-  const [deliveryStatus, setDeliveryStatus] = useState<Map<string, DeliveryInfo>>(new Map())
+  const [deliveryStatus, setDeliveryStatus] = useState<Map<string, DeliveryInfo>>(
+    new Map(),
+  )
+  const [quickZapVisible, setQuickZapVisible] = useState(false)
+  const [savedQuickZapAmount, setSavedQuickZapAmount] = useState<number | null>(null)
+  const [isZapping, setIsZapping] = useState(false)
+
+  // Load persisted default zap amount on mount
+  useEffect(() => {
+    AsyncStorage.getItem("@default_zap_amount").then((raw) => {
+      if (raw) setSavedQuickZapAmount(Number(raw))
+    })
+  }, [])
 
   const pubkeys = groupId.split(",")
   const isGroupChat = pubkeys.length > 2
@@ -78,6 +138,52 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
     readProfilesFromStore(pubkeys),
   )
 
+  const recipientProfile = profileMap.get(recipientPubkeys[0])
+
+  const doZap = async (amount: number, saveAsDefault: boolean) => {
+    if (isZapping) return
+    if (saveAsDefault) {
+      setSavedQuickZapAmount(amount)
+      AsyncStorage.setItem("@default_zap_amount", String(amount))
+    }
+
+    const recipientPubkey = recipientPubkeys[0]
+    if (!recipientPubkey) return
+
+    const lud16 = recipientProfile?.lud16
+    if (!lud16) {
+      toastShow({ message: "This user has no lightning address set.", type: "error" })
+      return
+    }
+
+    setIsZapping(true)
+    try {
+      const result = await sendZap({
+        recipientPubkey,
+        lud16,
+        amountSats: amount,
+        lnAddressHostname,
+        payInvoice,
+      })
+
+      if (result.success) {
+        toastShow({ message: `Zapped ${amount} sats`, type: "success" })
+      } else {
+        toastShow({ message: result.error || "Payment could not be sent.", type: "error" })
+      }
+    } finally {
+      setIsZapping(false)
+    }
+  }
+
+  const handleQuickZapPress = () => {
+    if (isZapping) return
+    if (savedQuickZapAmount) {
+      doZap(savedQuickZapAmount, false)
+    } else {
+      setQuickZapVisible(true)
+    }
+  }
   useEffect(() => {
     // Re-read from EventStore whenever it emits (covers profiles fetched by any screen)
     const unsubStore = nostrRuntime.getEventStore().subscribe(() => {
@@ -85,10 +191,10 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
     })
 
     // Ensure relay subscription for profiles not yet in store
-    nostrRuntime.ensureSubscription(
-      `messagesProfiles:${pubkeys.join(",")}`,
-      { kinds: [0], authors: pubkeys },
-    )
+    nostrRuntime.ensureSubscription(`messagesProfiles:${pubkeys.join(",")}`, {
+      kinds: [0],
+      authors: pubkeys,
+    })
 
     return unsubStore
   }, [groupId])
@@ -136,7 +242,9 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
         })
         // Guard against late callbacks firing after sendNip17Message has returned
         if (!sendSettled) {
-          setDeliveryStatus((prev) => new Map(prev).set(rumor.id, { pending: true, results: [] }))
+          setDeliveryStatus((prev) =>
+            new Map(prev).set(rumor.id, { pending: true, results: [] }),
+          )
         }
       },
       replyToId,
@@ -144,7 +252,10 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
 
     sendSettled = true
     setDeliveryStatus((prev) =>
-      new Map(prev).set(result.rumor.id, { pending: false, results: result.relayDetails }),
+      new Map(prev).set(result.rumor.id, {
+        pending: false,
+        results: result.relayDetails,
+      }),
     )
 
     if (result.outputs.filter((o) => o.acceptedRelays.length > 0).length === 0) {
@@ -158,10 +269,11 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
 
   const handleReaction = (rumor: Rumor, emoji: string) => {
     if (userPubkey) addOptimisticReaction(rumor.id, emoji, userPubkey)
-    getSigner().then((signer) => sendReaction(rumor.id, rumor.pubkey, emoji, pubkeys, new Map(), signer))
+    getSigner().then((signer) =>
+      sendReaction(rumor.id, rumor.pubkey, emoji, pubkeys, new Map(), signer),
+    )
   }
 
-  const recipientProfile = profileMap.get(recipientPubkeys[0])
   const headerTitle = recipientPubkeys
     .map(
       (p) =>
@@ -177,7 +289,12 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
   return (
     <Screen>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: Platform.OS === "android" ? insets.top : 0 }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: Platform.OS === "android" ? insets.top : 0 },
+        ]}
+      >
         <TouchableOpacity onPress={navigation.goBack} style={styles.backBtn} hitSlop={8}>
           <Icon name="arrow-back-outline" size={24} color={colors.primary3} />
         </TouchableOpacity>
@@ -206,15 +323,20 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
 
         {/* Lightning button */}
         <TouchableOpacity
-          style={[styles.lightningBtn, { backgroundColor: colors.primary + "18" }]}
-          onPress={() => {
-            navigation.navigate("sendBitcoinDestination", {
-              username: recipientProfile?.lud16,
-            })
-          }}
+          style={[
+            styles.lightningBtn,
+            { backgroundColor: isZapping ? colors.primary + "40" : colors.primary + "18" },
+          ]}
+          onPress={handleQuickZapPress}
+          onLongPress={() => !isZapping && setQuickZapVisible(true)}
+          disabled={isZapping}
           hitSlop={8}
         >
-          <Icon name="flash-outline" size={20} color={colors.primary} />
+          {isZapping ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Icon name="flash" size={20} color={colors.primary} />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -254,6 +376,16 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ userPubkey, grou
           onSend={handleSend}
         />
       </View>
+      <QuickZapModal
+        visible={quickZapVisible}
+        initialAmount={savedQuickZapAmount}
+        recipientName={recipientProfile?.name || recipientProfile?.username}
+        onClose={() => setQuickZapVisible(false)}
+        onZap={async (amount, saveAsDefault) => {
+          await doZap(amount, saveAsDefault)
+          setQuickZapVisible(false)
+        }}
+      />
     </Screen>
   )
 }
