@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Converteix",
-    "percentageToConvert": "% a convertir"
+    "percentageToConvert": "% a convertir",
+    "emptyWallet": "El teu {walletName:string} no té fons per intercanviar"
   },
   "ConversionConfirmationScreen": {
     "title": "Revisa la conversió",

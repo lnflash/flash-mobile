@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Çevir",
-    "percentageToConvert": "Çevirmek için % seç"
+    "percentageToConvert": "Çevirmek için % seç",
+    "emptyWallet": "{walletName:string} cüzdanınızda takas edilecek bakiye yok"
   },
   "ConversionConfirmationScreen": {
     "title": "Çevirmeyi incele",

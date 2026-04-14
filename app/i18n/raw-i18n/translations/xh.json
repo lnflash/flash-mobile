@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Guqula",
-    "percentageToConvert": "% ukuguqula"
+    "percentageToConvert": "% ukuguqula",
+    "emptyWallet": "I-{walletName:string} yakho ayinazimali zokutshintshisa"
   },
   "ConversionConfirmationScreen": {
     "title": "Phonononga uguqulo",

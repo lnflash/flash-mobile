@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Конвертуј",
-    "percentageToConvert": "% конвертовати"
+    "percentageToConvert": "% конвертовати",
+    "emptyWallet": "Ваш {walletName:string} нема средстава за замену"
   },
   "ConversionConfirmationScreen": {
     "title": "Преглед конверзије",

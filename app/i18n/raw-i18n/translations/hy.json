@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Փոխակերպել",
-    "percentageToConvert": "փոխակերպելու %"
+    "percentageToConvert": "փոխակերպելու %",
+    "emptyWallet": "\u0541\u0565\u0580 {walletName:string}-\u0568 \u0574\u056b\u057b\u0578\u0581\u0576\u0565\u0580 \u0579\u0578\u0582\u0576\u056b \u0583\u0578\u056d\u0561\u0576\u0561\u056f\u0574\u0561\u0576 \u0570\u0561\u0574\u0561\u0580"
   },
   "ConversionConfirmationScreen": {
     "title": "Ստուգել փոխակերպումը",

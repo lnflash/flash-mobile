@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Převod",
-    "percentageToConvert": "% k převodu"
+    "percentageToConvert": "% k převodu",
+    "emptyWallet": "Váš {walletName:string} nemá žádné prostředky k výměně"
   },
   "ConversionConfirmationScreen": {
     "title": "Přezkoumat převod",

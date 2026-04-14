@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-const fs = require('fs')
-const path = require('path')
+const fs = require("fs")
+const path = require("path")
 
 function isObject(value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
+  return value !== null && typeof value === "object" && !Array.isArray(value)
 }
 
-function flattenKeys(obj, prefix = '') {
+function flattenKeys(obj, prefix = "") {
   const keys = []
 
   if (!isObject(obj)) return keys
@@ -32,16 +32,21 @@ function findMissingKeys(source, translation) {
 }
 
 function checkTranslationDrift({
-  sourcePath = path.join(process.cwd(), 'app/i18n/raw-i18n/source/en.json'),
-  translationsDir = path.join(process.cwd(), 'app/i18n/raw-i18n/translations'),
+  sourcePath = path.join(process.cwd(), "app/i18n/raw-i18n/source/en.json"),
+  translationsDir = path.join(process.cwd(), "app/i18n/raw-i18n/translations"),
 } = {}) {
-  const source = JSON.parse(fs.readFileSync(sourcePath, 'utf8'))
-  const files = fs.readdirSync(translationsDir).filter((f) => f.endsWith('.json')).sort()
+  const source = JSON.parse(fs.readFileSync(sourcePath, "utf8"))
+  const files = fs
+    .readdirSync(translationsDir)
+    .filter((f) => f.endsWith(".json"))
+    .sort()
 
   const failures = []
   for (const file of files) {
-    const lang = path.basename(file, '.json')
-    const translation = JSON.parse(fs.readFileSync(path.join(translationsDir, file), 'utf8'))
+    const lang = path.basename(file, ".json")
+    const translation = JSON.parse(
+      fs.readFileSync(path.join(translationsDir, file), "utf8"),
+    )
     const missing = findMissingKeys(source, translation)
 
     if (missing.length > 0) {
@@ -56,7 +61,7 @@ if (require.main === module) {
   const failures = checkTranslationDrift()
 
   if (failures.length > 0) {
-    console.error('❌ Translation drift detected (missing keys from en.json):\n')
+    console.error("❌ Translation drift detected (missing keys from en.json):\n")
 
     for (const { lang, missing } of failures) {
       console.error(`- ${lang}: ${missing.length} missing key(s)`)
@@ -64,13 +69,13 @@ if (require.main === module) {
       if (missing.length > 20) {
         console.error(`  ... and ${missing.length - 20} more`)
       }
-      console.error('')
+      console.error("")
     }
 
     process.exit(1)
   }
 
-  console.log('✅ No translation drift detected (all languages include en.json keys).')
+  console.log("✅ No translation drift detected (all languages include en.json keys).")
 }
 
 module.exports = {

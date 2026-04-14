@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "แลกเปลี่ยน",
-    "percentageToConvert": "% ที่ต้องการแลกเปลี่ยน"
+    "percentageToConvert": "% ที่ต้องการแลกเปลี่ยน",
+    "emptyWallet": "{walletName:string} ของคุณไม่มีเงินสำหรับการแลกเปลี่ยน"
   },
   "ConversionConfirmationScreen": {
     "title": "ตรวจสอบการแลกเปลี่ยน",

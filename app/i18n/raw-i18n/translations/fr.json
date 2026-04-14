@@ -81,7 +81,8 @@
   },
   "ConversionDetailsScreen": {
     "title": "Convertir",
-    "percentageToConvert": "% à convertir"
+    "percentageToConvert": "% à convertir",
+    "emptyWallet": "Votre {walletName:string} n'a pas de fonds à échanger"
   },
   "ConversionConfirmationScreen": {
     "title": "Vérifier la conversion",
