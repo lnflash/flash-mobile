@@ -238,6 +238,7 @@ export const fetchBreezFee = async (
         amount: BigInt(amountSats),
         tokenIdentifier: undefined,
         conversionOptions: undefined,
+        feePolicy: undefined,
       })
       const fee = extractFeeFromPaymentMethod(prepareResponse.paymentMethod)
       return { fee: Number(fee), err: null }
@@ -249,6 +250,7 @@ export const fetchBreezFee = async (
         amount: BigInt(amountSats),
         tokenIdentifier: undefined,
         conversionOptions: undefined,
+        feePolicy: undefined,
       })
       const fee = extractFeeFromPaymentMethod(
         prepareResponse.paymentMethod,
@@ -262,10 +264,13 @@ export const fetchBreezFee = async (
 
       if (parsed.tag === InputType_Tags.LightningAddress) {
         const prepareResponse = await sdk.prepareLnurlPay({
-          amountSats: BigInt(amountSats),
+          amount: BigInt(amountSats),
           payRequest: parsed.inner[0].payRequest,
           comment: undefined,
           validateSuccessActionUrl: undefined,
+          tokenIdentifier: undefined,
+          conversionOptions: undefined,
+          feePolicy: undefined,
         })
 
         return { fee: Number(prepareResponse.feeSats), err: null }
@@ -296,6 +301,7 @@ export const receivePaymentBreez = async (
       description: description || "",
       amountSats: BigInt(amountSats || 0),
       expirySecs: undefined,
+      paymentHash: undefined,
     }),
   })
 
@@ -306,7 +312,7 @@ export const receiveOnchainBreez = async (): Promise<ReceivePaymentResponse> => 
   const sdk = getSDKInstance()
 
   const response = await sdk.receivePayment({
-    paymentMethod: new ReceivePaymentMethod.BitcoinAddress(),
+    paymentMethod: new ReceivePaymentMethod.BitcoinAddress({ newAddress: undefined }),
   })
 
   return response
@@ -332,6 +338,7 @@ export const payLightningBreez = async (
       amount: amountSats !== undefined ? BigInt(amountSats) : undefined,
       tokenIdentifier: undefined,
       conversionOptions: undefined,
+      feePolicy: undefined,
     })
 
     const options = new SendPaymentOptions.Bolt11Invoice({
@@ -366,6 +373,7 @@ export const payOnchainBreez = async (
       amount: BigInt(amountSats),
       tokenIdentifier: undefined,
       conversionOptions: undefined,
+      feePolicy: undefined,
     })
 
     const confirmationSpeed =
@@ -405,10 +413,13 @@ export const payLnurlBreez = async (
     const input = await sdk.parse(lnurl)
     if (input.tag === InputType_Tags.LightningAddress) {
       const prepareResponse = await sdk.prepareLnurlPay({
-        amountSats: BigInt(amountSats),
+        amount: BigInt(amountSats),
         payRequest: input.inner[0].payRequest,
         comment: memo,
         validateSuccessActionUrl: true,
+        tokenIdentifier: undefined,
+        conversionOptions: undefined,
+        feePolicy: undefined,
       })
 
       const response = await sdk.lnurlPay({
@@ -467,10 +478,13 @@ export const onRedeem = async (
 
     if (input.tag === InputType_Tags.LightningAddress) {
       const prepareResponse = await sdk.prepareLnurlPay({
-        amountSats: BigInt(amountSats),
+        amount: BigInt(amountSats),
         payRequest: input.inner[0].payRequest,
         comment: memo,
         validateSuccessActionUrl: true,
+        tokenIdentifier: undefined,
+        conversionOptions: undefined,
+        feePolicy: undefined,
       })
 
       const response = await sdk.lnurlPay({

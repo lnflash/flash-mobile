@@ -1,5 +1,9 @@
 import type { Payment } from "@breeztech/breez-sdk-spark-react-native"
-import { PaymentDetails_Tags } from "@breeztech/breez-sdk-spark-react-native"
+import {
+  PaymentDetails_Tags,
+  PaymentType,
+  PaymentStatus,
+} from "@breeztech/breez-sdk-spark-react-native"
 import type { TransactionFragment } from "@app/graphql/generated"
 
 // ============================================================================
@@ -87,8 +91,7 @@ export const getTransactionAmount = (tx: UnifiedTransaction): number => {
  */
 export const isReceiveTransaction = (tx: UnifiedTransaction): boolean => {
   if (isBreezTransaction(tx)) {
-    // PaymentType.Receive = 1
-    return tx.payment.paymentType === 1
+    return tx.payment.paymentType === PaymentType.Receive
   }
   return tx.transaction.direction === "RECEIVE"
 }
@@ -103,10 +106,13 @@ export const getTransactionStatus = (
     // PaymentStatus: Completed = 0, Pending = 1, Failed = 2
     switch (tx.payment.status) {
       case 0:
+      case PaymentStatus.Completed:
         return "SUCCESS"
       case 1:
+      case PaymentStatus.Pending:
         return "PENDING"
       case 2:
+      case PaymentStatus.Failed:
         return "FAILURE"
       default:
         return "PENDING"
