@@ -21,6 +21,7 @@ import {
 import {
   TransactionEdge,
   useHomeAuthedQuery,
+  useLatestAccountUpgradeRequestQuery,
   useRealtimePriceQuery,
 } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -60,6 +61,10 @@ export const HomeScreen: React.FC = () => {
     fetchPolicy: "network-only",
     nextFetchPolicy: "cache-and-network", // this enables offline mode use-case
   })
+  const { refetch: refetchUpgradeRequest } = useLatestAccountUpgradeRequestQuery({
+    skip: !isAuthed,
+    fetchPolicy: "cache-and-network",
+  })
 
   const transactions = dataAuthed?.me?.defaultAccount.transactions?.edges || []
 
@@ -95,10 +100,11 @@ export const HomeScreen: React.FC = () => {
     if (isAuthed) {
       refetchRealtimePrice()
       refetchAuthed()
+      refetchUpgradeRequest()
       setRefreshTriggered(true)
       setTimeout(() => setRefreshTriggered(false), 1000)
     }
-  }, [isAuthed, refetchAuthed, refetchRealtimePrice])
+  }, [isAuthed, refetchAuthed, refetchRealtimePrice, refetchUpgradeRequest])
 
   const renderRefreshControl = () => (
     <RefreshControl
