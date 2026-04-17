@@ -96,7 +96,7 @@ export const usePriceConversion = () => {
       let amount =
         moneyAmount.amount * priceOfCurrencyInCurrency(moneyAmount.currency, toCurrency)
 
-      if (toCurrency === "BTC") {
+      if (toCurrency === WalletCurrency.Btc || toCurrency === WalletCurrency.Usd) {
         amount = Math.round(amount)
       }
 
