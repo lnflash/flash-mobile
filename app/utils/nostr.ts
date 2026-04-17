@@ -18,6 +18,7 @@ import { AbstractRelay } from "nostr-tools/abstract-relay"
 import * as Keychain from "react-native-keychain"
 import { pool } from "./nostr/pool"
 import type { NostrSigner } from "@app/nostr/signer/types"
+import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 
 export type RelayDeliveryResult = {
   url: string
@@ -498,4 +499,69 @@ export const createContactListEvent = async (signer: NostrSigner) => {
       signedEvent,
     ),
   )
+}
+
+/**
+ * Creates a contact list with the user included only if one doesn't already exist.
+ * Safe to call multiple times — will not overwrite an existing contact list.
+ *
+ * Check order:
+ *   1. nostrRuntime in-memory cache (instant)
+ *   2. live relay query via nostrRuntime subscription + EOSE (5 s timeout)
+ *   3. If nothing found, publish a fresh kind-3 with self as the only contact.
+ */
+export const ensureContactListExists = async (signer: NostrSigner) => {
+  const selfPublicKey = await signer.getPublicKey()
+  const relays = [
+    "wss://relay.flashapp.me",
+    "wss://relay.damus.io",
+    "wss://relay.primal.net",
+    "wss://nos.lol",
+  ]
+
+  // 1. Fast path — already in the runtime's event store
+  if (nostrRuntime.getEvent(`3:${selfPublicKey}`)) {
+    console.log("Contact list already exists (cached), skipping creation")
+    return
+  }
+
+  // 2. Ask relays — wait for EOSE or a 5 s timeout
+  const exists = await new Promise<boolean>((resolve) => {
+    let found = false
+    const subKey = `ensure-contact-list:${selfPublicKey}`
+
+    const timeout = setTimeout(() => {
+      nostrRuntime.releaseSubscription(subKey)
+      resolve(found)
+    }, 5000)
+
+    nostrRuntime.ensureSubscription(
+      subKey,
+      { kinds: [3], authors: [selfPublicKey] },
+      () => {
+        found = true
+      },
+      () => {
+        clearTimeout(timeout)
+        nostrRuntime.releaseSubscription(subKey)
+        resolve(found)
+      },
+      relays,
+    )
+  })
+
+  if (exists) {
+    console.log("Contact list already exists on relays, skipping creation")
+    return
+  }
+
+  const event: UnsignedEvent = {
+    kind: 3,
+    tags: [["p", selfPublicKey]],
+    content: "",
+    created_at: Math.floor(Date.now() / 1000),
+    pubkey: selfPublicKey,
+  }
+  const signedEvent = await signer.signEvent(event)
+  await Promise.allSettled(pool.publish(relays, signedEvent))
 }
