@@ -14,7 +14,6 @@ import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
 import { ChatList } from "@app/screens/chat"
 import { DeveloperScreen } from "../screens/developer-screen"
-import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
 import { SectionCompleted } from "../screens/earns-screen/section-completed"
 import { GetStartedScreen } from "../screens/get-started-screen"
@@ -61,7 +60,6 @@ import {
   TotpRegistrationInitiateScreen,
   TotpRegistrationValidateScreen,
 } from "@app/screens/totp-screen"
-import { testProps } from "@app/utils/testProps"
 import { makeStyles, useTheme } from "@rneui/themed"
 import { ScanningQRCodeScreen } from "../screens/send-bitcoin-screen"
 import { SettingsScreen } from "../screens/settings-screen"
@@ -114,7 +112,8 @@ import {
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
-import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
+import ContactDetailsScreen from "@app/screens/chat/contactDetailsScreen"
+import Contacts from "@app/screens/chat/contacts"
 import {
   BankTransfer,
   BuyBitcoin,
@@ -123,6 +122,9 @@ import {
   BuySellBitcoin,
   CardPayment,
 } from "@app/screens/buy-bitcoin-flow"
+import MakeNostrPost from "@app/screens/social/post"
+import PostSuccess from "@app/screens/social/post-success"
+import IrisBrowser from "@app/screens/social/iris-browser"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -723,7 +725,8 @@ export const PrimaryNavigator = () => {
           title: LL.HomeScreen.title(),
           tabBarAccessibilityLabel: LL.HomeScreen.title(),
           tabBarTestID: LL.HomeScreen.title(),
-          tabBarIcon: ({ focused, color }) => (focused ? <HomeActive color={color} /> : <HomeInactive color={color} />),
+          tabBarIcon: ({ focused, color }) =>
+            focused ? <HomeActive color={color} /> : <HomeInactive color={color} />,
         }}
       />
       {/* <Tab.Screen
@@ -767,7 +770,8 @@ export const PrimaryNavigator = () => {
           headerShown: false,
           tabBarAccessibilityLabel: LL.MapScreen.title(),
           tabBarTestID: LL.MapScreen.title(),
-          tabBarIcon: ({ focused, color }) => (focused ? <MapActive color={color} /> : <MapInactive color={color} />),
+          tabBarIcon: ({ focused, color }) =>
+            focused ? <MapActive color={color} /> : <MapInactive color={color} />,
         }}
       />
       <Tab.Screen
