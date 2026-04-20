@@ -54,6 +54,13 @@ const FeaturedProfileView: React.FC = () => {
 
   const { persistentState, updateState } = usePersistentStateContext()
 
+  // Capture first-access detection at mount time so the log effect doesn't
+  // depend on persistentState (which would re-fire on every state update).
+  const isFirstAccessRef = useRef(
+    !persistentState?.featuredProfile?.hasViewedProfile,
+  )
+  const hasLoggedRef = useRef(false)
+
   // Animation states
   const overlayOpacity = useRef(new Animated.Value(1)).current
   const textOpacity = useRef(new Animated.Value(0)).current
@@ -74,13 +81,14 @@ const FeaturedProfileView: React.FC = () => {
     return () => unsubscribe()
   }, [])
 
-  // Track analytics and update persistent state
+  // Track analytics and update persistent state (mount-only).
   useEffect(() => {
-    const isFirstAccess = !persistentState?.featuredProfile?.hasViewedProfile
+    if (hasLoggedRef.current) return
+    hasLoggedRef.current = true
 
     logFeaturedViewOpened({
       entryPoint,
-      isFirstAccess,
+      isFirstAccess: isFirstAccessRef.current,
     })
 
     updateState((currentState) => {
@@ -95,9 +103,9 @@ const FeaturedProfileView: React.FC = () => {
         },
       }
     })
-  }, [])
+  }, [entryPoint, updateState])
 
-  // Run entry animation
+  // Run entry animation (mount-only; refs hold the Animated.Values).
   useEffect(() => {
     ReactNativeHapticFeedback.trigger('notificationSuccess', {
       enableVibrateFallback: true,
@@ -123,6 +131,7 @@ const FeaturedProfileView: React.FC = () => {
     }, 1000)
 
     return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleGoBack = () => {

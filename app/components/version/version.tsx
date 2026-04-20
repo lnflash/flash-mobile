@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Pressable } from "react-native"
+import { Pressable, View, StyleSheet, Animated } from "react-native"
 import { Text, makeStyles } from "@rneui/themed"
 import DeviceInfo from "react-native-device-info"
 import { useNavigation } from "@react-navigation/native"
@@ -18,14 +18,19 @@ type VersionComponentNavigationProp = StackNavigationProp<
   "getStarted" | "settings"
 >
 
+// Tick cadence for the long-press progress animation.
+const PROGRESS_TICK_MS = 40
+const PROGRESS_INCREMENT = PROGRESS_TICK_MS / FEATURED_PROFILE.LONG_PRESS_DURATION_MS
+
 export const VersionComponent = () => {
   const styles = useStyles()
   const { navigate } = useNavigation<VersionComponentNavigationProp>()
   const { LL } = useI18nContext()
+
+  // Developer screen tap counter (existing behavior)
   const [secretMenuCounter, setSecretMenuCounter] = React.useState(0)
 
   // Long-press featured-profile entry
-  const longPressTimer = React.useRef<NodeJS.Timeout | null>(null)
   const progressInterval = React.useRef<NodeJS.Timeout | null>(null)
   const progressAnim = React.useRef(new Animated.Value(0)).current
   const [isPressing, setIsPressing] = React.useState(false)
@@ -40,64 +45,54 @@ export const VersionComponent = () => {
 
   const readableVersion = DeviceInfo.getReadableVersion()
 
-  // Long-press handlers for featured-profile entry
   const handlePressIn = () => {
     setIsPressing(true)
     let progress = 0
-    
-    // Progressive haptic feedback during hold
+
     progressInterval.current = setInterval(() => {
-      progress += 0.04 // 5 seconds = 125 intervals at 40ms
-      
-      // Light haptic every 1 second (25 intervals)
-      if (Math.floor(progress * 25) > Math.floor((progress - 0.04) * 25)) {
-        ReactNativeHapticFeedback.trigger('impactLight', {
+      const prev = progress
+      progress += PROGRESS_INCREMENT
+
+      // Light haptic at each ~1/5 of the hold (5 pulses across the full duration).
+      if (Math.floor(progress * 5) > Math.floor(prev * 5)) {
+        ReactNativeHapticFeedback.trigger("impactLight", {
           enableVibrateFallback: true,
           ignoreAndroidSystemSettings: false,
         })
       }
-      
-      // Animate progress
+
       Animated.timing(progressAnim, {
         toValue: progress,
-        duration: 40,
+        duration: PROGRESS_TICK_MS,
         useNativeDriver: false,
       }).start()
-      
+
       if (progress >= 1) {
-        // Success — open the featured profile view
         clearInterval(progressInterval.current!)
         progressInterval.current = null
         setIsPressing(false)
 
-        // Strong haptic on success
-        ReactNativeHapticFeedback.trigger('notificationSuccess', {
+        ReactNativeHapticFeedback.trigger("notificationSuccess", {
           enableVibrateFallback: true,
           ignoreAndroidSystemSettings: false,
         })
 
-        // Analytics
-        logFeaturedProfileSelected({ discoveryMethod: 'long_press' })
+        logFeaturedProfileSelected({ discoveryMethod: "long_press" })
+        navigate("FeaturedProfileView", { entryPoint: "long_press" })
 
-        // Navigate
-        navigate("FeaturedProfileView", { entryPoint: 'long_press' })
-
-        // Reset progress
         progressAnim.setValue(0)
       }
-    }, 40)
+    }, PROGRESS_TICK_MS)
   }
 
   const handlePressOut = () => {
     setIsPressing(false)
-    
-    // Clear the interval
+
     if (progressInterval.current) {
       clearInterval(progressInterval.current)
       progressInterval.current = null
     }
-    
-    // Animate progress back to 0
+
     Animated.timing(progressAnim, {
       toValue: 0,
       duration: 200,
@@ -105,22 +100,48 @@ export const VersionComponent = () => {
     }).start()
   }
 
-  // Calculate progress ring circumference
-  const size = 80
-  const strokeWidth = 3
-  const radius = (size - strokeWidth) / 2
-  const circumference = radius * 2 * Math.PI
-
   return (
     <Pressable
       style={styles.wrapper}
       onPress={() => setSecretMenuCounter(secretMenuCounter + 1)}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      delayLongPress={100}
     >
-      <Text {...testProps("Version Build Text")} style={styles.version}>
-        {readableVersion}
-        {"\n"}
-        {LL.GetStartedScreen.headline()}
-      </Text>
+      <View style={styles.textBox}>
+        {isPressing && (
+          <View style={styles.progressContainer}>
+            <Animated.View
+              style={[
+                styles.progressRing,
+                {
+                  borderColor: progressAnim.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [
+                      "rgba(0, 255, 0, 0.2)",
+                      "rgba(0, 255, 0, 0.5)",
+                      "rgba(0, 255, 0, 1)",
+                    ],
+                  }),
+                  transform: [
+                    {
+                      scale: progressAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.1],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+          </View>
+        )}
+        <Text {...testProps("Version Build Text")} style={styles.version}>
+          {readableVersion}
+          {"\n"}
+          {LL.GetStartedScreen.headline()}
+        </Text>
+      </View>
     </Pressable>
   )
 }
@@ -131,10 +152,25 @@ const useStyles = makeStyles(({ colors }) => ({
     justifyContent: "flex-end",
     marginBottom: 40,
   },
+  textBox: {
+    alignSelf: "center",
+  },
   version: {
     color: colors.grey0,
     fontSize: 18,
     marginTop: 18,
     textAlign: "center",
+  },
+  progressContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  progressRing: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    backgroundColor: "transparent",
   },
 }))
