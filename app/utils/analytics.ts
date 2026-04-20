@@ -186,3 +186,29 @@ export const logAppFeedback = (params: LogAppFeedbackParams) => {
     is_enjoying_app: params.isEnjoingApp,
   })
 }
+
+// ============================================
+// Featured profile events
+// ============================================
+
+type LogFeaturedProfileSelectedParams = {
+  discoveryMethod: 'search' | 'long_press' | 'profile'
+}
+
+export const logFeaturedProfileSelected = (params: LogFeaturedProfileSelectedParams) => {
+  getAnalytics().logEvent('featured_profile_selected', {
+    discovery_method: params.discoveryMethod,
+  })
+}
+
+type LogFeaturedViewOpenedParams = {
+  entryPoint: 'search' | 'long_press' | 'profile'
+  isFirstAccess: boolean
+}
+
+export const logFeaturedViewOpened = (params: LogFeaturedViewOpenedParams) => {
+  getAnalytics().logEvent('featured_view_opened', {
+    entry_point: params.entryPoint,
+    is_first_access: params.isFirstAccess,
+  })
+}

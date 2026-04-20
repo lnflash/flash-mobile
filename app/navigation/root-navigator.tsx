@@ -128,6 +128,7 @@ import {
   Validation,
   Success,
 } from "@app/screens/account-upgrade-flow"
+import { FeaturedProfileView } from "@app/screens/featured-profile-view"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -643,6 +644,16 @@ export const RootStack = () => {
         name="AccountUpgradeSuccess"
         component={Success}
         options={{ headerShown: false }}
+      />
+      {/* Featured profile WebView entry */}
+      <RootNavigator.Screen
+        name="FeaturedProfileView"
+        component={FeaturedProfileView}
+        options={{
+          headerShown: false,
+          cardStyleInterpolator: CardStyleInterpolators.forFadeFromBottomAndroid,
+          gestureEnabled: false,
+        }}
       />
     </RootNavigator.Navigator>
   )

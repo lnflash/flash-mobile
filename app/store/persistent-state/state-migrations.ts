@@ -80,6 +80,12 @@ type PersistentState_7 = {
   flashcardHtml?: string
   hasPostedToNostr?: boolean // true if user has made at least one Nostr post
   sparkMigrationCompleted?: boolean
+  // Featured profile view tracking
+  featuredProfile?: {
+    hasViewedProfile: boolean
+    firstViewedAt?: string
+    viewCount: number
+  }
 }
 
 type JwtPayload = {

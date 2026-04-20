@@ -13,6 +13,10 @@ import { useState } from "react"
 import { ActivityIndicator } from "react-native"
 import { getSigner } from "@app/nostr/signer"
 
+// Featured profile detection
+import { isFeaturedPubkey } from "@app/utils/featured-profile"
+import { logFeaturedProfileSelected } from "@app/utils/analytics"
+
 interface SearchListItemProps {
   item: Chat
 }
@@ -30,7 +34,12 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({ item }) => {
   const {
     theme: { colors },
   } = useTheme()
-  const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
+  
+  // Use any for navigation to support both Chat and Root navigators
+  const navigation = useNavigation<any>()
+
+  // Is this the featured profile?
+  const isFeaturedProfile = isFeaturedPubkey(item.id)
 
   const getIcon = () => {
     const itemPubkey = item.groupId
@@ -62,27 +71,56 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({ item }) => {
     }
   }
 
+  const handlePress = () => {
+    if (isFeaturedProfile) {
+      // Log the selection
+      logFeaturedProfileSelected({ discoveryMethod: 'search' })
+      // Dispatch up to the root navigator to open the featured view
+      navigation.dispatch(
+        CommonActions.navigate({
+          name: 'FeaturedProfileView',
+          params: { entryPoint: 'search' },
+        })
+      )
+    } else {
+      // Normal flow - navigate to messages
+      navigation.navigate("messages", {
+        groupId: item.groupId,
+      })
+    }
+  }
+
   return (
     <ListItem
       key={item.id}
       style={styles.item}
-      containerStyle={styles.itemContainer}
-      onPress={() => {
-        navigation.navigate("messages", {
-          groupId: item.groupId,
-        })
-      }}
+      containerStyle={[
+        styles.itemContainer,
+        isFeaturedProfile && localStyles.featuredItemContainer,
+      ]}
+      onPress={handlePress}
     >
-      <Image
-        source={{
-          uri:
-            item.picture ||
-            "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
-        }}
-        style={styles.profilePicture}
-      />
+      <View style={localStyles.avatarContainer}>
+        <Image
+          source={{
+            uri:
+              item.picture ||
+              "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg",
+          }}
+          style={styles.profilePicture}
+        />
+        {/* Featured profile badge */}
+        {isFeaturedProfile && (
+          <View style={localStyles.featuredBadge}>
+            <Icon name="key" size={12} color="#000" />
+          </View>
+        )}
+      </View>
       <ListItem.Content>
-        <ListItem.Title style={styles.itemText}>
+        <ListItem.Title style={[
+          styles.itemText,
+          isFeaturedProfile && localStyles.featuredItemText,
+        ]}>
           {item.alias ||
             item.username ||
             item.name ||
@@ -91,7 +129,10 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({ item }) => {
         </ListItem.Title>
       </ListItem.Content>
 
-      {isLoading ? (
+      {isFeaturedProfile ? (
+        // Forward arrow for the featured profile row (no add-contact affordance)
+        <Icon name="arrow-forward" size={24} color="#FFD700" />
+      ) : isLoading ? (
         <ActivityIndicator size="small" color={colors.primary} />
       ) : (
         <TouchableOpacity onPress={handleAddContact}>
@@ -100,4 +141,32 @@ export const SearchListItem: React.FC<SearchListItemProps> = ({ item }) => {
       )}
     </ListItem>
   )
+}
+
+const useLocalStyles = () => {
+  return StyleSheet.create({
+    avatarContainer: {
+      position: 'relative',
+    },
+    featuredItemContainer: {
+      borderLeftWidth: 3,
+      borderLeftColor: '#FFD700',
+    },
+    featuredItemText: {
+      fontWeight: '600',
+    },
+    featuredBadge: {
+      position: 'absolute',
+      bottom: -2,
+      right: -2,
+      backgroundColor: '#FFD700',
+      borderRadius: 10,
+      width: 20,
+      height: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: '#FFF',
+    },
+  })
 }
