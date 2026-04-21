@@ -40,6 +40,11 @@ const DropDownField: React.FC<Props> = ({
       <Dropdown
         style={styles.dropdown}
         containerStyle={styles.container}
+        selectedTextStyle={{ color: colors.black }}
+        itemTextStyle={{ color: colors.black }}
+        placeholderStyle={{ color: colors.placeholder }}
+        itemContainerStyle={{ backgroundColor: colors.grey5 }}
+        activeColor={colors.grey4}
         data={data}
         search={false}
         maxHeight={300}
