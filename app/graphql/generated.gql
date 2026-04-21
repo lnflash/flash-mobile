@@ -164,94 +164,6 @@ mutation accountDelete {
   }
 }
 
-mutation accountDisableNotificationCategory($input: AccountDisableNotificationCategoryInput!) {
-  accountDisableNotificationCategory(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-mutation accountDisableNotificationChannel($input: AccountDisableNotificationChannelInput!) {
-  accountDisableNotificationChannel(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-mutation accountEnableNotificationCategory($input: AccountEnableNotificationCategoryInput!) {
-  accountEnableNotificationCategory(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-mutation accountEnableNotificationChannel($input: AccountEnableNotificationChannelInput!) {
-  accountEnableNotificationChannel(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
 mutation accountUpdateDefaultWalletId($input: AccountUpdateDefaultWalletIdInput!) {
   accountUpdateDefaultWalletId(input: $input) {
     errors {
@@ -1250,25 +1162,6 @@ query myUserId {
 query network {
   globals {
     network
-    __typename
-  }
-}
-
-query notificationSettings {
-  me {
-    id
-    defaultAccount {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
     __typename
   }
 }

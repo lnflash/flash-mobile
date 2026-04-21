@@ -54,9 +54,12 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
 
   const onConfirm = async () => {
     toggleActivityIndicator(true)
+    console.log("Cashout Initiate Input: ", { walletId, offerId })
     const res = await initiateCashout({ variables: { input: { walletId, offerId } } })
-    console.log("RESPONSE>>>>>>>>>>>>", res)
-    if (res.data?.initiateCashout.success) {
+    console.log("Cashout Initiate Response: ", res)
+    console.log("Cashout Initiate Response Error: ", res.data?.initiateCashout.errors)
+
+    if (res.data?.initiateCashout.journalId) {
       navigation.navigate("CashoutSuccess")
     } else {
       setErrorMsg(res.data?.initiateCashout.errors[0].message)
@@ -83,11 +86,14 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
           {LL.Cashout.valid({ time: moment(expiresAt).fromNow(true) })}
         </Text>
         <CashoutFromWallet usdBalance={usdBalance} />
-        <CashoutCard title={LL.Cashout.exchangeRate()} detail={`$1/J$${exchangeRate}`} />
+        <CashoutCard
+          title={LL.Cashout.exchangeRate()}
+          detail={`$1/J$${(exchangeRate / 100).toFixed(2)}`}
+        />
         <CashoutCard title={LL.Cashout.sendAmount()} detail={formattedSendAmount} />
         <CashoutCard
           title={LL.Cashout.receiveAmount()}
-          detail={`${formattedReceiveUsdAmount} (J$${receiveJmd})`}
+          detail={`${formattedReceiveUsdAmount} (J$${(receiveJmd / 100).toFixed(2)})`}
         />
         <CashoutCard title={LL.Cashout.fee()} detail={formattedFeeAmount} />
         {!!errorMsg && (

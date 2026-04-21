@@ -172,6 +172,7 @@ export const useAccountUpgrade = () => {
         bankInfo.bankName &&
         bankInfo.currency
       ) {
+        console.log(">>>>>>>>>>>>>>?????????", typeof bankInfo.accountNumber)
         bankAccount = {
           // accountNumber is a String in GraphQL (identifiers can exceed Int32)
           accountNumber: bankInfo.accountNumber,
@@ -210,7 +211,7 @@ export const useAccountUpgrade = () => {
       const { data } = await requestAccountUpgrade({
         variables: { input },
       })
-
+      console.log(">???????>>>>>>>>>??????", data?.businessAccountUpgradeRequest.errors)
       const upgradeResponse = data?.businessAccountUpgradeRequest
       const errors = upgradeResponse?.errors?.filter(Boolean) ?? []
 

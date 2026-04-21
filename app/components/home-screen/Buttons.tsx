@@ -68,7 +68,7 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
     })
   }
 
-  if (currentLevel === AccountLevel.Two) {
+  if (!(currentLevel === AccountLevel.Zero || currentLevel === AccountLevel.One)) {
     buttons.push({
       title: LL.Cashout.title(),
       target: "CashoutDetails",
