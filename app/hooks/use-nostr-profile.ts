@@ -80,7 +80,6 @@ const useNostrProfile = () => {
     try {
       const existingSigner = await getSigner()
       if (existingSigner) {
-        console.log("[saveNewNostrKey] key already exists, ensuring contact list")
         await ensureContactListExists(existingSigner)
         return
       }
@@ -164,20 +163,20 @@ const useNostrProfile = () => {
     try {
       const baseProfileContent = username
         ? {
-            name: username,
-            username: username,
-            flash_username: username,
-            lud16: lud16,
-            nip05: `${username}@${lnDomain}`,
-            ...(pictureUrl && { picture: pictureUrl }),
-            ...(bannerUrl && { banner: bannerUrl }),
-          }
+          name: username,
+          username: username,
+          flash_username: username,
+          lud16: lud16,
+          nip05: `${username}@${lnDomain}`,
+          ...(pictureUrl && { picture: pictureUrl }),
+          ...(bannerUrl && { banner: bannerUrl }),
+        }
         : {
-            name: "Flash User",
-            about: "Flash wallet user",
-            ...(pictureUrl && { picture: pictureUrl }),
-            ...(bannerUrl && { banner: bannerUrl }),
-          }
+          name: "Flash User",
+          about: "Flash wallet user",
+          ...(pictureUrl && { picture: pictureUrl }),
+          ...(bannerUrl && { banner: bannerUrl }),
+        }
 
       // Merge with any additional content passed in (e.g., from username screen)
       const profileContent = {
@@ -429,10 +428,9 @@ const useNostrProfile = () => {
     const coreRelays = ["wss://relay.flashapp.me", "wss://relay.islandbitcoin.com"]
     const coreSuccess = successfulRelays.some((relay) => coreRelays.includes(relay))
     console.log(
-      `\n🎯 Core relay status: ${
-        coreSuccess
-          ? "✅ At least one core relay succeeded"
-          : "⚠️ No core relays succeeded"
+      `\n🎯 Core relay status: ${coreSuccess
+        ? "✅ At least one core relay succeeded"
+        : "⚠️ No core relays succeeded"
       }`,
     )
 
