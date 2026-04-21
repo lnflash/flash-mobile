@@ -18,9 +18,12 @@ type VersionComponentNavigationProp = StackNavigationProp<
   "getStarted" | "settings"
 >
 
-// Tick cadence for the long-press progress animation.
-const PROGRESS_TICK_MS = 40
-const PROGRESS_INCREMENT = PROGRESS_TICK_MS / FEATURED_PROFILE.LONG_PRESS_DURATION_MS
+// Number of haptic pulses across the full hold (light "ticks" at each 1/N of the
+// duration, giving the user a sense of progress).
+const HAPTIC_PULSE_COUNT = 5
+
+// Reset animation duration when the user lifts their finger early.
+const RESET_ANIM_MS = 200
 
 export const VersionComponent = () => {
   const styles = useStyles()
@@ -31,9 +34,14 @@ export const VersionComponent = () => {
   const [secretMenuCounter, setSecretMenuCounter] = React.useState(0)
 
   // Long-press featured-profile entry
-  const progressInterval = React.useRef<NodeJS.Timeout | null>(null)
   const progressAnim = React.useRef(new Animated.Value(0)).current
   const [isPressing, setIsPressing] = React.useState(false)
+
+  // Track the last haptic-pulse bucket so we only fire each pulse once per hold.
+  const lastPulseBucket = React.useRef(-1)
+  // Track whether the current hold has already completed (to avoid firing the
+  // completion path twice if the animation and a late `onPressOut` race).
+  const hasCompleted = React.useRef(false)
 
   // Existing developer screen behavior
   React.useEffect(() => {
@@ -43,33 +51,22 @@ export const VersionComponent = () => {
     }
   }, [navigate, secretMenuCounter])
 
-  const readableVersion = DeviceInfo.getReadableVersion()
-
-  const handlePressIn = () => {
-    setIsPressing(true)
-    let progress = 0
-
-    progressInterval.current = setInterval(() => {
-      const prev = progress
-      progress += PROGRESS_INCREMENT
-
-      // Light haptic at each ~1/5 of the hold (5 pulses across the full duration).
-      if (Math.floor(progress * 5) > Math.floor(prev * 5)) {
+  // Drive haptic pulses and completion off the animation engine instead of a
+  // setInterval. This removes the manual tick loop (and with it the unmount
+  // leak) while keeping the progress-ring / haptic UX unchanged.
+  React.useEffect(() => {
+    const id = progressAnim.addListener(({ value }) => {
+      const bucket = Math.floor(value * HAPTIC_PULSE_COUNT)
+      if (bucket > lastPulseBucket.current && bucket < HAPTIC_PULSE_COUNT) {
+        lastPulseBucket.current = bucket
         ReactNativeHapticFeedback.trigger("impactLight", {
           enableVibrateFallback: true,
           ignoreAndroidSystemSettings: false,
         })
       }
 
-      Animated.timing(progressAnim, {
-        toValue: progress,
-        duration: PROGRESS_TICK_MS,
-        useNativeDriver: false,
-      }).start()
-
-      if (progress >= 1) {
-        clearInterval(progressInterval.current!)
-        progressInterval.current = null
+      if (value >= 1 && !hasCompleted.current) {
+        hasCompleted.current = true
         setIsPressing(false)
 
         ReactNativeHapticFeedback.trigger("notificationSuccess", {
@@ -81,23 +78,46 @@ export const VersionComponent = () => {
         navigate("FeaturedProfileView", { entryPoint: "long_press" })
 
         progressAnim.setValue(0)
+        lastPulseBucket.current = -1
       }
-    }, PROGRESS_TICK_MS)
+    })
+
+    return () => {
+      progressAnim.removeListener(id)
+      progressAnim.stopAnimation()
+    }
+  }, [progressAnim, navigate])
+
+  const readableVersion = DeviceInfo.getReadableVersion()
+
+  const handlePressIn = () => {
+    // Reset per-hold state.
+    lastPulseBucket.current = -1
+    hasCompleted.current = false
+    setIsPressing(true)
+
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: FEATURED_PROFILE.LONG_PRESS_DURATION_MS,
+      useNativeDriver: false,
+    }).start()
   }
 
   const handlePressOut = () => {
     setIsPressing(false)
 
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current)
-      progressInterval.current = null
-    }
+    // If the hold already completed, the listener above has already reset
+    // progressAnim to 0 and navigated away — nothing to do here.
+    if (hasCompleted.current) return
 
+    progressAnim.stopAnimation()
     Animated.timing(progressAnim, {
       toValue: 0,
-      duration: 200,
+      duration: RESET_ANIM_MS,
       useNativeDriver: false,
-    }).start()
+    }).start(() => {
+      lastPulseBucket.current = -1
+    })
   }
 
   return (

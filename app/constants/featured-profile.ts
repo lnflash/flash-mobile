@@ -4,17 +4,19 @@
  * Configuration for the in-app WebView flow that opens when a featured
  * Nostr profile is matched in chat search or via the long-press entry
  * on the version component.
+ *
+ * Chat-search matching happens at the pubkey level: when the user types
+ * either the NIP-05 (e.g. `satoshin@flashapp.me`) or a bare alias (e.g.
+ * `satoshin`, which the search bar auto-appends with the configured
+ * hostname), the existing NIP-05 resolver in `UserSearchBar` returns
+ * the pubkey, and `isFeaturedPubkey(pubkey)` catches it against
+ * `FEATURED_PROFILE.PUBKEY`. No alias list is needed on the client.
  */
 
 export const FEATURED_PROFILE = {
-  // Featured profile pubkey (hex)
+  // Featured profile pubkey (hex). This is the only identity field the
+  // client reads — NIP-05 strings are resolved externally.
   PUBKEY: 'fc8c4bbff8c314791e82fe928bc96e1ca88dfb1ffe9da3552b3587fe4d33e543',
-
-  // NIP-05 identifier for the featured profile
-  NIP05: 'satoshin@flashapp.me',
-
-  // Search aliases that should match (with or without the domain)
-  NIP05_ALIASES: ['satoshin', 'satoshi'],
 
   // Destination URL loaded in the WebView
   DESTINATION_URL: 'https://kotc.islandbitcoin.com/terminal/',
