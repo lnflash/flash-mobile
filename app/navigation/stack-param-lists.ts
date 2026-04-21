@@ -149,7 +149,18 @@ export type RootStackParamList = {
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
+  Contacts: undefined
   SignInViaQRCode: undefined
+  Nip29GroupChat: { groupId: string }
+  AccountType: undefined
+  PersonalInformation: undefined
+  BusinessInformation: undefined
+  BankInformation: undefined
+  Validation: {
+    phone: string
+    channel: PhoneCodeChannelType
+  }
+  AccountUpgradeSuccess: undefined
   BuySellBitcoin: undefined
   BuyBitcoin: undefined
   BuyBitcoinDetails: { paymentType: "card" | "bankTransfer" }

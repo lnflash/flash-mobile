@@ -81,6 +81,19 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
+mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
+  idDocumentUploadUrlGenerate(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    fileKey
+    uploadUrl
+    __typename
+  }
+}
+
 mutation InitiateCashout($input: InitiateCashoutInput!) {
   initiateCashout(input: $input) {
     errors {

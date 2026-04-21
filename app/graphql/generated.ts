@@ -506,11 +506,36 @@ export type GraphQlApplicationError = Error & {
   readonly path?: Maybe<ReadonlyArray<Maybe<Scalars["String"]["output"]>>>
 }
 
+export type IdDocumentUploadUrlGenerateInput = {
+  /** MIME type (image/jpeg, image/png, image/webp) */
+  readonly contentType: Scalars["String"]["input"]
+  /** Original filename */
+  readonly filename: Scalars["String"]["input"]
+}
+
+export type IdDocumentUploadUrlPayload = {
+  readonly __typename: "IdDocumentUploadUrlPayload"
+  readonly errors: ReadonlyArray<Error>
+  /** Storage key for the uploaded file (use to generate read URLs) */
+  readonly fileKey?: Maybe<Scalars["String"]["output"]>
+  /** Pre-signed URL for uploading the ID document directly to storage */
+  readonly uploadUrl?: Maybe<Scalars["String"]["output"]>
+}
+
 export type InitiateCashoutInput = {
   /** The id of the offer being executed. */
   readonly offerId: Scalars["ID"]["input"]
   readonly walletId: Scalars["WalletId"]["input"]
 }
+  readonly offerId: Scalars['ID']['input'];
+  readonly walletId: Scalars['WalletId']['input'];
+};
+
+export type InitiatedCashoutResponse = {
+  readonly __typename: 'InitiatedCashoutResponse';
+  readonly errors: ReadonlyArray<Error>;
+  readonly journalId?: Maybe<Scalars['ID']['output']>;
+};
 
 export type InitiationVia =
   | InitiationViaIntraLedger
@@ -790,6 +815,10 @@ export type MobileVersions = {
 export type Mutation = {
   readonly __typename: "Mutation"
   readonly accountDelete: AccountDeletePayload
+  readonly accountDisableNotificationCategory: AccountUpdateNotificationSettingsPayload
+  readonly accountDisableNotificationChannel: AccountUpdateNotificationSettingsPayload
+  readonly accountEnableNotificationCategory: AccountUpdateNotificationSettingsPayload
+  readonly accountEnableNotificationChannel: AccountUpdateNotificationSettingsPayload
   readonly accountUpdateDefaultWalletId: AccountUpdateDefaultWalletIdPayload
   readonly accountUpdateDisplayCurrency: AccountUpdateDisplayCurrencyPayload
   readonly businessAccountUpgradeRequest: AccountUpgradePayload
