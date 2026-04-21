@@ -5,7 +5,7 @@ import {
   getPublicKey,
   SimplePool,
 } from "nostr-tools"
-import { createContactListEvent, setPreferredRelay } from "@app/utils/nostr"
+import { createContactListEvent, ensureContactListExists, setPreferredRelay } from "@app/utils/nostr"
 import { getSigner, createSignerFromKey, clearSigner } from "@app/nostr/signer"
 import {
   publishEventToRelays,
@@ -77,6 +77,17 @@ const useNostrProfile = () => {
     progressCallback?: (message: string) => void,
     additionalContent?: any,
   ) => {
+    try {
+      const existingSigner = await getSigner()
+      if (existingSigner) {
+        console.log("[saveNewNostrKey] key already exists, ensuring contact list")
+        await ensureContactListExists(existingSigner)
+        return
+      }
+    } catch {
+      // No existing key — proceed with generation
+    }
+
     const username = dataAuthed?.me?.username || undefined
     let lud16
     if (username) lud16 = `${username}@${lnDomain}`
