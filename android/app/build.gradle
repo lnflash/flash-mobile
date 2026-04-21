@@ -95,8 +95,8 @@ android {
         applicationId "com.lnflash"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 72
-        versionName "0.5.1"
+        versionCode 75
+        versionName "0.5.2"
 
         // use google-service.dev.json if google-service.json is not exits
         def googleServicesFile = rootProject.file("app/google-services.json")
@@ -160,6 +160,7 @@ android {
 
     packaging {
         jniLibs {
+            useLegacyPackaging = false
             pickFirsts += ['**/libjsc.so']
         }
     }
@@ -173,9 +174,9 @@ dependencies {
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.0.0")
 
     implementation("androidx.core:core-splashscreen:1.0.0")
-    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
-    implementation 'com.facebook.fresco:animated-gif:2.6.0'
+    implementation 'com.facebook.fresco:animated-gif:3.4.0'
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
