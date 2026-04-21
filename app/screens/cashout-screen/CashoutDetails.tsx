@@ -61,12 +61,16 @@ const CashoutDetails = ({ navigation }: Props) => {
   const onNext = async () => {
     if (usdWallet) {
       toggleActivityIndicator(true)
+      console.log("Cashout Input: ", {
+        walletId: usdWallet.id,
+        amount: settlementSendAmount.amount,
+      })
       const res = await requestCashout({
         variables: {
           input: { walletId: usdWallet.id, amount: settlementSendAmount.amount },
         },
       })
-      console.log("Response: ", res.data?.requestCashout)
+      console.log("Cashout Response: ", res.data?.requestCashout)
       if (res.data?.requestCashout.offer) {
         navigation.navigate("CashoutConfirmation", {
           offer: res.data.requestCashout.offer,

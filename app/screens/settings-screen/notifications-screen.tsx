@@ -21,98 +21,98 @@ import { makeStyles, Switch, Text } from "@rneui/themed"
 
 import { Screen } from "../../components/screen"
 
-gql`
-  query notificationSettings {
-    me {
-      id
-      defaultAccount {
-        id
-        notificationSettings {
-          push {
-            enabled
-            disabledCategories
-          }
-        }
-      }
-    }
-  }
+// gql`
+//   query notificationSettings {
+//     me {
+//       id
+//       defaultAccount {
+//         id
+//         notificationSettings {
+//           push {
+//             enabled
+//             disabledCategories
+//           }
+//         }
+//       }
+//     }
+//   }
 
-  mutation accountEnableNotificationChannel(
-    $input: AccountEnableNotificationChannelInput!
-  ) {
-    accountEnableNotificationChannel(input: $input) {
-      errors {
-        message
-      }
-      account {
-        id
-        notificationSettings {
-          push {
-            enabled
-            disabledCategories
-          }
-        }
-      }
-    }
-  }
+//   mutation accountEnableNotificationChannel(
+//     $input: AccountEnableNotificationChannelInput!
+//   ) {
+//     accountEnableNotificationChannel(input: $input) {
+//       errors {
+//         message
+//       }
+//       account {
+//         id
+//         notificationSettings {
+//           push {
+//             enabled
+//             disabledCategories
+//           }
+//         }
+//       }
+//     }
+//   }
 
-  mutation accountDisableNotificationChannel(
-    $input: AccountDisableNotificationChannelInput!
-  ) {
-    accountDisableNotificationChannel(input: $input) {
-      errors {
-        message
-      }
-      account {
-        id
-        notificationSettings {
-          push {
-            enabled
-            disabledCategories
-          }
-        }
-      }
-    }
-  }
+//   mutation accountDisableNotificationChannel(
+//     $input: AccountDisableNotificationChannelInput!
+//   ) {
+//     accountDisableNotificationChannel(input: $input) {
+//       errors {
+//         message
+//       }
+//       account {
+//         id
+//         notificationSettings {
+//           push {
+//             enabled
+//             disabledCategories
+//           }
+//         }
+//       }
+//     }
+//   }
 
-  mutation accountEnableNotificationCategory(
-    $input: AccountEnableNotificationCategoryInput!
-  ) {
-    accountEnableNotificationCategory(input: $input) {
-      errors {
-        message
-      }
-      account {
-        id
-        notificationSettings {
-          push {
-            enabled
-            disabledCategories
-          }
-        }
-      }
-    }
-  }
+//   mutation accountEnableNotificationCategory(
+//     $input: AccountEnableNotificationCategoryInput!
+//   ) {
+//     accountEnableNotificationCategory(input: $input) {
+//       errors {
+//         message
+//       }
+//       account {
+//         id
+//         notificationSettings {
+//           push {
+//             enabled
+//             disabledCategories
+//           }
+//         }
+//       }
+//     }
+//   }
 
-  mutation accountDisableNotificationCategory(
-    $input: AccountDisableNotificationCategoryInput!
-  ) {
-    accountDisableNotificationCategory(input: $input) {
-      errors {
-        message
-      }
-      account {
-        id
-        notificationSettings {
-          push {
-            enabled
-            disabledCategories
-          }
-        }
-      }
-    }
-  }
-`
+//   mutation accountDisableNotificationCategory(
+//     $input: AccountDisableNotificationCategoryInput!
+//   ) {
+//     accountDisableNotificationCategory(input: $input) {
+//       errors {
+//         message
+//       }
+//       account {
+//         id
+//         notificationSettings {
+//           push {
+//             enabled
+//             disabledCategories
+//           }
+//         }
+//       }
+//     }
+//   }
+// `
 
 const NotificationCategories = {
   // Circles: "Circles",

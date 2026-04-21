@@ -94,6 +94,30 @@ mutation InitiateCashout($input: InitiateCashoutInput!) {
   }
 }
 
+mutation InitiateCashout($input: InitiateCashoutInput!) {
+  initiateCashout(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    journalId
+    __typename
+  }
+}
+
+mutation InitiateCashout($input: InitiateCashoutInput!) {
+  initiateCashout(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    journalId
+    __typename
+  }
+}
+
 mutation MerchantMapSuggest($input: MerchantMapSuggestInput!) {
   merchantMapSuggest(input: $input) {
     errors {
@@ -142,6 +166,51 @@ mutation RequestCashout($input: RequestCashoutInput!) {
   }
 }
 
+mutation RequestCashout($input: RequestCashoutInput!) {
+  requestCashout(input: $input) {
+    errors {
+      code
+      message
+      path
+      __typename
+    }
+    offer {
+      exchangeRate
+      expiresAt
+      flashFee
+      offerId
+      receiveJmd
+      receiveUsd
+      send
+      walletId
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation RequestCashout($input: RequestCashoutInput!) {
+  requestCashout(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    offer {
+      exchangeRate
+      expiresAt
+      flashFee
+      offerId
+      receiveJmd
+      receiveUsd
+      send
+      walletId
+      __typename
+    }
+    __typename
+  }
+}
+
 mutation accountDelete {
   accountDelete {
     errors {
@@ -149,94 +218,6 @@ mutation accountDelete {
       __typename
     }
     success
-    __typename
-  }
-}
-
-mutation accountDisableNotificationCategory($input: AccountDisableNotificationCategoryInput!) {
-  accountDisableNotificationCategory(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-mutation accountDisableNotificationChannel($input: AccountDisableNotificationChannelInput!) {
-  accountDisableNotificationChannel(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-mutation accountEnableNotificationCategory($input: AccountEnableNotificationCategoryInput!) {
-  accountEnableNotificationCategory(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-mutation accountEnableNotificationChannel($input: AccountEnableNotificationChannelInput!) {
-  accountEnableNotificationChannel(input: $input) {
-    errors {
-      message
-      __typename
-    }
-    account {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
     __typename
   }
 }
@@ -540,7 +521,9 @@ mutation onChainUsdPaymentSend($input: OnChainUsdPaymentSendInput!) {
   }
 }
 
-mutation onChainUsdPaymentSendAsBtcDenominated($input: OnChainUsdPaymentSendAsBtcDenominatedInput!) {
+mutation onChainUsdPaymentSendAsBtcDenominated(
+  $input: OnChainUsdPaymentSendAsBtcDenominatedInput!
+) {
   onChainUsdPaymentSendAsBtcDenominated(input: $input) {
     errors {
       message
@@ -1243,25 +1226,6 @@ query network {
   }
 }
 
-query notificationSettings {
-  me {
-    id
-    defaultAccount {
-      id
-      notificationSettings {
-        push {
-          enabled
-          disabledCategories
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
 query npubByUsername($username: Username!) {
   npubByUsername(username: $username) {
     npub
@@ -1277,14 +1241,22 @@ query onChainTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: Sat
   }
 }
 
-query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: FractionalCentAmount!) {
+query onChainUsdTxFee(
+  $walletId: WalletId!
+  $address: OnChainAddress!
+  $amount: FractionalCentAmount!
+) {
   onChainUsdTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount
     __typename
   }
 }
 
-query onChainUsdTxFeeAsBtcDenominated($walletId: WalletId!, $address: OnChainAddress!, $amount: SatAmount!) {
+query onChainUsdTxFeeAsBtcDenominated(
+  $walletId: WalletId!
+  $address: OnChainAddress!
+  $amount: SatAmount!
+) {
   onChainUsdTxFeeAsBtcDenominated(
     walletId: $walletId
     address: $address
@@ -1617,7 +1589,13 @@ query transactionDetails($input: TransactionDetailsInput!) {
   }
 }
 
-query transactionListForContact($username: Username!, $first: Int, $after: String, $last: Int, $before: String) {
+query transactionListForContact(
+  $username: Username!
+  $first: Int
+  $after: String
+  $last: Int
+  $before: String
+) {
   me {
     id
     contactByUsername(username: $username) {
@@ -1631,7 +1609,12 @@ query transactionListForContact($username: Username!, $first: Int, $after: Strin
   }
 }
 
-query transactionListForDefaultAccount($first: Int, $after: String, $last: Int, $before: String) {
+query transactionListForDefaultAccount(
+  $first: Int
+  $after: String
+  $last: Int
+  $before: String
+) {
   me {
     id
     defaultAccount {
@@ -1729,7 +1712,7 @@ subscription myLnUpdates {
 }
 
 subscription realtimePriceWs($currency: DisplayCurrency!) {
-  realtimePrice(input: {currency: $currency}) {
+  realtimePrice(input: { currency: $currency }) {
     errors {
       message
       __typename
