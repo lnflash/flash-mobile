@@ -128,6 +128,14 @@ import {
   Validation,
   Success,
 } from "@app/screens/account-upgrade-flow"
+import {
+  BankTransfer,
+  BuyBitcoin,
+  BuyBitcoinDetails,
+  BuyBitcoinSuccess,
+  BuySellBitcoin,
+  CardPayment,
+} from "@app/screens/buy-bitcoin-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -644,6 +652,23 @@ export const RootStack = () => {
         component={Success}
         options={{ headerShown: false }}
       />
+      <RootNavigator.Group
+        screenOptions={{
+          title: "",
+          headerShadowVisible: false,
+        }}
+      >
+        <RootNavigator.Screen name="BuySellBitcoin" component={BuySellBitcoin} />
+        <RootNavigator.Screen name="BuyBitcoin" component={BuyBitcoin} />
+        <RootNavigator.Screen name="BuyBitcoinDetails" component={BuyBitcoinDetails} />
+        <RootNavigator.Screen name="BankTransfer" component={BankTransfer} />
+        <RootNavigator.Screen name="CardPayment" component={CardPayment} />
+        <RootNavigator.Screen
+          name="BuyBitcoinSuccess"
+          component={BuyBitcoinSuccess}
+          options={{ headerShown: false }}
+        />
+      </RootNavigator.Group>
     </RootNavigator.Navigator>
   )
 }
@@ -746,7 +771,8 @@ export const PrimaryNavigator = () => {
           title: LL.HomeScreen.title(),
           tabBarAccessibilityLabel: LL.HomeScreen.title(),
           tabBarTestID: LL.HomeScreen.title(),
-          tabBarIcon: ({ focused, color }) => (focused ? <HomeActive color={color} /> : <HomeInactive color={color} />),
+          tabBarIcon: ({ focused, color }) =>
+            focused ? <HomeActive color={color} /> : <HomeInactive color={color} />,
         }}
       />
       {/* <Tab.Screen
@@ -790,7 +816,8 @@ export const PrimaryNavigator = () => {
           headerShown: false,
           tabBarAccessibilityLabel: LL.MapScreen.title(),
           tabBarTestID: LL.MapScreen.title(),
-          tabBarIcon: ({ focused, color }) => (focused ? <MapActive color={color} /> : <MapInactive color={color} />),
+          tabBarIcon: ({ focused, color }) =>
+            focused ? <MapActive color={color} /> : <MapInactive color={color} />,
         }}
       />
       <Tab.Screen
