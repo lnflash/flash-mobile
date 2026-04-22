@@ -161,6 +161,8 @@ export type RootStackParamList = {
     channel: PhoneCodeChannelType
   }
   AccountUpgradeSuccess: undefined
+  // Featured profile WebView entry
+  FeaturedProfileView: { entryPoint: 'search' | 'long_press' | 'profile' }
 }
 
 export type ChatStackParamList = {
