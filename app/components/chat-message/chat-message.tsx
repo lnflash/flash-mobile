@@ -4,11 +4,10 @@ import "react-native-get-random-values"
 import React, { useEffect, useRef } from "react"
 import { View, Text } from "react-native"
 import { makeStyles } from "@rneui/themed"
-import { MessageType } from "@flyerhq/react-native-chat-ui"
 
 type Props = {
   recipientId: `npub1${string}`
-  message: MessageType.Text
+  message: { id: string; author: { id: string }; text: string }
   nextMessage: number
   prevMessage: boolean
 }

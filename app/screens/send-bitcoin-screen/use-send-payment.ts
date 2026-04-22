@@ -26,11 +26,7 @@ import { getErrorMessages } from "@app/graphql/utils"
 import { PaymentDetail, SendPaymentMutation } from "./payment-details/index.types"
 
 // Breez SDK
-import {
-  payLightningBreez,
-  payOnchainBreez,
-  payLnurlBreez,
-} from "@app/utils/breez-sdk-liquid"
+import { payLightningBreez, payOnchainBreez, payLnurlBreez } from "@app/utils/breez-sdk"
 
 type UseSendPaymentResult = {
   loading: boolean
@@ -47,7 +43,7 @@ type UseSendPaymentResult = {
 export const useSendPayment = (
   sendPaymentMutation?: SendPaymentMutation | null,
   paymentDetail?: PaymentDetail<WalletCurrency>,
-  feeRateSatPerVbyte?: number,
+  selectedFeeType?: "fast" | "medium" | "slow",
 ): UseSendPaymentResult => {
   const { lnAddressHostname } = useAppConfig().appConfig.galoyInstance
 
@@ -95,17 +91,21 @@ export const useSendPayment = (
           setHasAttemptedSend(true)
 
           if (paymentDetail && paymentDetail.sendingWalletDescriptor.currency === "BTC") {
-            const { settlementAmount, memo, isSendingMax, destination, paymentType } =
-              paymentDetail
+            const { settlementAmount, memo, destination, paymentType } = paymentDetail
 
             try {
               if (paymentType === "lightning") {
                 console.log("Starting payLightningBreez")
-                const response = await payLightningBreez(destination)
+                const response = await payLightningBreez(
+                  destination,
+                  settlementAmount.amount,
+                )
                 console.log("Response payLightningBreez: ", response)
                 return {
-                  status: PaymentSendResult.Success,
-                  errorsMessage: undefined,
+                  status: response.success
+                    ? PaymentSendResult.Success
+                    : PaymentSendResult.Failure,
+                  errorsMessage: response.error,
                 }
               } else if (paymentType === "lnurl" || paymentType === "intraledger") {
                 console.log("Starting payLnurlBreez", memo)
@@ -128,13 +128,15 @@ export const useSendPayment = (
                 const response = await payOnchainBreez(
                   destination,
                   settlementAmount.amount,
-                  feeRateSatPerVbyte,
-                  isSendingMax,
+                  selectedFeeType || "fast",
                 )
                 console.log("Response payOnchainBreez: ", response)
+
                 return {
-                  status: PaymentSendResult.Success,
-                  errorsMessage: undefined,
+                  status: response.success
+                    ? PaymentSendResult.Success
+                    : PaymentSendResult.Failure,
+                  errorsMessage: response.error,
                 }
               } else {
                 return {
@@ -176,7 +178,7 @@ export const useSendPayment = (
     sendPaymentMutation,
     hasAttemptedSend,
     paymentDetail,
-    feeRateSatPerVbyte,
+    selectedFeeType,
     intraLedgerPaymentSend,
     intraLedgerUsdPaymentSend,
     lnInvoicePaymentSend,

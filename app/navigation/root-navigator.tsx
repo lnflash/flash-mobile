@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { CardStyleInterpolators, createStackNavigator } from "@react-navigation/stack"
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native"
 import * as React from "react"
 
 import {
@@ -11,7 +12,7 @@ import {
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
-import { ChatList } from "@app/screens/nip17-chat"
+import { ChatList } from "@app/screens/chat"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
@@ -67,6 +68,7 @@ import { SettingsScreen } from "../screens/settings-screen"
 import { LanguageScreen } from "../screens/settings-screen/language-screen"
 import { SecurityScreen } from "../screens/settings-screen/security-screen"
 import { TransactionDetailScreen } from "../screens/transaction-detail-screen"
+import { BreezTransactionDetailScreen } from "../screens/transaction-detail-screen/breez-transaction-detail-screen"
 import {
   ChatStackParamList,
   ContactStackParamList,
@@ -90,22 +92,19 @@ import {
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
-import { WelcomeFirstScreen } from "../screens/welcome-screen"
 import { ReconciliationReport } from "@app/screens/reports"
 import {
-  RefundConfirmation,
-  RefundDestination,
-  RefundTransactionsList,
-} from "@app/screens/refund-flow"
-import { Messages } from "@app/screens/nip17-chat/messages"
+  UnclaimedDepositsList,
+  UnclaimedDepositDetails,
+  RefundDeposit,
+} from "@app/screens/unclaimed-deposit-flow"
+import { Messages } from "@app/screens/chat/messages"
 import { View } from "react-native"
 import NotificationBadge from "./notification-badge"
 import EditNostrProfileScreen from "@app/screens/edit-nostr-profile/edit-nostr-profile"
 
 import HomeActive from "@app/assets/icons/home-active.svg"
 import HomeInactive from "@app/assets/icons/home-inactive.svg"
-import CardActive from "@app/assets/icons/card-active.svg"
-import CardInactive from "@app/assets/icons/card-inactive.svg"
 import MapActive from "@app/assets/icons/map-active.svg"
 import MapInactive from "@app/assets/icons/map-inactive.svg"
 import ScanQR from "@app/assets/icons/scan-qr.svg"
@@ -115,7 +114,20 @@ import {
   CashoutSuccess,
 } from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
-import ContactDetailsScreen from "@app/screens/nip17-chat/contactDetailsScreen"
+import ContactDetailsScreen from "@app/screens/chat/contactDetailsScreen"
+import { SupportGroupChatScreen } from "@app/screens/chat/GroupChat/SupportGroupChat"
+import Contacts from "@app/screens/chat/contacts"
+import MakeNostrPost from "@app/screens/social/post"
+import PostSuccess from "@app/screens/social/post-success"
+import IrisBrowser from "@app/screens/social/iris-browser"
+import {
+  PersonalInformation,
+  BusinessInformation,
+  BankInformation,
+  AccountType,
+  Validation,
+  Success,
+} from "@app/screens/account-upgrade-flow"
 import {
   BankTransfer,
   BuyBitcoin,
@@ -185,11 +197,6 @@ export const RootStack = () => {
         name="Welcome"
         component={Welcome}
         options={{ headerShown: false, animationEnabled: false }}
-      />
-      <RootNavigator.Screen
-        name="welcomeFirst"
-        component={WelcomeFirstScreen}
-        options={{ headerShown: false }}
       />
       <RootNavigator.Screen
         name="authenticationCheck"
@@ -346,6 +353,11 @@ export const RootStack = () => {
         }}
       />
       <RootNavigator.Screen
+        name="Contacts"
+        component={Contacts}
+        options={{ title: "Contacts" }}
+      />
+      <RootNavigator.Screen
         name="addressScreen"
         component={GaloyAddressScreen}
         options={() => ({
@@ -415,8 +427,15 @@ export const RootStack = () => {
         name="transactionDetail"
         component={TransactionDetailScreen}
         options={{
-          headerTitle: "",
-          headerLeft: () => null,
+          headerShown: false,
+          cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+        }}
+      />
+      <RootNavigator.Screen
+        name="breezTransactionDetail"
+        component={BreezTransactionDetailScreen}
+        options={{
+          headerShown: false,
           cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
         }}
       />
@@ -531,24 +550,39 @@ export const RootStack = () => {
         options={{ title: LL.TransactionScreen.transactionHistoryTitle() }}
       />
       <RootNavigator.Screen
+        name="makeNostrPost"
+        component={MakeNostrPost}
+        options={{ title: LL.Social.postTitle() }}
+      />
+      <RootNavigator.Screen
+        name="postSuccess"
+        component={PostSuccess}
+        options={{ title: LL.Social.postSuccessTitle(), headerShown: false }}
+      />
+      <RootNavigator.Screen
+        name="irisBrowser"
+        component={IrisBrowser}
+        options={{ title: LL.Social.socialFeedTitle(), headerShown: false }}
+      />
+      <RootNavigator.Screen
         name="USDTransactionHistory"
         component={USDTransactionHistory}
         options={{ title: LL.TransactionScreen.transactionHistoryTitle() }}
       />
       <RootNavigator.Screen
-        name="RefundTransactionList"
-        component={RefundTransactionsList}
+        name="UnclaimedDepositsList"
+        component={UnclaimedDepositsList}
         options={{ title: LL.RefundFlow.refundListTitle() }}
       />
       <RootNavigator.Screen
-        name="RefundDestination"
-        component={RefundDestination}
-        options={{ title: LL.RefundFlow.destinationTitle() }}
+        name="UnclaimedDepositDetails"
+        component={UnclaimedDepositDetails}
+        options={{ title: "Deposit Details" }}
       />
       <RootNavigator.Screen
-        name="RefundConfirmation"
-        component={RefundConfirmation}
-        options={{ title: LL.RefundFlow.confirmationTitle() }}
+        name="RefundDeposit"
+        component={RefundDeposit}
+        options={{ title: "Refund Deposit" }}
       />
       <RootNavigator.Screen
         name="Card"
@@ -582,6 +616,41 @@ export const RootStack = () => {
           headerStyle: { backgroundColor: "#000" },
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         }}
+      />
+      <RootNavigator.Screen
+        name="Nip29GroupChat"
+        component={SupportGroupChatScreen}
+        options={{ headerShown: false }}
+      />
+      <RootNavigator.Screen
+        name="AccountType"
+        component={AccountType}
+        options={{ title: LL.AccountUpgrade.accountType() }}
+      />
+      <RootNavigator.Screen
+        name="PersonalInformation"
+        component={PersonalInformation}
+        options={{ title: LL.AccountUpgrade.personalInfo() }}
+      />
+      <RootNavigator.Screen
+        name="BusinessInformation"
+        component={BusinessInformation}
+        options={{ title: LL.AccountUpgrade.businessInfo() }}
+      />
+      <RootNavigator.Screen
+        name="BankInformation"
+        component={BankInformation}
+        options={{ title: LL.AccountUpgrade.bankingInfo() }}
+      />
+      <RootNavigator.Screen
+        name="Validation"
+        component={Validation}
+        options={{ title: LL.AccountUpgrade.validation() }}
+      />
+      <RootNavigator.Screen
+        name="AccountUpgradeSuccess"
+        component={Success}
+        options={{ headerShown: false }}
       />
       <RootNavigator.Group
         screenOptions={{
@@ -627,7 +696,9 @@ export const ChatNavigator = () => {
         name="contactDetails"
         component={ContactDetailsScreen}
         options={{
-          headerShown: false, // Since we're using our own header in the component
+          headerShown: true,
+          title: "Contact Details",
+          headerBackTitleVisible: false,
         }}
       />
     </StackChats.Navigator>
@@ -700,7 +771,8 @@ export const PrimaryNavigator = () => {
           title: LL.HomeScreen.title(),
           tabBarAccessibilityLabel: LL.HomeScreen.title(),
           tabBarTestID: LL.HomeScreen.title(),
-          tabBarIcon: ({ focused }) => (focused ? <HomeActive /> : <HomeInactive />),
+          tabBarIcon: ({ focused, color }) =>
+            focused ? <HomeActive color={color} /> : <HomeInactive color={color} />,
         }}
       />
       {/* <Tab.Screen
@@ -720,16 +792,20 @@ export const PrimaryNavigator = () => {
         <Tab.Screen
           name="Chat"
           component={ChatNavigator}
-          options={{
+          options={({ route }) => ({
             headerShown: false,
             title: LL.ChatScreen.title(),
+            tabBarStyle:
+              getFocusedRouteNameFromRoute(route) === "messages"
+                ? { display: "none" }
+                : styles.bottomNavigatorStyle,
             tabBarIcon: ({ color }) => (
               <View>
                 <ChatIcon color={color} />
                 <NotificationBadge />
               </View>
             ),
-          }}
+          })}
         />
       ) : null}
       <Tab.Screen
@@ -740,7 +816,8 @@ export const PrimaryNavigator = () => {
           headerShown: false,
           tabBarAccessibilityLabel: LL.MapScreen.title(),
           tabBarTestID: LL.MapScreen.title(),
-          tabBarIcon: ({ focused }) => (focused ? <MapActive /> : <MapInactive />),
+          tabBarIcon: ({ focused, color }) =>
+            focused ? <MapActive color={color} /> : <MapInactive color={color} />,
         }}
       />
       <Tab.Screen

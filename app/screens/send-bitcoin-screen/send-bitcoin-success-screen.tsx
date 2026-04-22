@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react"
 import Rate from "react-native-rate"
-import { View, Alert } from "react-native"
+import { View, Alert, InteractionManager } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // hooks
@@ -24,10 +24,7 @@ import { SuggestionModal } from "./suggestion-modal"
 import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 
 // utils
-import { ratingOptions } from "@app/config"
 import { testProps } from "../../utils/testProps"
-import { logAppFeedback } from "@app/utils/analytics"
-import { setFeedbackModalShown } from "@app/graphql/client-only-query"
 import { DisplayCurrency, isNonZeroMoneyAmount } from "@app/types/amounts"
 
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinSuccess">
@@ -73,10 +70,10 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   //   })
   //   Rate.rate(ratingOptions, (success, errorMessage) => {
   //     if (success) {
-  //       crashlytics().log("User went to the review page")
+  //       getCrashlytics().log("User went to the review page")
   //     }
   //     if (errorMessage) {
-  //       crashlytics().recordError(new Error(errorMessage))
+  //       getCrashlytics().recordError(new Error(errorMessage))
   //     }
   //   })
   // }
@@ -105,7 +102,14 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
 
   let formattedPrimaryAmount = undefined
   let formattedSecondaryAmount = undefined
-  const { walletCurrency, unitOfAccountAmount } = route.params
+  const { walletCurrency, unitOfAccountAmount, onSuccessAddContact } = route.params
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      onSuccessAddContact?.()
+    })
+    return () => task.cancel()
+  }, [])
 
   if (isNonZeroMoneyAmount(unitOfAccountAmount)) {
     const isBtcDenominatedUsdWalletAmount =

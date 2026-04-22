@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { WalletAmount } from "@app/types/amounts"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import {
   WalletCurrency,
   useLnInvoiceFeeProbeMutation,
@@ -78,7 +78,7 @@ gql`
   query onChainUsdTxFee(
     $walletId: WalletId!
     $address: OnChainAddress!
-    $amount: CentAmount!
+    $amount: FractionalCentAmount!
   ) {
     onChainUsdTxFee(walletId: $walletId, address: $address, amount: $amount) {
       amount
@@ -147,7 +147,7 @@ const useFee = <T extends WalletCurrency>(getFeeFn?: GetFee<T> | null): FeeType 
         })
       } catch (err) {
         if (err instanceof Error) {
-          crashlytics().recordError(err)
+          getCrashlytics().recordError(err)
         }
         return setFee({
           status: "error",

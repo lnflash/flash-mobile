@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useState } from "react"
 import { Alert, Linking, TouchableOpacity, View } from "react-native"
 import { Icon, Text, makeStyles } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { useCameraDevice, useCameraPermission } from "react-native-vision-camera"
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native"
+import { useNavigation } from "@react-navigation/native"
 
 // utils
 import { LNURL_DOMAINS } from "@app/config"
@@ -31,7 +31,6 @@ import { ActionBtns, QRCamera } from "@app/components/scan"
 
 export const ScanningQRCodeScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const route = useRoute<RouteProp<RootStackParamList, "scanningQRCode">>()
   const styles = useStyles()
   const device = useCameraDevice("back", {
     physicalDevices: ["ultra-wide-angle-camera", "wide-angle-camera", "telephoto-camera"],
@@ -88,15 +87,7 @@ export const ScanningQRCodeScreen = () => {
 
         if (destination.valid) {
           setPending(false)
-          if (route.params && destination.validDestination.paymentType === "onchain") {
-            navigation.navigate("RefundConfirmation", {
-              swapAddress: route.params.swapAddress,
-              amount: route.params.amount,
-              destination: destination.validDestination.address,
-              fee: route.params.fee,
-              feeType: route.params.feeType,
-            })
-          } else if (destination.destinationDirection === DestinationDirection.Send) {
+          if (destination.destinationDirection === DestinationDirection.Send) {
             navigation.navigate("sendBitcoinDetails", {
               paymentDestination: destination,
             })
@@ -135,7 +126,7 @@ export const ScanningQRCodeScreen = () => {
         }
       } catch (err: unknown) {
         if (err instanceof Error) {
-          crashlytics().recordError(err)
+          getCrashlytics().recordError(err)
           Alert.alert(err.toString(), "", [
             {
               text: LL.common.ok(),

@@ -7,6 +7,7 @@ import {
   Wallet,
   WalletCurrency,
 } from "@app/graphql/generated"
+import type { Payment, DepositInfo } from "@breeztech/breez-sdk-spark-react-native"
 import { EarnSectionType } from "@app/screens/earns-screen/sections"
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
 import {
@@ -23,7 +24,6 @@ export type RootStackParamList = {
   getStarted: undefined
   UsernameSet?: { insideApp?: boolean }
   Welcome: undefined
-  welcomeFirst: undefined
   liteDeviceAccount: {
     appCheckToken: string
   }
@@ -58,7 +58,7 @@ export type RootStackParamList = {
   sendBitcoinConfirmation: {
     paymentDetail: PaymentDetail<WalletCurrency>
     flashUserAddress?: string
-    feeRateSatPerVbyte?: number
+    selectedFeeType?: "fast" | "medium" | "slow"
     invoiceAmount?: MoneyAmount<WalletCurrency>
   }
   conversionDetails: undefined
@@ -74,6 +74,7 @@ export type RootStackParamList = {
     unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
     walletCurrency: WalletCurrency
     invoiceAmount?: MoneyAmount<WalletCurrency>
+    onSuccessAddContact?: () => void
   }
   language: undefined
   currency: undefined
@@ -105,11 +106,15 @@ export type RootStackParamList = {
   }
   phoneFlow?: NavigatorScreenParams<PhoneValidationStackParamList>
   phoneRegistrationInitiate: undefined
+  makeNostrPost: undefined
+  postSuccess: { postContent: string; userNpub: string; event: Event }
+  irisBrowser: { initialUrl?: string } | undefined
   phoneRegistrationValidate: {
     phone: string
     channel: PhoneCodeChannelType
   }
   transactionDetail: { tx: TransactionFragment }
+  breezTransactionDetail: { payment: Payment }
   TransactionHistoryTabs?: { initialRouteName?: string } | undefined
   USDTransactionHistory: undefined
   BTCTransactionHistory: undefined
@@ -136,21 +141,26 @@ export type RootStackParamList = {
   BackupShowSeedPhrase: undefined
   ImportWallet: { insideApp?: boolean }
   ImportWalletOptions: { insideApp?: boolean } | undefined
-  RefundTransactionList: undefined
-  RefundDestination: { swapAddress: string; amount: number }
-  RefundConfirmation: {
-    swapAddress: string
-    amount: number
-    destination: string
-    fee: number
-    feeType: string
-  }
+  UnclaimedDepositsList: undefined
+  UnclaimedDepositDetails: { deposit: DepositInfo }
+  RefundDeposit: { deposit: DepositInfo }
   CashoutDetails: undefined
   CashoutConfirmation: { offer: CashoutOffer }
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
+  Contacts: undefined
   SignInViaQRCode: undefined
+  Nip29GroupChat: { groupId: string }
+  AccountType: undefined
+  PersonalInformation: undefined
+  BusinessInformation: undefined
+  BankInformation: undefined
+  Validation: {
+    phone: string
+    channel: PhoneCodeChannelType
+  }
+  AccountUpgradeSuccess: undefined
   BuySellBitcoin: undefined
   BuyBitcoin: undefined
   BuyBitcoinDetails: { paymentType: "card" | "bankTransfer" }
@@ -175,8 +185,8 @@ export type ChatStackParamList = {
   chatDetail: { chat: Chat; giftwraps: Event[] }
   sendBitcoinDestination: { username: string }
   transactionDetail: { txid: string }
-  messages: { userPrivateKey: string; groupId: string }
-  contactDetails: { contactPubkey: string; userPrivateKey: string }
+  messages: { groupId: string }
+  contactDetails: { contactPubkey: string }
 }
 
 export type ContactStackParamList = {

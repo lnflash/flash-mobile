@@ -6,7 +6,7 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { SettingsRow } from "../row"
 import { toBtcMoneyAmount } from "@app/types/amounts"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
-import { Alert, Image, Modal, Platform } from "react-native"
+import { Alert, Platform } from "react-native"
 import { useSettingsScreenQuery } from "@app/graphql/generated"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
 import { useLevel } from "@app/graphql/level-context"
@@ -15,7 +15,7 @@ import { useBreez } from "@app/hooks"
 import { useEffect, useState } from "react"
 import { AdvancedModeModal } from "@app/components/advanced-mode-modal"
 import * as Keychain from "react-native-keychain"
-import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk-liquid"
+import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk"
 
 export const AdvancedModeToggle: React.FC = () => {
   const { LL } = useI18nContext()

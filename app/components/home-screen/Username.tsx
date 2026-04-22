@@ -6,7 +6,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import Clipboard from "@react-native-clipboard/clipboard"
 
 // hooks
-import { useHomeAuthedQuery } from "@app/graphql/generated"
+import { useHideBalanceQuery, useHomeAuthedQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -23,6 +23,7 @@ const Username = () => {
   const { appConfig } = useAppConfig()
   const { LL } = useI18nContext()
 
+  const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
   const { data, loading } = useHomeAuthedQuery({
     skip: !isAuthed,
   })
@@ -33,7 +34,7 @@ const Username = () => {
 
   const label = isAuthed
     ? data?.me?.username
-      ? `Hello, ${data.me.username}`
+      ? `Hello, ${hideBalance ? "*****" : data.me.username}`
       : "Set username"
     : "Login"
 

@@ -1,11 +1,14 @@
 overwrite: true
 schema: "https://api.flashapp.me/graphql"
+# schema: "http://localhost:4002/graphql"
 # schema: "https://raw.githubusercontent.com/lnflash/flash/feature/merchant-map-suggest/src/graphql/public/schema.graphql"
 documents:
   - "app/**/*.ts"
   - "app/**/*.tsx"
   - "e2e/**/*.ts"
   - "app/graphql/local-schema.gql"
+  - "app/graphql/*.gql"
+  - "!app/graphql/generated.gql"
 generates:
   app/graphql/generated.ts:
     schema: "app/graphql/local-schema.gql"

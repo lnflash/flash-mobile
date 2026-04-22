@@ -36,7 +36,7 @@ export type Scalars = {
   EndpointUrl: { input: string; output: string; }
   /** Feedback shared with our user */
   Feedback: { input: string; output: string; }
-  /** (Positive) Cent amount (1/100 of a dollar) as a float */
+  /** Cent amount (1/100 of a dollar) as a float, can be positive or negative */
   FractionalCentAmount: { input: number; output: number; }
   /** Hex-encoded string of 32 bytes */
   Hex32Bytes: { input: string; output: string; }
@@ -198,6 +198,58 @@ export type AccountUpdateNotificationSettingsPayload = {
   readonly errors: ReadonlyArray<Error>;
 };
 
+export type AccountUpgradePayload = {
+  readonly __typename: 'AccountUpgradePayload';
+  readonly errors?: Maybe<ReadonlyArray<Maybe<Error>>>;
+  readonly id?: Maybe<Scalars['String']['output']>;
+  readonly status?: Maybe<Scalars['String']['output']>;
+};
+
+export type AccountUpgradeRequest = {
+  readonly __typename: 'AccountUpgradeRequest';
+  readonly address: Address;
+  readonly bankAccount?: Maybe<BankAccount>;
+  readonly currentLevel: AccountLevel;
+  readonly email?: Maybe<Scalars['String']['output']>;
+  readonly fullName: Scalars['String']['output'];
+  readonly idDocument: Scalars['Boolean']['output'];
+  /** ERPNext document name */
+  readonly name: Scalars['String']['output'];
+  readonly phoneNumber: Scalars['String']['output'];
+  readonly requestedLevel: AccountLevel;
+  /** Status of the upgrade request */
+  readonly status: Scalars['String']['output'];
+  readonly terminalsRequested: Scalars['Int']['output'];
+  readonly username: Scalars['String']['output'];
+};
+
+export type AccountUpgradeRequestPayload = {
+  readonly __typename: 'AccountUpgradeRequestPayload';
+  readonly errors?: Maybe<ReadonlyArray<Maybe<Error>>>;
+  readonly upgradeRequest?: Maybe<AccountUpgradeRequest>;
+};
+
+export type Address = {
+  readonly __typename: 'Address';
+  readonly city: Scalars['String']['output'];
+  readonly country: Scalars['String']['output'];
+  readonly line1: Scalars['String']['output'];
+  readonly line2?: Maybe<Scalars['String']['output']>;
+  readonly postalCode?: Maybe<Scalars['String']['output']>;
+  readonly state: Scalars['String']['output'];
+  readonly title: Scalars['String']['output'];
+};
+
+export type AddressInput = {
+  readonly city: Scalars['String']['input'];
+  readonly country: Scalars['String']['input'];
+  readonly line1: Scalars['String']['input'];
+  readonly line2?: InputMaybe<Scalars['String']['input']>;
+  readonly postalCode?: InputMaybe<Scalars['String']['input']>;
+  readonly state: Scalars['String']['input'];
+  readonly title: Scalars['String']['input'];
+};
+
 export type AuthTokenPayload = {
   readonly __typename: 'AuthTokenPayload';
   readonly authToken?: Maybe<Scalars['AuthToken']['output']>;
@@ -210,7 +262,7 @@ export type BtcWallet = Wallet & {
   readonly __typename: 'BTCWallet';
   readonly accountId: Scalars['ID']['output'];
   /** A balance stored in BTC. */
-  readonly balance: Scalars['SignedAmount']['output'];
+  readonly balance: Scalars['FractionalCentAmount']['output'];
   readonly id: Scalars['ID']['output'];
   readonly lnurlp?: Maybe<Scalars['Lnurl']['output']>;
   /** An unconfirmed incoming onchain balance. */
@@ -240,10 +292,41 @@ export type BtcWalletTransactionsByAddressArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type Bank = {
+  readonly __typename: 'Bank';
+  readonly name: Scalars['String']['output'];
+};
+
+export type BankAccount = {
+  readonly __typename: 'BankAccount';
+  readonly accountNumber: Scalars['Int']['output'];
+  readonly accountType: Scalars['String']['output'];
+  readonly bankBranch: Scalars['String']['output'];
+  readonly bankName: Scalars['String']['output'];
+  readonly currency: Scalars['String']['output'];
+};
+
+export type BankAccountInput = {
+  readonly accountNumber: Scalars['Int']['input'];
+  readonly accountType: Scalars['String']['input'];
+  readonly bankBranch: Scalars['String']['input'];
+  readonly bankName: Scalars['String']['input'];
+  readonly currency: Scalars['String']['input'];
+};
+
 export type BuildInformation = {
   readonly __typename: 'BuildInformation';
   readonly commitHash?: Maybe<Scalars['String']['output']>;
   readonly helmRevision?: Maybe<Scalars['Int']['output']>;
+};
+
+export type BusinessAccountUpgradeRequestInput = {
+  readonly address: AddressInput;
+  readonly bankAccount?: InputMaybe<BankAccountInput>;
+  readonly fullName: Scalars['String']['input'];
+  readonly idDocument?: InputMaybe<Scalars['String']['input']>;
+  readonly level: AccountLevel;
+  readonly terminalsRequested?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type CallbackEndpoint = {
@@ -444,10 +527,32 @@ export type GraphQlApplicationError = Error & {
   readonly path?: Maybe<ReadonlyArray<Maybe<Scalars['String']['output']>>>;
 };
 
+export type IdDocumentUploadUrlGenerateInput = {
+  /** MIME type (image/jpeg, image/png, image/webp) */
+  readonly contentType: Scalars['String']['input'];
+  /** Original filename */
+  readonly filename: Scalars['String']['input'];
+};
+
+export type IdDocumentUploadUrlPayload = {
+  readonly __typename: 'IdDocumentUploadUrlPayload';
+  readonly errors: ReadonlyArray<Error>;
+  /** Storage key for the uploaded file (use to generate read URLs) */
+  readonly fileKey?: Maybe<Scalars['String']['output']>;
+  /** Pre-signed URL for uploading the ID document directly to storage */
+  readonly uploadUrl?: Maybe<Scalars['String']['output']>;
+};
+
 export type InitiateCashoutInput = {
   /** The id of the offer being executed. */
   readonly offerId: Scalars['ID']['input'];
   readonly walletId: Scalars['WalletId']['input'];
+};
+
+export type InitiatedCashoutResponse = {
+  readonly __typename: 'InitiatedCashoutResponse';
+  readonly errors: ReadonlyArray<Error>;
+  readonly journalId?: Maybe<Scalars['ID']['output']>;
 };
 
 export type InitiationVia = InitiationViaIntraLedger | InitiationViaLn | InitiationViaOnChain;
@@ -730,17 +835,19 @@ export type Mutation = {
   readonly accountEnableNotificationChannel: AccountUpdateNotificationSettingsPayload;
   readonly accountUpdateDefaultWalletId: AccountUpdateDefaultWalletIdPayload;
   readonly accountUpdateDisplayCurrency: AccountUpdateDisplayCurrencyPayload;
+  readonly businessAccountUpgradeRequest: AccountUpgradePayload;
   readonly callbackEndpointAdd: CallbackEndpointAddPayload;
   readonly callbackEndpointDelete: SuccessPayload;
   readonly captchaCreateChallenge: CaptchaCreateChallengePayload;
   readonly captchaRequestAuthCode: SuccessPayload;
   readonly deviceNotificationTokenCreate: SuccessPayload;
   readonly feedbackSubmit: SuccessPayload;
+  readonly idDocumentUploadUrlGenerate: IdDocumentUploadUrlPayload;
   /**
    * Start the Cashout process;
    * User sends USD to Flash via Ibex and receives USD or JMD to bank account.
    */
-  readonly initiateCashout: SuccessPayload;
+  readonly initiateCashout: InitiatedCashoutResponse;
   /**
    * Actions a payment which is internal to the ledger e.g. it does
    * not use onchain/lightning. Returns payment status (success,
@@ -881,6 +988,11 @@ export type MutationAccountUpdateDisplayCurrencyArgs = {
 };
 
 
+export type MutationBusinessAccountUpgradeRequestArgs = {
+  input: BusinessAccountUpgradeRequestInput;
+};
+
+
 export type MutationCallbackEndpointAddArgs = {
   input: CallbackEndpointAddInput;
 };
@@ -903,6 +1015,11 @@ export type MutationDeviceNotificationTokenCreateArgs = {
 
 export type MutationFeedbackSubmitArgs = {
   input: FeedbackSubmitInput;
+};
+
+
+export type MutationIdDocumentUploadUrlGenerateArgs = {
+  input: IdDocumentUploadUrlGenerateInput;
 };
 
 
@@ -1199,7 +1316,7 @@ export type OnChainUsdPaymentSendInput = {
 
 export type OnChainUsdTxFee = {
   readonly __typename: 'OnChainUsdTxFee';
-  readonly amount: Scalars['CentAmount']['output'];
+  readonly amount: Scalars['FractionalCentAmount']['output'];
 };
 
 export type OneDayAccountLimit = AccountLimit & {
@@ -1348,6 +1465,7 @@ export type Query = {
   readonly hiddenBalanceToolTip: Scalars['Boolean']['output'];
   readonly hideBalance: Scalars['Boolean']['output'];
   readonly isFlashNpub?: Maybe<IsFlashNpubPayload>;
+  readonly latestAccountUpgradeRequest: AccountUpgradeRequestPayload;
   readonly lnInvoicePaymentStatus: LnInvoicePaymentStatusPayload;
   readonly me?: Maybe<User>;
   readonly mobileVersions?: Maybe<ReadonlyArray<Maybe<MobileVersions>>>;
@@ -1360,6 +1478,8 @@ export type Query = {
   readonly quizQuestions?: Maybe<ReadonlyArray<Maybe<QuizQuestion>>>;
   /** Returns 1 Sat and 1 Usd Cent price for the given currency */
   readonly realtimePrice: RealtimePrice;
+  readonly supportedBanks: ReadonlyArray<Bank>;
+  readonly transactionDetails: TransactionDetailsPayload;
   /** @deprecated will be migrated to AccountDefaultWalletId */
   readonly userDefaultWalletId: Scalars['WalletId']['output'];
   readonly usernameAvailable?: Maybe<Scalars['Boolean']['output']>;
@@ -1407,7 +1527,7 @@ export type QueryOnChainTxFeeArgs = {
 
 export type QueryOnChainUsdTxFeeArgs = {
   address: Scalars['OnChainAddress']['input'];
-  amount: Scalars['CentAmount']['input'];
+  amount: Scalars['FractionalCentAmount']['input'];
   speed?: InputMaybe<PayoutSpeed>;
   walletId: Scalars['WalletId']['input'];
 };
@@ -1423,6 +1543,11 @@ export type QueryOnChainUsdTxFeeAsBtcDenominatedArgs = {
 
 export type QueryRealtimePriceArgs = {
   currency?: InputMaybe<Scalars['DisplayCurrency']['input']>;
+};
+
+
+export type QueryTransactionDetailsArgs = {
+  input: TransactionDetailsInput;
 };
 
 
@@ -1595,6 +1720,60 @@ export type TransactionConnection = {
   readonly pageInfo: PageInfo;
 };
 
+export type TransactionDetails = {
+  readonly __typename: 'TransactionDetails';
+  /** Account ID associated with the transaction */
+  readonly accountId?: Maybe<Scalars['String']['output']>;
+  /** Bitcoin address for onchain transactions */
+  readonly address?: Maybe<Scalars['String']['output']>;
+  /** Transaction amount */
+  readonly amount?: Maybe<Scalars['Float']['output']>;
+  /** Number of confirmations for onchain transactions */
+  readonly confirmations?: Maybe<Scalars['Int']['output']>;
+  /** Transaction creation timestamp */
+  readonly createdAt?: Maybe<Scalars['String']['output']>;
+  /** Transaction currency */
+  readonly currency?: Maybe<Scalars['String']['output']>;
+  /** Transaction fee */
+  readonly fee?: Maybe<Scalars['Float']['output']>;
+  /** Transaction ID */
+  readonly id: Scalars['String']['output'];
+  /** Lightning invoice (bolt11) */
+  readonly invoice?: Maybe<Scalars['String']['output']>;
+  /** Transaction memo/description */
+  readonly memo?: Maybe<Scalars['String']['output']>;
+  /** Lightning payment hash */
+  readonly paymentHash?: Maybe<Scalars['String']['output']>;
+  /** Lightning payment preimage */
+  readonly paymentPreimage?: Maybe<Scalars['String']['output']>;
+  /** Transaction status */
+  readonly status?: Maybe<Scalars['String']['output']>;
+  /** Bitcoin transaction ID for onchain transactions */
+  readonly txid?: Maybe<Scalars['String']['output']>;
+  /** Transaction type (lightning/onchain) */
+  readonly type?: Maybe<Scalars['String']['output']>;
+  /** Transaction last update timestamp */
+  readonly updatedAt?: Maybe<Scalars['String']['output']>;
+  /** Output index for onchain transactions */
+  readonly vout?: Maybe<Scalars['Int']['output']>;
+};
+
+export type TransactionDetailsError = {
+  readonly __typename: 'TransactionDetailsError';
+  readonly message: Scalars['String']['output'];
+};
+
+export type TransactionDetailsInput = {
+  /** Transaction ID to fetch details for */
+  readonly transactionId: Scalars['String']['input'];
+};
+
+export type TransactionDetailsPayload = {
+  readonly __typename: 'TransactionDetailsPayload';
+  readonly errors: ReadonlyArray<TransactionDetailsError>;
+  readonly transactionDetails?: Maybe<TransactionDetails>;
+};
+
 /** An edge in a connection. */
 export type TransactionEdge = {
   readonly __typename: 'TransactionEdge';
@@ -1638,7 +1817,7 @@ export type UpgradePayload = {
 export type UsdWallet = Wallet & {
   readonly __typename: 'UsdWallet';
   readonly accountId: Scalars['ID']['output'];
-  readonly balance: Scalars['SignedAmount']['output'];
+  readonly balance: Scalars['FractionalCentAmount']['output'];
   readonly id: Scalars['ID']['output'];
   readonly lnurlp?: Maybe<Scalars['Lnurl']['output']>;
   /** An unconfirmed incoming onchain balance. */
@@ -1896,7 +2075,7 @@ export type UserUpdateUsernamePayload = {
 /** A generic wallet which stores value in one of our supported currencies. */
 export type Wallet = {
   readonly accountId: Scalars['ID']['output'];
-  readonly balance: Scalars['SignedAmount']['output'];
+  readonly balance: Scalars['FractionalCentAmount']['output'];
   readonly id: Scalars['ID']['output'];
   readonly lnurlp?: Maybe<Scalars['Lnurl']['output']>;
   readonly pendingIncomingBalance: Scalars['SignedAmount']['output'];
@@ -2126,6 +2305,20 @@ export type UserUpdateNpubMutationVariables = Exact<{
 
 export type UserUpdateNpubMutation = { readonly __typename: 'Mutation', readonly userUpdateNpub: { readonly __typename: 'UserUpdateNpubPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null }>, readonly user?: { readonly __typename: 'User', readonly id: string, readonly npub?: string | null } | null } };
 
+export type BusinessAccountUpgradeRequestMutationVariables = Exact<{
+  input: BusinessAccountUpgradeRequestInput;
+}>;
+
+
+export type BusinessAccountUpgradeRequestMutation = { readonly __typename: 'Mutation', readonly businessAccountUpgradeRequest: { readonly __typename: 'AccountUpgradePayload', readonly id?: string | null, readonly status?: string | null, readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null } | null> | null } };
+
+export type IdDocumentUploadUrlGenerateMutationVariables = Exact<{
+  input: IdDocumentUploadUrlGenerateInput;
+}>;
+
+
+export type IdDocumentUploadUrlGenerateMutation = { readonly __typename: 'Mutation', readonly idDocumentUploadUrlGenerate: { readonly __typename: 'IdDocumentUploadUrlPayload', readonly fileKey?: string | null, readonly uploadUrl?: string | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
+
 export type AuthQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2150,11 +2343,6 @@ export type TransactionListForDefaultAccountQueryVariables = Exact<{
 
 
 export type TransactionListForDefaultAccountQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly transactions?: { readonly __typename: 'TransactionConnection', readonly pageInfo: { readonly __typename: 'PageInfo', readonly hasNextPage: boolean, readonly hasPreviousPage: boolean, readonly startCursor?: string | null, readonly endCursor?: string | null }, readonly edges?: ReadonlyArray<{ readonly __typename: 'TransactionEdge', readonly cursor: string, readonly node: { readonly __typename: 'Transaction', readonly id: string, readonly status: TxStatus, readonly direction: TxDirection, readonly memo?: string | null, readonly createdAt: number, readonly settlementAmount: number, readonly settlementFee: number, readonly settlementDisplayFee: string, readonly settlementCurrency: WalletCurrency, readonly settlementDisplayAmount: string, readonly settlementDisplayCurrency: string, readonly settlementPrice: { readonly __typename: 'PriceOfOneSettlementMinorUnitInDisplayMinorUnit', readonly base: number, readonly offset: number, readonly currencyUnit: string, readonly formattedAmount: string }, readonly initiationVia: { readonly __typename: 'InitiationViaIntraLedger', readonly counterPartyWalletId?: string | null, readonly counterPartyUsername?: string | null } | { readonly __typename: 'InitiationViaLn', readonly paymentHash: string } | { readonly __typename: 'InitiationViaOnChain', readonly address: string }, readonly settlementVia: { readonly __typename: 'SettlementViaIntraLedger', readonly counterPartyWalletId?: string | null, readonly counterPartyUsername?: string | null } | { readonly __typename: 'SettlementViaLn', readonly paymentSecret?: string | null } | { readonly __typename: 'SettlementViaOnChain', readonly transactionHash?: string | null } } }> | null } | null } } | null };
-
-export type BalanceHeaderQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type BalanceHeaderQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly wallets: ReadonlyArray<{ readonly __typename: 'BTCWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency } | { readonly __typename: 'UsdWallet', readonly id: string, readonly balance: number, readonly walletCurrency: WalletCurrency }> } } | null };
 
 export type SetDefaultAccountModalQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2227,12 +2415,36 @@ export type RealtimePriceUnauthedQueryVariables = Exact<{
 
 export type RealtimePriceUnauthedQuery = { readonly __typename: 'Query', readonly realtimePrice: { readonly __typename: 'RealtimePrice', readonly timestamp: number, readonly denominatorCurrency: string, readonly btcSatPrice: { readonly __typename: 'PriceOfOneSatInMinorUnit', readonly base: number, readonly offset: number }, readonly usdCentPrice: { readonly __typename: 'PriceOfOneUsdCentInMinorUnit', readonly base: number, readonly offset: number } } };
 
+export type NpubByUsernameQueryVariables = Exact<{
+  username: Scalars['Username']['input'];
+}>;
+
+
+export type NpubByUsernameQuery = { readonly __typename: 'Query', readonly npubByUsername?: { readonly __typename: 'npubByUsername', readonly npub?: string | null, readonly username?: string | null } | null };
+
+export type LatestAccountUpgradeRequestQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type LatestAccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly latestAccountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string } | null> | null, readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly currentLevel: AccountLevel, readonly fullName: string, readonly terminalsRequested: number, readonly status: string, readonly requestedLevel: AccountLevel, readonly phoneNumber: string, readonly email?: string | null, readonly idDocument: boolean, readonly address: { readonly __typename: 'Address', readonly city: string, readonly country: string, readonly line1: string, readonly line2?: string | null, readonly postalCode?: string | null, readonly state: string, readonly title: string }, readonly bankAccount?: { readonly __typename: 'BankAccount', readonly accountNumber: number, readonly accountType: string, readonly bankBranch: string, readonly bankName: string, readonly currency: string } | null } | null } };
+
+export type SupportedBanksQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SupportedBanksQuery = { readonly __typename: 'Query', readonly supportedBanks: ReadonlyArray<{ readonly __typename: 'Bank', readonly name: string }> };
+
 export type RealtimePriceWsSubscriptionVariables = Exact<{
   currency: Scalars['DisplayCurrency']['input'];
 }>;
 
 
 export type RealtimePriceWsSubscription = { readonly __typename: 'Subscription', readonly realtimePrice: { readonly __typename: 'RealtimePricePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }>, readonly realtimePrice?: { readonly __typename: 'RealtimePrice', readonly timestamp: number, readonly denominatorCurrency: string, readonly btcSatPrice: { readonly __typename: 'PriceOfOneSatInMinorUnit', readonly base: number, readonly offset: number }, readonly usdCentPrice: { readonly __typename: 'PriceOfOneUsdCentInMinorUnit', readonly base: number, readonly offset: number } } | null } };
+
+export type TransactionDetailsQueryVariables = Exact<{
+  input: TransactionDetailsInput;
+}>;
+
+
+export type TransactionDetailsQuery = { readonly __typename: 'Query', readonly transactionDetails: { readonly __typename: 'TransactionDetailsPayload', readonly errors: ReadonlyArray<{ readonly __typename: 'TransactionDetailsError', readonly message: string }>, readonly transactionDetails?: { readonly __typename: 'TransactionDetails', readonly id: string, readonly accountId?: string | null, readonly amount?: number | null, readonly currency?: string | null, readonly status?: string | null, readonly type?: string | null, readonly createdAt?: string | null, readonly updatedAt?: string | null, readonly invoice?: string | null, readonly paymentHash?: string | null, readonly paymentPreimage?: string | null, readonly memo?: string | null, readonly address?: string | null, readonly txid?: string | null, readonly vout?: number | null, readonly confirmations?: number | null, readonly fee?: number | null } | null } };
 
 export type NetworkQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2299,7 +2511,7 @@ export type OnChainTxFeeQuery = { readonly __typename: 'Query', readonly onChain
 export type OnChainUsdTxFeeQueryVariables = Exact<{
   walletId: Scalars['WalletId']['input'];
   address: Scalars['OnChainAddress']['input'];
-  amount: Scalars['CentAmount']['input'];
+  amount: Scalars['FractionalCentAmount']['input'];
 }>;
 
 
@@ -3716,6 +3928,82 @@ export function useUserUpdateNpubMutation(baseOptions?: Apollo.MutationHookOptio
 export type UserUpdateNpubMutationHookResult = ReturnType<typeof useUserUpdateNpubMutation>;
 export type UserUpdateNpubMutationResult = Apollo.MutationResult<UserUpdateNpubMutation>;
 export type UserUpdateNpubMutationOptions = Apollo.BaseMutationOptions<UserUpdateNpubMutation, UserUpdateNpubMutationVariables>;
+export const BusinessAccountUpgradeRequestDocument = gql`
+    mutation businessAccountUpgradeRequest($input: BusinessAccountUpgradeRequestInput!) {
+  businessAccountUpgradeRequest(input: $input) {
+    errors {
+      message
+      code
+    }
+    id
+    status
+  }
+}
+    `;
+export type BusinessAccountUpgradeRequestMutationFn = Apollo.MutationFunction<BusinessAccountUpgradeRequestMutation, BusinessAccountUpgradeRequestMutationVariables>;
+
+/**
+ * __useBusinessAccountUpgradeRequestMutation__
+ *
+ * To run a mutation, you first call `useBusinessAccountUpgradeRequestMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useBusinessAccountUpgradeRequestMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [businessAccountUpgradeRequestMutation, { data, loading, error }] = useBusinessAccountUpgradeRequestMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useBusinessAccountUpgradeRequestMutation(baseOptions?: Apollo.MutationHookOptions<BusinessAccountUpgradeRequestMutation, BusinessAccountUpgradeRequestMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<BusinessAccountUpgradeRequestMutation, BusinessAccountUpgradeRequestMutationVariables>(BusinessAccountUpgradeRequestDocument, options);
+      }
+export type BusinessAccountUpgradeRequestMutationHookResult = ReturnType<typeof useBusinessAccountUpgradeRequestMutation>;
+export type BusinessAccountUpgradeRequestMutationResult = Apollo.MutationResult<BusinessAccountUpgradeRequestMutation>;
+export type BusinessAccountUpgradeRequestMutationOptions = Apollo.BaseMutationOptions<BusinessAccountUpgradeRequestMutation, BusinessAccountUpgradeRequestMutationVariables>;
+export const IdDocumentUploadUrlGenerateDocument = gql`
+    mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
+  idDocumentUploadUrlGenerate(input: $input) {
+    errors {
+      code
+      message
+    }
+    fileKey
+    uploadUrl
+  }
+}
+    `;
+export type IdDocumentUploadUrlGenerateMutationFn = Apollo.MutationFunction<IdDocumentUploadUrlGenerateMutation, IdDocumentUploadUrlGenerateMutationVariables>;
+
+/**
+ * __useIdDocumentUploadUrlGenerateMutation__
+ *
+ * To run a mutation, you first call `useIdDocumentUploadUrlGenerateMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useIdDocumentUploadUrlGenerateMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [idDocumentUploadUrlGenerateMutation, { data, loading, error }] = useIdDocumentUploadUrlGenerateMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useIdDocumentUploadUrlGenerateMutation(baseOptions?: Apollo.MutationHookOptions<IdDocumentUploadUrlGenerateMutation, IdDocumentUploadUrlGenerateMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<IdDocumentUploadUrlGenerateMutation, IdDocumentUploadUrlGenerateMutationVariables>(IdDocumentUploadUrlGenerateDocument, options);
+      }
+export type IdDocumentUploadUrlGenerateMutationHookResult = ReturnType<typeof useIdDocumentUploadUrlGenerateMutation>;
+export type IdDocumentUploadUrlGenerateMutationResult = Apollo.MutationResult<IdDocumentUploadUrlGenerateMutation>;
+export type IdDocumentUploadUrlGenerateMutationOptions = Apollo.BaseMutationOptions<IdDocumentUploadUrlGenerateMutation, IdDocumentUploadUrlGenerateMutationVariables>;
 export const AuthDocument = gql`
     query auth {
   me {
@@ -3897,48 +4185,6 @@ export function useTransactionListForDefaultAccountLazyQuery(baseOptions?: Apoll
 export type TransactionListForDefaultAccountQueryHookResult = ReturnType<typeof useTransactionListForDefaultAccountQuery>;
 export type TransactionListForDefaultAccountLazyQueryHookResult = ReturnType<typeof useTransactionListForDefaultAccountLazyQuery>;
 export type TransactionListForDefaultAccountQueryResult = Apollo.QueryResult<TransactionListForDefaultAccountQuery, TransactionListForDefaultAccountQueryVariables>;
-export const BalanceHeaderDocument = gql`
-    query balanceHeader {
-  me {
-    id
-    defaultAccount {
-      id
-      wallets {
-        id
-        balance
-        walletCurrency
-      }
-    }
-  }
-}
-    `;
-
-/**
- * __useBalanceHeaderQuery__
- *
- * To run a query within a React component, call `useBalanceHeaderQuery` and pass it any options that fit your needs.
- * When your component renders, `useBalanceHeaderQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useBalanceHeaderQuery({
- *   variables: {
- *   },
- * });
- */
-export function useBalanceHeaderQuery(baseOptions?: Apollo.QueryHookOptions<BalanceHeaderQuery, BalanceHeaderQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<BalanceHeaderQuery, BalanceHeaderQueryVariables>(BalanceHeaderDocument, options);
-      }
-export function useBalanceHeaderLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<BalanceHeaderQuery, BalanceHeaderQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<BalanceHeaderQuery, BalanceHeaderQueryVariables>(BalanceHeaderDocument, options);
-        }
-export type BalanceHeaderQueryHookResult = ReturnType<typeof useBalanceHeaderQuery>;
-export type BalanceHeaderLazyQueryHookResult = ReturnType<typeof useBalanceHeaderLazyQuery>;
-export type BalanceHeaderQueryResult = Apollo.QueryResult<BalanceHeaderQuery, BalanceHeaderQueryVariables>;
 export const SetDefaultAccountModalDocument = gql`
     query setDefaultAccountModal {
   me {
@@ -4496,6 +4742,139 @@ export function useRealtimePriceUnauthedLazyQuery(baseOptions?: Apollo.LazyQuery
 export type RealtimePriceUnauthedQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedQuery>;
 export type RealtimePriceUnauthedLazyQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedLazyQuery>;
 export type RealtimePriceUnauthedQueryResult = Apollo.QueryResult<RealtimePriceUnauthedQuery, RealtimePriceUnauthedQueryVariables>;
+export const NpubByUsernameDocument = gql`
+    query npubByUsername($username: Username!) {
+  npubByUsername(username: $username) {
+    npub
+    username
+  }
+}
+    `;
+
+/**
+ * __useNpubByUsernameQuery__
+ *
+ * To run a query within a React component, call `useNpubByUsernameQuery` and pass it any options that fit your needs.
+ * When your component renders, `useNpubByUsernameQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useNpubByUsernameQuery({
+ *   variables: {
+ *      username: // value for 'username'
+ *   },
+ * });
+ */
+export function useNpubByUsernameQuery(baseOptions: Apollo.QueryHookOptions<NpubByUsernameQuery, NpubByUsernameQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<NpubByUsernameQuery, NpubByUsernameQueryVariables>(NpubByUsernameDocument, options);
+      }
+export function useNpubByUsernameLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<NpubByUsernameQuery, NpubByUsernameQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<NpubByUsernameQuery, NpubByUsernameQueryVariables>(NpubByUsernameDocument, options);
+        }
+export type NpubByUsernameQueryHookResult = ReturnType<typeof useNpubByUsernameQuery>;
+export type NpubByUsernameLazyQueryHookResult = ReturnType<typeof useNpubByUsernameLazyQuery>;
+export type NpubByUsernameQueryResult = Apollo.QueryResult<NpubByUsernameQuery, NpubByUsernameQueryVariables>;
+export const LatestAccountUpgradeRequestDocument = gql`
+    query LatestAccountUpgradeRequest {
+  latestAccountUpgradeRequest {
+    errors {
+      code
+      message
+    }
+    upgradeRequest {
+      address {
+        city
+        country
+        line1
+        line2
+        postalCode
+        state
+        title
+      }
+      bankAccount {
+        accountNumber
+        accountType
+        bankBranch
+        bankName
+        currency
+      }
+      currentLevel
+      fullName
+      terminalsRequested
+      status
+      requestedLevel
+      phoneNumber
+      email
+      idDocument
+    }
+  }
+}
+    `;
+
+/**
+ * __useLatestAccountUpgradeRequestQuery__
+ *
+ * To run a query within a React component, call `useLatestAccountUpgradeRequestQuery` and pass it any options that fit your needs.
+ * When your component renders, `useLatestAccountUpgradeRequestQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useLatestAccountUpgradeRequestQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useLatestAccountUpgradeRequestQuery(baseOptions?: Apollo.QueryHookOptions<LatestAccountUpgradeRequestQuery, LatestAccountUpgradeRequestQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<LatestAccountUpgradeRequestQuery, LatestAccountUpgradeRequestQueryVariables>(LatestAccountUpgradeRequestDocument, options);
+      }
+export function useLatestAccountUpgradeRequestLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<LatestAccountUpgradeRequestQuery, LatestAccountUpgradeRequestQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<LatestAccountUpgradeRequestQuery, LatestAccountUpgradeRequestQueryVariables>(LatestAccountUpgradeRequestDocument, options);
+        }
+export type LatestAccountUpgradeRequestQueryHookResult = ReturnType<typeof useLatestAccountUpgradeRequestQuery>;
+export type LatestAccountUpgradeRequestLazyQueryHookResult = ReturnType<typeof useLatestAccountUpgradeRequestLazyQuery>;
+export type LatestAccountUpgradeRequestQueryResult = Apollo.QueryResult<LatestAccountUpgradeRequestQuery, LatestAccountUpgradeRequestQueryVariables>;
+export const SupportedBanksDocument = gql`
+    query SupportedBanks {
+  supportedBanks {
+    name
+  }
+}
+    `;
+
+/**
+ * __useSupportedBanksQuery__
+ *
+ * To run a query within a React component, call `useSupportedBanksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSupportedBanksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSupportedBanksQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useSupportedBanksQuery(baseOptions?: Apollo.QueryHookOptions<SupportedBanksQuery, SupportedBanksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SupportedBanksQuery, SupportedBanksQueryVariables>(SupportedBanksDocument, options);
+      }
+export function useSupportedBanksLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SupportedBanksQuery, SupportedBanksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SupportedBanksQuery, SupportedBanksQueryVariables>(SupportedBanksDocument, options);
+        }
+export type SupportedBanksQueryHookResult = ReturnType<typeof useSupportedBanksQuery>;
+export type SupportedBanksLazyQueryHookResult = ReturnType<typeof useSupportedBanksLazyQuery>;
+export type SupportedBanksQueryResult = Apollo.QueryResult<SupportedBanksQuery, SupportedBanksQueryVariables>;
 export const RealtimePriceWsDocument = gql`
     subscription realtimePriceWs($currency: DisplayCurrency!) {
   realtimePrice(input: {currency: $currency}) {
@@ -4540,6 +4919,62 @@ export function useRealtimePriceWsSubscription(baseOptions: Apollo.SubscriptionH
       }
 export type RealtimePriceWsSubscriptionHookResult = ReturnType<typeof useRealtimePriceWsSubscription>;
 export type RealtimePriceWsSubscriptionResult = Apollo.SubscriptionResult<RealtimePriceWsSubscription>;
+export const TransactionDetailsDocument = gql`
+    query transactionDetails($input: TransactionDetailsInput!) {
+  transactionDetails(input: $input) {
+    errors {
+      message
+    }
+    transactionDetails {
+      id
+      accountId
+      amount
+      currency
+      status
+      type
+      createdAt
+      updatedAt
+      invoice
+      paymentHash
+      paymentPreimage
+      memo
+      address
+      txid
+      vout
+      confirmations
+      fee
+    }
+  }
+}
+    `;
+
+/**
+ * __useTransactionDetailsQuery__
+ *
+ * To run a query within a React component, call `useTransactionDetailsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTransactionDetailsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTransactionDetailsQuery({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useTransactionDetailsQuery(baseOptions: Apollo.QueryHookOptions<TransactionDetailsQuery, TransactionDetailsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<TransactionDetailsQuery, TransactionDetailsQueryVariables>(TransactionDetailsDocument, options);
+      }
+export function useTransactionDetailsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<TransactionDetailsQuery, TransactionDetailsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<TransactionDetailsQuery, TransactionDetailsQueryVariables>(TransactionDetailsDocument, options);
+        }
+export type TransactionDetailsQueryHookResult = ReturnType<typeof useTransactionDetailsQuery>;
+export type TransactionDetailsLazyQueryHookResult = ReturnType<typeof useTransactionDetailsLazyQuery>;
+export type TransactionDetailsQueryResult = Apollo.QueryResult<TransactionDetailsQuery, TransactionDetailsQueryVariables>;
 export const NetworkDocument = gql`
     query network {
   globals {
@@ -4911,7 +5346,7 @@ export type OnChainTxFeeQueryHookResult = ReturnType<typeof useOnChainTxFeeQuery
 export type OnChainTxFeeLazyQueryHookResult = ReturnType<typeof useOnChainTxFeeLazyQuery>;
 export type OnChainTxFeeQueryResult = Apollo.QueryResult<OnChainTxFeeQuery, OnChainTxFeeQueryVariables>;
 export const OnChainUsdTxFeeDocument = gql`
-    query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: CentAmount!) {
+    query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: FractionalCentAmount!) {
   onChainUsdTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount
   }

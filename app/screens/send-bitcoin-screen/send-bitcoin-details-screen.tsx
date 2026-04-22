@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react"
 import { View, Alert } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 
 // components
 import { PrimaryBtn } from "@app/components/buttons"
@@ -42,13 +42,12 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { PaymentDetail } from "./payment-details/index.types"
 import { Satoshis } from "lnurl-pay/dist/types/types"
-import { RecommendedFees } from "@breeztech/react-native-breez-sdk-liquid"
 
 // utils
 import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { requestInvoice, utils } from "lnurl-pay"
-import { fetchBreezFee, fetchRecommendedFees } from "@app/utils/breez-sdk-liquid"
+import { fetchBreezFee } from "@app/utils/breez-sdk"
 
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 
@@ -68,14 +67,11 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const { paymentDestination, flashUserAddress, isFromFlashcard, invoiceAmount } =
     route.params
 
-  const [recommendedFees, setRecommendedFees] = useState<RecommendedFees>()
   const [isLoadingLnurl, setIsLoadingLnurl] = useState(false)
   const [paymentDetail, setPaymentDetail] = useState<PaymentDetail<WalletCurrency>>()
   const [asyncErrorMessage, setAsyncErrorMessage] = useState("")
-  const [selectedFee, setSelectedFee] = useState<number>()
-  const [selectedFeeType, setSelectedFeeType] = useState<string>()
+  const [selectedFeeType, setSelectedFeeType] = useState<"fast" | "medium" | "slow">()
   const [isProcessing, setIsProcessing] = useState(false)
-
   const { data } = useSendBitcoinDetailsScreenQuery({
     fetchPolicy: "cache-first",
     returnPartialData: true,
@@ -141,24 +137,6 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     zeroDisplayAmount,
   ])
 
-  useEffect(() => {
-    if (
-      paymentDetail &&
-      paymentDetail.sendingWalletDescriptor.currency === "BTC" &&
-      paymentDetail.paymentType === "onchain" &&
-      !recommendedFees
-    ) {
-      fetchBreezRecommendedFees()
-    }
-  }, [paymentDetail?.sendingWalletDescriptor, paymentDetail?.paymentType])
-
-  const fetchBreezRecommendedFees = async () => {
-    toggleActivityIndicator(true)
-    const recommendedFees = await fetchRecommendedFees()
-    setRecommendedFees(recommendedFees)
-    toggleActivityIndicator(false)
-  }
-
   const fetchSendingFee = async (pd: PaymentDetail<WalletCurrency>) => {
     if (pd) {
       if (pd?.sendingWalletDescriptor.currency === "BTC") {
@@ -166,8 +144,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           pd?.paymentType,
           !!flashUserAddress ? flashUserAddress : pd?.destination,
           pd?.settlementAmount.amount,
-          selectedFee, // feeRateSatPerVbyte
-          pd.isSendingMax,
+          selectedFeeType,
         )
         if (fee === null && err) {
           const error = err?.message || err
@@ -175,6 +152,18 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
             ? `${error} (amount + fee)`
             : error
           setAsyncErrorMessage(errMsg)
+          return false
+        }
+        if (_convertMoneyAmount && pd.settlementAmount.amount + fee > btcWallet.balance) {
+          const amount = formatDisplayAndWalletAmount({
+            displayAmount: _convertMoneyAmount(btcBalanceMoneyAmount, DisplayCurrency),
+            walletAmount: btcBalanceMoneyAmount,
+          })
+          setAsyncErrorMessage(
+            LL.SendBitcoinScreen.amountExceed({
+              balance: amount,
+            }) + "(amount + fee)",
+          )
           return false
         }
       } else {
@@ -220,7 +209,9 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const handleCriticalError = useCallback(
     (error: any, context: string) => {
       console.error(`Critical error in ${context}:`, error)
-      crashlytics().recordError(error instanceof Error ? error : new Error(String(error)))
+      getCrashlytics().recordError(
+        error instanceof Error ? error : new Error(String(error)),
+      )
 
       // Show user-friendly error and offer to reload
       Alert.alert(
@@ -251,10 +242,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     (paymentDetail?.sendPaymentMutation ||
       (paymentDetail?.paymentType === "lnurl" && paymentDetail?.unitOfAccountAmount)) &&
     (async () => {
-      // Prevent multiple simultaneous executions
-      if (isProcessing) {
-        return
-      }
+      if (isProcessing) return
 
       try {
         setIsProcessing(true)
@@ -329,7 +317,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           } catch (error) {
             setIsLoadingLnurl(false)
             if (error instanceof Error) {
-              crashlytics().recordError(error)
+              getCrashlytics().recordError(error)
               if (error.message.includes("timed out")) {
                 setAsyncErrorMessage(
                   "Request timed out. Please check your connection and try again.",
@@ -353,7 +341,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           navigation.navigate("sendBitcoinConfirmation", {
             paymentDetail: paymentDetailForConfirmation,
             flashUserAddress,
-            feeRateSatPerVbyte: selectedFee,
+            selectedFeeType: selectedFeeType,
             invoiceAmount,
           })
         }
@@ -365,11 +353,6 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         setIsLoadingLnurl(false)
       }
     })
-
-  const onSelectFee = (type: string, value?: number) => {
-    setSelectedFeeType(type)
-    setSelectedFee(value)
-  }
 
   const amountStatus = isValidAmount({
     paymentDetail,
@@ -387,7 +370,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     isLoadingLnurl ||
     (paymentDetail?.sendingWalletDescriptor.currency === "BTC" &&
       paymentDetail.paymentType === "onchain" &&
-      !selectedFee)
+      !selectedFeeType)
 
   if (paymentDetail) {
     return (
@@ -408,21 +391,19 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           paymentDetail={paymentDetail}
         />
         <DetailAmountNote
-          selectedFee={selectedFee}
+          selectedFeeType={selectedFeeType}
           usdWallet={usdWallet}
           paymentDetail={paymentDetail}
           setPaymentDetail={setPaymentDetail}
           setAsyncErrorMessage={setAsyncErrorMessage}
-          isFromFlashcard={isFromFlashcard}
           invoiceAmount={invoiceAmount}
         />
         {paymentDetail.sendingWalletDescriptor.currency === "BTC" &&
           paymentDetail.paymentType === "onchain" && (
             <Fees
               wrapperStyle={{ marginTop: 0 }}
-              recommendedFees={recommendedFees}
               selectedFeeType={selectedFeeType}
-              onSelectFee={onSelectFee}
+              onSelectFee={setSelectedFeeType}
             />
           )}
         <SendBitcoinDetailsExtraInfo

@@ -25,9 +25,9 @@ export const resolveIntraledgerDestination = async ({
   myWalletIds,
 }: ResolveIntraledgerDestinationParams): Promise<ParseDestinationResult> => {
   const { handle } = parsedIntraledgerDestination
-
+  console.log("Intraledger destination is", handle, parsedIntraledgerDestination)
   const handleWalletId = await getUserWalletId(handle, accountDefaultWalletQuery)
-
+  console.log("HANDLE WALLET ID IS", handleWalletId)
   if (!handleWalletId) {
     return {
       valid: false,
@@ -89,5 +89,6 @@ const getUserWalletId = async (
   accountDefaultWalletQuery: AccountDefaultWalletLazyQueryHookResult[0],
 ) => {
   const { data } = await accountDefaultWalletQuery({ variables: { username } })
+  console.log("USER FETCHED is", data)
   return data?.accountDefaultWallet?.id
 }

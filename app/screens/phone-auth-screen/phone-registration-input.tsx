@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ActivityIndicator, View } from "react-native"
+import { ActivityIndicator, TouchableOpacity, View } from "react-native"
 import CountryPicker, {
   CountryCode,
   DARK_THEME,
@@ -23,7 +23,6 @@ import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-button"
 import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 import { PhoneCodeChannelType } from "@app/graphql/generated"
-import { TouchableOpacity } from "react-native-gesture-handler"
 
 const DEFAULT_COUNTRY_CODE = "SV"
 const PLACEHOLDER_PHONE_NUMBER = "123-456-7890"

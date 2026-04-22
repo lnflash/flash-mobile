@@ -2,9 +2,10 @@ import React from "react"
 import moment from "moment"
 import styled from "styled-components/native"
 import { Text, useTheme } from "@rneui/themed"
-import { TransactionFragment, useHideBalanceQuery } from "@app/graphql/generated"
+import { useHideBalanceQuery } from "@app/graphql/generated"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { PaymentType, PaymentStatus } from "@breeztech/breez-sdk-spark-react-native"
 
 // components
 import HideableArea from "../hideable-area/hideable-area"
@@ -16,12 +17,22 @@ import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 // assets
 import ArrowUp from "@app/assets/icons/arrow-up.svg"
 import ArrowDown from "@app/assets/icons/arrow-down.svg"
+import Icon from "react-native-vector-icons/Ionicons"
 
 // utils
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 
+// types
+import {
+  UnifiedTransaction,
+  isBreezTransaction,
+  isIbexTransaction,
+  getTransactionTimestamp,
+  getTransactionMemo,
+} from "@app/types/transactions"
+
 type Props = {
-  tx: TransactionFragment
+  tx: UnifiedTransaction
 }
 
 const label = {
@@ -38,26 +49,40 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
 
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 
+  // Extract common fields based on transaction source
+  const isReceive = isBreezTransaction(tx)
+    ? tx.payment.paymentType === PaymentType.Receive
+    : tx.transaction.direction === "RECEIVE"
+
+  const direction = isReceive ? "RECEIVE" : "SEND"
+
+  const isPending = isBreezTransaction(tx)
+    ? tx.payment.status === PaymentStatus.Pending
+    : tx.transaction.status === "PENDING"
+
+  const memo = getTransactionMemo(tx)
+
+  const timestamp = getTransactionTimestamp(tx)
+
+  // Calculate display amounts
   let primaryAmount = null
   let secondaryAmount = null
-  if (tx.settlementCurrency === "BTC") {
-    const moneyAmount = toBtcMoneyAmount(tx.settlementAmount ?? NaN)
+
+  if (isBreezTransaction(tx)) {
+    // Breez transaction - always BTC
+    const moneyAmount = toBtcMoneyAmount(Number(tx.payment.amount))
     primaryAmount = moneyAmountToDisplayCurrencyString({
       moneyAmount,
       isApproximate: true,
     })
-
-    secondaryAmount = formatMoneyAmount({
+    secondaryAmount = formatMoneyAmount({ moneyAmount })
+  } else {
+    // Ibex transaction - always USD
+    const amount = tx.transaction.settlementAmount * 100
+    const moneyAmount = toUsdMoneyAmount(amount ?? NaN)
+    primaryAmount = moneyAmountToDisplayCurrencyString({
       moneyAmount,
     })
-  } else {
-    const amount = tx.settlementAmount * 100
-    const moneyAmount = toUsdMoneyAmount(amount ?? NaN)
-
-    primaryAmount = moneyAmountToDisplayCurrencyString({
-      moneyAmount: moneyAmount,
-    })
-
     if (convertMoneyAmount) {
       secondaryAmount = formatMoneyAmount({
         moneyAmount: convertMoneyAmount(moneyAmount, "BTC"),
@@ -65,12 +90,21 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
     }
   }
 
-  const onPress = () => navigation.navigate("transactionDetail", { tx })
+  // Get currency label - Breez is BTC, Ibex is USD
+  const currencyLabel = isBreezTransaction(tx) ? "BTC" : "USD"
+
+  const onPress = () => {
+    if (isIbexTransaction(tx)) {
+      navigation.navigate("transactionDetail", { tx: tx.transaction })
+    } else {
+      navigation.navigate("breezTransactionDetail", { payment: tx.payment })
+    }
+  }
 
   return (
     <Wrapper onPress={onPress} activeOpacity={0.5}>
       <IconWrapper borderColor={colors.border01}>
-        {tx.direction === "RECEIVE" ? (
+        {isReceive ? (
           <ArrowDown color={colors.accent02} />
         ) : (
           <ArrowUp color={colors.black} />
@@ -78,23 +112,28 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
       </IconWrapper>
       <ColumnWrapper>
         <RowWrapper>
-          <Text type="bl">{`${label[tx.direction]} ${tx.settlementCurrency}`}</Text>
-          {tx.status === "PENDING" && (
+          <Text type="bl">{`${label[direction]} ${currencyLabel}`}</Text>
+          {isPending && (
             <Text type="caption" color={colors._orange}>
               {`  (Pending)`}
             </Text>
           )}
         </RowWrapper>
+        {memo && (
+          <RowWrapper style={{ marginVertical: 2 }}>
+            <Icon name="document-text" size={14} color={colors.primary} />
+            <Text type="caption" color={colors.primary} numberOfLines={1}>
+              {memo}
+            </Text>
+          </RowWrapper>
+        )}
         <Text type="caption" color={colors.text02}>
-          {moment(moment.unix(tx.createdAt)).fromNow()}
+          {moment(moment.unix(timestamp)).fromNow()}
         </Text>
       </ColumnWrapper>
       <HideableArea isContentVisible={hideBalance}>
         <ColumnWrapper style={{ alignItems: "flex-end" }}>
-          <Text
-            type="bl"
-            color={tx.direction === "RECEIVE" ? colors.accent02 : colors.black}
-          >
+          <Text type="bl" color={isReceive ? colors.accent02 : colors.black}>
             {primaryAmount}
           </Text>
           <Text type="caption" color={colors.text02}>

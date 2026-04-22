@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react"
 import { View } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { StackScreenProps } from "@react-navigation/stack"
 import ReactNativeHapticFeedback from "react-native-haptic-feedback"
 
@@ -33,6 +33,7 @@ import {
   ZeroUsdMoneyAmount,
 } from "@app/types/amounts"
 import {
+  useNpubByUsernameLazyQuery,
   useSendBitcoinConfirmationScreenQuery,
   WalletCurrency,
 } from "@app/graphql/generated"
@@ -42,12 +43,16 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // utils
 import { logPaymentAttempt, logPaymentResult } from "@app/utils/analytics"
 import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { useChatContext } from "../chat/chatContext"
+import { addToContactList } from "@app/utils/nostr"
+import { getSigner } from "@app/nostr/signer"
+import { nip19 } from "nostr-tools"
+import { useRequireContactList } from "./require-contact-list-modal"
 
 type Props = {} & StackScreenProps<RootStackParamList, "sendBitcoinConfirmation">
 
 const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { paymentDetail, flashUserAddress, feeRateSatPerVbyte, invoiceAmount } =
-    route.params
+  const { paymentDetail, flashUserAddress, selectedFeeType, invoiceAmount } = route.params
   const {
     paymentType,
     sendingWalletDescriptor,
@@ -70,6 +75,10 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   const [paymentError, setPaymentError] = useState<string>()
   const [invalidAmountErr, setInvalidAmountErr] = useState<string>()
   const [fee, setFee] = useState<FeeType>({ status: "loading" })
+  const { contactsEvent } = useChatContext()
+  const [npubByUsernameQuery] = useNpubByUsernameLazyQuery()
+  const { promptForContactList, ModalComponent: ConfirmOverwriteModal } =
+    useRequireContactList()
 
   const { data } = useSendBitcoinConfirmationScreenQuery({ skip: !useIsAuthed() })
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
@@ -78,7 +87,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     loading: sendPaymentLoading,
     sendPayment,
     hasAttemptedSend,
-  } = useSendPayment(sendPaymentMutation, paymentDetail, feeRateSatPerVbyte)
+  } = useSendPayment(sendPaymentMutation, paymentDetail, selectedFeeType)
 
   useEffect(() => {
     setWalletText()
@@ -150,6 +159,45 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     }
   }
 
+  const autoAddContact = useCallback(async () => {
+    if (!flashUserAddress) return
+
+    try {
+      const flashUsername = flashUserAddress.split("@")[0]
+      const queryResult = await npubByUsernameQuery({
+        variables: { username: flashUsername },
+      })
+
+      const destinationNpub = queryResult.data?.npubByUsername?.npub
+      if (!destinationNpub) {
+        console.error("[autoAddContact] no npub found for username:", flashUsername)
+        return
+      }
+
+      let signer
+      try {
+        signer = await getSigner()
+      } catch {
+        return
+      }
+
+      const hexPubkey = nip19.decode(destinationNpub).data as string
+      await addToContactList(
+        signer,
+        hexPubkey,
+        promptForContactList,
+        contactsEvent,
+      )
+    } catch (err) {
+      console.warn("Failed to auto-add flash user to contacts", err)
+    }
+  }, [
+    flashUserAddress,
+    npubByUsernameQuery,
+    promptForContactList,
+    contactsEvent,
+  ])
+
   const handleSendPayment = useCallback(async () => {
     if (sendPayment && sendingWalletDescriptor?.currency) {
       console.log("Starting animation and sending payment")
@@ -174,6 +222,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
               sendingWalletDescriptor.currency === "USD" && invoiceAmount
                 ? invoiceAmount
                 : paymentDetail.unitOfAccountAmount,
+            onSuccessAddContact: autoAddContact,
           })
           ReactNativeHapticFeedback.trigger("notificationSuccess", {
             ignoreAndroidSystemSettings: true,
@@ -191,7 +240,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         }
       } catch (err) {
         if (err instanceof Error) {
-          crashlytics().recordError(err)
+          getCrashlytics().recordError(err)
           setPaymentError(err.message || err.toString())
         }
       }
@@ -211,7 +260,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         paymentDetail={paymentDetail}
         btcWalletText={btcWalletText}
         usdWalletText={usdWalletText}
-        feeRateSatPerVbyte={feeRateSatPerVbyte}
+        selectedFeeType={selectedFeeType}
         fee={fee}
         setFee={setFee}
         setPaymentError={setPaymentError}
@@ -224,10 +273,11 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         <PrimaryBtn
           loading={sendPaymentLoading}
           label={LL.SendBitcoinConfirmationScreen.title()}
-          disabled={!isValidAmount || hasAttemptedSend}
+          disabled={!isValidAmount || hasAttemptedSend || !!paymentError}
           onPress={handleSendPayment}
         />
       </View>
+      <ConfirmOverwriteModal />
     </Screen>
   )
 }

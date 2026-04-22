@@ -14,7 +14,7 @@ import { DisplayCurrency } from "@app/types/amounts"
 
 // utils
 import { testProps } from "@app/utils/testProps"
-import { fetchBreezFee } from "@app/utils/breez-sdk-liquid"
+import { fetchBreezFee } from "@app/utils/breez-sdk"
 
 // assets
 import Cash from "@app/assets/icons/cash.svg"
@@ -25,7 +25,7 @@ type Props = {
   paymentDetail: PaymentDetail<WalletCurrency>
   btcWalletText: string
   usdWalletText: string
-  feeRateSatPerVbyte?: number
+  selectedFeeType?: "fast" | "medium" | "slow"
   fee: FeeType
   setFee: (fee: FeeType) => void
   setPaymentError: (val: string) => void
@@ -36,7 +36,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
   paymentDetail,
   btcWalletText,
   usdWalletText,
-  feeRateSatPerVbyte,
+  selectedFeeType,
   fee,
   setFee,
   setPaymentError,
@@ -49,13 +49,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
 
   useEffect(() => {
     getSendingFee()
-  }, [
-    getLightningFee,
-    paymentType,
-    sendingWalletDescriptor.currency,
-    settlementAmount.amount,
-    feeRateSatPerVbyte,
-  ])
+  }, [getLightningFee])
 
   const getSendingFee = async () => {
     setFee({ status: "loading", amount: undefined })
@@ -66,8 +60,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
         paymentType,
         !!flashUserAddress ? flashUserAddress : paymentDetail.destination,
         settlementAmount.amount,
-        feeRateSatPerVbyte,
-        paymentDetail.isSendingMax,
+        selectedFeeType,
       )
       if (fee !== null) {
         setFee({
@@ -84,7 +77,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
           status: "error",
           amount: undefined,
         })
-        setPaymentError(`Failed to fetch the fee. ${err} (amount + fee)`)
+        setPaymentError(`${err}`)
       }
     }
   }

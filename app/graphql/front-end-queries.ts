@@ -73,20 +73,6 @@ gql`
     }
   }
 
-  query balanceHeader {
-    me {
-      id
-      defaultAccount {
-        id
-        wallets {
-          id
-          balance
-          walletCurrency
-        }
-      }
-    }
-  }
-
   query setDefaultAccountModal {
     me {
       id
@@ -280,6 +266,53 @@ gql`
         offset
       }
       denominatorCurrency
+    }
+  }
+  query npubByUsername($username: Username!) {
+    npubByUsername(username: $username) {
+      npub
+      username
+    }
+  }
+
+  query LatestAccountUpgradeRequest {
+    latestAccountUpgradeRequest {
+      errors {
+        code
+        message
+      }
+      upgradeRequest {
+        address {
+          city
+          country
+          line1
+          line2
+          postalCode
+          state
+          title
+        }
+        bankAccount {
+          accountNumber
+          accountType
+          bankBranch
+          bankName
+          currency
+        }
+        currentLevel
+        fullName
+        terminalsRequested
+        status
+        requestedLevel
+        phoneNumber
+        email
+        idDocument
+      }
+    }
+  }
+
+  query SupportedBanks {
+    supportedBanks {
+      name
     }
   }
 `

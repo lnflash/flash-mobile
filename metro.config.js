@@ -1,36 +1,32 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-/**
- * Metro configuration for React Native
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
 const path = require("path")
-const { getDefaultConfig } = require("metro-config")
+const { getDefaultConfig, mergeConfig } = require("@react-native/metro-config")
 
-module.exports = (async () => {
-  const {
-    resolver: { sourceExts, assetExts },
-  } = await getDefaultConfig()
-  return {
-    transformer: {
-      getTransformOptions: async () => ({
-        transform: {
-          experimentalImportSupport: false,
-          inlineRequires: false,
-        },
-      }),
-      babelTransformerPath: require.resolve("react-native-svg-transformer"),
-    },
-    projectRoot: path.resolve(__dirname),
-    resolver: {
-      assetExts: assetExts.filter((ext) => ext !== "svg"),
-      sourceExts: [...sourceExts, "svg", "cjs", "json"],
-      extraNodeModules: {
-        stream: path.resolve(__dirname, "node_modules/readable-stream"),
-        zlib: path.resolve(__dirname, "node_modules/browserify-zlib"),
+const defaultConfig = getDefaultConfig(__dirname)
+
+// Node.js core module polyfills for React Native 0.74+
+const nodeLibs = require("node-libs-react-native")
+
+module.exports = mergeConfig(defaultConfig, {
+  transformer: {
+    ...defaultConfig.transformer,
+    babelTransformerPath: require.resolve("react-native-svg-transformer"),
+    getTransformOptions: async () => ({
+      transform: {
+        experimentalImportSupport: false,
+        inlineRequires: true,
       },
+    }),
+  },
+  resolver: {
+    ...defaultConfig.resolver,
+    assetExts: defaultConfig.resolver.assetExts.filter((ext) => ext !== "svg"),
+    sourceExts: [...defaultConfig.resolver.sourceExts, "svg", "cjs", "json"],
+    extraNodeModules: {
+      ...nodeLibs,
+      crypto: require.resolve("crypto-browserify"),
+      stream: require.resolve("readable-stream"),
+      buffer: require.resolve("buffer"),
+      vm: require.resolve("vm-browserify"),
     },
-  }
-})()
+  },
+})

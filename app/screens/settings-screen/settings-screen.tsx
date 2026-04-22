@@ -28,6 +28,7 @@ import { AdvancedModeToggle } from "./settings/advanced-mode-toggle"
 import { ExportCsvSetting } from "./settings/advanced-export-csv"
 import { ApiAccessSetting } from "./settings/advanced-api-access"
 import { GenerateReportsSetting } from "./settings/generate-reports"
+import { ExportSparkLogsSetting } from "./settings/export-spark-logs"
 import { SettingsGroup } from "./group"
 import { EmailSetting } from "./account/settings/email"
 import { ChatSetting } from "./chat-setting"
@@ -79,6 +80,7 @@ const items = {
   advanced: [
     AdvancedModeToggle,
     ExportCsvSetting,
+    ExportSparkLogsSetting,
     //  ApiAccessSetting
   ],
   community: [JoinCommunitySetting],
@@ -104,10 +106,10 @@ export const SettingsScreen: React.FC = () => {
         name={LL.SettingsScreen.addressScreen()}
         items={items.waysToGetPaid}
       />
-      {currentLevel === AccountLevel.Two && (
+      {(currentLevel === AccountLevel.Two || currentLevel === AccountLevel.Three) && (
         <SettingsGroup name="Reports" items={items.reports} />
       )}
-      <SettingsGroup name="Experimental" items={items.experimental} />
+      <SettingsGroup name="Chat" items={items.experimental} />
       <SettingsGroup name={LL.SettingsScreen.keysManagement()} items={items.wallet} />
       <SettingsGroup name={LL.common.preferences()} items={items.preferences} />
       <SettingsGroup

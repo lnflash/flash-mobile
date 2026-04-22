@@ -92,7 +92,7 @@ const Wrapper = styled.View`
 `
 
 const Container = styled.View`
-  row-gap: 10;
+  row-gap: 10px;
 `
 
 const SeedPhrase = styled.View<{ marginRight: boolean }>`
@@ -114,5 +114,5 @@ const SeedPhraseNum = styled.View`
 
 const SeedPhraseText = styled.View`
   flex: 1;
-  padding-horizontal: 15;
+  padding-horizontal: 15px;
 `

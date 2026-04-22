@@ -1,17 +1,39 @@
-import { NativeModules } from "react-native"
+import { TurboModuleRegistry, NativeModules } from "react-native"
+
+interface SourceCodeTurboModule {
+  getConstants(): {
+    scriptURL: string
+  }
+}
 
 // this is used for local development
 // will typically return localhost
 const scriptHostname = (): string => {
-  const { scriptURL } = NativeModules.SourceCode
-  const scriptHostname = scriptURL?.split("://")[1].split(":")[0] ?? ""
-  return scriptHostname
+  const turboModule =
+    TurboModuleRegistry.getEnforcing<SourceCodeTurboModule>("SourceCode")
+  const turboScriptURL = turboModule?.getConstants?.()?.scriptURL
+
+  const { scriptURL } = NativeModules.SourceCode || {}
+  const urlToUse = turboScriptURL || scriptURL
+
+  if (!urlToUse) {
+    return "localhost"
+  }
+
+  const parts = urlToUse.split("://")
+  if (parts.length < 2) {
+    return "localhost"
+  }
+
+  const hostPart = parts[1]?.split(":")[0]
+  return hostPart ?? "localhost"
 }
 
 export const possibleGaloyInstanceNames = [
   "Main",
   "Staging",
   "Test",
+  "Sandbox",
   "Development",
   "Local",
   "Custom",
@@ -19,7 +41,7 @@ export const possibleGaloyInstanceNames = [
 export type GaloyInstanceName = (typeof possibleGaloyInstanceNames)[number]
 
 export type StandardInstance = {
-  id: "Main" | "Staging" | "Test" | "Development" | "Local"
+  id: "Main" | "Staging" | "Test" | "Sandbox" | "Development" | "Local"
 }
 
 export type CustomInstance = {
@@ -99,6 +121,17 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
     lnAddressHostname: "test.flashapp.me",
     blockExplorer: "https://mempool.space/signet/tx/",
     relayUrl: "wss://relay.test.flashapp.me",
+  },
+  {
+    id: "Sandbox",
+    name: "Sandbox",
+    graphqlUri: "https://sandbox.flashapp.me/graphql",
+    graphqlWsUri: "wss://ws.sandbox.flashapp.me/graphql",
+    authUrl: "https://sandbox.flashapp.me",
+    posUrl: "http://pay.sandbox.flashapp.me",
+    lnAddressHostname: "sandbox.flashapp.me",
+    blockExplorer: "https://mempool.space/signet/tx/",
+    relayUrl: "wss://relay.staging.flashapp.me",
   },
   {
     id: "Development",

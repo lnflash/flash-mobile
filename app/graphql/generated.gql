@@ -81,6 +81,19 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
+mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
+  idDocumentUploadUrlGenerate(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    fileKey
+    uploadUrl
+    __typename
+  }
+}
+
 mutation InitiateCashout($input: InitiateCashoutInput!) {
   initiateCashout(input: $input) {
     errors {
@@ -153,7 +166,9 @@ mutation accountDelete {
   }
 }
 
-mutation accountDisableNotificationCategory($input: AccountDisableNotificationCategoryInput!) {
+mutation accountDisableNotificationCategory(
+  $input: AccountDisableNotificationCategoryInput!
+) {
   accountDisableNotificationCategory(input: $input) {
     errors {
       message
@@ -175,7 +190,9 @@ mutation accountDisableNotificationCategory($input: AccountDisableNotificationCa
   }
 }
 
-mutation accountDisableNotificationChannel($input: AccountDisableNotificationChannelInput!) {
+mutation accountDisableNotificationChannel(
+  $input: AccountDisableNotificationChannelInput!
+) {
   accountDisableNotificationChannel(input: $input) {
     errors {
       message
@@ -197,7 +214,9 @@ mutation accountDisableNotificationChannel($input: AccountDisableNotificationCha
   }
 }
 
-mutation accountEnableNotificationCategory($input: AccountEnableNotificationCategoryInput!) {
+mutation accountEnableNotificationCategory(
+  $input: AccountEnableNotificationCategoryInput!
+) {
   accountEnableNotificationCategory(input: $input) {
     errors {
       message
@@ -219,7 +238,9 @@ mutation accountEnableNotificationCategory($input: AccountEnableNotificationCate
   }
 }
 
-mutation accountEnableNotificationChannel($input: AccountEnableNotificationChannelInput!) {
+mutation accountEnableNotificationChannel(
+  $input: AccountEnableNotificationChannelInput!
+) {
   accountEnableNotificationChannel(input: $input) {
     errors {
       message
@@ -267,6 +288,19 @@ mutation accountUpdateDisplayCurrency($input: AccountUpdateDisplayCurrencyInput!
       displayCurrency
       __typename
     }
+    __typename
+  }
+}
+
+mutation businessAccountUpgradeRequest($input: BusinessAccountUpgradeRequestInput!) {
+  businessAccountUpgradeRequest(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    id
+    status
     __typename
   }
 }
@@ -527,7 +561,9 @@ mutation onChainUsdPaymentSend($input: OnChainUsdPaymentSendInput!) {
   }
 }
 
-mutation onChainUsdPaymentSendAsBtcDenominated($input: OnChainUsdPaymentSendAsBtcDenominatedInput!) {
+mutation onChainUsdPaymentSendAsBtcDenominated(
+  $input: OnChainUsdPaymentSendAsBtcDenominatedInput!
+) {
   onChainUsdPaymentSendAsBtcDenominated(input: $input) {
     errors {
       message
@@ -850,6 +886,53 @@ query ExportCsvSetting($walletIds: [WalletId!]!) {
   }
 }
 
+query LatestAccountUpgradeRequest {
+  latestAccountUpgradeRequest {
+    errors {
+      code
+      message
+      __typename
+    }
+    upgradeRequest {
+      address {
+        city
+        country
+        line1
+        line2
+        postalCode
+        state
+        title
+        __typename
+      }
+      bankAccount {
+        accountNumber
+        accountType
+        bankBranch
+        bankName
+        currency
+        __typename
+      }
+      currentLevel
+      fullName
+      terminalsRequested
+      status
+      requestedLevel
+      phoneNumber
+      email
+      idDocument
+      __typename
+    }
+    __typename
+  }
+}
+
+query SupportedBanks {
+  supportedBanks {
+    name
+    __typename
+  }
+}
+
 query accountDefaultWallet($username: Username!) {
   accountDefaultWallet(username: $username) {
     id
@@ -943,23 +1026,6 @@ query auth {
     email {
       address
       verified
-      __typename
-    }
-    __typename
-  }
-}
-
-query balanceHeader {
-  me {
-    id
-    defaultAccount {
-      id
-      wallets {
-        id
-        balance
-        walletCurrency
-        __typename
-      }
       __typename
     }
     __typename
@@ -1219,6 +1285,14 @@ query notificationSettings {
   }
 }
 
+query npubByUsername($username: Username!) {
+  npubByUsername(username: $username) {
+    npub
+    username
+    __typename
+  }
+}
+
 query onChainTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: SatAmount!) {
   onChainTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount
@@ -1226,14 +1300,22 @@ query onChainTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: Sat
   }
 }
 
-query onChainUsdTxFee($walletId: WalletId!, $address: OnChainAddress!, $amount: CentAmount!) {
+query onChainUsdTxFee(
+  $walletId: WalletId!
+  $address: OnChainAddress!
+  $amount: FractionalCentAmount!
+) {
   onChainUsdTxFee(walletId: $walletId, address: $address, amount: $amount) {
     amount
     __typename
   }
 }
 
-query onChainUsdTxFeeAsBtcDenominated($walletId: WalletId!, $address: OnChainAddress!, $amount: SatAmount!) {
+query onChainUsdTxFeeAsBtcDenominated(
+  $walletId: WalletId!
+  $address: OnChainAddress!
+  $amount: SatAmount!
+) {
   onChainUsdTxFeeAsBtcDenominated(
     walletId: $walletId
     address: $address
@@ -1536,7 +1618,43 @@ query totpRegistrationScreen {
   }
 }
 
-query transactionListForContact($username: Username!, $first: Int, $after: String, $last: Int, $before: String) {
+query transactionDetails($input: TransactionDetailsInput!) {
+  transactionDetails(input: $input) {
+    errors {
+      message
+      __typename
+    }
+    transactionDetails {
+      id
+      accountId
+      amount
+      currency
+      status
+      type
+      createdAt
+      updatedAt
+      invoice
+      paymentHash
+      paymentPreimage
+      memo
+      address
+      txid
+      vout
+      confirmations
+      fee
+      __typename
+    }
+    __typename
+  }
+}
+
+query transactionListForContact(
+  $username: Username!
+  $first: Int
+  $after: String
+  $last: Int
+  $before: String
+) {
   me {
     id
     contactByUsername(username: $username) {
@@ -1550,7 +1668,12 @@ query transactionListForContact($username: Username!, $first: Int, $after: Strin
   }
 }
 
-query transactionListForDefaultAccount($first: Int, $after: String, $last: Int, $before: String) {
+query transactionListForDefaultAccount(
+  $first: Int
+  $after: String
+  $last: Int
+  $before: String
+) {
   me {
     id
     defaultAccount {
@@ -1648,7 +1771,7 @@ subscription myLnUpdates {
 }
 
 subscription realtimePriceWs($currency: DisplayCurrency!) {
-  realtimePrice(input: {currency: $currency}) {
+  realtimePrice(input: { currency: $currency }) {
     errors {
       message
       __typename

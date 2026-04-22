@@ -12,7 +12,7 @@ import {
   useScanningQrCodeScreenQuery,
 } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { usePriceConversion } from "@app/hooks"
+import { useActivityIndicator, usePriceConversion } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { parseDestination } from "@app/screens/send-bitcoin-screen/payment-destination"
 import {
@@ -25,12 +25,7 @@ import { isIOS } from "@rneui/base"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 
 import { GaloySecondaryButton } from "../atomic/galoy-secondary-button"
-import {
-  InputTypeVariant,
-  LnUrlWithdrawResultVariant,
-  lnurlWithdraw,
-  parse,
-} from "@breeztech/react-native-breez-sdk-liquid"
+import { lnurlWithdraw } from "@app/utils/breez-sdk"
 
 export const ModalNfc: React.FC<{
   isActive: boolean
@@ -40,6 +35,7 @@ export const ModalNfc: React.FC<{
   onPaid: () => void
   note?: string
 }> = ({ isActive, setIsActive, settlementAmount, receiveViaNFC, onPaid, note }) => {
+  const { toggleActivityIndicator } = useActivityIndicator()
   const { data } = useScanningQrCodeScreenQuery({ skip: !useIsAuthed() })
   const wallets = data?.me?.defaultAccount.wallets
   const bitcoinNetwork = data?.globals?.network
@@ -148,7 +144,7 @@ export const ModalNfc: React.FC<{
 
       // TODO: add a loading icon because this call do a fetch() to an external server
       // and the response can be arbitrary long
-
+      toggleActivityIndicator(true)
       if (settlementAmount?.currency === "USD") {
         const destination = await parseDestination({
           rawInput: lnurl,
@@ -179,29 +175,17 @@ export const ModalNfc: React.FC<{
         }
       } else {
         try {
-          const input = await parse(lnurl)
-          if (input.type === InputTypeVariant.LN_URL_WITHDRAW) {
-            const lnUrlWithdrawResult = await lnurlWithdraw({
-              data: input.data,
-              amountMsat: settlementAmount.amount * 1000,
-              description: note,
-            })
-
-            console.log(lnUrlWithdrawResult)
-            if (lnUrlWithdrawResult.type === LnUrlWithdrawResultVariant.OK) {
-              onPaid()
-            } else {
-              alert(lnUrlWithdrawResult.data || LL.RedeemBitcoinScreen.redeemingError())
-            }
-          } else if (input.type === InputTypeVariant.LN_URL_ERROR) {
-            alert(input?.data?.reason || LL.RedeemBitcoinScreen.redeemingError())
+          const res = await lnurlWithdraw(lnurl, settlementAmount.amount)
+          if (res.success) {
+            onPaid()
+          } else {
+            alert(res.error || LL.RedeemBitcoinScreen.redeemingError())
           }
         } catch (err: any) {
-          console.error(err)
           Alert.alert(err.message)
         }
       }
-
+      toggleActivityIndicator(false)
       dismiss()
     }
 

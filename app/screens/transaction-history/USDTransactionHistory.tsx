@@ -1,5 +1,5 @@
 import React, { useMemo } from "react"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { SectionList, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { Text, makeStyles } from "@rneui/themed"
@@ -12,10 +12,13 @@ import { Loading } from "@app/contexts/ActivityIndicatorContext"
 // graphql
 import { useTransactionListForDefaultAccountQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { groupTransactionsByDate } from "@app/graphql/transactions"
+
+// types
+import { getTransactionId, getTransactionTimestamp } from "@app/types/transactions"
 
 // utils
 import { toastShow } from "../../utils/toast"
+import { groupByDate } from "@app/utils/transactions"
 
 export const USDTransactionHistory: React.FC = () => {
   const styles = useStyles()
@@ -31,8 +34,13 @@ export const USDTransactionHistory: React.FC = () => {
 
   const sections = useMemo(
     () =>
-      groupTransactionsByDate({
-        txs: transactions?.edges?.map((edge) => edge.node) ?? [],
+      groupByDate({
+        items:
+          transactions?.edges?.map((edge) => ({
+            source: "ibex" as const,
+            transaction: edge.node,
+          })) ?? [],
+        getTimestamp: getTransactionTimestamp,
         LL,
         locale,
       }),
@@ -41,7 +49,7 @@ export const USDTransactionHistory: React.FC = () => {
 
   if (error) {
     console.error(error)
-    crashlytics().recordError(error)
+    getCrashlytics().recordError(error)
     toastShow({
       message: (translations) => translations.common.transactionsError(),
     })
@@ -70,7 +78,7 @@ export const USDTransactionHistory: React.FC = () => {
         showsVerticalScrollIndicator={false}
         maxToRenderPerBatch={10}
         initialNumToRender={20}
-        renderItem={({ item }) => <TxItem key={`txn-${item.id}`} tx={item} />}
+        renderItem={({ item }) => <TxItem key={getTransactionId(item)} tx={item} />}
         renderSectionHeader={({ section: { title } }) => (
           <View style={styles.sectionHeaderContainer}>
             <Text type="p1" bold>
@@ -84,7 +92,7 @@ export const USDTransactionHistory: React.FC = () => {
           </View>
         }
         sections={sections}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => getTransactionId(item)}
         onEndReached={fetchNextTransactionsPage}
         onEndReachedThreshold={0.5}
         onRefresh={refetch}

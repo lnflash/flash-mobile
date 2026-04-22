@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import { ScrollView, Text } from "react-native"
-import crashlytics from "@react-native-firebase/crashlytics"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { StackScreenProps } from "@react-navigation/stack"
 import { CommonActions } from "@react-navigation/native"
 import { makeStyles } from "@rneui/themed"
@@ -48,13 +48,13 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
     if (lnInvoice) {
       try {
         toggleActivityIndicator(true)
-        const res = await swap(lnInvoice, fromWalletCurrency)
+        const res = await swap(lnInvoice, fromWalletCurrency, moneyAmount.amount)
         if (res) {
           handlePaymentSuccess()
         }
       } catch (err) {
         if (err instanceof Error) {
-          crashlytics().recordError(err)
+          getCrashlytics().recordError(err)
           handlePaymentError(err)
         }
       }

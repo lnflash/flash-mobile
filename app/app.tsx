@@ -31,19 +31,25 @@ import { ErrorScreen } from "./screens/error-screen"
 import { PersistentStateProvider } from "./store/persistent-state"
 import { detectDefaultLocale } from "./utils/locale-detector"
 import { ThemeSyncGraphql } from "./utils/theme-sync"
+import NostrKeyEnsurer from "./components/nostr-key-ensurer"
 import { NetworkErrorComponent } from "./graphql/network-error-component"
 import { FeatureFlagContextProvider } from "./config/feature-flags-context"
 import "./utils/logs"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { Provider } from "react-redux"
-import { store } from "./store/redux"
+import { persistor, store } from "./store/redux"
 import PolyfillCrypto from "react-native-webview-crypto"
 import { ActivityIndicatorProvider } from "./contexts/ActivityIndicatorContext"
 import { BreezProvider } from "./contexts/BreezContext"
-import { ChatContextProvider } from "./screens/nip17-chat/chatContext"
+import { ChatContextProvider } from "./screens/chat/chatContext"
 import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { FlashcardProvider } from "./contexts/Flashcard"
+import { NostrGroupChatProvider } from "./screens/chat/GroupChat/GroupChatProvider"
+import { PersistGate } from "redux-persist/integration/react"
+import { useEffect } from "react"
+import { nostrRuntime } from "./nostr/runtime/NostrRuntime"
+import { AppState } from "react-native"
 
 // FIXME should we only load the currently used local?
 // this would help to make the app load faster
@@ -56,49 +62,75 @@ loadAllLocales()
 /**
  * This is the root component of our app.
  */
-export const App = () => (
+export const App = () => {
   /* eslint-disable-next-line react-native/no-inline-styles */
-  <SafeAreaProvider>
-    <StatusBar
-      backgroundColor={"#000"}
-      barStyle={Platform.OS === "android" ? "light-content" : "dark-content"}
-    />
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <PolyfillCrypto />
-      <Provider store={store}>
-        <PersistentStateProvider>
-          <ChatContextProvider>
-            <ActivityIndicatorProvider>
-              <TypesafeI18n locale={detectDefaultLocale()}>
-                <ThemeProvider theme={theme}>
-                  <GaloyClient>
-                    <FeatureFlagContextProvider>
-                      <ErrorBoundary FallbackComponent={ErrorScreen}>
-                        <NavigationContainerWrapper>
-                          <RootSiblingParent>
-                            <NotificationsProvider>
-                              <AppStateWrapper />
-                              <PushNotificationComponent />
-                              <BreezProvider>
-                                <FlashcardProvider>
-                                  <RootStack />
-                                </FlashcardProvider>
-                              </BreezProvider>
-                              <GaloyToast />
-                              <NetworkErrorComponent />
-                            </NotificationsProvider>
-                          </RootSiblingParent>
-                        </NavigationContainerWrapper>
-                      </ErrorBoundary>
-                      <ThemeSyncGraphql />
-                    </FeatureFlagContextProvider>
-                  </GaloyClient>
-                </ThemeProvider>
-              </TypesafeI18n>
-            </ActivityIndicatorProvider>
-          </ChatContextProvider>
-        </PersistentStateProvider>
-      </Provider>
-    </GestureHandlerRootView>
-  </SafeAreaProvider>
-)
+
+  useEffect(() => {
+    nostrRuntime.start()
+
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") nostrRuntime.onForeground()
+      else nostrRuntime.onBackground()
+    })
+
+    return () => {
+      sub.remove()
+      nostrRuntime.stop()
+    }
+  }, [])
+
+  return (
+    <SafeAreaProvider>
+      <StatusBar
+        backgroundColor={"#000"}
+        barStyle={Platform.OS === "android" ? "light-content" : undefined}
+      />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <PolyfillCrypto />
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <PersistentStateProvider>
+              <ChatContextProvider>
+                <NostrGroupChatProvider
+                  groupId={"A9lScksyYAOWNxqR"}
+                  relayUrls={["wss://groups.0xchat.com"]}
+                  adminPubkeys={[]}
+                >
+                  <ActivityIndicatorProvider>
+                    <TypesafeI18n locale={detectDefaultLocale()}>
+                      <ThemeProvider theme={theme}>
+                        <GaloyClient>
+                          <FeatureFlagContextProvider>
+                            <ErrorBoundary FallbackComponent={ErrorScreen}>
+                              <NavigationContainerWrapper>
+                                <RootSiblingParent>
+                                  <NotificationsProvider>
+                                    <AppStateWrapper />
+                                    <PushNotificationComponent />
+                                    <BreezProvider>
+                                      <FlashcardProvider>
+                                        <RootStack />
+                                      </FlashcardProvider>
+                                    </BreezProvider>
+                                    <GaloyToast />
+                                    <NetworkErrorComponent />
+                                  </NotificationsProvider>
+                                </RootSiblingParent>
+                              </NavigationContainerWrapper>
+                            </ErrorBoundary>
+                            <ThemeSyncGraphql />
+                            <NostrKeyEnsurer />
+                          </FeatureFlagContextProvider>
+                        </GaloyClient>
+                      </ThemeProvider>
+                    </TypesafeI18n>
+                  </ActivityIndicatorProvider>
+                </NostrGroupChatProvider>
+              </ChatContextProvider>
+            </PersistentStateProvider>
+          </PersistGate>
+        </Provider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
+  )
+}

@@ -321,6 +321,11 @@ type RootTranslation = {
 		 * %​ ​t​o​ ​c​o​n​v​e​r​t
 		 */
 		percentageToConvert: string
+		/**
+		 * Y​o​u​r​ ​{​w​a​l​l​e​t​N​a​m​e​}​ ​h​a​s​ ​n​o​ ​f​u​n​d​s​ ​t​o​ ​s​w​a​p
+		 * @param {string} walletName
+		 */
+		emptyWallet: RequiredParams<'walletName'>
 	}
 	ConversionConfirmationScreen: {
 		/**
@@ -1605,7 +1610,7 @@ type RootTranslation = {
 		 */
 		locationPermissionNegative: string
 		/**
-		 * A​s​k​ ​M​e​ ​L​a​t​e​r
+		 * R​e​m​i​n​d​ ​m​e​ ​l​a​t​e​r
 		 */
 		locationPermissionNeutral: string
 		/**
@@ -1701,13 +1706,13 @@ type RootTranslation = {
 		 */
 		myAccounts: string
 		/**
-		 * P​l​e​a​s​e​ ​c​o​m​p​l​e​t​e​ ​o​r​ ​r​e​f​u​n​d​ ​a​l​l​ ​p​e​n​d​i​n​g​ ​t​r​a​n​s​a​c​t​i​o​n​s​ ​b​e​f​o​r​e​ ​u​n​i​n​s​t​a​l​l​i​n​g​ ​F​l​a​s​h​ ​o​r​ ​p​e​n​d​i​n​g​ ​f​u​n​d​s​ ​w​i​l​l​ ​b​e​ ​l​o​s​t​.
+		 * ⚠​️​ ​P​​​l​​​e​​​a​​​s​​​e​​​ ​​​c​​​o​​​m​​​p​​​l​​​e​​​t​​​e​​​ ​​​o​​​r​​​ ​c​l​a​i​m​ ​​​a​​​l​​​l​​​ ​u​n​c​l​a​i​m​e​d​ ​d​e​p​o​s​i​t​s​ ​​​b​​​e​​​f​​​o​​​r​​​e​​​ ​​​u​​​n​​​i​​​n​​​s​​​t​​​a​​​l​​​l​​​i​​​n​​​g​​​ ​​​F​​​l​​​a​​​s​​​h​​​ ​​​o​​​r​​​ ​u​n​c​l​a​i​m​e​d​ ​d​e​p​o​s​i​t​s​ ​​​w​​​i​​​l​​​l​​​ ​​​b​​​e​​​ ​​​l​​​o​​​s​​​t​​​.
 		 */
-		refundableWarning: string
+		unclaimedDepositsWarning: string
 		/**
-		 * R​e​f​u​n​d​a​b​l​e​s
+		 * U​n​c​l​a​i​m​e​d​ ​D​e​p​o​s​i​t​s
 		 */
-		refundables: string
+		unclaimedDeposits: string
 		/**
 		 * C​a​s​h
 		 */
@@ -1725,13 +1730,21 @@ type RootTranslation = {
 		 */
 		addFlashcard: string
 		/**
-		 * A​d​d​ ​y​o​u​r​ ​p​h​o​n​e​ ​n​u​m​b​e​r
+		 * U​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t
 		 */
 		upgradeTitle: string
 		/**
-		 * B​a​c​k​u​p​ ​y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​a​n​d​ ​i​n​c​r​e​a​s​e​ ​t​r​a​n​s​a​c​t​i​o​n​ ​l​i​m​i​t​s​.
+		 * U​p​g​r​a​d​e​ ​r​e​q​u​e​s​t​ ​i​s​ ​p​e​n​d​i​n​g
+		 */
+		upgradeTitlePending: string
+		/**
+		 * U​n​l​o​c​k​ ​y​o​u​r​ ​f​u​l​l​ ​p​o​t​e​n​t​i​a​l​!​ ​U​p​g​r​a​d​e​ ​t​o​ ​b​o​o​s​t​ ​v​i​s​i​b​i​l​i​t​y​,​ ​l​i​m​i​t​s​,​ ​a​n​d​ ​p​a​y​o​u​t​s​.
 		 */
 		upgradeDesc: string
+		/**
+		 * Y​o​u​r​ ​a​c​c​o​u​n​t​ ​u​p​g​r​a​d​e​ ​r​e​q​u​e​s​t​ ​i​s​ ​u​n​d​e​r​ ​r​e​v​i​e​w​.
+		 */
+		upgradePendingDesc: string
 		/**
 		 * C​h​a​n​g​e​ ​t​o​ ​y​o​u​r​ ​l​o​c​a​l​ ​c​u​r​r​e​n​c​y
 		 */
@@ -2286,6 +2299,10 @@ type RootTranslation = {
 		 */
 		payCodeOrLNURL: string
 		/**
+		 * Y​o​u​ ​c​a​n​n​o​t​ ​r​e​c​e​i​v​e​ ​a​ ​z​e​r​o​ ​s​a​t​s​.​ ​P​l​e​a​s​e​ ​e​n​t​e​r​ ​a​n​ ​a​m​o​u​n​t​ ​c​o​r​r​e​s​p​o​n​d​i​n​g​ ​t​o​ ​1​ ​o​r​ ​m​o​r​e​ ​s​a​t​s​.
+		 */
+		cantReceiveZeroSats: string
+		/**
 		 * *​ ​I​n​i​t​i​a​l​ ​d​e​p​o​s​i​t​ ​o​f​ ​$​5​ ​r​e​c​o​m​m​e​n​d​e​d​ ​f​o​r​ ​c​h​a​n​n​e​l​ ​s​e​t​u​p​.​ ​~​$​1​ ​w​i​l​l​ ​b​e​ ​p​a​i​d​ ​a​s​ ​s​e​t​u​p​ ​f​e​e​.
 		 */
 		initialDeposit: string
@@ -2617,6 +2634,16 @@ type RootTranslation = {
 			 * I​'​m​ ​1​0​0​%​ ​s​u​r​e
 			 */
 			confirmButton: string
+			/**
+			 * Y​o​u​ ​a​r​e​ ​a​b​o​u​t​ ​t​o​ ​s​e​n​d​ ​m​o​n​e​y​ ​t​o​ ​s​o​m​e​o​n​e​ ​t​h​a​t​ ​i​s​ ​n​o​t​ ​a​ ​{​b​a​n​k​N​a​m​e​}​ ​a​c​c​o​u​n​t​.​ ​A​r​e​ ​y​o​u​ ​s​u​r​e​ ​t​h​i​s​ ​i​s​ ​t​h​e​ ​a​d​d​r​e​s​s​ ​y​o​u​ ​i​n​t​e​n​d​ ​t​o​ ​s​e​n​d​ ​t​o​?
+			 * @param {string} bankName
+			 */
+			externalWarning: RequiredParams<'bankName'>
+			/**
+			 * I​ ​c​o​n​f​i​r​m​ ​s​e​n​d​i​n​g​ ​t​o​ ​{​a​d​d​r​e​s​s​}​.
+			 * @param {string} address
+			 */
+			externalCheckBox: RequiredParams<'address'>
 		}
 		/**
 		 * E​r​r​o​r​ ​g​e​t​t​i​n​g​ ​v​a​l​u​e​ ​f​r​o​m​ ​c​l​i​p​b​o​a​r​d
@@ -2911,7 +2938,7 @@ type RootTranslation = {
 		 */
 		advanceMode: string
 		/**
-		 * K​e​y​s​ ​m​a​n​a​g​e​m​e​n​t
+		 * W​a​l​l​e​t​ ​b​a​c​k​u​p
 		 */
 		keysManagement: string
 		/**
@@ -3022,7 +3049,7 @@ type RootTranslation = {
 		 */
 		upgrade: string
 		/**
-		 * L​o​g​ ​o​u​t​ ​a​n​d​ ​c​l​e​a​r​ ​a​l​l​ ​l​o​c​a​l​ ​d​a​t​a
+		 * L​o​g​ ​o​u​t
 		 */
 		logOutAndDeleteLocalData: string
 		/**
@@ -3562,11 +3589,11 @@ type RootTranslation = {
 	}
 	UnVerifiedSeedModal: {
 		/**
-		 * Y​O​U​R​ ​B​I​T​C​O​I​N​ ​I​S​ ​N​O​T​ ​S​E​C​U​R​E​!
+		 * S​e​c​u​r​e​ ​Y​o​u​r​ ​B​i​t​c​o​i​n​ ​W​a​l​l​e​t
 		 */
 		header: string
 		/**
-		 * Y​o​u​ ​s​h​o​u​l​d​ ​W​R​I​T​E​ ​D​O​W​N​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​s​o​m​e​w​h​e​r​e​ ​s​a​f​e​ ​i​n​ ​o​r​d​e​r​ ​t​o​ ​p​r​o​t​e​c​t​ ​y​o​u​r​ ​m​o​n​e​y​.​ ​I​f​ ​y​o​u​ ​l​o​s​e​ ​y​o​u​r​ ​p​h​o​n​e​ ​o​r​ ​u​n​i​n​s​t​a​l​l​ ​t​h​e​ ​a​p​p​ ​w​i​t​h​o​u​t​ ​w​r​i​t​i​n​g​ ​d​o​w​n​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​,​ ​y​o​u​ ​w​i​l​l​ ​l​o​s​e​ ​a​c​c​e​s​s​ ​t​o​ ​y​o​u​r​ ​f​u​n​d​s​.​
+		 * Y​o​u​ ​s​h​o​u​l​d​ ​w​r​i​t​e​ ​d​o​w​n​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​s​o​m​e​w​h​e​r​e​ ​s​a​f​e​ ​i​n​ ​o​r​d​e​r​ ​t​o​ ​p​r​o​t​e​c​t​ ​y​o​u​r​ ​m​o​n​e​y​.​ ​I​f​ ​y​o​u​ ​l​o​s​e​ ​y​o​u​r​ ​p​h​o​n​e​ ​o​r​ ​u​n​i​n​s​t​a​l​l​ ​t​h​e​ ​a​p​p​ ​w​i​t​h​o​u​t​ ​w​r​i​t​i​n​g​ ​d​o​w​n​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​,​ ​y​o​u​ ​w​i​l​l​ ​l​o​s​e​ ​a​c​c​e​s​s​ ​t​o​ ​y​o​u​r​ ​f​u​n​d​s​.​
 	​
 
 		 */
@@ -3577,7 +3604,7 @@ type RootTranslation = {
 		 */
 		termsAndConditions: string
 		/**
-		 * W​h​a​t​ ​i​s​ ​a​ ​R​e​c​o​v​e​r​y​ ​P​h​a​s​e​?
+		 * W​h​a​t​ ​i​s​ ​a​ ​R​e​c​o​v​e​r​y​ ​P​h​r​a​s​e​?
 		 */
 		learnMore: string
 	}
@@ -3614,6 +3641,74 @@ type RootTranslation = {
 		 * Y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​c​u​r​r​e​n​t​l​y​ ​p​e​n​d​i​n​g​ ​a​n​d​ ​w​i​l​l​ ​b​e​ ​b​r​o​a​d​c​a​s​t​e​d​ ​t​o​ ​t​h​e​ ​B​i​t​c​o​i​n​ ​n​e​t​w​o​r​k​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
 		 */
 		txNotBroadcast: string
+		/**
+		 * N​o​ ​t​r​a​n​s​a​c​t​i​o​n​ ​f​o​u​n​d​ ​w​i​t​h​ ​t​h​i​s​ ​I​D
+		 */
+		noTransaction: string
+		/**
+		 * O​n​C​h​a​i​n
+		 */
+		typeOnChain: string
+		/**
+		 * L​i​g​h​t​n​i​n​g
+		 */
+		typeLightning: string
+		/**
+		 * I​n​t​r​a​L​e​d​g​e​r
+		 */
+		typeIntraLedger: string
+		/**
+		 * P​e​n​d​i​n​g
+		 */
+		pendingStatus: string
+		/**
+		 * C​o​n​f​i​r​m​a​t​i​o​n
+		 */
+		confirmation: string
+		/**
+		 * C​o​n​f​i​r​m​a​t​i​o​n​s
+		 */
+		confirmations: string
+		/**
+		 * H​a​s​h
+		 */
+		hash: string
+		/**
+		 * P​r​e​i​m​a​g​e
+		 */
+		preimage: string
+		/**
+		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
+		 */
+		transactionId: string
+		/**
+		 * S​w​a​p​ ​D​e​t​a​i​l​s
+		 */
+		swapDetails: string
+		/**
+		 * D​e​s​t​i​n​a​t​i​o​n​ ​A​d​d​r​e​s​s
+		 */
+		destinationAddress: string
+		/**
+		 * S​w​a​p​ ​I​D
+		 */
+		swapId: string
+		/**
+		 * L​o​c​k​u​p​ ​T​r​a​n​s​a​c​t​i​o​n
+		 */
+		lockupTxId: string
+		/**
+		 * C​l​a​i​m​ ​T​r​a​n​s​a​c​t​i​o​n
+		 */
+		claimTxId: string
+		/**
+		 * S​w​a​p​ ​F​e​e​s
+		 */
+		swapFees: string
+		/**
+		 * E​x​p​i​r​e​s​ ​a​t​ ​B​l​o​c​k
+		 */
+		expirationBlockHeight: string
 	}
 	TransactionLimitsScreen: {
 		/**
@@ -3680,9 +3775,13 @@ type RootTranslation = {
 		 */
 		spendingLimitsDescription: string
 		/**
-		 * R​e​q​u​e​s​t​ ​B​u​s​i​n​e​s​s​ ​A​c​c​o​u​n​t
+		 * R​e​q​u​e​s​t​ ​U​p​g​r​a​d​e
 		 */
-		requestBusiness: string
+		requestUpgrade: string
+		/**
+		 * E​d​i​t​ ​U​p​g​r​a​d​e​ ​R​e​q​u​e​s​t
+		 */
+		editRequest: string
 	}
 	TransactionScreen: {
 		/**
@@ -4107,7 +4206,7 @@ type RootTranslation = {
 		 */
 		backHome: string
 		/**
-		 * S​h​o​w​ ​R​e​c​o​v​e​r​y​ ​P​h​r​a​s​e
+		 * W​r​i​t​e​ ​d​o​w​n​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e
 		 */
 		revealSeed: string
 		/**
@@ -4157,6 +4256,10 @@ type RootTranslation = {
 		 */
 		confirm: string
 		/**
+		 * C​o​p​i​e​d​ ​t​o​ ​c​l​i​p​b​o​a​r​d
+		 */
+		copied: string
+		/**
 		 * C​o​n​v​e​r​t
 		 */
 		convert: string
@@ -4177,6 +4280,10 @@ type RootTranslation = {
 		 */
 		csvExport: string
 		/**
+		 * E​x​p​o​r​t​ ​L​o​g​s
+		 */
+		exportSparkLogs: string
+		/**
 		 * D​a​t​e
 		 */
 		date: string
@@ -4184,6 +4291,10 @@ type RootTranslation = {
 		 * D​e​s​c​r​i​p​t​i​o​n
 		 */
 		description: string
+		/**
+		 * D​e​t​a​i​l​s
+		 */
+		details: string
 		/**
 		 * D​o​m​a​i​n
 		 */
@@ -4448,6 +4559,85 @@ type RootTranslation = {
 		 * W​a​r​n​i​n​g
 		 */
 		warning: string
+	}
+	NostrQuickStart: {
+		/**
+		 * M​a​k​e​ ​y​o​u​r​ ​f​i​r​s​t​ ​s​o​c​i​a​l​ ​p​o​s​t​!
+		 */
+		postHeading: string
+		/**
+		 * I​n​t​r​o​d​u​c​e​ ​y​o​u​r​s​e​l​f​ ​t​o​ ​t​h​e​ ​W​o​r​l​d​!
+		 */
+		postDesc: string
+	}
+	Social: {
+		/**
+		 * P​o​s​t​ ​t​o​ ​N​o​s​t​r
+		 */
+		post: string
+		/**
+		 * M​a​k​e​ ​a​ ​P​o​s​t
+		 */
+		postTitle: string
+		/**
+		 * P​o​s​t​e​d​ ​u​s​i​n​g​ ​F​l​a​s​h​!​ ​G​e​t​ ​i​t​ ​@​ ​h​t​t​p​s​:​/​/​g​e​t​f​l​a​s​h​.​i​o​/​a​p​p
+		 */
+		flashAppCredit: string
+		/**
+		 * W​r​i​t​e​ ​y​o​u​r​ ​n​o​t​e​,​ ​m​a​k​e​ ​i​t​ ​s​p​e​c​i​a​l​ ​:​)
+		 */
+		writeYourNote: string
+		/**
+		 * P​o​s​t
+		 */
+		postButton: string
+		/**
+		 * S​u​c​c​e​s​s​!​
+	​ ​Y​o​u​r​ ​n​o​t​e​ ​h​a​s​ ​b​e​e​n​ ​p​o​s​t​e​d
+		 */
+		notePosted: string
+		/**
+		 * E​r​r​o​r​!​
+	​ ​E​r​r​o​r​ ​i​n​ ​p​o​s​t​i​n​g​ ​n​o​t​e
+		 */
+		errorPostFailed: string
+		/**
+		 * E​r​r​o​r​:​ ​
+	​ ​E​m​p​t​y​ ​n​o​t​e
+		 */
+		errorEmptyNote: string
+		/**
+		 * p​o​s​t​i​n​g​.​.​.
+		 */
+		posting: string
+		/**
+		 * V​i​e​w​ ​o​n​ ​i​r​i​s​.​t​o
+		 */
+		viewOnIris: string
+		/**
+		 * W​o​u​l​d​ ​y​o​u​ ​l​i​k​e​ ​t​o​ ​v​i​e​w​ ​y​o​u​r​ ​p​o​s​t​ ​o​n​ ​i​r​i​s​.​t​o​?
+		 */
+		viewPostQuestion: string
+		/**
+		 * B​r​o​w​s​e​ ​S​o​c​i​a​l​ ​F​e​e​d
+		 */
+		browseSocialFeed: string
+		/**
+		 * S​o​c​i​a​l​ ​F​e​e​d
+		 */
+		socialFeedTitle: string
+		/**
+		 * P​o​s​t​ ​S​h​a​r​e​d​!
+		 */
+		postSuccessTitle: string
+		/**
+		 * Y​o​u​r​ ​p​o​s​t​ ​h​a​s​ ​b​e​e​n​ ​p​u​b​l​i​s​h​e​d​ ​t​o​ ​N​o​s​t​r
+		 */
+		postSuccessSubtitle: string
+		/**
+		 * S​h​o​w​ ​m​e​ ​m​o​r​e
+		 */
+		showMeMore: string
 	}
 	errors: {
 		/**
@@ -4751,9 +4941,17 @@ type RootTranslation = {
 	}
 	RefundFlow: {
 		/**
-		 * R​e​f​u​n​d​a​b​l​e​ ​T​r​a​n​s​a​c​t​i​o​n​s
+		 * U​n​c​l​a​i​m​e​d​ ​D​e​p​o​s​i​t​s
 		 */
 		refundListTitle: string
+		/**
+		 * D​e​p​o​s​i​t​ ​D​e​t​a​i​l​s
+		 */
+		depositDetails: string
+		/**
+		 * R​e​f​u​n​d​ ​D​e​p​o​s​i​t
+		 */
+		refundTitle: string
 		/**
 		 * D​e​s​t​i​n​a​t​i​o​n
 		 */
@@ -4767,7 +4965,7 @@ type RootTranslation = {
 		 */
 		pendingTransactions: string
 		/**
-		 * N​o​ ​r​e​f​u​n​d​a​b​l​e​ ​t​r​a​n​s​a​c​t​i​o​n​s​ ​f​o​u​n​d
+		 * N​o​ ​u​n​c​l​a​i​m​e​d​ ​d​e​p​o​s​i​t​s​ ​f​o​u​n​d
 		 */
 		noRefundables: string
 		/**
@@ -4791,17 +4989,139 @@ type RootTranslation = {
 		 */
 		fast: string
 		/**
-		 * H​a​l​f​ ​H​o​u​r
+		 * M​e​d​i​u​m
 		 */
-		halfHour: string
+		medium: string
 		/**
-		 * H​o​u​r
+		 * S​l​o​w
 		 */
-		hour: string
+		slow: string
 		/**
 		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
 		 */
 		txId: string
+		/**
+		 * R​e​f​u​n​d​e​d
+		 */
+		refunded: string
+		/**
+		 * P​e​n​d​i​n​g
+		 */
+		pending: string
+		/**
+		 * T​h​i​s​ ​t​r​a​n​s​f​e​r​ ​w​i​l​l​ ​b​e​ ​c​l​a​i​m​e​d​ ​a​u​t​o​m​a​t​i​c​a​l​l​y
+		 */
+		autoClaiming: string
+		/**
+		 * A​p​p​r​o​v​a​l​ ​R​e​q​u​i​r​e​d
+		 */
+		approvalRequired: string
+		/**
+		 * B​r​o​a​d​c​a​s​t​i​n​g
+		 */
+		broadcasting: string
+		/**
+		 * F​e​e​ ​t​o​o​ ​h​i​g​h
+		 */
+		feeExceeded: string
+		/**
+		 * C​l​a​i​m​ ​f​a​i​l​e​d
+		 */
+		claimFailed: string
+		/**
+		 * T​h​i​s​ ​d​e​p​o​s​i​t​ ​w​i​l​l​ ​b​e​ ​c​l​a​i​m​e​d​ ​a​u​t​o​m​a​t​i​c​a​l​l​y​ ​w​h​e​n​ ​n​e​t​w​o​r​k​ ​f​e​e​s​ ​a​r​e​ ​l​o​w​e​r​.
+		 */
+		automaticClaim: string
+		/**
+		 * A​p​p​r​o​v​e​ ​t​o​ ​c​l​a​i​m​ ​t​h​i​s​ ​t​r​a​n​s​f​e​r​,​ ​o​r​ ​r​e​j​e​c​t​ ​t​o​ ​p​r​o​c​e​s​s​ ​a​ ​r​e​f​u​n​d​.
+		 */
+		approveFee: string
+		/**
+		 * E​n​t​e​r​ ​t​h​e​ ​B​i​t​c​o​i​n​ ​a​d​d​r​e​s​s​ ​w​h​e​r​e​ ​y​o​u​ ​w​a​n​t​ ​t​o​ ​r​e​c​e​i​v​e​ ​t​h​e​ ​r​e​f​u​n​d​.
+		 */
+		enterAddress: string
+		/**
+		 * S​e​l​e​c​t​ ​a​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​f​o​r​ ​y​o​u​r​ ​r​e​f​u​n​d
+		 */
+		selectFee: string
+		/**
+		 * C​o​n​f​i​r​m​ ​&​ ​R​e​f​u​n​d
+		 */
+		confirmRefund: string
+		/**
+		 * P​r​o​c​e​s​s​i​n​g​ ​r​e​f​u​n​d​.​.​.
+		 */
+		processing: string
+		/**
+		 * R​e​f​u​n​d​ ​B​r​o​a​d​c​a​s​t
+		 */
+		success: string
+		/**
+		 * Y​o​u​r​ ​r​e​f​u​n​d​ ​h​a​s​ ​b​e​e​n​ ​s​e​n​t​ ​t​o​ ​t​h​e​ ​B​i​t​c​o​i​n​ ​n​e​t​w​o​r​k​.
+		 */
+		refundSuccess: string
+		/**
+		 * R​e​f​u​n​d​ ​F​a​i​l​e​d
+		 */
+		refundFailed: string
+		/**
+		 * F​a​i​l​e​d​ ​t​o​ ​c​l​a​i​m​ ​d​e​p​o​s​i​t
+		 */
+		failedToClaim: string
+		/**
+		 * U​n​k​n​o​w​n​ ​e​r​r​o​r​ ​o​c​c​u​r​r​e​d
+		 */
+		unknownError: string
+		/**
+		 * T​h​e​ ​d​e​p​o​s​i​t​ ​U​T​X​O​ ​i​s​ ​m​i​s​s​i​n​g​.​ ​T​h​e​ ​t​r​a​n​s​a​c​t​i​o​n​ ​m​a​y​ ​n​o​t​ ​b​e​ ​c​o​n​f​i​r​m​e​d​ ​y​e​t​.
+		 */
+		missingUtxo: string
+		/**
+		 * T​h​i​s​ ​d​e​p​o​s​i​t​ ​c​o​u​l​d​ ​n​o​t​ ​b​e​ ​c​l​a​i​m​e​d​ ​a​u​t​o​m​a​t​i​c​a​l​l​y​.
+		 */
+		couldNotClaimAutomatically: string
+		/**
+		 * N​e​t​w​o​r​k​ ​F​e​e
+		 */
+		networkFee: string
+		/**
+		 * N​e​t​w​o​r​k​ ​F​e​e​ ​(​{​f​e​e​R​a​t​e​}​ ​s​a​t​/​v​B​)
+		 * @param {string} feeRate
+		 */
+		networkFeeWithRate: RequiredParams<'feeRate'>
+		/**
+		 * Y​o​u​ ​R​e​c​e​i​v​e
+		 */
+		youReceive: string
+		/**
+		 * A​p​p​r​o​v​e
+		 */
+		approve: string
+		/**
+		 * Y​o​u​ ​c​a​n​ ​r​e​f​u​n​d​ ​i​t​ ​t​o​ ​a​n​ ​e​x​t​e​r​n​a​l​ ​w​a​l​l​e​t​.
+		 */
+		refundToExternalWallet: string
+		/**
+		 * P​l​e​a​s​e​ ​e​n​t​e​r​ ​a​ ​d​e​s​t​i​n​a​t​i​o​n​ ​a​d​d​r​e​s​s
+		 */
+		enterDestinationAddress: string
+		/**
+		 * I​n​v​a​l​i​d​ ​B​i​t​c​o​i​n​ ​a​d​d​r​e​s​s​ ​f​o​r​m​a​t
+		 */
+		invalidBitcoinAddress: string
+		/**
+		 * E​s​t​.​ ​N​e​t​w​o​r​k​ ​F​e​e​ ​(​{​f​e​e​R​a​t​e​}​ ​s​a​t​/​v​B​)
+		 * @param {string} feeRate
+		 */
+		estimatedFee: RequiredParams<'feeRate'>
+		/**
+		 * E​s​t​.​ ​Y​o​u​ ​R​e​c​e​i​v​e
+		 */
+		estimatedReceive: string
+		/**
+		 * F​e​e​s​ ​a​r​e​ ​e​s​t​i​m​a​t​e​d​.​ ​T​h​e​ ​a​c​t​u​a​l​ ​f​e​e​ ​w​i​l​l​ ​b​e​ ​c​a​l​c​u​l​a​t​e​d​ ​a​t​ ​b​r​o​a​d​c​a​s​t​.
+		 */
+		feeEstimateDisclaimer: string
 	}
 	Nostr: {
 		/**
@@ -4837,7 +5157,7 @@ type RootTranslation = {
 		 */
 		createProfileButton: string
 		/**
-		 * W​e​’​r​e​ ​l​o​o​k​i​n​g​,​ ​b​u​t​ ​w​e​ ​h​a​v​e​n​’​t​ ​b​e​e​n​ ​a​b​l​e​ ​t​o​ ​f​i​n​d​ ​y​o​u​r​ ​p​r​o​f​i​l​e​.
+		 * W​e​'​r​e​ ​l​o​o​k​i​n​g​,​ ​b​u​t​ ​w​e​ ​h​a​v​e​n​'​t​ ​b​e​e​n​ ​a​b​l​e​ ​t​o​ ​f​i​n​d​ ​y​o​u​r​ ​p​r​o​f​i​l​e​.
 		 */
 		profileNotFound: string
 		/**
@@ -4909,10 +5229,18 @@ type RootTranslation = {
 		 */
 		noProfileFound: string
 		/**
-		 * Y​o​u​ ​h​a​v​e​n​’​t​ ​c​r​e​a​t​e​d​ ​a​ ​N​o​s​t​r​ ​p​r​o​f​i​l​e​ ​y​e​t​.​
+		 * Y​o​u​ ​h​a​v​e​n​'​t​ ​c​r​e​a​t​e​d​ ​a​ ​N​o​s​t​r​ ​p​r​o​f​i​l​e​ ​y​e​t​.​
 	​T​a​p​ ​b​e​l​o​w​ ​t​o​ ​c​r​e​a​t​e​ ​o​n​e​.
 		 */
 		noProfileDescription: string
+		/**
+		 * N​o​s​t​r​ ​K​e​y​ ​N​o​t​ ​F​o​u​n​d​ ​o​n​ ​D​e​v​i​c​e
+		 */
+		keyConflictTitle: string
+		/**
+		 * Y​o​u​r​ ​a​c​c​o​u​n​t​ ​h​a​s​ ​a​ ​r​e​g​i​s​t​e​r​e​d​ ​N​o​s​t​r​ ​k​e​y​ ​b​u​t​ ​i​t​ ​w​a​s​ ​n​o​t​ ​f​o​u​n​d​ ​o​n​ ​t​h​i​s​ ​d​e​v​i​c​e​.​ ​T​h​i​s​ ​c​a​n​ ​h​a​p​p​e​n​ ​a​f​t​e​r​ ​r​e​i​n​s​t​a​l​l​i​n​g​ ​t​h​e​ ​a​p​p​ ​o​r​ ​s​w​i​t​c​h​i​n​g​ ​d​e​v​i​c​e​s​.​ ​T​o​ ​r​e​s​t​o​r​e​ ​a​c​c​e​s​s​,​ ​i​m​p​o​r​t​ ​y​o​u​r​ ​n​s​e​c​ ​b​a​c​k​u​p​ ​f​r​o​m​ ​A​d​v​a​n​c​e​d​ ​S​e​t​t​i​n​g​s​.
+		 */
+		keyConflictDescription: string
 		/**
 		 * C​r​e​a​t​i​n​g​ ​P​r​o​f​i​l​e​.​.​.
 		 */
@@ -4921,6 +5249,10 @@ type RootTranslation = {
 		 * C​r​e​a​t​e​ ​N​e​w​ ​P​r​o​f​i​l​e
 		 */
 		createNewProfile: string
+		/**
+		 * G​e​n​e​r​a​t​e​ ​P​r​o​f​i​l​e
+		 */
+		generateProfile: string
 		/**
 		 * F​i​n​d​i​n​g​ ​Y​o​u​.​.
 		 */
@@ -4965,7 +5297,7 @@ type RootTranslation = {
 			 */
 			message: string
 			/**
-			 * S​e​n​d​ ​P​a​y​m​e​n​t
+			 * S​e​n​d
 			 */
 			sendPayment: string
 			/**
@@ -4980,6 +5312,18 @@ type RootTranslation = {
 			 * U​n​f​o​l​l​o​w​ ​C​o​n​t​a​c​t
 			 */
 			unfollowContact: string
+			/**
+			 * W​e​ ​c​o​u​l​d​n​'​t​ ​f​i​n​d​ ​y​o​u​r​ ​c​o​n​t​a​c​t​ ​l​i​s​t​.​ ​T​o​ ​a​d​d​ ​f​r​i​e​n​d​s​,​ ​y​o​u​ ​n​e​e​d​ ​t​o​ ​i​n​i​t​i​a​l​i​z​e​ ​y​o​u​r​ ​c​o​n​t​a​c​t​ ​l​i​s​t​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​f​i​r​s​t​.
+			 */
+			noListDeepLinkMessage: string
+			/**
+			 * M​a​n​a​g​e​ ​C​o​n​t​a​c​t​s
+			 */
+			manageContacts: string
+			/**
+			 * C​r​e​a​t​e​ ​C​o​n​t​a​c​t​ ​L​i​s​t
+			 */
+			createContactList: string
 		}
 		common: {
 			/**
@@ -4990,7 +5334,155 @@ type RootTranslation = {
 			 * C​o​p​i​e​d
 			 */
 			copied: string
+			/**
+			 * G​o​ ​t​o​ ​s​e​t​t​i​n​g​s
+			 */
+			goToSettings: string
 		}
+	}
+	AccountUpgrade: {
+		/**
+		 * A​c​c​o​u​n​t​ ​T​y​p​e
+		 */
+		accountType: string
+		/**
+		 * P​e​r​s​o​n​a​l
+		 */
+		personal: string
+		/**
+		 * S​e​c​u​r​e​ ​y​o​u​r​ ​w​a​l​l​e​t​ ​w​i​t​h​ ​p​h​o​n​e​ ​a​n​d​ ​e​m​a​i​l​.​ ​S​t​a​y​ ​s​a​f​e​ ​a​n​d​ ​r​e​c​o​v​e​r​ ​e​a​s​i​l​y​ ​i​f​ ​n​e​e​d​e​d
+		 */
+		personalDesc: string
+		/**
+		 * P​r​o
+		 */
+		pro: string
+		/**
+		 * A​c​c​e​p​t​ ​p​a​y​m​e​n​t​s​ ​a​n​d​ ​g​e​t​ ​d​i​s​c​o​v​e​r​e​d​ ​o​n​ ​t​h​e​ ​m​a​p​.​ ​R​e​q​u​i​r​e​s​ ​a​ ​b​u​s​i​n​e​s​s​ ​n​a​m​e​ ​a​n​d​ ​l​o​c​a​t​i​o​n​.
+		 */
+		proDesc: string
+		/**
+		 * M​e​r​c​h​a​n​t
+		 */
+		merchant: string
+		/**
+		 * G​i​v​e​ ​r​e​w​a​r​d​s​,​ ​a​p​p​e​a​r​ ​o​n​ ​t​h​e​ ​m​a​p​,​ ​a​n​d​ ​s​e​t​t​l​e​ ​t​o​ ​y​o​u​r​ ​b​a​n​k​.​ ​I​D​ ​a​n​d​ ​b​a​n​k​ ​i​n​f​o​ ​r​e​q​u​i​r​e​d​.
+		 */
+		merchantDesc: string
+		/**
+		 * P​e​r​s​o​n​a​l​ ​I​n​f​o​r​m​a​t​i​o​n
+		 */
+		personalInfo: string
+		/**
+		 * F​u​l​l​ ​n​a​m​e
+		 */
+		fullName: string
+		/**
+		 * P​h​o​n​e​ ​N​u​m​b​e​r
+		 */
+		phoneNumber: string
+		/**
+		 * E​m​a​i​l​ ​A​d​d​r​e​s​s
+		 */
+		email: string
+		/**
+		 *  ​(​O​p​t​i​o​n​a​l​)
+		 */
+		optional: string
+		/**
+		 * V​a​l​i​d​a​t​i​o​n
+		 */
+		validation: string
+		/**
+		 * V​a​l​i​d​a​t​i​o​n​ ​c​o​d​e
+		 */
+		validationCode: string
+		/**
+		 * B​u​s​i​n​e​s​s​ ​I​n​f​o​r​m​a​t​i​o​n
+		 */
+		businessInfo: string
+		/**
+		 * B​u​s​i​n​e​s​s​ ​N​a​m​e
+		 */
+		businessName: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​n​a​m​e
+		 */
+		businessNamePlaceholder: string
+		/**
+		 * B​u​s​i​n​e​s​s​ ​A​d​d​r​e​s​s
+		 */
+		businessAddress: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​a​d​d​r​e​s​s
+		 */
+		businessAddressPlaceholder: string
+		/**
+		 * D​o​ ​y​o​u​ ​w​a​n​t​ ​a​ ​F​l​a​s​h​ ​t​e​r​m​i​n​a​l​?
+		 */
+		flashTerminal: string
+		/**
+		 * A​ ​F​l​a​s​h​ ​T​e​r​m​i​n​a​l​ ​i​s​ ​a​ ​s​m​a​r​t​ ​d​e​v​i​c​e​ ​t​h​a​t​ ​c​a​n​ ​a​c​c​e​p​t​ ​p​a​y​m​e​n​t​ ​v​i​a​ ​F​l​a​s​h​ ​f​o​r​ ​y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​a​n​d​ ​p​r​i​n​t​ ​r​e​c​e​i​p​t​s​.​ ​A​ ​c​u​s​t​o​m​e​r​ ​s​e​r​v​i​c​e​ ​r​e​p​r​e​s​e​n​t​a​t​i​v​e​ ​w​i​l​l​ ​c​o​n​t​a​c​t​ ​y​o​u​ ​i​f​ ​y​o​u​ ​c​h​e​c​k​ ​t​h​i​s​ ​b​o​x​.
+		 */
+		flashTerminalTooltip: string
+		/**
+		 * B​a​n​k​i​n​g​ ​I​n​f​o​r​m​a​t​i​o​n
+		 */
+		bankingInfo: string
+		/**
+		 * B​a​n​k​ ​N​a​m​e
+		 */
+		bankName: string
+		/**
+		 * S​e​l​e​c​t​ ​y​o​u​r​ ​b​a​n​k​ ​n​a​m​e
+		 */
+		bankNamePlaceholder: string
+		/**
+		 * B​a​n​k​ ​B​r​a​n​c​h
+		 */
+		bankBranch: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​b​a​n​k​ ​b​r​a​n​c​h
+		 */
+		bankBranchPlaceholder: string
+		/**
+		 * A​c​c​o​u​n​t​ ​T​y​p​e
+		 */
+		bankAccountType: string
+		/**
+		 * S​e​l​e​c​t​ ​a​c​c​o​u​n​t​ ​t​y​p​e
+		 */
+		selectBankAccountType: string
+		/**
+		 * C​u​r​r​e​n​c​y
+		 */
+		currency: string
+		/**
+		 * S​e​l​e​c​t​ ​C​u​r​r​e​n​c​y
+		 */
+		selectCurrency: string
+		/**
+		 * A​c​c​o​u​n​t​ ​N​u​m​b​e​r
+		 */
+		accountNum: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​n​u​m​b​e​r
+		 */
+		accountNumPlaceholder: string
+		/**
+		 * U​p​l​o​a​d​ ​I​D​ ​D​o​c​u​m​e​n​t
+		 */
+		uploadId: string
+		/**
+		 * Y​o​u​ ​s​u​c​c​e​s​s​f​u​l​l​y​ ​u​p​g​r​a​d​e​d​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​{​a​c​c​o​u​n​t​T​y​p​e​}
+		 * @param {string} accountType
+		 */
+		successUpgrade: RequiredParams<'accountType'>
+		/**
+		 * Y​o​u​ ​s​u​c​c​e​s​s​f​u​l​l​y​ ​r​e​q​u​e​s​t​e​d​ ​t​o​ ​u​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​{​a​c​c​o​u​n​t​T​y​p​e​}
+		 * @param {string} accountType
+		 */
+		successRequest: RequiredParams<'accountType'>
 	}
 }
 
@@ -5275,6 +5767,10 @@ export type TranslationFunctions = {
 		 * % to convert
 		 */
 		percentageToConvert: () => LocalizedString
+		/**
+		 * Your {walletName} has no funds to swap
+		 */
+		emptyWallet: (arg: { walletName: string }) => LocalizedString
 	}
 	ConversionConfirmationScreen: {
 		/**
@@ -6556,7 +7052,7 @@ export type TranslationFunctions = {
 		 */
 		locationPermissionNegative: () => LocalizedString
 		/**
-		 * Ask Me Later
+		 * Remind me later
 		 */
 		locationPermissionNeutral: () => LocalizedString
 		/**
@@ -6652,13 +7148,13 @@ export type TranslationFunctions = {
 		 */
 		myAccounts: () => LocalizedString
 		/**
-		 * Please complete or refund all pending transactions before uninstalling Flash or pending funds will be lost.
+		 * ⚠️ P​l​e​a​s​e​ ​c​o​m​p​l​e​t​e​ ​o​r​ claim ​a​l​l​ unclaimed deposits ​b​e​f​o​r​e​ ​u​n​i​n​s​t​a​l​l​i​n​g​ ​F​l​a​s​h​ ​o​r​ unclaimed deposits ​w​i​l​l​ ​b​e​ ​l​o​s​t​.
 		 */
-		refundableWarning: () => LocalizedString
+		unclaimedDepositsWarning: () => LocalizedString
 		/**
-		 * Refundables
+		 * Unclaimed Deposits
 		 */
-		refundables: () => LocalizedString
+		unclaimedDeposits: () => LocalizedString
 		/**
 		 * Cash
 		 */
@@ -6676,13 +7172,21 @@ export type TranslationFunctions = {
 		 */
 		addFlashcard: () => LocalizedString
 		/**
-		 * Add your phone number
+		 * Upgrade your account
 		 */
 		upgradeTitle: () => LocalizedString
 		/**
-		 * Backup your cash wallet and increase transaction limits.
+		 * Upgrade request is pending
+		 */
+		upgradeTitlePending: () => LocalizedString
+		/**
+		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
 		 */
 		upgradeDesc: () => LocalizedString
+		/**
+		 * Your account upgrade request is under review.
+		 */
+		upgradePendingDesc: () => LocalizedString
 		/**
 		 * Change to your local currency
 		 */
@@ -7231,6 +7735,10 @@ export type TranslationFunctions = {
 		 */
 		payCodeOrLNURL: () => LocalizedString
 		/**
+		 * You cannot receive a zero sats. Please enter an amount corresponding to 1 or more sats.
+		 */
+		cantReceiveZeroSats: () => LocalizedString
+		/**
 		 * * Initial deposit of $5 recommended for channel setup. ~$1 will be paid as setup fee.
 		 */
 		initialDeposit: () => LocalizedString
@@ -7537,6 +8045,14 @@ export type TranslationFunctions = {
 			 * I'm 100% sure
 			 */
 			confirmButton: () => LocalizedString
+			/**
+			 * You are about to send money to someone that is not a {bankName} account. Are you sure this is the address you intend to send to?
+			 */
+			externalWarning: (arg: { bankName: string }) => LocalizedString
+			/**
+			 * I confirm sending to {address}.
+			 */
+			externalCheckBox: (arg: { address: string }) => LocalizedString
 		}
 		/**
 		 * Error getting value from clipboard
@@ -7663,23 +8179,23 @@ export type TranslationFunctions = {
 		/**
 		 * The amount you entered is less than the minimum amount required to send an on-chain transaction {amount}. Please consider sending this amount via Lightning!
 		 */
-		onchainMinAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		onchainMinAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is less than minimum required amount {amount}
 		 */
-		minAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		minAmountConvertError: (arg: { amount: number }) => LocalizedString
 		/**
 		 * The conversion amount is greater than maximum amount {amount}
 		 */
-		maxAmountConvertError: (arg: { amount: number | string }) => LocalizedString
+		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
 	}
 	SettingsScreen: {
 		/**
@@ -7823,7 +8339,7 @@ export type TranslationFunctions = {
 		 */
 		advanceMode: () => LocalizedString
 		/**
-		 * Keys management
+		 * Wallet backup
 		 */
 		keysManagement: () => LocalizedString
 		/**
@@ -7933,7 +8449,7 @@ export type TranslationFunctions = {
 		 */
 		upgrade: () => LocalizedString
 		/**
-		 * Log out and clear all local data
+		 * Log out
 		 */
 		logOutAndDeleteLocalData: () => LocalizedString
 		/**
@@ -8467,11 +8983,11 @@ export type TranslationFunctions = {
 	}
 	UnVerifiedSeedModal: {
 		/**
-		 * YOUR BITCOIN IS NOT SECURE!
+		 * Secure Your Bitcoin Wallet
 		 */
 		header: () => LocalizedString
 		/**
-		 * You should WRITE DOWN your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.
+		 * You should write down your recovery phrase somewhere safe in order to protect your money. If you lose your phone or uninstall the app without writing down your recovery phrase, you will lose access to your funds.
 
 
 		 */
@@ -8482,7 +8998,7 @@ export type TranslationFunctions = {
 		 */
 		termsAndConditions: () => LocalizedString
 		/**
-		 * What is a Recovery Phase?
+		 * What is a Recovery Phrase?
 		 */
 		learnMore: () => LocalizedString
 	}
@@ -8519,6 +9035,74 @@ export type TranslationFunctions = {
 		 * Your transaction is currently pending and will be broadcasted to the Bitcoin network in a moment.
 		 */
 		txNotBroadcast: () => LocalizedString
+		/**
+		 * No transaction found with this ID
+		 */
+		noTransaction: () => LocalizedString
+		/**
+		 * OnChain
+		 */
+		typeOnChain: () => LocalizedString
+		/**
+		 * Lightning
+		 */
+		typeLightning: () => LocalizedString
+		/**
+		 * IntraLedger
+		 */
+		typeIntraLedger: () => LocalizedString
+		/**
+		 * Pending
+		 */
+		pendingStatus: () => LocalizedString
+		/**
+		 * Confirmation
+		 */
+		confirmation: () => LocalizedString
+		/**
+		 * Confirmations
+		 */
+		confirmations: () => LocalizedString
+		/**
+		 * Hash
+		 */
+		hash: () => LocalizedString
+		/**
+		 * Preimage
+		 */
+		preimage: () => LocalizedString
+		/**
+		 * Transaction ID
+		 */
+		transactionId: () => LocalizedString
+		/**
+		 * Swap Details
+		 */
+		swapDetails: () => LocalizedString
+		/**
+		 * Destination Address
+		 */
+		destinationAddress: () => LocalizedString
+		/**
+		 * Swap ID
+		 */
+		swapId: () => LocalizedString
+		/**
+		 * Lockup Transaction
+		 */
+		lockupTxId: () => LocalizedString
+		/**
+		 * Claim Transaction
+		 */
+		claimTxId: () => LocalizedString
+		/**
+		 * Swap Fees
+		 */
+		swapFees: () => LocalizedString
+		/**
+		 * Expires at Block
+		 */
+		expirationBlockHeight: () => LocalizedString
 	}
 	TransactionLimitsScreen: {
 		/**
@@ -8582,9 +9166,13 @@ export type TranslationFunctions = {
 		 */
 		spendingLimitsDescription: () => LocalizedString
 		/**
-		 * Request Business Account
+		 * Request Upgrade
 		 */
-		requestBusiness: () => LocalizedString
+		requestUpgrade: () => LocalizedString
+		/**
+		 * Edit Upgrade Request
+		 */
+		editRequest: () => LocalizedString
 	}
 	TransactionScreen: {
 		/**
@@ -8998,7 +9586,7 @@ export type TranslationFunctions = {
 		 */
 		backHome: () => LocalizedString
 		/**
-		 * Show Recovery Phrase
+		 * Write down recovery phrase
 		 */
 		revealSeed: () => LocalizedString
 		/**
@@ -9046,6 +9634,10 @@ export type TranslationFunctions = {
 		 */
 		confirm: () => LocalizedString
 		/**
+		 * Copied to clipboard
+		 */
+		copied: () => LocalizedString
+		/**
 		 * Convert
 		 */
 		convert: () => LocalizedString
@@ -9066,6 +9658,10 @@ export type TranslationFunctions = {
 		 */
 		csvExport: () => LocalizedString
 		/**
+		 * Export Logs
+		 */
+		exportSparkLogs: () => LocalizedString
+		/**
 		 * Date
 		 */
 		date: () => LocalizedString
@@ -9073,6 +9669,10 @@ export type TranslationFunctions = {
 		 * Description
 		 */
 		description: () => LocalizedString
+		/**
+		 * Details
+		 */
+		details: () => LocalizedString
 		/**
 		 * Domain
 		 */
@@ -9337,6 +9937,85 @@ export type TranslationFunctions = {
 		 * Warning
 		 */
 		warning: () => LocalizedString
+	}
+	NostrQuickStart: {
+		/**
+		 * Make your first social post!
+		 */
+		postHeading: () => LocalizedString
+		/**
+		 * Introduce yourself to the World!
+		 */
+		postDesc: () => LocalizedString
+	}
+	Social: {
+		/**
+		 * Post to Nostr
+		 */
+		post: () => LocalizedString
+		/**
+		 * Make a Post
+		 */
+		postTitle: () => LocalizedString
+		/**
+		 * Posted using Flash! Get it @ https://getflash.io/app
+		 */
+		flashAppCredit: () => LocalizedString
+		/**
+		 * Write your note, make it special :)
+		 */
+		writeYourNote: () => LocalizedString
+		/**
+		 * Post
+		 */
+		postButton: () => LocalizedString
+		/**
+		 * Success!
+	 Your note has been posted
+		 */
+		notePosted: () => LocalizedString
+		/**
+		 * Error!
+	 Error in posting note
+		 */
+		errorPostFailed: () => LocalizedString
+		/**
+		 * Error: 
+	 Empty note
+		 */
+		errorEmptyNote: () => LocalizedString
+		/**
+		 * posting...
+		 */
+		posting: () => LocalizedString
+		/**
+		 * View on iris.to
+		 */
+		viewOnIris: () => LocalizedString
+		/**
+		 * Would you like to view your post on iris.to?
+		 */
+		viewPostQuestion: () => LocalizedString
+		/**
+		 * Browse Social Feed
+		 */
+		browseSocialFeed: () => LocalizedString
+		/**
+		 * Social Feed
+		 */
+		socialFeedTitle: () => LocalizedString
+		/**
+		 * Post Shared!
+		 */
+		postSuccessTitle: () => LocalizedString
+		/**
+		 * Your post has been published to Nostr
+		 */
+		postSuccessSubtitle: () => LocalizedString
+		/**
+		 * Show me more
+		 */
+		showMeMore: () => LocalizedString
 	}
 	errors: {
 		/**
@@ -9627,9 +10306,17 @@ export type TranslationFunctions = {
 	}
 	RefundFlow: {
 		/**
-		 * Refundable Transactions
+		 * Unclaimed Deposits
 		 */
 		refundListTitle: () => LocalizedString
+		/**
+		 * Deposit Details
+		 */
+		depositDetails: () => LocalizedString
+		/**
+		 * Refund Deposit
+		 */
+		refundTitle: () => LocalizedString
 		/**
 		 * Destination
 		 */
@@ -9643,7 +10330,7 @@ export type TranslationFunctions = {
 		 */
 		pendingTransactions: () => LocalizedString
 		/**
-		 * No refundable transactions found
+		 * No unclaimed deposits found
 		 */
 		noRefundables: () => LocalizedString
 		/**
@@ -9667,17 +10354,137 @@ export type TranslationFunctions = {
 		 */
 		fast: () => LocalizedString
 		/**
-		 * Half Hour
+		 * Medium
 		 */
-		halfHour: () => LocalizedString
+		medium: () => LocalizedString
 		/**
-		 * Hour
+		 * Slow
 		 */
-		hour: () => LocalizedString
+		slow: () => LocalizedString
 		/**
 		 * Transaction ID
 		 */
 		txId: () => LocalizedString
+		/**
+		 * Refunded
+		 */
+		refunded: () => LocalizedString
+		/**
+		 * Pending
+		 */
+		pending: () => LocalizedString
+		/**
+		 * This transfer will be claimed automatically
+		 */
+		autoClaiming: () => LocalizedString
+		/**
+		 * Approval Required
+		 */
+		approvalRequired: () => LocalizedString
+		/**
+		 * Broadcasting
+		 */
+		broadcasting: () => LocalizedString
+		/**
+		 * Fee too high
+		 */
+		feeExceeded: () => LocalizedString
+		/**
+		 * Claim failed
+		 */
+		claimFailed: () => LocalizedString
+		/**
+		 * This deposit will be claimed automatically when network fees are lower.
+		 */
+		automaticClaim: () => LocalizedString
+		/**
+		 * Approve to claim this transfer, or reject to process a refund.
+		 */
+		approveFee: () => LocalizedString
+		/**
+		 * Enter the Bitcoin address where you want to receive the refund.
+		 */
+		enterAddress: () => LocalizedString
+		/**
+		 * Select a network fee for your refund
+		 */
+		selectFee: () => LocalizedString
+		/**
+		 * Confirm & Refund
+		 */
+		confirmRefund: () => LocalizedString
+		/**
+		 * Processing refund...
+		 */
+		processing: () => LocalizedString
+		/**
+		 * Refund Broadcast
+		 */
+		success: () => LocalizedString
+		/**
+		 * Your refund has been sent to the Bitcoin network.
+		 */
+		refundSuccess: () => LocalizedString
+		/**
+		 * Refund Failed
+		 */
+		refundFailed: () => LocalizedString
+		/**
+		 * Failed to claim deposit
+		 */
+		failedToClaim: () => LocalizedString
+		/**
+		 * Unknown error occurred
+		 */
+		unknownError: () => LocalizedString
+		/**
+		 * The deposit UTXO is missing. The transaction may not be confirmed yet.
+		 */
+		missingUtxo: () => LocalizedString
+		/**
+		 * This deposit could not be claimed automatically.
+		 */
+		couldNotClaimAutomatically: () => LocalizedString
+		/**
+		 * Network Fee
+		 */
+		networkFee: () => LocalizedString
+		/**
+		 * Network Fee ({feeRate} sat/vB)
+		 */
+		networkFeeWithRate: (arg: { feeRate: string }) => LocalizedString
+		/**
+		 * You Receive
+		 */
+		youReceive: () => LocalizedString
+		/**
+		 * Approve
+		 */
+		approve: () => LocalizedString
+		/**
+		 * You can refund it to an external wallet.
+		 */
+		refundToExternalWallet: () => LocalizedString
+		/**
+		 * Please enter a destination address
+		 */
+		enterDestinationAddress: () => LocalizedString
+		/**
+		 * Invalid Bitcoin address format
+		 */
+		invalidBitcoinAddress: () => LocalizedString
+		/**
+		 * Est. Network Fee ({feeRate} sat/vB)
+		 */
+		estimatedFee: (arg: { feeRate: string }) => LocalizedString
+		/**
+		 * Est. You Receive
+		 */
+		estimatedReceive: () => LocalizedString
+		/**
+		 * Fees are estimated. The actual fee will be calculated at broadcast.
+		 */
+		feeEstimateDisclaimer: () => LocalizedString
 	}
 	Nostr: {
 		/**
@@ -9713,7 +10520,7 @@ export type TranslationFunctions = {
 		 */
 		createProfileButton: () => LocalizedString
 		/**
-		 * We’re looking, but we haven’t been able to find your profile.
+		 * We're looking, but we haven't been able to find your profile.
 		 */
 		profileNotFound: () => LocalizedString
 		/**
@@ -9785,10 +10592,18 @@ export type TranslationFunctions = {
 		 */
 		noProfileFound: () => LocalizedString
 		/**
-		 * You haven’t created a Nostr profile yet.
+		 * You haven't created a Nostr profile yet.
 	Tap below to create one.
 		 */
 		noProfileDescription: () => LocalizedString
+		/**
+		 * Nostr Key Not Found on Device
+		 */
+		keyConflictTitle: () => LocalizedString
+		/**
+		 * Your account has a registered Nostr key but it was not found on this device. This can happen after reinstalling the app or switching devices. To restore access, import your nsec backup from Advanced Settings.
+		 */
+		keyConflictDescription: () => LocalizedString
 		/**
 		 * Creating Profile...
 		 */
@@ -9797,6 +10612,10 @@ export type TranslationFunctions = {
 		 * Create New Profile
 		 */
 		createNewProfile: () => LocalizedString
+		/**
+		 * Generate Profile
+		 */
+		generateProfile: () => LocalizedString
 		/**
 		 * Finding You..
 		 */
@@ -9841,7 +10660,7 @@ export type TranslationFunctions = {
 			 */
 			message: () => LocalizedString
 			/**
-			 * Send Payment
+			 * Send
 			 */
 			sendPayment: () => LocalizedString
 			/**
@@ -9856,6 +10675,18 @@ export type TranslationFunctions = {
 			 * Unfollow Contact
 			 */
 			unfollowContact: () => LocalizedString
+			/**
+			 * We couldn't find your contact list. To add friends, you need to initialize your contact list in Settings first.
+			 */
+			noListDeepLinkMessage: () => LocalizedString
+			/**
+			 * Manage Contacts
+			 */
+			manageContacts: () => LocalizedString
+			/**
+			 * Create Contact List
+			 */
+			createContactList: () => LocalizedString
 		}
 		common: {
 			/**
@@ -9866,7 +10697,153 @@ export type TranslationFunctions = {
 			 * Copied
 			 */
 			copied: () => LocalizedString
+			/**
+			 * Go to settings
+			 */
+			goToSettings: () => LocalizedString
 		}
+	}
+	AccountUpgrade: {
+		/**
+		 * Account Type
+		 */
+		accountType: () => LocalizedString
+		/**
+		 * Personal
+		 */
+		personal: () => LocalizedString
+		/**
+		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
+		 */
+		personalDesc: () => LocalizedString
+		/**
+		 * Pro
+		 */
+		pro: () => LocalizedString
+		/**
+		 * Accept payments and get discovered on the map. Requires a business name and location.
+		 */
+		proDesc: () => LocalizedString
+		/**
+		 * Merchant
+		 */
+		merchant: () => LocalizedString
+		/**
+		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
+		 */
+		merchantDesc: () => LocalizedString
+		/**
+		 * Personal Information
+		 */
+		personalInfo: () => LocalizedString
+		/**
+		 * Full name
+		 */
+		fullName: () => LocalizedString
+		/**
+		 * Phone Number
+		 */
+		phoneNumber: () => LocalizedString
+		/**
+		 * Email Address
+		 */
+		email: () => LocalizedString
+		/**
+		 *  (Optional)
+		 */
+		optional: () => LocalizedString
+		/**
+		 * Validation
+		 */
+		validation: () => LocalizedString
+		/**
+		 * Validation code
+		 */
+		validationCode: () => LocalizedString
+		/**
+		 * Business Information
+		 */
+		businessInfo: () => LocalizedString
+		/**
+		 * Business Name
+		 */
+		businessName: () => LocalizedString
+		/**
+		 * Enter your business name
+		 */
+		businessNamePlaceholder: () => LocalizedString
+		/**
+		 * Business Address
+		 */
+		businessAddress: () => LocalizedString
+		/**
+		 * Enter your business address
+		 */
+		businessAddressPlaceholder: () => LocalizedString
+		/**
+		 * Do you want a Flash terminal?
+		 */
+		flashTerminal: () => LocalizedString
+		/**
+		 * A Flash Terminal is a smart device that can accept payment via Flash for your business and print receipts. A customer service representative will contact you if you check this box.
+		 */
+		flashTerminalTooltip: () => LocalizedString
+		/**
+		 * Banking Information
+		 */
+		bankingInfo: () => LocalizedString
+		/**
+		 * Bank Name
+		 */
+		bankName: () => LocalizedString
+		/**
+		 * Select your bank name
+		 */
+		bankNamePlaceholder: () => LocalizedString
+		/**
+		 * Bank Branch
+		 */
+		bankBranch: () => LocalizedString
+		/**
+		 * Enter your bank branch
+		 */
+		bankBranchPlaceholder: () => LocalizedString
+		/**
+		 * Account Type
+		 */
+		bankAccountType: () => LocalizedString
+		/**
+		 * Select account type
+		 */
+		selectBankAccountType: () => LocalizedString
+		/**
+		 * Currency
+		 */
+		currency: () => LocalizedString
+		/**
+		 * Select Currency
+		 */
+		selectCurrency: () => LocalizedString
+		/**
+		 * Account Number
+		 */
+		accountNum: () => LocalizedString
+		/**
+		 * Enter your account number
+		 */
+		accountNumPlaceholder: () => LocalizedString
+		/**
+		 * Upload ID Document
+		 */
+		uploadId: () => LocalizedString
+		/**
+		 * You successfully upgraded your account to {accountType}
+		 */
+		successUpgrade: (arg: { accountType: string }) => LocalizedString
+		/**
+		 * You successfully requested to upgrade your account to {accountType}
+		 */
+		successRequest: (arg: { accountType: string }) => LocalizedString
 	}
 }
 
