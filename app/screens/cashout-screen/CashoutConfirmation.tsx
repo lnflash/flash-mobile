@@ -57,8 +57,7 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
   const onConfirm = async () => {
     toggleActivityIndicator(true)
     const res = await initiateCashout({ variables: { input: { walletId, offerId } } })
-    console.log("RESPONSE>>>>>>>>>>>>", res)
-    if (res.data?.initiateCashout.success) {
+    if (res.data?.initiateCashout.journalId) {
       navigation.navigate("CashoutSuccess")
     } else {
       setErrorMsg(res.data?.initiateCashout.errors[0].message)
@@ -87,14 +86,12 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
         <CashoutFromWallet usdBalance={usdBalance} />
         <CashoutCard
           title={LL.Cashout.exchangeRate()}
-          detail={`$1/J$${exchangeRate / 100}`}
+          detail={`$1/J$${(exchangeRate / 100).toFixed(2)}`}
         />
         <CashoutCard title={LL.Cashout.sendAmount()} detail={formattedSendAmount} />
         <CashoutCard
           title={LL.Cashout.receiveAmount()}
-          detail={`${formattedReceiveUsdAmount} ${
-            displayCurrency === "JMD" ? "" : `(J${receiveJmd / 100})`
-          }`}
+          detail={`${formattedReceiveUsdAmount} (J$${(receiveJmd / 100).toFixed(2)})`}
         />
         <CashoutCard title={LL.Cashout.fee()} detail={formattedFeeAmount} />
         {!!errorMsg && (

@@ -2277,14 +2277,14 @@ export type RequestCashoutMutationVariables = Exact<{
 }>;
 
 
-export type RequestCashoutMutation = { readonly __typename: 'Mutation', readonly requestCashout: { readonly __typename: 'RequestCashoutResponse', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string, readonly path?: ReadonlyArray<string | null> | null }>, readonly offer?: { readonly __typename: 'CashoutOffer', readonly exchangeRate: number, readonly expiresAt: number, readonly flashFee: number, readonly offerId: string, readonly receiveJmd: number, readonly receiveUsd: number, readonly send: number, readonly walletId: string } | null } };
+export type RequestCashoutMutation = { readonly __typename: 'Mutation', readonly requestCashout: { readonly __typename: 'RequestCashoutResponse', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }>, readonly offer?: { readonly __typename: 'CashoutOffer', readonly exchangeRate: number, readonly expiresAt: number, readonly flashFee: number, readonly offerId: string, readonly receiveJmd: number, readonly receiveUsd: number, readonly send: number, readonly walletId: string } | null } };
 
 export type InitiateCashoutMutationVariables = Exact<{
   input: InitiateCashoutInput;
 }>;
 
 
-export type InitiateCashoutMutation = { readonly __typename: 'Mutation', readonly initiateCashout: { readonly __typename: 'SuccessPayload', readonly success?: boolean | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly path?: ReadonlyArray<string | null> | null, readonly message: string, readonly code?: string | null }> } };
+export type InitiateCashoutMutation = { readonly __typename: 'Mutation', readonly initiateCashout: { readonly __typename: 'InitiatedCashoutResponse', readonly journalId?: string | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
 
 export type AccountDeleteMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -3738,7 +3738,6 @@ export const RequestCashoutDocument = gql`
     errors {
       code
       message
-      path
     }
     offer {
       exchangeRate
@@ -3783,11 +3782,10 @@ export const InitiateCashoutDocument = gql`
     mutation InitiateCashout($input: InitiateCashoutInput!) {
   initiateCashout(input: $input) {
     errors {
-      path
-      message
       code
+      message
     }
-    success
+    journalId
   }
 }
     `;

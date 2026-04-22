@@ -122,7 +122,6 @@ gql`
       errors {
         code
         message
-        path
       }
       offer {
         exchangeRate
@@ -140,11 +139,10 @@ gql`
   mutation InitiateCashout($input: InitiateCashoutInput!) {
     initiateCashout(input: $input) {
       errors {
-        path
-        message
         code
+        message
       }
-      success
+      journalId
     }
   }
 
