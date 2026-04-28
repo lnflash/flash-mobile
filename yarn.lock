@@ -1334,10 +1334,10 @@
   dependencies:
     "@noble/curves" "^1.7.0"
 
-"@breeztech/breez-sdk-spark-react-native@^0.13.1":
-  version "0.13.1"
-  resolved "https://registry.yarnpkg.com/@breeztech/breez-sdk-spark-react-native/-/breez-sdk-spark-react-native-0.13.1.tgz#4ae1258d9c8f6e00d31b81605c9e309700b42841"
-  integrity sha512-1DHiCxQ+Bamrd6WWjbxAMrmS9YgFa2+ZHqeQ1h8o3d0jDcdGNtjNb686lU+L6ArGtSqLQnSXGvKUsFjwQupxMA==
+"@breeztech/breez-sdk-spark-react-native@^0.13.4":
+  version "0.13.4"
+  resolved "https://registry.yarnpkg.com/@breeztech/breez-sdk-spark-react-native/-/breez-sdk-spark-react-native-0.13.4.tgz#7c5429a677547fcbe3aef4fcb299c159e0ff1641"
+  integrity sha512-wspP9tXY4GDJWVH42xI3dhe+MS5ROYX0a2mOqHKLWGcFqQc+Yuf77NaPBhZqM3FDKxVvZkDtAhCDuqDJ4vaclQ==
   dependencies:
     uniffi-bindgen-react-native "^0.29.3-1"
 
@@ -7124,7 +7124,7 @@
   dependencies:
     "@types/istanbul-lib-report" "*"
 
-"@types/jest@^29.5.10":
+"@types/jest@^29.5.13":
   version "29.5.14"
   resolved "https://registry.yarnpkg.com/@types/jest/-/jest-29.5.14.tgz#2b910912fa1d6856cadcd0c1f95af7df1d6049e5"
   integrity sha512-ZN+4sdnLUbo8EVvVc2ao0GFW6oVrQRPn4K2lglySj7APvSrgzxHiNNK99us4WDMi57xxA2yggblIAMNhXOotLQ==
