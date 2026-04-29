@@ -131,7 +131,6 @@ import {
 import { FeaturedProfileView } from "@app/screens/featured-profile-view"
 import {
   BankTransfer,
-  BuyBitcoin,
   BuyBitcoinDetails,
   BuyBitcoinSuccess,
   BuySellBitcoin,
@@ -670,7 +669,6 @@ export const RootStack = () => {
         }}
       >
         <RootNavigator.Screen name="BuySellBitcoin" component={BuySellBitcoin} />
-        <RootNavigator.Screen name="BuyBitcoin" component={BuyBitcoin} />
         <RootNavigator.Screen name="BuyBitcoinDetails" component={BuyBitcoinDetails} />
         <RootNavigator.Screen name="BankTransfer" component={BankTransfer} />
         <RootNavigator.Screen name="CardPayment" component={CardPayment} />

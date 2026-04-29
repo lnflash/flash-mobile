@@ -1175,7 +1175,15 @@ const en: BaseTranslation = {
     topUp: "Top Up",
     topUpDesc: "Add funds to your wallet",
     settle: "Settle",
-    settleDesc: "Cashout funds from your wallet"
+    settleDesc: "Cashout funds from your wallet",
+    selectSettleMethod: "Settle to",
+    selectTopUpMethod: "Top up via",
+    jmdBankAccount: "JMD Bank Account",
+    jmdBankAccountDesc: "Withdraw to your Jamaican bank account",
+    internationalBankAccount: "International Bank Account",
+    internationalBankAccountDesc: "Withdraw to your international bank account",
+    internationalBankTransfer: "International Bank Transfer",
+    internationalBankTransferDesc: "Transfer from your international bank account",
   },
   UpgradeAccountModal: {
     title: "Upgrade your account",

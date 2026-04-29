@@ -164,7 +164,6 @@ export type RootStackParamList = {
   // Featured profile WebView entry
   FeaturedProfileView: { entryPoint: "search" | "long_press" | "profile" }
   BuySellBitcoin: undefined
-  BuyBitcoin: undefined
   BuyBitcoinDetails: { paymentType: "card" | "bankTransfer" }
   BankTransfer: {
     amount: number

@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useMemo, useState } from "react"
 import { TouchableOpacity, View } from "react-native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
@@ -7,6 +7,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 
 // components
 import { Screen } from "@app/components/screen"
+import TransferOptionModal, { TransferOption } from "./TransferOptionModal"
 
 // assets
 import ArrowDown from "@app/assets/icons/arrow-down-to-bracket.svg"
@@ -19,13 +20,65 @@ const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
 
-  const handleTopUp = () => {
-    navigation.navigate("BuyBitcoin")
-  }
+  const [topUpModalVisible, setTopUpModalVisible] = useState(false)
+  const [settleModalVisible, setSettleModalVisible] = useState(false)
 
-  const handleSettle = () => {
-    navigation.navigate("CashoutDetails")
-  }
+  const topUpOptions: TransferOption[] = useMemo(
+    () => [
+      {
+        icon: "card",
+        title: LL.TopUpScreen.debitCreditCard(),
+        description: LL.TopUpScreen.debitCreditCardDesc(),
+        onPress: () => {
+          setTopUpModalVisible(false)
+          navigation.navigate("BuyBitcoinDetails", { paymentType: "card" })
+        },
+      },
+      {
+        icon: "business",
+        title: LL.TopUpScreen.bankTransfer(),
+        description: LL.TopUpScreen.bankTransferDesc(),
+        onPress: () => {
+          setTopUpModalVisible(false)
+          navigation.navigate("BuyBitcoinDetails", { paymentType: "bankTransfer" })
+        },
+      },
+      {
+        icon: "globe",
+        title: LL.TransferScreen.internationalBankTransfer(),
+        description: LL.TransferScreen.internationalBankTransferDesc(),
+        onPress: () => {
+          setTopUpModalVisible(false)
+          // TODO: navigate to international bank transfer top up flow
+        },
+      },
+    ],
+    [LL, navigation],
+  )
+
+  const settleOptions: TransferOption[] = useMemo(
+    () => [
+      {
+        icon: "business",
+        title: LL.TransferScreen.jmdBankAccount(),
+        description: LL.TransferScreen.jmdBankAccountDesc(),
+        onPress: () => {
+          setSettleModalVisible(false)
+          navigation.navigate("CashoutDetails")
+        },
+      },
+      {
+        icon: "globe",
+        title: LL.TransferScreen.internationalBankAccount(),
+        description: LL.TransferScreen.internationalBankAccountDesc(),
+        onPress: () => {
+          setSettleModalVisible(false)
+          // TODO: navigate to international bank account cashout flow
+        },
+      },
+    ],
+    [LL, navigation],
+  )
 
   return (
     <Screen>
@@ -33,7 +86,7 @@ const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
         <Text type="h02" bold style={styles.title}>
           {LL.TransferScreen.title()}
         </Text>
-        <TouchableOpacity style={styles.btn} onPress={handleTopUp}>
+        <TouchableOpacity style={styles.btn} onPress={() => setTopUpModalVisible(true)}>
           <ArrowDown color={colors.black} width={40} height={40} />
           <View style={styles.btnTextWrapper}>
             <Text type="p1">{LL.TransferScreen.topUp()}</Text>
@@ -43,7 +96,7 @@ const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
           </View>
           <Icon type="ionicon" name={"chevron-forward"} size={20} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.btn} onPress={handleSettle}>
+        <TouchableOpacity style={styles.btn} onPress={() => setSettleModalVisible(true)}>
           <ArrowUp color={colors.black} width={40} height={40} />
           <View style={styles.btnTextWrapper}>
             <Text type="p1"> {LL.TransferScreen.settle()}</Text>
@@ -54,11 +107,24 @@ const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
           <Icon type="ionicon" name={"chevron-forward"} size={20} />
         </TouchableOpacity>
       </View>
+
+      <TransferOptionModal
+        visible={topUpModalVisible}
+        title={LL.TransferScreen.selectTopUpMethod()}
+        options={topUpOptions}
+        onClose={() => setTopUpModalVisible(false)}
+      />
+      <TransferOptionModal
+        visible={settleModalVisible}
+        title={LL.TransferScreen.selectSettleMethod()}
+        options={settleOptions}
+        onClose={() => setSettleModalVisible(false)}
+      />
     </Screen>
   )
 }
 
-const useStyles = makeStyles(({ colors }) => ({
+const useStyles = makeStyles(() => ({
   container: {
     flex: 1,
     paddingHorizontal: 20,

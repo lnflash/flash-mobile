@@ -3850,6 +3850,38 @@ type RootTranslation = {
 		 * C​a​s​h​o​u​t​ ​f​u​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​w​a​l​l​e​t
 		 */
 		settleDesc: string
+		/**
+		 * S​e​t​t​l​e​ ​t​o
+		 */
+		selectSettleMethod: string
+		/**
+		 * T​o​p​ ​u​p​ ​v​i​a
+		 */
+		selectTopUpMethod: string
+		/**
+		 * J​M​D​ ​B​a​n​k​ ​A​c​c​o​u​n​t
+		 */
+		jmdBankAccount: string
+		/**
+		 * W​i​t​h​d​r​a​w​ ​t​o​ ​y​o​u​r​ ​J​a​m​a​i​c​a​n​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 */
+		jmdBankAccountDesc: string
+		/**
+		 * I​n​t​e​r​n​a​t​i​o​n​a​l​ ​B​a​n​k​ ​A​c​c​o​u​n​t
+		 */
+		internationalBankAccount: string
+		/**
+		 * W​i​t​h​d​r​a​w​ ​t​o​ ​y​o​u​r​ ​i​n​t​e​r​n​a​t​i​o​n​a​l​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 */
+		internationalBankAccountDesc: string
+		/**
+		 * I​n​t​e​r​n​a​t​i​o​n​a​l​ ​B​a​n​k​ ​T​r​a​n​s​f​e​r
+		 */
+		internationalBankTransfer: string
+		/**
+		 * T​r​a​n​s​f​e​r​ ​f​r​o​m​ ​y​o​u​r​ ​i​n​t​e​r​n​a​t​i​o​n​a​l​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 */
+		internationalBankTransferDesc: string
 	}
 	UpgradeAccountModal: {
 		/**
@@ -9260,6 +9292,38 @@ export type TranslationFunctions = {
 		 * Cashout funds from your wallet
 		 */
 		settleDesc: () => LocalizedString
+		/**
+		 * Settle to
+		 */
+		selectSettleMethod: () => LocalizedString
+		/**
+		 * Top up via
+		 */
+		selectTopUpMethod: () => LocalizedString
+		/**
+		 * JMD Bank Account
+		 */
+		jmdBankAccount: () => LocalizedString
+		/**
+		 * Withdraw to your Jamaican bank account
+		 */
+		jmdBankAccountDesc: () => LocalizedString
+		/**
+		 * International Bank Account
+		 */
+		internationalBankAccount: () => LocalizedString
+		/**
+		 * Withdraw to your international bank account
+		 */
+		internationalBankAccountDesc: () => LocalizedString
+		/**
+		 * International Bank Transfer
+		 */
+		internationalBankTransfer: () => LocalizedString
+		/**
+		 * Transfer from your international bank account
+		 */
+		internationalBankTransferDesc: () => LocalizedString
 	}
 	UpgradeAccountModal: {
 		/**
