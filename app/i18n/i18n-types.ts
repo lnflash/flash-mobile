@@ -311,6 +311,30 @@ type RootTranslation = {
 
 		 */
 		disclaimer: string
+		/**
+		 * W​i​t​h​d​r​a​w​ ​t​o
+		 */
+		withdrawTo: string
+		/**
+		 * B​a​n​k​ ​N​a​m​e
+		 */
+		bankName: string
+		/**
+		 * B​a​n​k​ ​B​r​a​n​c​h
+		 */
+		bankBranch: string
+		/**
+		 * A​c​c​o​u​n​t​ ​N​u​m​b​e​r
+		 */
+		accountNumber: string
+		/**
+		 * A​c​c​o​u​n​t​ ​T​y​p​e
+		 */
+		accountType: string
+		/**
+		 * C​u​r​r​e​n​c​y
+		 */
+		currency: string
 	}
 	ConversionDetailsScreen: {
 		/**
@@ -1804,7 +1828,7 @@ type RootTranslation = {
 		 */
 		bankTransfer: string
 		/**
-		 * T​r​a​n​s​f​e​r​ ​f​u​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 * T​r​a​n​s​f​e​r​ ​f​u​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​b​a​n​k
 		 */
 		bankTransferDesc: string
 		/**
@@ -1812,7 +1836,7 @@ type RootTranslation = {
 		 */
 		debitCreditCard: string
 		/**
-		 * P​a​y​ ​w​i​t​h​ ​y​o​u​r​ ​c​a​r​d​ ​v​i​a​ ​F​y​g​a​r​o
+		 * P​a​y​ ​w​i​t​h​ ​y​o​u​r​ ​d​e​b​i​t​ ​o​r​ ​c​r​e​d​i​t​ ​c​a​r​d
 		 */
 		debitCreditCardDesc: string
 	}
@@ -1822,7 +1846,7 @@ type RootTranslation = {
 		 */
 		title: string
 		/**
-		 * Bank Transfer
+		 * B​a​n​k​ ​T​r​a​n​s​f​e​r
 		 */
 		bankTransfer: string
 		/**
@@ -1894,72 +1918,72 @@ type RootTranslation = {
 	}
 	BankTransfer: {
 		/**
-		 * Bank Transfer
+		 * B​a​n​k​ ​T​r​a​n​s​f​e​r
 		 */
 		title: string
 		/**
-		 * Your order has been created. To complete the order, please transfer ${amount} USD to the bank details provided below.
+		 * Y​o​u​r​ ​o​r​d​e​r​ ​h​a​s​ ​b​e​e​n​ ​c​r​e​a​t​e​d​.​ ​T​o​ ​c​o​m​p​l​e​t​e​ ​t​h​e​ ​o​r​d​e​r​,​ ​p​l​e​a​s​e​ ​t​r​a​n​s​f​e​r​ ​$​{​a​m​o​u​n​t​}​ ​U​S​D​ ​t​o​ ​t​h​e​ ​b​a​n​k​ ​d​e​t​a​i​l​s​ ​p​r​o​v​i​d​e​d​ ​b​e​l​o​w​.
 		 * @param {number} amount
 		 */
-		desc1: string
+		desc1: RequiredParams<'amount'>
 		/**
-		 * Use {code} as the reference description. This unique code will help us associate the payment with your Flash account and process the Bitcoin transfer.
+		 * U​s​e​ ​{​c​o​d​e​}​ ​a​s​ ​t​h​e​ ​r​e​f​e​r​e​n​c​e​ ​d​e​s​c​r​i​p​t​i​o​n​.​ ​T​h​i​s​ ​u​n​i​q​u​e​ ​c​o​d​e​ ​w​i​l​l​ ​h​e​l​p​ ​u​s​ ​a​s​s​o​c​i​a​t​e​ ​t​h​e​ ​p​a​y​m​e​n​t​ ​w​i​t​h​ ​y​o​u​r​ ​F​l​a​s​h​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​p​r​o​c​e​s​s​ ​t​h​e​ ​B​i​t​c​o​i​n​ ​t​r​a​n​s​f​e​r​.
 		 * @param {string} code
 		 */
-		desc2: string
+		desc2: RequiredParams<'code'>
 		/**
-		 * After we have received your payment, you will be credited with ${amount} USD in your Cash wallet, with a ${fee} USD fee deducted. You can then choose when you convert those USD to Bitcoin on your own using the Convert functionality in the mobile app.
+		 * A​f​t​e​r​ ​w​e​ ​h​a​v​e​ ​r​e​c​e​i​v​e​d​ ​y​o​u​r​ ​p​a​y​m​e​n​t​,​ ​y​o​u​ ​w​i​l​l​ ​b​e​ ​c​r​e​d​i​t​e​d​ ​w​i​t​h​ ​$​{​a​m​o​u​n​t​}​ ​U​S​D​ ​i​n​ ​y​o​u​r​ ​C​a​s​h​ ​w​a​l​l​e​t​,​ ​w​i​t​h​ ​a​ ​$​{​f​e​e​}​ ​U​S​D​ ​f​e​e​ ​d​e​d​u​c​t​e​d​.​ ​Y​o​u​ ​c​a​n​ ​t​h​e​n​ ​c​h​o​o​s​e​ ​w​h​e​n​ ​y​o​u​ ​c​o​n​v​e​r​t​ ​t​h​o​s​e​ ​U​S​D​ ​t​o​ ​B​i​t​c​o​i​n​ ​o​n​ ​y​o​u​r​ ​o​w​n​ ​u​s​i​n​g​ ​t​h​e​ ​C​o​n​v​e​r​t​ ​f​u​n​c​t​i​o​n​a​l​i​t​y​ ​i​n​ ​t​h​e​ ​m​o​b​i​l​e​ ​a​p​p​.
 		 * @param {number} amount
 		 * @param {number} fee
 		 */
-		desc3: string
+		desc3: RequiredParams<'amount' | 'fee'>
 		/**
-		 * Account Type
+		 * A​c​c​o​u​n​t​ ​T​y​p​e
 		 */
 		accountType: string
 		/**
-		 * Destination Bank
+		 * D​e​s​t​i​n​a​t​i​o​n​ ​B​a​n​k
 		 */
 		destinationBank: string
 		/**
-		 * Account Number
+		 * A​c​c​o​u​n​t​ ​N​u​m​b​e​r
 		 */
 		accountNumber: string
 		/**
-		 * Type of Client
+		 * T​y​p​e​ ​o​f​ ​C​l​i​e​n​t
 		 */
 		typeOfClient: string
 		/**
-		 * Receiver's Name
+		 * R​e​c​e​i​v​e​r​'​s​ ​N​a​m​e
 		 */
 		receiverName: string
 		/**
-		 * Email
+		 * E​m​a​i​l
 		 */
 		email: string
 		/**
-		 * Amount
+		 * A​m​o​u​n​t
 		 */
 		amount: string
 		/**
-		 * Unique Code
+		 * U​n​i​q​u​e​ ​C​o​d​e
 		 */
 		uniqueCode: string
 		/**
-		 * Fees
+		 * F​e​e​s
 		 */
 		fees: string
 		/**
-		 * After payment completion on your end you can send us an email to {email} with a screenshot of your payment confirmation.
-		 * @param {number} email
+		 * A​f​t​e​r​ ​p​a​y​m​e​n​t​ ​c​o​m​p​l​e​t​i​o​n​ ​o​n​ ​y​o​u​r​ ​e​n​d​ ​y​o​u​ ​c​a​n​ ​s​e​n​d​ ​u​s​ ​a​n​ ​e​m​a​i​l​ ​t​o​ ​{​e​m​a​i​l​}​ ​w​i​t​h​ ​a​ ​s​c​r​e​e​n​s​h​o​t​ ​o​f​ ​y​o​u​r​ ​p​a​y​m​e​n​t​ ​c​o​n​f​i​r​m​a​t​i​o​n​.
+		 * @param {string} email
 		 */
-		desc4: string
+		desc4: RequiredParams<'email'>
 		/**
-		 * Your payment will be processed even if we don't receive this email, but having this confirmation can help accelerate the order.
+		 * Y​o​u​r​ ​p​a​y​m​e​n​t​ ​w​i​l​l​ ​b​e​ ​p​r​o​c​e​s​s​e​d​ ​e​v​e​n​ ​i​f​ ​w​e​ ​d​o​n​'​t​ ​r​e​c​e​i​v​e​ ​t​h​i​s​ ​e​m​a​i​l​,​ ​b​u​t​ ​h​a​v​i​n​g​ ​t​h​i​s​ ​c​o​n​f​i​r​m​a​t​i​o​n​ ​c​a​n​ ​h​e​l​p​ ​a​c​c​e​l​e​r​a​t​e​ ​t​h​e​ ​o​r​d​e​r​.
 		 */
 		desc5: string
 		/**
-		 * Back to Home
+		 * B​a​c​k​ ​t​o​ ​H​o​m​e
 		 */
 		backHome: string
 	}
@@ -3823,7 +3847,7 @@ type RootTranslation = {
 		 */
 		settle: string
 		/**
-		 * S​e​t​t​l​e​ ​p​e​n​d​i​n​g​ ​t​r​a​n​s​a​c​t​i​o​n​s
+		 * C​a​s​h​o​u​t​ ​f​u​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​w​a​l​l​e​t
 		 */
 		settleDesc: string
 	}
@@ -5757,6 +5781,30 @@ export type TranslationFunctions = {
 
 		 */
 		disclaimer: () => LocalizedString
+		/**
+		 * Withdraw to
+		 */
+		withdrawTo: () => LocalizedString
+		/**
+		 * Bank Name
+		 */
+		bankName: () => LocalizedString
+		/**
+		 * Bank Branch
+		 */
+		bankBranch: () => LocalizedString
+		/**
+		 * Account Number
+		 */
+		accountNumber: () => LocalizedString
+		/**
+		 * Account Type
+		 */
+		accountType: () => LocalizedString
+		/**
+		 * Currency
+		 */
+		currency: () => LocalizedString
 	}
 	ConversionDetailsScreen: {
 		/**
@@ -7341,18 +7389,14 @@ export type TranslationFunctions = {
 		title: () => LocalizedString
 		/**
 		 * Your order has been created. To complete the order, please transfer ${amount} USD to the bank details provided below.
-		 * @param {number} amount
 		 */
 		desc1: (arg: { amount: number }) => LocalizedString
 		/**
 		 * Use {code} as the reference description. This unique code will help us associate the payment with your Flash account and process the Bitcoin transfer.
-		 * @param {string} code
 		 */
 		desc2: (arg: { code: string }) => LocalizedString
 		/**
 		 * After we have received your payment, you will be credited with ${amount} USD in your Cash wallet, with a ${fee} USD fee deducted. You can then choose when you convert those USD to Bitcoin on your own using the Convert functionality in the mobile app.
-		 * @param {number} amount
-		 * @param {number} fee
 		 */
 		desc3: (arg: { amount: number, fee: number }) => LocalizedString
 		/**
@@ -7393,7 +7437,6 @@ export type TranslationFunctions = {
 		fees: () => LocalizedString
 		/**
 		 * After payment completion on your end you can send us an email to {email} with a screenshot of your payment confirmation.
-		 * @param {string} email
 		 */
 		desc4: (arg: { email: string }) => LocalizedString
 		/**

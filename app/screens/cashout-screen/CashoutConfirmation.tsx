@@ -7,7 +7,7 @@ import moment from "moment"
 // components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
-import { CashoutCard, CashoutFromWallet } from "@app/components/cashout-flow"
+import { CashoutCard, CashoutFromWallet, CashoutWithdrawTo } from "@app/components/cashout-flow"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -94,6 +94,7 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
           detail={`${formattedReceiveUsdAmount} (J$${(receiveJmd / 100).toFixed(2)})`}
         />
         <CashoutCard title={LL.Cashout.fee()} detail={formattedFeeAmount} />
+        <CashoutWithdrawTo />
         {!!errorMsg && (
           <Text type="bm" color={colors.red}>
             {errorMsg}
