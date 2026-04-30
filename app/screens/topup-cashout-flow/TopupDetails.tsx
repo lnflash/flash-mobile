@@ -1,5 +1,5 @@
 /**
- * BuyBitcoinDetails Component
+ * TopupDetails Component
  *
  * This screen collects payment details before initiating the topup flow.
  * Users select:
@@ -32,9 +32,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Cash from "@app/assets/icons/cash.svg"
 import Bitcoin from "@app/assets/icons/bitcoin.svg"
 
-type Props = StackScreenProps<RootStackParamList, "BuyBitcoinDetails">
+type Props = StackScreenProps<RootStackParamList, "TopupDetails">
 
-const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
+const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { bottom } = useSafeAreaInsets()
@@ -76,7 +76,7 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
    */
   const handleContinue = async () => {
     if (!validateAmount(amount)) {
-      Alert.alert("Invalid Amount", LL.BuyBitcoinDetails.minimumAmount())
+      Alert.alert("Invalid Amount", LL.TopupDetails.minimumAmount())
       return
     }
 
@@ -115,7 +115,7 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
   const walletButtons = [
     {
       id: "USD",
-      text: LL.BuyBitcoinDetails.usdWallet(),
+      text: LL.TopupDetails.usdWallet(),
       icon: {
         selected: <Cash width={30} height={30} />,
         normal: <Cash width={30} height={30} />,
@@ -123,7 +123,7 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
     },
     {
       id: "BTC",
-      text: LL.BuyBitcoinDetails.btcWallet(),
+      text: LL.TopupDetails.btcWallet(),
       icon: {
         selected: <Bitcoin width={30} height={30} />,
         normal: <Bitcoin width={30} height={30} />,
@@ -136,13 +136,13 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
       <View style={styles.container}>
         <Text type="h02" bold style={styles.title}>
           {route.params.paymentType === "card"
-            ? LL.BuyBitcoinDetails.title()
-            : LL.BuyBitcoinDetails.bankTransfer()}
+            ? LL.TopupDetails.title()
+            : LL.TopupDetails.bankTransfer()}
         </Text>
 
         <View style={styles.fieldContainer}>
           <Text type="p1" bold>
-            {LL.BuyBitcoinDetails.wallet()}
+            {LL.TopupDetails.wallet()}
           </Text>
           <ButtonGroup
             buttons={walletButtons}
@@ -154,11 +154,11 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
 
         <View style={styles.fieldContainer}>
           <Text type="p1" bold>
-            {LL.BuyBitcoinDetails.amount()}
+            {LL.TopupDetails.amount()}
           </Text>
           <TextInput
             style={styles.input}
-            placeholder={LL.BuyBitcoinDetails.amountPlaceholder()}
+            placeholder={LL.TopupDetails.amountPlaceholder()}
             placeholderTextColor={colors.grey1}
             value={amount}
             onChangeText={setAmount}
@@ -167,7 +167,7 @@ const BuyBitcoinDetails: React.FC<Props> = ({ navigation, route }) => {
         </View>
       </View>
       <PrimaryBtn
-        label={LL.BuyBitcoinDetails.continue()}
+        label={LL.TopupDetails.continue()}
         onPress={handleContinue}
         loading={isLoading}
         btnStyle={styles.primaryButton}
@@ -207,4 +207,4 @@ const useStyles = makeStyles(({ colors }) => (props: { bottom: number }) => ({
   },
 }))
 
-export default BuyBitcoinDetails
+export default TopupDetails

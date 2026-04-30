@@ -582,7 +582,7 @@ const en: BaseTranslation = {
     debitCreditCard: "Debit/Credit Card",
     debitCreditCardDesc: "Pay with your debit or credit card"
   },
-  BuyBitcoinDetails: {
+  TopupDetails: {
     title: "Card Payment",
     bankTransfer: "Bank Transfer",
     email: "Email",

@@ -1840,7 +1840,7 @@ type RootTranslation = {
 		 */
 		debitCreditCardDesc: string
 	}
-	BuyBitcoinDetails: {
+	TopupDetails: {
 		/**
 		 * C​a​r​d​ ​P​a​y​m​e​n​t
 		 */
@@ -7338,7 +7338,7 @@ export type TranslationFunctions = {
 		 */
 		debitCreditCardDesc: () => LocalizedString
 	}
-	BuyBitcoinDetails: {
+	TopupDetails: {
 		/**
 		 * Card Payment
 		 */

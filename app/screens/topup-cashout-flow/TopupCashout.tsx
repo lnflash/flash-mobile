@@ -7,31 +7,31 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 
 // components
 import { Screen } from "@app/components/screen"
-import TransferOptionModal, { TransferOption } from "./TransferOptionModal"
+import TransferOptionModal, { TransferOption } from "@app/components/topup-cashout-flow/TransferOptionModal"
 
 // assets
 import ArrowDown from "@app/assets/icons/arrow-down-to-bracket.svg"
 import ArrowUp from "@app/assets/icons/arrow-up-from-bracket.svg"
 
-type Props = StackScreenProps<RootStackParamList, "BuySellBitcoin">
+type Props = StackScreenProps<RootStackParamList, "TopupCashout">
 
-const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
+const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
 
-  const [topUpModalVisible, setTopUpModalVisible] = useState(false)
+  const [topupModalVisible, setTopupModalVisible] = useState(false)
   const [settleModalVisible, setSettleModalVisible] = useState(false)
 
-  const topUpOptions: TransferOption[] = useMemo(
+  const topupOptions: TransferOption[] = useMemo(
     () => [
       {
         icon: "card",
         title: LL.TopUpScreen.debitCreditCard(),
         description: LL.TopUpScreen.debitCreditCardDesc(),
         onPress: () => {
-          setTopUpModalVisible(false)
-          navigation.navigate("BuyBitcoinDetails", { paymentType: "card" })
+          setTopupModalVisible(false)
+          navigation.navigate("TopupDetails", { paymentType: "card" })
         },
       },
       {
@@ -39,8 +39,8 @@ const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
         title: LL.TopUpScreen.bankTransfer(),
         description: LL.TopUpScreen.bankTransferDesc(),
         onPress: () => {
-          setTopUpModalVisible(false)
-          navigation.navigate("BuyBitcoinDetails", { paymentType: "bankTransfer" })
+          setTopupModalVisible(false)
+          navigation.navigate("TopupDetails", { paymentType: "bankTransfer" })
         },
       },
       {
@@ -48,7 +48,7 @@ const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
         title: LL.TransferScreen.internationalBankTransfer(),
         description: LL.TransferScreen.internationalBankTransferDesc(),
         onPress: () => {
-          setTopUpModalVisible(false)
+          setTopupModalVisible(false)
           // TODO: navigate to international bank transfer top up flow
         },
       },
@@ -86,7 +86,7 @@ const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
         <Text type="h02" bold style={styles.title}>
           {LL.TransferScreen.title()}
         </Text>
-        <TouchableOpacity style={styles.btn} onPress={() => setTopUpModalVisible(true)}>
+        <TouchableOpacity style={styles.btn} onPress={() => setTopupModalVisible(true)}>
           <ArrowDown color={colors.black} width={40} height={40} />
           <View style={styles.btnTextWrapper}>
             <Text type="p1">{LL.TransferScreen.topUp()}</Text>
@@ -109,10 +109,10 @@ const BuySellBitcoin: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <TransferOptionModal
-        visible={topUpModalVisible}
+        visible={topupModalVisible}
         title={LL.TransferScreen.selectTopUpMethod()}
-        options={topUpOptions}
-        onClose={() => setTopUpModalVisible(false)}
+        options={topupOptions}
+        onClose={() => setTopupModalVisible(false)}
       />
       <TransferOptionModal
         visible={settleModalVisible}
@@ -150,4 +150,4 @@ const useStyles = makeStyles(() => ({
   },
 }))
 
-export default BuySellBitcoin
+export default TopupCashout

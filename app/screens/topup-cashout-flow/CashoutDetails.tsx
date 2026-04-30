@@ -7,7 +7,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // components
 import { Screen } from "@app/components/screen"
 import { AmountInput } from "@app/components/amount-input"
-import { CashoutFromWallet, CashoutPercentage } from "@app/components/cashout-flow"
+import { CashoutFromWallet, CashoutPercentage } from "@app/components/topup-cashout-flow"
 
 // hooks
 import { useCashoutScreenQuery, useRequestCashoutMutation } from "@app/graphql/generated"

@@ -7,7 +7,7 @@ import moment from "moment"
 // components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
-import { CashoutCard, CashoutFromWallet, CashoutWithdrawTo } from "@app/components/cashout-flow"
+import { CashoutCard, CashoutFromWallet, CashoutWithdrawTo } from "@app/components/topup-cashout-flow"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"

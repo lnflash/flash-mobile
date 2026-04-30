@@ -17,9 +17,9 @@ import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-type Props = StackScreenProps<RootStackParamList, "BuyBitcoinSuccess">
+type Props = StackScreenProps<RootStackParamList, "TopupSuccess">
 
-const BuyBitcoinSuccess: React.FC<Props> = () => {
+const TopupSuccess: React.FC<Props> = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
@@ -62,7 +62,7 @@ const BuyBitcoinSuccess: React.FC<Props> = () => {
   )
 }
 
-export default BuyBitcoinSuccess
+export default TopupSuccess
 
 const useStyles = makeStyles(() => ({
   container: {

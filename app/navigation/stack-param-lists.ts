@@ -163,8 +163,8 @@ export type RootStackParamList = {
   AccountUpgradeSuccess: undefined
   // Featured profile WebView entry
   FeaturedProfileView: { entryPoint: "search" | "long_press" | "profile" }
-  BuySellBitcoin: undefined
-  BuyBitcoinDetails: { paymentType: "card" | "bankTransfer" }
+  TopupCashout: undefined
+  TopupDetails: { paymentType: "card" | "bankTransfer" }
   BankTransfer: {
     amount: number
     wallet: string
@@ -173,7 +173,7 @@ export type RootStackParamList = {
     amount: number
     wallet: string
   }
-  BuyBitcoinSuccess: undefined
+  TopupSuccess: undefined
   paymentSuccess: {
     amount: number
     wallet: string

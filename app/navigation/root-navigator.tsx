@@ -108,11 +108,6 @@ import HomeInactive from "@app/assets/icons/home-inactive.svg"
 import MapActive from "@app/assets/icons/map-active.svg"
 import MapInactive from "@app/assets/icons/map-inactive.svg"
 import ScanQR from "@app/assets/icons/scan-qr.svg"
-import {
-  CashoutDetails,
-  CashoutConfirmation,
-  CashoutSuccess,
-} from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 import ContactDetailsScreen from "@app/screens/chat/contactDetailsScreen"
 import { SupportGroupChatScreen } from "@app/screens/chat/GroupChat/SupportGroupChat"
@@ -131,11 +126,15 @@ import {
 import { FeaturedProfileView } from "@app/screens/featured-profile-view"
 import {
   BankTransfer,
-  BuyBitcoinDetails,
-  BuyBitcoinSuccess,
-  BuySellBitcoin,
+  TopupDetails,
+  TopupSuccess,
+  TopupCashout,
   CardPayment,
-} from "@app/screens/buy-bitcoin-flow"
+  CashoutDetails,
+  CashoutConfirmation,
+  CashoutSuccess,
+  PaymentSuccessScreen,
+} from "@app/screens/topup-cashout-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -668,13 +667,18 @@ export const RootStack = () => {
           headerShadowVisible: false,
         }}
       >
-        <RootNavigator.Screen name="BuySellBitcoin" component={BuySellBitcoin} />
-        <RootNavigator.Screen name="BuyBitcoinDetails" component={BuyBitcoinDetails} />
+        <RootNavigator.Screen name="TopupCashout" component={TopupCashout} />
+        <RootNavigator.Screen name="TopupDetails" component={TopupDetails} />
         <RootNavigator.Screen name="BankTransfer" component={BankTransfer} />
         <RootNavigator.Screen name="CardPayment" component={CardPayment} />
         <RootNavigator.Screen
-          name="BuyBitcoinSuccess"
-          component={BuyBitcoinSuccess}
+          name="TopupSuccess"
+          component={TopupSuccess}
+          options={{ headerShown: false }}
+        />
+        <RootNavigator.Screen
+          name="paymentSuccess"
+          component={PaymentSuccessScreen}
           options={{ headerShown: false }}
         />
       </RootNavigator.Group>
