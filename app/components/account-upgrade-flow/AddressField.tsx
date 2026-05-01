@@ -68,11 +68,11 @@ const AddressField: React.FC<Props> = ({
         <View style={[styles.modal, { paddingTop: top, paddingBottom: bottom }]}>
           <GooglePlacesAutocomplete
             ref={ref}
-            listViewDisplayed="auto"
             placeholder={placeholder}
             onFail={(err) => console.log("Google places auto complete", err)}
             onNotFound={() => console.log("Google places auto complete not found")}
             fetchDetails={true}
+            debounce={300}
             onPress={(data, details) => {
               setIsVisible(false)
               onAddressSelect(data, details)
