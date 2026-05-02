@@ -1,4 +1,6 @@
+import { Alert, Platform } from "react-native"
 import Share from "react-native-share"
+import RNFS from "react-native-fs"
 
 import { gql } from "@apollo/client"
 import {
@@ -38,6 +40,23 @@ export const ExportCsvSetting: React.FC = () => {
       fetchPolicy: "network-only",
     })
 
+  const shareCsvFile = async (filePath: string) => {
+    try {
+      const fileUrl = Platform.OS === "ios" ? filePath : `file://${filePath}`
+      await Share.open({
+        title: "flash-transactions",
+        url: fileUrl,
+        type: "text/csv",
+        failOnCancel: false,
+      })
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        getCrashlytics().recordError(err)
+      }
+      console.error(err)
+    }
+  }
+
   const fetchCsvTransactions = async () => {
     const walletIds: string[] = []
     // if (btcWalletId) walletIds.push(btcWalletId)
@@ -48,18 +67,39 @@ export const ExportCsvSetting: React.FC = () => {
     })
 
     const csvEncoded = data?.me?.defaultAccount?.csvTransactions
+    if (!csvEncoded) return
+
     try {
-      await Share.open({
-        title: "flash-transactions",
-        filename: "flash-transactions",
-        url: `data:text/comma-separated-values;base64,${csvEncoded}`,
-        type: "text/comma-separated-values",
-      })
+      const csvContent = atob(csvEncoded)
+      const dirPath =
+        Platform.OS === "ios"
+          ? RNFS.DocumentDirectoryPath
+          : RNFS.DownloadDirectoryPath
+      const filePath = `${dirPath}/flash-transactions.csv`
+
+      await RNFS.writeFile(filePath, csvContent, "utf8")
+
+      Alert.alert(
+        "CSV Exported",
+        `Saved to ${
+          Platform.OS === "ios"
+            ? "Documents"
+            : "Downloads"
+        }/flash-transactions.csv`,
+        [
+          {
+            text: "Share",
+            onPress: () => shareCsvFile(filePath),
+          },
+          { text: "OK", style: "cancel" },
+        ],
+      )
     } catch (err: unknown) {
       if (err instanceof Error) {
         getCrashlytics().recordError(err)
       }
       console.error(err)
+      Alert.alert("Error", "Failed to export CSV")
     }
   }
 
