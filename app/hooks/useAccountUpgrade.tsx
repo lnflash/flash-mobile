@@ -71,7 +71,14 @@ export const useAccountUpgrade = () => {
       dispatch(
         setAccountUpgrade({
           status: upgradeData.status,
-          accountType: upgradeData.requestedLevel,
+          // Only overwrite accountType from server if the user hasn't
+          // already made a fresh selection in the current session.
+          // The default Redux value is "ONE", so if it differs from
+          // default AND from the server value, the user made a choice.
+          accountType:
+            accountType !== "ONE" && accountType !== upgradeData.requestedLevel
+              ? accountType
+              : upgradeData.requestedLevel,
         }),
       )
       dispatch(
