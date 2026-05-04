@@ -155,11 +155,14 @@ export const MapScreen = memo(() => {
           Alert.alert("Chat Unavailable", "This user is not available for chat.")
           return
         }
-        const { data: decoded } = nip19.decode(npub)
-        const merchantPubkey = decoded as string
+        const decoded = nip19.decode(npub)
+        if (decoded.type !== "npub") {
+          Alert.alert("Chat Unavailable", "This user is not available for chat.")
+          return
+        }
+        const merchantPubkey = decoded.data as string
         const groupId = [userPublicKey, merchantPubkey].sort().join(",")
-        // @ts-ignore: Chat is a tab screen not in RootStackParamList, but runtime navigation works
-        navigation.navigate("Chat", { screen: "messages", params: { groupId } })
+        ;(navigation as any).navigate("Chat", { screen: "messages", params: { groupId } })
       },
       onError: () => {
         Alert.alert("Chat Unavailable", "This user is not available for chat.")
