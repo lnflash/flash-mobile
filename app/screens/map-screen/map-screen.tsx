@@ -5,7 +5,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/display-name */
 import React, { memo, useCallback, useEffect, useState } from "react"
-import { Linking, PermissionsAndroid, Platform } from "react-native"
+import { Alert, Linking, PermissionsAndroid, Platform } from "react-native"
 import MapView from "react-native-maps"
 import { makeStyles } from "@rneui/themed"
 import { getCrashlytics } from "@react-native-firebase/crashlytics"
@@ -151,12 +151,18 @@ export const MapScreen = memo(() => {
       variables: { username: selectedMarker.username },
       onCompleted: (data) => {
         const npub = data?.npubByUsername?.npub
-        if (!npub) return
+        if (!npub) {
+          Alert.alert("Chat Unavailable", "This user is not available for chat.")
+          return
+        }
         const { data: decoded } = nip19.decode(npub)
         const merchantPubkey = decoded as string
         const groupId = [userPublicKey, merchantPubkey].sort().join(",")
         // @ts-ignore: Chat is a tab screen not in RootStackParamList, but runtime navigation works
         navigation.navigate("Chat", { screen: "messages", params: { groupId } })
+      },
+      onError: () => {
+        Alert.alert("Chat Unavailable", "This user is not available for chat.")
       },
     })
   }, [selectedMarker, userPublicKey, navigation, resolveNpub])
