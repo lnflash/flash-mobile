@@ -34,12 +34,14 @@ type MarkerItem = {
   acceptsFlash?: boolean
   redeemTopup?: boolean
   hasRewards?: boolean
+  pubkey?: string | null
 }
 
 type Props = {
   visible: boolean
   item: MarkerItem | null
   chatEnabled: boolean
+  userPubkey: string | null
   onClose: () => void
   onPayBusiness: () => void
   onGetDirections: () => void
@@ -53,12 +55,16 @@ const SERVICE_BADGES = [
 ] as const
 
 export const BusinessCardModal: React.FC<Props> = memo(
-  ({ visible, item, chatEnabled, onClose, onPayBusiness, onGetDirections, onChat }) => {
+  ({ visible, item, chatEnabled, userPubkey, onClose, onPayBusiness, onGetDirections, onChat }) => {
     const styles = useStyles()
 
     if (!item) return null
 
     const firstLetter = item.mapInfo.title.charAt(0).toUpperCase()
+
+    // Chat is available when feature is enabled, merchant has a pubkey,
+    // and the merchant is not the current user
+    const chatAvailable = chatEnabled && !!item.pubkey && item.pubkey !== userPubkey
 
     return (
       <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -129,25 +135,21 @@ export const BusinessCardModal: React.FC<Props> = memo(
                   <Icon name="navigate-outline" size={14} color={COLORS.buttonText} />
                   <Text style={styles.secondaryButtonText}>Directions</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.secondaryButton, !chatEnabled && styles.disabledButton]}
-                  onPress={chatEnabled ? onChat : undefined}
-                  disabled={!chatEnabled}
-                >
-                  <Icon
-                    name="chatbubble-outline"
-                    size={14}
-                    color={chatEnabled ? COLORS.buttonText : COLORS.mutedText}
-                  />
-                  <Text
-                    style={[
-                      styles.secondaryButtonText,
-                      !chatEnabled && { color: COLORS.mutedText },
-                    ]}
+                {chatAvailable && (
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={onChat}
                   >
-                    Chat
-                  </Text>
-                </TouchableOpacity>
+                    <Icon
+                      name="chatbubble-outline"
+                      size={14}
+                      color={COLORS.buttonText}
+                    />
+                    <Text style={styles.secondaryButtonText}>
+                      Chat
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
               <TouchableOpacity style={styles.primaryButton} onPress={onPayBusiness}>
                 <Icon name="flash-outline" size={14} color="white" />

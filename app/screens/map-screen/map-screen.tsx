@@ -32,6 +32,7 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useChatContext } from "@app/screens/chat/chatContext"
 
 // gql
 import {
@@ -92,6 +93,7 @@ export const MapScreen = memo(() => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { persistentState } = usePersistentStateContext()
   const chatEnabled = persistentState?.chatEnabled ?? false
+  const { userPublicKey } = useChatContext()
 
   const [merchantMapSuggest] = useMerchantMapSuggestMutation()
   const {
@@ -140,9 +142,12 @@ export const MapScreen = memo(() => {
   }, [selectedMarker])
 
   const handleChat = useCallback(() => {
-    if (!selectedMarker) return
+    if (!selectedMarker || !selectedMarker.pubkey || !userPublicKey) return
     setCardVisible(false)
-  }, [selectedMarker])
+    const groupId = [userPublicKey, selectedMarker.pubkey].sort().join(",")
+    // @ts-ignore: Chat is a tab screen not in RootStackParamList, but runtime navigation works
+    navigation.navigate("Chat", { screen: "messages", params: { groupId } })
+  }, [selectedMarker, userPublicKey, navigation])
 
   useEffect(() => {
     const errorMessage = blinkError?.message || flashError?.message
@@ -264,6 +269,7 @@ export const MapScreen = memo(() => {
         visible={cardVisible}
         item={selectedMarker}
         chatEnabled={chatEnabled}
+        userPubkey={userPublicKey}
         onClose={() => setCardVisible(false)}
         onPayBusiness={handlePayBusiness}
         onGetDirections={handleGetDirections}
