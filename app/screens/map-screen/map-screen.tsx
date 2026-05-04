@@ -33,11 +33,13 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useChatContext } from "@app/screens/chat/chatContext"
+import { nip19 } from "nostr-tools"
 
 // gql
 import {
   useBusinessMapMarkersQuery,
   useMerchantMapSuggestMutation,
+  useNpubByUsernameLazyQuery,
   useSettingsScreenQuery,
 } from "@app/graphql/generated"
 import {
@@ -95,6 +97,7 @@ export const MapScreen = memo(() => {
   const chatEnabled = persistentState?.chatEnabled ?? false
   const { userPublicKey } = useChatContext()
 
+  const [resolveNpub] = useNpubByUsernameLazyQuery()
   const [merchantMapSuggest] = useMerchantMapSuggestMutation()
   const {
     data: blinkData,
@@ -142,12 +145,21 @@ export const MapScreen = memo(() => {
   }, [selectedMarker])
 
   const handleChat = useCallback(() => {
-    if (!selectedMarker || !selectedMarker.pubkey || !userPublicKey) return
+    if (!selectedMarker || !selectedMarker.username || !userPublicKey) return
     setCardVisible(false)
-    const groupId = [userPublicKey, selectedMarker.pubkey].sort().join(",")
-    // @ts-ignore: Chat is a tab screen not in RootStackParamList, but runtime navigation works
-    navigation.navigate("Chat", { screen: "messages", params: { groupId } })
-  }, [selectedMarker, userPublicKey, navigation])
+    resolveNpub({
+      variables: { username: selectedMarker.username },
+      onCompleted: (data) => {
+        const npub = data?.npubByUsername?.npub
+        if (!npub) return
+        const { data: decoded } = nip19.decode(npub)
+        const merchantPubkey = decoded as string
+        const groupId = [userPublicKey, merchantPubkey].sort().join(",")
+        // @ts-ignore: Chat is a tab screen not in RootStackParamList, but runtime navigation works
+        navigation.navigate("Chat", { screen: "messages", params: { groupId } })
+      },
+    })
+  }, [selectedMarker, userPublicKey, navigation, resolveNpub])
 
   useEffect(() => {
     const errorMessage = blinkError?.message || flashError?.message
@@ -269,7 +281,6 @@ export const MapScreen = memo(() => {
         visible={cardVisible}
         item={selectedMarker}
         chatEnabled={chatEnabled}
-        userPubkey={userPublicKey}
         onClose={() => setCardVisible(false)}
         onPayBusiness={handlePayBusiness}
         onGetDirections={handleGetDirections}

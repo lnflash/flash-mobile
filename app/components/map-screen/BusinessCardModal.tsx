@@ -34,14 +34,12 @@ type MarkerItem = {
   acceptsFlash?: boolean
   redeemTopup?: boolean
   hasRewards?: boolean
-  pubkey?: string | null
 }
 
 type Props = {
   visible: boolean
   item: MarkerItem | null
   chatEnabled: boolean
-  userPubkey: string | null
   onClose: () => void
   onPayBusiness: () => void
   onGetDirections: () => void
@@ -55,16 +53,16 @@ const SERVICE_BADGES = [
 ] as const
 
 export const BusinessCardModal: React.FC<Props> = memo(
-  ({ visible, item, chatEnabled, userPubkey, onClose, onPayBusiness, onGetDirections, onChat }) => {
+  ({ visible, item, chatEnabled, onClose, onPayBusiness, onGetDirections, onChat }) => {
     const styles = useStyles()
 
     if (!item) return null
 
     const firstLetter = item.mapInfo.title.charAt(0).toUpperCase()
 
-    // Chat is available when feature is enabled, merchant has a pubkey,
-    // and the merchant is not the current user
-    const chatAvailable = chatEnabled && !!item.pubkey && item.pubkey !== userPubkey
+    // Chat is available when feature is enabled and merchant has a username
+    // (npub resolves asynchronously when tapped)
+    const chatAvailable = chatEnabled && !!item.username
 
     return (
       <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>

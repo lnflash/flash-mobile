@@ -23,19 +23,6 @@ import {
   setPersonalInfo,
 } from "@app/store/redux/slices/accountUpgradeSlice"
 
-const sanitizeMessage = (msg: string): string => {
-  // UInexpectedError is an internal GraphQL error wrapper — not useful to end users
-  if (
-    msg.includes("UInexpectedError") ||
-    msg.includes("Internal server error") ||
-    msg.includes("internal error") ||
-    msg.includes("Unexpected error")
-  ) {
-    return "An unexpected error occurred. Please try again."
-  }
-  return msg
-}
-
 type UpgradeResult = {
   success: boolean
   errors?: string[]
@@ -84,14 +71,7 @@ export const useAccountUpgrade = () => {
       dispatch(
         setAccountUpgrade({
           status: upgradeData.status,
-          // Only overwrite accountType from server if the user hasn't
-          // already made a fresh selection in the current session.
-          // The default Redux value is "ONE", so if it differs from
-          // default AND from the server value, the user made a choice.
-          accountType:
-            accountType !== "ONE" && accountType !== upgradeData.requestedLevel
-              ? accountType
-              : upgradeData.requestedLevel,
+          accountType: upgradeData.requestedLevel,
         }),
       )
       dispatch(
@@ -237,7 +217,7 @@ export const useAccountUpgrade = () => {
       if (errors.length) {
         return {
           success: false,
-          errors: errors.map((e) => sanitizeMessage(e!.message)),
+          errors: errors.map((e) => e!.message),
         }
       }
 
@@ -250,7 +230,7 @@ export const useAccountUpgrade = () => {
       console.error("Account upgrade failed:", err)
       return {
         success: false,
-        errors: [sanitizeMessage(err instanceof Error ? err.message : "Unknown error occurred")],
+        errors: [err instanceof Error ? err.message : "Unknown error occurred"],
       }
     } finally {
       toggleActivityIndicator(false)
