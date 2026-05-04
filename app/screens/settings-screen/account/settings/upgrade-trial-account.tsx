@@ -57,7 +57,9 @@ export const UpgradeTrialAccount: React.FC = () => {
             : LL.TransactionLimitsScreen.editRequest()
         }
         btnStyle={upgradePending ? { backgroundColor: "#FF7e1c" } : {}}
-        onPress={() => navigation.navigate("PersonalInformation")}
+        onPress={() =>
+          navigation.navigate(upgradePending ? "PersonalInformation" : "AccountType")
+        }
       />
     )
   } else {
