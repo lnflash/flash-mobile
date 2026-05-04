@@ -75,30 +75,33 @@ export const ExportCsvSetting: React.FC = () => {
     if (!csvEncoded) return
 
     try {
-      const csvContent = atob(csvEncoded)
-      const dirPath =
-        Platform.OS === "ios"
-          ? RNFS.DocumentDirectoryPath
-          : RNFS.DownloadDirectoryPath
-      const filePath = `${dirPath}/flash-transactions.csv`
+      if (Platform.OS === "ios") {
+        // iOS: share directly via base64 data URI so the file appears in the share sheet
+        await Share.open({
+          title: "flash-transactions",
+          filename: "flash-transactions",
+          url: `data:text/comma-separated-values;base64,${csvEncoded}`,
+          type: "text/comma-separated-values",
+          failOnCancel: false,
+        })
+      } else {
+        // Android: save to Downloads, then offer Share button
+        const csvContent = atob(csvEncoded)
+        const filePath = `${RNFS.DownloadDirectoryPath}/flash-transactions.csv`
+        await RNFS.writeFile(filePath, csvContent, "utf8")
 
-      await RNFS.writeFile(filePath, csvContent, "utf8")
-
-      Alert.alert(
-        "CSV Exported",
-        `Saved to ${
-          Platform.OS === "ios"
-            ? "Documents"
-            : "Downloads"
-        }/flash-transactions.csv`,
-        [
-          {
-            text: "Share",
-            onPress: () => shareCsvFile(filePath),
-          },
-          { text: "OK", style: "cancel" },
-        ],
-      )
+        Alert.alert(
+          "CSV Exported",
+          `Saved to Downloads/flash-transactions.csv`,
+          [
+            {
+              text: "Share",
+              onPress: () => shareCsvFile(filePath),
+            },
+            { text: "OK", style: "cancel" },
+          ],
+        )
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         getCrashlytics().recordError(err)
