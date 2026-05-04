@@ -42,10 +42,15 @@ export const ExportCsvSetting: React.FC = () => {
 
   const shareCsvFile = async (filePath: string) => {
     try {
-      const fileUrl = Platform.OS === "ios" ? filePath : `file://${filePath}`
+      let shareUrl = filePath
+      if (Platform.OS === "android") {
+        const cachePath = `${RNFS.CachesDirectoryPath}/flash-transactions.csv`
+        await RNFS.copyFile(filePath, cachePath)
+        shareUrl = `file://${cachePath}`
+      }
       await Share.open({
         title: "flash-transactions",
-        url: fileUrl,
+        url: shareUrl,
         type: "text/csv",
         failOnCancel: false,
       })
