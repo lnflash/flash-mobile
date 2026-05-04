@@ -84,14 +84,7 @@ export const useAccountUpgrade = () => {
       dispatch(
         setAccountUpgrade({
           status: upgradeData.status,
-          // Only overwrite accountType from server if the user hasn't
-          // already made a fresh selection in the current session.
-          // The default Redux value is "ONE", so if it differs from
-          // default AND from the server value, the user made a choice.
-          accountType:
-            accountType !== "ONE" && accountType !== upgradeData.requestedLevel
-              ? accountType
-              : upgradeData.requestedLevel,
+          accountType: upgradeData.requestedLevel,
         }),
       )
       dispatch(
@@ -193,7 +186,6 @@ export const useAccountUpgrade = () => {
         bankInfo.currency
       ) {
         bankAccount = {
-          // accountNumber is a String in GraphQL (identifiers can exceed Int32)
           accountNumber: bankInfo.accountNumber,
           accountType: bankInfo.bankAccountType,
           bankBranch: bankInfo.bankBranch,
@@ -250,7 +242,9 @@ export const useAccountUpgrade = () => {
       console.error("Account upgrade failed:", err)
       return {
         success: false,
-        errors: [sanitizeMessage(err instanceof Error ? err.message : "Unknown error occurred")],
+        errors: [
+          sanitizeMessage(err instanceof Error ? err.message : "Unknown error occurred"),
+        ],
       }
     } finally {
       toggleActivityIndicator(false)
