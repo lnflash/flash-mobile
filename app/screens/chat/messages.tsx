@@ -295,7 +295,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
           { paddingTop: Platform.OS === "android" ? insets.top : 0 },
         ]}
       >
-        <TouchableOpacity onPress={navigation.goBack} style={styles.backBtn} hitSlop={8}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={8}>
           <Icon name="arrow-back-outline" size={24} color={colors.primary3} />
         </TouchableOpacity>
 
