@@ -40,6 +40,7 @@ type Props = {
   visible: boolean
   item: MarkerItem | null
   chatEnabled: boolean
+  currentUsername?: string | null
   onClose: () => void
   onPayBusiness: () => void
   onGetDirections: () => void
@@ -53,7 +54,7 @@ const SERVICE_BADGES = [
 ] as const
 
 export const BusinessCardModal: React.FC<Props> = memo(
-  ({ visible, item, chatEnabled, onClose, onPayBusiness, onGetDirections, onChat }) => {
+  ({ visible, item, chatEnabled, currentUsername, onClose, onPayBusiness, onGetDirections, onChat }) => {
     const styles = useStyles()
 
     if (!item) return null
@@ -62,7 +63,7 @@ export const BusinessCardModal: React.FC<Props> = memo(
 
     // Chat is available when feature is enabled and merchant has a username
     // (npub resolves asynchronously when tapped)
-    const chatAvailable = chatEnabled && !!item.username
+    const chatAvailable = chatEnabled && !!item.username && item.username !== currentUsername
 
     return (
       <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -134,18 +135,9 @@ export const BusinessCardModal: React.FC<Props> = memo(
                   <Text style={styles.secondaryButtonText}>Directions</Text>
                 </TouchableOpacity>
                 {chatAvailable && (
-                  <TouchableOpacity
-                    style={styles.secondaryButton}
-                    onPress={onChat}
-                  >
-                    <Icon
-                      name="chatbubble-outline"
-                      size={14}
-                      color={COLORS.buttonText}
-                    />
-                    <Text style={styles.secondaryButtonText}>
-                      Chat
-                    </Text>
+                  <TouchableOpacity style={styles.secondaryButton} onPress={onChat}>
+                    <Icon name="chatbubble-outline" size={14} color={COLORS.buttonText} />
+                    <Text style={styles.secondaryButtonText}>Chat</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -276,9 +268,6 @@ const useStyles = makeStyles(({ colors }) => ({
     fontSize: 12,
     fontWeight: "500",
     color: COLORS.buttonText,
-  },
-  disabledButton: {
-    opacity: 0.4,
   },
   primaryButton: {
     flexDirection: "row",

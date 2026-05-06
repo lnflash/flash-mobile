@@ -146,7 +146,6 @@ export const MapScreen = memo(() => {
 
   const handleChat = useCallback(() => {
     if (!selectedMarker || !selectedMarker.username || !userPublicKey) return
-    setCardVisible(false)
     resolveNpub({
       variables: { username: selectedMarker.username },
       onCompleted: (data) => {
@@ -155,14 +154,19 @@ export const MapScreen = memo(() => {
           Alert.alert("Chat Unavailable", "This user is not available for chat.")
           return
         }
-        const decoded = nip19.decode(npub)
-        if (decoded.type !== "npub") {
+        try {
+          const decoded = nip19.decode(npub)
+          if (decoded.type !== "npub") {
+            Alert.alert("Chat Unavailable", "This user is not available for chat.")
+            return
+          }
+          const merchantPubkey = decoded.data as string
+          const groupId = [userPublicKey, merchantPubkey].sort().join(",")
+          setCardVisible(false)
+          ;(navigation as any).navigate("Chat", { screen: "messages", params: { groupId } })
+        } catch {
           Alert.alert("Chat Unavailable", "This user is not available for chat.")
-          return
         }
-        const merchantPubkey = decoded.data as string
-        const groupId = [userPublicKey, merchantPubkey].sort().join(",")
-        ;(navigation as any).navigate("Chat", { screen: "messages", params: { groupId } })
       },
       onError: () => {
         Alert.alert("Chat Unavailable", "This user is not available for chat.")
@@ -290,6 +294,7 @@ export const MapScreen = memo(() => {
         visible={cardVisible}
         item={selectedMarker}
         chatEnabled={chatEnabled}
+        currentUsername={data?.me?.username}
         onClose={() => setCardVisible(false)}
         onPayBusiness={handlePayBusiness}
         onGetDirections={handleGetDirections}
