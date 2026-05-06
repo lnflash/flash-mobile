@@ -6,3 +6,4 @@ import CashoutWithdrawTo from "./CashoutWithdrawTo"
 export { CashoutFromWallet, CashoutPercentage, CashoutCard, CashoutWithdrawTo }
 export { default as TransferOptionModal } from "./TransferOptionModal"
 export type { TransferOption } from "./TransferOptionModal"
+export { default as BridgeKycModal } from "./BridgeKycModal"

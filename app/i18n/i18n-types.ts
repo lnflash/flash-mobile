@@ -1898,6 +1898,68 @@ type RootTranslation = {
 		 */
 		minimumAmount: string
 	}
+	BridgeKyc: {
+		/**
+		 * I​n​t​e​r​n​a​t​i​o​n​a​l​ ​T​r​a​n​s​f​e​r
+		 */
+		title: string
+		/**
+		 * P​l​e​a​s​e​ ​p​r​o​v​i​d​e​ ​y​o​u​r​ ​d​e​t​a​i​l​s​ ​t​o​ ​s​e​t​ ​u​p​ ​i​n​t​e​r​n​a​t​i​o​n​a​l​ ​t​r​a​n​s​f​e​r​s
+		 */
+		description: string
+		/**
+		 * F​u​l​l​ ​N​a​m​e
+		 */
+		fullName: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​f​u​l​l​ ​n​a​m​e
+		 */
+		fullNamePlaceholder: string
+		/**
+		 * E​m​a​i​l
+		 */
+		email: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s
+		 */
+		emailPlaceholder: string
+		/**
+		 * A​c​c​o​u​n​t​ ​T​y​p​e
+		 */
+		kycType: string
+		/**
+		 * S​e​l​e​c​t​ ​a​c​c​o​u​n​t​ ​t​y​p​e
+		 */
+		kycTypePlaceholder: string
+		/**
+		 * I​n​d​i​v​i​d​u​a​l
+		 */
+		individual: string
+		/**
+		 * B​u​s​i​n​e​s​s
+		 */
+		business: string
+		/**
+		 * S​u​b​m​i​t
+		 */
+		submit: string
+		/**
+		 * F​u​l​l​ ​n​a​m​e​ ​i​s​ ​r​e​q​u​i​r​e​d
+		 */
+		fullNameRequired: string
+		/**
+		 * E​m​a​i​l​ ​i​s​ ​r​e​q​u​i​r​e​d
+		 */
+		emailRequired: string
+		/**
+		 * P​l​e​a​s​e​ ​e​n​t​e​r​ ​a​ ​v​a​l​i​d​ ​e​m​a​i​l​ ​a​d​d​r​e​s​s
+		 */
+		invalidEmail: string
+		/**
+		 * P​l​e​a​s​e​ ​s​e​l​e​c​t​ ​a​n​ ​a​c​c​o​u​n​t​ ​t​y​p​e
+		 */
+		kycTypeRequired: string
+	}
 	FygaroWebViewScreen: {
 		/**
 		 * F​y​g​a​r​o​ ​P​a​y​m​e​n​t
@@ -7395,6 +7457,68 @@ export type TranslationFunctions = {
 		 * Minimum amount is $1.00
 		 */
 		minimumAmount: () => LocalizedString
+	}
+	BridgeKyc: {
+		/**
+		 * International Transfer
+		 */
+		title: () => LocalizedString
+		/**
+		 * Please provide your details to set up international transfers
+		 */
+		description: () => LocalizedString
+		/**
+		 * Full Name
+		 */
+		fullName: () => LocalizedString
+		/**
+		 * Enter your full name
+		 */
+		fullNamePlaceholder: () => LocalizedString
+		/**
+		 * Email
+		 */
+		email: () => LocalizedString
+		/**
+		 * Enter your email address
+		 */
+		emailPlaceholder: () => LocalizedString
+		/**
+		 * Account Type
+		 */
+		kycType: () => LocalizedString
+		/**
+		 * Select account type
+		 */
+		kycTypePlaceholder: () => LocalizedString
+		/**
+		 * Individual
+		 */
+		individual: () => LocalizedString
+		/**
+		 * Business
+		 */
+		business: () => LocalizedString
+		/**
+		 * Submit
+		 */
+		submit: () => LocalizedString
+		/**
+		 * Full name is required
+		 */
+		fullNameRequired: () => LocalizedString
+		/**
+		 * Email is required
+		 */
+		emailRequired: () => LocalizedString
+		/**
+		 * Please enter a valid email address
+		 */
+		invalidEmail: () => LocalizedString
+		/**
+		 * Please select an account type
+		 */
+		kycTypeRequired: () => LocalizedString
 	}
 	FygaroWebViewScreen: {
 		/**

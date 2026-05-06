@@ -7,7 +7,8 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 
 // components
 import { Screen } from "@app/components/screen"
-import TransferOptionModal, { TransferOption } from "@app/components/topup-cashout-flow/TransferOptionModal"
+import { TransferOptionModal, BridgeKycModal } from "@app/components/topup-cashout-flow"
+import type { TransferOption } from "@app/components/topup-cashout-flow"
 
 // assets
 import ArrowDown from "@app/assets/icons/arrow-down-to-bracket.svg"
@@ -22,6 +23,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
 
   const [topupModalVisible, setTopupModalVisible] = useState(false)
   const [settleModalVisible, setSettleModalVisible] = useState(false)
+  const [bridgeKycModalVisible, setBridgeKycModalVisible] = useState(false)
 
   const topupOptions: TransferOption[] = useMemo(
     () => [
@@ -49,7 +51,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         description: LL.TransferScreen.internationalBankTransferDesc(),
         onPress: () => {
           setTopupModalVisible(false)
-          // TODO: navigate to international bank transfer top up flow
+          setBridgeKycModalVisible(true)
         },
       },
     ],
@@ -73,7 +75,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         description: LL.TransferScreen.internationalBankAccountDesc(),
         onPress: () => {
           setSettleModalVisible(false)
-          // TODO: navigate to international bank account cashout flow
+          setBridgeKycModalVisible(true)
         },
       },
     ],
@@ -119,6 +121,16 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         title={LL.TransferScreen.selectSettleMethod()}
         options={settleOptions}
         onClose={() => setSettleModalVisible(false)}
+      />
+
+      <BridgeKycModal
+        visible={bridgeKycModalVisible}
+        onClose={() => setBridgeKycModalVisible(false)}
+        onSubmit={(data) => {
+          setBridgeKycModalVisible(false)
+          // TODO: send KYC data to Bridge API when query is ready
+          console.log("Bridge KYC submitted:", data)
+        }}
       />
     </Screen>
   )

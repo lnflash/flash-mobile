@@ -598,6 +598,23 @@ const en: BaseTranslation = {
     invalidAmount: "Please enter a valid amount",
     minimumAmount: "Minimum amount is $1.00"
   },
+  BridgeKyc: {
+    title: "International Transfer",
+    description: "Please provide your details to set up international transfers",
+    fullName: "Full Name",
+    fullNamePlaceholder: "Enter your full name",
+    email: "Email",
+    emailPlaceholder: "Enter your email address",
+    kycType: "Account Type",
+    kycTypePlaceholder: "Select account type",
+    individual: "Individual",
+    business: "Business",
+    submit: "Submit",
+    fullNameRequired: "Full name is required",
+    emailRequired: "Email is required",
+    invalidEmail: "Please enter a valid email address",
+    kycTypeRequired: "Please select an account type",
+  },
   FygaroWebViewScreen: {
     title: "Fygaro Payment",
     loading: "Loading payment page...",
