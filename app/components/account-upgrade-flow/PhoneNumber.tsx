@@ -134,6 +134,7 @@ const useStyles = makeStyles(({ colors }) => ({
     backgroundColor: colors.grey5,
     fontSize: 16,
     fontFamily: "Sora-Regular",
+    color: colors.black,
     marginLeft: 10,
   },
 }))

@@ -321,6 +321,11 @@ type RootTranslation = {
 		 * %​ ​t​o​ ​c​o​n​v​e​r​t
 		 */
 		percentageToConvert: string
+		/**
+		 * Y​o​u​r​ ​{​w​a​l​l​e​t​N​a​m​e​}​ ​h​a​s​ ​n​o​ ​f​u​n​d​s​ ​t​o​ ​s​w​a​p
+		 * @param {string} walletName
+		 */
+		emptyWallet: RequiredParams<'walletName'>
 	}
 	ConversionConfirmationScreen: {
 		/**
@@ -1605,7 +1610,7 @@ type RootTranslation = {
 		 */
 		locationPermissionNegative: string
 		/**
-		 * A​s​k​ ​M​e​ ​L​a​t​e​r
+		 * R​e​m​i​n​d​ ​m​e​ ​l​a​t​e​r
 		 */
 		locationPermissionNeutral: string
 		/**
@@ -2730,7 +2735,7 @@ type RootTranslation = {
 		 */
 		advanceMode: string
 		/**
-		 * K​e​y​ ​m​a​n​a​g​e​m​e​n​t
+		 * W​a​l​l​e​t​ ​b​a​c​k​u​p
 		 */
 		keysManagement: string
 		/**
@@ -2841,7 +2846,7 @@ type RootTranslation = {
 		 */
 		upgrade: string
 		/**
-		 * L​o​g​ ​o​u​t​ ​a​n​d​ ​c​l​e​a​r​ ​a​l​l​ ​l​o​c​a​l​ ​d​a​t​a
+		 * L​o​g​ ​o​u​t
 		 */
 		logOutAndDeleteLocalData: string
 		/**
@@ -3381,11 +3386,11 @@ type RootTranslation = {
 	}
 	UnVerifiedSeedModal: {
 		/**
-		 * Y​O​U​R​ ​B​I​T​C​O​I​N​ ​I​S​ ​N​O​T​ ​S​E​C​U​R​E​!
+		 * S​e​c​u​r​e​ ​Y​o​u​r​ ​B​i​t​c​o​i​n​ ​W​a​l​l​e​t
 		 */
 		header: string
 		/**
-		 * Y​o​u​ ​s​h​o​u​l​d​ ​W​R​I​T​E​ ​D​O​W​N​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​s​o​m​e​w​h​e​r​e​ ​s​a​f​e​ ​i​n​ ​o​r​d​e​r​ ​t​o​ ​p​r​o​t​e​c​t​ ​y​o​u​r​ ​m​o​n​e​y​.​ ​I​f​ ​y​o​u​ ​l​o​s​e​ ​y​o​u​r​ ​p​h​o​n​e​ ​o​r​ ​u​n​i​n​s​t​a​l​l​ ​t​h​e​ ​a​p​p​ ​w​i​t​h​o​u​t​ ​w​r​i​t​i​n​g​ ​d​o​w​n​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​,​ ​y​o​u​ ​w​i​l​l​ ​l​o​s​e​ ​a​c​c​e​s​s​ ​t​o​ ​y​o​u​r​ ​f​u​n​d​s​.​
+		 * Y​o​u​ ​s​h​o​u​l​d​ ​w​r​i​t​e​ ​d​o​w​n​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​s​o​m​e​w​h​e​r​e​ ​s​a​f​e​ ​i​n​ ​o​r​d​e​r​ ​t​o​ ​p​r​o​t​e​c​t​ ​y​o​u​r​ ​m​o​n​e​y​.​ ​I​f​ ​y​o​u​ ​l​o​s​e​ ​y​o​u​r​ ​p​h​o​n​e​ ​o​r​ ​u​n​i​n​s​t​a​l​l​ ​t​h​e​ ​a​p​p​ ​w​i​t​h​o​u​t​ ​w​r​i​t​i​n​g​ ​d​o​w​n​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​,​ ​y​o​u​ ​w​i​l​l​ ​l​o​s​e​ ​a​c​c​e​s​s​ ​t​o​ ​y​o​u​r​ ​f​u​n​d​s​.​
 	​
 
 		 */
@@ -3982,7 +3987,7 @@ type RootTranslation = {
 		 */
 		backHome: string
 		/**
-		 * S​h​o​w​ ​R​e​c​o​v​e​r​y​ ​P​h​r​a​s​e
+		 * W​r​i​t​e​ ​d​o​w​n​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e
 		 */
 		revealSeed: string
 		/**
@@ -4056,7 +4061,7 @@ type RootTranslation = {
 		 */
 		csvExport: string
 		/**
-		 * E​x​p​o​r​t​ ​l​o​g​s
+		 * E​x​p​o​r​t​ ​L​o​g​s
 		 */
 		exportSparkLogs: string
 		/**
@@ -4785,7 +4790,7 @@ type RootTranslation = {
 		 */
 		pending: string
 		/**
-		 * This transfer will be claimed automatically
+		 * T​h​i​s​ ​t​r​a​n​s​f​e​r​ ​w​i​l​l​ ​b​e​ ​c​l​a​i​m​e​d​ ​a​u​t​o​m​a​t​i​c​a​l​l​y
 		 */
 		autoClaiming: string
 		/**
@@ -4861,8 +4866,8 @@ type RootTranslation = {
 		 */
 		networkFee: string
 		/**
-		 * @param {string} feeRate
 		 * N​e​t​w​o​r​k​ ​F​e​e​ ​(​{​f​e​e​R​a​t​e​}​ ​s​a​t​/​v​B​)
+		 * @param {string} feeRate
 		 */
 		networkFeeWithRate: RequiredParams<'feeRate'>
 		/**
@@ -4886,8 +4891,8 @@ type RootTranslation = {
 		 */
 		invalidBitcoinAddress: string
 		/**
-		 * @param {string} feeRate
 		 * E​s​t​.​ ​N​e​t​w​o​r​k​ ​F​e​e​ ​(​{​f​e​e​R​a​t​e​}​ ​s​a​t​/​v​B​)
+		 * @param {string} feeRate
 		 */
 		estimatedFee: RequiredParams<'feeRate'>
 		/**
@@ -5014,7 +5019,7 @@ type RootTranslation = {
 		 */
 		keyConflictTitle: string
 		/**
-		 * Y​o​u​r​ ​a​c​c​o​u​n​t​ ​h​a​s​ ​a​ ​r​e​g​i​s​t​e​r​e​d​ ​N​o​s​t​r​ ​k​e​y​ ​b​u​t​ ​i​t​ ​w​a​s​ ​n​o​t​ ​f​o​u​n​d​ ​o​n​ ​t​h​i​s​ ​d​e​v​i​c​e​.
+		 * Y​o​u​r​ ​a​c​c​o​u​n​t​ ​h​a​s​ ​a​ ​r​e​g​i​s​t​e​r​e​d​ ​N​o​s​t​r​ ​k​e​y​ ​b​u​t​ ​i​t​ ​w​a​s​ ​n​o​t​ ​f​o​u​n​d​ ​o​n​ ​t​h​i​s​ ​d​e​v​i​c​e​.​ ​T​h​i​s​ ​c​a​n​ ​h​a​p​p​e​n​ ​a​f​t​e​r​ ​r​e​i​n​s​t​a​l​l​i​n​g​ ​t​h​e​ ​a​p​p​ ​o​r​ ​s​w​i​t​c​h​i​n​g​ ​d​e​v​i​c​e​s​.​ ​T​o​ ​r​e​s​t​o​r​e​ ​a​c​c​e​s​s​,​ ​i​m​p​o​r​t​ ​y​o​u​r​ ​n​s​e​c​ ​b​a​c​k​u​p​ ​f​r​o​m​ ​A​d​v​a​n​c​e​d​ ​S​e​t​t​i​n​g​s​.
 		 */
 		keyConflictDescription: string
 		/**
@@ -5543,6 +5548,10 @@ export type TranslationFunctions = {
 		 * % to convert
 		 */
 		percentageToConvert: () => LocalizedString
+		/**
+		 * Your {walletName} has no funds to swap
+		 */
+		emptyWallet: (arg: { walletName: string }) => LocalizedString
 	}
 	ConversionConfirmationScreen: {
 		/**
@@ -7908,7 +7917,7 @@ export type TranslationFunctions = {
 		 */
 		advanceMode: () => LocalizedString
 		/**
-		 * Key management
+		 * Wallet backup
 		 */
 		keysManagement: () => LocalizedString
 		/**
@@ -9643,7 +9652,7 @@ export type TranslationFunctions = {
 	}
 	reports: {
 		/**
-		 * Export Transactions
+		 * Generate Reports
 		 */
 		title: () => LocalizedString
 		/**
@@ -10154,7 +10163,7 @@ export type TranslationFunctions = {
 		 */
 		keyConflictTitle: () => LocalizedString
 		/**
-		 * Your account has a registered Nostr key but it was not found on this device.
+		 * Your account has a registered Nostr key but it was not found on this device. This can happen after reinstalling the app or switching devices. To restore access, import your nsec backup from Advanced Settings.
 		 */
 		keyConflictDescription: () => LocalizedString
 		/**

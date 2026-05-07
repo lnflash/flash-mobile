@@ -5,7 +5,7 @@ import {
   getPublicKey,
   SimplePool,
 } from "nostr-tools"
-import { createContactListEvent, setPreferredRelay } from "@app/utils/nostr"
+import { createContactListEvent, ensureContactListExists, setPreferredRelay } from "@app/utils/nostr"
 import { getSigner, createSignerFromKey, clearSigner } from "@app/nostr/signer"
 import {
   publishEventToRelays,
@@ -77,6 +77,16 @@ const useNostrProfile = () => {
     progressCallback?: (message: string) => void,
     additionalContent?: any,
   ) => {
+    try {
+      const existingSigner = await getSigner()
+      if (existingSigner) {
+        await ensureContactListExists(existingSigner)
+        return
+      }
+    } catch {
+      // No existing key — proceed with generation
+    }
+
     const username = dataAuthed?.me?.username || undefined
     let lud16
     if (username) lud16 = `${username}@${lnDomain}`
@@ -153,20 +163,20 @@ const useNostrProfile = () => {
     try {
       const baseProfileContent = username
         ? {
-            name: username,
-            username: username,
-            flash_username: username,
-            lud16: lud16,
-            nip05: `${username}@${lnDomain}`,
-            ...(pictureUrl && { picture: pictureUrl }),
-            ...(bannerUrl && { banner: bannerUrl }),
-          }
+          name: username,
+          username: username,
+          flash_username: username,
+          lud16: lud16,
+          nip05: `${username}@${lnDomain}`,
+          ...(pictureUrl && { picture: pictureUrl }),
+          ...(bannerUrl && { banner: bannerUrl }),
+        }
         : {
-            name: "Flash User",
-            about: "Flash wallet user",
-            ...(pictureUrl && { picture: pictureUrl }),
-            ...(bannerUrl && { banner: bannerUrl }),
-          }
+          name: "Flash User",
+          about: "Flash wallet user",
+          ...(pictureUrl && { picture: pictureUrl }),
+          ...(bannerUrl && { banner: bannerUrl }),
+        }
 
       // Merge with any additional content passed in (e.g., from username screen)
       const profileContent = {
@@ -418,10 +428,9 @@ const useNostrProfile = () => {
     const coreRelays = ["wss://relay.flashapp.me", "wss://relay.islandbitcoin.com"]
     const coreSuccess = successfulRelays.some((relay) => coreRelays.includes(relay))
     console.log(
-      `\n🎯 Core relay status: ${
-        coreSuccess
-          ? "✅ At least one core relay succeeded"
-          : "⚠️ No core relays succeeded"
+      `\n🎯 Core relay status: ${coreSuccess
+        ? "✅ At least one core relay succeeded"
+        : "⚠️ No core relays succeeded"
       }`,
     )
 

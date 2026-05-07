@@ -1,0 +1,27 @@
+name: i18n-drift-check
+
+on:
+  pull_request:
+    paths:
+      - "app/i18n/**"
+  workflow_dispatch:
+
+jobs:
+  translation-drift:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Check translation drift (missing keys from en.json)
+        run: yarn check:translation-drift

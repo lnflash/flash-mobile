@@ -3,6 +3,7 @@ import { parsePhoneNumber } from "libphonenumber-js"
 
 // hooks
 import { useActivityIndicator } from "./useActivityIndicator"
+import { normalizeContentType } from "@app/utils/image-content-type"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import {
   useBusinessAccountUpgradeRequestMutation,
@@ -21,6 +22,19 @@ import {
   setBusinessInfo,
   setPersonalInfo,
 } from "@app/store/redux/slices/accountUpgradeSlice"
+
+const sanitizeMessage = (msg: string): string => {
+  // UInexpectedError is an internal GraphQL error wrapper — not useful to end users
+  if (
+    msg.includes("UInexpectedError") ||
+    msg.includes("Internal server error") ||
+    msg.includes("internal error") ||
+    msg.includes("Unexpected error")
+  ) {
+    return "An unexpected error occurred. Please try again."
+  }
+  return msg
+}
 
 type UpgradeResult = {
   success: boolean
@@ -112,13 +126,17 @@ export const useAccountUpgrade = () => {
       return null
     }
 
+    // Normalize content type: Android returns "image/jpg" for some JPEGs,
+    // but the backend only accepts "image/jpeg" (ENG-291)
+    const normalizedContentType = normalizeContentType(idDocument.type)
+
     let data
     try {
       const result = await generateIdDocumentUploadUrl({
         variables: {
           input: {
             filename: idDocument.fileName,
-            contentType: idDocument.type,
+            contentType: normalizedContentType,
           },
         },
       })
@@ -138,7 +156,7 @@ export const useAccountUpgrade = () => {
     await uploadFileToS3(
       data.idDocumentUploadUrlGenerate.uploadUrl,
       idDocument.uri,
-      idDocument.type,
+      normalizedContentType,
     )
 
     return data.idDocumentUploadUrlGenerate.fileKey ?? null
@@ -168,7 +186,7 @@ export const useAccountUpgrade = () => {
         bankInfo.currency
       ) {
         bankAccount = {
-          accountNumber: Number(bankInfo.accountNumber),
+          accountNumber: bankInfo.accountNumber,
           accountType: bankInfo.bankAccountType,
           bankBranch: bankInfo.bankBranch,
           bankName: bankInfo.bankName,
@@ -211,7 +229,7 @@ export const useAccountUpgrade = () => {
       if (errors.length) {
         return {
           success: false,
-          errors: errors.map((e) => e!.message),
+          errors: errors.map((e) => sanitizeMessage(e!.message)),
         }
       }
 
@@ -224,7 +242,9 @@ export const useAccountUpgrade = () => {
       console.error("Account upgrade failed:", err)
       return {
         success: false,
-        errors: [err instanceof Error ? err.message : "Unknown error occurred"],
+        errors: [
+          sanitizeMessage(err instanceof Error ? err.message : "Unknown error occurred"),
+        ],
       }
     } finally {
       toggleActivityIndicator(false)

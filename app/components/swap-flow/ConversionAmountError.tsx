@@ -56,9 +56,17 @@ const ConversionAmountError: React.FC<Props> = ({
   const checkErrorMessage = () => {
     if (!convertMoneyAmount) return null
     let amountFieldError: string | undefined = undefined
-    if (
+
+    const fromBalance = fromWalletCurrency === "BTC" ? btcBalance : usdBalance
+
+    if (fromBalance.amount === 0) {
+      amountFieldError = LL.ConversionDetailsScreen.emptyWallet({
+        walletName:
+          fromWalletCurrency === "BTC" ? LL.common.btcAccount() : LL.common.usdAccount(),
+      })
+    } else if (
       lessThan({
-        value: fromWalletCurrency === "BTC" ? btcBalance : usdBalance,
+        value: fromBalance,
         lessThan: settlementSendAmount,
       })
     ) {

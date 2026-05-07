@@ -94,6 +94,7 @@ const en: BaseTranslation = {
   ConversionDetailsScreen: {
     title: "Swap",
     percentageToConvert: "% to convert",
+    emptyWallet: "Your {walletName:string} has no funds to swap",
   },
   ConversionConfirmationScreen: {
     title: "Review conversion",

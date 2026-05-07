@@ -81,7 +81,8 @@
     },
     "ConversionDetailsScreen": {
         "title": "Swap",
-        "percentageToConvert": "% to convert"
+        "percentageToConvert": "% to convert",
+        "emptyWallet": "Your {walletName:string} has no funds to swap"
     },
     "ConversionConfirmationScreen": {
         "title": "Review conversion",

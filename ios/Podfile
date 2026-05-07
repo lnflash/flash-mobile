@@ -79,6 +79,13 @@ post_install do |installer|
       end
     end
 
+    # Fix fmt consteval error with Xcode 26.4+ clang
+    if target.name == 'fmt'
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+      end
+    end
+
     # Fix deployment target warnings
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'

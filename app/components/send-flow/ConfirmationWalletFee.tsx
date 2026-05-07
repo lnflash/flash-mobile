@@ -49,7 +49,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
 
   useEffect(() => {
     getSendingFee()
-  }, [])
+  }, [getLightningFee])
 
   const getSendingFee = async () => {
     setFee({ status: "loading", amount: undefined })

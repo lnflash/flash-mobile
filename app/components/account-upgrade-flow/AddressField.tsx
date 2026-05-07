@@ -68,11 +68,11 @@ const AddressField: React.FC<Props> = ({
         <View style={[styles.modal, { paddingTop: top, paddingBottom: bottom }]}>
           <GooglePlacesAutocomplete
             ref={ref}
-            listViewDisplayed="auto"
             placeholder={placeholder}
             onFail={(err) => console.log("Google places auto complete", err)}
             onNotFound={() => console.log("Google places auto complete not found")}
             fetchDetails={true}
+            debounce={300}
             onPress={(data, details) => {
               setIsVisible(false)
               onAddressSelect(data, details)
@@ -86,6 +86,21 @@ const AddressField: React.FC<Props> = ({
                 styles.googlePlace,
                 isFocused ? { borderColor: colors.primary } : {},
               ],
+              listView: {
+                backgroundColor: colors.white,
+              },
+              row: {
+                backgroundColor: colors.grey5,
+              },
+              separator: {
+                backgroundColor: colors.black,
+              },
+              poweredContainer: {
+                backgroundColor: colors.grey5,
+              },
+              description: {
+                color: colors.black,
+              },
             }}
             textInputProps={{
               onFocus: () => setIsFocused(true),
@@ -133,5 +148,6 @@ const useStyles = makeStyles(({ colors }) => ({
     backgroundColor: colors.grey5,
     fontSize: 16,
     fontFamily: "Sora-Regular",
+    color: colors.black,
   },
 }))

@@ -104,10 +104,13 @@ export const getTransactionStatus = (
 ): "SUCCESS" | "PENDING" | "FAILURE" => {
   if (isBreezTransaction(tx)) {
     switch (tx.payment.status) {
+      case 0:
       case PaymentStatus.Completed:
         return "SUCCESS"
+      case 1:
       case PaymentStatus.Pending:
         return "PENDING"
+      case 2:
       case PaymentStatus.Failed:
         return "FAILURE"
       default:

@@ -1,929 +1,1492 @@
 {
-    "GaloyAddressScreen": {
-        "title": "Recevoir le paiement en utilisant :",
-        "buttonTitle": "Définir votre adresse",
-        "yourAddress": "Votre adresse {bankName: string} ",
-        "notAbleToChange": "Vous ne pourrez plus modifier votre adresse {bankName: string}.",
-        "addressNotAvailable": "Cette adresse {bankName: string} est déjà prise.",
-        "somethingWentWrong": "Une erreur est survenue. Merci d’essayer ultérieurement.",
-        "merchantTitle": "Pour les commerçants",
-        "yourCashRegister": "Votre terminal de paiement Lightning",
-        "yourPaycode": "Votre Code de paiement",
-        "copiedAddressToClipboard": "Adresse copiée {bankName: string} dans le presse-papiers",
-        "copiedPaycodeToClipboard": "Code de paiement copié dans le presse-papiers",
-        "copiedCashRegisterLinkToClipboard": "Lien du terminal de paiement copié au presse-papier",
-        "howToUseIt": "Comment l’utiliser ?",
-        "howToUseYourAddress": "Comment utiliser une adresse Lightning",
-        "howToUseYourPaycode": "Comment utiliser votre Code de paiement",
-        "howToUseYourCashRegister": "Comment utiliser votre terminal de paiement",
-        "howToUseYourAddressExplainer": "Partager avec quelqu’un qui possède un portefeuille compatible, par exemple : ",
-        "howToUseYourPaycodeExplainer": "Vous pouvez imprimer votre Code de paiement (techniquement c’est une adresse lnurl-pay) et l’afficher dans votre entreprise pour recevoir des paiements. Les particuliers peuvent vous payer en le scannant avec un portefeuille utilisant Lightning.\n\nCependant, il faut savoir que certains portefeuilles ne peuvent pas scanner un Code de paiement comme par exemple : ",
-        "howToUseYourCashRegisterExplainer": "Accepter que des personnes collectent des paiements via le lien du terminal de paiement, sans avoir accès à votre portefeuille.\n\nIls peuvent créer des factures et les paiements seront envoyés directement à votre portefeuille\n{bankName: string}."
-    },
-    "SetAccountModal": {
-        "title": "Définir le compte par défaut",
-        "description": "Ce compte sera d’abord sélectionné pour envoyer et recevoir des paiements. Il peut être modifié à tout moment.",
-        "stablesatsTag": "Choisir ceci pour garder un montant stable du dollar US.",
-        "bitcoinTag": "Choisir ceci pour être dans le standard Bitcoin."
-    },
-    "AuthenticationScreen": {
-        "authenticationDescription": "Authentifiez-vous pour continuer",
-        "setUp": "Configurez l’authentification biométrique",
-        "setUpAuthenticationDescription": "Utilisez l’authentification biométrique",
-        "skip": "Passez cette étape",
-        "unlock": "Déverrouillez",
-        "usePin": "Utilisez un NIP"
-    },
-    "ContactsScreen": {
-        "noContactsTitle": "Aucun contact trouvé",
-        "noContactsYet": "Envoyez ou recevez un paiement en utilisant un nom d’utilisateur et il sera automatiquement ajouté à vos contacts ici",
-        "noMatchingContacts": "Aucun contact ne correspond à votre recherche.",
-        "title": "Contacts"
-    },
-    "ContactDetailsScreen": {
-        "title": "Transactions avec {username: string}"
-    },
-    "ConversionDetailsScreen": {
-        "title": "Convertir",
-        "percentageToConvert": "% à convertir"
-    },
-    "ConversionConfirmationScreen": {
-        "title": "Vérifier la conversion",
-        "youreConverting": "Vous êtes en train de convertir",
-        "receivingAccount": "Compte destinataire"
-    },
-    "ConversionSuccessScreen": {
-        "title": "Conversion réalisée avec succès",
-        "message": "Conversion réussie"
-    },
-    "EarnScreen": {
-        "earnSats": "Gagner {formattedNumber|sats}",
-        "earnSections": {
-            "bitcoinWhatIsIt": {
-                "title": "Bitcoin : Qu’est-ce que c’est ?",
-                "questions": {
-                    "whatIsBitcoin": {
-                        "answers": [
-                            "Une monnaie numérique",
-                            "Un jeu vidéo",
-                            "Un nouveau personnage de dessins animés"
-                        ],
-                        "feedback": [
-                            "Exact. Vous venez de gagner 1 “sat” !",
-                            "Faux, essayez encore.",
-                            "Vraiment pas. Au moins, aucun que l’on ne connait !"
-                        ],
-                        "question": "Qu’est-ce que le Bitcoin exactement ?",
-                        "text": "Le Bitcoin est une monnaie numérique. \n\nDeux personnes peuvent s’échanger un bitcoin instantanément et en toute sécurité partout dans le monde, sans l’aide d’une banque ou d’autre compagnie financière.",
-                        "title": "Qu’est-ce que le Bitcoin exactement ?"
-                    },
-                    "sat": {
-                        "answers": [
-                            "La plus petite unité de bitcoin",
-                            "Un petit satellite",
-                            "Un chat spatial 🐱🚀"
-                        ],
-                        "feedback": [
-                            "Exact. Vous venez de gagner deux sats !!",
-                            "Peut-être… mais ce n’est pas la bonne réponse dans ce contexte 🙂",
-                            "Vraiment pas.... mais ce serait génial !"
-                        ],
-                        "question": "Je viens de gagner un “Sat”, qu’est-ce que c'est ?",
-                        "text": "Un “Sat” est la plus petite unité d'un bitcoin. \n\n On sait tous qu’un dollar peut être divisé en 100 centimes. De façon similaire, un bitcoin peut se diviser en 100,000,000 sats. \n\n En fait, on n’a pas besoin d’avoir tout un bitcoin pour s’en servir. On peut se servir de Bitcoin que l’on possède 20 sats, 3000 sats ou 100,000,000 sats (ce qui équivaut à un bitcoin).",
-                        "title": "Je viens de gagner un “Sat”, qu'est-ce que c'est ?"
-                    },
-                    "whereBitcoinExist": {
-                        "answers": [
-                            "Sur Internet",
-                            "Sur la Lune",
-                            "Dans un compte en banque fédéral"
-                        ],
-                        "feedback": [
-                            "Exact. Vous gagnez 5 sats supplémentaires.",
-                            "Faux. Au moins pas pour l’instant ;)",
-                            "Faux, essayez encore."
-                        ],
-                        "question": "Où sont définis les bitcoins ?",
-                        "text": "Le Bitcoin est une nouvelle forme de monnaie. Tout le monde peut s’en servir, à n’importe quel moment et n’importe où dans le monde. \n\n Il n’est pas rattaché à un gouvernment ou une région spécifique (comme le dollard US par exemple). De plus, il n’y a pas de version sur papier, sur pièces métalliques ou de cartes en plastique. \n\n Tout est 100% numérique. Le Bitcoin est un réseau d’ordinateurs reliés par internet. \n\n Vos bitcoins sont facilement gérés à partir de votre ordinateur ou de votre téléphone !",
-                        "title": "Où sont définis les bitcoins ?"
-                    },
-                    "whoControlsBitcoin": {
-                        "answers": [
-                            "Une communauté mondiale d'utilisateurs volontaires",
-                            "Mr Burns de la série télévisée Les Simpson",
-                            "Le gouvernement français"
-                        ],
-                        "feedback": [
-                            "C'est la bonne réponse. Le Bitcoin est possible grâce à la participation de personnes exécutant le logiciel Bitcoin sur leurs ordinateurs ou leurs téléphones.",
-                            "Une idée amusante, mais incorrecte !",
-                            "Faux. Aucun gouvernement ni aucune compagnie ne contrôle le Bitcoin."
-                        ],
-                        "question": "Qui contrôle le Bitcoin ?",
-                        "text": "Le Bitcoin n’est pas contrôlé par une personne, une compagnie ou un gouvernement. \n\n Il est dirigé par la communauté d’utilisateurs, des personnes et des compagnies du monde entier, qui exécutent le logiciel Bitcoin de façon volontaire sur leurs ordinateurs ou leurs téléphones.",
-                        "title": "Qui contrôle le Bitcoin ?"
-                    },
-                    "copyBitcoin": {
-                        "answers": [
-                            "Non, c’est impossible de copier ou dupliquer la valeur du bitcoin",
-                            "Oui, on peut copier des bitcoins aussi facilement que l’on peut copier des photos numériques",
-                            "Oui, mais copier des bitcoins nécessite des ordinateurs spécialisés"
-                        ],
-                        "feedback": [
-                            "C’est tout à fait juste !",
-                            "Non ce n’est pas vrai. Essayez de nouveau.",
-                            "Faux. Il n’y a aucune façon de copier ou de créer des bitcoins."
-                        ],
-                        "question": "Si le Bitcoin est une monnaie numérique, est-ce que quelqu’un pourrait le copier et ainsi créer de l’argent gratuitc?",
-                        "text": "La valeur d’un bitcoin ne peut jamais être copiée. C'est justement pour cela que le Bitcoin est une invention aussi puissante !!\n\n La plupart des fichiers numériques, comme les photos d’un iPhone, une chanson en format MP3, ou un document Microsoft Word, peuvent facilement être dupliqués et partagés. \n\n Le logiciel Bitcoin empêche la duplication, ou dans le jargon Bitcoin “la double dépense”, de la monnaie numérique. Nous expliquerons le fonctionnement précis de l’algorithme ultérieurement !",
-                        "title": "Si le Bitcoin est une monnaie numérique, est-ce que quelqu’un pourrait le copier et ainsi créer de l’argent gratuit ?"
-                    }
-                }
-            },
-            "WhatIsMoney": {
-                "title": "Qu'est-ce que la monnaie ? ",
-                "questions": {
-                    "moneySocialAggrement": {
-                        "answers": [
-                            "Parce que les gens ont confiance dans le fait que d’autres personnes évalueront la monnaie de façon similaire",
-                            "Parce que votre mère vous l’a dit",
-                            "Parce qu’un billet d’un dollar vaut son poids en or"
-                        ],
-                        "feedback": [
-                            "Exact. C’est ce qui permet à la monnaie de fonctionner !",
-                            "Elle l’a peut-être fait. Mais ce n’est pas la bonne réponse ici !",
-                            "Non, plus maintenant. Dans le passé, on pouvait échanger des dollars contre de l’or, mais ce n’est plus le cas."
-                        ],
-                        "question": "Pourquoi les monnaies ont-elles de la valeur ?",
-                        "text": "La monnaie nécessite la confiance du peuple.\n\n Les gens font confiance à la monnaie papier dans leurs poches. Ils font confiance aux chiffres sur leurs comptes bancaires en ligne. Ils font confiance que le solde de leurs cartes cadeaux sera disponible pour des transactions. \n\n Avoir de la monnaie permet au gens de l’échanger facilement pour des biens ou des services.",
-                        "title": "L'argent est un contrat social."
-                    },
-                    "coincidenceOfWants": {
-                        "answers": [
-                            "La coïncidence des besoins",
-                            "La coïncidence du jour et de la nuit",
-                            "La coïncidence de la lune bloquant la lumière du Soleil"
-                        ],
-                        "feedback": [
-                            "Exact. La monnaie permet des transactions qui ne nécessitent pas de négotiation sur la forme du paiement.",
-                            "Très drôle, vous savez que ce n’est pas la bonne réponse.",
-                            "Et non, on appelle cette coïncidence une éclipse solaire 🌚 et la monnaie ne change rien dans ce cas."
-                        ],
-                        "question": "Quelle coïncidence est résolue par la monnaie ?",
-                        "text": "Il y a des siècles, avant l’invention de la monnaie, les gens faisaient du troc -- c’est-à-dire qu’ils négociaient l’échange d’un bien contre un autre type de bien ou de service. \n\nDisons que vous vouliez manger dans un restaurant et que vous offriez au propriétaire un balai en échange d’un repas. Le propriétaire pouvait dire “non, mais je vais prendre trois chapeaux, si vous en avez”. \n\n Vous pouvez imaginer comme un système de troc pouvait être difficile et inefficace !\n\nAu contraire, avec de la monnaie, un simple billet de 20$ règle cette transaction en sachant que le propriétaire du restaurant l’acceptera avec plaisir.",
-                        "title": "La monnaie permet de résoudre la “coïncidence des besoins”...  Mais qu’est-ce que c‘est ??"
-                    },
-                    "moneyEvolution": {
-                        "answers": [
-                            "Des pierres, des coquillages et de l’or",
-                            "Des petites maisons de Monopoly en plastique",
-                            "Des pièces en chocolat"
-                        ],
-                        "feedback": [
-                            "Exact. Des objets rares et difficiles à copier furent souvent utilisés comme monnaie.",
-                            "Faux. Ils ont de la valeur lorsque l’on joue à un jeu, mais pas dans le monde réel !",
-                            "Non. Ils sont délicieux, mais ils ne seraient pas utile comme monnaie."
-                        ],
-                        "question": "Quels furent les objets utilisés comme monnaie dans l’Histoire ?",
-                        "text": "Il y a des milliers d’années, la société en Micronésie utilisaient des pierres rares et de très grandes tailles comme une forme de monnaie reconnue. \n\nÀ partir de 1500, du fait de leur rareté, les coquillages Cauri (que l’on trouvent dans l’océan) devinrent une monnaie utilisée communément par plusieurs nations.\n\nDepuis des millénaires, l’or a été utilisé comme une forme de monnaie par des pays du monde entier, notamment les États-Unis d’Amérique (jusqu’en 1971).",
-                        "title": "La monnaie a évoluée depuis le début de la civilisation."
-                    },
-                    "whyStonesShellGold": {
-                        "answers": [
-                            "Parce qu’ils ont des caractéristiques essentielles, comme une bonne durabilité, une uniformité et qu’ils sont divisibles.",
-                            "Parce qu’ils brillent et qu’ils sont jolis.",
-                            "Parce qu’ils peuvent être transportés dans votre poche."
-                        ],
-                        "feedback": [
-                            "Exact. Leur rareté et leur portabilité sont également des caractéristiques essentielles.",
-                            "Faux. Cela peut être le cas, mais ce ne sont pas des caractéristiques utiles pour de la monnaie.",
-                            "Pas tout à fait. Bien que ces objets étaient portables, ce n'est pas une raison suffisante en soi."
-                        ],
-                        "question": "Pourquoi les pierres, les coquillages et l’or furent utilisés comme monnaie ?",
-                        "text": "Ces objets possèdent certaines des caractéristiques essentielles pour une bonne monnaie, mais pas toutes.\n\nQuelles sont les caractéristiques essentielles pour une “bonne” monnaie?\nRareté : peu abondante et difficile à reproduire ou copier\nAdoption : c’est relativement facile pour les gens de vérifier son authenticité\nDurabilité : facile à conserver, sans qu’elle ne s’abîme ou tombe en morceaux\nUniformité : facile à échanger avec un autre objet du même type\nPortabilité : facile à transporter\nDivisible : peut être fractionnée et partagée en pièces plus petites.",
-                        "title": "Pourquoi les pierres, les coquillages et l'or furent utilisés comme monnaie dans le passé ?"
-                    },
-                    "moneyIsImportant": {
-                        "answers": [
-                            "La monnaie permet d’acheter des biens et des services aujourd'hui et demain.",
-                            "La monnaie permet de se rendre sur la Lune.",
-                            "La monnaie est la solution à tous les problèmes."
-                        ],
-                        "feedback": [
-                            "C’est tout à fait cela !",
-                            "Faux. Mais cela peut changer dans le futur ;)",
-                            "Pas tout à fait. Bien que des gens le croient, cette réponse n’aborde pas la raison principale de la monnaie."
-                        ],
-                        "question": "Quelle est la raison principale de la monnaie ? Pourquoi est-elle importante ?",
-                        "text": "Tout le monde sait que la monnaie est importante. \n\nLa plupart des gens échangent leur temps et leur énergie, sous la forme de travail, pour gagner de l’argent. Ils le font pour pouvoir acheter des biens et des services aujourd’hui et dans l’avenir.",
-                        "title": "La monnaie est importante pour les individus"
-                    },
-                    "moneyImportantGovernement": {
-                        "answers": [
-                            "La banque centrale du pays, par exemple la Banque Centrale des États-Unis (La Réserve Fédérale)",
-                            "Mr Burns de la série télévisée Les Simpson",
-                            "Un gars avec une imprimante dans son sous-sol"
-                        ],
-                        "feedback": [
-                            "Exact. Le gouvernement peut imprimer à tout moment autant de monnaie qu’il souhaite.",
-                            "Faux. Bien que dans la série, il semble fortuné depuis toujours.",
-                            "Non. Certaines personnes peuvent imprimer des faux billets, mais ce n’est définitivement pas légal !"
-                        ],
-                        "question": "Qui peut imprimer de la monnaie quand ils le souhaitent ?",
-                        "text": "Les économies modernes sont organisées par les États-nations : USA, Japon, Suisse, Brésil, Norvège, Chine, etc. \n\n Ainsi, dans la majorité des nations, le gouvernement détient le pouvoir d’émettre et de contrôler la monnaie. \n\n Aux États-Unis, la Banque Centrale (appelée la Réserve Fédérale, ou “Fed”) peut imprimer ou créer plus de dollars US quand elle le souhaite. \n\n La “Fed” ne requiert pas la permission du Président, ni du Congrès, et certainement pas des citoyens américains. \n\n Imaginez si vous pouviez imprimer des dollars US quand vous le vouliez, que feriez-vous ??",
-                        "title": "La monnaie est aussi importante pour les gouvernements"
-                    }
-                }
-            },
-            "HowDoesMoneyWork": {
-                "title": "Comment fonctionne la monnaie ? ",
-                "questions": {
-                    "WhatIsFiat": {
-                        "answers": [
-                            "Elle est créée sous les ordres du gouvernement national du pays.",
-                            "Par le gérant d’une banque locale.",
-                            "Par le créateur du jeu Monopoly."
-                        ],
-                        "feedback": [
-                            "Exact. La banque centrale d'un gouvernement crée la monnaie fiduciaire.",
-                            "Faux. Une banque locale ne peut que gérer de la monnaie qui a été créée précédemment par le gouvernement.",
-                            "Non. Essayez encore !"
-                        ],
-                        "question": "Qui crée la monnaie fiduciaire, comme le Dollar US ou l’Euro ?",
-                        "text": "Toutes les monnaies nationales en circulation aujourd’hui sont appelées monnaies fiduciaires. Cela  inclut le Dollar US, le Yen Japonais, le Franc Suisse et ainsi de suite. \n\nLe mot “fiduciaire” vient du latin signifiant \"par décret\", c’est-à-dire \"par ordre officiel\".\n\nCela signifie que toute monnaie fiduciaire, incluant le Dollar US, est simplement créée sous les ordres du gouvernement national.",
-                        "title": "La monnaie fiduciaire : qu’est-ce que c’est ?"
-                    },
-                    "whyCareAboutFiatMoney": {
-                        "answers": [
-                            "Tous les gouvernements abusent tôt ou tard de leur pouvoir sur leurs monnaies fiduciaires.",
-                            "Les banques locales peuvent manquer d’espace dans leurs coffres pour stocker tous les billets.",
-                            "On pourrait manquer d’arbres pour fabriquer du papier pour tous ces billets de banque supplémentaires."
-                        ],
-                        "feedback": [
-                            "Exact. Historiquement, les gouvernements n'ont pas pu résister à la tentation d'imprimer plus de monnaie puisqu'ils n'ont pas d'obligation de repayer cette nouvelle monnaie.",
-                            "Non, ce n’est certainement pas le cas.",
-                            "Faux. Essayez encore."
-                        ],
-                        "question": "Pourquoi devrais-je me soucier du contrôle du gouvernement sur la monnaie fiduciaire ?",
-                        "text": "Comme vous l’avez vu dans un quiz précédent, la banque centrale des États-Unis est la Réserve Fédérale, ou la “Fed”.\n\n La Fed peut imprimer plus de monnaie quand elle le souhaite et elle ne requiert pas la permission du Président, ni du Congrès et certainement pas des citoyens américains. \n\n Avec ce genre de contrôle sur la monnaie, il peut être très tentant pour ces autorités d’en abuser. Cela amène parfois à de l’inflation massive, des confiscations arbitraires et de la corruption. \n\nEn effet, Alan Greenspan, le célèbre ex-président de la Fed, a déclaré que les États-Unis “peuvent payer n’importe quelle dette, puisque l’on peut toujours imprimer plus de billets”.",
-                        "title": "Je fais confiance à mon gouvernement. \nPourquoi devrais-je me soucier de la monnaie fiduciaire ?"
-                    },
-                    "GovernementCanPrintMoney": {
-                        "answers": [
-                            "L’impression de monnaie supplémentaire cause de l’inflation.",
-                            "Les gens doivent échanger leur anciens billets de banque chaque année.",
-                            "L’apparence des billets change."
-                        ],
-                        "feedback": [
-                            "Exact. Cela signifie que les biens et les services vont être plus chers dans l’avenir.",
-                            "Non. Les vieux billets de banque sont aussi valables que les nouveaux.",
-                            "Faux. Bien que le gouvernement peut changer l’apparence des billets, cela n’a rien à voir avec l’augmentation des réserves monétaires."
-                        ],
-                        "question": "Quel impact aura l’impression de monnaie par le gouvernement ?",
-                        "text": "Tout le monde devrait s’en soucier ! \n\nL’impression de monnaie par le gouvernement, ou plutôt l’augmentation de la réserve monétaire, cause de l’inflation. \n\nL’inflation est une augmentation du prix des biens et des services. C’est-à-dire que le prix d’un objet sera plus cher dans l’avenir que maintenant. \n\nAlors que signifie l’inflation pour les citoyens ? \n\nAu Royaume-Uni, la livre Sterling a perdu 99.5% de sa valeur depuis son introduction il y a plus de 300 ans. \n\nAux États-Unis, le dollar a perdu 97% de sa valeur depuis la fin de la Première Guerre Mondiale, il y a environ 100 ans. \n\nCela signifie qu’un bifteck qui coûtait $0.30 en 1920... était à $3 en 1990… et coûte environ $15 aujourd'hui, dans les années 2020 !",
-                        "title": "Qui devrait se soucier que le gouvernement peut imprimer de la monnaie sans limite ?"
-                    },
-                    "FiatLosesValueOverTime": {
-                        "answers": [
-                            "Toutes les monnaies fiduciaires ont perdu une grande valeur.",
-                            "La valeur reste la même pour toujours.",
-                            "L’apparence et la forme des billets de banque changent tous les 10 ans environ."
-                        ],
-                        "feedback": [
-                            "Exact. Ceci est vrai même pour le dollar US, qui a perdu 97% de sa valeur en 100 ans.",
-                            "Faux. Essayez encore.",
-                            "Pas tout à fait. Bien que l’apparence et la forme des billets peuvent changer, cela n’a aucun impact sur leur valeur."
-                        ],
-                        "question": "Qu’arrive-t-il à la valeur des monnaies fiduciaires au fil du temps ?",
-                        "text": "C'est le cas. \n\n À travers l’histoire, 775 monnaies fiduciaires ont été créées. La plupart n’existe plus et l’espérance de vie d’une nouvelle monnaie fiduciaire est de seulement 27 ans. \n\nLa livre Sterling est la plus vieille monnaie fiduciaire du monde. Elle a perdu plus de 99% de sa valeur depuis 1694. \n\n Il n’y a aucun exemple de monnaie fiduciaire ayant conservé sa valeur. C’est l’inflation. \n C’est réellement une forme de vol de votre argent durement gagner !",
-                        "title": "Est-ce que cela signifie que toutes les monnaies fiduciaires perdent de leur valeur avec le temps ?"
-                    },
-                    "OtherIssues": {
-                        "answers": [
-                            "La monnaie est difficile à transférer dans le monde et elle peut être aussi surveillée.",
-                            "La monnaie n’est plus nécessaire au 21 ième siècle.",
-                            "L’argent est la source de tous les maux."
-                        ],
-                        "feedback": [
-                            "Exact. On va expliquer ces enjeux avec plus de détails dans un prochain quiz. Continuez de creuser !!",
-                            "Faux. Vous savez que ce n’est pas le cas.",
-                            "Bien que certaines personnes peuvent le croire, ce n’est pas la réponse que l’on recherche."
-                        ],
-                        "question": "Quels sont les autres problèmes rencontrés avec les monnaies fiduciaires ?",
-                        "text": "Oui, il y a beaucoup de problèmes avec les monnaies fiduciaires modernes. \n\nTout d’abord, il peut être extrêmement difficile de transférer de la monnaie dans le monde. Souvent, les gouvernements vont mettre des restrictions sur ces déplacements, et parfois même confisquer les fonds sans justifications valables. Même quand on réussit à envoyer de l’argent, les frais importants rendent la transaction trop chère. \n\nEnsuite, même aux États-Unis, il y a eu une perte totale de la confidentialité puisque la majorité des échanges se fait via des cartes de débit ou de crédit, ainsi que des systèmes en ligne tel que PayPal et Apple Pay.\n\n Avez-vous remarqué que des publicités apparaissent sur vos réseaux sociaux ou dans vos e-mails quelques instants après que vous ayez fait une recherche sur un bien ou un service ? On appelle cela “le capitalisme de surveillance”, il est basé sur la vente de vos données financières.",
-                        "title": "D’accord, les monnaies fiduciaires perdent de leur valeur avec le temps. Y a-t-il d’autres problèmes ?"
-                    }
-                }
-            },
-            "BitcoinWhySpecial": {
-                "title": "Bitcoin : Pourquoi est-ce spécial ? ",
-                "questions": {
-                    "LimitedSupply": {
-                        "answers": [
-                            "Oui. On ne pourra jamais créer plus de 21 millions de bitcoins.",
-                            "Non. Le gouvernement peut créer plus de bitcoins quand il le souhaite.",
-                            "Non, le logiciel Bitcoin peut être modifié pour permettre la création de plus de bitcoins."
-                        ],
-                        "feedback": [
-                            "Exact. En limitant la quantité qui peut être créée, le Bitcoin a été conçu pour accroître sa valeur avec le temps.",
-                            "Faux. Le gouvernement n’a aucun contrôle sur le Bitcoin.",
-                            "Faux. Une des caractéristiques clés du bitcoin est que la réserve est limitée pour toujours."
-                        ],
-                        "question": "Est-ce que la réserve de bitcoin est limitée pour toujours ?",
-                        "text": "Les gouvernements peuvent imprimer de la monnaie fiduciaire en quantités illimitées. \n\nEn revanche la réserve maximale de Bitcoin est fixée et elle ne peut jamais dépasser 21 millions de bitcoins. \n\nUn accroissement continuel de la réserve de monnaie fiduciaire cause de l’inflation. Cela signifie que l’argent que vous avez aujourd’hui aura une valeur moindre dans le futur. \n\nUn exemple simple : \nUne miche de pain qui coûtait environ 8 centimes en 1920, valait environ $1.00 en 1990 et aujourd’hui il coûte environ $2.50 ! \n\n La réserve limitée de bitcoin a l’effet inverse, un effet de déflation. \n\n Cela signifie que le bitcoin que vous détenez aujourd’hui est conçu pour avoir plus de valeur dans le futur, parce qu’il est rare.",
-                        "title": "Caractéristique spéciale #1 :\nUne réserve limitée"
-                    },
-                    "Decentralized": {
-                        "answers": [
-                            "Non. Le Bitcoin est complètement “décentralisé”.",
-                            "Oui. Il est contrôlé par les Nations Unis.",
-                            "Oui. Il est contrôlé par les plus grandes banques du monde."
-                        ],
-                        "feedback": [
-                            "Exact. Il n’y a pas de compagnie, de gouvernement ni d’institution qui contrôle le Bitcoin. N’importe qui peut utiliser le Bitcoin et tout ce qu’il faut c’est un smartphone et une connexion internet.",
-                            "Faux. Essayez encore.",
-                            "Faux, mais vous le saviez déjà !"
-                        ],
-                        "question": "Est-ce que le Bitcoin est centralisé ?",
-                        "text": "La monnaie fiduciaire est contrôlée par les banques et les gouvernements, c’est pour cela que l’on dit qu’elle est centralisée. \n\n Le Bitcoin n’est pas contrôlé par une personne, un gouvernement ni une compagnie, ce qui signifie qu'il est décentralisé. \n\n Puisque personne ne contrôle le Bitcoin, cela signifie que personne ne peut vous limiter son accès, pour des raisons de race, de genre, de revenu, d’historique financer, de position géographique ou n’importe quel autre facteur. \n\n N’importe qui, n’importe où dans le monde, peut utiliser le Bitcoin quand il le veut. Tout ce dont vous avez besoin ce sont un ordinateur ou smartphone et une connexion internet !",
-                        "title": "Caractéristique spéciale #2 : Décentralisation"
-                    },
-                    "NoCounterfeitMoney": {
-                        "answers": [
-                            "Non. Il est impossible de faire des contrefaçons de Bitcoin.",
-                            "Oui. Sauf que la création de faux bitcoin nécessite des ordinateurs très spécialisés.",
-                            "Oui. Le gouvernement peut imprimer autant de bitcoins qu’il le souhaite."
-                        ],
-                        "feedback": [
-                            "Ceci est la bonne réponse. Dans un prochain quiz, Honey Badger vous expliquera pourquoi c'est ainsi !",
-                            "Faux. Il n’y a aucune façon de copier ou dupliquer la valeur du bitcoin.",
-                            "Faux. Bien que le gouvernement peut imprimer une quantité illimité de dollars, il ne peut pas imprimer de bitcoin."
-                        ],
-                        "question": "Est-ce que l’on peut créer des contrefaçons de Bitcoin?",
-                        "text": "La monnaie papier, les chèques et les transactions par carte de crédit peuvent tous être contrefaits ou frauduleux. \n\n Le logiciel unique sur lequel repose le réseau Bitcoin élimine toute possibilité de duplication, y compris pour faire des contrefaçons. \n\n Les nouveaux bitcoins peuvent seulement être créés s’il y a un consensus parmis les participants du réseau, c’est-à-dire les gens qui exécutent le logiciel Bitcoin sur leurs ordinateurs ou smartphones. \n\n Cela rend impossible la création de contrefaçons ou de faux bitcoins.",
-                        "title": "Caractéristique spéciale #3 : \nPas de contrefaçon"
-                    },
-                    "HighlyDivisible": {
-                        "answers": [
-                            "0.00000001 BTC",
-                            "Un bitcoin entier. Il est impossible d'utiliser moins d’un bitcoin.",
-                            "0.01 BTC"
-                        ],
-                        "feedback": [
-                            "Oui. On peut diviser un bitcoin en 100 000 000 unités. Comme mentionné plus tôt, la plus petite unité d’un bitcoin - 0.00000001 BTC - s'appelle un “sat”.",
-                            "Faux. Un bitcoin est très divisible. On peut facilement utiliser une très petite fraction de bitcoin",
-                            "Incorrect. Quoique la plus petite unité du dollar US est un centime, un bitcoin est divisible par un facteur de plus de 100x."
-                        ],
-                        "question": "Quelle est la plus petite fraction de bitcoin qu’une personne peut posséder, ou utiliser ?",
-                        "text": "La monnaie fiduciaire peut être seulement dépensée en montants multiples d’un centime - c’est-à-dire deux décimales pour un dollar US ($0.01).\n\nAlors qu’un bitcoin peut être divisé en 100 000 000 unités. Cela signifie qu’il est possible de dépenser aussi peu que ₿0.00000001. Notez le symbole \"₿\" utilisé, qui est l’équivalent Bitcoin du \"$\". Vous verrez parfois l’utilisation de \"BTC\", au lieu du ₿. \n\nEn revanche Bitcoin permet de très petits paiements - même aussi peu qu’un centime de dollar US.",
-                        "title": "Caractéristique spéciale #4 : \nHautement divisible"
-                    },
-                    "securePartOne": {
-                        "answers": [
-                            "Oui. Le réseau Bitcoin est extrêmement sûr",
-                            "Peut-être. Cela dépend du jour de la semaine.",
-                            "Non. Bitcoin est un logiciel libre et est facilement attaquable."
-                        ],
-                        "feedback": [
-                            "Correct. Dans les faits, le réseau Bitcoin n’a jamais été attaqué. Répondez à la question suivante pour en apprendre davantage !",
-                            "Bien tenté, mais c’est faux. Le réseau Bitcoin est sûr et sécurisé - 24 heures par jour, 365 jours par an.",
-                            "Incorrect. Bien que Bitcoin est en effet un logiciel \"open source\" - c'est-à-dire disponible au public gratuitement - il est extrêmement sécurisé."
-                        ],
-                        "question": "Est-ce que Bitcoin est un réseau sécurisé ?",
-                        "text": "Le réseau bitcoin vaut bien plus de 100 milliards de dollars aujourd’hui. En conséquence, le réseau doit être très sécurisé pour que l’argent ne soit jamais volé. \n\nBitcoin est connu comme la première crypto-monnaie au monde. \n\nLa partie “crypto” du nom vient de la cryptographie. En d’autres termes, la cryptographie protège les informations grâce à des fonctions mathématiques très complexes. \n\nLa plupart des gens ne réalisent pas que Bitcoin est en fait le réseau informatique le plus sécurisé au monde ! \n\n(Vous avez peut-être entendu parler des “piratages” du Bitcoin que nous démystifierons dans le prochain quiz.)",
-                        "title": "Caractéristique spéciale #5 : \nSécurité -- Partie I"
-                    },
-                    "securePartTwo": {
-                        "answers": [
-                            "Non. Bitcoin n’a jamais été piraté",
-                            "Oui. Bitcoin se fait pirater régulièrement.",
-                            "Oui. Bitcoin se fait pirater habituellement les jours fériés lorsque les banques traditionnelles sont fermées."
-                        ],
-                        "feedback": [
-                            "Correct. Le réseau Bitcoin n’a jamais été compromis. Cependant, il est important d’utiliser des portefeuilles numériques sécurisés en permanence pour conserver vos bitcoins.",
-                            "Faux. Essayez encore.",
-                            "Très drôle, vous savez que ce n'est pas la bonne réponse."
-                        ],
-                        "question": "Est-ce que Bitcoin a déjà été piraté ?",
-                        "text": "Pour être direct : le réseau Bitcoin lui-même n’a jamais été piraté, ne serait-ce qu’une seule fois.\n\nAlors, qu’est-ce qui été piraté exactement ? \n\nCertains portefeuilles numériques qui n’avaient pas de système sécuritaire adéquat. \n\nDe la même façon qu’un portefeuille physique contient de la monnaie fiduciaire (sous la forme de billets de banque), les portefeuilles numériques contiennent un certain montant en bitcoin.\n\nDans le monde physique, les criminels attaquent des banques et s’enfuient avec des dollars sous forme de billets de banque. Le fait que certaines personnes volent des banques n’a aucun lien avec la stabilité ou la fiabilité du dollar US.\n\nDe la même façon, certains pirates informatiques ont volé des bitcoins dans des portefeuilles numériques non sécurisés - l’équivalent en ligne d’un vol dans une banque. \n\nCependant, il est important de savoir que le réseau Bitcoin n'a jamais été piraté ou compromis !",
-                        "title": "Caractéristique spéciale #5 : \nSécurité -- Partie II"
-                    }
-                }
-            }
-        },
-        "finishText": "C’est tout pour le moment, nous vous ferons savoir lorsqu’il y en aura plus à découvrir.",
-        "getRewardNow": "Répondez au quiz",
-        "keepDigging": "Continuez à chercher !",
-        "phoneNumberNeeded": "Numéro de téléphone requis",
-        "quizComplete": "Quiz complété et {amount: number} sats gagnés",
-        "reviewQuiz": "Revoir le quiz",
-        "satAccumulated": "Sats accumulés",
-        "satsEarned": "{formattedNumber|sats} gagnés",
-        "sectionsCompleted": "Vous avez terminé",
-        "title": "Quiz",
-        "unlockQuestion": "Pour dévérouiller, répondez à la question :",
-        "youEarned": "Vous avez gagné",
-        "registerTitle": "Besoin de mettre à jour votre compte",
-        "registerContent": "Enregistrer votre numéro de téléphone pour recevoir des sats"
-    },
-    "GetStartedScreen": {
-        "logInCreateAccount": "Se connecter / créer un compte",
-        "quickStart": "Démarrage",
-        "exploreWalletInstead": "Explorer plutôt le portefeuille",
-        "setupBusinessAccount": "Configurer un compte professionnel",
-        "headline": "Portefeuille développé par Galoy",
-        "startTrialAccount": "Débuter avec un compte test",
-        "iUnderstand": "Je comprends, continuer",
-        "startWithTrialAccount": "Débuter avec un compte test",
-        "registerPhoneAccount": "Enregistrer le téléphone du compte",
-        "trialAccountCreationFailed": "Échec de la création du compte test ",
-        "trialAccountCreationFailedMessage": "Malheureusement nous n’avons pas réussi à créer votre compte test. Merci de réessayer ultérieurement ou de créer un compte avec un numéro de téléphone.",
-        "trialAccountHasLimits": "Le compte test a des limites",
-        "trialAccountLimits": {
-            "noBackup": "Pas d’option de sauvegarde",
-            "sendingLimit": "Diminuer la limite d’envoi quotidienne",
-            "noOnchain": "Non réception de bitcoin on-chain"
+  "GaloyAddressScreen": {
+    "title": "Recevoir le paiement en utilisant :",
+    "buttonTitle": "Définir votre adresse",
+    "yourLightningAddress": "Votre adresse Lightning",
+    "yourAddress": "Votre adresse {bankName: string} ",
+    "notAbleToChange": "Vous ne pourrez plus modifier votre adresse {bankName: string}.",
+    "addressNotAvailable": "Cette adresse {bankName: string} est déjà prise.",
+    "somethingWentWrong": "Une erreur est survenue. Merci d’essayer ultérieurement.",
+    "merchantTitle": "Pour les commerçants",
+    "yourCashRegister": "Votre terminal de paiement Lightning",
+    "yourPaycode": "Votre Code de paiement",
+    "copiedLightningAddressToClipboard": "J'ai copié l'adresse Lightning à clipboard",
+    "copiedAddressToClipboard": "Adresse copiée {bankName: string} dans le presse-papiers",
+    "copiedPaycodeToClipboard": "Code de paiement copié dans le presse-papiers",
+    "copiedCashRegisterLinkToClipboard": "Lien du terminal de paiement copié au presse-papier",
+    "howToUseIt": "Comment l’utiliser ?",
+    "howToUseYourAddress": "Comment utiliser une adresse Lightning",
+    "howToUseYourPaycode": "Comment utiliser votre Code de paiement",
+    "howToUseYourCashRegister": "Comment utiliser votre terminal de paiement",
+    "howToUseYourAddressExplainer": "Partager avec quelqu’un qui possède un portefeuille compatible, par exemple : ",
+    "howToUseYourPaycodeExplainer": "Vous pouvez imprimer votre Code de paiement (techniquement c’est une adresse lnurl-pay) et l’afficher dans votre entreprise pour recevoir des paiements. Les particuliers peuvent vous payer en le scannant avec un portefeuille utilisant Lightning.\n\nCependant, il faut savoir que certains portefeuilles ne peuvent pas scanner un Code de paiement comme par exemple : ",
+    "howToUseYourCashRegisterExplainer": "Accepter que des personnes collectent des paiements via le lien du terminal de paiement, sans avoir accès à votre portefeuille.\n\nIls peuvent créer des factures et les paiements seront envoyés directement à votre portefeuille\n{bankName: string}."
+  },
+  "SetAccountModal": {
+    "title": "Définir le compte par défaut",
+    "description": "Ce compte sera d’abord sélectionné pour envoyer et recevoir des paiements. Il peut être modifié à tout moment.",
+    "stablesatsTag": "Choisir ceci pour garder un montant stable du dollar US.",
+    "bitcoinTag": "Choisir ceci pour être dans le standard Bitcoin."
+  },
+  "NoteInput": {
+    "addNote": "Ajouter une note..."
+  },
+  "AuthenticationScreen": {
+    "authenticationDescription": "Authentifiez-vous pour continuer",
+    "setUp": "Configurez l’authentification biométrique",
+    "setUpAuthenticationDescription": "Utilisez l’authentification biométrique",
+    "skip": "Passez cette étape",
+    "unlock": "Déverrouillez",
+    "usePin": "Utilisez un NIP"
+  },
+  "ContactsScreen": {
+    "noContactsTitle": "Aucun contact trouvé",
+    "noContactsYet": "Envoyez ou recevez un paiement en utilisant un nom d’utilisateur et il sera automatiquement ajouté à vos contacts ici",
+    "noMatchingContacts": "Aucun contact ne correspond à votre recherche.",
+    "title": "Contacts"
+  },
+  "ContactDetailsScreen": {
+    "title": "Transactions avec {username: string}"
+  },
+  "ChatScreen": {
+    "noChatsTitle": "Aucun chat n'a été trouvé",
+    "noChatsYet": "Entrez un nom d'utilisateur Flash ou un clavier public nostr pour démarrer un chat",
+    "noMatchingChats": "Aucun chat correspondant à votre recherche n'a été trouvé.",
+    "title": "Chat  Chat "
+  },
+  "ChatDetailsScreen": {
+    "title": "Chattez avec {username: string}"
+  },
+  "CardScreen": {
+    "noCardsTitle": "Aucune carte n'a été trouvée",
+    "noCardsYet": "Appuyez sur un Flashcard pour l'ajouter ici",
+    "noMatchingCards": "Aucune carte correspondant à votre recherche n'a été trouvée.",
+    "title": "Flashcard",
+    "notFlashcard": "La carte NFC n'est pas prise en charge.S'il vous plaît assurez-vous d'utiliser une carte flash.",
+    "noNDEFMessage": "Le message NDEF n'a pas été trouvé.S'il vous plaît assurez-vous que vous utilisez une carte flash.",
+    "notSupported": "NFC n'est pas pris en charge sur cet appareil.",
+    "notEnabled": "NFC n'est pas activé sur cet appareil.",
+    "noTag": "Aucune balise n'a été trouvée.S'il vous plaît assurez-vous d'utiliser une carte flash."
+  },
+  "Cashout": {
+    "title": "Settle",
+    "percentageToCashout": "% à régler % à régler",
+    "valid": "Valide pour {time: string}",
+    "exchangeRate": "Le taux de change",
+    "sendAmount": "Envoyez un montant",
+    "receiveAmount": "Amour de réception",
+    "fee": "Frais  Frais",
+    "success": "La demande de règlement a été lancée avec succès.",
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
+  },
+  "ConversionDetailsScreen": {
+    "title": "Convertir",
+    "percentageToConvert": "% à convertir",
+    "emptyWallet": "Votre {walletName:string} n'a pas de fonds à échanger"
+  },
+  "ConversionConfirmationScreen": {
+    "title": "Vérifier la conversion",
+    "youreConverting": "Vous êtes en train de convertir",
+    "sendingAccount": "Compte d'envoi",
+    "receivingAccount": "Compte destinataire",
+    "conversionFee": "Frais de conversion"
+  },
+  "ConversionSuccessScreen": {
+    "title": "Conversion réalisée avec succès",
+    "message": "Conversion réussie"
+  },
+  "EarnScreen": {
+    "earnSats": "Gagner {formattedNumber|sats}",
+    "earnSections": {
+      "bitcoinWhatIsIt": {
+        "title": "Bitcoin : Qu’est-ce que c’est ?",
+        "questions": {
+          "whatIsBitcoin": {
+            "answers": [
+              "Une monnaie numérique",
+              "Un jeu vidéo",
+              "Un nouveau personnage de dessins animés"
+            ],
+            "feedback": [
+              "Exact. Vous venez de gagner 1 “sat” !",
+              "Faux, essayez encore.",
+              "Vraiment pas. Au moins, aucun que l’on ne connait !"
+            ],
+            "question": "Qu’est-ce que le Bitcoin exactement ?",
+            "text": "Le Bitcoin est une monnaie numérique. \n\nDeux personnes peuvent s’échanger un bitcoin instantanément et en toute sécurité partout dans le monde, sans l’aide d’une banque ou d’autre compagnie financière.",
+            "title": "Qu’est-ce que le Bitcoin exactement ?"
+          },
+          "sat": {
+            "answers": [
+              "La plus petite unité de bitcoin",
+              "Un petit satellite",
+              "Un chat spatial 🐱🚀"
+            ],
+            "feedback": [
+              "Exact. Vous venez de gagner deux sats !!",
+              "Peut-être… mais ce n’est pas la bonne réponse dans ce contexte 🙂",
+              "Vraiment pas.... mais ce serait génial !"
+            ],
+            "question": "Je viens de gagner un “Sat”, qu’est-ce que c'est ?",
+            "text": "Un “Sat” est la plus petite unité d'un bitcoin. \n\n On sait tous qu’un dollar peut être divisé en 100 centimes. De façon similaire, un bitcoin peut se diviser en 100,000,000 sats. \n\n En fait, on n’a pas besoin d’avoir tout un bitcoin pour s’en servir. On peut se servir de Bitcoin que l’on possède 20 sats, 3000 sats ou 100,000,000 sats (ce qui équivaut à un bitcoin).",
+            "title": "Je viens de gagner un “Sat”, qu'est-ce que c'est ?"
+          },
+          "whereBitcoinExist": {
+            "answers": [
+              "Sur Internet",
+              "Sur la Lune",
+              "Dans un compte en banque fédéral"
+            ],
+            "feedback": [
+              "Exact. Vous gagnez 5 sats supplémentaires.",
+              "Faux. Au moins pas pour l’instant ;)",
+              "Faux, essayez encore."
+            ],
+            "question": "Où sont définis les bitcoins ?",
+            "text": "Le Bitcoin est une nouvelle forme de monnaie. Tout le monde peut s’en servir, à n’importe quel moment et n’importe où dans le monde. \n\n Il n’est pas rattaché à un gouvernment ou une région spécifique (comme le dollard US par exemple). De plus, il n’y a pas de version sur papier, sur pièces métalliques ou de cartes en plastique. \n\n Tout est 100% numérique. Le Bitcoin est un réseau d’ordinateurs reliés par internet. \n\n Vos bitcoins sont facilement gérés à partir de votre ordinateur ou de votre téléphone !",
+            "title": "Où sont définis les bitcoins ?"
+          },
+          "whoControlsBitcoin": {
+            "answers": [
+              "Une communauté mondiale d'utilisateurs volontaires",
+              "Mr Burns de la série télévisée Les Simpson",
+              "Le gouvernement français"
+            ],
+            "feedback": [
+              "C'est la bonne réponse. Le Bitcoin est possible grâce à la participation de personnes exécutant le logiciel Bitcoin sur leurs ordinateurs ou leurs téléphones.",
+              "Une idée amusante, mais incorrecte !",
+              "Faux. Aucun gouvernement ni aucune compagnie ne contrôle le Bitcoin."
+            ],
+            "question": "Qui contrôle le Bitcoin ?",
+            "text": "Le Bitcoin n’est pas contrôlé par une personne, une compagnie ou un gouvernement. \n\n Il est dirigé par la communauté d’utilisateurs, des personnes et des compagnies du monde entier, qui exécutent le logiciel Bitcoin de façon volontaire sur leurs ordinateurs ou leurs téléphones.",
+            "title": "Qui contrôle le Bitcoin ?"
+          },
+          "copyBitcoin": {
+            "answers": [
+              "Non, c’est impossible de copier ou dupliquer la valeur du bitcoin",
+              "Oui, on peut copier des bitcoins aussi facilement que l’on peut copier des photos numériques",
+              "Oui, mais copier des bitcoins nécessite des ordinateurs spécialisés"
+            ],
+            "feedback": [
+              "C’est tout à fait juste !",
+              "Non ce n’est pas vrai. Essayez de nouveau.",
+              "Faux. Il n’y a aucune façon de copier ou de créer des bitcoins."
+            ],
+            "question": "Si le Bitcoin est une monnaie numérique, est-ce que quelqu’un pourrait le copier et ainsi créer de l’argent gratuitc?",
+            "text": "La valeur d’un bitcoin ne peut jamais être copiée. C'est justement pour cela que le Bitcoin est une invention aussi puissante !!\n\n La plupart des fichiers numériques, comme les photos d’un iPhone, une chanson en format MP3, ou un document Microsoft Word, peuvent facilement être dupliqués et partagés. \n\n Le logiciel Bitcoin empêche la duplication, ou dans le jargon Bitcoin “la double dépense”, de la monnaie numérique. Nous expliquerons le fonctionnement précis de l’algorithme ultérieurement !",
+            "title": "Si le Bitcoin est une monnaie numérique, est-ce que quelqu’un pourrait le copier et ainsi créer de l’argent gratuit ?"
+          }
         }
-    },
-    "MapScreen": {
-        "locationPermissionMessage": "Entrez votre localisation, vous pourrez ainsi être inscrit sur la carte",
-        "locationPermissionNegative": "Annuler",
-        "locationPermissionNeutral": "Demandez moi plus tard",
-        "locationPermissionPositive": "OK",
-        "locationPermissionTitle": "Localisez votre position sur la carte",
-        "payBusiness": "payez cette entreprise",
-        "title": "Carte"
-    },
-    "HomeScreen": {
-        "receive": "Recevoir",
-        "send": "Envoyer",
-        "title": "Accueil",
-        "scan": "Scanner",
-        "updateAvailable": "Une mise à jour est disponible. Appuyez pour mettre à jour maintenant",
-        "useLightning": "Nous utilisons le réseau Lightning.",
-        "myAccounts": "Mes comptes"
-    },
-    "PinScreen": {
-        "attemptsRemaining": "NIP incorrect. {attemptsRemaining: number} tentatives restantes.",
-        "oneAttemptRemaining": "NIP incorrect. 1 tentative restante.",
-        "setPin": "Définissez votre code NIP",
-        "setPinFailedMatch": "Les NIP ne correspondent pas - Corrigez votre code NIP",
-        "storePinFailed": "Impossible d’enregistrer votre NIP.",
-        "tooManyAttempts": "Trop de tentatives infructeuses. Déconnexion.",
-        "verifyPin": "Validez votre code NIP"
-    },
-    "PriceHistoryScreen": {
-        "oneDay": "1J",
-        "oneMonth": "1M",
-        "oneWeek": "1S",
-        "oneYear": "1A",
-        "fiveYears": "5A",
-        "satPrice": "Prix pour 100,000 sats : ",
-        "last24Hours": "Les dernières 24 heures",
-        "lastWeek": "La semaine dernière",
-        "lastMonth": "Le mois dernier",
-        "lastYear": "L’année dernière",
-        "lastFiveYears": "Les cinq dernières années"
-    },
-    "PrimaryScreen": {
-        "title": "Accueil"
-    },
-    "ReceiveScreen": {
-        "nfc": "NFC",
-        "enterAmountFirst": "Please enter an amount first",
-        "activateNotifications": "Souhaitez-vous activer les notifications pour être prévenu lorsque le paiement est bien parvenu ?",
-        "copyClipboard": "La facture a été copiée dans le presse-papier",
-        "copyClipboardBitcoin": "L’adresse Bitcoin a été copiée dans le presse-papier",
-        "invoicePaid": "La facture a été payée",
-        "setNote": "Ajouter un message",
-        "tapQrCodeCopy": "Touchez le code QR pour le copier",
-        "title": "Recevoir des Bitcoin",
-        "usdTitle": "Recevoir des dollars US",
-        "error": "Impossible de générer la facture. Merci de contacter le support si le problème persiste.",
-        "copyInvoice": "Copier la facture",
-        "shareInvoice": "Partager la facture",
-        "addAmount": "Demander un montant spécifique",
-        "expired": "La facture a expiré",
-        "expiresIn": "Expire dans",
-        "updateInvoice": "Mettre à jour la facture",
-        "flexibleAmountInvoice": "Facture à montant flexible",
-        "copyAddress": "Copier l’adresse",
-        "shareAddress": "Partager l’adresse",
-        "generatingInvoice": "Génération de la facture",
-        "regenerateInvoice": "Générer à nouveau la facture",
-        "useABitcoinOnchainAddress": "Utiliser une adresse Bitcoin on-chain",
-        "useALightningInvoice": "Utiliser une facture Lightning",
-        "setANote": "Ajouter un message",
-        "invoiceAmount": "Montant de la facture",
-        "fees": "{minBankFee: string} sats de frais pour des paiements on-chain en-dessous de {minBankFeeThreshold: string} sats"
-    },
-    "RedeemBitcoinScreen": {
-        "title": "Échanger des Bitcoin",
-        "usdTitle": "Recevoir des dollars US",
-        "error": "Impossible de générer la facture. Merci de contacter le support si le problème persiste.",
-        "redeemingError": "Impossible d’échanger des Bitcoin. Merci de contacter le support si le problème persiste.",
-        "submissionError": "Impossible de soumettre la demande de retrait. Merci de contacter le support si le problème persiste.",
-        "minMaxRange": "Min : {minimumAmount: string}, Max : {maximumAmount: string}",
-        "redeemBitcoin": "Échanger des Bitcoin",
-        "amountToRedeemFrom": "Montant à échanger depuis {domain: string}",
-        "redeemAmountFrom": "Échanger {amountToRedeem: string} depuis {domain: string}"
-    },
-    "ScanningQRCodeScreen": {
-        "invalidContent": "Nous avons trouvé :\n\n{found: string}\n\nCeci n'est pas une adresse valide pour une facture Lightning.",
-        "expiredContent": "Nous avons trouvé : \n\n{found: string}\n\nCette facture a expiré",
-        "invalidTitle": "Code QR invalide",
-        "noQrCode": "Nous n’avons pas trouvé de code QR dans l’image",
-        "title": "Scanner QR",
-        "invalidContentLnurl": "Nous avons trouvé :\n\n{found: string}\n\n n’est pas supporté"
-    },
-    "SecurityScreen": {
-        "biometricDescription": "Dévérouiller la reconnaissance faciale ou digitale.",
-        "biometricTitle": "Biométrie",
-        "biometryNotAvailable": "Le capteur biométrique n'est pas disponible.",
-        "biometryNotEnrolled": "SVP enregistrez au moins un capteur biométrique pour utiliser l’authentification biométrique.",
-        "hideBalanceDescription": "Masquer votre solde sur l’écran d’accueil par défaut pour dissimuler vos informations à quiconque regarderait votre écran.",
-        "hideBalanceTitle": "Masquer le solde",
-        "pinDescription": "Le NIP est utilisé comme méthode de sauvegarde pour l’authentification biométrique.",
-        "pinTitle": "Code NIP",
-        "setPin": "Définir le NIP"
-    },
-    "SendBitcoinConfirmationScreen": {
-        "amountLabel": "Montant :",
-        "confirmPayment": "Confirmer le paiement",
-        "confirmPaymentQuestion": "Voulez-vous confirmer le paiement ?",
-        "destinationLabel": "À :",
-        "feeLabel": "Frais",
-        "memoLabel": "Note :",
-        "paymentFinal": "Les paiements sont définitifs.",
-        "stalePrice": "Votre prix pour un bitcoin n’est plus valable et a été mis-à-jour il y a {timePeriod}. Veuillez redémarrer l’application avant d’effectuer un paiement.",
-        "title": "Confirmer le paiement",
-        "totalLabel": "Solde :",
-        "totalExceed": "Le total excède votre solde de {balance: string}",
-        "maxFeeSelected": "Il s’agit des frais maximums qui vous seront facturés pour cette transaction. Il peut s’avérer inférieur une fois le paiement effectué.",
-        "feeError": "Échec du calcul des frais",
-        "breezFeeText": "There may be a small fee for routing"
-    },
-    "SendBitcoinDestinationScreen": {
-        "usernameNowAddress": "Les identifiants {bankName: string} sont maintenant les adresses {bankName: string}.",
-        "usernameNowAddressInfo": "Lorsque vous saisissez l’identifiant de l’établissement {bankName: string}, nous ajouterons \"@{lnDomain: string}\" à ce dernier pour créer une adresse (ex : maria@{lnDomain: string}). Votre identifiant est à présent aussi une adresse {bankName: string}.\n\nAllez à la page de votre adresse {bankName: string} depuis les Réglages pour apprendre comment l’utiliser et la partager pour recevoir des paiements.",
-        "enterValidDestination": "Merci d’indiquer une adresse de destination valide",
-        "destinationOptions": "Vous pouvez envoyer à une adresse {bankName: string}, une adresse LN, une facture LN, ou une adresse BTC.",
-        "expiredInvoice": "Cette facture a expiré. Merci d’en générer une nouvelle.",
-        "wrongNetwork": "Cette facture est pour un réseau différent. Merci d’en générer une nouvelle",
-        "invalidAmount": "Cette facture contient un montant non valide. Merci d’en générer une nouvelle avec un montant valide.",
-        "usernameDoesNotExist": "{lnAddress: string} ne semble pas être une adresse {bankName: string} existante.",
-        "usernameDoesNotExistAdvice": "Assurez-vous que l’orthographe est correcte ou bien demandez au bénéficiaire une facture Lightning Network LN ou une adresse BTC à la place.",
-        "selfPaymentError": "{lnAddress: string} est votre adresse {bankName: string}.",
-        "selfPaymentAdvice": "Si vous souhaitez envoyer de l’argent à un autre compte que le vôtre, vous pouvez utiliser une facture avec une adresse Lightning Network LN ou BTC à la place.",
-        "lnAddressError": "Nous ne pouvons pas accéder à cette adresse Lightning. Si vous êtes sûr qu’elle existe, vous pouvez essayer à nouveau ultérieurement.",
-        "lnAddressAdvice": "Assurez-vous que l’orthographe est correcte ou bien demandez au bénéficiaire une facture ou une adresse BTC à la place.",
-        "unknownLightning": "Nous ne pouvons pas analyser cette adresse Lightning. Merci de réessayer.",
-        "unknownOnchain": "Nous ne pouvons pas analyser cette adresse Bitcoin. Merci de réessayer.",
-        "newBankAddressUsername": "{lnAddress: string} existe en tant qu’adresse {bankName: string}, mais vous n’y avez jamais envoyé d’argent.",
-        "confirmModal": {
-            "title": "Vous n’avez jamais envoyé d’argent à cette adresse",
-            "body1": "Merci de vous assurer que le bénéficiaire vous a donné une adresse {bankName: string}, ",
-            "bold2bold": "et non pas un identifiant d’un autre portefeuille.",
-            "body3": "Sinon l’argent sera transféré au compte {bankName: string} qui a l’adresse “{lnAddress: string}”.\n\nVérifiez également l’orthographe de la première partie de l’adresse, par exemple jackie et jack1e sont 2 adresses différentes.",
-            "warning": "Si l’adresse {bankName: string} est saisie de manière incorrecte, {bankName: string} ne peut pas annuler la transaction.",
-            "checkBox": "{lnAddress: string} est la correcte adresse.",
-            "confirmButton": "J’en suis sûr-e à 100%"
-        },
-        "clipboardError": "Erreur pour obtenir de la valeur depuis le presse-papier"
-    },
-    "SendBitcoinScreen": {
-        "amount": "Montant",
-        "amountExceed": "Le montant excède votre solde de {balance: string}",
-        "amountExceedsLimit": "Le montant excède le restant de votre limite journalière qui est de {limit: string}",
-        "upgradeAccountToIncreaseLimit": "Mettre à jour votre compte pour augmenter votre limite",
-        "amountIsRequired": "Un montant est requis",
-        "cost": "Coût",
-        "destination": "Adresse de destination",
-        "destinationIsRequired": "Adresse de destination requise",
-        "fee": "frais de réseau",
-        "feeCalculationUnsuccessful": "Calcul infructueux ⚠️",
-        "input": "Identifiant, facture ou adresse",
-        "invalidUsername": "Identifiant non valide",
-        "noAmount": "Cette facture ne contient pas de montant, vous devez indiquer manuellement quel montant vous désirez envoyer",
-        "notConfirmed": "Le paiement a été envoyé\nmais n'est pas encore confirmé\n\nVous pouvez vérifier l'état du paiement dans Transactions",
-        "note": "Note optionnelle",
-        "success": "Le paiement a été envoyé avec succès",
-        "max": "Max",
-        "maxAmount": "Montant max",
-        "title": "Envoyer des bitcoins",
-        "failedToFetchLnurlInvoice": "Échec de la récupération de la facture lnurl",
-        "lnurlInvoiceIncorrectAmount": "Le serveur lnurl a répondu avec une facture contenant un montant incorrect",
-        "lnurlInvoiceIncorrectDescription": "Le serveur lnurl a répondu avec une facture contenant un hachage de description incorrect."
-    },
-    "SettingsScreen": {
-        "activated": "Activé",
-        "tapLogIn": "Appuyer pour vous connecter",
-        "addressScreen": "Manières d’être payé",
-        "tapUserName": "Appuyez pour définir l’identifiant",
-        "title": "Réglages",
-        "darkMode": "Mode sombre",
-        "setToDark": "Mode : sombre.",
-        "setToLight": "Mode : clair.",
-        "darkDefault": "Mode : sombre, (par défaut).",
-        "lightDefault": "Mode : clair, (par défaut).",
-        "csvTransactionsError": "Impossible d’exporter les transactions vers un fichier CSV. Une erreur s’est produite. Si le problème persiste, veuillez contacter le support technique.",
-        "lnurlNoUsername": "Pour générer une adresse lnurl, vous devez d’abord définir un identifiant. Voulez-vous en définir un maintenant ?",
-        "copyClipboardLnurl": "L'adresse lnurl a été copiée dans le presse-papiers",
-        "defaultWallet": "Compte par défaut",
-        "rateUs": "Donnez-nous une note sur {storeName: string}",
-        "theme": "Thème",
-        "nfc": "Recevoir depuis le paiement sans contact",
-        "nfcError": "Erreur dans la lecture du marqueur NFC. Merci de réessayer.",
-        "nfcNotCompatible": "L’information extraite de la carte n’est pas compatible avec le lien lnurl-withdraw.",
-        "nfcOnlyReceive": "Seule la réception depuis NFC est disponible pour le moment",
-        "nfcScanNow": "Scanner NFC maintenant",
-        "nfcNotSupported": "NFC n’est pas compatible sur cet appareil"
-    },
-    "NotificationSettingsScreen": {
-        "title": "Réglages des notifications",
-        "pushNotifications": "Notifications push",
-        "notificationCategories": {
-            "Circles": {
-                "title": "Cercles",
-                "description": "Notifications concernant vos cercles."
-            },
-            "Payments": {
-                "title": "Paiements",
-                "description": "Notifications associées aux paiements envoyés et reçus."
-            }
+      },
+      "WhatIsMoney": {
+        "title": "Qu'est-ce que la monnaie ? ",
+        "questions": {
+          "moneySocialAggrement": {
+            "answers": [
+              "Parce que les gens ont confiance dans le fait que d’autres personnes évalueront la monnaie de façon similaire",
+              "Parce que votre mère vous l’a dit",
+              "Parce qu’un billet d’un dollar vaut son poids en or"
+            ],
+            "feedback": [
+              "Exact. C’est ce qui permet à la monnaie de fonctionner !",
+              "Elle l’a peut-être fait. Mais ce n’est pas la bonne réponse ici !",
+              "Non, plus maintenant. Dans le passé, on pouvait échanger des dollars contre de l’or, mais ce n’est plus le cas."
+            ],
+            "question": "Pourquoi les monnaies ont-elles de la valeur ?",
+            "text": "La monnaie nécessite la confiance du peuple.\n\n Les gens font confiance à la monnaie papier dans leurs poches. Ils font confiance aux chiffres sur leurs comptes bancaires en ligne. Ils font confiance que le solde de leurs cartes cadeaux sera disponible pour des transactions. \n\n Avoir de la monnaie permet au gens de l’échanger facilement pour des biens ou des services.",
+            "title": "L'argent est un contrat social."
+          },
+          "coincidenceOfWants": {
+            "answers": [
+              "La coïncidence des besoins",
+              "La coïncidence du jour et de la nuit",
+              "La coïncidence de la lune bloquant la lumière du Soleil"
+            ],
+            "feedback": [
+              "Exact. La monnaie permet des transactions qui ne nécessitent pas de négotiation sur la forme du paiement.",
+              "Très drôle, vous savez que ce n’est pas la bonne réponse.",
+              "Et non, on appelle cette coïncidence une éclipse solaire 🌚 et la monnaie ne change rien dans ce cas."
+            ],
+            "question": "Quelle coïncidence est résolue par la monnaie ?",
+            "text": "Il y a des siècles, avant l’invention de la monnaie, les gens faisaient du troc -- c’est-à-dire qu’ils négociaient l’échange d’un bien contre un autre type de bien ou de service. \n\nDisons que vous vouliez manger dans un restaurant et que vous offriez au propriétaire un balai en échange d’un repas. Le propriétaire pouvait dire “non, mais je vais prendre trois chapeaux, si vous en avez”. \n\n Vous pouvez imaginer comme un système de troc pouvait être difficile et inefficace !\n\nAu contraire, avec de la monnaie, un simple billet de 20$ règle cette transaction en sachant que le propriétaire du restaurant l’acceptera avec plaisir.",
+            "title": "La monnaie permet de résoudre la “coïncidence des besoins”...  Mais qu’est-ce que c‘est ??"
+          },
+          "moneyEvolution": {
+            "answers": [
+              "Des pierres, des coquillages et de l’or",
+              "Des petites maisons de Monopoly en plastique",
+              "Des pièces en chocolat"
+            ],
+            "feedback": [
+              "Exact. Des objets rares et difficiles à copier furent souvent utilisés comme monnaie.",
+              "Faux. Ils ont de la valeur lorsque l’on joue à un jeu, mais pas dans le monde réel !",
+              "Non. Ils sont délicieux, mais ils ne seraient pas utile comme monnaie."
+            ],
+            "question": "Quels furent les objets utilisés comme monnaie dans l’Histoire ?",
+            "text": "Il y a des milliers d’années, la société en Micronésie utilisaient des pierres rares et de très grandes tailles comme une forme de monnaie reconnue. \n\nÀ partir de 1500, du fait de leur rareté, les coquillages Cauri (que l’on trouvent dans l’océan) devinrent une monnaie utilisée communément par plusieurs nations.\n\nDepuis des millénaires, l’or a été utilisé comme une forme de monnaie par des pays du monde entier, notamment les États-Unis d’Amérique (jusqu’en 1971).",
+            "title": "La monnaie a évoluée depuis le début de la civilisation."
+          },
+          "whyStonesShellGold": {
+            "answers": [
+              "Parce qu’ils ont des caractéristiques essentielles, comme une bonne durabilité, une uniformité et qu’ils sont divisibles.",
+              "Parce qu’ils brillent et qu’ils sont jolis.",
+              "Parce qu’ils peuvent être transportés dans votre poche."
+            ],
+            "feedback": [
+              "Exact. Leur rareté et leur portabilité sont également des caractéristiques essentielles.",
+              "Faux. Cela peut être le cas, mais ce ne sont pas des caractéristiques utiles pour de la monnaie.",
+              "Pas tout à fait. Bien que ces objets étaient portables, ce n'est pas une raison suffisante en soi."
+            ],
+            "question": "Pourquoi les pierres, les coquillages et l’or furent utilisés comme monnaie ?",
+            "text": "Ces objets possèdent certaines des caractéristiques essentielles pour une bonne monnaie, mais pas toutes.\n\nQuelles sont les caractéristiques essentielles pour une “bonne” monnaie?\nRareté : peu abondante et difficile à reproduire ou copier\nAdoption : c’est relativement facile pour les gens de vérifier son authenticité\nDurabilité : facile à conserver, sans qu’elle ne s’abîme ou tombe en morceaux\nUniformité : facile à échanger avec un autre objet du même type\nPortabilité : facile à transporter\nDivisible : peut être fractionnée et partagée en pièces plus petites.",
+            "title": "Pourquoi les pierres, les coquillages et l'or furent utilisés comme monnaie dans le passé ?"
+          },
+          "moneyIsImportant": {
+            "answers": [
+              "La monnaie permet d’acheter des biens et des services aujourd'hui et demain.",
+              "La monnaie permet de se rendre sur la Lune.",
+              "La monnaie est la solution à tous les problèmes."
+            ],
+            "feedback": [
+              "C’est tout à fait cela !",
+              "Faux. Mais cela peut changer dans le futur ;)",
+              "Pas tout à fait. Bien que des gens le croient, cette réponse n’aborde pas la raison principale de la monnaie."
+            ],
+            "question": "Quelle est la raison principale de la monnaie ? Pourquoi est-elle importante ?",
+            "text": "Tout le monde sait que la monnaie est importante. \n\nLa plupart des gens échangent leur temps et leur énergie, sous la forme de travail, pour gagner de l’argent. Ils le font pour pouvoir acheter des biens et des services aujourd’hui et dans l’avenir.",
+            "title": "La monnaie est importante pour les individus"
+          },
+          "moneyImportantGovernement": {
+            "answers": [
+              "La banque centrale du pays, par exemple la Banque Centrale des États-Unis (La Réserve Fédérale)",
+              "Mr Burns de la série télévisée Les Simpson",
+              "Un gars avec une imprimante dans son sous-sol"
+            ],
+            "feedback": [
+              "Exact. Le gouvernement peut imprimer à tout moment autant de monnaie qu’il souhaite.",
+              "Faux. Bien que dans la série, il semble fortuné depuis toujours.",
+              "Non. Certaines personnes peuvent imprimer des faux billets, mais ce n’est définitivement pas légal !"
+            ],
+            "question": "Qui peut imprimer de la monnaie quand ils le souhaitent ?",
+            "text": "Les économies modernes sont organisées par les États-nations : USA, Japon, Suisse, Brésil, Norvège, Chine, etc. \n\n Ainsi, dans la majorité des nations, le gouvernement détient le pouvoir d’émettre et de contrôler la monnaie. \n\n Aux États-Unis, la Banque Centrale (appelée la Réserve Fédérale, ou “Fed”) peut imprimer ou créer plus de dollars US quand elle le souhaite. \n\n La “Fed” ne requiert pas la permission du Président, ni du Congrès, et certainement pas des citoyens américains. \n\n Imaginez si vous pouviez imprimer des dollars US quand vous le vouliez, que feriez-vous ??",
+            "title": "La monnaie est aussi importante pour les gouvernements"
+          }
         }
+      },
+      "HowDoesMoneyWork": {
+        "title": "Comment fonctionne la monnaie ? ",
+        "questions": {
+          "WhatIsFiat": {
+            "answers": [
+              "Elle est créée sous les ordres du gouvernement national du pays.",
+              "Par le gérant d’une banque locale.",
+              "Par le créateur du jeu Monopoly."
+            ],
+            "feedback": [
+              "Exact. La banque centrale d'un gouvernement crée la monnaie fiduciaire.",
+              "Faux. Une banque locale ne peut que gérer de la monnaie qui a été créée précédemment par le gouvernement.",
+              "Non. Essayez encore !"
+            ],
+            "question": "Qui crée la monnaie fiduciaire, comme le Dollar US ou l’Euro ?",
+            "text": "Toutes les monnaies nationales en circulation aujourd’hui sont appelées monnaies fiduciaires. Cela  inclut le Dollar US, le Yen Japonais, le Franc Suisse et ainsi de suite. \n\nLe mot “fiduciaire” vient du latin signifiant \"par décret\", c’est-à-dire \"par ordre officiel\".\n\nCela signifie que toute monnaie fiduciaire, incluant le Dollar US, est simplement créée sous les ordres du gouvernement national.",
+            "title": "La monnaie fiduciaire : qu’est-ce que c’est ?"
+          },
+          "whyCareAboutFiatMoney": {
+            "answers": [
+              "Tous les gouvernements abusent tôt ou tard de leur pouvoir sur leurs monnaies fiduciaires.",
+              "Les banques locales peuvent manquer d’espace dans leurs coffres pour stocker tous les billets.",
+              "On pourrait manquer d’arbres pour fabriquer du papier pour tous ces billets de banque supplémentaires."
+            ],
+            "feedback": [
+              "Exact. Historiquement, les gouvernements n'ont pas pu résister à la tentation d'imprimer plus de monnaie puisqu'ils n'ont pas d'obligation de repayer cette nouvelle monnaie.",
+              "Non, ce n’est certainement pas le cas.",
+              "Faux. Essayez encore."
+            ],
+            "question": "Pourquoi devrais-je me soucier du contrôle du gouvernement sur la monnaie fiduciaire ?",
+            "text": "Comme vous l’avez vu dans un quiz précédent, la banque centrale des États-Unis est la Réserve Fédérale, ou la “Fed”.\n\n La Fed peut imprimer plus de monnaie quand elle le souhaite et elle ne requiert pas la permission du Président, ni du Congrès et certainement pas des citoyens américains. \n\n Avec ce genre de contrôle sur la monnaie, il peut être très tentant pour ces autorités d’en abuser. Cela amène parfois à de l’inflation massive, des confiscations arbitraires et de la corruption. \n\nEn effet, Alan Greenspan, le célèbre ex-président de la Fed, a déclaré que les États-Unis “peuvent payer n’importe quelle dette, puisque l’on peut toujours imprimer plus de billets”.",
+            "title": "Je fais confiance à mon gouvernement. \nPourquoi devrais-je me soucier de la monnaie fiduciaire ?"
+          },
+          "GovernementCanPrintMoney": {
+            "answers": [
+              "L’impression de monnaie supplémentaire cause de l’inflation.",
+              "Les gens doivent échanger leur anciens billets de banque chaque année.",
+              "L’apparence des billets change."
+            ],
+            "feedback": [
+              "Exact. Cela signifie que les biens et les services vont être plus chers dans l’avenir.",
+              "Non. Les vieux billets de banque sont aussi valables que les nouveaux.",
+              "Faux. Bien que le gouvernement peut changer l’apparence des billets, cela n’a rien à voir avec l’augmentation des réserves monétaires."
+            ],
+            "question": "Quel impact aura l’impression de monnaie par le gouvernement ?",
+            "text": "Tout le monde devrait s’en soucier ! \n\nL’impression de monnaie par le gouvernement, ou plutôt l’augmentation de la réserve monétaire, cause de l’inflation. \n\nL’inflation est une augmentation du prix des biens et des services. C’est-à-dire que le prix d’un objet sera plus cher dans l’avenir que maintenant. \n\nAlors que signifie l’inflation pour les citoyens ? \n\nAu Royaume-Uni, la livre Sterling a perdu 99.5% de sa valeur depuis son introduction il y a plus de 300 ans. \n\nAux États-Unis, le dollar a perdu 97% de sa valeur depuis la fin de la Première Guerre Mondiale, il y a environ 100 ans. \n\nCela signifie qu’un bifteck qui coûtait $0.30 en 1920... était à $3 en 1990… et coûte environ $15 aujourd'hui, dans les années 2020 !",
+            "title": "Qui devrait se soucier que le gouvernement peut imprimer de la monnaie sans limite ?"
+          },
+          "FiatLosesValueOverTime": {
+            "answers": [
+              "Toutes les monnaies fiduciaires ont perdu une grande valeur.",
+              "La valeur reste la même pour toujours.",
+              "L’apparence et la forme des billets de banque changent tous les 10 ans environ."
+            ],
+            "feedback": [
+              "Exact. Ceci est vrai même pour le dollar US, qui a perdu 97% de sa valeur en 100 ans.",
+              "Faux. Essayez encore.",
+              "Pas tout à fait. Bien que l’apparence et la forme des billets peuvent changer, cela n’a aucun impact sur leur valeur."
+            ],
+            "question": "Qu’arrive-t-il à la valeur des monnaies fiduciaires au fil du temps ?",
+            "text": "C'est le cas. \n\n À travers l’histoire, 775 monnaies fiduciaires ont été créées. La plupart n’existe plus et l’espérance de vie d’une nouvelle monnaie fiduciaire est de seulement 27 ans. \n\nLa livre Sterling est la plus vieille monnaie fiduciaire du monde. Elle a perdu plus de 99% de sa valeur depuis 1694. \n\n Il n’y a aucun exemple de monnaie fiduciaire ayant conservé sa valeur. C’est l’inflation. \n C’est réellement une forme de vol de votre argent durement gagner !",
+            "title": "Est-ce que cela signifie que toutes les monnaies fiduciaires perdent de leur valeur avec le temps ?"
+          },
+          "OtherIssues": {
+            "answers": [
+              "La monnaie est difficile à transférer dans le monde et elle peut être aussi surveillée.",
+              "La monnaie n’est plus nécessaire au 21 ième siècle.",
+              "L’argent est la source de tous les maux."
+            ],
+            "feedback": [
+              "Exact. On va expliquer ces enjeux avec plus de détails dans un prochain quiz. Continuez de creuser !!",
+              "Faux. Vous savez que ce n’est pas le cas.",
+              "Bien que certaines personnes peuvent le croire, ce n’est pas la réponse que l’on recherche."
+            ],
+            "question": "Quels sont les autres problèmes rencontrés avec les monnaies fiduciaires ?",
+            "text": "Oui, il y a beaucoup de problèmes avec les monnaies fiduciaires modernes. \n\nTout d’abord, il peut être extrêmement difficile de transférer de la monnaie dans le monde. Souvent, les gouvernements vont mettre des restrictions sur ces déplacements, et parfois même confisquer les fonds sans justifications valables. Même quand on réussit à envoyer de l’argent, les frais importants rendent la transaction trop chère. \n\nEnsuite, même aux États-Unis, il y a eu une perte totale de la confidentialité puisque la majorité des échanges se fait via des cartes de débit ou de crédit, ainsi que des systèmes en ligne tel que PayPal et Apple Pay.\n\n Avez-vous remarqué que des publicités apparaissent sur vos réseaux sociaux ou dans vos e-mails quelques instants après que vous ayez fait une recherche sur un bien ou un service ? On appelle cela “le capitalisme de surveillance”, il est basé sur la vente de vos données financières.",
+            "title": "D’accord, les monnaies fiduciaires perdent de leur valeur avec le temps. Y a-t-il d’autres problèmes ?"
+          }
+        }
+      },
+      "BitcoinWhySpecial": {
+        "title": "Bitcoin : Pourquoi est-ce spécial ? ",
+        "questions": {
+          "LimitedSupply": {
+            "answers": [
+              "Oui. On ne pourra jamais créer plus de 21 millions de bitcoins.",
+              "Non. Le gouvernement peut créer plus de bitcoins quand il le souhaite.",
+              "Non, le logiciel Bitcoin peut être modifié pour permettre la création de plus de bitcoins."
+            ],
+            "feedback": [
+              "Exact. En limitant la quantité qui peut être créée, le Bitcoin a été conçu pour accroître sa valeur avec le temps.",
+              "Faux. Le gouvernement n’a aucun contrôle sur le Bitcoin.",
+              "Faux. Une des caractéristiques clés du bitcoin est que la réserve est limitée pour toujours."
+            ],
+            "question": "Est-ce que la réserve de bitcoin est limitée pour toujours ?",
+            "text": "Les gouvernements peuvent imprimer de la monnaie fiduciaire en quantités illimitées. \n\nEn revanche la réserve maximale de Bitcoin est fixée et elle ne peut jamais dépasser 21 millions de bitcoins. \n\nUn accroissement continuel de la réserve de monnaie fiduciaire cause de l’inflation. Cela signifie que l’argent que vous avez aujourd’hui aura une valeur moindre dans le futur. \n\nUn exemple simple : \nUne miche de pain qui coûtait environ 8 centimes en 1920, valait environ $1.00 en 1990 et aujourd’hui il coûte environ $2.50 ! \n\n La réserve limitée de bitcoin a l’effet inverse, un effet de déflation. \n\n Cela signifie que le bitcoin que vous détenez aujourd’hui est conçu pour avoir plus de valeur dans le futur, parce qu’il est rare.",
+            "title": "Caractéristique spéciale #1 :\nUne réserve limitée"
+          },
+          "Decentralized": {
+            "answers": [
+              "Non. Le Bitcoin est complètement “décentralisé”.",
+              "Oui. Il est contrôlé par les Nations Unis.",
+              "Oui. Il est contrôlé par les plus grandes banques du monde."
+            ],
+            "feedback": [
+              "Exact. Il n’y a pas de compagnie, de gouvernement ni d’institution qui contrôle le Bitcoin. N’importe qui peut utiliser le Bitcoin et tout ce qu’il faut c’est un smartphone et une connexion internet.",
+              "Faux. Essayez encore.",
+              "Faux, mais vous le saviez déjà !"
+            ],
+            "question": "Est-ce que le Bitcoin est centralisé ?",
+            "text": "La monnaie fiduciaire est contrôlée par les banques et les gouvernements, c’est pour cela que l’on dit qu’elle est centralisée. \n\n Le Bitcoin n’est pas contrôlé par une personne, un gouvernement ni une compagnie, ce qui signifie qu'il est décentralisé. \n\n Puisque personne ne contrôle le Bitcoin, cela signifie que personne ne peut vous limiter son accès, pour des raisons de race, de genre, de revenu, d’historique financer, de position géographique ou n’importe quel autre facteur. \n\n N’importe qui, n’importe où dans le monde, peut utiliser le Bitcoin quand il le veut. Tout ce dont vous avez besoin ce sont un ordinateur ou smartphone et une connexion internet !",
+            "title": "Caractéristique spéciale #2 : Décentralisation"
+          },
+          "NoCounterfeitMoney": {
+            "answers": [
+              "Non. Il est impossible de faire des contrefaçons de Bitcoin.",
+              "Oui. Sauf que la création de faux bitcoin nécessite des ordinateurs très spécialisés.",
+              "Oui. Le gouvernement peut imprimer autant de bitcoins qu’il le souhaite."
+            ],
+            "feedback": [
+              "Ceci est la bonne réponse. Dans un prochain quiz, Honey Badger vous expliquera pourquoi c'est ainsi !",
+              "Faux. Il n’y a aucune façon de copier ou dupliquer la valeur du bitcoin.",
+              "Faux. Bien que le gouvernement peut imprimer une quantité illimité de dollars, il ne peut pas imprimer de bitcoin."
+            ],
+            "question": "Est-ce que l’on peut créer des contrefaçons de Bitcoin?",
+            "text": "La monnaie papier, les chèques et les transactions par carte de crédit peuvent tous être contrefaits ou frauduleux. \n\n Le logiciel unique sur lequel repose le réseau Bitcoin élimine toute possibilité de duplication, y compris pour faire des contrefaçons. \n\n Les nouveaux bitcoins peuvent seulement être créés s’il y a un consensus parmis les participants du réseau, c’est-à-dire les gens qui exécutent le logiciel Bitcoin sur leurs ordinateurs ou smartphones. \n\n Cela rend impossible la création de contrefaçons ou de faux bitcoins.",
+            "title": "Caractéristique spéciale #3 : \nPas de contrefaçon"
+          },
+          "HighlyDivisible": {
+            "answers": [
+              "0.00000001 BTC",
+              "Un bitcoin entier. Il est impossible d'utiliser moins d’un bitcoin.",
+              "0.01 BTC"
+            ],
+            "feedback": [
+              "Oui. On peut diviser un bitcoin en 100 000 000 unités. Comme mentionné plus tôt, la plus petite unité d’un bitcoin - 0.00000001 BTC - s'appelle un “sat”.",
+              "Faux. Un bitcoin est très divisible. On peut facilement utiliser une très petite fraction de bitcoin",
+              "Incorrect. Quoique la plus petite unité du dollar US est un centime, un bitcoin est divisible par un facteur de plus de 100x."
+            ],
+            "question": "Quelle est la plus petite fraction de bitcoin qu’une personne peut posséder, ou utiliser ?",
+            "text": "La monnaie fiduciaire peut être seulement dépensée en montants multiples d’un centime - c’est-à-dire deux décimales pour un dollar US ($0.01).\n\nAlors qu’un bitcoin peut être divisé en 100 000 000 unités. Cela signifie qu’il est possible de dépenser aussi peu que ₿0.00000001. Notez le symbole \"₿\" utilisé, qui est l’équivalent Bitcoin du \"$\". Vous verrez parfois l’utilisation de \"BTC\", au lieu du ₿. \n\nEn revanche Bitcoin permet de très petits paiements - même aussi peu qu’un centime de dollar US.",
+            "title": "Caractéristique spéciale #4 : \nHautement divisible"
+          },
+          "securePartOne": {
+            "answers": [
+              "Oui. Le réseau Bitcoin est extrêmement sûr",
+              "Peut-être. Cela dépend du jour de la semaine.",
+              "Non. Bitcoin est un logiciel libre et est facilement attaquable."
+            ],
+            "feedback": [
+              "Correct. Dans les faits, le réseau Bitcoin n’a jamais été attaqué. Répondez à la question suivante pour en apprendre davantage !",
+              "Bien tenté, mais c’est faux. Le réseau Bitcoin est sûr et sécurisé - 24 heures par jour, 365 jours par an.",
+              "Incorrect. Bien que Bitcoin est en effet un logiciel \"open source\" - c'est-à-dire disponible au public gratuitement - il est extrêmement sécurisé."
+            ],
+            "question": "Est-ce que Bitcoin est un réseau sécurisé ?",
+            "text": "Le réseau bitcoin vaut bien plus de 100 milliards de dollars aujourd’hui. En conséquence, le réseau doit être très sécurisé pour que l’argent ne soit jamais volé. \n\nBitcoin est connu comme la première crypto-monnaie au monde. \n\nLa partie “crypto” du nom vient de la cryptographie. En d’autres termes, la cryptographie protège les informations grâce à des fonctions mathématiques très complexes. \n\nLa plupart des gens ne réalisent pas que Bitcoin est en fait le réseau informatique le plus sécurisé au monde ! \n\n(Vous avez peut-être entendu parler des “piratages” du Bitcoin que nous démystifierons dans le prochain quiz.)",
+            "title": "Caractéristique spéciale #5 : \nSécurité -- Partie I"
+          },
+          "securePartTwo": {
+            "answers": [
+              "Non. Bitcoin n’a jamais été piraté",
+              "Oui. Bitcoin se fait pirater régulièrement.",
+              "Oui. Bitcoin se fait pirater habituellement les jours fériés lorsque les banques traditionnelles sont fermées."
+            ],
+            "feedback": [
+              "Correct. Le réseau Bitcoin n’a jamais été compromis. Cependant, il est important d’utiliser des portefeuilles numériques sécurisés en permanence pour conserver vos bitcoins.",
+              "Faux. Essayez encore.",
+              "Très drôle, vous savez que ce n'est pas la bonne réponse."
+            ],
+            "question": "Est-ce que Bitcoin a déjà été piraté ?",
+            "text": "Pour être direct : le réseau Bitcoin lui-même n’a jamais été piraté, ne serait-ce qu’une seule fois.\n\nAlors, qu’est-ce qui été piraté exactement ? \n\nCertains portefeuilles numériques qui n’avaient pas de système sécuritaire adéquat. \n\nDe la même façon qu’un portefeuille physique contient de la monnaie fiduciaire (sous la forme de billets de banque), les portefeuilles numériques contiennent un certain montant en bitcoin.\n\nDans le monde physique, les criminels attaquent des banques et s’enfuient avec des dollars sous forme de billets de banque. Le fait que certaines personnes volent des banques n’a aucun lien avec la stabilité ou la fiabilité du dollar US.\n\nDe la même façon, certains pirates informatiques ont volé des bitcoins dans des portefeuilles numériques non sécurisés - l’équivalent en ligne d’un vol dans une banque. \n\nCependant, il est important de savoir que le réseau Bitcoin n'a jamais été piraté ou compromis !",
+            "title": "Caractéristique spéciale #5 : \nSécurité -- Partie II"
+          }
+        }
+      }
     },
-    "AccountScreen": {
-        "accountLevel": "Niveau du compte",
-        "logIn": "Se connecter",
-        "upgrade": "Mettre à jour votre compte",
-        "logOutAndDeleteLocalData": "Se déconnecter et effacer toutes les données locales",
-        "IUnderstand": "Je comprends. Merci de me déconnecter",
-        "logoutAlertTitle": "Êtes-vous sûr de vouloir être déconnecté et supprimer toutes les données locales?",
-        "logoutAlertContent": "Vous aurez besoin de saisir à nouveau votre numéro de téléphone pour vous reconnecter.\nVotre numéro de téléphone est le {phoneNumber: string}, et veillez à en avoir l’accès pour vous reconnecter.",
-        "usdBalanceWarning": "Vous avec un solde Stablesats de {balance: string}.",
-        "btcBalanceWarning": "Vous avez un solde Bitcoin de {balance: string}.",
-        "secureYourAccount": "S’inscrire pour sécuriser votre compte"
+    "finishText": "C’est tout pour le moment, nous vous ferons savoir lorsqu’il y en aura plus à découvrir.",
+    "getRewardNow": "Répondez au quiz",
+    "keepDigging": "Continuez à chercher !",
+    "phoneNumberNeeded": "Numéro de téléphone requis",
+    "quizComplete": "Quiz complété et {amount: number} sats gagnés",
+    "reviewQuiz": "Revoir le quiz",
+    "satAccumulated": "Sats accumulés",
+    "satsEarned": "{formattedNumber|sats} gagnés",
+    "sectionsCompleted": "Vous avez terminé",
+    "title": "Quiz",
+    "unlockQuestion": "Pour dévérouiller, répondez à la question :",
+    "youEarned": "Vous avez gagné",
+    "registerTitle": "Besoin de mettre à jour votre compte",
+    "registerContent": "Enregistrer votre numéro de téléphone pour recevoir des sats"
+  },
+  "GetStartedScreen": {
+    "logInCreateAccount": "Se connecter / créer un compte",
+    "quickStart": "Démarrage",
+    "restoreWallet": "Login",
+    "exploreWalletInstead": "Explorer plutôt le portefeuille",
+    "setupBusinessAccount": "Configurer un compte professionnel",
+    "createAccount": "Créez un nouveau compte",
+    "exploreWallet": "Explorez le portefeuille",
+    "logBackInWith": "Retournez à la connexion avec",
+    "headline": "Portefeuille développé par Galoy",
+    "startTrialAccount": "Débuter avec un compte test",
+    "startWithTrialAccount": "Débuter avec un compte test",
+    "registerPhoneAccount": "Enregistrer le téléphone du compte",
+    "trialAccountCreationFailed": "Échec de la création du compte test ",
+    "trialAccountCreationFailedMessage": "Malheureusement nous n’avons pas réussi à créer votre compte test. Merci de réessayer ultérieurement ou de créer un compte avec un numéro de téléphone.",
+    "trialAccountHasLimits": "Le compte test a des limites",
+    "trialAccountLimits": {
+      "noBackup": "Pas d’option de sauvegarde",
+      "sendingLimit": "Diminuer la limite d’envoi quotidienne",
+      "noOnchain": "Non réception de bitcoin on-chain"
     },
-    "DefaultWalletScreen": {
-        "title": "Compte par défaut",
-        "info": "Sélectionner le compte à définir par défaut pour recevoir et envoyer des paiements. Vous pouvez configurer le compte de transfert et de réception pour des paiements individuels dans l’application mobile. Les paiements reçus via le terminal de paiement ou votre adresse Lightning seront toujours envoyés sur le compte par défaut.\n\nPour éviter la fluctuation de Bitcoin, choisissez Stablesats. Cela vous permet de garder un montant stable de votre argent, tout en continuant à envoyer et recevoir des paiements.\n\nVous pouvez modifier ce réglage à tout moment, et cela n’affectera pas votre solde actuel."
+    "chooseAccountType": "Choisissez le type de compte"
+  },
+  "MapScreen": {
+    "locationPermissionMessage": "Entrez votre localisation, vous pourrez ainsi être inscrit sur la carte",
+    "locationPermissionNegative": "Annuler",
+    "locationPermissionNeutral": "Demandez moi plus tard",
+    "locationPermissionPositive": "OK",
+    "locationPermissionTitle": "Localisez votre position sur la carte",
+    "payBusiness": "payez cette entreprise",
+    "title": "Carte",
+    "addPin": "Cliquez sur n'importe où pour ajouter une broche",
+    "selectedCoordinates": "Vos coordonnées Flashpoint sont les suivantes: ",
+    "viewInGoogleMaps": "Voir dans Google Maps",
+    "getDirections": "Directions Obtenez des directions"
+  },
+  "HomeScreen": {
+    "cashout": "Cash Out ",
+    "receive": "Recevoir",
+    "reload": "Carte de reload ",
+    "balance": "L'équilibre de rafraîchissement",
+    "showQrCode": "Topup via QR",
+    "send": "Envoyer",
+    "sweep": "Faites une balayage vers le portefeuille",
+    "pay": "Pay  Pay ",
+    "title": "Accueil",
+    "scan": "Scanner",
+    "updateAvailable": "Une mise à jour est disponible. Appuyez pour mettre à jour maintenant",
+    "useLightning": "Nous utilisons le réseau Lightning.",
+    "myAccounts": "Mes comptes",
+    "unclaimedDepositsWarning": "️ Prétendre à des dépôts non réclamés ",
+    "unclaimedDeposits": "Les dépôts non réclamés",
+    "cash": "L'argent en espèces ",
+    "bitcoin": "Bitcoin",
+    "flashcard": "Flashcard",
+    "addFlashcard": "Flashcard Ajouter",
+    "upgradeTitle": "Améliorez votre compte",
+    "upgradeTitlePending": "Une demande de mise à niveau est en attente",
+    "upgradeDesc": "Débloquez votre plein potentiel! Améliorez pour augmenter la visibilité, les limites et les paiements.",
+    "upgradePendingDesc": "Votre demande de mise à niveau de votre compte est en cours d'examen.",
+    "currencyTitle": "Changez à votre monnaie locale",
+    "currencyDesc": "Consultez notre liste de devises disponibles et sélectionnez votre devise.",
+    "flashcardTitle": "Obtenez un Flashcard",
+    "flashcardDesc": "Trouvez un Flashpoint et obtenez un Flashcard à utiliser dans la vie quotidienne.",
+    "nonCustodialWalletTitle": "Les portefeuilles non custodiels",
+    "nonCustodialWalletDesc": "En savoir plus sur les portefeuilles non custodiels.",
+    "emailTitle": "Adresse e-mail ",
+    "emailDesc": "Ajoutez votre adresse e-mail pour sécuriser votre compte et connectez-vous à l'aide d'une adresse e-mail.",
+    "btcWalletTitle": "Activer le portefeuille BTC",
+    "btcWalletDesc": "Il est facile de transférer de plus grandes quantités en Bitcoin.",
+    "backupTitle": "Faites une sauvegarde de votre portefeuille BTC",
+    "backupDesc": "Faites une sauvegarde et sécurisez votre portefeuille Bitcoin en utilisant la phrase recovery."
+  },
+  "PinScreen": {
+    "attemptsRemaining": "NIP incorrect. {attemptsRemaining: number} tentatives restantes.",
+    "oneAttemptRemaining": "NIP incorrect. 1 tentative restante.",
+    "setPin": "Définissez votre code NIP",
+    "setPinFailedMatch": "Les NIP ne correspondent pas - Corrigez votre code NIP",
+    "storePinFailed": "Impossible d’enregistrer votre NIP.",
+    "tooManyAttempts": "Trop de tentatives infructeuses. Déconnexion.",
+    "verifyPin": "Validez votre code NIP"
+  },
+  "PriceHistoryScreen": {
+    "oneDay": "1J",
+    "oneMonth": "1M",
+    "oneWeek": "1S",
+    "oneYear": "1A",
+    "fiveYears": "5A",
+    "satPrice": "Prix pour 100,000 sats : ",
+    "last24Hours": "Les dernières 24 heures",
+    "lastWeek": "La semaine dernière",
+    "lastMonth": "Le mois dernier",
+    "lastYear": "L’année dernière",
+    "lastFiveYears": "Les cinq dernières années"
+  },
+  "PrimaryScreen": {
+    "title": "Accueil"
+  },
+  "ReceiveScreen": {
+    "flashcardInstructions": "Scannez le code QR, ou appuyez sur l'icône pour le partager sur whatsapp, e-mail, etc.",
+    "nfc": "NFC",
+    "enterAmountFirst": "Please enter an amount first",
+    "activateNotifications": "Souhaitez-vous activer les notifications pour être prévenu lorsque le paiement est bien parvenu ?",
+    "copyClipboard": "La facture a été copiée dans le presse-papier",
+    "copyClipboardBitcoin": "L’adresse Bitcoin a été copiée dans le presse-papier",
+    "copyClipboardPaycode": "Le code de paiement/LNURL a été copié dans le tableau de bord",
+    "invoicePaid": "La facture a été payée",
+    "setNote": "Ajouter un message",
+    "tapQrCodeCopy": "Touchez le code QR pour le copier",
+    "title": "Recevoir des Bitcoin",
+    "usdTitle": "Recevoir des dollars US",
+    "error": "Impossible de générer la facture. Merci de contacter le support si le problème persiste.",
+    "copyInvoice": "Copier la facture",
+    "shareInvoice": "Partager la facture",
+    "addAmount": "Demander un montant spécifique",
+    "expired": "La facture a expiré",
+    "expiresIn": "Expire dans",
+    "updateInvoice": "Mettre à jour la facture",
+    "flexibleAmountInvoice": "Facture à montant flexible",
+    "copyAddress": "Copier l’adresse",
+    "shareAddress": "Partager l’adresse",
+    "generatingInvoice": "Génération de la facture",
+    "regenerateInvoice": "Générer à nouveau la facture",
+    "useABitcoinOnchainAddress": "Utiliser une adresse Bitcoin on-chain",
+    "useALightningInvoice": "Utiliser une facture Lightning",
+    "setANote": "Ajouter un message",
+    "invoiceAmount": "Montant de la facture",
+    "fees": "{minBankFee: string} sats de frais pour des paiements on-chain en-dessous de {minBankFeeThreshold: string} sats",
+    "lightning": "Lightning",
+    "paycode": "Le code de paiement",
+    "onchain": "Onchain",
+    "bitcoin": "Bitcoin",
+    "stablesats": "L'argent en espèces ",
+    "regenerateInvoiceButtonTitle": "Regenerer la facture",
+    "setUsernameButtonTitle": "Réglage de nom d'utilisateur",
+    "invoiceHasExpired": "La facture a expiré",
+    "setUsernameToAcceptViaPaycode": "Définissez votre nom d'utilisateur pour qu'il soit accepté via le code payant QR (LNURL) et Lightning Address.",
+    "singleUse": "Utilisation unique",
+    "invoiceExpired": "L'expiration de la facture",
+    "invoiceValidity": {
+      "validFor1Day": "Valide pour 1 jour",
+      "validForNext": "Valide pour le prochain {duration: string}",
+      "validBefore": "Valables avant {time: string}",
+      "expiresIn": "Il expire en {duration: string}",
+      "expiresNow": "Il expire maintenant"
     },
-    "ThemeScreen": {
-        "title": "Thème",
-        "info": "Sélectionnez votre thème favori pour utiliser Flash, ou choisissez de le garder synchronisé avec vos Réglages système.",
-        "system": "Utiliser les Réglages système",
-        "light": "Utiliser le mode clair",
-        "dark": "Utiliser le mode sombre"
+    "invoiceHasBeenPaid": "La facture a été payée",
+    "yourBitcoinOnChainAddress": "Votre adresse Bitcoin sur chaîne ",
+    "receive": "Recevoir et recevoir.",
+    "receiveViaInvoice": "Recevez par l'intermédiaire de Lightning",
+    "receiveViaPaycode": "Recevez par Paycode",
+    "topupFlashcard": "Topup Flashcard",
+    "receiveViaOnchain": "Recevez par l'intermédiaire d'Onchain",
+    "payCodeOrLNURL": "Le code de paiement / LNURL",
+    "cantReceiveZeroSats": "Vous ne pouvez pas recevoir un sats zéro.S'il vous plaît entrer un montant correspondant à 1 ou plus sats.",
+    "initialDeposit": "* Un dépôt initial de 5 $ est recommandé pour la configuration du canal. ~$1 sera payé comme frais de configuration.",
+    "selectPaymentMethod": "Sélectionnez le mode de paiement",
+    "selectWallet": "Sélectionnez le portefeuille"
+  },
+  "RedeemBitcoinScreen": {
+    "title": "Échanger des Bitcoin",
+    "usdTitle": "Recevoir des dollars US",
+    "error": "Impossible de générer la facture. Merci de contacter le support si le problème persiste.",
+    "redeemingError": "Impossible d’échanger des Bitcoin. Merci de contacter le support si le problème persiste.",
+    "submissionError": "Impossible de soumettre la demande de retrait. Merci de contacter le support si le problème persiste.",
+    "minMaxRange": "Min : {minimumAmount: string}, Max : {maximumAmount: string}",
+    "redeemBitcoin": "Échanger des Bitcoin",
+    "amountToRedeemFrom": "Montant à échanger depuis {domain: string}",
+    "redeemAmountFrom": "Échanger {amountToRedeem: string} depuis {domain: string}"
+  },
+  "ScanningQRCodeScreen": {
+    "invalidContent": "Nous avons trouvé :\n\n{found: string}\n\nCeci n'est pas une adresse valide pour une facture Lightning.",
+    "expiredContent": "Nous avons trouvé : \n\n{found: string}\n\nCette facture a expiré",
+    "invalidTitle": "Code QR invalide",
+    "noQrCode": "Nous n’avons pas trouvé de code QR dans l’image",
+    "title": "Scanner QR",
+    "permissionCamera": "Nous avons besoin d'autorisation pour utiliser votre appareil photo",
+    "noCamera": "Pas de caméra trouvée",
+    "openSettings": "Ouvrez les paramètres ",
+    "unableToOpenSettings": "Impossible d'ouvrir les paramètres",
+    "invalidContentLnurl": "Nous avons trouvé :\n\n{found: string}\n\n n’est pas supporté",
+    "imageLibraryPermissionsNotGranted": "Nous n'avons pas d'autorisations pour accéder à la bibliothèque d'images.Veuillez vérifier les paramètres de l'application pour votre plateforme."
+  },
+  "SecurityScreen": {
+    "biometricDescription": "Dévérouiller la reconnaissance faciale ou digitale.",
+    "biometricTitle": "Biométrie",
+    "biometryNotAvailable": "Le capteur biométrique n'est pas disponible.",
+    "biometryNotEnrolled": "SVP enregistrez au moins un capteur biométrique pour utiliser l’authentification biométrique.",
+    "hideBalanceDescription": "Masquer votre solde sur l’écran d’accueil par défaut pour dissimuler vos informations à quiconque regarderait votre écran.",
+    "hideBalanceTitle": "Masquer le solde",
+    "pinDescription": "Le NIP est utilisé comme méthode de sauvegarde pour l’authentification biométrique.",
+    "pinTitle": "Code NIP",
+    "setPin": "Définir le NIP",
+    "backupDescription": "Pour définir un code PIN, veuillez sauvegarder votre compte en ajoutant un numéro de téléphone."
+  },
+  "SendBitcoinConfirmationScreen": {
+    "amountLabel": "Montant :",
+    "confirmPayment": "Confirmer le paiement",
+    "confirmPaymentQuestion": "Voulez-vous confirmer le paiement ?",
+    "destinationLabel": "À :",
+    "feeLabel": "Frais",
+    "memoLabel": "Note :",
+    "paymentFinal": "Les paiements sont définitifs.",
+    "stalePrice": "Votre prix pour un bitcoin n’est plus valable et a été mis-à-jour il y a {timePeriod}. Veuillez redémarrer l’application avant d’effectuer un paiement.",
+    "title": "Confirmer le paiement",
+    "totalLabel": "Solde :",
+    "totalExceed": "Le total excède votre solde de {balance: string}",
+    "maxFeeSelected": "Il s’agit des frais maximums qui vous seront facturés pour cette transaction. Il peut s’avérer inférieur une fois le paiement effectué.",
+    "feeError": "Échec du calcul des frais",
+    "breezFeeText": "There may be a small fee for routing"
+  },
+  "SendBitcoinDestinationScreen": {
+    "usernameNowAddress": "Les identifiants {bankName: string} sont maintenant les adresses {bankName: string}.",
+    "usernameNowAddressInfo": "Lorsque vous saisissez l’identifiant de l’établissement {bankName: string}, nous ajouterons \"@{lnDomain: string}\" à ce dernier pour créer une adresse (ex : maria@{lnDomain: string}). Votre identifiant est à présent aussi une adresse {bankName: string}.\n\nAllez à la page de votre adresse {bankName: string} depuis les Réglages pour apprendre comment l’utiliser et la partager pour recevoir des paiements.",
+    "enterValidDestination": "Merci d’indiquer une adresse de destination valide",
+    "destinationOptions": "Vous pouvez envoyer à une adresse {bankName: string}, une adresse LN, une facture LN, ou une adresse BTC.",
+    "expiredInvoice": "Cette facture a expiré. Merci d’en générer une nouvelle.",
+    "wrongNetwork": "Cette facture est pour un réseau différent. Merci d’en générer une nouvelle",
+    "invalidAmount": "Cette facture contient un montant non valide. Merci d’en générer une nouvelle avec un montant valide.",
+    "usernameDoesNotExist": "{lnAddress: string} ne semble pas être une adresse {bankName: string} existante.",
+    "usernameDoesNotExistAdvice": "Assurez-vous que l’orthographe est correcte ou bien demandez au bénéficiaire une facture Lightning Network LN ou une adresse BTC à la place.",
+    "selfPaymentError": "{lnAddress: string} est votre adresse {bankName: string}.",
+    "selfPaymentAdvice": "Si vous souhaitez envoyer de l’argent à un autre compte que le vôtre, vous pouvez utiliser une facture avec une adresse Lightning Network LN ou BTC à la place.",
+    "lnAddressError": "Nous ne pouvons pas accéder à cette adresse Lightning. Si vous êtes sûr qu’elle existe, vous pouvez essayer à nouveau ultérieurement.",
+    "lnAddressAdvice": "Assurez-vous que l’orthographe est correcte ou bien demandez au bénéficiaire une facture ou une adresse BTC à la place.",
+    "unknownLightning": "Nous ne pouvons pas analyser cette adresse Lightning. Merci de réessayer.",
+    "unknownOnchain": "Nous ne pouvons pas analyser cette adresse Bitcoin. Merci de réessayer.",
+    "newBankAddressUsername": "{lnAddress: string} existe en tant qu’adresse {bankName: string}, mais vous n’y avez jamais envoyé d’argent.",
+    "confirmModal": {
+      "title": "Vous n’avez jamais envoyé d’argent à cette adresse",
+      "body1": "Merci de vous assurer que le bénéficiaire vous a donné une adresse {bankName: string}, ",
+      "bold2bold": "et non pas un identifiant d’un autre portefeuille.",
+      "body3": "Sinon l’argent sera transféré au compte {bankName: string} qui a l’adresse “{lnAddress: string}”.\n\nVérifiez également l’orthographe de la première partie de l’adresse, par exemple jackie et jack1e sont 2 adresses différentes.",
+      "warning": "Si l’adresse {bankName: string} est saisie de manière incorrecte, {bankName: string} ne peut pas annuler la transaction.",
+      "checkBox": "{lnAddress: string} est la correcte adresse.",
+      "confirmButton": "J’en suis sûr-e à 100%",
+      "externalWarning": "Vous êtes sur le point d'envoyer de l'argent à quelqu'un qui n'est pas un compte {bankName: string}. Êtes-vous sûr que c'est l'adresse à laquelle vous avez l'intention d'envoyer?",
+      "externalCheckBox": "Je confirme l'envoi à {address: string}."
     },
-    "Languages": {
-        "DEFAULT": "Par défaut (OS)"
+    "clipboardError": "Erreur pour obtenir de la valeur depuis le presse-papier"
+  },
+  "SendBitcoinScreen": {
+    "amount": "Montant",
+    "MinOnChainLimit": "Le montant minimum pour cette transaction est de 2,00 $ US",
+    "MinOnChainSatLimit": "Le montant minimum pour cette transaction est de 5 500 sats",
+    "MinFlashcardLimit": "Le montant minimum lors du reloading de la carte flash est de 100 sats",
+    "amountExceed": "Le montant excède votre solde de {balance: string}",
+    "amountExceedsLimit": "Le montant excède le restant de votre limite journalière qui est de {limit: string}",
+    "upgradeAccountToIncreaseLimit": "Mettre à jour votre compte pour augmenter votre limite",
+    "amountIsRequired": "Un montant est requis",
+    "cost": "Coût",
+    "destination": "Adresse de destination",
+    "destinationIsRequired": "Adresse de destination requise",
+    "fee": "frais de réseau",
+    "feeCalculationUnsuccessful": "Calcul infructueux ⚠️",
+    "placeholder": "Nom d'utilisateur, facture ou adresse",
+    "invalidUsername": "Identifiant non valide",
+    "noAmount": "Cette facture ne contient pas de montant, vous devez indiquer manuellement quel montant vous désirez envoyer",
+    "notConfirmed": "Le paiement a été envoyé\nmais n'est pas encore confirmé\n\nVous pouvez vérifier l'état du paiement dans Transactions",
+    "note": "Note optionnelle",
+    "success": "Le paiement a été envoyé avec succès",
+    "suggestionInput": "Entrez votre suggestion",
+    "max": "Max",
+    "maxAmount": "Montant max",
+    "title": "Envoyer des bitcoins",
+    "send": "Envoyez  Envoyez ",
+    "failedToFetchLnurlInvoice": "Échec de la récupération de la facture lnurl",
+    "lnurlInvoiceIncorrectAmount": "Le serveur lnurl a répondu avec une facture contenant un montant incorrect",
+    "lnurlInvoiceIncorrectDescription": "Le serveur lnurl a répondu avec une facture contenant un hachage de description incorrect.",
+    "noAmountInvoiceError": "Aucun montant de facture n'est pris en charge dans le portefeuille BTC. Veuillez revenir en arrière et numériser ou saisir une facture avec un montant ajouté.",
+    "onchainMinAmountInvoiceError": "Le montant que vous avez entré est inférieur au montant minimum requis pour envoyer une transaction en chaîne {amount: number}. Veuillez envisager d'envoyer ce montant via Lightning!",
+    "minAmountInvoiceError": "Le montant de la facture est inférieur au montant minimum {amount: number}",
+    "maxAmountInvoiceError": "Le montant de la facture est supérieur au montant maximal {amount: number}",
+    "minAmountConvertError": "Le montant de conversion est inférieur au montant minimum requis {amount: number}",
+    "maxAmountConvertError": "Le montant de conversion est supérieur au montant maximal {amount: number}"
+  },
+  "SettingsScreen": {
+    "staticQr": "Imprimable Static QR Code ",
+    "staticQrCopied": "Votre lien de code statique QR a été copié",
+    "setByOs": "Configuré par le système d'exploitation ",
+    "apiAcess": "Accès à l'API ",
+    "pos": "Point de vente",
+    "posCopied": "Votre lien de point de vente a été copié",
+    "setYourLightningAddress": "Définissez votre nom d'utilisateur",
+    "activated": "Activé",
+    "addressScreen": "Manières d’être payé",
+    "tapUserName": "Appuyez pour définir l’identifiant",
+    "title": "Réglages",
+    "darkMode": "Mode sombre",
+    "setToDark": "Mode : sombre.",
+    "setToLight": "Mode : clair.",
+    "darkDefault": "Mode : sombre, (par défaut).",
+    "lightDefault": "Mode : clair, (par défaut).",
+    "csvTransactionsError": "Impossible d’exporter les transactions vers un fichier CSV. Une erreur s’est produite. Si le problème persiste, veuillez contacter le support technique.",
+    "lnurlNoUsername": "Pour générer une adresse lnurl, vous devez d’abord définir un identifiant. Voulez-vous en définir un maintenant ?",
+    "copyClipboardLnurl": "L'adresse lnurl a été copiée dans le presse-papiers",
+    "defaultWallet": "Compte par défaut",
+    "rateUs": "Donnez-nous une note sur {storeName: string}",
+    "theme": "Thème",
+    "nfc": "Recevoir depuis le paiement sans contact",
+    "nfcError": "Erreur dans la lecture du marqueur NFC. Merci de réessayer.",
+    "nfcNotCompatible": "L’information extraite de la carte n’est pas compatible avec le lien lnurl-withdraw.",
+    "nfcOnlyReceive": "Seule la réception depuis NFC est disponible pour le moment",
+    "nfcScanNow": "Scanner NFC maintenant",
+    "nfcNotSupported": "NFC n’est pas compatible sur cet appareil",
+    "logInOrCreateAccount": "Connectez-vous ou créez un compte",
+    "backup": "Une sauvegarde ",
+    "importWallet": "Importer le portefeuille",
+    "showSeedPhrase": "Révéler la phrase de récupération de récupération",
+    "showNostrSecret": "Paramètres de chat",
+    "beginnerMode": "Désactivez votre compte Bitcoin",
+    "advanceMode": "Activer le compte Bitcoin (mode avancé)",
+    "keysManagement": "Une sauvegarde de portefeuille",
+    "showBtcAccount": "Afficher le compte Bitcoin",
+    "hideBtcAccount": "Hide le compte Bitcoin"
+  },
+  "NotificationSettingsScreen": {
+    "title": "Réglages des notifications",
+    "pushNotifications": "Notifications push",
+    "notificationCategories": {
+      "Circles": {
+        "title": "Cercles",
+        "description": "Notifications concernant vos cercles."
+      },
+      "Payments": {
+        "title": "Paiements",
+        "description": "Notifications associées aux paiements envoyés et reçus."
+      },
+      "Marketing": {
+        "title": "Des fonctionnalités et des mises à jour",
+        "description": "Notifications sur les nouvelles fonctionnalités et mises à jour."
+      },
+      "Price": {
+        "title": "Les prix changent",
+        "description": "Notifications sur le prix du Bitcoin."
+      }
+    }
+  },
+  "AccountScreen": {
+    "fundsMoreThan5Dollars": "Votre compte a plus de 5$",
+    "itsATrialAccount": "Les comptes d'essai ont réduit les limites de transaction et aucune méthode de récupération.Si vous perdez votre téléphone ou désinstallez l'application, vos fonds seront irrécupérables.",
+    "accountBeingDeleted": "Votre compte est en train d'être supprimé, s'il vous plaît attendez...",
+    "dangerZone": "Zone de danger ",
+    "phoneDeletedSuccessfully": "Le téléphone a été supprimé avec succès",
+    "phoneNumber": "Numéro de téléphone ",
+    "tapToAddPhoneNumber": "Appuyez sur le bouton pour ajouter le numéro de téléphone",
+    "loginMethods": "Méthodes de connexion",
+    "level": "Le niveau {level: string}",
+    "accountLevel": "Niveau du compte",
+    "upgrade": "Mettre à jour votre compte",
+    "logOutAndDeleteLocalData": "Se déconnecter et effacer toutes les données locales",
+    "IUnderstand": "Je comprends. Merci de me déconnecter",
+    "logoutAlertTitle": "Êtes-vous sûr de vouloir être déconnecté et supprimer toutes les données locales?",
+    "logoutAlertContentPhone": "Vous devrez réentrer votre numéro de téléphone pour vous connecter. votre numéro de téléphone est {phoneNumber: string} alors assurez-vous d'y avoir accès pour vous connecter à nouveau",
+    "logoutAlertContentEmail": "Vous devrez réentrer votre courrier électronique pour vous connecter. votre courrier électronique est {email: string}, alors assurez-vous d'y avoir accès pour vous connecter à nouveau",
+    "logoutAlertContentPhoneEmail": "Votre numéro de téléphone est {phoneNumber: string} et votre e-mail est {email: string}, alors assurez-vous d'avoir accès à ceux pour vous connecter à nouveau",
+    "usdBalanceWarning": "Vous avec un solde Stablesats de {balance: string}.",
+    "btcBalanceWarning": "Vous avez un solde Bitcoin de {balance: string}.",
+    "secureYourAccount": "S’inscrire pour sécuriser votre compte",
+    "tapToAdd": "Appuyez sur le bouton pour ajouter",
+    "tapToAddEmail": "Appuyez sur le bouton pour ajouter un e-mail",
+    "unverifiedEmail": "Le courrier électronique (non vérifié)",
+    "email": "Le courrier électronique",
+    "emailDeletedSuccessfully": "Le courrier électronique a été supprimé avec succès",
+    "unverifiedEmailAdvice": "Les e-mails non vérifiés ne peuvent pas être utilisés pour vous connecter.",
+    "deleteEmailPromptTitle": "Supprimer le courrier électronique",
+    "deleteEmailPromptContent": "Êtes-vous sûr de vouloir supprimer votre adresse e-mail? vous ne pourrez vous connecter qu'avec votre numéro de téléphone.",
+    "deletePhonePromptTitle": "Supprimer le téléphone",
+    "deletePhonePromptContent": "Êtes-vous sûr de vouloir supprimer votre numéro de téléphone? vous ne pourrez vous connecter qu'avec votre courrier électronique.",
+    "addEmailFirst": "Ajoutez d'abord un e-mail",
+    "addPhoneFirst": "Ajoutez d'abord un téléphone",
+    "phoneNumberAuthentication": "Numéro de téléphone (pour le login)",
+    "emailAuthentication": "E-mail (pour le login)",
+    "removePhone": "Enlever le téléphone",
+    "removeEmail": "Supprimer le courrier électronique",
+    "unverified": "Le courrier électronique n'a pas été vérifié",
+    "unverifiedContent": "Sécurisez votre compte en vérifiant votre courrier électronique.",
+    "confirmEmail": "Confirmez votre courrier électronique",
+    "emailUnverified": "Votre courrier électronique n'a pas été vérifié",
+    "emailUnverifiedContent": "Assurez-vous que vous pouvez vous connecter à nouveau à votre compte en vérifiant votre courrier électronique.",
+    "totp": "L'authentification à deux facteurs",
+    "totpDeactivated": "L'authentification à deux facteurs a été désactivée",
+    "totpDeleteAlertTitle": "Supprimer l'authentification à deux facteurs",
+    "totpDeleteAlertContent": "Êtes-vous sûr de vouloir supprimer votre authentification à deux facteurs?",
+    "copiedAccountId": "Vous avez copié l'identifiant de votre compte à clipboard",
+    "yourAccountId": "Votre numéro d'identification de compte ",
+    "accountId": "ID du compte ",
+    "copy": "Copier "
+  },
+  "TotpRegistrationInitiateScreen": {
+    "title": "L'authentification à deux facteurs",
+    "content": "Scannez ce code QR avec votre application d'authentification.Autrement, vous pouvez copier/coller manuellement le secret dans votre application d'authentification."
+  },
+  "TotpRegistrationValidateScreen": {
+    "title": "L'authentification à deux facteurs",
+    "enter6digitCode": "Entrez le code à 6 chiffres de votre application d'authentification pour valider votre authentification à deux facteurs.",
+    "success": "L'authentification à deux facteurs a été activée.Vous ne pourrez désormais vous connecter qu'avec votre téléphone ou votre courrier électronique ET votre authentification à deux facteurs.Seuls les comptes KYC complets peuvent être récupérés si un utilisateur a perdu l'accès à son authentification à deux facteurs."
+  },
+  "TotpLoginValidateScreen": {
+    "title": "L'authentification à deux facteurs",
+    "content": "Entrez le code à 6 chiffres de votre application d'authentification pour vous connecter.Ce code change toutes les 30 secondes."
+  },
+  "BackupOptions": {
+    "title": "Options de sauvegarde",
+    "recoveryPhrase": "Phrase de récupération ",
+    "recoveryPhraseDesc": "Backup Bitcoin Wallet en utilisant la phrase récupération",
+    "revealRecoveryPhrase": "Révéler la phrase de récupération ",
+    "revealRecoveryPhraseDesc": "Utilisez votre phrase de récupération pour importer le portefeuille Bitcoin",
+    "phone": "Téléphone  Téléphone ",
+    "phoneDesc": "Backup Cash Wallet à l'aide d'un numéro de téléphone",
+    "usePhoneNumber": "Utilisez votre numéro de téléphone pour importer Cash Wallet",
+    "done": "                                                                                                                                                        "
+  },
+  "BackupStart": {
+    "title": "Tout d'abord, créons votre phrase de récupération",
+    "description": "Une phrase de récupération est une série de 12 mots dans un ordre spécifique. Cette combinaison de mots est unique à votre portefeuille. Assurez-vous d'avoir le stylo et le papier prêts pour que vous puissiez l'écrire.",
+    "continue": " Continuez à poursuivre."
+  },
+  "BackupSeedPhrase": {
+    "title": "C'est votre phrase de récupération",
+    "description": "Assurez-vous de l'écrire comme indiqué ici, vous devez le vérifier plus tard.",
+    "backupToICloud": "Une sauvegarde à iCloud",
+    "backupToGoogleDrive": "Une sauvegarde à Google Drive",
+    "verify": "Vérifiez"
+  },
+  "BackupDoubleCheck": {
+    "title": "Faisons une double vérification",
+    "description1": "Maintenant, vérifions que vous avez correctement écrit votre phrase de récupération.",
+    "description2": "Oui, c'est si important.",
+    "continue": " Continuez à poursuivre."
+  },
+  "BackupVerify": {
+    "title": "Tapez les mots dans le bon ordre.",
+    "correctTitle": "Parfait, assurez-vous de stocker en toute sécurité votre phrase de récupération.",
+    "wrongTitle": "Désolé, ce n'est pas le troisième mot correct.",
+    "tryAgain": "Essayez à nouveau",
+    "continue": " Continuez à poursuivre."
+  },
+  "BackupComplete": {
+    "title": "Votre sauvegarde est complète",
+    "description": "Vous devriez maintenant avoir votre phrase de récupération et votre mot de passe écrits pour une référence future.",
+    "complete": "Complete Complete"
+  },
+  "BackupShowSeedPhrase": {
+    "title": "C'est votre phrase de récupération",
+    "description": "Assurez-vous de l'écrire comme indiqué ici, vous devrez récupérer votre portefeuille.",
+    "done": "                                                                                                                                                        "
+  },
+  "ImportWalletOptions": {
+    "loginOptions": "Options de connexion ",
+    "importOptions": "Les options de portefeuille d'importation",
+    "recoveryPhrase": "Phrase de récupération ",
+    "importBTCWallet": "Importer le portefeuille Bitcoin en utilisant la phrase recovery",
+    "phone": "Téléphone  Téléphone ",
+    "importUsingPhone": "Importez ou créez votre portefeuille en espèces à l'aide d'un numéro de téléphone",
+    "email": "Le courrier électronique",
+    "importUsingEmail": "Importez votre portefeuille en espèces à l'aide d'une adresse e-mail",
+    "login": "Connectez-vous/Créer",
+    "done": "                                                                                                                                                        "
+  },
+  "ImportWallet": {
+    "title": "Inscrivez-vous avec une phrase de récupération",
+    "importTitle": "Importez votre portefeuille avec une phrase de récupération",
+    "description": "C'est une phrase de 12 mots qui vous a été donnée lorsque vous avez créé votre précédent portefeuille.",
+    "complete": "Complete Complete"
+  },
+  "TransactionHistoryTabs": {
+    "titleBTC": "BTC",
+    "titleUSD": "USD"
+  },
+  "CopySecretComponent": {
+    "button": "Copier le secret",
+    "toastMessage": "Secret copié sur le clipboard!"
+  },
+  "DefaultWalletScreen": {
+    "title": "Compte par défaut",
+    "info": "Sélectionner le compte à définir par défaut pour recevoir et envoyer des paiements. Vous pouvez configurer le compte de transfert et de réception pour des paiements individuels dans l’application mobile. Les paiements reçus via le terminal de paiement ou votre adresse Lightning seront toujours envoyés sur le compte par défaut.\n\nPour éviter la fluctuation de Bitcoin, choisissez Stablesats. Cela vous permet de garder un montant stable de votre argent, tout en continuant à envoyer et recevoir des paiements.\n\nVous pouvez modifier ce réglage à tout moment, et cela n’affectera pas votre solde actuel."
+  },
+  "ThemeScreen": {
+    "title": "Thème",
+    "info": "Sélectionnez votre thème favori pour utiliser Flash, ou choisissez de le garder synchronisé avec vos Réglages système.",
+    "system": "Utiliser les Réglages système",
+    "light": "Utiliser le mode clair",
+    "dark": "Utiliser le mode sombre",
+    "setToDark": "Mode sombre  Mode sombre",
+    "setToLight": "Mode de lumière "
+  },
+  "Languages": {
+    "DEFAULT": "Par défaut (OS)"
+  },
+  "StablesatsModal": {
+    "header": "Avec Stablesats, vous avez à présent un compte en dollar US ajouté à votre portefeuille !",
+    "body": "Vous pouvez l’utiliser pour envoyer et recevoir des bitcoins, et instantanément transférer la valeur entre votre compte BTC et Dollar US. La valeur du dollar US ne fluctuera pas avec le prix du bitcoin. Cette fonction n’est pas compatible avec le système bancaire traditionnel.",
+    "termsAndConditions": "Lire les Termes & Conditions.",
+    "learnMore": "En savoir plus sur Stablesats"
+  },
+  "AdvancedModeModal": {
+    "header": "Bienvenue dans le mode avancé!",
+    "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",
+    "termsAndConditions": "Lisez les termes et conditions.",
+    "learnMore": "Qu'est-ce qu'un portefeuille non conservateur ?",
+    "importWallet": "Importer le portefeuille",
+    "createWallet": "Porte-monnaie Créer un portefeuille"
+  },
+  "MerchantSuggestModal": {
+    "header": "Flashpoint Add",
+    "body": "Vous avez sélectionné un emplacement pour votre entreprise sur la carte.Les utilisateurs de Flash pourront vous trouver sur la carte et vous envoyer des paiements en cliquant sur votre pin de carte.",
+    "termsAndConditions": "Lisez les termes et conditions.",
+    "learnMore": "Votre demande de pin sera traitée dans les 24 heures."
+  },
+  "UnVerifiedSeedModal": {
+    "header": "Sécurisez votre portefeuille Bitcoin",
+    "body": "Si vous perdez votre téléphone ou désinstallez l'application sans écrire votre phrase de récupération, vous perdrez l'accès à vos fonds. ",
+    "termsAndConditions": "Lisez les termes et conditions.",
+    "learnMore": "Qu'est-ce qu'une phrase de récupération?"
+  },
+  "SplashScreen": {
+    "update": "Votre application n’est plus à jour. Une mise à jour est nécessaire avant que l’application puisse être utilisée.\n\nCela peut être fait depuis le PlayStore pour Android et Testflight pour iOS"
+  },
+  "TransactionDetailScreen": {
+    "paid": "Payé à/de",
+    "received": "Vous avez reçu",
+    "spent": "Vous avez dépensé",
+    "receivingAccount": "Compte destinataire",
+    "sendingAccount": "Compte expéditeur",
+    "txNotBroadcast": "Votre transaction est actuellement en attente et sera transmise au réseau Bitcoin dans un moment.",
+    "noTransaction": "Aucune transaction n'a été trouvée avec cet identifiant",
+    "typeOnChain": "OnChain",
+    "typeLightning": "Lightning",
+    "typeIntraLedger": "IntraLedger",
+    "pendingStatus": "En attente ",
+    "confirmation": "Confirmation ",
+    "confirmations": "Confirmations ",
+    "hash": "Hash Hash",
+    "preimage": "Préimage ",
+    "transactionId": "ID de transaction ",
+    "swapDetails": "Swap Details",
+    "destinationAddress": "Adresse de destination",
+    "swapId": "L'identifiant d'échange",
+    "lockupTxId": "Transaction de localisation ",
+    "claimTxId": "Transaction de réclamation",
+    "swapFees": "Les frais d'échange",
+    "expirationBlockHeight": "Expires à Block"
+  },
+  "TransactionLimitsScreen": {
+    "receive": "Recevoir",
+    "withdraw": "Retirer",
+    "perDay": "par jour",
+    "perWeek": "par semaine",
+    "unlimited": "Illimité",
+    "remaining": "Restant",
+    "stablesatTransfers": "Transfert de Stablesats",
+    "internalSend": "Envoyer à l’utilisateur {bankName: string}",
+    "error": "Impossible de récupérer les limites de transfert pour le moment",
+    "contactUsMessageBody": "Bonjour, je souhaiterais augmenter les limites de transaction de mon compte {bankName: string}. ",
+    "contactUsMessageSubject": "Demande d’augmentation des limites de transaction",
+    "contactSupportToPerformKyc": "Contacter le support pour effectuer manuellement le processus KYC (Know Your Customer) pour augmenter votre limite.",
+    "increaseLimits": "Augmenter vos limites",
+    "spendingLimits": "Limite de dépenses",
+    "spendingLimitsDescription": "Les limites de dépenses indiquées sur cette page sont définies en USD. Pour votre commodité, nous convertissons ces limites en votre devise locale en fonction des taux de change actuels.S'il vous plaît noter que le montant de la devise locale affichée peut fluctuer à mesure que les taux de change sont mis à jour en temps réel.",
+    "requestUpgrade": "Demande de mise à niveau",
+    "editRequest": "Modifiez la demande de mise à niveau"
+  },
+  "TransactionScreen": {
+    "noTransaction": "Aucune transaction à afficher",
+    "title": "Transactions",
+    "recentTransactions": "Transactions récentes",
+    "transactionHistoryTitle": "Historique des transactions"
+  },
+  "TransferScreen": {
+    "title": "Transfert",
+    "percentageToConvert": "% à convertir"
+  },
+  "UpgradeAccountModal": {
+    "title": "Mettre à jour votre compte",
+    "backUpFunds": "Sauvegarder vos fonds",
+    "higherLimits": "Augmenter vos limites de transaction",
+    "receiveOnchain": "Recevoir bitcoin on-chain",
+    "onlyAPhoneNumber": "Vérification rapide et facile du numéro de téléphone",
+    "letsGo": "C’est parti !",
+    "stayInTrialMode": "Rester en mode test"
+  },
+  "SetAddressModal": {
+    "helloText": "Bonjour ! ",
+    "whoAreYou": "Comment devrions-nous vous appeler ?",
+    "usernameHint": "Ce sera votre nom d'utilisateur {bankName: string}",
+    "placeholder": "Entrez votre nom d'utilisateur",
+    "title": "Définir l’adresse {bankName: string}",
+    "save": "Laissez-vous guider par la sauvegarde.",
+    "Errors": {
+      "tooShort": "L’adresse doit contenir au moins 3 caractères",
+      "tooLong": "L’adresse ne peut excéder plus de 50 caractères",
+      "invalidCharacter": "L’adresse ne peut contenir que des lettres, chiffres et des tirets.",
+      "startsWithNumber": "Votre nom d'utilisateur doit commencer par une lettre majuscule ou minuscule",
+      "addressUnavailable": "Désolé, cette adresse est déjà utilisée",
+      "unknownError": "Une erreur inconnue est survenue, merci d’essayer ultérieurement"
     },
-    "StablesatsModal": {
-        "header": "Avec Stablesats, vous avez à présent un compte en dollar US ajouté à votre portefeuille !",
-        "body": "Vous pouvez l’utiliser pour envoyer et recevoir des bitcoins, et instantanément transférer la valeur entre votre compte BTC et Dollar US. La valeur du dollar US ne fluctuera pas avec le prix du bitcoin. Cette fonction n’est pas compatible avec le système bancaire traditionnel.",
-        "termsAndConditions": "Lire les Termes & Conditions.",
-        "learnMore": "En savoir plus sur Stablesats"
+    "receiveMoney": "Recevoir de l’argent depuis d’autres portefeuilles Lightning et d’utilisateurs {bankName: string} avec cette adresse.",
+    "itCannotBeChanged": "Ce ne sera plus possible de changer après"
+  },
+  "WelcomeFirstScreen": {
+    "bank": "Bitcoin a été conçu pour vous permettre de conserver, d’envoyer ou de recevoir de l’argent, sans dépendre d’une banque ou d’une carte de crédit.",
+    "before": "Avant Bitcoin, les gens dépendaient des banques ou des fournisseurs de cartes de crédit pour dépenser, recevoir et envoyer de l’argent.",
+    "care": "Pourquoi devrais-je m’en préoccuper ?",
+    "learn": "Je ne veux pas insister mais il y a beaucoup plus à apprendre...",
+    "learnToEarn": "Apprendre à gagner"
+  },
+  "PhoneLoginInitiateScreen": {
+    "title": "Compte créé",
+    "header": "Saisissez votre numéro de téléphone pour recevoir le code d’accès par SMS.",
+    "headerVerify": "Vérifiez que vous êtes un humain",
+    "errorRequestingCaptcha": "Une erreur est survenue au moment de vérifier que vous êtes bien un humain. Merci d’essayer ultérieurement.",
+    "errorRequestingCode": "Une erreur est survenue au moment de la demande du code reçu sur le téléphone. Merci d’essayer ultérieurement",
+    "errorInvalidPhoneNumber": "Numéro de téléphone non valide. Êtes-vous sûr d’avoir saisi le bon numéro ?",
+    "errorUnsupportedCountry": "Nous sommes dans l’incapacité d’assister les clients dans votre langue.",
+    "placeholder": "Numéro de téléphone",
+    "verify": "Cliquez pour valider",
+    "sms": "Envoyer par SMS",
+    "whatsapp": "Envoyer via WhatsApp"
+  },
+  "PhoneLoginValidationScreen": {
+    "errorLoggingIn": "Erreur de connexion. Avez-vous saisi correctement le code ?",
+    "errorTooManyAttempts": "Trop de tentatives. Merci d’essayer ultérieurement.",
+    "errorCannotUpgradeToExistingAccount": "Ce compte associé au téléphone existe déjà. Merci de vous déconnecter de votre compte test puis de vous connecter avec votre numéro de téléphone.",
+    "header": "Pour valider votre numéro de téléphone, saisissez le code que nous venons de vous envoyer via {channel: string} sur le {phoneNumber: string}",
+    "placeholder": "Code à 6 chiffres",
+    "sendAgain": "Envoyer à nouveau",
+    "tryAgain": "Essayer à nouveau",
+    "sendViaOtherChannel": "Vous avez choisi de recevoir le code via {channel: string}. Vous pouvez essayer de le recevoir plutôt via {other: string}."
+  },
+  "PhoneRegistrationInitiateScreen": {
+    "title": "Le téléphone est configuré",
+    "header": "Entrez votre numéro de téléphone, et nous vous enverrons un code d'accès.",
+    "headerVerify": "Vérifiez que vous êtes humain",
+    "errorRequestingCode": "Quelque chose a mal tourné en demandant le code du téléphone, veuillez réessayer plus tard.",
+    "errorInvalidPhoneNumber": "Nombre de téléphone invalide, êtes-vous sûr d'avoir entré le bon numéro ?",
+    "errorUnsupportedCountry": "Nous ne sommes pas en mesure de soutenir les clients dans votre pays.",
+    "placeholder": "Numéro de téléphone ",
+    "verify": "Cliquez pour vérifier",
+    "sms": "Envoyez par le biais de SMS",
+    "whatsapp": "Envoyez par l'intermédiaire de WhatsApp"
+  },
+  "PhoneRegistrationValidateScreen": {
+    "successTitle": "Numéro de téléphone confirmé"
+  },
+  "EmailRegistrationInitiateScreen": {
+    "title": "Ajoutez votre courrier électronique",
+    "header": "Entrez votre adresse e-mail et nous vous enverrons un code d'accès.",
+    "invalidEmail": "Une adresse e-mail invalide, êtes-vous sûr d'avoir entré le bon e-mail ?",
+    "send": "Envoyez un code",
+    "missingEmailRegistrationId": "L'identifiant d'enregistrement de courrier électronique manquant",
+    "placeholder": "hal@finney.org"
+  },
+  "EmailRegistrationValidateScreen": {
+    "header": "Pour confirmer votre adresse e-mail, entrez le code que nous venons de vous envoyer sur {email: string}",
+    "success": "Le courrier électronique {email: string} a été confirmé avec succès"
+  },
+  "EmailLoginInitiateScreen": {
+    "title": "Connectez-vous par courrier électronique",
+    "header": "Entrez votre adresse e-mail et nous vous enverrons un code d'accès.",
+    "invalidEmail": "Une adresse e-mail invalide, êtes-vous sûr d'avoir entré le bon e-mail ?",
+    "send": "Envoyez un code"
+  },
+  "EmailLoginValidateScreen": {
+    "header": "S'il y a un compte lié à {email: string}, vous devriez avoir reçu un code à 6 chiffres pour entrer ci-dessous.Si vous ne recevez rien, c'est probablement parce que ce n'est pas le bon courrier électronique, le courrier électronique est dans votre dossier de spam.",
+    "success": "Le courrier électronique {email: string} a été confirmé avec succès"
+  },
+  "common": {
+    "enabled": "Activé",
+    "notifications": "Les notifications ",
+    "preferences": "Les préférences ",
+    "onDeviceSecurity": "Sécurité sur l'appareil",
+    "securityAndPrivacy": "Sécurité et confidentialité",
+    "advanced": " Avancé Avancé",
+    "community": "La communauté  La communauté ",
+    "account": "Compte",
+    "trialAccount": "Compte d'essai",
+    "flashUser": "Flash Utilisateur ",
+    "transactionLimits": "Limite de transaction",
+    "activateWallet": "Activer le portefeuille",
+    "amountRequired": "Un montant est requis",
+    "back": "Retour",
+    "backHome": "Retour à l’accueil",
+    "revealSeed": "Écrivez la phrase de récupération.",
+    "bank": "Banque",
+    "bankAccount": "Compte en espèces",
+    "bankAdvice": "Conseil {bankName: string}",
+    "bankInfo": "Info {bankName: string}",
+    "beta": "beta",
+    "bitcoin": "Bitcoin",
+    "bitcoinPrice": "Prix Bitcoin",
+    "btcAccount": "Compte Bitcoin",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "copied": "Copié sur clipboard",
+    "convert": "Convertir",
+    "codeConfirmation": "Le code de confirmation",
+    "currency": "Monnaie",
+    "currencySyncIssue": "Problème de devise. Une actualisation est nécessaire",
+    "csvExport": "Exporter les transactions sous format CSV",
+    "exportSparkLogs": "Les journaux d'exportation",
+    "date": "Date",
+    "description": "Description",
+    "details": "Les détails",
+    "domain": "Domaine",
+    "email": "E-mail",
+    "error": "Erreur",
+    "fatal": "Fatal",
+    "fee": "frais",
+    "Fee": "Frais",
+    "fees": "Frais",
+    "firstName": "Prénom",
+    "from": "De",
+    "hour": "heure",
+    "hours": "heures",
+    "invoice": "Facture",
+    "language": "Langue",
+    "languagePreference": "Langue de préférence",
+    "lastName": "Nom",
+    "later": "Plus tard",
+    "loggedOut": "Vous avez été déconnecté-e.",
+    "logout": "Déconnexion",
+    "minutes": "minutes",
+    "errorAuthToken": "Le jeton d'auteur manquant",
+    "needWallet": "Se connecter ou créer un compte pour accéder à votre portefeuille.",
+    "next": "Suivant",
+    "No": "Non",
+    "note": "Note",
+    "notification": "Notification",
+    "ok": "OK",
+    "or": "ou ",
+    "openWallet": "Ouvrir Portefeuille",
+    "phone": "Téléphone  Téléphone ",
+    "phoneNumber": "Numéro de téléphone",
+    "rate": "Taux",
+    "reauth": "Session expirée. SVP connectez-vous à nouveau.",
+    "request": "Pin de demande ",
+    "restart": "Recommencer",
+    "sats": "sats",
+    "search": "Recherche",
+    "chatSearch": "nom d'utilisateur ou nostr pubkey",
+    "security": "Sécurité",
+    "send": "Envoyer",
+    "setAnAmount": "Fixer un montant",
+    "share": "Partager",
+    "shareBitcoin": "Partager l’adresse Bitcoin",
+    "shareLightning": "Partager la facture Lightning",
+    "soon": "Bientôt disponible !",
+    "submit": "Soumettez-le ",
+    "success": "Succès !",
+    "stablesatsUsd": "Cash (USD)",
+    "to": "À",
+    "total": "Total",
+    "transactions": "Transactions",
+    "transactionsError": "Erreur de chargement des transactions",
+    "tryAgain": "Essayer à nouveau",
+    "type": "Type",
+    "usdAccount": "Compte en dollar US",
+    "username": "Identifiant",
+    "usernameRequired": "Un identifiant est requis",
+    "backupAccount": "Sauvegarde / Mise à jour du compte",
+    "viewTransaction": "Voir la transaction",
+    "yes": "Oui",
+    "pending": "en attente",
+    "today": "Aujourd’hui",
+    "yesterday": "Hier",
+    "thisMonth": "Ce mois-ci",
+    "prevMonths": "Mois derniers",
+    "problemMaybeReauth": "Il y a eu un problème avec votre demande. Merci de réessayer dans une minute. Si le problème persiste, nous vous conseillons de vous déconnecter et de vous connecter à nouveau. Vous pouvez vous déconnecter en allant dans Réglages > Compte > Déconnexion",
+    "warning": "Alerte"
+  },
+  "NostrQuickStart": {
+    "postHeading": "Faites votre premier article sur les réseaux sociaux!",
+    "postDesc": "Présentez-vous au monde !"
+  },
+  "Social": {
+    "post": "Envoyez-le à Nostr",
+    "postTitle": "Faites un article",
+    "flashAppCredit": "Publié à l'aide de Flash! obtenez-le @ https://getflash.io/app",
+    "writeYourNote": "Écrivez votre note, faites-la spéciale :) ",
+    "postButton": "Post  Post ",
+    "notePosted": "Votre note a été publiée",
+    "errorPostFailed": "Erreur lors de la publication de la note",
+    "errorEmptyNote": "Erreur: note vide",
+    "posting": "En ce qui concerne la publication...",
+    "viewOnIris": "Afficher sur iris.to",
+    "viewPostQuestion": "Aimeriez-vous voir votre article sur iris.to?",
+    "browseSocialFeed": "Parcourez le flux social",
+    "socialFeedTitle": "Le flux social ",
+    "postSuccessTitle": "Article partagé!",
+    "postSuccessSubtitle": "Votre message a été publié à Nostr",
+    "showMeMore": "Montrez-moi plus "
+  },
+  "errors": {
+    "generic": "Une erreur est survenue.\nMerci d’essayer ultérieurement.",
+    "invalidEmail": "E-mail non valide",
+    "invalidPhoneNumber": "n’est pas un numéro de téléphone valide",
+    "tooManyRequestsPhoneCode": "Trop de requêtes. Merci de patienter avant de demander un autre SMS.",
+    "network": {
+      "server": "Erreur de serveur. Merci d’essayer ultérieurement",
+      "request": "Problème avec une requête.\nContactez le support technique si le problème persiste",
+      "connection": "Problème de connexion.\nVérifiez votre connexion Internet"
     },
-    "SplashScreen": {
-        "update": "Votre application n’est plus à jour. Une mise à jour est nécessaire avant que l’application puisse être utilisée.\n\nCela peut être fait depuis le PlayStore pour Android et Testflight pour iOS"
+    "unexpectedError": "Une erreur inattendue s’est produite",
+    "restartApp": "Veuillez redémarrer l’application.",
+    "problemPersists": "Si le problème persiste, contactez le support technique.",
+    "fatalError": "Désolé, nous semblons avoir des problèmes pour charger les données de l’application. Si le problème persiste, merci de contacter le support technique.",
+    "showError": "Afficher l’erreur",
+    "clearAppData": "Effacer les données de l’application et se déconnecter"
+  },
+  "notifications": {
+    "payment": {
+      "body": "Vous venez de recevoir {value: string} sats",
+      "title": "Paiement reçu"
+    }
+  },
+  "reports": {
+    "title": "Générer des rapports",
+    "reconciliation": "Rapport de réconciliation",
+    "aggregation": "Rapport d'agrégation ",
+    "topRecipients": "Le rapport des meilleurs destinataires ",
+    "topSenders": "Le rapport Top Senders ",
+    "selectFromDate": "Sélectionnez à partir de la date",
+    "selectToDate": "Sélectionnez à la date",
+    "fromDate": "                                                                                                                                                ",
+    "toDate": "À  À",
+    "total": " Total  Total  Total "
+  },
+  "support": {
+    "contactUs": "Besoin d’aide ? Contactez-nous.",
+    "joinTheCommunity": "Rejoindre la communauté",
+    "whatsapp": "WhatsApp",
+    "email": "E-mail",
+    "enjoyingApp": "Vous appréciez l'application?",
+    "statusPage": "Page de configuration",
+    "discord": "Discord Discord",
+    "mattermost": "Mattermost",
+    "thankYouText": "Merci pour les commentaires, aimeriez-vous suggérer une amélioration?",
+    "defaultEmailSubject": "Aide {bankName: string} ",
+    "defaultSupportMessage": "Bonjour ! J’ai besoin d’aide avec {bankName: string}, j’utilise la version {version: string} sur {os: string}.",
+    "emailCopied": "e-mail {email: string} copié dans le presse-papier",
+    "deleteAccount": "Supprimer le compte",
+    "delete": "Supprimer",
+    "typeDelete": "Merci de taper \"{delete: string}\" pour confirmer la suppression du compte.",
+    "finalConfirmationAccountDeletionTitle": "Confirmation finale requise",
+    "finalConfirmationAccountDeletionMessage": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.",
+    "deleteAccountBalanceWarning": "Supprimer votre compte entrainera la perte de l’accès à votre solde actuel. Êtes-vous sûr de vouloir continuer ?",
+    "deleteAccountConfirmation": "Votre compte a été inscrit en vue de sa suppression.\n\nLorsque le temps de probation lié aux exigences réglementaires sera terminé, les données restantes associées à votre compte seront supprimées définitivement.",
+    "deleteAccountFromPhone": "Bonjour ! Merci de supprimer mon compte. Mon numéro de téléphone est le {phoneNumber: string}.",
+    "deleteAccountError": "Une erreur est survenue. Contacter {email: string} pour recevoir une aide supplémentaire.",
+    "bye": "Salut !",
+    "switchToBeginnerMode": "En passant au mode débutant, vous ne perdrez pas l'accès à vos fonds de portefeuille BTC, mais le portefeuille sera caché.Vous pouvez passer à nouveau au mode avancé à tout moment.Est-ce que vous êtes sûr de vouloir continuer?"
+  },
+  "lnurl": {
+    "overLimit": "Vous ne pouvez pas envoyer plus que le montant maximum",
+    "underLimit": "Vous ne pouvez pas envoyer moins que le montant minimum",
+    "commentRequired": "Commentaires requis",
+    "viewPrintable": "Voir la version imprimable"
+  },
+  "DisplayCurrencyScreen": {
+    "errorLoading": "Erreur pour charger la liste des monnaies"
+  },
+  "AmountInputScreen": {
+    "enterAmount": "Indiquer le montant",
+    "setAmount": "Fixer le montant",
+    "maxAmountExceeded": "Le montant ne doit pas excéder {maxAmount: string}.",
+    "minAmountNotMet": "Le montant doit être au minimum de {minAmount: string}."
+  },
+  "AmountInputButton": {
+    "tapToSetAmount": "Toucher pour fixer le montant",
+    "tapToSetOnChainAmount": "Ajoutez un montant",
+    "enterAmount": "S'il vous plaît entrer le montant pour procéder"
+  },
+  "AppUpdate": {
+    "needToUpdateSupportMessage": "J’ai besoin de mettre à jour la dernière version sur mon app. J’utilise l’app {os: string} avec la version {version: string}.",
+    "versionNotSupported": "La version mobile n’est plus supportée",
+    "updateMandatory": "La mise à jour est obligatoire",
+    "tapHereUpdate": "Appuyez ici pour mettre à jour maintenant",
+    "contactSupport": "Contacter l’Aide"
+  },
+  "RefundFlow": {
+    "refundListTitle": "Les dépôts non réclamés",
+    "depositDetails": "Détails du dépôt",
+    "refundTitle": "Remboursement du dépôt",
+    "destinationTitle": "Destination ",
+    "confirmationTitle": "Confirmation ",
+    "pendingTransactions": "Transactions en attente",
+    "noRefundables": "Aucun dépôt non réclamé n'a été trouvé",
+    "view": "Voir  Voir ",
+    "refund": "Remboursement ",
+    "refundTo": "Remboursement au portefeuille USD",
+    "recommendedFees": "Des frais recommandés",
+    "fast": "Rapide et rapide ",
+    "medium": "Moyenne ",
+    "slow": "Lentement  lentement ",
+    "txId": "ID de transaction ",
+    "refunded": "Il a été remboursé",
+    "pending": "En attente ",
+    "autoClaiming": "Ce transfert sera réclamé automatiquement",
+    "approvalRequired": "L'approbation est requise",
+    "broadcasting": "La radiodiffusion",
+    "feeExceeded": "Les frais sont trop élevés",
+    "claimFailed": "La réclamation a échoué",
+    "automaticClaim": "Ce dépôt sera réclamé automatiquement lorsque les frais de réseau seront inférieurs.",
+    "approveFee": "Soyez d'accord pour réclamer ce transfert, ou refuser de traiter un remboursement.",
+    "enterAddress": "Entrez l'adresse Bitcoin où vous souhaitez recevoir le remboursement.",
+    "selectFee": "Sélectionnez une redevance réseau pour votre remboursement",
+    "confirmRefund": "Confirmer et rembourser",
+    "processing": "Le remboursement du traitement...",
+    "success": "Remboursement de la diffusion",
+    "refundSuccess": "Votre remboursement a été envoyé au réseau Bitcoin.",
+    "refundFailed": "Remboursement échoué",
+    "failedToClaim": "Il n'a pas réussi à réclamer de dépôt",
+    "unknownError": "Une erreur inconnue s'est produite",
+    "missingUtxo": "Le dépôt UTXO manque, la transaction n'a peut-être pas encore été confirmée.",
+    "couldNotClaimAutomatically": "Ce dépôt ne pouvait pas être réclamé automatiquement.",
+    "networkFee": "Frais de réseau réseau",
+    "networkFeeWithRate": "Frais de réseau ({feeRate: string} sat/vB)",
+    "youReceive": "Vous recevez",
+    "approve": "Approuver",
+    "refundToExternalWallet": "Vous pouvez le rembourser à un portefeuille externe.",
+    "enterDestinationAddress": "Veuillez saisir une adresse de destination",
+    "invalidBitcoinAddress": "Le format d'adresse Bitcoin est invalide",
+    "estimatedFee": "Les frais de réseau ({feeRate: string} sat/vB)",
+    "estimatedReceive": "Est. Vous recevez",
+    "feeEstimateDisclaimer": "Les frais sont estimés, les frais réels seront calculés lors de la diffusion."
+  },
+  "Nostr": {
+    "editProfile": "Modifiez le profil",
+    "importNsecTitle": "Importez votre clé secrète Nostr",
+    "importNsecDefaultDescription": "S'il vous plaît importer votre nsec de l'autre appareil pour continuer à utiliser la fonction de chat.",
+    "createProfileTitle": "Créez un profil",
+    "createProfileWarning": "Si vous procédez, toutes les données de profil existantes seront écrasées.",
+    "createProfilePubkeyMessage": "Nous n'avons pas pu trouver d'événement de profil lié à ce pubkey.",
+    "createProfilePrompt": "Voulez-vous continuer à créer?",
+    "createProfileButton": "Créez un profil",
+    "profileNotFound": "Nous cherchons, mais nous n'avons pas été en mesure de trouver votre profil.",
+    "promptToCreateProfile": "Voulez-vous en créer un maintenant?",
+    "learnAboutNostr": "Apprenez à connaître Nostr",
+    "learnAboutNostrSubtext": "Explorez ce guide pour tirer le meilleur parti du chat nostr",
+    "showPublicKey": "Afficher la clé publique",
+    "showPrivateKey": "Afficher la clé privée",
+    "profileConnected": "Profil connecté",
+    "reconnectProfile": "Reconnectez le profil",
+    "tapToRefreshConnection": "Appuyez sur le bouton pour rafraîchir la connexion",
+    "importExistingProfile": "Importer le profil existant",
+    "deleteProfile": "Supprimer le profil",
+    "noProfileIdExists": "Il n'existe pas d'ID de profil",
+    "profileReconnected": "Votre profil a été reconnecté avec succès",
+    "deleteWarningTitle": "Avertissement ",
+    "deleteWarningMessage": "La suppression de vos clés de profil supprimera votre compte de cet appareil. Sans une sauvegarde, vous ne pourrez plus accéder à ce profil.",
+    "importNsecDescription": "Si vous souhaitez utiliser votre propre nsec, collez-le ci-dessous.",
+    "profileImportedSuccessfully": "Le profil importé avec succès",
+    "noProfileFound": "Aucun profil Nostr n'a été trouvé",
+    "noProfileDescription": "Vous n'avez pas encore créé de profil Nostr, cliquez ci-dessous pour en créer un.",
+    "keyConflictTitle": "Nostr Key n'a pas été trouvé sur l'appareil",
+    "keyConflictDescription": "Votre compte a une clé Nostr enregistrée, mais elle n'a pas été trouvée sur cet appareil. Cela peut se produire après la réinstallation de l'application ou le changement de périphériques. Pour restaurer l'accès, importez votre sauvegarde nsec à partir des paramètres avancés.",
+    "creatingProfile": "Créer un profil...",
+    "createNewProfile": "Créez un nouveau profil",
+    "generateProfile": "Générer un profil",
+    "findingYou": "Je vous trouve..",
+    "advancedSettings": "Nostr Paramètres avancés",
+    "KeyModal": {
+      "yourPublicProfileId": "Votre identifiant de profil public",
+      "yourPrivateProfileKey": "Votre clé de profil privé",
+      "keyCopiedToClipboard": "La clé copiée sur le clipboard"
     },
-    "TransactionDetailScreen": {
-        "paid": "Payé à/de",
-        "received": "Vous avez reçu",
-        "spent": "Vous avez dépensé",
-        "receivingAccount": "Compte destinataire",
-        "sendingAccount": "Compte expéditeur",
-        "txNotBroadcast": "Votre transaction est actuellement en attente et sera transmise au réseau Bitcoin dans un moment."
-    },
-    "TransactionLimitsScreen": {
-        "receive": "Recevoir",
-        "withdraw": "Retirer",
-        "perDay": "par jour",
-        "perWeek": "par semaine",
-        "unlimited": "Illimité",
-        "remaining": "Restant",
-        "stablesatTransfers": "Transfert de Stablesats",
-        "internalSend": "Envoyer à l’utilisateur {bankName: string}",
-        "error": "Impossible de récupérer les limites de transfert pour le moment",
-        "contactUsMessageBody": "Bonjour, je souhaiterais augmenter les limites de transaction de mon compte {bankName: string}. ",
-        "contactUsMessageSubject": "Demande d’augmentation des limites de transaction",
-        "contactSupportToPerformKyc": "Contacter le support pour effectuer manuellement le processus KYC (Know Your Customer) pour augmenter votre limite.",
-        "increaseLimits": "Augmenter vos limites"
-    },
-    "TransactionScreen": {
-        "noTransaction": "Aucune transaction à afficher",
-        "title": "Transactions",
-        "recentTransactions": "Transactions récentes",
-        "transactionHistoryTitle": "Historique des transactions"
-    },
-    "TransferScreen": {
-        "title": "Transfert",
-        "percentageToConvert": "% à convertir"
-    },
-    "UpgradeAccountModal": {
-        "title": "Mettre à jour votre compte",
-        "backUpFunds": "Sauvegarder vos fonds",
-        "higherLimits": "Augmenter vos limites de transaction",
-        "receiveOnchain": "Recevoir bitcoin on-chain",
-        "onlyAPhoneNumber": "Vérification rapide et facile du numéro de téléphone",
-        "letsGo": "C’est parti !",
-        "stayInTrialMode": "Rester en mode test"
-    },
-    "SetAddressModal": {
-        "title": "Définir l’adresse {bankName: string}",
-        "Errors": {
-            "tooShort": "L’adresse doit contenir au moins 3 caractères",
-            "tooLong": "L’adresse ne peut excéder plus de 50 caractères",
-            "invalidCharacter": "L’adresse ne peut contenir que des lettres, chiffres et des tirets.",
-            "addressUnavailable": "Désolé, cette adresse est déjà utilisée",
-            "unknownError": "Une erreur inconnue est survenue, merci d’essayer ultérieurement"
-        },
-        "receiveMoney": "Recevoir de l’argent depuis d’autres portefeuilles Lightning et d’utilisateurs {bankName: string} avec cette adresse.",
-        "itCannotBeChanged": "Ce ne sera plus possible de changer après"
-    },
-    "WelcomeFirstScreen": {
-        "bank": "Bitcoin a été conçu pour vous permettre de conserver, d’envoyer ou de recevoir de l’argent, sans dépendre d’une banque ou d’une carte de crédit.",
-        "before": "Avant Bitcoin, les gens dépendaient des banques ou des fournisseurs de cartes de crédit pour dépenser, recevoir et envoyer de l’argent.",
-        "care": "Pourquoi devrais-je m’en préoccuper ?",
-        "learn": "Je ne veux pas insister mais il y a beaucoup plus à apprendre...",
-        "learnToEarn": "Apprendre à gagner"
-    },
-    "PhoneLoginInitiateScreen": {
-        "title": "Compte créé",
-        "header": "Saisissez votre numéro de téléphone pour recevoir le code d’accès par SMS.",
-        "headerVerify": "Vérifiez que vous êtes un humain",
-        "errorRequestingCaptcha": "Une erreur est survenue au moment de vérifier que vous êtes bien un humain. Merci d’essayer ultérieurement.",
-        "errorRequestingCode": "Une erreur est survenue au moment de la demande du code reçu sur le téléphone. Merci d’essayer ultérieurement",
-        "errorInvalidPhoneNumber": "Numéro de téléphone non valide. Êtes-vous sûr d’avoir saisi le bon numéro ?",
-        "errorUnsupportedCountry": "Nous sommes dans l’incapacité d’assister les clients dans votre langue.",
-        "placeholder": "Numéro de téléphone",
-        "verify": "Cliquez pour valider",
-        "sms": "Envoyer par SMS",
-        "whatsapp": "Envoyer via WhatsApp"
-    },
-    "PhoneLoginValidationScreen": {
-        "errorLoggingIn": "Erreur de connexion. Avez-vous saisi correctement le code ?",
-        "errorTooManyAttempts": "Trop de tentatives. Merci d’essayer ultérieurement.",
-        "errorCannotUpgradeToExistingAccount": "Ce compte associé au téléphone existe déjà. Merci de vous déconnecter de votre compte test puis de vous connecter avec votre numéro de téléphone.",
-        "header": "Pour valider votre numéro de téléphone, saisissez le code que nous venons de vous envoyer via {channel: string} sur le {phoneNumber: string}",
-        "placeholder": "Code à 6 chiffres",
-        "sendAgain": "Envoyer à nouveau",
-        "tryAgain": "Essayer à nouveau",
-        "sendViaOtherChannel": "Vous avez choisi de recevoir le code via {channel: string}. Vous pouvez essayer de le recevoir plutôt via {other: string}."
+    "Contacts": {
+      "stillLoading": "Vous avez du mal à trouver votre liste de contacts, avez-vous déjà suivi quelqu'un ?",
+      "noCantacts": "Il n'y a pas de contacts disponibles",
+      "profile": "Le profil",
+      "nostrUser": "Nostr Utilisateur",
+      "message": "Message Message",
+      "sendPayment": "Envoyez  Envoyez ",
+      "contactInfo": "L'info de contact",
+      "contactManagement": "Gestion des contacts ",
+      "unfollowContact": "Ne suivez pas le contact",
+      "noListDeepLinkMessage": "Pour ajouter des amis, vous devez d'abord initialiser votre liste de contacts dans les paramètres.",
+      "manageContacts": "Gérer les contacts",
+      "createContactList": "Liste de contacts Créer une liste de contacts"
     },
     "common": {
-        "account": "Compte",
-        "transactionLimits": "Limite de transaction",
-        "activateWallet": "Activer le portefeuille",
-        "amountRequired": "Un montant est requis",
-        "back": "Retour",
-        "backHome": "Retour à l’accueil",
-        "bank": "Banque",
-        "bankAccount": "Compte en espèces",
-        "bankAdvice": "Conseil {bankName: string}",
-        "bankInfo": "Info {bankName: string}",
-        "beta": "beta",
-        "bitcoin": "Bitcoin",
-        "bitcoinPrice": "Prix Bitcoin",
-        "btcAccount": "Compte Bitcoin",
-        "cancel": "Annuler",
-        "close": "Fermer",
-        "confirm": "Confirmer",
-        "convert": "Convertir",
-        "currency": "Monnaie",
-        "currencySyncIssue": "Problème de devise. Une actualisation est nécessaire",
-        "csvExport": "Exporter les transactions sous format CSV",
-        "date": "Date",
-        "description": "Description",
-        "domain": "Domaine",
-        "email": "E-mail",
-        "error": "Erreur",
-        "fatal": "Fatal",
-        "fee": "frais",
-        "Fee": "Frais",
-        "fees": "Frais",
-        "firstName": "Prénom",
-        "from": "De",
-        "hour": "heure",
-        "hours": "heures",
-        "invoice": "Facture",
-        "language": "Langue",
-        "languagePreference": "Langue de préférence",
-        "lastName": "Nom",
-        "later": "Plus tard",
-        "loggedOut": "Vous avez été déconnecté-e.",
-        "logout": "Déconnexion",
-        "minutes": "minutes",
-        "needWallet": "Se connecter ou créer un compte pour accéder à votre portefeuille.",
-        "next": "Suivant",
-        "No": "Non",
-        "note": "Note",
-        "notification": "Notification",
-        "ok": "OK",
-        "openWallet": "Ouvrir Portefeuille",
-        "phoneNumber": "Numéro de téléphone",
-        "rate": "Taux",
-        "reauth": "Session expirée. SVP connectez-vous à nouveau.",
-        "restart": "Recommencer",
-        "sats": "sats",
-        "search": "Recherche",
-        "security": "Sécurité",
-        "send": "Envoyer",
-        "setAnAmount": "Fixer un montant",
-        "share": "Partager",
-        "shareBitcoin": "Partager l’adresse Bitcoin",
-        "shareLightning": "Partager la facture Lightning",
-        "soon": "Bientôt disponible !",
-        "success": "Succès !",
-        "stablesatsUsd": "Cash (USD)",
-        "to": "À",
-        "total": "Total",
-        "transactions": "Transactions",
-        "transactionsError": "Erreur de chargement des transactions",
-        "tryAgain": "Essayer à nouveau",
-        "type": "Type",
-        "usdAccount": "Compte en dollar US",
-        "username": "Identifiant",
-        "usernameRequired": "Un identifiant est requis",
-        "backupAccount": "Sauvegarde / Mise à jour du compte",
-        "viewTransaction": "Voir la transaction",
-        "yes": "Oui",
-        "pending": "en attente",
-        "today": "Aujourd’hui",
-        "yesterday": "Hier",
-        "thisMonth": "Ce mois-ci",
-        "prevMonths": "Mois derniers",
-        "problemMaybeReauth": "Il y a eu un problème avec votre demande. Merci de réessayer dans une minute. Si le problème persiste, nous vous conseillons de vous déconnecter et de vous connecter à nouveau. Vous pouvez vous déconnecter en allant dans Réglages > Compte > Déconnexion",
-        "warning": "Alerte"
-    },
-    "errors": {
-        "generic": "Une erreur est survenue.\nMerci d’essayer ultérieurement.",
-        "invalidEmail": "E-mail non valide",
-        "invalidPhoneNumber": "n’est pas un numéro de téléphone valide",
-        "tooManyRequestsPhoneCode": "Trop de requêtes. Merci de patienter avant de demander un autre SMS.",
-        "network": {
-            "server": "Erreur de serveur. Merci d’essayer ultérieurement",
-            "request": "Problème avec une requête.\nContactez le support technique si le problème persiste",
-            "connection": "Problème de connexion.\nVérifiez votre connexion Internet"
-        },
-        "unexpectedError": "Une erreur inattendue s’est produite",
-        "restartApp": "Veuillez redémarrer l’application.",
-        "problemPersists": "Si le problème persiste, contactez le support technique.",
-        "fatalError": "Désolé, nous semblons avoir des problèmes pour charger les données de l’application. Si le problème persiste, merci de contacter le support technique.",
-        "showError": "Afficher l’erreur",
-        "clearAppData": "Effacer les données de l’application et se déconnecter"
-    },
-    "notifications": {
-        "payment": {
-            "body": "Vous venez de recevoir {value: string} sats",
-            "title": "Paiement reçu"
-        }
-    },
-    "support": {
-        "contactUs": "Besoin d’aide ? Contactez-nous.",
-        "joinTheCommunity": "Rejoindre la communauté",
-        "whatsapp": "WhatsApp",
-        "email": "E-mail",
-        "statusPage": "Page de configuration",
-        "telegram": "Telegram",
-        "mattermost": "Mattermost",
-        "defaultEmailSubject": "Aide {bankName: string} ",
-        "defaultSupportMessage": "Bonjour ! J’ai besoin d’aide avec {bankName: string}, j’utilise la version {version: string} sur {os: string}.",
-        "emailCopied": "e-mail {email: string} copié dans le presse-papier",
-        "deleteAccount": "Supprimer le compte",
-        "delete": "Supprimer",
-        "typeDelete": "Merci de taper \"{delete: string}\" pour confirmer la suppression du compte.",
-        "finalConfirmationAccountDeletionTitle": "Confirmation finale requise",
-        "finalConfirmationAccountDeletionMessage": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.",
-        "deleteAccountBalanceWarning": "Supprimer votre compte entrainera la perte de l’accès à votre solde actuel. Êtes-vous sûr de vouloir continuer ?",
-        "deleteAccountConfirmation": "Votre compte a été inscrit en vue de sa suppression.\n\nLorsque le temps de probation lié aux exigences réglementaires sera terminé, les données restantes associées à votre compte seront supprimées définitivement.",
-        "deleteAccountFromPhone": "Bonjour ! Merci de supprimer mon compte. Mon numéro de téléphone est le {phoneNumber: string}.",
-        "deleteAccountError": "Une erreur est survenue. Contacter {email: string} pour recevoir une aide supplémentaire.",
-        "bye": "Salut !"
-    },
-    "lnurl": {
-        "overLimit": "Vous ne pouvez pas envoyer plus que le montant maximum",
-        "underLimit": "Vous ne pouvez pas envoyer moins que le montant minimum",
-        "commentRequired": "Commentaires requis",
-        "viewPrintable": "Voir la version imprimable"
-    },
-    "DisplayCurrencyScreen": {
-        "errorLoading": "Erreur pour charger la liste des monnaies"
-    },
-    "AmountInputScreen": {
-        "enterAmount": "Indiquer le montant",
-        "setAmount": "Fixer le montant",
-        "maxAmountExceeded": "Le montant ne doit pas excéder {maxAmount: string}.",
-        "minAmountNotMet": "Le montant doit être au minimum de {minAmount: string}."
-    },
-    "AmountInputButton": {
-        "tapToSetAmount": "Toucher pour fixer le montant"
-    },
-    "AppUpdate": {
-        "needToUpdateSupportMessage": "J’ai besoin de mettre à jour la dernière version sur mon app. J’utilise l’app {os: string} avec la version {version: string}.",
-        "versionNotSupported": "La version mobile n’est plus supportée",
-        "updateMandatory": "La mise à jour est obligatoire",
-        "tapHereUpdate": "Appuyez ici pour mettre à jour maintenant",
-        "contactSupport": "Contacter l’Aide"
+      "copy": "Copier ",
+      "copied": "Copié",
+      "goToSettings": "Allez dans les paramètres"
     }
+  },
+  "AccountUpgrade": {
+    "accountType": "Type de compte",
+    "personal": "Personnel  Personnel",
+    "personalDesc": "Sécurisez votre portefeuille par téléphone et par courrier électronique.",
+    "pro": "Pro Pro",
+    "proDesc": "Accepter les paiements et être découvert sur la carte.",
+    "merchant": "Le commerçant",
+    "merchantDesc": "Donnez des récompenses, apparaissez sur la carte et réglez-vous auprès de votre banque.",
+    "personalInfo": "Informations personnelles ",
+    "fullName": "Nom complet",
+    "phoneNumber": "Numéro de téléphone ",
+    "email": "Adresse e-mail",
+    "optional": "(Optionel) ",
+    "validation": "Validation",
+    "validationCode": "Le code de validation",
+    "businessInfo": "Informations commerciales ",
+    "businessName": "Nom d'entreprise",
+    "businessNamePlaceholder": "Entrez le nom de votre entreprise",
+    "businessAddress": "Adresse d'affaires",
+    "businessAddressPlaceholder": "Entrez votre adresse d'affaires",
+    "flashTerminal": "Vous voulez un terminal Flash?",
+    "flashTerminalTooltip": "Un terminal Flash est un appareil intelligent qui peut accepter le paiement via Flash pour votre entreprise et des reçus d'impression.Un représentant du service à la clientèle vous contactera si vous cochez cette case.",
+    "bankingInfo": "Informations bancaires ",
+    "bankName": "Nom de la banque",
+    "bankNamePlaceholder": "Sélectionnez le nom de votre banque",
+    "bankBranch": "Branche bancaire ",
+    "bankBranchPlaceholder": "Entrez dans votre succursale bancaire",
+    "bankAccountType": "Type de compte",
+    "selectBankAccountType": "Sélectionnez le type de compte",
+    "currency": "Monnaies ",
+    "selectCurrency": "Sélectionnez la devise",
+    "accountNum": "Numéro de compte ",
+    "accountNumPlaceholder": "Entrez votre numéro de compte",
+    "uploadId": "Téléchargez le document d'identification ",
+    "successUpgrade": "Vous avez réussi à mettre à niveau votre compte à {accountType: string}",
+    "successRequest": "Vous avez demandé avec succès de mettre à niveau votre compte à {accountType: string}"
+  }
 }

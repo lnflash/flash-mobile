@@ -109,7 +109,7 @@ const breezLogger: Logger = {
 let loggingInitialized = false
 
 const connectToSDK = async (): Promise<void> => {
-  if (!loggingInitialized) {
+  if (!loggingInitialized && !__DEV__) {
     await initLogBuffer()
     initLogging(undefined, breezLogger, undefined)
     loggingInitialized = true
@@ -266,10 +266,11 @@ export const fetchBreezFee = async (
 
       if (parsed.tag === InputType_Tags.LightningAddress) {
         const prepareResponse = await sdk.prepareLnurlPay({
-          amountSats: BigInt(amountSats),
+          amount: BigInt(amountSats),
           payRequest: parsed.inner[0].payRequest,
           comment: undefined,
           validateSuccessActionUrl: undefined,
+          tokenIdentifier: undefined,
           conversionOptions: undefined,
           feePolicy: undefined,
         })
@@ -313,7 +314,7 @@ export const receiveOnchainBreez = async (): Promise<ReceivePaymentResponse> => 
   const sdk = getSDKInstance()
 
   const response = await sdk.receivePayment({
-    paymentMethod: new ReceivePaymentMethod.BitcoinAddress(),
+    paymentMethod: new ReceivePaymentMethod.BitcoinAddress({ newAddress: undefined }),
   })
 
   return response
@@ -329,14 +330,14 @@ type PayResponse = {
 
 export const payLightningBreez = async (
   paymentRequest: string,
-  amountSats: number,
+  amountSats?: number,
 ): Promise<PayResponse> => {
   try {
     const sdk = getSDKInstance()
 
     const prepareResponse = await sdk.prepareSendPayment({
       paymentRequest,
-      amount: BigInt(amountSats),
+      amount: amountSats !== undefined ? BigInt(amountSats) : undefined,
       tokenIdentifier: undefined,
       conversionOptions: undefined,
       feePolicy: undefined,
@@ -355,11 +356,9 @@ export const payLightningBreez = async (
 
     return { success: true, payment: response }
   } catch (err) {
-    return {
-      success: false,
-      error:
-        "Failed to pay the invoice. Please make sure you have enough balance to cover the payment and the network fee.",
-    }
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("payLightningBreez error:", message)
+    return { success: false, error: message }
   }
 }
 
@@ -416,10 +415,11 @@ export const payLnurlBreez = async (
     const input = await sdk.parse(lnurl)
     if (input.tag === InputType_Tags.LightningAddress) {
       const prepareResponse = await sdk.prepareLnurlPay({
-        amountSats: BigInt(amountSats),
+        amount: BigInt(amountSats),
         payRequest: input.inner[0].payRequest,
         comment: memo,
         validateSuccessActionUrl: true,
+        tokenIdentifier: undefined,
         conversionOptions: undefined,
         feePolicy: undefined,
       })
@@ -480,10 +480,11 @@ export const onRedeem = async (
 
     if (input.tag === InputType_Tags.LightningAddress) {
       const prepareResponse = await sdk.prepareLnurlPay({
-        amountSats: BigInt(amountSats),
+        amount: BigInt(amountSats),
         payRequest: input.inner[0].payRequest,
         comment: memo,
         validateSuccessActionUrl: true,
+        tokenIdentifier: undefined,
         conversionOptions: undefined,
         feePolicy: undefined,
       })

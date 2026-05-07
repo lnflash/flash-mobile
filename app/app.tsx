@@ -83,7 +83,7 @@ export const App = () => {
     <SafeAreaProvider>
       <StatusBar
         backgroundColor={"#000"}
-        barStyle={Platform.OS === "android" ? "light-content" : "dark-content"}
+        barStyle={Platform.OS === "android" ? "light-content" : undefined}
       />
       <GestureHandlerRootView style={{ flex: 1 }}>
         <PolyfillCrypto />
@@ -97,39 +97,39 @@ export const App = () => {
                   adminPubkeys={[]}
                 >
                   <ActivityIndicatorProvider>
-                  <TypesafeI18n locale={detectDefaultLocale()}>
-                    <ThemeProvider theme={theme}>
-                      <GaloyClient>
-                        <FeatureFlagContextProvider>
-                          <ErrorBoundary FallbackComponent={ErrorScreen}>
-                            <NavigationContainerWrapper>
-                              <RootSiblingParent>
-                                <NotificationsProvider>
-                                  <AppStateWrapper />
-                                  <PushNotificationComponent />
-                                  <BreezProvider>
-                                    <FlashcardProvider>
-                                      <RootStack />
-                                    </FlashcardProvider>
-                                  </BreezProvider>
-                                  <GaloyToast />
-                                  <NetworkErrorComponent />
-                                </NotificationsProvider>
-                              </RootSiblingParent>
-                            </NavigationContainerWrapper>
-                          </ErrorBoundary>
-                          <ThemeSyncGraphql />
-                          <NostrKeyEnsurer />
-                        </FeatureFlagContextProvider>
-                      </GaloyClient>
-                    </ThemeProvider>
-                  </TypesafeI18n>
+                    <TypesafeI18n locale={detectDefaultLocale()}>
+                      <ThemeProvider theme={theme}>
+                        <GaloyClient>
+                          <FeatureFlagContextProvider>
+                            <ErrorBoundary FallbackComponent={ErrorScreen}>
+                              <NavigationContainerWrapper>
+                                <RootSiblingParent>
+                                  <NotificationsProvider>
+                                    <AppStateWrapper />
+                                    <PushNotificationComponent />
+                                    <BreezProvider>
+                                      <FlashcardProvider>
+                                        <RootStack />
+                                      </FlashcardProvider>
+                                    </BreezProvider>
+                                    <GaloyToast />
+                                    <NetworkErrorComponent />
+                                  </NotificationsProvider>
+                                </RootSiblingParent>
+                              </NavigationContainerWrapper>
+                            </ErrorBoundary>
+                            <ThemeSyncGraphql />
+                            <NostrKeyEnsurer />
+                          </FeatureFlagContextProvider>
+                        </GaloyClient>
+                      </ThemeProvider>
+                    </TypesafeI18n>
                   </ActivityIndicatorProvider>
                 </NostrGroupChatProvider>
               </ChatContextProvider>
             </PersistentStateProvider>
           </PersistGate>
-      </Provider>
+        </Provider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   )
