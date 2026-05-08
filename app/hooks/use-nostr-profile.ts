@@ -62,7 +62,7 @@ const useNostrProfile = () => {
   const [userUpdateNpubMutation] = useUserUpdateNpubMutation()
 
   const deleteNostrKeys = async () => {
-    await Keychain.resetInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
+    await Keychain.resetInternetCredentials({ server: KEYCHAIN_NOSTRCREDS_KEY })
   }
 
   const deleteNostrData = async () => {

@@ -140,7 +140,7 @@ export const disconnectToSDK = async (): Promise<void> => {
       sdkInstance = null
     }
 
-    await Keychain.resetInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
+    await Keychain.resetInternetCredentials({ server: KEYCHAIN_MNEMONIC_KEY })
 
     const storageDir = `${RNFS.DocumentDirectoryPath}/${STORAGE_DIR}`
     if (await RNFS.exists(storageDir)) {
