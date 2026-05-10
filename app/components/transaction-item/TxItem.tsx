@@ -12,7 +12,7 @@ import HideableArea from "../hideable-area/hideable-area"
 
 // hooks
 import { useNavigation } from "@react-navigation/native"
-import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
+import { useDisplayCurrency } from "@app/hooks"
 
 // assets
 import ArrowUp from "@app/assets/icons/arrow-up.svg"
@@ -20,7 +20,7 @@ import ArrowDown from "@app/assets/icons/arrow-down.svg"
 import Icon from "react-native-vector-icons/Ionicons"
 
 // utils
-import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
 
 // types
 import {
@@ -44,8 +44,8 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { colors } = useTheme().theme
 
-  const { formatMoneyAmount, moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
-  const { convertMoneyAmount } = usePriceConversion()
+  const { formatCurrency, formatMoneyAmount, moneyAmountToDisplayCurrencyString } =
+    useDisplayCurrency()
 
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 
@@ -77,21 +77,24 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
     })
     secondaryAmount = formatMoneyAmount({ moneyAmount })
   } else {
-    // Ibex transaction - always USD
-    const amount = tx.transaction.settlementAmount * 100
-    const moneyAmount = toUsdMoneyAmount(amount ?? NaN)
-    primaryAmount = moneyAmountToDisplayCurrencyString({
-      moneyAmount,
+    const { transaction } = tx
+    primaryAmount = formatCurrency({
+      amountInMajorUnits: transaction.settlementDisplayAmount,
+      currency: transaction.settlementDisplayCurrency,
     })
-    if (convertMoneyAmount) {
+    if (transaction.settlementDisplayCurrency !== transaction.settlementCurrency) {
       secondaryAmount = formatMoneyAmount({
-        moneyAmount: convertMoneyAmount(moneyAmount, "BTC"),
+        moneyAmount: toWalletAmount({
+          amount: transaction.settlementAmount,
+          currency: transaction.settlementCurrency,
+        }),
       })
     }
   }
 
-  // Get currency label - Breez is BTC, Ibex is USD
-  const currencyLabel = isBreezTransaction(tx) ? "BTC" : "USD"
+  const currencyLabel = isBreezTransaction(tx)
+    ? "BTC"
+    : tx.transaction.settlementDisplayCurrency
 
   const onPress = () => {
     if (isIbexTransaction(tx)) {

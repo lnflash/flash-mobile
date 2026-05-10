@@ -88,6 +88,37 @@ describe("intraledger payment details", () => {
         },
       })
     })
+
+    it("rounds the mutation amount", async () => {
+      const paymentDetails = createIntraledgerPaymentDetails({
+        ...btcSendingWalletParams,
+        convertMoneyAmount: (_amount, currency) => ({
+          amount: 123.6,
+          currency,
+          currencyCode: currency,
+        }),
+      })
+      const sendPaymentMocks = createSendPaymentMocks()
+      if (!paymentDetails.canSendPayment) {
+        throw new Error("Cannot send payment")
+      }
+
+      try {
+        await paymentDetails.sendPaymentMutation(sendPaymentMocks)
+      } catch {
+        // do nothing as function is expected to throw since we are not mocking the send payment response
+      }
+
+      expect(sendPaymentMocks.intraLedgerPaymentSend).toHaveBeenCalledWith({
+        variables: {
+          input: {
+            recipientWalletId: defaultParams.recipientWalletId,
+            amount: 124,
+            walletId: btcSendingWalletParams.sendingWalletDescriptor.id,
+          },
+        },
+      })
+    })
   })
 
   describe("sending from a usd wallet", () => {
@@ -119,6 +150,37 @@ describe("intraledger payment details", () => {
           input: {
             recipientWalletId: defaultParams.recipientWalletId,
             amount: settlementAmount.amount,
+            walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
+          },
+        },
+      })
+    })
+
+    it("rounds the mutation amount", async () => {
+      const paymentDetails = createIntraledgerPaymentDetails({
+        ...usdSendingWalletParams,
+        convertMoneyAmount: (_amount, currency) => ({
+          amount: 123.4,
+          currency,
+          currencyCode: currency,
+        }),
+      })
+      const sendPaymentMocks = createSendPaymentMocks()
+      if (!paymentDetails.canSendPayment) {
+        throw new Error("Cannot send payment")
+      }
+
+      try {
+        await paymentDetails.sendPaymentMutation(sendPaymentMocks)
+      } catch {
+        // do nothing as function is expected to throw since we are not mocking the send payment response
+      }
+
+      expect(sendPaymentMocks.intraLedgerUsdPaymentSend).toHaveBeenCalledWith({
+        variables: {
+          input: {
+            recipientWalletId: defaultParams.recipientWalletId,
+            amount: 123,
             walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
           },
         },

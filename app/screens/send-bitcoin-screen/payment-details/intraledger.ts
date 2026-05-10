@@ -37,6 +37,7 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
     unitOfAccountAmount,
     sendingWalletDescriptor.currency,
   )
+  const mutationAmount = Math.round(settlementAmount.amount)
 
   const getFee: GetFee<T> = (_) => {
     return Promise.resolve({
@@ -61,7 +62,7 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
           input: {
             walletId: sendingWalletDescriptor.id,
             recipientWalletId,
-            amount: settlementAmount.amount,
+            amount: mutationAmount,
             memo,
           },
         },
@@ -89,7 +90,7 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
           input: {
             walletId: sendingWalletDescriptor.id,
             recipientWalletId,
-            amount: settlementAmount.amount,
+            amount: mutationAmount,
             memo,
           },
         },
