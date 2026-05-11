@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React, { useCallback, useEffect } from "react"
 import { ActivityIndicator, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles, Text } from "@rneui/themed"
@@ -19,6 +19,9 @@ import { fetchBreezFee } from "@app/utils/breez-sdk"
 // assets
 import Cash from "@app/assets/icons/cash.svg"
 import Bitcoin from "@app/assets/icons/bitcoin.svg"
+
+const WESTERN_UNION_COMPARISON_THRESHOLD_CENTS = 1000
+const FLASH_FEE_GREEN = "#3ab54a"
 
 type Props = {
   flashUserAddress?: string
@@ -46,19 +49,21 @@ const ConfirmationWalletFee: React.FC<Props> = ({
   const styles = useStyles()
   const getLightningFee = useFee(getFee ? getFee : null)
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
+  const usdSettlementAmount = paymentDetail.convertMoneyAmount(
+    settlementAmount,
+    WalletCurrency.Usd,
+  )
+  const showWesternUnionComparison =
+    usdSettlementAmount.amount > WESTERN_UNION_COMPARISON_THRESHOLD_CENTS
 
-  useEffect(() => {
-    getSendingFee()
-  }, [getLightningFee])
-
-  const getSendingFee = async () => {
+  const getSendingFee = useCallback(async () => {
     setFee({ status: "loading", amount: undefined })
     if (sendingWalletDescriptor.currency === "USD") {
       setFee(getLightningFee)
     } else {
       const { fee, err } = await fetchBreezFee(
         paymentType,
-        !!flashUserAddress ? flashUserAddress : paymentDetail.destination,
+        flashUserAddress || paymentDetail.destination,
         settlementAmount.amount,
         selectedFeeType,
       )
@@ -80,7 +85,21 @@ const ConfirmationWalletFee: React.FC<Props> = ({
         setPaymentError(`${err}`)
       }
     }
-  }
+  }, [
+    flashUserAddress,
+    getLightningFee,
+    paymentDetail.destination,
+    paymentType,
+    selectedFeeType,
+    sendingWalletDescriptor.currency,
+    setFee,
+    setPaymentError,
+    settlementAmount.amount,
+  ])
+
+  useEffect(() => {
+    getSendingFee()
+  }, [getSendingFee])
 
   let feeDisplayText = ""
   if (fee.amount) {
@@ -129,10 +148,12 @@ const ConfirmationWalletFee: React.FC<Props> = ({
         <View style={styles.fieldBackground}>
           {fee.status === "loading" && <ActivityIndicator />}
           {fee.status === "set" && (
-            <Text {...testProps("Successful Fee")}>{feeDisplayText}</Text>
+            <Text style={styles.feeAmountText} {...testProps("Successful Fee")}>
+              {feeDisplayText}
+            </Text>
           )}
           {fee.status === "error" && Boolean(fee.amount) && (
-            <Text>{feeDisplayText} *</Text>
+            <Text style={styles.feeAmountText}>{feeDisplayText} *</Text>
           )}
           {fee.status === "error" && !fee.amount && (
             <Text>{LL.SendBitcoinConfirmationScreen.feeError()}</Text>
@@ -141,6 +162,11 @@ const ConfirmationWalletFee: React.FC<Props> = ({
             <Text>{LL.SendBitcoinConfirmationScreen.breezFeeText()}</Text>
           )}
         </View>
+        {showWesternUnionComparison && (
+          <Text style={styles.feeComparisonText}>
+            Western Union charges ~J$1,800 for this transfer
+          </Text>
+        )}
         {fee.status === "error" && Boolean(fee.amount) && (
           <Text style={styles.maxFeeWarningText}>
             {"*" + LL.SendBitcoinConfirmationScreen.maxFeeSelected()}
@@ -189,6 +215,15 @@ const useStyles = makeStyles(({ colors }) => ({
   walletSelectorBalanceContainer: {
     flex: 1,
     flexDirection: "row",
+  },
+  feeAmountText: {
+    color: FLASH_FEE_GREEN,
+    fontWeight: "bold",
+  },
+  feeComparisonText: {
+    color: colors.grey2,
+    fontSize: 12,
+    marginTop: 4,
   },
   maxFeeWarningText: {
     color: colors.warning,

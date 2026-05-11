@@ -664,7 +664,7 @@
         "confirmPayment": "Confirm payment",
         "confirmPaymentQuestion": "Do you want to confirm this payment?",
         "destinationLabel": "To:",
-        "feeLabel": "Fee",
+        "feeLabel": "Flash fee:",
         "memoLabel": "Note:",
         "paymentFinal": "Payments are final.",
         "stalePrice": "Your bitcoin price is old and was last updated {timePeriod} ago. Please restart the app before making a payment.",
