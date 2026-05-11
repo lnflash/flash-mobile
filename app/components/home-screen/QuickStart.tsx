@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { Dimensions, Linking, TouchableOpacity, View } from "react-native"
+import { Dimensions, TouchableOpacity, View } from "react-native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import Carousel from "react-native-reanimated-carousel"
@@ -10,7 +10,7 @@ import * as Keychain from "react-native-keychain"
 import Account from "@app/assets/illustrations/account.svg"
 import Dollar from "@app/assets/illustrations/dollar.svg"
 import Flashcard from "@app/assets/icons/empty-flashcard.svg"
-import NonCustodialWallet from "@app/assets/illustrations/non-custodial-wallet.svg"
+import BitcoinCircle from "@app/screens/earns-map-screen/bitcoin-circle-01.svg"
 import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
 import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 import SocialChat from "@app/assets/illustrations/social-chat.svg"
@@ -100,16 +100,13 @@ const QuickStart = () => {
       onPress: () => navigation.navigate("Map"),
     },
     {
-      type: "nonCustodialWallet",
-      title: LL.HomeScreen.nonCustodialWalletTitle(),
-      description: LL.HomeScreen.nonCustodialWalletDesc(),
-      image: NonCustodialWallet,
-      onPress: () => {
-        onHide("nonCustodialWallet")
-        Linking.openURL(
-          "https://documentation.getflash.io/en/guides/non-custodial-wallets",
-        )
-      },
+      type: "whatIsBitcoin",
+      title: LL.EarnScreen.earnSections.bitcoinWhatIsIt.title(),
+      description: LL.EarnScreen.earnSections.bitcoinWhatIsIt.questions.whatIsBitcoin
+        .text()
+        .split("\n")[0],
+      image: BitcoinCircle,
+      onPress: () => navigation.navigate("earnsSection", { section: "bitcoinWhatIsIt" }),
     },
     {
       type: "email",
@@ -159,8 +156,8 @@ const QuickStart = () => {
   ) {
     carouselData = carouselData.filter((el) => el.type !== "flashcard")
   }
-  if (persistentState?.closedQuickStartTypes?.includes("nonCustodialWallet")) {
-    carouselData = carouselData.filter((el) => el.type !== "nonCustodialWallet")
+  if (persistentState?.closedQuickStartTypes?.includes("whatIsBitcoin")) {
+    carouselData = carouselData.filter((el) => el.type !== "whatIsBitcoin")
   }
   if (
     data?.me?.defaultAccount.level === AccountLevel.Zero ||
