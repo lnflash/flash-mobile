@@ -212,4 +212,14 @@ gql`
       uploadUrl
     }
   }
+
+  mutation UpdateExternalWallet($input: UpdateExternalWalletInput!) {
+    updateExternalWallet(input: $input) {
+      errors {
+        code
+        message
+      }
+      walletId
+    }
+  }
 `
