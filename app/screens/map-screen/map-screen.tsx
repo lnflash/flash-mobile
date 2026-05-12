@@ -5,7 +5,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/display-name */
 import React, { memo, useCallback, useEffect, useState } from "react"
-import { Linking, PermissionsAndroid, Platform } from "react-native"
+import { Alert, Linking, PermissionsAndroid, Platform } from "react-native"
 import MapView from "react-native-maps"
 import { makeStyles } from "@rneui/themed"
 import { getCrashlytics } from "@react-native-firebase/crashlytics"
@@ -32,11 +32,14 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useChatContext } from "@app/screens/chat/chatContext"
+import { nip19 } from "nostr-tools"
 
 // gql
 import {
   useBusinessMapMarkersQuery,
   useMerchantMapSuggestMutation,
+  useNpubByUsernameLazyQuery,
   useSettingsScreenQuery,
 } from "@app/graphql/generated"
 import {
@@ -92,7 +95,9 @@ export const MapScreen = memo(() => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { persistentState } = usePersistentStateContext()
   const chatEnabled = persistentState?.chatEnabled ?? false
+  const { userPublicKey } = useChatContext()
 
+  const [resolveNpub] = useNpubByUsernameLazyQuery()
   const [merchantMapSuggest] = useMerchantMapSuggestMutation()
   const {
     data: blinkData,
@@ -140,9 +145,34 @@ export const MapScreen = memo(() => {
   }, [selectedMarker])
 
   const handleChat = useCallback(() => {
-    if (!selectedMarker) return
-    setCardVisible(false)
-  }, [selectedMarker])
+    if (!selectedMarker || !selectedMarker.username || !userPublicKey) return
+    resolveNpub({
+      variables: { username: selectedMarker.username },
+      onCompleted: (data) => {
+        const npub = data?.npubByUsername?.npub
+        if (!npub) {
+          Alert.alert("Chat Unavailable", "This user is not available for chat.")
+          return
+        }
+        try {
+          const decoded = nip19.decode(npub)
+          if (decoded.type !== "npub") {
+            Alert.alert("Chat Unavailable", "This user is not available for chat.")
+            return
+          }
+          const merchantPubkey = decoded.data as string
+          const groupId = [userPublicKey, merchantPubkey].sort().join(",")
+          setCardVisible(false)
+          ;(navigation as any).navigate("Chat", { screen: "messages", params: { groupId } })
+        } catch {
+          Alert.alert("Chat Unavailable", "This user is not available for chat.")
+        }
+      },
+      onError: () => {
+        Alert.alert("Chat Unavailable", "This user is not available for chat.")
+      },
+    })
+  }, [selectedMarker, userPublicKey, navigation, resolveNpub])
 
   useEffect(() => {
     const errorMessage = blinkError?.message || flashError?.message
@@ -264,6 +294,7 @@ export const MapScreen = memo(() => {
         visible={cardVisible}
         item={selectedMarker}
         chatEnabled={chatEnabled}
+        currentUsername={data?.me?.username}
         onClose={() => setCardVisible(false)}
         onPayBusiness={handlePayBusiness}
         onGetDirections={handleGetDirections}

@@ -105,7 +105,7 @@ export const disconnectToSDK = async () => {
       await disconnect()
     }
 
-    await Keychain.resetInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
+    await Keychain.resetInternetCredentials({ server: KEYCHAIN_MNEMONIC_KEY })
 
     const config = await defaultConfig(LiquidNetwork.MAINNET, API_KEY)
     const exists = await RNFS.exists(config.workingDir)

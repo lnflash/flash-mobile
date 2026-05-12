@@ -63,7 +63,7 @@ const useLogout = () => {
     resetFlashcard()
 
     if (clearDeviceCred) {
-      await Keychain.resetInternetCredentials(DEVICE_ACCOUNT_CREDENTIALS_KEY)
+      await Keychain.resetInternetCredentials({ server: DEVICE_ACCOUNT_CREDENTIALS_KEY })
     }
   }
 

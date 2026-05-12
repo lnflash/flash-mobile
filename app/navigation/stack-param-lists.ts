@@ -218,7 +218,7 @@ export type PhoneValidationStackParamList = {
 export type PrimaryStackParamList = {
   Home: undefined
   Contacts: undefined
-  Chat: undefined
+  Chat: NavigatorScreenParams<ChatStackParamList>
   Card: undefined
   Map: undefined
   Earn: undefined
