@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useRef, useState } from "react"
-import { WalletCurrency } from "@app/graphql/generated"
+import { useUpdateExternalWalletMutation, WalletCurrency } from "@app/graphql/generated"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { Alert, Platform } from "react-native"
 import { v4 as uuidv4 } from "uuid"
@@ -50,6 +50,8 @@ export const BreezProvider = ({ children }: Props) => {
     fetchPolicy: "cache-first",
     skip: !isAuthed,
   })
+  const [updateExternalWallet] = useUpdateExternalWalletMutation()
+
   const [loading, setLoading] = useState(false)
   const [btcWallet, setBtcWallet] = useState<BtcWallet>({
     id: "",
@@ -110,22 +112,35 @@ export const BreezProvider = ({ children }: Props) => {
     if (updatingBalanceRef.current) return
     updatingBalanceRef.current = true
     try {
-      const balanceSats = await getInfo()
-      setBtcWallet({
-        id: uuidv4(),
-        walletCurrency: WalletCurrency.Btc,
-        balance: balanceSats,
-      })
+      const walletInfo = await getInfo()
+      setBtcWallet((prev) => ({
+        ...prev,
+        balance: Number(walletInfo.balanceSats),
+      }))
       updateState((state: any) => {
         if (state)
           return {
             ...state,
-            breezBalance: balanceSats,
+            breezBalance: Number(walletInfo.balanceSats),
           }
         return undefined
       })
     } finally {
       updatingBalanceRef.current = false
+    }
+  }
+
+  const updateExternalWalletLnurlp = async (lnurlp: string) => {
+    const externalWalletRes = await updateExternalWallet({
+      variables: { input: { lnurlp } },
+    })
+    console.log("Update External Wallet Response: ", externalWalletRes)
+    const walletId = externalWalletRes.data?.updateExternalWallet.walletId
+    if (walletId) {
+      setBtcWallet((prev) => ({
+        ...prev,
+        id: walletId,
+      }))
     }
   }
 
@@ -136,7 +151,11 @@ export const BreezProvider = ({ children }: Props) => {
     try {
       const existing = await getLightningAddress()
       console.log("BREEZ LIGHTNING ADDRESS: ", existing)
-      if (existing) return
+
+      if (existing) {
+        updateExternalWalletLnurlp(existing.lnurl.bech32)
+        return
+      }
 
       // Register with username as the Lightning address
       const lightningAddress = username + uuidv4()
@@ -145,6 +164,10 @@ export const BreezProvider = ({ children }: Props) => {
         `Pay to ${username}@${appConfig.galoyInstance.lnAddressHostname}`,
       )
       console.log("BREEZ LIGHTNING ADDRESS RES: ", res)
+
+      if (res) {
+        updateExternalWalletLnurlp(res.lnurl.bech32)
+      }
     } catch (err) {
       console.warn("Failed to register Lightning address:", err)
     }

@@ -176,7 +176,7 @@ export const getInfo = async () => {
   const sdk = getSDKInstance()
   const info = await sdk.getInfo({ ensureSynced: true })
 
-  return Number(info.balanceSats)
+  return info
 }
 
 // Fee Estimation
