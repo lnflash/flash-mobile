@@ -1,5 +1,8 @@
 import { gql } from "@apollo/client"
-import { useSetDefaultWalletScreenQuery } from "@app/graphql/generated"
+import {
+  useAccountUpdateDefaultWalletIdMutation,
+  useSetDefaultWalletScreenQuery,
+} from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { Text, makeStyles } from "@rneui/themed"
@@ -54,6 +57,7 @@ export const DefaultWalletScreen: React.FC = () => {
     fetchPolicy: "cache-first",
     skip: !isAuthed,
   })
+  const [updateDefaultWalletId] = useAccountUpdateDefaultWalletIdMutation()
 
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
@@ -71,6 +75,12 @@ export const DefaultWalletScreen: React.FC = () => {
 
     if (id === btcWalletId) {
       defaultWallet = btcWallet
+    }
+
+    if (defaultWallet.id) {
+      await updateDefaultWalletId({
+        variables: { input: { walletId: defaultWallet.id } },
+      })
     }
 
     updateState((state: any) => {
