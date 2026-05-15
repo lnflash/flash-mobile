@@ -336,6 +336,20 @@ type RootTranslation = {
 		 */
 		currency: string
 	}
+	CashWalletCutover: {
+		/**
+		 * C​a​s​h​ ​W​a​l​l​e​t​ ​U​p​d​a​t​e​d
+		 */
+		title: string
+		/**
+		 * Y​o​u​r​ ​C​a​s​h​ ​W​a​l​l​e​t​ ​h​a​s​ ​b​e​e​n​ ​u​p​g​r​a​d​e​d​ ​f​r​o​m​ ​U​S​D​ ​t​o​ ​U​S​D​T​.​ ​Y​o​u​r​ ​b​a​l​a​n​c​e​ ​h​a​s​ ​b​e​e​n​ ​a​u​t​o​m​a​t​i​c​a​l​l​y​ ​m​i​g​r​a​t​e​d​.​ ​N​o​ ​a​c​t​i​o​n​ ​i​s​ ​n​e​e​d​e​d​ ​o​n​ ​y​o​u​r​ ​p​a​r​t​.
+		 */
+		body: string
+		/**
+		 * G​o​t​ ​i​t
+		 */
+		dismissButton: string
+	}
 	ConversionDetailsScreen: {
 		/**
 		 * S​w​a​p
@@ -5899,6 +5913,20 @@ export type TranslationFunctions = {
 		 * Currency
 		 */
 		currency: () => LocalizedString
+	}
+	CashWalletCutover: {
+		/**
+		 * Cash Wallet Updated
+		 */
+		title: () => LocalizedString
+		/**
+		 * Your Cash Wallet has been upgraded from USD to USDT. Your balance has been automatically migrated. No action is needed on your part.
+		 */
+		body: () => LocalizedString
+		/**
+		 * Got it
+		 */
+		dismissButton: () => LocalizedString
 	}
 	ConversionDetailsScreen: {
 		/**

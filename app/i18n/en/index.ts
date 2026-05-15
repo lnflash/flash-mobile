@@ -97,6 +97,11 @@ const en: BaseTranslation = {
     accountType: "Account Type",
     currency: "Currency",
   },
+  CashWalletCutover: {
+    title: "Cash Wallet Updated",
+    body: "Your Cash Wallet has been upgraded from USD to USDT. Your balance has been automatically migrated. No action is needed on your part.",
+    dismissButton: "Got it",
+  },
   ConversionDetailsScreen: {
     title: "Swap",
     percentageToConvert: "% to convert",
