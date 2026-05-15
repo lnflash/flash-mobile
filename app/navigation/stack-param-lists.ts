@@ -163,6 +163,10 @@ export type RootStackParamList = {
   AccountUpgradeSuccess: undefined
   // Featured profile WebView entry
   FeaturedProfileView: { entryPoint: "search" | "long_press" | "profile" }
+  BridgeKycWebView: {
+    tosLink: string
+    kycLink: string
+  }
   TopupCashout: undefined
   TopupDetails: { paymentType: "card" | "bankTransfer" }
   BankTransfer: {

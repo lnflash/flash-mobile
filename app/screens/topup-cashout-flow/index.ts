@@ -1,3 +1,4 @@
+import BridgeKycWebView from "./BridgeKycWebView"
 import TopupCashout from "./TopupCashout"
 import TopupDetails from "./TopupDetails"
 import BankTransfer from "./BankTransfer"
@@ -9,6 +10,7 @@ import CashoutSuccess from "./CashoutSuccess"
 import PaymentSuccessScreen from "./payment-success-screen"
 
 export {
+  BridgeKycWebView,
   TopupCashout,
   TopupDetails,
   BankTransfer,

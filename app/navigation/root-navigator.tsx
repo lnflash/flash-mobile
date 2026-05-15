@@ -126,6 +126,7 @@ import {
 import { FeaturedProfileView } from "@app/screens/featured-profile-view"
 import {
   BankTransfer,
+  BridgeKycWebView,
   TopupDetails,
   TopupSuccess,
   TopupCashout,
@@ -668,6 +669,14 @@ export const RootStack = () => {
         }}
       >
         <RootNavigator.Screen name="TopupCashout" component={TopupCashout} />
+        <RootNavigator.Screen
+          name="BridgeKycWebView"
+          component={BridgeKycWebView}
+          options={{
+            headerShown: false,
+            cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+          }}
+        />
         <RootNavigator.Screen name="TopupDetails" component={TopupDetails} />
         <RootNavigator.Screen name="BankTransfer" component={BankTransfer} />
         <RootNavigator.Screen name="CardPayment" component={CardPayment} />
