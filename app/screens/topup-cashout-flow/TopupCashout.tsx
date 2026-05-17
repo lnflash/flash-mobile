@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react"
-import { TouchableOpacity, View } from "react-native"
+import { Alert, TouchableOpacity, View } from "react-native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -14,16 +14,27 @@ import type { TransferOption } from "@app/components/topup-cashout-flow"
 import ArrowDown from "@app/assets/icons/arrow-down-to-bracket.svg"
 import ArrowUp from "@app/assets/icons/arrow-up-from-bracket.svg"
 
+// hooks
+import {
+  useBridgeInitiateKycMutation,
+  useBridgeKycStatusQuery,
+} from "@app/graphql/generated"
+import { useActivityIndicator } from "@app/hooks"
+
 type Props = StackScreenProps<RootStackParamList, "TopupCashout">
 
 const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
+  const { toggleActivityIndicator } = useActivityIndicator()
 
   const [topupModalVisible, setTopupModalVisible] = useState(false)
   const [settleModalVisible, setSettleModalVisible] = useState(false)
   const [bridgeKycModalVisible, setBridgeKycModalVisible] = useState(false)
+
+  const { data } = useBridgeKycStatusQuery()
+  const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
 
   const topupOptions: TransferOption[] = useMemo(
     () => [
@@ -51,7 +62,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         description: LL.TransferScreen.internationalBankTransferDesc(),
         onPress: () => {
           setTopupModalVisible(false)
-          setBridgeKycModalVisible(true)
+          checkBridgeKyc()
         },
       },
     ],
@@ -75,12 +86,64 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         description: LL.TransferScreen.internationalBankAccountDesc(),
         onPress: () => {
           setSettleModalVisible(false)
-          setBridgeKycModalVisible(true)
+          checkBridgeKyc()
         },
       },
     ],
     [LL, navigation],
   )
+
+  const checkBridgeKyc = () => {
+    console.log("Bridge KYC Status", data)
+    if (data?.bridgeKycStatus) {
+      if (true) {
+        //pending
+        //show pending status
+      } else {
+        // navigate to next screen
+      }
+    } else {
+      setBridgeKycModalVisible(true)
+    }
+  }
+
+  const getBridgeKycLink = async (data: {
+    fullName: string
+    email: string
+    kycType: string
+  }) => {
+    toggleActivityIndicator(true)
+    try {
+      const res = await initiateBridgeKyc({
+        variables: {
+          input: {
+            full_name: data.fullName,
+            email: data.email,
+            type: data.kycType,
+          },
+        },
+      })
+      toggleActivityIndicator(false)
+      console.log("BRIDGE INITIATE KYC RESPONSE: ", res)
+
+      const errors = res.data?.bridgeInitiateKyc?.errors
+      if (errors && errors.length > 0) {
+        Alert.alert("Error", errors[0].message)
+        return
+      }
+
+      const kycLink = res.data?.bridgeInitiateKyc?.kycLink
+      if (kycLink?.tosLink && kycLink?.kycLink) {
+        navigation.navigate("BridgeKycWebView", {
+          tosLink: kycLink.tosLink,
+          kycLink: kycLink.kycLink,
+        })
+      }
+    } catch (err) {
+      toggleActivityIndicator(false)
+      Alert.alert("Error", "Something went wrong. Please try again.")
+    }
+  }
 
   return (
     <Screen>
@@ -128,8 +191,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         onClose={() => setBridgeKycModalVisible(false)}
         onSubmit={(data) => {
           setBridgeKycModalVisible(false)
-          // TODO: send KYC data to Bridge API when query is ready
-          console.log("Bridge KYC submitted:", data)
+          getBridgeKycLink(data)
         }}
       />
     </Screen>
