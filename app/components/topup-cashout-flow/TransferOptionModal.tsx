@@ -8,6 +8,7 @@ export type TransferOption = {
   title: string
   description: string
   onPress: () => void
+  pending?: boolean
 }
 
 type Props = {
@@ -52,7 +53,14 @@ const TransferOptionModal: React.FC<Props> = ({ visible, title, options, onClose
             </TouchableOpacity>
           </View>
           {options.map((option, index) => (
-            <TouchableOpacity key={index} style={styles.optionBtn} onPress={option.onPress}>
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.optionBtn,
+                option.pending ? { borderColor: "orange" } : undefined,
+              ]}
+              onPress={option.onPress}
+            >
               <Icon type="ionicon" name={option.icon} size={30} color={colors.black} />
               <View style={styles.optionTextWrapper}>
                 <Text type="p1">{option.title}</Text>

@@ -33,8 +33,10 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const [settleModalVisible, setSettleModalVisible] = useState(false)
   const [bridgeKycModalVisible, setBridgeKycModalVisible] = useState(false)
 
-  const { data } = useBridgeKycStatusQuery()
+  const { data: kycStatusData } = useBridgeKycStatusQuery()
   const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
+
+  const isBridgeKycPending = kycStatusData?.bridgeKycStatus === "pending"
 
   const topupOptions: TransferOption[] = useMemo(
     () => [
@@ -60,13 +62,14 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         icon: "globe",
         title: LL.TransferScreen.internationalBankTransfer(),
         description: LL.TransferScreen.internationalBankTransferDesc(),
+        pending: isBridgeKycPending,
         onPress: () => {
           setTopupModalVisible(false)
           checkBridgeKyc()
         },
       },
     ],
-    [LL, navigation],
+    [LL, navigation, isBridgeKycPending],
   )
 
   const settleOptions: TransferOption[] = useMemo(
@@ -84,24 +87,24 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         icon: "globe",
         title: LL.TransferScreen.internationalBankAccount(),
         description: LL.TransferScreen.internationalBankAccountDesc(),
+        pending: isBridgeKycPending,
         onPress: () => {
           setSettleModalVisible(false)
           checkBridgeKyc()
         },
       },
     ],
-    [LL, navigation],
+    [LL, navigation, isBridgeKycPending],
   )
 
   const checkBridgeKyc = () => {
-    console.log("Bridge KYC Status", data)
-    if (data?.bridgeKycStatus) {
-      if (true) {
-        //pending
-        //show pending status
-      } else {
-        // navigate to next screen
-      }
+    if (isBridgeKycPending) {
+      Alert.alert("KYC Pending", "Your KYC status is pending. Please wait for approval.")
+      return
+    }
+
+    if (kycStatusData?.bridgeKycStatus) {
+      // KYC already completed - navigate to next screen
     } else {
       setBridgeKycModalVisible(true)
     }
