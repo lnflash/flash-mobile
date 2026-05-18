@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from "react"
+import React, { useCallback, useMemo, useState } from "react"
 import { Alert, TouchableOpacity, View } from "react-native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { useFocusEffect } from "@react-navigation/native"
 
 // components
 import { Screen } from "@app/components/screen"
@@ -33,10 +34,16 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const [settleModalVisible, setSettleModalVisible] = useState(false)
   const [bridgeKycModalVisible, setBridgeKycModalVisible] = useState(false)
 
-  const { data: kycStatusData } = useBridgeKycStatusQuery()
   const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
+  const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
+    fetchPolicy: "cache-and-network",
+  })
 
-  const isBridgeKycPending = kycStatusData?.bridgeKycStatus === "pending"
+  useFocusEffect(
+    useCallback(() => {
+      refetchKycStatus()
+    }, [refetchKycStatus]),
+  )
 
   const topupOptions: TransferOption[] = useMemo(
     () => [
@@ -62,14 +69,14 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         icon: "globe",
         title: LL.TransferScreen.internationalBankTransfer(),
         description: LL.TransferScreen.internationalBankTransferDesc(),
-        pending: isBridgeKycPending,
+        pending: kycStatusData?.bridgeKycStatus === "pending",
         onPress: () => {
           setTopupModalVisible(false)
           checkBridgeKyc()
         },
       },
     ],
-    [LL, navigation, isBridgeKycPending],
+    [LL, navigation, kycStatusData?.bridgeKycStatus],
   )
 
   const settleOptions: TransferOption[] = useMemo(
@@ -87,23 +94,21 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         icon: "globe",
         title: LL.TransferScreen.internationalBankAccount(),
         description: LL.TransferScreen.internationalBankAccountDesc(),
-        pending: isBridgeKycPending,
+        pending: kycStatusData?.bridgeKycStatus === "pending",
         onPress: () => {
           setSettleModalVisible(false)
           checkBridgeKyc()
         },
       },
     ],
-    [LL, navigation, isBridgeKycPending],
+    [LL, navigation, kycStatusData?.bridgeKycStatus],
   )
 
   const checkBridgeKyc = () => {
-    if (isBridgeKycPending) {
+    console.log(">>>>>>???????", kycStatusData?.bridgeKycStatus)
+    if (kycStatusData?.bridgeKycStatus === "pending") {
       Alert.alert("KYC Pending", "Your KYC status is pending. Please wait for approval.")
-      return
-    }
-
-    if (kycStatusData?.bridgeKycStatus) {
+    } else if (kycStatusData?.bridgeKycStatus === "approved") {
       // KYC already completed - navigate to next screen
     } else {
       setBridgeKycModalVisible(true)
