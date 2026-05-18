@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react"
-import { Alert, TouchableOpacity, View } from "react-native"
+import { Alert, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -33,6 +33,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const [topupModalVisible, setTopupModalVisible] = useState(false)
   const [settleModalVisible, setSettleModalVisible] = useState(false)
   const [bridgeKycModalVisible, setBridgeKycModalVisible] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
   const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
@@ -44,6 +45,12 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
       refetchKycStatus()
     }, [refetchKycStatus]),
   )
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await refetchKycStatus()
+    setRefreshing(false)
+  }, [refetchKycStatus])
 
   const topupOptions: TransferOption[] = useMemo(
     () => [
@@ -155,7 +162,12 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
 
   return (
     <Screen>
-      <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <Text type="h02" bold style={styles.title}>
           {LL.TransferScreen.title()}
         </Text>
@@ -179,7 +191,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
           </View>
           <Icon type="ionicon" name={"chevron-forward"} size={20} />
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       <TransferOptionModal
         visible={topupModalVisible}
@@ -208,7 +220,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
 
 const useStyles = makeStyles(() => ({
   container: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 20,
   },
   title: {
