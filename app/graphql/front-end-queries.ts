@@ -37,6 +37,7 @@ gql`
           id
           balance
           walletCurrency
+          isExternal
         }
       }
     }
@@ -83,6 +84,7 @@ gql`
           id
           balance
           walletCurrency
+          isExternal
         }
       }
     }
@@ -97,6 +99,7 @@ gql`
           id
           balance
           walletCurrency
+          isExternal
         }
       }
     }
@@ -111,6 +114,7 @@ gql`
           id
           balance
           walletCurrency
+          isExternal
         }
       }
     }
@@ -135,6 +139,7 @@ gql`
           id
           balance
           walletCurrency
+          isExternal
         }
       }
     }
@@ -150,6 +155,7 @@ gql`
         id
         wallets {
           id
+          isExternal
         }
       }
       contacts {
@@ -178,6 +184,7 @@ gql`
           id
           walletCurrency
           balance
+          isExternal
         }
       }
     }
@@ -224,6 +231,7 @@ gql`
           id
           balance
           walletCurrency
+          isExternal
         }
       }
     }
@@ -245,6 +253,7 @@ gql`
         id
         wallets {
           id
+          isExternal
         }
       }
       contacts {

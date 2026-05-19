@@ -48,6 +48,7 @@ gql`
           id
           balance
           walletCurrency
+          isExternal
         }
       }
       totpEnabled

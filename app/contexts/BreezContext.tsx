@@ -20,6 +20,7 @@ type BtcWallet = {
   id: string
   walletCurrency: WalletCurrency
   balance: number
+  isExternal: boolean
 }
 
 interface BreezInterface {
@@ -35,6 +36,7 @@ export const BreezContext = createContext<BreezInterface>({
     id: "",
     walletCurrency: "BTC",
     balance: 0,
+    isExternal: true,
   },
 })
 
@@ -57,6 +59,7 @@ export const BreezProvider = ({ children }: Props) => {
     id: "",
     walletCurrency: "BTC",
     balance: persistentState.breezBalance || 0,
+    isExternal: true,
   })
   const initializingRef = useRef(false)
   const updatingBalanceRef = useRef(false)
@@ -103,6 +106,7 @@ export const BreezProvider = ({ children }: Props) => {
           id: "",
           walletCurrency: "BTC",
           balance: 0,
+          isExternal: true,
         })
       }
     }

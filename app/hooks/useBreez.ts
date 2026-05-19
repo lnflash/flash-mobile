@@ -6,6 +6,7 @@ type BtcWallet = {
   id: string
   walletCurrency: WalletCurrency
   balance: number
+  isExternal: boolean
 }
 
 interface ContextProps {
