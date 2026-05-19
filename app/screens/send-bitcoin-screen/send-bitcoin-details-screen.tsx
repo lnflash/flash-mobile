@@ -23,7 +23,7 @@ import {
   WalletCurrency,
 } from "@app/graphql/generated"
 import { decodeInvoiceString, Network as NetworkLibGaloy } from "@galoymoney/client"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getInternalWallets, getUsdWallet } from "@app/graphql/wallets-utils"
 
 // hooks
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -382,7 +382,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
       >
         <ChooseWallet
           usdWallet={usdWallet}
-          wallets={data?.me?.defaultAccount?.wallets as any[]}
+          wallets={getInternalWallets(data?.me?.defaultAccount?.wallets) as any[]}
           paymentDetail={paymentDetail}
           setPaymentDetail={setPaymentDetail}
         />
