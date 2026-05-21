@@ -2062,6 +2062,18 @@ type RootTranslation = {
 		 * B​a​c​k​ ​t​o​ ​H​o​m​e
 		 */
 		backHome: string
+		/**
+		 * Virtual Bank Transfer
+		 */
+		virtualBankTransfer: string
+		/**
+		 * Bank Name
+		 */
+		bankName: string
+		/**
+		 * Routing Number
+		 */
+		routingNumber: string
 	}
 	PaymentSuccessScreen: {
 		/**
@@ -7631,6 +7643,19 @@ export type TranslationFunctions = {
 		 * Back to Home
 		 */
 		backHome: () => LocalizedString
+		/**
+		 * Virtual Bank Transfer
+		 */
+		virtualBankTransfer: () => LocalizedString
+		/**
+		 * Bank Name
+		 */
+		bankName: () => LocalizedString
+		/**
+		 * Routing Number
+		 */
+		routingNumber: () => LocalizedString
+
 	}
 	PaymentSuccessScreen: {
 		/**

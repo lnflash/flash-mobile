@@ -642,7 +642,10 @@ const en: BaseTranslation = {
     fees: "Fees",
     desc4: "After payment completion on your end you can send us an email to {email: string} with a screenshot of your payment confirmation.",
     desc5: "Your payment will be processed even if we don't receive this email, but having this confirmation can help accelerate the order.",
-    backHome: "Back to Home"
+    backHome: "Back to Home",
+    virtualBankTransfer: "Virtual Bank Transfer",
+		bankName: "Bank Name",
+		routingNumber: "Routing Number"
   },
   PaymentSuccessScreen: {
     title: "Payment Successful",
