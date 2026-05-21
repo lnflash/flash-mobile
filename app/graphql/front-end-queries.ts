@@ -292,11 +292,14 @@ gql`
           title
         }
         bankAccount {
+          accountName
           accountNumber
           accountType
           bankBranch
           bankName
           currency
+          id
+          isDefault
         }
         currentLevel
         fullName
@@ -313,6 +316,24 @@ gql`
   query SupportedBanks {
     supportedBanks {
       name
+    }
+  }
+
+  query BridgeKycStatus {
+    bridgeKycStatus
+  }
+
+  query BridgeVirtualAccount {
+    bridgeVirtualAccount {
+      accountNumber
+      accountNumberLast4
+      bankName
+      id
+      kycLink
+      message
+      pending
+      routingNumber
+      tosLink
     }
   }
 `

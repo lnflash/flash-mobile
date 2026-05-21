@@ -142,7 +142,7 @@ gql`
         code
         message
       }
-      journalId
+      id
     }
   }
 
@@ -208,6 +208,19 @@ gql`
       }
       fileKey
       uploadUrl
+    }
+  }
+
+  mutation BridgeInitiateKyc($input: BridgeInitiateKycInput!) {
+    bridgeInitiateKyc(input: $input) {
+      errors {
+        code
+        message
+      }
+      kycLink {
+        kycLink
+        tosLink
+      }
     }
   }
 `
