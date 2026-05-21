@@ -12,6 +12,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 
+// gql
+import { useBridgeVirtualAccountQuery } from "@app/graphql/generated"
+
 type Props = StackScreenProps<RootStackParamList, "BankTransfer">
 
 const BankTransfer: React.FC<Props> = ({ navigation, route }) => {
@@ -19,8 +22,41 @@ const BankTransfer: React.FC<Props> = ({ navigation, route }) => {
   const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
 
-  const { email, amount, wallet } = route.params
+  const { data } = useBridgeVirtualAccountQuery()
+
+  const { amount, wallet, paymentType } = route.params
   const fee = amount * 0.02
+
+  if (paymentType === "bridge") {
+    return (
+      <Screen preset="scroll" style={{ paddingHorizontal: 20 }}>
+        <Text type="h02" bold style={styles.title}>
+          {LL.BankTransfer.virtualBankTransfer()}
+        </Text>
+        <Text type="p1" style={styles.desc}>
+          {LL.BankTransfer.desc1({ amount: amount + fee })}
+        </Text>
+        <View style={styles.fieldContainer}>
+          <Text type="bl">{LL.BankTransfer.bankName()}</Text>
+          <Text type="p1" bold>
+            {data?.bridgeVirtualAccount?.bankName}
+          </Text>
+        </View>
+        <View style={styles.fieldContainer}>
+          <Text type="bl">{LL.BankTransfer.accountNumber()}</Text>
+          <Text type="p1" bold>
+            {data?.bridgeVirtualAccount?.accountNumber}
+          </Text>
+        </View>
+        <View style={styles.fieldContainer}>
+          <Text type="bl">{LL.BankTransfer.routingNumber()}</Text>
+          <Text type="p1" bold>
+            {data?.bridgeVirtualAccount?.routingNumber}
+          </Text>
+        </View>
+      </Screen>
+    )
+  }
 
   return (
     <Screen preset="scroll" style={{ paddingHorizontal: 20 }}>
