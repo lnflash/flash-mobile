@@ -1,11 +1,19 @@
 import React, { useState } from "react"
-import { KeyboardAvoidingView, Modal, Platform, ScrollView, TouchableOpacity, View } from "react-native"
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from "react-native"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
-import { InputField, DropDownField } from "@app/components/account-upgrade-flow"
+import { InputField } from "@app/components/account-upgrade-flow"
 import { PrimaryBtn } from "@app/components/buttons"
+import { ButtonGroup } from "@app/components/button-group"
 
 type BridgeKycModalProps = {
   visible: boolean
@@ -13,7 +21,11 @@ type BridgeKycModalProps = {
   onSubmit: (data: { fullName: string; email: string; kycType: string }) => void
 }
 
-const BridgeKycModal: React.FC<BridgeKycModalProps> = ({ visible, onClose, onSubmit }) => {
+const BridgeKycModal: React.FC<BridgeKycModalProps> = ({
+  visible,
+  onClose,
+  onSubmit,
+}) => {
   const styles = useStyles()
   const { colors, mode } = useTheme().theme
   const bottom = useSafeAreaInsets().bottom
@@ -27,9 +39,9 @@ const BridgeKycModal: React.FC<BridgeKycModalProps> = ({ visible, onClose, onSub
   const [emailErr, setEmailErr] = useState<string | undefined>()
   const [kycTypeErr, setKycTypeErr] = useState<string | undefined>()
 
-  const kycTypeOptions = [
-    { label: LL.BridgeKyc.individual(), value: "individual" },
-    { label: LL.BridgeKyc.business(), value: "business" },
+  const kycTypeButtons = [
+    { id: "individual", text: LL.BridgeKyc.individual() },
+    { id: "business", text: LL.BridgeKyc.business() },
   ]
 
   const validate = (): boolean => {
@@ -72,7 +84,12 @@ const BridgeKycModal: React.FC<BridgeKycModalProps> = ({ visible, onClose, onSub
   }
 
   return (
-    <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={handleClose}>
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={handleClose}
+    >
       <TouchableOpacity
         style={[
           styles.backdrop,
@@ -85,6 +102,7 @@ const BridgeKycModal: React.FC<BridgeKycModalProps> = ({ visible, onClose, onSub
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={-30}
           style={styles.keyboardAvoid}
         >
           <View
@@ -131,17 +149,25 @@ const BridgeKycModal: React.FC<BridgeKycModalProps> = ({ visible, onClose, onSub
                 }}
               />
 
-              <DropDownField
-                label={LL.BridgeKyc.kycType()}
-                placeholder={LL.BridgeKyc.kycTypePlaceholder()}
-                data={kycTypeOptions}
-                value={kycType}
-                errorMsg={kycTypeErr}
-                onChange={(val) => {
-                  setKycTypeErr(undefined)
-                  setKycType(val)
-                }}
-              />
+              <View style={styles.kycTypeWrapper}>
+                <Text type="bl" bold>
+                  {LL.BridgeKyc.kycType()}
+                </Text>
+                <ButtonGroup
+                  buttons={kycTypeButtons}
+                  selectedId={kycType}
+                  onPress={(id) => {
+                    setKycTypeErr(undefined)
+                    setKycType(id)
+                  }}
+                  style={styles.kycTypeRow}
+                />
+                {!!kycTypeErr && (
+                  <Text type="caption" color={colors.red}>
+                    {kycTypeErr}
+                  </Text>
+                )}
+              </View>
             </ScrollView>
 
             <PrimaryBtn
@@ -158,7 +184,7 @@ const BridgeKycModal: React.FC<BridgeKycModalProps> = ({ visible, onClose, onSub
 
 export default BridgeKycModal
 
-const useStyles = makeStyles(({ colors }) => ({
+const useStyles = makeStyles(() => ({
   backdrop: {
     flex: 1,
     justifyContent: "flex-end",
@@ -186,5 +212,12 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   submitBtn: {
     marginTop: 10,
+  },
+  kycTypeWrapper: {
+    marginBottom: 15,
+  },
+  kycTypeRow: {
+    marginTop: 5,
+    marginBottom: 2,
   },
 }))
