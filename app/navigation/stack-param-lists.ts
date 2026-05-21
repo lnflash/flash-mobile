@@ -168,10 +168,11 @@ export type RootStackParamList = {
     kycLink: string
   }
   TopupCashout: undefined
-  TopupDetails: { paymentType: "card" | "bankTransfer" }
+  TopupDetails: { paymentType: "card" | "bankTransfer" | "bridge" }
   BankTransfer: {
     amount: number
     wallet: string
+    paymentType: "bankTransfer" | "bridge"
   }
   CardPayment: {
     amount: number

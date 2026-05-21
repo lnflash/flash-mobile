@@ -27,6 +27,7 @@ import { ButtonGroup } from "@app/components/button-group"
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // assets
 import Cash from "@app/assets/icons/cash.svg"
@@ -39,6 +40,8 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const { bottom } = useSafeAreaInsets()
   const styles = useStyles()({ bottom })
+
+  const { persistentState } = usePersistentStateContext()
 
   /**
    * Component state:
@@ -83,10 +86,14 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     setIsLoading(true)
 
     try {
-      if (route.params.paymentType === "bankTransfer") {
+      if (
+        route.params.paymentType === "bankTransfer" ||
+        route.params.paymentType === "bridge"
+      ) {
         navigation.navigate("BankTransfer", {
           amount: parseFloat(amount),
           wallet: selectedWallet,
+          paymentType: route.params.paymentType,
         })
       } else {
         // Card payment flow via Fygaro WebView
@@ -121,15 +128,18 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
         normal: <Cash width={30} height={30} />,
       },
     },
-    {
+  ]
+
+  if (persistentState.isAdvanceMode) {
+    walletButtons.push({
       id: "BTC",
       text: LL.TopupDetails.btcWallet(),
       icon: {
         selected: <Bitcoin width={30} height={30} />,
         normal: <Bitcoin width={30} height={30} />,
       },
-    },
-  ]
+    })
+  }
 
   return (
     <Screen>
@@ -137,6 +147,8 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
         <Text type="h02" bold style={styles.title}>
           {route.params.paymentType === "card"
             ? LL.TopupDetails.title()
+            : route.params.paymentType === "bridge"
+            ? LL.BankTransfer.virtualBankTransfer()
             : LL.TopupDetails.bankTransfer()}
         </Text>
 

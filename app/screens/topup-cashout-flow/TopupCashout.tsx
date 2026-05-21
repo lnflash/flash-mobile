@@ -79,7 +79,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         pending: kycStatusData?.bridgeKycStatus === "pending",
         onPress: () => {
           setTopupModalVisible(false)
-          checkBridgeKyc()
+          checkBridgeKyc("topup")
         },
       },
     ],
@@ -104,19 +104,20 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         pending: kycStatusData?.bridgeKycStatus === "pending",
         onPress: () => {
           setSettleModalVisible(false)
-          checkBridgeKyc()
+          checkBridgeKyc("settle")
         },
       },
     ],
     [LL, navigation, kycStatusData?.bridgeKycStatus],
   )
 
-  const checkBridgeKyc = () => {
-    console.log(">>>>>>???????", kycStatusData?.bridgeKycStatus)
+  const checkBridgeKyc = (type: "topup" | "settle") => {
     if (kycStatusData?.bridgeKycStatus === "pending") {
       Alert.alert("KYC Pending", "Your KYC status is pending. Please wait for approval.")
     } else if (kycStatusData?.bridgeKycStatus === "approved") {
-      // KYC already completed - navigate to next screen
+      type === "topup"
+        ? navigation.navigate("TopupDetails", { paymentType: "bridge" })
+        : navigation.navigate("CashoutDetails")
     } else {
       setBridgeKycModalVisible(true)
     }
@@ -164,9 +165,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     <Screen>
       <ScrollView
         contentContainerStyle={styles.container}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <Text type="h02" bold style={styles.title}>
           {LL.TransferScreen.title()}
