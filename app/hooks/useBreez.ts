@@ -12,7 +12,10 @@ type BtcWallet = {
 interface ContextProps {
   btcWallet: BtcWallet
   loading: boolean
+  externalWalletLoading: boolean
+  externalWalletError?: string
   refreshBreez: () => void
+  retryExternalWalletRegistration: () => Promise<void>
 }
 
 export const useBreez = () => {

@@ -50,7 +50,13 @@ export const DefaultWalletScreen: React.FC = () => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const isAuthed = useIsAuthed()
-  const { btcWallet } = useBreez()
+  const {
+    btcWallet,
+    loading: breezLoading,
+    externalWalletLoading,
+    externalWalletError,
+    retryExternalWalletRegistration,
+  } = useBreez()
 
   const { persistentState, updateState } = usePersistentStateContext()
 
@@ -67,8 +73,20 @@ export const DefaultWalletScreen: React.FC = () => {
 
   const defaultWalletId = persistentState.defaultWallet?.id || usdWalletId
 
-  if (!usdWalletId || !btcWalletId) {
-    return <Text>{"missing walletIds"}</Text>
+  if (!usdWalletId) {
+    return <Text>{"Loading default account..."}</Text>
+  }
+
+  if (!btcWalletId) {
+    if (externalWalletError) {
+      return <Text onPress={retryExternalWalletRegistration}>{externalWalletError}</Text>
+    }
+
+    if (breezLoading || externalWalletLoading) {
+      return <Text>{"Loading BTC account..."}</Text>
+    }
+
+    return <Text onPress={retryExternalWalletRegistration}>{"Tap to retry BTC account setup"}</Text>
   }
 
   const handleSetDefaultWallet = async (id: string) => {

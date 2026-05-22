@@ -9,7 +9,6 @@ import {
   handleSparkMigration,
   registerLightningAddress,
   getLightningAddress,
-  checkLightningAddressAvailable,
 } from "@app/utils/breez-sdk"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { useAddressScreenQuery } from "@app/graphql/generated"
@@ -25,13 +24,19 @@ type BtcWallet = {
 
 interface BreezInterface {
   refreshBreez: () => void
+  retryExternalWalletRegistration: () => Promise<void>
   loading: boolean
+  externalWalletLoading: boolean
+  externalWalletError?: string
   btcWallet: BtcWallet
 }
 
 export const BreezContext = createContext<BreezInterface>({
   refreshBreez: () => {},
+  retryExternalWalletRegistration: async () => {},
   loading: false,
+  externalWalletLoading: false,
+  externalWalletError: undefined,
   btcWallet: {
     id: "",
     walletCurrency: "BTC",
@@ -63,9 +68,13 @@ export const BreezProvider = ({ children }: Props) => {
   })
   const initializingRef = useRef(false)
   const updatingBalanceRef = useRef(false)
+  const registeringExternalWalletRef = useRef(false)
   const [migrating, setMigrating] = useState(false)
   const [migrationModal, setMigrationModal] = useState(false)
   const [migrationErr, setMigrationErr] = useState<string | undefined>()
+  const [externalWalletLoading, setExternalWalletLoading] = useState(false)
+  const [externalWalletError, setExternalWalletError] = useState<string | undefined>()
+  const [breezReady, setBreezReady] = useState(false)
 
   const onMigrate = async () => {
     setMigrating(true)
@@ -108,6 +117,7 @@ export const BreezProvider = ({ children }: Props) => {
           balance: 0,
           isExternal: true,
         })
+        setExternalWalletError(undefined)
       }
     }
   }, [persistentState.isAdvanceMode])
@@ -139,6 +149,11 @@ export const BreezProvider = ({ children }: Props) => {
       variables: { input: { lnurlp } },
     })
     console.log("Update External Wallet Response: ", externalWalletRes)
+    const errors = externalWalletRes.data?.updateExternalWallet.errors
+    if (errors?.length) {
+      throw new Error(errors.map((error) => error.message).join(", "))
+    }
+
     const walletId = externalWalletRes.data?.updateExternalWallet.walletId
     if (walletId) {
       setBtcWallet((prev) => ({
@@ -146,18 +161,28 @@ export const BreezProvider = ({ children }: Props) => {
         id: walletId,
       }))
     }
+
+    return walletId
   }
 
   const ensureLightningAddress = async () => {
     const username = meData?.me?.username
+    if (registeringExternalWalletRef.current || btcWallet.id) return
     if (!username) return
+
+    registeringExternalWalletRef.current = true
+    setExternalWalletLoading(true)
+    setExternalWalletError(undefined)
 
     try {
       const existing = await getLightningAddress()
       console.log("BREEZ LIGHTNING ADDRESS: ", existing)
 
       if (existing) {
-        updateExternalWalletLnurlp(existing.lnurl.bech32)
+        const walletId = await updateExternalWalletLnurlp(existing.lnurl.bech32)
+        if (!walletId) {
+          throw new Error("External wallet registration returned no wallet id")
+        }
         return
       }
 
@@ -170,12 +195,33 @@ export const BreezProvider = ({ children }: Props) => {
       console.log("BREEZ LIGHTNING ADDRESS RES: ", res)
 
       if (res) {
-        updateExternalWalletLnurlp(res.lnurl.bech32)
+        const walletId = await updateExternalWalletLnurlp(res.lnurl.bech32)
+        if (!walletId) {
+          throw new Error("External wallet registration returned no wallet id")
+        }
+        return
       }
+
+      throw new Error("Breez lightning address registration returned no address")
     } catch (err) {
-      console.warn("Failed to register Lightning address:", err)
+      const message = err instanceof Error ? err.message : String(err)
+      setExternalWalletError(message)
+      console.warn("Failed to register Lightning address:", message)
+    } finally {
+      setExternalWalletLoading(false)
+      registeringExternalWalletRef.current = false
     }
   }
+
+  useEffect(() => {
+    if (Platform.OS === "ios" && Number(Platform.Version) < 13) return
+    if (!persistentState.isAdvanceMode) return
+    if (!breezReady) return
+    if (!meData?.me?.username) return
+    if (btcWallet.id) return
+
+    ensureLightningAddress()
+  }, [persistentState.isAdvanceMode, breezReady, meData?.me?.username, btcWallet.id])
 
   const getBreezInfo = async () => {
     if (initializingRef.current) return
@@ -183,6 +229,7 @@ export const BreezProvider = ({ children }: Props) => {
     try {
       setLoading(true)
       await initializeBreezSDK()
+      setBreezReady(true)
       await updateBalance()
       setLoading(false)
 
@@ -208,7 +255,16 @@ export const BreezProvider = ({ children }: Props) => {
   }
 
   return (
-    <BreezContext.Provider value={{ btcWallet, loading, refreshBreez }}>
+    <BreezContext.Provider
+      value={{
+        btcWallet,
+        loading,
+        externalWalletLoading,
+        externalWalletError,
+        refreshBreez,
+        retryExternalWalletRegistration: ensureLightningAddress,
+      }}
+    >
       {children}
       <SparkMigrationModal
         isVisible={migrationModal}
