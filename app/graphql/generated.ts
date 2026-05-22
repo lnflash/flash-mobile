@@ -2404,7 +2404,7 @@ export type AccountDefaultWalletQueryVariables = Exact<{
 }>;
 
 
-export type AccountDefaultWalletQuery = { readonly __typename: 'Query', readonly accountDefaultWallet: { readonly __typename: 'PublicWallet', readonly id: string } };
+export type AccountDefaultWalletQuery = { readonly __typename: 'Query', readonly accountDefaultWallet: { readonly __typename: 'PublicWallet', readonly id: string, readonly walletCurrency: WalletCurrency } };
 
 export type SendBitcoinDetailsScreenQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4426,6 +4426,7 @@ export const AccountDefaultWalletDocument = gql`
     query accountDefaultWallet($username: Username!) {
   accountDefaultWallet(username: $username) {
     id
+    walletCurrency
   }
 }
     `;

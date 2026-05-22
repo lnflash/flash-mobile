@@ -168,6 +168,7 @@ gql`
   query accountDefaultWallet($username: Username!) {
     accountDefaultWallet(username: $username) {
       id
+      walletCurrency
     }
   }
 

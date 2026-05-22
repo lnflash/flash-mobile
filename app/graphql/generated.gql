@@ -903,6 +903,7 @@ query SupportedBanks {
 query accountDefaultWallet($username: Username!) {
   accountDefaultWallet(username: $username) {
     id
+    walletCurrency
     __typename
   }
 }
