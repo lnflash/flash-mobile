@@ -1,5 +1,11 @@
 import React, { useState, useRef, useCallback } from "react"
-import { View, ActivityIndicator, Linking, Platform, TouchableOpacity } from "react-native"
+import {
+  View,
+  ActivityIndicator,
+  Linking,
+  Platform,
+  TouchableOpacity,
+} from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -220,11 +226,7 @@ const BridgeKycWebView: React.FC<Props> = ({ navigation, route }) => {
             // During ToS step, open terms/privacy links in external browser
             if (currentStep === "tos" && request.url !== tosLink) {
               const url = request.url.toLowerCase()
-              if (
-                url.includes("terms") ||
-                url.includes("privacy") ||
-                url.includes("policy")
-              ) {
+              if (url.includes("www.bridge.xyz/legal")) {
                 Linking.openURL(request.url)
                 return false
               }

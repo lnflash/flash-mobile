@@ -81,6 +81,22 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
+mutation BridgeInitiateKyc($input: BridgeInitiateKycInput!) {
+  bridgeInitiateKyc(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    kycLink {
+      kycLink
+      tosLink
+      __typename
+    }
+    __typename
+  }
+}
+
 mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
   idDocumentUploadUrlGenerate(input: $input) {
     errors {
@@ -101,7 +117,7 @@ mutation InitiateCashout($input: InitiateCashoutInput!) {
       message
       __typename
     }
-    journalId
+    id
     __typename
   }
 }
@@ -862,6 +878,25 @@ mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
   }
 }
 
+query BridgeKycStatus {
+  bridgeKycStatus
+}
+
+query BridgeVirtualAccount {
+  bridgeVirtualAccount {
+    accountNumber
+    accountNumberLast4
+    bankName
+    id
+    kycLink
+    message
+    pending
+    routingNumber
+    tosLink
+    __typename
+  }
+}
+
 query ExportCsvSetting($walletIds: [WalletId!]!) {
   me {
     id
@@ -893,11 +928,14 @@ query LatestAccountUpgradeRequest {
         __typename
       }
       bankAccount {
+        accountName
         accountNumber
         accountType
-        bankBranch
-        bankName
+        bank
+        branchCode
         currency
+        id
+        isDefault
         __typename
       }
       currentLevel
