@@ -6,7 +6,7 @@ const mockUseRealtimePriceQuery = jest.fn<
   Parameters<typeof useRealtimePriceQuery>
 >()
 import { usePriceConversion } from "@app/hooks/use-price-conversion"
-import { useRealtimePriceQuery } from "@app/graphql/generated"
+import { useRealtimePriceQuery, WalletCurrency } from "@app/graphql/generated"
 import {
   BtcMoneyAmount,
   DisplayAmount,
@@ -115,6 +115,19 @@ describe("usePriceConversion", () => {
       amountsArray.forEach((amount) => {
         expect(convertMoneyAmount(amount, amount.currency)).toBe(amount)
       })
+    })
+
+    it("should round non-BTC conversion results to integer minor units", () => {
+      const displayAmount: DisplayAmount = {
+        amount: 1515,
+        currency: DisplayCurrency,
+        currencyCode: "NGN",
+      }
+
+      const convertedAmount = convertMoneyAmount(displayAmount, WalletCurrency.Usd)
+
+      expect(convertedAmount.amount).toBe(Math.round(displayAmount.amount / 460.434879))
+      expect(Number.isInteger(convertedAmount.amount)).toBe(true)
     })
   })
 })

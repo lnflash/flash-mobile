@@ -114,106 +114,102 @@ export const createPaymentRequest = (
         const res = await receiveOnchainBreez()
         info = generateOnChainInfo(res.paymentRequest, [], [])
       }
-    } else {
+    } else if (pr.type === Invoice.Lightning) {
       // Handle USD payment requests
-      if (pr.type === Invoice.Lightning) {
-        if (pr.settlementAmount && pr.settlementAmount?.currency === WalletCurrency.Usd) {
-          console.log("Invoice create amount: ", pr.settlementAmount.amount)
-          const { data, errors } = await mutations.lnUsdInvoiceCreate({
-            variables: {
-              input: {
-                walletId: pr.receivingWalletDescriptor.id,
-                amount: pr.settlementAmount.amount,
-                memo: pr.memo,
-              },
+      if (pr.settlementAmount && pr.settlementAmount?.currency === WalletCurrency.Usd) {
+        const roundedAmount = Math.round(pr.settlementAmount.amount)
+        console.log("Invoice create amount: ", roundedAmount)
+        const { data, errors } = await mutations.lnUsdInvoiceCreate({
+          variables: {
+            input: {
+              walletId: pr.receivingWalletDescriptor.id,
+              amount: roundedAmount,
+              memo: pr.memo,
             },
-          })
-          info = generateLightningInfo(
-            data?.lnUsdInvoiceCreate.invoice,
-            data?.lnUsdInvoiceCreate?.errors,
-            errors,
-          )
-        } else if (
-          pr.settlementAmount === undefined ||
-          pr.settlementAmount.amount === 0
-        ) {
-          const { data, errors } = await mutations.lnUsdInvoiceCreate({
-            variables: {
-              input: {
-                walletId: pr.receivingWalletDescriptor.id,
-                amount: 0,
-                memo: pr.memo,
-              },
-            },
-          })
-
-          info = generateLightningInfo(
-            data?.lnUsdInvoiceCreate.invoice,
-            data?.lnUsdInvoiceCreate?.errors,
-            errors,
-          )
-        }
-      } else if (pr.type === Invoice.OnChain) {
-        const result = await mutations.onChainAddressCurrent({
-          variables: { input: { walletId: pr.receivingWalletDescriptor.id } },
-        })
-
-        info = generateOnChainInfo(
-          result.data?.onChainAddressCurrent.address || "",
-          result.data?.onChainAddressCurrent.errors,
-          result.errors,
-        )
-      } else if (pr.type === Invoice.PayCode && pr.username) {
-        const lnurl: string = await new Promise((resolve) => {
-          resolve(
-            bech32.encode(
-              "lnurl",
-              bech32.toWords(
-                Buffer.from(`${pr.posUrl}/.well-known/lnurlp/${pr.username}`, "utf8"),
-              ),
-              1500,
-            ),
-          )
-        })
-
-        await new Promise((r) => {
-          setTimeout(r, 50)
-        })
-
-        const webURL = `${pr.posUrl}/${pr.username}`
-        const qrCodeURL = webURL.toUpperCase() + "?lightning=" + lnurl.toUpperCase()
-
-        const getFullUriFn: GetFullUriFn = ({ uppercase, prefix }) =>
-          getPaymentRequestFullUri({
-            type: Invoice.PayCode,
-            input: qrCodeURL,
-            uppercase,
-            prefix,
-            wallet: pr.receivingWalletDescriptor.currency,
-            convertMoneyAmount: pr.convertMoneyAmount,
-          })
-
-        info = {
-          data: {
-            invoiceType: Invoice.PayCode,
-            username: pr.username,
-            getFullUriFn,
           },
-          applicationErrors: undefined,
-          gqlErrors: undefined,
-        }
-      } else if (pr.type === Invoice.PayCode && !pr.username) {
-        // Can't create paycode payment request for a user with no username set so info will be empty
-        return createPaymentRequest({
-          ...params,
-          state: PaymentRequestState.Created,
-          info: undefined,
         })
-      } else {
-        info = undefined
-        console.log(JSON.stringify({ pr }, null, 2))
-        throw new Error("Unknown Payment Request Type Encountered - Please Report")
+        info = generateLightningInfo(
+          data?.lnUsdInvoiceCreate.invoice,
+          data?.lnUsdInvoiceCreate?.errors,
+          errors,
+        )
+      } else if (pr.settlementAmount === undefined || pr.settlementAmount.amount === 0) {
+        const { data, errors } = await mutations.lnUsdInvoiceCreate({
+          variables: {
+            input: {
+              walletId: pr.receivingWalletDescriptor.id,
+              amount: 0,
+              memo: pr.memo,
+            },
+          },
+        })
+
+        info = generateLightningInfo(
+          data?.lnUsdInvoiceCreate.invoice,
+          data?.lnUsdInvoiceCreate?.errors,
+          errors,
+        )
       }
+    } else if (pr.type === Invoice.OnChain) {
+      const result = await mutations.onChainAddressCurrent({
+        variables: { input: { walletId: pr.receivingWalletDescriptor.id } },
+      })
+
+      info = generateOnChainInfo(
+        result.data?.onChainAddressCurrent.address || "",
+        result.data?.onChainAddressCurrent.errors,
+        result.errors,
+      )
+    } else if (pr.type === Invoice.PayCode && pr.username) {
+      const lnurl: string = await new Promise((resolve) => {
+        resolve(
+          bech32.encode(
+            "lnurl",
+            bech32.toWords(
+              Buffer.from(`${pr.posUrl}/.well-known/lnurlp/${pr.username}`, "utf8"),
+            ),
+            1500,
+          ),
+        )
+      })
+
+      await new Promise((r) => {
+        setTimeout(r, 50)
+      })
+
+      const webURL = `${pr.posUrl}/${pr.username}`
+      const qrCodeURL = webURL.toUpperCase() + "?lightning=" + lnurl.toUpperCase()
+
+      const getFullUriFn: GetFullUriFn = ({ uppercase, prefix }) =>
+        getPaymentRequestFullUri({
+          type: Invoice.PayCode,
+          input: qrCodeURL,
+          uppercase,
+          prefix,
+          wallet: pr.receivingWalletDescriptor.currency,
+          convertMoneyAmount: pr.convertMoneyAmount,
+        })
+
+      info = {
+        data: {
+          invoiceType: Invoice.PayCode,
+          username: pr.username,
+          getFullUriFn,
+        },
+        applicationErrors: undefined,
+        gqlErrors: undefined,
+      }
+    } else if (pr.type === Invoice.PayCode && !pr.username) {
+      // Can't create paycode payment request for a user with no username set so info will be empty
+      return createPaymentRequest({
+        ...params,
+        state: PaymentRequestState.Created,
+        info: undefined,
+      })
+    } else {
+      info = undefined
+      console.log(JSON.stringify({ pr }, null, 2))
+      throw new Error("Unknown Payment Request Type Encountered - Please Report")
     }
 
     let state: PaymentRequestStateType = PaymentRequestState.Created

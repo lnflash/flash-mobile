@@ -164,6 +164,28 @@ describe("payment request", () => {
     expect(prNew.info?.data?.getFullUriFn({})).toBe(usdAmountInvoice)
   })
 
+  it("rounds usd invoice creation amount before mutation", async () => {
+    mockLnUsdInvoiceCreate.mockClear()
+
+    const prcd = createPaymentRequestCreationData({
+      ...defaultParams,
+      receivingWalletDescriptor: usdWalletDescriptor,
+      unitOfAccountAmount: toUsdMoneyAmount(1.6),
+    })
+
+    const pr = createPaymentRequest({ creationData: prcd, mutations })
+    await pr.generateRequest()
+
+    expect(mockLnUsdInvoiceCreate).toHaveBeenCalledWith({
+      variables: {
+        input: expect.objectContaining({
+          walletId: usdWalletDescriptor.id,
+          amount: 2,
+        }),
+      },
+    })
+  })
+
   it("paycode/lnurl", async () => {
     const prcd = createPaymentRequestCreationData({
       ...defaultParams,

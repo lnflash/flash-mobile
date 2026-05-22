@@ -124,6 +124,39 @@ describe("intraledger payment details", () => {
         },
       })
     })
+
+    it("rounds usd send amount before mutation", async () => {
+      const fractionalUsdConvertMoneyAmount = ((amount, currency) => ({
+        amount: amount.amount === 0 ? 0 : 1.6,
+        currency,
+        currencyCode: currency,
+      })) as typeof convertMoneyAmountMock
+
+      const paymentDetails = createIntraledgerPaymentDetails({
+        ...usdSendingWalletParams,
+        convertMoneyAmount: fractionalUsdConvertMoneyAmount,
+      })
+      const sendPaymentMocks = createSendPaymentMocks()
+      if (!paymentDetails.canSendPayment) {
+        throw new Error("Cannot send payment")
+      }
+
+      try {
+        await paymentDetails.sendPaymentMutation(sendPaymentMocks)
+      } catch {
+        // do nothing as function is expected to throw since we are not mocking the send payment response
+      }
+
+      expect(sendPaymentMocks.intraLedgerUsdPaymentSend).toHaveBeenCalledWith({
+        variables: {
+          input: expect.objectContaining({
+            recipientWalletId: defaultParams.recipientWalletId,
+            amount: 2,
+            walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
+          }),
+        },
+      })
+    })
   })
 
   it("cannot calculate fee or send payment with zero amount", () => {

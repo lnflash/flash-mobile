@@ -2,7 +2,7 @@ import React from "react"
 import moment from "moment"
 import styled from "styled-components/native"
 import { Text, useTheme } from "@rneui/themed"
-import { useHideBalanceQuery } from "@app/graphql/generated"
+import { useHideBalanceQuery, WalletCurrency } from "@app/graphql/generated"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { PaymentType, PaymentStatus } from "@breeztech/breez-sdk-spark-react-native"
@@ -20,7 +20,7 @@ import ArrowDown from "@app/assets/icons/arrow-down.svg"
 import Icon from "react-native-vector-icons/Ionicons"
 
 // utils
-import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
 
 // types
 import {
@@ -44,7 +44,8 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { colors } = useTheme().theme
 
-  const { formatMoneyAmount, moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
+  const { formatCurrency, formatMoneyAmount, moneyAmountToDisplayCurrencyString } =
+    useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
 
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
@@ -77,21 +78,29 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
     })
     secondaryAmount = formatMoneyAmount({ moneyAmount })
   } else {
-    // Ibex transaction - always USD
-    const amount = tx.transaction.settlementAmount * 100
-    const moneyAmount = toUsdMoneyAmount(amount ?? NaN)
-    primaryAmount = moneyAmountToDisplayCurrencyString({
-      moneyAmount,
+    primaryAmount = formatCurrency({
+      amountInMajorUnits: tx.transaction.settlementDisplayAmount,
+      currency: tx.transaction.settlementDisplayCurrency,
     })
+
+    const moneyAmount = toWalletAmount({
+      amount: tx.transaction.settlementAmount,
+      currency: tx.transaction.settlementCurrency,
+    })
+
     if (convertMoneyAmount) {
       secondaryAmount = formatMoneyAmount({
-        moneyAmount: convertMoneyAmount(moneyAmount, "BTC"),
+        moneyAmount:
+          tx.transaction.settlementCurrency === WalletCurrency.Btc
+            ? moneyAmount
+            : convertMoneyAmount(moneyAmount, WalletCurrency.Btc),
       })
     }
   }
 
-  // Get currency label - Breez is BTC, Ibex is USD
-  const currencyLabel = isBreezTransaction(tx) ? "BTC" : "USD"
+  const currencyLabel = isBreezTransaction(tx)
+    ? WalletCurrency.Btc
+    : tx.transaction.settlementDisplayCurrency
 
   const onPress = () => {
     if (isIbexTransaction(tx)) {
