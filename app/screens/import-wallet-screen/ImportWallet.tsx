@@ -16,6 +16,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useCreateAccount } from "@app/hooks/useCreateAccount"
 import { Text, useTheme, useThemeMode } from "@rneui/themed"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useAppConfig } from "@app/hooks/use-app-config"
 
 // utils
 import { disconnectToSDK, initializeBreezSDK } from "@app/utils/breez-sdk"
@@ -31,6 +32,7 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
   const { mode } = useThemeMode()
   const { LL } = useI18nContext()
   const { updateState } = usePersistentStateContext()
+  const { appConfig } = useAppConfig()
   const { createDeviceAccountAndLogin } = useCreateAccount()
 
   const inputRef = useRef<TextInput[]>([])

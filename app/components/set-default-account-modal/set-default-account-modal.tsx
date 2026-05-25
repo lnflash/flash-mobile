@@ -10,7 +10,10 @@ import { useBreez } from "@app/hooks"
 import { useApolloClient } from "@apollo/client"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
-import { useSetDefaultAccountModalQuery } from "@app/graphql/generated"
+import {
+  useAccountUpdateDefaultWalletIdMutation,
+  useSetDefaultAccountModalQuery,
+} from "@app/graphql/generated"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // utils
@@ -34,16 +37,22 @@ export const SetDefaultAccountModal = ({ isVisible, toggleModal }: Props) => {
   const { LL } = useI18nContext()
   const { btcWallet } = useBreez()
   const { updateState } = usePersistentStateContext()
+  const [updateDefaultWalletId] = useAccountUpdateDefaultWalletIdMutation()
 
   const { data } = useSetDefaultAccountModalQuery({
     fetchPolicy: "cache-only",
   })
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
-  const onPressHandler = (currency: string) => {
+  const onPressHandler = async (currency: string) => {
     let defaultWallet = usdWallet
     if (currency === "BTC") {
       defaultWallet = btcWallet
+    }
+    if (defaultWallet?.id) {
+      await updateDefaultWalletId({
+        variables: { input: { walletId: defaultWallet.id } },
+      })
     }
     updateState((state: any) => {
       if (state)

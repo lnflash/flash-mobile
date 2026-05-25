@@ -1,6 +1,6 @@
 import { Wallet, WalletCurrency } from "@app/graphql/generated"
 
-type WalletBalance = Pick<Wallet, "id" | "walletCurrency" | "balance">
+type WalletBalance = Pick<Wallet, "id" | "walletCurrency" | "balance" | "isExternal">
 
 export const getBtcWallet = (wallets: readonly WalletBalance[] | undefined) => {
   if (wallets === undefined || wallets.length === 0) {
@@ -27,4 +27,12 @@ export const getDefaultWallet = (
   }
 
   return wallets.find((wallet) => wallet.id === defaultWalletId)
+}
+
+export const getInternalWallets = (wallets: readonly WalletBalance[] | undefined) => {
+  if (wallets === undefined || wallets.length === 0) {
+    return undefined
+  }
+
+  return wallets.filter((wallet) => !wallet.isExternal)
 }

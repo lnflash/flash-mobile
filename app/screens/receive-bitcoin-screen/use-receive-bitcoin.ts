@@ -61,6 +61,7 @@ gql`
           id
           balance
           walletCurrency
+          isExternal
         }
         defaultWalletId
       }
