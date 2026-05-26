@@ -3,7 +3,7 @@ import { TouchableOpacity, View } from "react-native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useLatestAccountUpgradeRequestQuery } from "@app/graphql/generated"
+import { useBankAccountsQuery } from "@app/graphql/generated"
 
 const CashoutWithdrawTo: React.FC = () => {
   const styles = useStyles()
@@ -11,12 +11,10 @@ const CashoutWithdrawTo: React.FC = () => {
   const { LL } = useI18nContext()
   const [expanded, setExpanded] = useState(false)
 
-  const { data } = useLatestAccountUpgradeRequestQuery({
-    fetchPolicy: "cache-first",
-  })
+  const { data } = useBankAccountsQuery({ fetchPolicy: "cache-only" })
 
-  const bankAccount = data?.latestAccountUpgradeRequest.upgradeRequest?.bankAccount
-  console.log(">>>>>>>>>>>?????????", data)
+  const bankAccount =
+    data?.me?.bankAccounts.find((el) => el.isDefault) || data?.me?.bankAccounts[0]
 
   if (!bankAccount) return null
 

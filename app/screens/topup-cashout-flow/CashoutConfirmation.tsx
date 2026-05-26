@@ -7,7 +7,11 @@ import moment from "moment"
 // components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
-import { CashoutCard, CashoutFromWallet, CashoutWithdrawTo } from "@app/components/topup-cashout-flow"
+import {
+  CashoutCard,
+  CashoutFromWallet,
+  CashoutWithdrawTo,
+} from "@app/components/topup-cashout-flow"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -57,7 +61,7 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
   const onConfirm = async () => {
     toggleActivityIndicator(true)
     const res = await initiateCashout({ variables: { input: { walletId, offerId } } })
-    if (res.data?.initiateCashout.journalId) {
+    if (res.data?.initiateCashout.id) {
       navigation.navigate("CashoutSuccess")
     } else {
       setErrorMsg(res.data?.initiateCashout.errors[0].message)
@@ -84,15 +88,19 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
           {LL.Cashout.valid({ time: moment(expiresAt).fromNow(true) })}
         </Text>
         <CashoutFromWallet usdBalance={usdBalance} />
-        <CashoutCard
-          title={LL.Cashout.exchangeRate()}
-          detail={`$1/J$${(exchangeRate / 100).toFixed(2)}`}
-        />
+        {exchangeRate && (
+          <CashoutCard
+            title={LL.Cashout.exchangeRate()}
+            detail={`$1/J$${(exchangeRate / 100).toFixed(2)}`}
+          />
+        )}
         <CashoutCard title={LL.Cashout.sendAmount()} detail={formattedSendAmount} />
-        <CashoutCard
-          title={LL.Cashout.receiveAmount()}
-          detail={`${formattedReceiveUsdAmount} (J$${(receiveJmd / 100).toFixed(2)})`}
-        />
+        {receiveJmd && (
+          <CashoutCard
+            title={LL.Cashout.receiveAmount()}
+            detail={`${formattedReceiveUsdAmount} (J$${(receiveJmd / 100).toFixed(2)})`}
+          />
+        )}
         <CashoutCard title={LL.Cashout.fee()} detail={formattedFeeAmount} />
         <CashoutWithdrawTo />
         {!!errorMsg && (
