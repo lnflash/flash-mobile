@@ -10,7 +10,11 @@ import { AmountInput } from "@app/components/amount-input"
 import { CashoutFromWallet, CashoutPercentage } from "@app/components/topup-cashout-flow"
 
 // hooks
-import { useCashoutScreenQuery, useRequestCashoutMutation } from "@app/graphql/generated"
+import {
+  useBankAccountsQuery,
+  useCashoutScreenQuery,
+  useRequestCashoutMutation,
+} from "@app/graphql/generated"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useActivityIndicator, useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
@@ -43,6 +47,10 @@ const CashoutDetails = ({ navigation }: Props) => {
 
   const [requestCashout] = useRequestCashoutMutation()
 
+  const { data: bankAccountsData, loading } = useBankAccountsQuery({
+    fetchPolicy: "network-only",
+  })
+
   const { data } = useCashoutScreenQuery({
     fetchPolicy: "cache-first",
     returnPartialData: true,
@@ -56,14 +64,24 @@ const CashoutDetails = ({ navigation }: Props) => {
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
   const settlementSendAmount = convertMoneyAmount(moneyAmount, "USD")
   const isValidAmount =
-    settlementSendAmount.amount > 0 && settlementSendAmount.amount <= usdBalance.amount
+    settlementSendAmount.amount > 0 &&
+    settlementSendAmount.amount <= usdBalance.amount &&
+    !loading
 
   const onNext = async () => {
-    if (usdWallet) {
+    const defaultBankAccount =
+      bankAccountsData?.me?.bankAccounts.find((el) => el.isDefault) ||
+      bankAccountsData?.me?.bankAccounts[0]
+
+    if (usdWallet && defaultBankAccount?.id) {
       toggleActivityIndicator(true)
       const res = await requestCashout({
         variables: {
-          input: { walletId: usdWallet.id, amount: settlementSendAmount.amount },
+          input: {
+            bankAccountId: defaultBankAccount.id,
+            walletId: usdWallet.id,
+            amount: settlementSendAmount.amount,
+          },
         },
       })
       console.log("Response: ", res.data?.requestCashout)
