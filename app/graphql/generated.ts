@@ -302,16 +302,15 @@ export type Bank = {
 
 export type BankAccount = {
   readonly __typename: 'BankAccount';
-  readonly accountName: Scalars['String']['output'];
+  readonly accountName?: Maybe<Scalars['String']['output']>;
   readonly accountNumber: Scalars['String']['output'];
   readonly accountType: Scalars['String']['output'];
-  /** Name of the bank institution */
-  readonly bank: Scalars['String']['output'];
-  readonly branchCode: Scalars['String']['output'];
+  readonly bankBranch: Scalars['String']['output'];
+  readonly bankName: Scalars['String']['output'];
   /** Account currency (e.g. JMD, USD) */
   readonly currency: Scalars['String']['output'];
   /** ERPNext bank account identifier */
-  readonly id: Scalars['ID']['output'];
+  readonly id?: Maybe<Scalars['ID']['output']>;
   readonly isDefault: Scalars['Boolean']['output'];
 };
 
@@ -390,6 +389,7 @@ export type BridgeWithdrawal = {
   readonly amount: Scalars['String']['output'];
   readonly createdAt: Scalars['String']['output'];
   readonly currency: Scalars['String']['output'];
+  readonly failureReason?: Maybe<Scalars['String']['output']>;
   readonly id: Scalars['ID']['output'];
   readonly status: Scalars['String']['output'];
 };
@@ -2587,7 +2587,7 @@ export type NpubByUsernameQuery = { readonly __typename: 'Query', readonly npubB
 export type LatestAccountUpgradeRequestQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type LatestAccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly latestAccountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string } | null> | null, readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly currentLevel: AccountLevel, readonly fullName: string, readonly terminalsRequested: number, readonly status: string, readonly requestedLevel: AccountLevel, readonly phoneNumber: string, readonly email?: string | null, readonly idDocument: boolean, readonly address: { readonly __typename: 'Address', readonly city: string, readonly country: string, readonly line1: string, readonly line2?: string | null, readonly postalCode?: string | null, readonly state: string, readonly title: string }, readonly bankAccount?: { readonly __typename: 'BankAccount', readonly accountName: string, readonly accountNumber: string, readonly accountType: string, readonly bank: string, readonly branchCode: string, readonly currency: string, readonly id: string, readonly isDefault: boolean } | null } | null } };
+export type LatestAccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly latestAccountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string } | null> | null, readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly currentLevel: AccountLevel, readonly fullName: string, readonly terminalsRequested: number, readonly status: string, readonly requestedLevel: AccountLevel, readonly phoneNumber: string, readonly email?: string | null, readonly idDocument: boolean, readonly address: { readonly __typename: 'Address', readonly city: string, readonly country: string, readonly line1: string, readonly line2?: string | null, readonly postalCode?: string | null, readonly state: string, readonly title: string }, readonly bankAccount?: { readonly __typename: 'BankAccount', readonly accountName?: string | null, readonly accountNumber: string, readonly accountType: string, readonly bankBranch: string, readonly bankName: string, readonly currency: string, readonly id?: string | null, readonly isDefault: boolean } | null } | null } };
 
 export type SupportedBanksQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2603,6 +2603,11 @@ export type BridgeVirtualAccountQueryVariables = Exact<{ [key: string]: never; }
 
 
 export type BridgeVirtualAccountQuery = { readonly __typename: 'Query', readonly bridgeVirtualAccount?: { readonly __typename: 'BridgeVirtualAccount', readonly accountNumber?: string | null, readonly accountNumberLast4?: string | null, readonly bankName?: string | null, readonly id?: string | null, readonly kycLink?: string | null, readonly message?: string | null, readonly pending?: boolean | null, readonly routingNumber?: string | null, readonly tosLink?: string | null } | null };
+
+export type BankAccountsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type BankAccountsQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly bankAccounts: ReadonlyArray<{ readonly __typename: 'BankAccount', readonly accountName?: string | null, readonly accountNumber: string, readonly accountType: string, readonly bankBranch: string, readonly bankName: string, readonly currency: string, readonly id?: string | null, readonly isDefault: boolean }> } | null };
 
 export type RealtimePriceWsSubscriptionVariables = Exact<{
   currency: Scalars['DisplayCurrency']['input'];
@@ -5009,8 +5014,8 @@ export const LatestAccountUpgradeRequestDocument = gql`
         accountName
         accountNumber
         accountType
-        bank
-        branchCode
+        bankBranch
+        bankName
         currency
         id
         isDefault
@@ -5162,6 +5167,50 @@ export function useBridgeVirtualAccountLazyQuery(baseOptions?: Apollo.LazyQueryH
 export type BridgeVirtualAccountQueryHookResult = ReturnType<typeof useBridgeVirtualAccountQuery>;
 export type BridgeVirtualAccountLazyQueryHookResult = ReturnType<typeof useBridgeVirtualAccountLazyQuery>;
 export type BridgeVirtualAccountQueryResult = Apollo.QueryResult<BridgeVirtualAccountQuery, BridgeVirtualAccountQueryVariables>;
+export const BankAccountsDocument = gql`
+    query BankAccounts {
+  me {
+    id
+    bankAccounts {
+      accountName
+      accountNumber
+      accountType
+      bankBranch
+      bankName
+      currency
+      id
+      isDefault
+    }
+  }
+}
+    `;
+
+/**
+ * __useBankAccountsQuery__
+ *
+ * To run a query within a React component, call `useBankAccountsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBankAccountsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBankAccountsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useBankAccountsQuery(baseOptions?: Apollo.QueryHookOptions<BankAccountsQuery, BankAccountsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<BankAccountsQuery, BankAccountsQueryVariables>(BankAccountsDocument, options);
+      }
+export function useBankAccountsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<BankAccountsQuery, BankAccountsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<BankAccountsQuery, BankAccountsQueryVariables>(BankAccountsDocument, options);
+        }
+export type BankAccountsQueryHookResult = ReturnType<typeof useBankAccountsQuery>;
+export type BankAccountsLazyQueryHookResult = ReturnType<typeof useBankAccountsLazyQuery>;
+export type BankAccountsQueryResult = Apollo.QueryResult<BankAccountsQuery, BankAccountsQueryVariables>;
 export const RealtimePriceWsDocument = gql`
     subscription realtimePriceWs($currency: DisplayCurrency!) {
   realtimePrice(input: {currency: $currency}) {

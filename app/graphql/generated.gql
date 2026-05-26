@@ -878,6 +878,24 @@ mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
   }
 }
 
+query BankAccounts {
+  me {
+    id
+    bankAccounts {
+      accountName
+      accountNumber
+      accountType
+      bankBranch
+      bankName
+      currency
+      id
+      isDefault
+      __typename
+    }
+    __typename
+  }
+}
+
 query BridgeKycStatus {
   bridgeKycStatus
 }
@@ -931,8 +949,8 @@ query LatestAccountUpgradeRequest {
         accountName
         accountNumber
         accountType
-        bank
-        branchCode
+        bankBranch
+        bankName
         currency
         id
         isDefault

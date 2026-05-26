@@ -336,4 +336,20 @@ gql`
       tosLink
     }
   }
+
+  query BankAccounts {
+    me {
+      id
+      bankAccounts {
+        accountName
+        accountNumber
+        accountType
+        bankBranch
+        bankName
+        currency
+        id
+        isDefault
+      }
+    }
+  }
 `
