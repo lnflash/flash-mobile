@@ -21,12 +21,17 @@ import {
   useBridgeKycStatusQuery,
 } from "@app/graphql/generated"
 import { useActivityIndicator } from "@app/hooks"
+import { useLevel } from "@app/graphql/level-context"
+
+// utils
+import { AccountLevel } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "TopupCashout">
 
 const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
+  const { currentLevel } = useLevel()
   const { colors } = useTheme().theme
   const { toggleActivityIndicator } = useActivityIndicator()
 
@@ -60,7 +65,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         description: LL.TopUpScreen.debitCreditCardDesc(),
         onPress: () => {
           setTopupModalVisible(false)
-          navigation.navigate("TopupDetails", { paymentType: "card" })
+          checkAccountLevel("card")
         },
       },
       {
@@ -69,7 +74,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         description: LL.TopUpScreen.bankTransferDesc(),
         onPress: () => {
           setTopupModalVisible(false)
-          navigation.navigate("TopupDetails", { paymentType: "bankTransfer" })
+          checkAccountLevel("bankTransfer")
         },
       },
       {
@@ -94,7 +99,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         description: LL.TransferScreen.jmdBankAccountDesc(),
         onPress: () => {
           setSettleModalVisible(false)
-          navigation.navigate("CashoutDetails")
+          checkAccountLevel("cashout")
         },
       },
       {
@@ -110,6 +115,25 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     ],
     [LL, navigation, kycStatusData?.bridgeKycStatus],
   )
+
+  const checkAccountLevel = (type: "card" | "bankTransfer" | "cashout") => {
+    if (currentLevel === AccountLevel.Zero || currentLevel === AccountLevel.One) {
+      Alert.alert(
+        "Account upgrade required",
+        "You should upgrade your account to use this feature",
+        [
+          { text: "Continue", onPress: () => navigation.navigate("AccountType") },
+          { text: "Cancel", style: "cancel" },
+        ],
+      )
+    } else {
+      if (type === "cashout") {
+        navigation.navigate("CashoutDetails")
+      } else {
+        navigation.navigate("TopupDetails", { paymentType: type })
+      }
+    }
+  }
 
   const checkBridgeKyc = (type: "topup" | "settle") => {
     if (kycStatusData?.bridgeKycStatus === "pending") {
@@ -141,13 +165,11 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
       })
       toggleActivityIndicator(false)
       console.log("BRIDGE INITIATE KYC RESPONSE: ", res)
-
       const errors = res.data?.bridgeInitiateKyc?.errors
       if (errors && errors.length > 0) {
         Alert.alert("Error", errors[0].message)
         return
       }
-
       const kycLink = res.data?.bridgeInitiateKyc?.kycLink
       if (kycLink?.tosLink && kycLink?.kycLink) {
         navigation.navigate("BridgeKycWebView", {
