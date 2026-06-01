@@ -211,6 +211,16 @@ gql`
     }
   }
 
+  mutation UpdateExternalWallet($input: UpdateExternalWalletInput!) {
+    updateExternalWallet(input: $input) {
+      errors {
+        code
+        message
+      }
+      walletId
+    }
+  }
+
   mutation BridgeInitiateKyc($input: BridgeInitiateKycInput!) {
     bridgeInitiateKyc(input: $input) {
       errors {

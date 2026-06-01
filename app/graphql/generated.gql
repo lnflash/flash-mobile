@@ -3,6 +3,7 @@ fragment MyWallets on ConsumerAccount {
     id
     balance
     walletCurrency
+    isExternal
     __typename
   }
   __typename
@@ -165,6 +166,18 @@ mutation RequestCashout($input: RequestCashoutInput!) {
       walletId
       __typename
     }
+    __typename
+  }
+}
+
+mutation UpdateExternalWallet($input: UpdateExternalWalletInput!) {
+  updateExternalWallet(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    walletId
     __typename
   }
 }
@@ -980,6 +993,7 @@ query SupportedBanks {
 query accountDefaultWallet($username: Username!) {
   accountDefaultWallet(username: $username) {
     id
+    walletCurrency
     __typename
   }
 }
@@ -1033,6 +1047,7 @@ query accountScreen {
         id
         balance
         walletCurrency
+        isExternal
         __typename
       }
       __typename
@@ -1118,6 +1133,7 @@ query cashoutScreen {
         id
         balance
         walletCurrency
+        isExternal
         __typename
       }
       __typename
@@ -1153,6 +1169,7 @@ query conversionScreen {
         id
         balance
         walletCurrency
+        isExternal
         __typename
       }
       __typename
@@ -1224,6 +1241,7 @@ query homeAuthed {
         id
         balance
         walletCurrency
+        isExternal
         __typename
       }
       __typename
@@ -1384,6 +1402,7 @@ query paymentRequest {
         id
         balance
         walletCurrency
+        isExternal
         __typename
       }
       defaultWalletId
@@ -1457,6 +1476,7 @@ query scanningQRCodeScreen {
       id
       wallets {
         id
+        isExternal
         __typename
       }
       __typename
@@ -1479,6 +1499,7 @@ query sendBitcoinConfirmationScreen {
         id
         balance
         walletCurrency
+        isExternal
         __typename
       }
       __typename
@@ -1498,6 +1519,7 @@ query sendBitcoinDestination {
       id
       wallets {
         id
+        isExternal
         __typename
       }
       __typename
@@ -1525,6 +1547,7 @@ query sendBitcoinDetailsScreen {
         id
         walletCurrency
         balance
+        isExternal
         __typename
       }
       __typename
@@ -1583,6 +1606,7 @@ query setDefaultAccountModal {
         id
         balance
         walletCurrency
+        isExternal
         __typename
       }
       __typename
@@ -1601,6 +1625,7 @@ query setDefaultWalletScreen {
         id
         balance
         walletCurrency
+        isExternal
         __typename
       }
       __typename
@@ -1622,6 +1647,7 @@ query settingsScreen {
         id
         balance
         walletCurrency
+        isExternal
         __typename
       }
       __typename
@@ -1734,6 +1760,7 @@ query walletOverviewScreen {
         id
         balance
         walletCurrency
+        isExternal
         __typename
       }
       __typename
@@ -1751,6 +1778,7 @@ query wallets {
         walletCurrency
         id
         lnurlp
+        isExternal
         __typename
       }
       __typename
@@ -1769,6 +1797,7 @@ query warningSecureAccount {
         id
         balance
         walletCurrency
+        isExternal
         __typename
       }
       __typename

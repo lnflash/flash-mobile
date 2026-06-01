@@ -13,11 +13,13 @@ import { DestinationInformation } from "./destination-information"
 
 // hooks
 import {
+  AccountDefaultWalletLazyQueryHookResult,
   useAccountDefaultWalletLazyQuery,
   useLnUsdInvoiceAmountMutation,
   useNpubByUsernameLazyQuery,
   useRealtimePriceQuery,
   useSendBitcoinDestinationQuery,
+  WalletCurrency,
 } from "@app/graphql/generated"
 import { useActivityIndicator, useAppConfig } from "@app/hooks"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -25,16 +27,20 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 // types
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { PaymentType } from "@galoymoney/client"
+import { Network as NetworkGaloyClient, parsePaymentDestination } from "@flash/client"
 import {
   DestinationDirection,
   InvalidDestinationReason,
+  ParseDestinationResult,
 } from "./payment-destination/index.types"
 
 // utils
 import { LNURL_DOMAINS } from "@app/config"
 import { toUsdMoneyAmount } from "@app/types/amounts"
 import { parseDestination } from "./payment-destination"
+import { createLnurlPaymentDestination } from "./payment-destination/lnurl"
 import { logParseDestinationResult } from "@app/utils/analytics"
+import { requestPayServiceParams } from "lnurl-pay"
 
 // store
 import {
@@ -184,13 +190,20 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
           unparsedDestination: rawInput,
         },
       })
-      const destination = await parseDestination({
-        rawInput,
-        myWalletIds: wallets.map((wallet) => wallet.id),
-        bitcoinNetwork,
-        lnurlDomains: LNURL_DOMAINS,
-        accountDefaultWalletQuery,
-      })
+      const destination =
+        (await maybeResolveManualUsernameToLnurl({
+          rawInput,
+          myWalletIds: wallets.map((wallet) => wallet.id),
+          lnAddressHostname: lnDomain,
+          accountDefaultWalletQuery,
+        })) ??
+        (await parseDestination({
+          rawInput,
+          myWalletIds: wallets.map((wallet) => wallet.id),
+          bitcoinNetwork,
+          lnurlDomains: LNURL_DOMAINS,
+          accountDefaultWalletQuery,
+        }))
 
       if (destination.valid === false) {
         if (destination.invalidReason === InvalidDestinationReason.SelfPayment) {
@@ -270,6 +283,7 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
     wallets,
     destinationState.destinationState,
     accountDefaultWalletQuery,
+    lnDomain,
     dispatchDestinationStateAction,
     navigation,
   ])
@@ -322,6 +336,72 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
 }
 
 export default SendBitcoinDestinationScreen
+
+const maybeResolveManualUsernameToLnurl = async ({
+  rawInput,
+  myWalletIds,
+  lnAddressHostname,
+  accountDefaultWalletQuery,
+}: {
+  rawInput: string
+  myWalletIds: string[]
+  lnAddressHostname: string
+  accountDefaultWalletQuery: AccountDefaultWalletLazyQueryHookResult[0]
+}): Promise<ParseDestinationResult | null> => {
+  const parsedDestination = parsePaymentDestination({
+    destination: rawInput,
+    network: "mainnet" as NetworkGaloyClient,
+    lnAddressDomains: LNURL_DOMAINS,
+  })
+
+  if (
+    parsedDestination.paymentType !== PaymentType.Intraledger ||
+    !parsedDestination.valid
+  ) {
+    return null
+  }
+
+  const { handle } = parsedDestination
+  const { data } = await accountDefaultWalletQuery({ variables: { username: handle } })
+  const wallet = data?.accountDefaultWallet
+
+  if (!wallet || wallet.walletCurrency !== WalletCurrency.Btc) {
+    return null
+  }
+
+  if (myWalletIds.includes(wallet.id)) {
+    return {
+      valid: false,
+      invalidReason: InvalidDestinationReason.SelfPayment,
+      invalidPaymentDestination: parsedDestination,
+    } as const
+  }
+
+  const lnurl = `${handle}@${lnAddressHostname}`
+
+  try {
+    const lnurlParams = await requestPayServiceParams({
+      lnUrlOrAddress: lnurl,
+    })
+
+    return createLnurlPaymentDestination({
+      paymentType: PaymentType.Lnurl,
+      valid: true,
+      lnurl,
+      lnurlParams,
+    })
+  } catch {
+    return {
+      valid: false,
+      invalidReason: InvalidDestinationReason.LnurlError,
+      invalidPaymentDestination: {
+        paymentType: PaymentType.Lnurl,
+        valid: false,
+        invalidReason: "unknown",
+      },
+    } as const
+  }
+}
 
 const usestyles = makeStyles(({ colors }) => ({
   screenStyle: {

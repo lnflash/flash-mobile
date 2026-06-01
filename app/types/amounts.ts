@@ -37,8 +37,8 @@ export const ZeroBtcMoneyAmount: BtcMoneyAmount = {
   currencyCode: "BTC",
 }
 
-export const toBtcMoneyAmount = (amount: number | undefined): BtcMoneyAmount => {
-  if (amount === undefined) {
+export const toBtcMoneyAmount = (amount: number | undefined | null): BtcMoneyAmount => {
+  if (amount === undefined || amount === null) {
     return {
       amount: NaN,
       currency: WalletCurrency.Btc,
@@ -52,8 +52,8 @@ export const toBtcMoneyAmount = (amount: number | undefined): BtcMoneyAmount => 
   }
 }
 
-export const toUsdMoneyAmount = (amount: number | undefined): UsdMoneyAmount => {
-  if (amount === undefined) {
+export const toUsdMoneyAmount = (amount: number | undefined | null): UsdMoneyAmount => {
+  if (amount === undefined || amount === null) {
     return {
       amount: NaN,
       currency: WalletCurrency.Usd,

@@ -90,6 +90,7 @@ gql`
           walletCurrency
           id
           lnurlp
+          isExternal
         }
       }
     }

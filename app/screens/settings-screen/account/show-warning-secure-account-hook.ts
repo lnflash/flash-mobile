@@ -22,6 +22,7 @@ gql`
           id
           balance
           walletCurrency
+          isExternal
         }
       }
     }

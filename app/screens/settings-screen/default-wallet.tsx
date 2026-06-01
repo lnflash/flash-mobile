@@ -1,5 +1,8 @@
 import { gql } from "@apollo/client"
-import { useSetDefaultWalletScreenQuery } from "@app/graphql/generated"
+import {
+  useAccountUpdateDefaultWalletIdMutation,
+  useSetDefaultWalletScreenQuery,
+} from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { Text, makeStyles } from "@rneui/themed"
@@ -36,6 +39,7 @@ gql`
           id
           balance
           walletCurrency
+          isExternal
         }
       }
     }
@@ -46,7 +50,13 @@ export const DefaultWalletScreen: React.FC = () => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const isAuthed = useIsAuthed()
-  const { btcWallet } = useBreez()
+  const {
+    btcWallet,
+    loading: breezLoading,
+    externalWalletLoading,
+    externalWalletError,
+    retryExternalWalletRegistration,
+  } = useBreez()
 
   const { persistentState, updateState } = usePersistentStateContext()
 
@@ -54,6 +64,7 @@ export const DefaultWalletScreen: React.FC = () => {
     fetchPolicy: "cache-first",
     skip: !isAuthed,
   })
+  const [updateDefaultWalletId] = useAccountUpdateDefaultWalletIdMutation()
 
   const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
 
@@ -62,8 +73,20 @@ export const DefaultWalletScreen: React.FC = () => {
 
   const defaultWalletId = persistentState.defaultWallet?.id || usdWalletId
 
-  if (!usdWalletId || !btcWalletId) {
-    return <Text>{"missing walletIds"}</Text>
+  if (!usdWalletId) {
+    return <Text>{"Loading default account..."}</Text>
+  }
+
+  if (!btcWalletId) {
+    if (externalWalletError) {
+      return <Text onPress={retryExternalWalletRegistration}>{externalWalletError}</Text>
+    }
+
+    if (breezLoading || externalWalletLoading) {
+      return <Text>{"Loading BTC account..."}</Text>
+    }
+
+    return <Text onPress={retryExternalWalletRegistration}>{"Tap to retry BTC account setup"}</Text>
   }
 
   const handleSetDefaultWallet = async (id: string) => {
@@ -71,6 +94,12 @@ export const DefaultWalletScreen: React.FC = () => {
 
     if (id === btcWalletId) {
       defaultWallet = btcWallet
+    }
+
+    if (defaultWallet.id) {
+      await updateDefaultWalletId({
+        variables: { input: { walletId: defaultWallet.id } },
+      })
     }
 
     updateState((state: any) => {
