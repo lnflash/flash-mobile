@@ -2063,15 +2063,15 @@ type RootTranslation = {
 		 */
 		backHome: string
 		/**
-		 * Virtual Bank Transfer
+		 * V​i​r​t​u​a​l​ ​B​a​n​k​ ​T​r​a​n​s​f​e​r
 		 */
 		virtualBankTransfer: string
 		/**
-		 * Bank Name
+		 * B​a​n​k​ ​N​a​m​e
 		 */
 		bankName: string
 		/**
-		 * Routing Number
+		 * R​o​u​t​i​n​g​ ​N​u​m​b​e​r
 		 */
 		routingNumber: string
 	}
@@ -5514,6 +5514,14 @@ type RootTranslation = {
 		 */
 		merchantDesc: string
 		/**
+		 * I​n​t​e​r​n​a​t​i​o​n​a​l
+		 */
+		international: string
+		/**
+		 * S​e​t​ ​u​p​ ​i​n​t​e​r​n​a​t​i​o​n​a​l​ ​t​r​a​n​s​f​e​r​s​ ​w​i​t​h​ ​B​r​i​d​g​e​ ​K​Y​C​.
+		 */
+		internationalDesc: string
+		/**
 		 * P​e​r​s​o​n​a​l​ ​I​n​f​o​r​m​a​t​i​o​n
 		 */
 		personalInfo: string
@@ -7655,7 +7663,6 @@ export type TranslationFunctions = {
 		 * Routing Number
 		 */
 		routingNumber: () => LocalizedString
-
 	}
 	PaymentSuccessScreen: {
 		/**
@@ -11016,6 +11023,14 @@ export type TranslationFunctions = {
 		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
 		 */
 		merchantDesc: () => LocalizedString
+		/**
+		 * International
+		 */
+		international: () => LocalizedString
+		/**
+		 * Set up international transfers with Bridge KYC.
+		 */
+		internationalDesc: () => LocalizedString
 		/**
 		 * Personal Information
 		 */

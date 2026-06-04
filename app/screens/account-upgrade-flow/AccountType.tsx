@@ -35,6 +35,10 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("PersonalInformation")
   }
 
+  const onInternationalPress = () => {
+    navigation.navigate("TopupCashout", { openBridgeKyc: true })
+  }
+
   const numOfSteps = currentLevel === AccountLevel.Zero ? 3 : 4
 
   return (
@@ -76,6 +80,18 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
           </Text>
           <Text type="bm" style={{ marginTop: 2 }}>
             {LL.AccountUpgrade.merchantDesc()}
+          </Text>
+        </View>
+        <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.card} onPress={onInternationalPress}>
+        <Icon name={"globe"} size={35} color={colors.grey1} type="ionicon" />
+        <View style={styles.textWrapper}>
+          <Text type="bl" bold>
+            {LL.AccountUpgrade.international()}
+          </Text>
+          <Text type="bm" style={{ marginTop: 2 }}>
+            {LL.AccountUpgrade.internationalDesc()}
           </Text>
         </View>
         <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />

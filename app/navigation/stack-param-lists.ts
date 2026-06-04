@@ -167,7 +167,7 @@ export type RootStackParamList = {
     tosLink: string
     kycLink: string
   }
-  TopupCashout: undefined
+  TopupCashout: { openBridgeKyc?: boolean } | undefined
   TopupDetails: { paymentType: "card" | "bankTransfer" | "bridge" }
   BankTransfer: {
     amount: number
