@@ -136,6 +136,7 @@ export const useDisplayCurrency = () => {
         case WalletCurrency.Btc:
           return moneyAmount.amount
         case WalletCurrency.Usd:
+        case WalletCurrency.Usdt:
           return moneyAmount.amount / 100
         case DisplayCurrency:
           return moneyAmount.amount / 10 ** displayCurrencyInfo.fractionDigits
@@ -153,6 +154,7 @@ export const useDisplayCurrency = () => {
         case WalletCurrency.Btc:
           return toBtcMoneyAmount(Math.round(amount))
         case WalletCurrency.Usd:
+        case WalletCurrency.Usdt:
           return toUsdMoneyAmount(Math.round(amount * 100))
         case DisplayCurrency:
           return toDisplayMoneyAmount(
@@ -175,6 +177,12 @@ export const useDisplayCurrency = () => {
         minorUnitToMajorUnitOffset: usdDisplayCurrency.fractionDigits,
         showFractionDigits: true,
         currencyCode: usdDisplayCurrency.id,
+      },
+      [WalletCurrency.Usdt]: {
+        symbol: usdDisplayCurrency.symbol,
+        minorUnitToMajorUnitOffset: usdDisplayCurrency.fractionDigits,
+        showFractionDigits: true,
+        currencyCode: "USDT",
       },
       [WalletCurrency.Btc]: {
         symbol: "₿",
