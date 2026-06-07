@@ -114,7 +114,8 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
     }
   } else if (
     settlementAmount?.amount &&
-    sendingWalletDescriptor.currency === WalletCurrency.Usd
+    (sendingWalletDescriptor.currency === WalletCurrency.Usd ||
+      sendingWalletDescriptor.currency === WalletCurrency.Usdt)
   ) {
     const getFee: GetFee<T> = async (getFeeFns) => {
       const { data } = await getFeeFns.lnNoAmountUsdInvoiceFeeProbe({
