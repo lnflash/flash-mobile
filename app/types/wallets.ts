@@ -6,4 +6,5 @@ export type WalletDescriptor<T extends WalletCurrency> = {
 }
 
 export type UsdWalletDescriptor = WalletDescriptor<"USD">
+export type UsdtWalletDescriptor = WalletDescriptor<"USDT">
 export type BtcWalletDescriptor = WalletDescriptor<"BTC">
