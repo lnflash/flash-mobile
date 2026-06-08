@@ -51,7 +51,11 @@ const ReceiveScreen = () => {
 
   const lnAddressHostname = appConfig.galoyInstance.lnAddressHostname
   const wallets: any = data?.me?.defaultAccount.wallets
-  const usdWallet = wallets?.find((el: any) => el.walletCurrency === WalletCurrency.Usd)
+  const usdWallet = wallets?.find(
+    (el: any) =>
+      el.walletCurrency === WalletCurrency.Usdt ||
+      el.walletCurrency === WalletCurrency.Usd,
+  )
 
   useEffect(() => {
     if (
@@ -72,7 +76,8 @@ const ReceiveScreen = () => {
     if (
       request &&
       request.type === "PayCode" &&
-      request.receivingWalletDescriptor.currency === "USD" &&
+      (request.receivingWalletDescriptor.currency === "USD" ||
+        request.receivingWalletDescriptor.currency === "USDT") &&
       Boolean(usdWallet?.lnurlp) &&
       Boolean(userData.username)
     ) {

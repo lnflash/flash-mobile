@@ -42,7 +42,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // utils
 import { logPaymentAttempt, logPaymentResult } from "@app/utils/analytics"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { useChatContext } from "../chat/chatContext"
 import { addToContactList } from "@app/utils/nostr"
 import { getSigner } from "@app/nostr/signer"
@@ -81,7 +81,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     useRequireContactList()
 
   const { data } = useSendBitcoinConfirmationScreenQuery({ skip: !useIsAuthed() })
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const {
     loading: sendPaymentLoading,
@@ -182,21 +182,11 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
       }
 
       const hexPubkey = nip19.decode(destinationNpub).data as string
-      await addToContactList(
-        signer,
-        hexPubkey,
-        promptForContactList,
-        contactsEvent,
-      )
+      await addToContactList(signer, hexPubkey, promptForContactList, contactsEvent)
     } catch (err) {
       console.warn("Failed to auto-add flash user to contacts", err)
     }
-  }, [
-    flashUserAddress,
-    npubByUsernameQuery,
-    promptForContactList,
-    contactsEvent,
-  ])
+  }, [flashUserAddress, npubByUsernameQuery, promptForContactList, contactsEvent])
 
   const handleSendPayment = useCallback(async () => {
     if (sendPayment && sendingWalletDescriptor?.currency) {
@@ -219,7 +209,9 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           navigation.navigate("sendBitcoinSuccess", {
             walletCurrency: sendingWalletDescriptor.currency,
             unitOfAccountAmount:
-              sendingWalletDescriptor.currency === "USD" && invoiceAmount
+              (sendingWalletDescriptor.currency === "USD" ||
+                sendingWalletDescriptor.currency === "USDT") &&
+              invoiceAmount
                 ? invoiceAmount
                 : paymentDetail.unitOfAccountAmount,
             onSuccessAddContact: autoAddContact,

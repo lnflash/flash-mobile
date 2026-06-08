@@ -145,7 +145,7 @@ export const ModalNfc: React.FC<{
       // TODO: add a loading icon because this call do a fetch() to an external server
       // and the response can be arbitrary long
       toggleActivityIndicator(true)
-      if (settlementAmount?.currency === "USD") {
+      if (settlementAmount?.currency === "USD" || settlementAmount?.currency === "USDT") {
         const destination = await parseDestination({
           rawInput: lnurl,
           myWalletIds: wallets.map((wallet) => wallet.id),
@@ -160,7 +160,10 @@ export const ModalNfc: React.FC<{
             Alert.alert(LL.SettingsScreen.nfcOnlyReceive())
           } else {
             let amount = settlementAmount.amount
-            if (settlementAmount.currency === WalletCurrency.Usd) {
+            if (
+              settlementAmount.currency === WalletCurrency.Usd ||
+              settlementAmount.currency === WalletCurrency.Usdt
+            ) {
               amount = convertMoneyAmount(
                 toUsdMoneyAmount(settlementAmount.amount),
                 WalletCurrency.Btc,
