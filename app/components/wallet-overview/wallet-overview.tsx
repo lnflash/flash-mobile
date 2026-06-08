@@ -17,7 +17,7 @@ import { useBreez, useFlashcard } from "@app/hooks"
 
 // utils
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 
 type Props = {
   setIsUnverifiedSeedModalVisible: (value: boolean) => void
@@ -91,7 +91,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
     )
 
     if (data) {
-      const extUsdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+      const extUsdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
       const extUsdWalletBalance = toUsdMoneyAmount(extUsdWallet?.balance ?? NaN)
       setCashBalance(
         formatMoneyAmount({
