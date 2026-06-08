@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React from "react"
 import { TouchableOpacity, View } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
@@ -8,10 +8,11 @@ import { AccountLevel } from "@app/graphql/generated"
 // components
 import { Screen } from "@app/components/screen"
 import { ProgressSteps } from "@app/components/account-upgrade-flow"
+import { BridgeKycModal } from "@app/components/topup-cashout-flow"
 
 // hooks
 import { useLevel } from "@app/graphql/level-context"
-import { useAccountUpgrade } from "@app/hooks"
+import { useBridgeKyc } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 // store
@@ -26,6 +27,12 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
+  const {
+    bridgeKycModalVisible,
+    openBridgeKycModal,
+    closeBridgeKycModal,
+    submitBridgeKyc,
+  } = useBridgeKyc({ navigation })
 
   const onPress = (accountType: string) => {
     const numOfSteps =
@@ -33,10 +40,6 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
 
     dispatch(setAccountUpgrade({ accountType, numOfSteps }))
     navigation.navigate("PersonalInformation")
-  }
-
-  const onInternationalPress = () => {
-    navigation.navigate("TopupCashout", { openBridgeKyc: true })
   }
 
   const numOfSteps = currentLevel === AccountLevel.Zero ? 3 : 4
@@ -51,7 +54,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
             <Text type="bl" bold>
               {LL.AccountUpgrade.personal()}
             </Text>
-            <Text type="bm" style={{ marginTop: 2 }}>
+            <Text type="bm" style={styles.description}>
               {LL.AccountUpgrade.personalDesc()}
             </Text>
           </View>
@@ -65,7 +68,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
             <Text type="bl" bold>
               {LL.AccountUpgrade.pro()}
             </Text>
-            <Text type="bm" style={{ marginTop: 2 }}>
+            <Text type="bm" style={styles.description}>
               {LL.AccountUpgrade.proDesc()}
             </Text>
           </View>
@@ -78,24 +81,29 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
           <Text type="bl" bold>
             {LL.AccountUpgrade.merchant()}
           </Text>
-          <Text type="bm" style={{ marginTop: 2 }}>
+          <Text type="bm" style={styles.description}>
             {LL.AccountUpgrade.merchantDesc()}
           </Text>
         </View>
         <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.card} onPress={onInternationalPress}>
+      <TouchableOpacity style={styles.card} onPress={openBridgeKycModal}>
         <Icon name={"globe"} size={35} color={colors.grey1} type="ionicon" />
         <View style={styles.textWrapper}>
           <Text type="bl" bold>
             {LL.AccountUpgrade.international()}
           </Text>
-          <Text type="bm" style={{ marginTop: 2 }}>
+          <Text type="bm" style={styles.description}>
             {LL.AccountUpgrade.internationalDesc()}
           </Text>
         </View>
         <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
       </TouchableOpacity>
+      <BridgeKycModal
+        visible={bridgeKycModalVisible}
+        onClose={closeBridgeKycModal}
+        onSubmit={submitBridgeKyc}
+      />
     </Screen>
   )
 }
@@ -115,5 +123,8 @@ const useStyles = makeStyles(({ colors }) => ({
   textWrapper: {
     flex: 1,
     marginHorizontal: 15,
+  },
+  description: {
+    marginTop: 2,
   },
 }))

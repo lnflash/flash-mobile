@@ -4,7 +4,6 @@ import {
   CashoutOffer,
   PhoneCodeChannelType,
   TransactionFragment,
-  Wallet,
   WalletCurrency,
 } from "@app/graphql/generated"
 import type { Payment, DepositInfo } from "@breeztech/breez-sdk-spark-react-native"
@@ -167,7 +166,7 @@ export type RootStackParamList = {
     tosLink: string
     kycLink: string
   }
-  TopupCashout: { openBridgeKyc?: boolean } | undefined
+  TopupCashout: undefined
   TopupDetails: { paymentType: "card" | "bankTransfer" | "bridge" }
   BankTransfer: {
     amount: number
