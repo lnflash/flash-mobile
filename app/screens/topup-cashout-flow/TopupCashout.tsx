@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { Alert, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
@@ -8,39 +8,39 @@ import { useFocusEffect } from "@react-navigation/native"
 
 // components
 import { Screen } from "@app/components/screen"
-import {
-  BridgeKycModal,
-  TransferOptionModal,
-  type TransferOption,
-} from "@app/components/topup-cashout-flow"
+import { TransferOptionModal, BridgeKycModal } from "@app/components/topup-cashout-flow"
+import type { TransferOption } from "@app/components/topup-cashout-flow"
 
 // assets
 import ArrowDown from "@app/assets/icons/arrow-down-to-bracket.svg"
 import ArrowUp from "@app/assets/icons/arrow-up-from-bracket.svg"
 
 // hooks
-import { AccountLevel, useBridgeKycStatusQuery } from "@app/graphql/generated"
-import { useBridgeKyc } from "@app/hooks"
+import {
+  useBridgeInitiateKycMutation,
+  useBridgeKycStatusQuery,
+} from "@app/graphql/generated"
+import { useActivityIndicator } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
+
+// utils
+import { AccountLevel } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "TopupCashout">
 
-const TopupCashout: React.FC<Props> = ({ navigation }) => {
+const TopupCashout: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
   const { colors } = useTheme().theme
-  const {
-    bridgeKycModalVisible,
-    openBridgeKycModal,
-    closeBridgeKycModal,
-    submitBridgeKyc,
-  } = useBridgeKyc({ navigation })
+  const { toggleActivityIndicator } = useActivityIndicator()
 
   const [topupModalVisible, setTopupModalVisible] = useState(false)
   const [settleModalVisible, setSettleModalVisible] = useState(false)
+  const [bridgeKycModalVisible, setBridgeKycModalVisible] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
+  const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
   const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
     fetchPolicy: "cache-and-network",
   })
@@ -56,47 +56,6 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     await refetchKycStatus()
     setRefreshing(false)
   }, [refetchKycStatus])
-
-  const checkAccountLevel = useCallback(
-    (type: "card" | "bankTransfer" | "cashout") => {
-      if (currentLevel === AccountLevel.Zero || currentLevel === AccountLevel.One) {
-        Alert.alert(
-          "Account upgrade required",
-          "You should upgrade your account to use this feature",
-          [
-            { text: "Continue", onPress: () => navigation.navigate("AccountType") },
-            { text: "Cancel", style: "cancel" },
-          ],
-        )
-        return
-      }
-
-      if (type === "cashout") {
-        navigation.navigate("CashoutDetails")
-      } else {
-        navigation.navigate("TopupDetails", { paymentType: type })
-      }
-    },
-    [currentLevel, navigation],
-  )
-
-  const checkBridgeKyc = useCallback(
-    (type: "topup" | "settle") => {
-      if (kycStatusData?.bridgeKycStatus === "pending") {
-        Alert.alert(
-          "KYC Pending",
-          "Your KYC status is pending. Please wait for approval.",
-        )
-      } else if (kycStatusData?.bridgeKycStatus === "approved") {
-        type === "topup"
-          ? navigation.navigate("TopupDetails", { paymentType: "bridge" })
-          : navigation.navigate("CashoutDetails")
-      } else {
-        openBridgeKycModal()
-      }
-    },
-    [kycStatusData?.bridgeKycStatus, navigation, openBridgeKycModal],
-  )
 
   const topupOptions: TransferOption[] = useMemo(
     () => [
@@ -129,7 +88,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         },
       },
     ],
-    [LL, checkAccountLevel, checkBridgeKyc, kycStatusData?.bridgeKycStatus],
+    [LL, navigation, kycStatusData?.bridgeKycStatus],
   )
 
   const settleOptions: TransferOption[] = useMemo(
@@ -154,8 +113,75 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         },
       },
     ],
-    [LL, checkAccountLevel, checkBridgeKyc, kycStatusData?.bridgeKycStatus],
+    [LL, navigation, kycStatusData?.bridgeKycStatus],
   )
+
+  const checkAccountLevel = (type: "card" | "bankTransfer" | "cashout") => {
+    if (currentLevel === AccountLevel.Zero || currentLevel === AccountLevel.One) {
+      Alert.alert(
+        "Account upgrade required",
+        "You should upgrade your account to use this feature",
+        [
+          { text: "Continue", onPress: () => navigation.navigate("AccountType") },
+          { text: "Cancel", style: "cancel" },
+        ],
+      )
+    } else {
+      if (type === "cashout") {
+        navigation.navigate("CashoutDetails")
+      } else {
+        navigation.navigate("TopupDetails", { paymentType: type })
+      }
+    }
+  }
+
+  const checkBridgeKyc = (type: "topup" | "settle") => {
+    if (kycStatusData?.bridgeKycStatus === "pending") {
+      Alert.alert("KYC Pending", "Your KYC status is pending. Please wait for approval.")
+    } else if (kycStatusData?.bridgeKycStatus === "approved") {
+      type === "topup"
+        ? navigation.navigate("TopupDetails", { paymentType: "bridge" })
+        : navigation.navigate("CashoutDetails")
+    } else {
+      setBridgeKycModalVisible(true)
+    }
+  }
+
+  const getBridgeKycLink = async (data: {
+    fullName: string
+    email: string
+    kycType: string
+  }) => {
+    toggleActivityIndicator(true)
+    try {
+      const res = await initiateBridgeKyc({
+        variables: {
+          input: {
+            full_name: data.fullName,
+            email: data.email,
+            type: data.kycType,
+          },
+        },
+      })
+      toggleActivityIndicator(false)
+      console.log("BRIDGE INITIATE KYC RESPONSE: ", res)
+      const errors = res.data?.bridgeInitiateKyc?.errors
+      if (errors && errors.length > 0) {
+        Alert.alert("Error", errors[0].message)
+        return
+      }
+      const kycLink = res.data?.bridgeInitiateKyc?.kycLink
+      if (kycLink?.tosLink && kycLink?.kycLink) {
+        navigation.navigate("BridgeKycWebView", {
+          tosLink: kycLink.tosLink,
+          kycLink: kycLink.kycLink,
+        })
+      }
+    } catch (err) {
+      toggleActivityIndicator(false)
+      Alert.alert("Error", "Something went wrong. Please try again.")
+    }
+  }
 
   return (
     <Screen>
@@ -200,11 +226,13 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         options={settleOptions}
         onClose={() => setSettleModalVisible(false)}
       />
-
       <BridgeKycModal
         visible={bridgeKycModalVisible}
-        onClose={closeBridgeKycModal}
-        onSubmit={submitBridgeKyc}
+        onClose={() => setBridgeKycModalVisible(false)}
+        onSubmit={(data) => {
+          setBridgeKycModalVisible(false)
+          getBridgeKycLink(data)
+        }}
       />
     </Screen>
   )
