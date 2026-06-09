@@ -146,7 +146,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
         </View>
         <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
       </TouchableOpacity>
-      {bridgeKycStatus !== "approved" && (
+      {currentLevel !== AccountLevel.Zero && bridgeKycStatus !== "approved" && (
         <TouchableOpacity
           style={[
             styles.card,
