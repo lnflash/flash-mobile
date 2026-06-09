@@ -7,17 +7,17 @@ import { AccountLevel, useBridgeInitiateKycMutation } from "@app/graphql/generat
 
 // components
 import { Screen } from "@app/components/screen"
+import { BridgeKycModal } from "@app/components/topup-cashout-flow"
 import { ProgressSteps } from "@app/components/account-upgrade-flow"
 
 // hooks
 import { useLevel } from "@app/graphql/level-context"
-import { useAccountUpgrade, useActivityIndicator } from "@app/hooks"
+import { useActivityIndicator } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 // store
 import { useAppDispatch } from "@app/store/redux"
 import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
-import { BridgeKycModal } from "@app/components/topup-cashout-flow"
 
 type Props = StackScreenProps<RootStackParamList, "AccountType">
 

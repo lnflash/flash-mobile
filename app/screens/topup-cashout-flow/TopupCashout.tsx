@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react"
+import React, { useCallback, useMemo, useState } from "react"
 import { Alert, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
@@ -28,7 +28,7 @@ import { AccountLevel } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "TopupCashout">
 
-const TopupCashout: React.FC<Props> = ({ navigation, route }) => {
+const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
