@@ -1659,6 +1659,8 @@ const en: BaseTranslation = {
       proDesc: "Accept payments and get discovered on the map. Requires a business name and location.",
       merchant: "Merchant",
       merchantDesc: "Give rewards, appear on the map, and settle to your bank. ID and bank info required.",
+      international: "International",
+      internationalDesc: "Set up international transfers with Bridge KYC.",
       personalInfo: "Personal Information",
       fullName: "Full name",
       phoneNumber: "Phone Number",
