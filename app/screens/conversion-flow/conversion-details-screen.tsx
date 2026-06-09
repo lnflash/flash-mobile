@@ -32,7 +32,7 @@ import {
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 
 // gql
 import {
@@ -67,7 +67,7 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
     returnPartialData: true,
   })
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const btcBalance = toBtcMoneyAmount(btcWallet?.balance ?? NaN)
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
@@ -111,7 +111,7 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const moveToNextScreen = async () => {
     toggleActivityIndicator(true)
     const { data, err } =
-      fromWalletCurrency === "USD"
+      fromWalletCurrency === "USD" || fromWalletCurrency === "USDT"
         ? await prepareUsdToBtc(settlementSendAmount)
         : await prepareBtcToUsd(settlementSendAmount)
 

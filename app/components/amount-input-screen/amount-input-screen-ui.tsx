@@ -19,7 +19,7 @@ import Sync from "@app/assets/icons/sync.svg"
 
 // utils
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 
 export type AmountInputScreenUIProps = {
   walletCurrency: WalletCurrency
@@ -68,7 +68,7 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
         moneyAmount: toBtcMoneyAmount(btcWallet?.balance ?? 0),
       })
     }
-    const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+    const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
     return moneyAmountToDisplayCurrencyString({
       moneyAmount: toUsdMoneyAmount(usdWallet?.balance ?? 0),
     })

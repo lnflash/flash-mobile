@@ -88,7 +88,10 @@ export const createNoAmountOnchainPaymentDetails = <T extends WalletCurrency>(
         return {
           amount,
         }
-      } else if (sendingWalletDescriptor.currency === WalletCurrency.Usd) {
+      } else if (
+        sendingWalletDescriptor.currency === WalletCurrency.Usd ||
+        sendingWalletDescriptor.currency === WalletCurrency.Usdt
+      ) {
         const { data } = await getFeeFns.onChainUsdTxFee({
           variables: {
             walletId: sendingWalletDescriptor.id,
@@ -173,12 +176,16 @@ export const createNoAmountOnchainPaymentDetails = <T extends WalletCurrency>(
     }
   } else if (
     settlementAmount.amount &&
-    sendingWalletDescriptor.currency === WalletCurrency.Usd
+    (sendingWalletDescriptor.currency === WalletCurrency.Usd ||
+      sendingWalletDescriptor.currency === WalletCurrency.Usdt)
   ) {
     let sendPaymentMutation: SendPaymentMutation
     let getFee: GetFee<T>
 
-    if (settlementAmount.currency === WalletCurrency.Usd) {
+    if (
+      settlementAmount.currency === WalletCurrency.Usd ||
+      settlementAmount.currency === WalletCurrency.Usdt
+    ) {
       sendPaymentMutation = async (paymentMutations) => {
         const { data } = await paymentMutations.onChainUsdPaymentSend({
           variables: {
@@ -408,7 +415,7 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
       getFee,
     }
   } else {
-    // sendingWalletDescriptor.currency === WalletCurrency.Usd
+    // sendingWalletDescriptor.currency === WalletCurrency.Usd or WalletCurrency.Usdt
     console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     console.log("Destination Specified Amount", destinationSpecifiedAmount)
     console.log("PARAMS:", {

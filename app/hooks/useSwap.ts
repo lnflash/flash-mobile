@@ -6,7 +6,7 @@ import {
   useLnUsdInvoiceFeeProbeMutation,
   WalletCurrency,
 } from "@app/graphql/generated"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { useBreez } from "./useBreez"
 import { usePriceConversion } from "./use-price-conversion"
 import {
@@ -43,7 +43,7 @@ export const useSwap = () => {
     returnPartialData: true,
   })
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const btcBalance = toBtcMoneyAmount(btcWallet?.balance ?? NaN)
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
@@ -184,7 +184,7 @@ export const useSwap = () => {
     amount: number,
   ) => {
     if (lnInvoice && usdWallet) {
-      if (fromWalletCurrency === "USD") {
+      if (fromWalletCurrency === "USD" || fromWalletCurrency === "USDT") {
         const res = await lnInvoicePaymentSend({
           variables: {
             input: {

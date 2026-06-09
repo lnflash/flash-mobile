@@ -115,9 +115,13 @@ export const createPaymentRequest = (
         info = generateOnChainInfo(res.paymentRequest, [], [])
       }
     } else {
-      // Handle USD payment requests
+      // Handle USD/USDT payment requests
       if (pr.type === Invoice.Lightning) {
-        if (pr.settlementAmount && pr.settlementAmount?.currency === WalletCurrency.Usd) {
+        if (
+          pr.settlementAmount &&
+          (pr.settlementAmount?.currency === WalletCurrency.Usd ||
+            pr.settlementAmount?.currency === WalletCurrency.Usdt)
+        ) {
           console.log("Invoice create amount: ", pr.settlementAmount.amount)
           const { data, errors } = await mutations.lnUsdInvoiceCreate({
             variables: {

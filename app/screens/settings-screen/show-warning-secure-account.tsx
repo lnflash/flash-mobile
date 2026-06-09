@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client"
 import { useWarningSecureAccountQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { useBreez, usePriceConversion } from "@app/hooks"
 import {
   ZeroUsdMoneyAmount,
@@ -43,7 +43,7 @@ export const useShowWarningSecureAccount = () => {
 
   if (data?.me?.defaultAccount.level !== "ZERO") return false
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const usdMoneyAmount = toUsdMoneyAmount(usdWallet?.balance)
   const btcMoneyAmount = toBtcMoneyAmount(btcWallet?.balance)

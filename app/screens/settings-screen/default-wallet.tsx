@@ -12,7 +12,7 @@ import { Screen } from "../../components/screen"
 import { testProps } from "../../utils/testProps"
 import { GaloyInfo } from "@app/components/atomic/galoy-info"
 import { MenuSelect, MenuSelectItem } from "@app/components/menu-select"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { useBreez } from "@app/hooks"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
@@ -66,7 +66,7 @@ export const DefaultWalletScreen: React.FC = () => {
   })
   const [updateDefaultWalletId] = useAccountUpdateDefaultWalletIdMutation()
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const btcWalletId = btcWallet?.id
   const usdWalletId = usdWallet?.id
@@ -86,7 +86,11 @@ export const DefaultWalletScreen: React.FC = () => {
       return <Text>{"Loading BTC account..."}</Text>
     }
 
-    return <Text onPress={retryExternalWalletRegistration}>{"Tap to retry BTC account setup"}</Text>
+    return (
+      <Text onPress={retryExternalWalletRegistration}>
+        {"Tap to retry BTC account setup"}
+      </Text>
+    )
   }
 
   const handleSetDefaultWallet = async (id: string) => {

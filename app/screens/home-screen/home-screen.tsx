@@ -83,7 +83,8 @@ export const HomeScreen: React.FC = () => {
     )
     if (
       !persistentState.defaultWallet ||
-      (persistentState.defaultWallet.walletCurrency === "USD" &&
+      ((persistentState.defaultWallet.walletCurrency === "USD" ||
+        persistentState.defaultWallet.walletCurrency === "USDT") &&
         persistentState.defaultWallet.id !== defaultWallet?.id)
     ) {
       updateState((state: any) => {

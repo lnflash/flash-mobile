@@ -18,6 +18,23 @@ export const getUsdWallet = (wallets: readonly WalletBalance[] | undefined) => {
   return wallets.find((wallet) => wallet.walletCurrency === WalletCurrency.Usd)
 }
 
+export const getCashWallet = (wallets: readonly WalletBalance[] | undefined) => {
+  if (wallets === undefined || wallets.length === 0) {
+    return undefined
+  }
+
+  const usdtWallet = wallets.find(
+    (wallet) => wallet.walletCurrency === WalletCurrency.Usdt,
+  )
+  if (usdtWallet) {
+    return usdtWallet
+  }
+
+  const usdWallet = wallets.find((wallet) => wallet.walletCurrency === WalletCurrency.Usd)
+
+  return usdWallet
+}
+
 export const getDefaultWallet = (
   wallets: readonly WalletBalance[] | undefined,
   defaultWalletId: string | undefined,

@@ -117,20 +117,24 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
   )
 
   const checkAccountLevel = (type: "card" | "bankTransfer" | "cashout") => {
-    if (currentLevel === AccountLevel.Zero || currentLevel === AccountLevel.One) {
-      Alert.alert(
-        "Account upgrade required",
-        "You should upgrade your account to use this feature",
-        [
-          { text: "Continue", onPress: () => navigation.navigate("AccountType") },
-          { text: "Cancel", style: "cancel" },
-        ],
-      )
+    if (type === "card") {
+      navigation.navigate("TopupDetails", { paymentType: type })
     } else {
-      if (type === "cashout") {
-        navigation.navigate("CashoutDetails")
+      if (currentLevel === AccountLevel.One) {
+        Alert.alert(
+          "Account upgrade required",
+          "You should upgrade your account to use this feature",
+          [
+            { text: "Continue", onPress: () => navigation.navigate("AccountType") },
+            { text: "Cancel", style: "cancel" },
+          ],
+        )
       } else {
-        navigation.navigate("TopupDetails", { paymentType: type })
+        if (type === "cashout") {
+          navigation.navigate("CashoutDetails")
+        } else {
+          navigation.navigate("TopupDetails", { paymentType: type })
+        }
       }
     }
   }

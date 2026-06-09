@@ -20,7 +20,7 @@ import { useActivityIndicator, useDisplayCurrency } from "@app/hooks"
 import { useCashoutScreenQuery, useInitiateCashoutMutation } from "@app/graphql/generated"
 
 //utils
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { toUsdMoneyAmount } from "@app/types/amounts"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -44,7 +44,7 @@ const CashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
     returnPartialData: true,
   })
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
 
   const {

@@ -25,7 +25,7 @@ import {
   toWalletAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { View } from "react-native"
 import { PrimaryBtn } from "@app/components/buttons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -60,7 +60,7 @@ const CashoutDetails = ({ navigation }: Props) => {
     return
   }
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
   const settlementSendAmount = convertMoneyAmount(moneyAmount, "USD")
   const isValidAmount =

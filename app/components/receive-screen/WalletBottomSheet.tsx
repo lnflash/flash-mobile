@@ -10,13 +10,15 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import Cash from "@app/assets/icons/cash.svg"
 import Bitcoin from "@app/assets/icons/bitcoin.svg"
 
-const icons = {
+const icons: Record<string, any> = {
   USD: Cash,
+  USDT: Cash,
   BTC: Bitcoin,
 }
 
 const wallets = [
   { title: "Cash", key: "USD" },
+  { title: "Cash", key: "USDT" },
   { title: "Bitcoin", key: "BTC" },
 ]
 
@@ -49,7 +51,9 @@ const WalletBottomSheet: React.FC<Props> = ({ currency, disabled, onChange }) =>
       >
         <Row>
           <CurrencyIcon width={25} height={25} style={{ marginRight: 10 }} />
-          <Text type="bl">{currency === "USD" ? "Cash" : "Bitcoin"}</Text>
+          <Text type="bl">
+            {currency === "USD" || currency === "USDT" ? "Cash" : "Bitcoin"}
+          </Text>
         </Row>
         <Icon
           name={modalVisible ? "chevron-up" : "chevron-down"}

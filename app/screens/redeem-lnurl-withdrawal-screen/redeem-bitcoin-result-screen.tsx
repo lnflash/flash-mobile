@@ -56,7 +56,10 @@ const RedeemBitcoinResultScreen: React.FC<Prop> = ({ route, navigation }) => {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    if (receivingWalletDescriptor.currency === WalletCurrency.Usd) {
+    if (
+      receivingWalletDescriptor.currency === WalletCurrency.Usd ||
+      receivingWalletDescriptor.currency === WalletCurrency.Usdt
+    ) {
       navigation.setOptions({ title: LL.RedeemBitcoinScreen.usdTitle() })
     } else if (receivingWalletDescriptor.currency === WalletCurrency.Btc) {
       navigation.setOptions({ title: LL.RedeemBitcoinScreen.title() })
