@@ -612,10 +612,10 @@
         "desc4": "After payment completion on your end you can send us an email to {email: string} with a screenshot of your payment confirmation.",
         "desc5": "Your payment will be processed even if we don't receive this email, but having this confirmation can help accelerate the order.",
         "backHome": "Back to Home",
-		"virtualBankTransfer": "Virtual Bank Transfer",
-		"bankName": "Bank Name",
-		"routingNumber": "Routing Number"
-      },
+        "virtualBankTransfer": "Virtual Bank Transfer",
+        "bankName": "Bank Name",
+        "routingNumber": "Routing Number"
+    },
     "PaymentSuccessScreen": {
         "title": "Payment Successful",
         "successMessage": "Your payment has been processed successfully",
@@ -797,6 +797,7 @@
         "amount": "Amount",
         "MinOnChainLimit": "Minimum amount for this transaction is US$2.00",
         "MinOnChainSatLimit": "Minimum amount for this transaction is 5,500 sats",
+        "MinFlashcardLimit": "Minimum amount when reloading from flashcard is 100 sats",
         "amountExceed": "Amount exceeds your balance of {balance: string}",
         "amountExceedsLimit": "Amount exceeds your remaining daily limit of {limit: string}",
         "upgradeAccountToIncreaseLimit": "Upgrade your account to increase your limit",
@@ -1559,6 +1560,8 @@
         "proDesc": "Accept payments and get discovered on the map. Requires a business name and location.",
         "merchant": "Merchant",
         "merchantDesc": "Give rewards, appear on the map, and settle to your bank. ID and bank info required.",
+        "international": "International",
+        "internationalDesc": "Set up international transfers with Bridge KYC.",
         "personalInfo": "Personal Information",
         "fullName": "Full name",
         "phoneNumber": "Phone Number",

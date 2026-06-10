@@ -230,7 +230,6 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         options={settleOptions}
         onClose={() => setSettleModalVisible(false)}
       />
-
       <BridgeKycModal
         visible={bridgeKycModalVisible}
         onClose={() => setBridgeKycModalVisible(false)}

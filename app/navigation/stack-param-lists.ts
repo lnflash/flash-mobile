@@ -4,7 +4,6 @@ import {
   CashoutOffer,
   PhoneCodeChannelType,
   TransactionFragment,
-  Wallet,
   WalletCurrency,
 } from "@app/graphql/generated"
 import type { Payment, DepositInfo } from "@breeztech/breez-sdk-spark-react-native"
