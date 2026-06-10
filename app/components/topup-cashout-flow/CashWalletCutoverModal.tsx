@@ -1,18 +1,27 @@
-import React, { useState } from "react"
+import React from "react"
 import { useWindowDimensions, View } from "react-native"
 import Modal from "react-native-modal"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { PrimaryBtn } from "@app/components/buttons"
 import DollarIllustration from "@app/assets/illustrations/dollar.svg"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 const CashWalletCutoverModal = () => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const { width } = useWindowDimensions()
   const { colors } = useTheme().theme
+  const { persistentState, updateState } = usePersistentStateContext()
 
-  const [visible, setVisible] = useState(false)
+  const visible = !persistentState.hasSeenCashWalletCutoverModal
+
+  const dismiss = () => {
+    updateState((state) => {
+      if (!state) return state
+      return { ...state, hasSeenCashWalletCutoverModal: true }
+    })
+  }
 
   const illustrationSize = Math.min(width * 0.35, 140)
 
@@ -22,8 +31,8 @@ const CashWalletCutoverModal = () => {
       backdropOpacity={0.5}
       backdropColor={colors.black}
       backdropTransitionOutTiming={0}
-      onBackdropPress={() => setVisible(false)}
-      onSwipeComplete={() => setVisible(false)}
+      onBackdropPress={dismiss}
+      onSwipeComplete={dismiss}
       swipeDirection={["down"]}
       style={styles.modal}
       useNativeDriverForBackdrop
@@ -47,7 +56,7 @@ const CashWalletCutoverModal = () => {
         <View style={styles.buttonContainer}>
           <PrimaryBtn
             label={LL.CashWalletCutover.dismissButton()}
-            onPress={() => setVisible(false)}
+            onPress={dismiss}
           />
         </View>
       </View>
