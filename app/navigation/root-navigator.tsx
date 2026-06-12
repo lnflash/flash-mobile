@@ -116,6 +116,7 @@ import {
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 import ContactDetailsScreen from "@app/screens/chat/contactDetailsScreen"
 import { SupportGroupChatScreen } from "@app/screens/chat/GroupChat/SupportGroupChat"
+import { Nip29DevScreen } from "@app/screens/chat/GroupChat/Nip29DevScreen"
 import Contacts from "@app/screens/chat/contacts"
 import MakeNostrPost from "@app/screens/social/post"
 import PostSuccess from "@app/screens/social/post-success"
@@ -613,6 +614,11 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="Nip29GroupChat"
         component={SupportGroupChatScreen}
+        options={{ headerShown: false }}
+      />
+      <RootNavigator.Screen
+        name="Nip29DevScreen"
+        component={Nip29DevScreen}
         options={{ headerShown: false }}
       />
       <RootNavigator.Screen

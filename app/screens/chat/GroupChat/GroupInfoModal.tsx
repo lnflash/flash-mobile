@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import {
   Modal,
   View,
@@ -6,11 +6,17 @@ import {
   ScrollView,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  TextInput,
+  Alert,
 } from "react-native"
-import { Text, makeStyles, useTheme } from "@rneui/themed"
+import { Text, makeStyles, useTheme, Button } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
 import { nip19 } from "nostr-tools"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useNavigation } from "@react-navigation/native"
+import { StackNavigationProp } from "@react-navigation/stack"
+import type { RootStackParamList } from "../../../navigation/stack-param-lists"
+import { useNostrGroupChat } from "./GroupChatProvider"
 
 const DEFAULT_AVATAR =
   "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg"
@@ -37,6 +43,42 @@ export const GroupInfoModal: React.FC<Props> = ({
   const styles = useStyles()
   const { theme: { colors } } = useTheme()
   const insets = useSafeAreaInsets()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const { editMetadata } = useNostrGroupChat()
+
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({
+    name: groupMetadata.name || "",
+    about: groupMetadata.about || "",
+    picture: groupMetadata.picture || "",
+  })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!editing) {
+      setForm({
+        name: groupMetadata.name || "",
+        about: groupMetadata.about || "",
+        picture: groupMetadata.picture || "",
+      })
+    }
+  }, [groupMetadata.name, groupMetadata.about, groupMetadata.picture, editing])
+
+  const onSave = async () => {
+    try {
+      setSaving(true)
+      await editMetadata({
+        name: form.name.trim(),
+        about: form.about.trim(),
+        picture: form.picture.trim(),
+      })
+      setEditing(false)
+    } catch (e: any) {
+      Alert.alert("Failed to update", e?.message || String(e))
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const getDisplayName = (pubkey: string) => {
     const p = profileMap.get(pubkey)
@@ -90,7 +132,80 @@ export const GroupInfoModal: React.FC<Props> = ({
                 <Text style={[styles.adminBadgeText, { color: colors.primary }]}>You are an admin</Text>
               </View>
             )}
+            {isAdmin && !editing && (
+              <TouchableOpacity
+                style={[styles.editBtn, { borderColor: colors.primary }]}
+                onPress={() => setEditing(true)}
+              >
+                <Icon name="create-outline" size={14} color={colors.primary} />
+                <Text style={[styles.editBtnText, { color: colors.primary }]}>Edit metadata</Text>
+              </TouchableOpacity>
+            )}
           </View>
+
+          {editing && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Edit metadata</Text>
+              <Text style={styles.fieldLabel}>Name</Text>
+              <TextInput
+                style={[styles.input, { color: colors.primary3, borderColor: colors.grey4 }]}
+                placeholder="Group name"
+                placeholderTextColor={colors.grey3}
+                value={form.name}
+                onChangeText={(name) => setForm((f) => ({ ...f, name }))}
+              />
+              <Text style={styles.fieldLabel}>About</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { color: colors.primary3, borderColor: colors.grey4, minHeight: 56 },
+                ]}
+                placeholder="Description"
+                placeholderTextColor={colors.grey3}
+                multiline
+                value={form.about}
+                onChangeText={(about) => setForm((f) => ({ ...f, about }))}
+              />
+              <Text style={styles.fieldLabel}>Picture URL</Text>
+              <TextInput
+                style={[styles.input, { color: colors.primary3, borderColor: colors.grey4 }]}
+                placeholder="https://..."
+                placeholderTextColor={colors.grey3}
+                autoCapitalize="none"
+                value={form.picture}
+                onChangeText={(picture) => setForm((f) => ({ ...f, picture }))}
+              />
+              <View style={styles.editActionsRow}>
+                <Button
+                  title="Cancel"
+                  type="outline"
+                  onPress={() => setEditing(false)}
+                  containerStyle={{ flex: 1, marginRight: 6 }}
+                />
+                <Button
+                  title={saving ? "Saving..." : "Save"}
+                  onPress={onSave}
+                  disabled={saving}
+                  containerStyle={{ flex: 1, marginLeft: 6 }}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* Dev tools entry */}
+          <TouchableOpacity
+            style={styles.devToolsBtn}
+            onPress={() => {
+              onClose()
+              navigation.navigate("Nip29DevScreen")
+            }}
+          >
+            <Icon name="construct-outline" size={16} color={colors.primary} />
+            <Text style={[styles.devToolsText, { color: colors.primary }]}>
+              Open NIP-29 Dev Tools
+            </Text>
+            <Icon name="chevron-forward" size={16} color={colors.primary} />
+          </TouchableOpacity>
 
           {/* Admins section */}
           {adminList.length > 0 && (
@@ -250,6 +365,53 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   adminTagText: {
     fontSize: 11,
+    fontWeight: "600",
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  editBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  fieldLabel: {
+    fontSize: 12,
+    color: colors.grey2,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
+  },
+  editActionsRow: {
+    flexDirection: "row",
+    marginTop: 12,
+  },
+  devToolsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.grey4,
+    marginBottom: 16,
+  },
+  devToolsText: {
+    flex: 1,
+    fontSize: 13,
     fontWeight: "600",
   },
 }))

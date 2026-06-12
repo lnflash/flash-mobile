@@ -54,7 +54,7 @@ const InnerGroupChat: React.FC = () => {
   const { theme: { colors, mode } } = useTheme()
   const insets = useSafeAreaInsets()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const { messages, isMember, isAdmin, adminList, knownMembers, sendMessage, requestJoin, removeMessage, removeMember, groupMetadata } = useNostrGroupChat()
+  const { messages, isMember, isAdmin, adminList, knownMembers, sendMessage, requestJoin, removeMessage, removeMember, addAdmin, groupMetadata } = useNostrGroupChat()
   const { userPublicKey } = useChatContext()
   const [replyTo, setReplyTo] = useState<Rumor | null>(null)
   const [infoVisible, setInfoVisible] = useState(false)
@@ -94,6 +94,7 @@ const InnerGroupChat: React.FC = () => {
 
   const handleAdminPress = (msg: GroupMessage) => {
     const isOwnMessage = msg.authorId === userPublicKey
+    const targetIsAdmin = adminList.includes(msg.authorId)
     const options: { text: string; onPress: () => void; style?: "destructive" | "cancel" }[] = []
 
     options.push({
@@ -113,6 +114,22 @@ const InnerGroupChat: React.FC = () => {
           ])
         },
       })
+
+      if (!targetIsAdmin) {
+        options.push({
+          text: "Promote to Admin",
+          onPress: () => {
+            Alert.alert(
+              "Promote to Admin",
+              "Give this user admin permissions in the group?",
+              [
+                { text: "Cancel", style: "cancel" },
+                { text: "Promote", onPress: () => addAdmin(msg.authorId) },
+              ],
+            )
+          },
+        })
+      }
     }
 
     options.push({ text: "Cancel", style: "cancel", onPress: () => {} })

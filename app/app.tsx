@@ -46,6 +46,11 @@ import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { FlashcardProvider } from "./contexts/Flashcard"
 import { NostrGroupChatProvider } from "./screens/chat/GroupChat/GroupChatProvider"
+import {
+  NIP29_DEFAULT_GROUP_ID,
+  NIP29_DEFAULT_RELAY_URL,
+} from "./screens/chat/GroupChat/constants"
+import { usePersistentStateContext } from "./store/persistent-state"
 import { PersistGate } from "redux-persist/integration/react"
 import { useEffect } from "react"
 import { nostrRuntime } from "./nostr/runtime/NostrRuntime"
@@ -91,11 +96,7 @@ export const App = () => {
           <PersistGate loading={null} persistor={persistor}>
             <PersistentStateProvider>
               <ChatContextProvider>
-                <NostrGroupChatProvider
-                  groupId={"A9lScksyYAOWNxqR"}
-                  relayUrls={["wss://groups.0xchat.com"]}
-                  adminPubkeys={[]}
-                >
+                <Nip29GroupProviderWithOverride>
                   <ActivityIndicatorProvider>
                     <TypesafeI18n locale={detectDefaultLocale()}>
                       <ThemeProvider theme={theme}>
@@ -125,12 +126,29 @@ export const App = () => {
                       </ThemeProvider>
                     </TypesafeI18n>
                   </ActivityIndicatorProvider>
-                </NostrGroupChatProvider>
+                </Nip29GroupProviderWithOverride>
               </ChatContextProvider>
             </PersistentStateProvider>
           </PersistGate>
         </Provider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
+  )
+}
+
+const Nip29GroupProviderWithOverride: React.FC<React.PropsWithChildren> = ({
+  children,
+}) => {
+  const { persistentState } = usePersistentStateContext()
+  const groupId = persistentState.nip29GroupIdOverride || NIP29_DEFAULT_GROUP_ID
+  const relayUrl = persistentState.nip29RelayUrlOverride || NIP29_DEFAULT_RELAY_URL
+  return (
+    <NostrGroupChatProvider
+      groupId={groupId}
+      relayUrls={[relayUrl]}
+      adminPubkeys={[]}
+    >
+      {children}
+    </NostrGroupChatProvider>
   )
 }

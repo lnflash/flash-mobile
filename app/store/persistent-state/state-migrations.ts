@@ -86,6 +86,8 @@ type PersistentState_7 = {
     firstViewedAt?: string
     viewCount: number
   }
+  nip29GroupIdOverride?: string
+  nip29RelayUrlOverride?: string
 }
 
 type JwtPayload = {
