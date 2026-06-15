@@ -233,4 +233,55 @@ gql`
       }
     }
   }
+
+  mutation BridgeAddExternalAccount {
+    bridgeAddExternalAccount {
+      externalAccount {
+        expiresAt
+        linkUrl
+      }
+      errors {
+        code
+        message
+      }
+    }
+  }
+
+  mutation BridgeRequestWithdrawal($input: BridgeRequestWithdrawalInput!) {
+    bridgeRequestWithdrawal(input: $input) {
+      withdrawal {
+        amount
+        createdAt
+        bridgeTransferId
+        currency
+        externalAccountId
+        failureReason
+        id
+        status
+      }
+      errors {
+        code
+        message
+      }
+    }
+  }
+
+  mutation BridgeInitiateWithdrawal($input: BridgeInitiateWithdrawalInput!) {
+    bridgeInitiateWithdrawal(input: $input) {
+      withdrawal {
+        amount
+        bridgeTransferId
+        createdAt
+        currency
+        externalAccountId
+        failureReason
+        id
+        status
+      }
+      errors {
+        code
+        message
+      }
+    }
+  }
 `

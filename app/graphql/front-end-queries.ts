@@ -19,6 +19,7 @@ gql`
       language
       username
       phone
+      createdAt
       email {
         address
         verified
@@ -360,6 +361,30 @@ gql`
         id
         isDefault
       }
+    }
+  }
+
+  query BridgeExternalAccounts {
+    bridgeExternalAccounts {
+      accountNumberLast4
+      bankName
+      id
+      status
+    }
+  }
+
+  query CashWalletCutover {
+    cashWalletCutover {
+      completedAt
+      cutoverVersion
+      pauseReason
+      pausedAt
+      runId
+      scheduledAt
+      startedAt
+      state
+      updatedAt
+      updatedBy
     }
   }
 `

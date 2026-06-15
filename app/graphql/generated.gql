@@ -82,6 +82,22 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
+mutation BridgeAddExternalAccount {
+  bridgeAddExternalAccount {
+    externalAccount {
+      expiresAt
+      linkUrl
+      __typename
+    }
+    errors {
+      code
+      message
+      __typename
+    }
+    __typename
+  }
+}
+
 mutation BridgeInitiateKyc($input: BridgeInitiateKycInput!) {
   bridgeInitiateKyc(input: $input) {
     errors {
@@ -92,6 +108,50 @@ mutation BridgeInitiateKyc($input: BridgeInitiateKycInput!) {
     kycLink {
       kycLink
       tosLink
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BridgeInitiateWithdrawal($input: BridgeInitiateWithdrawalInput!) {
+  bridgeInitiateWithdrawal(input: $input) {
+    withdrawal {
+      amount
+      bridgeTransferId
+      createdAt
+      currency
+      externalAccountId
+      failureReason
+      id
+      status
+      __typename
+    }
+    errors {
+      code
+      message
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BridgeRequestWithdrawal($input: BridgeRequestWithdrawalInput!) {
+  bridgeRequestWithdrawal(input: $input) {
+    withdrawal {
+      amount
+      createdAt
+      bridgeTransferId
+      currency
+      externalAccountId
+      failureReason
+      id
+      status
+      __typename
+    }
+    errors {
+      code
+      message
       __typename
     }
     __typename
@@ -909,6 +969,16 @@ query BankAccounts {
   }
 }
 
+query BridgeExternalAccounts {
+  bridgeExternalAccounts {
+    accountNumberLast4
+    bankName
+    id
+    status
+    __typename
+  }
+}
+
 query BridgeKycStatus {
   bridgeKycStatus
 }
@@ -924,6 +994,22 @@ query BridgeVirtualAccount {
     pending
     routingNumber
     tosLink
+    __typename
+  }
+}
+
+query CashWalletCutover {
+  cashWalletCutover {
+    completedAt
+    cutoverVersion
+    pauseReason
+    pausedAt
+    runId
+    scheduledAt
+    startedAt
+    state
+    updatedAt
+    updatedBy
     __typename
   }
 }
@@ -1223,6 +1309,7 @@ query homeAuthed {
     language
     username
     phone
+    createdAt
     email {
       address
       verified
