@@ -17,6 +17,8 @@ import ArrowUp from "@app/assets/icons/arrow-up-from-bracket.svg"
 
 // hooks
 import {
+  useBridgeAddExternalAccountMutation,
+  useBridgeExternalAccountsQuery,
   useBridgeInitiateKycMutation,
   useBridgeKycStatusQuery,
 } from "@app/graphql/generated"
@@ -41,21 +43,29 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false)
 
   const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
+  const [addExternalAccount] = useBridgeAddExternalAccountMutation()
+
   const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
     fetchPolicy: "cache-and-network",
   })
+  const { data: externalAccountsData, refetch: refetchExternalAccounts } =
+    useBridgeExternalAccountsQuery({
+      fetchPolicy: "cache-and-network",
+    })
 
   useFocusEffect(
     useCallback(() => {
       refetchKycStatus()
-    }, [refetchKycStatus]),
+      refetchExternalAccounts()
+    }, [refetchKycStatus, refetchExternalAccounts]),
   )
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     await refetchKycStatus()
+    await refetchExternalAccounts()
     setRefreshing(false)
-  }, [refetchKycStatus])
+  }, [refetchKycStatus, refetchExternalAccounts])
 
   const topupOptions: TransferOption[] = useMemo(
     () => [
@@ -131,7 +141,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         )
       } else {
         if (type === "cashout") {
-          navigation.navigate("CashoutDetails")
+          navigation.navigate("CashoutDetails", { type: "local" })
         } else {
           navigation.navigate("TopupDetails", { paymentType: type })
         }
@@ -139,13 +149,37 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     }
   }
 
-  const checkBridgeKyc = (type: "topup" | "settle") => {
+  const checkBridgeKyc = async (type: "topup" | "settle") => {
     if (kycStatusData?.bridgeKycStatus === "pending") {
       Alert.alert("KYC Pending", "Your KYC status is pending. Please wait for approval.")
     } else if (kycStatusData?.bridgeKycStatus === "approved") {
-      type === "topup"
-        ? navigation.navigate("TopupDetails", { paymentType: "bridge" })
-        : navigation.navigate("CashoutDetails")
+      if (type === "topup") {
+        navigation.navigate("TopupDetails", { paymentType: "bridge" })
+      } else {
+        if (
+          externalAccountsData?.bridgeExternalAccounts &&
+          externalAccountsData.bridgeExternalAccounts.length > 0
+        ) {
+          navigation.navigate("CashoutDetails", { type: "bridge" })
+        } else {
+          toggleActivityIndicator(true)
+          const res = await addExternalAccount()
+          toggleActivityIndicator(false)
+
+          const errors = res.data?.bridgeAddExternalAccount?.errors
+          if (errors && errors.length > 0) {
+            Alert.alert("Error", errors[0].message)
+            return
+          }
+
+          const linkUrl = res.data?.bridgeAddExternalAccount?.externalAccount?.linkUrl
+          if (linkUrl) {
+            navigation.navigate("BridgeExternalAccountWebView", { linkUrl })
+          } else {
+            Alert.alert("Error", "Failed to get external account link. Please try again.")
+          }
+        }
+      }
     } else {
       setBridgeKycModalVisible(true)
     }
