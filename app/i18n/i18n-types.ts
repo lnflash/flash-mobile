@@ -342,7 +342,7 @@ type RootTranslation = {
 		 */
 		title: string
 		/**
-		 * Y​o​u​r​ ​C​a​s​h​ ​W​a​l​l​e​t​ ​h​a​s​ ​b​e​e​n​ ​u​p​g​r​a​d​e​d​ ​f​r​o​m​ ​U​S​D​ ​t​o​ ​U​S​D​T​.​ ​Y​o​u​r​ ​b​a​l​a​n​c​e​ ​h​a​s​ ​b​e​e​n​ ​a​u​t​o​m​a​t​i​c​a​l​l​y​ ​m​i​g​r​a​t​e​d​.​ ​N​o​ ​a​c​t​i​o​n​ ​i​s​ ​n​e​e​d​e​d​ ​o​n​ ​y​o​u​r​ ​p​a​r​t​.
+		 * Y​o​u​r​ ​C​a​s​h​ ​W​a​l​l​e​t​ ​h​a​s​ ​b​e​e​n​ ​a​u​t​o​m​a​t​i​c​a​l​l​y​ ​u​p​g​r​a​d​e​d​ ​a​n​d​ ​n​o​w​ ​h​a​s​ ​a​d​d​i​t​i​o​n​a​l​ ​c​a​p​a​b​i​l​i​t​i​e​s​.​ ​N​o​ ​a​c​t​i​o​n​ ​i​s​ ​n​e​e​d​e​d​ ​o​n​ ​y​o​u​r​ ​p​a​r​t​.
 		 */
 		body: string
 		/**
@@ -5518,7 +5518,7 @@ type RootTranslation = {
 		 */
 		international: string
 		/**
-		 * S​e​t​ ​u​p​ ​i​n​t​e​r​n​a​t​i​o​n​a​l​ ​t​r​a​n​s​f​e​r​s​ ​w​i​t​h​ ​B​r​i​d​g​e​ ​K​Y​C​.
+		 * G​e​t​ ​a​n​ ​i​n​t​e​r​n​a​t​i​o​n​a​l​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​r​o​u​t​i​n​g​ ​n​u​m​b​e​r​ ​f​o​r​ ​b​a​n​k​ ​t​r​a​n​s​f​e​r​s​.​ ​I​D​ ​r​e​q​u​i​r​e​d​.
 		 */
 		internationalDesc: string
 		/**
@@ -5940,7 +5940,7 @@ export type TranslationFunctions = {
 		 */
 		title: () => LocalizedString
 		/**
-		 * Your Cash Wallet has been upgraded from USD to USDT. Your balance has been automatically migrated. No action is needed on your part.
+		 * Your Cash Wallet has been automatically upgraded and now has additional capabilities. No action is needed on your part.
 		 */
 		body: () => LocalizedString
 		/**
@@ -11028,7 +11028,7 @@ export type TranslationFunctions = {
 		 */
 		international: () => LocalizedString
 		/**
-		 * Set up international transfers with Bridge KYC.
+		 * Get an international account and routing number for bank transfers. ID required.
 		 */
 		internationalDesc: () => LocalizedString
 		/**
