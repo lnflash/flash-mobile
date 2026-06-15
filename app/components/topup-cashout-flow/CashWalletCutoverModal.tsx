@@ -6,6 +6,11 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { PrimaryBtn } from "@app/components/buttons"
 import DollarIllustration from "@app/assets/illustrations/dollar.svg"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import {
+  CashWalletCutoverState,
+  useCashWalletCutoverQuery,
+  useHomeAuthedQuery,
+} from "@app/graphql/generated"
 
 const CashWalletCutoverModal = () => {
   const { LL } = useI18nContext()
@@ -13,8 +18,21 @@ const CashWalletCutoverModal = () => {
   const { width } = useWindowDimensions()
   const { colors } = useTheme().theme
   const { persistentState, updateState } = usePersistentStateContext()
+  const { data: cutoverData } = useCashWalletCutoverQuery()
+  const { data: meData } = useHomeAuthedQuery()
 
-  const visible = !persistentState.hasSeenCashWalletCutoverModal
+  const cutoverState = cutoverData?.cashWalletCutover?.state
+  const cutoverCompletedAt = cutoverData?.cashWalletCutover?.completedAt
+  const accountCreatedAt = meData?.me?.createdAt
+
+  // Show modal only for accounts created before the cutover completed
+  const isOldAccount =
+    cutoverState === CashWalletCutoverState.Complete &&
+    cutoverCompletedAt &&
+    accountCreatedAt &&
+    accountCreatedAt < cutoverCompletedAt
+
+  const visible = !persistentState.hasSeenCashWalletCutoverModal && Boolean(isOldAccount)
 
   const dismiss = () => {
     updateState((state) => {
@@ -54,10 +72,7 @@ const CashWalletCutoverModal = () => {
         </Text>
 
         <View style={styles.buttonContainer}>
-          <PrimaryBtn
-            label={LL.CashWalletCutover.dismissButton()}
-            onPress={dismiss}
-          />
+          <PrimaryBtn label={LL.CashWalletCutover.dismissButton()} onPress={dismiss} />
         </View>
       </View>
     </Modal>
