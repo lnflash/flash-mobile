@@ -143,7 +143,7 @@ export type RootStackParamList = {
   UnclaimedDepositsList: undefined
   UnclaimedDepositDetails: { deposit: DepositInfo }
   RefundDeposit: { deposit: DepositInfo }
-  CashoutDetails: undefined
+  CashoutDetails: { type: "local" | "bridge" }
   CashoutConfirmation: { offer: CashoutOffer }
   CashoutSuccess: undefined
   EditNostrProfile: undefined
@@ -165,6 +165,9 @@ export type RootStackParamList = {
   BridgeKycWebView: {
     tosLink: string
     kycLink: string
+  }
+  BridgeExternalAccountWebView: {
+    linkUrl: string
   }
   TopupCashout: undefined
   TopupDetails: { paymentType: "card" | "bankTransfer" | "bridge" }

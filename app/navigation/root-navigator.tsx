@@ -127,6 +127,7 @@ import { FeaturedProfileView } from "@app/screens/featured-profile-view"
 import {
   BankTransfer,
   BridgeKycWebView,
+  BridgeExternalAccountWebView,
   TopupDetails,
   TopupSuccess,
   TopupCashout,
@@ -672,6 +673,14 @@ export const RootStack = () => {
         <RootNavigator.Screen
           name="BridgeKycWebView"
           component={BridgeKycWebView}
+          options={{
+            headerShown: false,
+            cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+          }}
+        />
+        <RootNavigator.Screen
+          name="BridgeExternalAccountWebView"
+          component={BridgeExternalAccountWebView}
           options={{
             headerShown: false,
             cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
