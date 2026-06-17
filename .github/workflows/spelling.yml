@@ -1,7 +1,7 @@
 name: Spelling
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/fygaro]
 
 jobs:
   spelling:
