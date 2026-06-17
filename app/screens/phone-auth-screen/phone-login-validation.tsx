@@ -223,7 +223,7 @@ export const PhoneLoginValidationScreen: React.FC<Props> = ({ navigation, route 
                 return undefined
               })
             }
-            // enbale nostr chat
+            // enable nostr chat
             if (nsec) {
               const secretKey = hexToBytes(nsec)
               await Keychain.setInternetCredentials(

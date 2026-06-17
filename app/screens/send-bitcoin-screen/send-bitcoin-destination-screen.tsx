@@ -4,7 +4,7 @@ import { makeStyles } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { StackScreenProps } from "@react-navigation/stack"
 
-// componenets
+// components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 import { DestinationField } from "@app/components/send-flow"
