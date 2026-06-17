@@ -1,15 +1,25 @@
 import { createPaymentRequestCreationData } from "@app/screens/receive-bitcoin-screen/payment/payment-request-creation-data"
 
 import { createMock } from "ts-auto-mock"
-import { LnInvoice } from "@app/graphql/generated"
+import { LnInvoice, WalletCurrency } from "@app/graphql/generated"
 import {
   GeneratePaymentRequestMutations,
   Invoice,
   PaymentRequestState,
 } from "@app/screens/receive-bitcoin-screen/payment/index.types"
-import { btcWalletDescriptor, defaultParams, usdWalletDescriptor } from "./helpers"
+import {
+  btcWalletDescriptor,
+  defaultParams,
+  usdWalletDescriptor,
+  usdtWalletDescriptor,
+} from "./helpers"
 import { createPaymentRequest } from "@app/screens/receive-bitcoin-screen/payment/payment-request"
-import { toUsdMoneyAmount } from "@app/types/amounts"
+import {
+  MoneyAmount,
+  toUsdMoneyAmount,
+  USDT_MICROS_PER_USD_CENT,
+  WalletOrDisplayCurrency,
+} from "@app/types/amounts"
 
 const usdAmountInvoice =
   "lnbc49100n1p3l2q6cpp5y8lc3dv7qnplxhc3z9j0sap4n0hu99g39tl3srx6zj0hrqy2snwsdqqcqzpuxqzfvsp5q6t5f3xeruu4k5sk5nlmxx2kzlw2pydmmjk9g4qqmsc9c6ffzldq9qyyssq9lesnumasvvlvwc7yckvuepklttlvwhjqw3539qqqttsyh5s5j246spy9gezng7ng3d40qsrn6dhsrgs7rccaftzulx5auqqd5lz0psqfskeg4"
@@ -86,6 +96,10 @@ export const clearMocks = () => {
 }
 
 describe("payment request", () => {
+  beforeEach(() => {
+    clearMocks()
+  })
+
   it("ln with btc receiving wallet", async () => {
     const prcd = createPaymentRequestCreationData({
       ...defaultParams,
@@ -162,6 +176,53 @@ describe("payment request", () => {
     expect(prNew.state).toBe(PaymentRequestState.Created)
     expect(prNew.info?.data?.invoiceType).toBe(Invoice.Lightning)
     expect(prNew.info?.data?.getFullUriFn({})).toBe(usdAmountInvoice)
+  })
+
+  it("ln with usdt receiving wallet - set amount sends cents, not micros", async () => {
+    // Regression for the $5.00 -> $50,583 USDT invoice bug. The price
+    // conversion denominates USDT money amounts in smallest units (micros),
+    // which are USDT_MICROS_PER_USD_CENT (10,000x) smaller than a cent. The
+    // lnUsdInvoiceCreate mutation expects USD cents, so the receive flow must
+    // convert USDT micros back to cents before calling it. Otherwise a $5.00
+    // request (500 cents) is sent as 5,000,000 and the backend mints a
+    // $50,000 invoice.
+    const convertToUsdtMicros = <T extends WalletOrDisplayCurrency>(
+      amount: MoneyAmount<WalletOrDisplayCurrency>,
+      toCurrency: T,
+    ): MoneyAmount<T> => {
+      const converted =
+        toCurrency === WalletCurrency.Usdt
+          ? amount.amount * USDT_MICROS_PER_USD_CENT
+          : amount.amount
+      return { amount: converted, currency: toCurrency, currencyCode: toCurrency }
+    }
+
+    const prcd = createPaymentRequestCreationData({
+      ...defaultParams,
+      convertMoneyAmount: convertToUsdtMicros,
+      receivingWalletDescriptor: usdtWalletDescriptor,
+      // $5.00 entered as 500 USD cents in the unit of account
+      unitOfAccountAmount: toUsdMoneyAmount(500),
+    })
+
+    // sanity: the settlement amount is in USDT micros (500 cents * 10,000)
+    expect(prcd.settlementAmount?.currency).toBe(WalletCurrency.Usdt)
+    expect(prcd.settlementAmount?.amount).toBe(500 * USDT_MICROS_PER_USD_CENT)
+
+    const pr = createPaymentRequest({ creationData: prcd, mutations })
+    const prNew = await pr.generateRequest()
+
+    expect(prNew.info).not.toBeUndefined()
+    expect(mockLnUsdInvoiceCreate).toHaveBeenCalledWith({
+      variables: {
+        input: expect.objectContaining({
+          walletId: usdtWalletDescriptor.id,
+          // must be 500 cents, NOT 5,000,000 micros
+          amount: 500,
+        }),
+      },
+    })
+    expect(prNew.state).toBe(PaymentRequestState.Created)
   })
 
   it("paycode/lnurl", async () => {
