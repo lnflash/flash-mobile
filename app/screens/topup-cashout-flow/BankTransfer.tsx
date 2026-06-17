@@ -21,15 +21,19 @@ const BankTransfer: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
+  const backHomeButtonStyle = React.useMemo(
+    () => [styles.backHomeButton, { marginBottom: bottom + 20 }],
+    [bottom, styles.backHomeButton],
+  )
 
   const { data } = useBridgeVirtualAccountQuery()
 
-  const { amount, wallet, paymentType } = route.params
+  const { amount, paymentType } = route.params
   const fee = amount * 0.02
 
   if (paymentType === "bridge") {
     return (
-      <Screen preset="scroll" style={{ paddingHorizontal: 20 }}>
+      <Screen preset="scroll" style={styles.container}>
         <Text type="h02" bold style={styles.title}>
           {LL.BankTransfer.virtualBankTransfer()}
         </Text>
@@ -54,12 +58,17 @@ const BankTransfer: React.FC<Props> = ({ navigation, route }) => {
             {data?.bridgeVirtualAccount?.routingNumber}
           </Text>
         </View>
+        <PrimaryBtn
+          label={LL.BankTransfer.backHome()}
+          onPress={() => navigation.reset({ index: 0, routes: [{ name: "Primary" }] })}
+          btnStyle={backHomeButtonStyle}
+        />
       </Screen>
     )
   }
 
   return (
-    <Screen preset="scroll" style={{ paddingHorizontal: 20 }}>
+    <Screen preset="scroll" style={styles.container}>
       <Text type="h02" bold style={styles.title}>
         {LL.BankTransfer.title()}
       </Text>
@@ -70,7 +79,7 @@ const BankTransfer: React.FC<Props> = ({ navigation, route }) => {
         {LL.BankTransfer.desc2({ code: "UUM7MJRD" })}
       </Text>
       <Text type="p1" style={styles.desc}>
-        {LL.BankTransfer.desc3({ amount: amount, fee: fee })}
+        {LL.BankTransfer.desc3({ amount, fee })}
       </Text>
       <View style={styles.bankDetails}>
         <View style={styles.fieldContainer}>
@@ -137,7 +146,7 @@ const BankTransfer: React.FC<Props> = ({ navigation, route }) => {
       <PrimaryBtn
         label={LL.BankTransfer.backHome()}
         onPress={() => navigation.reset({ index: 0, routes: [{ name: "Primary" }] })}
-        btnStyle={{ marginBottom: bottom + 20, marginTop: 20 }}
+        btnStyle={backHomeButtonStyle}
       />
     </Screen>
   )
@@ -181,5 +190,8 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   buttonGroup: {
     marginTop: 8,
+  },
+  backHomeButton: {
+    marginTop: 20,
   },
 }))

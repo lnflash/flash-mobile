@@ -14,7 +14,6 @@ import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
 import { ChatList } from "@app/screens/chat"
 import { DeveloperScreen } from "../screens/developer-screen"
-import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
 import { SectionCompleted } from "../screens/earns-screen/section-completed"
 import { GetStartedScreen } from "../screens/get-started-screen"
@@ -61,7 +60,6 @@ import {
   TotpRegistrationInitiateScreen,
   TotpRegistrationValidateScreen,
 } from "@app/screens/totp-screen"
-import { testProps } from "@app/utils/testProps"
 import { makeStyles, useTheme } from "@rneui/themed"
 import { ScanningQRCodeScreen } from "../screens/send-bitcoin-screen"
 import { SettingsScreen } from "../screens/settings-screen"
@@ -128,6 +126,7 @@ import {
   BankTransfer,
   BridgeKycWebView,
   BridgeExternalAccountWebView,
+  BridgeAddExternalAccount,
   TopupDetails,
   TopupSuccess,
   TopupCashout,
@@ -681,6 +680,14 @@ export const RootStack = () => {
         <RootNavigator.Screen
           name="BridgeExternalAccountWebView"
           component={BridgeExternalAccountWebView}
+          options={{
+            headerShown: false,
+            cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+          }}
+        />
+        <RootNavigator.Screen
+          name="BridgeAddExternalAccount"
+          component={BridgeAddExternalAccount}
           options={{
             headerShown: false,
             cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,

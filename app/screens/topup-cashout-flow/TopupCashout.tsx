@@ -8,8 +8,11 @@ import { useFocusEffect } from "@react-navigation/native"
 
 // components
 import { Screen } from "@app/components/screen"
-import { TransferOptionModal, BridgeKycModal } from "@app/components/topup-cashout-flow"
-import type { TransferOption } from "@app/components/topup-cashout-flow"
+import {
+  BridgeKycModal,
+  type TransferOption,
+  TransferOptionModal,
+} from "@app/components/topup-cashout-flow"
 
 // assets
 import ArrowDown from "@app/assets/icons/arrow-down-to-bracket.svg"
@@ -17,6 +20,7 @@ import ArrowUp from "@app/assets/icons/arrow-up-from-bracket.svg"
 
 // hooks
 import {
+  AccountLevel,
   useBridgeAddExternalAccountMutation,
   useBridgeExternalAccountsQuery,
   useBridgeInitiateKycMutation,
@@ -24,9 +28,6 @@ import {
 } from "@app/graphql/generated"
 import { useActivityIndicator } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
-
-// utils
-import { AccountLevel } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "TopupCashout">
 
@@ -67,6 +68,79 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     setRefreshing(false)
   }, [refetchKycStatus, refetchExternalAccounts])
 
+  const checkAccountLevel = useCallback(
+    (type: "card" | "bankTransfer" | "cashout") => {
+      if (type === "card") {
+        navigation.navigate("TopupDetails", { paymentType: type })
+      } else if (currentLevel === AccountLevel.One) {
+        Alert.alert(
+          "Account upgrade required",
+          "You should upgrade your account to use this feature",
+          [
+            { text: "Continue", onPress: () => navigation.navigate("AccountType") },
+            { text: "Cancel", style: "cancel" },
+          ],
+        )
+      } else if (type === "cashout") {
+        navigation.navigate("CashoutDetails", { type: "local" })
+      } else {
+        navigation.navigate("TopupDetails", { paymentType: type })
+      }
+    },
+    [currentLevel, navigation],
+  )
+
+  const checkBridgeKyc = useCallback(
+    async (type: "topup" | "settle") => {
+      if (kycStatusData?.bridgeKycStatus === "pending") {
+        Alert.alert(
+          "KYC Pending",
+          "Your KYC status is pending. Please wait for approval.",
+        )
+      } else if (kycStatusData?.bridgeKycStatus === "approved") {
+        if (type === "topup") {
+          navigation.navigate("TopupDetails", { paymentType: "bridge" })
+        } else if (
+          externalAccountsData?.bridgeExternalAccounts &&
+          externalAccountsData.bridgeExternalAccounts.length > 0
+        ) {
+          navigation.navigate("CashoutDetails", { type: "bridge" })
+        } else {
+          toggleActivityIndicator(true)
+          const res = await addExternalAccount()
+          toggleActivityIndicator(false)
+
+          const errors = res.data?.bridgeAddExternalAccount?.errors
+          if (errors && errors.length > 0) {
+            // If Plaid Link is unavailable, offer manual bank entry as fallback
+            if (errors[0].code === "BRIDGE_PLAID_NOT_AVAILABLE") {
+              navigation.navigate("BridgeAddExternalAccount")
+              return
+            }
+            Alert.alert("Error", errors[0].message)
+            return
+          }
+
+          const linkUrl = res.data?.bridgeAddExternalAccount?.externalAccount?.linkUrl
+          if (linkUrl) {
+            navigation.navigate("BridgeExternalAccountWebView", { linkUrl })
+          } else {
+            Alert.alert("Error", "Failed to get external account link. Please try again.")
+          }
+        }
+      } else {
+        setBridgeKycModalVisible(true)
+      }
+    },
+    [
+      addExternalAccount,
+      externalAccountsData?.bridgeExternalAccounts,
+      kycStatusData?.bridgeKycStatus,
+      navigation,
+      toggleActivityIndicator,
+    ],
+  )
+
   const topupOptions: TransferOption[] = useMemo(
     () => [
       {
@@ -98,7 +172,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         },
       },
     ],
-    [LL, navigation, kycStatusData?.bridgeKycStatus],
+    [LL, checkAccountLevel, checkBridgeKyc, kycStatusData?.bridgeKycStatus],
   )
 
   const settleOptions: TransferOption[] = useMemo(
@@ -123,67 +197,8 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         },
       },
     ],
-    [LL, navigation, kycStatusData?.bridgeKycStatus],
+    [LL, checkAccountLevel, checkBridgeKyc, kycStatusData?.bridgeKycStatus],
   )
-
-  const checkAccountLevel = (type: "card" | "bankTransfer" | "cashout") => {
-    if (type === "card") {
-      navigation.navigate("TopupDetails", { paymentType: type })
-    } else {
-      if (currentLevel === AccountLevel.One) {
-        Alert.alert(
-          "Account upgrade required",
-          "You should upgrade your account to use this feature",
-          [
-            { text: "Continue", onPress: () => navigation.navigate("AccountType") },
-            { text: "Cancel", style: "cancel" },
-          ],
-        )
-      } else {
-        if (type === "cashout") {
-          navigation.navigate("CashoutDetails", { type: "local" })
-        } else {
-          navigation.navigate("TopupDetails", { paymentType: type })
-        }
-      }
-    }
-  }
-
-  const checkBridgeKyc = async (type: "topup" | "settle") => {
-    if (kycStatusData?.bridgeKycStatus === "pending") {
-      Alert.alert("KYC Pending", "Your KYC status is pending. Please wait for approval.")
-    } else if (kycStatusData?.bridgeKycStatus === "approved") {
-      if (type === "topup") {
-        navigation.navigate("TopupDetails", { paymentType: "bridge" })
-      } else {
-        if (
-          externalAccountsData?.bridgeExternalAccounts &&
-          externalAccountsData.bridgeExternalAccounts.length > 0
-        ) {
-          navigation.navigate("CashoutDetails", { type: "bridge" })
-        } else {
-          toggleActivityIndicator(true)
-          const res = await addExternalAccount()
-          toggleActivityIndicator(false)
-
-          const errors = res.data?.bridgeAddExternalAccount?.errors
-          if (errors && errors.length > 0) {
-            Alert.alert("Error", errors[0].message)
-            return
-          }
-
-          const linkUrl = res.data?.bridgeAddExternalAccount?.externalAccount?.linkUrl
-          if (linkUrl) {
-            navigation.navigate("BridgeExternalAccountWebView", { linkUrl })
-          } else {
-            Alert.alert("Error", "Failed to get external account link. Please try again.")
-          }
-        }
-      }
-    } else {
-      setBridgeKycModalVisible(true)
-    }
-  }
 
   const getBridgeKycLink = async (data: {
     fullName: string
@@ -195,6 +210,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
       const res = await initiateBridgeKyc({
         variables: {
           input: {
+            // eslint-disable-next-line camelcase
             full_name: data.fullName,
             email: data.email,
             type: data.kycType,

@@ -284,4 +284,37 @@ gql`
       }
     }
   }
+
+  mutation BridgeCancelWithdrawalRequest($input: BridgeCancelWithdrawalRequestInput!) {
+    bridgeCancelWithdrawalRequest(input: $input) {
+      withdrawal {
+        amount
+        createdAt
+        currency
+        externalAccountId
+        failureReason
+        id
+        status
+      }
+      errors {
+        code
+        message
+      }
+    }
+  }
+
+  mutation BridgeCreateExternalAccount($input: BridgeCreateExternalAccountInput!) {
+    bridgeCreateExternalAccount(input: $input) {
+      externalAccount {
+        id
+        bankName
+        accountNumberLast4
+        status
+      }
+      errors {
+        code
+        message
+      }
+    }
+  }
 `

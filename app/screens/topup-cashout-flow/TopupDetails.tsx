@@ -14,7 +14,15 @@
  */
 
 import React, { useState } from "react"
-import { View, TextInput, Alert } from "react-native"
+import {
+  View,
+  TextInput,
+  Alert,
+  InputAccessoryView,
+  Keyboard,
+  TouchableOpacity,
+  Platform,
+} from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -142,7 +150,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <Screen>
+    <Screen keyboardShouldPersistTaps="handled">
       <View style={styles.container}>
         <Text type="h02" bold style={styles.title}>
           {route.params.paymentType === "card"
@@ -175,7 +183,17 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
             value={amount}
             onChangeText={setAmount}
             keyboardType="numeric"
+            inputAccessoryViewID="topupAmountAccessory"
           />
+          {Platform.OS === "ios" && (
+            <InputAccessoryView nativeID="topupAmountAccessory">
+              <View style={styles.keyboardAccessory}>
+                <TouchableOpacity onPress={Keyboard.dismiss}>
+                  <Text style={styles.doneButton}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            </InputAccessoryView>
+          )}
         </View>
       </View>
       <PrimaryBtn
@@ -189,6 +207,23 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
 }
 
 const useStyles = makeStyles(({ colors }) => (props: { bottom: number }) => ({
+  keyboardAccessory: {
+    flexDirection: "row" as const,
+    justifyContent: "flex-end" as const,
+    alignItems: "center" as const,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.grey3,
+  },
+  doneButton: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
   container: {
     flex: 1,
     paddingHorizontal: 20,
