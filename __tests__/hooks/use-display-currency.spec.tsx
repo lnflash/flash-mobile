@@ -5,7 +5,11 @@ import { MockedProvider } from "@apollo/client/testing"
 import { PropsWithChildren } from "react"
 import * as React from "react"
 import { IsAuthedContextProvider } from "@app/graphql/is-authed-context"
-import { CurrencyListDocument, RealtimePriceDocument } from "@app/graphql/generated"
+import {
+  CurrencyListDocument,
+  RealtimePriceDocument,
+  WalletCurrency,
+} from "@app/graphql/generated"
 
 const mocksNgn = [
   {
@@ -135,6 +139,21 @@ const wrapWithMocks =
 
 describe("usePriceConversion", () => {
   describe("testing moneyAmountToMajorUnitOrSats", () => {
+    it("formats USDT micros as major units", async () => {
+      const { result } = renderHook(useDisplayCurrency, {
+        wrapper: wrapWithMocks([]),
+      })
+
+      const moneyAmount = {
+        amount: 179_554,
+        currency: WalletCurrency.Usdt,
+        currencyCode: "USDT",
+      }
+
+      expect(result.current.moneyAmountToMajorUnitOrSats(moneyAmount)).toBe(0.179554)
+      expect(result.current.formatMoneyAmount({ moneyAmount })).toBe("$0.179554 USDT")
+    })
+
     it("with 0 digits", async () => {
       const { result, waitForNextUpdate } = renderHook(useDisplayCurrency, {
         wrapper: wrapWithMocks(mocksJpy),
@@ -229,5 +248,30 @@ describe("usePriceConversion", () => {
       fiatSymbol: "₦",
       displayCurrency: "NGN",
     })
+  })
+
+  it("converts USDT micros to display currency using USD-cent price", async () => {
+    const { result, waitFor } = renderHook(useDisplayCurrency, {
+      wrapper: wrapWithMocks(mocksNgn),
+    })
+
+    await waitFor(
+      () => {
+        return result.current.displayCurrency === "NGN"
+      },
+      {
+        timeout: 4000,
+      },
+    )
+
+    const displayAmount = result.current.moneyAmountToDisplayCurrencyString({
+      moneyAmount: {
+        amount: 1_000_000,
+        currency: WalletCurrency.Usdt,
+        currencyCode: "USDT",
+      },
+    })
+
+    expect(displayAmount).toBe("₦100.00")
   })
 })

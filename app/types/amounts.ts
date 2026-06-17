@@ -1,5 +1,9 @@
 import { WalletCurrency } from "@app/graphql/generated"
 
+export const CENTS_PER_USD = 100
+export const USDT_MICROS_PER_USDT = 1_000_000
+export const USDT_MICROS_PER_USD_CENT = USDT_MICROS_PER_USDT / CENTS_PER_USD
+
 export const DisplayCurrency = "DisplayCurrency" as const
 export type DisplayCurrency = typeof DisplayCurrency
 

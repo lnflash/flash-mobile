@@ -5,6 +5,7 @@ import {
   DisplayCurrency,
   MoneyAmount,
   moneyAmountIsCurrencyType,
+  USDT_MICROS_PER_USD_CENT,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
 import { useMemo } from "react"
@@ -62,25 +63,30 @@ export const usePriceConversion = () => {
         [WalletCurrency.Btc]: {
           [DisplayCurrency]: displayCurrencyPerSat,
           [WalletCurrency.Usd]: displayCurrencyPerSat * (1 / displayCurrencyPerCent),
-          [WalletCurrency.Usdt]: displayCurrencyPerSat * (1 / displayCurrencyPerCent),
+          [WalletCurrency.Usdt]:
+            displayCurrencyPerSat *
+            (1 / displayCurrencyPerCent) *
+            USDT_MICROS_PER_USD_CENT,
           [WalletCurrency.Btc]: 1,
         },
         [WalletCurrency.Usd]: {
           [DisplayCurrency]: displayCurrencyPerCent,
           [WalletCurrency.Btc]: displayCurrencyPerCent * (1 / displayCurrencyPerSat),
           [WalletCurrency.Usd]: 1,
-          [WalletCurrency.Usdt]: 1,
+          [WalletCurrency.Usdt]: USDT_MICROS_PER_USD_CENT,
         },
         [WalletCurrency.Usdt]: {
-          [DisplayCurrency]: displayCurrencyPerCent,
-          [WalletCurrency.Btc]: displayCurrencyPerCent * (1 / displayCurrencyPerSat),
-          [WalletCurrency.Usd]: 1,
+          [DisplayCurrency]: displayCurrencyPerCent / USDT_MICROS_PER_USD_CENT,
+          [WalletCurrency.Btc]:
+            (displayCurrencyPerCent / USDT_MICROS_PER_USD_CENT) *
+            (1 / displayCurrencyPerSat),
+          [WalletCurrency.Usd]: 1 / USDT_MICROS_PER_USD_CENT,
           [WalletCurrency.Usdt]: 1,
         },
         [DisplayCurrency]: {
           [WalletCurrency.Btc]: 1 / displayCurrencyPerSat,
           [WalletCurrency.Usd]: 1 / displayCurrencyPerCent,
-          [WalletCurrency.Usdt]: 1 / displayCurrencyPerCent,
+          [WalletCurrency.Usdt]: (1 / displayCurrencyPerCent) * USDT_MICROS_PER_USD_CENT,
           [DisplayCurrency]: 1,
         },
       }
