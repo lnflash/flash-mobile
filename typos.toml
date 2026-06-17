@@ -3,6 +3,27 @@ youreConverting = "youreConverting"
 hace = "hace"
 "BA" = "BA"
 "FO" = "FO"
+# Earns quiz section IDs: these are a contract with the backend — matched
+# against server quiz data in earns-utils.ts and sent to the `quizCompleted`
+# mutation. Renaming would break quiz completion/rewards, so the historical
+# misspelling is preserved intentionally.
+moneySocialAggrement = "moneySocialAggrement"
+moneyImportantGovernement = "moneyImportantGovernement"
+GovernementCanPrintMoney = "GovernementCanPrintMoney"
+# i18n message keys: a clean rename requires running the i18n codegen pipeline
+# (raw-i18n + generated types + all locales). Deferred to a focused i18n PR so
+# this CI-fix change stays reviewable.
+apiAcess = "apiAcess"
+noCantacts = "noCantacts"
+# Pre-existing internal identifiers — safe to rename, but each is a cross-file
+# refactor (component file + imports, analytics field + call sites). Deferred.
+isEnjoingApp = "isEnjoingApp"
+InforError = "InforError"
+
+[default.extend-words]
+# Nostr terminology: "parameterized replaceable events" are referred to as
+# "replaceables" in NIP discussions.
+replaceables = "replaceables"
 
 [files]
-extend-exclude = ["*.svg", "app/i18n/raw-i18n", "earns-utils.test.ts", "*.plist", "*.pbxproj", "Appfile", "google-services.json", "patches", "ci/tasks/*"]
+extend-exclude = ["*.svg", "app/i18n/raw-i18n", "earns-utils.test.ts", "*.plist", "*.pbxproj", "Appfile", "google-services.json", "patches", "ci/tasks/*", "logcat.txt", "*.storyboard"]
