@@ -5,7 +5,11 @@ import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useBankAccountsQuery } from "@app/graphql/generated"
 
-const CashoutWithdrawTo: React.FC = () => {
+type Props = {
+  preferredCurrency?: string
+}
+
+const CashoutWithdrawTo: React.FC<Props> = ({ preferredCurrency }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
@@ -13,8 +17,15 @@ const CashoutWithdrawTo: React.FC = () => {
 
   const { data } = useBankAccountsQuery({ fetchPolicy: "cache-only" })
 
+  const bankAccounts = data?.me?.bankAccounts ?? []
+  const preferredCurrencyCode = preferredCurrency?.toUpperCase()
   const bankAccount =
-    data?.me?.bankAccounts.find((el) => el.isDefault) || data?.me?.bankAccounts[0]
+    bankAccounts.find(
+      (el) =>
+        preferredCurrencyCode && el.currency.toUpperCase() === preferredCurrencyCode,
+    ) ||
+    bankAccounts.find((el) => el.isDefault) ||
+    bankAccounts[0]
 
   if (!bankAccount) return null
 

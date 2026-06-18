@@ -99,9 +99,11 @@ const CashoutDetails = ({ navigation, route }: Props) => {
       return
     }
 
+    const localBankAccounts = bankAccountsData?.me?.bankAccounts ?? []
     const defaultBankAccount =
-      bankAccountsData?.me?.bankAccounts.find((el) => el.isDefault) ||
-      bankAccountsData?.me?.bankAccounts[0]
+      localBankAccounts.find((el) => el.currency.toUpperCase() === "JMD") ||
+      localBankAccounts.find((el) => el.isDefault) ||
+      localBankAccounts[0]
 
     if (!defaultBankAccount?.id) {
       setErrorMsg("No bank account found. Please add a bank account first.")

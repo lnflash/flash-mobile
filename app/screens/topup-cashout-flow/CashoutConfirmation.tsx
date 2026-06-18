@@ -125,7 +125,7 @@ const LocalCashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
           />
         )}
         <CashoutCard title={LL.Cashout.fee()} detail={formattedFeeAmount} />
-        <CashoutWithdrawTo />
+        <CashoutWithdrawTo preferredCurrency={receiveJmd ? "JMD" : undefined} />
         {Boolean(errorMsg) && (
           <Text type="bm" color={colors.red}>
             {errorMsg}
