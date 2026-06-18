@@ -99,7 +99,7 @@ const en: BaseTranslation = {
   },
   CashWalletCutover: {
     title: "Cash Wallet Updated",
-    body: "Your Cash Wallet has been upgraded from USD to USDT. Your balance has been automatically migrated. No action is needed on your part.",
+    body: "Your Cash Wallet has been automatically upgraded and now has additional capabilities. No action is needed on your part.",
     dismissButton: "Got it",
   },
   ConversionDetailsScreen: {
@@ -1660,7 +1660,7 @@ const en: BaseTranslation = {
       merchant: "Merchant",
       merchantDesc: "Give rewards, appear on the map, and settle to your bank. ID and bank info required.",
       international: "International",
-      internationalDesc: "Set up international transfers with Bridge KYC.",
+      internationalDesc: "Get an international account and routing number for bank transfers. ID required.",
       personalInfo: "Personal Information",
       fullName: "Full name",
       phoneNumber: "Phone Number",
