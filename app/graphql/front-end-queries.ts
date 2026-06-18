@@ -373,6 +373,18 @@ gql`
     }
   }
 
+  query BridgeWithdrawalRequest($id: ID!) {
+    bridgeWithdrawalRequest(id: $id) {
+      amount
+      createdAt
+      currency
+      externalAccountId
+      failureReason
+      id
+      status
+    }
+  }
+
   query CashWalletCutover {
     cashWalletCutover {
       completedAt

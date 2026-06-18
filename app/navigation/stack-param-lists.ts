@@ -144,7 +144,12 @@ export type RootStackParamList = {
   UnclaimedDepositDetails: { deposit: DepositInfo }
   RefundDeposit: { deposit: DepositInfo }
   CashoutDetails: { type: "local" | "bridge" }
-  CashoutConfirmation: { offer: CashoutOffer }
+  CashoutConfirmation:
+    | { offer: CashoutOffer }
+    | {
+        bridgeWithdrawalId: string
+        bridgeAccountLabel?: string
+      }
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
@@ -169,6 +174,7 @@ export type RootStackParamList = {
   BridgeExternalAccountWebView: {
     linkUrl: string
   }
+  BridgeAddExternalAccount: undefined
   TopupCashout: undefined
   TopupDetails: { paymentType: "card" | "bankTransfer" | "bridge" }
   BankTransfer: {

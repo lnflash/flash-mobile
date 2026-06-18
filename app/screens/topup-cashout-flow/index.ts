@@ -1,5 +1,6 @@
 import BridgeKycWebView from "./BridgeKycWebView"
 import BridgeExternalAccountWebView from "./BridgeExternalAccountWebView"
+import BridgeAddExternalAccount from "./BridgeAddExternalAccount"
 import TopupCashout from "./TopupCashout"
 import TopupDetails from "./TopupDetails"
 import BankTransfer from "./BankTransfer"
@@ -13,6 +14,7 @@ import PaymentSuccessScreen from "./payment-success-screen"
 export {
   BridgeKycWebView,
   BridgeExternalAccountWebView,
+  BridgeAddExternalAccount,
   TopupCashout,
   TopupDetails,
   BankTransfer,
