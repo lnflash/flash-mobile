@@ -5,6 +5,7 @@ import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import * as Keychain from "react-native-keychain"
 import * as bip39 from "bip39"
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view"
 
 // components
 import { PrimaryBtn } from "@app/components/buttons"
@@ -123,29 +124,38 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <Wrapper style={{ backgroundColor: colors.white }}>
-      <Container>
-        <Text type="h01" bold style={{ textAlign: "center" }}>
-          {insideApp ? LL.ImportWallet.importTitle() : LL.ImportWallet.title()}
-        </Text>
-        <Text type="p1" color={colors.grey2} style={{ textAlign: "center" }}>
-          {LL.ImportWallet.description()}
-        </Text>
-        <FlatList
-          data={inputSeedPhrase}
-          numColumns={2}
-          renderItem={renderItemHandler}
-          columnWrapperStyle={{ justifyContent: "space-between", columnGap: 15 }}
-          scrollEnabled={false}
-          style={{ marginVertical: 20 }}
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "space-between" }}
+        enableOnAndroid
+        extraScrollHeight={20}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Container>
+          <Text type="h01" bold style={{ textAlign: "center" }}>
+            {insideApp ? LL.ImportWallet.importTitle() : LL.ImportWallet.title()}
+          </Text>
+          <Text type="p1" color={colors.grey2} style={{ textAlign: "center" }}>
+            {LL.ImportWallet.description()}
+          </Text>
+          <FlatList
+            data={inputSeedPhrase}
+            numColumns={2}
+            renderItem={renderItemHandler}
+            columnWrapperStyle={{ justifyContent: "space-between", columnGap: 15 }}
+            scrollEnabled={false}
+            style={{ marginVertical: 20 }}
+          />
+        </Container>
+        <PrimaryBtn
+          label={LL.ImportWallet.complete()}
+          disabled={disabled}
+          loading={loading}
+          onPress={onComplete}
+          btnStyle={{ marginBottom: bottom || 10 }}
         />
-      </Container>
-      <PrimaryBtn
-        label={LL.ImportWallet.complete()}
-        disabled={disabled}
-        loading={loading}
-        onPress={onComplete}
-        btnStyle={{ marginBottom: bottom || 10 }}
-      />
+      </KeyboardAwareScrollView>
       {loading && <Loading />}
     </Wrapper>
   )
