@@ -1,7 +1,7 @@
 name: "Check code"
 on:
   push:
-    branches: [feat/fygaro]
+    branches: [feat/fygaro, main]
   pull_request:
     branches: [main, feat/fygaro]
 jobs:
