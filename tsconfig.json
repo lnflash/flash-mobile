@@ -2,7 +2,8 @@
   "extends": "@react-native/typescript-config/tsconfig.json",
   "compilerOptions": {
     "target": "ES2017",
-    "module": "Node16",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "allowJs": false,
     "sourceMap": true,

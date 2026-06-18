@@ -24,6 +24,11 @@ InforError = "InforError"
 # Nostr terminology: "parameterized replaceable events" are referred to as
 # "replaceables" in NIP discussions.
 replaceables = "replaceables"
+# Earns quiz-ID misspellings that also surface as bare words (i18n strings /
+# generated types). The identifiers are a backend contract and can't be renamed
+# (see extend-identifiers above), so accept the word form everywhere too.
+Aggrement = "Aggrement"
+Governement = "Governement"
 
 [files]
 extend-exclude = ["*.svg", "app/i18n/raw-i18n", "earns-utils.test.ts", "*.plist", "*.pbxproj", "Appfile", "google-services.json", "patches", "ci/tasks/*", "logcat.txt", "*.storyboard"]
