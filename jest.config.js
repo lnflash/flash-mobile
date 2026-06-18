@@ -9,8 +9,19 @@ module.exports = {
     "\\.(ts|tsx)$": [
       "ts-jest",
       {
-        compiler: "ttypescript",
         tsconfig: "tsconfig.jest.json",
+        diagnostics: false,
+        astTransformers: {
+          before: [
+            {
+              path: "./test/ts-auto-mock-transformer.js",
+              options: {
+                cacheBetweenTests: false,
+                features: ["random"],
+              },
+            },
+          ],
+        },
       },
     ],
     "^.+\\.svg$": "jest-transform-stub",
@@ -19,6 +30,7 @@ module.exports = {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   rootDir: ".",
   moduleNameMapper: {
+    "^@app/utils/breez-sdk$": ["<rootDir>__mocks__/breez-sdk.js"],
     "^@app/(.*)$": ["<rootDir>app/$1"],
     "^@mocks/(.*)$": ["<rootDir>__mocks__/$1"],
   },
