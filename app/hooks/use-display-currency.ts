@@ -1,14 +1,11 @@
 import { gql } from "@apollo/client"
 import { useCurrencyListQuery, WalletCurrency } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details"
 import {
   DisplayAmount,
   DisplayCurrency,
-  lessThan,
   MoneyAmount,
-  toBtcMoneyAmount,
-  toUsdMoneyAmount,
+  USDT_MICROS_PER_USDT,
   WalletAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
@@ -82,36 +79,6 @@ const formatCurrencyHelper = ({
   }${symbol}${amountStr}${currencyCode ? ` ${currencyCode}` : ""}`
 }
 
-const displayCurrencyHasSignificantMinorUnits = ({
-  convertMoneyAmount,
-  amountInMajorUnitOrSatsToMoneyAmount,
-}: {
-  convertMoneyAmount?: ConvertMoneyAmount
-  amountInMajorUnitOrSatsToMoneyAmount: (
-    amount: number,
-    currency: WalletOrDisplayCurrency,
-  ) => MoneyAmount<WalletOrDisplayCurrency>
-}) => {
-  if (!convertMoneyAmount) {
-    return true
-  }
-
-  const oneMajorUnitOfDisplayCurrency = amountInMajorUnitOrSatsToMoneyAmount(
-    1,
-    DisplayCurrency,
-  )
-
-  const oneUsdCentInDisplayCurrency = convertMoneyAmount(
-    toUsdMoneyAmount(1),
-    DisplayCurrency,
-  )
-
-  return lessThan({
-    value: oneUsdCentInDisplayCurrency,
-    lessThan: oneMajorUnitOfDisplayCurrency,
-  })
-}
-
 export const useDisplayCurrency = () => {
   const { LL } = useI18nContext()
   const isAuthed = useIsAuthed()
@@ -136,39 +103,15 @@ export const useDisplayCurrency = () => {
         case WalletCurrency.Btc:
           return moneyAmount.amount
         case WalletCurrency.Usd:
-        case WalletCurrency.Usdt:
           return moneyAmount.amount / 100
+        case WalletCurrency.Usdt:
+          return moneyAmount.amount / USDT_MICROS_PER_USDT
         case DisplayCurrency:
           return moneyAmount.amount / 10 ** displayCurrencyInfo.fractionDigits
       }
     },
     [displayCurrencyInfo],
   )
-
-  const amountInMajorUnitOrSatsToMoneyAmount = useCallback(
-    (
-      amount: number,
-      currency: WalletOrDisplayCurrency,
-    ): MoneyAmount<WalletOrDisplayCurrency> => {
-      switch (currency) {
-        case WalletCurrency.Btc:
-          return toBtcMoneyAmount(Math.round(amount))
-        case WalletCurrency.Usd:
-        case WalletCurrency.Usdt:
-          return toUsdMoneyAmount(Math.round(amount * 100))
-        case DisplayCurrency:
-          return toDisplayMoneyAmount(
-            Math.round(amount * 10 ** displayCurrencyInfo.fractionDigits),
-          )
-      }
-    },
-    [displayCurrencyInfo, toDisplayMoneyAmount],
-  )
-
-  const displayCurrencyShouldDisplayDecimals = displayCurrencyHasSignificantMinorUnits({
-    convertMoneyAmount,
-    amountInMajorUnitOrSatsToMoneyAmount,
-  })
 
   const currencyInfo: Record<WalletOrDisplayCurrency, CurrencyInfo> = useMemo(() => {
     return {
@@ -180,7 +123,7 @@ export const useDisplayCurrency = () => {
       },
       [WalletCurrency.Usdt]: {
         symbol: usdDisplayCurrency.symbol,
-        minorUnitToMajorUnitOffset: usdDisplayCurrency.fractionDigits,
+        minorUnitToMajorUnitOffset: 6,
         showFractionDigits: true,
         currencyCode: "USDT",
       },
@@ -260,7 +203,9 @@ export const useDisplayCurrency = () => {
         symbol: noSymbol ? "" : symbol,
         fractionDigits: showFractionDigits ? minorUnitToMajorUnitOffset : 0,
         currencyCode:
-          moneyAmount.currency === WalletCurrency.Btc && !noSuffix
+          (moneyAmount.currency === WalletCurrency.Btc ||
+            moneyAmount.currency === WalletCurrency.Usdt) &&
+          !noSuffix
             ? currencyCode
             : undefined,
       })
