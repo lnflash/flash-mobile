@@ -72,12 +72,16 @@ const InnerGroupChat: React.FC = () => {
     return unsubStore
   }, [])
 
-  // Subscribe to profiles for any new authors we haven't seen yet
+  // Subscribe to profiles for any new authors/members/admins we haven't seen yet
   useEffect(() => {
-    const newPubkeys = messages
-      .filter((m) => !m.isSystem && !subscribedPubkeys.current.has(m.authorId))
-      .map((m) => m.authorId)
-      .filter((id, i, arr) => arr.indexOf(id) === i)
+    const candidates = [
+      ...messages.filter((m) => !m.isSystem).map((m) => m.authorId),
+      ...knownMembers,
+      ...adminList,
+    ]
+    const newPubkeys = candidates.filter(
+      (id, i, arr) => !subscribedPubkeys.current.has(id) && arr.indexOf(id) === i,
+    )
 
     if (newPubkeys.length === 0) return
 
@@ -89,7 +93,7 @@ const InnerGroupChat: React.FC = () => {
     )
 
     setProfileMap(readProfilesFromStore([...subscribedPubkeys.current]))
-  }, [messages])
+  }, [messages, knownMembers, adminList])
 
   const chatBg = mode === "dark" ? "#0e1a16" : "#eef5f2"
 

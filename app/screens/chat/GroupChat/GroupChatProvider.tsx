@@ -60,6 +60,7 @@ type ContextValue = {
   requestJoin: () => Promise<void>
   removeMessage: (messageId: string) => Promise<void>
   removeMember: (pubkey: string) => Promise<void>
+  addMember: (pubkey: string) => Promise<void>
   editMetadata: (metadata: GroupMetadataInput) => Promise<void>
   setRole: (pubkey: string, role: Nip29Role) => Promise<void>
   createGroup: (metadata: GroupMetadataInput) => Promise<string>
@@ -96,6 +97,11 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     picture?: string
   }>({})
   const prevMembersRef = useRef<Set<string>>(new Set())
+  // Members added/removed locally that the relay's 39002 snapshot hasn't caught up
+  // to yet. Applied in recompute so the roster updates immediately, and reconciled
+  // away once the relay snapshot reflects the change.
+  const optimisticAddedRef = useRef<Set<string>>(new Set())
+  const optimisticRemovedRef = useRef<Set<string>>(new Set())
 
   const messages = useMemo(() => {
     return Array.from(messagesMap.values())
@@ -129,34 +135,50 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     setMetadata({})
     setIsMember(false)
     prevMembersRef.current = new Set()
+    optimisticAddedRef.current = new Set()
+    optimisticRemovedRef.current = new Set()
   }, [groupId, relayUrls.join("|")])
 
   // ----- Sub: group messages (kind 9) -----
+  // The runtime's onEvent only fires for events NOT already cached, so messages
+  // pulled by an earlier mount/subscription would never reach us via the callback.
+  // Derive from the shared EventStore instead (same pattern as the 39xxx snapshots),
+  // merging in any kind-9 messages we don't already have without dropping system messages.
   useEffect(() => {
+    const store = nostrRuntime.getEventStore()
+    const ingest = () => {
+      const all = store.getAllCanonical()
+      setMessagesMap((prev) => {
+        let next: Map<string, GroupMessage> | null = null
+        for (const event of all) {
+          if (event.kind !== 9) continue
+          if (!event.tags.some((t) => t[0] === "h" && t[1] === groupId)) continue
+          if (prev.has(event.id)) continue
+          const replyTag = event.tags.find((t) => t[0] === "e" && t[3] === "reply")
+          const msg: GroupMessage = {
+            id: event.id,
+            authorId: event.pubkey,
+            createdAt: event.created_at * 1000,
+            text: event.content,
+            replyToId: replyTag?.[1],
+          }
+          if (!next) next = new Map(prev)
+          next.set(msg.id, msg)
+        }
+        return next ?? prev
+      })
+    }
+
     nostrRuntime.ensureSubscription(
       `nip29:messages:${groupId}`,
       { "#h": [groupId], "kinds": [9] },
-      (event: Event) => {
-        const replyTag = event.tags.find(
-          (t: string[]) => t[0] === "e" && t[3] === "reply",
-        )
-        const msg: GroupMessage = {
-          id: event.id,
-          authorId: event.pubkey,
-          createdAt: event.created_at * 1000,
-          text: event.content,
-          replyToId: replyTag?.[1],
-        }
-        setMessagesMap((prev) => {
-          if (prev.has(msg.id)) return prev
-          const next = new Map(prev)
-          next.set(msg.id, msg)
-          return next
-        })
-      },
-      () => {},
+      undefined,
+      undefined,
       relayUrls,
     )
+    const unsubscribe = store.subscribe(ingest)
+    ingest()
+    return unsubscribe
   }, [relayUrls.join("|"), groupId])
 
   // ----- Subscribe to relay snapshots (39000 metadata / 39001 admins / 39002 members) -----
@@ -215,7 +237,18 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       }
 
       if (members) {
-        const currentSet = new Set(pTags(members).map((t) => t[1]))
+        const relaySet = new Set(pTags(members).map((t) => t[1]))
+        // Reconcile optimistic ops: once the relay snapshot reflects them, stop forcing.
+        optimisticAddedRef.current.forEach((pk) => {
+          if (relaySet.has(pk)) optimisticAddedRef.current.delete(pk)
+        })
+        optimisticRemovedRef.current.forEach((pk) => {
+          if (!relaySet.has(pk)) optimisticRemovedRef.current.delete(pk)
+        })
+        // Apply still-pending optimistic adds/removes on top of the relay snapshot.
+        const currentSet = new Set(relaySet)
+        optimisticAddedRef.current.forEach((pk) => currentSet.add(pk))
+        optimisticRemovedRef.current.forEach((pk) => currentSet.delete(pk))
         // Announce a member joining only when transitioning from a known roster.
         if (prevMembersRef.current.size !== 0) {
           currentSet.forEach((pk) => {
@@ -244,22 +277,43 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   }, [groupId, relayUrls.join("|"), userPublicKey])
 
   // ----- Sub: deleted messages (kind 9005) -----
+  // Derive from the store for the same reason as messages above (cached events
+  // never reach the onEvent callback).
   useEffect(() => {
+    const store = nostrRuntime.getEventStore()
+    const ingest = () => {
+      const all = store.getAllCanonical()
+      const deleted: string[] = []
+      for (const event of all) {
+        if (event.kind !== 9005) continue
+        if (!event.tags.some((t) => t[0] === "h" && t[1] === groupId)) continue
+        const id = event.tags.find((t) => t[0] === "e")?.[1]
+        if (id) deleted.push(id)
+      }
+      if (deleted.length === 0) return
+      setDeletedIds((prev) => {
+        let changed = false
+        const next = new Set(prev)
+        deleted.forEach((id) => {
+          if (!next.has(id)) {
+            next.add(id)
+            changed = true
+          }
+        })
+        return changed ? next : prev
+      })
+    }
+
     nostrRuntime.ensureSubscription(
       `nip29:deletions:${groupId}`,
       { "#h": [groupId], "kinds": [9005] },
-      (event: Event) => {
-        const deletedId = event.tags.find((t: string[]) => t[0] === "e")?.[1]
-        if (deletedId) {
-          setDeletedIds((prev) => {
-            if (prev.has(deletedId)) return prev
-            return new Set([...prev, deletedId])
-          })
-        }
-      },
-      () => {},
+      undefined,
+      undefined,
       relayUrls,
     )
+    const unsubscribe = store.subscribe(ingest)
+    ingest()
+    return unsubscribe
   }, [groupId, relayUrls.join("|")])
 
   // Publish an event to the configured relays, responding to NIP-42 AUTH challenges.
@@ -349,7 +403,64 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
         content: "",
         pubkey: userPublicKey,
       } as any)
-      await publishEvent(signedEvent)
+
+      // Optimistically remove from the roster; the relay's updated 39002 snapshot
+      // will confirm (and recompute keeps subtracting until it does).
+      optimisticAddedRef.current.delete(pubkey)
+      optimisticRemovedRef.current.add(pubkey)
+      setKnownMembers((prev) => {
+        const next = new Set(prev)
+        next.delete(pubkey)
+        return next
+      })
+
+      const results = await publishEvent(signedEvent)
+      const allFailed =
+        results.length > 0 && results.every((r) => r.status === "rejected")
+      if (allFailed) {
+        // Roll back the optimistic removal so the member reappears.
+        optimisticRemovedRef.current.delete(pubkey)
+        setKnownMembers((prev) => new Set([...prev, pubkey]))
+      }
+    },
+    [userPublicKey, groupId, relayUrls, publishEvent],
+  )
+
+  // Add a user to the group (NIP-29 kind 9000 put-user with just a `p` tag, no
+  // role — the relay adds them as a plain member). King-only; the relay rejects
+  // the event with insufficient permissions otherwise.
+  const addMember = useCallback(
+    async (pubkey: string) => {
+      if (!userPublicKey) throw Error("No user pubkey present")
+      const signer = await getSigner()
+      const signedEvent = await signer.signEvent({
+        kind: 9000,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: [
+          ["h", groupId],
+          ["p", pubkey],
+        ],
+        content: "",
+        pubkey: userPublicKey,
+      } as any)
+
+      // Optimistically add to the roster; the relay's updated 39002 snapshot
+      // confirms (and recompute keeps applying until it does).
+      optimisticRemovedRef.current.delete(pubkey)
+      optimisticAddedRef.current.add(pubkey)
+      setKnownMembers((prev) => new Set([...prev, pubkey]))
+
+      const results = await publishEvent(signedEvent)
+      const allFailed = results.length > 0 && results.every((r) => r.status === "rejected")
+      if (allFailed) {
+        // Roll back the optimistic add.
+        optimisticAddedRef.current.delete(pubkey)
+        setKnownMembers((prev) => {
+          const next = new Set(prev)
+          next.delete(pubkey)
+          return next
+        })
+      }
     },
     [userPublicKey, groupId, relayUrls, publishEvent],
   )
@@ -479,6 +590,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       requestJoin,
       removeMessage,
       removeMember,
+      addMember,
       editMetadata,
       setRole,
       createGroup,
@@ -499,6 +611,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       requestJoin,
       removeMessage,
       removeMember,
+      addMember,
       editMetadata,
       setRole,
       createGroup,

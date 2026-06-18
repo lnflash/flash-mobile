@@ -14,6 +14,7 @@ import Icon from "react-native-vector-icons/Ionicons"
 import { nip19 } from "nostr-tools"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useNostrGroupChat } from "./GroupChatProvider"
+import { GroupMembersModal } from "./GroupMembersModal"
 
 const DEFAULT_AVATAR =
   "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg"
@@ -46,6 +47,7 @@ export const GroupInfoModal: React.FC<Props> = ({
   const { editMetadata } = useNostrGroupChat()
 
   const [editing, setEditing] = useState(false)
+  const [membersVisible, setMembersVisible] = useState(false)
   const [form, setForm] = useState({
     name: groupMetadata.name || "",
     about: groupMetadata.about || "",
@@ -119,12 +121,17 @@ export const GroupInfoModal: React.FC<Props> = ({
             {groupMetadata.about ? (
               <Text style={styles.groupAbout}>{groupMetadata.about}</Text>
             ) : null}
-            <View style={styles.memberBadge}>
+            <TouchableOpacity
+              style={styles.memberBadge}
+              activeOpacity={0.7}
+              onPress={() => setMembersVisible(true)}
+            >
               <Icon name="people-outline" size={14} color={colors.primary} />
               <Text style={[styles.memberCount, { color: colors.primary }]}>
                 {memberCount} {memberCount === 1 ? "member" : "members"}
               </Text>
-            </View>
+              <Icon name="chevron-forward" size={14} color={colors.primary} />
+            </TouchableOpacity>
             {isAdmin && (
               <View style={[styles.adminBadge, { backgroundColor: colors.primary + "22" }]}>
                 <Icon name="shield-checkmark-outline" size={13} color={colors.primary} />
@@ -222,6 +229,12 @@ export const GroupInfoModal: React.FC<Props> = ({
           )}
         </ScrollView>
       </View>
+
+      <GroupMembersModal
+        visible={membersVisible}
+        onClose={() => setMembersVisible(false)}
+        profileMap={profileMap}
+      />
     </Modal>
   )
 }
