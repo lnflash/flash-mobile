@@ -9,7 +9,8 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import Icon from "react-native-vector-icons/Ionicons"
 import type { StackScreenProps } from "@react-navigation/stack"
 import type { RootStackParamList } from "../../../navigation/stack-param-lists"
-import { useNostrGroupChat, GroupMessage } from "./GroupChatProvider"
+import { useNostrGroupChat, GroupMessage, NostrGroupChatProvider } from "./GroupChatProvider"
+import { NIP29_DEFAULT_GROUP_ID, NIP29_DEFAULT_RELAY_URL } from "./constants"
 import { useChatContext } from "../chatContext"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { MessageInput } from "../components/MessageInput"
@@ -54,7 +55,7 @@ const InnerGroupChat: React.FC = () => {
   const { theme: { colors, mode } } = useTheme()
   const insets = useSafeAreaInsets()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const { messages, isMember, isAdmin, adminList, knownMembers, sendMessage, requestJoin, removeMessage, removeMember, addAdmin, groupMetadata } = useNostrGroupChat()
+  const { messages, isMember, isAdmin, canModerate, isKing, adminList, roleMap, knownMembers, sendMessage, requestJoin, removeMessage, removeMember, setRole, groupMetadata } = useNostrGroupChat()
   const { userPublicKey } = useChatContext()
   const [replyTo, setReplyTo] = useState<Rumor | null>(null)
   const [infoVisible, setInfoVisible] = useState(false)
@@ -97,38 +98,49 @@ const InnerGroupChat: React.FC = () => {
     const targetIsAdmin = adminList.includes(msg.authorId)
     const options: { text: string; onPress: () => void; style?: "destructive" | "cancel" }[] = []
 
-    options.push({
-      text: "Delete Message",
-      style: "destructive",
-      onPress: () => removeMessage(msg.id),
-    })
+    // Delete is available to any moderator (king or bishop).
+    if (canModerate) {
+      options.push({
+        text: "Delete Message",
+        style: "destructive",
+        onPress: () => removeMessage(msg.id),
+      })
+    }
 
     if (!isOwnMessage) {
-      options.push({
-        text: "Remove User",
-        style: "destructive",
-        onPress: () => {
-          Alert.alert("Remove User", "Remove this user from the group?", [
-            { text: "Cancel", style: "cancel" },
-            { text: "Remove", style: "destructive", onPress: () => removeMember(msg.authorId) },
-          ])
-        },
-      })
-
-      if (!targetIsAdmin) {
+      // Removing users and promoting roles are king-only actions.
+      if (isKing) {
         options.push({
-          text: "Promote to Admin",
+          text: "Remove User",
+          style: "destructive",
           onPress: () => {
-            Alert.alert(
-              "Promote to Admin",
-              "Give this user admin permissions in the group?",
-              [
-                { text: "Cancel", style: "cancel" },
-                { text: "Promote", onPress: () => addAdmin(msg.authorId) },
-              ],
-            )
+            Alert.alert("Remove User", "Remove this user from the group?", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Remove", style: "destructive", onPress: () => removeMember(msg.authorId) },
+            ])
           },
         })
+
+        if (!targetIsAdmin) {
+          options.push({
+            text: "Make Bishop",
+            onPress: () => {
+              Alert.alert("Make Bishop", "Grant this user moderator (bishop) permissions?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Make Bishop", onPress: () => setRole(msg.authorId, "bishop") },
+              ])
+            },
+          })
+          options.push({
+            text: "Make King",
+            onPress: () => {
+              Alert.alert("Make King", "Grant this user full admin (king) permissions?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Make King", onPress: () => setRole(msg.authorId, "king") },
+              ])
+            },
+          })
+        }
       }
     }
 
@@ -202,7 +214,7 @@ const InnerGroupChat: React.FC = () => {
               onReply={setReplyTo}
               onReact={() => {}}
               isGroupChat
-              onAdminPress={isAdmin ? () => handleAdminPress(msg) : undefined}
+              onAdminPress={canModerate || isKing ? () => handleAdminPress(msg) : undefined}
             />
           )
         }}
@@ -234,6 +246,7 @@ const InnerGroupChat: React.FC = () => {
         onClose={() => setInfoVisible(false)}
         groupMetadata={groupMetadata}
         adminList={adminList}
+        roleMap={roleMap}
         memberCount={knownMembers.size}
         profileMap={profileMap}
         isAdmin={isAdmin}
@@ -242,8 +255,13 @@ const InnerGroupChat: React.FC = () => {
   )
 }
 
-export const SupportGroupChatScreen: React.FC<SupportGroupChatScreenProps> = () => {
-  return <InnerGroupChat />
+export const SupportGroupChatScreen: React.FC<SupportGroupChatScreenProps> = ({ route }) => {
+  const groupId = route.params?.groupId || NIP29_DEFAULT_GROUP_ID
+  return (
+    <NostrGroupChatProvider groupId={groupId} relayUrls={[NIP29_DEFAULT_RELAY_URL]}>
+      <InnerGroupChat />
+    </NostrGroupChatProvider>
+  )
 }
 
 const useStyles = makeStyles(({ colors }) => ({

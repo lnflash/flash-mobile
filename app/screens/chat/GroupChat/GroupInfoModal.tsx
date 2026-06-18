@@ -13,9 +13,6 @@ import { Text, makeStyles, useTheme, Button } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
 import { nip19 } from "nostr-tools"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useNavigation } from "@react-navigation/native"
-import { StackNavigationProp } from "@react-navigation/stack"
-import type { RootStackParamList } from "../../../navigation/stack-param-lists"
 import { useNostrGroupChat } from "./GroupChatProvider"
 
 const DEFAULT_AVATAR =
@@ -26,6 +23,8 @@ type Props = {
   onClose: () => void
   groupMetadata: { name?: string; about?: string; picture?: string }
   adminList: string[]
+  // pubkey -> roles (king/bishop) from the relay's 39001 event.
+  roleMap?: Map<string, string[]>
   memberCount: number
   profileMap: Map<string, any>
   isAdmin: boolean
@@ -36,6 +35,7 @@ export const GroupInfoModal: React.FC<Props> = ({
   onClose,
   groupMetadata,
   adminList,
+  roleMap,
   memberCount,
   profileMap,
   isAdmin,
@@ -43,7 +43,6 @@ export const GroupInfoModal: React.FC<Props> = ({
   const styles = useStyles()
   const { theme: { colors } } = useTheme()
   const insets = useSafeAreaInsets()
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { editMetadata } = useNostrGroupChat()
 
   const [editing, setEditing] = useState(false)
@@ -192,27 +191,14 @@ export const GroupInfoModal: React.FC<Props> = ({
             </View>
           )}
 
-          {/* Dev tools entry */}
-          <TouchableOpacity
-            style={styles.devToolsBtn}
-            onPress={() => {
-              onClose()
-              navigation.navigate("Nip29DevScreen")
-            }}
-          >
-            <Icon name="construct-outline" size={16} color={colors.primary} />
-            <Text style={[styles.devToolsText, { color: colors.primary }]}>
-              Open NIP-29 Dev Tools
-            </Text>
-            <Icon name="chevron-forward" size={16} color={colors.primary} />
-          </TouchableOpacity>
-
           {/* Admins section */}
           {adminList.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Admins</Text>
               {adminList.map((pubkey) => {
                 const profile = profileMap.get(pubkey)
+                const roles = roleMap?.get(pubkey) ?? []
+                const roleLabel = roles.length ? roles.join(", ") : "admin"
                 return (
                   <View key={pubkey} style={styles.memberRow}>
                     <Image
@@ -227,7 +213,7 @@ export const GroupInfoModal: React.FC<Props> = ({
                     </View>
                     <View style={[styles.adminTag, { backgroundColor: colors.primary + "22" }]}>
                       <Icon name="shield-checkmark-outline" size={12} color={colors.primary} />
-                      <Text style={[styles.adminTagText, { color: colors.primary }]}>Admin</Text>
+                      <Text style={[styles.adminTagText, { color: colors.primary, textTransform: "capitalize" }]}>{roleLabel}</Text>
                     </View>
                   </View>
                 )

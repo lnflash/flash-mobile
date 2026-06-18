@@ -14,6 +14,7 @@ import { useChatContext } from "../../../screens/chat/chatContext"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { pool } from "@app/utils/nostr/pool"
 import { toastShow } from "@app/utils/toast"
+import { NIP29_ROLE_BISHOP, NIP29_ROLE_KING, Nip29Role } from "./constants"
 
 // ===== Types =====
 
@@ -45,15 +46,22 @@ type ContextValue = {
   messages: GroupMessage[]
   groupMetadata: { name?: string; about?: string; picture?: string }
   isMember: boolean
+  // Membership in the admin list (king or bishop). Kept as `isAdmin` for display.
   isAdmin: boolean
+  // Can delete messages / moderate (king or bishop).
+  canModerate: boolean
+  // Can promote other users to a role (king only).
+  isKing: boolean
   adminList: string[]
+  // pubkey -> roles granted by the relay (from kind 39001).
+  roleMap: Map<string, string[]>
   knownMembers: Set<string>
   sendMessage: (text: string, replyToId?: string) => Promise<void>
   requestJoin: () => Promise<void>
   removeMessage: (messageId: string) => Promise<void>
   removeMember: (pubkey: string) => Promise<void>
   editMetadata: (metadata: GroupMetadataInput) => Promise<void>
-  addAdmin: (pubkey: string) => Promise<void>
+  setRole: (pubkey: string, role: Nip29Role) => Promise<void>
   createGroup: (metadata: GroupMetadataInput) => Promise<string>
 }
 
@@ -79,7 +87,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   const [messagesMap, setMessagesMap] = useState<Map<string, GroupMessage>>(new Map())
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
   const [isMember, setIsMember] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [roleMap, setRoleMap] = useState<Map<string, string[]>>(new Map())
   const [adminList, setAdminList] = useState<string[]>([])
   const [knownMembers, setKnownMembers] = useState<Set<string>>(new Set())
   const [metadata, setMetadata] = useState<{
@@ -95,6 +103,16 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       .sort((a, b) => b.createdAt - a.createdAt)
   }, [messagesMap, deletedIds])
 
+  // Roles for the current user, derived from the relay's 39001 admin list.
+  const myRoles = useMemo(
+    () => (userPublicKey ? roleMap.get(userPublicKey) ?? [] : []),
+    [roleMap, userPublicKey],
+  )
+  const isKing = myRoles.includes(NIP29_ROLE_KING)
+  const canModerate = isKing || myRoles.includes(NIP29_ROLE_BISHOP)
+  // `isAdmin` = present in the admin list at all (any role). Used only for display.
+  const isAdmin = !!userPublicKey && roleMap.has(userPublicKey)
+
   useEffect(() => {
     if (userPublicKey && knownMembers.size > 0) {
       setIsMember(knownMembers.has(userPublicKey))
@@ -107,9 +125,9 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     setDeletedIds(new Set())
     setKnownMembers(new Set())
     setAdminList([])
+    setRoleMap(new Map())
     setMetadata({})
     setIsMember(false)
-    setIsAdmin(false)
     prevMembersRef.current = new Set()
   }, [groupId, relayUrls.join("|")])
 
@@ -141,96 +159,88 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     )
   }, [relayUrls.join("|"), groupId])
 
-  // ----- Sub: group metadata (kind 39000) -----
+  // ----- Subscribe to relay snapshots (39000 metadata / 39001 admins / 39002 members) -----
+  // These addressable, relay-signed events may already be cached by another
+  // subscriber (e.g. the group list), in which case the runtime's onEvent never
+  // fires here. So we keep the subscriptions warm and DERIVE all state from the
+  // shared EventStore on every change.
   useEffect(() => {
-    console.log(`[nip29] subscribe metadata group=${groupId} relays=${relayUrls.join(",")}`)
     nostrRuntime.ensureSubscription(
       `nip29:group_metadata:${groupId}`,
-      { "kinds": [39000], "#d": [groupId] },
-      (event: Event) => {
-        console.log(`[nip29] recv 39000 metadata`, { tags: event.tags })
+      { kinds: [39000], "#d": [groupId] },
+      undefined,
+      undefined,
+      relayUrls,
+    )
+    nostrRuntime.ensureSubscription(
+      `nip29:membership:${groupId}`,
+      { kinds: [39002], "#d": [groupId] },
+      undefined,
+      undefined,
+      relayUrls,
+    )
+    nostrRuntime.ensureSubscription(
+      `nip29:admins:${groupId}`,
+      { kinds: [39001], "#d": [groupId] },
+      undefined,
+      undefined,
+      relayUrls,
+    )
+
+    const store = nostrRuntime.getEventStore()
+    const dTagOf = (e: Event) => e.tags.find((t) => t[0] === "d")?.[1]
+    const pTags = (e: Event) => e.tags.filter((t) => t[0] === "p" && t[1])
+
+    const recompute = () => {
+      const all = store.getAllCanonical()
+      const meta = all.find((e) => e.kind === 39000 && dTagOf(e) === groupId)
+      const admins = all.find((e) => e.kind === 39001 && dTagOf(e) === groupId)
+      const members = all.find((e) => e.kind === 39002 && dTagOf(e) === groupId)
+
+      if (meta) {
         const result: { name?: string; about?: string; picture?: string } = {}
-        for (const [key, value] of event.tags) {
+        for (const [key, value] of meta.tags) {
           if (key === "name") result.name = value
           else if (key === "about") result.about = value
           else if (key === "picture") result.picture = value
         }
         setMetadata(result)
-      },
-      () => {},
-      relayUrls,
-    )
-  }, [groupId])
+      }
 
-  // ----- Sub: membership roster (kind 39002) -----
-  useEffect(() => {
-    const filters: any = { "kinds": [39002], "#d": [groupId] }
-    if (adminPubkeys?.length) filters.authors = adminPubkeys
+      if (admins) {
+        const nextRoleMap = new Map<string, string[]>()
+        pTags(admins).forEach((t) => nextRoleMap.set(t[1], t.slice(2)))
+        setAdminList(Array.from(nextRoleMap.keys()))
+        setRoleMap(nextRoleMap)
+      }
 
-    nostrRuntime.ensureSubscription(
-      `nip29:membership:${groupId}`,
-      filters,
-      (event: any) => {
-        const currentMembers: string[] = event.tags
-          .filter((tag: string[]) => tag?.[0] === "p" && tag[1])
-          .map((tag: string[]) => tag[1])
-        console.log(`[nip29] recv 39002 members count=${currentMembers.length} group=${groupId}`)
-
-        const currentSet = new Set(currentMembers)
-
-        if (
-          userPublicKey &&
-          !prevMembersRef.current.has(userPublicKey) &&
-          currentSet.has(userPublicKey)
-        ) {
-          setMessagesMap((prev) => {
-            const next = new Map(prev)
-            next.set(`sys-joined-self-${Date.now()}`, makeSystemMessage("You joined the group"))
-            return next
+      if (members) {
+        const currentSet = new Set(pTags(members).map((t) => t[1]))
+        // Announce a member joining only when transitioning from a known roster.
+        if (prevMembersRef.current.size !== 0) {
+          currentSet.forEach((pk) => {
+            if (!prevMembersRef.current.has(pk)) {
+              const label =
+                pk === userPublicKey
+                  ? "You joined the group"
+                  : `${pk.slice(0, 6)}…${pk.slice(-4)} joined the group`
+              setMessagesMap((prev) => {
+                const next = new Map(prev)
+                next.set(`sys-joined-${pk}-${Date.now()}`, makeSystemMessage(label))
+                return next
+              })
+            }
           })
         }
-
         if (userPublicKey) setIsMember(currentSet.has(userPublicKey))
-
-        currentMembers.forEach((pk) => {
-          if (pk !== userPublicKey && !prevMembersRef.current.has(pk) && prevMembersRef.current.size !== 0) {
-            const short = pk.slice(0, 6) + "…" + pk.slice(-4)
-            setMessagesMap((prev) => {
-              const next = new Map(prev)
-              next.set(`sys-joined-${pk}-${Date.now()}`, makeSystemMessage(`${short} joined the group`))
-              return next
-            })
-          }
-        })
-
         prevMembersRef.current = currentSet
         setKnownMembers(currentSet)
-      },
-      () => {},
-      relayUrls,
-    )
-  }, [relayUrls.join("|"), groupId, userPublicKey, adminPubkeys?.join("|")])
+      }
+    }
 
-  // ----- Sub: admin list (kind 39001) -----
-  useEffect(() => {
-    nostrRuntime.ensureSubscription(
-      `nip29:admins:${groupId}`,
-      { "kinds": [39001], "#d": [groupId] },
-      (event: Event) => {
-        const adminPubkeyList = event.tags
-          .filter((t: string[]) => t[0] === "p")
-          .map((t: string[]) => t[1])
-        console.log(
-          `[nip29] recv 39001 admins count=${adminPubkeyList.length} group=${groupId} includesMe=${
-            !!userPublicKey && adminPubkeyList.includes(userPublicKey)
-          }`,
-        )
-        setAdminList(adminPubkeyList)
-        if (userPublicKey) setIsAdmin(adminPubkeyList.includes(userPublicKey))
-      },
-      () => {},
-      relayUrls,
-    )
+    const unsubscribe = store.subscribe(recompute)
+    recompute()
+    return unsubscribe
   }, [groupId, relayUrls.join("|"), userPublicKey])
 
   // ----- Sub: deleted messages (kind 9005) -----
@@ -364,8 +374,10 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     [userPublicKey, groupId, relayUrls, publishEvent],
   )
 
-  const addAdmin = useCallback(
-    async (pubkey: string) => {
+  // Assign a relay-recognized role (king/bishop) to a user. Requires the caller to
+  // be a king; the relay rejects unauthorized role changes with insufficient permissions.
+  const setRole = useCallback(
+    async (pubkey: string, role: Nip29Role) => {
       if (!userPublicKey) throw Error("No user pubkey present")
       const signer = await getSigner()
       const signedEvent = await signer.signEvent({
@@ -373,7 +385,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
         created_at: Math.floor(Date.now() / 1000),
         tags: [
           ["h", groupId],
-          ["p", pubkey, "admin"],
+          ["p", pubkey, role],
         ],
         content: "",
         pubkey: userPublicKey,
@@ -413,19 +425,10 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
         await publishEvent(metaEvent)
       }
 
-      // Add the creator as an admin member (relay only auto-adds to admins, not members)
-      const addSelfEvent = await signer.signEvent({
-        kind: 9000,
-        created_at: Math.floor(Date.now() / 1000) + 2,
-        tags: [
-          ["h", newGroupId],
-          ["p", userPublicKey, "admin"],
-        ],
-        content: "",
-        pubkey: userPublicKey,
-      } as any)
-      await publishEvent(addSelfEvent)
-
+      // NOTE: do NOT self-add via kind 9000 here. On create (kind 9007) the relay
+      // already makes the creator a `king` and a member. A self-add with role "admin"
+      // would overwrite the king role with an unrecognized label and strip the
+      // creator's moderation permissions.
       return newGroupId
     },
     [userPublicKey, relayUrls, publishEvent],
@@ -436,20 +439,10 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     const signer = await getSigner()
     console.log(`[nip29] requestJoin invoked group=${groupId} isAdmin=${isAdmin}`)
 
-    // If we're already an admin, skip the join-request flow and self-add directly.
+    // Admins (king/bishop) are already members on the relay — no join request needed,
+    // and we must not re-publish a 9000 that could overwrite our role.
     if (isAdmin) {
-      const addSelfEvent = await signer.signEvent({
-        kind: 9000,
-        created_at: Math.floor(Date.now() / 1000),
-        tags: [
-          ["h", groupId],
-          ["p", userPublicKey, "admin"],
-        ],
-        content: "",
-        pubkey: userPublicKey,
-      } as any)
-      console.log(`[nip29] self-add 9000`, addSelfEvent)
-      await publishEvent(addSelfEvent)
+      console.log(`[nip29] requestJoin: already admin/member, skipping join request`)
       return
     }
 
@@ -477,14 +470,17 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       messages,
       isMember,
       isAdmin,
+      canModerate,
+      isKing,
       adminList,
+      roleMap,
       knownMembers,
       sendMessage,
       requestJoin,
       removeMessage,
       removeMember,
       editMetadata,
-      addAdmin,
+      setRole,
       createGroup,
       groupMetadata: metadata,
     }),
@@ -494,14 +490,17 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       messages,
       isMember,
       isAdmin,
+      canModerate,
+      isKing,
       adminList,
+      roleMap,
       knownMembers,
       sendMessage,
       requestJoin,
       removeMessage,
       removeMember,
       editMetadata,
-      addAdmin,
+      setRole,
       createGroup,
       metadata,
     ],
