@@ -82,7 +82,6 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
         },
       })
       toggleActivityIndicator(false)
-      console.log("BRIDGE INITIATE KYC RESPONSE: ", res)
       const errors = res.data?.bridgeInitiateKyc?.errors
       if (errors && errors.length > 0) {
         Alert.alert("Error", errors[0].message)
