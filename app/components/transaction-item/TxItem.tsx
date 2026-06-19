@@ -45,7 +45,7 @@ const TxItemComponent: React.FC<Props> = ({ tx }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { colors } = useTheme().theme
 
-  const { formatMoneyAmount, moneyAmountToDisplayCurrencyString, formatCurrency } =
+  const { formatMoneyAmount, moneyAmountToDisplayCurrencyString } =
     useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
 
@@ -84,9 +84,9 @@ const TxItemComponent: React.FC<Props> = ({ tx }) => {
       amount: Math.abs(tx.transaction.settlementAmount),
       currency: tx.transaction.settlementCurrency,
     })
-    primaryAmount = formatCurrency({
-      amountInMajorUnits: tx.transaction.settlementDisplayAmount,
-      currency: tx.transaction.settlementDisplayCurrency,
+    primaryAmount = moneyAmountToDisplayCurrencyString({
+      moneyAmount,
+      isApproximate: true,
     })
 
     if (tx.transaction.settlementCurrency === WalletCurrency.Usd && convertMoneyAmount) {
