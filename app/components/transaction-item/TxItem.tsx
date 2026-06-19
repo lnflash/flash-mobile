@@ -21,6 +21,7 @@ import Icon from "react-native-vector-icons/Ionicons"
 
 // utils
 import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
+import { displayCurrencyCode } from "@app/utils/currency-display"
 
 // types
 import {
@@ -88,7 +89,11 @@ const TxItemComponent: React.FC<Props> = ({ tx }) => {
       currency: tx.transaction.settlementDisplayCurrency,
     })
 
-    if (tx.transaction.settlementCurrency === WalletCurrency.Usd && convertMoneyAmount) {
+    if (
+      (tx.transaction.settlementCurrency === WalletCurrency.Usd ||
+        tx.transaction.settlementCurrency === WalletCurrency.Usdt) &&
+      convertMoneyAmount
+    ) {
       secondaryAmount = formatMoneyAmount({
         moneyAmount: convertMoneyAmount(moneyAmount, "BTC"),
       })
@@ -106,7 +111,9 @@ const TxItemComponent: React.FC<Props> = ({ tx }) => {
     }
   }
 
-  const currencyLabel = isBreezTransaction(tx) ? "BTC" : tx.transaction.settlementCurrency
+  const currencyLabel = isBreezTransaction(tx)
+    ? "BTC"
+    : displayCurrencyCode(tx.transaction.settlementCurrency)
 
   const onPress = () => {
     if (isIbexTransaction(tx)) {
