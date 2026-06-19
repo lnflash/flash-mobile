@@ -8,6 +8,7 @@ import {
   GooglePlacesAutocompleteRef,
 } from "react-native-google-places-autocomplete"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 // components
 import { PrimaryBtn } from "../buttons"
@@ -20,6 +21,7 @@ type Props = {
   placeholder: string
   value?: string
   errorMsg?: string
+  isOptional?: boolean
   onAddressSelect: (data: GooglePlaceData, details: GooglePlaceDetail | null) => void
 }
 
@@ -28,11 +30,13 @@ const AddressField: React.FC<Props> = ({
   placeholder,
   value,
   errorMsg,
+  isOptional,
   onAddressSelect,
 }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { bottom, top } = useSafeAreaInsets()
+  const { LL } = useI18nContext()
 
   const ref = useRef<GooglePlacesAutocompleteRef>(null)
   const [isFocused, setIsFocused] = useState(false)
@@ -48,6 +52,11 @@ const AddressField: React.FC<Props> = ({
     <View style={styles.container}>
       <Text type="bl" bold>
         {label}
+        {isOptional && (
+          <Text type="caption" color={colors.grey2}>
+            {LL.AccountUpgrade.optional()}
+          </Text>
+        )}
       </Text>
       <TouchableOpacity style={styles.input} onPress={() => setIsVisible(true)}>
         <Text type="bl" color={value ? colors.black : colors.placeholder}>
