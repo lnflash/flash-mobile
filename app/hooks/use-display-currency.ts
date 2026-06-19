@@ -124,7 +124,7 @@ export const useDisplayCurrency = () => {
       },
       [WalletCurrency.Usdt]: {
         symbol: usdDisplayCurrency.symbol,
-        minorUnitToMajorUnitOffset: usdDisplayCurrency.fractionDigits,
+        minorUnitToMajorUnitOffset: 6,
         showFractionDigits: true,
         currencyCode: usdDisplayCurrency.id,
       },
@@ -204,7 +204,9 @@ export const useDisplayCurrency = () => {
         symbol: noSymbol ? "" : symbol,
         fractionDigits: showFractionDigits ? minorUnitToMajorUnitOffset : 0,
         currencyCode:
-          moneyAmount.currency === WalletCurrency.Btc && !noSuffix
+          (moneyAmount.currency === WalletCurrency.Btc ||
+            moneyAmount.currency === WalletCurrency.Usdt) &&
+          !noSuffix
             ? currencyCode
             : undefined,
       })
