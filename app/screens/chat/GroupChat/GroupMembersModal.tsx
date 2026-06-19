@@ -8,6 +8,8 @@ import {
   TouchableWithoutFeedback,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
@@ -79,7 +81,11 @@ export const GroupMembersModal: React.FC<Props> = ({ visible, onClose, profileMa
         <View style={styles.backdrop} />
       </TouchableWithoutFeedback>
 
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.sheet}
+      >
+        <View style={{ paddingBottom: insets.bottom + 16 }}>
         <View style={styles.handle} />
         <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={8}>
           <Icon name="close" size={22} color={colors.grey2} />
@@ -169,7 +175,8 @@ export const GroupMembersModal: React.FC<Props> = ({ visible, onClose, profileMa
             )
           })}
         </ScrollView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }

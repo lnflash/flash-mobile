@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native"
 import { Text, makeStyles, useTheme, Button } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
@@ -71,13 +73,17 @@ export const CreateGroupModal: React.FC<Props> = ({
         <View style={styles.backdrop} />
       </TouchableWithoutFeedback>
 
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
-        <View style={styles.handle} />
-        <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={8}>
-          <Icon name="close" size={22} color={colors.grey2} />
-        </TouchableOpacity>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.sheet}
+      >
+        <View style={[{ paddingBottom: insets.bottom + 16 }]}>
+          <View style={styles.handle} />
+          <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={8}>
+            <Icon name="close" size={22} color={colors.grey2} />
+          </TouchableOpacity>
 
-        <Text style={styles.title}>Create a group</Text>
+          <Text style={styles.title}>Create a group</Text>
 
         <Text style={styles.fieldLabel}>Name *</Text>
         <TextInput
@@ -108,13 +114,14 @@ export const CreateGroupModal: React.FC<Props> = ({
           value={form.picture}
           onChangeText={(picture) => setForm((f) => ({ ...f, picture }))}
         />
-        <Button
-          title={creating ? "Creating..." : "Create group"}
-          onPress={onCreate}
-          disabled={creating || !userPublicKey}
-          buttonStyle={{ marginTop: 16 }}
-        />
-      </View>
+          <Button
+            title={creating ? "Creating..." : "Create group"}
+            onPress={onCreate}
+            disabled={creating || !userPublicKey}
+            buttonStyle={{ marginTop: 16 }}
+          />
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }

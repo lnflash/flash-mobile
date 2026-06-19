@@ -8,6 +8,8 @@ import {
   TouchableWithoutFeedback,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native"
 import { Text, makeStyles, useTheme, Button } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
@@ -97,7 +99,11 @@ export const GroupInfoModal: React.FC<Props> = ({
         <View style={styles.backdrop} />
       </TouchableWithoutFeedback>
 
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.sheet}
+      >
+        <View style={{ paddingBottom: insets.bottom + 16 }}>
         {/* Handle bar */}
         <View style={styles.handle} />
 
@@ -228,7 +234,8 @@ export const GroupInfoModal: React.FC<Props> = ({
             </View>
           )}
         </ScrollView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
 
       <GroupMembersModal
         visible={membersVisible}
