@@ -183,7 +183,9 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     )
     const unsubscribe = store.subscribe(ingest)
     ingest()
-    return unsubscribe
+    return () => {
+      unsubscribe()
+    }
   }, [relayUrls.join("|"), groupId])
 
   // ----- Subscribe to relay snapshots (39000 metadata / 39001 admins / 39002 members) -----
@@ -278,7 +280,9 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
 
     const unsubscribe = store.subscribe(recompute)
     recompute()
-    return unsubscribe
+    return () => {
+      unsubscribe()
+    }
   }, [groupId, relayUrls.join("|"), userPublicKey])
 
   // ----- Sub: deleted messages (kind 9005) -----
@@ -318,7 +322,9 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     )
     const unsubscribe = store.subscribe(ingest)
     ingest()
-    return unsubscribe
+    return () => {
+      unsubscribe()
+    }
   }, [groupId, relayUrls.join("|")])
 
   // Publish an event to the configured relays, responding to NIP-42 AUTH challenges.
