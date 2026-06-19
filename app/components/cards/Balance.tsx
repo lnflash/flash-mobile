@@ -8,6 +8,9 @@ import HideableArea from "../hideable-area/hideable-area"
 // hooks
 import { useHideBalanceQuery } from "@app/graphql/generated"
 
+// utils
+import { displayCurrencyCode } from "@app/utils/currency-display"
+
 // assets
 import Cash from "@app/assets/icons/cash.svg"
 import Bitcoin from "@app/assets/icons/bitcoin.svg"
@@ -67,7 +70,7 @@ const Balance: React.FC<Props> = ({
               <Text type="h02" bold>
                 {amount}{" "}
                 <Text type="h02" color={colors.text02}>
-                  {currency}
+                  {displayCurrencyCode(currency)}
                 </Text>
               </Text>
             </HideableArea>

@@ -4,6 +4,7 @@ import { ThemeProvider } from "@rneui/themed"
 
 import { CurrencyTag } from "@app/components/currency-tag"
 import { WalletCurrency } from "@app/graphql/generated"
+import { displayCurrencyCode } from "@app/utils/currency-display"
 import theme from "@app/rne-theme/theme"
 
 const renderCurrencyTag = (walletCurrency: WalletCurrency) =>
@@ -16,10 +17,11 @@ const renderCurrencyTag = (walletCurrency: WalletCurrency) =>
 describe("CurrencyTag", () => {
   it.each([WalletCurrency.Btc, WalletCurrency.Usd, WalletCurrency.Usdt])(
     "renders a %s tag",
-    (walletCurrency) => {
+    (walletCurrency: WalletCurrency) => {
       const { getByText } = renderCurrencyTag(walletCurrency)
 
-      expect(getByText(walletCurrency)).toBeTruthy()
+      // USDT displays as USD (stablecoin → fiat mapping)
+      expect(getByText(displayCurrencyCode(walletCurrency))).toBeTruthy()
     },
   )
 })

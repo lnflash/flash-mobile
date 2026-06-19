@@ -9,6 +9,7 @@ import {
   WalletAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
+import { displayCurrencyCode } from "@app/utils/currency-display"
 import { useCallback, useMemo } from "react"
 import { usePriceConversion } from "./use-price-conversion"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -125,7 +126,7 @@ export const useDisplayCurrency = () => {
         symbol: usdDisplayCurrency.symbol,
         minorUnitToMajorUnitOffset: 6,
         showFractionDigits: true,
-        currencyCode: "USDT",
+        currencyCode: usdDisplayCurrency.id,
       },
       [WalletCurrency.Btc]: {
         symbol: "₿",
@@ -203,9 +204,7 @@ export const useDisplayCurrency = () => {
         symbol: noSymbol ? "" : symbol,
         fractionDigits: showFractionDigits ? minorUnitToMajorUnitOffset : 0,
         currencyCode:
-          (moneyAmount.currency === WalletCurrency.Btc ||
-            moneyAmount.currency === WalletCurrency.Usdt) &&
-          !noSuffix
+          moneyAmount.currency === WalletCurrency.Btc && !noSuffix
             ? currencyCode
             : undefined,
       })

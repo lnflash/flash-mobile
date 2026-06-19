@@ -4,6 +4,7 @@ import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useBankAccountsQuery } from "@app/graphql/generated"
+import { displayCurrencyCode } from "@app/utils/currency-display"
 
 type Props = {
   preferredCurrency?: string
@@ -59,7 +60,7 @@ const CashoutWithdrawTo: React.FC<Props> = ({ preferredCurrency }) => {
               value={String(bankAccount.accountNumber)}
             />
             <DetailRow label={LL.Cashout.accountType()} value={bankAccount.accountType} />
-            <DetailRow label={LL.Cashout.currency()} value={bankAccount.currency} />
+            <DetailRow label={LL.Cashout.currency()} value={displayCurrencyCode(bankAccount.currency)} />
           </View>
         )}
       </TouchableOpacity>
