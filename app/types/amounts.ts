@@ -39,7 +39,7 @@ export const ZeroUsdMoneyAmount: UsdMoneyAmount = {
 export const ZeroUsdtMoneyAmount: UsdtMoneyAmount = {
   amount: 0,
   currency: WalletCurrency.Usdt,
-  currencyCode: "USDT",
+  currencyCode: "USD",
 }
 
 export const ZeroBtcMoneyAmount: BtcMoneyAmount = {
@@ -83,13 +83,13 @@ export const toUsdtMoneyAmount = (amount: number | undefined | null): UsdtMoneyA
     return {
       amount: NaN,
       currency: WalletCurrency.Usdt,
-      currencyCode: "USDT",
+      currencyCode: "USD",
     }
   }
   return {
     amount,
     currency: WalletCurrency.Usdt,
-    currencyCode: "USDT",
+    currencyCode: "USD",
   }
 }
 

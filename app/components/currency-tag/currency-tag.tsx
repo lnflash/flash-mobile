@@ -1,4 +1,5 @@
 import { WalletCurrency } from "@app/graphql/generated"
+import { displayCurrencyCode } from "@app/utils/currency-display"
 import { makeStyles, useTheme } from "@rneui/themed"
 import React, { FC } from "react"
 import { Text, View } from "react-native"
@@ -36,7 +37,7 @@ export const CurrencyTag: FC<CurrencyTagProps> = ({ walletCurrency }) => {
 
   return (
     <View style={styles.currencyTag}>
-      <Text style={styles.currencyText}>{walletCurrency}</Text>
+      <Text style={styles.currencyText}>{displayCurrencyCode(walletCurrency)}</Text>
     </View>
   )
 }
