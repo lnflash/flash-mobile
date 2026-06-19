@@ -7,14 +7,20 @@ import React, {
   useRef,
   useState,
 } from "react"
-import { Event, generateSecretKey } from "nostr-tools"
-import { bytesToHex } from "@noble/hashes/utils"
+import { Event } from "nostr-tools"
 import { getSigner } from "@app/nostr/signer"
 import { useChatContext } from "../../../screens/chat/chatContext"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { pool } from "@app/utils/nostr/pool"
 import { toastShow } from "@app/utils/toast"
-import { NIP29_ROLE_BISHOP, NIP29_ROLE_KING, Nip29Role } from "./constants"
+import {
+  NIP29_DEFAULT_RELAY_URL,
+  NIP29_ROLE_BISHOP,
+  NIP29_ROLE_KING,
+  Nip29Role,
+  nip29Log,
+  nip29Warn,
+} from "./constants"
 
 // ===== Types =====
 
@@ -63,7 +69,6 @@ type ContextValue = {
   addMember: (pubkey: string) => Promise<void>
   editMetadata: (metadata: GroupMetadataInput) => Promise<void>
   setRole: (pubkey: string, role: Nip29Role) => Promise<void>
-  createGroup: (metadata: GroupMetadataInput) => Promise<string>
 }
 
 const NostrGroupChatContext = createContext<ContextValue | undefined>(undefined)
@@ -79,7 +84,7 @@ const makeSystemMessage = (text: string): GroupMessage => ({
 
 export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
   groupId,
-  relayUrls = ["wss://groups.0xchat.com"],
+  relayUrls = [NIP29_DEFAULT_RELAY_URL],
   adminPubkeys,
   children,
 }) => {
@@ -336,12 +341,12 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       results.forEach((r, i) => {
         if (r.status === "rejected") {
           const msg = r.reason?.message || String(r.reason)
-          console.warn(
-            `[nip29] publish failed kind=${event.kind} relay=${relayUrls[i]} reason=${msg}`,
+          nip29Warn(
+            `publish failed kind=${event.kind} relay=${relayUrls[i]} reason=${msg}`,
           )
           failures.push(msg)
         } else {
-          console.log(`[nip29] publish ok kind=${event.kind} relay=${relayUrls[i]}`)
+          nip29Log(`publish ok kind=${event.kind} relay=${relayUrls[i]}`)
         }
       })
       if (failures.length && failures.length === results.length) {
@@ -506,54 +511,15 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
     [userPublicKey, groupId, relayUrls, publishEvent],
   )
 
-  const createGroup = useCallback(
-    async (metadata: GroupMetadataInput): Promise<string> => {
-      if (!userPublicKey) throw Error("No user pubkey present")
-      const signer = await getSigner()
-      const newGroupId = bytesToHex(generateSecretKey().slice(0, 8))
-
-      const createEvent = await signer.signEvent({
-        kind: 9007,
-        created_at: Math.floor(Date.now() / 1000),
-        tags: [["h", newGroupId]],
-        content: "",
-        pubkey: userPublicKey,
-      } as any)
-      await publishEvent(createEvent)
-
-      const metaTags: string[][] = [["h", newGroupId]]
-      if (metadata.name !== undefined) metaTags.push(["name", metadata.name])
-      if (metadata.about !== undefined) metaTags.push(["about", metadata.about])
-      if (metadata.picture !== undefined) metaTags.push(["picture", metadata.picture])
-      if (metaTags.length > 1) {
-        const metaEvent = await signer.signEvent({
-          kind: 9002,
-          created_at: Math.floor(Date.now() / 1000) + 1,
-          tags: metaTags,
-          content: "",
-          pubkey: userPublicKey,
-        } as any)
-        await publishEvent(metaEvent)
-      }
-
-      // NOTE: do NOT self-add via kind 9000 here. On create (kind 9007) the relay
-      // already makes the creator a `king` and a member. A self-add with role "admin"
-      // would overwrite the king role with an unrecognized label and strip the
-      // creator's moderation permissions.
-      return newGroupId
-    },
-    [userPublicKey, relayUrls, publishEvent],
-  )
-
   const requestJoin = useCallback(async () => {
     if (!userPublicKey) throw Error("No user pubkey present")
     const signer = await getSigner()
-    console.log(`[nip29] requestJoin invoked group=${groupId} isAdmin=${isAdmin}`)
+    nip29Log(`requestJoin invoked group=${groupId} isAdmin=${isAdmin}`)
 
     // Admins (king/bishop) are already members on the relay — no join request needed,
     // and we must not re-publish a 9000 that could overwrite our role.
     if (isAdmin) {
-      console.log(`[nip29] requestJoin: already admin/member, skipping join request`)
+      nip29Log(`requestJoin: already admin/member, skipping join request`)
       return
     }
 
@@ -564,7 +530,7 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       content: "I'd like to join this group.",
       pubkey: userPublicKey,
     } as any)
-    console.log(`[nip29] join request 9021`, signedEvent)
+    nip29Log("join request 9021", signedEvent)
     await publishEvent(signedEvent)
 
     setMessagesMap((prev) => {
@@ -593,7 +559,6 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       addMember,
       editMetadata,
       setRole,
-      createGroup,
       groupMetadata: metadata,
     }),
     [
@@ -614,7 +579,6 @@ export const NostrGroupChatProvider: React.FC<NostrGroupChatProviderProps> = ({
       addMember,
       editMetadata,
       setRole,
-      createGroup,
       metadata,
     ],
   )
