@@ -147,11 +147,12 @@ describe("usePriceConversion", () => {
       const moneyAmount = {
         amount: 179_554,
         currency: WalletCurrency.Usdt,
-        currencyCode: "USDT",
+        currencyCode: "USD",
       }
 
       expect(result.current.moneyAmountToMajorUnitOrSats(moneyAmount)).toBe(0.179554)
-      expect(result.current.formatMoneyAmount({ moneyAmount })).toBe("$0.179554 USDT")
+      // USDT displays as USD (stablecoin → fiat display mapping)
+      expect(result.current.formatMoneyAmount({ moneyAmount })).toBe("$0.179554 USD")
     })
 
     it("with 0 digits", async () => {
