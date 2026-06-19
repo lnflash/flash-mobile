@@ -18,7 +18,6 @@ const icons: Record<string, any> = {
 
 const wallets = [
   { title: "Cash", key: "USD" },
-  { title: "Cash", key: "USDT" },
   { title: "Bitcoin", key: "BTC" },
 ]
 
