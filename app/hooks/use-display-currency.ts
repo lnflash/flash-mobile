@@ -9,7 +9,6 @@ import {
   WalletAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
-import { displayCurrencyCode } from "@app/utils/currency-display"
 import { useCallback, useMemo } from "react"
 import { usePriceConversion } from "./use-price-conversion"
 import { useI18nContext } from "@app/i18n/i18n-react"
