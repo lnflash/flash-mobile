@@ -89,11 +89,7 @@ const TxItemComponent: React.FC<Props> = ({ tx }) => {
       currency: tx.transaction.settlementDisplayCurrency,
     })
 
-    if (
-      (tx.transaction.settlementCurrency === WalletCurrency.Usd ||
-        tx.transaction.settlementCurrency === WalletCurrency.Usdt) &&
-      convertMoneyAmount
-    ) {
+    if (tx.transaction.settlementCurrency === WalletCurrency.Usd && convertMoneyAmount) {
       secondaryAmount = formatMoneyAmount({
         moneyAmount: convertMoneyAmount(moneyAmount, "BTC"),
       })
