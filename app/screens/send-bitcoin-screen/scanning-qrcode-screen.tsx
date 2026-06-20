@@ -9,6 +9,7 @@ import { useNavigation } from "@react-navigation/native"
 // utils
 import { LNURL_DOMAINS } from "@app/config"
 import { parseDestination } from "./payment-destination"
+import { maybeResolveManualUsernameToLnurl } from "./payment-destination/resolve-username-to-lnurl"
 import { logParseDestinationResult } from "@app/utils/analytics"
 
 // types
@@ -23,6 +24,7 @@ import {
 } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { useAppConfig } from "@app/hooks"
 
 // components
 import { Screen } from "../../components/screen"
@@ -38,6 +40,11 @@ export const ScanningQRCodeScreen = () => {
 
   const { LL } = useI18nContext()
   const { hasPermission, requestPermission } = useCameraPermission()
+  const {
+    appConfig: {
+      galoyInstance: { lnAddressHostname },
+    },
+  } = useAppConfig()
 
   const [pending, setPending] = useState(false)
 
@@ -76,13 +83,23 @@ export const ScanningQRCodeScreen = () => {
       try {
         setPending(true)
 
-        const destination = await parseDestination({
-          rawInput: data,
-          myWalletIds: wallets.map((wallet) => wallet.id),
-          bitcoinNetwork,
-          lnurlDomains: LNURL_DOMAINS,
-          accountDefaultWalletQuery,
-        })
+        // A bare Flash username scanned via QR whose recipient defaults to a
+        // BTC/Breez wallet must be re-routed through LNURL, otherwise a USD
+        // send fails as an intraledger payment. Mirror the manual-entry path.
+        const destination =
+          (await maybeResolveManualUsernameToLnurl({
+            rawInput: data,
+            myWalletIds: wallets.map((wallet) => wallet.id),
+            lnAddressHostname,
+            accountDefaultWalletQuery,
+          })) ??
+          (await parseDestination({
+            rawInput: data,
+            myWalletIds: wallets.map((wallet) => wallet.id),
+            bitcoinNetwork,
+            lnurlDomains: LNURL_DOMAINS,
+            accountDefaultWalletQuery,
+          }))
         logParseDestinationResult(destination)
 
         if (destination.valid) {
@@ -144,6 +161,7 @@ export const ScanningQRCodeScreen = () => {
     bitcoinNetwork,
     wallets,
     accountDefaultWalletQuery,
+    lnAddressHostname,
   ])
 
   if (!hasPermission) {
