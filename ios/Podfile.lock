@@ -183,6 +183,7 @@ PODS:
   - GoogleUtilities/UserDefaults (8.1.0):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
+  - GT3Captcha-iOS (0.15.9)
   - GT3Captcha-iOS-xcframework (0.15.9)
   - hermes-engine (0.77.1):
     - hermes-engine/Pre-built (= 0.77.1)
@@ -1446,7 +1447,7 @@ PODS:
   - react-native-fingerprint-scanner (6.0.0):
     - React
   - react-native-geetest-module (0.1.5):
-    - GT3Captcha-iOS-xcframework
+    - GT3Captcha-iOS
     - React-Core
   - react-native-get-random-values (1.11.0):
     - React-Core
@@ -2527,7 +2528,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNSVG (15.15.4):
+  - RNSVG (15.15.5):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2547,9 +2548,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNSVG/common (= 15.15.4)
+    - RNSVG/common (= 15.15.5)
     - Yoga
-  - RNSVG/common (15.15.4):
+  - RNSVG/common (15.15.5):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2760,6 +2761,7 @@ SPEC REPOS:
     - GoogleAppMeasurement
     - GoogleDataTransport
     - GoogleUtilities
+    - GT3Captcha-iOS
     - GT3Captcha-iOS-xcframework
     - nanopb
     - PromisesObjC
@@ -3039,6 +3041,7 @@ SPEC CHECKSUMS:
   GoogleAppMeasurement: 57270ccc2b77472d7e85c4cbe45972564eff78bb
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
+  GT3Captcha-iOS: aeb6fed2e8594099821430a89208679e5a55b740
   GT3Captcha-iOS-xcframework: b1ed0eef381afccd76d384bed6597fe2bd48c8aa
   hermes-engine: ccc24d29d650ea725d582a9a53d57cd417fbdb53
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
@@ -3077,7 +3080,7 @@ SPEC CHECKSUMS:
   react-native-config: 1340fe63a5fb3f3d5a44b50838d72f000aac5b7f
   react-native-date-picker: 729d0384b49f516c6712625aa571d55af5cdb1e0
   react-native-fingerprint-scanner: 91bf6825709dd7bd3abc4588a4772eb097a2b2d8
-  react-native-geetest-module: 7bb2e8c1cde8ae3aa797abaf1842715ab4f20adb
+  react-native-geetest-module: cecd5dfca2c7f815a8e724c11137b35c92e900d3
   react-native-get-random-values: d16467cf726c618e9c7a8c3c39c31faa2244bbba
   react-native-html-to-pdf: 7a49e6c58ac5221bcc093027b195f4b214f27a9d
   react-native-image-picker: 84b261e109faa7312bca59f1f65c8f2b22865496
@@ -3148,7 +3151,7 @@ SPEC CHECKSUMS:
   RNScreens: 40f4d6b58fa33751b8b2b5450e3595898a993ad5
   RNSecureRandom: b64d263529492a6897e236a22a2c4249aa1b53dc
   RNShare: cd3f6016cd74f1ce490c3e58201d722dc08ac5d7
-  RNSVG: bf614a99855f7f7f182ed9ed7456c66fd280e22e
+  RNSVG: 6666b0f5f2ba0aa6a68129812da3aab9010a5d4a
   RNVectorIcons: 0e915baaf807d5dfed506a14f23a29476c1f07f9
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   uniffi-bindgen-react-native: 125eae9e3a0cf34bf8f3d4b0ceed517df7cc0733
@@ -3156,6 +3159,6 @@ SPEC CHECKSUMS:
   Yoga: 1fd059161b449018342943b095a6d4e69bcaa719
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: d7d7a2f392a5b514054b43f4a8aea8b685603ee4
+PODFILE CHECKSUM: 57beda4ec8637308fafaee3e1a02108e993f2cca
 
 COCOAPODS: 1.16.2

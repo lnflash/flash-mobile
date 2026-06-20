@@ -174,7 +174,7 @@
     "react-native-securerandom": "^1.0.1",
     "react-native-share": "^12.2.1",
     "react-native-snap-carousel": "^3.9.1",
-    "react-native-svg": "^15.15.1",
+    "react-native-svg": "15.15.5",
     "react-native-swiper": "^1.6.0",
     "react-native-tab-view": "^3.5.2",
     "react-native-toast-message": "^2.1.5",
