@@ -164,7 +164,18 @@ export const useAccountUpgrade = () => {
 
   const submitAccountUpgrade = async (): Promise<UpgradeResult> => {
     const { fullName } = personalInfo
-    const { businessName, city, country, line1, line2, postalCode, state } = businessInfo
+    const isProUpgrade = accountType === "TWO"
+    const username = dataAuthed?.me?.username
+
+    const businessName =
+      businessInfo.businessName ||
+      (isProUpgrade ? `${username || "Flash"} - Pro Account` : undefined)
+    const line1 = businessInfo.line1 || (isProUpgrade ? "1 Grenada Way" : undefined)
+    const city = businessInfo.city || (isProUpgrade ? "Kingston 5" : undefined)
+    const state = businessInfo.state || (isProUpgrade ? "Kingston" : undefined)
+    const postalCode = businessInfo.postalCode || (isProUpgrade ? "000000" : undefined)
+    const country = businessInfo.country || (isProUpgrade ? "Jamaica" : undefined)
+    const line2 = businessInfo.line2
 
     if (!fullName) return { success: false, errors: ["Full name is required"] }
     if (!businessName) return { success: false, errors: ["Business name is required"] }
