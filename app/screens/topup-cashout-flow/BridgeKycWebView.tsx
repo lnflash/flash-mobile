@@ -78,14 +78,15 @@ const TOS_INJECTED_JS = `(function() {
 
 // iOS zoom prevention: force 16px font on inputs, disable text-size-adjust,
 // and use MutationObserver for dynamically added inputs.
+// Note: Removed touch-action manipulation to allow camera auto-capture to work properly
 const KYC_ZOOM_PREVENTION_JS = `(function(){
   document.querySelectorAll('meta[name="viewport"]').forEach(m=>m.remove());
   var meta=document.createElement('meta');
   meta.name='viewport';
-  meta.content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
+  meta.content='width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, user-scalable=yes';
   document.head.insertBefore(meta,document.head.firstChild);
   var style=document.createElement('style');
-  style.innerHTML='input,textarea,select{font-size:16px!important}*{-webkit-text-size-adjust:100%!important;touch-action:manipulation!important}';
+  style.innerHTML='input,textarea,select{font-size:16px!important}*{-webkit-text-size-adjust:100%!important}';
   document.head.appendChild(style);
   var preventZoom=function(e){if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')){e.target.style.fontSize='16px';e.target.style.transform='none'}};
   document.addEventListener('focusin',preventZoom,true);
@@ -95,7 +96,8 @@ const KYC_ZOOM_PREVENTION_JS = `(function(){
   true})();`
 
 // Viewport meta injection before content loads to prevent initial zoom.
-const VIEWPORT_INJECTION_JS = `(function(){const forceViewport=()=>{const content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';document.querySelectorAll('meta[name="viewport"]').forEach(m=>m.remove());const meta=document.createElement('meta');meta.name='viewport';meta.content=content;if(document.head){document.head.insertBefore(meta,document.head.firstChild)}else{document.documentElement.appendChild(meta)}};forceViewport();document.addEventListener('DOMContentLoaded',forceViewport);window.addEventListener('load',forceViewport);if(document.documentElement){document.documentElement.style.touchAction='pan-x pan-y'}true})();`
+// Updated to allow scaling and removed restrictive touch-action for camera functionality
+const VIEWPORT_INJECTION_JS = `(function(){const forceViewport=()=>{const content='width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, user-scalable=yes';document.querySelectorAll('meta[name="viewport"]').forEach(m=>m.remove());const meta=document.createElement('meta');meta.name='viewport';meta.content=content;if(document.head){document.head.insertBefore(meta,document.head.firstChild)}else{document.documentElement.appendChild(meta)}};forceViewport();document.addEventListener('DOMContentLoaded',forceViewport);window.addEventListener('load',forceViewport);true})();`
 
 const BridgeKycWebView: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
@@ -220,8 +222,14 @@ const BridgeKycWebView: React.FC<Props> = ({ navigation, route }) => {
           startInLoadingState
           scalesPageToFit={false}
           bounces={false}
+          scrollEnabled
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
+          allowsInlineMediaPlayback
+          mediaPlaybackRequiresUserAction={false}
+          allowsFullscreenVideo={false}
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
           onShouldStartLoadWithRequest={(request) => {
             // During ToS step, open terms/privacy links in external browser
             if (currentStep === "tos" && request.url !== tosLink) {
