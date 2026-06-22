@@ -234,7 +234,7 @@ const BridgeKycWebView: React.FC<Props> = ({ navigation, route }) => {
             // During ToS step, open terms/privacy links in external browser
             if (currentStep === "tos" && request.url !== tosLink) {
               const url = request.url.toLowerCase()
-              if (url.includes("www.bridge.xyz/legal")) {
+              if (url.includes("/legal")) {
                 Linking.openURL(request.url)
                 return false
               }
