@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import {
   Modal,
   View,
@@ -6,11 +6,17 @@ import {
   ScrollView,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  TextInput,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native"
-import { Text, makeStyles, useTheme } from "@rneui/themed"
+import { Text, makeStyles, useTheme, Button } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
 import { nip19 } from "nostr-tools"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useNostrGroupChat } from "./GroupChatProvider"
+import { GroupMembersModal } from "./GroupMembersModal"
 
 const DEFAULT_AVATAR =
   "https://pfp.nostr.build/520649f789e06c2a3912765c0081584951e91e3b5f3366d2ae08501162a5083b.jpg"
@@ -20,6 +26,8 @@ type Props = {
   onClose: () => void
   groupMetadata: { name?: string; about?: string; picture?: string }
   adminList: string[]
+  // pubkey -> roles (king/bishop) from the relay's 39001 event.
+  roleMap?: Map<string, string[]>
   memberCount: number
   profileMap: Map<string, any>
   isAdmin: boolean
@@ -30,6 +38,7 @@ export const GroupInfoModal: React.FC<Props> = ({
   onClose,
   groupMetadata,
   adminList,
+  roleMap,
   memberCount,
   profileMap,
   isAdmin,
@@ -37,6 +46,42 @@ export const GroupInfoModal: React.FC<Props> = ({
   const styles = useStyles()
   const { theme: { colors } } = useTheme()
   const insets = useSafeAreaInsets()
+  const { editMetadata } = useNostrGroupChat()
+
+  const [editing, setEditing] = useState(false)
+  const [membersVisible, setMembersVisible] = useState(false)
+  const [form, setForm] = useState({
+    name: groupMetadata.name || "",
+    about: groupMetadata.about || "",
+    picture: groupMetadata.picture || "",
+  })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!editing) {
+      setForm({
+        name: groupMetadata.name || "",
+        about: groupMetadata.about || "",
+        picture: groupMetadata.picture || "",
+      })
+    }
+  }, [groupMetadata.name, groupMetadata.about, groupMetadata.picture, editing])
+
+  const onSave = async () => {
+    try {
+      setSaving(true)
+      await editMetadata({
+        name: form.name.trim(),
+        about: form.about.trim(),
+        picture: form.picture.trim(),
+      })
+      setEditing(false)
+    } catch (e: any) {
+      Alert.alert("Failed to update", e?.message || String(e))
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const getDisplayName = (pubkey: string) => {
     const p = profileMap.get(pubkey)
@@ -54,7 +99,11 @@ export const GroupInfoModal: React.FC<Props> = ({
         <View style={styles.backdrop} />
       </TouchableWithoutFeedback>
 
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.sheet}
+      >
+        <View style={{ paddingBottom: insets.bottom + 16 }}>
         {/* Handle bar */}
         <View style={styles.handle} />
 
@@ -78,19 +127,82 @@ export const GroupInfoModal: React.FC<Props> = ({
             {groupMetadata.about ? (
               <Text style={styles.groupAbout}>{groupMetadata.about}</Text>
             ) : null}
-            <View style={styles.memberBadge}>
+            <TouchableOpacity
+              style={styles.memberBadge}
+              activeOpacity={0.7}
+              onPress={() => setMembersVisible(true)}
+            >
               <Icon name="people-outline" size={14} color={colors.primary} />
               <Text style={[styles.memberCount, { color: colors.primary }]}>
                 {memberCount} {memberCount === 1 ? "member" : "members"}
               </Text>
-            </View>
+              <Icon name="chevron-forward" size={14} color={colors.primary} />
+            </TouchableOpacity>
             {isAdmin && (
               <View style={[styles.adminBadge, { backgroundColor: colors.primary + "22" }]}>
                 <Icon name="shield-checkmark-outline" size={13} color={colors.primary} />
                 <Text style={[styles.adminBadgeText, { color: colors.primary }]}>You are an admin</Text>
               </View>
             )}
+            {isAdmin && !editing && (
+              <TouchableOpacity
+                style={[styles.editBtn, { borderColor: colors.primary }]}
+                onPress={() => setEditing(true)}
+              >
+                <Icon name="create-outline" size={14} color={colors.primary} />
+                <Text style={[styles.editBtnText, { color: colors.primary }]}>Edit metadata</Text>
+              </TouchableOpacity>
+            )}
           </View>
+
+          {editing && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Edit metadata</Text>
+              <Text style={styles.fieldLabel}>Name</Text>
+              <TextInput
+                style={[styles.input, { color: colors.primary3, borderColor: colors.grey4 }]}
+                placeholder="Group name"
+                placeholderTextColor={colors.grey3}
+                value={form.name}
+                onChangeText={(name) => setForm((f) => ({ ...f, name }))}
+              />
+              <Text style={styles.fieldLabel}>About</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { color: colors.primary3, borderColor: colors.grey4, minHeight: 56 },
+                ]}
+                placeholder="Description"
+                placeholderTextColor={colors.grey3}
+                multiline
+                value={form.about}
+                onChangeText={(about) => setForm((f) => ({ ...f, about }))}
+              />
+              <Text style={styles.fieldLabel}>Picture URL</Text>
+              <TextInput
+                style={[styles.input, { color: colors.primary3, borderColor: colors.grey4 }]}
+                placeholder="https://..."
+                placeholderTextColor={colors.grey3}
+                autoCapitalize="none"
+                value={form.picture}
+                onChangeText={(picture) => setForm((f) => ({ ...f, picture }))}
+              />
+              <View style={styles.editActionsRow}>
+                <Button
+                  title="Cancel"
+                  type="outline"
+                  onPress={() => setEditing(false)}
+                  containerStyle={{ flex: 1, marginRight: 6 }}
+                />
+                <Button
+                  title={saving ? "Saving..." : "Save"}
+                  onPress={onSave}
+                  disabled={saving}
+                  containerStyle={{ flex: 1, marginLeft: 6 }}
+                />
+              </View>
+            </View>
+          )}
 
           {/* Admins section */}
           {adminList.length > 0 && (
@@ -98,6 +210,8 @@ export const GroupInfoModal: React.FC<Props> = ({
               <Text style={styles.sectionTitle}>Admins</Text>
               {adminList.map((pubkey) => {
                 const profile = profileMap.get(pubkey)
+                const roles = roleMap?.get(pubkey) ?? []
+                const roleLabel = roles.length ? roles.join(", ") : "admin"
                 return (
                   <View key={pubkey} style={styles.memberRow}>
                     <Image
@@ -112,7 +226,7 @@ export const GroupInfoModal: React.FC<Props> = ({
                     </View>
                     <View style={[styles.adminTag, { backgroundColor: colors.primary + "22" }]}>
                       <Icon name="shield-checkmark-outline" size={12} color={colors.primary} />
-                      <Text style={[styles.adminTagText, { color: colors.primary }]}>Admin</Text>
+                      <Text style={[styles.adminTagText, { color: colors.primary, textTransform: "capitalize" }]}>{roleLabel}</Text>
                     </View>
                   </View>
                 )
@@ -120,7 +234,14 @@ export const GroupInfoModal: React.FC<Props> = ({
             </View>
           )}
         </ScrollView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
+
+      <GroupMembersModal
+        visible={membersVisible}
+        onClose={() => setMembersVisible(false)}
+        profileMap={profileMap}
+      />
     </Modal>
   )
 }
@@ -250,6 +371,53 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   adminTagText: {
     fontSize: 11,
+    fontWeight: "600",
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  editBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  fieldLabel: {
+    fontSize: 12,
+    color: colors.grey2,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
+  },
+  editActionsRow: {
+    flexDirection: "row",
+    marginTop: 12,
+  },
+  devToolsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.grey4,
+    marginBottom: 16,
+  },
+  devToolsText: {
+    flex: 1,
+    fontSize: 13,
     fontWeight: "600",
   },
 }))

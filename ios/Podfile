@@ -89,6 +89,11 @@ post_install do |installer|
     # Fix deployment target warnings
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+      # Xcode 16: library evolution forces every Swift pod to emit + verify a
+      # .swiftinterface, and the verifier can't resolve cross-pod modules
+      # (FBLPromises, etc.). An app doesn't need distributable interfaces, so
+      # turn it off — this removes the whole swiftinterface failure class.
+      config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'NO'
     end
   end
 
@@ -111,6 +116,34 @@ post_install do |installer|
 
   framework_paths.each do |framework_relative_path|
     strip_bitcode_from_framework(bitcode_strip_path, framework_relative_path)
+  end
+
+  # Xcode 16: CocoaPods adds `-import-underlying-module` to every Swift pod's
+  # xcconfig, even pure-Swift pods that have no underlying Objective-C module.
+  # Under Xcode 16 this makes Swift look for a non-existent ObjC module and fails
+  # the build (e.g. FirebaseRemoteConfigInterop, FirebaseSessions). Strip the flag
+  # ONLY from pods with no ObjC sources; mixed pods (Crashlytics, VisionCamera,
+  # Breez) genuinely need it, so they are left untouched.
+  support_files_dir = File.join(Dir.pwd, 'Pods', 'Target Support Files')
+  Dir.glob(File.join(support_files_dir, '*')).each do |pod_dir|
+    pod_name = File.basename(pod_dir)
+    pod_source = File.join(Dir.pwd, 'Pods', pod_name)
+    next unless File.directory?(pod_source)
+    next unless Dir.glob(File.join(pod_source, '**', '*.{m,mm}')).empty?
+    Dir.glob(File.join(pod_dir, '*.xcconfig')).each do |xcconfig|
+      contents = File.read(xcconfig)
+      next unless contents.include?('-import-underlying-module')
+      File.write(xcconfig, contents.gsub(' -import-underlying-module', ''))
+      puts "Stripped -import-underlying-module from Swift-only pod #{pod_name}"
+    end
+  end
+
+  # Belt-and-suspenders for the line above: force library evolution OFF directly
+  # in every pod xcconfig, so no .swiftinterface is emitted/verified under Xcode 16.
+  Dir.glob(File.join(support_files_dir, '*', '*.xcconfig')).each do |xcconfig|
+    contents = File.read(xcconfig)
+    next unless contents.include?('BUILD_LIBRARY_FOR_DISTRIBUTION = YES')
+    File.write(xcconfig, contents.gsub('BUILD_LIBRARY_FOR_DISTRIBUTION = YES', 'BUILD_LIBRARY_FOR_DISTRIBUTION = NO'))
   end
 
   # use GoogleService-Info.dev.plist if GoogleService-Info.plist is not exits

@@ -45,7 +45,6 @@ import { ChatContextProvider } from "./screens/chat/chatContext"
 import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { FlashcardProvider } from "./contexts/Flashcard"
-import { NostrGroupChatProvider } from "./screens/chat/GroupChat/GroupChatProvider"
 import { PersistGate } from "redux-persist/integration/react"
 import { useEffect } from "react"
 import { nostrRuntime } from "./nostr/runtime/NostrRuntime"
@@ -91,11 +90,7 @@ export const App = () => {
           <PersistGate loading={null} persistor={persistor}>
             <PersistentStateProvider>
               <ChatContextProvider>
-                <NostrGroupChatProvider
-                  groupId={"A9lScksyYAOWNxqR"}
-                  relayUrls={["wss://groups.0xchat.com"]}
-                  adminPubkeys={[]}
-                >
+                {/* NIP-29 group chat is mounted per-group by the chat screen, not globally. */}
                   <ActivityIndicatorProvider>
                     <TypesafeI18n locale={detectDefaultLocale()}>
                       <ThemeProvider theme={theme}>
@@ -125,7 +120,6 @@ export const App = () => {
                       </ThemeProvider>
                     </TypesafeI18n>
                   </ActivityIndicatorProvider>
-                </NostrGroupChatProvider>
               </ChatContextProvider>
             </PersistentStateProvider>
           </PersistGate>
@@ -134,3 +128,4 @@ export const App = () => {
     </SafeAreaProvider>
   )
 }
+

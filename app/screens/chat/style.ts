@@ -145,4 +145,28 @@ export const useStyles = makeStyles(({ colors }) => ({
     marginLeft: 15,
     margin: 10,
   },
+  groupsHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  groupsHeaderText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.grey2,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  groupsHeaderAdd: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  groupsHeaderAddText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
 }))
