@@ -3,10 +3,14 @@ import { WalletCurrency } from "@app/graphql/generated"
 import { InvalidDestinationReason } from "@app/screens/send-bitcoin-screen/payment-destination/index.types"
 
 const mockParsePaymentDestination = jest.fn()
-jest.mock("@flash/client", () => ({
-  parsePaymentDestination: (...args: unknown[]) => mockParsePaymentDestination(...args),
-  Network: {},
-}))
+jest.mock("@flash/client", () => {
+  const actual = jest.requireActual("@flash/client")
+  return {
+    ...actual,
+    parsePaymentDestination: (...args: unknown[]) => mockParsePaymentDestination(...args),
+    Network: actual.Network ?? {},
+  }
+})
 
 const mockRequestPayServiceParams = jest.fn()
 jest.mock("lnurl-pay", () => ({
@@ -14,10 +18,16 @@ jest.mock("lnurl-pay", () => ({
 }))
 
 const mockCreateLnurlPaymentDestination = jest.fn()
-jest.mock("@app/screens/send-bitcoin-screen/payment-destination/lnurl", () => ({
-  createLnurlPaymentDestination: (...args: unknown[]) =>
-    mockCreateLnurlPaymentDestination(...args),
-}))
+jest.mock("@app/screens/send-bitcoin-screen/payment-destination/lnurl", () => {
+  const actual = jest.requireActual(
+    "@app/screens/send-bitcoin-screen/payment-destination/lnurl",
+  )
+  return {
+    ...actual,
+    createLnurlPaymentDestination: (...args: unknown[]) =>
+      mockCreateLnurlPaymentDestination(...args),
+  }
+})
 
 import { maybeResolveManualUsernameToLnurl } from "@app/screens/send-bitcoin-screen/payment-destination/resolve-username-to-lnurl"
 

@@ -1,6 +1,6 @@
 import React from "react"
 
-import { act, render } from "@testing-library/react-native"
+import { act, render, waitFor } from "@testing-library/react-native"
 import { Intraledger } from "../../app/screens/send-bitcoin-screen/send-bitcoin-confirmation-screen.stories"
 import { ContextForScreen } from "./helper"
 
@@ -16,6 +16,8 @@ it("SendScreen Confirmation", async () => {
   await act(async () => {})
   await act(async () => {})
 
-  const { children } = await findByLabelText("Successful Fee")
-  expect(children).toEqual(["₦0.00 ($0.00)"])
+  await waitFor(async () => {
+    const { children } = await findByLabelText("Successful Fee")
+    expect(children).toEqual(["₦0.00 ($0.00)"])
+  })
 })

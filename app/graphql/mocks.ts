@@ -111,6 +111,7 @@ const mocks = [
     request: {
       query: CurrencyListDocument,
     },
+    maxUsageCount: Number.POSITIVE_INFINITY,
     result: {
       data: {
         currencyList: [
@@ -534,6 +535,7 @@ const mocks = [
     request: {
       query: RealtimePriceDocument,
     },
+    maxUsageCount: Number.POSITIVE_INFINITY,
     result: {
       data: {
         me: {
