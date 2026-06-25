@@ -10,7 +10,11 @@
     "baseUrl": "./",
     "paths": {
       "@app/*": ["app/*"],
-      "react": ["./node_modules/@types/react"]
+      "react": ["./node_modules/@types/react"],
+      "react-native-indicators": ["types/react-native-indicators"],
+      "react-native-vector-icons/Ionicons": [
+        "types/react-native-vector-icons/Ionicons"
+      ]
     },
     "plugins": [
       {
@@ -30,5 +34,5 @@
     "jsx": "react-native"
   },
   "exclude": ["**/*.stories.tsx"],
-  "include": ["app", "e2e", "__tests__", ".storybook"]
+  "include": ["app", "e2e", "__tests__", ".storybook", "types"]
 }

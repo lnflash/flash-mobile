@@ -1,5 +1,4 @@
 import {
-  BalanceHeaderDocument,
   CurrencyListDocument,
   DisplayCurrencyDocument,
   HomeAuthedDocument,
@@ -13,6 +12,7 @@ import {
   SendBitcoinConfirmationScreenDocument,
   SendBitcoinDestinationDocument,
   SendBitcoinDetailsScreenDocument,
+  WalletsDocument,
 } from "./generated"
 
 // TODO: put in __tests__ folder?
@@ -74,10 +74,12 @@ const mocks = [
             wallets: [
               {
                 id: "f79792e3-282b-45d4-85d5-7486d020def5",
+                isExternal: false,
                 __typename: "BTCWallet",
               },
               {
                 id: "f091c102-6277-4cc6-8d81-87ebf6aaad1b",
+                isExternal: false,
                 __typename: "UsdWallet",
               },
             ],
@@ -214,6 +216,72 @@ const mocks = [
   },
   {
     request: {
+      query: WalletsDocument,
+    },
+    result: {
+      data: {
+        me: {
+          id: "70df9822-efe0-419c-b864-c9efa99872ea",
+          defaultAccount: {
+            id: "84b26b88-89b0-5c6f-9d3d-fbead08f79d8",
+            wallets: [
+              {
+                id: "f79792e3-282b-45d4-85d5-7486d020def5",
+                walletCurrency: "BTC",
+                lnurlp: null,
+                isExternal: false,
+                __typename: "BTCWallet",
+              },
+              {
+                id: "f091c102-6277-4cc6-8d81-87ebf6aaad1b",
+                walletCurrency: "USD",
+                lnurlp: "test1@getflash.io",
+                isExternal: false,
+                __typename: "UsdWallet",
+              },
+            ],
+            __typename: "ConsumerAccount",
+          },
+          __typename: "User",
+        },
+      },
+    },
+  },
+  {
+    request: {
+      query: WalletsDocument,
+    },
+    result: {
+      data: {
+        me: {
+          id: "70df9822-efe0-419c-b864-c9efa99872ea",
+          defaultAccount: {
+            id: "84b26b88-89b0-5c6f-9d3d-fbead08f79d8",
+            wallets: [
+              {
+                id: "f79792e3-282b-45d4-85d5-7486d020def5",
+                walletCurrency: "BTC",
+                lnurlp: null,
+                isExternal: false,
+                __typename: "BTCWallet",
+              },
+              {
+                id: "f091c102-6277-4cc6-8d81-87ebf6aaad1b",
+                walletCurrency: "USD",
+                lnurlp: "test1@getflash.io",
+                isExternal: false,
+                __typename: "UsdWallet",
+              },
+            ],
+            __typename: "ConsumerAccount",
+          },
+          __typename: "User",
+        },
+      },
+    },
+  },
+  {
+    request: {
       query: DisplayCurrencyDocument,
     },
     result: {
@@ -240,6 +308,22 @@ const mocks = [
           id: "70df9822-efe0-419c-b864-c9efa99872ea",
           defaultAccount: {
             id: "84b26b88-89b0-5c6f-9d3d-fbead08f79d8",
+            wallets: [
+              {
+                id: "f79792e3-282b-45d4-85d5-7486d020def5",
+                balance: 88413,
+                walletCurrency: "BTC",
+                isExternal: false,
+                __typename: "BTCWallet",
+              },
+              {
+                id: "f091c102-6277-4cc6-8d81-87ebf6aaad1b",
+                balance: 158,
+                walletCurrency: "USD",
+                isExternal: false,
+                __typename: "UsdWallet",
+              },
+            ],
             __typename: "ConsumerAccount",
           },
           __typename: "User",
@@ -272,12 +356,14 @@ const mocks = [
                 id: "f79792e3-282b-45d4-85d5-7486d020def5",
                 walletCurrency: "BTC",
                 balance: 88413,
+                isExternal: false,
                 __typename: "BTCWallet",
               },
               {
                 id: "f091c102-6277-4cc6-8d81-87ebf6aaad1b",
                 walletCurrency: "USD",
                 balance: 158,
+                isExternal: false,
                 __typename: "UsdWallet",
               },
             ],
@@ -358,12 +444,14 @@ const mocks = [
                 id: "f79792e3-282b-45d4-85d5-7486d020def5",
                 balance: 88413,
                 walletCurrency: "BTC",
+                isExternal: false,
                 __typename: "BTCWallet",
               },
               {
                 id: "f091c102-6277-4cc6-8d81-87ebf6aaad1b",
                 balance: 158,
                 walletCurrency: "USD",
+                isExternal: false,
                 __typename: "UsdWallet",
               },
             ],
@@ -473,23 +561,6 @@ const mocks = [
               __typename: "RealtimePrice",
             },
           },
-        },
-      },
-    },
-  },
-  {
-    request: {
-      query: BalanceHeaderDocument,
-    },
-    result: {
-      data: {
-        me: {
-          id: "70df9822-efe0-419c-b864-c9efa99872ea",
-          defaultAccount: {
-            id: "84b26b88-89b0-5c6f-9d3d-fbead08f79d8",
-            __typename: "ConsumerAccount",
-          },
-          __typename: "User",
         },
       },
     },
@@ -1344,12 +1415,14 @@ const mocks = [
                 id: "f79792e3-282b-45d4-85d5-7486d020def5",
                 balance: 88413,
                 walletCurrency: "BTC",
+                isExternal: false,
                 __typename: "BTCWallet",
               },
               {
                 id: "f091c102-6277-4cc6-8d81-87ebf6aaad1b",
                 balance: 158,
                 walletCurrency: "USD",
+                isExternal: false,
                 __typename: "UsdWallet",
               },
             ],

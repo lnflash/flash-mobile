@@ -156,11 +156,15 @@ describe("usePriceConversion", () => {
     })
 
     it("with 0 digits", async () => {
-      const { result, waitForNextUpdate } = renderHook(useDisplayCurrency, {
+      const { result, waitFor } = renderHook(useDisplayCurrency, {
         wrapper: wrapWithMocks(mocksJpy),
       })
 
-      await waitForNextUpdate()
+      await waitFor(
+        () =>
+          result.current.displayCurrency === "JPY" &&
+          result.current.fractionDigits === 0,
+      )
 
       const res = result.current.moneyAmountToMajorUnitOrSats({
         amount: 100,

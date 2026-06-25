@@ -16,6 +16,7 @@ import {
   useBridgeRequestWithdrawalMutation,
   useCashoutScreenQuery,
   useRequestCashoutMutation,
+  WalletCurrency,
 } from "@app/graphql/generated"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useActivityIndicator, useDisplayCurrency, usePriceConversion } from "@app/hooks"
@@ -74,12 +75,12 @@ const CashoutDetails = ({ navigation, route }: Props) => {
   })
 
   if (!convertMoneyAmount) {
-    return
+    return null
   }
 
   const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
-  const settlementSendAmount = convertMoneyAmount(moneyAmount, "USD")
+  const settlementSendAmount = convertMoneyAmount(moneyAmount, WalletCurrency.Usd)
   const accountsLoading = isBridge ? bridgeLoading : bankLoading
   const isValidAmount =
     settlementSendAmount.amount > 0 &&
@@ -173,7 +174,7 @@ const CashoutDetails = ({ navigation, route }: Props) => {
     setMoneyAmount(
       toWalletAmount({
         amount: Math.round((usdBalance.amount * percentage) / 100),
-        currency: "USD",
+        currency: WalletCurrency.Usd,
       }),
     )
   }
@@ -188,13 +189,13 @@ const CashoutDetails = ({ navigation, route }: Props) => {
           </Text>
           <AmountInput
             unitOfAccountAmount={moneyAmount}
-            walletCurrency={"USD"}
+            walletCurrency={WalletCurrency.Usd}
             setAmount={setMoneyAmount}
             convertMoneyAmount={convertMoneyAmount}
-            minAmount={{ amount: 1, currency: "USD", currencyCode: "USD" }}
+            minAmount={toUsdMoneyAmount(1)}
             maxAmount={{
               amount: usdBalance.amount,
-              currency: "USD",
+              currency: WalletCurrency.Usd,
               currencyCode: "USD",
             }}
           />

@@ -23,6 +23,8 @@ declare module "@rneui/themed" {
     _orange: string
     _sky: string
     _gold: string
+    _green: string
+    _lightpurple: string
 
     primary3: string
     primary4: string

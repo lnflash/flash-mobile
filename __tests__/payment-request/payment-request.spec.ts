@@ -286,6 +286,11 @@ describe("payment request", () => {
     expect(mockReceiveOnchainBreez).toHaveBeenCalled()
     expect(prNew.state).toBe(PaymentRequestState.Created)
     expect(prNew.info?.data?.invoiceType).toBe(Invoice.OnChain)
-    expect(prNew.info?.data?.getFullUriFn({})).toBe(mockOnChainAddress)
+    expect(prNew.info?.data?.getFullUriFn({})).toBe(
+      `bitcoin:${mockOnChainAddress}?message=Pay%2520to%2520Flash%2520Wallet%2520User`,
+    )
+    expect(prNew.info?.data?.getFullUriFn({ prefix: false })).toBe(
+      `${mockOnChainAddress}?message=Pay%2520to%2520Flash%2520Wallet%2520User`,
+    )
   })
 })

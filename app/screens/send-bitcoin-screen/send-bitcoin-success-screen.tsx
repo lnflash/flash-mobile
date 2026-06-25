@@ -44,7 +44,7 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   const feedbackShownData = useFeedbackModalShownQuery()
   const feedbackModalShown = feedbackShownData?.data?.feedbackModalShown
 
-  if (!convertMoneyAmount) return
+  if (!convertMoneyAmount) return null
 
   // useEffect(() => {
   // if (!feedbackModalShown) {

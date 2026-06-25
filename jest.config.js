@@ -24,6 +24,7 @@ module.exports = {
         },
       },
     ],
+    "^.+\\.(js|jsx)$": "babel-jest",
     "^.+\\.svg$": "jest-transform-stub",
   },
   testRegex: "(/__tests__/.*\\.(test|spec))\\.(ts|tsx|js)$",
@@ -33,6 +34,8 @@ module.exports = {
     "^@app/utils/breez-sdk$": ["<rootDir>__mocks__/breez-sdk.js"],
     "^@app/(.*)$": ["<rootDir>app/$1"],
     "^@mocks/(.*)$": ["<rootDir>__mocks__/$1"],
+    "^@env$": ["<rootDir>__mocks__/@env.js"],
+    "\\.(png|jpg|jpeg|gif|webp)$": "jest-transform-stub",
   },
   transformIgnorePatterns: [
     "node_modules/(?!(react-native" +
@@ -41,12 +44,15 @@ module.exports = {
       "|@react-native-firebase/auth" +
       "|@react-native" +
       "|@react-navigation" +
+      "|@noble" +
+      "|@scure" +
       "|react-native-animatable" +
       "|react-native-camera" +
       "|react-native-country-picker-modal" +
       "|react-native-error-boundary" +
       "|react-native-extended-stylesheet" +
       "|react-native-haptic-feedback" +
+      "|react-native-indicators" +
       "|react-native-keyboard-aware-scroll-view" +
       "|react-native-modal" +
       "|react-native-phone-number-input" +
@@ -61,12 +67,16 @@ module.exports = {
       "|react-native-vector-icons" +
       "|react-navigation-tabs" +
       "|@rneui" +
+      "|immer" +
+      "|react-redux" +
+      "|uuid" +
       "|rn-qr-generator" +
       "|react-native-image-crop-picker" +
       "|react-native-currency-picker" +
       "|react-native-status-bar-height" +
       "|react-native-auto-height-image" +
       "|react-native-nfc-manager" +
+      "|nostr-tools" +
       ")/)",
   ],
 }

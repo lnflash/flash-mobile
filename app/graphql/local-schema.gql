@@ -6,7 +6,7 @@ extend type Transaction {
   text: String!
 }
 
-extend type Contact {
+type Contact {
   prettyName: String!
 }
 

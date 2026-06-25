@@ -49,7 +49,7 @@ export type Scalars = {
   /** BOLT11 lightning invoice payment request with the amount included */
   LnPaymentRequest: { input: string; output: string; }
   LnPaymentSecret: { input: string; output: string; }
-  /** A bech32-encoded HTTPS/Onion URL that can be interacted with automatically by a WALLET in a standard way such that a SERVICE can provide extra services or a better experience for the user. Ref: https://github.com/lnurl/luds/blob/luds/01.md  */
+  /** A bech32-encoded HTTPS/Onion URL that can be interacted with automatically by a WALLET in a standard way such that a SERVICE can provide extra services or a better experience for the user. Ref: https://github.com/lnurl/luds/blob/luds/01.md */
   Lnurl: { input: string; output: string; }
   /** Text field in a lightning payment transaction */
   Memo: { input: string; output: string; }
@@ -338,6 +338,25 @@ export type BridgeCancelWithdrawalRequestPayload = {
   readonly withdrawal?: Maybe<BridgeWithdrawal>;
 };
 
+export type BridgeCreateExternalAccountInput = {
+  readonly accountNumber: Scalars['String']['input'];
+  readonly accountOwnerName: Scalars['String']['input'];
+  readonly bankName: Scalars['String']['input'];
+  readonly checkingOrSavings?: InputMaybe<Scalars['String']['input']>;
+  readonly city: Scalars['String']['input'];
+  readonly country: Scalars['String']['input'];
+  readonly postalCode: Scalars['String']['input'];
+  readonly routingNumber: Scalars['String']['input'];
+  readonly state: Scalars['String']['input'];
+  readonly streetLine1: Scalars['String']['input'];
+};
+
+export type BridgeCreateExternalAccountPayload = {
+  readonly __typename: 'BridgeCreateExternalAccountPayload';
+  readonly errors: ReadonlyArray<Error>;
+  readonly externalAccount?: Maybe<BridgeExternalAccount>;
+};
+
 export type BridgeCreateVirtualAccountPayload = {
   readonly __typename: 'BridgeCreateVirtualAccountPayload';
   readonly errors: ReadonlyArray<Error>;
@@ -356,25 +375,6 @@ export type BridgeExternalAccountLink = {
   readonly __typename: 'BridgeExternalAccountLink';
   readonly expiresAt: Scalars['String']['output'];
   readonly linkUrl: Scalars['String']['output'];
-};
-
-export type BridgeCreateExternalAccountInput = {
-  readonly accountNumber: Scalars['String']['input'];
-  readonly accountOwnerName: Scalars['String']['input'];
-  readonly bankName: Scalars['String']['input'];
-  readonly checkingOrSavings?: InputMaybe<Scalars['String']['input']>;
-  readonly city: Scalars['String']['input'];
-  readonly country: Scalars['String']['input'];
-  readonly postalCode: Scalars['String']['input'];
-  readonly routingNumber: Scalars['String']['input'];
-  readonly state: Scalars['String']['input'];
-  readonly streetLine1: Scalars['String']['input'];
-};
-
-export type BridgeCreateExternalAccountPayload = {
-  readonly __typename: 'BridgeCreateExternalAccountPayload';
-  readonly errors: ReadonlyArray<Error>;
-  readonly externalAccount?: Maybe<BridgeExternalAccount>;
 };
 
 export type BridgeInitiateKycInput = {
@@ -432,13 +432,25 @@ export type BridgeVirtualAccount = {
 export type BridgeWithdrawal = {
   readonly __typename: 'BridgeWithdrawal';
   readonly amount: Scalars['String']['output'];
+  readonly bridgeDeveloperFee?: Maybe<Scalars['String']['output']>;
+  readonly bridgeExchangeFee?: Maybe<Scalars['String']['output']>;
   readonly bridgeTransferId?: Maybe<Scalars['String']['output']>;
   readonly createdAt: Scalars['String']['output'];
   readonly currency: Scalars['String']['output'];
+  readonly estimatedBridgeFee?: Maybe<Scalars['String']['output']>;
+  readonly estimatedBridgeFeePercent?: Maybe<Scalars['String']['output']>;
+  readonly estimatedCustomerFee?: Maybe<Scalars['String']['output']>;
+  readonly estimatedGasBuffer?: Maybe<Scalars['String']['output']>;
   readonly externalAccountId?: Maybe<Scalars['String']['output']>;
   readonly failureReason?: Maybe<Scalars['String']['output']>;
+  readonly finalAmount?: Maybe<Scalars['String']['output']>;
+  readonly flashFee?: Maybe<Scalars['String']['output']>;
+  readonly flashFeeIsEstimate: Scalars['Boolean']['output'];
+  readonly flashFeeNotice?: Maybe<Scalars['String']['output']>;
+  readonly flashFeePercent?: Maybe<Scalars['String']['output']>;
   readonly id: Scalars['ID']['output'];
   readonly status: Scalars['String']['output'];
+  readonly subtotalAmount?: Maybe<Scalars['String']['output']>;
 };
 
 export type BuildInformation = {
@@ -995,8 +1007,8 @@ export type Mutation = {
   readonly accountUpdateDefaultWalletId: AccountUpdateDefaultWalletIdPayload;
   readonly accountUpdateDisplayCurrency: AccountUpdateDisplayCurrencyPayload;
   readonly bridgeAddExternalAccount: BridgeAddExternalAccountPayload;
-  readonly bridgeCreateExternalAccount?: Maybe<BridgeCreateExternalAccountPayload>;
   readonly bridgeCancelWithdrawalRequest: BridgeCancelWithdrawalRequestPayload;
+  readonly bridgeCreateExternalAccount: BridgeCreateExternalAccountPayload;
   readonly bridgeCreateVirtualAccount: BridgeCreateVirtualAccountPayload;
   readonly bridgeInitiateKyc: BridgeInitiateKycPayload;
   readonly bridgeInitiateWithdrawal: BridgeInitiateWithdrawalPayload;
@@ -1162,6 +1174,11 @@ export type MutationAccountUpdateDisplayCurrencyArgs = {
 
 export type MutationBridgeCancelWithdrawalRequestArgs = {
   input: BridgeCancelWithdrawalRequestInput;
+};
+
+
+export type MutationBridgeCreateExternalAccountArgs = {
+  input: BridgeCreateExternalAccountInput;
 };
 
 
@@ -2602,19 +2619,19 @@ export type BridgeAddExternalAccountMutationVariables = Exact<{ [key: string]: n
 
 export type BridgeAddExternalAccountMutation = { readonly __typename: 'Mutation', readonly bridgeAddExternalAccount: { readonly __typename: 'BridgeAddExternalAccountPayload', readonly externalAccount?: { readonly __typename: 'BridgeExternalAccountLink', readonly expiresAt: string, readonly linkUrl: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
 
-export type BridgeCreateExternalAccountMutationVariables = Exact<{
-  input: BridgeCreateExternalAccountInput;
-}>;
-
-
-export type BridgeCreateExternalAccountMutation = { readonly __typename: 'Mutation', readonly bridgeCreateExternalAccount?: { readonly __typename: 'BridgeCreateExternalAccountPayload', readonly externalAccount?: { readonly __typename: 'BridgeExternalAccount', readonly accountNumberLast4: string, readonly bankName: string, readonly id: string, readonly status: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } | null };
-
 export type BridgeRequestWithdrawalMutationVariables = Exact<{
   input: BridgeRequestWithdrawalInput;
 }>;
 
 
 export type BridgeRequestWithdrawalMutation = { readonly __typename: 'Mutation', readonly bridgeRequestWithdrawal: { readonly __typename: 'BridgeRequestWithdrawalPayload', readonly withdrawal?: { readonly __typename: 'BridgeWithdrawal', readonly amount: string, readonly createdAt: string, readonly bridgeTransferId?: string | null, readonly currency: string, readonly externalAccountId?: string | null, readonly failureReason?: string | null, readonly id: string, readonly status: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
+
+export type BridgeInitiateWithdrawalMutationVariables = Exact<{
+  input: BridgeInitiateWithdrawalInput;
+}>;
+
+
+export type BridgeInitiateWithdrawalMutation = { readonly __typename: 'Mutation', readonly bridgeInitiateWithdrawal: { readonly __typename: 'BridgeInitiateWithdrawalPayload', readonly withdrawal?: { readonly __typename: 'BridgeWithdrawal', readonly amount: string, readonly bridgeTransferId?: string | null, readonly createdAt: string, readonly currency: string, readonly externalAccountId?: string | null, readonly failureReason?: string | null, readonly id: string, readonly status: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
 
 export type BridgeCancelWithdrawalRequestMutationVariables = Exact<{
   input: BridgeCancelWithdrawalRequestInput;
@@ -2623,19 +2640,12 @@ export type BridgeCancelWithdrawalRequestMutationVariables = Exact<{
 
 export type BridgeCancelWithdrawalRequestMutation = { readonly __typename: 'Mutation', readonly bridgeCancelWithdrawalRequest: { readonly __typename: 'BridgeCancelWithdrawalRequestPayload', readonly withdrawal?: { readonly __typename: 'BridgeWithdrawal', readonly amount: string, readonly createdAt: string, readonly currency: string, readonly externalAccountId?: string | null, readonly failureReason?: string | null, readonly id: string, readonly status: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
 
-export type BridgeWithdrawalRequestQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
+export type BridgeCreateExternalAccountMutationVariables = Exact<{
+  input: BridgeCreateExternalAccountInput;
 }>;
 
 
-export type BridgeWithdrawalRequestQuery = { readonly __typename: 'Query', readonly bridgeWithdrawalRequest?: { readonly __typename: 'BridgeWithdrawal', readonly amount: string, readonly createdAt: string, readonly currency: string, readonly externalAccountId?: string | null, readonly failureReason?: string | null, readonly id: string, readonly status: string } | null };
-
-export type BridgeInitiateWithdrawalMutationVariables = Exact<{
-  input: BridgeInitiateWithdrawalInput;
-}>;
-
-
-export type BridgeInitiateWithdrawalMutation = { readonly __typename: 'Mutation', readonly bridgeInitiateWithdrawal: { readonly __typename: 'BridgeInitiateWithdrawalPayload', readonly withdrawal?: { readonly __typename: 'BridgeWithdrawal', readonly amount: string, readonly bridgeTransferId?: string | null, readonly createdAt: string, readonly currency: string, readonly externalAccountId?: string | null, readonly failureReason?: string | null, readonly id: string, readonly status: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
+export type BridgeCreateExternalAccountMutation = { readonly __typename: 'Mutation', readonly bridgeCreateExternalAccount: { readonly __typename: 'BridgeCreateExternalAccountPayload', readonly externalAccount?: { readonly __typename: 'BridgeExternalAccount', readonly id: string, readonly bankName: string, readonly accountNumberLast4: string, readonly status: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
 
 export type AuthQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2769,6 +2779,13 @@ export type BridgeExternalAccountsQueryVariables = Exact<{ [key: string]: never;
 
 
 export type BridgeExternalAccountsQuery = { readonly __typename: 'Query', readonly bridgeExternalAccounts?: ReadonlyArray<{ readonly __typename: 'BridgeExternalAccount', readonly accountNumberLast4: string, readonly bankName: string, readonly id: string, readonly status: string } | null> | null };
+
+export type BridgeWithdrawalRequestQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type BridgeWithdrawalRequestQuery = { readonly __typename: 'Query', readonly bridgeWithdrawalRequest?: { readonly __typename: 'BridgeWithdrawal', readonly amount: string, readonly createdAt: string, readonly currency: string, readonly externalAccountId?: string | null, readonly failureReason?: string | null, readonly id: string, readonly status: string } | null };
 
 export type CashWalletCutoverQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4462,48 +4479,6 @@ export function useBridgeAddExternalAccountMutation(baseOptions?: Apollo.Mutatio
 export type BridgeAddExternalAccountMutationHookResult = ReturnType<typeof useBridgeAddExternalAccountMutation>;
 export type BridgeAddExternalAccountMutationResult = Apollo.MutationResult<BridgeAddExternalAccountMutation>;
 export type BridgeAddExternalAccountMutationOptions = Apollo.BaseMutationOptions<BridgeAddExternalAccountMutation, BridgeAddExternalAccountMutationVariables>;
-export const BridgeCreateExternalAccountDocument = gql`
-    mutation BridgeCreateExternalAccount($input: BridgeCreateExternalAccountInput!) {
-  bridgeCreateExternalAccount(input: $input) {
-    externalAccount {
-      id
-      bankName
-      accountNumberLast4
-      status
-    }
-    errors {
-      code
-      message
-    }
-  }
-}
-    `;
-export type BridgeCreateExternalAccountMutationFn = Apollo.MutationFunction<BridgeCreateExternalAccountMutation, BridgeCreateExternalAccountMutationVariables>;
-
-/**
- * __useBridgeCreateExternalAccountMutation__
- *
- * To run a mutation, you first call `useBridgeCreateExternalAccountMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useBridgeCreateExternalAccountMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [bridgeCreateExternalAccountMutation, { data, loading, error }] = useBridgeCreateExternalAccountMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useBridgeCreateExternalAccountMutation(baseOptions?: Apollo.MutationHookOptions<BridgeCreateExternalAccountMutation, BridgeCreateExternalAccountMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<BridgeCreateExternalAccountMutation, BridgeCreateExternalAccountMutationVariables>(BridgeCreateExternalAccountDocument, options);
-      }
-export type BridgeCreateExternalAccountMutationHookResult = ReturnType<typeof useBridgeCreateExternalAccountMutation>;
-export type BridgeCreateExternalAccountMutationResult = Apollo.MutationResult<BridgeCreateExternalAccountMutation>;
-export type BridgeCreateExternalAccountMutationOptions = Apollo.BaseMutationOptions<BridgeCreateExternalAccountMutation, BridgeCreateExternalAccountMutationVariables>;
 export const BridgeRequestWithdrawalDocument = gql`
     mutation BridgeRequestWithdrawal($input: BridgeRequestWithdrawalInput!) {
   bridgeRequestWithdrawal(input: $input) {
@@ -4550,51 +4525,6 @@ export function useBridgeRequestWithdrawalMutation(baseOptions?: Apollo.Mutation
 export type BridgeRequestWithdrawalMutationHookResult = ReturnType<typeof useBridgeRequestWithdrawalMutation>;
 export type BridgeRequestWithdrawalMutationResult = Apollo.MutationResult<BridgeRequestWithdrawalMutation>;
 export type BridgeRequestWithdrawalMutationOptions = Apollo.BaseMutationOptions<BridgeRequestWithdrawalMutation, BridgeRequestWithdrawalMutationVariables>;
-export const BridgeCancelWithdrawalRequestDocument = gql`
-    mutation BridgeCancelWithdrawalRequest($input: BridgeCancelWithdrawalRequestInput!) {
-  bridgeCancelWithdrawalRequest(input: $input) {
-    withdrawal {
-      amount
-      createdAt
-      currency
-      externalAccountId
-      failureReason
-      id
-      status
-    }
-    errors {
-      code
-      message
-    }
-  }
-}
-    `;
-export type BridgeCancelWithdrawalRequestMutationFn = Apollo.MutationFunction<BridgeCancelWithdrawalRequestMutation, BridgeCancelWithdrawalRequestMutationVariables>;
-
-/**
- * __useBridgeCancelWithdrawalRequestMutation__
- *
- * To run a mutation, you first call `useBridgeCancelWithdrawalRequestMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useBridgeCancelWithdrawalRequestMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [bridgeCancelWithdrawalRequestMutation, { data, loading, error }] = useBridgeCancelWithdrawalRequestMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useBridgeCancelWithdrawalRequestMutation(baseOptions?: Apollo.MutationHookOptions<BridgeCancelWithdrawalRequestMutation, BridgeCancelWithdrawalRequestMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<BridgeCancelWithdrawalRequestMutation, BridgeCancelWithdrawalRequestMutationVariables>(BridgeCancelWithdrawalRequestDocument, options);
-      }
-export type BridgeCancelWithdrawalRequestMutationHookResult = ReturnType<typeof useBridgeCancelWithdrawalRequestMutation>;
-export type BridgeCancelWithdrawalRequestMutationResult = Apollo.MutationResult<BridgeCancelWithdrawalRequestMutation>;
-export type BridgeCancelWithdrawalRequestMutationOptions = Apollo.BaseMutationOptions<BridgeCancelWithdrawalRequestMutation, BridgeCancelWithdrawalRequestMutationVariables>;
 export const BridgeInitiateWithdrawalDocument = gql`
     mutation BridgeInitiateWithdrawal($input: BridgeInitiateWithdrawalInput!) {
   bridgeInitiateWithdrawal(input: $input) {
@@ -4641,6 +4571,93 @@ export function useBridgeInitiateWithdrawalMutation(baseOptions?: Apollo.Mutatio
 export type BridgeInitiateWithdrawalMutationHookResult = ReturnType<typeof useBridgeInitiateWithdrawalMutation>;
 export type BridgeInitiateWithdrawalMutationResult = Apollo.MutationResult<BridgeInitiateWithdrawalMutation>;
 export type BridgeInitiateWithdrawalMutationOptions = Apollo.BaseMutationOptions<BridgeInitiateWithdrawalMutation, BridgeInitiateWithdrawalMutationVariables>;
+export const BridgeCancelWithdrawalRequestDocument = gql`
+    mutation BridgeCancelWithdrawalRequest($input: BridgeCancelWithdrawalRequestInput!) {
+  bridgeCancelWithdrawalRequest(input: $input) {
+    withdrawal {
+      amount
+      createdAt
+      currency
+      externalAccountId
+      failureReason
+      id
+      status
+    }
+    errors {
+      code
+      message
+    }
+  }
+}
+    `;
+export type BridgeCancelWithdrawalRequestMutationFn = Apollo.MutationFunction<BridgeCancelWithdrawalRequestMutation, BridgeCancelWithdrawalRequestMutationVariables>;
+
+/**
+ * __useBridgeCancelWithdrawalRequestMutation__
+ *
+ * To run a mutation, you first call `useBridgeCancelWithdrawalRequestMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useBridgeCancelWithdrawalRequestMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [bridgeCancelWithdrawalRequestMutation, { data, loading, error }] = useBridgeCancelWithdrawalRequestMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useBridgeCancelWithdrawalRequestMutation(baseOptions?: Apollo.MutationHookOptions<BridgeCancelWithdrawalRequestMutation, BridgeCancelWithdrawalRequestMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<BridgeCancelWithdrawalRequestMutation, BridgeCancelWithdrawalRequestMutationVariables>(BridgeCancelWithdrawalRequestDocument, options);
+      }
+export type BridgeCancelWithdrawalRequestMutationHookResult = ReturnType<typeof useBridgeCancelWithdrawalRequestMutation>;
+export type BridgeCancelWithdrawalRequestMutationResult = Apollo.MutationResult<BridgeCancelWithdrawalRequestMutation>;
+export type BridgeCancelWithdrawalRequestMutationOptions = Apollo.BaseMutationOptions<BridgeCancelWithdrawalRequestMutation, BridgeCancelWithdrawalRequestMutationVariables>;
+export const BridgeCreateExternalAccountDocument = gql`
+    mutation BridgeCreateExternalAccount($input: BridgeCreateExternalAccountInput!) {
+  bridgeCreateExternalAccount(input: $input) {
+    externalAccount {
+      id
+      bankName
+      accountNumberLast4
+      status
+    }
+    errors {
+      code
+      message
+    }
+  }
+}
+    `;
+export type BridgeCreateExternalAccountMutationFn = Apollo.MutationFunction<BridgeCreateExternalAccountMutation, BridgeCreateExternalAccountMutationVariables>;
+
+/**
+ * __useBridgeCreateExternalAccountMutation__
+ *
+ * To run a mutation, you first call `useBridgeCreateExternalAccountMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useBridgeCreateExternalAccountMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [bridgeCreateExternalAccountMutation, { data, loading, error }] = useBridgeCreateExternalAccountMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useBridgeCreateExternalAccountMutation(baseOptions?: Apollo.MutationHookOptions<BridgeCreateExternalAccountMutation, BridgeCreateExternalAccountMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<BridgeCreateExternalAccountMutation, BridgeCreateExternalAccountMutationVariables>(BridgeCreateExternalAccountDocument, options);
+      }
+export type BridgeCreateExternalAccountMutationHookResult = ReturnType<typeof useBridgeCreateExternalAccountMutation>;
+export type BridgeCreateExternalAccountMutationResult = Apollo.MutationResult<BridgeCreateExternalAccountMutation>;
+export type BridgeCreateExternalAccountMutationOptions = Apollo.BaseMutationOptions<BridgeCreateExternalAccountMutation, BridgeCreateExternalAccountMutationVariables>;
 export const AuthDocument = gql`
     query auth {
   me {

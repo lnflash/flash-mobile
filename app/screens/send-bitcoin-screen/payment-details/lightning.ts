@@ -403,8 +403,8 @@ export const createLnurlPaymentDetails = <T extends WalletCurrency>(
       paymentRequestAmount,
       convertMoneyAmount,
       sendingWalletDescriptor,
-      destinationSpecifiedMemo: memo,
-      senderSpecifiedMemo: memo,
+      destinationSpecifiedMemo,
+      senderSpecifiedMemo,
     })
     settlementAmount = amountLightningPaymentDetails.settlementAmount
     if (amountLightningPaymentDetails.canSendPayment) {
@@ -439,15 +439,16 @@ export const createLnurlPaymentDetails = <T extends WalletCurrency>(
         },
       }
 
-  const setMemo: PaymentDetailSetMemo<T> = {
-    setMemo: (newMemo) =>
-      createLnurlPaymentDetails({
-        ...params,
-        senderSpecifiedMemo: newMemo,
-        destinationSpecifiedMemo: newMemo,
-      }),
-    canSetMemo: true,
-  }
+  const setMemo: PaymentDetailSetMemo<T> = destinationSpecifiedMemo
+    ? { canSetMemo: false }
+    : {
+        setMemo: (newMemo) =>
+          createLnurlPaymentDetails({
+            ...params,
+            senderSpecifiedMemo: newMemo,
+          }),
+        canSetMemo: true,
+      }
 
   const setConvertMoneyAmount = (newConvertMoneyAmount: ConvertMoneyAmount) => {
     return createLnurlPaymentDetails({

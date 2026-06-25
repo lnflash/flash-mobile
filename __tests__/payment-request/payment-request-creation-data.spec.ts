@@ -67,7 +67,7 @@ describe("create payment request creation data", () => {
     expect(prcd.canSetAmount).toBe(false)
     expect(prcd.canSetMemo).toBe(false)
     expect(prcd.canSetReceivingWalletDescriptor).toBe(false)
-    expect(prcd.receivingWalletDescriptor).toBe(btcWalletDescriptor)
+    expect(prcd.receivingWalletDescriptor).toBe(usdWalletDescriptor)
   })
 
   it("onchain set", () => {

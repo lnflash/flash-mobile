@@ -416,47 +416,33 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
     }
   } else {
     // sendingWalletDescriptor.currency === WalletCurrency.Usd or WalletCurrency.Usdt
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    console.log("Destination Specified Amount", destinationSpecifiedAmount)
-    console.log("PARAMS:", {
-      walletId: sendingWalletDescriptor.id,
-      address,
-      amount: settlementAmount.amount,
-    })
     sendPaymentMutation = async (paymentMutations) => {
-      try {
-        const { data } = await paymentMutations.onChainUsdPaymentSend({
-          variables: {
-            input: {
-              walletId: sendingWalletDescriptor.id,
-              address,
-              amount: settlementAmount.amount,
-            },
-          },
-        })
-
-        console.log("RESPONSE ONCHAIN:", data)
-
-        return {
-          status: data?.onChainUsdPaymentSend.status,
-          errors: data?.onChainUsdPaymentSend.errors,
-        }
-      } catch (err) {
-        console.error("ONCHAIN ERR", err)
-      }
-      return { status: undefined, errors: undefined }
-    }
-
-    getFee = async (getFeeFns) => {
-      const { data } = await getFeeFns.onChainUsdTxFee({
+      const { data } = await paymentMutations.onChainUsdPaymentSendAsBtcDenominated({
         variables: {
-          walletId: sendingWalletDescriptor.id,
-          address,
-          amount: settlementAmount.amount,
+          input: {
+            walletId: sendingWalletDescriptor.id,
+            address,
+            amount: destinationSpecifiedAmount.amount,
+          },
         },
       })
 
-      const rawAmount = data?.onChainUsdTxFee.amount
+      return {
+        status: data?.onChainUsdPaymentSendAsBtcDenominated.status,
+        errors: data?.onChainUsdPaymentSendAsBtcDenominated.errors,
+      }
+    }
+
+    getFee = async (getFeeFns) => {
+      const { data } = await getFeeFns.onChainUsdTxFeeAsBtcDenominated({
+        variables: {
+          walletId: sendingWalletDescriptor.id,
+          address,
+          amount: destinationSpecifiedAmount.amount,
+        },
+      })
+
+      const rawAmount = data?.onChainUsdTxFeeAsBtcDenominated.amount
       const amount =
         typeof rawAmount === "number"
           ? toWalletAmount({

@@ -1,6 +1,5 @@
-import { TextStyle, ViewStyle } from "node_modules/@types/react-native/index"
 import * as React from "react"
-import { ActivityIndicator, StyleProp, View } from "react-native"
+import { ActivityIndicator, StyleProp, TextStyle, View, ViewStyle } from "react-native"
 import { Defs, LinearGradient, Stop } from "react-native-svg"
 import { VictoryArea, VictoryAxis, VictoryChart } from "victory-native"
 

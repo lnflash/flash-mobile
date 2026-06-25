@@ -1,6 +1,6 @@
 import { WalletCurrency } from "@app/graphql/generated"
 import * as PaymentDetails from "@app/screens/send-bitcoin-screen/payment-details/lightning"
-import { LnUrlPayServiceResponse } from "lnurl-pay/dist/types/types"
+import { LnUrlPayServiceResponse, Satoshis } from "lnurl-pay/dist/types/types"
 import { createMock } from "ts-auto-mock"
 import {
   btcSendingWalletDescriptor,
@@ -16,9 +16,11 @@ import {
   usdSendingWalletDescriptor,
 } from "./helpers"
 
+const sats = (amount: number) => amount as Satoshis
+
 const defaultParamsWithoutInvoice = {
   lnurl: "testlnurl",
-  lnurlParams: createMock<LnUrlPayServiceResponse>({ min: 1, max: 1000 }),
+  lnurlParams: createMock<LnUrlPayServiceResponse>({ min: sats(1), max: sats(1000) }),
   convertMoneyAmount: convertMoneyAmountMock,
   sendingWalletDescriptor: btcSendingWalletDescriptor,
   unitOfAccountAmount: testAmount,
@@ -32,7 +34,10 @@ const defaultParamsWithInvoice = {
 
 const defaultParamsWithEqualMinMaxAmount = {
   ...defaultParamsWithoutInvoice,
-  lnurlParams: createMock<LnUrlPayServiceResponse>({ min: 100, max: 100 }),
+  lnurlParams: createMock<LnUrlPayServiceResponse>({
+    min: sats(100),
+    max: sats(100),
+  }),
 }
 
 const spy = jest.spyOn(PaymentDetails, "createLnurlPaymentDetails")

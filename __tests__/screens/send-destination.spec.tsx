@@ -16,7 +16,11 @@ const sendBitcoinDestination = {
 it("SendScreen Destination", async () => {
   render(
     <ContextForScreen>
-      <SendBitcoinDestinationScreen route={sendBitcoinDestination} />
+      <SendBitcoinDestinationScreen
+        route={sendBitcoinDestination}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        navigation={{} as any}
+      />
     </ContextForScreen>,
   )
   await act(async () => {})

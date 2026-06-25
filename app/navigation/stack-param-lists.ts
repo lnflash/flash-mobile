@@ -33,7 +33,7 @@ export type RootStackParamList = {
     isPinEnabled: boolean
   }
   pin: { screenPurpose: PinScreenPurpose; callback?: () => void }
-  Primary: undefined
+  Primary: NavigatorScreenParams<PrimaryStackParamList> | undefined
   earnsSection: { section: EarnSectionType }
   earnsQuiz: { id: string }
   scanningQRCode?: { swapAddress: string; amount: number; fee: number; feeType: string }
@@ -107,6 +107,7 @@ export type RootStackParamList = {
   phoneRegistrationInitiate: undefined
   makeNostrPost: undefined
   postSuccess: { postContent: string; userNpub: string; event: Event }
+  contactDetails: { contactPubkey: string }
   irisBrowser: { initialUrl?: string } | undefined
   phoneRegistrationValidate: {
     phone: string
@@ -201,6 +202,7 @@ export type ChatStackParamList = {
   transactionDetail: { txid: string }
   messages: { groupId: string }
   contactDetails: { contactPubkey: string }
+  makeNostrPost: undefined
 }
 
 export type ContactStackParamList = {

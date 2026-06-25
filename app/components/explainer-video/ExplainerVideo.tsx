@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react"
 import { View, TouchableOpacity, StyleSheet, ViewStyle, Text } from "react-native"
-import Video from "react-native-video"
+import Video, { VideoRef } from "react-native-video"
 import Icon from "react-native-vector-icons/Ionicons"
 import { useTheme } from "@rneui/themed"
 
@@ -19,7 +19,7 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
   const [paused, setPaused] = useState(true)
   const [muted, setMuted] = useState(true)
   const [hasEnded, setHasEnded] = useState(false)
-  const videoRef = useRef<Video>(null)
+  const videoRef = useRef<VideoRef>(null)
 
   const togglePlayPause = () => {
     if (hasEnded && videoRef.current) {

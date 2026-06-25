@@ -7,7 +7,9 @@ import { getSigner } from "@app/nostr/signer"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { setPreferredRelay } from "@app/utils/nostr"
 import { useNavigation } from "@react-navigation/native"
+import { StackNavigationProp } from "@react-navigation/stack"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useChatContext } from "../../chat/chatContext"
 import Clipboard from "@react-native-clipboard/clipboard"
@@ -151,7 +153,7 @@ export const NostrSettingsScreen = () => {
     handler?.(true)
   }
 
-  const navigation = useNavigation()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
   const handleEditProfile = () => {
     navigation.navigate("EditNostrProfile")

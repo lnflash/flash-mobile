@@ -98,6 +98,45 @@ mutation BridgeAddExternalAccount {
   }
 }
 
+mutation BridgeCancelWithdrawalRequest($input: BridgeCancelWithdrawalRequestInput!) {
+  bridgeCancelWithdrawalRequest(input: $input) {
+    withdrawal {
+      amount
+      createdAt
+      currency
+      externalAccountId
+      failureReason
+      id
+      status
+      __typename
+    }
+    errors {
+      code
+      message
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BridgeCreateExternalAccount($input: BridgeCreateExternalAccountInput!) {
+  bridgeCreateExternalAccount(input: $input) {
+    externalAccount {
+      id
+      bankName
+      accountNumberLast4
+      status
+      __typename
+    }
+    errors {
+      code
+      message
+      __typename
+    }
+    __typename
+  }
+}
+
 mutation BridgeInitiateKyc($input: BridgeInitiateKycInput!) {
   bridgeInitiateKyc(input: $input) {
     errors {
@@ -994,6 +1033,19 @@ query BridgeVirtualAccount {
     pending
     routingNumber
     tosLink
+    __typename
+  }
+}
+
+query BridgeWithdrawalRequest($id: ID!) {
+  bridgeWithdrawalRequest(id: $id) {
+    amount
+    createdAt
+    currency
+    externalAccountId
+    failureReason
+    id
+    status
     __typename
   }
 }

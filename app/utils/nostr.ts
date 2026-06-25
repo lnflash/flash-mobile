@@ -362,14 +362,10 @@ export async function sendReaction(
   )
 }
 
-export const ensureRelay = async (
-  url: string,
-  params?: { connectionTimeout?: number },
-): Promise<AbstractRelay> => {
+export const ensureRelay = async (url: string): Promise<AbstractRelay> => {
   url = normalizeURL(url)
 
   let relay = new Relay(url)
-  if (params?.connectionTimeout) relay.connectionTimeout = params.connectionTimeout
   await relay.connect()
 
   return relay

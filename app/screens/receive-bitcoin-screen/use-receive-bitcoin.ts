@@ -279,7 +279,7 @@ export const useReceiveBitcoin = (initPRParams = {}) => {
   // For Expires In
   useLayoutEffect(() => {
     if (pr?.info?.data?.invoiceType === "Lightning" && pr.info?.data?.expiresAt) {
-      let intervalId: undefined | number = undefined
+      let intervalId: ReturnType<typeof setInterval> | undefined = undefined
 
       const setExpiresTime = () => {
         const currentTime = new Date()

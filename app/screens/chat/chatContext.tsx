@@ -15,7 +15,7 @@ import {
   fetchSecretFromLocalStorage,
 } from "@app/utils/nostr"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
-import { getSigner, clearSigner } from "@app/nostr/signer"
+import { getSigner, clearSigner, NostrSigner } from "@app/nostr/signer"
 import { loadJson, saveJson } from "@app/utils/storage"
 
 const contactsEventCacheKey = (pubkey: string) => `contacts_event:${pubkey}`
@@ -145,7 +145,7 @@ export const ChatContextProvider: React.FC<PropsWithChildren> = ({ children }) =
       return
     }
 
-    let signer
+    let signer: NostrSigner
     try {
       signer = await getSigner()
     } catch {

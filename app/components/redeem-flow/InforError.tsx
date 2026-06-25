@@ -4,6 +4,7 @@ import { makeStyles, Text } from "@rneui/themed"
 // hooks
 import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { WalletCurrency } from "@app/graphql/generated"
 
 // types
 import { BtcMoneyAmount, MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
@@ -36,15 +37,11 @@ const InforError: React.FC<Props> = ({
 
   const fetchLimits = async () => {
     if (convertMoneyAmount) {
-      const convertedAmount = convertMoneyAmount(unitOfAccountAmount, "USD")
+      const convertedAmount = convertMoneyAmount(unitOfAccountAmount, WalletCurrency.Usd)
       if (convertedAmount.amount < 1) {
         setHasError(true)
         setErrorMsg(
-          LL.SendBitcoinScreen.minAmountInvoiceError({
-            amount: formatMoneyAmount({
-              moneyAmount: { amount: 1, currency: "USD", currencyCode: "USD" },
-            }),
-          }),
+          LL.SendBitcoinScreen.minAmountInvoiceError({ amount: 1 }),
         )
       } else {
         setHasError(false)

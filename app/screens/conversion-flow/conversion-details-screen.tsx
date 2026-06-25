@@ -72,7 +72,7 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const btcBalance = toBtcMoneyAmount(btcWallet?.balance ?? NaN)
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
 
-  if (!convertMoneyAmount) return
+  if (!convertMoneyAmount) return null
 
   const convertedBTCBalance = convertMoneyAmount(btcBalance, DisplayCurrency)
   const convertedUsdBalance = convertMoneyAmount(usdBalance, DisplayCurrency)
