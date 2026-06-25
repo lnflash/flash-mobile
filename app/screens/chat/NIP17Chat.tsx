@@ -30,7 +30,9 @@ import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { UserSearchBar } from "./UserSearchBar"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { ChatStackParamList, RootStackParamList } from "@app/navigation/stack-param-lists"
-import { useNostrGroupChat } from "./GroupChat/GroupChatProvider"
+import { useNip29Groups, useNip29GroupMetadata } from "./GroupChat/useNip29Groups"
+import { CreateGroupModal } from "./GroupChat/CreateGroupModal"
+import { NIP29_DEFAULT_GROUP_ID } from "./GroupChat/constants"
 import { SearchListItem } from "./searchListItem"
 import Contacts from "./contacts"
 import {
@@ -72,7 +74,10 @@ export const NIP17Chat: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<ChatStackParamList, "chatList">>()
   const RootNavigator =
     useNavigation<StackNavigationProp<RootStackParamList, "Nip29GroupChat">>()
-  const { groupMetadata } = useNostrGroupChat()
+  // The pinned Support group's metadata, and the list of groups the user belongs to.
+  const groupMetadata = useNip29GroupMetadata(NIP29_DEFAULT_GROUP_ID)
+  const myGroups = useNip29Groups(userPublicKey || undefined)
+  const [showCreateGroup, setShowCreateGroup] = useState(false)
 
   // ------------------------
   // Initialize on mount
@@ -222,7 +227,7 @@ export const NIP17Chat: React.FC = () => {
                       <TouchableOpacity
                         onPress={() =>
                           RootNavigator.navigate("Nip29GroupChat", {
-                            groupId: "support-group-id",
+                            groupId: NIP29_DEFAULT_GROUP_ID,
                           })
                         }
                         style={styles.item}
@@ -279,6 +284,61 @@ export const NIP17Chat: React.FC = () => {
                         </View>
                       </TouchableOpacity>
 
+                      {/* My NIP-29 groups (created or joined) */}
+                      <View style={styles.groupsHeaderRow}>
+                        <Text style={styles.groupsHeaderText}>My groups</Text>
+                        <TouchableOpacity
+                          onPress={() => setShowCreateGroup(true)}
+                          hitSlop={8}
+                          style={styles.groupsHeaderAdd}
+                          {...testProps("create-group")}
+                        >
+                          <Icon name="add-circle-outline" size={22} color={colors.primary} />
+                          <Text style={[styles.groupsHeaderAddText, { color: colors.primary }]}>
+                            New
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {myGroups.map((g) => (
+                        <TouchableOpacity
+                          key={g.groupId}
+                          onPress={() =>
+                            RootNavigator.navigate("Nip29GroupChat", { groupId: g.groupId })
+                          }
+                          style={styles.item}
+                        >
+                          <View style={styles.itemContainer}>
+                            <View style={{ flexDirection: "row", marginVertical: 4, alignItems: "center" }}>
+                              <Image
+                                source={
+                                  g.picture
+                                    ? { uri: g.picture }
+                                    : require("../../assets/images/Flash-Mascot.png")
+                                }
+                                style={styles.communityPicture}
+                              />
+                              <View style={{ flexDirection: "column", maxWidth: "80%", marginLeft: 4 }}>
+                                <Text
+                                  style={{ ...styles.itemText, fontWeight: "bold" }}
+                                  numberOfLines={1}
+                                >
+                                  {g.name || g.groupId}
+                                </Text>
+                                <Text
+                                  style={{ ...styles.itemText, fontSize: 12 }}
+                                  numberOfLines={1}
+                                  ellipsizeMode="tail"
+                                >
+                                  {g.isAdmin ? "Admin" : "Member"}
+                                  {g.about ? ` · ${g.about}` : ""}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+
                       <FlatList
                         contentContainerStyle={styles.listContainer}
                         data={groupIds}
@@ -323,6 +383,15 @@ export const NIP17Chat: React.FC = () => {
         isActive={showImportModal}
         onCancel={() => setShowImportModal(false)}
         onSubmit={() => resetChat()}
+      />
+
+      <CreateGroupModal
+        visible={showCreateGroup}
+        onClose={() => setShowCreateGroup(false)}
+        onCreated={(groupId) => {
+          setShowCreateGroup(false)
+          RootNavigator.navigate("Nip29GroupChat", { groupId })
+        }}
       />
     </Screen>
   )

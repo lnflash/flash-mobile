@@ -25,6 +25,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { setBusinessInfo } from "@app/store/redux/slices/accountUpgradeSlice"
+import { AccountLevel } from "@app/graphql/generated"
 
 const getAddressComponent = (
   details: GooglePlaceDetail | null,
@@ -48,7 +49,10 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
 
   const [businessNameErr, setBusinessNameErr] = useState<string>()
   const [businessAddressErr, setBusinessAddressErr] = useState<string>()
-  const { numOfSteps, businessInfo } = useAppSelector((state) => state.accountUpgrade)
+  const { numOfSteps, accountType, businessInfo } = useAppSelector(
+    (state) => state.accountUpgrade,
+  )
+  const isProUpgrade = accountType === AccountLevel.Two
 
   const {
     businessName,
@@ -67,7 +71,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
       setBusinessNameErr("Business name must be at least 2 characters")
       hasError = true
     }
-    if (!(city && country && line1 && state)) {
+    if (!isProUpgrade && !(city && country && line1 && state)) {
       setBusinessAddressErr("Please enter a valid address")
       hasError = true
     }
@@ -122,6 +126,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
           placeholder={LL.AccountUpgrade.businessNamePlaceholder()}
           value={businessName}
           errorMsg={businessNameErr}
+          isOptional={isProUpgrade}
           onChangeText={(val) => {
             setBusinessNameErr(undefined)
             dispatch(setBusinessInfo({ businessName: val }))
@@ -133,6 +138,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
           placeholder={LL.AccountUpgrade.businessAddressPlaceholder()}
           value={businessAddress}
           errorMsg={businessAddressErr}
+          isOptional={isProUpgrade}
           onAddressSelect={onAddressSelect}
         />
         <CheckBoxField
@@ -144,7 +150,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
       </View>
       <PrimaryBtn
         label={LL.common.next()}
-        disabled={!businessName || !line1}
+        disabled={isProUpgrade ? false : !businessName || !line1}
         btnStyle={styles.btn}
         onPress={onPressNext}
       />
