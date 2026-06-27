@@ -83,6 +83,12 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         )
       } else if (type === "cashout") {
         navigation.navigate("CashoutDetails", { type: "local" })
+      } else if (type === "bankTransfer") {
+        navigation.navigate("BankTransfer", {
+          amount: 0,
+          wallet: "USD",
+          paymentType: "bankTransfer",
+        })
       } else {
         navigation.navigate("TopupDetails", { paymentType: type })
       }

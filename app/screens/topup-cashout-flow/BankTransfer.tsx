@@ -1,6 +1,6 @@
 import React from "react"
 import { View, Linking, TouchableOpacity } from "react-native"
-import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { makeStyles, Text } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
@@ -69,8 +69,6 @@ const BankTransfer: React.FC<Props> = ({ navigation, route }) => {
       </Screen>
     )
   }
-
-  const { theme } = useTheme()
 
   return (
     <Screen preset="scroll" style={styles.container}>
