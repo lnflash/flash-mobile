@@ -39,6 +39,7 @@ import { SCHEMA_VERSION_KEY } from "@app/config"
 import { NetworkError } from "@apollo/client/errors"
 import { LevelContainer } from "./level-component"
 import { getAppCheckToken } from "@app/screens/get-started-screen/use-device-token"
+import { WidgetPriceSync } from "@app/components/widget-price-sync"
 
 const noRetryOperations = [
   "intraLedgerPaymentSend",
@@ -335,6 +336,7 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
             <LanguageSync />
             <AnalyticsContainer />
             <MyPriceUpdates />
+            <WidgetPriceSync />
             {children}
           </NetworkErrorContextProvider>
         </LevelContainer>
