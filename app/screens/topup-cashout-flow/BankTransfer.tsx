@@ -1,6 +1,6 @@
 import React from "react"
 import { View, Linking, TouchableOpacity } from "react-native"
-import { makeStyles, Text } from "@rneui/themed"
+import { Icon, makeStyles, Text } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
@@ -82,10 +82,18 @@ const BankTransfer: React.FC<Props> = ({ navigation, route }) => {
         <TouchableOpacity
           style={styles.whatsappButton}
           onPress={() => Linking.openURL(WHATSAPP_SUPPORT_URL)}
+          activeOpacity={0.86}
         >
-          <Text style={styles.whatsappButtonText}>
-            Chat on WhatsApp
-          </Text>
+          <View style={styles.whatsappIcon}>
+            <Icon type="ionicon" name="logo-whatsapp" size={22} color="#0B5F37" />
+          </View>
+          <View style={styles.whatsappCopy}>
+            <Text style={styles.whatsappButtonText}>Chat on WhatsApp</Text>
+            <Text style={styles.whatsappButtonSubtext}>
+              Flash support will send the details
+            </Text>
+          </View>
+          <Icon type="ionicon" name="chevron-forward" size={18} color="#fff" />
         </TouchableOpacity>
       </View>
       <PrimaryBtn
@@ -122,15 +130,36 @@ const useStyles = makeStyles(({ colors }) => ({
     marginBottom: 24,
   },
   whatsappButton: {
-    backgroundColor: "#25D366",
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    alignItems: "center",
+    alignSelf: "stretch",
+    backgroundColor: "#1FB45A",
+    borderRadius: 8,
+    flexDirection: "row",
+    minHeight: 58,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  whatsappIcon: {
+    alignItems: "center",
+    backgroundColor: "#E7F8EE",
+    borderRadius: 18,
+    height: 36,
+    justifyContent: "center",
+    marginRight: 12,
+    width: 36,
+  },
+  whatsappCopy: {
+    flex: 1,
   },
   whatsappButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
+  },
+  whatsappButtonSubtext: {
+    color: "#E8FFF0",
+    fontSize: 12,
+    marginTop: 2,
   },
   fieldContainer: {
     flexDirection: "row",
