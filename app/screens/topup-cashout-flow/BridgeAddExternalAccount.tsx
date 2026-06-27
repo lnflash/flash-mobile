@@ -71,6 +71,21 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
 
       const errors = res.data?.bridgeCreateExternalAccount?.errors
       if (errors && errors.length > 0) {
+        // If the account is already linked, proceed to cashout instead of erroring
+        if (errors[0].code === "BRIDGE_API_ERROR") {
+          Alert.alert(
+            "Bank Account Already Linked",
+            "This bank account is already linked to your profile.",
+            [
+              {
+                text: "Continue",
+                onPress: () =>
+                  navigation.replace("CashoutDetails", { type: "bridge" }),
+              },
+            ],
+          )
+          return
+        }
         Alert.alert("Error", errors[0].message)
         return
       }
@@ -83,7 +98,8 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
           [
             {
               text: "Continue",
-              onPress: () => navigation.navigate("CashoutDetails", { type: "bridge" }),
+              onPress: () =>
+                navigation.replace("CashoutDetails", { type: "bridge" }),
             },
           ],
         )
