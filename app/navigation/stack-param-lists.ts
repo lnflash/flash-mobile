@@ -39,6 +39,7 @@ export type RootStackParamList = {
   scanningQRCode?: { swapAddress: string; amount: number; fee: number; feeType: string }
   settings: undefined
   addressScreen: undefined
+  BridgeAccountRouting: undefined
   defaultWallet: undefined
   theme: undefined
   sendBitcoinDestination: {
