@@ -5,8 +5,10 @@
 #import <React/RCTBundleURLProvider.h>
 #import <React/RCTLinkingManager.h>
 #import <RCTAppDependencyProvider.h>
+#import <WatchConnectivity/WatchConnectivity.h>
 
 #import "RNBootSplash.h"
+#import "Flash-Swift.h"
 
 @implementation AppDelegate
 
@@ -14,6 +16,7 @@
 {
   [RNFBAppCheckModule sharedInstance];
   [FIRApp configure];
+  [WatchConnectivityBridge activateSession];
 
   self.moduleName = @"LNFlash";
   self.dependencyProvider = [RCTAppDependencyProvider new];
