@@ -11,19 +11,18 @@ export type WidgetPriceData = {
 }
 
 const { WidgetBridge } = NativeModules as {
-  WidgetBridge?: { setPriceData: (data: WidgetPriceData) => Promise<void> }
+  WidgetBridge?: {
+    setPriceData: (data: WidgetPriceData) => Promise<void>
+  }
 }
 
 /**
  * Pushes the latest price snapshot into native shared storage so the
- * home-screen widget can render it. Best-effort: the widget is non-critical, so
- * failures (e.g. module not built into the current binary) are swallowed.
+ * home-screen widget can render it. Best-effort.
  */
 export const setWidgetPriceData = async (data: WidgetPriceData): Promise<void> => {
   try {
-    if (!WidgetBridge?.setPriceData) {
-      return
-    }
+    if (!WidgetBridge?.setPriceData) return
     await WidgetBridge.setPriceData(data)
   } catch {
     // ignore — the widget falls back to its own price fetch

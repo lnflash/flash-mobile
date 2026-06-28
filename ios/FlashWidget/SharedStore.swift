@@ -2,44 +2,46 @@
 //  SharedStore.swift
 //  FlashWidget
 //
-//  Reads/writes the price snapshot shared between the main app and the widget
-//  via an App Group UserDefaults suite. The main app (React Native) pushes the
-//  latest price through the `WidgetBridge` native module; the widget reads it
-//  here and can also refresh it on its own via `PriceService`.
+//  Reads/writes price data shared between the main app and the widget via an
+//  App Group UserDefaults suite.
 //
 
 import Foundation
 
 enum SharedStore {
-  /// Must match the App Group id enabled on BOTH the app target and the widget
-  /// extension target (see ios/LNFlash/*.entitlements and FlashWidget.entitlements).
   static let appGroupId = "group.com.lnflash"
 
   enum Key {
+    // Price snapshot
     static let btcPrice = "btcPrice"
     static let currencyCode = "currencyCode"
     static let currencySymbol = "currencySymbol"
     static let fractionDigits = "fractionDigits"
     static let timestamp = "timestamp"
+
+    // Price history (sparkline data)
+    static let priceHistory = "priceHistory"
+
   }
 
   static var defaults: UserDefaults? {
     UserDefaults(suiteName: appGroupId)
   }
 
-  static func read() -> PriceSnapshot {
+  // MARK: - Price snapshot
+
+  static func readPrice() -> PriceSnapshot {
     let d = defaults
     return PriceSnapshot(
       btcPrice: d?.double(forKey: Key.btcPrice) ?? 0,
       currencyCode: d?.string(forKey: Key.currencyCode) ?? "USD",
       currencySymbol: d?.string(forKey: Key.currencySymbol) ?? "$",
-      // `object(forKey:) == nil` lets us default to 2 instead of 0 on first run.
       fractionDigits: (d?.object(forKey: Key.fractionDigits) as? Int) ?? 2,
       timestamp: d?.double(forKey: Key.timestamp) ?? 0
     )
   }
 
-  static func write(_ snapshot: PriceSnapshot) {
+  static func writePrice(_ snapshot: PriceSnapshot) {
     guard let d = defaults else { return }
     d.set(snapshot.btcPrice, forKey: Key.btcPrice)
     d.set(snapshot.currencyCode, forKey: Key.currencyCode)
@@ -47,6 +49,34 @@ enum SharedStore {
     d.set(snapshot.fractionDigits, forKey: Key.fractionDigits)
     d.set(snapshot.timestamp, forKey: Key.timestamp)
   }
+
+  // MARK: - Price history (sparkline)
+
+  static func readHistory() -> [PricePoint] {
+    guard let data = defaults?.data(forKey: Key.priceHistory),
+          let points = try? JSONDecoder().decode([PricePoint].self, from: data)
+    else { return [] }
+    return points
+  }
+
+  static func appendHistory(_ snapshot: PriceSnapshot) {
+    var history = readHistory()
+    let point = PricePoint(price: snapshot.btcPrice, timestamp: snapshot.timestamp)
+    history.append(point)
+    // Keep enough points for the one-month chart plus a current-price append.
+    if history.count > 160 { history.removeFirst(history.count - 160) }
+    if let data = try? JSONEncoder().encode(history) {
+      defaults?.set(data, forKey: Key.priceHistory)
+    }
+  }
+
+}
+
+// MARK: - Data models
+
+struct PricePoint: Codable {
+  let price: Double
+  let timestamp: Double
 }
 
 struct PriceSnapshot {
@@ -58,7 +88,6 @@ struct PriceSnapshot {
 
   var hasPrice: Bool { btcPrice > 0 }
 
-  /// e.g. "$67,231" or "$67,231.50" depending on the currency's fraction digits.
   var formattedPrice: String {
     let formatter = NumberFormatter()
     formatter.numberStyle = .decimal

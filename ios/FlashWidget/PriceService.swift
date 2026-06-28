@@ -2,19 +2,16 @@
 //  PriceService.swift
 //  FlashWidget
 //
-//  Lets the widget fetch a fresh BTC price on its own (even when the app is
-//  closed) using the public, unauthenticated `realtimePrice` GraphQL query.
-//  The currency + fractionDigits come from the last snapshot the app wrote, so
-//  the widget always renders in the user's chosen display currency.
+//  Lets the widget fetch a fresh BTC price on its own and pull the same
+//  one-month chart data used by the Flash BTC price screen.
 //
 
 import Foundation
 
 enum PriceService {
-  /// Production Flash GraphQL endpoint (see app/config/galoy-instances.ts → "Main").
   static let endpoint = URL(string: "https://api.flashapp.me/graphql")!
 
-  static let query = """
+  static let priceQuery = """
   query realtimePriceUnauthed($currency: DisplayCurrency!) {
     realtimePrice(currency: $currency) {
       timestamp
@@ -24,10 +21,17 @@ enum PriceService {
   }
   """
 
-  /// Fetches the latest price for `currencyCode`, converts it to a major-unit
-  /// BTC price using `fractionDigits`, and returns an updated snapshot. Falls
-  /// back to `previous` on any failure so the widget never shows an empty state
-  /// once it has data.
+  static let historyQuery = """
+  query btcPriceListUnauthed($range: PriceGraphRange!) {
+    btcPriceList(range: $range) {
+      timestamp
+      price { base offset currencyUnit }
+    }
+  }
+  """
+
+  // MARK: - Current price
+
   static func fetch(
     currencyCode: String,
     fractionDigits: Int,
@@ -41,7 +45,7 @@ enum PriceService {
     request.timeoutInterval = 12
 
     let body: [String: Any] = [
-      "query": query,
+      "query": priceQuery,
       "variables": ["currency": currencyCode],
     ]
     guard let data = try? JSONSerialization.data(withJSONObject: body) else {
@@ -64,8 +68,6 @@ enum PriceService {
         return
       }
 
-      // displayCurrencyPerSat is in the display currency's MINOR units per sat.
-      // 1 BTC = 100,000,000 sats → major-unit price = perSat * 1e8 / 10^fractionDigits.
       let displayCurrencyPerSat = base / pow(10, offset)
       let btcPrice = displayCurrencyPerSat * 100_000_000 / pow(10, Double(fractionDigits))
       let ts = (realtime["timestamp"] as? NSNumber)?.doubleValue ?? previous.timestamp
@@ -77,8 +79,82 @@ enum PriceService {
         fractionDigits: fractionDigits,
         timestamp: ts
       )
-      SharedStore.write(snapshot)
+      SharedStore.writePrice(snapshot)
+      SharedStore.appendHistory(snapshot)
       completion(snapshot)
     }.resume()
+  }
+
+  // MARK: - 30-day price history for chart
+
+  /// Fetches one month of price data and converts it the same way the React
+  /// Native BTC price screen does (`base / 10^offset * currencyUnitMultiple`).
+  static func fetchHistory(
+    completion: @escaping ([PricePoint]) -> Void
+  ) {
+    var request = URLRequest(url: endpoint)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.timeoutInterval = 15
+
+    let body: [String: Any] = [
+      "query": historyQuery,
+      "variables": ["range": "ONE_MONTH"],
+    ]
+    guard let data = try? JSONSerialization.data(withJSONObject: body) else {
+      completion([])
+      return
+    }
+    request.httpBody = data
+
+    URLSession.shared.dataTask(with: request) { data, _, _ in
+      guard
+        let data = data,
+        let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let dataObj = json["data"] as? [String: Any],
+        let priceList = dataObj["btcPriceList"] as? [[String: Any]]
+      else {
+        completion([])
+        return
+      }
+
+      let points: [PricePoint] = priceList.compactMap { item in
+        guard let timestamp = (item["timestamp"] as? NSNumber)?.doubleValue,
+              let priceObj = item["price"] as? [String: Any],
+              let base = (priceObj["base"] as? NSNumber)?.doubleValue,
+              let offset = (priceObj["offset"] as? NSNumber)?.doubleValue
+        else { return nil }
+
+        let currencyUnit = priceObj["currencyUnit"] as? String ?? ""
+        let btcPrice = (base / pow(10, offset)) * multiple(for: currencyUnit)
+        return PricePoint(price: btcPrice, timestamp: timestamp)
+      }
+
+      let sampled = samplePoints(points, maxCount: 140)
+      if let data = try? JSONEncoder().encode(sampled) {
+        SharedStore.defaults?.set(data, forKey: "priceHistory")
+      }
+      completion(sampled)
+    }.resume()
+  }
+
+  /// Matches the conversion helper in app/components/price-history/price-history.tsx.
+  private static func multiple(for currencyUnit: String) -> Double {
+    switch currencyUnit {
+    case "USDCENT":
+      return pow(10, -5)
+    default:
+      return 1
+    }
+  }
+
+  /// Evenly samples an array to `maxCount` elements while preserving endpoints.
+  private static func samplePoints(_ points: [PricePoint], maxCount: Int) -> [PricePoint] {
+    guard points.count > maxCount else { return points }
+    let lastIndex = points.count - 1
+    return (0..<maxCount).map { i in
+      let position = Double(i) * Double(lastIndex) / Double(maxCount - 1)
+      return points[Int(position.rounded())]
+    }
   }
 }

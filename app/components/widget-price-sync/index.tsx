@@ -6,10 +6,8 @@ import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 import { setWidgetPriceData } from "@app/utils/widget"
 
 /**
- * Keeps the native home-screen widget in sync with the BTC price in the user's
- * display currency. Renders nothing; mount it once inside the authed Apollo tree
- * (alongside the price poller). The widget can also refresh on its own, but this
- * guarantees it reflects the user's chosen currency while the app is open.
+ * Keeps the native home-screen widget in sync with the BTC price. Renders
+ * nothing; mount it once inside the authed Apollo tree.
  */
 export const WidgetPriceSync: React.FC = () => {
   const { convertMoneyAmount } = usePriceConversion()
