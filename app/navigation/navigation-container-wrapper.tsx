@@ -84,6 +84,9 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
     config: {
       screens: {
         sendBitcoinDestination: ":payment",
+        // Home-screen widget quick actions (flash://scan, flash://receive)
+        scanningQRCode: "scan",
+        receiveBitcoin: "receive",
         Primary: {
           screens: {
             Home: "/",

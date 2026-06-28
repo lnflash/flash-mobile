@@ -20,12 +20,19 @@
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
-		3152A8AF830F40A7AB689E42 /* (null) in Resources */ = {isa = PBXBuildFile; };
-		3E3C92C2FC91412D8DFDE94D /* (null) in Resources */ = {isa = PBXBuildFile; };
-		560415592C5B4119B9F91553 /* (null) in Resources */ = {isa = PBXBuildFile; };
+		1C37FACBA6F1305D3941D9AD /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0153E6FB2FF0AF1E00DA9493 /* SwiftUI.framework */; };
+		1D0615461356D4513089873D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD9A2B3A3DB948C0E9DA3E8A /* Foundation.framework */; };
+		2D8F35872583AB46148D4EC8 /* WidgetBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 5899AF96676F3AEF8C018031 /* WidgetBridge.m */; };
+		3152A8AF830F40A7AB689E42 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		3E3C92C2FC91412D8DFDE94D /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		560415592C5B4119B9F91553 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
 		5CDD582462391BD4A7901BD8 /* libPods-LNFlash.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B660162FC198C5D612BB44A /* libPods-LNFlash.a */; };
+		65403F50DCC45A6C0F8A7719 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0153E6F92FF0AF1E00DA9493 /* WidgetKit.framework */; };
 		69B54F686F5835A64060EE6D /* libPods-LNFlash-Alt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 177D9FE829C0CBCE225C8178 /* libPods-LNFlash-Alt.a */; };
+		6FFA8CCE9FDC46439521C643 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D363BA80BBEB4C6646C39FBD /* WidgetBridge.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		833D390F570BFF9674FCBD74 /* FlashWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD465FEB229510D51684EDE6 /* FlashWidget.swift */; };
+		855F657BD177625DE7B379D9 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80B92CDD11F2D823E2EE004D /* SharedStore.swift */; };
 		8647B9C22DFD831600E2F160 /* AppDelegate.h in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FAF1A68108700A75B9A /* AppDelegate.h */; };
 		8647B9C32DFD831600E2F160 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		8647B9C42DFD831600E2F160 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
@@ -35,19 +42,25 @@
 		8647B9CB2DFD831600E2F160 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		8647B9CC2DFD831600E2F160 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 86FB60FB2BC40BBC0088C78C /* PrivacyInfo.xcprivacy */; };
 		8647B9CD2DFD831600E2F160 /* coins.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 0147E0DC2BAE64B90071CDF2 /* coins.mp3 */; };
-		8647B9CE2DFD831600E2F160 /* (null) in Resources */ = {isa = PBXBuildFile; };
-		8647B9CF2DFD831600E2F160 /* (null) in Resources */ = {isa = PBXBuildFile; };
-		8647B9D02DFD831600E2F160 /* (null) in Resources */ = {isa = PBXBuildFile; };
-		8647B9D12DFD831600E2F160 /* (null) in Resources */ = {isa = PBXBuildFile; };
-		8647B9D22DFD831600E2F160 /* (null) in Resources */ = {isa = PBXBuildFile; };
-		8647B9D32DFD831600E2F160 /* (null) in Resources */ = {isa = PBXBuildFile; };
+		8647B9CE2DFD831600E2F160 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		8647B9CF2DFD831600E2F160 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		8647B9D02DFD831600E2F160 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		8647B9D12DFD831600E2F160 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		8647B9D22DFD831600E2F160 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		8647B9D32DFD831600E2F160 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
 		8647B9ED2DFEAFE500E2F160 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8647B9EC2DFEAFE500E2F160 /* GoogleService-Info.plist */; };
 		8647B9EF2DFEAFF900E2F160 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8647B9EE2DFEAFF900E2F160 /* GoogleService-Info.plist */; };
 		86FB60FC2BC40BBC0088C78C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 86FB60FB2BC40BBC0088C78C /* PrivacyInfo.xcprivacy */; };
-		94D9F3C84EB547D68D41C50F /* (null) in Resources */ = {isa = PBXBuildFile; };
-		BD157A9851974C298EB06CB7 /* (null) in Resources */ = {isa = PBXBuildFile; };
-		C426C81D58C8450C878B6086 /* (null) in Resources */ = {isa = PBXBuildFile; };
+		94D9F3C84EB547D68D41C50F /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		9912AFA8033E0A56F4AF509F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 57657429D7D7561990B272E5 /* Assets.xcassets */; };
+		AB41648389366FA2DE04E252 /* FlashWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB09C467FDAE0560EC579ED /* FlashWidgetBundle.swift */; };
+		BD157A9851974C298EB06CB7 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		C426C81D58C8450C878B6086 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
 		C61EE0AD23C530E30054100C /* AuthenticationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C61EE0AC23C530E30054100C /* AuthenticationServices.framework */; };
+		C904177F638976744D113249 /* PriceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2E9F1C6B51F42DF36183FA /* PriceService.swift */; };
+		CB3637CFB3FAB9B2A188AB46 /* Provider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2052AFF690BEC2C99884C745 /* Provider.swift */; };
+		DB7F2D410CF8013086AE0F35 /* FlashWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AC352BF933E169BF74309B2C /* FlashWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		DFC87A5CC1F436C2FB3A9C48 /* FlashWidgetEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A19E0142B1D06F47B8624E /* FlashWidgetEntryView.swift */; };
 		F1D71F3628CE5C9A00636277 /* AppDelegate.h in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FAF1A68108700A75B9A /* AppDelegate.h */; };
 		FBB2BDC0DD3802BB090D3FD4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 86FB60FB2BC40BBC0088C78C /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
@@ -66,6 +79,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 0153E6F72FF0AF1E00DA9493;
 			remoteInfo = FlashWatchComplicationExtension;
+		};
+		6160A347E8394A7F6ABD4F41 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6567AA3B9C0E467A2A198311;
+			remoteInfo = FlashWidgetExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -92,6 +112,17 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		64C8B803F54047E90D28A894 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				DB7F2D410CF8013086AE0F35 /* FlashWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -113,35 +144,50 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = LNFlash/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = LNFlash/main.m; sourceTree = "<group>"; };
 		177D9FE829C0CBCE225C8178 /* libPods-LNFlash-Alt.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-LNFlash-Alt.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2052AFF690BEC2C99884C745 /* Provider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Provider.swift; sourceTree = "<group>"; };
 		2E782F00A296471DB427D608 /* Ionicons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Ionicons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Ionicons.ttf"; sourceTree = "<group>"; };
 		2FB6C1D703FBCCD4EF991FB5 /* Pods-LNFlash-Alt.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LNFlash-Alt.debug.xcconfig"; path = "Target Support Files/Pods-LNFlash-Alt/Pods-LNFlash-Alt.debug.xcconfig"; sourceTree = "<group>"; };
 		3CB4BEDD74CAD66898195195 /* Pods-LNFlash-Alt.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LNFlash-Alt.release.xcconfig"; path = "Target Support Files/Pods-LNFlash-Alt/Pods-LNFlash-Alt.release.xcconfig"; sourceTree = "<group>"; };
 		4B660162FC198C5D612BB44A /* libPods-LNFlash.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-LNFlash.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4EB09C467FDAE0560EC579ED /* FlashWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlashWidgetBundle.swift; sourceTree = "<group>"; };
+		57657429D7D7561990B272E5 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5899AF96676F3AEF8C018031 /* WidgetBridge.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = WidgetBridge.m; path = LNFlash/WidgetBridge.m; sourceTree = "<group>"; };
+		6DB141B9F92FB6FDBDFE6511 /* FlashWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = FlashWidget.entitlements; sourceTree = "<group>"; };
+		79A19E0142B1D06F47B8624E /* FlashWidgetEntryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlashWidgetEntryView.swift; sourceTree = "<group>"; };
+		7E28E5F972FF11E880F87B9F /* FlashWidgetExtension.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = FlashWidgetExtension.entitlements; sourceTree = "<group>"; };
 		7F29A37898BAE90005494376 /* Pods-LNFlash.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LNFlash.debug.xcconfig"; path = "Target Support Files/Pods-LNFlash/Pods-LNFlash.debug.xcconfig"; sourceTree = "<group>"; };
+		80B92CDD11F2D823E2EE004D /* SharedStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedStore.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = LNFlash/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		8647B9DD2DFD831600E2F160 /* Flash.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Flash.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8647B9EC2DFEAFE500E2F160 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "LNFlash/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		8647B9EE2DFEAFF900E2F160 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "LNFlash-Alt/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		86FB60FB2BC40BBC0088C78C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		8DEBA8D2B0E14FD0DD8B37E2 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		91622336680E692C2E1CD466 /* Pods-LNFlash.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LNFlash.release.xcconfig"; path = "Target Support Files/Pods-LNFlash/Pods-LNFlash.release.xcconfig"; sourceTree = "<group>"; };
+		A4F431BE17DF142F8967044E /* SETUP.md */ = {isa = PBXFileReference; includeInIndex = 1; path = SETUP.md; sourceTree = "<group>"; };
+		AC352BF933E169BF74309B2C /* FlashWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FlashWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C61EE0AB23C52FBA0054100C /* LNFlash.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = LNFlash.entitlements; path = LNFlash/LNFlash.entitlements; sourceTree = "<group>"; };
 		C61EE0AC23C530E30054100C /* AuthenticationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AuthenticationServices.framework; path = System/Library/Frameworks/AuthenticationServices.framework; sourceTree = SDKROOT; };
 		C63A9181296313BE00B54FDB /* hermes.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = hermes.xcframework; path = "Pods/hermes-engine/destroot/Library/Frameworks/universal/hermes.xcframework"; sourceTree = "<group>"; };
 		C6FCE05724592E5E0076B3C0 /* LNFlash-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LNFlash-Bridging-Header.h"; sourceTree = "<group>"; };
+		D363BA80BBEB4C6646C39FBD /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WidgetBridge.swift; path = LNFlash/WidgetBridge.swift; sourceTree = "<group>"; };
+		DC2E9F1C6B51F42DF36183FA /* PriceService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PriceService.swift; sourceTree = "<group>"; };
+		DD465FEB229510D51684EDE6 /* FlashWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlashWidget.swift; sourceTree = "<group>"; };
+		DD9A2B3A3DB948C0E9DA3E8A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		ED2971642150620600B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.0.sdk/System/Library/Frameworks/JavaScriptCore.framework; sourceTree = DEVELOPER_DIR; };
 		F10B45D328452374007CB684 /* LNFlashDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = LNFlashDebug.entitlements; path = LNFlash/LNFlashDebug.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		0153E7B42FF10F9500DA9493 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		0153E7B42FF10F9500DA9493 /* Exceptions for "FlashWatchComplication" folder in "FlashWatchComplicationExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = 0153E6F72FF0AF1E00DA9493 /* FlashWatchComplicationExtension */;
 		};
-		0153E8002FF1300000DA9493 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		0153E8002FF1300000DA9493 /* Exceptions for "FlashWatch Watch App" folder in "FlashWatch Watch App" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -151,11 +197,43 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		0153E6D72FF0ACD300DA9493 /* FlashWatch Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (0153E8002FF1300000DA9493 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "FlashWatch Watch App"; sourceTree = "<group>"; };
-		0153E6FD2FF0AF1E00DA9493 /* FlashWatchComplication */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (0153E7B42FF10F9500DA9493 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = FlashWatchComplication; sourceTree = "<group>"; };
+		0153E6D72FF0ACD300DA9493 /* FlashWatch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0153E8002FF1300000DA9493 /* Exceptions for "FlashWatch Watch App" folder in "FlashWatch Watch App" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "FlashWatch Watch App";
+			sourceTree = "<group>";
+		};
+		0153E6FD2FF0AF1E00DA9493 /* FlashWatchComplication */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0153E7B42FF10F9500DA9493 /* Exceptions for "FlashWatchComplication" folder in "FlashWatchComplicationExtension" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = FlashWatchComplication;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		00564C441A1FBBFE0489BBF3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1D0615461356D4513089873D /* Foundation.framework in Frameworks */,
+				65403F50DCC45A6C0F8A7719 /* WidgetKit.framework in Frameworks */,
+				1C37FACBA6F1305D3941D9AD /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		0153E6D32FF0ACD300DA9493 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -215,6 +293,8 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB71A68108700A75B9A /* main.m */,
+				5899AF96676F3AEF8C018031 /* WidgetBridge.m */,
+				D363BA80BBEB4C6646C39FBD /* WidgetBridge.swift */,
 			);
 			name = LNFlash;
 			sourceTree = "<group>";
@@ -230,6 +310,7 @@
 				177D9FE829C0CBCE225C8178 /* libPods-LNFlash-Alt.a */,
 				0153E6F92FF0AF1E00DA9493 /* WidgetKit.framework */,
 				0153E6FB2FF0AF1E00DA9493 /* SwiftUI.framework */,
+				68D08033BA102D1845373B47 /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -251,6 +332,14 @@
 				3CB4BEDD74CAD66898195195 /* Pods-LNFlash-Alt.release.xcconfig */,
 			);
 			path = Pods;
+			sourceTree = "<group>";
+		};
+		68D08033BA102D1845373B47 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				DD9A2B3A3DB948C0E9DA3E8A /* Foundation.framework */,
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -279,6 +368,8 @@
 				8647B9EC2DFEAFE500E2F160 /* GoogleService-Info.plist */,
 				8647B9EE2DFEAFF900E2F160 /* GoogleService-Info.plist */,
 				0153E82E2FF112ED00DA9493 /* Recovered References */,
+				949E5B22ACCF9C1384226AED /* FlashWidget */,
+				7E28E5F972FF11E880F87B9F /* FlashWidgetExtension.entitlements */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -292,8 +383,27 @@
 				8647B9DD2DFD831600E2F160 /* Flash.app */,
 				0153E6D62FF0ACD300DA9493 /* FlashWatch Watch App.app */,
 				0153E6F82FF0AF1E00DA9493 /* FlashWatchComplicationExtension.appex */,
+				AC352BF933E169BF74309B2C /* FlashWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		949E5B22ACCF9C1384226AED /* FlashWidget */ = {
+			isa = PBXGroup;
+			children = (
+				DD465FEB229510D51684EDE6 /* FlashWidget.swift */,
+				4EB09C467FDAE0560EC579ED /* FlashWidgetBundle.swift */,
+				79A19E0142B1D06F47B8624E /* FlashWidgetEntryView.swift */,
+				DC2E9F1C6B51F42DF36183FA /* PriceService.swift */,
+				2052AFF690BEC2C99884C745 /* Provider.swift */,
+				80B92CDD11F2D823E2EE004D /* SharedStore.swift */,
+				57657429D7D7561990B272E5 /* Assets.xcassets */,
+				8DEBA8D2B0E14FD0DD8B37E2 /* Info.plist */,
+				6DB141B9F92FB6FDBDFE6511 /* FlashWidget.entitlements */,
+				A4F431BE17DF142F8967044E /* SETUP.md */,
+			);
+			name = FlashWidget;
+			path = FlashWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -351,6 +461,7 @@
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				0153E6E02FF0ACD400DA9493 /* Embed Watch Content */,
+				64C8B803F54047E90D28A894 /* Embed Foundation Extensions */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				C655A53423D256CE008ACDDA /* Run Script */,
 				DAB98203F1E736C993D856E2 /* [CP] Embed Pods Frameworks */,
@@ -362,11 +473,29 @@
 			);
 			dependencies = (
 				0153E6DF2FF0ACD400DA9493 /* PBXTargetDependency */,
+				E3EB6EFEC85BA0B426E4FDA1 /* PBXTargetDependency */,
 			);
 			name = LNFlash;
 			productName = LNFlash;
 			productReference = 13B07F961A680F5B00A75B9A /* Flash.app */;
 			productType = "com.apple.product-type.application";
+		};
+		6567AA3B9C0E467A2A198311 /* FlashWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A36B673F63AA17FA1416553 /* Build configuration list for PBXNativeTarget "FlashWidgetExtension" */;
+			buildPhases = (
+				53D99210C5B69B5B65BBC64A /* Sources */,
+				00564C441A1FBBFE0489BBF3 /* Frameworks */,
+				993D861E5221744E8944A0C4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FlashWidgetExtension;
+			productName = FlashWidgetExtension;
+			productReference = AC352BF933E169BF74309B2C /* FlashWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		8647B9BE2DFD831600E2F160 /* LNFlash-Alt */ = {
 			isa = PBXNativeTarget;
@@ -438,6 +567,7 @@
 				8647B9BE2DFD831600E2F160 /* LNFlash-Alt */,
 				0153E6D52FF0ACD300DA9493 /* FlashWatch Watch App */,
 				0153E6F72FF0AF1E00DA9493 /* FlashWatchComplicationExtension */,
+				6567AA3B9C0E467A2A198311 /* FlashWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -468,12 +598,12 @@
 				86FB60FC2BC40BBC0088C78C /* PrivacyInfo.xcprivacy in Resources */,
 				0147E0DD2BAE64B90071CDF2 /* coins.mp3 in Resources */,
 				8647B9ED2DFEAFE500E2F160 /* GoogleService-Info.plist in Resources */,
-				560415592C5B4119B9F91553 /* (null) in Resources */,
-				3E3C92C2FC91412D8DFDE94D /* (null) in Resources */,
-				BD157A9851974C298EB06CB7 /* (null) in Resources */,
-				3152A8AF830F40A7AB689E42 /* (null) in Resources */,
-				94D9F3C84EB547D68D41C50F /* (null) in Resources */,
-				C426C81D58C8450C878B6086 /* (null) in Resources */,
+				560415592C5B4119B9F91553 /* BuildFile in Resources */,
+				3E3C92C2FC91412D8DFDE94D /* BuildFile in Resources */,
+				BD157A9851974C298EB06CB7 /* BuildFile in Resources */,
+				3152A8AF830F40A7AB689E42 /* BuildFile in Resources */,
+				94D9F3C84EB547D68D41C50F /* BuildFile in Resources */,
+				C426C81D58C8450C878B6086 /* BuildFile in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -487,12 +617,20 @@
 				8647B9CC2DFD831600E2F160 /* PrivacyInfo.xcprivacy in Resources */,
 				8647B9CD2DFD831600E2F160 /* coins.mp3 in Resources */,
 				8647B9EF2DFEAFF900E2F160 /* GoogleService-Info.plist in Resources */,
-				8647B9CE2DFD831600E2F160 /* (null) in Resources */,
-				8647B9CF2DFD831600E2F160 /* (null) in Resources */,
-				8647B9D02DFD831600E2F160 /* (null) in Resources */,
-				8647B9D12DFD831600E2F160 /* (null) in Resources */,
-				8647B9D22DFD831600E2F160 /* (null) in Resources */,
-				8647B9D32DFD831600E2F160 /* (null) in Resources */,
+				8647B9CE2DFD831600E2F160 /* BuildFile in Resources */,
+				8647B9CF2DFD831600E2F160 /* BuildFile in Resources */,
+				8647B9D02DFD831600E2F160 /* BuildFile in Resources */,
+				8647B9D12DFD831600E2F160 /* BuildFile in Resources */,
+				8647B9D22DFD831600E2F160 /* BuildFile in Resources */,
+				8647B9D32DFD831600E2F160 /* BuildFile in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		993D861E5221744E8944A0C4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9912AFA8033E0A56F4AF509F /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -994,6 +1132,21 @@
 				0153E6D02FF0AB3600DA9493 /* WatchConnectivityBridge.swift in Sources */,
 				0153E6D12FF0AB3600DA9493 /* WatchConnectivityBridge.m in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
+				2D8F35872583AB46148D4EC8 /* WidgetBridge.m in Sources */,
+				6FFA8CCE9FDC46439521C643 /* WidgetBridge.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		53D99210C5B69B5B65BBC64A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				833D390F570BFF9674FCBD74 /* FlashWidget.swift in Sources */,
+				AB41648389366FA2DE04E252 /* FlashWidgetBundle.swift in Sources */,
+				DFC87A5CC1F436C2FB3A9C48 /* FlashWidgetEntryView.swift in Sources */,
+				C904177F638976744D113249 /* PriceService.swift in Sources */,
+				CB3637CFB3FAB9B2A188AB46 /* Provider.swift in Sources */,
+				855F657BD177625DE7B379D9 /* SharedStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1019,6 +1172,12 @@
 			isa = PBXTargetDependency;
 			target = 0153E6F72FF0AF1E00DA9493 /* FlashWatchComplicationExtension */;
 			targetProxy = 0153E7072FF0AF2000DA9493 /* PBXContainerItemProxy */;
+		};
+		E3EB6EFEC85BA0B426E4FDA1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = FlashWidgetExtension;
+			target = 6567AA3B9C0E467A2A198311 /* FlashWidgetExtension */;
+			targetProxy = 6160A347E8394A7F6ABD4F41 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1067,6 +1226,7 @@
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -1118,6 +1278,7 @@
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1172,6 +1333,7 @@
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1222,6 +1384,7 @@
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
@@ -1761,6 +1924,112 @@
 			};
 			name = Release;
 		};
+		9FBD0BB59AC8E2DEB9F74447 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = FlashWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 39;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = H7UAM79QQP;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FlashWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FlashWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Galoy Inc. All rights reserved.";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 0.5.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash.FlashWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		C3436A162D60DEEDFF4EA331 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = FlashWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 39;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = H7UAM79QQP;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FlashWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FlashWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Galoy Inc. All rights reserved.";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 0.5.2;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash.FlashWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1787,6 +2056,15 @@
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
 				13B07F951A680F5B00A75B9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5A36B673F63AA17FA1416553 /* Build configuration list for PBXNativeTarget "FlashWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9FBD0BB59AC8E2DEB9F74447 /* Release */,
+				C3436A162D60DEEDFF4EA331 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
