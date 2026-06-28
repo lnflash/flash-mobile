@@ -4,6 +4,7 @@
 //
 //  SwiftUI views for small / medium / large widget families.
 //  Clean two-zone design: hero price on top, smooth sparkline below.
+//  Inspired by River's polished minimal aesthetic.
 //
 
 import WidgetKit
@@ -22,6 +23,7 @@ enum DeepLink {
 enum FlashDesign {
   static let accent = Color(red: 0.0, green: 0.78, blue: 0.55)
   static let accentSoft = Color(red: 0.0, green: 0.78, blue: 0.55).opacity(0.15)
+  static let negative = Color(red: 1.0, green: 0.3, blue: 0.38)
   static let muted = Color.primary.opacity(0.5)
   static let separator = Color.primary.opacity(0.08)
 }
@@ -60,7 +62,7 @@ private extension View {
   }
 }
 
-// MARK: - Logo only
+// MARK: - Logo
 
 struct FlashLogo: View {
   var size: CGFloat = 22
@@ -73,6 +75,59 @@ struct FlashLogo: View {
   }
 }
 
+// MARK: - Price change computation
+
+struct PriceChange {
+  let percent: Double
+  let label: String
+  let isPositive: Bool
+}
+
+func computePriceChange(_ history: [PricePoint]) -> PriceChange? {
+  let valid = history.filter { $0.price.isFinite && $0.price > 0 }
+  guard let first = valid.first?.price, let last = valid.last?.price, first > 0 else {
+    return nil
+  }
+  let pct = ((last / first) - 1) * 100
+  let sign = pct >= 0 ? "+" : "-"
+  return PriceChange(
+    percent: pct,
+    label: "\(sign)\(String(format: "%.1f", abs(pct)))%",
+    isPositive: pct >= 0
+  )
+}
+
+// MARK: - High / Low
+
+func computeRange(_ history: [PricePoint]) -> (low: String, high: String)? {
+  let prices = history.filter { $0.price.isFinite && $0.price > 0 }.map { $0.price }
+  guard let minP = prices.min(), let maxP = prices.max(), minP > 0 else { return nil }
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.maximumFractionDigits = 0
+  return (
+    fmt.string(from: NSNumber(value: minP)) ?? "—",
+    fmt.string(from: NSNumber(value: maxP)) ?? "—"
+  )
+}
+
+// MARK: - Price change badge
+
+struct PriceChangeBadge: View {
+  let change: PriceChange
+
+  var body: some View {
+    HStack(spacing: 3) {
+      Image(systemName: change.isPositive ? "arrow.up.right" : "arrow.down.right")
+        .font(.system(size: 9, weight: .bold))
+      Text(change.label)
+        .font(.system(size: 11, weight: .semibold, design: .rounded))
+        .monospacedDigit()
+    }
+    .foregroundColor(change.isPositive ? FlashDesign.accent : FlashDesign.negative)
+  }
+}
+
 // MARK: - Smooth sparkline (Catmull-Rom → Bezier curves)
 
 struct Sparkline: View {
@@ -81,13 +136,13 @@ struct Sparkline: View {
   var height: CGFloat = 40
   var lineWidth: CGFloat = 2.5
   var fillOpacity: Double = 0.22
+  var showEdgeMarker: Bool = false
 
   var body: some View {
     GeometryReader { geo in
       if points.count >= 2 {
         let path = SmoothPath.build(points: points, size: geo.size)
         ZStack {
-          // Gradient fill
           fillPath(path, in: geo.size)
             .fill(
               LinearGradient(
@@ -96,8 +151,15 @@ struct Sparkline: View {
                 endPoint: .bottom
               )
             )
-          // Smooth line
           path.stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
+
+          // End-point dot
+          if showEdgeMarker, let last = lastPoint(in: geo.size) {
+            Circle()
+              .fill(color)
+              .frame(width: 5, height: 5)
+              .position(last)
+          }
         }
       } else {
         Path { p in
@@ -117,10 +179,19 @@ struct Sparkline: View {
     filled.closeSubpath()
     return filled
   }
+
+  private func lastPoint(in size: CGSize) -> CGPoint? {
+    guard let last = points.last else { return nil }
+    let (minP, maxP) = SmoothPath.bounds(points)
+    let range = max(maxP - minP, 0.0001)
+    let vPad: CGFloat = 4
+    let usableH = size.height - vPad * 2
+    let normalized = (last.price - minP) / range
+    let y = vPad + usableH * (1 - CGFloat(normalized))
+    return CGPoint(x: size.width - 2, y: y)
+  }
 }
 
-/// Builds a smooth curved Path from price points using Catmull-Rom spline
-/// interpolation (visually similar to monotoneX / d3.curveMonotoneX).
 enum SmoothPath {
   static func build(points: [PricePoint], size: CGSize) -> Path {
     guard points.count >= 2 else { return Path() }
@@ -136,7 +207,6 @@ enum SmoothPath {
     let maxT = timestamps.max() ?? minT
     let timeRange = max(maxT - minT, 1)
 
-    // Convert to CGPoints
     let cgPoints: [CGPoint] = points.map { point in
       let x = hPad + usableW * CGFloat((point.timestamp - minT) / timeRange)
       let normalized = (point.price - minP) / range
@@ -147,8 +217,15 @@ enum SmoothPath {
     return catmullRom(cgPoints)
   }
 
-  /// Catmull-Rom spline → Bezier path for smooth curves through all points.
-  private static func catmullRom(_ points: [CGPoint]) -> Path {
+  static func bounds(_ points: [PricePoint]) -> (min: Double, max: Double) {
+    let prices = points.map { $0.price }
+    let minPrice = prices.min() ?? 0
+    let maxPrice = prices.max() ?? 0
+    let pad = max((maxPrice - minPrice) * 0.06, maxPrice * 0.002)
+    return (minPrice - pad, maxPrice + pad)
+  }
+
+  static func catmullRom(_ points: [CGPoint]) -> Path {
     var path = Path()
     guard let first = points.first else { return path }
     path.move(to: first)
@@ -159,28 +236,13 @@ enum SmoothPath {
       let p2 = points[i + 1]
       let p3 = i + 2 < points.count ? points[i + 2] : points[i + 1]
 
-      // Catmull-Rom to Bezier conversion
-      let cp1 = CGPoint(
-        x: p1.x + (p2.x - p0.x) / 6,
-        y: p1.y + (p2.y - p0.y) / 6
-      )
-      let cp2 = CGPoint(
-        x: p2.x - (p3.x - p1.x) / 6,
-        y: p2.y - (p3.y - p1.y) / 6
-      )
+      let cp1 = CGPoint(x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6)
+      let cp2 = CGPoint(x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6)
 
       path.addCurve(to: p2, control1: cp1, control2: cp2)
     }
 
     return path
-  }
-
-  private static func bounds(_ points: [PricePoint]) -> (min: Double, max: Double) {
-    let prices = points.map { $0.price }
-    let minPrice = prices.min() ?? 0
-    let maxPrice = prices.max() ?? 0
-    let pad = max((maxPrice - minPrice) * 0.06, maxPrice * 0.002)
-    return (minPrice - pad, maxPrice + pad)
   }
 }
 
@@ -232,16 +294,21 @@ private struct SmallWidget: View {
   let history: [PricePoint]
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: 6) {
       HStack(alignment: .top) {
-        HeroPrice(snapshot: snapshot, size: 23)
+        VStack(alignment: .leading, spacing: 2) {
+          HeroPrice(snapshot: snapshot, size: 22)
+          if let change = computePriceChange(history) {
+            PriceChangeBadge(change: change)
+          }
+        }
         Spacer()
-        FlashLogo(size: 23)
+        FlashLogo(size: 22)
       }
 
       Spacer()
 
-      Sparkline(points: history, height: 68, lineWidth: 2.5, fillOpacity: 0.18)
+      Sparkline(points: history, height: 68, lineWidth: 2.5, fillOpacity: 0.18, showEdgeMarker: true)
         .padding(.horizontal, -14)
         .padding(.bottom, -10)
     }
@@ -259,14 +326,17 @@ private struct MediumWidget: View {
 
   var body: some View {
     HStack(spacing: 14) {
-      VStack(alignment: .leading, spacing: 6) {
+      VStack(alignment: .leading, spacing: 4) {
         HStack {
-          HeroPrice(snapshot: snapshot, size: 26)
+          HeroPrice(snapshot: snapshot, size: 24)
           Spacer()
-          FlashLogo(size: 24)
+          FlashLogo(size: 22)
+        }
+        if let change = computePriceChange(history) {
+          PriceChangeBadge(change: change)
         }
         Spacer()
-        Sparkline(points: history, height: 58, lineWidth: 2.6, fillOpacity: 0.18)
+        Sparkline(points: history, height: 50, lineWidth: 2.6, fillOpacity: 0.18, showEdgeMarker: true)
           .padding(.horizontal, -14)
           .padding(.bottom, -10)
       }
@@ -289,18 +359,41 @@ private struct LargeWidget: View {
   let history: [PricePoint]
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      // Header
+    VStack(alignment: .leading, spacing: 10) {
+      // Header: price + logo
       HStack(alignment: .top) {
-        HeroPrice(snapshot: snapshot, size: 32)
+        VStack(alignment: .leading, spacing: 3) {
+          HeroPrice(snapshot: snapshot, size: 32)
+          if let change = computePriceChange(history) {
+            PriceChangeBadge(change: change)
+          }
+        }
         Spacer()
         FlashLogo(size: 28)
       }
 
       // Chart
-      Sparkline(points: history, height: 150, lineWidth: 3, fillOpacity: 0.2)
+      Sparkline(points: history, height: 130, lineWidth: 3, fillOpacity: 0.2, showEdgeMarker: true)
         .padding(.horizontal, -16)
-        .padding(.bottom, -4)
+
+      // High / Low row
+      if let range = computeRange(history) {
+        HStack {
+          Text("Low \(range.low)")
+            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .foregroundColor(FlashDesign.muted)
+            .monospacedDigit()
+          Spacer()
+          Text("30D Range")
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .foregroundColor(FlashDesign.muted)
+          Spacer()
+          Text("High \(range.high)")
+            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .foregroundColor(FlashDesign.muted)
+            .monospacedDigit()
+        }
+      }
 
       Spacer()
 

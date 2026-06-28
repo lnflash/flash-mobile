@@ -2,17 +2,19 @@
 //  ContentView.swift
 //  FlashWatch
 //
-//  Main watch app surface: live BTC price, one-month chart, self-refresh, and
-//  quick actions handed off to the paired iPhone.
+//  Main watch app surface: live BTC price, 30-day chart, price change,
+//  and quick actions handed off to the paired iPhone.
 //
 
 import SwiftUI
 
 private enum WatchStyle {
   static let accent = Color(red: 0.0, green: 0.78, blue: 0.55)
-  static let secondary = Color.primary.opacity(0.64)
-  static let tertiary = Color.primary.opacity(0.28)
+  static let accentSoft = Color(red: 0.0, green: 0.78, blue: 0.55).opacity(0.15)
+  static let secondary = Color.primary.opacity(0.6)
+  static let muted = Color.primary.opacity(0.35)
   static let negative = Color(red: 1.0, green: 0.3, blue: 0.38)
+  static let separator = Color.primary.opacity(0.08)
 }
 
 struct ContentView: View {
@@ -23,15 +25,16 @@ struct ContentView: View {
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 11) {
+      VStack(alignment: .leading, spacing: 10) {
         header
         heroPrice
-        PriceSparkline(points: history)
+        priceChangeBadge
+        chart
         metaRow
         actions
       }
-      .padding(.horizontal, 3)
-      .padding(.vertical, 8)
+      .padding(.horizontal, 4)
+      .padding(.vertical, 6)
     }
     .task {
       phone.activate()
@@ -47,16 +50,14 @@ struct ContentView: View {
     }
   }
 
+  // MARK: - Header
+
   private var header: some View {
-    HStack(alignment: .center, spacing: 8) {
-      VStack(alignment: .leading, spacing: 1) {
-        Text("BTC")
-          .font(.system(size: 12, weight: .semibold, design: .rounded))
-          .foregroundStyle(WatchStyle.secondary)
-        Text(snapshot.currencyCode)
-          .font(.system(size: 10, weight: .medium, design: .rounded))
-          .foregroundStyle(WatchStyle.secondary)
-      }
+    HStack(alignment: .center, spacing: 6) {
+      Image("FlashLogo")
+        .resizable()
+        .scaledToFit()
+        .frame(width: 22, height: 22)
 
       Spacer(minLength: 4)
 
@@ -64,21 +65,14 @@ struct ContentView: View {
         ProgressView()
           .controlSize(.mini)
       }
-
-      ZStack {
-        Circle()
-          .fill(WatchStyle.accent.opacity(0.18))
-        Image(systemName: "bolt.fill")
-          .font(.system(size: 15, weight: .bold))
-          .foregroundStyle(WatchStyle.accent)
-      }
-      .frame(width: 28, height: 28)
     }
   }
 
+  // MARK: - Hero price
+
   private var heroPrice: some View {
     Text(snapshot.hasPrice ? snapshot.formattedPrice : "Loading...")
-      .font(.system(size: 35, weight: .bold, design: .rounded))
+      .font(.system(size: 36, weight: .bold, design: .rounded))
       .monospacedDigit()
       .lineLimit(1)
       .minimumScaleFactor(0.34)
@@ -86,32 +80,66 @@ struct ContentView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
   }
 
-  private var metaRow: some View {
-    HStack(spacing: 7) {
+  // MARK: - Price change badge
+
+  private var priceChangeBadge: some View {
+    Group {
       if let change = priceChange {
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
           Image(systemName: change.isPositive ? "arrow.up.right" : "arrow.down.right")
             .font(.system(size: 9, weight: .bold))
           Text(change.label)
-            .font(.system(size: 10, weight: .semibold, design: .rounded))
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
             .monospacedDigit()
         }
         .foregroundStyle(change.isPositive ? WatchStyle.accent : WatchStyle.negative)
-        .padding(.horizontal, 7)
+        .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background((change.isPositive ? WatchStyle.accent : WatchStyle.negative).opacity(0.15))
         .clipShape(Capsule())
       }
-
-      Spacer(minLength: 4)
-
-      Text(updatedText)
-        .font(.system(size: 10, weight: .medium, design: .rounded))
-        .foregroundStyle(WatchStyle.secondary)
-        .lineLimit(1)
-        .minimumScaleFactor(0.7)
     }
   }
+
+  // MARK: - Chart
+
+  private var chart: some View {
+    VStack(spacing: 2) {
+      PriceSparkline(points: history)
+        .padding(.horizontal, -6)
+
+      // High/Low row
+      if let range = priceRange {
+        HStack {
+          Text("L \(range.low)")
+            .font(.system(size: 9, weight: .medium, design: .rounded))
+            .foregroundStyle(WatchStyle.muted)
+            .monospacedDigit()
+          Spacer()
+          Text("30D")
+            .font(.system(size: 9, weight: .semibold, design: .rounded))
+            .foregroundStyle(WatchStyle.muted)
+          Spacer()
+          Text("H \(range.high)")
+            .font(.system(size: 9, weight: .medium, design: .rounded))
+            .foregroundStyle(WatchStyle.muted)
+            .monospacedDigit()
+        }
+      }
+    }
+  }
+
+  // MARK: - Meta row
+
+  private var metaRow: some View {
+    Text(updatedText)
+      .font(.system(size: 10, weight: .medium, design: .rounded))
+      .foregroundStyle(WatchStyle.secondary)
+      .lineLimit(1)
+      .minimumScaleFactor(0.7)
+  }
+
+  // MARK: - Actions
 
   private var actions: some View {
     HStack(spacing: 8) {
@@ -124,11 +152,13 @@ struct ContentView: View {
     }
   }
 
+  // MARK: - Computed
+
   private var updatedText: String {
     guard let updatedAt = snapshot.updatedAt else {
       return "auto refresh"
     }
-    return updatedAt.formatted(.relative(presentation: .named))
+    return "Updated " + updatedAt.formatted(.relative(presentation: .named))
   }
 
   private var priceChange: PriceChange? {
@@ -144,10 +174,25 @@ struct ContentView: View {
     let percent = ((last / first) - 1) * 100
     let sign = percent >= 0 ? "+" : "-"
     return PriceChange(
-      label: "30D \(sign)\(String(format: "%.1f", abs(percent)))%",
+      label: "\(sign)\(String(format: "%.1f", abs(percent)))%",
       isPositive: percent >= 0
     )
   }
+
+  private var priceRange: (low: String, high: String)? {
+    let validPrices = history.filter { $0.price.isFinite && $0.price > 0 }.map { $0.price }
+    guard let minP = validPrices.min(), let maxP = validPrices.max(), minP > 0 else {
+      return nil
+    }
+    let fmt = NumberFormatter()
+    fmt.numberStyle = .decimal
+    fmt.maximumFractionDigits = 0
+    let low = fmt.string(from: NSNumber(value: minP)) ?? "—"
+    let high = fmt.string(from: NSNumber(value: maxP)) ?? "—"
+    return (low, high)
+  }
+
+  // MARK: - Refresh
 
   @MainActor
   private func refreshAll() async {
@@ -163,10 +208,14 @@ struct ContentView: View {
   }
 }
 
+// MARK: - Models
+
 private struct PriceChange {
   let label: String
   let isPositive: Bool
 }
+
+// MARK: - Quick action button
 
 private struct QuickActionButton: View {
   let title: String
@@ -184,14 +233,16 @@ private struct QuickActionButton: View {
           .minimumScaleFactor(0.8)
       }
       .frame(maxWidth: .infinity)
-      .padding(.vertical, 8)
+      .padding(.vertical, 9)
     }
     .buttonStyle(.plain)
     .foregroundStyle(WatchStyle.accent)
-    .background(WatchStyle.accent.opacity(0.15))
+    .background(WatchStyle.accentSoft)
     .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
   }
 }
+
+// MARK: - Sparkline chart
 
 private struct PriceSparkline: View {
   let points: [PricePoint]
@@ -200,8 +251,7 @@ private struct PriceSparkline: View {
     GeometryReader { proxy in
       ChartCanvas(points: normalizedPoints(in: proxy.size))
     }
-    .frame(height: 74)
-    .padding(.horizontal, -5)
+    .frame(height: 80)
     .accessibilityHidden(true)
   }
 
@@ -216,8 +266,8 @@ private struct PriceSparkline: View {
       return []
     }
 
-    let topInset: CGFloat = 6
-    let bottomInset: CGFloat = 8
+    let topInset: CGFloat = 5
+    let bottomInset: CGFloat = 5
     let drawableHeight = max(size.height - topInset - bottomInset, 1)
     let range = max(maxPrice - minPrice, maxPrice * 0.004)
     let lastIndex = validPoints.count - 1
@@ -241,7 +291,7 @@ private struct ChartCanvas: View {
           .fill(
             LinearGradient(
               colors: [
-                WatchStyle.accent.opacity(0.24),
+                WatchStyle.accent.opacity(0.25),
                 WatchStyle.accent.opacity(0.02),
               ],
               startPoint: .top,
@@ -252,11 +302,11 @@ private struct ChartCanvas: View {
         SmoothLineShape(points: points)
           .stroke(
             WatchStyle.accent,
-            style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round)
+            style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round)
           )
       } else {
         RoundedRectangle(cornerRadius: 1)
-          .fill(WatchStyle.tertiary)
+          .fill(WatchStyle.muted)
           .frame(height: 1)
           .padding(.horizontal, 8)
       }
@@ -266,10 +316,7 @@ private struct ChartCanvas: View {
 
 private struct SmoothLineShape: Shape {
   let points: [CGPoint]
-
-  func path(in rect: CGRect) -> Path {
-    SmoothPath.line(points)
-  }
+  func path(in rect: CGRect) -> Path { SmoothPath.line(points) }
 }
 
 private struct AreaShape: Shape {

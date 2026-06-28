@@ -37,6 +37,7 @@ private struct InlineView: View {
   let snapshot: PriceSnapshot
   var body: some View {
     // Inline complications render as plain text + an optional SF Symbol.
+    // Custom images aren't supported here, so keep the BTC sign.
     Label("BTC \(snapshot.compactPrice)", systemImage: "bitcoinsign")
   }
 }
@@ -46,16 +47,17 @@ private struct InlineView: View {
 private struct CircularView: View {
   let snapshot: PriceSnapshot
   var body: some View {
-    VStack(spacing: 0) {
-      Image(systemName: "bitcoinsign")
-        .font(.system(size: 11, weight: .bold))
-        .foregroundColor(ComplicationStyle.accent)
+    VStack(spacing: 1) {
+      Image("FlashLogo")
+        .resizable()
+        .scaledToFit()
+        .frame(width: 16, height: 16)
+        .widgetAccentable()
       Text(snapshot.compactPrice)
-        .font(.system(size: 13, weight: .semibold, design: .rounded))
+        .font(.system(size: 12, weight: .semibold, design: .rounded))
         .minimumScaleFactor(0.5)
         .lineLimit(1)
     }
-    .widgetAccentable()
   }
 }
 
@@ -80,16 +82,18 @@ private struct RectangularView: View {
   let snapshot: PriceSnapshot
   var body: some View {
     HStack(spacing: 8) {
-      Image(systemName: "bitcoinsign.circle.fill")
-        .font(.system(size: 22))
-        .foregroundColor(ComplicationStyle.accent)
+      Image("FlashLogo")
+        .resizable()
+        .scaledToFit()
+        .frame(width: 28, height: 28)
         .widgetAccentable()
+
       VStack(alignment: .leading, spacing: 1) {
         Text("Bitcoin")
-          .font(.system(size: 12, weight: .semibold))
+          .font(.system(size: 11, weight: .semibold))
           .foregroundColor(.secondary)
         Text(snapshot.hasPrice ? snapshot.formattedPrice : "—")
-          .font(.system(size: 17, weight: .bold, design: .rounded))
+          .font(.system(size: 16, weight: .bold, design: .rounded))
           .minimumScaleFactor(0.5)
           .lineLimit(1)
         Text(snapshot.currencyCode)
