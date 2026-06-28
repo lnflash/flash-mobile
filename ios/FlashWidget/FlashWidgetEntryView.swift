@@ -181,14 +181,17 @@ struct Sparkline: View {
   }
 
   private func lastPoint(in size: CGSize) -> CGPoint? {
-    guard let last = points.last else { return nil }
+    guard !points.isEmpty else { return nil }
     let (minP, maxP) = SmoothPath.bounds(points)
     let range = max(maxP - minP, 0.0001)
     let vPad: CGFloat = 4
     let usableH = size.height - vPad * 2
+    let last = points.last!
     let normalized = (last.price - minP) / range
     let y = vPad + usableH * (1 - CGFloat(normalized))
-    return CGPoint(x: size.width - 2, y: y)
+    let lastIndex = CGFloat(points.count - 1)
+    let x = (lastIndex / lastIndex) * size.width
+    return CGPoint(x: x - 2, y: y)
   }
 }
 
@@ -199,16 +202,13 @@ enum SmoothPath {
     let (minP, maxP) = bounds(points)
     let range = max(maxP - minP, 0.0001)
     let vPad: CGFloat = 4
-    let hPad: CGFloat = 1
     let usableH = size.height - vPad * 2
-    let usableW = size.width - hPad * 2
-    let timestamps = points.map { $0.timestamp }
-    let minT = timestamps.min() ?? 0
-    let maxT = timestamps.max() ?? minT
-    let timeRange = max(maxT - minT, 1)
+    let usableW = size.width
+    let lastIndex = CGFloat(points.count - 1)
 
-    let cgPoints: [CGPoint] = points.map { point in
-      let x = hPad + usableW * CGFloat((point.timestamp - minT) / timeRange)
+    // Index-based x positioning (evenly spaced) — matches watch app chart
+    let cgPoints: [CGPoint] = points.enumerated().map { index, point in
+      let x = (CGFloat(index) / lastIndex) * usableW
       let normalized = (point.price - minP) / range
       let y = vPad + usableH * (1 - CGFloat(normalized))
       return CGPoint(x: x, y: y)

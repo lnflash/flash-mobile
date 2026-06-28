@@ -80,7 +80,7 @@ enum PriceService {
         timestamp: ts
       )
       SharedStore.writePrice(snapshot)
-      SharedStore.appendHistory(snapshot)
+      // Don't append to history here — the 30D fetch is the authoritative source
       completion(snapshot)
     }.resume()
   }
@@ -88,8 +88,12 @@ enum PriceService {
   // MARK: - 30-day price history for chart
 
   /// Fetches one month of price data and converts it the same way the React
-  /// Native BTC price screen does (`base / 10^offset * currencyUnitMultiple`).
+  /// Native BTC price screen does: `(base / 10^offset) * multiple(currencyUnit)`.
+  /// This gives the BTC price in the display currency's major units, matching
+  /// the watch app exactly.
   static func fetchHistory(
+    currencyCode: String = "USD",
+    fractionDigits: Int = 2,
     completion: @escaping ([PricePoint]) -> Void
   ) {
     var request = URLRequest(url: endpoint)
@@ -126,6 +130,7 @@ enum PriceService {
         else { return nil }
 
         let currencyUnit = priceObj["currencyUnit"] as? String ?? ""
+        // Same conversion as the Flash price-history screen and the watch app
         let btcPrice = (base / pow(10, offset)) * multiple(for: currencyUnit)
         return PricePoint(price: btcPrice, timestamp: timestamp)
       }
