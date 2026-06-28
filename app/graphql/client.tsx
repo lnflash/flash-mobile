@@ -35,6 +35,7 @@ import { onError } from "@apollo/client/link/error"
 
 import { getLanguageFromString, getLocaleFromLanguage } from "@app/utils/locale-detector"
 import { WatchCurrencySync } from "@app/components/watch-currency-sync"
+import { WatchReceiveSync } from "@app/components/watch-receive-sync"
 import { MessagingContainer } from "./messaging"
 import { SCHEMA_VERSION_KEY } from "@app/config"
 import { NetworkError } from "@apollo/client/errors"
@@ -338,6 +339,7 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
             <AnalyticsContainer />
             <MyPriceUpdates />
             <WatchCurrencySync />
+            <WatchReceiveSync />
             <WidgetPriceSync />
             {children}
           </NetworkErrorContextProvider>

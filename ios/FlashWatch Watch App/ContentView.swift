@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import WatchKit
 
 private enum WatchStyle {
   static let accent = Color(red: 0.0, green: 0.78, blue: 0.55)
@@ -21,6 +22,8 @@ struct ContentView: View {
   @StateObject private var phone = PhoneConnectivity.shared
   @State private var snapshot = WatchStore.read()
   @State private var history = WatchStore.readHistory()
+  @State private var receiveQRCode = WatchStore.readReceiveQRCode()
+  @State private var isShowingReceiveQRCode = false
   @State private var isRefreshing = false
 
   var body: some View {
@@ -43,10 +46,16 @@ struct ContentView: View {
     .onChange(of: phone.currencyRevision) { _ in
       snapshot = WatchStore.read()
       history = WatchStore.readHistory()
+      receiveQRCode = WatchStore.readReceiveQRCode()
       Task { await refreshAll() }
     }
     .refreshable {
       await refreshAll()
+    }
+    .sheet(isPresented: $isShowingReceiveQRCode) {
+      if let receiveQRCode {
+        ReceiveQRCodeSheet(receiveQRCode: receiveQRCode)
+      }
     }
   }
 
@@ -147,7 +156,12 @@ struct ContentView: View {
         phone.requestQuickAction("scan")
       }
       QuickActionButton(title: "Receive", systemImage: "qrcode") {
-        phone.requestQuickAction("receive")
+        if let latest = WatchStore.readReceiveQRCode() {
+          receiveQRCode = latest
+          isShowingReceiveQRCode = true
+        } else {
+          phone.requestQuickAction("receive")
+        }
       }
     }
   }
@@ -205,6 +219,63 @@ struct ContentView: View {
 
     let fetchedHistory = await PriceService.fetchHistory()
     history = fetchedHistory.isEmpty ? WatchStore.readHistory() : fetchedHistory
+  }
+}
+
+// MARK: - Receive QR
+
+private struct ReceiveQRCodeSheet: View {
+  let receiveQRCode: ReceiveQRCode
+
+  var body: some View {
+    ScrollView {
+      VStack(spacing: 8) {
+        Text("Receive")
+          .font(.system(size: 15, weight: .bold, design: .rounded))
+
+        QRCodeImage(imageBase64: receiveQRCode.qrCodeImage)
+          .frame(maxWidth: .infinity)
+
+        if !receiveQRCode.address.isEmpty {
+          Text(receiveQRCode.address)
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .multilineTextAlignment(.center)
+            .lineLimit(2)
+            .minimumScaleFactor(0.7)
+        }
+
+        Text(receiveQRCode.label)
+          .font(.system(size: 10, weight: .medium, design: .rounded))
+          .foregroundStyle(WatchStyle.secondary)
+      }
+      .padding(.horizontal, 6)
+      .padding(.vertical, 8)
+    }
+  }
+}
+
+private struct QRCodeImage: View {
+  let imageBase64: String
+
+  var body: some View {
+    Group {
+      if
+        let data = Data(base64Encoded: imageBase64),
+        let image = UIImage(data: data)
+      {
+        Image(uiImage: image)
+          .resizable()
+          .interpolation(.none)
+          .scaledToFit()
+      } else {
+        Image(systemName: "qrcode")
+          .font(.system(size: 72, weight: .regular))
+          .foregroundStyle(WatchStyle.muted)
+      }
+    }
+    .padding(8)
+    .background(Color.white)
+    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
   }
 }
 

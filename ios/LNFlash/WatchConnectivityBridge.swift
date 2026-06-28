@@ -5,10 +5,9 @@
 //  React Native native module that talks to the paired Apple Watch over
 //  WatchConnectivity. Two responsibilities:
 //
-//   1. Push the user's display-currency preference to the watch (so the watch
-//      app + complication render BTC in the same currency as the phone). The JS
-//      layer (app/utils/watch.ts) calls `syncCurrency` whenever the display
-//      currency changes.
+//   1. Push lightweight user context to the watch, including display-currency
+//      preference and receive Paycode QR payload. The JS layer (app/utils/watch.ts)
+//      calls sync methods when those values change.
 //
 //   2. Receive quick-action requests from the watch ("scan" / "receive") and
 //      open the matching `flash://` deep link, reusing the app's existing
@@ -22,11 +21,14 @@ import Foundation
 import React
 import WatchConnectivity
 import UIKit
+import CoreImage
 
 @objc(WatchConnectivityBridge)
 class WatchConnectivityBridge: NSObject {
 
   private static let bootstrap = WatchConnectivityBridge()
+
+  private static var latestApplicationContext: [String: Any] = [:]
 
   private var session: WCSession? {
     WCSession.isSupported() ? WCSession.default : nil
@@ -55,6 +57,45 @@ class WatchConnectivityBridge: NSObject {
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
+    updateWatchContext(
+      [
+        "currencyCode": data["currencyCode"] as? String ?? "USD",
+        "currencySymbol": data["currencySymbol"] as? String ?? "$",
+        "fractionDigits": (data["fractionDigits"] as? NSNumber)?.intValue ?? 2,
+      ],
+      resolver: resolve,
+      rejecter: reject
+    )
+  }
+
+  @objc(syncReceiveQRCode:resolver:rejecter:)
+  func syncReceiveQRCode(
+    _ data: NSDictionary,
+    resolver resolve: RCTPromiseResolveBlock,
+    rejecter reject: RCTPromiseRejectBlock
+  ) {
+    let qrCode = data["receiveQRCode"] as? String ?? ""
+    var updates: [String: Any] = [
+      "receiveQRCode": qrCode,
+      "receiveAddress": data["receiveAddress"] as? String ?? "",
+      "receiveLabel": data["receiveLabel"] as? String ?? "Paycode",
+    ]
+    if let qrCodeImage = Self.makeQRCodeImageBase64(from: qrCode) {
+      updates["receiveQRCodeImage"] = qrCodeImage
+    }
+
+    updateWatchContext(
+      updates,
+      resolver: resolve,
+      rejecter: reject
+    )
+  }
+
+  private func updateWatchContext(
+    _ updates: [String: Any],
+    resolver resolve: RCTPromiseResolveBlock,
+    rejecter reject: RCTPromiseRejectBlock
+  ) {
     guard let session, session.activationState == .activated else {
       // Not an error: the device may have no paired watch.
       resolve(nil)
@@ -65,14 +106,10 @@ class WatchConnectivityBridge: NSObject {
       return
     }
 
-    let context: [String: Any] = [
-      "currencyCode": data["currencyCode"] as? String ?? "USD",
-      "currencySymbol": data["currencySymbol"] as? String ?? "$",
-      "fractionDigits": (data["fractionDigits"] as? NSNumber)?.intValue ?? 2,
-    ]
+    Self.latestApplicationContext.merge(updates) { _, new in new }
 
     do {
-      try session.updateApplicationContext(context)
+      try session.updateApplicationContext(Self.latestApplicationContext)
       resolve(nil)
     } catch {
       reject("watch_context_failed", error.localizedDescription, error)
@@ -90,6 +127,22 @@ class WatchConnectivityBridge: NSObject {
     DispatchQueue.main.async {
       UIApplication.shared.open(url, options: [:], completionHandler: nil)
     }
+  }
+
+  private static func makeQRCodeImageBase64(from payload: String) -> String? {
+    guard !payload.isEmpty else { return nil }
+    let filter = CIFilter(name: "CIQRCodeGenerator")
+    filter?.setValue(Data(payload.utf8), forKey: "inputMessage")
+    filter?.setValue("M", forKey: "inputCorrectionLevel")
+    guard let output = filter?.outputImage else { return nil }
+
+    let scaled = output.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
+    let context = CIContext()
+    guard let cgImage = context.createCGImage(scaled, from: scaled.extent) else {
+      return nil
+    }
+
+    return UIImage(cgImage: cgImage).pngData()?.base64EncodedString()
   }
 }
 

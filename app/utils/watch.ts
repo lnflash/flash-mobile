@@ -6,9 +6,16 @@ export type WatchCurrencyData = {
   fractionDigits: number
 }
 
+export type WatchReceiveQRCodeData = {
+  receiveQRCode: string
+  receiveAddress: string
+  receiveLabel: string
+}
+
 const { WatchConnectivityBridge } = NativeModules as {
   WatchConnectivityBridge?: {
     syncCurrency: (data: WatchCurrencyData) => Promise<void>
+    syncReceiveQRCode: (data: WatchReceiveQRCodeData) => Promise<void>
   }
 }
 
@@ -28,5 +35,18 @@ export const setWatchCurrency = async (data: WatchCurrencyData): Promise<void> =
     await WatchConnectivityBridge.syncCurrency(data)
   } catch {
     // ignore — the watch falls back to its own currency (USD by default)
+  }
+}
+
+export const setWatchReceiveQRCode = async (
+  data: WatchReceiveQRCodeData,
+): Promise<void> => {
+  try {
+    if (!WatchConnectivityBridge?.syncReceiveQRCode) {
+      return
+    }
+    await WatchConnectivityBridge.syncReceiveQRCode(data)
+  } catch {
+    // ignore — the watch falls back to opening Receive on the phone
   }
 }

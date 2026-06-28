@@ -20,6 +20,10 @@ enum WatchStore {
     static let fractionDigits = "fractionDigits"
     static let timestamp = "timestamp"
     static let priceHistory = "priceHistory"
+    static let receiveQRCode = "receiveQRCode"
+    static let receiveQRCodeImage = "receiveQRCodeImage"
+    static let receiveAddress = "receiveAddress"
+    static let receiveLabel = "receiveLabel"
   }
 
   static var defaults: UserDefaults? {
@@ -79,6 +83,36 @@ enum WatchStore {
     d.set(symbol, forKey: Key.currencySymbol)
     d.set(fractionDigits, forKey: Key.fractionDigits)
   }
+
+  static func readReceiveQRCode() -> ReceiveQRCode? {
+    guard
+      let qrCode = defaults?.string(forKey: Key.receiveQRCode),
+      let qrCodeImage = defaults?.string(forKey: Key.receiveQRCodeImage),
+      !qrCode.isEmpty,
+      !qrCodeImage.isEmpty
+    else {
+      return nil
+    }
+    return ReceiveQRCode(
+      qrCode: qrCode,
+      qrCodeImage: qrCodeImage,
+      address: defaults?.string(forKey: Key.receiveAddress) ?? "",
+      label: defaults?.string(forKey: Key.receiveLabel) ?? "Paycode"
+    )
+  }
+
+  static func writeReceiveQRCode(
+    qrCode: String,
+    qrCodeImage: String,
+    address: String,
+    label: String
+  ) {
+    guard let d = defaults else { return }
+    d.set(qrCode, forKey: Key.receiveQRCode)
+    d.set(qrCodeImage, forKey: Key.receiveQRCodeImage)
+    d.set(address, forKey: Key.receiveAddress)
+    d.set(label, forKey: Key.receiveLabel)
+  }
 }
 
 struct PricePoint: Codable, Equatable {
@@ -126,4 +160,11 @@ struct PriceSnapshot: Equatable {
     let number = formatter.string(from: NSNumber(value: scaled)) ?? "—"
     return "\(currencySymbol)\(number)\(suffix)"
   }
+}
+
+struct ReceiveQRCode: Equatable {
+  let qrCode: String
+  let qrCodeImage: String
+  let address: String
+  let label: String
 }

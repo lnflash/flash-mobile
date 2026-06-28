@@ -23,7 +23,7 @@ import WatchConnectivity
 final class PhoneConnectivity: NSObject, ObservableObject {
   static let shared = PhoneConnectivity()
 
-  /// Bumped whenever the currency changes so SwiftUI can re-fetch the price.
+  /// Bumped whenever phone-synced context changes so SwiftUI can refresh state.
   @Published private(set) var currencyRevision: Int = 0
 
   private var session: WCSession? {
@@ -57,21 +57,52 @@ final class PhoneConnectivity: NSObject, ObservableObject {
   }
 
   private func applyContext(_ context: [String: Any]) {
-    guard
+    var didChange = false
+
+    if
       let code = context["currencyCode"] as? String,
       let symbol = context["currencySymbol"] as? String
-    else { return }
-    let fractionDigits = (context["fractionDigits"] as? NSNumber)?.intValue ?? 2
+    {
+      let fractionDigits = (context["fractionDigits"] as? NSNumber)?.intValue ?? 2
+      let previous = WatchStore.read()
+      if
+        previous.currencyCode != code
+          || previous.currencySymbol != symbol
+          || previous.fractionDigits != fractionDigits
+      {
+        WatchStore.writeCurrency(code: code, symbol: symbol, fractionDigits: fractionDigits)
+        didChange = true
+      }
+    }
 
-    let previous = WatchStore.read()
-    guard
-      previous.currencyCode != code
-        || previous.currencySymbol != symbol
-        || previous.fractionDigits != fractionDigits
-    else { return }
+    if
+      let qrCode = context["receiveQRCode"] as? String,
+      let qrCodeImage = context["receiveQRCodeImage"] as? String,
+      !qrCode.isEmpty,
+      !qrCodeImage.isEmpty
+    {
+      let address = context["receiveAddress"] as? String ?? ""
+      let label = context["receiveLabel"] as? String ?? "Paycode"
+      let previous = WatchStore.readReceiveQRCode()
+      if
+        previous?.qrCode != qrCode
+          || previous?.qrCodeImage != qrCodeImage
+          || previous?.address != address
+          || previous?.label != label
+      {
+        WatchStore.writeReceiveQRCode(
+          qrCode: qrCode,
+          qrCodeImage: qrCodeImage,
+          address: address,
+          label: label
+        )
+        didChange = true
+      }
+    }
 
-    WatchStore.writeCurrency(code: code, symbol: symbol, fractionDigits: fractionDigits)
-    DispatchQueue.main.async { self.currencyRevision += 1 }
+    if didChange {
+      DispatchQueue.main.async { self.currencyRevision += 1 }
+    }
   }
 }
 
