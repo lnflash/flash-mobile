@@ -36,11 +36,24 @@ final class PhoneConnectivity: NSObject, ObservableObject {
     session.activate()
   }
 
-  /// Ask the iPhone to open one of its deep-linked screens. No-op if the phone
-  /// isn't reachable; the user can always open the app on the phone manually.
+  /// Ask the iPhone to open one of its deep-linked screens. On watchOS,
+  /// `sendMessage` can wake the iOS app in the background, so do not gate this
+  /// on `isReachable`. Queue a userInfo fallback for suspended/offline cases.
   func requestQuickAction(_ action: String) {
-    guard let session, session.isReachable else { return }
-    session.sendMessage(["action": action], replyHandler: nil, errorHandler: nil)
+    guard let session else { return }
+
+    let payload: [String: Any] = [
+      "action": action,
+      "requestedAt": Date().timeIntervalSince1970,
+    ]
+
+    if session.activationState != .activated {
+      session.activate()
+    }
+
+    session.sendMessage(payload, replyHandler: nil) { _ in
+      session.transferUserInfo(payload)
+    }
   }
 
   private func applyContext(_ context: [String: Any]) {

@@ -26,6 +26,8 @@ import UIKit
 @objc(WatchConnectivityBridge)
 class WatchConnectivityBridge: NSObject {
 
+  private static let bootstrap = WatchConnectivityBridge()
+
   private var session: WCSession? {
     WCSession.isSupported() ? WCSession.default : nil
   }
@@ -36,6 +38,13 @@ class WatchConnectivityBridge: NSObject {
       session.delegate = self
       session.activate()
     }
+  }
+
+  /// Called from AppDelegate so WatchConnectivity can wake the iOS app and
+  /// receive watch quick-actions before React Native has created this module.
+  @objc
+  static func activateSession() {
+    _ = bootstrap
   }
 
   /// Pushes the user's display currency to the watch via `updateApplicationContext`,
@@ -99,6 +108,19 @@ extension WatchConnectivityBridge: WCSessionDelegate {
 
   func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
     if let action = message["action"] as? String {
+      handleWatchAction(action)
+    }
+  }
+
+  func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
+    if let action = message["action"] as? String {
+      handleWatchAction(action)
+    }
+    replyHandler(["received": true])
+  }
+
+  func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
+    if let action = userInfo["action"] as? String {
       handleWatchAction(action)
     }
   }
