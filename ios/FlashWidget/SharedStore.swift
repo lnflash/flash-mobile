@@ -56,7 +56,16 @@ enum SharedStore {
     guard let data = defaults?.data(forKey: Key.priceHistory),
           let points = try? JSONDecoder().decode([PricePoint].self, from: data)
     else { return [] }
-    return points
+    let sanitized = sanitizeHistory(points)
+    if sanitized.count != points.count {
+      writeHistory(sanitized)
+    }
+    return sanitized
+  }
+
+  static func writeHistory(_ history: [PricePoint]) {
+    guard let data = try? JSONEncoder().encode(sanitizeHistory(history)) else { return }
+    defaults?.set(data, forKey: Key.priceHistory)
   }
 
   static func appendHistory(_ snapshot: PriceSnapshot) {
@@ -65,9 +74,27 @@ enum SharedStore {
     history.append(point)
     // Keep enough points for the one-month chart plus a current-price append.
     if history.count > 160 { history.removeFirst(history.count - 160) }
-    if let data = try? JSONEncoder().encode(history) {
-      defaults?.set(data, forKey: Key.priceHistory)
+    writeHistory(history)
+  }
+
+  private static func sanitizeHistory(_ history: [PricePoint]) -> [PricePoint] {
+    let valid = history
+      .filter { $0.price.isFinite && $0.price > 0 && $0.timestamp.isFinite }
+      .sorted { $0.timestamp < $1.timestamp }
+
+    guard valid.count > 1 else { return valid }
+
+    let prices = valid.map(\.price)
+    guard let minPrice = prices.min(), let maxPrice = prices.max(), minPrice > 0 else {
+      return []
     }
+
+    // Older widget builds cached mixed-unit chart data. A one-month BTC chart
+    // should never span orders of magnitude, so discard that stale cache and
+    // let the next timeline fetch write the authoritative watch-style history.
+    guard maxPrice / minPrice <= 20 else { return [] }
+
+    return valid
   }
 
 }

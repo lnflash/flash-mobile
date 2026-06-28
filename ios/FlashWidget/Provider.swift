@@ -3,7 +3,7 @@
 //  FlashWidget
 //
 //  Supplies timeline entries to WidgetKit. Each refresh reads the last snapshot
-//  the app wrote, fetches 30-day history if needed, then attempts a live refresh.
+//  the app wrote, refreshes 30-day history, then attempts a live price refresh.
 //
 
 import WidgetKit
@@ -38,33 +38,19 @@ struct Provider: TimelineProvider {
 
   func getTimeline(in context: Context, completion: @escaping (Timeline<PriceEntry>) -> Void) {
     let previous = SharedStore.readPrice()
-    let existingHistory = SharedStore.readHistory()
     let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date().addingTimeInterval(900)
 
-    // Refresh historical data often enough that a newly-added widget renders a
-    // real one-month chart instead of waiting for many timeline ticks.
-    if existingHistory.count < 30 {
-      PriceService.fetchHistory { _ in
-        PriceService.fetch(
-          currencyCode: previous.currencyCode,
-          fractionDigits: previous.fractionDigits,
-          symbol: previous.currencySymbol,
-          previous: previous
-        ) { snapshot in
-          let entry = PriceEntry(date: Date(), snapshot: snapshot, history: SharedStore.readHistory())
-          completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
-        }
-      }
-    } else {
-      // We have history — just refresh the current price
+    // Always refresh the authoritative one-month history. Older builds may
+    // have cached mixed-unit data, which makes the chart and percent change
+    // explode until the cache is overwritten.
+    PriceService.fetchHistory { _ in
       PriceService.fetch(
         currencyCode: previous.currencyCode,
         fractionDigits: previous.fractionDigits,
         symbol: previous.currencySymbol,
         previous: previous
       ) { snapshot in
-        let history = SharedStore.readHistory()
-        let entry = PriceEntry(date: Date(), snapshot: snapshot, history: history)
+        let entry = PriceEntry(date: Date(), snapshot: snapshot, history: SharedStore.readHistory())
         completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
       }
     }

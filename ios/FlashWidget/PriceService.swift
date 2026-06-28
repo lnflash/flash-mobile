@@ -136,9 +136,7 @@ enum PriceService {
       }
 
       let sampled = samplePoints(points, maxCount: 140)
-      if let data = try? JSONEncoder().encode(sampled) {
-        SharedStore.defaults?.set(data, forKey: "priceHistory")
-      }
+      SharedStore.writeHistory(sampled)
       completion(sampled)
     }.resume()
   }

@@ -84,7 +84,7 @@ struct PriceChange {
 }
 
 func computePriceChange(_ history: [PricePoint]) -> PriceChange? {
-  let valid = history.filter { $0.price.isFinite && $0.price > 0 }
+  let valid = validPriceHistory(history)
   guard let first = valid.first?.price, let last = valid.last?.price, first > 0 else {
     return nil
   }
@@ -100,7 +100,7 @@ func computePriceChange(_ history: [PricePoint]) -> PriceChange? {
 // MARK: - High / Low
 
 func computeRange(_ history: [PricePoint]) -> (low: String, high: String)? {
-  let prices = history.filter { $0.price.isFinite && $0.price > 0 }.map { $0.price }
+  let prices = validPriceHistory(history).map { $0.price }
   guard let minP = prices.min(), let maxP = prices.max(), minP > 0 else { return nil }
   let fmt = NumberFormatter()
   fmt.numberStyle = .decimal
@@ -109,6 +109,21 @@ func computeRange(_ history: [PricePoint]) -> (low: String, high: String)? {
     fmt.string(from: NSNumber(value: minP)) ?? "—",
     fmt.string(from: NSNumber(value: maxP)) ?? "—"
   )
+}
+
+func validPriceHistory(_ history: [PricePoint]) -> [PricePoint] {
+  let valid = history
+    .filter { $0.price.isFinite && $0.price > 0 && $0.timestamp.isFinite }
+    .sorted { $0.timestamp < $1.timestamp }
+
+  guard valid.count > 1 else { return valid }
+
+  let prices = valid.map(\.price)
+  guard let minPrice = prices.min(), let maxPrice = prices.max(), minPrice > 0 else {
+    return []
+  }
+
+  return maxPrice / minPrice <= 20 ? valid : []
 }
 
 // MARK: - Price change badge
@@ -136,31 +151,17 @@ struct Sparkline: View {
   var height: CGFloat = 40
   var lineWidth: CGFloat = 2.5
   var fillOpacity: Double = 0.22
-  var showEdgeMarker: Bool = false
 
   var body: some View {
     GeometryReader { geo in
-      if points.count >= 2 {
-        let path = SmoothPath.build(points: points, size: geo.size)
-        ZStack {
-          fillPath(path, in: geo.size)
-            .fill(
-              LinearGradient(
-                colors: [color.opacity(fillOpacity), color.opacity(0)],
-                startPoint: .top,
-                endPoint: .bottom
-              )
-            )
-          path.stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
-
-          // End-point dot
-          if showEdgeMarker, let last = lastPoint(in: geo.size) {
-            Circle()
-              .fill(color)
-              .frame(width: 5, height: 5)
-              .position(last)
-          }
-        }
+      let chartPoints = normalizedPoints(in: geo.size)
+      if chartPoints.count > 1 {
+        ChartCanvas(
+          points: chartPoints,
+          color: color,
+          lineWidth: lineWidth,
+          fillOpacity: fillOpacity
+        )
       } else {
         Path { p in
           p.move(to: CGPoint(x: 0, y: geo.size.height / 2))
@@ -172,74 +173,111 @@ struct Sparkline: View {
     .frame(height: height)
   }
 
-  private func fillPath(_ stroke: Path, in size: CGSize) -> Path {
-    var filled = stroke
-    filled.addLine(to: CGPoint(x: size.width, y: size.height))
-    filled.addLine(to: CGPoint(x: 0, y: size.height))
-    filled.closeSubpath()
-    return filled
-  }
+  private func normalizedPoints(in size: CGSize) -> [CGPoint] {
+    let validPoints = validPriceHistory(points)
+    guard validPoints.count > 1, size.width > 0, size.height > 0 else {
+      return []
+    }
 
-  private func lastPoint(in size: CGSize) -> CGPoint? {
-    guard !points.isEmpty else { return nil }
-    let (minP, maxP) = SmoothPath.bounds(points)
-    let range = max(maxP - minP, 0.0001)
-    let vPad: CGFloat = 4
-    let usableH = size.height - vPad * 2
-    let last = points.last!
-    let normalized = (last.price - minP) / range
-    let y = vPad + usableH * (1 - CGFloat(normalized))
-    let lastIndex = CGFloat(points.count - 1)
-    let x = (lastIndex / lastIndex) * size.width
-    return CGPoint(x: x - 2, y: y)
+    let prices = validPoints.map(\.price)
+    guard let minPrice = prices.min(), let maxPrice = prices.max() else {
+      return []
+    }
+
+    let topInset: CGFloat = 5
+    let bottomInset: CGFloat = 5
+    let drawableHeight = max(size.height - topInset - bottomInset, 1)
+    let range = max(maxPrice - minPrice, maxPrice * 0.004)
+    let lastIndex = validPoints.count - 1
+
+    return validPoints.enumerated().map { index, point in
+      let x = CGFloat(index) / CGFloat(lastIndex) * size.width
+      let normalized = (point.price - minPrice) / range
+      let y = topInset + CGFloat(1 - normalized) * drawableHeight
+      return CGPoint(x: x, y: y)
+    }
   }
 }
 
-enum SmoothPath {
-  static func build(points: [PricePoint], size: CGSize) -> Path {
-    guard points.count >= 2 else { return Path() }
+private struct ChartCanvas: View {
+  let points: [CGPoint]
+  let color: Color
+  let lineWidth: CGFloat
+  let fillOpacity: Double
 
-    let (minP, maxP) = bounds(points)
-    let range = max(maxP - minP, 0.0001)
-    let vPad: CGFloat = 4
-    let usableH = size.height - vPad * 2
-    let usableW = size.width
-    let lastIndex = CGFloat(points.count - 1)
+  var body: some View {
+    ZStack {
+      AreaShape(points: points)
+        .fill(
+          LinearGradient(
+            colors: [
+              color.opacity(fillOpacity),
+              color.opacity(0.02),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+          )
+        )
 
-    // Index-based x positioning (evenly spaced) — matches watch app chart
-    let cgPoints: [CGPoint] = points.enumerated().map { index, point in
-      let x = (CGFloat(index) / lastIndex) * usableW
-      let normalized = (point.price - minP) / range
-      let y = vPad + usableH * (1 - CGFloat(normalized))
-      return CGPoint(x: x, y: y)
+      SmoothLineShape(points: points)
+        .stroke(
+          color,
+          style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
+        )
+    }
+  }
+}
+
+private struct SmoothLineShape: Shape {
+  let points: [CGPoint]
+  func path(in rect: CGRect) -> Path { SmoothPath.line(points) }
+}
+
+private struct AreaShape: Shape {
+  let points: [CGPoint]
+
+  func path(in rect: CGRect) -> Path {
+    guard let first = points.first, let last = points.last else {
+      return Path()
     }
 
-    return catmullRom(cgPoints)
+    var path = SmoothPath.line(points)
+    path.addLine(to: CGPoint(x: last.x, y: rect.maxY))
+    path.addLine(to: CGPoint(x: first.x, y: rect.maxY))
+    path.closeSubpath()
+    return path
   }
+}
 
-  static func bounds(_ points: [PricePoint]) -> (min: Double, max: Double) {
-    let prices = points.map { $0.price }
-    let minPrice = prices.min() ?? 0
-    let maxPrice = prices.max() ?? 0
-    let pad = max((maxPrice - minPrice) * 0.06, maxPrice * 0.002)
-    return (minPrice - pad, maxPrice + pad)
-  }
-
-  static func catmullRom(_ points: [CGPoint]) -> Path {
+private enum SmoothPath {
+  static func line(_ points: [CGPoint]) -> Path {
     var path = Path()
     guard let first = points.first else { return path }
+
     path.move(to: first)
+    guard points.count > 1 else { return path }
 
-    for i in 0..<points.count - 1 {
-      let p0 = i == 0 ? points[0] : points[i - 1]
-      let p1 = points[i]
-      let p2 = points[i + 1]
-      let p3 = i + 2 < points.count ? points[i + 2] : points[i + 1]
+    if points.count == 2 {
+      path.addLine(to: points[1])
+      return path
+    }
 
-      let cp1 = CGPoint(x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6)
-      let cp2 = CGPoint(x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6)
+    for index in 0..<(points.count - 1) {
+      let p0 = points[max(index - 1, 0)]
+      let p1 = points[index]
+      let p2 = points[index + 1]
+      let p3 = points[min(index + 2, points.count - 1)]
 
-      path.addCurve(to: p2, control1: cp1, control2: cp2)
+      let control1 = CGPoint(
+        x: p1.x + (p2.x - p0.x) / 6,
+        y: p1.y + (p2.y - p0.y) / 6
+      )
+      let control2 = CGPoint(
+        x: p2.x - (p3.x - p1.x) / 6,
+        y: p2.y - (p3.y - p1.y) / 6
+      )
+
+      path.addCurve(to: p2, control1: control1, control2: control2)
     }
 
     return path
@@ -308,7 +346,7 @@ private struct SmallWidget: View {
 
       Spacer()
 
-      Sparkline(points: history, height: 68, lineWidth: 2.5, fillOpacity: 0.18, showEdgeMarker: true)
+      Sparkline(points: history, height: 68, lineWidth: 2.5, fillOpacity: 0.18)
         .padding(.horizontal, -14)
         .padding(.bottom, -10)
     }
@@ -336,7 +374,7 @@ private struct MediumWidget: View {
           PriceChangeBadge(change: change)
         }
         Spacer()
-        Sparkline(points: history, height: 50, lineWidth: 2.6, fillOpacity: 0.18, showEdgeMarker: true)
+        Sparkline(points: history, height: 50, lineWidth: 2.6, fillOpacity: 0.18)
           .padding(.horizontal, -14)
           .padding(.bottom, -10)
       }
@@ -373,7 +411,7 @@ private struct LargeWidget: View {
       }
 
       // Chart
-      Sparkline(points: history, height: 130, lineWidth: 3, fillOpacity: 0.2, showEdgeMarker: true)
+      Sparkline(points: history, height: 130, lineWidth: 3, fillOpacity: 0.2)
         .padding(.horizontal, -16)
 
       // High / Low row
