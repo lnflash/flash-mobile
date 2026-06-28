@@ -542,7 +542,12 @@ const mocks = [
           __typename: "User",
           id: "70df9822-efe0-419c-b864-c9efa99872ea",
           defaultAccount: {
-            __typename: "Account",
+            // Must match the concrete type used by every other mock for this
+            // account id. Using the "Account" interface name here normalizes to
+            // a separate cache entity, so a later ConsumerAccount query rewrites
+            // me.defaultAccount and the realtimePrice (and thus the display
+            // currency) is lost — making currency-dependent screens flaky.
+            __typename: "ConsumerAccount",
             id: "84b26b88-89b0-5c6f-9d3d-fbead08f79d8",
             realtimePrice: {
               btcSatPrice: {
