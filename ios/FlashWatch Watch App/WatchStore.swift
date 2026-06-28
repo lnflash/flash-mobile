@@ -3,27 +3,14 @@
 //  FlashWatch
 //
 //  Reads/writes the BTC price snapshot shared between the watch app and its
-//  complication via an App Group UserDefaults suite. This is a *watch-local*
-//  App Group — the iOS app group (group.com.lnflash) lives on a different
-//  device and cannot be reached from the watch.
-//
-//  The snapshot is populated two ways:
-//   1. The watch app / complication fetch it themselves via `PriceService`
-//      (public, unauthenticated query — works even with the phone away).
-//   2. The paired iPhone pushes the user's chosen display currency through
-//      WatchConnectivity (see PhoneConnectivity.swift), so the watch renders
-//      in the same currency as the phone instead of defaulting to USD.
-//
-//  Mirrors ios/FlashWidget/SharedStore.swift so the two stay conceptually in
-//  sync.
+//  complication via a watch-local App Group. The watch and complication also
+//  persist one-month price history for the same smooth sparkline treatment used
+//  by the iOS home-screen widget.
 //
 
 import Foundation
 
 enum WatchStore {
-  /// Must match the App Group id enabled on BOTH the watch app target and the
-  /// complication extension target (see FlashWatch.entitlements). This is a
-  /// distinct group from the iOS app's `group.com.lnflash`.
   static let appGroupId = "group.com.lnflash.watch"
 
   enum Key {
@@ -32,6 +19,7 @@ enum WatchStore {
     static let currencySymbol = "currencySymbol"
     static let fractionDigits = "fractionDigits"
     static let timestamp = "timestamp"
+    static let priceHistory = "priceHistory"
   }
 
   static var defaults: UserDefaults? {
@@ -44,7 +32,6 @@ enum WatchStore {
       btcPrice: d?.double(forKey: Key.btcPrice) ?? 0,
       currencyCode: d?.string(forKey: Key.currencyCode) ?? "USD",
       currencySymbol: d?.string(forKey: Key.currencySymbol) ?? "$",
-      // `object(forKey:) == nil` lets us default to 2 instead of 0 on first run.
       fractionDigits: (d?.object(forKey: Key.fractionDigits) as? Int) ?? 2,
       timestamp: d?.double(forKey: Key.timestamp) ?? 0
     )
@@ -59,15 +46,44 @@ enum WatchStore {
     d.set(snapshot.timestamp, forKey: Key.timestamp)
   }
 
-  /// Updates only the currency fields (used when the phone pushes the user's
-  /// display currency but no fresh price). Keeps the last known price so the UI
-  /// never blanks out, then lets the next fetch reprice in the new currency.
+  static func readHistory() -> [PricePoint] {
+    guard
+      let data = defaults?.data(forKey: Key.priceHistory),
+      let points = try? JSONDecoder().decode([PricePoint].self, from: data)
+    else {
+      return []
+    }
+    return points
+  }
+
+  static func writeHistory(_ points: [PricePoint]) {
+    guard let data = try? JSONEncoder().encode(points) else { return }
+    defaults?.set(data, forKey: Key.priceHistory)
+  }
+
+  static func appendHistory(_ snapshot: PriceSnapshot) {
+    guard snapshot.hasPrice, snapshot.timestamp > 0 else { return }
+    var history = readHistory()
+    history.append(PricePoint(price: snapshot.btcPrice, timestamp: snapshot.timestamp))
+    if history.count > 160 {
+      history.removeFirst(history.count - 160)
+    }
+    writeHistory(history)
+  }
+
+  /// Updates only the currency fields when the phone pushes the user's display
+  /// currency. Keeps the last known price until the next fetch reprices it.
   static func writeCurrency(code: String, symbol: String, fractionDigits: Int) {
     guard let d = defaults else { return }
     d.set(code, forKey: Key.currencyCode)
     d.set(symbol, forKey: Key.currencySymbol)
     d.set(fractionDigits, forKey: Key.fractionDigits)
   }
+}
+
+struct PricePoint: Codable, Equatable {
+  let price: Double
+  let timestamp: Double
 }
 
 struct PriceSnapshot: Equatable {
@@ -83,7 +99,6 @@ struct PriceSnapshot: Equatable {
     timestamp > 0 ? Date(timeIntervalSince1970: timestamp) : nil
   }
 
-  /// e.g. "$67,231" or "$67,231.50" depending on the currency's fraction digits.
   var formattedPrice: String {
     let formatter = NumberFormatter()
     formatter.numberStyle = .decimal
@@ -93,7 +108,6 @@ struct PriceSnapshot: Equatable {
     return "\(currencySymbol)\(number)"
   }
 
-  /// Compact form for tight complication slots, e.g. "$67.2k" or "$1.05M".
   var compactPrice: String {
     guard hasPrice else { return "—" }
     let value = btcPrice

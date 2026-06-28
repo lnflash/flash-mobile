@@ -16,6 +16,7 @@
 //  that itself. Connectivity is purely for currency sync + handing actions off.
 //
 
+import Combine
 import Foundation
 import WatchConnectivity
 

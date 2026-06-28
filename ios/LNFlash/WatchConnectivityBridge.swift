@@ -19,6 +19,7 @@
 //
 
 import Foundation
+import React
 import WatchConnectivity
 import UIKit
 

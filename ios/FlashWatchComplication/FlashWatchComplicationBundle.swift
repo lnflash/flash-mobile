@@ -2,9 +2,8 @@
 //  FlashWatchComplicationBundle.swift
 //  FlashWatchComplication
 //
-//  Entry point for the watchOS complication, built with WidgetKit (watchOS 9+).
-//  ClockKit is deprecated, so the complication is a `Widget` restricted to the
-//  accessory families that render on watch faces.
+//  Created by Dread on 6/27/26.
+//  Copyright © 2026 Galoy Inc. All rights reserved.
 //
 
 import WidgetKit
@@ -13,25 +12,36 @@ import SwiftUI
 @main
 struct FlashWatchComplicationBundle: WidgetBundle {
   var body: some Widget {
-    FlashPriceComplication()
+    FlashWatchComplication()
   }
 }
 
-struct FlashPriceComplication: Widget {
-  let kind: String = "FlashPriceComplication"
+struct FlashWatchComplication: Widget {
+  private let kind = "FlashWatchComplication"
 
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: kind, provider: ComplicationProvider()) { entry in
       ComplicationEntryView(entry: entry)
-        .containerBackground(for: .widget) { Color.clear }
+        .widgetContainerBackground()
     }
     .configurationDisplayName("Flash BTC Price")
-    .description("Live Bitcoin price on your watch face.")
+    .description("See the live BTC price from Flash.")
     .supportedFamilies([
-      .accessoryCircular,
       .accessoryInline,
+      .accessoryCircular,
       .accessoryRectangular,
       .accessoryCorner,
     ])
+  }
+}
+
+private extension View {
+  @ViewBuilder
+  func widgetContainerBackground() -> some View {
+    if #available(watchOS 10.0, *) {
+      self.containerBackground(.fill.tertiary, for: .widget)
+    } else {
+      self
+    }
   }
 }

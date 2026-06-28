@@ -8,6 +8,7 @@
 //
 
 import SwiftUI
+import WatchKit
 
 @main
 struct FlashWatchApp: App {
