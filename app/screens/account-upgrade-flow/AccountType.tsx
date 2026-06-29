@@ -19,6 +19,7 @@ import { ProgressSteps } from "@app/components/account-upgrade-flow"
 import { useLevel } from "@app/graphql/level-context"
 import { useActivityIndicator } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { useFeatureFlags } from "@app/config/feature-flags-context"
 
 // store
 import { useAppDispatch } from "@app/store/redux"
@@ -33,18 +34,21 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
   const { toggleActivityIndicator } = useActivityIndicator()
+  const { bridgeTopupEnabled } = useFeatureFlags()
 
   const [bridgeKycModalVisible, setBridgeKycModalVisible] = useState(false)
 
   const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
   const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
     fetchPolicy: "cache-and-network",
+    skip: !bridgeTopupEnabled,
   })
 
   useFocusEffect(
     useCallback(() => {
+      if (!bridgeTopupEnabled) return
       refetchKycStatus()
-    }, [refetchKycStatus]),
+    }, [bridgeTopupEnabled, refetchKycStatus]),
   )
 
   const bridgeKycStatus = kycStatusData?.bridgeKycStatus

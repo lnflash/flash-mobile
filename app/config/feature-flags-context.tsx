@@ -4,21 +4,29 @@ import { useAppConfig } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
 
 const DeviceAccountEnabledKey = "deviceAccountEnabledRestAuth"
+const BridgeTopupEnabledKey = "bridgeTopupEnabled"
 
 type FeatureFlags = {
   deviceAccountEnabled: boolean
+  bridgeTopupEnabled: boolean
 }
 
 type RemoteConfig = {
   [DeviceAccountEnabledKey]: boolean
+  [BridgeTopupEnabledKey]: boolean
 }
 
 const defaultRemoteConfig: RemoteConfig = {
   deviceAccountEnabledRestAuth: true,
+  // Default OFF: the Bridge/bank-topup GraphQL fields may not exist on the connected
+  // backend yet. Keep this off until backend support is confirmed, then flip in
+  // Firebase Remote Config. Gates the bridge queries in TopupCashout / AccountType.
+  bridgeTopupEnabled: false,
 }
 
 const defaultFeatureFlags = {
   deviceAccountEnabled: false,
+  bridgeTopupEnabled: false,
 }
 
 getRemoteConfig().setDefaults(defaultRemoteConfig)
@@ -48,7 +56,10 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
         const deviceAccountEnabledRestAuth = getRemoteConfig()
           .getValue(DeviceAccountEnabledKey)
           .asBoolean()
-        setRemoteConfig({ deviceAccountEnabledRestAuth })
+        const bridgeTopupEnabled = getRemoteConfig()
+          .getValue(BridgeTopupEnabledKey)
+          .asBoolean()
+        setRemoteConfig({ deviceAccountEnabledRestAuth, bridgeTopupEnabled })
       } catch (err) {
         console.error("Error fetching remote config: ", err)
       } finally {
@@ -60,6 +71,8 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
   const featureFlags = {
     deviceAccountEnabled:
       remoteConfig.deviceAccountEnabledRestAuth || galoyInstance.id === "Local",
+    bridgeTopupEnabled:
+      remoteConfig.bridgeTopupEnabled || galoyInstance.id === "Local",
   }
 
   if (!remoteConfigReady && currentLevel === "NonAuth") {
