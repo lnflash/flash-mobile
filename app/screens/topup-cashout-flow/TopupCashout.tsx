@@ -28,6 +28,7 @@ import {
 } from "@app/graphql/generated"
 import { useActivityIndicator } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
+import { useFeatureFlags } from "@app/config/feature-flags-context"
 
 type Props = StackScreenProps<RootStackParamList, "TopupCashout">
 
@@ -37,6 +38,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const { currentLevel } = useLevel()
   const { colors } = useTheme().theme
   const { toggleActivityIndicator } = useActivityIndicator()
+  const { bridgeTopupEnabled } = useFeatureFlags()
 
   const [topupModalVisible, setTopupModalVisible] = useState(false)
   const [settleModalVisible, setSettleModalVisible] = useState(false)
@@ -48,17 +50,20 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
 
   const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
     fetchPolicy: "cache-and-network",
+    skip: !bridgeTopupEnabled,
   })
   const { data: externalAccountsData, refetch: refetchExternalAccounts } =
     useBridgeExternalAccountsQuery({
       fetchPolicy: "cache-and-network",
+      skip: !bridgeTopupEnabled,
     })
 
   useFocusEffect(
     useCallback(() => {
+      if (!bridgeTopupEnabled) return
       refetchKycStatus()
       refetchExternalAccounts()
-    }, [refetchKycStatus, refetchExternalAccounts]),
+    }, [bridgeTopupEnabled, refetchKycStatus, refetchExternalAccounts]),
   )
 
   const onRefresh = useCallback(async () => {
