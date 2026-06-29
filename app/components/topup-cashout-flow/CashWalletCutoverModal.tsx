@@ -6,6 +6,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { PrimaryBtn } from "@app/components/buttons"
 import DollarIllustration from "@app/assets/illustrations/dollar.svg"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useFeatureFlags } from "@app/config/feature-flags-context"
 import {
   CashWalletCutoverState,
   useCashWalletCutoverQuery,
@@ -18,7 +19,8 @@ const CashWalletCutoverModal = () => {
   const { width } = useWindowDimensions()
   const { colors } = useTheme().theme
   const { persistentState, updateState } = usePersistentStateContext()
-  const { data: cutoverData } = useCashWalletCutoverQuery()
+  const { usdtWalletEnabled } = useFeatureFlags()
+  const { data: cutoverData } = useCashWalletCutoverQuery({ skip: !usdtWalletEnabled })
   const { data: meData } = useHomeAuthedQuery()
 
   const cutoverState = cutoverData?.cashWalletCutover?.state

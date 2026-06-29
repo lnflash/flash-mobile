@@ -4,21 +4,29 @@ import { useAppConfig } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
 
 const DeviceAccountEnabledKey = "deviceAccountEnabledRestAuth"
+const UsdtWalletEnabledKey = "usdtWalletEnabled"
 
 type FeatureFlags = {
   deviceAccountEnabled: boolean
+  usdtWalletEnabled: boolean
 }
 
 type RemoteConfig = {
   [DeviceAccountEnabledKey]: boolean
+  [UsdtWalletEnabledKey]: boolean
 }
 
 const defaultRemoteConfig: RemoteConfig = {
   deviceAccountEnabledRestAuth: true,
+  // Default OFF: the USDT cutover GraphQL field may not exist on the connected
+  // backend yet. Keep this off until backend support is confirmed, then flip in
+  // Firebase Remote Config. Gates the cashWalletCutover query.
+  usdtWalletEnabled: false,
 }
 
 const defaultFeatureFlags = {
   deviceAccountEnabled: false,
+  usdtWalletEnabled: false,
 }
 
 getRemoteConfig().setDefaults(defaultRemoteConfig)
@@ -48,7 +56,10 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
         const deviceAccountEnabledRestAuth = getRemoteConfig()
           .getValue(DeviceAccountEnabledKey)
           .asBoolean()
-        setRemoteConfig({ deviceAccountEnabledRestAuth })
+        const usdtWalletEnabled = getRemoteConfig()
+          .getValue(UsdtWalletEnabledKey)
+          .asBoolean()
+        setRemoteConfig({ deviceAccountEnabledRestAuth, usdtWalletEnabled })
       } catch (err) {
         console.error("Error fetching remote config: ", err)
       } finally {
@@ -60,6 +71,8 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
   const featureFlags = {
     deviceAccountEnabled:
       remoteConfig.deviceAccountEnabledRestAuth || galoyInstance.id === "Local",
+    usdtWalletEnabled:
+      remoteConfig.usdtWalletEnabled || galoyInstance.id === "Local",
   }
 
   if (!remoteConfigReady && currentLevel === "NonAuth") {
