@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react"
 import { Alert, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native"
+import { gql } from "@apollo/client"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -25,9 +26,18 @@ import {
   useBridgeExternalAccountsQuery,
   useBridgeInitiateKycMutation,
   useBridgeKycStatusQuery,
+  useGlobalsQuery,
 } from "@app/graphql/generated"
 import { useActivityIndicator } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
+
+gql`
+  query globals {
+    globals {
+      topupEnabled
+    }
+  }
+`
 
 type Props = StackScreenProps<RootStackParamList, "TopupCashout">
 
@@ -53,6 +63,12 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     useBridgeExternalAccountsQuery({
       fetchPolicy: "cache-and-network",
     })
+
+  // Card (webview) and bank-transfer (support) top-up entry points are gated by
+  // the instance-wide topup feature flag. International top-up is gated server-side
+  // by the bridge feature flag, so it stays available independently.
+  const { data: globalsData } = useGlobalsQuery({ fetchPolicy: "cache-and-network" })
+  const topupEnabled = globalsData?.globals?.topupEnabled ?? false
 
   useFocusEffect(
     useCallback(() => {
@@ -147,39 +163,54 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     ],
   )
 
-  const topupOptions: TransferOption[] = useMemo(
-    () => [
-      {
-        icon: "card",
-        title: LL.TopUpScreen.debitCreditCard(),
-        description: LL.TopUpScreen.debitCreditCardDesc(),
-        onPress: () => {
-          setTopupModalVisible(false)
-          checkAccountLevel("card")
+  const topupOptions: TransferOption[] = useMemo(() => {
+    const options: TransferOption[] = []
+
+    // Gated by the topup feature flag (card webview + bank-transfer-to-support).
+    if (topupEnabled) {
+      options.push(
+        {
+          icon: "card",
+          title: LL.TopUpScreen.debitCreditCard(),
+          description: LL.TopUpScreen.debitCreditCardDesc(),
+          onPress: () => {
+            setTopupModalVisible(false)
+            checkAccountLevel("card")
+          },
         },
-      },
-      {
-        icon: "business",
-        title: LL.TopUpScreen.bankTransfer(),
-        description: LL.TopUpScreen.bankTransferDesc(),
-        onPress: () => {
-          setTopupModalVisible(false)
-          checkAccountLevel("bankTransfer")
+        {
+          icon: "business",
+          title: LL.TopUpScreen.bankTransfer(),
+          description: LL.TopUpScreen.bankTransferDesc(),
+          onPress: () => {
+            setTopupModalVisible(false)
+            checkAccountLevel("bankTransfer")
+          },
         },
+      )
+    }
+
+    // International top-up flows through the bridge and is gated server-side by
+    // the bridge feature flag, so it stays available regardless of topupEnabled.
+    options.push({
+      icon: "globe",
+      title: LL.TransferScreen.internationalBankTransfer(),
+      description: LL.TransferScreen.internationalBankTransferDesc(),
+      pending: kycStatusData?.bridgeKycStatus === "pending",
+      onPress: () => {
+        setTopupModalVisible(false)
+        checkBridgeKyc("topup")
       },
-      {
-        icon: "globe",
-        title: LL.TransferScreen.internationalBankTransfer(),
-        description: LL.TransferScreen.internationalBankTransferDesc(),
-        pending: kycStatusData?.bridgeKycStatus === "pending",
-        onPress: () => {
-          setTopupModalVisible(false)
-          checkBridgeKyc("topup")
-        },
-      },
-    ],
-    [LL, checkAccountLevel, checkBridgeKyc, kycStatusData?.bridgeKycStatus],
-  )
+    })
+
+    return options
+  }, [
+    LL,
+    checkAccountLevel,
+    checkBridgeKyc,
+    kycStatusData?.bridgeKycStatus,
+    topupEnabled,
+  ])
 
   const settleOptions: TransferOption[] = useMemo(
     () => [

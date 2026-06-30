@@ -1343,6 +1343,13 @@ query feedbackModalShown {
   feedbackModalShown @client
 }
 
+query globals {
+  globals {
+    topupEnabled
+    __typename
+  }
+}
+
 query hasPromptedSetDefaultAccount {
   hasPromptedSetDefaultAccount @client
 }

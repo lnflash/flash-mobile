@@ -678,6 +678,12 @@ export type Globals = {
   readonly nodesIds: ReadonlyArray<Scalars['String']['output']>;
   /** A list of countries and their supported auth channels */
   readonly supportedCountries: ReadonlyArray<Country>;
+  /**
+   * Whether wallet top-up entry points (card webview and
+   * bank-transfer-to-support) should be shown to the user. Controlled by the
+   * instance-wide topup feature flag.
+   */
+  readonly topupEnabled: Scalars['Boolean']['output'];
 };
 
 export type GraphQlApplicationError = Error & {
@@ -3149,6 +3155,11 @@ export type AccountLimitsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AccountLimitsQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly limits: { readonly __typename: 'AccountLimits', readonly withdrawal: ReadonlyArray<{ readonly __typename: 'OneDayAccountLimit', readonly totalLimit: number, readonly remainingLimit?: number | null, readonly interval?: number | null }>, readonly internalSend: ReadonlyArray<{ readonly __typename: 'OneDayAccountLimit', readonly totalLimit: number, readonly remainingLimit?: number | null, readonly interval?: number | null }>, readonly convert: ReadonlyArray<{ readonly __typename: 'OneDayAccountLimit', readonly totalLimit: number, readonly remainingLimit?: number | null, readonly interval?: number | null }> } } } | null };
+
+export type GlobalsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GlobalsQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly topupEnabled: boolean } | null };
 
 export type TotpRegistrationScreenQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -8077,6 +8088,40 @@ export function useAccountLimitsLazyQuery(baseOptions?: Apollo.LazyQueryHookOpti
 export type AccountLimitsQueryHookResult = ReturnType<typeof useAccountLimitsQuery>;
 export type AccountLimitsLazyQueryHookResult = ReturnType<typeof useAccountLimitsLazyQuery>;
 export type AccountLimitsQueryResult = Apollo.QueryResult<AccountLimitsQuery, AccountLimitsQueryVariables>;
+export const GlobalsDocument = gql`
+    query globals {
+  globals {
+    topupEnabled
+  }
+}
+    `;
+
+/**
+ * __useGlobalsQuery__
+ *
+ * To run a query within a React component, call `useGlobalsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGlobalsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGlobalsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGlobalsQuery(baseOptions?: Apollo.QueryHookOptions<GlobalsQuery, GlobalsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GlobalsQuery, GlobalsQueryVariables>(GlobalsDocument, options);
+      }
+export function useGlobalsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GlobalsQuery, GlobalsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GlobalsQuery, GlobalsQueryVariables>(GlobalsDocument, options);
+        }
+export type GlobalsQueryHookResult = ReturnType<typeof useGlobalsQuery>;
+export type GlobalsLazyQueryHookResult = ReturnType<typeof useGlobalsLazyQuery>;
+export type GlobalsQueryResult = Apollo.QueryResult<GlobalsQuery, GlobalsQueryVariables>;
 export const TotpRegistrationScreenDocument = gql`
     query totpRegistrationScreen {
   me {
