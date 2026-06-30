@@ -2,6 +2,7 @@ import { WalletCurrency } from "@app/graphql/generated"
 import * as PaymentDetails from "@app/screens/send-bitcoin-screen/payment-details/intraledger"
 import {
   btcSendingWalletDescriptor,
+  convertMoneyAmountWithUsdtMock,
   convertMoneyAmountMock,
   createSendPaymentMocks,
   expectCannotGetFee,
@@ -12,8 +13,13 @@ import {
   getTestSetSendingWalletDescriptor,
   testAmount,
   usdSendingWalletDescriptor,
+  usdtSendingWalletDescriptor,
   zeroAmount,
 } from "./helpers"
+import {
+  toUsdMoneyAmount,
+  USDT_MICROS_PER_USD_CENT,
+} from "@app/types/amounts"
 
 const defaultParams: PaymentDetails.CreateIntraledgerPaymentDetailsParams<WalletCurrency> =
   {
@@ -120,6 +126,45 @@ describe("intraledger payment details", () => {
             recipientWalletId: defaultParams.recipientWalletId,
             amount: settlementAmount.amount,
             walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
+          },
+        },
+      })
+    })
+  })
+
+  describe("sending from a usdt wallet", () => {
+    const unitOfAccountAmount = toUsdMoneyAmount(500)
+    const usdtSendingWalletParams = {
+      ...defaultParams,
+      convertMoneyAmount: convertMoneyAmountWithUsdtMock,
+      unitOfAccountAmount,
+      sendingWalletDescriptor: usdtSendingWalletDescriptor,
+    }
+    const paymentDetails = createIntraledgerPaymentDetails(usdtSendingWalletParams)
+    const settlementAmount = convertMoneyAmountWithUsdtMock(
+      unitOfAccountAmount,
+      WalletCurrency.Usdt,
+    )
+
+    it("uses USD cents for the send payment mutation", async () => {
+      const sendPaymentMocks = createSendPaymentMocks()
+      if (!paymentDetails.canSendPayment) {
+        throw new Error("Cannot send payment")
+      }
+
+      try {
+        await paymentDetails.sendPaymentMutation(sendPaymentMocks)
+      } catch {
+        // do nothing as function is expected to throw since we are not mocking the send payment response
+      }
+
+      expect(settlementAmount.amount).toBe(500 * USDT_MICROS_PER_USD_CENT)
+      expect(sendPaymentMocks.intraLedgerUsdPaymentSend).toHaveBeenCalledWith({
+        variables: {
+          input: {
+            recipientWalletId: defaultParams.recipientWalletId,
+            amount: 500,
+            walletId: usdtSendingWalletParams.sendingWalletDescriptor.id,
           },
         },
       })

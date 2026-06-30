@@ -9,6 +9,7 @@ import {
   BtcMoneyAmount,
   UsdMoneyAmount,
   greaterThan,
+  isCashWalletCurrency,
   isNonZeroMoneyAmount,
   lessThan,
   moneyAmountIsCurrencyType,
@@ -49,6 +50,8 @@ export const isValidAmount = ({
     } as const
   }
   const settlementAmount = paymentDetail.settlementAmount
+  const isCashSettlementAmount = isCashWalletCurrency(settlementAmount.currency)
+
   if (
     moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Btc) &&
     greaterThan({
@@ -63,25 +66,26 @@ export const isValidAmount = ({
     }
   }
 
-  if (
-    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd) &&
-    greaterThan({
-      value: settlementAmount,
-      greaterThan: usdWalletAmount,
-    })
-  ) {
-    return {
-      validAmount: false,
-      invalidReason: AmountInvalidReason.InsufficientBalance,
-      balance: usdWalletAmount,
+  if (isCashSettlementAmount) {
+    const cashWalletAmount = paymentDetail.convertMoneyAmount(
+      usdWalletAmount,
+      settlementAmount.currency,
+    )
+
+    if (settlementAmount.amount > cashWalletAmount.amount) {
+      return {
+        validAmount: false,
+        invalidReason: AmountInvalidReason.InsufficientBalance,
+        balance: usdWalletAmount,
+      }
     }
   }
 
   if (
-    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd) &&
+    isCashSettlementAmount &&
     paymentDetail.paymentType === PaymentType.Onchain &&
     lessThan({
-      value: settlementAmount,
+      value: paymentDetail.convertMoneyAmount(settlementAmount, WalletCurrency.Usd),
       lessThan: toUsdMoneyAmount(200),
     })
   ) {

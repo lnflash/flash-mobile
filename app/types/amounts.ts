@@ -18,6 +18,12 @@ export const moneyAmountIsCurrencyType = <T extends WalletOrDisplayCurrency>(
   return moneyAmount.currency === currency
 }
 
+// Cash wallets (USD and the USDT-backed cash wallet) settle in USD cents at the
+// GraphQL boundary, so they share balance-validation handling on the send flow.
+export const isCashWalletCurrency = (currency: WalletOrDisplayCurrency): boolean => {
+  return currency === WalletCurrency.Usd || currency === WalletCurrency.Usdt
+}
+
 export type MoneyAmount<T extends WalletOrDisplayCurrency> = {
   amount: number
   currency: T

@@ -6,6 +6,7 @@ import {
   SendPaymentMutationParams,
 } from "@app/screens/send-bitcoin-screen/payment-details"
 import {
+  USDT_MICROS_PER_USD_CENT,
   ZeroBtcMoneyAmount,
   toBtcMoneyAmount,
   toUsdMoneyAmount,
@@ -14,6 +15,25 @@ import {
 export const convertMoneyAmountMock: ConvertMoneyAmount = (amount, currency) => {
   return {
     amount: amount.amount,
+    currency,
+    currencyCode: currency,
+  }
+}
+
+export const convertMoneyAmountWithUsdtMock: ConvertMoneyAmount = (amount, currency) => {
+  let convertedAmount = amount.amount
+
+  if (amount.currency === WalletCurrency.Usd && currency === WalletCurrency.Usdt) {
+    convertedAmount = amount.amount * USDT_MICROS_PER_USD_CENT
+  } else if (
+    amount.currency === WalletCurrency.Usdt &&
+    currency === WalletCurrency.Usd
+  ) {
+    convertedAmount = amount.amount / USDT_MICROS_PER_USD_CENT
+  }
+
+  return {
+    amount: convertedAmount,
     currency,
     currencyCode: currency,
   }
@@ -35,6 +55,11 @@ export const btcSendingWalletDescriptor = {
 export const usdSendingWalletDescriptor = {
   currency: WalletCurrency.Usd,
   id: "testwallet",
+}
+
+export const usdtSendingWalletDescriptor = {
+  currency: WalletCurrency.Usdt,
+  id: "testusdtwallet",
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

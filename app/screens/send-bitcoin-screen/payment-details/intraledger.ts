@@ -90,7 +90,7 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
           input: {
             walletId: sendingWalletDescriptor.id,
             recipientWalletId,
-            amount: settlementAmount.amount,
+            amount: convertMoneyAmount(settlementAmount, WalletCurrency.Usd).amount,
             memo,
           },
         },

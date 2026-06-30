@@ -25,12 +25,12 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import {
   addMoneyAmounts,
   DisplayCurrency,
+  isCashWalletCurrency,
   lessThanOrEqualTo,
   moneyAmountIsCurrencyType,
   toBtcMoneyAmount,
   toUsdMoneyAmount,
   ZeroBtcMoneyAmount,
-  ZeroUsdMoneyAmount,
 } from "@app/types/amounts"
 import {
   useNpubByUsernameLazyQuery,
@@ -136,19 +136,21 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
       setIsValidAmount(validAmount)
     }
 
-    if (
-      moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd) &&
-      usdBalanceMoneyAmount &&
-      !isSendingMax
-    ) {
-      const totalAmount = addMoneyAmounts({
-        a: settlementAmount,
-        b: fee.amount || ZeroUsdMoneyAmount,
-      })
-      const validAmount = lessThanOrEqualTo({
-        value: totalAmount,
-        lessThanOrEqualTo: usdBalanceMoneyAmount,
-      })
+    const isCashSettlementAmount = isCashWalletCurrency(settlementAmount.currency)
+
+    if (isCashSettlementAmount && usdBalanceMoneyAmount && !isSendingMax) {
+      const cashBalanceMoneyAmount = convertMoneyAmount(
+        usdBalanceMoneyAmount,
+        settlementAmount.currency,
+      )
+      const feeAmount = fee.amount
+        ? convertMoneyAmount(fee.amount, settlementAmount.currency).amount
+        : 0
+      const totalAmount = {
+        ...settlementAmount,
+        amount: settlementAmount.amount + feeAmount,
+      }
+      const validAmount = totalAmount.amount <= cashBalanceMoneyAmount.amount
       if (!validAmount) {
         const invalidAmountErrorMessage = LL.SendBitcoinScreen.amountExceed({
           balance: usdWalletText,

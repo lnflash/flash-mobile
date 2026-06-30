@@ -168,10 +168,18 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         }
       } else {
         const estimatedFee = await getIbexFee(pd.getFee)
+        const cashBalanceMoneyAmount = pd.convertMoneyAmount(
+          usdBalanceMoneyAmount,
+          pd.settlementAmount.currency,
+        )
+        const estimatedFeeMoneyAmount = estimatedFee
+          ? pd.convertMoneyAmount(estimatedFee, pd.settlementAmount.currency)
+          : undefined
         if (
           _convertMoneyAmount &&
-          estimatedFee &&
-          pd.settlementAmount.amount + estimatedFee?.amount > usdBalanceMoneyAmount.amount
+          estimatedFeeMoneyAmount &&
+          pd.settlementAmount.amount + estimatedFeeMoneyAmount.amount >
+            cashBalanceMoneyAmount.amount
         ) {
           const amount = formatDisplayAndWalletAmount({
             displayAmount: _convertMoneyAmount(usdBalanceMoneyAmount, DisplayCurrency),

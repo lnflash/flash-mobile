@@ -3,6 +3,7 @@ import * as PaymentDetails from "@app/screens/send-bitcoin-screen/payment-detail
 import {
   btcSendingWalletDescriptor,
   btcTestAmount,
+  convertMoneyAmountWithUsdtMock,
   convertMoneyAmountMock,
   createGetFeeMocks,
   createSendPaymentMocks,
@@ -10,7 +11,9 @@ import {
   getTestSetMemo,
   getTestSetSendingWalletDescriptor,
   usdSendingWalletDescriptor,
+  usdtSendingWalletDescriptor,
 } from "./helpers"
+import { USDT_MICROS_PER_USD_CENT } from "@app/types/amounts"
 
 const defaultParams: PaymentDetails.CreateAmountLightningPaymentDetailsParams<WalletCurrency> =
   {
@@ -150,6 +153,47 @@ describe("amount lightning payment details", () => {
             walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
           },
         },
+      })
+    })
+  })
+
+  describe("sending from a usdt wallet", () => {
+    const usdtSendingWalletParams = {
+      ...defaultParams,
+      convertMoneyAmount: convertMoneyAmountWithUsdtMock,
+      sendingWalletDescriptor: usdtSendingWalletDescriptor,
+    }
+    const paymentDetails = createAmountLightningPaymentDetails(usdtSendingWalletParams)
+
+    it("converts fee probe cents back to USDT micros", async () => {
+      const feeParamsMocks = createGetFeeMocks()
+      ;(feeParamsMocks.lnUsdInvoiceFeeProbe as jest.Mock).mockResolvedValue({
+        data: {
+          lnUsdInvoiceFeeProbe: {
+            amount: 3,
+            errors: [],
+          },
+        },
+      })
+
+      if (!paymentDetails.canGetFee) {
+        throw new Error("Cannot get fee")
+      }
+
+      const fee = await paymentDetails.getFee(feeParamsMocks)
+
+      expect(feeParamsMocks.lnUsdInvoiceFeeProbe).toHaveBeenCalledWith({
+        variables: {
+          input: {
+            paymentRequest: defaultParams.paymentRequest,
+            walletId: usdtSendingWalletParams.sendingWalletDescriptor.id,
+          },
+        },
+      })
+      expect(fee.amount).toEqual({
+        amount: 3 * USDT_MICROS_PER_USD_CENT,
+        currency: WalletCurrency.Usdt,
+        currencyCode: "USDT",
       })
     })
   })

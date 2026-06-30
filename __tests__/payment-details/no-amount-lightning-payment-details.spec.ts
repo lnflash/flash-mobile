@@ -3,6 +3,7 @@ import * as PaymentDetails from "@app/screens/send-bitcoin-screen/payment-detail
 import {
   testAmount,
   btcSendingWalletDescriptor,
+  convertMoneyAmountWithUsdtMock,
   convertMoneyAmountMock,
   createGetFeeMocks,
   createSendPaymentMocks,
@@ -13,8 +14,13 @@ import {
   getTestSetMemo,
   getTestSetSendingWalletDescriptor,
   usdSendingWalletDescriptor,
+  usdtSendingWalletDescriptor,
   zeroAmount,
 } from "./helpers"
+import {
+  toUsdMoneyAmount,
+  USDT_MICROS_PER_USD_CENT,
+} from "@app/types/amounts"
 
 const defaultParams: PaymentDetails.CreateNoAmountLightningPaymentDetailsParams<WalletCurrency> =
   {
@@ -166,6 +172,78 @@ describe("no amount lightning payment details", () => {
             paymentRequest: defaultParams.paymentRequest,
             amount: settlementAmount.amount,
             walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
+          },
+        },
+      })
+    })
+  })
+
+  describe("sending from a usdt wallet", () => {
+    const unitOfAccountAmount = toUsdMoneyAmount(500)
+    const usdtSendingWalletParams = {
+      ...defaultParams,
+      convertMoneyAmount: convertMoneyAmountWithUsdtMock,
+      unitOfAccountAmount,
+      sendingWalletDescriptor: usdtSendingWalletDescriptor,
+    }
+    const paymentDetails = createNoAmountLightningPaymentDetails(usdtSendingWalletParams)
+    const settlementAmount = convertMoneyAmountWithUsdtMock(
+      unitOfAccountAmount,
+      WalletCurrency.Usdt,
+    )
+
+    it("sends USD cents to the backend and converts fee cents back to USDT micros", async () => {
+      const feeParamsMocks = createGetFeeMocks()
+      ;(feeParamsMocks.lnNoAmountUsdInvoiceFeeProbe as jest.Mock).mockResolvedValue({
+        data: {
+          lnNoAmountUsdInvoiceFeeProbe: {
+            amount: 2,
+            errors: [],
+          },
+        },
+      })
+
+      if (!paymentDetails.canGetFee) {
+        throw new Error("Cannot get fee")
+      }
+
+      const fee = await paymentDetails.getFee(feeParamsMocks)
+
+      expect(settlementAmount.amount).toBe(500 * USDT_MICROS_PER_USD_CENT)
+      expect(feeParamsMocks.lnNoAmountUsdInvoiceFeeProbe).toHaveBeenCalledWith({
+        variables: {
+          input: {
+            paymentRequest: defaultParams.paymentRequest,
+            amount: 500,
+            walletId: usdtSendingWalletParams.sendingWalletDescriptor.id,
+          },
+        },
+      })
+      expect(fee.amount).toEqual({
+        amount: 2 * USDT_MICROS_PER_USD_CENT,
+        currency: WalletCurrency.Usdt,
+        currencyCode: "USDT",
+      })
+    })
+
+    it("uses USD cents for the send payment mutation", async () => {
+      const sendPaymentMocks = createSendPaymentMocks()
+      if (!paymentDetails.canSendPayment) {
+        throw new Error("Cannot send payment")
+      }
+
+      try {
+        await paymentDetails.sendPaymentMutation(sendPaymentMocks)
+      } catch {
+        // do nothing as function is expected to throw since we are not mocking the send payment response
+      }
+
+      expect(sendPaymentMocks.lnNoAmountUsdInvoicePaymentSend).toHaveBeenCalledWith({
+        variables: {
+          input: {
+            paymentRequest: defaultParams.paymentRequest,
+            amount: 500,
+            walletId: usdtSendingWalletParams.sendingWalletDescriptor.id,
           },
         },
       })

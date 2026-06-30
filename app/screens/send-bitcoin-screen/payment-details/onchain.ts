@@ -3,6 +3,7 @@ import {
   BtcMoneyAmount,
   MoneyAmount,
   WalletOrDisplayCurrency,
+  toUsdMoneyAmount,
   toWalletAmount,
 } from "@app/types/amounts"
 import { PaymentType } from "@galoymoney/client"
@@ -96,17 +97,17 @@ export const createNoAmountOnchainPaymentDetails = <T extends WalletCurrency>(
           variables: {
             walletId: sendingWalletDescriptor.id,
             address,
-            amount: settlementAmount.amount,
+            amount: convertMoneyAmount(settlementAmount, WalletCurrency.Usd).amount,
           },
         })
 
         const rawAmount = data?.onChainUsdTxFee.amount
         const amount =
           typeof rawAmount === "number" // FIXME: this branch is never taken? rawAmount is type number | undefined
-            ? toWalletAmount({
-                amount: rawAmount,
-                currency: sendingWalletDescriptor.currency,
-              })
+            ? convertMoneyAmount(
+                toUsdMoneyAmount(rawAmount),
+                sendingWalletDescriptor.currency,
+              )
             : rawAmount
 
         return {
@@ -192,7 +193,7 @@ export const createNoAmountOnchainPaymentDetails = <T extends WalletCurrency>(
             input: {
               walletId: sendingWalletDescriptor.id,
               address,
-              amount: settlementAmount.amount,
+              amount: convertMoneyAmount(settlementAmount, WalletCurrency.Usd).amount,
             },
           },
         })
@@ -208,17 +209,17 @@ export const createNoAmountOnchainPaymentDetails = <T extends WalletCurrency>(
           variables: {
             walletId: sendingWalletDescriptor.id,
             address,
-            amount: settlementAmount.amount,
+            amount: convertMoneyAmount(settlementAmount, WalletCurrency.Usd).amount,
           },
         })
 
         const rawAmount = data?.onChainUsdTxFee.amount
         const amount =
           typeof rawAmount === "number" // FIXME: this branch is never taken? rawAmount is type number | undefined
-            ? toWalletAmount({
-                amount: rawAmount,
-                currency: sendingWalletDescriptor.currency,
-              })
+            ? convertMoneyAmount(
+                toUsdMoneyAmount(rawAmount),
+                sendingWalletDescriptor.currency,
+              )
             : rawAmount
 
         return {
@@ -255,10 +256,10 @@ export const createNoAmountOnchainPaymentDetails = <T extends WalletCurrency>(
         const rawAmount = data?.onChainUsdTxFeeAsBtcDenominated.amount
         const amount =
           typeof rawAmount === "number" // FIXME: this branch is never taken? rawAmount is type number | undefined
-            ? toWalletAmount({
-                amount: rawAmount,
-                currency: sendingWalletDescriptor.currency,
-              })
+            ? convertMoneyAmount(
+                toUsdMoneyAmount(rawAmount),
+                sendingWalletDescriptor.currency,
+              )
             : rawAmount
 
         return {
@@ -445,10 +446,10 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
       const rawAmount = data?.onChainUsdTxFeeAsBtcDenominated.amount
       const amount =
         typeof rawAmount === "number"
-          ? toWalletAmount({
-              amount: rawAmount,
-              currency: sendingWalletDescriptor.currency,
-            })
+          ? convertMoneyAmount(
+              toUsdMoneyAmount(rawAmount),
+              sendingWalletDescriptor.currency,
+            )
           : rawAmount
 
       return {

@@ -3,6 +3,7 @@ import {
   BtcMoneyAmount,
   MoneyAmount,
   toBtcMoneyAmount,
+  toUsdMoneyAmount,
   toWalletAmount,
   WalletAmount,
   WalletOrDisplayCurrency,
@@ -121,7 +122,7 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
       const { data } = await getFeeFns.lnNoAmountUsdInvoiceFeeProbe({
         variables: {
           input: {
-            amount: settlementAmount.amount,
+            amount: convertMoneyAmount(settlementAmount, WalletCurrency.Usd).amount,
             paymentRequest,
             walletId: sendingWalletDescriptor.id,
           },
@@ -131,10 +132,10 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
       const rawAmount = data?.lnNoAmountUsdInvoiceFeeProbe.amount
       const amount =
         typeof rawAmount === "number"
-          ? toWalletAmount({
-              amount: rawAmount,
-              currency: sendingWalletDescriptor.currency,
-            })
+          ? convertMoneyAmount(
+              toUsdMoneyAmount(rawAmount),
+              sendingWalletDescriptor.currency,
+            )
           : rawAmount
 
       return {
@@ -149,7 +150,7 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
           input: {
             walletId: sendingWalletDescriptor.id,
             paymentRequest,
-            amount: settlementAmount.amount,
+            amount: convertMoneyAmount(settlementAmount, WalletCurrency.Usd).amount,
             memo,
           },
         },
@@ -297,10 +298,10 @@ export const createAmountLightningPaymentDetails = <T extends WalletCurrency>(
       const rawAmount = data?.lnUsdInvoiceFeeProbe.amount
       const amount =
         typeof rawAmount === "number"
-          ? toWalletAmount({
-              amount: rawAmount,
-              currency: sendingWalletDescriptor.currency,
-            })
+          ? convertMoneyAmount(
+              toUsdMoneyAmount(rawAmount),
+              sendingWalletDescriptor.currency,
+            )
           : rawAmount
 
       return {
