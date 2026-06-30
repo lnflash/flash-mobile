@@ -63,6 +63,7 @@ import {
 import { makeStyles, useTheme } from "@rneui/themed"
 import { ScanningQRCodeScreen } from "../screens/send-bitcoin-screen"
 import { SettingsScreen } from "../screens/settings-screen"
+import { BridgeAccountRoutingScreen } from "@app/screens/settings-screen/bridge-account-routing-screen"
 import { LanguageScreen } from "../screens/settings-screen/language-screen"
 import { SecurityScreen } from "../screens/settings-screen/security-screen"
 import { TransactionDetailScreen } from "../screens/transaction-detail-screen"
@@ -363,6 +364,13 @@ export const RootStack = () => {
         options={() => ({
           title: "",
         })}
+      />
+      <RootNavigator.Screen
+        name="BridgeAccountRouting"
+        component={BridgeAccountRoutingScreen}
+        options={{
+          title: "Account and routing number",
+        }}
       />
       <RootNavigator.Screen
         name="defaultWallet"
