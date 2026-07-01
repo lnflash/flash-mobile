@@ -5,7 +5,6 @@ import {
   DisplayAmount,
   DisplayCurrency,
   MoneyAmount,
-  USDT_MICROS_PER_USDT,
   WalletAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
@@ -105,7 +104,7 @@ export const useDisplayCurrency = () => {
         case WalletCurrency.Usd:
           return moneyAmount.amount / 100
         case WalletCurrency.Usdt:
-          return moneyAmount.amount / USDT_MICROS_PER_USDT
+          return moneyAmount.amount / 100
         case DisplayCurrency:
           return moneyAmount.amount / 10 ** displayCurrencyInfo.fractionDigits
       }
