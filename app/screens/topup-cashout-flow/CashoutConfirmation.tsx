@@ -57,6 +57,7 @@ const LocalCashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
   )
 
   const [errorMsg, setErrorMsg] = useState<string>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [initiateCashout] = useInitiateCashoutMutation()
 
@@ -82,23 +83,35 @@ const LocalCashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
   } = params.offer
 
   const onConfirm = async () => {
-    toggleActivityIndicator(true)
-    const res = await initiateCashout({ variables: { input: { walletId, offerId } } })
-    if (res.data?.initiateCashout.id) {
-      navigation.navigate("CashoutSuccess")
-    } else {
-      setErrorMsg(res.data?.initiateCashout.errors[0].message)
+    if (isSubmitting) {
+      return
     }
-    toggleActivityIndicator(false)
+    setErrorMsg(undefined)
+    setIsSubmitting(true)
+    toggleActivityIndicator(true)
+    try {
+      const res = await initiateCashout({ variables: { input: { walletId, offerId } } })
+      if (res.data?.initiateCashout.id) {
+        navigation.navigate("CashoutSuccess")
+      } else {
+        setErrorMsg(res.data?.initiateCashout.errors[0]?.message ?? LL.common.error())
+      }
+    } finally {
+      setIsSubmitting(false)
+      toggleActivityIndicator(false)
+    }
   }
 
   const formattedSendAmount = moneyAmountToDisplayCurrencyString({
     moneyAmount: toUsdMoneyAmount(send ?? NaN),
   })
 
-  const formattedReceiveUsdAmount = moneyAmountToDisplayCurrencyString({
-    moneyAmount: toUsdMoneyAmount(receiveUsd ?? NaN),
-  })
+  const formattedReceiveUsdAmount =
+    receiveUsd !== undefined && receiveUsd !== null
+      ? moneyAmountToDisplayCurrencyString({
+          moneyAmount: toUsdMoneyAmount(receiveUsd),
+        })
+      : undefined
 
   const formattedFeeAmount = moneyAmountToDisplayCurrencyString({
     moneyAmount: toUsdMoneyAmount(flashFee ?? NaN),
@@ -118,10 +131,14 @@ const LocalCashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
           />
         )}
         <CashoutCard title={LL.Cashout.sendAmount()} detail={formattedSendAmount} />
-        {receiveJmd && (
+        {receiveJmd !== undefined && receiveJmd !== null && (
           <CashoutCard
             title={LL.Cashout.receiveAmount()}
-            detail={`${formattedReceiveUsdAmount} (J$${(receiveJmd / 100).toFixed(2)})`}
+            detail={
+              formattedReceiveUsdAmount
+                ? `${formattedReceiveUsdAmount} (J$${(receiveJmd / 100).toFixed(2)})`
+                : `J$${(receiveJmd / 100).toFixed(2)}`
+            }
           />
         )}
         <CashoutCard title={LL.Cashout.fee()} detail={formattedFeeAmount} />
@@ -135,6 +152,7 @@ const LocalCashoutConfirmation: React.FC<Props> = ({ navigation, route }) => {
       <PrimaryBtn
         label={LL.common.confirm()}
         btnStyle={confirmButtonStyle}
+        disabled={isSubmitting}
         onPress={onConfirm}
       />
     </Screen>

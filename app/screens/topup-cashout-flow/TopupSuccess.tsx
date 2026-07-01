@@ -19,13 +19,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 type Props = StackScreenProps<RootStackParamList, "TopupSuccess">
 
-const TopupSuccess: React.FC<Props> = () => {
+const TopupSuccess: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { bottom } = useSafeAreaInsets()
 
-  const onPressDone = () => {}
+  const onPressDone = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Primary" }],
+    })
+  }
 
   return (
     <Screen unsafe backgroundColor={colors.accent02}>
@@ -35,21 +40,12 @@ const TopupSuccess: React.FC<Props> = () => {
         </SuccessIconAnimation>
         <SuccessTextAnimation>
           <Text type="h01" style={[styles.successText, { marginTop: 32 }]}>
-            USD Wallet Topped Up
-          </Text>
-          <Text type="h03" style={styles.successText}>
-            $200
-          </Text>
-          <Text
-            type="h01"
-            style={[styles.successText, { color: "rgba(255,255,255,.7)" }]}
-          >
-            J$35.11
+            {LL.PaymentSuccessScreen.title()}
           </Text>
         </SuccessTextAnimation>
       </View>
       <PrimaryBtn
-        label="Done"
+        label={LL.PaymentSuccessScreen.done()}
         onPress={onPressDone}
         btnStyle={{
           backgroundColor: "#fff",
