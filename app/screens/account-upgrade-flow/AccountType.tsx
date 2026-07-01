@@ -19,6 +19,7 @@ import { ProgressSteps } from "@app/components/account-upgrade-flow"
 import { useLevel } from "@app/graphql/level-context"
 import { useActivityIndicator } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { useFeatureFlags } from "@app/config/feature-flags-context"
 
 // store
 import { useAppDispatch } from "@app/store/redux"
@@ -33,18 +34,21 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
   const { toggleActivityIndicator } = useActivityIndicator()
+  const { bridgeTopupEnabled } = useFeatureFlags()
 
   const [bridgeKycModalVisible, setBridgeKycModalVisible] = useState(false)
 
   const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
   const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
     fetchPolicy: "cache-and-network",
+    skip: !bridgeTopupEnabled,
   })
 
   useFocusEffect(
     useCallback(() => {
+      if (!bridgeTopupEnabled) return
       refetchKycStatus()
-    }, [refetchKycStatus]),
+    }, [bridgeTopupEnabled, refetchKycStatus]),
   )
 
   const bridgeKycStatus = kycStatusData?.bridgeKycStatus
@@ -58,6 +62,8 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   }
 
   const checkBridgeKyc = () => {
+    if (!bridgeTopupEnabled) return
+
     if (bridgeKycStatus === "pending") {
       Alert.alert("KYC Pending", "Your KYC status is pending. Please wait for approval.")
     } else {
@@ -145,28 +151,35 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
         </View>
         <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
       </TouchableOpacity>
-      {currentLevel !== AccountLevel.Zero && bridgeKycStatus !== "approved" && (
-        <TouchableOpacity
-          style={[
-            styles.card,
-            bridgeKycStatus === "pending"
-              ? { borderColor: "orange", borderWidth: 1 }
-              : undefined,
-          ]}
-          onPress={checkBridgeKyc}
-        >
-          <Icon name={"globe"} size={35} color={colors.grey1} type="ionicon" />
-          <View style={styles.textWrapper}>
-            <Text type="bl" bold>
-              {LL.AccountUpgrade.international()}
-            </Text>
-            <Text type="bm" style={{ marginTop: 2 }}>
-              {LL.AccountUpgrade.internationalDesc()}
-            </Text>
-          </View>
-          <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
-        </TouchableOpacity>
-      )}
+      {bridgeTopupEnabled &&
+        currentLevel !== AccountLevel.Zero &&
+        bridgeKycStatus !== "approved" && (
+          <TouchableOpacity
+            style={[
+              styles.card,
+              bridgeKycStatus === "pending"
+                ? { borderColor: "orange", borderWidth: 1 }
+                : undefined,
+            ]}
+            onPress={checkBridgeKyc}
+          >
+            <Icon name={"globe"} size={35} color={colors.grey1} type="ionicon" />
+            <View style={styles.textWrapper}>
+              <Text type="bl" bold>
+                {LL.AccountUpgrade.international()}
+              </Text>
+              <Text type="bm" style={{ marginTop: 2 }}>
+                {LL.AccountUpgrade.internationalDesc()}
+              </Text>
+            </View>
+            <Icon
+              name={"chevron-forward"}
+              size={25}
+              color={colors.grey2}
+              type="ionicon"
+            />
+          </TouchableOpacity>
+        )}
       <BridgeKycModal
         visible={bridgeKycModalVisible}
         onClose={() => setBridgeKycModalVisible(false)}
