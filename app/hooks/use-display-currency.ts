@@ -122,7 +122,7 @@ export const useDisplayCurrency = () => {
       },
       [WalletCurrency.Usdt]: {
         symbol: usdDisplayCurrency.symbol,
-        minorUnitToMajorUnitOffset: 6,
+        minorUnitToMajorUnitOffset: usdDisplayCurrency.fractionDigits,
         showFractionDigits: true,
         currencyCode: usdDisplayCurrency.id,
       },

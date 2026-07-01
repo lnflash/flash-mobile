@@ -139,20 +139,20 @@ const wrapWithMocks =
 
 describe("usePriceConversion", () => {
   describe("testing moneyAmountToMajorUnitOrSats", () => {
-    it("formats USDT micros as major units", async () => {
+    it("formats USDT cents as major units", async () => {
       const { result } = renderHook(useDisplayCurrency, {
         wrapper: wrapWithMocks([]),
       })
 
       const moneyAmount = {
-        amount: 179_554,
+        amount: 18,
         currency: WalletCurrency.Usdt,
         currencyCode: "USD",
       }
 
-      expect(result.current.moneyAmountToMajorUnitOrSats(moneyAmount)).toBe(0.179554)
+      expect(result.current.moneyAmountToMajorUnitOrSats(moneyAmount)).toBe(0.18)
       // USDT displays as USD (stablecoin → fiat display mapping)
-      expect(result.current.formatMoneyAmount({ moneyAmount })).toBe("$0.179554 USD")
+      expect(result.current.formatMoneyAmount({ moneyAmount })).toBe("$0.18 USD")
     })
 
     it("with 0 digits", async () => {
@@ -255,7 +255,7 @@ describe("usePriceConversion", () => {
     })
   })
 
-  it("converts USDT micros to display currency using USD-cent price", async () => {
+  it("converts USDT cents to display currency using USD-cent price", async () => {
     const { result, waitFor } = renderHook(useDisplayCurrency, {
       wrapper: wrapWithMocks(mocksNgn),
     })
@@ -271,7 +271,7 @@ describe("usePriceConversion", () => {
 
     const displayAmount = result.current.moneyAmountToDisplayCurrencyString({
       moneyAmount: {
-        amount: 1_000_000,
+        amount: 100,
         currency: WalletCurrency.Usdt,
         currencyCode: "USDT",
       },
