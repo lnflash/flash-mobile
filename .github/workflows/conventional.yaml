@@ -1,7 +1,7 @@
 name: "Conventional commits"
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/fygaro]
 jobs:
   conventional:
     name: "Conventional commits"
@@ -14,3 +14,6 @@ jobs:
         message: this PR needs to be updated to follow conventional commits message
         body: false
         issue: false
+        # Report on invalid PRs instead of closing them (avoids nuking
+        # long-lived PRs like the feat/fygaro umbrella #621).
+        close: false

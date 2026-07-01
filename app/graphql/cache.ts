@@ -61,7 +61,7 @@ export const createCache = () =>
   new InMemoryCache({
     possibleTypes: {
       // TODO: add other possible types
-      Wallet: ["BTCWallet", "UsdWallet"],
+      Wallet: ["BTCWallet", "UsdWallet", "UsdtWallet"],
       Account: ["ConsumerAccount"],
     },
     typePolicies: {

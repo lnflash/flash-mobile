@@ -1,57 +1,58 @@
 import { WalletCurrency } from "@app/graphql/generated"
+import { displayCurrencyCode } from "@app/utils/currency-display"
 import { makeStyles, useTheme } from "@rneui/themed"
 import React, { FC } from "react"
 import { Text, View } from "react-native"
 
-const useStyles = makeStyles(() => ({
+type CurrencyTagProps = {
+  walletCurrency: WalletCurrency
+}
+
+type CurrencyStyle = {
+  backgroundColor: string
+  textColor: string
+}
+
+export const CurrencyTag: FC<CurrencyTagProps> = ({ walletCurrency }) => {
+  const {
+    theme: { colors },
+  } = useTheme()
+
+  const currencyStyling: Record<WalletCurrency, CurrencyStyle> = {
+    [WalletCurrency.Btc]: {
+      textColor: colors.white,
+      backgroundColor: colors.primary,
+    },
+    [WalletCurrency.Usd]: {
+      textColor: colors.black,
+      backgroundColor: colors.green,
+    },
+    [WalletCurrency.Usdt]: {
+      textColor: colors.black,
+      backgroundColor: colors.green,
+    },
+  }
+
+  const styles = useStyles(currencyStyling[walletCurrency])
+
+  return (
+    <View style={styles.currencyTag}>
+      <Text style={styles.currencyText}>{displayCurrencyCode(walletCurrency)}</Text>
+    </View>
+  )
+}
+
+const useStyles = makeStyles((_, currencyStyle: CurrencyStyle) => ({
   currencyTag: {
     borderRadius: 10,
     height: 30,
     width: 50,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: currencyStyle.backgroundColor,
   },
   currencyText: {
     fontSize: 12,
+    color: currencyStyle.textColor,
   },
 }))
-
-type CurrencyTagProps = {
-  walletCurrency: WalletCurrency
-}
-
-export const CurrencyTag: FC<CurrencyTagProps> = ({ walletCurrency }) => {
-  const styles = useStyles()
-  const {
-    theme: { colors },
-  } = useTheme()
-
-  const currencyStyling = {
-    BTC: {
-      textColor: colors.white,
-      backgroundColor: colors.primary,
-    },
-    USD: {
-      textColor: colors.black,
-      backgroundColor: colors.green,
-    },
-  }
-
-  return (
-    <View
-      style={{
-        ...styles.currencyTag,
-        backgroundColor: currencyStyling[walletCurrency].backgroundColor,
-      }}
-    >
-      <Text
-        style={{
-          ...styles.currencyText,
-          color: currencyStyling[walletCurrency].textColor,
-        }}
-      >
-        {walletCurrency}
-      </Text>
-    </View>
-  )
-}

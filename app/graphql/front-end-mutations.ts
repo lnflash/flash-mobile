@@ -117,36 +117,34 @@ gql`
     }
   }
 
-  # mutation RequestCashout($input: RequestCashoutInput!) {
-  #   requestCashout(input: $input) {
-  #     errors {
-  #       code
-  #       message
-  #       path
-  #     }
-  #     offer {
-  #       exchangeRate
-  #       expiresAt
-  #       flashFee
-  #       offerId
-  #       receiveJmd
-  #       receiveUsd
-  #       send
-  #       walletId
-  #     }
-  #   }
-  # }
+  mutation RequestCashout($input: RequestCashoutInput!) {
+    requestCashout(input: $input) {
+      errors {
+        code
+        message
+      }
+      offer {
+        exchangeRate
+        expiresAt
+        flashFee
+        offerId
+        receiveJmd
+        receiveUsd
+        send
+        walletId
+      }
+    }
+  }
 
-  # mutation InitiateCashout($input: InitiateCashoutInput!) {
-  #   initiateCashout(input: $input) {
-  #     errors {
-  #       path
-  #       message
-  #       code
-  #     }
-  #     success
-  #   }
-  # }
+  mutation InitiateCashout($input: InitiateCashoutInput!) {
+    initiateCashout(input: $input) {
+      errors {
+        code
+        message
+      }
+      id
+    }
+  }
 
   mutation accountDelete {
     accountDelete {
@@ -220,6 +218,103 @@ gql`
         message
       }
       walletId
+    }
+  }
+
+  mutation BridgeInitiateKyc($input: BridgeInitiateKycInput!) {
+    bridgeInitiateKyc(input: $input) {
+      errors {
+        code
+        message
+      }
+      kycLink {
+        kycLink
+        tosLink
+      }
+    }
+  }
+
+  mutation BridgeAddExternalAccount {
+    bridgeAddExternalAccount {
+      externalAccount {
+        expiresAt
+        linkUrl
+      }
+      errors {
+        code
+        message
+      }
+    }
+  }
+
+  mutation BridgeRequestWithdrawal($input: BridgeRequestWithdrawalInput!) {
+    bridgeRequestWithdrawal(input: $input) {
+      withdrawal {
+        amount
+        createdAt
+        bridgeTransferId
+        currency
+        externalAccountId
+        failureReason
+        id
+        status
+      }
+      errors {
+        code
+        message
+      }
+    }
+  }
+
+  mutation BridgeInitiateWithdrawal($input: BridgeInitiateWithdrawalInput!) {
+    bridgeInitiateWithdrawal(input: $input) {
+      withdrawal {
+        amount
+        bridgeTransferId
+        createdAt
+        currency
+        externalAccountId
+        failureReason
+        id
+        status
+      }
+      errors {
+        code
+        message
+      }
+    }
+  }
+
+  mutation BridgeCancelWithdrawalRequest($input: BridgeCancelWithdrawalRequestInput!) {
+    bridgeCancelWithdrawalRequest(input: $input) {
+      withdrawal {
+        amount
+        createdAt
+        currency
+        externalAccountId
+        failureReason
+        id
+        status
+      }
+      errors {
+        code
+        message
+      }
+    }
+  }
+
+  mutation BridgeCreateExternalAccount($input: BridgeCreateExternalAccountInput!) {
+    bridgeCreateExternalAccount(input: $input) {
+      externalAccount {
+        id
+        bankName
+        accountNumberLast4
+        status
+      }
+      errors {
+        code
+        message
+      }
     }
   }
 `

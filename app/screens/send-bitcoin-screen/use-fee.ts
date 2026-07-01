@@ -109,7 +109,7 @@ const useFee = <T extends WalletCurrency>(getFeeFn?: GetFee<T> | null): FeeType 
   const [lnNoAmountInvoiceFeeProbe] = useLnNoAmountInvoiceFeeProbeMutation()
   const [lnUsdInvoiceFeeProbe] = useLnUsdInvoiceFeeProbeMutation()
   const [lnNoAmountUsdInvoiceFeeProbe] = useLnNoAmountUsdInvoiceFeeProbeMutation()
-  const [onChainTxFee] = [undefined] // useOnChainTxFeeLazyQuery()
+  const [onChainTxFee] = useOnChainTxFeeLazyQuery()
   const [onChainUsdTxFee] = useOnChainUsdTxFeeLazyQuery()
   const [onChainUsdTxFeeAsBtcDenominated] = useOnChainUsdTxFeeAsBtcDenominatedLazyQuery()
 

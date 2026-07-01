@@ -69,7 +69,9 @@ const InnerGroupChat: React.FC = () => {
       const pubkeys = Array.from(subscribedPubkeys.current)
       setProfileMap(readProfilesFromStore(pubkeys))
     })
-    return unsubStore
+    return () => {
+      unsubStore()
+    }
   }, [])
 
   // Subscribe to profiles for any new authors/members/admins we haven't seen yet

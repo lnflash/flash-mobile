@@ -19,6 +19,7 @@ gql`
       language
       username
       phone
+      createdAt
       email {
         address
         verified
@@ -302,11 +303,14 @@ gql`
           title
         }
         bankAccount {
+          accountName
           accountNumber
           accountType
           bankBranch
           bankName
           currency
+          id
+          isDefault
         }
         currentLevel
         fullName
@@ -323,6 +327,76 @@ gql`
   query SupportedBanks {
     supportedBanks {
       name
+    }
+  }
+
+  query BridgeKycStatus {
+    bridgeKycStatus
+  }
+
+  query BridgeVirtualAccount {
+    bridgeVirtualAccount {
+      accountNumber
+      accountNumberLast4
+      bankName
+      id
+      kycLink
+      message
+      pending
+      routingNumber
+      tosLink
+    }
+  }
+
+  query BankAccounts {
+    me {
+      id
+      bankAccounts {
+        accountName
+        accountNumber
+        accountType
+        bankBranch
+        bankName
+        currency
+        id
+        isDefault
+      }
+    }
+  }
+
+  query BridgeExternalAccounts {
+    bridgeExternalAccounts {
+      accountNumberLast4
+      bankName
+      id
+      status
+    }
+  }
+
+  query BridgeWithdrawalRequest($id: ID!) {
+    bridgeWithdrawalRequest(id: $id) {
+      amount
+      createdAt
+      currency
+      externalAccountId
+      failureReason
+      id
+      status
+    }
+  }
+
+  query CashWalletCutover {
+    cashWalletCutover {
+      completedAt
+      cutoverVersion
+      pauseReason
+      pausedAt
+      runId
+      scheduledAt
+      startedAt
+      state
+      updatedAt
+      updatedBy
     }
   }
 `

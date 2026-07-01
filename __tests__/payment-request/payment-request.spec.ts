@@ -1,15 +1,25 @@
 import { createPaymentRequestCreationData } from "@app/screens/receive-bitcoin-screen/payment/payment-request-creation-data"
 
 import { createMock } from "ts-auto-mock"
-import { LnInvoice } from "@app/graphql/generated"
+import { LnInvoice, WalletCurrency } from "@app/graphql/generated"
 import {
   GeneratePaymentRequestMutations,
   Invoice,
   PaymentRequestState,
 } from "@app/screens/receive-bitcoin-screen/payment/index.types"
-import { btcWalletDescriptor, defaultParams, usdWalletDescriptor } from "./helpers"
+import {
+  btcWalletDescriptor,
+  defaultParams,
+  usdWalletDescriptor,
+  usdtWalletDescriptor,
+} from "./helpers"
 import { createPaymentRequest } from "@app/screens/receive-bitcoin-screen/payment/payment-request"
-import { toUsdMoneyAmount } from "@app/types/amounts"
+import {
+  MoneyAmount,
+  toUsdMoneyAmount,
+  WalletOrDisplayCurrency,
+} from "@app/types/amounts"
+import { receiveOnchainBreez, receivePaymentBreez } from "@app/utils/breez-sdk"
 
 const usdAmountInvoice =
   "lnbc49100n1p3l2q6cpp5y8lc3dv7qnplxhc3z9j0sap4n0hu99g39tl3srx6zj0hrqy2snwsdqqcqzpuxqzfvsp5q6t5f3xeruu4k5sk5nlmxx2kzlw2pydmmjk9g4qqmsc9c6ffzldq9qyyssq9lesnumasvvlvwc7yckvuepklttlvwhjqw3539qqqttsyh5s5j246spy9gezng7ng3d40qsrn6dhsrgs7rccaftzulx5auqqd5lz0psqfskeg4"
@@ -18,6 +28,10 @@ const noAmountInvoice =
 const btcAmountInvoice =
   "lnbc23690n1p3l2qugpp5jeflfqjpxhe0hg3tzttc325j5l6czs9vq9zqx5edpt0yf7k6cypsdqqcqzpuxqyz5vqsp5lteanmnwddszwut839etrgjenfr3dv5tnvz2d2ww2mvggq7zn46q9qyyssqzcz0rvt7r30q7jul79xqqwpr4k2e8mgd23fkjm422sdgpndwql93d4wh3lap9yfwahue9n7ju80ynkqly0lrqqd2978dr8srkrlrjvcq2v5s6k"
 const mockOnChainAddress = "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx"
+const defaultMemo = "Pay to Flash Wallet User"
+
+const mockReceiveOnchainBreez = receiveOnchainBreez as jest.Mock
+const mockReceivePaymentBreez = receivePaymentBreez as jest.Mock
 
 const mockLnInvoice = createMock<LnInvoice>({
   paymentRequest: btcAmountInvoice,
@@ -83,9 +97,23 @@ export const clearMocks = () => {
   mockLnUsdInvoiceCreate.mockClear()
   mockLnNoAmountInvoiceCreate.mockClear()
   mockOnChainAddressCurrent.mockClear()
+  mockReceiveOnchainBreez.mockReset()
+  mockReceivePaymentBreez.mockReset()
 }
 
 describe("payment request", () => {
+  beforeEach(() => {
+    clearMocks()
+    mockReceiveOnchainBreez.mockResolvedValue({
+      paymentRequest: mockOnChainAddress,
+    })
+    mockReceivePaymentBreez.mockImplementation((amount?: number) =>
+      Promise.resolve({
+        paymentRequest: amount ? btcAmountInvoice : noAmountInvoice,
+      }),
+    )
+  })
+
   it("ln with btc receiving wallet", async () => {
     const prcd = createPaymentRequestCreationData({
       ...defaultParams,
@@ -99,7 +127,7 @@ describe("payment request", () => {
 
     const prNew = await pr.generateRequest()
     expect(prNew.info).not.toBeUndefined()
-    expect(mockLnNoAmountInvoiceCreate).toHaveBeenCalled()
+    expect(mockReceivePaymentBreez).toHaveBeenCalledWith(undefined, defaultMemo)
     expect(prNew.state).toBe(PaymentRequestState.Created)
     expect(prNew.info?.data?.invoiceType).toBe(Invoice.Lightning)
     expect(prNew.info?.data?.getFullUriFn({})).toBe(noAmountInvoice)
@@ -118,10 +146,18 @@ describe("payment request", () => {
 
     const prNew = await pr.generateRequest()
     expect(prNew.info).not.toBeUndefined()
-    expect(mockLnNoAmountInvoiceCreate).toHaveBeenCalled()
+    expect(mockLnUsdInvoiceCreate).toHaveBeenCalledWith({
+      variables: {
+        input: {
+          walletId: usdWalletDescriptor.id,
+          amount: 0,
+          memo: defaultMemo,
+        },
+      },
+    })
     expect(prNew.state).toBe(PaymentRequestState.Created)
     expect(prNew.info?.data?.invoiceType).toBe(Invoice.Lightning)
-    expect(prNew.info?.data?.getFullUriFn({})).toBe(noAmountInvoice)
+    expect(prNew.info?.data?.getFullUriFn({})).toBe(usdAmountInvoice)
   })
 
   it("ln with btc receiving wallet - set amount", async () => {
@@ -138,7 +174,7 @@ describe("payment request", () => {
 
     const prNew = await pr.generateRequest()
     expect(prNew.info).not.toBeUndefined()
-    expect(mockLnInvoiceCreate).toHaveBeenCalled()
+    expect(mockReceivePaymentBreez).toHaveBeenCalledWith(1, defaultMemo)
     expect(prNew.state).toBe(PaymentRequestState.Created)
     expect(prNew.info?.data?.invoiceType).toBe(Invoice.Lightning)
     expect(prNew.info?.data?.getFullUriFn({})).toBe(btcAmountInvoice)
@@ -164,9 +200,52 @@ describe("payment request", () => {
     expect(prNew.info?.data?.getFullUriFn({})).toBe(usdAmountInvoice)
   })
 
+  it("ln with usdt receiving wallet - set amount sends cents, not micros", async () => {
+    // Regression for the $5.00 -> $50,583 USDT invoice bug. The price
+    // conversion denominates USDT money amounts in smallest units (micros),
+    // convert USDT micros back to cents before calling it. Otherwise a $5.00
+    // request (500 cents) is sent as 5,000,000 and the backend mints a
+    // $50,000 invoice.
+    const convertToUsdtCents = <T extends WalletOrDisplayCurrency>(
+      amount: MoneyAmount<WalletOrDisplayCurrency>,
+      toCurrency: T,
+    ): MoneyAmount<T> => {
+      const converted = amount.amount
+      return { amount: converted, currency: toCurrency, currencyCode: toCurrency }
+    }
+
+    const prcd = createPaymentRequestCreationData({
+      ...defaultParams,
+      convertMoneyAmount: convertToUsdtCents,
+      receivingWalletDescriptor: usdtWalletDescriptor,
+      // $5.00 entered as 500 USD cents in the unit of account
+      unitOfAccountAmount: toUsdMoneyAmount(500),
+    })
+
+    // sanity: the settlement amount is in USDT micros (500 cents * 10,000)
+    expect(prcd.settlementAmount?.currency).toBe(WalletCurrency.Usdt)
+    expect(prcd.settlementAmount?.amount).toBe(500)
+
+    const pr = createPaymentRequest({ creationData: prcd, mutations })
+    const prNew = await pr.generateRequest()
+
+    expect(prNew.info).not.toBeUndefined()
+    expect(mockLnUsdInvoiceCreate).toHaveBeenCalledWith({
+      variables: {
+        input: expect.objectContaining({
+          walletId: usdtWalletDescriptor.id,
+          // must be 500 cents, NOT 5,000,000 micros
+          amount: 500,
+        }),
+      },
+    })
+    expect(prNew.state).toBe(PaymentRequestState.Created)
+  })
+
   it("paycode/lnurl", async () => {
     const prcd = createPaymentRequestCreationData({
       ...defaultParams,
+      receivingWalletDescriptor: usdWalletDescriptor,
       type: Invoice.PayCode,
       username: "username",
       posUrl: "posUrl",
@@ -198,11 +277,14 @@ describe("payment request", () => {
 
     const prNew = await pr.generateRequest()
     expect(prNew.info).not.toBeUndefined()
-    expect(mockOnChainAddressCurrent).toHaveBeenCalled()
+    expect(mockReceiveOnchainBreez).toHaveBeenCalled()
     expect(prNew.state).toBe(PaymentRequestState.Created)
     expect(prNew.info?.data?.invoiceType).toBe(Invoice.OnChain)
-    expect(
-      prNew.info?.data?.getFullUriFn({}).startsWith(`bitcoin:${mockOnChainAddress}`),
-    ).toBe(true)
+    expect(prNew.info?.data?.getFullUriFn({})).toBe(
+      `bitcoin:${mockOnChainAddress}?message=Pay%2520to%2520Flash%2520Wallet%2520User`,
+    )
+    expect(prNew.info?.data?.getFullUriFn({ prefix: false })).toBe(
+      `${mockOnChainAddress}?message=Pay%2520to%2520Flash%2520Wallet%2520User`,
+    )
   })
 })

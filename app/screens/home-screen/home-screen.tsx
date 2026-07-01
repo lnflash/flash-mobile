@@ -6,6 +6,7 @@ import { useTheme } from "@rneui/themed"
 import WalletOverview from "@app/components/wallet-overview/wallet-overview"
 import { SetDefaultAccountModal } from "@app/components/set-default-account-modal"
 import { UnVerifiedSeedModal } from "@app/components/unverified-seed-modal"
+import { CashWalletCutoverModal } from "@app/components/topup-cashout-flow"
 import { Screen } from "@app/components/screen"
 import {
   AccountCreateModal,
@@ -82,7 +83,8 @@ export const HomeScreen: React.FC = () => {
     )
     if (
       !persistentState.defaultWallet ||
-      (persistentState.defaultWallet.walletCurrency === "USD" &&
+      ((persistentState.defaultWallet.walletCurrency === "USD" ||
+        persistentState.defaultWallet.walletCurrency === "USDT") &&
         persistentState.defaultWallet.id !== defaultWallet?.id)
     ) {
       updateState((state: any) => {
@@ -144,6 +146,7 @@ export const HomeScreen: React.FC = () => {
         setIsVisible={setIsUnverifiedSeedModalVisible}
       />
       <AccountCreateModal modalVisible={modalVisible} setModalVisible={setModalVisible} />
+      <CashWalletCutoverModal />
     </Screen>
   )
 }

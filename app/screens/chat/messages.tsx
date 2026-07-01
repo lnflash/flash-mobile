@@ -196,7 +196,9 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
       authors: pubkeys,
     })
 
-    return unsubStore
+    return () => {
+      unsubStore()
+    }
   }, [groupId])
 
   // Build deduplicated chat rumor list synchronously (no extra render cycle)

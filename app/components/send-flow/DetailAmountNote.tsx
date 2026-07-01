@@ -60,7 +60,10 @@ const DetailAmountNote: React.FC<Props> = ({
 
   const checkErrorMessage = () => {
     if (!convertMoneyAmount) return null
-    if (paymentDetail?.sendingWalletDescriptor.currency === "USD") {
+    if (
+      paymentDetail?.sendingWalletDescriptor.currency === "USD" ||
+      paymentDetail?.sendingWalletDescriptor.currency === "USDT"
+    ) {
       if (paymentDetail?.paymentType === "lnurl") {
         if (
           paymentDetail.canSetAmount &&
@@ -162,7 +165,9 @@ const DetailAmountNote: React.FC<Props> = ({
         <View style={styles.currencyInputContainer}>
           <AmountInput
             unitOfAccountAmount={
-              sendingWalletDescriptor.currency === "USD" && invoiceAmount
+              (sendingWalletDescriptor.currency === "USD" ||
+                sendingWalletDescriptor.currency === "USDT") &&
+              invoiceAmount
                 ? invoiceAmount
                 : paymentDetail.unitOfAccountAmount
             }

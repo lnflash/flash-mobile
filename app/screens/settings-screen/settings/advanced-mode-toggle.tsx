@@ -8,7 +8,7 @@ import { toBtcMoneyAmount } from "@app/types/amounts"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { Alert, Platform } from "react-native"
 import { useSettingsScreenQuery } from "@app/graphql/generated"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { useLevel } from "@app/graphql/level-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useBreez } from "@app/hooks"
@@ -37,7 +37,7 @@ export const AdvancedModeToggle: React.FC = () => {
     skip: !isAtLeastLevelZero,
   })
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   useEffect(() => {
     checkRecoveryPhrase()

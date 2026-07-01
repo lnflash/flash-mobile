@@ -15,6 +15,7 @@ it("migrates persistent state", async () => {
   })
   expect(state).toEqual({
     ...defaultPersistentState,
+    galoyInstance: { id: "Main" },
   })
 })
 
@@ -25,20 +26,24 @@ it("returns default when schema is not present", async () => {
   expect(state).toEqual(defaultPersistentState)
 })
 
-it("migration from 5 to 6", async () => {
+it("migration from 5 to current", async () => {
   const state5 = {
     schemaVersion: 5,
     galoyInstance: { id: "Main" },
     galoyAuthToken: "myToken",
   }
 
-  const state6 = {
-    schemaVersion: 6,
+  const currentState = {
+    schemaVersion: 7,
     galoyInstance: { id: "Main" },
     galoyAuthToken: "myToken",
+    hasInitializedBreezSDK: false,
+    helpTriggered: false,
+    unclaimedDeposits: 0,
+    closedQuickStartTypes: [],
   }
 
   const res = await migrateAndGetPersistentState(state5)
 
-  expect(res).toStrictEqual(state6)
+  expect(res).toStrictEqual(currentState)
 })

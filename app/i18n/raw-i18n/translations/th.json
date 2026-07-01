@@ -77,7 +77,13 @@
     "receiveAmount": "ได้รับจํานวนเงิน",
     "fee": "ค่าธรรมเนียม",
     "success": "การขอชําระสินค้าเริ่มต้นสําเร็จ.",
-    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n"
+    "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n",
+    "withdrawTo": "Withdraw to",
+    "bankName": "Bank Name",
+    "bankBranch": "Bank Branch",
+    "accountNumber": "Account Number",
+    "accountType": "Account Type",
+    "currency": "Currency"
   },
   "ConversionDetailsScreen": {
     "title": "แลกเปลี่ยน",
@@ -535,7 +541,8 @@
     "btcWalletTitle": "Enable BTC wallet",
     "btcWalletDesc": "การโอนเงินจํานวนมากขึ้นง่ายใน Bitcoin",
     "backupTitle": "ทําสํารองกระเป๋าเงิน BTC ของคุณ",
-    "backupDesc": "แบ็กคัพและคุ้มครองกระเป๋าเป้ Bitcoin ของคุณ โดยใช้ประโยคการฟื้นฟู."
+    "backupDesc": "แบ็กคัพและคุ้มครองกระเป๋าเป้ Bitcoin ของคุณ โดยใช้ประโยคการฟื้นฟู.",
+    "transfer": "Transfer"
   },
   "PinScreen": {
     "attemptsRemaining": "พินนี้ผิด มีโอกาสใส่พินอีก {attemptsRemaining: number} ครั้ง",
@@ -1035,7 +1042,19 @@
   },
   "TransferScreen": {
     "title": "แลกเปลี่ยน",
-    "percentageToConvert": "% ที่ต้องการแลกเปลี่ยน"
+    "percentageToConvert": "% ที่ต้องการแลกเปลี่ยน",
+    "topUp": "Top Up",
+    "topUpDesc": "Add funds to your wallet",
+    "settle": "Settle",
+    "settleDesc": "Cashout funds from your wallet",
+    "selectSettleMethod": "Settle to",
+    "selectTopUpMethod": "Top up via",
+    "jmdBankAccount": "JMD Bank Account",
+    "jmdBankAccountDesc": "Withdraw to your Jamaican bank account",
+    "internationalBankAccount": "International Bank Account",
+    "internationalBankAccountDesc": "Withdraw to your international bank account",
+    "internationalBankTransfer": "International Bank Transfer",
+    "internationalBankTransferDesc": "Transfer from your international bank account"
   },
   "UpgradeAccountModal": {
     "title": "Upgrade your account",
@@ -1487,6 +1506,89 @@
     "accountNumPlaceholder": "กรอกหมายเลขบัญชีของคุณ",
     "uploadId": "อัพโหลด ID Document",
     "successUpgrade": "คุณได้ปรับปรุงบัญชีของคุณเป็น {accountType: string} ได้สําเร็จ",
-    "successRequest": "คุณขอให้อัพเกรดบัญชีของคุณเป็น {accountType: string} ได้สําเร็จ"
+    "successRequest": "คุณขอให้อัพเกรดบัญชีของคุณเป็น {accountType: string} ได้สําเร็จ",
+    "international": "International",
+    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+  },
+  "CashWalletCutover": {
+    "title": "Cash Wallet Updated",
+    "body": "Your Cash Wallet has been automatically upgraded and now has additional capabilities. No action is needed on your part.",
+    "dismissButton": "Got it"
+  },
+  "TopUpScreen": {
+    "title": "Top Up",
+    "bankTransfer": "Bank Transfer",
+    "bankTransferDesc": "Transfer funds from your bank",
+    "debitCreditCard": "Debit/Credit Card",
+    "debitCreditCardDesc": "Pay with your debit or credit card"
+  },
+  "TopupDetails": {
+    "title": "Card Payment",
+    "bankTransfer": "Bank Transfer",
+    "email": "Email",
+    "emailPlaceholder": "Enter your email address",
+    "wallet": "Wallet",
+    "walletPlaceholder": "Select wallet",
+    "amount": "Amount (USD)",
+    "amountPlaceholder": "Enter amount",
+    "continue": "Continue",
+    "usdWallet": "USD Wallet",
+    "btcWallet": "BTC Wallet",
+    "invalidEmail": "Please enter a valid email address",
+    "invalidAmount": "Please enter a valid amount",
+    "minimumAmount": "Minimum amount is $1.00"
+  },
+  "BridgeKyc": {
+    "title": "International Transfer",
+    "description": "Please provide your details to set up international transfers",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Enter your full name",
+    "email": "Email",
+    "emailPlaceholder": "Enter your email address",
+    "kycType": "Account Type",
+    "kycTypePlaceholder": "Select account type",
+    "individual": "Individual",
+    "business": "Business",
+    "submit": "Submit",
+    "fullNameRequired": "Full name is required",
+    "emailRequired": "Email is required",
+    "invalidEmail": "Please enter a valid email address",
+    "kycTypeRequired": "Please select an account type"
+  },
+  "FygaroWebViewScreen": {
+    "title": "Fygaro Payment",
+    "loading": "Loading payment page...",
+    "error": "Failed to load payment page",
+    "retry": "Retry"
+  },
+  "BankTransfer": {
+    "title": "Bank Transfer",
+    "desc1": "Your order has been created. To complete the order, please transfer ${amount: number} USD to the bank details provided below.",
+    "desc2": "Use {code: string} as the reference description. This unique code will help us associate the payment with your Flash account and process the Bitcoin transfer.",
+    "desc3": "After we have received your payment, you will be credited with ${amount: number} USD in your Cash wallet, with a ${fee: number} USD fee deducted. You can then choose when you convert those USD to Bitcoin on your own using the Convert functionality in the mobile app.",
+    "accountType": "Account Type",
+    "destinationBank": "Destination Bank",
+    "accountNumber": "Account Number",
+    "typeOfClient": "Type of Client",
+    "receiverName": "Receiver's Name",
+    "email": "Email",
+    "amount": "Amount",
+    "uniqueCode": "Unique Code",
+    "fees": "Fees",
+    "desc4": "After payment completion on your end you can send us an email to {email: string} with a screenshot of your payment confirmation.",
+    "desc5": "Your payment will be processed even if we don't receive this email, but having this confirmation can help accelerate the order.",
+    "backHome": "Back to Home",
+    "virtualBankTransfer": "Virtual Bank Transfer",
+    "bankName": "Bank Name",
+    "routingNumber": "Routing Number"
+  },
+  "PaymentSuccessScreen": {
+    "title": "Payment Successful",
+    "successMessage": "Your payment has been processed successfully",
+    "amountSent": "Amount Sent",
+    "depositedTo": "Deposited to",
+    "transactionId": "Transaction ID",
+    "done": "Done",
+    "viewTransaction": "View Transaction"
   }
 }

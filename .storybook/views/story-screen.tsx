@@ -5,11 +5,14 @@ const PersistentStateWrapper: React.FC<React.PropsWithChildren> = ({ children })
   <PersistentStateContext.Provider
     value={{
       persistentState: {
-        schemaVersion: 6,
+        schemaVersion: 7,
         galoyInstance: {
           id: "Main",
         },
         galoyAuthToken: "",
+        hasInitializedBreezSDK: false,
+        unclaimedDeposits: 0,
+        closedQuickStartTypes: [],
       },
       updateState: () => {},
       resetState: () => {},

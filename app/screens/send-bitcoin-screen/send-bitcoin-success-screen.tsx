@@ -44,7 +44,7 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   const feedbackShownData = useFeedbackModalShownQuery()
   const feedbackModalShown = feedbackShownData?.data?.feedbackModalShown
 
-  if (!convertMoneyAmount) return
+  if (!convertMoneyAmount) return null
 
   // useEffect(() => {
   // if (!feedbackModalShown) {
@@ -112,8 +112,9 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   }, [])
 
   if (isNonZeroMoneyAmount(unitOfAccountAmount)) {
-    const isBtcDenominatedUsdWalletAmount =
-      walletCurrency === WalletCurrency.Usd &&
+    const isBtcDenominatedCashWalletAmount =
+      (walletCurrency === WalletCurrency.Usd ||
+        walletCurrency === WalletCurrency.Usdt) &&
       unitOfAccountAmount.currency === WalletCurrency.Btc
 
     const primaryAmount = convertMoneyAmount(unitOfAccountAmount, DisplayCurrency)
@@ -130,7 +131,7 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
 
     formattedPrimaryAmount = formatMoneyAmount({
       moneyAmount: primaryAmount,
-      isApproximate: isBtcDenominatedUsdWalletAmount && !secondaryAmount,
+      isApproximate: isBtcDenominatedCashWalletAmount && !secondaryAmount,
     })
 
     formattedSecondaryAmount =
@@ -138,8 +139,9 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
       formatMoneyAmount({
         moneyAmount: secondaryAmount,
         isApproximate:
-          isBtcDenominatedUsdWalletAmount &&
-          secondaryAmount.currency === WalletCurrency.Usd,
+          isBtcDenominatedCashWalletAmount &&
+          (secondaryAmount.currency === WalletCurrency.Usd ||
+            secondaryAmount.currency === WalletCurrency.Usdt),
       })
   }
 

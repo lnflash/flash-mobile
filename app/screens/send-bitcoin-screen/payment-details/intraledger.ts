@@ -81,7 +81,8 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
     }
   } else if (
     settlementAmount.amount &&
-    sendingWalletDescriptor.currency === WalletCurrency.Usd
+    (sendingWalletDescriptor.currency === WalletCurrency.Usd ||
+      sendingWalletDescriptor.currency === WalletCurrency.Usdt)
   ) {
     const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) => {
       const { data } = await paymentMutations.intraLedgerUsdPaymentSend({

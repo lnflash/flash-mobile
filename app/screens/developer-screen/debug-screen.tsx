@@ -93,6 +93,7 @@ export const DeveloperScreen: React.FC = () => {
           lnAddressHostname: newLnAddressHostname,
           name: "Custom", // TODO: make configurable
           blockExplorer: "https://mempool.space/tx/", // TODO make configurable
+          relayUrl: "wss://relay.test.flashapp.me", // TODO make configurable
         },
         token: newToken || "",
       })

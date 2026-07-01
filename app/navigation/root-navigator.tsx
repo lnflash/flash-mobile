@@ -14,7 +14,6 @@ import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen
 import { CardScreen, FlashcardTopup } from "../screens/card-screen"
 import { ChatList } from "@app/screens/chat"
 import { DeveloperScreen } from "../screens/developer-screen"
-import { EarnMapScreen } from "../screens/earns-map-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
 import { SectionCompleted } from "../screens/earns-screen/section-completed"
 import { GetStartedScreen } from "../screens/get-started-screen"
@@ -61,7 +60,6 @@ import {
   TotpRegistrationInitiateScreen,
   TotpRegistrationValidateScreen,
 } from "@app/screens/totp-screen"
-import { testProps } from "@app/utils/testProps"
 import { makeStyles, useTheme } from "@rneui/themed"
 import { ScanningQRCodeScreen } from "../screens/send-bitcoin-screen"
 import { SettingsScreen } from "../screens/settings-screen"
@@ -108,11 +106,6 @@ import HomeInactive from "@app/assets/icons/home-inactive.svg"
 import MapActive from "@app/assets/icons/map-active.svg"
 import MapInactive from "@app/assets/icons/map-inactive.svg"
 import ScanQR from "@app/assets/icons/scan-qr.svg"
-import {
-  CashoutDetails,
-  CashoutConfirmation,
-  CashoutSuccess,
-} from "@app/screens/cashout-screen"
 import { NostrSettingsScreen } from "@app/screens/settings-screen/nostr-settings/nostr-settings-screen"
 import ContactDetailsScreen from "@app/screens/chat/contactDetailsScreen"
 import { SupportGroupChatScreen } from "@app/screens/chat/GroupChat/SupportGroupChat"
@@ -129,6 +122,20 @@ import {
   Success,
 } from "@app/screens/account-upgrade-flow"
 import { FeaturedProfileView } from "@app/screens/featured-profile-view"
+import {
+  BankTransfer,
+  BridgeKycWebView,
+  BridgeExternalAccountWebView,
+  BridgeAddExternalAccount,
+  TopupDetails,
+  TopupSuccess,
+  TopupCashout,
+  CardPayment,
+  CashoutDetails,
+  CashoutConfirmation,
+  CashoutSuccess,
+  PaymentSuccessScreen,
+} from "@app/screens/topup-cashout-flow"
 
 const useStyles = makeStyles(({ colors }) => ({
   bottomNavigatorStyle: {
@@ -655,6 +662,51 @@ export const RootStack = () => {
           gestureEnabled: false,
         }}
       />
+      <RootNavigator.Group
+        screenOptions={{
+          title: "",
+          headerShadowVisible: false,
+        }}
+      >
+        <RootNavigator.Screen name="TopupCashout" component={TopupCashout} />
+        <RootNavigator.Screen
+          name="BridgeKycWebView"
+          component={BridgeKycWebView}
+          options={{
+            headerShown: false,
+            cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+          }}
+        />
+        <RootNavigator.Screen
+          name="BridgeExternalAccountWebView"
+          component={BridgeExternalAccountWebView}
+          options={{
+            headerShown: false,
+            cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+          }}
+        />
+        <RootNavigator.Screen
+          name="BridgeAddExternalAccount"
+          component={BridgeAddExternalAccount}
+          options={{
+            headerShown: false,
+            cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+          }}
+        />
+        <RootNavigator.Screen name="TopupDetails" component={TopupDetails} />
+        <RootNavigator.Screen name="BankTransfer" component={BankTransfer} />
+        <RootNavigator.Screen name="CardPayment" component={CardPayment} />
+        <RootNavigator.Screen
+          name="TopupSuccess"
+          component={TopupSuccess}
+          options={{ headerShown: false }}
+        />
+        <RootNavigator.Screen
+          name="paymentSuccess"
+          component={PaymentSuccessScreen}
+          options={{ headerShown: false }}
+        />
+      </RootNavigator.Group>
     </RootNavigator.Navigator>
   )
 }
@@ -757,7 +809,8 @@ export const PrimaryNavigator = () => {
           title: LL.HomeScreen.title(),
           tabBarAccessibilityLabel: LL.HomeScreen.title(),
           tabBarTestID: LL.HomeScreen.title(),
-          tabBarIcon: ({ focused, color }) => (focused ? <HomeActive color={color} /> : <HomeInactive color={color} />),
+          tabBarIcon: ({ focused, color }) =>
+            focused ? <HomeActive color={color} /> : <HomeInactive color={color} />,
         }}
       />
       {/* <Tab.Screen
@@ -801,7 +854,8 @@ export const PrimaryNavigator = () => {
           headerShown: false,
           tabBarAccessibilityLabel: LL.MapScreen.title(),
           tabBarTestID: LL.MapScreen.title(),
-          tabBarIcon: ({ focused, color }) => (focused ? <MapActive color={color} /> : <MapInactive color={color} />),
+          tabBarIcon: ({ focused, color }) =>
+            focused ? <MapActive color={color} /> : <MapInactive color={color} />,
         }}
       />
       <Tab.Screen

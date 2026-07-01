@@ -109,7 +109,9 @@ export const useNip29Groups = (
     // Recompute from the store now and whenever it changes.
     const unsubscribe = store.subscribe(recompute)
     recompute()
-    return unsubscribe
+    return () => {
+      unsubscribe()
+    }
   }, [userPublicKey, relayKey])
 
   return groups
@@ -140,7 +142,9 @@ export const useNip29GroupMetadata = (
     )
     const unsubscribe = store.subscribe(recompute)
     recompute()
-    return unsubscribe
+    return () => {
+      unsubscribe()
+    }
   }, [groupId, relayKey])
 
   return meta

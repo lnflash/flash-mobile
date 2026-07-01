@@ -59,7 +59,9 @@ const ConfirmationDestinationAmountNote: React.FC<Props> = ({
         <Text style={styles.fieldTitleText}>{LL.SendBitcoinScreen.amount()}</Text>
         <AmountInput
           unitOfAccountAmount={
-            sendingWalletDescriptor.currency === "USD" && invoiceAmount
+            (sendingWalletDescriptor.currency === "USD" ||
+              sendingWalletDescriptor.currency === "USDT") &&
+            invoiceAmount
               ? invoiceAmount
               : unitOfAccountAmount
           }

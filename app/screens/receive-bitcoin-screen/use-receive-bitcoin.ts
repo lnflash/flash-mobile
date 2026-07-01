@@ -24,7 +24,7 @@ import { useAppConfig, useBreez, usePriceConversion } from "@app/hooks"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { gql } from "@apollo/client"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { createPaymentRequest } from "./payment/payment-request"
 import { MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
 import { useLnUpdateHashPaid } from "@app/graphql/ln-update-context"
@@ -162,7 +162,7 @@ export const useReceiveBitcoin = (initPRParams = {}) => {
 
   const defaultWallet = persistentState.defaultWallet
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const username = data?.me?.username
 
@@ -279,7 +279,7 @@ export const useReceiveBitcoin = (initPRParams = {}) => {
   // For Expires In
   useLayoutEffect(() => {
     if (pr?.info?.data?.invoiceType === "Lightning" && pr.info?.data?.expiresAt) {
-      let intervalId: undefined | number = undefined
+      let intervalId: ReturnType<typeof setInterval> | undefined = undefined
 
       const setExpiresTime = () => {
         const currentTime = new Date()
@@ -445,10 +445,14 @@ export const useReceiveBitcoin = (initPRParams = {}) => {
             id: btcWallet.id,
             currency: WalletCurrency.Btc,
           })
-        } else if (walletCurrency === WalletCurrency.Usd && usdWallet) {
+        } else if (
+          (walletCurrency === WalletCurrency.Usd ||
+            walletCurrency === WalletCurrency.Usdt) &&
+          usdWallet
+        ) {
           return pr.setReceivingWalletDescriptor({
             id: usdWallet.id,
-            currency: WalletCurrency.Usd,
+            currency: usdWallet.walletCurrency,
           })
         }
       }

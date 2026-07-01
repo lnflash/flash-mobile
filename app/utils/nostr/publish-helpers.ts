@@ -42,7 +42,7 @@ export async function publishEventToRelays(
           const value = result.value
 
           // Different relays return different success indicators
-          if (value === true || value === "" || value === "OK") {
+          if (value === "" || value === "OK") {
             hasSuccess = true
             break
           } else if (typeof value === "string") {

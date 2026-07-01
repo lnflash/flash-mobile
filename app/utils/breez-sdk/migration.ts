@@ -76,12 +76,12 @@ const drainLiquidWallet = async (
 
 const feeReimbursement = async (estimatedFee: number): Promise<boolean> => {
   try {
-    const lnurwRespons = await lnurlWithdraw(
+    const lnurwResponse = await lnurlWithdraw(
       MIGRATION_FEE_LNURL_W,
       Math.round(estimatedFee * 2),
     )
 
-    return lnurwRespons.success
+    return lnurwResponse.success
   } catch (err) {
     throw `Fee reimbursement failed. The amount to reimburse is ${Math.round(
       estimatedFee * 2,

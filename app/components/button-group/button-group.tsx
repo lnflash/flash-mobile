@@ -1,13 +1,13 @@
 import React from "react"
-import { StyleProp, TouchableWithoutFeedback, View, ViewStyle } from "react-native"
-import { Text, makeStyles } from "@rneui/themed"
+import { StyleProp, TouchableOpacity, View, ViewStyle } from "react-native"
+import { Text, makeStyles, useTheme } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
 import { testProps } from "@app/utils/testProps"
 
 type ButtonForButtonGroupProps = {
   id: string
   text: string
-  icon:
+  icon?:
     | string
     | {
         selected: React.ReactElement
@@ -21,22 +21,37 @@ const ButtonForButtonGroup: React.FC<
     onPress: () => void
   }
 > = ({ text, icon, selected, onPress }) => {
+  const { colors } = useTheme().theme
   const styles = useStyles(Boolean(selected))
   return (
-    <TouchableWithoutFeedback onPress={onPress}>
-      <View style={styles.button}>
-        <Text {...testProps(text)} style={styles.text}>
-          {text}
-        </Text>
-        {typeof icon === "string" ? (
-          <Icon style={styles.text} name={icon} />
+    <TouchableOpacity
+      onPress={onPress}
+      style={[
+        styles.button,
+        selected && {
+          borderColor: colors.primary,
+          backgroundColor: colors.primary + "10",
+        },
+      ]}
+      activeOpacity={0.7}
+    >
+      {icon &&
+        (typeof icon === "string" ? (
+          <Icon style={styles.iconText} name={icon} />
         ) : selected ? (
           icon.selected
         ) : (
           icon.normal
-        )}
-      </View>
-    </TouchableWithoutFeedback>
+        ))}
+      <Text
+        {...testProps(text)}
+        type="p2"
+        color={selected ? colors.primary : colors.black}
+        style={{ marginLeft: 10 }}
+      >
+        {text}
+      </Text>
+    </TouchableOpacity>
   )
 }
 
@@ -85,20 +100,19 @@ const useStyles = makeStyles(({ colors }, selected: boolean) => ({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: 10,
-    paddingVertical: 15,
-    marginHorizontal: 3,
-    borderRadius: 5,
-    backgroundColor: selected ? colors.grey4 : colors.grey5,
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.grey4,
+    backgroundColor: colors.grey5,
   },
-  text: {
+  iconText: {
     fontSize: 16,
     color: selected ? colors.primary : colors.grey1,
+    marginRight: 8,
   },
   buttonGroup: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    gap: 10,
   },
 }))
