@@ -1812,6 +1812,13 @@ query supportedCountries {
   }
 }
 
+query topupCashout {
+  globals {
+    topupEnabled
+    __typename
+  }
+}
+
 query totpRegistrationScreen {
   me {
     username

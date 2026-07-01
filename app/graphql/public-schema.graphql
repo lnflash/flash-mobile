@@ -623,6 +623,13 @@ type Globals {
 
   """A list of countries and their supported auth channels"""
   supportedCountries: [Country!]!
+
+  """
+  Whether wallet top-up entry points (card webview and
+  bank-transfer-to-support) should be shown to the user. Controlled by the
+  instance-wide topup feature flag.
+  """
+  topupEnabled: Boolean!
 }
 
 type GraphQLApplicationError implements Error {

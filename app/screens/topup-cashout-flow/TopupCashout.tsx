@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react"
 import { Alert, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native"
+import { gql } from "@apollo/client"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -25,11 +26,20 @@ import {
   useBridgeExternalAccountsQuery,
   useBridgeInitiateKycMutation,
   useBridgeKycStatusQuery,
+  useTopupCashoutQuery,
 } from "@app/graphql/generated"
 import { useActivityIndicator } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
 
 type Props = StackScreenProps<RootStackParamList, "TopupCashout">
+
+gql`
+  query topupCashout {
+    globals {
+      topupEnabled
+    }
+  }
+`
 
 const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
@@ -46,6 +56,11 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
   const [addExternalAccount] = useBridgeAddExternalAccountMutation()
 
+  const { data: topupData, refetch: refetchTopup } = useTopupCashoutQuery({
+    fetchPolicy: "cache-and-network",
+  })
+  const topupEnabled = topupData?.globals?.topupEnabled ?? false
+
   const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
     fetchPolicy: "cache-and-network",
   })
@@ -56,17 +71,19 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
+      refetchTopup()
       refetchKycStatus()
       refetchExternalAccounts()
-    }, [refetchKycStatus, refetchExternalAccounts]),
+    }, [refetchTopup, refetchKycStatus, refetchExternalAccounts]),
   )
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
+    await refetchTopup()
     await refetchKycStatus()
     await refetchExternalAccounts()
     setRefreshing(false)
-  }, [refetchKycStatus, refetchExternalAccounts])
+  }, [refetchTopup, refetchKycStatus, refetchExternalAccounts])
 
   const checkAccountLevel = useCallback(
     (type: "card" | "bankTransfer" | "cashout") => {
@@ -147,39 +164,51 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     ],
   )
 
-  const topupOptions: TransferOption[] = useMemo(
-    () => [
-      {
-        icon: "card",
-        title: LL.TopUpScreen.debitCreditCard(),
-        description: LL.TopUpScreen.debitCreditCardDesc(),
-        onPress: () => {
-          setTopupModalVisible(false)
-          checkAccountLevel("card")
+  const topupOptions: TransferOption[] = useMemo(() => {
+    const options: TransferOption[] = []
+
+    if (topupEnabled) {
+      options.push(
+        {
+          icon: "card",
+          title: LL.TopUpScreen.debitCreditCard(),
+          description: LL.TopUpScreen.debitCreditCardDesc(),
+          onPress: () => {
+            setTopupModalVisible(false)
+            checkAccountLevel("card")
+          },
         },
-      },
-      {
-        icon: "business",
-        title: LL.TopUpScreen.bankTransfer(),
-        description: LL.TopUpScreen.bankTransferDesc(),
-        onPress: () => {
-          setTopupModalVisible(false)
-          checkAccountLevel("bankTransfer")
+        {
+          icon: "business",
+          title: LL.TopUpScreen.bankTransfer(),
+          description: LL.TopUpScreen.bankTransferDesc(),
+          onPress: () => {
+            setTopupModalVisible(false)
+            checkAccountLevel("bankTransfer")
+          },
         },
+      )
+    }
+
+    options.push({
+      icon: "globe",
+      title: LL.TransferScreen.internationalBankTransfer(),
+      description: LL.TransferScreen.internationalBankTransferDesc(),
+      pending: kycStatusData?.bridgeKycStatus === "pending",
+      onPress: () => {
+        setTopupModalVisible(false)
+        checkBridgeKyc("topup")
       },
-      {
-        icon: "globe",
-        title: LL.TransferScreen.internationalBankTransfer(),
-        description: LL.TransferScreen.internationalBankTransferDesc(),
-        pending: kycStatusData?.bridgeKycStatus === "pending",
-        onPress: () => {
-          setTopupModalVisible(false)
-          checkBridgeKyc("topup")
-        },
-      },
-    ],
-    [LL, checkAccountLevel, checkBridgeKyc, kycStatusData?.bridgeKycStatus],
-  )
+    })
+
+    return options
+  }, [
+    LL,
+    checkAccountLevel,
+    checkBridgeKyc,
+    kycStatusData?.bridgeKycStatus,
+    topupEnabled,
+  ])
 
   const settleOptions: TransferOption[] = useMemo(
     () => [
