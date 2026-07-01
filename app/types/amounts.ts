@@ -1,9 +1,5 @@
 import { WalletCurrency } from "@app/graphql/generated"
 
-export const CENTS_PER_USD = 100
-export const USDT_MICROS_PER_USDT = 1_000_000
-export const USDT_MICROS_PER_USD_CENT = USDT_MICROS_PER_USDT / CENTS_PER_USD
-
 export const DisplayCurrency = "DisplayCurrency" as const
 export type DisplayCurrency = typeof DisplayCurrency
 
@@ -27,18 +23,11 @@ export type MoneyAmount<T extends WalletOrDisplayCurrency> = {
 export type WalletAmount<T extends WalletCurrency> = MoneyAmount<T>
 
 export type UsdMoneyAmount = WalletAmount<typeof WalletCurrency.Usd>
-export type UsdtMoneyAmount = WalletAmount<typeof WalletCurrency.Usdt>
 export type BtcMoneyAmount = WalletAmount<typeof WalletCurrency.Btc>
 
 export const ZeroUsdMoneyAmount: UsdMoneyAmount = {
   amount: 0,
   currency: WalletCurrency.Usd,
-  currencyCode: "USD",
-}
-
-export const ZeroUsdtMoneyAmount: UsdtMoneyAmount = {
-  amount: 0,
-  currency: WalletCurrency.Usdt,
   currencyCode: "USD",
 }
 
@@ -74,21 +63,6 @@ export const toUsdMoneyAmount = (amount: number | undefined | null): UsdMoneyAmo
   return {
     amount,
     currency: WalletCurrency.Usd,
-    currencyCode: "USD",
-  }
-}
-
-export const toUsdtMoneyAmount = (amount: number | undefined | null): UsdtMoneyAmount => {
-  if (amount === undefined || amount === null) {
-    return {
-      amount: NaN,
-      currency: WalletCurrency.Usdt,
-      currencyCode: "USD",
-    }
-  }
-  return {
-    amount,
-    currency: WalletCurrency.Usdt,
     currencyCode: "USD",
   }
 }

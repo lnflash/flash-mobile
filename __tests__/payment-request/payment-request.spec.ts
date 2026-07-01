@@ -17,7 +17,6 @@ import { createPaymentRequest } from "@app/screens/receive-bitcoin-screen/paymen
 import {
   MoneyAmount,
   toUsdMoneyAmount,
-  USDT_MICROS_PER_USD_CENT,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
 import { receiveOnchainBreez, receivePaymentBreez } from "@app/utils/breez-sdk"
@@ -204,25 +203,20 @@ describe("payment request", () => {
   it("ln with usdt receiving wallet - set amount sends cents, not micros", async () => {
     // Regression for the $5.00 -> $50,583 USDT invoice bug. The price
     // conversion denominates USDT money amounts in smallest units (micros),
-    // which are USDT_MICROS_PER_USD_CENT (10,000x) smaller than a cent. The
-    // lnUsdInvoiceCreate mutation expects USD cents, so the receive flow must
     // convert USDT micros back to cents before calling it. Otherwise a $5.00
     // request (500 cents) is sent as 5,000,000 and the backend mints a
     // $50,000 invoice.
-    const convertToUsdtMicros = <T extends WalletOrDisplayCurrency>(
+    const convertToUsdtCents = <T extends WalletOrDisplayCurrency>(
       amount: MoneyAmount<WalletOrDisplayCurrency>,
       toCurrency: T,
     ): MoneyAmount<T> => {
-      const converted =
-        toCurrency === WalletCurrency.Usdt
-          ? amount.amount * USDT_MICROS_PER_USD_CENT
-          : amount.amount
+      const converted = amount.amount
       return { amount: converted, currency: toCurrency, currencyCode: toCurrency }
     }
 
     const prcd = createPaymentRequestCreationData({
       ...defaultParams,
-      convertMoneyAmount: convertToUsdtMicros,
+      convertMoneyAmount: convertToUsdtCents,
       receivingWalletDescriptor: usdtWalletDescriptor,
       // $5.00 entered as 500 USD cents in the unit of account
       unitOfAccountAmount: toUsdMoneyAmount(500),
@@ -230,7 +224,7 @@ describe("payment request", () => {
 
     // sanity: the settlement amount is in USDT micros (500 cents * 10,000)
     expect(prcd.settlementAmount?.currency).toBe(WalletCurrency.Usdt)
-    expect(prcd.settlementAmount?.amount).toBe(500 * USDT_MICROS_PER_USD_CENT)
+    expect(prcd.settlementAmount?.amount).toBe(500)
 
     const pr = createPaymentRequest({ creationData: prcd, mutations })
     const prNew = await pr.generateRequest()

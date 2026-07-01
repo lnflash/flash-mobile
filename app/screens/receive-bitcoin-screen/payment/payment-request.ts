@@ -8,7 +8,7 @@ import {
   PaymentRequestStateType,
   PaymentRequestInformation,
 } from "./index.types"
-import { BtcMoneyAmount, USDT_MICROS_PER_USD_CENT } from "@app/types/amounts"
+import { BtcMoneyAmount } from "@app/types/amounts"
 import { getPaymentRequestFullUri, prToDateString } from "./helpers"
 import { bech32 } from "bech32"
 
@@ -125,12 +125,9 @@ export const createPaymentRequest = (
           // lnUsdInvoiceCreate expects the amount in USD cents. USD settlement
           // amounts are already in cents, but USDT settlement amounts are
           // denominated in USDT smallest units (micros), which are
-          // USDT_MICROS_PER_USD_CENT (10,000x) smaller than a cent. Convert USDT
-          // micros back to cents at the mutation boundary so a $5.00 invoice is
-          // created for 500 cents, not 5,000,000.
           const amountInCents =
             pr.settlementAmount.currency === WalletCurrency.Usdt
-              ? Math.round(pr.settlementAmount.amount / USDT_MICROS_PER_USD_CENT)
+              ? pr.settlementAmount.amount
               : pr.settlementAmount.amount
           const { data, errors } = await mutations.lnUsdInvoiceCreate({
             variables: {
