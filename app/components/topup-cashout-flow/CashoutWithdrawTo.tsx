@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react"
+import React, { useCallback, useState } from "react"
 import { TouchableOpacity, View } from "react-native"
+import { useFocusEffect } from "@react-navigation/native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -20,18 +21,22 @@ const CashoutWithdrawTo: React.FC<Props> = ({ preferredCurrency }) => {
 
   const { data } = useBankAccountsQuery({ fetchPolicy: "cache-only" })
 
-  useEffect(() => {
-    let active = true
-    ;(async () => {
-      const id = await loadDefaultWithdrawAccountId(preferredCurrency)
-      if (active) {
-        setStoredDefaultId(id)
+  // Reload on focus (not just mount) so a default changed in Settings is
+  // picked up when the user returns to an already-mounted cash-out screen.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true
+      ;(async () => {
+        const id = await loadDefaultWithdrawAccountId(preferredCurrency)
+        if (active) {
+          setStoredDefaultId(id)
+        }
+      })()
+      return () => {
+        active = false
       }
-    })()
-    return () => {
-      active = false
-    }
-  }, [preferredCurrency])
+    }, [preferredCurrency]),
+  )
 
   const bankAccounts = data?.me?.bankAccounts ?? []
   const preferredCurrencyCode = preferredCurrency?.toUpperCase()

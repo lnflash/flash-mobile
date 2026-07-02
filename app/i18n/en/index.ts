@@ -140,6 +140,7 @@ const en: BaseTranslation = {
     removeComingSoon: "Remove (coming soon)",
     removingAccountsComingSoon: "Removing accounts is coming soon",
     accountEnding: "Account ending {last4: string}",
+    defaultUpdated: "Default account updated",
   },
   BridgeAddExternalAccount: {
     title: "Add Bank Account",
@@ -175,6 +176,8 @@ const en: BaseTranslation = {
     continue: "Continue",
     failedToAdd: "Failed to add bank account. Please try again.",
     genericError: "Something went wrong. Please try again.",
+    alreadyLinkedTitle: "Bank Account Already Linked",
+    alreadyLinkedMessage: "This bank account is already linked to your profile.",
   },
   CashWalletCutover: {
     title: "Cash Wallet Updated",

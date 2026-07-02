@@ -32,6 +32,8 @@ export type BankAccountVM = {
   canSetDefault: boolean
   /** Whether the account can be removed in-app (needs a backend delete mutation). */
   canRemove: boolean
+  /** Server-side default flag, when the rail provides one (used as a fallback). */
+  serverDefault?: boolean
 
   // Receive-role extras (virtual account) — undefined for withdrawal accounts.
   accountNumber?: string | null

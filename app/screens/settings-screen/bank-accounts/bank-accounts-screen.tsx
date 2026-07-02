@@ -372,7 +372,14 @@ export const BankAccountsScreen: React.FC = () => {
                 <WithdrawRow
                   key={account.key}
                   account={account}
-                  onSetDefault={() => setDefault(account)}
+                  onSetDefault={() => {
+                    if (account.isDefault) return
+                    setDefault(account)
+                    toastShow({
+                      type: "success",
+                      message: LL.BankAccountsScreen.defaultUpdated(),
+                    })
+                  }}
                 />
               ))}
             </View>

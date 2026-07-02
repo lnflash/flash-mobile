@@ -486,6 +486,10 @@ type RootTranslation = {
 		 * @param {string} last4
 		 */
 		accountEnding: RequiredParams<'last4'>
+		/**
+		 * D​e​f​a​u​l​t​ ​a​c​c​o​u​n​t​ ​u​p​d​a​t​e​d
+		 */
+		defaultUpdated: string
 	}
 	BridgeAddExternalAccount: {
 		/**
@@ -618,6 +622,14 @@ type RootTranslation = {
 		 * S​o​m​e​t​h​i​n​g​ ​w​e​n​t​ ​w​r​o​n​g​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
 		 */
 		genericError: string
+		/**
+		 * B​a​n​k​ ​A​c​c​o​u​n​t​ ​A​l​r​e​a​d​y​ ​L​i​n​k​e​d
+		 */
+		alreadyLinkedTitle: string
+		/**
+		 * T​h​i​s​ ​b​a​n​k​ ​a​c​c​o​u​n​t​ ​i​s​ ​a​l​r​e​a​d​y​ ​l​i​n​k​e​d​ ​t​o​ ​y​o​u​r​ ​p​r​o​f​i​l​e​.
+		 */
+		alreadyLinkedMessage: string
 	}
 	CashWalletCutover: {
 		/**
@@ -6366,6 +6378,10 @@ export type TranslationFunctions = {
 		 * Account ending {last4}
 		 */
 		accountEnding: (arg: { last4: string }) => LocalizedString
+		/**
+		 * Default account updated
+		 */
+		defaultUpdated: () => LocalizedString
 	}
 	BridgeAddExternalAccount: {
 		/**
@@ -6496,6 +6512,14 @@ export type TranslationFunctions = {
 		 * Something went wrong. Please try again.
 		 */
 		genericError: () => LocalizedString
+		/**
+		 * Bank Account Already Linked
+		 */
+		alreadyLinkedTitle: () => LocalizedString
+		/**
+		 * This bank account is already linked to your profile.
+		 */
+		alreadyLinkedMessage: () => LocalizedString
 	}
 	CashWalletCutover: {
 		/**

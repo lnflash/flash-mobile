@@ -87,8 +87,8 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
         // If the account is already linked, proceed instead of erroring
         if (errors[0].code === "BRIDGE_API_ERROR") {
           Alert.alert(
-            "Bank Account Already Linked",
-            "This bank account is already linked to your profile.",
+            LL.BridgeAddExternalAccount.alreadyLinkedTitle(),
+            LL.BridgeAddExternalAccount.alreadyLinkedMessage(),
             [
               {
                 text: LL.BridgeAddExternalAccount.continue(),

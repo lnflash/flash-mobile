@@ -194,7 +194,7 @@ export const useBankAccounts = (): UseBankAccounts => {
         canSetDefault: true, // interim client-side; server has no mutation yet
         canRemove: false,
         serverDefault: bank.isDefault,
-      } as BankAccountVM & { serverDefault?: boolean })
+      })
     })
 
     // Group by currency
@@ -211,9 +211,7 @@ export const useBankAccounts = (): UseBankAccounts => {
       const storedId = defaults[currencyKey(currency)]
       let defaultIdx = accounts.findIndex((a) => storedId && a.id === storedId)
       if (defaultIdx < 0) {
-        defaultIdx = accounts.findIndex(
-          (a) => (a as BankAccountVM & { serverDefault?: boolean }).serverDefault,
-        )
+        defaultIdx = accounts.findIndex((a) => a.serverDefault)
       }
       if (defaultIdx < 0) defaultIdx = 0
 
