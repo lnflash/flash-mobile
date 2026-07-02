@@ -40,6 +40,7 @@ export type RootStackParamList = {
   settings: undefined
   addressScreen: undefined
   BridgeAccountRouting: undefined
+  BankAccounts: undefined
   defaultWallet: undefined
   theme: undefined
   sendBitcoinDestination: {

@@ -3,12 +3,11 @@ import { gql } from "@apollo/client"
 import { makeStyles } from "@rneui/themed"
 import { AccountLevel, useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useBridgeKycStatusQuery } from "@app/graphql/generated"
 
 import { Screen } from "../../components/screen"
 import { VersionComponent } from "../../components/version"
 import { AccountLNAddress } from "./settings/account-ln-address"
-import { BridgeAccountRoutingSetting } from "./settings/bridge-account-routing"
+import { BankAccountsSetting } from "./settings/bank-accounts"
 import { AccountLevelSetting } from "./settings/account-level"
 import { AccountStaticQR } from "./settings/account-static-qr"
 import { TxLimits } from "./settings/account-tx-limits"
@@ -62,7 +61,7 @@ gql`
 const items = {
   account: [AccountLevelSetting, TxLimits],
   loginMethods: [EmailSetting, PhoneSetting],
-  waysToGetPaid: [AccountLNAddress, AccountPOS, AccountStaticQR],
+  waysToGetPaid: [AccountLNAddress, BankAccountsSetting, AccountPOS, AccountStaticQR],
   reports: [GenerateReportsSetting],
   wallet: [BackupWallet, ImportWallet],
   preferences: [
@@ -91,16 +90,6 @@ export const SettingsScreen: React.FC = () => {
   const { LL } = useI18nContext()
   const { isAtLeastLevelOne } = useLevel()
   const { currentLevel } = useLevel()
-  const { data: bridgeKycStatusData } = useBridgeKycStatusQuery({
-    fetchPolicy: "cache-and-network",
-  })
-  const waysToGetPaidItems = React.useMemo(
-    () =>
-      bridgeKycStatusData?.bridgeKycStatus === "approved"
-        ? [AccountLNAddress, BridgeAccountRoutingSetting, AccountPOS, AccountStaticQR]
-        : items.waysToGetPaid,
-    [bridgeKycStatusData?.bridgeKycStatus],
-  )
 
   return (
     <Screen preset="scroll" keyboardShouldPersistTaps="handled" style={styles.outer}>
@@ -114,7 +103,7 @@ export const SettingsScreen: React.FC = () => {
       )}
       <SettingsGroup
         name={LL.SettingsScreen.addressScreen()}
-        items={waysToGetPaidItems}
+        items={items.waysToGetPaid}
       />
       {(currentLevel === AccountLevel.Two || currentLevel === AccountLevel.Three) && (
         <SettingsGroup name="Reports" items={items.reports} />
