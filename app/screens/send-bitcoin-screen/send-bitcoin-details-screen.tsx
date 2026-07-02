@@ -382,7 +382,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
       >
         <ChooseWallet
           usdWallet={usdWallet}
-          wallets={[getCashWallet(data?.me?.defaultAccount?.wallets)] as any[]}
+          wallets={usdWallet ? [usdWallet] : []}
           paymentDetail={paymentDetail}
           setPaymentDetail={setPaymentDetail}
         />

@@ -120,24 +120,26 @@ const CashoutDetails = ({ navigation, route }: Props) => {
     }
 
     toggleActivityIndicator(true)
-    const res = await requestCashout({
-      variables: {
-        input: {
-          bankAccountId: defaultBankAccount.id,
-          walletId: usdWallet.id,
-          amount: settlementSendAmount.amount,
+    try {
+      const res = await requestCashout({
+        variables: {
+          input: {
+            bankAccountId: defaultBankAccount.id,
+            walletId: usdWallet.id,
+            amount: settlementSendAmount.amount,
+          },
         },
-      },
-    })
-    if (res.data?.requestCashout.offer) {
-      navigation.navigate("CashoutConfirmation", {
-        offer: res.data.requestCashout.offer,
       })
-    } else {
-      setErrorMsg(res.data?.requestCashout.errors[0].message)
+      if (res.data?.requestCashout.offer) {
+        navigation.navigate("CashoutConfirmation", {
+          offer: res.data.requestCashout.offer,
+        })
+      } else {
+        setErrorMsg(res.data?.requestCashout.errors[0]?.message ?? LL.common.error())
+      }
+    } finally {
+      toggleActivityIndicator(false)
     }
-
-    toggleActivityIndicator(false)
   }
 
   const onBridgeWithdraw = async () => {

@@ -1,6 +1,6 @@
 import React from "react"
-import { View } from "react-native"
-import { makeStyles, Text } from "@rneui/themed"
+import { View, Linking, TouchableOpacity } from "react-native"
+import { Icon, makeStyles, Text } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
@@ -11,6 +11,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 // components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
+
+// config
+import { WHATSAPP_SUPPORT_URL } from "@app/config"
 
 // gql
 import { useBridgeVirtualAccountQuery } from "@app/graphql/generated"
@@ -70,79 +73,29 @@ const BankTransfer: React.FC<Props> = ({ navigation, route }) => {
   return (
     <Screen preset="scroll" style={styles.container}>
       <Text type="h02" bold style={styles.title}>
-        {LL.BankTransfer.title()}
+        Bank Transfer
       </Text>
-      <Text type="p1" style={styles.desc}>
-        {LL.BankTransfer.desc1({ amount: amount + fee })}
-      </Text>
-      <Text type="p1" style={styles.desc}>
-        {LL.BankTransfer.desc2({ code: "UUM7MJRD" })}
-      </Text>
-      <Text type="p1" style={styles.desc}>
-        {LL.BankTransfer.desc3({ amount, fee })}
-      </Text>
-      <View style={styles.bankDetails}>
-        <View style={styles.fieldContainer}>
-          <Text type="bl">{LL.BankTransfer.accountType()}</Text>
-          <Text type="p1" bold>
-            Checking
-          </Text>
-        </View>
-        <View style={styles.fieldContainer}>
-          <Text type="bl">{LL.BankTransfer.destinationBank()}</Text>
-          <Text type="p1" bold>
-            Banco Hipotecario
-          </Text>
-        </View>
-        <View style={styles.fieldContainer}>
-          <Text type="bl">{LL.BankTransfer.accountNumber()}</Text>
-          <Text type="p1" bold>
-            00210312362
-          </Text>
-        </View>
-        <View style={styles.fieldContainer}>
-          <Text type="bl">{LL.BankTransfer.typeOfClient()}</Text>
-          <Text type="p1" bold>
-            Corporate
-          </Text>
-        </View>
-        <View style={styles.fieldContainer}>
-          <Text type="bl">{LL.BankTransfer.receiverName()}</Text>
-          <Text type="p1" bold>
-            BBW SA de CV
-          </Text>
-        </View>
-        <View style={styles.fieldContainer}>
-          <Text type="bl">{LL.BankTransfer.email()}</Text>
-          <Text type="p1" bold>
-            fiat@blink.sv
-          </Text>
-        </View>
-        <View style={styles.fieldContainer}>
-          <Text type="bl">{LL.BankTransfer.amount()}</Text>
-          <Text type="p1" bold>
-            {`${amount + fee} USD`}
-          </Text>
-        </View>
-        <View style={styles.fieldContainer}>
-          <Text type="bl">{LL.BankTransfer.uniqueCode()}</Text>
-          <Text type="p1" bold>
-            UUM7MJRD
-          </Text>
-        </View>
-        <View style={styles.fieldContainer}>
-          <Text type="bl">{LL.BankTransfer.fees()}</Text>
-          <Text type="p1" bold>
-            {`${fee} USD`}
-          </Text>
-        </View>
+      <View style={styles.messageContainer}>
+        <Text type="p1" style={styles.messageText}>
+          Contact Support for Banking Information to Top up
+        </Text>
+        <TouchableOpacity
+          style={styles.whatsappButton}
+          onPress={() => Linking.openURL(WHATSAPP_SUPPORT_URL)}
+          activeOpacity={0.86}
+        >
+          <View style={styles.whatsappIcon}>
+            <Icon type="ionicon" name="logo-whatsapp" size={22} color="#0B5F37" />
+          </View>
+          <View style={styles.whatsappCopy}>
+            <Text style={styles.whatsappButtonText}>Chat on WhatsApp</Text>
+            <Text style={styles.whatsappButtonSubtext}>
+              Flash support will send the details
+            </Text>
+          </View>
+          <Icon type="ionicon" name="chevron-forward" size={18} color="#fff" />
+        </TouchableOpacity>
       </View>
-      <Text type="p1" style={styles.desc}>
-        {LL.BankTransfer.desc4({ email: "fiat@blink.sv" })}
-      </Text>
-      <Text type="p1" style={styles.desc}>
-        {LL.BankTransfer.desc5()}
-      </Text>
       <PrimaryBtn
         label={LL.BankTransfer.backHome()}
         onPress={() => navigation.reset({ index: 0, routes: [{ name: "Primary" }] })}
@@ -166,8 +119,47 @@ const useStyles = makeStyles(({ colors }) => ({
   desc: {
     marginBottom: 15,
   },
-  bankDetails: {
-    marginVertical: 20,
+  messageContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  messageText: {
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  whatsappButton: {
+    alignItems: "center",
+    alignSelf: "stretch",
+    backgroundColor: "#1FB45A",
+    borderRadius: 8,
+    flexDirection: "row",
+    minHeight: 58,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  whatsappIcon: {
+    alignItems: "center",
+    backgroundColor: "#E7F8EE",
+    borderRadius: 18,
+    height: 36,
+    justifyContent: "center",
+    marginRight: 12,
+    width: 36,
+  },
+  whatsappCopy: {
+    flex: 1,
+  },
+  whatsappButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  whatsappButtonSubtext: {
+    color: "#E8FFF0",
+    fontSize: 12,
+    marginTop: 2,
   },
   fieldContainer: {
     flexDirection: "row",
@@ -177,19 +169,6 @@ const useStyles = makeStyles(({ colors }) => ({
     padding: 20,
     borderRadius: 10,
     marginBottom: 15,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.grey3,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    backgroundColor: colors.white,
-    color: colors.black,
-    marginTop: 8,
-  },
-  buttonGroup: {
-    marginTop: 8,
   },
   backHomeButton: {
     marginTop: 20,

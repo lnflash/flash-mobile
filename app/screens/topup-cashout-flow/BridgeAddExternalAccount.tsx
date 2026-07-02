@@ -39,6 +39,17 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
   const [postalCode, setPostalCode] = useState("")
   const [country, setCountry] = useState("USA")
 
+  // Post-link landing spot. From the Bank accounts hub, navigate back to the
+  // existing hub instance (drops this form from the stack); from the cash-out
+  // flow, replace so back doesn't return to the form (see #652).
+  const navigateAfterLink = () => {
+    if (route.params?.returnTo === "BankAccounts") {
+      navigation.navigate("BankAccounts")
+      return
+    }
+    navigation.replace("CashoutDetails", { type: "bridge" })
+  }
+
   const handleSubmit = async () => {
     if (!bankName || !accountOwnerName || !routingNumber || !accountNumber) {
       Alert.alert(LL.common.error(), LL.BridgeAddExternalAccount.requiredFieldsError())
@@ -73,6 +84,20 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
 
       const errors = res.data?.bridgeCreateExternalAccount?.errors
       if (errors && errors.length > 0) {
+        // If the account is already linked, proceed instead of erroring
+        if (errors[0].code === "BRIDGE_API_ERROR") {
+          Alert.alert(
+            "Bank Account Already Linked",
+            "This bank account is already linked to your profile.",
+            [
+              {
+                text: LL.BridgeAddExternalAccount.continue(),
+                onPress: navigateAfterLink,
+              },
+            ],
+          )
+          return
+        }
         Alert.alert(LL.common.error(), errors[0].message)
         return
       }
@@ -88,13 +113,7 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
           [
             {
               text: LL.BridgeAddExternalAccount.continue(),
-              onPress: () => {
-                if (route.params?.returnTo === "BankAccounts") {
-                  navigation.navigate("BankAccounts")
-                  return
-                }
-                navigation.navigate("CashoutDetails", { type: "bridge" })
-              },
+              onPress: navigateAfterLink,
             },
           ],
         )
