@@ -335,6 +335,301 @@ type RootTranslation = {
 		 * C​u​r​r​e​n​c​y
 		 */
 		currency: string
+		/**
+		 * N​o​ ​b​a​n​k​ ​a​c​c​o​u​n​t​ ​f​o​u​n​d​.​ ​P​l​e​a​s​e​ ​a​d​d​ ​a​ ​b​a​n​k​ ​a​c​c​o​u​n​t​ ​f​i​r​s​t​.
+		 */
+		noBankAccountFound: string
+		/**
+		 * N​o​ ​e​x​t​e​r​n​a​l​ ​a​c​c​o​u​n​t​ ​f​o​u​n​d​.​ ​P​l​e​a​s​e​ ​a​d​d​ ​a​n​ ​e​x​t​e​r​n​a​l​ ​a​c​c​o​u​n​t​ ​f​i​r​s​t​.
+		 */
+		noExternalAccountFound: string
+	}
+	BankAccountsScreen: {
+		/**
+		 * B​a​n​k​ ​a​c​c​o​u​n​t​s
+		 */
+		title: string
+		/**
+		 * R​e​c​e​i​v​e​ ​&​ ​w​i​t​h​d​r​a​w​ ​b​y​ ​b​a​n​k​ ​t​r​a​n​s​f​e​r
+		 */
+		settingsSubtitle: string
+		/**
+		 * R​E​C​E​I​V​E​ ​M​O​N​E​Y
+		 */
+		receiveMoney: string
+		/**
+		 * i​n​t​o​ ​F​l​a​s​h
+		 */
+		intoFlash: string
+		/**
+		 * W​I​T​H​D​R​A​W​ ​T​O
+		 */
+		withdrawTo: string
+		/**
+		 * o​u​t​ ​o​f​ ​F​l​a​s​h
+		 */
+		outOfFlash: string
+		/**
+		 * Y​o​u​r​ ​d​e​f​a​u​l​t​ ​a​c​c​o​u​n​t​ ​i​s​ ​a​u​t​o​-​s​e​l​e​c​t​e​d​ ​a​t​ ​c​a​s​h​-​o​u​t​.​ ​Y​o​u​ ​c​a​n​ ​c​h​a​n​g​e​ ​i​t​ ​a​n​y​ ​t​i​m​e​.
+		 */
+		defaultHint: string
+		/**
+		 * Y​o​u​r​ ​r​e​c​e​i​v​i​n​g​ ​a​c​c​o​u​n​t​ ​i​s​ ​n​o​t​ ​r​e​a​d​y​ ​y​e​t​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​ ​l​a​t​e​r​.
+		 */
+		receivingNotReady: string
+		/**
+		 * V​e​r​i​f​y​ ​i​d​e​n​t​i​t​y​ ​t​o​ ​u​n​l​o​c​k
+		 */
+		verifyIdentityTitle: string
+		/**
+		 * C​o​m​p​l​e​t​e​ ​v​e​r​i​f​i​c​a​t​i​o​n​ ​t​o​ ​g​e​t​ ​y​o​u​r​ ​U​S​D​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​r​o​u​t​i​n​g​ ​n​u​m​b​e​r​ ​a​n​d​ ​t​o​ ​a​d​d​ ​w​i​t​h​d​r​a​w​a​l​ ​b​a​n​k​s​.
+		 */
+		verifyIdentityDescription: string
+		/**
+		 * U​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t
+		 */
+		upgradeYourAccount: string
+		/**
+		 * N​o​ ​w​i​t​h​d​r​a​w​a​l​ ​a​c​c​o​u​n​t​s​ ​y​e​t​.​ ​A​d​d​ ​o​n​e​ ​t​o​ ​c​a​s​h​ ​o​u​t​.
+		 */
+		noWithdrawalAccounts: string
+		/**
+		 * A​d​d​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 */
+		addBankAccount: string
+		/**
+		 * C​o​n​t​a​c​t​ ​S​u​p​p​o​r​t
+		 */
+		contactSupport: string
+		/**
+		 * Y​o​u​r​ ​F​l​a​s​h​ ​U​S​D​ ​a​c​c​o​u​n​t
+		 */
+		flashUsdAccount: string
+		/**
+		 * Y​o​u​r​ ​b​a​n​k​ ​t​r​a​n​s​f​e​r​ ​d​e​t​a​i​l​s​ ​a​r​e​ ​b​e​i​n​g​ ​s​e​t​ ​u​p​.​ ​C​h​e​c​k​ ​b​a​c​k​ ​s​o​o​n​.
+		 */
+		receivingSetupPending: string
+		/**
+		 * B​a​n​k​ ​N​a​m​e
+		 */
+		bankName: string
+		/**
+		 * A​c​c​o​u​n​t​ ​N​u​m​b​e​r
+		 */
+		accountNumber: string
+		/**
+		 * R​o​u​t​i​n​g​ ​N​u​m​b​e​r
+		 */
+		routingNumber: string
+		/**
+		 * B​a​n​k​ ​n​a​m​e​ ​c​o​p​i​e​d
+		 */
+		bankNameCopied: string
+		/**
+		 * A​c​c​o​u​n​t​ ​n​u​m​b​e​r​ ​c​o​p​i​e​d
+		 */
+		accountNumberCopied: string
+		/**
+		 * R​o​u​t​i​n​g​ ​n​u​m​b​e​r​ ​c​o​p​i​e​d
+		 */
+		routingNumberCopied: string
+		/**
+		 * A​c​c​o​u​n​t​ ​d​e​t​a​i​l​s​ ​c​o​p​i​e​d
+		 */
+		accountDetailsCopied: string
+		/**
+		 * S​h​a​r​e​ ​t​h​e​s​e​ ​t​o​ ​r​e​c​e​i​v​e​ ​U​S​D​ ​b​a​n​k​ ​t​r​a​n​s​f​e​r​s​ ​i​n​t​o​ ​F​l​a​s​h​ ​C​a​s​h​.
+		 */
+		receiveCardHint: string
+		/**
+		 * C​o​p​y​ ​a​l​l​ ​d​e​t​a​i​l​s
+		 */
+		copyAllDetails: string
+		/**
+		 * V​e​r​i​f​i​e​d
+		 */
+		verified: string
+		/**
+		 * P​e​n​d​i​n​g
+		 */
+		pending: string
+		/**
+		 * A​c​t​i​o​n​ ​n​e​e​d​e​d
+		 */
+		actionNeeded: string
+		/**
+		 * —
+		 */
+		unknownStatus: string
+		/**
+		 * D​e​f​a​u​l​t
+		 */
+		defaultBadge: string
+		/**
+		 * S​e​t​ ​a​s​ ​d​e​f​a​u​l​t
+		 */
+		setAsDefault: string
+		/**
+		 * R​e​m​o​v​e
+		 */
+		remove: string
+		/**
+		 * R​e​m​o​v​e​ ​(​c​o​m​i​n​g​ ​s​o​o​n​)
+		 */
+		removeComingSoon: string
+		/**
+		 * R​e​m​o​v​i​n​g​ ​a​c​c​o​u​n​t​s​ ​i​s​ ​c​o​m​i​n​g​ ​s​o​o​n
+		 */
+		removingAccountsComingSoon: string
+		/**
+		 * A​c​c​o​u​n​t​ ​e​n​d​i​n​g​ ​{​l​a​s​t​4​}
+		 * @param {string} last4
+		 */
+		accountEnding: RequiredParams<'last4'>
+		/**
+		 * D​e​f​a​u​l​t​ ​a​c​c​o​u​n​t​ ​u​p​d​a​t​e​d
+		 */
+		defaultUpdated: string
+	}
+	BridgeAddExternalAccount: {
+		/**
+		 * A​d​d​ ​B​a​n​k​ ​A​c​c​o​u​n​t
+		 */
+		title: string
+		/**
+		 * E​n​t​e​r​ ​y​o​u​r​ ​U​S​ ​b​a​n​k​ ​a​c​c​o​u​n​t​ ​d​e​t​a​i​l​s​ ​b​e​l​o​w​ ​t​o​ ​l​i​n​k​ ​i​t​ ​f​o​r​ ​w​i​t​h​d​r​a​w​a​l​s​.
+		 */
+		subtitle: string
+		/**
+		 * B​a​n​k​ ​N​a​m​e
+		 */
+		bankName: string
+		/**
+		 * e​.​g​.​ ​B​a​n​k​ ​o​f​ ​A​m​e​r​i​c​a
+		 */
+		bankNamePlaceholder: string
+		/**
+		 * A​c​c​o​u​n​t​ ​O​w​n​e​r​ ​N​a​m​e
+		 */
+		accountOwnerName: string
+		/**
+		 * F​u​l​l​ ​n​a​m​e​ ​o​n​ ​a​c​c​o​u​n​t
+		 */
+		accountOwnerNamePlaceholder: string
+		/**
+		 * R​o​u​t​i​n​g​ ​N​u​m​b​e​r
+		 */
+		routingNumber: string
+		/**
+		 * 9​-​d​i​g​i​t​ ​r​o​u​t​i​n​g
+		 */
+		routingNumberPlaceholder: string
+		/**
+		 * A​c​c​o​u​n​t​ ​N​u​m​b​e​r
+		 */
+		accountNumber: string
+		/**
+		 * A​c​c​o​u​n​t​ ​n​u​m​b​e​r
+		 */
+		accountNumberPlaceholder: string
+		/**
+		 * A​c​c​o​u​n​t​ ​T​y​p​e
+		 */
+		accountType: string
+		/**
+		 * C​h​e​c​k​i​n​g
+		 */
+		checking: string
+		/**
+		 * S​a​v​i​n​g​s
+		 */
+		savings: string
+		/**
+		 * Y​o​u​r​ ​A​d​d​r​e​s​s
+		 */
+		yourAddress: string
+		/**
+		 * S​t​r​e​e​t​ ​A​d​d​r​e​s​s
+		 */
+		streetAddress: string
+		/**
+		 * 1​2​3​ ​M​a​i​n​ ​S​t
+		 */
+		streetAddressPlaceholder: string
+		/**
+		 * C​i​t​y
+		 */
+		city: string
+		/**
+		 * C​i​t​y
+		 */
+		cityPlaceholder: string
+		/**
+		 * S​t​a​t​e
+		 */
+		state: string
+		/**
+		 * F​L
+		 */
+		statePlaceholder: string
+		/**
+		 * Z​I​P​ ​C​o​d​e
+		 */
+		zipCode: string
+		/**
+		 * 3​3​1​0​1
+		 */
+		zipCodePlaceholder: string
+		/**
+		 * C​o​u​n​t​r​y
+		 */
+		country: string
+		/**
+		 * U​S​A
+		 */
+		countryPlaceholder: string
+		/**
+		 * L​i​n​k​ ​B​a​n​k​ ​A​c​c​o​u​n​t
+		 */
+		linkBankAccount: string
+		/**
+		 * P​l​e​a​s​e​ ​f​i​l​l​ ​i​n​ ​a​l​l​ ​r​e​q​u​i​r​e​d​ ​f​i​e​l​d​s
+		 */
+		requiredFieldsError: string
+		/**
+		 * P​l​e​a​s​e​ ​f​i​l​l​ ​i​n​ ​y​o​u​r​ ​a​d​d​r​e​s​s​ ​d​e​t​a​i​l​s
+		 */
+		addressFieldsError: string
+		/**
+		 * B​a​n​k​ ​A​c​c​o​u​n​t​ ​A​d​d​e​d
+		 */
+		bankAccountAddedTitle: string
+		/**
+		 * Y​o​u​r​ ​{​b​a​n​k​N​a​m​e​}​ ​a​c​c​o​u​n​t​ ​(​e​n​d​i​n​g​ ​i​n​ ​{​l​a​s​t​4​}​)​ ​h​a​s​ ​b​e​e​n​ ​l​i​n​k​e​d​ ​s​u​c​c​e​s​s​f​u​l​l​y​.
+		 * @param {string} bankName
+		 * @param {string} last4
+		 */
+		bankAccountAddedMessage: RequiredParams<'bankName' | 'last4'>
+		/**
+		 * C​o​n​t​i​n​u​e
+		 */
+		'continue': string
+		/**
+		 * F​a​i​l​e​d​ ​t​o​ ​a​d​d​ ​b​a​n​k​ ​a​c​c​o​u​n​t​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		failedToAdd: string
+		/**
+		 * S​o​m​e​t​h​i​n​g​ ​w​e​n​t​ ​w​r​o​n​g​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		genericError: string
+		/**
+		 * B​a​n​k​ ​A​c​c​o​u​n​t​ ​A​l​r​e​a​d​y​ ​L​i​n​k​e​d
+		 */
+		alreadyLinkedTitle: string
+		/**
+		 * T​h​i​s​ ​b​a​n​k​ ​a​c​c​o​u​n​t​ ​i​s​ ​a​l​r​e​a​d​y​ ​l​i​n​k​e​d​ ​t​o​ ​y​o​u​r​ ​p​r​o​f​i​l​e​.
+		 */
+		alreadyLinkedMessage: string
 	}
 	CashWalletCutover: {
 		/**
@@ -5933,6 +6228,298 @@ export type TranslationFunctions = {
 		 * Currency
 		 */
 		currency: () => LocalizedString
+		/**
+		 * No bank account found. Please add a bank account first.
+		 */
+		noBankAccountFound: () => LocalizedString
+		/**
+		 * No external account found. Please add an external account first.
+		 */
+		noExternalAccountFound: () => LocalizedString
+	}
+	BankAccountsScreen: {
+		/**
+		 * Bank accounts
+		 */
+		title: () => LocalizedString
+		/**
+		 * Receive & withdraw by bank transfer
+		 */
+		settingsSubtitle: () => LocalizedString
+		/**
+		 * RECEIVE MONEY
+		 */
+		receiveMoney: () => LocalizedString
+		/**
+		 * into Flash
+		 */
+		intoFlash: () => LocalizedString
+		/**
+		 * WITHDRAW TO
+		 */
+		withdrawTo: () => LocalizedString
+		/**
+		 * out of Flash
+		 */
+		outOfFlash: () => LocalizedString
+		/**
+		 * Your default account is auto-selected at cash-out. You can change it any time.
+		 */
+		defaultHint: () => LocalizedString
+		/**
+		 * Your receiving account is not ready yet. Please try again later.
+		 */
+		receivingNotReady: () => LocalizedString
+		/**
+		 * Verify identity to unlock
+		 */
+		verifyIdentityTitle: () => LocalizedString
+		/**
+		 * Complete verification to get your USD account and routing number and to add withdrawal banks.
+		 */
+		verifyIdentityDescription: () => LocalizedString
+		/**
+		 * Upgrade your account
+		 */
+		upgradeYourAccount: () => LocalizedString
+		/**
+		 * No withdrawal accounts yet. Add one to cash out.
+		 */
+		noWithdrawalAccounts: () => LocalizedString
+		/**
+		 * Add bank account
+		 */
+		addBankAccount: () => LocalizedString
+		/**
+		 * Contact Support
+		 */
+		contactSupport: () => LocalizedString
+		/**
+		 * Your Flash USD account
+		 */
+		flashUsdAccount: () => LocalizedString
+		/**
+		 * Your bank transfer details are being set up. Check back soon.
+		 */
+		receivingSetupPending: () => LocalizedString
+		/**
+		 * Bank Name
+		 */
+		bankName: () => LocalizedString
+		/**
+		 * Account Number
+		 */
+		accountNumber: () => LocalizedString
+		/**
+		 * Routing Number
+		 */
+		routingNumber: () => LocalizedString
+		/**
+		 * Bank name copied
+		 */
+		bankNameCopied: () => LocalizedString
+		/**
+		 * Account number copied
+		 */
+		accountNumberCopied: () => LocalizedString
+		/**
+		 * Routing number copied
+		 */
+		routingNumberCopied: () => LocalizedString
+		/**
+		 * Account details copied
+		 */
+		accountDetailsCopied: () => LocalizedString
+		/**
+		 * Share these to receive USD bank transfers into Flash Cash.
+		 */
+		receiveCardHint: () => LocalizedString
+		/**
+		 * Copy all details
+		 */
+		copyAllDetails: () => LocalizedString
+		/**
+		 * Verified
+		 */
+		verified: () => LocalizedString
+		/**
+		 * Pending
+		 */
+		pending: () => LocalizedString
+		/**
+		 * Action needed
+		 */
+		actionNeeded: () => LocalizedString
+		/**
+		 * —
+		 */
+		unknownStatus: () => LocalizedString
+		/**
+		 * Default
+		 */
+		defaultBadge: () => LocalizedString
+		/**
+		 * Set as default
+		 */
+		setAsDefault: () => LocalizedString
+		/**
+		 * Remove
+		 */
+		remove: () => LocalizedString
+		/**
+		 * Remove (coming soon)
+		 */
+		removeComingSoon: () => LocalizedString
+		/**
+		 * Removing accounts is coming soon
+		 */
+		removingAccountsComingSoon: () => LocalizedString
+		/**
+		 * Account ending {last4}
+		 */
+		accountEnding: (arg: { last4: string }) => LocalizedString
+		/**
+		 * Default account updated
+		 */
+		defaultUpdated: () => LocalizedString
+	}
+	BridgeAddExternalAccount: {
+		/**
+		 * Add Bank Account
+		 */
+		title: () => LocalizedString
+		/**
+		 * Enter your US bank account details below to link it for withdrawals.
+		 */
+		subtitle: () => LocalizedString
+		/**
+		 * Bank Name
+		 */
+		bankName: () => LocalizedString
+		/**
+		 * e.g. Bank of America
+		 */
+		bankNamePlaceholder: () => LocalizedString
+		/**
+		 * Account Owner Name
+		 */
+		accountOwnerName: () => LocalizedString
+		/**
+		 * Full name on account
+		 */
+		accountOwnerNamePlaceholder: () => LocalizedString
+		/**
+		 * Routing Number
+		 */
+		routingNumber: () => LocalizedString
+		/**
+		 * 9-digit routing
+		 */
+		routingNumberPlaceholder: () => LocalizedString
+		/**
+		 * Account Number
+		 */
+		accountNumber: () => LocalizedString
+		/**
+		 * Account number
+		 */
+		accountNumberPlaceholder: () => LocalizedString
+		/**
+		 * Account Type
+		 */
+		accountType: () => LocalizedString
+		/**
+		 * Checking
+		 */
+		checking: () => LocalizedString
+		/**
+		 * Savings
+		 */
+		savings: () => LocalizedString
+		/**
+		 * Your Address
+		 */
+		yourAddress: () => LocalizedString
+		/**
+		 * Street Address
+		 */
+		streetAddress: () => LocalizedString
+		/**
+		 * 123 Main St
+		 */
+		streetAddressPlaceholder: () => LocalizedString
+		/**
+		 * City
+		 */
+		city: () => LocalizedString
+		/**
+		 * City
+		 */
+		cityPlaceholder: () => LocalizedString
+		/**
+		 * State
+		 */
+		state: () => LocalizedString
+		/**
+		 * FL
+		 */
+		statePlaceholder: () => LocalizedString
+		/**
+		 * ZIP Code
+		 */
+		zipCode: () => LocalizedString
+		/**
+		 * 33101
+		 */
+		zipCodePlaceholder: () => LocalizedString
+		/**
+		 * Country
+		 */
+		country: () => LocalizedString
+		/**
+		 * USA
+		 */
+		countryPlaceholder: () => LocalizedString
+		/**
+		 * Link Bank Account
+		 */
+		linkBankAccount: () => LocalizedString
+		/**
+		 * Please fill in all required fields
+		 */
+		requiredFieldsError: () => LocalizedString
+		/**
+		 * Please fill in your address details
+		 */
+		addressFieldsError: () => LocalizedString
+		/**
+		 * Bank Account Added
+		 */
+		bankAccountAddedTitle: () => LocalizedString
+		/**
+		 * Your {bankName} account (ending in {last4}) has been linked successfully.
+		 */
+		bankAccountAddedMessage: (arg: { bankName: string, last4: string }) => LocalizedString
+		/**
+		 * Continue
+		 */
+		'continue': () => LocalizedString
+		/**
+		 * Failed to add bank account. Please try again.
+		 */
+		failedToAdd: () => LocalizedString
+		/**
+		 * Something went wrong. Please try again.
+		 */
+		genericError: () => LocalizedString
+		/**
+		 * Bank Account Already Linked
+		 */
+		alreadyLinkedTitle: () => LocalizedString
+		/**
+		 * This bank account is already linked to your profile.
+		 */
+		alreadyLinkedMessage: () => LocalizedString
 	}
 	CashWalletCutover: {
 		/**

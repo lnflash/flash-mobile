@@ -32,6 +32,7 @@ import { getCashWallet } from "@app/graphql/wallets-utils"
 import { View } from "react-native"
 import { PrimaryBtn } from "@app/components/buttons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { loadDefaultWithdrawAccountId } from "@app/screens/settings-screen/bank-accounts/use-bank-accounts"
 
 type Props = StackScreenProps<RootStackParamList, "CashoutDetails">
 
@@ -101,13 +102,20 @@ const CashoutDetails = ({ navigation, route }: Props) => {
     }
 
     const localBankAccounts = bankAccountsData?.me?.bankAccounts ?? []
+    const storedDefaultId = await loadDefaultWithdrawAccountId("JMD")
+    const jmdBankAccounts = localBankAccounts.filter(
+      (el) => el.currency.toUpperCase() === "JMD",
+    )
     const defaultBankAccount =
-      localBankAccounts.find((el) => el.currency.toUpperCase() === "JMD") ||
+      jmdBankAccounts.find((el) => el.id === storedDefaultId) ||
+      jmdBankAccounts.find((el) => el.isDefault) ||
+      jmdBankAccounts[0] ||
+      localBankAccounts.find((el) => el.id === storedDefaultId) ||
       localBankAccounts.find((el) => el.isDefault) ||
       localBankAccounts[0]
 
     if (!defaultBankAccount?.id) {
-      setErrorMsg("No bank account found. Please add a bank account first.")
+      setErrorMsg(LL.Cashout.noBankAccountFound())
       return
     }
 
@@ -135,10 +143,17 @@ const CashoutDetails = ({ navigation, route }: Props) => {
   }
 
   const onBridgeWithdraw = async () => {
-    const externalAccount = externalAccountsData?.bridgeExternalAccounts?.find(Boolean)
+    const storedDefaultId = await loadDefaultWithdrawAccountId("USD")
+    const externalAccounts =
+      externalAccountsData?.bridgeExternalAccounts?.flatMap((account) =>
+        account ? [account] : [],
+      ) ?? []
+    const externalAccount =
+      externalAccounts.find((account) => account.id === storedDefaultId) ||
+      externalAccounts[0]
 
     if (!externalAccount?.id) {
-      setErrorMsg("No external account found. Please add an external account first.")
+      setErrorMsg(LL.Cashout.noExternalAccountFound())
       return
     }
 

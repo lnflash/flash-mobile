@@ -1,10 +1,12 @@
-import React, { useState } from "react"
+import React, { useCallback, useState } from "react"
 import { TouchableOpacity, View } from "react-native"
+import { useFocusEffect } from "@react-navigation/native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useBankAccountsQuery } from "@app/graphql/generated"
 import { displayCurrencyCode } from "@app/utils/currency-display"
+import { loadDefaultWithdrawAccountId } from "@app/screens/settings-screen/bank-accounts/use-bank-accounts"
 
 type Props = {
   preferredCurrency?: string
@@ -15,16 +17,36 @@ const CashoutWithdrawTo: React.FC<Props> = ({ preferredCurrency }) => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const [expanded, setExpanded] = useState(false)
+  const [storedDefaultId, setStoredDefaultId] = useState<string>()
 
   const { data } = useBankAccountsQuery({ fetchPolicy: "cache-only" })
 
+  // Reload on focus (not just mount) so a default changed in Settings is
+  // picked up when the user returns to an already-mounted cash-out screen.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true
+      ;(async () => {
+        const id = await loadDefaultWithdrawAccountId(preferredCurrency)
+        if (active) {
+          setStoredDefaultId(id)
+        }
+      })()
+      return () => {
+        active = false
+      }
+    }, [preferredCurrency]),
+  )
+
   const bankAccounts = data?.me?.bankAccounts ?? []
   const preferredCurrencyCode = preferredCurrency?.toUpperCase()
+  const preferredBankAccounts = preferredCurrencyCode
+    ? bankAccounts.filter((el) => el.currency.toUpperCase() === preferredCurrencyCode)
+    : bankAccounts
   const bankAccount =
-    bankAccounts.find(
-      (el) =>
-        preferredCurrencyCode && el.currency.toUpperCase() === preferredCurrencyCode,
-    ) ||
+    preferredBankAccounts.find((el) => el.id === storedDefaultId) ||
+    preferredBankAccounts.find((el) => el.isDefault) ||
+    preferredBankAccounts[0] ||
     bankAccounts.find((el) => el.isDefault) ||
     bankAccounts[0]
 
@@ -60,7 +82,10 @@ const CashoutWithdrawTo: React.FC<Props> = ({ preferredCurrency }) => {
               value={String(bankAccount.accountNumber)}
             />
             <DetailRow label={LL.Cashout.accountType()} value={bankAccount.accountType} />
-            <DetailRow label={LL.Cashout.currency()} value={displayCurrencyCode(bankAccount.currency)} />
+            <DetailRow
+              label={LL.Cashout.currency()}
+              value={displayCurrencyCode(bankAccount.currency)}
+            />
           </View>
         )}
       </TouchableOpacity>
