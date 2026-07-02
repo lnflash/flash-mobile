@@ -408,8 +408,9 @@ export const BankAccountsScreen: React.FC = () => {
 
 const useStyles = makeStyles(({ colors }) => ({
   container: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 20,
+    paddingBottom: 24,
   },
   centered: {
     flex: 1,
