@@ -288,14 +288,31 @@ export const BankAccountsScreen: React.FC = () => {
           </View>
         )
       ) : (
-        <View style={styles.card}>
+        <View style={styles.lockedCard}>
+          <View style={styles.lockedIconRow}>
+            <Icon name="lock-closed" type="ionicon" size={32} color={colors.primary} />
+          </View>
           <Text type="p1" bold style={styles.lockedTitle}>
             Verify identity to unlock
           </Text>
-          <Text type="p3" color={colors.grey1}>
+          <Text type="p3" color={colors.grey1} style={styles.lockedDesc}>
             Complete verification to get your USD account and routing number and to add
             withdrawal banks.
           </Text>
+          <Pressable
+            style={styles.upgradeButton}
+            onPress={() => navigation.navigate("AccountType")}
+          >
+            <Icon
+              name="shield-checkmark-outline"
+              type="ionicon"
+              size={20}
+              color={colors.white}
+            />
+            <Text type="p1" bold color={colors.white}>
+              Upgrade your account
+            </Text>
+          </Pressable>
         </View>
       )}
 
@@ -406,6 +423,37 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   lockedTitle: {
     marginBottom: 4,
+  },
+  lockedCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.black,
+    padding: 20,
+    alignItems: "center",
+    rowGap: 8,
+  },
+  lockedIconRow: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.grey5,
+    marginBottom: 4,
+  },
+  lockedDesc: {
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  upgradeButton: {
+    minHeight: 52,
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    columnGap: 8,
+    backgroundColor: colors.primary,
   },
   detailRow: {
     flexDirection: "row",
