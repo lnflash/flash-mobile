@@ -2,12 +2,13 @@ import React, { useState } from "react"
 import { ActivityIndicator, Alert, Pressable, View } from "react-native"
 
 import Clipboard from "@react-native-clipboard/clipboard"
-import { useNavigation } from "@react-navigation/native"
+import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 
 import { Screen } from "@app/components/screen"
 import { WHATSAPP_SUPPORT_URL } from "@app/config"
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { openWhatsAppUrl } from "@app/utils/external"
 import { toastShow } from "@app/utils/toast"
@@ -67,11 +68,12 @@ const ReceiveRow = ({ label, value, masked, onCopy }: ReceiveRowProps) => {
 const ReceiveCard = ({ account }: { account: BankAccountVM }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
 
-  const copyValue = (value: string | null | undefined, label: string) => {
+  const copyValue = (value: string | null | undefined, message: string) => {
     if (!value) return
     Clipboard.setString(value)
-    toastShow({ type: "success", message: `${label} copied` })
+    toastShow({ type: "success", message })
   }
 
   const copyAll = () => {
@@ -82,7 +84,7 @@ const ReceiveCard = ({ account }: { account: BankAccountVM }) => {
         `Routing Number: ${account.routingNumber ?? ""}`,
       ].join("\n"),
     )
-    toastShow({ type: "success", message: "Account details copied" })
+    toastShow({ type: "success", message: LL.BankAccountsScreen.accountDetailsCopied() })
   }
 
   if (account.pending) {
@@ -90,12 +92,12 @@ const ReceiveCard = ({ account }: { account: BankAccountVM }) => {
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text type="p1" bold>
-            Your Flash USD account
+            {LL.BankAccountsScreen.flashUsdAccount()}
           </Text>
           <StatusPill status="pending" />
         </View>
         <Text type="p3" color={colors.grey1}>
-          Your bank transfer details are being set up. Check back soon.
+          {LL.BankAccountsScreen.receivingSetupPending()}
         </Text>
       </View>
     )
@@ -105,35 +107,39 @@ const ReceiveCard = ({ account }: { account: BankAccountVM }) => {
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text type="p1" bold>
-          Your Flash USD account
+          {LL.BankAccountsScreen.flashUsdAccount()}
         </Text>
         <StatusPill status="verified" />
       </View>
 
       <ReceiveRow
-        label="Bank Name"
+        label={LL.BankAccountsScreen.bankName()}
         value={account.bankName}
-        onCopy={() => copyValue(account.bankName, "Bank name")}
+        onCopy={() => copyValue(account.bankName, LL.BankAccountsScreen.bankNameCopied())}
       />
       <ReceiveRow
-        label="Account Number"
+        label={LL.BankAccountsScreen.accountNumber()}
         value={account.accountNumber}
         masked
-        onCopy={() => copyValue(account.accountNumber, "Account number")}
+        onCopy={() =>
+          copyValue(account.accountNumber, LL.BankAccountsScreen.accountNumberCopied())
+        }
       />
       <ReceiveRow
-        label="Routing Number"
+        label={LL.BankAccountsScreen.routingNumber()}
         value={account.routingNumber}
-        onCopy={() => copyValue(account.routingNumber, "Routing number")}
+        onCopy={() =>
+          copyValue(account.routingNumber, LL.BankAccountsScreen.routingNumberCopied())
+        }
       />
 
       <Text type="p3" color={colors.grey1} style={styles.cardHint}>
-        Share these to receive USD bank transfers into Flash Cash.
+        {LL.BankAccountsScreen.receiveCardHint()}
       </Text>
       <Pressable style={styles.secondaryButton} onPress={copyAll}>
         <Icon name="copy-outline" type="ionicon" size={18} color={colors.primary} />
         <Text type="p2" bold color={colors.primary}>
-          Copy all details
+          {LL.BankAccountsScreen.copyAllDetails()}
         </Text>
       </Pressable>
     </View>
@@ -147,12 +153,16 @@ const ReceiveCard = ({ account }: { account: BankAccountVM }) => {
 const StatusPill = ({ status }: { status: BankAccountStatus }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
 
   const map: Record<BankAccountStatus, { label: string; color: string }> = {
-    verified: { label: "Verified", color: colors.green },
-    pending: { label: "Pending", color: colors.warning },
-    actionRequired: { label: "Action needed", color: colors.error },
-    unknown: { label: "—", color: colors.grey3 },
+    verified: { label: LL.BankAccountsScreen.verified(), color: colors.green },
+    pending: { label: LL.BankAccountsScreen.pending(), color: colors.warning },
+    actionRequired: {
+      label: LL.BankAccountsScreen.actionNeeded(),
+      color: colors.error,
+    },
+    unknown: { label: LL.BankAccountsScreen.unknownStatus(), color: colors.grey3 },
   }
   const { label, color } = map[status]
 
@@ -177,6 +187,7 @@ type WithdrawRowProps = {
 const WithdrawRow = ({ account, onSetDefault }: WithdrawRowProps) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
 
   const openActions = () => {
     const options: {
@@ -185,21 +196,27 @@ const WithdrawRow = ({ account, onSetDefault }: WithdrawRowProps) => {
       onPress?: () => void
     }[] = []
     if (account.canSetDefault && !account.isDefault) {
-      options.push({ text: "Set as default", onPress: onSetDefault })
+      options.push({ text: LL.BankAccountsScreen.setAsDefault(), onPress: onSetDefault })
     }
     options.push({
-      text: account.canRemove ? "Remove" : "Remove (coming soon)",
+      text: account.canRemove
+        ? LL.BankAccountsScreen.remove()
+        : LL.BankAccountsScreen.removeComingSoon(),
       style: "destructive",
       onPress: () =>
         account.canRemove
           ? undefined // TODO: wire bridgeDeleteExternalAccount
           : toastShow({
               type: "warning",
-              message: "Removing accounts is coming soon",
+              message: LL.BankAccountsScreen.removingAccountsComingSoon(),
             }),
     })
-    options.push({ text: "Cancel", style: "cancel" })
-    Alert.alert(account.bankName, `Account ending ${account.last4}`, options)
+    options.push({ text: LL.common.cancel(), style: "cancel" })
+    Alert.alert(
+      account.bankName,
+      LL.BankAccountsScreen.accountEnding({ last4: account.last4 }),
+      options,
+    )
   }
 
   return (
@@ -222,7 +239,7 @@ const WithdrawRow = ({ account, onSetDefault }: WithdrawRowProps) => {
             {account.isDefault && (
               <View style={styles.defaultBadge}>
                 <Text type="p4" bold color={colors.white}>
-                  Default
+                  {LL.BankAccountsScreen.defaultBadge()}
                 </Text>
               </View>
             )}
@@ -249,10 +266,17 @@ const WithdrawRow = ({ account, onSetDefault }: WithdrawRowProps) => {
 export const BankAccountsScreen: React.FC = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
-  const { loading, kycApproved, receiveAccount, withdrawGroups, setDefault } =
+  const { loading, kycApproved, receiveAccount, withdrawGroups, setDefault, refetch } =
     useBankAccounts()
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refetch()
+    }, [refetch]),
+  )
 
   if (loading) {
     return (
@@ -267,12 +291,12 @@ export const BankAccountsScreen: React.FC = () => {
       {/* RECEIVE */}
       <View style={styles.sectionHeader}>
         <Text type="p2" bold color={colors.grey1}>
-          RECEIVE MONEY
+          {LL.BankAccountsScreen.receiveMoney()}
         </Text>
         <View style={styles.direction}>
           <Icon name="arrow-down" type="ionicon" size={14} color={colors.grey2} />
           <Text type="p4" color={colors.grey2}>
-            into Flash
+            {LL.BankAccountsScreen.intoFlash()}
           </Text>
         </View>
       </View>
@@ -283,7 +307,7 @@ export const BankAccountsScreen: React.FC = () => {
         ) : (
           <View style={styles.card}>
             <Text type="p3" color={colors.grey1}>
-              Your receiving account is not ready yet. Please try again later.
+              {LL.BankAccountsScreen.receivingNotReady()}
             </Text>
           </View>
         )
@@ -293,11 +317,10 @@ export const BankAccountsScreen: React.FC = () => {
             <Icon name="lock-closed" type="ionicon" size={32} color={colors.primary} />
           </View>
           <Text type="p1" bold style={styles.lockedTitle}>
-            Verify identity to unlock
+            {LL.BankAccountsScreen.verifyIdentityTitle()}
           </Text>
           <Text type="p3" color={colors.grey1} style={styles.lockedDesc}>
-            Complete verification to get your USD account and routing number and to add
-            withdrawal banks.
+            {LL.BankAccountsScreen.verifyIdentityDescription()}
           </Text>
           <Pressable
             style={styles.upgradeButton}
@@ -310,7 +333,7 @@ export const BankAccountsScreen: React.FC = () => {
               color={colors.white}
             />
             <Text type="p1" bold color={colors.white}>
-              Upgrade your account
+              {LL.BankAccountsScreen.upgradeYourAccount()}
             </Text>
           </Pressable>
         </View>
@@ -319,23 +342,23 @@ export const BankAccountsScreen: React.FC = () => {
       {/* WITHDRAW */}
       <View style={styles.sectionHeader}>
         <Text type="p2" bold color={colors.grey1}>
-          WITHDRAW TO
+          {LL.BankAccountsScreen.withdrawTo()}
         </Text>
         <View style={styles.direction}>
           <Icon name="arrow-up" type="ionicon" size={14} color={colors.grey2} />
           <Text type="p4" color={colors.grey2}>
-            out of Flash
+            {LL.BankAccountsScreen.outOfFlash()}
           </Text>
         </View>
       </View>
       <Text type="p3" color={colors.grey1} style={styles.subhint}>
-        Your default account is auto-selected at cash-out. You can change it any time.
+        {LL.BankAccountsScreen.defaultHint()}
       </Text>
 
       {withdrawGroups.length === 0 ? (
         <View style={styles.card}>
           <Text type="p3" color={colors.grey1}>
-            No withdrawal accounts yet. Add one to cash out.
+            {LL.BankAccountsScreen.noWithdrawalAccounts()}
           </Text>
         </View>
       ) : (
@@ -360,11 +383,13 @@ export const BankAccountsScreen: React.FC = () => {
       <Pressable
         style={[styles.primaryButton, !kycApproved && styles.disabled]}
         disabled={!kycApproved}
-        onPress={() => navigation.navigate("BridgeAddExternalAccount")}
+        onPress={() =>
+          navigation.navigate("BridgeAddExternalAccount", { returnTo: "BankAccounts" })
+        }
       >
         <Icon name="add" type="ionicon" size={20} color={colors.white} />
         <Text type="p1" bold color={colors.white}>
-          Add bank account
+          {LL.BankAccountsScreen.addBankAccount()}
         </Text>
       </Pressable>
 
@@ -374,7 +399,7 @@ export const BankAccountsScreen: React.FC = () => {
       >
         <Icon name="logo-whatsapp" type="ionicon" size={20} color={colors.primary} />
         <Text type="p2" bold color={colors.primary}>
-          Contact Support
+          {LL.BankAccountsScreen.contactSupport()}
         </Text>
       </Pressable>
     </Screen>

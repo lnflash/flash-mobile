@@ -14,12 +14,14 @@ import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { Screen } from "@app/components/screen"
 import { useBridgeCreateExternalAccountMutation } from "@app/graphql/generated"
 import { useActivityIndicator } from "@app/hooks"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 type Props = StackScreenProps<RootStackParamList, "BridgeAddExternalAccount">
 
-const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
+const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { theme } = useTheme()
+  const { LL } = useI18nContext()
   const { toggleActivityIndicator } = useActivityIndicator()
 
   const [createExternalAccount] = useBridgeCreateExternalAccountMutation()
@@ -39,12 +41,12 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
 
   const handleSubmit = async () => {
     if (!bankName || !accountOwnerName || !routingNumber || !accountNumber) {
-      Alert.alert("Error", "Please fill in all required fields")
+      Alert.alert(LL.common.error(), LL.BridgeAddExternalAccount.requiredFieldsError())
       return
     }
 
     if (!streetLine1 || !city || !state || !postalCode || !country) {
-      Alert.alert("Error", "Please fill in your address details")
+      Alert.alert(LL.common.error(), LL.BridgeAddExternalAccount.addressFieldsError())
       return
     }
 
@@ -71,28 +73,37 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
 
       const errors = res.data?.bridgeCreateExternalAccount?.errors
       if (errors && errors.length > 0) {
-        Alert.alert("Error", errors[0].message)
+        Alert.alert(LL.common.error(), errors[0].message)
         return
       }
 
       const externalAccount = res.data?.bridgeCreateExternalAccount?.externalAccount
       if (externalAccount) {
         Alert.alert(
-          "Bank Account Added",
-          `Your ${externalAccount.bankName} account (ending in ${externalAccount.accountNumberLast4}) has been linked successfully.`,
+          LL.BridgeAddExternalAccount.bankAccountAddedTitle(),
+          LL.BridgeAddExternalAccount.bankAccountAddedMessage({
+            bankName: externalAccount.bankName,
+            last4: externalAccount.accountNumberLast4,
+          }),
           [
             {
-              text: "Continue",
-              onPress: () => navigation.navigate("CashoutDetails", { type: "bridge" }),
+              text: LL.BridgeAddExternalAccount.continue(),
+              onPress: () => {
+                if (route.params?.returnTo === "BankAccounts") {
+                  navigation.navigate("BankAccounts")
+                  return
+                }
+                navigation.navigate("CashoutDetails", { type: "bridge" })
+              },
             },
           ],
         )
       } else {
-        Alert.alert("Error", "Failed to add bank account. Please try again.")
+        Alert.alert(LL.common.error(), LL.BridgeAddExternalAccount.failedToAdd())
       }
     } catch (error) {
       toggleActivityIndicator(false)
-      Alert.alert("Error", "Something went wrong. Please try again.")
+      Alert.alert(LL.common.error(), LL.BridgeAddExternalAccount.genericError())
     }
   }
 
@@ -108,61 +119,65 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
         >
           <View style={styles.headerRow}>
             <Text type="h1" style={styles.title}>
-              Add Bank Account
+              {LL.BridgeAddExternalAccount.title()}
             </Text>
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{LL.common.cancel()}</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.subtitle}>
-            Enter your US bank account details below to link it for withdrawals.
-          </Text>
+          <Text style={styles.subtitle}>{LL.BridgeAddExternalAccount.subtitle()}</Text>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Bank Name</Text>
+            <Text style={styles.label}>{LL.BridgeAddExternalAccount.bankName()}</Text>
             <TextInput
               style={styles.input}
               value={bankName}
               onChangeText={setBankName}
-              placeholder="e.g. Bank of America"
+              placeholder={LL.BridgeAddExternalAccount.bankNamePlaceholder()}
               placeholderTextColor={theme.colors.grey3}
             />
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Account Owner Name</Text>
+            <Text style={styles.label}>
+              {LL.BridgeAddExternalAccount.accountOwnerName()}
+            </Text>
             <TextInput
               style={styles.input}
               value={accountOwnerName}
               onChangeText={setAccountOwnerName}
-              placeholder="Full name on account"
+              placeholder={LL.BridgeAddExternalAccount.accountOwnerNamePlaceholder()}
               placeholderTextColor={theme.colors.grey3}
             />
           </View>
 
           <View style={styles.fieldRow}>
             <View style={styles.fieldRowLeft}>
-              <Text style={styles.label}>Routing Number</Text>
+              <Text style={styles.label}>
+                {LL.BridgeAddExternalAccount.routingNumber()}
+              </Text>
               <TextInput
                 style={styles.input}
                 value={routingNumber}
                 onChangeText={setRoutingNumber}
-                placeholder="9-digit routing"
+                placeholder={LL.BridgeAddExternalAccount.routingNumberPlaceholder()}
                 placeholderTextColor={theme.colors.grey3}
                 keyboardType="number-pad"
                 maxLength={9}
               />
             </View>
             <View style={styles.fieldRowRight}>
-              <Text style={styles.label}>Account Number</Text>
+              <Text style={styles.label}>
+                {LL.BridgeAddExternalAccount.accountNumber()}
+              </Text>
               <TextInput
                 style={styles.input}
                 value={accountNumber}
                 onChangeText={setAccountNumber}
-                placeholder="Account number"
+                placeholder={LL.BridgeAddExternalAccount.accountNumberPlaceholder()}
                 placeholderTextColor={theme.colors.grey3}
                 keyboardType="number-pad"
               />
@@ -170,7 +185,7 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Account Type</Text>
+            <Text style={styles.label}>{LL.BridgeAddExternalAccount.accountType()}</Text>
             <View style={styles.segmentRow}>
               <TouchableOpacity
                 style={[
@@ -185,7 +200,7 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
                     checkingOrSavings === "checking" && styles.segmentTextActive,
                   ]}
                 >
-                  Checking
+                  {LL.BridgeAddExternalAccount.checking()}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -201,45 +216,47 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
                     checkingOrSavings === "savings" && styles.segmentTextActive,
                   ]}
                 >
-                  Savings
+                  {LL.BridgeAddExternalAccount.savings()}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <Text type="h2" style={styles.sectionTitle}>
-            Your Address
+            {LL.BridgeAddExternalAccount.yourAddress()}
           </Text>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Street Address</Text>
+            <Text style={styles.label}>
+              {LL.BridgeAddExternalAccount.streetAddress()}
+            </Text>
             <TextInput
               style={styles.input}
               value={streetLine1}
               onChangeText={setStreetLine1}
-              placeholder="123 Main St"
+              placeholder={LL.BridgeAddExternalAccount.streetAddressPlaceholder()}
               placeholderTextColor={theme.colors.grey3}
             />
           </View>
 
           <View style={styles.fieldRow}>
             <View style={styles.fieldRowCity}>
-              <Text style={styles.label}>City</Text>
+              <Text style={styles.label}>{LL.BridgeAddExternalAccount.city()}</Text>
               <TextInput
                 style={styles.input}
                 value={city}
                 onChangeText={setCity}
-                placeholder="City"
+                placeholder={LL.BridgeAddExternalAccount.cityPlaceholder()}
                 placeholderTextColor={theme.colors.grey3}
               />
             </View>
             <View style={styles.fieldRowState}>
-              <Text style={styles.label}>State</Text>
+              <Text style={styles.label}>{LL.BridgeAddExternalAccount.state()}</Text>
               <TextInput
                 style={styles.input}
                 value={state}
                 onChangeText={setState}
-                placeholder="FL"
+                placeholder={LL.BridgeAddExternalAccount.statePlaceholder()}
                 placeholderTextColor={theme.colors.grey3}
                 maxLength={2}
               />
@@ -248,24 +265,24 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
 
           <View style={styles.fieldRow}>
             <View style={styles.fieldRowLeft}>
-              <Text style={styles.label}>ZIP Code</Text>
+              <Text style={styles.label}>{LL.BridgeAddExternalAccount.zipCode()}</Text>
               <TextInput
                 style={styles.input}
                 value={postalCode}
                 onChangeText={setPostalCode}
-                placeholder="33101"
+                placeholder={LL.BridgeAddExternalAccount.zipCodePlaceholder()}
                 placeholderTextColor={theme.colors.grey3}
                 keyboardType="number-pad"
                 maxLength={5}
               />
             </View>
             <View style={styles.fieldRowRight}>
-              <Text style={styles.label}>Country</Text>
+              <Text style={styles.label}>{LL.BridgeAddExternalAccount.country()}</Text>
               <TextInput
                 style={styles.input}
                 value={country}
                 onChangeText={setCountry}
-                placeholder="USA"
+                placeholder={LL.BridgeAddExternalAccount.countryPlaceholder()}
                 placeholderTextColor={theme.colors.grey3}
                 maxLength={3}
               />
@@ -273,7 +290,9 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
           </View>
 
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitText}>Link Bank Account</Text>
+            <Text style={styles.submitText}>
+              {LL.BridgeAddExternalAccount.linkBankAccount()}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

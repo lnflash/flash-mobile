@@ -24,6 +24,28 @@ import { BankAccountStatus, BankAccountVM, WithdrawGroup } from "./types"
 const DEFAULT_WITHDRAW_STORE_KEY = "bankAccounts.defaultWithdraw.v1"
 type DefaultMap = Record<string, string>
 
+const currencyKey = (currency?: string | null) => (currency ?? "").toUpperCase()
+
+export const loadDefaultWithdrawAccountId = async (
+  currency?: string | null,
+): Promise<string | undefined> => {
+  const key = currencyKey(currency)
+  if (!key) return undefined
+  const stored = (await loadJson(DEFAULT_WITHDRAW_STORE_KEY)) as DefaultMap | null
+  if (!stored || typeof stored !== "object") return undefined
+  return stored[key]
+}
+
+export const saveDefaultWithdrawAccountId = async (
+  account: Pick<BankAccountVM, "currency" | "id">,
+): Promise<boolean> => {
+  const key = currencyKey(account.currency)
+  if (!key) return false
+  const stored = (await loadJson(DEFAULT_WITHDRAW_STORE_KEY)) as DefaultMap | null
+  const current = stored && typeof stored === "object" ? stored : {}
+  return saveJson(DEFAULT_WITHDRAW_STORE_KEY, { ...current, [key]: account.id })
+}
+
 const normalizeStatus = (raw?: string | null): BankAccountStatus => {
   const s = (raw ?? "").toLowerCase()
   if (["active", "approved", "verified", "complete", "completed"].includes(s)) {
@@ -98,11 +120,11 @@ export const useBankAccounts = (): UseBankAccounts => {
 
   const setDefault = useCallback(
     (account: BankAccountVM) => {
-      const currency = account.currency.toUpperCase()
+      const currency = currencyKey(account.currency)
       setDefaults((prev) => {
         const next = { ...prev, [currency]: account.id }
         // fire-and-forget persist; failure is non-fatal (falls back to server/first)
-        saveJson(DEFAULT_WITHDRAW_STORE_KEY, next)
+        saveDefaultWithdrawAccountId(account)
         return next
       })
     },
@@ -166,7 +188,7 @@ export const useBankAccounts = (): UseBankAccounts => {
         role: "withdraw",
         bankName: bank.bankName,
         last4: last4Of(bank.accountNumber),
-        currency: (bank.currency ?? "").toUpperCase() || "LOCAL",
+        currency: currencyKey(bank.currency) || "LOCAL",
         status: "verified",
         isDefault: false,
         canSetDefault: true, // interim client-side; server has no mutation yet
@@ -186,7 +208,7 @@ export const useBankAccounts = (): UseBankAccounts => {
     const groups: WithdrawGroup[] = []
     for (const [currency, accounts] of byCurrency.entries()) {
       // Resolve default (per currency): client store -> server isDefault -> first
-      const storedId = defaults[currency.toUpperCase()]
+      const storedId = defaults[currencyKey(currency)]
       let defaultIdx = accounts.findIndex((a) => storedId && a.id === storedId)
       if (defaultIdx < 0) {
         defaultIdx = accounts.findIndex(

@@ -39,7 +39,6 @@ export type RootStackParamList = {
   scanningQRCode?: { swapAddress: string; amount: number; fee: number; feeType: string }
   settings: undefined
   addressScreen: undefined
-  BridgeAccountRouting: undefined
   BankAccounts: undefined
   defaultWallet: undefined
   theme: undefined
@@ -177,7 +176,7 @@ export type RootStackParamList = {
   BridgeExternalAccountWebView: {
     linkUrl: string
   }
-  BridgeAddExternalAccount: undefined
+  BridgeAddExternalAccount: { returnTo?: "BankAccounts" } | undefined
   TopupCashout: undefined
   TopupDetails: { paymentType: "card" | "bankTransfer" | "bridge" }
   BankTransfer: {
