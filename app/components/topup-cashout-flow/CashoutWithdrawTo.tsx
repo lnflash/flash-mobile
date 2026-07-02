@@ -6,7 +6,7 @@ import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useBankAccountsQuery } from "@app/graphql/generated"
 import { displayCurrencyCode } from "@app/utils/currency-display"
-import { loadDefaultWithdrawAccountId } from "@app/screens/settings-screen/bank-accounts/use-bank-accounts"
+import { loadDefaultWithdrawAccountId } from "@app/screens/settings-screen/bank-accounts/default-account-store"
 
 type Props = {
   preferredCurrency?: string

@@ -1,50 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
+import { useFeatureFlags } from "@app/config/feature-flags-context"
 import {
   useBankAccountsQuery,
   useBridgeExternalAccountsQuery,
   useBridgeKycStatusQuery,
   useBridgeVirtualAccountQuery,
 } from "@app/graphql/generated"
-import { loadJson, saveJson } from "@app/utils/storage"
 
+import {
+  DefaultMap,
+  currencyKey,
+  loadDefaultWithdrawMap,
+  saveDefaultWithdrawAccountId,
+} from "./default-account-store"
 import { BankAccountStatus, BankAccountVM, WithdrawGroup } from "./types"
-
-/**
- * INTERIM client-side default store (per currency).
- *
- * The Bridge external-account API has no `isDefault` field or set-default
- * mutation yet. Until that lands (see PR plan), we persist the user's chosen
- * default withdrawal account per currency in AsyncStorage. This is deliberately
- * isolated from the versioned persistentState blob so the migration chain stays
- * untouched and the swap to a server field is a one-file change.
- *
- * currency (upper-case) -> account id
- */
-const DEFAULT_WITHDRAW_STORE_KEY = "bankAccounts.defaultWithdraw.v1"
-type DefaultMap = Record<string, string>
-
-const currencyKey = (currency?: string | null) => (currency ?? "").toUpperCase()
-
-export const loadDefaultWithdrawAccountId = async (
-  currency?: string | null,
-): Promise<string | undefined> => {
-  const key = currencyKey(currency)
-  if (!key) return undefined
-  const stored = (await loadJson(DEFAULT_WITHDRAW_STORE_KEY)) as DefaultMap | null
-  if (!stored || typeof stored !== "object") return undefined
-  return stored[key]
-}
-
-export const saveDefaultWithdrawAccountId = async (
-  account: Pick<BankAccountVM, "currency" | "id">,
-): Promise<boolean> => {
-  const key = currencyKey(account.currency)
-  if (!key) return false
-  const stored = (await loadJson(DEFAULT_WITHDRAW_STORE_KEY)) as DefaultMap | null
-  const current = stored && typeof stored === "object" ? stored : {}
-  return saveJson(DEFAULT_WITHDRAW_STORE_KEY, { ...current, [key]: account.id })
-}
 
 const normalizeStatus = (raw?: string | null): BankAccountStatus => {
   const s = (raw ?? "").toLowerCase()
@@ -78,10 +48,16 @@ export type UseBankAccounts = {
 }
 
 export const useBankAccounts = (): UseBankAccounts => {
+  // ENG-465 kill switch: when Bridge is remotely disabled, skip every Bridge
+  // query (KYC, virtual account, external accounts) — same contract as
+  // AccountType and TopupCashout. Local ERPNext accounts still load.
+  const { bridgeTopupEnabled } = useFeatureFlags()
+
   const { data: kycData, loading: kycLoading } = useBridgeKycStatusQuery({
     fetchPolicy: "cache-and-network",
+    skip: !bridgeTopupEnabled,
   })
-  const kycApproved = kycData?.bridgeKycStatus === "approved"
+  const kycApproved = bridgeTopupEnabled && kycData?.bridgeKycStatus === "approved"
 
   const { data: virtualData, loading: virtualLoading } = useBridgeVirtualAccountQuery({
     fetchPolicy: "cache-and-network",
@@ -108,8 +84,8 @@ export const useBankAccounts = (): UseBankAccounts => {
   useEffect(() => {
     let active = true
     ;(async () => {
-      const stored = (await loadJson(DEFAULT_WITHDRAW_STORE_KEY)) as DefaultMap | null
-      if (active && stored && typeof stored === "object") {
+      const stored = await loadDefaultWithdrawMap()
+      if (active && stored) {
         setDefaults(stored)
       }
     })()

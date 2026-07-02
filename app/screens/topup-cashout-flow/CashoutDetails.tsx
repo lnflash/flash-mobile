@@ -32,7 +32,7 @@ import { getCashWallet } from "@app/graphql/wallets-utils"
 import { View } from "react-native"
 import { PrimaryBtn } from "@app/components/buttons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { loadDefaultWithdrawAccountId } from "@app/screens/settings-screen/bank-accounts/use-bank-accounts"
+import { loadDefaultWithdrawAccountId } from "@app/screens/settings-screen/bank-accounts/default-account-store"
 
 type Props = StackScreenProps<RootStackParamList, "CashoutDetails">
 
