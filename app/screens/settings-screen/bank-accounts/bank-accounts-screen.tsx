@@ -7,7 +7,9 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 
 import { Screen } from "@app/components/screen"
+import { WHATSAPP_SUPPORT_URL } from "@app/config"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { openWhatsAppUrl } from "@app/utils/external"
 import { toastShow } from "@app/utils/toast"
 
 import { BankAccountStatus, BankAccountVM } from "./types"
@@ -348,6 +350,16 @@ export const BankAccountsScreen: React.FC = () => {
           Add bank account
         </Text>
       </Pressable>
+
+      <Pressable
+        style={styles.supportButton}
+        onPress={() => openWhatsAppUrl(WHATSAPP_SUPPORT_URL)}
+      >
+        <Icon name="logo-whatsapp" type="ionicon" size={20} color={colors.primary} />
+        <Text type="p2" bold color={colors.primary}>
+          Contact Support
+        </Text>
+      </Pressable>
     </Screen>
   )
 }
@@ -480,5 +492,14 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   disabled: {
     opacity: 0.5,
+  },
+  supportButton: {
+    minHeight: 48,
+    borderRadius: 12,
+    marginBottom: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    columnGap: 8,
   },
 }))

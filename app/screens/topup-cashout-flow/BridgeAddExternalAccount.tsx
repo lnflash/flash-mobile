@@ -106,9 +106,17 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation }) => {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <Text type="h1" style={styles.title}>
-            Add Bank Account
-          </Text>
+          <View style={styles.headerRow}>
+            <Text type="h1" style={styles.title}>
+              Add Bank Account
+            </Text>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.subtitle}>
             Enter your US bank account details below to link it for withdrawals.
           </Text>
@@ -280,8 +288,19 @@ const useStyles = makeStyles(({ colors }) => ({
   scrollContent: {
     padding: 20,
   },
-  title: {
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 8,
+  },
+  title: {
+    flex: 1,
+  },
+  cancelText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.primary,
   },
   subtitle: {
     color: colors.grey2,
