@@ -601,7 +601,18 @@ scalar FractionalCentAmount
 Provides global settings for the application which might have an impact for the user.
 """
 type Globals {
+  """
+  Whether Bridge (international bank transfer) entry points
+  should be shown to the user. Controlled by the instance-wide bridge feature flag.
+  """
+  bridgeEnabled: Boolean!
   buildInformation: BuildInformation!
+
+  """
+  Whether cashout (settle to local bank account) entry points
+  should be shown to the user. Controlled by the instance-wide cashout feature flag.
+  """
+  cashoutEnabled: Boolean!
   feesInformation: FeesInformation!
 
   """
