@@ -33,7 +33,7 @@ const ConfirmationDetails: React.FC<Props> = ({
   const { formatMoneyAmount, displayCurrency } = useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
 
-  if (!convertMoneyAmount || !fromWallet || !toWallet) return
+  if (!convertMoneyAmount || !fromWallet || !toWallet) return null
 
   const fromAmount = convertMoneyAmount(moneyAmount, fromWallet?.walletCurrency)
   const toAmount = convertMoneyAmount(moneyAmount, toWallet?.walletCurrency)

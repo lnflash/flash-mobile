@@ -198,6 +198,13 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
         },
       })
 
+      const capabilitiesLink = setContext((_, { headers }) => ({
+        headers: {
+          ...headers,
+          "X-Flash-Client-Capabilities": "cash-wallet-usdt-v1",
+        },
+      }))
+
       let authLink: ApolloLink
       if (token) {
         authLink = setContext((request, { headers }) => ({
@@ -216,7 +223,7 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
       }
 
       // persistedQuery provide client side bandwidth optimization by returning a hash
-      // of the uery instead of the whole query
+      // of the query instead of the whole query
       //
       // use the following line if you want to deactivate in dev
       // const persistedQueryLink = httpLink
@@ -245,6 +252,7 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
           errorLink,
           retryLink,
           appCheckLink,
+          capabilitiesLink,
           authLink,
           retry401ErrorLink,
           persistedQueryLink,

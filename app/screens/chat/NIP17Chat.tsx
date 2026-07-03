@@ -39,7 +39,6 @@ import {
   createMaterialTopTabNavigator,
   MaterialTopTabBar,
 } from "@react-navigation/material-top-tabs"
-import { TabBarItem } from "react-native-tab-view"
 import ContactDetailsScreen from "./contactDetailsScreen"
 
 const Tab = createMaterialTopTabNavigator()
@@ -179,14 +178,7 @@ export const NIP17Chat: React.FC = () => {
       {userPublicKey && !showImportModal ? (
         <View style={{ flex: 1, paddingTop: statusBarHeight }}>
           <Tab.Navigator
-            tabBar={(props) => (
-              <MaterialTopTabBar
-                {...props}
-                renderTabBarItem={({ key, ...rest }) => (
-                  <TabBarItem key={key} {...rest} />
-                )}
-              />
-            )}
+            tabBar={(props) => <MaterialTopTabBar {...props} />}
             screenOptions={({ route }) => {
               return {
                 tabBarIcon: ({ color }) => {

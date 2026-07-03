@@ -82,6 +82,121 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
+mutation BridgeAddExternalAccount {
+  bridgeAddExternalAccount {
+    externalAccount {
+      expiresAt
+      linkUrl
+      __typename
+    }
+    errors {
+      code
+      message
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BridgeCancelWithdrawalRequest($input: BridgeCancelWithdrawalRequestInput!) {
+  bridgeCancelWithdrawalRequest(input: $input) {
+    withdrawal {
+      amount
+      createdAt
+      currency
+      externalAccountId
+      failureReason
+      id
+      status
+      __typename
+    }
+    errors {
+      code
+      message
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BridgeCreateExternalAccount($input: BridgeCreateExternalAccountInput!) {
+  bridgeCreateExternalAccount(input: $input) {
+    externalAccount {
+      id
+      bankName
+      accountNumberLast4
+      status
+      __typename
+    }
+    errors {
+      code
+      message
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BridgeInitiateKyc($input: BridgeInitiateKycInput!) {
+  bridgeInitiateKyc(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    kycLink {
+      kycLink
+      tosLink
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BridgeInitiateWithdrawal($input: BridgeInitiateWithdrawalInput!) {
+  bridgeInitiateWithdrawal(input: $input) {
+    withdrawal {
+      amount
+      bridgeTransferId
+      createdAt
+      currency
+      externalAccountId
+      failureReason
+      id
+      status
+      __typename
+    }
+    errors {
+      code
+      message
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BridgeRequestWithdrawal($input: BridgeRequestWithdrawalInput!) {
+  bridgeRequestWithdrawal(input: $input) {
+    withdrawal {
+      amount
+      createdAt
+      bridgeTransferId
+      currency
+      externalAccountId
+      failureReason
+      id
+      status
+      __typename
+    }
+    errors {
+      code
+      message
+      __typename
+    }
+    __typename
+  }
+}
+
 mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
   idDocumentUploadUrlGenerate(input: $input) {
     errors {
@@ -91,6 +206,18 @@ mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) 
     }
     fileKey
     uploadUrl
+    __typename
+  }
+}
+
+mutation InitiateCashout($input: InitiateCashoutInput!) {
+  initiateCashout(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    id
     __typename
   }
 }
@@ -114,6 +241,28 @@ mutation MerchantMapSuggest($input: MerchantMapSuggestInput!) {
       title
       username
       validated
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation RequestCashout($input: RequestCashoutInput!) {
+  requestCashout(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    offer {
+      exchangeRate
+      expiresAt
+      flashFee
+      offerId
+      receiveJmd
+      receiveUsd
+      send
+      walletId
       __typename
     }
     __typename
@@ -841,6 +990,82 @@ mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
   }
 }
 
+query BankAccounts {
+  me {
+    id
+    bankAccounts {
+      accountName
+      accountNumber
+      accountType
+      bankBranch
+      bankName
+      currency
+      id
+      isDefault
+      __typename
+    }
+    __typename
+  }
+}
+
+query BridgeExternalAccounts {
+  bridgeExternalAccounts {
+    accountNumberLast4
+    bankName
+    id
+    status
+    __typename
+  }
+}
+
+query BridgeKycStatus {
+  bridgeKycStatus
+}
+
+query BridgeVirtualAccount {
+  bridgeVirtualAccount {
+    accountNumber
+    accountNumberLast4
+    bankName
+    id
+    kycLink
+    message
+    pending
+    routingNumber
+    tosLink
+    __typename
+  }
+}
+
+query BridgeWithdrawalRequest($id: ID!) {
+  bridgeWithdrawalRequest(id: $id) {
+    amount
+    createdAt
+    currency
+    externalAccountId
+    failureReason
+    id
+    status
+    __typename
+  }
+}
+
+query CashWalletCutover {
+  cashWalletCutover {
+    completedAt
+    cutoverVersion
+    pauseReason
+    pausedAt
+    runId
+    scheduledAt
+    startedAt
+    state
+    updatedAt
+    updatedBy
+    __typename
+  }
+}
+
 query ExportCsvSetting($walletIds: [WalletId!]!) {
   me {
     id
@@ -872,11 +1097,14 @@ query LatestAccountUpgradeRequest {
         __typename
       }
       bankAccount {
+        accountName
         accountNumber
         accountType
         bankBranch
         bankName
         currency
+        id
+        isDefault
         __typename
       }
       currentLevel
@@ -1133,6 +1361,7 @@ query homeAuthed {
     language
     username
     phone
+    createdAt
     email {
       address
       verified
@@ -1579,6 +1808,13 @@ query supportedCountries {
       supportedAuthChannels
       __typename
     }
+    __typename
+  }
+}
+
+query topupCashout {
+  globals {
+    topupEnabled
     __typename
   }
 }

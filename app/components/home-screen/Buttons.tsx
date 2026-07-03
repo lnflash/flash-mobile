@@ -68,13 +68,13 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
     })
   }
 
-  // if (currentLevel === AccountLevel.Two) {
-  //   buttons.push({
-  //     title: LL.Cashout.title(),
-  //     target: "CashoutDetails",
-  //     icon: "dollar",
-  //   })
-  // }
+  if (currentLevel !== AccountLevel.Zero) {
+    buttons.push({
+      title: LL.HomeScreen.transfer(),
+      target: "TopupCashout",
+      icon: "upDown",
+    })
+  }
 
   return (
     <Wrapper>

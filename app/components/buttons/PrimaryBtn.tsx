@@ -1,5 +1,11 @@
 import React from "react"
-import { ActivityIndicator, TextStyle, TouchableOpacity, ViewStyle } from "react-native"
+import {
+  ActivityIndicator,
+  StyleProp,
+  TextStyle,
+  TouchableOpacity,
+  ViewStyle,
+} from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 
 type Props = {
@@ -7,8 +13,8 @@ type Props = {
   label: string
   loading?: boolean
   disabled?: boolean
-  btnStyle?: ViewStyle
-  txtStyle?: TextStyle
+  btnStyle?: StyleProp<ViewStyle>
+  txtStyle?: StyleProp<TextStyle>
   onPress?: () => void
 }
 

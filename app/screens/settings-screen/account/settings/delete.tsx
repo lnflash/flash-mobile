@@ -23,7 +23,7 @@ import { useAccountDeleteMutation, useSettingsScreenQuery } from "@app/graphql/g
 
 // utils
 import { CONTACT_EMAIL_ADDRESS } from "@app/config"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 
 export const Delete = () => {
@@ -43,7 +43,7 @@ export const Delete = () => {
   const [deleteAccount] = useAccountDeleteMutation({ fetchPolicy: "no-cache" })
   const { data, loading } = useSettingsScreenQuery()
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const usdWalletBalance = toUsdMoneyAmount(usdWallet?.balance)
   const btcWalletBalance = toBtcMoneyAmount(btcWallet?.balance)

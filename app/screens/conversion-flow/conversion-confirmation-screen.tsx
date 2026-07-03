@@ -17,7 +17,7 @@ import { useActivityIndicator, useBreez, useSwap } from "@app/hooks"
 
 // utils
 import { toastShow } from "@app/utils/toast"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 
 // types
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -42,7 +42,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
     returnPartialData: true,
   })
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const convertHandler = async () => {
     if (lnInvoice) {

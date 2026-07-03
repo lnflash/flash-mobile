@@ -5,7 +5,11 @@ import { MockedProvider } from "@apollo/client/testing"
 import { PropsWithChildren } from "react"
 import * as React from "react"
 import { IsAuthedContextProvider } from "@app/graphql/is-authed-context"
-import { CurrencyListDocument, RealtimePriceDocument } from "@app/graphql/generated"
+import {
+  CurrencyListDocument,
+  RealtimePriceDocument,
+  WalletCurrency,
+} from "@app/graphql/generated"
 
 const mocksNgn = [
   {
@@ -135,12 +139,32 @@ const wrapWithMocks =
 
 describe("usePriceConversion", () => {
   describe("testing moneyAmountToMajorUnitOrSats", () => {
+    it("formats USDT cents as major units", async () => {
+      const { result } = renderHook(useDisplayCurrency, {
+        wrapper: wrapWithMocks([]),
+      })
+
+      const moneyAmount = {
+        amount: 18,
+        currency: WalletCurrency.Usdt,
+        currencyCode: "USD",
+      }
+
+      expect(result.current.moneyAmountToMajorUnitOrSats(moneyAmount)).toBe(0.18)
+      // USDT displays as USD (stablecoin → fiat display mapping)
+      expect(result.current.formatMoneyAmount({ moneyAmount })).toBe("$0.18 USD")
+    })
+
     it("with 0 digits", async () => {
-      const { result, waitForNextUpdate } = renderHook(useDisplayCurrency, {
+      const { result, waitFor } = renderHook(useDisplayCurrency, {
         wrapper: wrapWithMocks(mocksJpy),
       })
 
-      await waitForNextUpdate()
+      await waitFor(
+        () =>
+          result.current.displayCurrency === "JPY" &&
+          result.current.fractionDigits === 0,
+      )
 
       const res = result.current.moneyAmountToMajorUnitOrSats({
         amount: 100,
@@ -229,5 +253,30 @@ describe("usePriceConversion", () => {
       fiatSymbol: "₦",
       displayCurrency: "NGN",
     })
+  })
+
+  it("converts USDT cents to display currency using USD-cent price", async () => {
+    const { result, waitFor } = renderHook(useDisplayCurrency, {
+      wrapper: wrapWithMocks(mocksNgn),
+    })
+
+    await waitFor(
+      () => {
+        return result.current.displayCurrency === "NGN"
+      },
+      {
+        timeout: 4000,
+      },
+    )
+
+    const displayAmount = result.current.moneyAmountToDisplayCurrencyString({
+      moneyAmount: {
+        amount: 100,
+        currency: WalletCurrency.Usdt,
+        currencyCode: "USDT",
+      },
+    })
+
+    expect(displayAmount).toBe("₦100.00")
   })
 })

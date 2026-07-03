@@ -15,7 +15,8 @@ const OnChainCharge: React.FC<Props> = ({ request }) => {
   const { LL } = useI18nContext()
 
   if (
-    request.receivingWalletDescriptor.currency === "USD" &&
+    (request.receivingWalletDescriptor.currency === "USD" ||
+      request.receivingWalletDescriptor.currency === "USDT") &&
     request.feesInformation?.deposit.minBankFee &&
     request.feesInformation?.deposit.minBankFeeThreshold &&
     request.type === Invoice.OnChain

@@ -1,13 +1,13 @@
 import * as React from "react"
 import { gql } from "@apollo/client"
 import { makeStyles } from "@rneui/themed"
-import { ScrollView } from "react-native-gesture-handler"
 import { AccountLevel, useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 import { Screen } from "../../components/screen"
 import { VersionComponent } from "../../components/version"
 import { AccountLNAddress } from "./settings/account-ln-address"
+import { BankAccountsSetting } from "./settings/bank-accounts"
 import { AccountLevelSetting } from "./settings/account-level"
 import { AccountStaticQR } from "./settings/account-static-qr"
 import { TxLimits } from "./settings/account-tx-limits"
@@ -26,12 +26,10 @@ import { BackupWallet } from "./settings/backup-wallet"
 import { ImportWallet } from "./settings/import-wallet"
 import { AdvancedModeToggle } from "./settings/advanced-mode-toggle"
 import { ExportCsvSetting } from "./settings/advanced-export-csv"
-import { ApiAccessSetting } from "./settings/advanced-api-access"
 import { GenerateReportsSetting } from "./settings/generate-reports"
 import { ExportSparkLogsSetting } from "./settings/export-spark-logs"
 import { SettingsGroup } from "./group"
 import { EmailSetting } from "./account/settings/email"
-import { ChatSetting } from "./chat-setting"
 // import { TotpSetting } from "./totp"
 
 gql`
@@ -63,7 +61,7 @@ gql`
 const items = {
   account: [AccountLevelSetting, TxLimits],
   loginMethods: [EmailSetting, PhoneSetting],
-  waysToGetPaid: [AccountLNAddress, AccountPOS, AccountStaticQR],
+  waysToGetPaid: [AccountLNAddress, BankAccountsSetting, AccountPOS, AccountStaticQR],
   reports: [GenerateReportsSetting],
   wallet: [BackupWallet, ImportWallet],
   preferences: [

@@ -4,7 +4,7 @@ import { makeStyles } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { StackScreenProps } from "@react-navigation/stack"
 
-// componenets
+// components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 import { DestinationField } from "@app/components/send-flow"
@@ -21,6 +21,7 @@ import {
 } from "@app/graphql/generated"
 import { useActivityIndicator, useAppConfig } from "@app/hooks"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // types
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -60,6 +61,7 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
   const styles = usestyles()
   const { appConfig } = useAppConfig()
   const { toggleActivityIndicator } = useActivityIndicator()
+  const { persistentState } = usePersistentStateContext()
   const { lnAddressHostname: lnDomain } = appConfig.galoyInstance
 
   const [destinationState, dispatchDestinationStateAction] = useReducer(
@@ -202,13 +204,24 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
 
       if (destination.valid === false) {
         if (destination.invalidReason === InvalidDestinationReason.SelfPayment) {
+          if (persistentState.isAdvanceMode) {
+            dispatchDestinationStateAction({
+              type: SendBitcoinActions.SetUnparsedDestination,
+              payload: {
+                unparsedDestination: rawInput,
+              },
+            })
+            navigation.navigate("conversionDetails")
+            return
+          }
+
           dispatchDestinationStateAction({
-            type: SendBitcoinActions.SetUnparsedDestination,
+            type: SendBitcoinActions.SetInvalid,
             payload: {
+              invalidDestination: destination,
               unparsedDestination: rawInput,
             },
           })
-          navigation.navigate("conversionDetails")
           return
         }
 
@@ -279,6 +292,7 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
     destinationState.destinationState,
     accountDefaultWalletQuery,
     lnDomain,
+    persistentState.isAdvanceMode,
     dispatchDestinationStateAction,
     navigation,
   ])

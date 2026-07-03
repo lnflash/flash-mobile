@@ -60,4 +60,10 @@ const route = {
   },
 } as const
 
-export const Intraledger = () => <SendBitcoinConfirmationScreen route={route} />
+export const Intraledger = () => (
+  <SendBitcoinConfirmationScreen
+    route={route}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    navigation={{} as any}
+  />
+)

@@ -53,7 +53,10 @@ const ConfirmationWalletFee: React.FC<Props> = ({
 
   const getSendingFee = async () => {
     setFee({ status: "loading", amount: undefined })
-    if (sendingWalletDescriptor.currency === "USD") {
+    if (
+      sendingWalletDescriptor.currency === "USD" ||
+      sendingWalletDescriptor.currency === "USDT"
+    ) {
       setFee(getLightningFee)
     } else {
       const { fee, err } = await fetchBreezFee(

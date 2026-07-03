@@ -2,7 +2,7 @@ import React from "react"
 import moment from "moment"
 import styled from "styled-components/native"
 import { Text, useTheme } from "@rneui/themed"
-import { useHideBalanceQuery } from "@app/graphql/generated"
+import { useHideBalanceQuery, WalletCurrency } from "@app/graphql/generated"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { PaymentType, PaymentStatus } from "@breeztech/breez-sdk-spark-react-native"
@@ -20,7 +20,8 @@ import ArrowDown from "@app/assets/icons/arrow-down.svg"
 import Icon from "react-native-vector-icons/Ionicons"
 
 // utils
-import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
+import { displayCurrencyCode } from "@app/utils/currency-display"
 
 // types
 import {
@@ -40,11 +41,12 @@ const label = {
   SEND: "Sent",
 }
 
-export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
+const TxItemComponent: React.FC<Props> = ({ tx }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { colors } = useTheme().theme
 
-  const { formatMoneyAmount, moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
+  const { formatMoneyAmount, moneyAmountToDisplayCurrencyString } =
+    useDisplayCurrency()
   const { convertMoneyAmount } = usePriceConversion()
 
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
@@ -67,6 +69,7 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
   // Calculate display amounts
   let primaryAmount = null
   let secondaryAmount = null
+  let feeAmount = null
 
   if (isBreezTransaction(tx)) {
     // Breez transaction - always BTC
@@ -77,21 +80,36 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
     })
     secondaryAmount = formatMoneyAmount({ moneyAmount })
   } else {
-    // Ibex transaction - always USD
-    const amount = tx.transaction.settlementAmount * 100
-    const moneyAmount = toUsdMoneyAmount(amount ?? NaN)
+    const moneyAmount = toWalletAmount({
+      amount: Math.abs(tx.transaction.settlementAmount),
+      currency: tx.transaction.settlementCurrency,
+    })
     primaryAmount = moneyAmountToDisplayCurrencyString({
       moneyAmount,
+      isApproximate: true,
     })
-    if (convertMoneyAmount) {
+
+    if (tx.transaction.settlementCurrency === WalletCurrency.Usd && convertMoneyAmount) {
       secondaryAmount = formatMoneyAmount({
         moneyAmount: convertMoneyAmount(moneyAmount, "BTC"),
+      })
+    } else {
+      secondaryAmount = formatMoneyAmount({ moneyAmount })
+    }
+
+    if (!isReceive && tx.transaction.settlementFee > 0) {
+      feeAmount = formatMoneyAmount({
+        moneyAmount: toWalletAmount({
+          amount: tx.transaction.settlementFee,
+          currency: tx.transaction.settlementCurrency,
+        }),
       })
     }
   }
 
-  // Get currency label - Breez is BTC, Ibex is USD
-  const currencyLabel = isBreezTransaction(tx) ? "BTC" : "USD"
+  const currencyLabel = isBreezTransaction(tx)
+    ? "BTC"
+    : displayCurrencyCode(tx.transaction.settlementCurrency)
 
   const onPress = () => {
     if (isIbexTransaction(tx)) {
@@ -120,30 +138,39 @@ export const TxItem: React.FC<Props> = React.memo(({ tx }) => {
           )}
         </RowWrapper>
         {memo && (
-          <RowWrapper style={{ marginVertical: 2 }}>
+          <MetadataRowWrapper>
             <Icon name="document-text" size={14} color={colors.primary} />
             <Text type="caption" color={colors.primary} numberOfLines={1}>
               {memo}
             </Text>
-          </RowWrapper>
+          </MetadataRowWrapper>
+        )}
+        {feeAmount && (
+          <MetadataRowWrapper>
+            <Text type="caption" color={colors.text02}>
+              {`Fee ${feeAmount}`}
+            </Text>
+          </MetadataRowWrapper>
         )}
         <Text type="caption" color={colors.text02}>
           {moment(moment.unix(timestamp)).fromNow()}
         </Text>
       </ColumnWrapper>
       <HideableArea isContentVisible={hideBalance}>
-        <ColumnWrapper style={{ alignItems: "flex-end" }}>
+        <AmountColumnWrapper>
           <Text type="bl" color={isReceive ? colors.accent02 : colors.black}>
             {primaryAmount}
           </Text>
           <Text type="caption" color={colors.text02}>
             {secondaryAmount}
           </Text>
-        </ColumnWrapper>
+        </AmountColumnWrapper>
       </HideableArea>
     </Wrapper>
   )
-})
+}
+
+export const TxItem = React.memo(TxItemComponent)
 
 const Wrapper = styled.TouchableOpacity`
   flex-direction: row;
@@ -168,4 +195,12 @@ const ColumnWrapper = styled.View`
 const RowWrapper = styled.View`
   flex-direction: row;
   align-items: center;
+`
+
+const MetadataRowWrapper = styled(RowWrapper)`
+  margin-vertical: 2px;
+`
+
+const AmountColumnWrapper = styled(ColumnWrapper)`
+  align-items: flex-end;
 `

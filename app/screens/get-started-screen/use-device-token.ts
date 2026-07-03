@@ -1,11 +1,8 @@
 import { useState, useEffect } from "react"
-import {
-  initializeAppCheck,
-  ReactNativeFirebaseAppCheckProvider,
-} from "@react-native-firebase/app-check"
+import appCheck, { initializeAppCheck } from "@react-native-firebase/app-check"
 import Config from "react-native-config"
 
-const rnfbProvider = new ReactNativeFirebaseAppCheckProvider()
+const rnfbProvider = appCheck().newReactNativeFirebaseAppCheckProvider()
 rnfbProvider.configure({
   android: {
     provider: __DEV__ ? "debug" : "playIntegrity",

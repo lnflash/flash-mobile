@@ -21,31 +21,24 @@ export const getPaymentRequestFullUri = ({
 }: GetFullUriInput): string => {
   if (type === Invoice.Lightning) {
     return uppercase ? input.toUpperCase() : input
-  } else {
-    if (wallet === "BTC") {
-      return input
-    } else {
-      return input
-      const uriPrefix = prefix ? prefixByType[type] : ""
-      const uri = `${uriPrefix}${input}`
-
-      const params = new URLSearchParams()
-
-      if (amount && convertMoneyAmount) {
-        params.append(
-          "amount",
-          `${satsToBTC(convertMoneyAmount(toUsdMoneyAmount(amount), "BTC").amount)}`,
-        )
-      }
-
-      if (memo) {
-        params.append("message", encodeURI(memo))
-        return `${uri}?${params.toString()}`
-      }
-
-      return uri + (params.toString() ? "?" + params.toString() : "")
-    }
   }
+
+  let uri = prefix ? `${prefixByType[type]}${input}` : input
+  const queryParams: string[] = []
+
+  if (amount) {
+    queryParams.push(`amount=${satsToBTC(amount)}`)
+  }
+
+  if (memo) {
+    queryParams.push(`message=${encodeURIComponent(encodeURIComponent(memo))}`)
+  }
+
+  if (queryParams.length > 0) {
+    uri = `${uri}?${queryParams.join("&")}`
+  }
+
+  return uppercase ? uri.toUpperCase() : uri
 }
 
 export const satsToBTC = (satsAmount: number): number => satsAmount / 10 ** 8

@@ -93,7 +93,7 @@ type BasePaymentRequestCreationData<T extends WalletCurrency> = {
   ) => PaymentRequestCreationData<T>
 
   // Bitcoin Wallet Descriptor
-  bitcoinWalletDescriptor: BtcWalletDescriptor
+  bitcoinWalletDescriptor?: BtcWalletDescriptor
   setBitcoinWalletDescriptor: (
     bitcoinWalletDescriptor: BtcWalletDescriptor,
   ) => PaymentRequestCreationData<T>

@@ -141,7 +141,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({
       const lnurlRegex = /(lnurl[a-zA-Z0-9]+)/gi
       const lightningInvoiceRegex = /(lnbc[a-zA-Z0-9]+)/gi
 
-      let images = content.match(imageRegex) || []
+      let images: string[] = content.match(imageRegex) || []
       const imageHosts = content.match(imageHostRegex) || []
       images = [...images, ...imageHosts]
 
@@ -458,7 +458,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({
     )
   } catch (e) {
     console.error("Error rendering FeedItem:", e)
-    console.error("Error stack:", e.stack)
+    console.error("Error stack:", e instanceof Error ? e.stack : e)
     return (
       <View style={styles.containerWrapper}>
         <Text style={{ padding: 20, color: "red" }}>Error displaying post</Text>

@@ -14,6 +14,10 @@ export const usdWalletDescriptor = {
   id: "usd-wallet-id",
   currency: WalletCurrency.Usd,
 }
+export const usdtWalletDescriptor = {
+  id: "usdt-wallet-id",
+  currency: WalletCurrency.Usdt,
+}
 export const convertMoneyAmountFn = <T extends WalletOrDisplayCurrency>(
   amount: MoneyAmount<WalletOrDisplayCurrency>,
   toCurrency: T,

@@ -17,7 +17,7 @@ import {
 import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // utils
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { setHasPromptedSetDefaultAccount } from "@app/graphql/client-only-query"
 
 // assets
@@ -42,7 +42,7 @@ export const SetDefaultAccountModal = ({ isVisible, toggleModal }: Props) => {
   const { data } = useSetDefaultAccountModalQuery({
     fetchPolicy: "cache-only",
   })
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const onPressHandler = async (currency: string) => {
     let defaultWallet = usdWallet

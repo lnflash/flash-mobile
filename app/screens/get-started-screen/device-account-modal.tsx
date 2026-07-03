@@ -146,10 +146,12 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
   }
 
   const onPressBasic = () => {
+    setIsBasicSelected(true)
     createDeviceAccountAndLogin()
   }
 
   const onPressFull = () => {
+    setIsBasicSelected(false)
     navigateToPhoneLogin()
   }
 
@@ -157,7 +159,6 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
     <DeviceAccountFailModal
       isVisible={isVisible}
       closeModal={closeModal}
-      navigateToPhoneLogin={navigateToPhoneLogin}
       navigateToHomeScreen={navigateToHomeScreen}
     />
   ) : (
@@ -166,6 +167,16 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
       toggleModal={closeModal}
       image={<GaloyIcon name="info" color={colors.primary3} size={100} />}
       title={LL.GetStartedScreen.chooseAccountType()}
+      primaryButtonTitle={LL.common.next()}
+      primaryButtonOnPress={() => {
+        if (isBasicSelected === true) {
+          onPressBasic()
+        } else if (isBasicSelected === false) {
+          onPressFull()
+        }
+      }}
+      primaryButtonDisabled={isBasicSelected === null}
+      primaryButtonLoading={loading}
       body={
         <View style={styles.modalBody}>
           <View style={styles.columnContainer}>
@@ -175,8 +186,8 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
                 selected={isBasicSelected === true}
                 title={"BASIC⚡"}
               />
-              <LimitItem text={"No Phone# required"} />
-              <LimitItem text={"Receive in seconds"} />
+              <LimitItem text="No Phone# required" />
+              <LimitItem text="Receive in seconds" />
             </View>
             <View style={styles.cellContainer}>
               <AccountTypeButton
@@ -184,8 +195,8 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
                 selected={isBasicSelected === false}
                 title={"FULL✅"}
               />
-              <LimitItem text={"No sending limits"} />
-              <LimitItem text={"Safe wallet backup"} />
+              <LimitItem text="No sending limits" />
+              <LimitItem text="Safe wallet backup" />
             </View>
           </View>
         </View>
@@ -194,7 +205,7 @@ export const DeviceAccountModal: React.FC<DeviceAccountModalProps> = ({
   )
 }
 
-const LimitItem = ({ text }: { text: LocalizedString }) => {
+const LimitItem = ({ text }: { text: LocalizedString | string }) => {
   const styles = useStyles()
 
   return (

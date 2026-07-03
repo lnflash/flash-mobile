@@ -32,8 +32,15 @@ export const NetworkErrorComponent: React.FC = () => {
     }
 
     if (networkError.statusCode >= 400 && networkError.statusCode < 500) {
-      let errorCode =
-        "result" in networkError ? networkError.result?.errors?.[0]?.code : undefined
+      const errors =
+        "result" in networkError &&
+        typeof networkError.result === "object" &&
+        networkError.result !== null &&
+        "errors" in networkError.result &&
+        Array.isArray(networkError.result.errors)
+          ? networkError.result.errors
+          : undefined
+      let errorCode = errors?.[0]?.code
 
       if (!errorCode) {
         switch (networkError.statusCode) {

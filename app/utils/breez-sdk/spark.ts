@@ -32,6 +32,7 @@ import type {
   Payment,
   Logger,
   LogEntry,
+  LnurlPayRequestDetails,
 } from "@breeztech/breez-sdk-spark-react-native"
 import { API_KEY, BREEZ_LNURL_DOMAIN } from "@env"
 import { appendLog, initLogBuffer } from "./log-buffer"
@@ -54,6 +55,20 @@ export const getSDKInstance = (): BreezSdkInterface => {
     throw new Error("Breez SDK not initialized. Call initializeBreezSDK first.")
   }
   return sdkInstance
+}
+
+export const lnurlPayRequestDetailsFromInput = (
+  input: InputType,
+): LnurlPayRequestDetails | null => {
+  if (input.tag === "LightningAddress") {
+    return input.inner[0].payRequest
+  }
+
+  if (input.tag === "LnurlPay") {
+    return input.inner[0]
+  }
+
+  return null
 }
 
 // SDK Initialization
@@ -263,11 +278,12 @@ export const fetchBreezFee = async (
 
     if (paymentType === "intraledger" || paymentType === "lnurl") {
       const parsed = await parse(paymentRequest)
+      const payRequest = lnurlPayRequestDetailsFromInput(parsed)
 
-      if (parsed.tag === InputType_Tags.LightningAddress) {
+      if (payRequest) {
         const prepareResponse = await sdk.prepareLnurlPay({
           amount: BigInt(amountSats),
-          payRequest: parsed.inner[0].payRequest,
+          payRequest,
           comment: undefined,
           validateSuccessActionUrl: undefined,
           tokenIdentifier: undefined,
@@ -413,10 +429,12 @@ export const payLnurlBreez = async (
     const sdk = getSDKInstance()
 
     const input = await sdk.parse(lnurl)
-    if (input.tag === InputType_Tags.LightningAddress) {
+    const payRequest = lnurlPayRequestDetailsFromInput(input)
+
+    if (payRequest) {
       const prepareResponse = await sdk.prepareLnurlPay({
         amount: BigInt(amountSats),
-        payRequest: input.inner[0].payRequest,
+        payRequest,
         comment: memo,
         validateSuccessActionUrl: true,
         tokenIdentifier: undefined,
