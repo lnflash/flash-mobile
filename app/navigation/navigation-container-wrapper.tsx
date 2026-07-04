@@ -84,9 +84,12 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
     config: {
       screens: {
         sendBitcoinDestination: ":payment",
-        // Home-screen widget quick actions (flash://scan, flash://receive)
-        scanningQRCode: "scan",
-        receiveBitcoin: "receive",
+        // Home-screen widget / watch quick actions. Namespaced under widget/ so
+        // they can never collide with a username matched by ":payment" (e.g. a
+        // pay link for a user literally named "receive"). flash://widget/home is
+        // deliberately unmapped: it opens the app without deep-navigating.
+        scanningQRCode: "widget/scan",
+        receiveBitcoin: "widget/receive",
         Primary: {
           screens: {
             Home: "/",

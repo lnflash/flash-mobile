@@ -127,7 +127,7 @@ Set both watch targets' **watchOS Deployment Target** to **9.0** or later
    and change your display currency in Settings — `WatchCurrencySync` pushes it
    over, and the watch reprices on its next refresh.
 5. Quick actions: tap **Scan** / **Receive** in the watch app. When the phone is
-   reachable the bridge opens `flash://scan` / `flash://receive` on the phone.
+   reachable the bridge opens `flash://widget/scan` / `flash://widget/receive` on the phone (via a local notification when the app is backgrounded, since iOS blocks background self-foregrounding).
 
 ## Notes
 
@@ -135,7 +135,7 @@ Set both watch targets' **watchOS Deployment Target** to **9.0** or later
   watch and complication show a price even before login (USD until the phone
   pushes the user's currency). WidgetKit budgets watch refreshes; the
   complication asks for one roughly every 20 minutes.
-- The `flash://scan` / `flash://receive` deep links resolve via the app's
+- The `flash://widget/scan` / `flash://widget/receive` deep links resolve via the app's
   existing React Navigation `linking` config (`PREFIX_LINKING` already includes
   `flash://`). If a given screen route isn't registered, the action simply opens
   the app — no crash.

@@ -219,6 +219,10 @@ struct ContentView: View {
 
     let fetchedHistory = await PriceService.fetchHistory()
     history = fetchedHistory.isEmpty ? WatchStore.readHistory() : fetchedHistory
+
+    // Reload the complication from the app context only — the complication's
+    // own timeline provider must never trigger a reload of itself.
+    PriceService.reloadComplications()
   }
 }
 

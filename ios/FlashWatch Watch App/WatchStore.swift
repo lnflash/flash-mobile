@@ -57,7 +57,11 @@ enum WatchStore {
     else {
       return []
     }
-    return points
+    let sanitized = sanitizeHistory(points)
+    if sanitized.count != points.count {
+      writeHistory(sanitized)
+    }
+    return sanitized
   }
 
   static func writeHistory(_ points: [PricePoint]) {
@@ -65,14 +69,25 @@ enum WatchStore {
     defaults?.set(data, forKey: Key.priceHistory)
   }
 
-  static func appendHistory(_ snapshot: PriceSnapshot) {
-    guard snapshot.hasPrice, snapshot.timestamp > 0 else { return }
-    var history = readHistory()
-    history.append(PricePoint(price: snapshot.btcPrice, timestamp: snapshot.timestamp))
-    if history.count > 160 {
-      history.removeFirst(history.count - 160)
+  private static func sanitizeHistory(_ history: [PricePoint]) -> [PricePoint] {
+    let valid = history
+      .filter { $0.price.isFinite && $0.price > 0 && $0.timestamp.isFinite }
+      .sorted { $0.timestamp < $1.timestamp }
+
+    guard valid.count > 1 else { return valid }
+
+    let prices = valid.map(\.price)
+    guard let minPrice = prices.min(), let maxPrice = prices.max(), minPrice > 0 else {
+      return []
     }
-    writeHistory(history)
+
+    // Earlier builds appended display-currency spot prices into the USD-based
+    // 30-day history. A one-month BTC chart should never span orders of
+    // magnitude, so discard a mixed-unit cache and let the next history fetch
+    // write the authoritative series.
+    guard maxPrice / minPrice <= 20 else { return [] }
+
+    return valid
   }
 
   /// Updates only the currency fields when the phone pushes the user's display

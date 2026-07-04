@@ -79,8 +79,12 @@ enum PriceService {
         timestamp: ts
       )
       WatchStore.write(snapshot)
-      WatchStore.appendHistory(snapshot)
-      reloadComplications()
+      // No history append: the 30D fetch is the authoritative source, and this
+      // snapshot is in the user's display currency while history is USD —
+      // mixing units corrupts the chart. No complication reload either: the
+      // complication provider runs this same fetch, and reloading from inside
+      // a timeline generation self-invalidates in a loop. The watch app
+      // triggers the reload instead (ContentView.refreshAll).
       completion(snapshot)
     }.resume()
   }

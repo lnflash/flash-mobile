@@ -8,7 +8,11 @@
 #import <WatchConnectivity/WatchConnectivity.h>
 
 #import "RNBootSplash.h"
+// Guarded so the LNFlash-Alt target (which compiles no Swift sources and
+// therefore has no generated Swift header) keeps building.
+#if __has_include("Flash-Swift.h")
 #import "Flash-Swift.h"
+#endif
 
 @implementation AppDelegate
 
@@ -16,7 +20,9 @@
 {
   [RNFBAppCheckModule sharedInstance];
   [FIRApp configure];
+#if __has_include("Flash-Swift.h")
   [WatchConnectivityBridge activateSession];
+#endif
 
   self.moduleName = @"LNFlash";
   self.dependencyProvider = [RCTAppDependencyProvider new];

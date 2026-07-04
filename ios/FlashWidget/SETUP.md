@@ -76,7 +76,7 @@ dependencies.
    widget will also self-refresh from `https://api.flashapp.me/graphql` every
    ~15 min even with the app closed.
 5. Tap **Scan** / **Receive** on the medium/large widget — they deep-link via
-   `flash://scan` and `flash://receive` into the app.
+   `flash://widget/scan` and `flash://widget/receive` into the app.
 
 ## Notes
 

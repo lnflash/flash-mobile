@@ -22,9 +22,15 @@ class FlashWidgetProvider : AppWidgetProvider() {
     appWidgetManager: AppWidgetManager,
     appWidgetIds: IntArray,
   ) {
-    // Refresh price off the main thread, then re-render every instance.
+    // Render the cached snapshot immediately — the receiver process can be
+    // killed shortly after onReceive returns, before a network fetch
+    // completes, so the fetch below is best-effort.
+    val cached = WidgetStore.read(context)
+    for (id in appWidgetIds) {
+      renderWidget(context, appWidgetManager, id, cached)
+    }
     Thread {
-      val snapshot = PriceFetcher.fetch(WidgetStore.read(context))
+      val snapshot = PriceFetcher.fetch(cached)
       WidgetStore.write(context, snapshot)
       for (id in appWidgetIds) {
         renderWidget(context, appWidgetManager, id, snapshot)
@@ -61,15 +67,35 @@ class FlashWidgetProvider : AppWidgetProvider() {
       setTextViewText(R.id.widget_price, snapshot.formattedPrice())
       setTextViewText(R.id.widget_currency, snapshot.currencyCode)
 
-      // Whole-widget tap opens the app; action buttons deep-link to screens.
-      setOnClickPendingIntent(R.id.widget_root, deepLinkIntent(context, "flash://home"))
+      // Whole-widget tap opens the app via a plain launch intent (a deep link
+      // here would fall through to the ":payment" route). Action buttons use
+      // widget/-namespaced deep links that can never collide with a username.
+      launchAppIntent(context)?.let { setOnClickPendingIntent(R.id.widget_root, it) }
       if (layoutId != R.layout.flash_widget_small) {
-        setOnClickPendingIntent(R.id.widget_btn_scan, deepLinkIntent(context, "flash://scan"))
-        setOnClickPendingIntent(R.id.widget_btn_receive, deepLinkIntent(context, "flash://receive"))
+        setOnClickPendingIntent(
+          R.id.widget_btn_scan,
+          deepLinkIntent(context, "flash://widget/scan"),
+        )
+        setOnClickPendingIntent(
+          R.id.widget_btn_receive,
+          deepLinkIntent(context, "flash://widget/receive"),
+        )
       }
     }
 
     appWidgetManager.updateAppWidget(appWidgetId, views)
+  }
+
+  private fun launchAppIntent(context: Context): PendingIntent? {
+    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+      ?.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP) }
+      ?: return null
+    return PendingIntent.getActivity(
+      context,
+      0,
+      intent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
   }
 
   private fun deepLinkIntent(context: Context, uri: String): PendingIntent {

@@ -13,9 +13,12 @@ import SwiftUI
 // MARK: - Deep links
 
 enum DeepLink {
-  static let scan = URL(string: "flash://scan")!
-  static let receive = URL(string: "flash://receive")!
-  static let sendHome = URL(string: "flash://home")!
+  // Namespaced under widget/ so the paths can never match the ":payment"
+  // username route in the RN linking config. widget/home is deliberately
+  // unmapped: it opens the app without deep-navigating anywhere.
+  static let scan = URL(string: "flash://widget/scan")!
+  static let receive = URL(string: "flash://widget/receive")!
+  static let sendHome = URL(string: "flash://widget/home")!
 }
 
 // MARK: - Design tokens

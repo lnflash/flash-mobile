@@ -33,24 +33,26 @@ object WidgetStore {
     }
   }
 
+  // Doubles are persisted as raw bits in a long — Float's ~7 significant
+  // digits visibly corrupt high-denomination prices (JMD, IDR, VND).
   fun read(context: Context): Snapshot {
     val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     return Snapshot(
-      btcPrice = p.getFloat(KEY_PRICE, 0f).toDouble(),
+      btcPrice = Double.fromBits(p.getLong(KEY_PRICE, 0L)),
       currencyCode = p.getString(KEY_CURRENCY, "USD") ?: "USD",
       currencySymbol = p.getString(KEY_SYMBOL, "$") ?: "$",
       fractionDigits = p.getInt(KEY_FRACTION, 2),
-      timestamp = p.getFloat(KEY_TIMESTAMP, 0f).toDouble(),
+      timestamp = Double.fromBits(p.getLong(KEY_TIMESTAMP, 0L)),
     )
   }
 
   fun write(context: Context, snapshot: Snapshot) {
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-      .putFloat(KEY_PRICE, snapshot.btcPrice.toFloat())
+      .putLong(KEY_PRICE, snapshot.btcPrice.toRawBits())
       .putString(KEY_CURRENCY, snapshot.currencyCode)
       .putString(KEY_SYMBOL, snapshot.currencySymbol)
       .putInt(KEY_FRACTION, snapshot.fractionDigits)
-      .putFloat(KEY_TIMESTAMP, snapshot.timestamp.toFloat())
+      .putLong(KEY_TIMESTAMP, snapshot.timestamp.toRawBits())
       .apply()
   }
 }
