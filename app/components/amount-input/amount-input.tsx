@@ -55,8 +55,9 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   let formattedSecondaryAmount = undefined
 
   if (isNonZeroMoneyAmount(unitOfAccountAmount)) {
-    const isBtcDenominatedUsdWalletAmount =
-      walletCurrency === WalletCurrency.Usd &&
+    const isBtcDenominatedCashWalletAmount =
+      (walletCurrency === WalletCurrency.Usd ||
+        walletCurrency === WalletCurrency.Usdt) &&
       unitOfAccountAmount.currency === WalletCurrency.Btc
 
     const primaryAmount = convertMoneyAmount(unitOfAccountAmount, DisplayCurrency)
@@ -73,7 +74,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
 
     formattedPrimaryAmount = formatMoneyAmount({
       moneyAmount: primaryAmount,
-      isApproximate: isBtcDenominatedUsdWalletAmount && !secondaryAmount,
+      isApproximate: isBtcDenominatedCashWalletAmount && !secondaryAmount,
     })
 
     formattedSecondaryAmount =
@@ -81,8 +82,9 @@ export const AmountInput: React.FC<AmountInputProps> = ({
       formatMoneyAmount({
         moneyAmount: secondaryAmount,
         isApproximate:
-          isBtcDenominatedUsdWalletAmount &&
-          secondaryAmount.currency === WalletCurrency.Usd,
+          isBtcDenominatedCashWalletAmount &&
+          (secondaryAmount.currency === WalletCurrency.Usd ||
+            secondaryAmount.currency === WalletCurrency.Usdt),
       })
   }
 

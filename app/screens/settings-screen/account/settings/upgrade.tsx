@@ -18,7 +18,7 @@ export const UpgradeAccountLevelOne: React.FC = () => {
     <SettingsRow
       title={LL.AccountScreen.upgrade()}
       leftIcon="person-outline"
-      action={() => navigate("fullOnboardingFlow")}
+      action={() => navigate("AccountType")}
     />
   )
 }

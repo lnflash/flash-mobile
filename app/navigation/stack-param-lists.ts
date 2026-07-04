@@ -4,7 +4,6 @@ import {
   CashoutOffer,
   PhoneCodeChannelType,
   TransactionFragment,
-  Wallet,
   WalletCurrency,
 } from "@app/graphql/generated"
 import type { Payment, DepositInfo } from "@breeztech/breez-sdk-spark-react-native"
@@ -34,12 +33,13 @@ export type RootStackParamList = {
     isPinEnabled: boolean
   }
   pin: { screenPurpose: PinScreenPurpose; callback?: () => void }
-  Primary: undefined
+  Primary: NavigatorScreenParams<PrimaryStackParamList> | undefined
   earnsSection: { section: EarnSectionType }
   earnsQuiz: { id: string }
   scanningQRCode?: { swapAddress: string; amount: number; fee: number; feeType: string }
   settings: undefined
   addressScreen: undefined
+  BankAccounts: undefined
   defaultWallet: undefined
   theme: undefined
   sendBitcoinDestination: {
@@ -108,6 +108,7 @@ export type RootStackParamList = {
   phoneRegistrationInitiate: undefined
   makeNostrPost: undefined
   postSuccess: { postContent: string; userNpub: string; event: Event }
+  contactDetails: { contactPubkey: string }
   irisBrowser: { initialUrl?: string } | undefined
   phoneRegistrationValidate: {
     phone: string
@@ -144,8 +145,13 @@ export type RootStackParamList = {
   UnclaimedDepositsList: undefined
   UnclaimedDepositDetails: { deposit: DepositInfo }
   RefundDeposit: { deposit: DepositInfo }
-  CashoutDetails: undefined
-  CashoutConfirmation: { offer: CashoutOffer }
+  CashoutDetails: { type: "local" | "bridge" }
+  CashoutConfirmation:
+    | { offer: CashoutOffer }
+    | {
+        bridgeWithdrawalId: string
+        bridgeAccountLabel?: string
+      }
   CashoutSuccess: undefined
   EditNostrProfile: undefined
   NostrSettingsScreen: undefined
@@ -162,7 +168,32 @@ export type RootStackParamList = {
   }
   AccountUpgradeSuccess: undefined
   // Featured profile WebView entry
-  FeaturedProfileView: { entryPoint: 'search' | 'long_press' | 'profile' }
+  FeaturedProfileView: { entryPoint: "search" | "long_press" | "profile" }
+  BridgeKycWebView: {
+    tosLink: string
+    kycLink: string
+  }
+  BridgeExternalAccountWebView: {
+    linkUrl: string
+  }
+  BridgeAddExternalAccount: { returnTo?: "BankAccounts" } | undefined
+  TopupCashout: undefined
+  TopupDetails: { paymentType: "card" | "bankTransfer" | "bridge" }
+  BankTransfer: {
+    amount: number
+    wallet: string
+    paymentType: "bankTransfer" | "bridge"
+  }
+  CardPayment: {
+    amount: number
+    wallet: string
+  }
+  TopupSuccess: undefined
+  paymentSuccess: {
+    amount: number
+    wallet: string
+    transactionId: string
+  }
 }
 
 export type ChatStackParamList = {
@@ -172,6 +203,7 @@ export type ChatStackParamList = {
   transactionDetail: { txid: string }
   messages: { groupId: string }
   contactDetails: { contactPubkey: string }
+  makeNostrPost: undefined
 }
 
 export type ContactStackParamList = {

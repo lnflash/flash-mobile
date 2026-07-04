@@ -115,15 +115,25 @@ export const createPaymentRequest = (
         info = generateOnChainInfo(res.paymentRequest, [], [])
       }
     } else {
-      // Handle USD payment requests
+      // Handle USD/USDT payment requests
       if (pr.type === Invoice.Lightning) {
-        if (pr.settlementAmount && pr.settlementAmount?.currency === WalletCurrency.Usd) {
-          console.log("Invoice create amount: ", pr.settlementAmount.amount)
+        if (
+          pr.settlementAmount &&
+          (pr.settlementAmount?.currency === WalletCurrency.Usd ||
+            pr.settlementAmount?.currency === WalletCurrency.Usdt)
+        ) {
+          // lnUsdInvoiceCreate expects the amount in USD cents. USD settlement
+          // amounts are already in cents, but USDT settlement amounts are
+          // denominated in USDT smallest units (micros), which are
+          const amountInCents =
+            pr.settlementAmount.currency === WalletCurrency.Usdt
+              ? pr.settlementAmount.amount
+              : pr.settlementAmount.amount
           const { data, errors } = await mutations.lnUsdInvoiceCreate({
             variables: {
               input: {
                 walletId: pr.receivingWalletDescriptor.id,
-                amount: pr.settlementAmount.amount,
+                amount: amountInCents,
                 memo: pr.memo,
               },
             },

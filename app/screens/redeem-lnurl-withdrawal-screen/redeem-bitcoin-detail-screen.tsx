@@ -71,7 +71,10 @@ const RedeemBitcoinDetailScreen: React.FC<Prop> = ({ route, navigation }) => {
     btcMoneyAmount.amount >= minSats.amount
 
   useEffect(() => {
-    if (persistentState.defaultWallet?.walletCurrency === WalletCurrency.Usd) {
+    if (
+      persistentState.defaultWallet?.walletCurrency === WalletCurrency.Usd ||
+      persistentState.defaultWallet?.walletCurrency === WalletCurrency.Usdt
+    ) {
       calculateEstimatedFee()
       navigation.setOptions({ title: LL.RedeemBitcoinScreen.usdTitle() })
     } else if (persistentState.defaultWallet?.walletCurrency === WalletCurrency.Btc) {

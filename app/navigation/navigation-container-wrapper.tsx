@@ -125,7 +125,7 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
         {...(mode === "dark" ? { theme: DarkTheme } : {})}
         linking={linking}
         onReady={() => {
-          RNBootSplash.hide({ fade: true, duration: 220 })
+          RNBootSplash.hide({ fade: true })
           console.log("NavigationContainer onReady")
         }}
         onStateChange={(state) => {

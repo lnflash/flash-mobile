@@ -28,6 +28,7 @@ export const IconTransaction: React.FC<Props> = ({
       if (onChain && !pending) return <OnchainIcon color={colors.primary} />
       return <LightningIcon color={colors.primary} />
     case WalletCurrency.Usd:
+    case WalletCurrency.Usdt:
       return <DollarIcon color={colors.primary} />
     default:
       return <View />

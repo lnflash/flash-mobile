@@ -116,14 +116,14 @@ export const BTCTransactionHistory = () => {
             </View>
           }
           ListFooterComponent={() =>
-            fetchingMore && (
+            fetchingMore ? (
               <BarIndicator
                 color={colors.primary}
                 count={5}
                 size={20}
                 style={{ marginVertical: 20 }}
               />
-            )
+            ) : null
           }
           sections={transactionSections}
           keyExtractor={(item, index) => getTransactionId(item) + index}

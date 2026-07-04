@@ -59,7 +59,7 @@ export const createPaymentRequestCreationData = <T extends WalletCurrency>(
   }
   let setAmount:
     | ((
-        unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>,
+        unitOfAccountAmount?: MoneyAmount<WalletOrDisplayCurrency>,
       ) => PaymentRequestCreationData<T>)
     | undefined = undefined
   if (permissions.canSetAmount) {

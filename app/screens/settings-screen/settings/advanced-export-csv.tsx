@@ -7,7 +7,7 @@ import {
   useSettingsScreenQuery,
   useWalletCsvTransactionsLazyQuery,
 } from "@app/graphql/generated"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { getCrashlytics } from "@react-native-firebase/crashlytics"
 
@@ -31,7 +31,7 @@ export const ExportCsvSetting: React.FC = () => {
   const { btcWallet } = useBreez()
   const { data, loading } = useSettingsScreenQuery()
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
   const btcWalletId = btcWallet?.id
   const usdWalletId = usdWallet?.id
 
@@ -90,17 +90,13 @@ export const ExportCsvSetting: React.FC = () => {
         const filePath = `${RNFS.DownloadDirectoryPath}/flash-transactions.csv`
         await RNFS.writeFile(filePath, csvContent, "utf8")
 
-        Alert.alert(
-          "CSV Exported",
-          `Saved to Downloads/flash-transactions.csv`,
-          [
-            {
-              text: "Share",
-              onPress: () => shareCsvFile(filePath),
-            },
-            { text: "OK", style: "cancel" },
-          ],
-        )
+        Alert.alert("CSV Exported", `Saved to Downloads/flash-transactions.csv`, [
+          {
+            text: "Share",
+            onPress: () => shareCsvFile(filePath),
+          },
+          { text: "OK", style: "cancel" },
+        ])
       }
     } catch (err: unknown) {
       if (err instanceof Error) {

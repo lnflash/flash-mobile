@@ -15,6 +15,9 @@ type GaloySecondaryButtonProps = PropsWithChildren<ButtonProps> & {
   grey?: boolean
 }
 
+const TouchableHighlightComponent =
+  TouchableHighlight as unknown as ButtonProps["TouchableComponent"]
+
 export const GaloySecondaryButton: FunctionComponent<GaloySecondaryButtonProps> = (
   props,
 ) => {
@@ -40,7 +43,7 @@ export const GaloySecondaryButton: FunctionComponent<GaloySecondaryButtonProps> 
       underlayColor={colors.transparent}
       activeOpacity={0.7}
       {...(icon ? { icon } : {})}
-      TouchableComponent={TouchableHighlight}
+      TouchableComponent={TouchableHighlightComponent}
       buttonStyle={styles.buttonStyle}
       disabledStyle={styles.disabledStyle}
       titleStyle={styles.buttonTitleStyle}

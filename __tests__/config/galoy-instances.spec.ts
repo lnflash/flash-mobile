@@ -22,6 +22,7 @@ it("get a full object with Custom", () => {
     posUrl: "https://pay.custom.com/",
     lnAddressHostname: "custom.com",
     blockExplorer: "https://mempool.space/tx/",
+    relayUrl: "wss://relay.custom.com",
   } as const
 
   const res = resolveGaloyInstanceOrDefault(CustomInstance)

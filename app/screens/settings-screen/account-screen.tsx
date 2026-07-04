@@ -24,7 +24,7 @@ import { GaloyPrimaryButton } from "@app/components/atomic/galoy-primary-button"
 import Modal from "react-native-modal"
 import { CONTACT_EMAIL_ADDRESS } from "@app/config"
 import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-button"
-import { getUsdWallet } from "@app/graphql/wallets-utils"
+import { getCashWallet } from "@app/graphql/wallets-utils"
 import { useNavigation } from "@react-navigation/native"
 import { useAppConfig, useBreez } from "@app/hooks"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
@@ -153,7 +153,7 @@ export const AccountScreen = () => {
 
   const [setEmailMutation] = useUserEmailRegistrationInitiateMutation()
 
-  const usdWallet = getUsdWallet(data?.me?.defaultAccount?.wallets)
+  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const usdWalletBalance = toUsdMoneyAmount(usdWallet?.balance)
   const btcWalletBalance = toBtcMoneyAmount(btcWallet?.balance)

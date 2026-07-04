@@ -1,6 +1,6 @@
 import { StackNavigationProp } from "@react-navigation/stack"
 import * as React from "react"
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native"
+import { ActivityIndicator, DimensionValue, StyleSheet, Text, View } from "react-native"
 import { ScrollView, TouchableOpacity } from "react-native-gesture-handler"
 import { SvgProps } from "react-native-svg"
 import { MountainHeader } from "../../components/mountain-header"
@@ -62,7 +62,7 @@ const ProgressBar = ({ progress }: ProgressProps) => {
   } = useTheme()
 
   const styles = useStyles()
-  const balanceWidth = `${progress * 100}%`
+  const balanceWidth = `${progress * 100}%` as DimensionValue
 
   return (
     <View style={styles.progressContainer}>

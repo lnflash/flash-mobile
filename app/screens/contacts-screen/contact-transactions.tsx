@@ -82,7 +82,9 @@ export const ContactTransactions = ({ contactUsername }: Props) => {
   return (
     <View style={styles.screen}>
       <SectionList
-        renderItem={({ item }) => <TxItem key={`txn-${item.id}`} tx={item} />}
+        renderItem={({ item }) => (
+          <TxItem key={`txn-${item.id}`} tx={{ source: "ibex", transaction: item }} />
+        )}
         initialNumToRender={20}
         renderSectionHeader={({ section: { title } }) => (
           <View style={styles.sectionHeaderContainer}>

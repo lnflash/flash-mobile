@@ -22,7 +22,7 @@ const CashoutFromWallet: React.FC<Props> = ({ usdBalance }) => {
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
 
-  if (!convertMoneyAmount) return
+  if (!convertMoneyAmount) return null
 
   const convertedUsdBalance = convertMoneyAmount(usdBalance, DisplayCurrency)
   const formattedUsdBalance = formatDisplayAndWalletAmount({
