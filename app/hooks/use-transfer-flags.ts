@@ -17,7 +17,7 @@ gql`
  * Instance-wide transfer feature flags, sourced from the backend globals query.
  *
  * The backend is the source of truth for bridge; the Firebase remote-config
- * flag (bridgeTopupEnabled) is kept ANDed in as a client-side kill switch.
+ * flag (bridgeTopupEnabled) must also be on, acting as a client-side kill switch.
  */
 export const useTransferFlags = () => {
   const { bridgeTopupEnabled } = useFeatureFlags()
