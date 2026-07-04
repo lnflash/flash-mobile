@@ -1812,13 +1812,6 @@ query supportedCountries {
   }
 }
 
-query topupCashout {
-  globals {
-    topupEnabled
-    __typename
-  }
-}
-
 query totpRegistrationScreen {
   me {
     username
@@ -1881,6 +1874,15 @@ query transactionListForDefaultAccount($first: Int, $after: String, $last: Int, 
       }
       __typename
     }
+    __typename
+  }
+}
+
+query transferFlags {
+  globals {
+    topupEnabled
+    cashoutEnabled
+    bridgeEnabled
     __typename
   }
 }

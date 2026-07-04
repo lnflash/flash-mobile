@@ -13,6 +13,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useTransferFlags } from "@app/hooks"
 
 // components
 import { IconBtn } from "../buttons"
@@ -30,6 +31,7 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
   const { currentLevel } = useLevel()
   const { persistentState } = usePersistentStateContext()
   const { data } = useHasPromptedSetDefaultAccountQuery()
+  const { transferEnabled } = useTransferFlags()
 
   const onMenuClick = (target: string) => {
     if (!isAuthed) {
@@ -68,7 +70,7 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
     })
   }
 
-  if (currentLevel !== AccountLevel.Zero) {
+  if (currentLevel !== AccountLevel.Zero && transferEnabled) {
     buttons.push({
       title: LL.HomeScreen.transfer(),
       target: "TopupCashout",
