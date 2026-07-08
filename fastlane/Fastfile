@@ -1,0 +1,279 @@
+opt_out_usage
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def version_from_git_tag(platform)
+  # Try platform-specific tag first (ios/v1.2.3 or android/v1.2.3), then generic v1.2.3
+  tag = `git describe --tags --match '#{platform}/v*' --abbrev=0 2>/dev/null`.strip
+  if tag.empty?
+    tag = `git describe --tags --match 'v*' --abbrev=0 2>/dev/null`.strip
+  end
+  tag.gsub(%r{^(ios|android)/}, "").gsub(/^v/, "")
+end
+
+def update_ios_version_from_tag
+  version = version_from_git_tag("ios")
+  unless version.empty?
+    increment_version_number(
+      version_number: version,
+      xcodeproj: "ios/LNFlash.xcodeproj"
+    )
+    UI.message("iOS version set to #{version}")
+  end
+end
+
+def update_android_version_from_tag
+  version = version_from_git_tag("android")
+  unless version.empty?
+    gradle_path = File.join(Dir.pwd, "..", "android", "app", "build.gradle")
+    content = File.read(gradle_path)
+    content = content.gsub(/versionName\s+"[^"]+"/, "versionName \"#{version}\"")
+    File.write(gradle_path, content)
+    UI.message("Android versionName set to #{version}")
+  end
+end
+
+def increment_android_version_code
+  gradle_path = File.join(Dir.pwd, "..", "android", "app", "build.gradle")
+  content = File.read(gradle_path)
+  current_code = content.match(/versionCode\s+(\d+)/)[1].to_i
+  new_code = current_code + 1
+  content = content.gsub(/versionCode\s+\d+/, "versionCode #{new_code}")
+  File.write(gradle_path, content)
+  UI.message("Android versionCode incremented: #{current_code} → #{new_code}")
+  new_code
+end
+
+# ---------------------------------------------------------------------------
+# iOS
+# ---------------------------------------------------------------------------
+
+platform :ios do
+  desc "Setup code signing for CI"
+  lane :setup_signing do
+    if is_ci
+      create_keychain(
+        name: "ci_keychain",
+        password: ENV["MATCH_PASSWORD"],
+        default_keychain: true,
+        unlock: true,
+        timeout: 3600,
+        lock_when_sleeps: false
+      )
+      match(
+        type: "appstore",
+        keychain_name: "ci_keychain",
+        keychain_password: ENV["MATCH_PASSWORD"],
+        readonly: true
+      )
+    else
+      match(type: "appstore", readonly: true)
+    end
+  end
+
+  desc "Deploy to TestFlight (beta)"
+  lane :beta do
+    ensure_git_status_clean unless ENV['CI']
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+      key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    update_ios_version_from_tag
+
+    increment_build_number(
+      build_number: latest_testflight_build_number(api_key: api_key) + 1,
+      xcodeproj: "ios/LNFlash.xcodeproj"
+    )
+
+    cocoapods(podfile: "ios/Podfile")
+
+    build_app(
+      workspace: "ios/LNFlash.xcworkspace",
+      scheme: "LNFlash",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "Flash.ipa",
+      export_options: {
+        provisioningProfiles: {
+          "com.lnflash" => ENV["sigh_com.lnflash_appstore_profile-name"] || "match AppStore com.lnflash"
+        }
+      },
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution'"
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: "./build/Flash.ipa",
+      skip_waiting_for_build_processing: true
+    )
+
+    version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash")
+    build = get_build_number(xcodeproj: "ios/LNFlash.xcodeproj")
+
+    if is_ci
+      git_commit(
+        path: ["ios/LNFlash.xcodeproj/project.pbxproj", "ios/LNFlash/Info.plist"],
+        message: "chore(ios): bump version to #{version} (#{build}) [skip ci]",
+        allow_nothing_to_commit: true
+      )
+      add_git_tag(tag: "ios/v#{version}-#{build}")
+    end
+  end
+
+  desc "Deploy to App Store (release)"
+  lane :release do
+    ensure_git_status_clean unless ENV['CI']
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+      key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    update_ios_version_from_tag
+
+    increment_build_number(
+      build_number: latest_testflight_build_number(api_key: api_key) + 1,
+      xcodeproj: "ios/LNFlash.xcodeproj"
+    )
+
+    cocoapods(podfile: "ios/Podfile")
+
+    build_app(
+      workspace: "ios/LNFlash.xcworkspace",
+      scheme: "LNFlash",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "Flash.ipa",
+      export_options: {
+        provisioningProfiles: {
+          "com.lnflash" => ENV["sigh_com.lnflash_appstore_profile-name"] || "match AppStore com.lnflash"
+        }
+      },
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution'"
+    )
+
+    upload_to_app_store(
+      api_key: api_key,
+      ipa: "./build/Flash.ipa",
+      skip_metadata: true,
+      skip_screenshots: true,
+      submit_for_review: false,
+      precheck_include_in_app_purchases: false
+    )
+
+    version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash")
+    build = get_build_number(xcodeproj: "ios/LNFlash.xcodeproj")
+
+    if is_ci
+      git_commit(
+        path: ["ios/LNFlash.xcodeproj/project.pbxproj", "ios/LNFlash/Info.plist"],
+        message: "chore(ios): release version #{version} (#{build}) [skip ci]",
+        allow_nothing_to_commit: true
+      )
+      add_git_tag(tag: "ios/release/v#{version}-#{build}", force: true)
+    end
+  end
+end
+
+# ---------------------------------------------------------------------------
+# Android
+# ---------------------------------------------------------------------------
+
+platform :android do
+  desc "Deploy to Google Play Internal Testing (beta)"
+  lane :beta do
+    ensure_git_status_clean unless ENV['CI']
+
+    update_android_version_from_tag
+    version_code = increment_android_version_code
+
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      project_dir: "android",
+      flags: "--no-daemon --stacktrace"
+    )
+
+    upload_to_play_store(
+      track: "internal",
+      aab: "android/app/build/outputs/bundle/release/app-release.aab",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true
+    )
+
+    gradle_path = File.join(Dir.pwd, "..", "android", "app", "build.gradle")
+    content = File.read(gradle_path)
+    version_name = content.match(/versionName\s+"([^"]+)"/)[1]
+
+    if is_ci
+      git_commit(
+        path: ["android/app/build.gradle"],
+        message: "chore(android): bump version to #{version_name} (#{version_code}) [skip ci]",
+        allow_nothing_to_commit: true
+      )
+      add_git_tag(tag: "android/v#{version_name}-#{version_code}")
+    end
+  end
+
+  desc "Deploy to Google Play Production (release)"
+  lane :release do
+    ensure_git_status_clean unless ENV['CI']
+
+    update_android_version_from_tag
+    version_code = increment_android_version_code
+
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      project_dir: "android",
+      flags: "--no-daemon --stacktrace"
+    )
+
+    upload_to_play_store(
+      track: "production",
+      rollout: "0.1",
+      aab: "android/app/build/outputs/bundle/release/app-release.aab",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true
+    )
+
+    gradle_path = File.join(Dir.pwd, "..", "android", "app", "build.gradle")
+    content = File.read(gradle_path)
+    version_name = content.match(/versionName\s+"([^"]+)"/)[1]
+
+    if is_ci
+      git_commit(
+        path: ["android/app/build.gradle"],
+        message: "chore(android): release version #{version_name} (#{version_code}) [skip ci]",
+        allow_nothing_to_commit: true
+      )
+      add_git_tag(tag: "android/release/v#{version_name}-#{version_code}", force: true)
+    end
+  end
+
+  desc "Promote Internal Testing to Beta"
+  lane :promote_to_beta do
+    upload_to_play_store(
+      track: "internal",
+      track_promote_to: "beta",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true
+    )
+  end
+end
