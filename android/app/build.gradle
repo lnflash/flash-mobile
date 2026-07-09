@@ -95,8 +95,8 @@ android {
         applicationId "com.lnflash"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 77
-        versionName "0.5.2"
+        versionCode 78
+        versionName "0.6.0"
 
         // use google-service.dev.json if google-service.json is not exits
         def googleServicesFile = rootProject.file("app/google-services.json")
