@@ -89,6 +89,7 @@ android/app/src/main/assets
 
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
+.bundle/
 vendor/
 
 # Sisyphus planning files
