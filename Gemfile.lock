@@ -23,8 +23,8 @@ GEM
     artifactory (3.0.17)
     atomos (0.1.3)
     aws-eventstream (1.4.0)
-    aws-partitions (1.1265.0)
-    aws-sdk-core (3.252.0)
+    aws-partitions (1.1267.0)
+    aws-sdk-core (3.253.0)
       aws-eventstream (~> 1, >= 1.3.0)
       aws-partitions (~> 1, >= 1.992.0)
       aws-sigv4 (~> 1.9)
@@ -101,7 +101,8 @@ GEM
     ethon (0.18.0)
       ffi (>= 1.15.0)
       logger
-    excon (0.112.0)
+    excon (1.5.0)
+      logger
     faraday (1.10.6)
       faraday-em_http (~> 1.0)
       faraday-em_synchrony (~> 1.0)
@@ -131,10 +132,10 @@ GEM
     faraday_middleware (1.2.1)
       faraday (~> 1.0)
     fastimage (2.4.1)
-    fastlane (2.236.1)
+    fastlane (2.237.0)
       CFPropertyList (>= 2.3, < 5.0.0)
       abbrev (~> 0.1)
-      addressable (>= 2.8, < 3.0.0)
+      addressable (>= 2.9.0, < 3.0.0)
       artifactory (~> 3.0)
       aws-sdk-s3 (~> 1.197)
       babosa (>= 1.0.3, < 2.0.0)
@@ -146,7 +147,7 @@ GEM
       csv (~> 3.3)
       dotenv (>= 2.1.1, < 3.0.0)
       emoji_regex (>= 0.1, < 4.0)
-      excon (>= 0.71.0, < 1.0.0)
+      excon (>= 0.71.0, < 2.0.0)
       faraday (~> 1.0)
       faraday-cookie_jar (~> 0.0.6)
       faraday_middleware (~> 1.0)
@@ -324,8 +325,8 @@ CHECKSUMS
   artifactory (3.0.17) sha256=3023d5c964c31674090d655a516f38ca75665c15084140c08b7f2841131af263
   atomos (0.1.3) sha256=7d43b22f2454a36bace5532d30785b06de3711399cb1c6bf932573eda536789f
   aws-eventstream (1.4.0) sha256=116bf85c436200d1060811e6f5d2d40c88f65448f2125bc77ffce5121e6e183b
-  aws-partitions (1.1265.0) sha256=591a4e4ba0bfde0a37fcfed1b0f57c8915c44d0564c4c332606bc9926d6f65d1
-  aws-sdk-core (3.252.0) sha256=09c042cbfc2acf2239441cc9b982ebab2a999bed2ef6bdc51849e7b3d6e48a1c
+  aws-partitions (1.1267.0) sha256=15a4c6bef8c303b09a1452c675cecb1ace0238dc91e26fe4646c5d761cb2221e
+  aws-sdk-core (3.253.0) sha256=b3fca1fbdfff3a92d371e4b4244bcd3806d861947eda7e06237031e4060d6821
   aws-sdk-kms (1.129.0) sha256=363f548df321f4a4fcfd05523384e591060b400f8e65133ed7ef0793155a3343
   aws-sdk-s3 (1.226.0) sha256=e599f431e006ec9b92c61ee0f14d3f658a1f6c8a1d623d2160be927ac958e2bf
   aws-sigv4 (1.12.1) sha256=6973ff95cb0fd0dc58ba26e90e9510a2219525d07620c8babeb70ef831826c00
@@ -333,7 +334,6 @@ CHECKSUMS
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
   benchmark (0.5.0) sha256=465df122341aedcb81a2a24b4d3bd19b6c67c1530713fd533f3ff034e419236c
   bigdecimal (4.1.2) sha256=53d217666027eab4280346fba98e7d5b66baaae1b9c3c1c0ffe89d48188a3fbd
-  bundler (4.0.15) sha256=a4ceb882fe94a0e0ac63cd0813932bbfd631a14e5ac0b7975189b19a4d28d9e7
   claide (1.1.0) sha256=6d3c5c089dde904d96aa30e73306d0d4bd444b1accb9b3125ce14a3c0183f82e
   cocoapods (1.15.2) sha256=f0f5153de8d028d133b96f423e04f37fb97a1da0d11dda581a9f46c0cba4090a
   cocoapods-core (1.15.2) sha256=322650d97fe1ad4c0831a09669764b888bd91c6d79d0f6bb07281a17667a2136
@@ -357,7 +357,7 @@ CHECKSUMS
   emoji_regex (3.2.3) sha256=ecd8be856b7691406c6bf3bb3a5e55d6ed683ffab98b4aa531bb90e1ddcc564b
   escape (0.0.4) sha256=e49f44ae2b4f47c6a3abd544ae77fe4157802794e32f19b8e773cbc4dcec4169
   ethon (0.18.0) sha256=b598afc9f30448cb068b850714b7d6948e941476095d04f90a4ac65b8d6efcb2
-  excon (0.112.0) sha256=daf9ac3a4c2fc9aa48383a33da77ecb44fa395111e973084d5c52f6f214ae0f0
+  excon (1.5.0) sha256=c503ad1d0123bc8ab2a062ff3789dc891ec368cb9e13765ab88a9c58c8bb6d50
   faraday (1.10.6) sha256=7ff4802a6b312876a2241b3e641ce0d5045e168dd871b422c35b505e5261ad4d
   faraday-cookie_jar (0.0.8) sha256=0140605823f8cc63c7028fccee486aaed8e54835c360cffc1f7c8c07c4299dbb
   faraday-em_http (1.0.0) sha256=7a3d4c7079789121054f57e08cd4ef7e40ad1549b63101f38c7093a9d6c59689
@@ -372,7 +372,7 @@ CHECKSUMS
   faraday-retry (1.0.4) sha256=dc659233777fabf96c69c2ffe56c0a5d2c102af90321a42cc6c90157bcd716aa
   faraday_middleware (1.2.1) sha256=d45b78c8ee864c4783fbc276f845243d4a7918a67301c052647bacabec0529e9
   fastimage (2.4.1) sha256=c64bebd46b6fd8943ab70c1e6e85ff728f970f2e48f92ecd249b6bc3a540ad20
-  fastlane (2.236.1) sha256=fb89e618e0f38636e487743622cf710ad722723f5d33a63f19e367f84d3770bc
+  fastlane (2.237.0) sha256=bb1e867bc070fb328741b5e6e7606d5ba596941a9ecca0478f60ef22d1009db9
   fastlane-sirp (1.1.0) sha256=10bc94f9682efd8e1badfb31452a76dd8981f1f3a33717c765fde6d75b54d847
   ffi (1.17.4) sha256=bcd1642e06f0d16fc9e09ac6d49c3a7298b9789bcb58127302f934e437d60acf
   fourflusher (2.3.1) sha256=1b3de61c7c791b6a4e64f31e3719eb25203d151746bb519a0292bff1065ccaa9
@@ -443,7 +443,7 @@ CHECKSUMS
   xcpretty-travis-formatter (1.0.1) sha256=aacc332f17cb7b2cba222994e2adc74223db88724fe76341483ad3098e232f93
 
 RUBY VERSION
-  ruby 3.2.2
+   ruby 3.2.2
 
 BUNDLED WITH
-  4.0.15
+   2.5.23
