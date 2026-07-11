@@ -1,0 +1,10 @@
+# Release-signing properties — DO NOT put real values in the tracked
+# android/gradle.properties. Define these in ~/.gradle/gradle.properties
+# on your machine (CI injects them from GitHub secrets at build time).
+#
+# The keystore file itself is never committed; keep it (and these values)
+# in the team vault.
+MYAPP_UPLOAD_STORE_FILE=release-keystore.jks
+MYAPP_UPLOAD_KEY_ALIAS=your-key-alias
+MYAPP_UPLOAD_STORE_PASSWORD=your-store-password
+MYAPP_UPLOAD_KEY_PASSWORD=your-key-password

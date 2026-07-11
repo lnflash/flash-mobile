@@ -20,7 +20,7 @@ One-time setup for the store-deploy pipelines in `.github/workflows/android-depl
 | `ANDROID_KEY_PASSWORD` | Key password. | Same source as the store password. Wired into `MYAPP_UPLOAD_KEY_PASSWORD`. |
 | `GOOGLE_PLAY_JSON_KEY` | Google Play service-account JSON (raw JSON, not base64). | Play Console → Setup → API access → create/choose a service account in Google Cloud → create a JSON key → grant the account release permissions for `com.lnflash`. Written at run time to `android/fastlane/lnflash-2e25e160d4ba.json` (the path the Appfile expects). |
 
-Note: `android/gradle.properties` in the repo contains placeholder `MYAPP_UPLOAD_*` values. CI overrides them via `~/.gradle/gradle.properties`, which takes precedence; the tracked file is not modified.
+Note: the tracked `android/gradle.properties` contains no signing values. CI writes `MYAPP_UPLOAD_*` into `~/.gradle/gradle.properties` on the runner from the secrets above; for local release builds, define the same properties in your own `~/.gradle/gradle.properties` (see `android/gradle.properties.example`). Historical values that were once committed have been rotated.
 
 ### iOS
 
