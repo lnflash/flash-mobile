@@ -159,18 +159,18 @@ jobs:
         if: steps.ver.outputs.lane == 'beta'
         working-directory: ios
         env:
-          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
-          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
-          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APPSTORE_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
         run: bundle exec fastlane ios app_store_upload
 
       - name: Distribute to external testers (promote_to_beta)
         if: steps.ver.outputs.lane == 'promote_to_beta'
         working-directory: ios
         env:
-          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
-          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
-          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APPSTORE_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
           VERSION: ${{ steps.ver.outputs.version }}
           CHANGELOG: ${{ github.event.inputs.changelog }}
           EXTERNAL_TESTING_GROUPS: ${{ vars.EXTERNAL_TESTING_GROUPS }}
@@ -186,9 +186,9 @@ jobs:
         if: steps.ver.outputs.lane == 'release'
         working-directory: ios
         env:
-          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
-          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
-          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APPSTORE_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
           VERSION: ${{ steps.ver.outputs.version }}
           BUILD_NUMBER: ${{ steps.ver.outputs.build_number }}
           CHANGELOG: ${{ github.event.inputs.changelog }}

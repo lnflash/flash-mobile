@@ -119,7 +119,7 @@ jobs:
       - name: Decode keystore
         if: steps.ver.outputs.lane == 'beta'
         env:
-          RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
+          RELEASE_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: echo "$RELEASE_KEYSTORE" | base64 --decode > android/app/release.keystore
 
       - name: Configure signing properties

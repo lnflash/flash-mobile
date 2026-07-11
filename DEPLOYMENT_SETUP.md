@@ -14,7 +14,7 @@ One-time setup for the store-deploy pipelines in `.github/workflows/android-depl
 
 | Secret | What it is | How to obtain |
 |---|---|---|
-| `RELEASE_KEYSTORE` | Base64 of the release keystore. | `base64 -i release.keystore \| pbcopy` from the keystore currently used by the CircleCI pipeline (env var of the same name there). |
+| `ANDROID_KEYSTORE_BASE64` | Base64 of the release keystore. | `base64 -i release.keystore \| pbcopy` from the keystore currently used by the CircleCI pipeline (env var `RELEASE_KEYSTORE` there). |
 | `ANDROID_KEYSTORE_PASSWORD` | Keystore store password. | From whoever generated the keystore / your secrets vault. Wired into `MYAPP_UPLOAD_STORE_PASSWORD`. |
 | `ANDROID_KEY_ALIAS` | Key alias inside the keystore (`flash-release` today). | `keytool -list -keystore release.keystore`. Wired into `MYAPP_UPLOAD_KEY_ALIAS`. |
 | `ANDROID_KEY_PASSWORD` | Key password. | Same source as the store password. Wired into `MYAPP_UPLOAD_KEY_PASSWORD`. |
@@ -28,9 +28,9 @@ Note: `android/gradle.properties` in the repo contains placeholder `MYAPP_UPLOAD
 |---|---|---|
 | `MATCH_PASSWORD` | Passphrase encrypting the match signing repo. | Must be the passphrase that encrypted the certs in `lnflash/flash-mobile-certificates`. Also used as the CI keychain password. |
 | `MATCH_GIT_BASIC_AUTHORIZATION` | `base64("<github-username>:<personal-access-token>")` for a user/machine account with **read access to the match repo**. | `echo -n 'user:ghp_xxx' \| base64`. The PAT needs `repo` read on the signing repo. |
-| `APPSTORE_API_KEY_ID` | App Store Connect API key ID. | App Store Connect → Users and Access → Integrations → App Store Connect API → generate a key with App Manager role. |
-| `APPSTORE_ISSUER_ID` | ASC API issuer ID. | Same page as above. |
-| `APPSTORE_API_KEY` | Base64 of the `.p8` private key. | `base64 -i AuthKey_XXXX.p8`. (These three names match the existing `ios/fastlane/Fastfile`.) |
+| `APP_STORE_CONNECT_API_KEY_ID` | App Store Connect API key ID. | App Store Connect → Users and Access → Integrations → App Store Connect API → generate a key with App Manager role. |
+| `APP_STORE_CONNECT_API_ISSUER_ID` | ASC API issuer ID. | Same page as above. |
+| `APP_STORE_CONNECT_API_KEY_CONTENT` | Base64 of the `.p8` private key. | `base64 -i AuthKey_XXXX.p8`. (The workflow maps these to the env names the existing `ios/fastlane/Fastfile`.) |
 | `APP_STORE_CONNECT_REVIEW_EMAIL` / `_FIRST_NAME` / `_LAST_NAME` / `_PHONE` | Review contact info (only used by promote lanes). | Optional; team contact details. |
 | `DEMO_ACCOUNT_NAME` / `DEMO_ACCOUNT_PASSWORD` | Demo account for App Review (promote lanes). | Optional. |
 
