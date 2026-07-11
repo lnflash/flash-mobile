@@ -1,0 +1,227 @@
+name: Android Deploy
+
+on:
+  push:
+    tags:
+      - 'android/v*'
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: >-
+          Lane: beta = build + upload to Play internal track.
+          release = phased promotion beta->production (public_phased_percent).
+          promote_to_beta = internal->alpha. promote_to_public = alpha->beta.
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - beta
+          - release
+          - promote_to_beta
+          - promote_to_public
+      rollout:
+        description: 'Production rollout fraction for release lane (e.g. 0.1 = 10%)'
+        required: false
+        default: '0.1'
+        type: string
+      version:
+        description: 'Override version name for promote/release lanes (default: versionName in build.gradle)'
+        required: false
+        type: string
+      version_code:
+        description: 'Override version code for promote/release lanes (default: versionCode in build.gradle)'
+        required: false
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          # Repo .ruby-version is 3.2.2; android/Gemfile has no ruby pin.
+          ruby-version: '3.2.2'
+          bundler-cache: true
+          working-directory: android
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'yarn'
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Create .env file
+        env:
+          DOT_ENV: ${{ secrets.DOT_ENV }}
+        run: printf '%s\n' "$DOT_ENV" > .env
+
+      - name: Determine lane and versions
+        id: ver
+        run: |
+          LANE="${{ github.event.inputs.lane }}"
+          if [ -z "$LANE" ]; then
+            # Tag pushes always run the beta path (build + internal track upload).
+            LANE="beta"
+          fi
+
+          # Marketing version: from tag android/vX.Y.Z[-beta.N] if present,
+          # otherwise current versionName in build.gradle (with optional override).
+          if [[ "${GITHUB_REF}" == refs/tags/android/v* ]]; then
+            VERSION="$(echo "${GITHUB_REF#refs/tags/android/v}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+).*$/\1/')"
+          else
+            VERSION="$(grep -E 'versionName\s+"' android/app/build.gradle | sed -E 's/.*versionName\s+"([^"]+)".*/\1/')"
+          fi
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+
+          CURRENT_CODE="$(grep -E 'versionCode\s+[0-9]+' android/app/build.gradle | head -n1 | sed -E 's/.*versionCode\s+([0-9]+).*/\1/')"
+          NEW_CODE=$((CURRENT_CODE + 1))
+          VERSION_CODE="$CURRENT_CODE"
+          if [ -n "${{ github.event.inputs.version_code }}" ]; then
+            VERSION_CODE="${{ github.event.inputs.version_code }}"
+          fi
+
+          echo "lane=$LANE" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "current_code=$CURRENT_CODE" >> "$GITHUB_OUTPUT"
+          echo "new_code=$NEW_CODE" >> "$GITHUB_OUTPUT"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "Lane=$LANE version=$VERSION versionCode current=$CURRENT_CODE new=$NEW_CODE"
+
+      - name: Decode keystore
+        if: steps.ver.outputs.lane == 'beta'
+        env:
+          RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
+        run: echo "$RELEASE_KEYSTORE" | base64 --decode > android/app/release.keystore
+
+      - name: Configure signing properties
+        if: steps.ver.outputs.lane == 'beta'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          # User-level gradle.properties overrides the (placeholder) MYAPP_* values
+          # checked into android/gradle.properties without touching tracked files.
+          mkdir -p "$HOME/.gradle"
+          cat > "$HOME/.gradle/gradle.properties" <<EOF
+          MYAPP_UPLOAD_STORE_FILE=release.keystore
+          MYAPP_UPLOAD_KEY_ALIAS=$KEY_ALIAS
+          MYAPP_UPLOAD_STORE_PASSWORD=$KEYSTORE_PASSWORD
+          MYAPP_UPLOAD_KEY_PASSWORD=$KEY_PASSWORD
+          EOF
+
+      - name: Write Google Play service account key
+        env:
+          GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
+        run: |
+          # Appfile declares json_key_file("lnflash-2e25e160d4ba.json"); write it to
+          # both plausible resolution roots (fastlane dir and its parent).
+          printf '%s' "$GOOGLE_PLAY_JSON_KEY" > android/fastlane/lnflash-2e25e160d4ba.json
+          printf '%s' "$GOOGLE_PLAY_JSON_KEY" > android/lnflash-2e25e160d4ba.json
+
+      - name: Bump versionName and versionCode
+        if: steps.ver.outputs.lane == 'beta'
+        run: |
+          sed -i -E "s/versionName[[:space:]]+\"[^\"]+\"/versionName \"${{ steps.ver.outputs.version }}\"/" android/app/build.gradle
+          sed -i -E "s/versionCode[[:space:]]+[0-9]+/versionCode ${{ steps.ver.outputs.new_code }}/" android/app/build.gradle
+          grep -E 'versionCode|versionName' android/app/build.gradle | head -n4
+
+      - name: Build release APKs
+        if: steps.ver.outputs.lane == 'beta'
+        working-directory: android
+        env:
+          PUBLIC_VERSION: ${{ steps.ver.outputs.version }}
+        run: bundle exec fastlane android build
+
+      - name: Upload to Play internal track (beta)
+        if: steps.ver.outputs.lane == 'beta'
+        working-directory: android
+        run: bundle exec fastlane android play_store_upload
+
+      - name: Promote internal to alpha (promote_to_beta)
+        if: steps.ver.outputs.lane == 'promote_to_beta'
+        working-directory: android
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          VERSION_CODE: ${{ steps.ver.outputs.version_code }}
+        run: bundle exec fastlane android promote_to_beta
+
+      - name: Promote alpha to beta (promote_to_public)
+        if: steps.ver.outputs.lane == 'promote_to_public'
+        working-directory: android
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          VERSION_CODE: ${{ steps.ver.outputs.version_code }}
+        run: bundle exec fastlane android promote_to_public
+
+      - name: Phased rollout to production (release)
+        if: steps.ver.outputs.lane == 'release'
+        working-directory: android
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          VERSION_CODE: ${{ steps.ver.outputs.version_code }}
+          ROLLOUT: ${{ github.event.inputs.rollout || '0.1' }}
+        run: bundle exec fastlane android public_phased_percent
+
+      - name: Commit version bump
+        if: success() && steps.ver.outputs.lane == 'beta'
+        run: |
+          git add android/app/build.gradle
+          git commit -m "Bump Android version to ${{ steps.ver.outputs.version }} (${{ steps.ver.outputs.new_code }}) [skip ci]"
+
+      - name: Push version bump
+        if: success() && steps.ver.outputs.lane == 'beta'
+        run: |
+          git pull --rebase --autostash origin main
+          git push origin main --follow-tags
+
+      - name: Upload build artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-logs
+          path: |
+            android/app/build/outputs
+            android/fastlane/report.xml
+
+      - name: Clean up sensitive files
+        if: always()
+        run: |
+          rm -f android/app/release.keystore
+          rm -f android/fastlane/lnflash-2e25e160d4ba.json
+          rm -f android/lnflash-2e25e160d4ba.json
+          rm -f "$HOME/.gradle/gradle.properties"
+          rm -f .env
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "Android deployment failed. Check the logs for details."
