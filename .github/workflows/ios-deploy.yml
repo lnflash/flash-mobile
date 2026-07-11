@@ -1,0 +1,232 @@
+name: iOS Deploy
+
+on:
+  push:
+    tags:
+      - 'ios/v*'
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: >-
+          Lane: beta = build + upload to TestFlight (app_store_upload).
+          release = promote current build to the App Store (promote_to_public).
+          promote_to_beta = distribute TestFlight build to external testers.
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - beta
+          - release
+          - promote_to_beta
+      version:
+        description: 'Override marketing version for promote/release lanes (default: MARKETING_VERSION in pbxproj)'
+        required: false
+        type: string
+      build_number:
+        description: 'Override build number for promote/release lanes (default: CURRENT_PROJECT_VERSION in pbxproj)'
+        required: false
+        type: string
+      changelog:
+        description: 'Changelog / release notes for promote/release lanes'
+        required: false
+        default: 'Bug fixes and improvements'
+        type: string
+
+jobs:
+  deploy:
+    runs-on: macos-15
+
+    env:
+      MATCH_KEYCHAIN_NAME: ci_keychain
+      MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          # ios/Gemfile pins ruby 2.7.7 and bundler 2.2.30 (BUNDLED WITH).
+          ruby-version: '2.7.7'
+          bundler-cache: true
+          working-directory: ios
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Create .env file
+        env:
+          DOT_ENV: ${{ secrets.DOT_ENV }}
+        run: printf '%s\n' "$DOT_ENV" > .env
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: Install CocoaPods
+        working-directory: ios
+        run: bundle exec pod install
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          # CircleCI pinned Xcode 14.2, which no longer exists on GitHub runners.
+          # See DEPLOYMENT_SETUP.md "Open items" — verify the project builds on
+          # latest-stable before relying on this pipeline.
+          xcode-version: 'latest-stable'
+
+      - name: Determine lane and versions
+        id: ver
+        run: |
+          LANE="${{ github.event.inputs.lane }}"
+          if [ -z "$LANE" ]; then
+            # Tag pushes always run the beta path (build + TestFlight upload).
+            LANE="beta"
+          fi
+
+          PBX=ios/LNFlash.xcodeproj/project.pbxproj
+          if [[ "${GITHUB_REF}" == refs/tags/ios/v* ]]; then
+            VERSION="$(echo "${GITHUB_REF#refs/tags/ios/v}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+).*$/\1/')"
+          else
+            VERSION="$(grep -E 'MARKETING_VERSION = ' "$PBX" | sed -E 's/.*MARKETING_VERSION = ([0-9.]+);.*/\1/' | sort -V | tail -n1)"
+          fi
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+
+          CURRENT_BUILD="$(grep -E 'CURRENT_PROJECT_VERSION = ' "$PBX" | sed -E 's/.*CURRENT_PROJECT_VERSION = ([0-9]+);.*/\1/' | sort -n | tail -n1)"
+          NEW_BUILD=$((CURRENT_BUILD + 1))
+          BUILD_NUMBER="$CURRENT_BUILD"
+          if [ -n "${{ github.event.inputs.build_number }}" ]; then
+            BUILD_NUMBER="${{ github.event.inputs.build_number }}"
+          fi
+
+          echo "lane=$LANE" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "current_build=$CURRENT_BUILD" >> "$GITHUB_OUTPUT"
+          echo "new_build=$NEW_BUILD" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Lane=$LANE version=$VERSION build current=$CURRENT_BUILD new=$NEW_BUILD"
+
+      - name: Set marketing version
+        if: steps.ver.outputs.lane == 'beta'
+        run: |
+          # Same sed the CircleCI pipeline used — updates MARKETING_VERSION for
+          # every target, including FlashWatch / FlashWatchComplication.
+          cd ios
+          sed -i '' -e "s/MARKETING_VERSION.*/MARKETING_VERSION = ${{ steps.ver.outputs.version }};/g" LNFlash.xcodeproj/project.pbxproj
+
+      - name: Import certificates and provisioning profiles
+        if: steps.ver.outputs.lane == 'beta'
+        working-directory: ios
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL || 'https://github.com/GaloyMoney/signing_keys_react_native' }}
+        run: bundle exec fastlane ios setup_signing
+
+      - name: Build IPA (beta)
+        if: steps.ver.outputs.lane == 'beta'
+        working-directory: ios
+        env:
+          BUILD_NUMBER: ${{ steps.ver.outputs.new_build }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL || 'https://github.com/GaloyMoney/signing_keys_react_native' }}
+        run: bundle exec fastlane ios build
+
+      - name: Upload to TestFlight (beta)
+        if: steps.ver.outputs.lane == 'beta'
+        working-directory: ios
+        env:
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+        run: bundle exec fastlane ios app_store_upload
+
+      - name: Distribute to external testers (promote_to_beta)
+        if: steps.ver.outputs.lane == 'promote_to_beta'
+        working-directory: ios
+        env:
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          CHANGELOG: ${{ github.event.inputs.changelog }}
+          EXTERNAL_TESTING_GROUPS: ${{ vars.EXTERNAL_TESTING_GROUPS }}
+          APP_STORE_CONNECT_REVIEW_EMAIL: ${{ secrets.APP_STORE_CONNECT_REVIEW_EMAIL }}
+          APP_STORE_CONNECT_REVIEW_FIRST_NAME: ${{ secrets.APP_STORE_CONNECT_REVIEW_FIRST_NAME }}
+          APP_STORE_CONNECT_REVIEW_LAST_NAME: ${{ secrets.APP_STORE_CONNECT_REVIEW_LAST_NAME }}
+          APP_STORE_CONNECT_REVIEW_PHONE: ${{ secrets.APP_STORE_CONNECT_REVIEW_PHONE }}
+          DEMO_ACCOUNT_NAME: ${{ secrets.DEMO_ACCOUNT_NAME }}
+          DEMO_ACCOUNT_PASSWORD: ${{ secrets.DEMO_ACCOUNT_PASSWORD }}
+        run: bundle exec fastlane ios promote_to_beta
+
+      - name: Promote to App Store (release)
+        if: steps.ver.outputs.lane == 'release'
+        working-directory: ios
+        env:
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          BUILD_NUMBER: ${{ steps.ver.outputs.build_number }}
+          CHANGELOG: ${{ github.event.inputs.changelog }}
+          APP_STORE_CONNECT_REVIEW_EMAIL: ${{ secrets.APP_STORE_CONNECT_REVIEW_EMAIL }}
+          APP_STORE_CONNECT_REVIEW_FIRST_NAME: ${{ secrets.APP_STORE_CONNECT_REVIEW_FIRST_NAME }}
+          APP_STORE_CONNECT_REVIEW_LAST_NAME: ${{ secrets.APP_STORE_CONNECT_REVIEW_LAST_NAME }}
+          APP_STORE_CONNECT_REVIEW_PHONE: ${{ secrets.APP_STORE_CONNECT_REVIEW_PHONE }}
+          DEMO_ACCOUNT_NAME: ${{ secrets.DEMO_ACCOUNT_NAME }}
+          DEMO_ACCOUNT_PASSWORD: ${{ secrets.DEMO_ACCOUNT_PASSWORD }}
+        run: bundle exec fastlane ios promote_to_public
+
+      - name: Commit version bump
+        if: success() && steps.ver.outputs.lane == 'beta'
+        run: |
+          git add ios/LNFlash.xcodeproj/project.pbxproj
+          git commit -m "Bump iOS version to ${{ steps.ver.outputs.version }} (${{ steps.ver.outputs.new_build }}) [skip ci]"
+
+      - name: Push version bump
+        if: success() && steps.ver.outputs.lane == 'beta'
+        run: |
+          git pull --rebase --autostash origin main
+          git push origin main --follow-tags
+
+      - name: Upload build artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-logs
+          path: |
+            ~/Library/Logs/gym
+            ios/fastlane/report.xml
+
+      - name: Clean up keychain and secrets
+        if: always()
+        run: |
+          security delete-keychain ci_keychain 2>/dev/null || true
+          rm -f .env
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "iOS deployment failed. Check the logs for details."

@@ -114,6 +114,22 @@ platform :ios do
     )
   end
 
+  desc "Setup code signing for CI (creates a temporary keychain and fetches match profiles)"
+  lane :setup_signing do
+    if is_ci
+      create_keychain(
+        name: ENV["MATCH_KEYCHAIN_NAME"] || "ci_keychain",
+        password: ENV["MATCH_KEYCHAIN_PASSWORD"] || ENV["MATCH_PASSWORD"],
+        default_keychain: true,
+        unlock: true,
+        timeout: 3600,
+        lock_when_sleeps: false
+      )
+    end
+
+    match(type: "appstore", readonly: is_ci)
+  end
+
   desc "Build for end to end tests"
   lane :build_e2e do
     xcode_select("/Applications/Xcode-14.2.app")
