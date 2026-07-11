@@ -26,7 +26,7 @@ Note: `android/gradle.properties` in the repo contains placeholder `MYAPP_UPLOAD
 
 | Secret | What it is | How to obtain |
 |---|---|---|
-| `MATCH_PASSWORD` | Passphrase encrypting the match signing repo. | From the team member who maintains `signing_keys_react_native`. Also used as the CI keychain password. |
+| `MATCH_PASSWORD` | Passphrase encrypting the match signing repo. | Must be the passphrase that encrypted the certs in `lnflash/flash-mobile-certificates`. Also used as the CI keychain password. |
 | `MATCH_GIT_BASIC_AUTHORIZATION` | `base64("<github-username>:<personal-access-token>")` for a user/machine account with **read access to the match repo**. | `echo -n 'user:ghp_xxx' \| base64`. The PAT needs `repo` read on the signing repo. |
 | `APPSTORE_API_KEY_ID` | App Store Connect API key ID. | App Store Connect → Users and Access → Integrations → App Store Connect API → generate a key with App Manager role. |
 | `APPSTORE_ISSUER_ID` | ASC API issuer ID. | Same page as above. |
@@ -38,12 +38,14 @@ Note: `android/gradle.properties` in the repo contains placeholder `MYAPP_UPLOAD
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `MATCH_GIT_URL` | `https://github.com/GaloyMoney/signing_keys_react_native` | Match repo URL. Must be the **https** form so `MATCH_GIT_BASIC_AUTHORIZATION` works. Override if the signing repo moves to an lnflash-owned repo. |
+| `MATCH_GIT_URL` | `https://github.com/lnflash/flash-mobile-certificates` | Match repo URL. Must be the **https** form so `MATCH_GIT_BASIC_AUTHORIZATION` works. Only set the variable to point somewhere else. |
 | `EXTERNAL_TESTING_GROUPS` | (unset) | TestFlight external tester groups for `promote_to_beta`. |
 
 ## Match repo access
 
-The Matchfile now reads `MATCH_GIT_URL` from the environment and falls back to the original `git@github.com:GaloyMoney/signing_keys_react_native` for local use. CI uses basic auth over https — no deploy SSH key needed. The account behind the PAT must have read access to the GaloyMoney signing repo (or to whatever repo `MATCH_GIT_URL` points at).
+The Matchfile reads `MATCH_GIT_URL` from the environment and defaults to the lnflash-owned `https://github.com/lnflash/flash-mobile-certificates` (contains `certs/`, `profiles/`, `match_version.txt`). CI uses basic auth over https — no deploy SSH key needed. The account behind the PAT must have read access to that repo (or to whatever repo `MATCH_GIT_URL` points at).
+
+Note: `MATCH_PASSWORD` must be the passphrase that encrypted the certs already in that repo. If those certs were not created by your match setup (or the passphrase is unknown), run `fastlane match appstore` once locally in read-write mode to regenerate certs/profiles into the repo with a passphrase you control.
 
 ## Branch permissions
 
@@ -63,8 +65,7 @@ The `.circleci/config.yml` pipeline is **left untouched** and can be retired onc
 
 ## Open items to verify before first real release
 
-1. **Xcode version** — CircleCI pinned Xcode 14.2, which is unavailable on GitHub's macos-15 runners; the workflow uses `latest-stable`. RN 0.77 should be fine on modern Xcode, but the pinned toolchain (`fastlane 2.212.1`, `cocoapods ~>1.11`, ruby 2.7.7 from `ios/Gemfile`) is old — do a dispatch `beta` dry run and expect to bump the ios Gemfile if fastlane/CocoaPods choke on the new Xcode/SDK.
-2. **Ruby 2.7.7 on macos-15 (arm64)** — `ruby/setup-ruby` may not provide 2.7.7 prebuilt for arm64 runners. If setup fails, either bump `ios/Gemfile` to a modern ruby/fastlane or switch the job to an Intel runner (`macos-15-intel` while available).
-3. **Match repo ownership** — signing repo is GaloyMoney-owned today. Decide whether to migrate to an lnflash-owned repo and update `MATCH_GIT_URL`.
-4. **Play promotion version codes** — Android builds use ABI-split `versionCodeOverride` (e.g. `3xxxxxxxx` for arm64). The promote lanes pass the base `versionCode` from `build.gradle`; if Play rejects the promotion, pass the actual uploaded code via the `version_code` dispatch input.
-5. **`GOOGLE_PLAY_JSON_KEY` path resolution** — the key is written to both `android/fastlane/` and `android/` to cover fastlane's relative-path resolution; once confirmed, one can be dropped.
+1. **Xcode version** — CircleCI pinned Xcode 14.2, which is unavailable on GitHub's macos-15 runners; the workflow uses `latest-stable`. The iOS Ruby toolchain has been modernized (ruby 3.2.2, fastlane 2.237.0, cocoapods 1.15.2 in `ios/Gemfile`), but `pod install` under the new CocoaPods and the project building on latest-stable Xcode are **unverified** — a dispatch `beta` dry run is the first-run verify item.
+2. **Match certs validity** — `MATCH_PASSWORD` must match the passphrase used to encrypt `lnflash/flash-mobile-certificates`; if the certs there weren't produced by this team's match setup, run `fastlane match appstore` once in read-write mode to regenerate.
+3. **Play promotion version codes** — Android builds use ABI-split `versionCodeOverride` (e.g. `3xxxxxxxx` for arm64). The promote lanes pass the base `versionCode` from `build.gradle`; if Play rejects the promotion, pass the actual uploaded code via the `version_code` dispatch input.
+4. **`GOOGLE_PLAY_JSON_KEY` path resolution** — the key is written to both `android/fastlane/` and `android/` to cover fastlane's relative-path resolution; once confirmed, one can be dropped.

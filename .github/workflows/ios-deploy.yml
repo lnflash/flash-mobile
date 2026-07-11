@@ -142,7 +142,7 @@ jobs:
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL || 'https://github.com/GaloyMoney/signing_keys_react_native' }}
+          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL || 'https://github.com/lnflash/flash-mobile-certificates' }}
         run: bundle exec fastlane ios setup_signing
 
       - name: Build IPA (beta)
@@ -152,7 +152,7 @@ jobs:
           BUILD_NUMBER: ${{ steps.ver.outputs.new_build }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL || 'https://github.com/GaloyMoney/signing_keys_react_native' }}
+          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL || 'https://github.com/lnflash/flash-mobile-certificates' }}
         run: bundle exec fastlane ios build
 
       - name: Upload to TestFlight (beta)
