@@ -21,7 +21,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy iOS
-    runs-on: macos-15
+    runs-on: macos-14
     timeout-minutes: 90
 
     steps:
