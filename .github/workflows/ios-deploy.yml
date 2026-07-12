@@ -86,6 +86,16 @@ jobs:
           git pull --rebase --autostash origin main
           git push origin main --follow-tags
 
+      - name: Dump gym build log on failure
+        if: failure()
+        run: |
+          echo "=== Gym build log ==="
+          cat ~/Library/Logs/gym/Flash-LNFlash.log 2>/dev/null | tail -200 || echo "No gym log found"
+          echo ""
+          echo "=== Looking for build logs ==="
+          find ~/Library/Logs/gym -name "*.log" 2>/dev/null | head -5
+          find ~/Library/Developer/Xcode/DerivedData -name "*.log" 2>/dev/null | head -5
+
       - name: Upload artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -95,6 +105,7 @@ jobs:
             build/
             fastlane/report.xml
             ios/build/Logs/
+            ~/Library/Logs/gym/
 
       - name: Notify on failure
         if: failure()

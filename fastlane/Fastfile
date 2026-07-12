@@ -104,11 +104,13 @@ platform :ios do
       export_method: "app-store",
       output_directory: "./build",
       output_name: "Flash.ipa",
+      clean: true,
       export_options: {
         provisioningProfiles: {
           "com.lnflash" => profile_name
         }
       },
+      xcodebuild_formatter: "",
       xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}' ENABLE_USER_SCRIPT_SANDBOXING=NO"
     )
 
@@ -161,11 +163,13 @@ platform :ios do
       export_method: "app-store",
       output_directory: "./build",
       output_name: "Flash.ipa",
+      clean: true,
       export_options: {
         provisioningProfiles: {
           "com.lnflash" => profile_name
         }
       },
+      xcodebuild_formatter: "",
       xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}' ENABLE_USER_SCRIPT_SANDBOXING=NO"
     )
 
