@@ -62,7 +62,10 @@ jobs:
           xcode-version: "16.2"
 
       - name: Set NODE_BINARY for Xcode build scripts
-        run: echo "export NODE_BINARY=$(command -v node)" > ios/.xcode.env.local
+        run: |
+          NODE_PATH=$(command -v node)
+          echo "export NODE_BINARY=$NODE_PATH" > ios/.xcode.env
+          echo "export NODE_BINARY=$NODE_PATH" > ios/.xcode.env.local
 
       - name: Determine lane
         id: lane
