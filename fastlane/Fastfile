@@ -85,6 +85,8 @@ platform :ios do
       is_key_content_base64: true
     )
 
+    setup_signing
+
     update_ios_version_from_tag
 
     increment_build_number(
@@ -94,6 +96,8 @@ platform :ios do
 
     cocoapods(podfile: "ios/Podfile")
 
+    profile_name = ENV["sigh_com.lnflash_appstore_profile-name"] || "match AppStore com.lnflash"
+
     build_app(
       workspace: "ios/LNFlash.xcworkspace",
       scheme: "LNFlash",
@@ -102,10 +106,10 @@ platform :ios do
       output_name: "Flash.ipa",
       export_options: {
         provisioningProfiles: {
-          "com.lnflash" => ENV["sigh_com.lnflash_appstore_profile-name"] || "match AppStore com.lnflash"
+          "com.lnflash" => profile_name
         }
       },
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution'"
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}'"
     )
 
     upload_to_testflight(
@@ -138,6 +142,8 @@ platform :ios do
       is_key_content_base64: true
     )
 
+    setup_signing
+
     update_ios_version_from_tag
 
     increment_build_number(
@@ -147,6 +153,8 @@ platform :ios do
 
     cocoapods(podfile: "ios/Podfile")
 
+    profile_name = ENV["sigh_com.lnflash_appstore_profile-name"] || "match AppStore com.lnflash"
+
     build_app(
       workspace: "ios/LNFlash.xcworkspace",
       scheme: "LNFlash",
@@ -155,10 +163,10 @@ platform :ios do
       output_name: "Flash.ipa",
       export_options: {
         provisioningProfiles: {
-          "com.lnflash" => ENV["sigh_com.lnflash_appstore_profile-name"] || "match AppStore com.lnflash"
+          "com.lnflash" => profile_name
         }
       },
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution'"
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}'"
     )
 
     upload_to_app_store(
