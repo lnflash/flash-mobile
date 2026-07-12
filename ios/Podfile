@@ -146,6 +146,27 @@ post_install do |installer|
     File.write(xcconfig, contents.gsub('BUILD_LIBRARY_FOR_DISTRIBUTION = YES', 'BUILD_LIBRARY_FOR_DISTRIBUTION = NO'))
   end
 
+  # Fix Xcode 26: swiftCompatibility56 and swiftCompatibilityPacks libraries were
+  # removed from the toolchain. Pre-built Swift libraries (Firebase, BreezSDK) still
+  # reference them. Mark these symbols as allowed-undefined since they are not needed
+  # at runtime with Swift 6.2+.
+  swift_compat_flags = ' -Wl,-U,__swift_FORCE_LOAD_$_swiftCompatibility56 -Wl,-U,__swift_FORCE_LOAD_$_swiftCompatibilityPacks'
+  ['Pods-LNFlash', 'Pods-LNFlash-Alt'].each do |aggregate_name|
+    agg_dir = File.join(support_files_dir, aggregate_name)
+    next unless Dir.exist?(agg_dir)
+    Dir.glob(File.join(agg_dir, '*.xcconfig')).each do |xcconfig|
+      contents = File.read(xcconfig)
+      next if contents.include?('swiftCompatibility56')
+      if contents.match?(/^OTHER_LDFLAGS\s*=/)
+        contents = contents.gsub(/^(OTHER_LDFLAGS\s*=.*)$/, "\\1#{swift_compat_flags}")
+      else
+        contents += "\nOTHER_LDFLAGS = $(inherited)#{swift_compat_flags}\n"
+      end
+      File.write(xcconfig, contents)
+      puts "Added swiftCompatibility56 workaround to #{aggregate_name}/#{File.basename(xcconfig)}"
+    end
+  end
+
   # use GoogleService-Info.dev.plist if GoogleService-Info.plist is not exits
   app_path = File.join(Dir.pwd, 'LNFlash') 
   google_service_plist = File.join(app_path, 'GoogleService-Info.plist')
