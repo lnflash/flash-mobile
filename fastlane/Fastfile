@@ -109,7 +109,7 @@ platform :ios do
           "com.lnflash" => profile_name
         }
       },
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}'"
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}' ENABLE_USER_SCRIPT_SANDBOXING=NO"
     )
 
     upload_to_testflight(
@@ -166,7 +166,7 @@ platform :ios do
           "com.lnflash" => profile_name
         }
       },
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}'"
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}' ENABLE_USER_SCRIPT_SANDBOXING=NO"
     )
 
     upload_to_app_store(
