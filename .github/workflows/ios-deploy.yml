@@ -28,7 +28,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: feat/automated-deployment
+          ref: main
           fetch-depth: 0
 
       - name: Configure git
@@ -89,28 +89,9 @@ jobs:
       - name: Push version bump
         if: success()
         run: |
-          git pull --rebase --autostash origin main
-          git push origin main --follow-tags
-
-      - name: Dump gym build log on failure
-        if: failure()
-        run: |
-          LOG=~/Library/Logs/gym/Flash-LNFlash.log
-          if [ -f "$LOG" ]; then
-            echo "=== ERRORS from gym log ==="
-            grep -i "error:" "$LOG" | head -50
-            echo ""
-            echo "=== FAILED script phases ==="
-            grep -B5 -A10 "failed with a nonzero exit code" "$LOG" | head -100
-            echo ""
-            echo "=== Script phase outputs ==="
-            grep -B2 -A20 "PhaseScriptExecution.*Hermes" "$LOG" | head -80
-            echo ""
-            echo "=== Last 100 lines ==="
-            tail -100 "$LOG"
-          else
-            echo "No gym log found"
-          fi
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          git pull --rebase --autostash origin "$BRANCH"
+          git push origin "$BRANCH" --follow-tags
 
       - name: Upload artifacts on failure
         if: failure()
@@ -120,9 +101,4 @@ jobs:
           path: |
             build/
             fastlane/report.xml
-            ios/build/Logs/
             ~/Library/Logs/gym/
-
-      - name: Notify on failure
-        if: failure()
-        run: echo "::error::iOS deployment failed. Check the logs above for details."

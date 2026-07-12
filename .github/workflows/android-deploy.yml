@@ -29,7 +29,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: feat/automated-deployment
+          ref: main
           fetch-depth: 0
 
       - name: Configure git
@@ -106,8 +106,9 @@ jobs:
       - name: Push version bump
         if: success() && steps.lane.outputs.lane != 'promote_to_beta'
         run: |
-          git pull --rebase --autostash origin main
-          git push origin main --follow-tags
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          git pull --rebase --autostash origin "$BRANCH"
+          git push origin "$BRANCH" --follow-tags
 
       - name: Clean up sensitive files
         if: always()
