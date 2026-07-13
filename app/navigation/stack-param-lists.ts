@@ -47,6 +47,7 @@ export type RootStackParamList = {
     accountType: string
     accountNumber: string
     currency: string
+    rejectionReason?: string
   }
   defaultWallet: undefined
   theme: undefined

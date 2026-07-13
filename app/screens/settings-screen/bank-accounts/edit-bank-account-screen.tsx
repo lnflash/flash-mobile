@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react"
-import { Alert, ScrollView } from "react-native"
+import { Alert, ScrollView, View } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 
@@ -20,6 +20,8 @@ const accountTypes = [
   { label: "Savings", value: "Savings" },
 ]
 
+const ALLOWED_ACCOUNT_TYPES = ["Chequing", "Savings"]
+
 type Props = StackScreenProps<RootStackParamList, "EditBankAccount">
 
 // Lets a user propose changes to an already-approved bank account. The change is
@@ -31,11 +33,15 @@ export const EditBankAccountScreen: React.FC<Props> = ({ route, navigation }) =>
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
 
-  const { accountId, currency } = route.params
+  const { accountId, currency, rejectionReason } = route.params
 
   const [bankName, setBankName] = useState(route.params.bankName)
   const [bankBranch, setBankBranch] = useState(route.params.bankBranch)
-  const [accountType, setAccountType] = useState(route.params.accountType)
+  const [accountType, setAccountType] = useState(
+    ALLOWED_ACCOUNT_TYPES.includes(route.params.accountType)
+      ? route.params.accountType
+      : "",
+  )
   const [accountNumber, setAccountNumber] = useState(route.params.accountNumber)
 
   const [nameErr, setNameErr] = useState<string>()
@@ -61,8 +67,8 @@ export const EditBankAccountScreen: React.FC<Props> = ({ route, navigation }) =>
       setBranchErr("Branch is required")
       ok = false
     }
-    if (!accountType) {
-      setAccountTypeErr("Account type is required")
+    if (!ALLOWED_ACCOUNT_TYPES.includes(accountType)) {
+      setAccountTypeErr("Account type must be Chequing or Savings")
       ok = false
     }
     if (!accountNumber || accountNumber.length < 4) {
@@ -123,6 +129,13 @@ export const EditBankAccountScreen: React.FC<Props> = ({ route, navigation }) =>
         <Text type="p3" color={colors.grey2} style={styles.subtitle}>
           {LL.BankAccountsScreen.editSubtitle()}
         </Text>
+        {rejectionReason ? (
+          <View style={styles.declinedBanner}>
+            <Text type="p3" color={colors.error}>
+              {LL.BankAccountsScreen.lastRequestDeclined({ reason: rejectionReason })}
+            </Text>
+          </View>
+        ) : null}
         <DropDownField
           label={LL.AccountUpgrade.bankName()}
           placeholder={LL.AccountUpgrade.bankNamePlaceholder()}
@@ -187,11 +200,18 @@ export const EditBankAccountScreen: React.FC<Props> = ({ route, navigation }) =>
 
 export default EditBankAccountScreen
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles(({ colors }) => ({
   container: {
     flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 20,
+  },
+  declinedBanner: {
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.error,
   },
   subtitle: {
     marginBottom: 16,

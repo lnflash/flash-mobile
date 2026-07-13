@@ -152,6 +152,7 @@ const en: BaseTranslation = {
     confirmMessage:
       "Cash-outs keep going to your current account until the new details are approved.",
     updateSubmitted: "Update submitted for review",
+    lastRequestDeclined: "Your last request was declined: {reason: string}",
   },
   BridgeAddExternalAccount: {
     title: "Add Bank Account",

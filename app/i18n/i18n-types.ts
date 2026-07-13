@@ -522,6 +522,11 @@ type RootTranslation = {
 		 * U​p​d​a​t​e​ ​s​u​b​m​i​t​t​e​d​ ​f​o​r​ ​r​e​v​i​e​w
 		 */
 		updateSubmitted: string
+		/**
+		 * Y​o​u​r​ ​l​a​s​t​ ​r​e​q​u​e​s​t​ ​w​a​s​ ​d​e​c​l​i​n​e​d​:​ ​{​r​e​a​s​o​n​}
+		 * @param {string} reason
+		 */
+		lastRequestDeclined: RequiredParams<'reason'>
 	}
 	BridgeAddExternalAccount: {
 		/**
@@ -6446,6 +6451,10 @@ export type TranslationFunctions = {
 		 * Update submitted for review
 		 */
 		updateSubmitted: () => LocalizedString
+		/**
+		 * Your last request was declined: {reason}
+		 */
+		lastRequestDeclined: (arg: { reason: string }) => LocalizedString
 	}
 	BridgeAddExternalAccount: {
 		/**

@@ -392,6 +392,8 @@ export const BankAccountsScreen: React.FC = () => {
                       accountType: account.accountType ?? "",
                       accountNumber: account.accountNumber ?? "",
                       currency: account.currencyRaw ?? account.currency,
+                      rejectionReason:
+                        account.pendingUpdate?.rejectionReason ?? undefined,
                     })
                   }
                 />
