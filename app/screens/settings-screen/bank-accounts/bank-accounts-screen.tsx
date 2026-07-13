@@ -182,9 +182,10 @@ const StatusPill = ({ status }: { status: BankAccountStatus }) => {
 type WithdrawRowProps = {
   account: BankAccountVM
   onSetDefault: () => void
+  onEdit: () => void
 }
 
-const WithdrawRow = ({ account, onSetDefault }: WithdrawRowProps) => {
+const WithdrawRow = ({ account, onSetDefault, onEdit }: WithdrawRowProps) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
@@ -197,6 +198,9 @@ const WithdrawRow = ({ account, onSetDefault }: WithdrawRowProps) => {
     }[] = []
     if (account.canSetDefault && !account.isDefault) {
       options.push({ text: LL.BankAccountsScreen.setAsDefault(), onPress: onSetDefault })
+    }
+    if (account.source === "erpnext") {
+      options.push({ text: LL.BankAccountsScreen.updateDetails(), onPress: onEdit })
     }
     options.push({
       text: account.canRemove
@@ -380,6 +384,16 @@ export const BankAccountsScreen: React.FC = () => {
                       message: LL.BankAccountsScreen.defaultUpdated(),
                     })
                   }}
+                  onEdit={() =>
+                    navigation.navigate("EditBankAccount", {
+                      accountId: account.id,
+                      bankName: account.bankName,
+                      bankBranch: account.bankBranch ?? "",
+                      accountType: account.accountType ?? "",
+                      accountNumber: account.accountNumber ?? "",
+                      currency: account.currencyRaw ?? account.currency,
+                    })
+                  }
                 />
               ))}
             </View>

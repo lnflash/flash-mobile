@@ -64,6 +64,7 @@ import { makeStyles, useTheme } from "@rneui/themed"
 import { ScanningQRCodeScreen } from "../screens/send-bitcoin-screen"
 import { SettingsScreen } from "../screens/settings-screen"
 import { BankAccountsScreen } from "@app/screens/settings-screen/bank-accounts/bank-accounts-screen"
+import { EditBankAccountScreen } from "@app/screens/settings-screen/bank-accounts/edit-bank-account-screen"
 import { LanguageScreen } from "../screens/settings-screen/language-screen"
 import { SecurityScreen } from "../screens/settings-screen/security-screen"
 import { TransactionDetailScreen } from "../screens/transaction-detail-screen"
@@ -369,6 +370,11 @@ export const RootStack = () => {
         name="BankAccounts"
         component={BankAccountsScreen}
         options={{ title: LL.BankAccountsScreen.title() }}
+      />
+      <RootNavigator.Screen
+        name="EditBankAccount"
+        component={EditBankAccountScreen}
+        options={{ title: LL.BankAccountsScreen.editTitle() }}
       />
       <RootNavigator.Screen
         name="defaultWallet"

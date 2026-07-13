@@ -200,6 +200,16 @@ gql`
     }
   }
 
+  mutation bankAccountUpdateRequest($input: BankAccountUpdateRequestInput!) {
+    bankAccountUpdateRequest(input: $input) {
+      errors {
+        message
+        code
+      }
+      status
+    }
+  }
+
   mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
     idDocumentUploadUrlGenerate(input: $input) {
       errors {

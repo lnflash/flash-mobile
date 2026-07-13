@@ -231,6 +231,11 @@ type BankAccount {
   """ERPNext bank account identifier"""
   id: ID
   isDefault: Boolean!
+
+  """
+  An open request to change this account's details, awaiting review. Null when none is pending.
+  """
+  pendingUpdate: BankAccountUpdateRequest
 }
 
 input BankAccountInput {
@@ -239,6 +244,52 @@ input BankAccountInput {
   bankBranch: String!
   bankName: String!
   currency: String!
+}
+
+"""
+A pending request to change the details of an approved bank account, awaiting admin review.
+"""
+type BankAccountUpdateRequest {
+  """Proposed new account number"""
+  accountNumber: String!
+
+  """Proposed new account type"""
+  accountType: String!
+
+  """Proposed new bank branch"""
+  bankBranch: String!
+
+  """Proposed new bank name"""
+  bankName: String!
+
+  """Account currency (unchanged from the current account)"""
+  currency: String!
+
+  """Reviewer note, set when status is Rejected"""
+  rejectionReason: String
+
+  """Pending | Approved | Rejected | Closed"""
+  status: String!
+}
+
+input BankAccountUpdateRequestInput {
+  accountNumber: AccountNumber!
+  accountType: String!
+
+  """ERPNext identifier of the account to update"""
+  bankAccountId: ID!
+  bankBranch: String!
+  bankName: String!
+
+  """Must match the account's current currency (currency is locked)"""
+  currency: String!
+}
+
+type BankAccountUpdateRequestPayload {
+  errors: [Error]
+
+  """Status of the created request (Pending on success)"""
+  status: String
 }
 
 type BridgeAddExternalAccountPayload {
@@ -1030,6 +1081,7 @@ type Mutation {
   bridgeInitiateKyc(input: BridgeInitiateKycInput!): BridgeInitiateKycPayload!
   bridgeInitiateWithdrawal(input: BridgeInitiateWithdrawalInput!): BridgeInitiateWithdrawalPayload!
   bridgeRequestWithdrawal(input: BridgeRequestWithdrawalInput!): BridgeRequestWithdrawalPayload!
+  bankAccountUpdateRequest(input: BankAccountUpdateRequestInput!): BankAccountUpdateRequestPayload!
   businessAccountUpgradeRequest(input: BusinessAccountUpgradeRequestInput!): AccountUpgradePayload!
   callbackEndpointAdd(input: CallbackEndpointAddInput!): CallbackEndpointAddPayload!
   callbackEndpointDelete(input: CallbackEndpointDeleteInput!): SuccessPayload!

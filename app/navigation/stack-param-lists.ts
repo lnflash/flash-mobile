@@ -40,6 +40,14 @@ export type RootStackParamList = {
   settings: undefined
   addressScreen: undefined
   BankAccounts: undefined
+  EditBankAccount: {
+    accountId: string
+    bankName: string
+    bankBranch: string
+    accountType: string
+    accountNumber: string
+    currency: string
+  }
   defaultWallet: undefined
   theme: undefined
   sendBitcoinDestination: {

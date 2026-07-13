@@ -141,6 +141,17 @@ const en: BaseTranslation = {
     removingAccountsComingSoon: "Removing accounts is coming soon",
     accountEnding: "Account ending {last4: string}",
     defaultUpdated: "Default account updated",
+    updateDetails: "Update details",
+    editTitle: "Update bank account",
+    editSubtitle:
+      "Changes are reviewed before they take effect. Cash-outs keep going to your current details until then.",
+    currencyLocked:
+      "Currency can't be changed here. To use a different currency, add a new account.",
+    submitUpdate: "Submit for review",
+    confirmTitle: "Submit changes?",
+    confirmMessage:
+      "Cash-outs keep going to your current account until the new details are approved.",
+    updateSubmitted: "Update submitted for review",
   },
   BridgeAddExternalAccount: {
     title: "Add Bank Account",

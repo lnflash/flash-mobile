@@ -312,6 +312,8 @@ export type BankAccount = {
   /** ERPNext bank account identifier */
   readonly id?: Maybe<Scalars['ID']['output']>;
   readonly isDefault: Scalars['Boolean']['output'];
+  /** An open request to change this account's details, awaiting review. Null when none is pending. */
+  readonly pendingUpdate?: Maybe<BankAccountUpdateRequest>;
 };
 
 export type BankAccountInput = {
@@ -320,6 +322,43 @@ export type BankAccountInput = {
   readonly bankBranch: Scalars['String']['input'];
   readonly bankName: Scalars['String']['input'];
   readonly currency: Scalars['String']['input'];
+};
+
+/** A pending request to change the details of an approved bank account, awaiting admin review. */
+export type BankAccountUpdateRequest = {
+  readonly __typename: 'BankAccountUpdateRequest';
+  /** Proposed new account number */
+  readonly accountNumber: Scalars['String']['output'];
+  /** Proposed new account type */
+  readonly accountType: Scalars['String']['output'];
+  /** Proposed new bank branch */
+  readonly bankBranch: Scalars['String']['output'];
+  /** Proposed new bank name */
+  readonly bankName: Scalars['String']['output'];
+  /** Account currency (unchanged from the current account) */
+  readonly currency: Scalars['String']['output'];
+  /** Reviewer note, set when status is Rejected */
+  readonly rejectionReason?: Maybe<Scalars['String']['output']>;
+  /** Pending | Approved | Rejected | Closed */
+  readonly status: Scalars['String']['output'];
+};
+
+export type BankAccountUpdateRequestInput = {
+  readonly accountNumber: Scalars['AccountNumber']['input'];
+  readonly accountType: Scalars['String']['input'];
+  /** ERPNext identifier of the account to update */
+  readonly bankAccountId: Scalars['ID']['input'];
+  readonly bankBranch: Scalars['String']['input'];
+  readonly bankName: Scalars['String']['input'];
+  /** Must match the account's current currency (currency is locked) */
+  readonly currency: Scalars['String']['input'];
+};
+
+export type BankAccountUpdateRequestPayload = {
+  readonly __typename: 'BankAccountUpdateRequestPayload';
+  readonly errors?: Maybe<ReadonlyArray<Maybe<Error>>>;
+  /** Status of the created request (Pending on success) */
+  readonly status?: Maybe<Scalars['String']['output']>;
 };
 
 export type BridgeAddExternalAccountPayload = {
@@ -1022,6 +1061,7 @@ export type Mutation = {
   readonly accountEnableNotificationChannel: AccountUpdateNotificationSettingsPayload;
   readonly accountUpdateDefaultWalletId: AccountUpdateDefaultWalletIdPayload;
   readonly accountUpdateDisplayCurrency: AccountUpdateDisplayCurrencyPayload;
+  readonly bankAccountUpdateRequest: BankAccountUpdateRequestPayload;
   readonly bridgeAddExternalAccount: BridgeAddExternalAccountPayload;
   readonly bridgeCancelWithdrawalRequest: BridgeCancelWithdrawalRequestPayload;
   readonly bridgeCreateExternalAccount: BridgeCreateExternalAccountPayload;
@@ -1185,6 +1225,11 @@ export type MutationAccountUpdateDefaultWalletIdArgs = {
 
 export type MutationAccountUpdateDisplayCurrencyArgs = {
   input: AccountUpdateDisplayCurrencyInput;
+};
+
+
+export type MutationBankAccountUpdateRequestArgs = {
+  input: BankAccountUpdateRequestInput;
 };
 
 
@@ -2609,6 +2654,13 @@ export type BusinessAccountUpgradeRequestMutationVariables = Exact<{
 
 export type BusinessAccountUpgradeRequestMutation = { readonly __typename: 'Mutation', readonly businessAccountUpgradeRequest: { readonly __typename: 'AccountUpgradePayload', readonly id?: string | null, readonly status?: string | null, readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null } | null> | null } };
 
+export type BankAccountUpdateRequestMutationVariables = Exact<{
+  input: BankAccountUpdateRequestInput;
+}>;
+
+
+export type BankAccountUpdateRequestMutation = { readonly __typename: 'Mutation', readonly bankAccountUpdateRequest: { readonly __typename: 'BankAccountUpdateRequestPayload', readonly status?: string | null, readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null } | null> | null } };
+
 export type IdDocumentUploadUrlGenerateMutationVariables = Exact<{
   input: IdDocumentUploadUrlGenerateInput;
 }>;
@@ -2789,7 +2841,7 @@ export type BridgeVirtualAccountQuery = { readonly __typename: 'Query', readonly
 export type BankAccountsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type BankAccountsQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly bankAccounts: ReadonlyArray<{ readonly __typename: 'BankAccount', readonly accountName?: string | null, readonly accountNumber: string, readonly accountType: string, readonly bankBranch: string, readonly bankName: string, readonly currency: string, readonly id?: string | null, readonly isDefault: boolean }> } | null };
+export type BankAccountsQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly bankAccounts: ReadonlyArray<{ readonly __typename: 'BankAccount', readonly accountName?: string | null, readonly accountNumber: string, readonly accountType: string, readonly bankBranch: string, readonly bankName: string, readonly currency: string, readonly id?: string | null, readonly isDefault: boolean, readonly pendingUpdate?: { readonly __typename: 'BankAccountUpdateRequest', readonly status: string, readonly bankName: string, readonly bankBranch: string, readonly accountType: string, readonly accountNumber: string, readonly currency: string, readonly rejectionReason?: string | null } | null }> } | null };
 
 export type BridgeExternalAccountsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4346,6 +4398,43 @@ export function useBusinessAccountUpgradeRequestMutation(baseOptions?: Apollo.Mu
 export type BusinessAccountUpgradeRequestMutationHookResult = ReturnType<typeof useBusinessAccountUpgradeRequestMutation>;
 export type BusinessAccountUpgradeRequestMutationResult = Apollo.MutationResult<BusinessAccountUpgradeRequestMutation>;
 export type BusinessAccountUpgradeRequestMutationOptions = Apollo.BaseMutationOptions<BusinessAccountUpgradeRequestMutation, BusinessAccountUpgradeRequestMutationVariables>;
+export const BankAccountUpdateRequestDocument = gql`
+    mutation bankAccountUpdateRequest($input: BankAccountUpdateRequestInput!) {
+  bankAccountUpdateRequest(input: $input) {
+    errors {
+      message
+      code
+    }
+    status
+  }
+}
+    `;
+export type BankAccountUpdateRequestMutationFn = Apollo.MutationFunction<BankAccountUpdateRequestMutation, BankAccountUpdateRequestMutationVariables>;
+
+/**
+ * __useBankAccountUpdateRequestMutation__
+ *
+ * To run a mutation, you first call `useBankAccountUpdateRequestMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useBankAccountUpdateRequestMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [bankAccountUpdateRequestMutation, { data, loading, error }] = useBankAccountUpdateRequestMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useBankAccountUpdateRequestMutation(baseOptions?: Apollo.MutationHookOptions<BankAccountUpdateRequestMutation, BankAccountUpdateRequestMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<BankAccountUpdateRequestMutation, BankAccountUpdateRequestMutationVariables>(BankAccountUpdateRequestDocument, options);
+      }
+export type BankAccountUpdateRequestMutationHookResult = ReturnType<typeof useBankAccountUpdateRequestMutation>;
+export type BankAccountUpdateRequestMutationResult = Apollo.MutationResult<BankAccountUpdateRequestMutation>;
+export type BankAccountUpdateRequestMutationOptions = Apollo.BaseMutationOptions<BankAccountUpdateRequestMutation, BankAccountUpdateRequestMutationVariables>;
 export const IdDocumentUploadUrlGenerateDocument = gql`
     mutation IdDocumentUploadUrlGenerate($input: IdDocumentUploadUrlGenerateInput!) {
   idDocumentUploadUrlGenerate(input: $input) {
@@ -5651,6 +5740,15 @@ export const BankAccountsDocument = gql`
       currency
       id
       isDefault
+      pendingUpdate {
+        status
+        bankName
+        bankBranch
+        accountType
+        accountNumber
+        currency
+        rejectionReason
+      }
     }
   }
 }
