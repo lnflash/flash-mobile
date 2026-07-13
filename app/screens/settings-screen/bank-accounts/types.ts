@@ -40,6 +40,23 @@ export type BankAccountVM = {
   routingNumber?: string | null
   /** Provisioning still in flight (receive account not ready yet). */
   pending?: boolean
+
+  // Withdraw (ERPNext) extras — prefill the "update details" screen and surface
+  // an in-review change. Undefined for other rails.
+  bankBranch?: string
+  accountType?: string
+  /** Raw currency value as stored server-side (echoed back on update; currency is locked). */
+  currencyRaw?: string
+  /** Open request to change this account's details, awaiting review (null when none). */
+  pendingUpdate?: {
+    status: string
+    bankName: string
+    bankBranch: string
+    accountType: string
+    accountNumber: string
+    currency: string
+    rejectionReason?: string | null
+  } | null
 }
 
 export type WithdrawGroup = {

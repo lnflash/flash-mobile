@@ -490,6 +490,43 @@ type RootTranslation = {
 		 * D​e​f​a​u​l​t​ ​a​c​c​o​u​n​t​ ​u​p​d​a​t​e​d
 		 */
 		defaultUpdated: string
+		/**
+		 * U​p​d​a​t​e​ ​d​e​t​a​i​l​s
+		 */
+		updateDetails: string
+		/**
+		 * U​p​d​a​t​e​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 */
+		editTitle: string
+		/**
+		 * C​h​a​n​g​e​s​ ​a​r​e​ ​r​e​v​i​e​w​e​d​ ​b​e​f​o​r​e​ ​t​h​e​y​ ​t​a​k​e​ ​e​f​f​e​c​t​.​ ​C​a​s​h​-​o​u​t​s​ ​k​e​e​p​ ​g​o​i​n​g​ ​t​o​ ​y​o​u​r​ ​c​u​r​r​e​n​t​ ​d​e​t​a​i​l​s​ ​u​n​t​i​l​ ​t​h​e​n​.
+		 */
+		editSubtitle: string
+		/**
+		 * C​u​r​r​e​n​c​y​ ​c​a​n​'​t​ ​b​e​ ​c​h​a​n​g​e​d​ ​h​e​r​e​.​ ​T​o​ ​u​s​e​ ​a​ ​d​i​f​f​e​r​e​n​t​ ​c​u​r​r​e​n​c​y​,​ ​a​d​d​ ​a​ ​n​e​w​ ​a​c​c​o​u​n​t​.
+		 */
+		currencyLocked: string
+		/**
+		 * S​u​b​m​i​t​ ​f​o​r​ ​r​e​v​i​e​w
+		 */
+		submitUpdate: string
+		/**
+		 * S​u​b​m​i​t​ ​c​h​a​n​g​e​s​?
+		 */
+		confirmTitle: string
+		/**
+		 * C​a​s​h​-​o​u​t​s​ ​k​e​e​p​ ​g​o​i​n​g​ ​t​o​ ​y​o​u​r​ ​c​u​r​r​e​n​t​ ​a​c​c​o​u​n​t​ ​u​n​t​i​l​ ​t​h​e​ ​n​e​w​ ​d​e​t​a​i​l​s​ ​a​r​e​ ​a​p​p​r​o​v​e​d​.
+		 */
+		confirmMessage: string
+		/**
+		 * U​p​d​a​t​e​ ​s​u​b​m​i​t​t​e​d​ ​f​o​r​ ​r​e​v​i​e​w
+		 */
+		updateSubmitted: string
+		/**
+		 * Y​o​u​r​ ​l​a​s​t​ ​r​e​q​u​e​s​t​ ​w​a​s​ ​d​e​c​l​i​n​e​d​:​ ​{​r​e​a​s​o​n​}
+		 * @param {string} reason
+		 */
+		lastRequestDeclined: RequiredParams<'reason'>
 	}
 	BridgeAddExternalAccount: {
 		/**
@@ -6382,6 +6419,42 @@ export type TranslationFunctions = {
 		 * Default account updated
 		 */
 		defaultUpdated: () => LocalizedString
+		/**
+		 * Update details
+		 */
+		updateDetails: () => LocalizedString
+		/**
+		 * Update bank account
+		 */
+		editTitle: () => LocalizedString
+		/**
+		 * Changes are reviewed before they take effect. Cash-outs keep going to your current details until then.
+		 */
+		editSubtitle: () => LocalizedString
+		/**
+		 * Currency can't be changed here. To use a different currency, add a new account.
+		 */
+		currencyLocked: () => LocalizedString
+		/**
+		 * Submit for review
+		 */
+		submitUpdate: () => LocalizedString
+		/**
+		 * Submit changes?
+		 */
+		confirmTitle: () => LocalizedString
+		/**
+		 * Cash-outs keep going to your current account until the new details are approved.
+		 */
+		confirmMessage: () => LocalizedString
+		/**
+		 * Update submitted for review
+		 */
+		updateSubmitted: () => LocalizedString
+		/**
+		 * Your last request was declined: {reason}
+		 */
+		lastRequestDeclined: (arg: { reason: string }) => LocalizedString
 	}
 	BridgeAddExternalAccount: {
 		/**
