@@ -360,6 +360,15 @@ gql`
         currency
         id
         isDefault
+        pendingUpdate {
+          status
+          bankName
+          bankBranch
+          accountType
+          accountNumber
+          currency
+          rejectionReason
+        }
       }
     }
   }

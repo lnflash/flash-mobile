@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react"
 import { Alert, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native"
-import { gql } from "@apollo/client"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -26,21 +25,11 @@ import {
   useBridgeExternalAccountsQuery,
   useBridgeInitiateKycMutation,
   useBridgeKycStatusQuery,
-  useTopupCashoutQuery,
 } from "@app/graphql/generated"
-import { useActivityIndicator } from "@app/hooks"
+import { useActivityIndicator, useTransferFlags } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
-import { useFeatureFlags } from "@app/config/feature-flags-context"
 
 type Props = StackScreenProps<RootStackParamList, "TopupCashout">
-
-gql`
-  query topupCashout {
-    globals {
-      topupEnabled
-    }
-  }
-`
 
 const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
@@ -48,7 +37,12 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const { currentLevel } = useLevel()
   const { colors } = useTheme().theme
   const { toggleActivityIndicator } = useActivityIndicator()
-  const { bridgeTopupEnabled } = useFeatureFlags()
+  const {
+    topupEnabled,
+    cashoutEnabled,
+    bridgeEnabled,
+    refetch: refetchFlags,
+  } = useTransferFlags()
 
   const [topupModalVisible, setTopupModalVisible] = useState(false)
   const [settleModalVisible, setSettleModalVisible] = useState(false)
@@ -58,41 +52,36 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
   const [addExternalAccount] = useBridgeAddExternalAccountMutation()
 
-  const { data: topupData, refetch: refetchTopup } = useTopupCashoutQuery({
-    fetchPolicy: "cache-and-network",
-  })
-  const topupEnabled = topupData?.globals?.topupEnabled ?? false
-
   const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
     fetchPolicy: "cache-and-network",
-    skip: !bridgeTopupEnabled,
+    skip: !bridgeEnabled,
   })
   const { data: externalAccountsData, refetch: refetchExternalAccounts } =
     useBridgeExternalAccountsQuery({
       fetchPolicy: "cache-and-network",
-      skip: !bridgeTopupEnabled,
+      skip: !bridgeEnabled,
     })
 
   useFocusEffect(
     useCallback(() => {
-      refetchTopup()
-      if (!bridgeTopupEnabled) return
+      refetchFlags()
+      if (!bridgeEnabled) return
       refetchKycStatus()
       refetchExternalAccounts()
-    }, [bridgeTopupEnabled, refetchTopup, refetchKycStatus, refetchExternalAccounts]),
+    }, [bridgeEnabled, refetchFlags, refetchKycStatus, refetchExternalAccounts]),
   )
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    await refetchTopup()
-    if (!bridgeTopupEnabled) {
+    await refetchFlags()
+    if (!bridgeEnabled) {
       setRefreshing(false)
       return
     }
     await refetchKycStatus()
     await refetchExternalAccounts()
     setRefreshing(false)
-  }, [bridgeTopupEnabled, refetchTopup, refetchKycStatus, refetchExternalAccounts])
+  }, [bridgeEnabled, refetchFlags, refetchKycStatus, refetchExternalAccounts])
 
   const checkAccountLevel = useCallback(
     (type: "card" | "bankTransfer" | "cashout") => {
@@ -124,7 +113,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
 
   const checkBridgeKyc = useCallback(
     async (type: "topup" | "settle") => {
-      if (!bridgeTopupEnabled) return
+      if (!bridgeEnabled) return
 
       if (kycStatusData?.bridgeKycStatus === "pending") {
         Alert.alert(
@@ -168,7 +157,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     },
     [
       addExternalAccount,
-      bridgeTopupEnabled,
+      bridgeEnabled,
       externalAccountsData?.bridgeExternalAccounts,
       kycStatusData?.bridgeKycStatus,
       navigation,
@@ -202,7 +191,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
       )
     }
 
-    if (bridgeTopupEnabled) {
+    if (bridgeEnabled) {
       options.push({
         icon: "globe",
         title: LL.TransferScreen.internationalBankTransfer(),
@@ -218,7 +207,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     return options
   }, [
     LL,
-    bridgeTopupEnabled,
+    bridgeEnabled,
     checkAccountLevel,
     checkBridgeKyc,
     kycStatusData?.bridgeKycStatus,
@@ -226,8 +215,10 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
   ])
 
   const settleOptions: TransferOption[] = useMemo(() => {
-    const options: TransferOption[] = [
-      {
+    const options: TransferOption[] = []
+
+    if (cashoutEnabled) {
+      options.push({
         icon: "business",
         title: LL.TransferScreen.jmdBankAccount(),
         description: LL.TransferScreen.jmdBankAccountDesc(),
@@ -235,10 +226,10 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
           setSettleModalVisible(false)
           checkAccountLevel("cashout")
         },
-      },
-    ]
+      })
+    }
 
-    if (bridgeTopupEnabled) {
+    if (bridgeEnabled) {
       options.push({
         icon: "globe",
         title: LL.TransferScreen.internationalBankAccount(),
@@ -254,7 +245,8 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     return options
   }, [
     LL,
-    bridgeTopupEnabled,
+    bridgeEnabled,
+    cashoutEnabled,
     checkAccountLevel,
     checkBridgeKyc,
     kycStatusData?.bridgeKycStatus,
@@ -317,16 +309,21 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
             <Icon type="ionicon" name={"chevron-forward"} size={20} />
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.btn} onPress={() => setSettleModalVisible(true)}>
-          <ArrowUp color={colors.black} width={40} height={40} />
-          <View style={styles.btnTextWrapper}>
-            <Text type="p1"> {LL.TransferScreen.settle()}</Text>
-            <Text type="p3" color={colors.grey2}>
-              {LL.TransferScreen.settleDesc()}
-            </Text>
-          </View>
-          <Icon type="ionicon" name={"chevron-forward"} size={20} />
-        </TouchableOpacity>
+        {settleOptions.length > 0 && (
+          <TouchableOpacity
+            style={styles.btn}
+            onPress={() => setSettleModalVisible(true)}
+          >
+            <ArrowUp color={colors.black} width={40} height={40} />
+            <View style={styles.btnTextWrapper}>
+              <Text type="p1"> {LL.TransferScreen.settle()}</Text>
+              <Text type="p3" color={colors.grey2}>
+                {LL.TransferScreen.settleDesc()}
+              </Text>
+            </View>
+            <Icon type="ionicon" name={"chevron-forward"} size={20} />
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       <TransferOptionModal

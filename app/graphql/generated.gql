@@ -410,6 +410,18 @@ mutation accountUpdateDisplayCurrency($input: AccountUpdateDisplayCurrencyInput!
   }
 }
 
+mutation bankAccountUpdateRequest($input: BankAccountUpdateRequestInput!) {
+  bankAccountUpdateRequest(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    status
+    __typename
+  }
+}
+
 mutation businessAccountUpgradeRequest($input: BusinessAccountUpgradeRequestInput!) {
   businessAccountUpgradeRequest(input: $input) {
     errors {
@@ -1002,6 +1014,16 @@ query BankAccounts {
       currency
       id
       isDefault
+      pendingUpdate {
+        status
+        bankName
+        bankBranch
+        accountType
+        accountNumber
+        currency
+        rejectionReason
+        __typename
+      }
       __typename
     }
     __typename
@@ -1812,13 +1834,6 @@ query supportedCountries {
   }
 }
 
-query topupCashout {
-  globals {
-    topupEnabled
-    __typename
-  }
-}
-
 query totpRegistrationScreen {
   me {
     username
@@ -1881,6 +1896,15 @@ query transactionListForDefaultAccount($first: Int, $after: String, $last: Int, 
       }
       __typename
     }
+    __typename
+  }
+}
+
+query transferFlags {
+  globals {
+    topupEnabled
+    cashoutEnabled
+    bridgeEnabled
     __typename
   }
 }

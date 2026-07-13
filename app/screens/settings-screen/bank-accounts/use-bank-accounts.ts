@@ -165,11 +165,19 @@ export const useBankAccounts = (): UseBankAccounts => {
         bankName: bank.bankName,
         last4: last4Of(bank.accountNumber),
         currency: currencyKey(bank.currency) || "LOCAL",
-        status: "verified",
+        status: bank.pendingUpdate
+          ? normalizeStatus(bank.pendingUpdate.status)
+          : "verified",
         isDefault: false,
         canSetDefault: true, // interim client-side; server has no mutation yet
         canRemove: false,
         serverDefault: bank.isDefault,
+        // Prefill + in-review surface for the "update details" flow.
+        accountNumber: bank.accountNumber,
+        bankBranch: bank.bankBranch,
+        accountType: bank.accountType,
+        currencyRaw: bank.currency,
+        pendingUpdate: bank.pendingUpdate ?? null,
       })
     })
 
