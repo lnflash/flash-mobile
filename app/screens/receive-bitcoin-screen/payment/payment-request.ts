@@ -9,8 +9,8 @@ import {
   PaymentRequestInformation,
 } from "./index.types"
 import { BtcMoneyAmount } from "@app/types/amounts"
+import { getPaycodeQRContent } from "@app/utils/pay-code"
 import { getPaymentRequestFullUri, prToDateString } from "./helpers"
-import { bech32 } from "bech32"
 
 // breez
 import { receivePaymentBreez, receiveOnchainBreez } from "@app/utils/breez-sdk"
@@ -174,24 +174,13 @@ export const createPaymentRequest = (
           result.errors,
         )
       } else if (pr.type === Invoice.PayCode && pr.username) {
-        const lnurl: string = await new Promise((resolve) => {
-          resolve(
-            bech32.encode(
-              "lnurl",
-              bech32.toWords(
-                Buffer.from(`${pr.posUrl}/.well-known/lnurlp/${pr.username}`, "utf8"),
-              ),
-              1500,
-            ),
-          )
+        const qrCodeURL: string = await new Promise((resolve) => {
+          resolve(getPaycodeQRContent(pr.posUrl, pr.username ?? ""))
         })
 
         await new Promise((r) => {
           setTimeout(r, 50)
         })
-
-        const webURL = `${pr.posUrl}/${pr.username}`
-        const qrCodeURL = webURL.toUpperCase() + "?lightning=" + lnurl.toUpperCase()
 
         const getFullUriFn: GetFullUriFn = ({ uppercase, prefix }) =>
           getPaymentRequestFullUri({

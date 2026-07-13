@@ -34,11 +34,14 @@ import { NetworkErrorContextProvider } from "./network-error-context"
 import { onError } from "@apollo/client/link/error"
 
 import { getLanguageFromString, getLocaleFromLanguage } from "@app/utils/locale-detector"
+import { WatchCurrencySync } from "@app/components/watch-currency-sync"
+import { WatchReceiveSync } from "@app/components/watch-receive-sync"
 import { MessagingContainer } from "./messaging"
 import { SCHEMA_VERSION_KEY } from "@app/config"
 import { NetworkError } from "@apollo/client/errors"
 import { LevelContainer } from "./level-component"
 import { getAppCheckToken } from "@app/screens/get-started-screen/use-device-token"
+import { WidgetPriceSync } from "@app/components/widget-price-sync"
 
 const noRetryOperations = [
   "intraLedgerPaymentSend",
@@ -343,6 +346,9 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
             <LanguageSync />
             <AnalyticsContainer />
             <MyPriceUpdates />
+            <WatchCurrencySync />
+            <WatchReceiveSync />
+            <WidgetPriceSync />
             {children}
           </NetworkErrorContextProvider>
         </LevelContainer>
