@@ -50,14 +50,14 @@ jobs:
           node-version: "24"
           cache: "yarn"
 
-      - name: Install JS dependencies
-        run: yarn install --frozen-lockfile
-
       - name: Create .env from secrets
         run: echo "${{ secrets.DOT_ENV }}" > .env
 
       - name: Create GoogleService-Info.plist from secrets
         run: echo '${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}' > ios/LNFlash/GoogleService-Info.plist
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
