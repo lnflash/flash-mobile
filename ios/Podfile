@@ -167,6 +167,24 @@ post_install do |installer|
     end
   end
 
+  # React Native 0.77 Yoga sources include nested private headers with
+  # <yoga/...> paths, but the podspec only exposes top-level public headers.
+  # Link those nested headers into CocoaPods' public header tree so clean
+  # installs compile reliably under Xcode.
+  yoga_source_dir = File.expand_path('../node_modules/react-native/ReactCommon/yoga/yoga', Dir.pwd)
+  yoga_public_dir = File.join(Dir.pwd, 'Pods', 'Headers', 'Public', 'Yoga', 'yoga')
+  if File.directory?(yoga_source_dir) && File.directory?(yoga_public_dir)
+    Dir.glob(File.join(yoga_source_dir, '**', '*.h')).each do |header|
+      relative_header = header.delete_prefix("#{yoga_source_dir}/")
+      next unless relative_header.include?('/')
+
+      public_header = File.join(yoga_public_dir, relative_header)
+      FileUtils.mkdir_p(File.dirname(public_header))
+      FileUtils.ln_sf(header, public_header)
+    end
+    puts "Linked nested Yoga headers for Xcode"
+  end
+
   # use GoogleService-Info.dev.plist if GoogleService-Info.plist is not exits
   app_path = File.join(Dir.pwd, 'LNFlash') 
   google_service_plist = File.join(app_path, 'GoogleService-Info.plist')
@@ -182,6 +200,5 @@ post_install do |installer|
   end
   # end
 end
-
 
 
