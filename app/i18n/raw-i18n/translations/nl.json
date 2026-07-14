@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Uw account upgrade aanvraag is onder review.",
     "currencyTitle": "Verander naar uw lokale valuta",
     "currencyDesc": "Bekijk onze beschikbare valutalijst en selecteer uw valuta.",
-    "flashcardTitle": "Krijg een Flashcard",
-    "flashcardDesc": "Zoek een Flashpoint en krijg een Flashcard om in het dagelijks leven te gebruiken.",
-    "nonCustodialWalletTitle": "Niet-custodiële portemonnees",
-    "nonCustodialWalletDesc": "Leer meer over niet-verzorgingsbeurzen.",
     "emailTitle": "E-mailadres",
     "emailDesc": "Voeg uw e-mailadres toe om uw account te beveiligen en login met behulp van een e-mailadres.",
     "btcWalletTitle": "Enable BTC wallet",
@@ -787,7 +783,8 @@
     "advanceMode": "Enable Bitcoin Account (Advanced Mode) ",
     "keysManagement": "Back-up van het portemonnee",
     "showBtcAccount": "Toon Bitcoin-account",
-    "hideBtcAccount": "Hide Bitcoin account"
+    "hideBtcAccount": "Hide Bitcoin account",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notificatie instellingen",

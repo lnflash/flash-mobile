@@ -534,10 +534,6 @@
     "upgradePendingDesc": "การขอปรับปรุงบัญชีของคุณกําลังถูกพิจารณา",
     "currencyTitle": "เปลี่ยนไปยังเงินของท้องถิ่นของคุณ",
     "currencyDesc": "ตรวจสอบรายการสกุลเงินที่เรามี และเลือกสกุลเงินของคุณ",
-    "flashcardTitle": "รับ Flashcard",
-    "flashcardDesc": "ค้นหา Flashpoint และใช้ Flashcard ในชีวิตประจําวัน",
-    "nonCustodialWalletTitle": "กระเป๋าเปลือกที่ไม่ใช่ของฝ่ายปกครอง",
-    "nonCustodialWalletDesc": "เรียนรู้เพิ่มเติมเกี่ยวกับกระเป๋าเปลือกที่ไม่ใช่ของฝ่ายปกครอง",
     "emailTitle": "ที่อยู่อีเมล",
     "emailDesc": "เพิ่มเติมที่อยู่อีเมลของคุณเพื่อคุ้มครองบัญชี และเข้าใช้บริการด้วยที่อยู่อีเมล",
     "btcWalletTitle": "Enable BTC wallet",
@@ -787,7 +783,8 @@
     "advanceMode": "Enable Bitcoin Account (Advanced Mode) ",
     "keysManagement": "การสํารอง Wallet ",
     "showBtcAccount": "แสดงบัญชี Bitcoin",
-    "hideBtcAccount": "ซ่อนบัญชี Bitcoin"
+    "hideBtcAccount": "ซ่อนบัญชี Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",

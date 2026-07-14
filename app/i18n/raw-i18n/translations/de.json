@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Ihre Account-Upgrade-Anforderung wird überprüft.",
     "currencyTitle": "Wechseln Sie zu Ihrer lokalen Währung",
     "currencyDesc": "Überprüfen Sie unsere verfügbare Währungsliste und wählen Sie Ihre Währung aus.",
-    "flashcardTitle": "Holen Sie sich einen Flashcard",
-    "flashcardDesc": "Finden Sie einen Flashpoint und holen Sie sich einen Flashcard zum Gebrauch im täglichen Leben.",
-    "nonCustodialWalletTitle": "Nicht-verpflichtige Brieftaschen",
-    "nonCustodialWalletDesc": "Erfahren Sie mehr über nicht-verpflichtige Brieftaschen.",
     "emailTitle": "E-Mail-Adresse",
     "emailDesc": "Fügen Sie Ihre E-Mail-Adresse hinzu, um Ihr Konto zu sichern und mit E-Mail-Adresse einloggen zu können.",
     "btcWalletTitle": "Aktivieren Sie BTC Wallet",
@@ -787,7 +783,8 @@
     "advanceMode": "Aktivieren Sie Bitcoin Account (Advanced Mode)",
     "keysManagement": "Wallet-Backup",
     "showBtcAccount": "Zeigen Sie das Bitcoin-Konto",
-    "hideBtcAccount": "Verstecken Sie das Bitcoin-Konto"
+    "hideBtcAccount": "Verstecken Sie das Bitcoin-Konto",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",

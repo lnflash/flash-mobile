@@ -534,10 +534,6 @@
     "upgradePendingDesc": "A fiókja felújítási kérése felülvizsgálat alatt áll.",
     "currencyTitle": "Cserélj a helyi pénznemben",
     "currencyDesc": "Tekintse át a rendelkezésre álló valuták listáját, és válassza ki a pénznemeit.",
-    "flashcardTitle": "Kapjon egy Flashcard",
-    "flashcardDesc": "Találj egy Flashpoint-t, és szerezz egy Flashcard-t a mindennapi életben.",
-    "nonCustodialWalletTitle": "Nem őrizetbeli pénztárcák",
-    "nonCustodialWalletDesc": "Tudjon meg többet a nem őrizetbeli pénztárcákról.",
     "emailTitle": "E-mail cím",
     "emailDesc": "Adja hozzá az e-mail címét, hogy biztosítsa a fiókját, és lépjen be az e-mail cím használatával.",
     "btcWalletTitle": "Az BTC pénztárca engedélyezése",
@@ -787,7 +783,8 @@
     "advanceMode": "Lehetővé tegye az Bitcoin fiókot (Advanced Mode)",
     "keysManagement": "Cseppártyás biztonsági mentés",
     "showBtcAccount": "Mutasd meg a Bitcoin fiókot",
-    "hideBtcAccount": "Elrejtse az Bitcoin fiókot"
+    "hideBtcAccount": "Elrejtse az Bitcoin fiókot",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Értesítési beállítások",

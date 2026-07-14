@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Ваш захтев за надоградњу рачуна је под обзиром.",
     "currencyTitle": "Промените се у своју локалну валуту",
     "currencyDesc": "Прегледајте нашу листу доступних валута и одаберете своју валуту.",
-    "flashcardTitle": "Добијте Flashcard",
-    "flashcardDesc": "Нађите Flashpoint и добијте Flashcard за употребу у свакодневном животу.",
-    "nonCustodialWalletTitle": "Не-кустодијални новчаници",
-    "nonCustodialWalletDesc": "Сазнајте више о новчаницима који нису чувани.",
     "emailTitle": "Имејловни адрес",
     "emailDesc": "Додајте своју е-поштену адресу како бисте обезбедили свој рачун и пријавили се користећи е-поштену адресу.",
     "btcWalletTitle": "Омогућити BTC новчаник",
@@ -787,7 +783,8 @@
     "advanceMode": "Активише Bitcoin рачуна (Авансрен режим)",
     "keysManagement": "Резерван новчаника ",
     "showBtcAccount": "Показати Bitcoin рачун",
-    "hideBtcAccount": "Скријте рачун Bitcoin"
+    "hideBtcAccount": "Скријте рачун Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",

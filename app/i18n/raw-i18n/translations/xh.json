@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Isicelo sakho sokuphucula iakhawunti sihlaziywa.",
     "currencyTitle": "Tshintshela kwiimali zakho zasekuhlaleni",
     "currencyDesc": "Jonga uluhlu lwethu lweemali ezikhoyo kwaye ukhethe imali yakho.",
-    "flashcardTitle": "Fumana i-Flashcard",
-    "flashcardDesc": "Fumana i-Flashpoint kwaye ufumane i-Flashcard yokusebenzisa kubomi bemihla ngemihla.",
-    "nonCustodialWalletTitle": "Izipaji ezingezizo ezikhuselweyo",
-    "nonCustodialWalletDesc": "Funda okungakumbi malunga nee-wallets ezingezizo ze-custodial.",
     "emailTitle": "Idilesi ye-imeyile",
     "emailDesc": "Yongeza idilesi yakho ye-imeyile ukuze ukhusele iakhawunti yakho kwaye ungene ngemvume usebenzisa idilesi ye-imeyile.",
     "btcWalletTitle": "Qinisekisa i-BTC wallet",
@@ -787,7 +783,8 @@
     "advanceMode": "Vumela i-akhawunti ye-Bitcoin (imowudi ephuculweyo)",
     "keysManagement": "Isipele seWallets ",
     "showBtcAccount": "Bonisa i-akhawunti ye-Bitcoin",
-    "hideBtcAccount": "Fihla iakhawunti ye-Bitcoin"
+    "hideBtcAccount": "Fihla iakhawunti ye-Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Izilungiselelo Zokwazisa",

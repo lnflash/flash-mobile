@@ -534,10 +534,6 @@
     "upgradePendingDesc": "La teva sol·licitud d'actualització de compte està en fase d'examen.",
     "currencyTitle": "Canvia a la teva moneda local",
     "currencyDesc": "Revisar la nostra llista de monedes disponibles i seleccionar la seva moneda.",
-    "flashcardTitle": "Obtenir un Flashcard",
-    "flashcardDesc": "Trobar una Flashpoint i obtenir una Flashcard per utilitzar-la en la vida diària.",
-    "nonCustodialWalletTitle": "Els carts no custodials",
-    "nonCustodialWalletDesc": "Descobreix més sobre les carteres no custodials.",
     "emailTitle": "L'adreça de correu electrònic",
     "emailDesc": "Agrega la teva adreça de correu electrònic per protegir el teu compte i iniciar sesión utilitzant l'adreça de correu electrònic.",
     "btcWalletTitle": "Enable BTC wallet",
@@ -787,7 +783,8 @@
     "advanceMode": "Enable Bitcoin Account (Advanced Mode)",
     "keysManagement": "Backup de cartera",
     "showBtcAccount": "Mostreu el compte Bitcoin",
-    "hideBtcAccount": "Escondir un compte Bitcoin"
+    "hideBtcAccount": "Escondir un compte Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Configuració de notificacions",

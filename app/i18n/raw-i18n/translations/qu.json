@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Paykunapa contranpi llamk'anankupaq mañakusqankuqa qhawarisqa kashan.",
     "currencyTitle": "Qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi",
     "currencyDesc": "Ñoqanchispa qolqeta qhawaychis, chaymantataq qollqeta ajllaychis.",
-    "flashcardTitle": "Qawasun Flashcard",
-    "flashcardDesc": "Flashpoint-ta tarinki, chaymantataq sapa p'unchawpaqmi Flashcard-ta tarinki.",
-    "nonCustodialWalletTitle": "Mana custodial qollqekunaqa",
-    "nonCustodialWalletDesc": "Commons nisqapi suyukunata uyarinakunatapas tarinki kaymantam: Wallet non-custodial.",
     "emailTitle": "E-mail address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address",
     "emailDesc": "Imaynatá qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki.",
     "btcWalletTitle": "BTC qollqeta atiy",
@@ -787,7 +783,8 @@
     "advanceMode": "Bitcoin Account (Advanced Mode) sutiyuq katiguriyapi llamk'apuy",
     "keysManagement": "Qhapaq qollqeta kutichinapaq (wallet backup)",
     "showBtcAccount": "Show Bitcoin cuenta",
-    "hideBtcAccount": "Hide Bitcoin cuenta"
+    "hideBtcAccount": "Hide Bitcoin cuenta",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",

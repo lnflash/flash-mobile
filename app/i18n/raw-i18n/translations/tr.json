@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Hesap yükseltme talebiniz gözden geçiriliyor.",
     "currencyTitle": "Yerel para birimine değişin",
     "currencyDesc": "Kullanılabilir para birimi listesini inceleyin ve para birimini seçin.",
-    "flashcardTitle": "Bir Flashcard alın",
-    "flashcardDesc": "Bir Flashpoint bulun ve günlük yaşamda kullanabileceğiniz bir Flashcard alın.",
-    "nonCustodialWalletTitle": "Koruma dışı cüzdanlar",
-    "nonCustodialWalletDesc": "Koruma dışı cüzdanlar hakkında daha fazla bilgi edinin.",
     "emailTitle": "E-posta adresi",
     "emailDesc": "Hesabınızı güvence altına almak ve e-posta adresini kullanarak giriş yapmak için e-posta adresinizi ekleyin.",
     "btcWalletTitle": "BTC cüzdanı etkinleştirin",
@@ -787,7 +783,8 @@
     "advanceMode": "Bitcoin Hesabını (Gelişmiş Mod) etkinleştirin",
     "keysManagement": "Cüzdan yedekleme",
     "showBtcAccount": "Bitcoin hesabını göster",
-    "hideBtcAccount": "Bitcoin hesabını gizleyin"
+    "hideBtcAccount": "Bitcoin hesabını gizleyin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Bildirim Ayarları",

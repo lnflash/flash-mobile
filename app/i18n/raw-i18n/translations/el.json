@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Το αίτημα αναβάθμισης του λογαριασμού σας εξετάζεται.",
     "currencyTitle": "Αλλαγή σε τοπικό νόμισμα",
     "currencyDesc": "Εξετάστε τη λίστα των διαθέσιμων νομισμάτων και επιλέξτε το νόμισμά σας.",
-    "flashcardTitle": "Πάρτε ένα Flashcard",
-    "flashcardDesc": "Βρείτε ένα Flashpoint και πάρετε ένα Flashcard για να το χρησιμοποιήσετε στην καθημερινή σας ζωή.",
-    "nonCustodialWalletTitle": "Τα μη φυλακισμένα πορτοφόλια",
-    "nonCustodialWalletDesc": "Μάθετε περισσότερα σχετικά με τα μη φυλακισμένα πορτοφόλια.",
     "emailTitle": "Η διεύθυνση ηλεκτρονικού ταχυδρομείου",
     "emailDesc": "Προσθέστε τη διεύθυνση ηλεκτρονικού ταχυδρομείου σας για να προστατεύσετε το λογαριασμό σας και να συνδεθείτε χρησιμοποιώντας τη διεύθυνση ηλεκτρονικού ταχυδρομείου.",
     "btcWalletTitle": "Επιτρέψτε το BTC wallet",
@@ -787,7 +783,8 @@
     "advanceMode": "Επιτρέψτε το λογαριασμό Bitcoin (Advanced Mode)",
     "keysManagement": "Υποστήριξη του πορτοφόλι",
     "showBtcAccount": "Δείξτε λογαριασμό Bitcoin",
-    "hideBtcAccount": "Κρύψτε το λογαριασμό Bitcoin"
+    "hideBtcAccount": "Κρύψτε το λογαριασμό Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Ρυθμίσεις ειδοποιήσεων",
