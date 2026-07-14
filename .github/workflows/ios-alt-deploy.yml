@@ -54,7 +54,9 @@ jobs:
         run: echo "${{ secrets.DOT_ENV }}" > .env
 
       - name: Create GoogleService-Info.plist from secrets
-        run: echo '${{ secrets.GOOGLE_SERVICE_INFO_PLIST_ALT }}' > ios/LNFlash-Alt/GoogleService-Info.plist
+        run: |
+          mkdir -p ios/LNFlash-Alt
+          echo '${{ secrets.GOOGLE_SERVICE_INFO_PLIST_ALT }}' > ios/LNFlash-Alt/GoogleService-Info.plist
 
       - name: Install JS dependencies
         run: yarn install --frozen-lockfile
