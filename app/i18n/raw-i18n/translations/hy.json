@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Ձեր հաշիվի թարմացման խնդրանքն վերանայվում է:",
     "currencyTitle": "Փոխեք ձեր տեղական արժույթը",
     "currencyDesc": "Վերանայեք մեր մատչելի արժույթի ցուցակը եւ ընտրեք ձեր արժույթը:",
-    "flashcardTitle": "Ստացեք Flashcard",
-    "flashcardDesc": "Գտեք Flashpoint եւ ձեռք բերեք Flashcard, որը կօգտագործեք ամենօրյա կյանքում:",
-    "nonCustodialWalletTitle": "Ոչ խնամակալական դրամապանակները",
-    "nonCustodialWalletDesc": "Կարդացեք ավելին ոչ խնամակալական դրամապանակների մասին:",
     "emailTitle": "Էլեկտրոնային հասցեն",
     "emailDesc": "Ավելացրեք ձեր էլ.փոստի հասցեն, որպեսզի ապահովեք ձեր հաշիվը եւ մուտք գործեք էլ.փոստի հասցեն օգտագործելով:",
     "btcWalletTitle": "Հնարավորացնել BTC դրամապանակ",
@@ -787,7 +783,8 @@
     "advanceMode": "Աջակցեք Bitcoin հաշիվը (Ադվանսացված ռեժիմ) ",
     "keysManagement": "Հարցաթղթադրամների կրկնօրինակում",
     "showBtcAccount": "Ցույց տուր Bitcoin հաշիվ",
-    "hideBtcAccount": "Թաքցնել Bitcoin հաշիվ"
+    "hideBtcAccount": "Թաքցնել Bitcoin հաշիվ",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",

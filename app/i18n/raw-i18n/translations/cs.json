@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Vaše žádost o aktualizaci účtu je přezkoumána.",
     "currencyTitle": "Změňte měnu na svou místní měnu",
     "currencyDesc": "Podívejte se na náš seznam dostupných měn a vyberte si svou měnu.",
-    "flashcardTitle": "Získejte Flashcard",
-    "flashcardDesc": "Najděte Flashpoint a získejte Flashcard k použití v každodenním životě.",
-    "nonCustodialWalletTitle": "Non-custodial peněženky",
-    "nonCustodialWalletDesc": "Přečtěte si více o peněženkách, které nejsou ve vazbě.",
     "emailTitle": "E-mailová adresa",
     "emailDesc": "Přidejte svou e-mailovou adresu k zajištění vašeho účtu a přihlaste se pomocí e-mailové adresy.",
     "btcWalletTitle": "Aktivovat peněženku BTC",
@@ -787,7 +783,8 @@
     "advanceMode": "Aktivujte účet Bitcoin (pokročilý režim)",
     "keysManagement": "Záložní záloha peněženky",
     "showBtcAccount": "Zobrazit Bitcoin účet",
-    "hideBtcAccount": "Schovat účet Bitcoin"
+    "hideBtcAccount": "Schovat účet Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",

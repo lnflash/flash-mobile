@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Permintaan peningkatan akaun anda sedang dikaji.",
     "currencyTitle": "Ubah ke mata wang tempatan anda",
     "currencyDesc": "Lihat senarai mata wang kami yang tersedia dan pilih mata wang anda.",
-    "flashcardTitle": "Dapatkan Flashcard",
-    "flashcardDesc": "Cari Flashpoint dan dapatkan Flashcard untuk digunakan dalam kehidupan seharian.",
-    "nonCustodialWalletTitle": "Dompet bukan tahanan",
-    "nonCustodialWalletDesc": "Ketahui lebih lanjut mengenai dompet bukan tahanan.",
     "emailTitle": "Alamat e-mel",
     "emailDesc": "Tambah alamat e-mel anda untuk mengamankan akaun anda dan log masuk menggunakan alamat e-mel.",
     "btcWalletTitle": "Membolehkan dompet BTC",
@@ -787,7 +783,8 @@
     "advanceMode": "Membolehkan Akaun Bitcoin (Mod Lanjutan)",
     "keysManagement": "Cadangan simpanan dompet",
     "showBtcAccount": "Tunjukkan akaun Bitcoin",
-    "hideBtcAccount": "Sembunyikan akaun Bitcoin"
+    "hideBtcAccount": "Sembunyikan akaun Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Tetapan Notifikasi",

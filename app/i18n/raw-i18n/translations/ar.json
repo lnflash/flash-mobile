@@ -483,10 +483,6 @@
     "emailDesc": "Add your email address to secure your account and login using email address.",
     "emailTitle": "Email address",
     "flashcard": "Flashcard",
-    "flashcardDesc": "Find a Flashpoint and get a Flashcard to use in daily life.",
-    "flashcardTitle": "Get a Flashcard",
-    "nonCustodialWalletDesc": "Learn more about non-custodial wallets.",
-    "nonCustodialWalletTitle": "Non-custodial wallets",
     "pay": "Pay",
     "reload": "Reload Card",
     "showQrCode": "Topup via QR",
@@ -742,7 +738,8 @@
     "showNostrSecret": "Chat Settings",
     "showSeedPhrase": "Reveal recovery phrase",
     "staticQr": "Printable Static QR Code",
-    "staticQrCopied": "Your static QR code link has been copied"
+    "staticQrCopied": "Your static QR code link has been copied",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",

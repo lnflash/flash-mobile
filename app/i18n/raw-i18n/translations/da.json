@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Din kontoopgraderingsanmodning er under gennemgang.",
     "currencyTitle": "Skift til din lokale valuta",
     "currencyDesc": "Gennemgå vores liste over tilgængelige valutaer og vælg din valuta.",
-    "flashcardTitle": "Få en Flashcard",
-    "flashcardDesc": "Find en Flashpoint og få en Flashcard til brug i dagligdagen.",
-    "nonCustodialWalletTitle": "Ikke-custodial tegnebøger",
-    "nonCustodialWalletDesc": "Læs mere om ikke-bevaringsmæssige tegnebøger.",
     "emailTitle": "E-mailadresse",
     "emailDesc": "Tilføj din e-mailadresse for at sikre din konto og log in ved hjælp af en e-mailadresse.",
     "btcWalletTitle": "Aktiver BTC tegnebog",
@@ -787,7 +783,8 @@
     "advanceMode": "Aktiver Bitcoin Account (Advanced Mode)",
     "keysManagement": "Bankmandskabs sikkerhedskopiering",
     "showBtcAccount": "Vis Bitcoin konto",
-    "hideBtcAccount": "Hide Bitcoin konto"
+    "hideBtcAccount": "Hide Bitcoin konto",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notifikationsindstillinger",

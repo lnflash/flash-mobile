@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Yêu cầu nâng cấp tài khoản của bạn đang được xem xét.",
     "currencyTitle": "Thay đổi sang tiền tệ địa phương của bạn",
     "currencyDesc": "Xem lại danh sách tiền tệ có sẵn của chúng tôi và chọn tiền tệ của bạn.",
-    "flashcardTitle": "Nhận được một Flashcard",
-    "flashcardDesc": "Tìm một chiếc Flashpoint và mua một chiếc Flashcard để sử dụng trong cuộc sống hàng ngày.",
-    "nonCustodialWalletTitle": "Những ví không có quyền bảo vệ",
-    "nonCustodialWalletDesc": "Tìm hiểu thêm về ví không có quyền bảo vệ.",
     "emailTitle": "Địa chỉ email",
     "emailDesc": "Thêm địa chỉ email của bạn để bảo mật tài khoản và đăng nhập bằng địa chỉ email.",
     "btcWalletTitle": "Enable BTC wallet",
@@ -787,7 +783,8 @@
     "advanceMode": "Enable Bitcoin Account (Advanced Mode)",
     "keysManagement": "Căn khoán dự phòng ví",
     "showBtcAccount": "Xem tài khoản Bitcoin",
-    "hideBtcAccount": "ẩn tài khoản Bitcoin"
+    "hideBtcAccount": "ẩn tài khoản Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",

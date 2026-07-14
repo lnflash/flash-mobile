@@ -534,10 +534,6 @@
     "upgradePendingDesc": "Seu pedido de atualização da conta está em revisão.",
     "currencyTitle": "Mude para a sua moeda local",
     "currencyDesc": "Reveja nossa lista de moedas disponíveis e selecione sua moeda.",
-    "flashcardTitle": "Obtenha um Flashcard",
-    "flashcardDesc": "Encontre um Flashpoint e obtenha um Flashcard para usar na vida diária.",
-    "nonCustodialWalletTitle": "Carteiras não custodiáveis",
-    "nonCustodialWalletDesc": "Saiba mais sobre carteiras não custodiáveis.",
     "emailTitle": "Endereço de e-mail",
     "emailDesc": "Adicione seu endereço de e-mail para proteger sua conta e fazer login usando o endereço de e-mail.",
     "btcWalletTitle": "Enable BTC wallet",
@@ -787,7 +783,8 @@
     "advanceMode": "Enable Bitcoin Account (Modo Avançado)",
     "keysManagement": "Backup de carteira",
     "showBtcAccount": "Mostre a conta Bitcoin",
-    "hideBtcAccount": "Esconda a conta Bitcoin"
+    "hideBtcAccount": "Esconda a conta Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Configurações de Notificação",

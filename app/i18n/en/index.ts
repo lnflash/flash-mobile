@@ -663,10 +663,6 @@ const en: BaseTranslation = {
     upgradePendingDesc: "Your account upgrade request is under review.",
     currencyTitle:"Change to your local currency",
     currencyDesc: "Review our available currency list and select your currency.",
-    flashcardTitle: "Get a Flashcard",
-    flashcardDesc: "Find a Flashpoint and get a Flashcard to use in daily life.",
-    nonCustodialWalletTitle: "Non-custodial wallets",
-    nonCustodialWalletDesc: "Learn more about non-custodial wallets.",
     emailTitle: "Email address",
     emailDesc: "Add your email address to secure your account and login using email address.",
     btcWalletTitle: "Enable BTC wallet",
@@ -982,6 +978,7 @@ const en: BaseTranslation = {
 		maxAmountConvertError: "The conversion amount is greater than maximum amount {amount: number}"
   },
   SettingsScreen: {
+    flashcard: "Flashcard",
     staticQr: "Printable Static QR Code",
     staticQrCopied: "Your static QR code link has been copied",
     setByOs: "Set by OS",
