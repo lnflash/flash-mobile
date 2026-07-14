@@ -5,16 +5,16 @@ opt_out_usage
 # ---------------------------------------------------------------------------
 
 def version_from_git_tag(platform)
-  # Try platform-specific tag first (ios/v1.2.3 or android/v1.2.3), then generic v1.2.3
+  # Try platform-specific tag first (ios/v1.2.3, ios-alt/v1.2.3, android/v1.2.3), then generic v1.2.3
   tag = `git describe --tags --match '#{platform}/v*' --abbrev=0 2>/dev/null`.strip
   if tag.empty?
     tag = `git describe --tags --match 'v*' --abbrev=0 2>/dev/null`.strip
   end
-  tag.gsub(%r{^(ios|android)/}, "").gsub(/^v/, "")
+  tag.gsub(%r{^(ios-alt|ios|android)/}, "").gsub(/^v/, "")
 end
 
-def update_ios_version_from_tag
-  version = version_from_git_tag("ios")
+def update_ios_version_from_tag(tag_prefix = "ios")
+  version = version_from_git_tag(tag_prefix)
   unless version.empty?
     increment_version_number(
       version_number: version,
@@ -190,6 +190,154 @@ platform :ios do
         allow_nothing_to_commit: true
       )
       add_git_tag(tag: "ios/release/v#{version}-#{build}", force: true)
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # LNFlash-Alt
+  # ---------------------------------------------------------------------------
+
+  desc "Setup code signing for CI (Alt)"
+  lane :setup_signing_alt do
+    if is_ci
+      create_keychain(
+        name: "ci_keychain",
+        password: ENV["MATCH_PASSWORD"],
+        default_keychain: true,
+        unlock: true,
+        timeout: 3600,
+        lock_when_sleeps: false
+      )
+      match(
+        type: "appstore",
+        app_identifier: "com.flashapp.alt",
+        keychain_name: "ci_keychain",
+        keychain_password: ENV["MATCH_PASSWORD"],
+        readonly: true
+      )
+    else
+      match(type: "appstore", app_identifier: "com.flashapp.alt", readonly: true)
+    end
+  end
+
+  desc "Deploy Alt to TestFlight (beta)"
+  lane :beta_alt do
+    ensure_git_status_clean unless ENV['CI']
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+      key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    setup_signing_alt
+
+    update_ios_version_from_tag("ios-alt")
+
+    increment_build_number(
+      build_number: latest_testflight_build_number(api_key: api_key, app_identifier: "com.flashapp.alt") + 1,
+      xcodeproj: "ios/LNFlash.xcodeproj"
+    )
+
+    cocoapods(podfile: "ios/Podfile", clean_install: true)
+
+    profile_name = ENV["sigh_com.flashapp.alt_appstore_profile-name"] || "match AppStore com.flashapp.alt"
+
+    build_app(
+      workspace: "ios/LNFlash.xcworkspace",
+      scheme: "LNFlash-Alt",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "FlashAlt.ipa",
+      clean: true,
+      export_options: {
+        provisioningProfiles: {
+          "com.flashapp.alt" => profile_name
+        }
+      },
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}' ENABLE_USER_SCRIPT_SANDBOXING=NO"
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: "com.flashapp.alt",
+      ipa: "./build/FlashAlt.ipa",
+      skip_waiting_for_build_processing: true
+    )
+
+    version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash-Alt")
+    build = get_build_number(xcodeproj: "ios/LNFlash.xcodeproj")
+
+    if is_ci
+      git_commit(
+        path: ["ios/LNFlash.xcodeproj/project.pbxproj"],
+        message: "chore(ios-alt): bump version to #{version} (#{build}) [skip ci]",
+        allow_nothing_to_commit: true
+      )
+      add_git_tag(tag: "ios-alt/v#{version}-#{build}")
+    end
+  end
+
+  desc "Deploy Alt to App Store (release)"
+  lane :release_alt do
+    ensure_git_status_clean unless ENV['CI']
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+      key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    setup_signing_alt
+
+    update_ios_version_from_tag("ios-alt")
+
+    increment_build_number(
+      build_number: latest_testflight_build_number(api_key: api_key, app_identifier: "com.flashapp.alt") + 1,
+      xcodeproj: "ios/LNFlash.xcodeproj"
+    )
+
+    cocoapods(podfile: "ios/Podfile", clean_install: true)
+
+    profile_name = ENV["sigh_com.flashapp.alt_appstore_profile-name"] || "match AppStore com.flashapp.alt"
+
+    build_app(
+      workspace: "ios/LNFlash.xcworkspace",
+      scheme: "LNFlash-Alt",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "FlashAlt.ipa",
+      clean: true,
+      export_options: {
+        provisioningProfiles: {
+          "com.flashapp.alt" => profile_name
+        }
+      },
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}' ENABLE_USER_SCRIPT_SANDBOXING=NO"
+    )
+
+    upload_to_app_store(
+      api_key: api_key,
+      app_identifier: "com.flashapp.alt",
+      ipa: "./build/FlashAlt.ipa",
+      skip_metadata: true,
+      skip_screenshots: true,
+      submit_for_review: false,
+      precheck_include_in_app_purchases: false
+    )
+
+    version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash-Alt")
+    build = get_build_number(xcodeproj: "ios/LNFlash.xcodeproj")
+
+    if is_ci
+      git_commit(
+        path: ["ios/LNFlash.xcodeproj/project.pbxproj"],
+        message: "chore(ios-alt): release version #{version} (#{build}) [skip ci]",
+        allow_nothing_to_commit: true
+      )
+      add_git_tag(tag: "ios-alt/release/v#{version}-#{build}", force: true)
     end
   end
 end
