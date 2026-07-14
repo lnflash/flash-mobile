@@ -155,6 +155,7 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
               style={styles.input}
               value={bankName}
               onChangeText={setBankName}
+              autoCapitalize="words"
               placeholder={LL.BridgeAddExternalAccount.bankNamePlaceholder()}
               placeholderTextColor={theme.colors.grey3}
             />
@@ -168,6 +169,7 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
               style={styles.input}
               value={accountOwnerName}
               onChangeText={setAccountOwnerName}
+              autoCapitalize="words"
               placeholder={LL.BridgeAddExternalAccount.accountOwnerNamePlaceholder()}
               placeholderTextColor={theme.colors.grey3}
             />
@@ -253,6 +255,7 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
               style={styles.input}
               value={streetLine1}
               onChangeText={setStreetLine1}
+              autoCapitalize="words"
               placeholder={LL.BridgeAddExternalAccount.streetAddressPlaceholder()}
               placeholderTextColor={theme.colors.grey3}
             />
@@ -265,6 +268,7 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
                 style={styles.input}
                 value={city}
                 onChangeText={setCity}
+                autoCapitalize="words"
                 placeholder={LL.BridgeAddExternalAccount.cityPlaceholder()}
                 placeholderTextColor={theme.colors.grey3}
               />
@@ -275,6 +279,7 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
                 style={styles.input}
                 value={state}
                 onChangeText={setState}
+                autoCapitalize="characters"
                 placeholder={LL.BridgeAddExternalAccount.statePlaceholder()}
                 placeholderTextColor={theme.colors.grey3}
                 maxLength={2}
@@ -301,6 +306,7 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
                 style={styles.input}
                 value={country}
                 onChangeText={setCountry}
+                autoCapitalize="characters"
                 placeholder={LL.BridgeAddExternalAccount.countryPlaceholder()}
                 placeholderTextColor={theme.colors.grey3}
                 maxLength={3}
