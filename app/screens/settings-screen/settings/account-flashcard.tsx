@@ -19,7 +19,7 @@ export const AccountFlashcard: React.FC = () => {
 
   return (
     <SettingsRow
-      title={LL.HomeScreen.flashcard()}
+      title={LL.SettingsScreen.flashcard()}
       leftIcon="card"
       action={onPressFlashcard}
     />

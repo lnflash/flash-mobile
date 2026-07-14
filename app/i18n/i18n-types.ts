@@ -2124,22 +2124,6 @@ type RootTranslation = {
 		 */
 		currencyDesc: string
 		/**
-		 * G​e​t​ ​a​ ​F​l​a​s​h​c​a​r​d
-		 */
-		flashcardTitle: string
-		/**
-		 * F​i​n​d​ ​a​ ​F​l​a​s​h​p​o​i​n​t​ ​a​n​d​ ​g​e​t​ ​a​ ​F​l​a​s​h​c​a​r​d​ ​t​o​ ​u​s​e​ ​i​n​ ​d​a​i​l​y​ ​l​i​f​e​.
-		 */
-		flashcardDesc: string
-		/**
-		 * N​o​n​-​c​u​s​t​o​d​i​a​l​ ​w​a​l​l​e​t​s
-		 */
-		nonCustodialWalletTitle: string
-		/**
-		 * L​e​a​r​n​ ​m​o​r​e​ ​a​b​o​u​t​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​w​a​l​l​e​t​s​.
-		 */
-		nonCustodialWalletDesc: string
-		/**
 		 * E​m​a​i​l​ ​a​d​d​r​e​s​s
 		 */
 		emailTitle: string
@@ -3240,6 +3224,10 @@ type RootTranslation = {
 		maxAmountConvertError: RequiredParams<'amount'>
 	}
 	SettingsScreen: {
+		/**
+		 * F​l​a​s​h​c​a​r​d
+		 */
+		flashcard: string
 		/**
 		 * P​r​i​n​t​a​b​l​e​ ​S​t​a​t​i​c​ ​Q​R​ ​C​o​d​e
 		 */
@@ -8046,22 +8034,6 @@ export type TranslationFunctions = {
 		 */
 		currencyDesc: () => LocalizedString
 		/**
-		 * Get a Flashcard
-		 */
-		flashcardTitle: () => LocalizedString
-		/**
-		 * Find a Flashpoint and get a Flashcard to use in daily life.
-		 */
-		flashcardDesc: () => LocalizedString
-		/**
-		 * Non-custodial wallets
-		 */
-		nonCustodialWalletTitle: () => LocalizedString
-		/**
-		 * Learn more about non-custodial wallets.
-		 */
-		nonCustodialWalletDesc: () => LocalizedString
-		/**
 		 * Email address
 		 */
 		emailTitle: () => LocalizedString
@@ -9117,6 +9089,10 @@ export type TranslationFunctions = {
 		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
 	}
 	SettingsScreen: {
+		/**
+		 * Flashcard
+		 */
+		flashcard: () => LocalizedString
 		/**
 		 * Printable Static QR Code
 		 */
