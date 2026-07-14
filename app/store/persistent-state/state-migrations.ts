@@ -65,6 +65,7 @@ type PersistentState_7 = {
   cashBalance?: string
   btcDisplayBalance?: string
   cashDisplayBalance?: string
+  cardDisplayBalance?: string
   mergedTransactions?: UnifiedTransaction[]
   btcTransactions?: BreezTransaction[]
   defaultWallet?: WalletBalance

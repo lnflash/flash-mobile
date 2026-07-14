@@ -66,16 +66,19 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
       const res = await createExternalAccount({
         variables: {
           input: {
-            bankName,
-            accountOwnerName,
-            routingNumber,
-            accountNumber,
+            bankName: bankName.trim(),
+            accountOwnerName: accountOwnerName.trim(),
+            routingNumber: routingNumber.trim(),
+            accountNumber: accountNumber.trim(),
             checkingOrSavings,
-            streetLine1,
-            city,
-            state,
-            postalCode,
-            country,
+            streetLine1: streetLine1.trim(),
+            city: city.trim(),
+            // Bridge expects ISO codes — 2-char state, 3-char country.
+            // autoCapitalize is only a keyboard hint (autofill and hardware
+            // keyboards ignore it), so normalize here rather than trust casing.
+            state: state.trim().toUpperCase(),
+            postalCode: postalCode.trim(),
+            country: country.trim().toUpperCase(),
           },
         },
       })

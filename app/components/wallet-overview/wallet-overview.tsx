@@ -51,13 +51,17 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   const [cashDisplayBalance, setCashDisplayBalance] = useState<string | undefined>(
     persistentState?.cashDisplayBalance || "0",
   )
+  const [cardDisplayBalance, setCardDisplayBalance] = useState<string | undefined>(
+    persistentState?.cardDisplayBalance || undefined,
+  )
 
   useEffect(() => {
     if (
       persistentState.btcDisplayBalance !== btcDisplayBalance ||
       persistentState.cashDisplayBalance !== cashDisplayBalance ||
       persistentState.btcBalance !== btcBalance ||
-      persistentState.cashBalance !== cashBalance
+      persistentState.cashBalance !== cashBalance ||
+      persistentState.cardDisplayBalance !== cardDisplayBalance
     ) {
       updateState((state) => {
         if (state)
@@ -67,11 +71,12 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
             cashDisplayBalance,
             btcBalance,
             cashBalance,
+            cardDisplayBalance,
           }
         return undefined
       })
     }
-  }, [btcDisplayBalance, cashDisplayBalance, btcBalance, cashBalance])
+  }, [btcDisplayBalance, cashDisplayBalance, btcBalance, cashBalance, cardDisplayBalance])
 
   useEffect(() => {
     if (isAuthed) formatBalance()
@@ -79,6 +84,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
     isAuthed,
     data?.me?.defaultAccount?.wallets,
     btcWallet?.balance,
+    balanceInSats,
     displayCurrency,
     // recompute once price conversion becomes ready so the balance isn't stuck blank/stale (ENG-512)
     moneyAmountToDisplayCurrencyString,
@@ -107,6 +113,14 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
       if (cashAmount) setCashBalance(cashAmount)
       if (cashDisplay) setCashDisplayBalance(cashDisplay)
     }
+
+    // Flashcard balance comes from the (cached) card HTML via useFlashcard and
+    // runs through the same price conversion — guard it identically so a linked
+    // card never flips to the "Add Flashcard" empty state mid-load (ENG-512).
+    const cardDisplay = moneyAmountToDisplayCurrencyString({
+      moneyAmount: toBtcMoneyAmount(balanceInSats ?? NaN),
+    })
+    if (cardDisplay) setCardDisplayBalance(cardDisplay)
   }
 
   const navigateHandler = (activeTab: string) => {
@@ -127,10 +141,6 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
     if (lnurl) navigation.navigate("Card")
     else readFlashcard()
   }
-
-  const formattedCardBalance = moneyAmountToDisplayCurrencyString({
-    moneyAmount: toBtcMoneyAmount(balanceInSats ?? NaN),
-  })
 
   return (
     <View style={{ marginHorizontal: 20 }}>
@@ -156,13 +166,13 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
       )}
       {lnurl && (
         <Balance
-          icon={!!formattedCardBalance ? "flashcard" : "cardAdd"}
+          icon={cardDisplayBalance ? "flashcard" : "cardAdd"}
           title={LL.HomeScreen.flashcard()}
-          amount={formattedCardBalance}
+          amount={cardDisplayBalance}
           currency={displayCurrency}
           emptyText={LL.HomeScreen.addFlashcard()}
           onPress={onPressFlashcard}
-          onPressRightBtn={() => readFlashcard(false)}
+          onPressRightBtn={() => readFlashcard()}
           rightIcon={"sync"}
         />
       )}
