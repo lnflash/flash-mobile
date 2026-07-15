@@ -18,7 +18,9 @@ import { AccountLevel } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "AccountUpgradeSuccess">
 
-const accountTypeLabel = { ONE: "PERSONAL", TWO: "PRO", THREE: "MERCHANT" }
+// ENG-516 nomenclature: Pro is retired (L2 is the bank-payout capability)
+// and Merchant is now Business.
+const accountTypeLabel = { ONE: "VERIFIED", TWO: "BANK PAYOUT", THREE: "BUSINESS" }
 
 const Success: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()

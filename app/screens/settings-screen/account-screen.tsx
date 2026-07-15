@@ -27,6 +27,7 @@ import { GaloySecondaryButton } from "@app/components/atomic/galoy-secondary-but
 import { getCashWallet } from "@app/graphql/wallets-utils"
 import { useNavigation } from "@react-navigation/native"
 import { useAppConfig, useBreez } from "@app/hooks"
+import { useAccountStatus } from "@app/hooks/use-account-status"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 
 gql`
@@ -129,6 +130,7 @@ export const AccountScreen = () => {
   } = useTheme()
 
   const { isAtLeastLevelZero, currentLevel, isAtLeastLevelOne } = useLevel()
+  const { statusHeadline, capabilities } = useAccountStatus()
 
   const [deleteAccount] = useAccountDeleteMutation()
   const [emailDeleteMutation] = useUserEmailDeleteMutation()
@@ -412,12 +414,28 @@ export const AccountScreen = () => {
     )
   }
 
+  // ENG-516 light headline status: one word (Trial / Verified / Business)
+  // with capability badges as supporting detail. The numeric level is
+  // internal and no longer shown.
+  const headlineLabel = {
+    TRIAL: "Trial",
+    VERIFIED: "Verified",
+    BUSINESS: "Business",
+  }[statusHeadline]
+  const capabilityBadges = capabilities
+    ? [
+        capabilities.bankPayout ? "Bank payout" : null,
+        capabilities.usdAccount ? "USD account" : null,
+      ].filter(Boolean)
+    : []
+  const statusText = [headlineLabel, ...capabilityBadges].join(" · ")
+
   const accountSettingsList: SettingRow[] = [
     {
       category: LL.AccountScreen.accountLevel(),
       id: "level",
       icon: "flash",
-      subTitleText: currentLevel,
+      subTitleText: statusText,
       enabled: false,
       greyed: true,
     },

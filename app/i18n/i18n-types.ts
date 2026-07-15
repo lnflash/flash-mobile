@@ -2230,11 +2230,11 @@ type RootTranslation = {
 	}
 	BridgeKyc: {
 		/**
-		 * I​n​t​e​r​n​a​t​i​o​n​a​l​ ​T​r​a​n​s​f​e​r
+		 * U​S​D​ ​A​c​c​o​u​n​t
 		 */
 		title: string
 		/**
-		 * P​l​e​a​s​e​ ​p​r​o​v​i​d​e​ ​y​o​u​r​ ​d​e​t​a​i​l​s​ ​t​o​ ​s​e​t​ ​u​p​ ​i​n​t​e​r​n​a​t​i​o​n​a​l​ ​t​r​a​n​s​f​e​r​s
+		 * P​l​e​a​s​e​ ​p​r​o​v​i​d​e​ ​y​o​u​r​ ​d​e​t​a​i​l​s​ ​t​o​ ​s​e​t​ ​u​p​ ​y​o​u​r​ ​U​S​D​ ​a​c​c​o​u​n​t
 		 */
 		description: string
 		/**
@@ -5810,7 +5810,7 @@ type RootTranslation = {
 		 */
 		accountType: string
 		/**
-		 * P​e​r​s​o​n​a​l
+		 * V​e​r​i​f​i​e​d
 		 */
 		personal: string
 		/**
@@ -5818,15 +5818,15 @@ type RootTranslation = {
 		 */
 		personalDesc: string
 		/**
-		 * P​r​o
+		 * B​a​n​k​ ​P​a​y​o​u​t
 		 */
 		pro: string
 		/**
-		 * A​c​c​e​p​t​ ​p​a​y​m​e​n​t​s​ ​a​n​d​ ​g​e​t​ ​d​i​s​c​o​v​e​r​e​d​ ​o​n​ ​t​h​e​ ​m​a​p​.​ ​R​e​q​u​i​r​e​s​ ​a​ ​b​u​s​i​n​e​s​s​ ​n​a​m​e​ ​a​n​d​ ​l​o​c​a​t​i​o​n​.
+		 * S​e​t​t​l​e​ ​y​o​u​r​ ​b​a​l​a​n​c​e​ ​t​o​ ​y​o​u​r​ ​b​a​n​k​ ​a​c​c​o​u​n​t​.​ ​R​e​q​u​i​r​e​s​ ​a​ ​b​u​s​i​n​e​s​s​ ​n​a​m​e​ ​a​n​d​ ​l​o​c​a​t​i​o​n​.
 		 */
 		proDesc: string
 		/**
-		 * M​e​r​c​h​a​n​t
+		 * B​u​s​i​n​e​s​s
 		 */
 		merchant: string
 		/**
@@ -5834,11 +5834,11 @@ type RootTranslation = {
 		 */
 		merchantDesc: string
 		/**
-		 * I​n​t​e​r​n​a​t​i​o​n​a​l
+		 * U​S​D​ ​A​c​c​o​u​n​t
 		 */
 		international: string
 		/**
-		 * G​e​t​ ​a​n​ ​i​n​t​e​r​n​a​t​i​o​n​a​l​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​r​o​u​t​i​n​g​ ​n​u​m​b​e​r​ ​f​o​r​ ​b​a​n​k​ ​t​r​a​n​s​f​e​r​s​.​ ​I​D​ ​r​e​q​u​i​r​e​d​.
+		 * G​e​t​ ​a​ ​U​S​D​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​r​o​u​t​i​n​g​ ​n​u​m​b​e​r​ ​f​o​r​ ​b​a​n​k​ ​t​r​a​n​s​f​e​r​s​.​ ​I​D​ ​r​e​q​u​i​r​e​d​.
 		 */
 		internationalDesc: string
 		/**
@@ -8140,11 +8140,11 @@ export type TranslationFunctions = {
 	}
 	BridgeKyc: {
 		/**
-		 * International Transfer
+		 * USD Account
 		 */
 		title: () => LocalizedString
 		/**
-		 * Please provide your details to set up international transfers
+		 * Please provide your details to set up your USD account
 		 */
 		description: () => LocalizedString
 		/**
@@ -11636,7 +11636,7 @@ export type TranslationFunctions = {
 		 */
 		accountType: () => LocalizedString
 		/**
-		 * Personal
+		 * Verified
 		 */
 		personal: () => LocalizedString
 		/**
@@ -11644,15 +11644,15 @@ export type TranslationFunctions = {
 		 */
 		personalDesc: () => LocalizedString
 		/**
-		 * Pro
+		 * Bank Payout
 		 */
 		pro: () => LocalizedString
 		/**
-		 * Accept payments and get discovered on the map. Requires a business name and location.
+		 * Settle your balance to your bank account. Requires a business name and location.
 		 */
 		proDesc: () => LocalizedString
 		/**
-		 * Merchant
+		 * Business
 		 */
 		merchant: () => LocalizedString
 		/**
@@ -11660,11 +11660,11 @@ export type TranslationFunctions = {
 		 */
 		merchantDesc: () => LocalizedString
 		/**
-		 * International
+		 * USD Account
 		 */
 		international: () => LocalizedString
 		/**
-		 * Get an international account and routing number for bank transfers. ID required.
+		 * Get a USD account and routing number for bank transfers. ID required.
 		 */
 		internationalDesc: () => LocalizedString
 		/**

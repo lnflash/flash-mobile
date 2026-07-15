@@ -25,6 +25,42 @@ interface Account {
   wallets: [Wallet!]!
 }
 
+type AccountCapabilities {
+  """An approved bank account is on file for payouts."""
+  bankPayout: Boolean!
+
+  """Business profile (name and address) on file."""
+  business: Boolean!
+
+  """
+  USD account and routing number available (Bridge KYC approved). Orthogonal to the other capabilities.
+  """
+  usdAccount: Boolean!
+
+  """Phone and identity verified."""
+  verified: Boolean!
+}
+
+enum AccountCapability {
+  BANK_PAYOUT
+  BUSINESS
+}
+
+input AccountCapabilityUpgradeRequestInput {
+  address: AddressInput!
+  bankAccount: BankAccountInput
+  capability: AccountCapability!
+  fullName: String!
+  idDocument: String
+  terminalsRequested: Int = 0
+}
+
+type AccountCapabilityUpgradeRequestPayload {
+  errors: [Error]
+  id: String
+  status: String
+}
+
 type AccountDeletePayload {
   errors: [Error!]!
   success: Boolean!
@@ -83,6 +119,12 @@ type AccountLimits {
 
 """Bank account number. Accepts String or Int and coerces to String."""
 scalar AccountNumber
+
+enum AccountStatusHeadline {
+  BUSINESS
+  TRIAL
+  VERIFIED
+}
 
 input AccountUpdateDefaultWalletIdInput {
   walletId: WalletId!
@@ -155,6 +197,118 @@ input AddressInput {
   postalCode: String
   state: String!
   title: String!
+}
+
+type ApiKey {
+  createdAt: Timestamp!
+  expiresAt: Timestamp
+  id: ID!
+
+  """Public key identifier (the keyId in fk_<keyId>_<secret>)"""
+  keyId: String!
+  lastUsedAt: Timestamp
+  name: String!
+
+  """
+  Per-key request rate limit (requests per minute). Null means the platform default applies.
+  """
+  rateLimitPerMinute: Int
+  scopes: [ApiKeyScope!]!
+
+  """
+  Effective status: keys past their expiry report EXPIRED even before the stored status catches up
+  """
+  status: ApiKeyStatus!
+}
+
+input ApiKeyCreateInput {
+  """
+  Optional expiration time in seconds. If not set, the key doesn't expire.
+  """
+  expiresIn: Int
+
+  """A descriptive name for the API key (e.g., 'BTCPayServer Integration')"""
+  name: String!
+
+  """
+  Optional per-key request rate limit (requests per minute, 1-10000). If not set, the platform default applies.
+  """
+  rateLimitPerMinute: Int
+
+  """Permission scopes for the key. Defaults to read-only user access."""
+  scopes: [ApiKeyScope!] = [read_user]
+}
+
+type ApiKeyCreatePayload {
+  apiKey: ApiKeyCreated
+  errors: [Error!]!
+}
+
+type ApiKeyCreated {
+  """The raw API key. Store it securely — it won't be shown again."""
+  apiKey: String!
+  expiresAt: Timestamp
+  id: ID!
+
+  """Public key identifier (the keyId in fk_<keyId>_<secret>)"""
+  keyId: String!
+  name: String!
+
+  """
+  Per-key request rate limit (requests per minute). Null means the platform default applies.
+  """
+  rateLimitPerMinute: Int
+  scopes: [ApiKeyScope!]!
+  warning: String!
+}
+
+input ApiKeyRevokeInput {
+  id: ID!
+}
+
+type ApiKeyRevokePayload {
+  apiKey: ApiKey
+  errors: [Error!]!
+}
+
+input ApiKeyRotateInput {
+  id: ID!
+}
+
+type ApiKeyRotatePayload {
+  apiKey: ApiKeyCreated
+  errors: [Error!]!
+}
+
+"""Permission scopes for API keys (FIP-07)"""
+enum ApiKeyScope {
+  """Full administrative access"""
+  admin
+
+  """Read transaction history"""
+  read_transactions
+
+  """Read-only access to user/account data"""
+  read_user
+
+  """Read wallet balances and details"""
+  read_wallet
+
+  """Create transactions"""
+  write_transactions
+
+  """Modify user/account data"""
+  write_user
+
+  """Perform wallet operations (send/receive)"""
+  write_wallet
+}
+
+"""Lifecycle status of an API key (FIP-07)"""
+enum ApiKeyStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
 }
 
 """An Opaque Bearer token"""
@@ -233,7 +387,7 @@ type BankAccount {
   isDefault: Boolean!
 
   """
-  An open request to change this account's details, awaiting review. Null when none is pending.
+  The account's in-flight update request when it needs the user's attention — Pending (awaiting review) or Rejected (declined). Null once approved/closed, or when none exists.
   """
   pendingUpdate: BankAccountUpdateRequest
 }
@@ -329,10 +483,20 @@ type BridgeCreateVirtualAccountPayload {
   virtualAccount: BridgeVirtualAccount
 }
 
+input BridgeDeleteExternalAccountInput {
+  externalAccountId: ID!
+}
+
+type BridgeDeleteExternalAccountPayload {
+  errors: [Error!]!
+  externalAccount: BridgeExternalAccount
+}
+
 type BridgeExternalAccount {
   accountNumberLast4: String!
   bankName: String!
   id: ID!
+  isDefault: Boolean!
   status: String!
 }
 
@@ -374,6 +538,15 @@ input BridgeRequestWithdrawalInput {
 type BridgeRequestWithdrawalPayload {
   errors: [Error!]!
   withdrawal: BridgeWithdrawal
+}
+
+input BridgeSetDefaultExternalAccountInput {
+  externalAccountId: ID!
+}
+
+type BridgeSetDefaultExternalAccountPayload {
+  errors: [Error!]!
+  externalAccount: BridgeExternalAccount
 }
 
 type BridgeVirtualAccount {
@@ -481,6 +654,7 @@ enum CashWalletCutoverState {
   COMPLETE
   IN_PROGRESS
   PRE
+  ROLLED_BACK
 }
 
 type CashoutOffer {
@@ -524,6 +698,7 @@ type CentAmountPayload {
 
 type ConsumerAccount implements Account {
   callbackEndpoints: [CallbackEndpoint!]!
+  capabilities: AccountCapabilities!
 
   """
   return CSV stream, base64 encoded, of the list of transactions in the wallet
@@ -532,6 +707,10 @@ type ConsumerAccount implements Account {
   defaultWalletId: WalletId!
   displayCurrency: DisplayCurrency!
   id: ID!
+
+  """
+  Internal account level, derived from capabilities (ENG-516). Present capabilities and statusHeadline instead of this.
+  """
   level: AccountLevel!
   limits: AccountLimits!
   notificationSettings: NotificationSettings!
@@ -539,6 +718,7 @@ type ConsumerAccount implements Account {
   """List the quiz questions of the consumer account"""
   quiz: [Quiz!]!
   realtimePrice: RealtimePrice!
+  statusHeadline: AccountStatusHeadline!
 
   """
   A list of all transactions associated with walletIds optionally passed.
@@ -998,7 +1178,7 @@ input LnUsdInvoiceFeeProbeInput {
 }
 
 """
-A bech32-encoded HTTPS/Onion URL that can be interacted with automatically by a WALLET in a standard way such that a SERVICE can provide extra services or a better experience for the user. Ref: https://github.com/lnurl/luds/blob/luds/01.md
+A bech32-encoded HTTPS/Onion URL that can be interacted with automatically by a WALLET in a standard way such that a SERVICE can provide extra services or a better experience for the user. Ref: https://github.com/lnurl/luds/blob/luds/01.md 
 """
 scalar Lnurl
 
@@ -1067,6 +1247,7 @@ type MobileVersions {
 }
 
 type Mutation {
+  accountCapabilityUpgradeRequest(input: AccountCapabilityUpgradeRequestInput!): AccountCapabilityUpgradeRequestPayload!
   accountDelete: AccountDeletePayload!
   accountDisableNotificationCategory(input: AccountDisableNotificationCategoryInput!): AccountUpdateNotificationSettingsPayload!
   accountDisableNotificationChannel(input: AccountDisableNotificationChannelInput!): AccountUpdateNotificationSettingsPayload!
@@ -1074,14 +1255,31 @@ type Mutation {
   accountEnableNotificationChannel(input: AccountEnableNotificationChannelInput!): AccountUpdateNotificationSettingsPayload!
   accountUpdateDefaultWalletId(input: AccountUpdateDefaultWalletIdInput!): AccountUpdateDefaultWalletIdPayload!
   accountUpdateDisplayCurrency(input: AccountUpdateDisplayCurrencyInput!): AccountUpdateDisplayCurrencyPayload!
+
+  """
+  Generate a new API key for external service authentication. The raw key is only shown once and cannot be retrieved later.
+  """
+  apiKeyCreate(input: ApiKeyCreateInput!): ApiKeyCreatePayload!
+
+  """
+  Revoke an API key. Verification stops honoring it immediately; this cannot be undone.
+  """
+  apiKeyRevoke(input: ApiKeyRevokeInput!): ApiKeyRevokePayload!
+
+  """
+  Rotate an API key: a replacement with a new secret (and keyId) is created with the same name, scopes, and expiry, and the old key is revoked. The new raw key is only shown once.
+  """
+  apiKeyRotate(input: ApiKeyRotateInput!): ApiKeyRotatePayload!
+  bankAccountUpdateRequest(input: BankAccountUpdateRequestInput!): BankAccountUpdateRequestPayload!
   bridgeAddExternalAccount: BridgeAddExternalAccountPayload!
   bridgeCancelWithdrawalRequest(input: BridgeCancelWithdrawalRequestInput!): BridgeCancelWithdrawalRequestPayload!
   bridgeCreateExternalAccount(input: BridgeCreateExternalAccountInput!): BridgeCreateExternalAccountPayload!
   bridgeCreateVirtualAccount: BridgeCreateVirtualAccountPayload!
+  bridgeDeleteExternalAccount(input: BridgeDeleteExternalAccountInput!): BridgeDeleteExternalAccountPayload!
   bridgeInitiateKyc(input: BridgeInitiateKycInput!): BridgeInitiateKycPayload!
   bridgeInitiateWithdrawal(input: BridgeInitiateWithdrawalInput!): BridgeInitiateWithdrawalPayload!
   bridgeRequestWithdrawal(input: BridgeRequestWithdrawalInput!): BridgeRequestWithdrawalPayload!
-  bankAccountUpdateRequest(input: BankAccountUpdateRequestInput!): BankAccountUpdateRequestPayload!
+  bridgeSetDefaultExternalAccount(input: BridgeSetDefaultExternalAccountInput!): BridgeSetDefaultExternalAccountPayload!
   businessAccountUpgradeRequest(input: BusinessAccountUpgradeRequestInput!): AccountUpgradePayload!
   callbackEndpointAdd(input: CallbackEndpointAddInput!): CallbackEndpointAddPayload!
   callbackEndpointDelete(input: CallbackEndpointDeleteInput!): SuccessPayload!
@@ -1092,7 +1290,7 @@ type Mutation {
   idDocumentUploadUrlGenerate(input: IdDocumentUploadUrlGenerateInput!): IdDocumentUploadUrlPayload!
 
   """
-  Start the Cashout process;
+  Start the Cashout process; 
   User sends USD to Flash via Ibex and receives USD or JMD to bank account.
   """
   initiateCashout(input: InitiateCashoutInput!): InitiatedCashoutResponse!
@@ -1108,7 +1306,7 @@ type Mutation {
   Galoy: Actions a payment which is internal to the ledger e.g. it does
   not use onchain/lightning. Returns payment status (success,
   failed, pending, already_paid).
-
+  
   Flash: We do not currently have an internal ledger. Consequently, intraledger payments have been updated to call Ibex instead.
   """
   intraLedgerUsdPaymentSend(input: IntraLedgerUsdPaymentSendInput!): PaymentSendPayload!
@@ -1456,6 +1654,11 @@ type PublicWallet {
 
 type Query {
   accountDefaultWallet(username: Username!, walletCurrency: WalletCurrency): PublicWallet!
+
+  """
+  All API keys for the calling account, newest first. Never includes secret material.
+  """
+  apiKeys: [ApiKey!]!
   bridgeExternalAccounts: [BridgeExternalAccount]
   bridgeKycStatus: String
   bridgeVirtualAccount: BridgeVirtualAccount
