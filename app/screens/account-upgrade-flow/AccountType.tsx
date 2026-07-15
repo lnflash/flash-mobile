@@ -139,18 +139,20 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
           <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
         </TouchableOpacity>
       )}
-      <TouchableOpacity style={styles.card} onPress={() => onPress(AccountLevel.Three)}>
-        <Icon name={"cart"} size={35} color={colors.grey1} type="ionicon" />
-        <View style={styles.textWrapper}>
-          <Text type="bl" bold>
-            {LL.AccountUpgrade.merchant()}
-          </Text>
-          <Text type="bm" style={{ marginTop: 2 }}>
-            {LL.AccountUpgrade.merchantDesc()}
-          </Text>
-        </View>
-        <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
-      </TouchableOpacity>
+      {currentLevel !== AccountLevel.Three && (
+        <TouchableOpacity style={styles.card} onPress={() => onPress(AccountLevel.Three)}>
+          <Icon name={"cart"} size={35} color={colors.grey1} type="ionicon" />
+          <View style={styles.textWrapper}>
+            <Text type="bl" bold>
+              {LL.AccountUpgrade.merchant()}
+            </Text>
+            <Text type="bm" style={{ marginTop: 2 }}>
+              {LL.AccountUpgrade.merchantDesc()}
+            </Text>
+          </View>
+          <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
+        </TouchableOpacity>
+      )}
       {bridgeTopupEnabled &&
         currentLevel !== AccountLevel.Zero &&
         bridgeKycStatus !== "approved" && (
