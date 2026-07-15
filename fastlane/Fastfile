@@ -108,6 +108,23 @@ platform :ios do
     profile_watch = ENV["sigh_com.lnflash.watchkitapp_appstore_profile-name"] || "match AppStore com.lnflash.watchkitapp"
     profile_complication = ENV["sigh_com.lnflash.watchkitapp.FlashWatchComplication_appstore_profile-name"] || "match AppStore com.lnflash.watchkitapp.FlashWatchComplication"
 
+    signing_targets = {
+      "LNFlash" => profile_main,
+      "FlashWidgetExtension" => profile_widget,
+      "FlashWatch Watch App" => profile_watch,
+      "FlashWatchComplicationExtension" => profile_complication
+    }
+    signing_targets.each do |target_name, profile|
+      update_code_signing_settings(
+        use_automatic_signing: false,
+        path: "ios/LNFlash.xcodeproj",
+        targets: [target_name],
+        profile_name: profile,
+        code_sign_identity: "Apple Distribution",
+        bundle_identifier: false
+      )
+    end
+
     build_app(
       workspace: "ios/LNFlash.xcworkspace",
       scheme: "LNFlash",
@@ -123,7 +140,7 @@ platform :ios do
           "com.lnflash.watchkitapp.FlashWatchComplication" => profile_complication
         }
       },
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' ENABLE_USER_SCRIPT_SANDBOXING=NO"
+      xcargs: "ENABLE_USER_SCRIPT_SANDBOXING=NO"
     )
 
     upload_to_testflight(
@@ -172,6 +189,23 @@ platform :ios do
     profile_watch = ENV["sigh_com.lnflash.watchkitapp_appstore_profile-name"] || "match AppStore com.lnflash.watchkitapp"
     profile_complication = ENV["sigh_com.lnflash.watchkitapp.FlashWatchComplication_appstore_profile-name"] || "match AppStore com.lnflash.watchkitapp.FlashWatchComplication"
 
+    signing_targets = {
+      "LNFlash" => profile_main,
+      "FlashWidgetExtension" => profile_widget,
+      "FlashWatch Watch App" => profile_watch,
+      "FlashWatchComplicationExtension" => profile_complication
+    }
+    signing_targets.each do |target_name, profile|
+      update_code_signing_settings(
+        use_automatic_signing: false,
+        path: "ios/LNFlash.xcodeproj",
+        targets: [target_name],
+        profile_name: profile,
+        code_sign_identity: "Apple Distribution",
+        bundle_identifier: false
+      )
+    end
+
     build_app(
       workspace: "ios/LNFlash.xcworkspace",
       scheme: "LNFlash",
@@ -187,7 +221,7 @@ platform :ios do
           "com.lnflash.watchkitapp.FlashWatchComplication" => profile_complication
         }
       },
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' ENABLE_USER_SCRIPT_SANDBOXING=NO"
+      xcargs: "ENABLE_USER_SCRIPT_SANDBOXING=NO"
     )
 
     upload_to_app_store(
