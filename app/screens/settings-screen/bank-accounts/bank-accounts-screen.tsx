@@ -7,7 +7,9 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 
 import { Screen } from "@app/components/screen"
+import { BridgeKycModal } from "@app/components/topup-cashout-flow"
 import { WHATSAPP_SUPPORT_URL } from "@app/config"
+import { useBridgeKyc } from "@app/hooks/use-bridge-kyc"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { openWhatsAppUrl } from "@app/utils/external"
@@ -276,6 +278,15 @@ export const BankAccountsScreen: React.FC = () => {
   const { loading, kycApproved, receiveAccount, withdrawGroups, setDefault, refetch } =
     useBankAccounts()
 
+  // The locked card gates on the usdAccount capability (Bridge KYC), so its
+  // CTA launches the KYC flow directly instead of the upgrade picker
+  // (ENG-516). Falls back to the picker when the Bridge feature is off.
+  const { kycModalVisible, startBridgeKyc, closeKycModal, submitBridgeKyc } =
+    useBridgeKyc()
+  const onVerifyIdentity = () => {
+    if (!startBridgeKyc()) navigation.navigate("AccountType")
+  }
+
   useFocusEffect(
     React.useCallback(() => {
       refetch()
@@ -326,10 +337,7 @@ export const BankAccountsScreen: React.FC = () => {
           <Text type="p3" color={colors.grey1} style={styles.lockedDesc}>
             {LL.BankAccountsScreen.verifyIdentityDescription()}
           </Text>
-          <Pressable
-            style={styles.upgradeButton}
-            onPress={() => navigation.navigate("AccountType")}
-          >
+          <Pressable style={styles.upgradeButton} onPress={onVerifyIdentity}>
             <Icon
               name="shield-checkmark-outline"
               type="ionicon"
@@ -425,6 +433,12 @@ export const BankAccountsScreen: React.FC = () => {
           {LL.BankAccountsScreen.contactSupport()}
         </Text>
       </Pressable>
+
+      <BridgeKycModal
+        visible={kycModalVisible}
+        onClose={closeKycModal}
+        onSubmit={submitBridgeKyc}
+      />
     </Screen>
   )
 }

@@ -1,13 +1,9 @@
-import React, { useCallback, useState } from "react"
-import { Alert, TouchableOpacity, View } from "react-native"
+import React, { useCallback } from "react"
+import { TouchableOpacity, View } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import {
-  AccountLevel,
-  useBridgeInitiateKycMutation,
-  useBridgeKycStatusQuery,
-} from "@app/graphql/generated"
+import { AccountLevel } from "@app/graphql/generated"
 import { useFocusEffect } from "@react-navigation/native"
 
 // components
@@ -17,9 +13,8 @@ import { ProgressSteps } from "@app/components/account-upgrade-flow"
 
 // hooks
 import { useLevel } from "@app/graphql/level-context"
-import { useActivityIndicator } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useFeatureFlags } from "@app/config/feature-flags-context"
+import { useBridgeKyc } from "@app/hooks/use-bridge-kyc"
 
 // store
 import { useAppDispatch } from "@app/store/redux"
@@ -33,16 +28,15 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
-  const { toggleActivityIndicator } = useActivityIndicator()
-  const { bridgeTopupEnabled } = useFeatureFlags()
-
-  const [bridgeKycModalVisible, setBridgeKycModalVisible] = useState(false)
-
-  const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
-  const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
-    fetchPolicy: "cache-and-network",
-    skip: !bridgeTopupEnabled,
-  })
+  const {
+    bridgeTopupEnabled,
+    bridgeKycStatus,
+    refetchKycStatus,
+    kycModalVisible,
+    startBridgeKyc,
+    closeKycModal,
+    submitBridgeKyc,
+  } = useBridgeKyc()
 
   useFocusEffect(
     useCallback(() => {
@@ -51,59 +45,12 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
     }, [bridgeTopupEnabled, refetchKycStatus]),
   )
 
-  const bridgeKycStatus = kycStatusData?.bridgeKycStatus
-
   const onPress = (accountType: string) => {
     const numOfSteps =
       accountType === AccountLevel.One ? 3 : currentLevel === AccountLevel.Zero ? 5 : 4
 
     dispatch(setAccountUpgrade({ accountType, numOfSteps }))
     navigation.navigate("PersonalInformation")
-  }
-
-  const checkBridgeKyc = () => {
-    if (!bridgeTopupEnabled) return
-
-    if (bridgeKycStatus === "pending") {
-      Alert.alert("KYC Pending", "Your KYC status is pending. Please wait for approval.")
-    } else {
-      setBridgeKycModalVisible(true)
-    }
-  }
-
-  const getBridgeKycLink = async (data: {
-    fullName: string
-    email: string
-    kycType: string
-  }) => {
-    toggleActivityIndicator(true)
-    try {
-      const res = await initiateBridgeKyc({
-        variables: {
-          input: {
-            full_name: data.fullName,
-            email: data.email,
-            type: data.kycType,
-          },
-        },
-      })
-      toggleActivityIndicator(false)
-      const errors = res.data?.bridgeInitiateKyc?.errors
-      if (errors && errors.length > 0) {
-        Alert.alert("Error", errors[0].message)
-        return
-      }
-      const kycLink = res.data?.bridgeInitiateKyc?.kycLink
-      if (kycLink?.tosLink && kycLink?.kycLink) {
-        navigation.navigate("BridgeKycWebView", {
-          tosLink: kycLink.tosLink,
-          kycLink: kycLink.kycLink,
-        })
-      }
-    } catch (err) {
-      toggleActivityIndicator(false)
-      Alert.alert("Error", "Something went wrong. Please try again.")
-    }
   }
 
   const numOfSteps = currentLevel === AccountLevel.Zero ? 3 : 4
@@ -163,7 +110,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
                 ? { borderColor: "orange", borderWidth: 1 }
                 : undefined,
             ]}
-            onPress={checkBridgeKyc}
+            onPress={startBridgeKyc}
           >
             <Icon name={"globe"} size={35} color={colors.grey1} type="ionicon" />
             <View style={styles.textWrapper}>
@@ -183,12 +130,9 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         )}
       <BridgeKycModal
-        visible={bridgeKycModalVisible}
-        onClose={() => setBridgeKycModalVisible(false)}
-        onSubmit={(data) => {
-          setBridgeKycModalVisible(false)
-          getBridgeKycLink(data)
-        }}
+        visible={kycModalVisible}
+        onClose={closeKycModal}
+        onSubmit={submitBridgeKyc}
       />
     </Screen>
   )
