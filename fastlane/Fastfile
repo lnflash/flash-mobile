@@ -121,7 +121,7 @@ platform :ios do
         targets: [target_name],
         profile_name: profile,
         code_sign_identity: "Apple Distribution",
-        bundle_identifier: false
+        team_id: "H7UAM79QQP"
       )
     end
 
@@ -202,7 +202,7 @@ platform :ios do
         targets: [target_name],
         profile_name: profile,
         code_sign_identity: "Apple Distribution",
-        bundle_identifier: false
+        team_id: "H7UAM79QQP"
       )
     end
 
