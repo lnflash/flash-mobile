@@ -9,12 +9,13 @@ import { useFocusEffect } from "@react-navigation/native"
 // components
 import { Screen } from "@app/components/screen"
 import { BridgeKycModal } from "@app/components/topup-cashout-flow"
-import { ProgressSteps } from "@app/components/account-upgrade-flow"
 
 // hooks
 import { useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useBridgeKyc } from "@app/hooks/use-bridge-kyc"
+import { useAccountStatus } from "@app/hooks/use-account-status"
+import type { AccountCapabilities } from "@app/hooks/use-account-status"
 
 // store
 import { useAppDispatch } from "@app/store/redux"
@@ -22,12 +23,31 @@ import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
 
 type Props = StackScreenProps<RootStackParamList, "AccountType">
 
+type CapRow = {
+  icon: string
+  title: string
+  desc: string
+  on: boolean
+  onPress: () => void
+}
+
+/**
+ * "Do more with Flash" capabilities hub (ENG-513).
+ *
+ * Replaces the old tier ladder (Personal/Pro/Merchant/International) with a
+ * menu of independent capabilities. Verify is the only prerequisite; each row
+ * routes straight into that one capability's existing setup flow — no interview.
+ * The internal L1/L2/L3 level stays hidden; rows key off the `capabilities`
+ * object from `useAccountStatus`, falling back to a level derivation for older
+ * backends.
+ */
 const AccountType: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
+  const { statusHeadline, capabilities, refetch: refetchStatus } = useAccountStatus()
   const {
     bridgeTopupEnabled,
     bridgeKycStatus,
@@ -40,10 +60,28 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
-      if (!bridgeTopupEnabled) return
-      refetchKycStatus()
-    }, [bridgeTopupEnabled, refetchKycStatus]),
+      refetchStatus()
+      if (bridgeTopupEnabled) refetchKycStatus()
+    }, [bridgeTopupEnabled, refetchKycStatus, refetchStatus]),
   )
+
+  // Prefer the backend `capabilities`; fall back to a level-derived
+  // approximation when an older backend doesn't expose it yet.
+  const derived: AccountCapabilities = {
+    verified:
+      currentLevel === AccountLevel.One ||
+      currentLevel === AccountLevel.Two ||
+      currentLevel === AccountLevel.Three,
+    bankPayout:
+      currentLevel === AccountLevel.Two || currentLevel === AccountLevel.Three,
+    business: currentLevel === AccountLevel.Three,
+    usdAccount: bridgeKycStatus === "approved",
+  }
+  const caps = capabilities ?? derived
+  const verifiedOn = caps.verified
+  const bankOn = caps.bankPayout
+  const businessOn = caps.business
+  const usdOn = caps.usdAccount || bridgeKycStatus === "approved"
 
   const onPress = (accountType: string) => {
     const numOfSteps =
@@ -53,82 +91,119 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("PersonalInformation")
   }
 
-  const numOfSteps = currentLevel === AccountLevel.Zero ? 3 : 4
+  const isTrial = statusHeadline === "TRIAL" || !verifiedOn
+  const headlineLabel = isTrial
+    ? LL.AccountUpgrade.statusTrial()
+    : statusHeadline === "BUSINESS"
+      ? LL.AccountUpgrade.statusBusiness()
+      : LL.AccountUpgrade.statusVerified()
+
+  const renderCapRow = ({ icon, title, desc, on, onPress: onRowPress }: CapRow) => (
+    <TouchableOpacity style={styles.card} onPress={onRowPress} disabled={on}>
+      <View style={[styles.rowIcon, on && styles.rowIconOn]}>
+        <Icon name={icon} size={21} color={on ? colors._white : colors.primary} type="ionicon" />
+      </View>
+      <View style={styles.textWrapper}>
+        <Text type="bl" bold>
+          {title}
+        </Text>
+        <Text type="bm" style={styles.desc}>
+          {desc}
+        </Text>
+      </View>
+      {on ? (
+        <View style={styles.action}>
+          <Icon name="checkmark" size={16} color={colors.green} type="ionicon" />
+          <Text style={styles.onText}>{LL.AccountUpgrade.enabled()}</Text>
+        </View>
+      ) : (
+        <View style={styles.action}>
+          <Text style={styles.setupText}>{LL.AccountUpgrade.setUp()}</Text>
+          <Icon name="chevron-forward" size={16} color={colors.primary} type="ionicon" />
+        </View>
+      )}
+    </TouchableOpacity>
+  )
 
   return (
-    <Screen>
-      <ProgressSteps numOfSteps={numOfSteps} currentStep={1} />
-      {currentLevel === AccountLevel.Zero && (
-        <TouchableOpacity style={styles.card} onPress={() => onPress(AccountLevel.One)}>
-          <Icon name={"person"} size={35} color={colors.grey1} type="ionicon" />
-          <View style={styles.textWrapper}>
-            <Text type="bl" bold>
-              {LL.AccountUpgrade.personal()}
-            </Text>
-            <Text type="bm" style={{ marginTop: 2 }}>
-              {LL.AccountUpgrade.personalDesc()}
-            </Text>
-          </View>
-          <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
-        </TouchableOpacity>
-      )}
-      {(currentLevel === AccountLevel.Zero || currentLevel === AccountLevel.One) && (
-        <TouchableOpacity style={styles.card} onPress={() => onPress(AccountLevel.Two)}>
-          <Icon name={"briefcase"} size={35} color={colors.grey1} type="ionicon" />
-          <View style={styles.textWrapper}>
-            <Text type="bl" bold>
-              {LL.AccountUpgrade.pro()}
-            </Text>
-            <Text type="bm" style={{ marginTop: 2 }}>
-              {LL.AccountUpgrade.proDesc()}
-            </Text>
-          </View>
-          <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
-        </TouchableOpacity>
-      )}
-      {currentLevel !== AccountLevel.Three && (
-        <TouchableOpacity style={styles.card} onPress={() => onPress(AccountLevel.Three)}>
-          <Icon name={"cart"} size={35} color={colors.grey1} type="ionicon" />
-          <View style={styles.textWrapper}>
-            <Text type="bl" bold>
-              {LL.AccountUpgrade.merchant()}
-            </Text>
-            <Text type="bm" style={{ marginTop: 2 }}>
-              {LL.AccountUpgrade.merchantDesc()}
-            </Text>
-          </View>
-          <Icon name={"chevron-forward"} size={25} color={colors.grey2} type="ionicon" />
-        </TouchableOpacity>
-      )}
-      {bridgeTopupEnabled &&
-        currentLevel !== AccountLevel.Zero &&
-        bridgeKycStatus !== "approved" && (
-          <TouchableOpacity
-            style={[
-              styles.card,
-              bridgeKycStatus === "pending"
-                ? { borderColor: "orange", borderWidth: 1 }
-                : undefined,
-            ]}
-            onPress={startBridgeKyc}
-          >
-            <Icon name={"globe"} size={35} color={colors.grey1} type="ionicon" />
-            <View style={styles.textWrapper}>
-              <Text type="bl" bold>
-                {LL.AccountUpgrade.international()}
-              </Text>
-              <Text type="bm" style={{ marginTop: 2 }}>
-                {LL.AccountUpgrade.internationalDesc()}
+    <Screen preset="scroll" keyboardShouldPersistTaps="handled">
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text type="p2" style={styles.eyebrow}>
+            {LL.AccountUpgrade.hubEyebrow()}
+          </Text>
+          <Text type="h01" bold style={styles.title}>
+            {LL.AccountUpgrade.hubTitle()}
+          </Text>
+          <View style={styles.statusRow}>
+            <View style={[styles.pill, isTrial ? styles.pillMuted : styles.pillOn]}>
+              {!isTrial && (
+                <Icon
+                  name="checkmark-circle"
+                  size={15}
+                  color={colors._white}
+                  type="ionicon"
+                />
+              )}
+              <Text
+                style={[styles.pillText, isTrial ? styles.pillTextMuted : styles.pillTextOn]}
+              >
+                {headlineLabel}
               </Text>
             </View>
-            <Icon
-              name={"chevron-forward"}
-              size={25}
-              color={colors.grey2}
-              type="ionicon"
-            />
+          </View>
+        </View>
+
+        {!verifiedOn && (
+          <TouchableOpacity
+            style={styles.verifyCard}
+            onPress={() => onPress(AccountLevel.One)}
+          >
+            <View style={styles.verifyIcon}>
+              <Icon name="shield-checkmark" size={22} color={colors._white} type="ionicon" />
+            </View>
+            <View style={styles.textWrapper}>
+              <Text type="bl" bold>
+                {LL.AccountUpgrade.verifyTitle()}
+              </Text>
+              <Text type="bm" style={styles.desc}>
+                {LL.AccountUpgrade.verifyDesc()}
+              </Text>
+            </View>
+            <Icon name="chevron-forward" size={22} color={colors.primary} type="ionicon" />
           </TouchableOpacity>
         )}
+
+        <Text style={styles.sectionLabel}>{LL.AccountUpgrade.sectionGetPaid()}</Text>
+        {renderCapRow({
+          icon: "business",
+          title: LL.AccountUpgrade.bankCashoutTitle(),
+          desc: LL.AccountUpgrade.bankCashoutDesc(),
+          on: bankOn,
+          onPress: () => onPress(AccountLevel.Two),
+        })}
+        {bridgeTopupEnabled &&
+          currentLevel !== AccountLevel.Zero &&
+          renderCapRow({
+            icon: "logo-usd",
+            title: LL.AccountUpgrade.usdAccountTitle(),
+            desc: LL.AccountUpgrade.usdAccountDesc(),
+            on: usdOn,
+            onPress: () => {
+              startBridgeKyc()
+            },
+          })}
+
+        <Text style={styles.sectionLabel}>{LL.AccountUpgrade.sectionGrow()}</Text>
+        {renderCapRow({
+          icon: "storefront",
+          title: LL.AccountUpgrade.businessTitle(),
+          desc: LL.AccountUpgrade.businessDesc(),
+          on: businessOn,
+          onPress: () => onPress(AccountLevel.Three),
+        })}
+      </View>
+
       <BridgeKycModal
         visible={kycModalVisible}
         onClose={closeKycModal}
@@ -141,17 +216,113 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
 export default AccountType
 
 const useStyles = makeStyles(({ colors }) => ({
+  container: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 32,
+  },
+  header: {
+    marginBottom: 8,
+  },
+  eyebrow: {
+    color: colors.grey2,
+  },
+  title: {
+    marginTop: 2,
+  },
+  statusRow: {
+    flexDirection: "row",
+    marginTop: 14,
+  },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+  },
+  pillOn: {
+    backgroundColor: colors.primary,
+  },
+  pillMuted: {
+    backgroundColor: colors.grey4,
+  },
+  pillText: {
+    fontWeight: "600",
+  },
+  pillTextOn: {
+    color: colors._white,
+    marginLeft: 6,
+  },
+  pillTextMuted: {
+    color: colors.grey1,
+  },
+  sectionLabel: {
+    color: colors.grey2,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    marginTop: 22,
+    marginBottom: 10,
+  },
   card: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.grey5,
+    padding: 14,
+    marginVertical: 6,
+    borderRadius: 16,
+  },
+  verifyCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.grey5,
     padding: 15,
-    marginHorizontal: 20,
-    marginVertical: 10,
-    borderRadius: 20,
+    marginTop: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  verifyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: colors.grey4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowIconOn: {
+    backgroundColor: colors.primary,
   },
   textWrapper: {
     flex: 1,
-    marginHorizontal: 15,
+    marginHorizontal: 14,
+  },
+  desc: {
+    marginTop: 2,
+    color: colors.grey1,
+  },
+  action: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  setupText: {
+    color: colors.primary,
+    fontWeight: "600",
+    marginRight: 3,
+  },
+  onText: {
+    color: colors.grey1,
+    fontWeight: "600",
+    marginLeft: 4,
   },
 }))

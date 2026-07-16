@@ -5955,6 +5955,74 @@ type RootTranslation = {
 		 * @param {string} accountType
 		 */
 		successRequest: RequiredParams<'accountType'>
+		/**
+		 * Y​o​u​r​ ​F​l​a​s​h​ ​a​c​c​o​u​n​t
+		 */
+		hubEyebrow: string
+		/**
+		 * D​o​ ​m​o​r​e​ ​w​i​t​h​ ​F​l​a​s​h
+		 */
+		hubTitle: string
+		/**
+		 * T​r​i​a​l​ ​a​c​c​o​u​n​t
+		 */
+		statusTrial: string
+		/**
+		 * V​e​r​i​f​i​e​d
+		 */
+		statusVerified: string
+		/**
+		 * B​u​s​i​n​e​s​s
+		 */
+		statusBusiness: string
+		/**
+		 * W​a​y​s​ ​t​o​ ​g​e​t​ ​p​a​i​d
+		 */
+		sectionGetPaid: string
+		/**
+		 * G​r​o​w
+		 */
+		sectionGrow: string
+		/**
+		 * V​e​r​i​f​y​ ​y​o​u​r​ ​a​c​c​o​u​n​t
+		 */
+		verifyTitle: string
+		/**
+		 * P​h​o​n​e​ ​+​ ​I​D​ ​·​ ​u​n​l​o​c​k​ ​h​i​g​h​e​r​ ​l​i​m​i​t​s​.​ ​T​a​k​e​s​ ​a​ ​m​i​n​u​t​e​.
+		 */
+		verifyDesc: string
+		/**
+		 * B​a​n​k​ ​c​a​s​h​-​o​u​t
+		 */
+		bankCashoutTitle: string
+		/**
+		 * C​a​s​h​ ​o​u​t​ ​J​M​D​ ​t​o​ ​y​o​u​r​ ​J​a​m​a​i​c​a​n​ ​b​a​n​k
+		 */
+		bankCashoutDesc: string
+		/**
+		 * U​S​-​d​o​l​l​a​r​ ​a​c​c​o​u​n​t
+		 */
+		usdAccountTitle: string
+		/**
+		 * G​e​t​ ​p​a​i​d​ ​&​ ​c​a​s​h​ ​o​u​t​ ​U​S​D​ ​·​ ​2​0​0​+​ ​c​o​u​n​t​r​i​e​s
+		 */
+		usdAccountDesc: string
+		/**
+		 * B​u​s​i​n​e​s​s
+		 */
+		businessTitle: string
+		/**
+		 * G​e​t​ ​l​i​s​t​e​d​ ​o​n​ ​t​h​e​ ​F​l​a​s​h​ ​m​a​p
+		 */
+		businessDesc: string
+		/**
+		 * S​e​t​ ​u​p
+		 */
+		setUp: string
+		/**
+		 * O​n
+		 */
+		enabled: string
 	}
 }
 
@@ -11779,6 +11847,74 @@ export type TranslationFunctions = {
 		 * You successfully requested to upgrade your account to {accountType}
 		 */
 		successRequest: (arg: { accountType: string }) => LocalizedString
+		/**
+		 * Your Flash account
+		 */
+		hubEyebrow: () => LocalizedString
+		/**
+		 * Do more with Flash
+		 */
+		hubTitle: () => LocalizedString
+		/**
+		 * Trial account
+		 */
+		statusTrial: () => LocalizedString
+		/**
+		 * Verified
+		 */
+		statusVerified: () => LocalizedString
+		/**
+		 * Business
+		 */
+		statusBusiness: () => LocalizedString
+		/**
+		 * Ways to get paid
+		 */
+		sectionGetPaid: () => LocalizedString
+		/**
+		 * Grow
+		 */
+		sectionGrow: () => LocalizedString
+		/**
+		 * Verify your account
+		 */
+		verifyTitle: () => LocalizedString
+		/**
+		 * Phone + ID · unlock higher limits. Takes a minute.
+		 */
+		verifyDesc: () => LocalizedString
+		/**
+		 * Bank cash-out
+		 */
+		bankCashoutTitle: () => LocalizedString
+		/**
+		 * Cash out JMD to your Jamaican bank
+		 */
+		bankCashoutDesc: () => LocalizedString
+		/**
+		 * US-dollar account
+		 */
+		usdAccountTitle: () => LocalizedString
+		/**
+		 * Get paid & cash out USD · 200+ countries
+		 */
+		usdAccountDesc: () => LocalizedString
+		/**
+		 * Business
+		 */
+		businessTitle: () => LocalizedString
+		/**
+		 * Get listed on the Flash map
+		 */
+		businessDesc: () => LocalizedString
+		/**
+		 * Set up
+		 */
+		setUp: () => LocalizedString
+		/**
+		 * On
+		 */
+		enabled: () => LocalizedString
 	}
 }
 

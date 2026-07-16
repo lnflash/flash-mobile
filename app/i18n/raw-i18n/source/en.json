@@ -1671,6 +1671,23 @@
         "accountNumPlaceholder": "Enter your account number",
         "uploadId": "Upload ID Document",
         "successUpgrade": "You successfully upgraded your account to {accountType: string}",
-        "successRequest": "You successfully requested to upgrade your account to {accountType: string}"
+        "successRequest": "You successfully requested to upgrade your account to {accountType: string}",
+        "hubEyebrow": "Your Flash account",
+        "hubTitle": "Do more with Flash",
+        "statusTrial": "Trial account",
+        "statusVerified": "Verified",
+        "statusBusiness": "Business",
+        "sectionGetPaid": "Ways to get paid",
+        "sectionGrow": "Grow",
+        "verifyTitle": "Verify your account",
+        "verifyDesc": "Phone + ID · unlock higher limits. Takes a minute.",
+        "bankCashoutTitle": "Bank cash-out",
+        "bankCashoutDesc": "Cash out JMD to your Jamaican bank",
+        "usdAccountTitle": "US-dollar account",
+        "usdAccountDesc": "Get paid & cash out USD · 200+ countries",
+        "businessTitle": "Business",
+        "businessDesc": "Get listed on the Flash map",
+        "setUp": "Set up",
+        "enabled": "On"
     }
 }
