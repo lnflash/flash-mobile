@@ -12,9 +12,6 @@ import {
   headlineFromLevel,
 } from "./account-status-derivation"
 
-export type { AccountCapabilities, AccountStatusHeadline }
-export { capabilitiesFromLevel, headlineFromLevel }
-
 gql`
   query accountStatus {
     me {

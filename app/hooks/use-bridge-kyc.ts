@@ -42,16 +42,15 @@ export const useBridgeKyc = () => {
 
   const bridgeKycStatus = kycStatusData?.bridgeKycStatus
 
-  // Returns false when KYC can't be started here (feature off or already
-  // pending) so callers can fall back to their previous behavior.
+  // No-op when Bridge is remotely disabled; alerts instead of opening the
+  // modal while a KYC submission is already pending.
   const startBridgeKyc = useCallback(() => {
-    if (!bridgeTopupEnabled) return false
+    if (!bridgeTopupEnabled) return
     if (bridgeKycStatus === "pending") {
       Alert.alert(LL.BridgeKyc.pendingTitle(), LL.BridgeKyc.pendingBody())
-      return true
+      return
     }
     setKycModalVisible(true)
-    return true
   }, [bridgeTopupEnabled, bridgeKycStatus, LL])
 
   const closeKycModal = useCallback(() => setKycModalVisible(false), [])
