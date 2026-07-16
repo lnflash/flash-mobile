@@ -22,12 +22,17 @@ import ArrowUp from "@app/assets/icons/arrow-up-from-bracket.svg"
 import {
   AccountLevel,
   useBridgeAddExternalAccountMutation,
+  useBridgeExchangePlaidPublicTokenMutation,
   useBridgeExternalAccountsQuery,
   useBridgeInitiateKycMutation,
   useBridgeKycStatusQuery,
 } from "@app/graphql/generated"
 import { useActivityIndicator, useTransferFlags } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
+
+// Plaid Link SDK — opens the native Plaid flow with a linkToken from the backend.
+import { create, open } from "react-native-plaid-link-sdk"
+import type { LinkExit, LinkSuccess } from "react-native-plaid-link-sdk"
 
 type Props = StackScreenProps<RootStackParamList, "TopupCashout">
 
@@ -51,6 +56,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
 
   const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
   const [addExternalAccount] = useBridgeAddExternalAccountMutation()
+  const [exchangePlaidPublicToken] = useBridgeExchangePlaidPublicTokenMutation()
 
   const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
     fetchPolicy: "cache-and-network",
@@ -111,6 +117,48 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     [currentLevel, navigation],
   )
 
+  const openPlaidLink = useCallback(
+    (linkToken: string) => {
+      create({ token: linkToken })
+      open({
+        onSuccess: async (success: LinkSuccess) => {
+          toggleActivityIndicator(true)
+          try {
+            const res = await exchangePlaidPublicToken({
+              variables: {
+                input: { linkToken, publicToken: success.publicToken },
+              },
+            })
+            toggleActivityIndicator(false)
+
+            const errors = res.data?.bridgeExchangePlaidPublicToken?.errors
+            if (errors && errors.length > 0) {
+              Alert.alert("Error", errors[0].message)
+              return
+            }
+
+            // The linked account is provisioned asynchronously via Bridge's webhook.
+            await refetchExternalAccounts()
+            Alert.alert(
+              "Bank connected",
+              "Your bank is being linked and will appear here shortly.",
+            )
+          } catch (err) {
+            toggleActivityIndicator(false)
+            Alert.alert("Error", "Failed to link your bank. Please try again.")
+          }
+        },
+        onExit: (exit: LinkExit) => {
+          // Plaid reports a real failure here, distinct from a plain user cancel.
+          if (exit.error) {
+            Alert.alert("Error", exit.error.errorMessage || "Bank linking was cancelled.")
+          }
+        },
+      })
+    },
+    [exchangePlaidPublicToken, refetchExternalAccounts, toggleActivityIndicator],
+  )
+
   const checkBridgeKyc = useCallback(
     async (type: "topup" | "settle") => {
       if (!bridgeEnabled) return
@@ -144,8 +192,14 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
             return
           }
 
-          const linkUrl = res.data?.bridgeAddExternalAccount?.externalAccount?.linkUrl
-          if (linkUrl) {
+          const externalAccount = res.data?.bridgeAddExternalAccount?.externalAccount
+          const linkToken = externalAccount?.linkToken
+          const linkUrl = externalAccount?.linkUrl
+          if (linkToken) {
+            // Preferred path: open Plaid Link with the SDK, then exchange the public token.
+            openPlaidLink(linkToken)
+          } else if (linkUrl) {
+            // Deprecated hosted-URL fallback for backends that don't return a linkToken yet.
             navigation.navigate("BridgeExternalAccountWebView", { linkUrl })
           } else {
             Alert.alert("Error", "Failed to get external account link. Please try again.")
@@ -161,6 +215,7 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
       externalAccountsData?.bridgeExternalAccounts,
       kycStatusData?.bridgeKycStatus,
       navigation,
+      openPlaidLink,
       toggleActivityIndicator,
     ],
   )

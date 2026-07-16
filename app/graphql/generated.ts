@@ -402,6 +402,17 @@ export type BridgeCreateVirtualAccountPayload = {
   readonly virtualAccount?: Maybe<BridgeVirtualAccount>;
 };
 
+export type BridgeExchangePlaidPublicTokenInput = {
+  readonly linkToken: Scalars['String']['input'];
+  readonly publicToken: Scalars['String']['input'];
+};
+
+export type BridgeExchangePlaidPublicTokenPayload = {
+  readonly __typename: 'BridgeExchangePlaidPublicTokenPayload';
+  readonly errors: ReadonlyArray<Error>;
+  readonly message?: Maybe<Scalars['String']['output']>;
+};
+
 export type BridgeExternalAccount = {
   readonly __typename: 'BridgeExternalAccount';
   readonly accountNumberLast4: Scalars['String']['output'];
@@ -413,7 +424,9 @@ export type BridgeExternalAccount = {
 export type BridgeExternalAccountLink = {
   readonly __typename: 'BridgeExternalAccountLink';
   readonly expiresAt: Scalars['String']['output'];
-  readonly linkUrl: Scalars['String']['output'];
+  readonly linkToken: Scalars['String']['output'];
+  /** @deprecated Use linkToken with the Plaid Link SDK. Hosted-URL linking is being retired; this field is best-effort and may be null. */
+  readonly linkUrl?: Maybe<Scalars['String']['output']>;
 };
 
 export type BridgeInitiateKycInput = {
@@ -1066,6 +1079,7 @@ export type Mutation = {
   readonly bridgeCancelWithdrawalRequest: BridgeCancelWithdrawalRequestPayload;
   readonly bridgeCreateExternalAccount: BridgeCreateExternalAccountPayload;
   readonly bridgeCreateVirtualAccount: BridgeCreateVirtualAccountPayload;
+  readonly bridgeExchangePlaidPublicToken: BridgeExchangePlaidPublicTokenPayload;
   readonly bridgeInitiateKyc: BridgeInitiateKycPayload;
   readonly bridgeInitiateWithdrawal: BridgeInitiateWithdrawalPayload;
   readonly bridgeRequestWithdrawal: BridgeRequestWithdrawalPayload;
@@ -1240,6 +1254,11 @@ export type MutationBridgeCancelWithdrawalRequestArgs = {
 
 export type MutationBridgeCreateExternalAccountArgs = {
   input: BridgeCreateExternalAccountInput;
+};
+
+
+export type MutationBridgeExchangePlaidPublicTokenArgs = {
+  input: BridgeExchangePlaidPublicTokenInput;
 };
 
 
@@ -2685,7 +2704,14 @@ export type BridgeInitiateKycMutation = { readonly __typename: 'Mutation', reado
 export type BridgeAddExternalAccountMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type BridgeAddExternalAccountMutation = { readonly __typename: 'Mutation', readonly bridgeAddExternalAccount: { readonly __typename: 'BridgeAddExternalAccountPayload', readonly externalAccount?: { readonly __typename: 'BridgeExternalAccountLink', readonly expiresAt: string, readonly linkUrl: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
+export type BridgeAddExternalAccountMutation = { readonly __typename: 'Mutation', readonly bridgeAddExternalAccount: { readonly __typename: 'BridgeAddExternalAccountPayload', readonly externalAccount?: { readonly __typename: 'BridgeExternalAccountLink', readonly expiresAt: string, readonly linkToken: string, readonly linkUrl?: string | null } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
+
+export type BridgeExchangePlaidPublicTokenMutationVariables = Exact<{
+  input: BridgeExchangePlaidPublicTokenInput;
+}>;
+
+
+export type BridgeExchangePlaidPublicTokenMutation = { readonly __typename: 'Mutation', readonly bridgeExchangePlaidPublicToken: { readonly __typename: 'BridgeExchangePlaidPublicTokenPayload', readonly message?: string | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
 
 export type BridgeRequestWithdrawalMutationVariables = Exact<{
   input: BridgeRequestWithdrawalInput;
@@ -4555,6 +4581,7 @@ export const BridgeAddExternalAccountDocument = gql`
   bridgeAddExternalAccount {
     externalAccount {
       expiresAt
+      linkToken
       linkUrl
     }
     errors {
@@ -4589,6 +4616,43 @@ export function useBridgeAddExternalAccountMutation(baseOptions?: Apollo.Mutatio
 export type BridgeAddExternalAccountMutationHookResult = ReturnType<typeof useBridgeAddExternalAccountMutation>;
 export type BridgeAddExternalAccountMutationResult = Apollo.MutationResult<BridgeAddExternalAccountMutation>;
 export type BridgeAddExternalAccountMutationOptions = Apollo.BaseMutationOptions<BridgeAddExternalAccountMutation, BridgeAddExternalAccountMutationVariables>;
+export const BridgeExchangePlaidPublicTokenDocument = gql`
+    mutation BridgeExchangePlaidPublicToken($input: BridgeExchangePlaidPublicTokenInput!) {
+  bridgeExchangePlaidPublicToken(input: $input) {
+    errors {
+      code
+      message
+    }
+    message
+  }
+}
+    `;
+export type BridgeExchangePlaidPublicTokenMutationFn = Apollo.MutationFunction<BridgeExchangePlaidPublicTokenMutation, BridgeExchangePlaidPublicTokenMutationVariables>;
+
+/**
+ * __useBridgeExchangePlaidPublicTokenMutation__
+ *
+ * To run a mutation, you first call `useBridgeExchangePlaidPublicTokenMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useBridgeExchangePlaidPublicTokenMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [bridgeExchangePlaidPublicTokenMutation, { data, loading, error }] = useBridgeExchangePlaidPublicTokenMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useBridgeExchangePlaidPublicTokenMutation(baseOptions?: Apollo.MutationHookOptions<BridgeExchangePlaidPublicTokenMutation, BridgeExchangePlaidPublicTokenMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<BridgeExchangePlaidPublicTokenMutation, BridgeExchangePlaidPublicTokenMutationVariables>(BridgeExchangePlaidPublicTokenDocument, options);
+      }
+export type BridgeExchangePlaidPublicTokenMutationHookResult = ReturnType<typeof useBridgeExchangePlaidPublicTokenMutation>;
+export type BridgeExchangePlaidPublicTokenMutationResult = Apollo.MutationResult<BridgeExchangePlaidPublicTokenMutation>;
+export type BridgeExchangePlaidPublicTokenMutationOptions = Apollo.BaseMutationOptions<BridgeExchangePlaidPublicTokenMutation, BridgeExchangePlaidPublicTokenMutationVariables>;
 export const BridgeRequestWithdrawalDocument = gql`
     mutation BridgeRequestWithdrawal($input: BridgeRequestWithdrawalInput!) {
   bridgeRequestWithdrawal(input: $input) {

@@ -248,12 +248,23 @@ gql`
     bridgeAddExternalAccount {
       externalAccount {
         expiresAt
+        linkToken
         linkUrl
       }
       errors {
         code
         message
       }
+    }
+  }
+
+  mutation BridgeExchangePlaidPublicToken($input: BridgeExchangePlaidPublicTokenInput!) {
+    bridgeExchangePlaidPublicToken(input: $input) {
+      errors {
+        code
+        message
+      }
+      message
     }
   }
 
