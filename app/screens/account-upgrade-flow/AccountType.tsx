@@ -156,7 +156,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <Screen preset="scroll" keyboardShouldPersistTaps="handled">
+    <Screen preset="scroll">
       <View style={styles.container}>
         <View style={styles.header}>
           <Text type="p2" style={styles.eyebrow}>
