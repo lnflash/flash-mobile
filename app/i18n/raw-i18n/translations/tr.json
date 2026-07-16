@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "Bankaya para çekme talebiniz incelenmek üzere gönderildi",
     "successBusinessRequest": "İşletme yükseltme talebiniz incelenmek üzere gönderildi",
     "successVerified": "Hesabınız doğrulandı",
-    "usdAccountTitle": "Sanal ABD doları banka hesabı",
+    "usdAccountTitle": "Sanal USD banka hesabı",
     "usdAccountDesc": "Kendi ABD hesap ve routing numaranız — ACH, havale ve maaş alın",
     "verifyTitle": "Hesabınızı doğrulayın",
-    "verifyDesc": "Sadece telefon numaranız · bir dakikada daha yüksek limitler"
+    "verifyDesc": "Sadece telefon numaranız · bir dakikada daha yüksek limitler",
+    "lockedVerifyFirst": "Kilidi açmak için önce hesabınızı doğrulayın"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

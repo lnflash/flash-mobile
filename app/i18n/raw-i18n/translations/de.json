@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "Deine Anfrage zur Bankauszahlung wurde zur Prüfung eingereicht",
     "successBusinessRequest": "Deine Anfrage zum Unternehmens-Upgrade wurde zur Prüfung eingereicht",
     "successVerified": "Dein Konto ist verifiziert",
-    "usdAccountTitle": "Virtuelles US-Dollar-Bankkonto",
+    "usdAccountTitle": "Virtuelles USD-Bankkonto",
     "usdAccountDesc": "Deine eigene US-Konto- und Routing-Nummer — empfange ACH, Überweisungen & Gehalt",
     "verifyTitle": "Verifiziere dein Konto",
-    "verifyDesc": "Nur deine Telefonnummer · höhere Limits in einer Minute"
+    "verifyDesc": "Nur deine Telefonnummer · höhere Limits in einer Minute",
+    "lockedVerifyFirst": "Verifiziere zuerst dein Konto, um freizuschalten"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

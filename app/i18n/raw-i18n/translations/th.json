@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "คำขอถอนเงินเข้าธนาคารของคุณถูกส่งเพื่อตรวจสอบแล้ว",
     "successBusinessRequest": "คำขออัปเกรดธุรกิจของคุณถูกส่งเพื่อตรวจสอบแล้ว",
     "successVerified": "บัญชีของคุณได้รับการยืนยันแล้ว",
-    "usdAccountTitle": "บัญชีธนาคารเสมือนสกุลดอลลาร์สหรัฐ",
+    "usdAccountTitle": "บัญชีธนาคารเสมือน USD",
     "usdAccountDesc": "เลขบัญชีและเลข routing ของสหรัฐเป็นของคุณเอง — รับ ACH โอนเงิน และเงินเดือน",
     "verifyTitle": "ยืนยันบัญชีของคุณ",
-    "verifyDesc": "ใช้แค่เบอร์โทรศัพท์ · เพิ่มวงเงินภายในหนึ่งนาที"
+    "verifyDesc": "ใช้แค่เบอร์โทรศัพท์ · เพิ่มวงเงินภายในหนึ่งนาที",
+    "lockedVerifyFirst": "ยืนยันบัญชีของคุณก่อนเพื่อปลดล็อก"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

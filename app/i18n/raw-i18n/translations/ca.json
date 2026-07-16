@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "La teva sol·licitud de retirada bancària s'ha enviat per a revisió",
     "successBusinessRequest": "La teva sol·licitud d'actualització a negoci s'ha enviat per a revisió",
     "successVerified": "El teu compte està verificat",
-    "usdAccountTitle": "Compte bancari virtual en dòlars americans",
+    "usdAccountTitle": "Compte bancari virtual en USD",
     "usdAccountDesc": "El teu propi número de compte i routing dels EUA — rep ACH, transferències i nòmines",
     "verifyTitle": "Verifica el teu compte",
-    "verifyDesc": "Només el teu número de telèfon · límits més alts en un minut"
+    "verifyDesc": "Només el teu número de telèfon · límits més alts en un minut",
+    "lockedVerifyFirst": "Verifica primer el teu compte per desbloquejar-ho"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "La tua richiesta di prelievo bancario è stata inviata per la revisione",
     "successBusinessRequest": "La tua richiesta di upgrade ad attività è stata inviata per la revisione",
     "successVerified": "Il tuo conto è verificato",
-    "usdAccountTitle": "Conto bancario virtuale in dollari USA",
+    "usdAccountTitle": "Conto bancario virtuale in USD",
     "usdAccountDesc": "Il tuo numero di conto e routing USA — ricevi ACH, bonifici e stipendio",
     "verifyTitle": "Verifica il tuo conto",
-    "verifyDesc": "Basta il tuo numero di telefono · limiti più alti in un minuto"
+    "verifyDesc": "Basta il tuo numero di telefono · limiti più alti in un minuto",
+    "lockedVerifyFirst": "Verifica prima il tuo conto per sbloccare"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

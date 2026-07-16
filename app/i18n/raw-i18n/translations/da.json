@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "Din anmodning om bankudbetaling er sendt til gennemgang",
     "successBusinessRequest": "Din anmodning om virksomhedsopgradering er sendt til gennemgang",
     "successVerified": "Din konto er verificeret",
-    "usdAccountTitle": "Virtuel bankkonto i US-dollar",
+    "usdAccountTitle": "Virtuel USD-bankkonto",
     "usdAccountDesc": "Dit eget amerikanske konto- og routingnummer — modtag ACH, overførsler og løn",
     "verifyTitle": "Verificér din konto",
-    "verifyDesc": "Kun dit telefonnummer · højere grænser på et minut"
+    "verifyDesc": "Kun dit telefonnummer · højere grænser på et minut",
+    "lockedVerifyFirst": "Verificér din konto først for at låse op"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

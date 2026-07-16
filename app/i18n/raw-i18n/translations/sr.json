@@ -1520,7 +1520,8 @@
     "usdAccountTitle": "Виртуелни банковни рачун у USD",
     "usdAccountDesc": "Сопствени амерички број рачуна и routing — примајте ACH, дознаке и плату",
     "verifyTitle": "Верификујте свој налог",
-    "verifyDesc": "Само ваш број телефона · већи лимити за минут"
+    "verifyDesc": "Само ваш број телефона · већи лимити за минут",
+    "lockedVerifyFirst": "Прво верификујте свој налог да бисте откључали"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

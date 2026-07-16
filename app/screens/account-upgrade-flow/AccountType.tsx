@@ -84,6 +84,8 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
     : !bridgeTopupEnabled || !verifiedOn
     ? "locked"
     : "available"
+  // When the lock is the L1 floor (not the kill switch), say how to lift it.
+  const usdNeedsVerify = usdStatus === "locked" && bridgeTopupEnabled && !verifiedOn
 
   const onPress = (accountType: string) => {
     const numOfSteps =
@@ -136,8 +138,7 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
           </View>
         ) : status === "locked" ? (
           <View style={styles.action}>
-            <Icon name="lock-closed" size={14} color={colors.grey2} type="ionicon" />
-            <Text style={styles.lockedText}>{LL.AccountUpgrade.setUp()}</Text>
+            <Icon name="lock-closed" size={16} color={colors.grey2} type="ionicon" />
           </View>
         ) : (
           <View style={styles.action}>
@@ -227,7 +228,9 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
         {renderCapRow({
           icon: "logo-usd",
           title: LL.AccountUpgrade.usdAccountTitle(),
-          desc: LL.AccountUpgrade.usdAccountDesc(),
+          desc: usdNeedsVerify
+            ? LL.AccountUpgrade.lockedVerifyFirst()
+            : LL.AccountUpgrade.usdAccountDesc(),
           status: usdStatus,
           onPress: () => {
             startBridgeKyc()
@@ -359,11 +362,6 @@ const useStyles = makeStyles(({ colors }) => ({
     color: colors.primary,
     fontWeight: "600",
     marginRight: 3,
-  },
-  lockedText: {
-    color: colors.grey2,
-    fontWeight: "600",
-    marginLeft: 4,
   },
   onText: {
     color: colors.grey1,

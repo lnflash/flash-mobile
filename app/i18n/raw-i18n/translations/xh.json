@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "Isicelo sakho sokukhupha imali ebhankini singenisiwe ukuze sihlolwe",
     "successBusinessRequest": "Isicelo sakho sokuphucula ishishini singenisiwe ukuze sihlolwe",
     "successVerified": "I-akhawunti yakho iqinisekisiwe",
-    "usdAccountTitle": "I-akhawunti yebhanki ebonakalayo yedola yase-US",
+    "usdAccountTitle": "I-akhawunti yebhanki ebonakalayo ye-USD",
     "usdAccountDesc": "Inombolo ye-akhawunti kunye ne-routing yase-US eyakho — fumana i-ACH, utyalo-mali nomvuzo",
     "verifyTitle": "Qinisekisa i-akhawunti yakho",
-    "verifyDesc": "Inombolo yakho yefowuni kuphela · imida ephezulu ngomzuzu"
+    "verifyDesc": "Inombolo yakho yefowuni kuphela · imida ephezulu ngomzuzu",
+    "lockedVerifyFirst": "Qinisekisa i-akhawunti yakho kuqala ukuze uvule"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

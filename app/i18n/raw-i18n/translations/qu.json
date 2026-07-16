@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "Bancoman horqoy mañakuyniyki qhawanapaq apachisqa",
     "successBusinessRequest": "Negocio wicharichiy mañakuyniyki qhawanapaq apachisqa",
     "successVerified": "Cuentayki chiqaqchasqa",
-    "usdAccountTitle": "USD dolar virtual banco cuenta",
+    "usdAccountTitle": "USD virtual banco cuenta",
     "usdAccountDesc": "Kikiykipa USA cuenta, routing numeroyki — ACH, transferencia, pago chaskiy",
     "verifyTitle": "Cuentaykita chiqaqchay",
-    "verifyDesc": "Telefono numeroykillawan · aswan hatun limitekuna huk minutopi"
+    "verifyDesc": "Telefono numeroykillawan · aswan hatun limitekuna huk minutopi",
+    "lockedVerifyFirst": "Ñawpaqta cuentaykita chiqaqchay kichanapaq"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

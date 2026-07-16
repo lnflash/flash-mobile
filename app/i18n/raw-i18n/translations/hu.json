@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "A banki kifizetési kérelmedet elbírálásra beküldtük",
     "successBusinessRequest": "A vállalkozási bővítési kérelmedet elbírálásra beküldtük",
     "successVerified": "A fiókod ellenőrizve",
-    "usdAccountTitle": "Virtuális USA-dollár bankszámla",
+    "usdAccountTitle": "Virtuális USD-bankszámla",
     "usdAccountDesc": "Saját amerikai számla- és routingszám — fogadj ACH-t, utalást és fizetést",
     "verifyTitle": "Ellenőrizd a fiókod",
-    "verifyDesc": "Csak a telefonszámod kell · magasabb limitek egy perc alatt"
+    "verifyDesc": "Csak a telefonszámod kell · magasabb limitek egy perc alatt",
+    "lockedVerifyFirst": "Először ellenőrizd a fiókod a feloldáshoz"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

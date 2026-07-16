@@ -1192,10 +1192,11 @@
     "successBankPayoutRequest": "Ombi lako la kutoa pesa benki limewasilishwa kwa ukaguzi",
     "successBusinessRequest": "Ombi lako la kupandisha hadhi ya biashara limewasilishwa kwa ukaguzi",
     "successVerified": "Akaunti yako imethibitishwa",
-    "usdAccountTitle": "Akaunti pepe ya benki ya dola za Marekani",
+    "usdAccountTitle": "Akaunti pepe ya benki ya USD",
     "usdAccountDesc": "Nambari yako mwenyewe ya akaunti na routing ya Marekani — pokea ACH, uhamisho na mshahara",
     "verifyTitle": "Thibitisha akaunti yako",
-    "verifyDesc": "Nambari yako ya simu tu · vikomo vya juu ndani ya dakika moja"
+    "verifyDesc": "Nambari yako ya simu tu · vikomo vya juu ndani ya dakika moja",
+    "lockedVerifyFirst": "Thibitisha akaunti yako kwanza ili kufungua"
   },
   "AdvancedModeModal": {
     "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",

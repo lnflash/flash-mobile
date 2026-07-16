@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "Permohonan pengeluaran bank anda telah dihantar untuk semakan",
     "successBusinessRequest": "Permohonan naik taraf perniagaan anda telah dihantar untuk semakan",
     "successVerified": "Akaun anda telah disahkan",
-    "usdAccountTitle": "Akaun bank maya dolar AS",
+    "usdAccountTitle": "Akaun bank maya USD",
     "usdAccountDesc": "Nombor akaun dan routing AS anda sendiri — terima ACH, pindahan & gaji",
     "verifyTitle": "Sahkan akaun anda",
-    "verifyDesc": "Hanya nombor telefon anda · had lebih tinggi dalam seminit"
+    "verifyDesc": "Hanya nombor telefon anda · had lebih tinggi dalam seminit",
+    "lockedVerifyFirst": "Sahkan akaun anda dahulu untuk membuka"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

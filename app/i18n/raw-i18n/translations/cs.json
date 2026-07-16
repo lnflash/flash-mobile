@@ -1520,7 +1520,8 @@
     "usdAccountTitle": "Virtuální bankovní účet v USD",
     "usdAccountDesc": "Vlastní americké číslo účtu a routing — přijímejte ACH, převody i výplaty",
     "verifyTitle": "Ověřte svůj účet",
-    "verifyDesc": "Stačí vaše telefonní číslo · vyšší limity během minuty"
+    "verifyDesc": "Stačí vaše telefonní číslo · vyšší limity během minuty",
+    "lockedVerifyFirst": "Nejprve ověřte svůj účet pro odemknutí"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

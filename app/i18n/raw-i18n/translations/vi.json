@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "Yêu cầu rút tiền về ngân hàng của bạn đã được gửi để xét duyệt",
     "successBusinessRequest": "Yêu cầu nâng cấp doanh nghiệp của bạn đã được gửi để xét duyệt",
     "successVerified": "Tài khoản của bạn đã được xác minh",
-    "usdAccountTitle": "Tài khoản ngân hàng ảo đô la Mỹ",
+    "usdAccountTitle": "Tài khoản ngân hàng ảo USD",
     "usdAccountDesc": "Số tài khoản và số routing Mỹ của riêng bạn — nhận ACH, chuyển khoản và lương",
     "verifyTitle": "Xác minh tài khoản của bạn",
-    "verifyDesc": "Chỉ cần số điện thoại của bạn · nâng hạn mức trong một phút"
+    "verifyDesc": "Chỉ cần số điện thoại của bạn · nâng hạn mức trong một phút",
+    "lockedVerifyFirst": "Xác minh tài khoản của bạn trước để mở khóa"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

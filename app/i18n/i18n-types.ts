@@ -5990,13 +5990,17 @@ type RootTranslation = {
 		 */
 		bankCashoutDesc: string
 		/**
-		 * U​S​-​D​o​l​l​a​r​ ​V​i​r​t​u​a​l​ ​B​a​n​k​ ​A​c​c​o​u​n​t
+		 * U​S​D​ ​V​i​r​t​u​a​l​ ​B​a​n​k​ ​A​c​c​o​u​n​t
 		 */
 		usdAccountTitle: string
 		/**
 		 * Y​o​u​r​ ​o​w​n​ ​U​S​ ​a​c​c​o​u​n​t​ ​&​ ​r​o​u​t​i​n​g​ ​n​u​m​b​e​r​ ​—​ ​r​e​c​e​i​v​e​ ​A​C​H​,​ ​w​i​r​e​s​ ​&​ ​p​a​y​r​o​l​l
 		 */
 		usdAccountDesc: string
+		/**
+		 * V​e​r​i​f​y​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​f​i​r​s​t​ ​t​o​ ​u​n​l​o​c​k
+		 */
+		lockedVerifyFirst: string
 		/**
 		 * B​u​s​i​n​e​s​s
 		 */
@@ -11878,13 +11882,17 @@ export type TranslationFunctions = {
 		 */
 		bankCashoutDesc: () => LocalizedString
 		/**
-		 * US-Dollar Virtual Bank Account
+		 * USD Virtual Bank Account
 		 */
 		usdAccountTitle: () => LocalizedString
 		/**
 		 * Your own US account & routing number — receive ACH, wires & payroll
 		 */
 		usdAccountDesc: () => LocalizedString
+		/**
+		 * Verify your account first to unlock
+		 */
+		lockedVerifyFirst: () => LocalizedString
 		/**
 		 * Business
 		 */

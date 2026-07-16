@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "Je verzoek voor bankuitbetaling is ingediend ter beoordeling",
     "successBusinessRequest": "Je verzoek voor een bedrijfsupgrade is ingediend ter beoordeling",
     "successVerified": "Je account is geverifieerd",
-    "usdAccountTitle": "Virtuele US-dollarbankrekening",
+    "usdAccountTitle": "Virtuele USD-bankrekening",
     "usdAccountDesc": "Je eigen Amerikaanse rekening- en routingnummer — ontvang ACH, overboekingen & salaris",
     "verifyTitle": "Verifieer je account",
-    "verifyDesc": "Alleen je telefoonnummer · hogere limieten binnen een minuut"
+    "verifyDesc": "Alleen je telefoonnummer · hogere limieten binnen een minuut",
+    "lockedVerifyFirst": "Verifieer eerst je account om te ontgrendelen"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

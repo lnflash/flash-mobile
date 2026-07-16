@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "Ձեր բանկային կանխիկացման հայտը ուղարկվել է դիտարկման",
     "successBusinessRequest": "Ձեր բիզնես թարմացման հայտը ուղարկվել է դիտարկման",
     "successVerified": "Ձեր հաշիվը հաստատված է",
-    "usdAccountTitle": "Վիրտուալ բանկային հաշիվ ԱՄՆ դոլարով",
+    "usdAccountTitle": "Վիրտուալ USD բանկային հաշիվ",
     "usdAccountDesc": "Ձեր սեփական ԱՄՆ հաշվի և routing համարը — ստացեք ACH, փոխանցումներ և աշխատավարձ",
     "verifyTitle": "Հաստատեք ձեր հաշիվը",
-    "verifyDesc": "Միայն ձեր հեռախոսահամարը · ավելի բարձր սահմաններ մեկ րոպեում"
+    "verifyDesc": "Միայն ձեր հեռախոսահամարը · ավելի բարձր սահմաններ մեկ րոպեում",
+    "lockedVerifyFirst": "Նախ հաստատեք ձեր հաշիվը՝ բացելու համար"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

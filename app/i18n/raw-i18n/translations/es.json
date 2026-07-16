@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "Tu solicitud de retiro bancario fue enviada para revisión",
     "successBusinessRequest": "Tu solicitud de actualización a negocio fue enviada para revisión",
     "successVerified": "Tu cuenta está verificada",
-    "usdAccountTitle": "Cuenta bancaria virtual en dólares",
+    "usdAccountTitle": "Cuenta bancaria virtual en USD",
     "usdAccountDesc": "Tu propio número de cuenta y routing de EE. UU. — recibe ACH, transferencias y nómina",
     "verifyTitle": "Verifica tu cuenta",
-    "verifyDesc": "Solo tu número de teléfono · límites más altos en un minuto"
+    "verifyDesc": "Solo tu número de teléfono · límites más altos en un minuto",
+    "lockedVerifyFirst": "Verifica tu cuenta primero para desbloquear"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

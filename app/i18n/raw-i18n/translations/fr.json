@@ -1517,10 +1517,11 @@
     "successBankPayoutRequest": "Votre demande de retrait bancaire a été soumise pour examen",
     "successBusinessRequest": "Votre demande de passage en compte entreprise a été soumise pour examen",
     "successVerified": "Votre compte est vérifié",
-    "usdAccountTitle": "Compte bancaire virtuel en dollars américains",
+    "usdAccountTitle": "Compte bancaire virtuel en USD",
     "usdAccountDesc": "Vos propres numéros de compte et de routage US — recevez ACH, virements et salaires",
     "verifyTitle": "Vérifiez votre compte",
-    "verifyDesc": "Seulement votre numéro de téléphone · limites plus élevées en une minute"
+    "verifyDesc": "Seulement votre numéro de téléphone · limites plus élevées en une minute",
+    "lockedVerifyFirst": "Vérifiez d'abord votre compte pour débloquer"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
