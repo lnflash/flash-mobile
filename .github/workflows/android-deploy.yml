@@ -44,7 +44,9 @@ jobs:
           cache: "yarn"
 
       - name: Create .env from secrets
-        run: echo "${{ secrets.DOT_ENV }}" > .env
+        env:
+          DOT_ENV: ${{ secrets.DOT_ENV }}
+        run: printenv DOT_ENV > .env
 
       - name: Install JS dependencies
         run: yarn install --frozen-lockfile
@@ -85,8 +87,9 @@ jobs:
           EOF
 
       - name: Setup Google Play JSON key
-        run: |
-          echo "${{ secrets.GOOGLE_PLAY_JSON_KEY }}" > google-play-key.json
+        env:
+          GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
+        run: printenv GOOGLE_PLAY_JSON_KEY > google-play-key.json
 
       - name: Determine lane
         id: lane
