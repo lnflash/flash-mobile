@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Saque bancário",
     "bankCashoutDesc": "Saque JMD para o seu banco jamaicano",
     "businessTitle": "Negócio",
-    "businessDesc": "Apareça no mapa da Flash",
+    "businessDesc": "Apareça no mapa da Flash e recompense seus clientes",
     "enabled": "Ativo",
     "hubEyebrow": "Sua conta Flash",
     "hubTitle": "Faça mais com a Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Sua solicitação de saque bancário foi enviada para análise",
     "successBusinessRequest": "Sua solicitação de upgrade para negócio foi enviada para análise",
     "successVerified": "Sua conta está verificada",
-    "usdAccountTitle": "Conta em dólares americanos",
-    "usdAccountDesc": "Receba e saque USD · mais de 200 países",
+    "usdAccountTitle": "Conta bancária virtual em dólares",
+    "usdAccountDesc": "Seu próprio número de conta e routing dos EUA — receba ACH, transferências e salário",
     "verifyTitle": "Verifique sua conta",
-    "verifyDesc": "Telefone + documento · limites mais altos. Leva um minuto."
+    "verifyDesc": "Só o seu número de telefone · limites mais altos em um minuto"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

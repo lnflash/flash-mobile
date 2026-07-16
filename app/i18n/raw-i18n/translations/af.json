@@ -1235,7 +1235,7 @@
     "bankCashoutTitle": "Bankuitbetaling",
     "bankCashoutDesc": "Betaal JMD uit na jou Jamaikaanse bank",
     "businessTitle": "Besigheid",
-    "businessDesc": "Verskyn op die Flash-kaart",
+    "businessDesc": "Kom op die Flash-kaart & beloon jou klante",
     "enabled": "Aan",
     "hubEyebrow": "Jou Flash-rekening",
     "hubTitle": "Doen meer met Flash",
@@ -1250,10 +1250,10 @@
     "successBankPayoutRequest": "Jou bankuitbetalingsversoek is vir hersiening ingedien",
     "successBusinessRequest": "Jou besigheidsopgraderingsversoek is vir hersiening ingedien",
     "successVerified": "Jou rekening is geverifieer",
-    "usdAccountTitle": "US-dollarrekening",
-    "usdAccountDesc": "Word betaal en betaal USD uit · 200+ lande",
+    "usdAccountTitle": "VSA-dollar virtuele bankrekening",
+    "usdAccountDesc": "Jou eie VSA-rekening- en routingnommer — ontvang ACH, oorbetalings & salaris",
     "verifyTitle": "Verifieer jou rekening",
-    "verifyDesc": "Foon + ID · ontsluit hoër limiete. Neem 'n minuut."
+    "verifyDesc": "Net jou foonnommer · ontsluit hoër limiete binne 'n minuut"
   },
   "AdvancedModeModal": {
     "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",

@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Bancoman horqoy",
     "bankCashoutDesc": "JMD qullqita Jamaica bancoykiman horqoy",
     "businessTitle": "Negocio",
-    "businessDesc": "Flash mapapi rikhuriy",
+    "businessDesc": "Flash mapapi rikhuriy, rantiqkunata premiay",
     "enabled": "Hap'ichisqa",
     "hubEyebrow": "Flash cuentayki",
     "hubTitle": "Flashwan astawan ruray",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Bancoman horqoy mañakuyniyki qhawanapaq apachisqa",
     "successBusinessRequest": "Negocio wicharichiy mañakuyniyki qhawanapaq apachisqa",
     "successVerified": "Cuentayki chiqaqchasqa",
-    "usdAccountTitle": "USD dolar cuenta",
-    "usdAccountDesc": "USD chaskiy, horqoy · 200+ suyukuna",
+    "usdAccountTitle": "USD dolar virtual banco cuenta",
+    "usdAccountDesc": "Kikiykipa USA cuenta, routing numeroyki — ACH, transferencia, pago chaskiy",
     "verifyTitle": "Cuentaykita chiqaqchay",
-    "verifyDesc": "Telefono + ID · aswan hatun limitekuna. Huk minutolla."
+    "verifyDesc": "Telefono numeroykillawan · aswan hatun limitekuna huk minutopi"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

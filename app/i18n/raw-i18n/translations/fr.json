@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Retrait bancaire",
     "bankCashoutDesc": "Retirez des JMD vers votre banque jamaïcaine",
     "businessTitle": "Entreprise",
-    "businessDesc": "Apparaissez sur la carte Flash",
+    "businessDesc": "Apparaissez sur la carte Flash et récompensez vos clients",
     "enabled": "Activé",
     "hubEyebrow": "Votre compte Flash",
     "hubTitle": "Faites plus avec Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Votre demande de retrait bancaire a été soumise pour examen",
     "successBusinessRequest": "Votre demande de passage en compte entreprise a été soumise pour examen",
     "successVerified": "Votre compte est vérifié",
-    "usdAccountTitle": "Compte en dollars américains",
-    "usdAccountDesc": "Recevez et retirez des USD · plus de 200 pays",
+    "usdAccountTitle": "Compte bancaire virtuel en dollars américains",
+    "usdAccountDesc": "Vos propres numéros de compte et de routage US — recevez ACH, virements et salaires",
     "verifyTitle": "Vérifiez votre compte",
-    "verifyDesc": "Téléphone + pièce d'identité · limites plus élevées. Une minute suffit."
+    "verifyDesc": "Seulement votre numéro de téléphone · limites plus élevées en une minute"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

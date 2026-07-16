@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Rút tiền về ngân hàng",
     "bankCashoutDesc": "Rút JMD về ngân hàng Jamaica của bạn",
     "businessTitle": "Doanh nghiệp",
-    "businessDesc": "Xuất hiện trên bản đồ Flash",
+    "businessDesc": "Xuất hiện trên bản đồ Flash và tặng thưởng khách hàng của bạn",
     "enabled": "Bật",
     "hubEyebrow": "Tài khoản Flash của bạn",
     "hubTitle": "Làm được nhiều hơn với Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Yêu cầu rút tiền về ngân hàng của bạn đã được gửi để xét duyệt",
     "successBusinessRequest": "Yêu cầu nâng cấp doanh nghiệp của bạn đã được gửi để xét duyệt",
     "successVerified": "Tài khoản của bạn đã được xác minh",
-    "usdAccountTitle": "Tài khoản đô la Mỹ",
-    "usdAccountDesc": "Nhận và rút USD · hơn 200 quốc gia",
+    "usdAccountTitle": "Tài khoản ngân hàng ảo đô la Mỹ",
+    "usdAccountDesc": "Số tài khoản và số routing Mỹ của riêng bạn — nhận ACH, chuyển khoản và lương",
     "verifyTitle": "Xác minh tài khoản của bạn",
-    "verifyDesc": "Điện thoại + giấy tờ tùy thân · nâng hạn mức. Chỉ mất một phút."
+    "verifyDesc": "Chỉ cần số điện thoại của bạn · nâng hạn mức trong một phút"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

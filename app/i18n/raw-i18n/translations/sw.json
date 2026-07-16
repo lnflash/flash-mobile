@@ -1177,7 +1177,7 @@
     "bankCashoutTitle": "Kutoa pesa benki",
     "bankCashoutDesc": "Toa JMD kwenda benki yako ya Jamaica",
     "businessTitle": "Biashara",
-    "businessDesc": "Onekana kwenye ramani ya Flash",
+    "businessDesc": "Onekana kwenye ramani ya Flash na uwazawadie wateja wako",
     "enabled": "Imewashwa",
     "hubEyebrow": "Akaunti yako ya Flash",
     "hubTitle": "Fanya zaidi na Flash",
@@ -1192,10 +1192,10 @@
     "successBankPayoutRequest": "Ombi lako la kutoa pesa benki limewasilishwa kwa ukaguzi",
     "successBusinessRequest": "Ombi lako la kupandisha hadhi ya biashara limewasilishwa kwa ukaguzi",
     "successVerified": "Akaunti yako imethibitishwa",
-    "usdAccountTitle": "Akaunti ya dola za Marekani",
-    "usdAccountDesc": "Pokea na utoe USD · nchi 200+",
+    "usdAccountTitle": "Akaunti pepe ya benki ya dola za Marekani",
+    "usdAccountDesc": "Nambari yako mwenyewe ya akaunti na routing ya Marekani — pokea ACH, uhamisho na mshahara",
     "verifyTitle": "Thibitisha akaunti yako",
-    "verifyDesc": "Simu + kitambulisho · vikomo vya juu zaidi. Inachukua dakika moja."
+    "verifyDesc": "Nambari yako ya simu tu · vikomo vya juu ndani ya dakika moja"
   },
   "AdvancedModeModal": {
     "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",

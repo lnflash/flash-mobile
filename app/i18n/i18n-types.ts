@@ -5978,7 +5978,7 @@ type RootTranslation = {
 		 */
 		verifyTitle: string
 		/**
-		 * P​h​o​n​e​ ​+​ ​I​D​ ​·​ ​u​n​l​o​c​k​ ​h​i​g​h​e​r​ ​l​i​m​i​t​s​.​ ​T​a​k​e​s​ ​a​ ​m​i​n​u​t​e​.
+		 * J​u​s​t​ ​y​o​u​r​ ​p​h​o​n​e​ ​n​u​m​b​e​r​ ​·​ ​u​n​l​o​c​k​s​ ​h​i​g​h​e​r​ ​l​i​m​i​t​s​ ​i​n​ ​a​ ​m​i​n​u​t​e
 		 */
 		verifyDesc: string
 		/**
@@ -5990,11 +5990,11 @@ type RootTranslation = {
 		 */
 		bankCashoutDesc: string
 		/**
-		 * U​S​-​d​o​l​l​a​r​ ​a​c​c​o​u​n​t
+		 * U​S​-​D​o​l​l​a​r​ ​V​i​r​t​u​a​l​ ​B​a​n​k​ ​A​c​c​o​u​n​t
 		 */
 		usdAccountTitle: string
 		/**
-		 * G​e​t​ ​p​a​i​d​ ​&​ ​c​a​s​h​ ​o​u​t​ ​U​S​D​ ​·​ ​2​0​0​+​ ​c​o​u​n​t​r​i​e​s
+		 * Y​o​u​r​ ​o​w​n​ ​U​S​ ​a​c​c​o​u​n​t​ ​&​ ​r​o​u​t​i​n​g​ ​n​u​m​b​e​r​ ​—​ ​r​e​c​e​i​v​e​ ​A​C​H​,​ ​w​i​r​e​s​ ​&​ ​p​a​y​r​o​l​l
 		 */
 		usdAccountDesc: string
 		/**
@@ -6002,7 +6002,7 @@ type RootTranslation = {
 		 */
 		businessTitle: string
 		/**
-		 * G​e​t​ ​l​i​s​t​e​d​ ​o​n​ ​t​h​e​ ​F​l​a​s​h​ ​m​a​p
+		 * G​e​t​ ​o​n​ ​t​h​e​ ​F​l​a​s​h​ ​m​a​p​ ​&​ ​r​e​w​a​r​d​ ​y​o​u​r​ ​c​u​s​t​o​m​e​r​s
 		 */
 		businessDesc: string
 		/**
@@ -11866,7 +11866,7 @@ export type TranslationFunctions = {
 		 */
 		verifyTitle: () => LocalizedString
 		/**
-		 * Phone + ID · unlock higher limits. Takes a minute.
+		 * Just your phone number · unlocks higher limits in a minute
 		 */
 		verifyDesc: () => LocalizedString
 		/**
@@ -11878,11 +11878,11 @@ export type TranslationFunctions = {
 		 */
 		bankCashoutDesc: () => LocalizedString
 		/**
-		 * US-dollar account
+		 * US-Dollar Virtual Bank Account
 		 */
 		usdAccountTitle: () => LocalizedString
 		/**
-		 * Get paid & cash out USD · 200+ countries
+		 * Your own US account & routing number — receive ACH, wires & payroll
 		 */
 		usdAccountDesc: () => LocalizedString
 		/**
@@ -11890,7 +11890,7 @@ export type TranslationFunctions = {
 		 */
 		businessTitle: () => LocalizedString
 		/**
-		 * Get listed on the Flash map
+		 * Get on the Flash map & reward your customers
 		 */
 		businessDesc: () => LocalizedString
 		/**

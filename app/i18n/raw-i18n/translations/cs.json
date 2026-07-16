@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Výběr do banky",
     "bankCashoutDesc": "Vyberte JMD do své jamajské banky",
     "businessTitle": "Firma",
-    "businessDesc": "Zobrazte se na mapě Flash",
+    "businessDesc": "Buďte na mapě Flash a odměňujte své zákazníky",
     "enabled": "Zapnuto",
     "hubEyebrow": "Váš účet Flash",
     "hubTitle": "Dělejte s Flash víc",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Vaše žádost o bankovní výběr byla odeslána k posouzení",
     "successBusinessRequest": "Vaše žádost o firemní účet byla odeslána k posouzení",
     "successVerified": "Váš účet je ověřen",
-    "usdAccountTitle": "Účet v amerických dolarech",
-    "usdAccountDesc": "Přijímejte a vybírejte USD · více než 200 zemí",
+    "usdAccountTitle": "Virtuální bankovní účet v USD",
+    "usdAccountDesc": "Vlastní americké číslo účtu a routing — přijímejte ACH, převody i výplaty",
     "verifyTitle": "Ověřte svůj účet",
-    "verifyDesc": "Telefon + doklad · vyšší limity. Zabere minutu."
+    "verifyDesc": "Stačí vaše telefonní číslo · vyšší limity během minuty"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

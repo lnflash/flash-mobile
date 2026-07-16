@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Prelievo bancario",
     "bankCashoutDesc": "Preleva JMD sulla tua banca giamaicana",
     "businessTitle": "Attività",
-    "businessDesc": "Compari sulla mappa di Flash",
+    "businessDesc": "Compari sulla mappa di Flash e premia i tuoi clienti",
     "enabled": "Attivo",
     "hubEyebrow": "Il tuo conto Flash",
     "hubTitle": "Fai di più con Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "La tua richiesta di prelievo bancario è stata inviata per la revisione",
     "successBusinessRequest": "La tua richiesta di upgrade ad attività è stata inviata per la revisione",
     "successVerified": "Il tuo conto è verificato",
-    "usdAccountTitle": "Conto in dollari USA",
-    "usdAccountDesc": "Ricevi e preleva USD · oltre 200 paesi",
+    "usdAccountTitle": "Conto bancario virtuale in dollari USA",
+    "usdAccountDesc": "Il tuo numero di conto e routing USA — ricevi ACH, bonifici e stipendio",
     "verifyTitle": "Verifica il tuo conto",
-    "verifyDesc": "Telefono + documento · limiti più alti. Ci vuole un minuto."
+    "verifyDesc": "Basta il tuo numero di telefono · limiti più alti in un minuto"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

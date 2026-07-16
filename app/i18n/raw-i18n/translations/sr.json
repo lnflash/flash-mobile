@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Исплата на банку",
     "bankCashoutDesc": "Исплатите JMD на своју јамајчанску банку",
     "businessTitle": "Бизнис",
-    "businessDesc": "Појавите се на Flash мапи",
+    "businessDesc": "Будите на Flash мапи и наградите своје купце",
     "enabled": "Укључено",
     "hubEyebrow": "Ваш Flash налог",
     "hubTitle": "Урадите више уз Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Ваш захтев за банковну исплату послат је на преглед",
     "successBusinessRequest": "Ваш захтев за пословну надоградњу послат је на преглед",
     "successVerified": "Ваш налог је верификован",
-    "usdAccountTitle": "Рачун у америчким доларима",
-    "usdAccountDesc": "Примајте и исплаћујте USD · 200+ земаља",
+    "usdAccountTitle": "Виртуелни банковни рачун у USD",
+    "usdAccountDesc": "Сопствени амерички број рачуна и routing — примајте ACH, дознаке и плату",
     "verifyTitle": "Верификујте свој налог",
-    "verifyDesc": "Телефон + лична карта · већи лимити. Траје минут."
+    "verifyDesc": "Само ваш број телефона · већи лимити за минут"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

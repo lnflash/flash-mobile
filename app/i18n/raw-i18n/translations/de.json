@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Bankauszahlung",
     "bankCashoutDesc": "JMD auf deine jamaikanische Bank auszahlen",
     "businessTitle": "Unternehmen",
-    "businessDesc": "Erscheine auf der Flash-Karte",
+    "businessDesc": "Erscheine auf der Flash-Karte & belohne deine Kunden",
     "enabled": "Aktiv",
     "hubEyebrow": "Dein Flash-Konto",
     "hubTitle": "Mehr mit Flash machen",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Deine Anfrage zur Bankauszahlung wurde zur Prüfung eingereicht",
     "successBusinessRequest": "Deine Anfrage zum Unternehmens-Upgrade wurde zur Prüfung eingereicht",
     "successVerified": "Dein Konto ist verifiziert",
-    "usdAccountTitle": "US-Dollar-Konto",
-    "usdAccountDesc": "USD empfangen & auszahlen · über 200 Länder",
+    "usdAccountTitle": "Virtuelles US-Dollar-Bankkonto",
+    "usdAccountDesc": "Deine eigene US-Konto- und Routing-Nummer — empfange ACH, Überweisungen & Gehalt",
     "verifyTitle": "Verifiziere dein Konto",
-    "verifyDesc": "Telefon + Ausweis · höhere Limits. Dauert eine Minute."
+    "verifyDesc": "Nur deine Telefonnummer · höhere Limits in einer Minute"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

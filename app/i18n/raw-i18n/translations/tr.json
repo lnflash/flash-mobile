@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Bankaya para çekme",
     "bankCashoutDesc": "JMD'yi Jamaika'daki bankanıza çekin",
     "businessTitle": "İşletme",
-    "businessDesc": "Flash haritasında görünün",
+    "businessDesc": "Flash haritasında görünün ve müşterilerinizi ödüllendirin",
     "enabled": "Açık",
     "hubEyebrow": "Flash hesabınız",
     "hubTitle": "Flash ile daha fazlasını yapın",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Bankaya para çekme talebiniz incelenmek üzere gönderildi",
     "successBusinessRequest": "İşletme yükseltme talebiniz incelenmek üzere gönderildi",
     "successVerified": "Hesabınız doğrulandı",
-    "usdAccountTitle": "ABD doları hesabı",
-    "usdAccountDesc": "USD alın ve çekin · 200'den fazla ülke",
+    "usdAccountTitle": "Sanal ABD doları banka hesabı",
+    "usdAccountDesc": "Kendi ABD hesap ve routing numaranız — ACH, havale ve maaş alın",
     "verifyTitle": "Hesabınızı doğrulayın",
-    "verifyDesc": "Telefon + kimlik · daha yüksek limitler. Bir dakika sürer."
+    "verifyDesc": "Sadece telefon numaranız · bir dakikada daha yüksek limitler"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

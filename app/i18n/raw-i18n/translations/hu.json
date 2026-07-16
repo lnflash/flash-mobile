@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Banki kifizetés",
     "bankCashoutDesc": "JMD kifizetése jamaicai bankszámládra",
     "businessTitle": "Vállalkozás",
-    "businessDesc": "Jelenj meg a Flash térképen",
+    "businessDesc": "Jelenj meg a Flash térképen és jutalmazd a vásárlóidat",
     "enabled": "Bekapcsolva",
     "hubEyebrow": "A Flash-fiókod",
     "hubTitle": "Hozz ki többet a Flashből",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "A banki kifizetési kérelmedet elbírálásra beküldtük",
     "successBusinessRequest": "A vállalkozási bővítési kérelmedet elbírálásra beküldtük",
     "successVerified": "A fiókod ellenőrizve",
-    "usdAccountTitle": "USA-dollár számla",
-    "usdAccountDesc": "Fogadj és fizess ki USD-t · 200+ ország",
+    "usdAccountTitle": "Virtuális USA-dollár bankszámla",
+    "usdAccountDesc": "Saját amerikai számla- és routingszám — fogadj ACH-t, utalást és fizetést",
     "verifyTitle": "Ellenőrizd a fiókod",
-    "verifyDesc": "Telefon + igazolvány · magasabb limitek. Egy perc az egész."
+    "verifyDesc": "Csak a telefonszámod kell · magasabb limitek egy perc alatt"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

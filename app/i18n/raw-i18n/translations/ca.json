@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Retirada al banc",
     "bankCashoutDesc": "Retira JMD al teu banc jamaicà",
     "businessTitle": "Negoci",
-    "businessDesc": "Apareix al mapa de Flash",
+    "businessDesc": "Apareix al mapa de Flash i recompensa els teus clients",
     "enabled": "Actiu",
     "hubEyebrow": "El teu compte de Flash",
     "hubTitle": "Fes més amb Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "La teva sol·licitud de retirada bancària s'ha enviat per a revisió",
     "successBusinessRequest": "La teva sol·licitud d'actualització a negoci s'ha enviat per a revisió",
     "successVerified": "El teu compte està verificat",
-    "usdAccountTitle": "Compte en dòlars americans",
-    "usdAccountDesc": "Cobra i retira USD · més de 200 països",
+    "usdAccountTitle": "Compte bancari virtual en dòlars americans",
+    "usdAccountDesc": "El teu propi número de compte i routing dels EUA — rep ACH, transferències i nòmines",
     "verifyTitle": "Verifica el teu compte",
-    "verifyDesc": "Telèfon + ID · desbloqueja límits més alts. Només un minut."
+    "verifyDesc": "Només el teu número de telèfon · límits més alts en un minut"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Կանխիկացում բանկ",
     "bankCashoutDesc": "Կանխիկացրեք JMD ձեր ջամայկյան բանկ",
     "businessTitle": "Բիզնես",
-    "businessDesc": "Հայտնվեք Flash-ի քարտեզում",
+    "businessDesc": "Հայտնվեք Flash-ի քարտեզում և պարգևատրեք ձեր հաճախորդներին",
     "enabled": "Միացված",
     "hubEyebrow": "Ձեր Flash հաշիվը",
     "hubTitle": "Արեք ավելին Flash-ի հետ",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Ձեր բանկային կանխիկացման հայտը ուղարկվել է դիտարկման",
     "successBusinessRequest": "Ձեր բիզնես թարմացման հայտը ուղարկվել է դիտարկման",
     "successVerified": "Ձեր հաշիվը հաստատված է",
-    "usdAccountTitle": "ԱՄՆ դոլարի հաշիվ",
-    "usdAccountDesc": "Ստացեք և կանխիկացրեք USD · 200+ երկիր",
+    "usdAccountTitle": "Վիրտուալ բանկային հաշիվ ԱՄՆ դոլարով",
+    "usdAccountDesc": "Ձեր սեփական ԱՄՆ հաշվի և routing համարը — ստացեք ACH, փոխանցումներ և աշխատավարձ",
     "verifyTitle": "Հաստատեք ձեր հաշիվը",
-    "verifyDesc": "Հեռախոս + անձնագիր · ավելի բարձր սահմաններ։ Տևում է մեկ րոպե։"
+    "verifyDesc": "Միայն ձեր հեռախոսահամարը · ավելի բարձր սահմաններ մեկ րոպեում"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

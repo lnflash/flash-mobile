@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Uitbetalen naar bank",
     "bankCashoutDesc": "Betaal JMD uit naar je Jamaicaanse bank",
     "businessTitle": "Bedrijf",
-    "businessDesc": "Kom op de Flash-kaart",
+    "businessDesc": "Kom op de Flash-kaart & beloon je klanten",
     "enabled": "Aan",
     "hubEyebrow": "Je Flash-account",
     "hubTitle": "Doe meer met Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Je verzoek voor bankuitbetaling is ingediend ter beoordeling",
     "successBusinessRequest": "Je verzoek voor een bedrijfsupgrade is ingediend ter beoordeling",
     "successVerified": "Je account is geverifieerd",
-    "usdAccountTitle": "US-dollarrekening",
-    "usdAccountDesc": "Ontvang en betaal USD uit · 200+ landen",
+    "usdAccountTitle": "Virtuele US-dollarbankrekening",
+    "usdAccountDesc": "Je eigen Amerikaanse rekening- en routingnummer — ontvang ACH, overboekingen & salaris",
     "verifyTitle": "Verifieer je account",
-    "verifyDesc": "Telefoon + ID · hogere limieten. Duurt een minuut."
+    "verifyDesc": "Alleen je telefoonnummer · hogere limieten binnen een minuut"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

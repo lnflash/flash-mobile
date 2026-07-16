@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "ถอนเงินเข้าธนาคาร",
     "bankCashoutDesc": "ถอน JMD เข้าธนาคารจาเมกาของคุณ",
     "businessTitle": "ธุรกิจ",
-    "businessDesc": "แสดงบนแผนที่ Flash",
+    "businessDesc": "แสดงบนแผนที่ Flash และให้รางวัลลูกค้าของคุณ",
     "enabled": "เปิดใช้งาน",
     "hubEyebrow": "บัญชี Flash ของคุณ",
     "hubTitle": "ทำได้มากขึ้นกับ Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "คำขอถอนเงินเข้าธนาคารของคุณถูกส่งเพื่อตรวจสอบแล้ว",
     "successBusinessRequest": "คำขออัปเกรดธุรกิจของคุณถูกส่งเพื่อตรวจสอบแล้ว",
     "successVerified": "บัญชีของคุณได้รับการยืนยันแล้ว",
-    "usdAccountTitle": "บัญชีดอลลาร์สหรัฐ",
-    "usdAccountDesc": "รับและถอนเงิน USD · กว่า 200 ประเทศ",
+    "usdAccountTitle": "บัญชีธนาคารเสมือนสกุลดอลลาร์สหรัฐ",
+    "usdAccountDesc": "เลขบัญชีและเลข routing ของสหรัฐเป็นของคุณเอง — รับ ACH โอนเงิน และเงินเดือน",
     "verifyTitle": "ยืนยันบัญชีของคุณ",
-    "verifyDesc": "โทรศัพท์ + บัตรประจำตัว · เพิ่มวงเงิน ใช้เวลาเพียงนาทีเดียว"
+    "verifyDesc": "ใช้แค่เบอร์โทรศัพท์ · เพิ่มวงเงินภายในหนึ่งนาที"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

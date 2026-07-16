@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Ανάληψη σε τράπεζα",
     "bankCashoutDesc": "Κάνε ανάληψη JMD στην τζαμαϊκανή σου τράπεζα",
     "businessTitle": "Επιχείρηση",
-    "businessDesc": "Εμφανίσου στον χάρτη του Flash",
+    "businessDesc": "Μπες στον χάρτη του Flash & επιβράβευσε τους πελάτες σου",
     "enabled": "Ενεργό",
     "hubEyebrow": "Ο λογαριασμός σου στο Flash",
     "hubTitle": "Κάνε περισσότερα με το Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Το αίτημα ανάληψης σε τράπεζα υποβλήθηκε για έλεγχο",
     "successBusinessRequest": "Το αίτημα αναβάθμισης σε επιχείρηση υποβλήθηκε για έλεγχο",
     "successVerified": "Ο λογαριασμός σου επαληθεύτηκε",
-    "usdAccountTitle": "Λογαριασμός σε δολάρια ΗΠΑ",
-    "usdAccountDesc": "Πληρώσου και κάνε αναλήψεις σε USD · 200+ χώρες",
+    "usdAccountTitle": "Εικονικός τραπεζικός λογαριασμός σε δολάρια ΗΠΑ",
+    "usdAccountDesc": "Δικός σου αριθμός λογαριασμού & routing ΗΠΑ — δέξου ACH, εμβάσματα & μισθοδοσία",
     "verifyTitle": "Επαλήθευσε τον λογαριασμό σου",
-    "verifyDesc": "Τηλέφωνο + ταυτότητα · υψηλότερα όρια. Παίρνει ένα λεπτό."
+    "verifyDesc": "Μόνο ο αριθμός τηλεφώνου σου · υψηλότερα όρια σε ένα λεπτό"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

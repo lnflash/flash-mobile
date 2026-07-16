@@ -1177,7 +1177,7 @@
     "bankCashoutTitle": "السحب إلى البنك",
     "bankCashoutDesc": "اسحب الدولار الجامايكي (JMD) إلى بنكك الجامايكي",
     "businessTitle": "نشاط تجاري",
-    "businessDesc": "اظهر على خريطة Flash",
+    "businessDesc": "اظهر على خريطة Flash وكافئ عملاءك",
     "enabled": "مفعّل",
     "hubEyebrow": "حسابك في Flash",
     "hubTitle": "افعل المزيد مع Flash",
@@ -1192,10 +1192,10 @@
     "successBankPayoutRequest": "تم إرسال طلب السحب البنكي الخاص بك للمراجعة",
     "successBusinessRequest": "تم إرسال طلب ترقية النشاط التجاري الخاص بك للمراجعة",
     "successVerified": "تم توثيق حسابك",
-    "usdAccountTitle": "حساب بالدولار الأمريكي",
-    "usdAccountDesc": "استلم واسحب بالدولار الأمريكي · أكثر من 200 دولة",
+    "usdAccountTitle": "حساب بنكي افتراضي بالدولار الأمريكي",
+    "usdAccountDesc": "رقم حساب وتوجيه أمريكي خاص بك — استلم ACH والحوالات والرواتب",
     "verifyTitle": "وثّق حسابك",
-    "verifyDesc": "هاتف + هوية · حدود أعلى. يستغرق دقيقة."
+    "verifyDesc": "رقم هاتفك فقط · حدود أعلى في دقيقة واحدة"
   },
   "AdvancedModeModal": {
     "body": "- Your BTC is non-custodial, fees may apply.\n- You can swap between BTC and USD.\n- BTC may take up to 60s to confirm.\n\nDO NOT SHARE YOUR RECOVERY PHRASE!",

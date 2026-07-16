@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Bankudbetaling",
     "bankCashoutDesc": "Udbetal JMD til din jamaicanske bank",
     "businessTitle": "Virksomhed",
-    "businessDesc": "Bliv vist på Flash-kortet",
+    "businessDesc": "Kom på Flash-kortet og beløn dine kunder",
     "enabled": "Til",
     "hubEyebrow": "Din Flash-konto",
     "hubTitle": "Gør mere med Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Din anmodning om bankudbetaling er sendt til gennemgang",
     "successBusinessRequest": "Din anmodning om virksomhedsopgradering er sendt til gennemgang",
     "successVerified": "Din konto er verificeret",
-    "usdAccountTitle": "Amerikansk dollarkonto",
-    "usdAccountDesc": "Få betaling og udbetal USD · 200+ lande",
+    "usdAccountTitle": "Virtuel bankkonto i US-dollar",
+    "usdAccountDesc": "Dit eget amerikanske konto- og routingnummer — modtag ACH, overførsler og løn",
     "verifyTitle": "Verificér din konto",
-    "verifyDesc": "Telefon + ID · højere grænser. Tager et minut."
+    "verifyDesc": "Kun dit telefonnummer · højere grænser på et minut"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

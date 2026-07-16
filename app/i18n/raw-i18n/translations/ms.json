@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Pengeluaran ke bank",
     "bankCashoutDesc": "Keluarkan JMD ke bank Jamaica anda",
     "businessTitle": "Perniagaan",
-    "businessDesc": "Muncul di peta Flash",
+    "businessDesc": "Muncul di peta Flash & beri ganjaran kepada pelanggan anda",
     "enabled": "Aktif",
     "hubEyebrow": "Akaun Flash anda",
     "hubTitle": "Buat lebih banyak dengan Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Permohonan pengeluaran bank anda telah dihantar untuk semakan",
     "successBusinessRequest": "Permohonan naik taraf perniagaan anda telah dihantar untuk semakan",
     "successVerified": "Akaun anda telah disahkan",
-    "usdAccountTitle": "Akaun dolar AS",
-    "usdAccountDesc": "Terima dan keluarkan USD · 200+ negara",
+    "usdAccountTitle": "Akaun bank maya dolar AS",
+    "usdAccountDesc": "Nombor akaun dan routing AS anda sendiri — terima ACH, pindahan & gaji",
     "verifyTitle": "Sahkan akaun anda",
-    "verifyDesc": "Telefon + ID · had lebih tinggi. Ambil masa seminit."
+    "verifyDesc": "Hanya nombor telefon anda · had lebih tinggi dalam seminit"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",

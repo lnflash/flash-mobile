@@ -1502,7 +1502,7 @@
     "bankCashoutTitle": "Ukukhupha imali ebhankini",
     "bankCashoutDesc": "Khupha i-JMD uye kwibhanki yakho yaseJamaica",
     "businessTitle": "Ishishini",
-    "businessDesc": "Bonakala kwimephu ye-Flash",
+    "businessDesc": "Bonakala kwimephu ye-Flash uze uvuze abathengi bakho",
     "enabled": "Ivuliwe",
     "hubEyebrow": "I-akhawunti yakho ye-Flash",
     "hubTitle": "Yenza okungakumbi nge-Flash",
@@ -1517,10 +1517,10 @@
     "successBankPayoutRequest": "Isicelo sakho sokukhupha imali ebhankini singenisiwe ukuze sihlolwe",
     "successBusinessRequest": "Isicelo sakho sokuphucula ishishini singenisiwe ukuze sihlolwe",
     "successVerified": "I-akhawunti yakho iqinisekisiwe",
-    "usdAccountTitle": "I-akhawunti yedola yase-US",
-    "usdAccountDesc": "Fumana uhlawulwe kwaye ukhuphe i-USD · amazwe angama-200+",
+    "usdAccountTitle": "I-akhawunti yebhanki ebonakalayo yedola yase-US",
+    "usdAccountDesc": "Inombolo ye-akhawunti kunye ne-routing yase-US eyakho — fumana i-ACH, utyalo-mali nomvuzo",
     "verifyTitle": "Qinisekisa i-akhawunti yakho",
-    "verifyDesc": "Ifowuni + isazisi · imida ephezulu. Kuthatha umzuzu."
+    "verifyDesc": "Inombolo yakho yefowuni kuphela · imida ephezulu ngomzuzu"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
