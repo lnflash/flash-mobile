@@ -1471,13 +1471,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Typ účtu",
-    "personal": "Osobní",
-    "personalDesc": "Zabezpečte si peněženku telefonem a e-mailem.",
-    "pro": "Pro Pro",
-    "proDesc": "Přijměte platby a objevte se na mapě.Potřebuje obchodní název a umístění.",
-    "merchant": "Obchodník",
-    "merchantDesc": "Dejte odměny, ukažte se na mapě a vyrovnejte se s vaší bankou.",
     "personalInfo": "Osobní údaje",
     "fullName": "Plné jméno",
     "phoneNumber": "Telefonní číslo",
@@ -1504,10 +1497,30 @@
     "accountNum": "Počet účtu ",
     "accountNumPlaceholder": "Vezměte si číslo účtu",
     "uploadId": "Upload ID Document",
-    "successUpgrade": "Úspěšně jste vylepšili svůj účet na {accountType: string}",
-    "successRequest": "Úspěšně jste požádali o aktualizaci svého účtu na {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Bankovní výplata",
+    "badgeUsdAccount": "USD účet",
+    "bankCashoutTitle": "Výběr do banky",
+    "bankCashoutDesc": "Vyberte JMD do své jamajské banky",
+    "businessTitle": "Firma",
+    "businessDesc": "Zobrazte se na mapě Flash",
+    "enabled": "Zapnuto",
+    "hubEyebrow": "Váš účet Flash",
+    "hubTitle": "Dělejte s Flash víc",
+    "inReview": "V posouzení",
+    "sectionGetPaid": "Způsoby přijímání plateb",
+    "sectionGrow": "Růst",
+    "setUp": "Nastavit",
+    "statusBusiness": "Firma",
+    "statusTrial": "Zkušební účet",
+    "statusUnauthorized": "Neautorizovaný účet",
+    "statusVerified": "Ověřeno",
+    "successBankPayoutRequest": "Vaše žádost o bankovní výběr byla odeslána k posouzení",
+    "successBusinessRequest": "Vaše žádost o firemní účet byla odeslána k posouzení",
+    "successVerified": "Váš účet je ověřen",
+    "usdAccountTitle": "Účet v amerických dolarech",
+    "usdAccountDesc": "Přijímejte a vybírejte USD · více než 200 zemí",
+    "verifyTitle": "Ověřte svůj účet",
+    "verifyDesc": "Telefon + doklad · vyšší limity. Zabere minutu."
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1538,8 +1551,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "USD účet",
+    "description": "Zadejte prosím své údaje pro zřízení USD účtu",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1552,7 +1565,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Ověření čeká",
+    "pendingBody": "Ověření vaší totožnosti čeká na vyřízení. Vyčkejte prosím na schválení.",
+    "genericError": "Něco se pokazilo. Zkuste to prosím znovu."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

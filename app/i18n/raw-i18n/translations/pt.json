@@ -1471,13 +1471,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Tipo de Conta",
-    "personal": "Pessoal Pessoal",
-    "personalDesc": "Segure sua carteira com telefone e e-mail, mantenha-se seguro e recupere-se facilmente se necessário",
-    "pro": "Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro",
-    "proDesc": "Aceitar pagamentos e ser descoberto no mapa requer um nome de negócio e localização.",
-    "merchant": "Merchant Merchant",
-    "merchantDesc": "Dê recompensas, apareça no mapa e decida no seu banco.",
     "personalInfo": "Informações pessoais",
     "fullName": "Nome completo",
     "phoneNumber": "Número de telefone",
@@ -1504,10 +1497,30 @@
     "accountNum": "Número de Conta ",
     "accountNumPlaceholder": "Digite o seu número de conta.",
     "uploadId": "Faça o upload de ID Document",
-    "successUpgrade": "Você atualizou com sucesso sua conta para {accountType: string}",
-    "successRequest": "Você solicitou com sucesso a atualização de sua conta para {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Saque bancário",
+    "badgeUsdAccount": "Conta em USD",
+    "bankCashoutTitle": "Saque bancário",
+    "bankCashoutDesc": "Saque JMD para o seu banco jamaicano",
+    "businessTitle": "Negócio",
+    "businessDesc": "Apareça no mapa da Flash",
+    "enabled": "Ativo",
+    "hubEyebrow": "Sua conta Flash",
+    "hubTitle": "Faça mais com a Flash",
+    "inReview": "Em análise",
+    "sectionGetPaid": "Formas de receber pagamentos",
+    "sectionGrow": "Crescer",
+    "setUp": "Configurar",
+    "statusBusiness": "Negócio",
+    "statusTrial": "Conta de teste",
+    "statusUnauthorized": "Conta não autorizada",
+    "statusVerified": "Verificada",
+    "successBankPayoutRequest": "Sua solicitação de saque bancário foi enviada para análise",
+    "successBusinessRequest": "Sua solicitação de upgrade para negócio foi enviada para análise",
+    "successVerified": "Sua conta está verificada",
+    "usdAccountTitle": "Conta em dólares americanos",
+    "usdAccountDesc": "Receba e saque USD · mais de 200 países",
+    "verifyTitle": "Verifique sua conta",
+    "verifyDesc": "Telefone + documento · limites mais altos. Leva um minuto."
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1538,8 +1551,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "Conta em USD",
+    "description": "Forneça seus dados para configurar sua conta em USD",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1552,7 +1565,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Verificação pendente",
+    "pendingBody": "A verificação da sua identidade está pendente. Aguarde a aprovação.",
+    "genericError": "Algo deu errado. Tente novamente."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

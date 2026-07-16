@@ -1471,13 +1471,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "ประเภทบัญชี",
-    "personal": "รายละเอียดส่วนตัว",
-    "personalDesc": "ปลอดภัยกระเป๋าเปลือกของคุณด้วยโทรศัพท์และอีเมล ปลอดภัยและฟื้นฟูได้อย่างง่ายดายถ้าต้องการ",
-    "pro": "โปร โปร",
-    "proDesc": "ยอมรับการชําระเงินและได้รับการค้นพบบนแผนที่ จําเป็นต้องมีชื่อและสถานที่ของธุรกิจ",
-    "merchant": "นักค้า",
-    "merchantDesc": "แจกรางวัล ปรากฏบนแผนที่ และชําระเงินกับธนาคารของคุณ จําเป็นต้องมีบัตรประชาชนและข้อมูลธนาคาร",
     "personalInfo": "ข้อมูลส่วนตัว",
     "fullName": "ชื่อเต็ม",
     "phoneNumber": "เบอร์โทรศัพท์",
@@ -1504,10 +1497,30 @@
     "accountNum": "เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี",
     "accountNumPlaceholder": "กรอกหมายเลขบัญชีของคุณ",
     "uploadId": "อัพโหลด ID Document",
-    "successUpgrade": "คุณได้ปรับปรุงบัญชีของคุณเป็น {accountType: string} ได้สําเร็จ",
-    "successRequest": "คุณขอให้อัพเกรดบัญชีของคุณเป็น {accountType: string} ได้สําเร็จ",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "การจ่ายเงินเข้าธนาคาร",
+    "badgeUsdAccount": "บัญชี USD",
+    "bankCashoutTitle": "ถอนเงินเข้าธนาคาร",
+    "bankCashoutDesc": "ถอน JMD เข้าธนาคารจาเมกาของคุณ",
+    "businessTitle": "ธุรกิจ",
+    "businessDesc": "แสดงบนแผนที่ Flash",
+    "enabled": "เปิดใช้งาน",
+    "hubEyebrow": "บัญชี Flash ของคุณ",
+    "hubTitle": "ทำได้มากขึ้นกับ Flash",
+    "inReview": "กำลังตรวจสอบ",
+    "sectionGetPaid": "วิธีรับเงิน",
+    "sectionGrow": "เติบโต",
+    "setUp": "ตั้งค่า",
+    "statusBusiness": "ธุรกิจ",
+    "statusTrial": "บัญชีทดลอง",
+    "statusUnauthorized": "บัญชีไม่ได้รับอนุญาต",
+    "statusVerified": "ยืนยันแล้ว",
+    "successBankPayoutRequest": "คำขอถอนเงินเข้าธนาคารของคุณถูกส่งเพื่อตรวจสอบแล้ว",
+    "successBusinessRequest": "คำขออัปเกรดธุรกิจของคุณถูกส่งเพื่อตรวจสอบแล้ว",
+    "successVerified": "บัญชีของคุณได้รับการยืนยันแล้ว",
+    "usdAccountTitle": "บัญชีดอลลาร์สหรัฐ",
+    "usdAccountDesc": "รับและถอนเงิน USD · กว่า 200 ประเทศ",
+    "verifyTitle": "ยืนยันบัญชีของคุณ",
+    "verifyDesc": "โทรศัพท์ + บัตรประจำตัว · เพิ่มวงเงิน ใช้เวลาเพียงนาทีเดียว"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1538,8 +1551,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "บัญชี USD",
+    "description": "กรุณากรอกข้อมูลของคุณเพื่อตั้งค่าบัญชี USD",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1552,7 +1565,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "การยืนยันอยู่ระหว่างดำเนินการ",
+    "pendingBody": "การยืนยันตัวตนของคุณอยู่ระหว่างดำเนินการ กรุณารอการอนุมัติ",
+    "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

@@ -1471,13 +1471,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Тип рачуна",
-    "personal": "Лично Лично",
-    "personalDesc": "Заштити свој новчаник телефоном и е-поштовом.",
-    "pro": "Про Про",
-    "proDesc": "Прихватајте плаћање и откријте се на мапи.",
-    "merchant": "Трговац Трговац",
-    "merchantDesc": "Дајте награде, појавите се на мапи и поставите се у своју банку.",
     "personalInfo": "Лична информација",
     "fullName": "Полно име",
     "phoneNumber": "Телефонски број",
@@ -1504,10 +1497,30 @@
     "accountNum": "Број рачуна ",
     "accountNumPlaceholder": "Уведите број рачуна",
     "uploadId": "Уведите идентификациони документ",
-    "successUpgrade": "Успешно сте унапредили свој рачун на {accountType: string}",
-    "successRequest": "Успешно сте захтевали да се ваш рачун унапреди на {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Банковна исплата",
+    "badgeUsdAccount": "USD рачун",
+    "bankCashoutTitle": "Исплата на банку",
+    "bankCashoutDesc": "Исплатите JMD на своју јамајчанску банку",
+    "businessTitle": "Бизнис",
+    "businessDesc": "Појавите се на Flash мапи",
+    "enabled": "Укључено",
+    "hubEyebrow": "Ваш Flash налог",
+    "hubTitle": "Урадите више уз Flash",
+    "inReview": "У прегледу",
+    "sectionGetPaid": "Начини примања уплата",
+    "sectionGrow": "Раст",
+    "setUp": "Подеси",
+    "statusBusiness": "Бизнис",
+    "statusTrial": "Пробни налог",
+    "statusUnauthorized": "Неовлашћени налог",
+    "statusVerified": "Верификован",
+    "successBankPayoutRequest": "Ваш захтев за банковну исплату послат је на преглед",
+    "successBusinessRequest": "Ваш захтев за пословну надоградњу послат је на преглед",
+    "successVerified": "Ваш налог је верификован",
+    "usdAccountTitle": "Рачун у америчким доларима",
+    "usdAccountDesc": "Примајте и исплаћујте USD · 200+ земаља",
+    "verifyTitle": "Верификујте свој налог",
+    "verifyDesc": "Телефон + лична карта · већи лимити. Траје минут."
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1538,8 +1551,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "USD рачун",
+    "description": "Унесите своје податке за отварање USD рачуна",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1552,7 +1565,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Верификација на чекању",
+    "pendingBody": "Верификација вашег идентитета је на чекању. Сачекајте одобрење.",
+    "genericError": "Нешто је пошло по злу. Покушајте поново."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

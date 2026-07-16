@@ -1471,13 +1471,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Loại tài khoản",
-    "personal": "Cá nhân",
-    "personalDesc": "Bảo vệ ví của bạn bằng điện thoại và email.",
-    "pro": "Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro",
-    "proDesc": "Chấp nhận thanh toán và được khám phá trên bản đồ.",
-    "merchant": "Thương nhân",
-    "merchantDesc": "Cung cấp phần thưởng, xuất hiện trên bản đồ và thanh toán với ngân hàng của bạn.",
     "personalInfo": "Thông tin cá nhân",
     "fullName": "Tên đầy đủ",
     "phoneNumber": "Số điện thoại ",
@@ -1504,10 +1497,30 @@
     "accountNum": "Số tài khoản ",
     "accountNumPlaceholder": "Nhập số tài khoản của bạn",
     "uploadId": "Upload ID Document",
-    "successUpgrade": "Bạn đã nâng cấp thành công tài khoản của mình lên {accountType: string}",
-    "successRequest": "Bạn đã yêu cầu thành công nâng cấp tài khoản của mình lên {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Thanh toán qua ngân hàng",
+    "badgeUsdAccount": "Tài khoản USD",
+    "bankCashoutTitle": "Rút tiền về ngân hàng",
+    "bankCashoutDesc": "Rút JMD về ngân hàng Jamaica của bạn",
+    "businessTitle": "Doanh nghiệp",
+    "businessDesc": "Xuất hiện trên bản đồ Flash",
+    "enabled": "Bật",
+    "hubEyebrow": "Tài khoản Flash của bạn",
+    "hubTitle": "Làm được nhiều hơn với Flash",
+    "inReview": "Đang xét duyệt",
+    "sectionGetPaid": "Các cách nhận tiền",
+    "sectionGrow": "Phát triển",
+    "setUp": "Thiết lập",
+    "statusBusiness": "Doanh nghiệp",
+    "statusTrial": "Tài khoản dùng thử",
+    "statusUnauthorized": "Tài khoản chưa được cấp quyền",
+    "statusVerified": "Đã xác minh",
+    "successBankPayoutRequest": "Yêu cầu rút tiền về ngân hàng của bạn đã được gửi để xét duyệt",
+    "successBusinessRequest": "Yêu cầu nâng cấp doanh nghiệp của bạn đã được gửi để xét duyệt",
+    "successVerified": "Tài khoản của bạn đã được xác minh",
+    "usdAccountTitle": "Tài khoản đô la Mỹ",
+    "usdAccountDesc": "Nhận và rút USD · hơn 200 quốc gia",
+    "verifyTitle": "Xác minh tài khoản của bạn",
+    "verifyDesc": "Điện thoại + giấy tờ tùy thân · nâng hạn mức. Chỉ mất một phút."
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1538,8 +1551,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "Tài khoản USD",
+    "description": "Vui lòng cung cấp thông tin để thiết lập tài khoản USD của bạn",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1552,7 +1565,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Đang chờ xác minh",
+    "pendingBody": "Việc xác minh danh tính của bạn đang chờ xử lý. Vui lòng chờ phê duyệt.",
+    "genericError": "Đã xảy ra lỗi. Vui lòng thử lại."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

@@ -1471,13 +1471,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Accountstype",
-    "personal": "Persoonlijk Persoonlijk",
-    "personalDesc": "Beveilig je portemonnee met telefoon en e-mail.",
-    "pro": "Pro Pro",
-    "proDesc": "Accepteer betalingen en word ontdekt op de kaart.Het vereist een bedrijfsnaam en locatie.",
-    "merchant": "Handelaar",
-    "merchantDesc": "Geef beloningen, verschijn op de kaart en maak een afrekening bij je bank.",
     "personalInfo": "Persoonlijke informatie",
     "fullName": "Volledige naam",
     "phoneNumber": "Telefoonnummer ",
@@ -1504,10 +1497,30 @@
     "accountNum": "Accountsummer  Accountsummer ",
     "accountNumPlaceholder": "Voer uw accountnummer in",
     "uploadId": "Upload ID Document",
-    "successUpgrade": "U hebt uw account met succes bijgewerkt naar {accountType: string}",
-    "successRequest": "U heeft met succes verzocht om uw account te upgraden naar {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Bankuitbetaling",
+    "badgeUsdAccount": "USD-rekening",
+    "bankCashoutTitle": "Uitbetalen naar bank",
+    "bankCashoutDesc": "Betaal JMD uit naar je Jamaicaanse bank",
+    "businessTitle": "Bedrijf",
+    "businessDesc": "Kom op de Flash-kaart",
+    "enabled": "Aan",
+    "hubEyebrow": "Je Flash-account",
+    "hubTitle": "Doe meer met Flash",
+    "inReview": "In behandeling",
+    "sectionGetPaid": "Manieren om betaald te worden",
+    "sectionGrow": "Groeien",
+    "setUp": "Instellen",
+    "statusBusiness": "Bedrijf",
+    "statusTrial": "Proefaccount",
+    "statusUnauthorized": "Ongeautoriseerd account",
+    "statusVerified": "Geverifieerd",
+    "successBankPayoutRequest": "Je verzoek voor bankuitbetaling is ingediend ter beoordeling",
+    "successBusinessRequest": "Je verzoek voor een bedrijfsupgrade is ingediend ter beoordeling",
+    "successVerified": "Je account is geverifieerd",
+    "usdAccountTitle": "US-dollarrekening",
+    "usdAccountDesc": "Ontvang en betaal USD uit · 200+ landen",
+    "verifyTitle": "Verifieer je account",
+    "verifyDesc": "Telefoon + ID · hogere limieten. Duurt een minuut."
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1538,8 +1551,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "USD-rekening",
+    "description": "Geef je gegevens op om je USD-rekening in te stellen",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1552,7 +1565,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Verificatie in behandeling",
+    "pendingBody": "Je identiteitsverificatie is in behandeling. Wacht op goedkeuring.",
+    "genericError": "Er is iets misgegaan. Probeer het opnieuw."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

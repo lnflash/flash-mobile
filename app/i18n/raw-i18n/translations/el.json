@@ -1471,13 +1471,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Τύπος Λογαριασμού",
-    "personal": "Προσωπικό Προσωπικό",
-    "personalDesc": "Κρατήστε το πορτοφόλι σας ασφαλές με το τηλέφωνο και το ηλεκτρονικό ταχυδρομείο.",
-    "pro": "Το Pro Pro",
-    "proDesc": "Απαιτεί όνομα και τοποθεσία της επιχείρησης.",
-    "merchant": "Εμπορεύτης Εμπορεύτης",
-    "merchantDesc": "Δώστε ανταμοιβές, εμφανιστείτε στον χάρτη και διευθετήστε με την τράπεζά σας.",
     "personalInfo": "Προσωπικές πληροφορίες",
     "fullName": "Ολόκληρο το όνομα",
     "phoneNumber": "Αριθμός τηλεφώνου",
@@ -1504,10 +1497,30 @@
     "accountNum": "Ο αριθμός λογαριασμού ",
     "accountNumPlaceholder": "Εισάγετε τον αριθμό του λογαριασμού σας",
     "uploadId": "Ανεβάστε το αναγνωριστικό έγγραφο.",
-    "successUpgrade": "Αναβαθμίσατε με επιτυχία το λογαριασμό σας σε {accountType: string}",
-    "successRequest": "Ζήτησες με επιτυχία να αναβαθμίσεις το λογαριασμό σου σε {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Πληρωμή σε τράπεζα",
+    "badgeUsdAccount": "Λογαριασμός USD",
+    "bankCashoutTitle": "Ανάληψη σε τράπεζα",
+    "bankCashoutDesc": "Κάνε ανάληψη JMD στην τζαμαϊκανή σου τράπεζα",
+    "businessTitle": "Επιχείρηση",
+    "businessDesc": "Εμφανίσου στον χάρτη του Flash",
+    "enabled": "Ενεργό",
+    "hubEyebrow": "Ο λογαριασμός σου στο Flash",
+    "hubTitle": "Κάνε περισσότερα με το Flash",
+    "inReview": "Σε έλεγχο",
+    "sectionGetPaid": "Τρόποι να πληρώνεσαι",
+    "sectionGrow": "Ανάπτυξη",
+    "setUp": "Ρύθμιση",
+    "statusBusiness": "Επιχείρηση",
+    "statusTrial": "Δοκιμαστικός λογαριασμός",
+    "statusUnauthorized": "Μη εξουσιοδοτημένος λογαριασμός",
+    "statusVerified": "Επαληθευμένος",
+    "successBankPayoutRequest": "Το αίτημα ανάληψης σε τράπεζα υποβλήθηκε για έλεγχο",
+    "successBusinessRequest": "Το αίτημα αναβάθμισης σε επιχείρηση υποβλήθηκε για έλεγχο",
+    "successVerified": "Ο λογαριασμός σου επαληθεύτηκε",
+    "usdAccountTitle": "Λογαριασμός σε δολάρια ΗΠΑ",
+    "usdAccountDesc": "Πληρώσου και κάνε αναλήψεις σε USD · 200+ χώρες",
+    "verifyTitle": "Επαλήθευσε τον λογαριασμό σου",
+    "verifyDesc": "Τηλέφωνο + ταυτότητα · υψηλότερα όρια. Παίρνει ένα λεπτό."
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1538,8 +1551,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "Λογαριασμός USD",
+    "description": "Δώσε τα στοιχεία σου για να ρυθμίσεις τον λογαριασμό σου σε USD",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1552,7 +1565,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Επαλήθευση σε εκκρεμότητα",
+    "pendingBody": "Η επαλήθευση της ταυτότητάς σου εκκρεμεί. Περίμενε την έγκριση.",
+    "genericError": "Κάτι πήγε στραβά. Δοκίμασε ξανά."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

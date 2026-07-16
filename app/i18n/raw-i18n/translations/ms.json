@@ -1471,13 +1471,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Jenis Akaun",
-    "personal": "Personal Personal",
-    "personalDesc": "Pastikan dompet anda selamat dengan telefon dan e-mel.",
-    "pro": "Pro Pro",
-    "proDesc": "Mengaku pembayaran dan ditemui di peta memerlukan nama perniagaan dan lokasi.",
-    "merchant": "Merchant Merchant",
-    "merchantDesc": "Berikan ganjaran, muncul di peta, dan settle dengan bank anda. ID dan maklumat bank diperlukan.",
     "personalInfo": "Maklumat Peribadi",
     "fullName": "Nama penuh",
     "phoneNumber": "Nombor Telefon ",
@@ -1504,10 +1497,30 @@
     "accountNum": "Nombor Akaun ",
     "accountNumPlaceholder": "Masukkan nombor akaun anda",
     "uploadId": "Upload ID Document",
-    "successUpgrade": "Anda berjaya menaik taraf akaun anda ke {accountType: string}",
-    "successRequest": "Anda berjaya meminta untuk menaik taraf akaun anda ke {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Pembayaran bank",
+    "badgeUsdAccount": "Akaun USD",
+    "bankCashoutTitle": "Pengeluaran ke bank",
+    "bankCashoutDesc": "Keluarkan JMD ke bank Jamaica anda",
+    "businessTitle": "Perniagaan",
+    "businessDesc": "Muncul di peta Flash",
+    "enabled": "Aktif",
+    "hubEyebrow": "Akaun Flash anda",
+    "hubTitle": "Buat lebih banyak dengan Flash",
+    "inReview": "Dalam semakan",
+    "sectionGetPaid": "Cara menerima bayaran",
+    "sectionGrow": "Kembangkan",
+    "setUp": "Sediakan",
+    "statusBusiness": "Perniagaan",
+    "statusTrial": "Akaun percubaan",
+    "statusUnauthorized": "Akaun tanpa kebenaran",
+    "statusVerified": "Disahkan",
+    "successBankPayoutRequest": "Permohonan pengeluaran bank anda telah dihantar untuk semakan",
+    "successBusinessRequest": "Permohonan naik taraf perniagaan anda telah dihantar untuk semakan",
+    "successVerified": "Akaun anda telah disahkan",
+    "usdAccountTitle": "Akaun dolar AS",
+    "usdAccountDesc": "Terima dan keluarkan USD · 200+ negara",
+    "verifyTitle": "Sahkan akaun anda",
+    "verifyDesc": "Telefon + ID · had lebih tinggi. Ambil masa seminit."
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1538,8 +1551,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "Akaun USD",
+    "description": "Sila berikan maklumat anda untuk menyediakan akaun USD anda",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1552,7 +1565,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Pengesahan belum selesai",
+    "pendingBody": "Pengesahan identiti anda belum selesai. Sila tunggu kelulusan.",
+    "genericError": "Sesuatu telah berlaku. Sila cuba lagi."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",
