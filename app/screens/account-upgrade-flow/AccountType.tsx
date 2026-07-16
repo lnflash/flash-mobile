@@ -15,7 +15,6 @@ import { useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useBridgeKyc } from "@app/hooks/use-bridge-kyc"
 import { useAccountStatus } from "@app/hooks/use-account-status"
-import type { AccountCapabilities } from "@app/hooks/use-account-status"
 
 // store
 import { useAppDispatch } from "@app/store/redux"
@@ -23,11 +22,15 @@ import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
 
 type Props = StackScreenProps<RootStackParamList, "AccountType">
 
+// "locked" = prerequisite not met (unverified) or feature remotely disabled —
+// the row stays visible so the capability is discoverable, but can't be tapped.
+type CapRowStatus = "available" | "on" | "pending" | "locked"
+
 type CapRow = {
   icon: string
   title: string
   desc: string
-  on: boolean
+  status: CapRowStatus
   onPress: () => void
 }
 
@@ -65,23 +68,22 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
     }, [bridgeTopupEnabled, refetchKycStatus, refetchStatus]),
   )
 
-  // Prefer the backend `capabilities`; fall back to a level-derived
-  // approximation when an older backend doesn't expose it yet.
-  const derived: AccountCapabilities = {
-    verified:
-      currentLevel === AccountLevel.One ||
-      currentLevel === AccountLevel.Two ||
-      currentLevel === AccountLevel.Three,
-    bankPayout:
-      currentLevel === AccountLevel.Two || currentLevel === AccountLevel.Three,
-    business: currentLevel === AccountLevel.Three,
-    usdAccount: bridgeKycStatus === "approved",
-  }
-  const caps = capabilities ?? derived
-  const verifiedOn = caps.verified
-  const bankOn = caps.bankPayout
-  const businessOn = caps.business
-  const usdOn = caps.usdAccount || bridgeKycStatus === "approved"
+  // `capabilities` already carries the level-derived fallback for older
+  // backends — useAccountStatus is the single source of capability truth.
+  const verifiedOn = capabilities.verified
+  const bankOn = capabilities.bankPayout
+  const businessOn = capabilities.business
+  const usdOn = capabilities.usdAccount
+
+  // Bridge KYC has an L1 floor, and ENG-465 can remotely disable Bridge —
+  // in both cases the row shows locked rather than disappearing.
+  const usdStatus: CapRowStatus = usdOn
+    ? "on"
+    : bridgeKycStatus === "pending"
+    ? "pending"
+    : !bridgeTopupEnabled || !verifiedOn
+    ? "locked"
+    : "available"
 
   const onPress = (accountType: string) => {
     const numOfSteps =
@@ -95,35 +97,62 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const headlineLabel = isTrial
     ? LL.AccountUpgrade.statusTrial()
     : statusHeadline === "BUSINESS"
-      ? LL.AccountUpgrade.statusBusiness()
-      : LL.AccountUpgrade.statusVerified()
+    ? LL.AccountUpgrade.statusBusiness()
+    : LL.AccountUpgrade.statusVerified()
 
-  const renderCapRow = ({ icon, title, desc, on, onPress: onRowPress }: CapRow) => (
-    <TouchableOpacity style={styles.card} onPress={onRowPress} disabled={on}>
-      <View style={[styles.rowIcon, on && styles.rowIconOn]}>
-        <Icon name={icon} size={21} color={on ? colors._white : colors.primary} type="ionicon" />
-      </View>
-      <View style={styles.textWrapper}>
-        <Text type="bl" bold>
-          {title}
-        </Text>
-        <Text type="bm" style={styles.desc}>
-          {desc}
-        </Text>
-      </View>
-      {on ? (
-        <View style={styles.action}>
-          <Icon name="checkmark" size={16} color={colors.green} type="ionicon" />
-          <Text style={styles.onText}>{LL.AccountUpgrade.enabled()}</Text>
+  const renderCapRow = ({ icon, title, desc, status, onPress: onRowPress }: CapRow) => {
+    const on = status === "on"
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={onRowPress}
+        disabled={status !== "available"}
+      >
+        <View style={[styles.rowIcon, on && styles.rowIconOn]}>
+          <Icon
+            name={icon}
+            size={21}
+            color={on ? colors._white : colors.primary}
+            type="ionicon"
+          />
         </View>
-      ) : (
-        <View style={styles.action}>
-          <Text style={styles.setupText}>{LL.AccountUpgrade.setUp()}</Text>
-          <Icon name="chevron-forward" size={16} color={colors.primary} type="ionicon" />
+        <View style={styles.textWrapper}>
+          <Text type="bl" bold>
+            {title}
+          </Text>
+          <Text type="bm" style={styles.desc}>
+            {desc}
+          </Text>
         </View>
-      )}
-    </TouchableOpacity>
-  )
+        {on ? (
+          <View style={styles.action}>
+            <Icon name="checkmark" size={16} color={colors.green} type="ionicon" />
+            <Text style={styles.onText}>{LL.AccountUpgrade.enabled()}</Text>
+          </View>
+        ) : status === "pending" ? (
+          <View style={styles.action}>
+            <Icon name="time" size={16} color="orange" type="ionicon" />
+            <Text style={styles.onText}>{LL.AccountUpgrade.inReview()}</Text>
+          </View>
+        ) : status === "locked" ? (
+          <View style={styles.action}>
+            <Icon name="lock-closed" size={14} color={colors.grey2} type="ionicon" />
+            <Text style={styles.lockedText}>{LL.AccountUpgrade.setUp()}</Text>
+          </View>
+        ) : (
+          <View style={styles.action}>
+            <Text style={styles.setupText}>{LL.AccountUpgrade.setUp()}</Text>
+            <Icon
+              name="chevron-forward"
+              size={16}
+              color={colors.primary}
+              type="ionicon"
+            />
+          </View>
+        )}
+      </TouchableOpacity>
+    )
+  }
 
   return (
     <Screen preset="scroll" keyboardShouldPersistTaps="handled">
@@ -146,7 +175,10 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
                 />
               )}
               <Text
-                style={[styles.pillText, isTrial ? styles.pillTextMuted : styles.pillTextOn]}
+                style={[
+                  styles.pillText,
+                  isTrial ? styles.pillTextMuted : styles.pillTextOn,
+                ]}
               >
                 {headlineLabel}
               </Text>
@@ -160,7 +192,12 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
             onPress={() => onPress(AccountLevel.One)}
           >
             <View style={styles.verifyIcon}>
-              <Icon name="shield-checkmark" size={22} color={colors._white} type="ionicon" />
+              <Icon
+                name="shield-checkmark"
+                size={22}
+                color={colors._white}
+                type="ionicon"
+              />
             </View>
             <View style={styles.textWrapper}>
               <Text type="bl" bold>
@@ -170,7 +207,12 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
                 {LL.AccountUpgrade.verifyDesc()}
               </Text>
             </View>
-            <Icon name="chevron-forward" size={22} color={colors.primary} type="ionicon" />
+            <Icon
+              name="chevron-forward"
+              size={22}
+              color={colors.primary}
+              type="ionicon"
+            />
           </TouchableOpacity>
         )}
 
@@ -179,27 +221,25 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
           icon: "business",
           title: LL.AccountUpgrade.bankCashoutTitle(),
           desc: LL.AccountUpgrade.bankCashoutDesc(),
-          on: bankOn,
+          status: bankOn ? "on" : "available",
           onPress: () => onPress(AccountLevel.Two),
         })}
-        {bridgeTopupEnabled &&
-          currentLevel !== AccountLevel.Zero &&
-          renderCapRow({
-            icon: "logo-usd",
-            title: LL.AccountUpgrade.usdAccountTitle(),
-            desc: LL.AccountUpgrade.usdAccountDesc(),
-            on: usdOn,
-            onPress: () => {
-              startBridgeKyc()
-            },
-          })}
+        {renderCapRow({
+          icon: "logo-usd",
+          title: LL.AccountUpgrade.usdAccountTitle(),
+          desc: LL.AccountUpgrade.usdAccountDesc(),
+          status: usdStatus,
+          onPress: () => {
+            startBridgeKyc()
+          },
+        })}
 
         <Text style={styles.sectionLabel}>{LL.AccountUpgrade.sectionGrow()}</Text>
         {renderCapRow({
           icon: "storefront",
           title: LL.AccountUpgrade.businessTitle(),
           desc: LL.AccountUpgrade.businessDesc(),
-          on: businessOn,
+          status: businessOn ? "on" : "available",
           onPress: () => onPress(AccountLevel.Three),
         })}
       </View>
@@ -319,6 +359,11 @@ const useStyles = makeStyles(({ colors }) => ({
     color: colors.primary,
     fontWeight: "600",
     marginRight: 3,
+  },
+  lockedText: {
+    color: colors.grey2,
+    fontWeight: "600",
+    marginLeft: 4,
   },
   onText: {
     color: colors.grey1,

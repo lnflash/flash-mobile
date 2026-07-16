@@ -68,7 +68,7 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
           } else {
             Alert.alert(
               LL.PhoneRegistrationValidateScreen.successTitle(),
-              LL.AccountUpgrade.successUpgrade({ accountType: "PERSONAL" }),
+              LL.AccountUpgrade.successVerified(),
               [
                 {
                   text: "Continue",

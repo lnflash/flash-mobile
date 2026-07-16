@@ -2238,6 +2238,18 @@ type RootTranslation = {
 		 */
 		description: string
 		/**
+		 * V​e​r​i​f​i​c​a​t​i​o​n​ ​p​e​n​d​i​n​g
+		 */
+		pendingTitle: string
+		/**
+		 * Y​o​u​r​ ​i​d​e​n​t​i​t​y​ ​v​e​r​i​f​i​c​a​t​i​o​n​ ​i​s​ ​p​e​n​d​i​n​g​.​ ​P​l​e​a​s​e​ ​w​a​i​t​ ​f​o​r​ ​a​p​p​r​o​v​a​l​.
+		 */
+		pendingBody: string
+		/**
+		 * S​o​m​e​t​h​i​n​g​ ​w​e​n​t​ ​w​r​o​n​g​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		genericError: string
+		/**
 		 * F​u​l​l​ ​N​a​m​e
 		 */
 		fullName: string
@@ -5806,42 +5818,6 @@ type RootTranslation = {
 	}
 	AccountUpgrade: {
 		/**
-		 * A​c​c​o​u​n​t​ ​T​y​p​e
-		 */
-		accountType: string
-		/**
-		 * V​e​r​i​f​i​e​d
-		 */
-		personal: string
-		/**
-		 * S​e​c​u​r​e​ ​y​o​u​r​ ​w​a​l​l​e​t​ ​w​i​t​h​ ​p​h​o​n​e​ ​a​n​d​ ​e​m​a​i​l​.​ ​S​t​a​y​ ​s​a​f​e​ ​a​n​d​ ​r​e​c​o​v​e​r​ ​e​a​s​i​l​y​ ​i​f​ ​n​e​e​d​e​d
-		 */
-		personalDesc: string
-		/**
-		 * B​a​n​k​ ​P​a​y​o​u​t
-		 */
-		pro: string
-		/**
-		 * S​e​t​t​l​e​ ​y​o​u​r​ ​b​a​l​a​n​c​e​ ​t​o​ ​y​o​u​r​ ​b​a​n​k​ ​a​c​c​o​u​n​t​.​ ​R​e​q​u​i​r​e​s​ ​a​ ​b​u​s​i​n​e​s​s​ ​n​a​m​e​ ​a​n​d​ ​l​o​c​a​t​i​o​n​.
-		 */
-		proDesc: string
-		/**
-		 * B​u​s​i​n​e​s​s
-		 */
-		merchant: string
-		/**
-		 * G​i​v​e​ ​r​e​w​a​r​d​s​,​ ​a​p​p​e​a​r​ ​o​n​ ​t​h​e​ ​m​a​p​,​ ​a​n​d​ ​s​e​t​t​l​e​ ​t​o​ ​y​o​u​r​ ​b​a​n​k​.​ ​I​D​ ​a​n​d​ ​b​a​n​k​ ​i​n​f​o​ ​r​e​q​u​i​r​e​d​.
-		 */
-		merchantDesc: string
-		/**
-		 * U​S​D​ ​A​c​c​o​u​n​t
-		 */
-		international: string
-		/**
-		 * G​e​t​ ​a​ ​U​S​D​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​r​o​u​t​i​n​g​ ​n​u​m​b​e​r​ ​f​o​r​ ​b​a​n​k​ ​t​r​a​n​s​f​e​r​s​.​ ​I​D​ ​r​e​q​u​i​r​e​d​.
-		 */
-		internationalDesc: string
-		/**
 		 * P​e​r​s​o​n​a​l​ ​I​n​f​o​r​m​a​t​i​o​n
 		 */
 		personalInfo: string
@@ -5946,15 +5922,17 @@ type RootTranslation = {
 		 */
 		uploadId: string
 		/**
-		 * Y​o​u​ ​s​u​c​c​e​s​s​f​u​l​l​y​ ​u​p​g​r​a​d​e​d​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​{​a​c​c​o​u​n​t​T​y​p​e​}
-		 * @param {string} accountType
+		 * Y​o​u​r​ ​a​c​c​o​u​n​t​ ​i​s​ ​v​e​r​i​f​i​e​d
 		 */
-		successUpgrade: RequiredParams<'accountType'>
+		successVerified: string
 		/**
-		 * Y​o​u​ ​s​u​c​c​e​s​s​f​u​l​l​y​ ​r​e​q​u​e​s​t​e​d​ ​t​o​ ​u​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​{​a​c​c​o​u​n​t​T​y​p​e​}
-		 * @param {string} accountType
+		 * Y​o​u​r​ ​b​a​n​k​ ​c​a​s​h​-​o​u​t​ ​r​e​q​u​e​s​t​ ​h​a​s​ ​b​e​e​n​ ​s​u​b​m​i​t​t​e​d​ ​f​o​r​ ​r​e​v​i​e​w
 		 */
-		successRequest: RequiredParams<'accountType'>
+		successBankPayoutRequest: string
+		/**
+		 * Y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​u​p​g​r​a​d​e​ ​r​e​q​u​e​s​t​ ​h​a​s​ ​b​e​e​n​ ​s​u​b​m​i​t​t​e​d​ ​f​o​r​ ​r​e​v​i​e​w
+		 */
+		successBusinessRequest: string
 		/**
 		 * Y​o​u​r​ ​F​l​a​s​h​ ​a​c​c​o​u​n​t
 		 */
@@ -5975,6 +5953,18 @@ type RootTranslation = {
 		 * B​u​s​i​n​e​s​s
 		 */
 		statusBusiness: string
+		/**
+		 * U​n​a​u​t​h​o​r​i​z​e​d​ ​a​c​c​o​u​n​t
+		 */
+		statusUnauthorized: string
+		/**
+		 * B​a​n​k​ ​p​a​y​o​u​t
+		 */
+		badgeBankPayout: string
+		/**
+		 * U​S​D​ ​a​c​c​o​u​n​t
+		 */
+		badgeUsdAccount: string
 		/**
 		 * W​a​y​s​ ​t​o​ ​g​e​t​ ​p​a​i​d
 		 */
@@ -6023,6 +6013,10 @@ type RootTranslation = {
 		 * O​n
 		 */
 		enabled: string
+		/**
+		 * I​n​ ​r​e​v​i​e​w
+		 */
+		inReview: string
 	}
 }
 
@@ -8215,6 +8209,18 @@ export type TranslationFunctions = {
 		 * Please provide your details to set up your USD account
 		 */
 		description: () => LocalizedString
+		/**
+		 * Verification pending
+		 */
+		pendingTitle: () => LocalizedString
+		/**
+		 * Your identity verification is pending. Please wait for approval.
+		 */
+		pendingBody: () => LocalizedString
+		/**
+		 * Something went wrong. Please try again.
+		 */
+		genericError: () => LocalizedString
 		/**
 		 * Full Name
 		 */
@@ -11700,42 +11706,6 @@ export type TranslationFunctions = {
 	}
 	AccountUpgrade: {
 		/**
-		 * Account Type
-		 */
-		accountType: () => LocalizedString
-		/**
-		 * Verified
-		 */
-		personal: () => LocalizedString
-		/**
-		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
-		 */
-		personalDesc: () => LocalizedString
-		/**
-		 * Bank Payout
-		 */
-		pro: () => LocalizedString
-		/**
-		 * Settle your balance to your bank account. Requires a business name and location.
-		 */
-		proDesc: () => LocalizedString
-		/**
-		 * Business
-		 */
-		merchant: () => LocalizedString
-		/**
-		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
-		 */
-		merchantDesc: () => LocalizedString
-		/**
-		 * USD Account
-		 */
-		international: () => LocalizedString
-		/**
-		 * Get a USD account and routing number for bank transfers. ID required.
-		 */
-		internationalDesc: () => LocalizedString
-		/**
 		 * Personal Information
 		 */
 		personalInfo: () => LocalizedString
@@ -11840,13 +11810,17 @@ export type TranslationFunctions = {
 		 */
 		uploadId: () => LocalizedString
 		/**
-		 * You successfully upgraded your account to {accountType}
+		 * Your account is verified
 		 */
-		successUpgrade: (arg: { accountType: string }) => LocalizedString
+		successVerified: () => LocalizedString
 		/**
-		 * You successfully requested to upgrade your account to {accountType}
+		 * Your bank cash-out request has been submitted for review
 		 */
-		successRequest: (arg: { accountType: string }) => LocalizedString
+		successBankPayoutRequest: () => LocalizedString
+		/**
+		 * Your business upgrade request has been submitted for review
+		 */
+		successBusinessRequest: () => LocalizedString
 		/**
 		 * Your Flash account
 		 */
@@ -11867,6 +11841,18 @@ export type TranslationFunctions = {
 		 * Business
 		 */
 		statusBusiness: () => LocalizedString
+		/**
+		 * Unauthorized account
+		 */
+		statusUnauthorized: () => LocalizedString
+		/**
+		 * Bank payout
+		 */
+		badgeBankPayout: () => LocalizedString
+		/**
+		 * USD account
+		 */
+		badgeUsdAccount: () => LocalizedString
 		/**
 		 * Ways to get paid
 		 */
@@ -11915,6 +11901,10 @@ export type TranslationFunctions = {
 		 * On
 		 */
 		enabled: () => LocalizedString
+		/**
+		 * In review
+		 */
+		inReview: () => LocalizedString
 	}
 }
 

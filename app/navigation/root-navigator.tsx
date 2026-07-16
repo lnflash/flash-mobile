@@ -637,7 +637,9 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="AccountType"
         component={AccountType}
-        options={{ title: LL.AccountUpgrade.accountType() }}
+        // The capabilities hub carries its own header block ("Do more with
+        // Flash"); the nav bar stays untitled.
+        options={{ title: "" }}
       />
       <RootNavigator.Screen
         name="PersonalInformation"

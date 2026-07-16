@@ -18,10 +18,6 @@ import { AccountLevel } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "AccountUpgradeSuccess">
 
-// ENG-516 nomenclature: Pro is retired (L2 is the bank-payout capability)
-// and Merchant is now Business.
-const accountTypeLabel = { ONE: "VERIFIED", TWO: "BANK PAYOUT", THREE: "BUSINESS" }
-
 const Success: React.FC<Props> = ({ navigation }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
@@ -36,15 +32,20 @@ const Success: React.FC<Props> = ({ navigation }) => {
     })
   }
 
-  const text = accountType === AccountLevel.One ? "successUpgrade" : "successRequest"
+  // ENG-516: capability language, not tier language. Verify applies
+  // immediately; bank-payout / business upgrades are requests pending review.
+  const successText =
+    accountType === AccountLevel.Two
+      ? LL.AccountUpgrade.successBankPayoutRequest()
+      : accountType === AccountLevel.Three
+      ? LL.AccountUpgrade.successBusinessRequest()
+      : LL.AccountUpgrade.successVerified()
 
   return (
     <Screen backgroundColor={colors.primary}>
       <View style={styles.wrapper}>
         <Text type="h02" bold style={styles.header}>
-          {LL.AccountUpgrade[text]({
-            accountType: accountTypeLabel[accountType as keyof typeof accountTypeLabel],
-          })}
+          {successText}
         </Text>
         <Account />
       </View>

@@ -9,9 +9,13 @@ import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 import { Screen } from "@app/components/screen"
 import { BridgeKycModal } from "@app/components/topup-cashout-flow"
 import { WHATSAPP_SUPPORT_URL } from "@app/config"
+import { AccountLevel } from "@app/graphql/generated"
+import { useAccountStatus } from "@app/hooks/use-account-status"
 import { useBridgeKyc } from "@app/hooks/use-bridge-kyc"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { useAppDispatch } from "@app/store/redux"
+import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
 import { openWhatsAppUrl } from "@app/utils/external"
 import { toastShow } from "@app/utils/toast"
 
@@ -279,12 +283,19 @@ export const BankAccountsScreen: React.FC = () => {
     useBankAccounts()
 
   // The locked card gates on the usdAccount capability (Bridge KYC), so its
-  // CTA launches the KYC flow directly instead of the upgrade picker
-  // (ENG-516). Falls back to the picker when the Bridge feature is off.
+  // CTA launches the KYC flow directly (ENG-516). Bridge has an L1 floor:
+  // unverified accounts are sent through the verify wizard first.
   const { kycModalVisible, startBridgeKyc, closeKycModal, submitBridgeKyc } =
     useBridgeKyc()
+  const { capabilities } = useAccountStatus()
+  const dispatch = useAppDispatch()
   const onVerifyIdentity = () => {
-    if (!startBridgeKyc()) navigation.navigate("AccountType")
+    if (!capabilities.verified) {
+      dispatch(setAccountUpgrade({ accountType: AccountLevel.One, numOfSteps: 3 }))
+      navigation.navigate("PersonalInformation")
+      return
+    }
+    startBridgeKyc()
   }
 
   useFocusEffect(

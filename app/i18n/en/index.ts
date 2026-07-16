@@ -696,6 +696,9 @@ const en: BaseTranslation = {
   BridgeKyc: {
     title: "USD Account",
     description: "Please provide your details to set up your USD account",
+    pendingTitle: "Verification pending",
+    pendingBody: "Your identity verification is pending. Please wait for approval.",
+    genericError: "Something went wrong. Please try again.",
     fullName: "Full Name",
     fullNamePlaceholder: "Enter your full name",
     email: "Email",
@@ -1743,15 +1746,6 @@ const en: BaseTranslation = {
     }
   },
   AccountUpgrade: {
-      accountType: "Account Type",
-      personal: "Verified",
-      personalDesc: "Secure your wallet with phone and email. Stay safe and recover easily if needed",
-      pro: "Bank Payout",
-      proDesc: "Settle your balance to your bank account. Requires a business name and location.",
-      merchant: "Business",
-      merchantDesc: "Give rewards, appear on the map, and settle to your bank. ID and bank info required.",
-      international: "USD Account",
-      internationalDesc: "Get a USD account and routing number for bank transfers. ID required.",
       personalInfo: "Personal Information",
       fullName: "Full name",
       phoneNumber: "Phone Number",
@@ -1777,14 +1771,18 @@ const en: BaseTranslation = {
       selectCurrency: "Select Currency",
       accountNum: "Account Number",
       accountNumPlaceholder: "Enter your account number",
-      uploadId: "Upload ID Document",     
-      successUpgrade: "You successfully upgraded your account to {accountType: string}",
-      successRequest: "You successfully requested to upgrade your account to {accountType: string}",
+      uploadId: "Upload ID Document",
+      successVerified: "Your account is verified",
+      successBankPayoutRequest: "Your bank cash-out request has been submitted for review",
+      successBusinessRequest: "Your business upgrade request has been submitted for review",
       hubEyebrow: "Your Flash account",
       hubTitle: "Do more with Flash",
       statusTrial: "Trial account",
       statusVerified: "Verified",
       statusBusiness: "Business",
+      statusUnauthorized: "Unauthorized account",
+      badgeBankPayout: "Bank payout",
+      badgeUsdAccount: "USD account",
       sectionGetPaid: "Ways to get paid",
       sectionGrow: "Grow",
       verifyTitle: "Verify your account",
@@ -1796,7 +1794,8 @@ const en: BaseTranslation = {
       businessTitle: "Business",
       businessDesc: "Get listed on the Flash map",
       setUp: "Set up",
-      enabled: "On"
+      enabled: "On",
+      inReview: "In review"
     }
 }
 

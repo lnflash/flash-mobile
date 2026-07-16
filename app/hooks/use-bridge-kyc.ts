@@ -8,6 +8,7 @@ import {
   useBridgeKycStatusQuery,
 } from "@app/graphql/generated"
 import { useFeatureFlags } from "@app/config/feature-flags-context"
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 import { useActivityIndicator } from "./useActivityIndicator"
@@ -29,6 +30,7 @@ export const useBridgeKyc = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { bridgeTopupEnabled } = useFeatureFlags()
   const { toggleActivityIndicator } = useActivityIndicator()
+  const { LL } = useI18nContext()
 
   const [kycModalVisible, setKycModalVisible] = useState(false)
 
@@ -45,12 +47,12 @@ export const useBridgeKyc = () => {
   const startBridgeKyc = useCallback(() => {
     if (!bridgeTopupEnabled) return false
     if (bridgeKycStatus === "pending") {
-      Alert.alert("KYC Pending", "Your KYC status is pending. Please wait for approval.")
+      Alert.alert(LL.BridgeKyc.pendingTitle(), LL.BridgeKyc.pendingBody())
       return true
     }
     setKycModalVisible(true)
     return true
-  }, [bridgeTopupEnabled, bridgeKycStatus])
+  }, [bridgeTopupEnabled, bridgeKycStatus, LL])
 
   const closeKycModal = useCallback(() => setKycModalVisible(false), [])
 
@@ -72,7 +74,7 @@ export const useBridgeKyc = () => {
         toggleActivityIndicator(false)
         const errors = res.data?.bridgeInitiateKyc?.errors
         if (errors && errors.length > 0) {
-          Alert.alert("Error", errors[0].message)
+          Alert.alert(LL.common.error(), errors[0].message)
           return
         }
         const kycLink = res.data?.bridgeInitiateKyc?.kycLink
@@ -84,10 +86,10 @@ export const useBridgeKyc = () => {
         }
       } catch (err) {
         toggleActivityIndicator(false)
-        Alert.alert("Error", "Something went wrong. Please try again.")
+        Alert.alert(LL.common.error(), LL.BridgeKyc.genericError())
       }
     },
-    [initiateBridgeKyc, navigation, toggleActivityIndicator],
+    [initiateBridgeKyc, navigation, toggleActivityIndicator, LL],
   )
 
   return {

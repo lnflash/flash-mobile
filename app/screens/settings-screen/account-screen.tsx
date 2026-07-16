@@ -418,16 +418,14 @@ export const AccountScreen = () => {
   // with capability badges as supporting detail. The numeric level is
   // internal and no longer shown.
   const headlineLabel = {
-    TRIAL: "Trial",
-    VERIFIED: "Verified",
-    BUSINESS: "Business",
+    TRIAL: LL.AccountUpgrade.statusTrial(),
+    VERIFIED: LL.AccountUpgrade.statusVerified(),
+    BUSINESS: LL.AccountUpgrade.statusBusiness(),
   }[statusHeadline]
-  const capabilityBadges = capabilities
-    ? [
-        capabilities.bankPayout ? "Bank payout" : null,
-        capabilities.usdAccount ? "USD account" : null,
-      ].filter(Boolean)
-    : []
+  const capabilityBadges = [
+    capabilities.bankPayout ? LL.AccountUpgrade.badgeBankPayout() : null,
+    capabilities.usdAccount ? LL.AccountUpgrade.badgeUsdAccount() : null,
+  ].filter(Boolean)
   const statusText = [headlineLabel, ...capabilityBadges].join(" · ")
 
   const accountSettingsList: SettingRow[] = [
