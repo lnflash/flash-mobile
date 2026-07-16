@@ -10,6 +10,7 @@ import {
   split,
 } from "@apollo/client"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import NetInfo from "@react-native-community/netinfo"
 import DeviceInfo from "react-native-device-info"
 
 import { setContext } from "@apollo/client/link/context"
@@ -89,6 +90,22 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
   }>()
 
   useEffect(() => {
+    // Point NetInfo's reachability probe at our own API instead of the
+    // default clients3.google.com endpoint. A GET to the GraphQL endpoint
+    // returns 4xx, which still proves the wallet backend is reachable —
+    // what we actually care about. The default Google probe produces
+    // false "offline" states on networks where it is slow or filtered.
+    NetInfo.configure({
+      reachabilityUrl: appConfig.galoyInstance.graphqlUri,
+      reachabilityMethod: "HEAD",
+      reachabilityTest: async (response) => response.status < 500,
+      reachabilityRequestTimeout: 30 * 1000,
+      // While "offline", re-probe every 5s so recovery is quick
+      reachabilityShortTimeout: 5 * 1000,
+      reachabilityLongTimeout: 60 * 1000,
+      useNativeReachability: false,
+    })
+
     ;(async () => {
       const token = appConfig.token
 

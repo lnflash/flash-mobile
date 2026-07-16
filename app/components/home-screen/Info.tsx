@@ -4,9 +4,8 @@ import { ApolloError } from "@apollo/client"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { useNetInfo } from "@react-native-community/netinfo"
-
 // hooks
+import { useConnectivity } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -37,7 +36,7 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
   const styles = useStyles()
   const { colors, mode } = useTheme().theme
   const { LL } = useI18nContext()
-  const { isInternetReachable } = useNetInfo()
+  const { isOffline } = useConnectivity()
   const { persistentState, updateState } = usePersistentStateContext()
 
   const { isAdvanceMode, unclaimedDeposits = 0 } = persistentState
@@ -65,15 +64,23 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
     navigation.navigate("UnclaimedDepositsList")
   }, [navigation])
 
-  if (isInternetReachable === false) {
+  if (isOffline) {
     return (
       <View style={styles.wrapper}>
-        <GaloyErrorBox errorMessage="Wallet is offline" />
+        <GaloyErrorBox errorMessage="No connection — showing cached balances" />
       </View>
     )
   }
 
-  if (!error && !hasUnclaimedDeposits) {
+  // Pure network failures are represented by the offline banner above (with
+  // debounce) — surfacing them here too would flash "offline" on every
+  // transient blip even when retries succeed. Only real API errors show.
+  const isTransientNetworkError =
+    error instanceof ApolloError && !error.graphQLErrors?.length && error.networkError
+
+  const displayError = isTransientNetworkError ? undefined : error
+
+  if (!displayError && !hasUnclaimedDeposits) {
     return null
   }
 
@@ -89,8 +96,8 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
           </Text>
         </View>
       )}
-      {error && hasUnclaimedDeposits && <View style={styles.spacer} />}
-      {error && <GaloyErrorBox errorMessage={getErrorMessages(error)} />}
+      {displayError && hasUnclaimedDeposits && <View style={styles.spacer} />}
+      {displayError && <GaloyErrorBox errorMessage={getErrorMessages(displayError)} />}
     </View>
   )
 }
