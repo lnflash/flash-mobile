@@ -37,6 +37,18 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "yarn"
+
+      - name: Create .env from secrets
+        run: echo "${{ secrets.DOT_ENV }}" > .env
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -45,23 +57,11 @@ jobs:
       - name: Install Ruby dependencies
         run: bundle install --jobs 4 --retry 3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "yarn"
-
       - name: Setup JDK
         uses: actions/setup-java@v4
         with:
           distribution: "zulu"
           java-version: "17"
-
-      - name: Install JS dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Create .env from secrets
-        run: echo "${{ secrets.DOT_ENV }}" > .env
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
