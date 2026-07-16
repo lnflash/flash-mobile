@@ -97,7 +97,9 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
     // false "offline" states on networks where it is slow or filtered.
     NetInfo.configure({
       reachabilityUrl: appConfig.galoyInstance.graphqlUri,
-      reachabilityMethod: "HEAD",
+      // GET, not HEAD: the API returns 500 to HEAD requests, which would
+      // fail the reachability test below and pin the app "offline"
+      reachabilityMethod: "GET",
       reachabilityTest: async (response) => response.status < 500,
       reachabilityRequestTimeout: 30 * 1000,
       // While "offline", re-probe every 5s so recovery is quick

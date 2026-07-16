@@ -26,9 +26,13 @@ const getAppCheckInstance = () => {
       provider: rnfbProvider,
       isTokenAutoRefreshEnabled: true,
     })
-    // Allow a retry on the next call if initialization itself failed
-    appCheckInstance.catch(() => {
-      appCheckInstance = undefined
+    // Allow a retry on the next call if initialization itself failed —
+    // but only clear our own promise, in case a newer attempt replaced it
+    const thisAttempt = appCheckInstance
+    thisAttempt.catch(() => {
+      if (appCheckInstance === thisAttempt) {
+        appCheckInstance = undefined
+      }
     })
   }
   return appCheckInstance
