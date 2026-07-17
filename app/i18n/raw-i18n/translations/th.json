@@ -540,7 +540,8 @@
     "btcWalletDesc": "การโอนเงินจํานวนมากขึ้นง่ายใน Bitcoin",
     "backupTitle": "ทําสํารองกระเป๋าเงิน BTC ของคุณ",
     "backupDesc": "แบ็กคัพและคุ้มครองกระเป๋าเป้ Bitcoin ของคุณ โดยใช้ประโยคการฟื้นฟู.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "ไม่มีการเชื่อมต่อ — แสดงยอดคงเหลือที่บันทึกไว้"
   },
   "PinScreen": {
     "attemptsRemaining": "พินนี้ผิด มีโอกาสใส่พินอีก {attemptsRemaining: number} ครั้ง",

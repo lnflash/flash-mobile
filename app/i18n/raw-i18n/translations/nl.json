@@ -540,7 +540,8 @@
     "btcWalletDesc": "Makkelijk overbrengen van grotere bedragen in Bitcoin.",
     "backupTitle": "Backup je BTC-portemonnee.",
     "backupDesc": "Backup en beveiligen van uw Bitcoin portemonnee met behulp van recovery phrase.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Geen verbinding — opgeslagen saldi worden getoond"
   },
   "PinScreen": {
     "attemptsRemaining": "Onjuiste pincode. {attemptsRemaining: number} resterende pogingen.",

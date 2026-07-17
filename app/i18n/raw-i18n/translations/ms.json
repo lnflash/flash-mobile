@@ -540,7 +540,8 @@
     "btcWalletDesc": "Mudah memindahkan jumlah yang lebih besar dalam Bitcoin.",
     "backupTitle": "Simpan balik dompet BTC anda",
     "backupDesc": "Simpan balik dan selamatkan dompet Bitcoin anda menggunakan frasa pemulihan.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Tiada sambungan — baki cache dipaparkan"
   },
   "PinScreen": {
     "attemptsRemaining": "Salah No PIN. {Percubaan yang tinggal: number} kali lagi percubaan.",

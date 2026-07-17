@@ -493,7 +493,8 @@
     "upgradePendingDesc": "Your account upgrade request is under review.",
     "upgradeTitle": "Upgrade your account",
     "upgradeTitlePending": "Upgrade request is pending",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "لا يوجد اتصال — يتم عرض الأرصدة المخزنة"
   },
   "PinScreen": {
     "attemptsRemaining": "رمز شخصي خاطئ. بقي {attemptsRemaining} محاولات.",

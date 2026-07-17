@@ -501,7 +501,8 @@
     "upgradePendingDesc": "Your account upgrade request is under review.",
     "upgradeTitle": "Upgrade your account",
     "upgradeTitlePending": "Upgrade request is pending",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Geen verbinding — gekasde saldo's word gewys"
   },
   "PinScreen": {
     "attemptsRemaining": "Verkeerde PIN. {attemptsRemaining: number} probeerslae oor. ",

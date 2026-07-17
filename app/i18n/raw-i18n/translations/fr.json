@@ -540,7 +540,8 @@
     "btcWalletDesc": "Il est facile de transférer de plus grandes quantités en Bitcoin.",
     "backupTitle": "Faites une sauvegarde de votre portefeuille BTC",
     "backupDesc": "Faites une sauvegarde et sécurisez votre portefeuille Bitcoin en utilisant la phrase recovery.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Pas de connexion — soldes en cache affichés"
   },
   "PinScreen": {
     "attemptsRemaining": "NIP incorrect. {attemptsRemaining: number} tentatives restantes.",

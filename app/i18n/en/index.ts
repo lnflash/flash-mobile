@@ -638,6 +638,7 @@ const en: BaseTranslation = {
   },
   HomeScreen: {
     cashout: "Cash Out",
+    offlineShowingCached: "No connection — showing cached balances",
     receive: "Receive",
     reload: "Reload Card",
     balance: "Refresh Balance",

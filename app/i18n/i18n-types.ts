@@ -2023,6 +2023,10 @@ type RootTranslation = {
 		 */
 		cashout: string
 		/**
+		 * N​o​ ​c​o​n​n​e​c​t​i​o​n​ ​—​ ​s​h​o​w​i​n​g​ ​c​a​c​h​e​d​ ​b​a​l​a​n​c​e​s
+		 */
+		offlineShowingCached: string
+		/**
 		 * R​e​c​e​i​v​e
 		 */
 		receive: string
@@ -7932,6 +7936,10 @@ export type TranslationFunctions = {
 		 * Cash Out
 		 */
 		cashout: () => LocalizedString
+		/**
+		 * No connection — showing cached balances
+		 */
+		offlineShowingCached: () => LocalizedString
 		/**
 		 * Receive
 		 */

@@ -540,7 +540,8 @@
     "btcWalletDesc": "Лако преноси веће количине у Bitcoin.",
     "backupTitle": "Заштити свој BTC новчаник",
     "backupDesc": "Заштити и осигурати свој Bitcoin новчаник користећи фразу за опоравак.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Нема везе — приказана су сачувана стања"
   },
   "PinScreen": {
     "attemptsRemaining": "Неисправан ПИН. Преостало је {attemptsRemaining: number} покушаја.",

@@ -540,7 +540,8 @@
     "btcWalletDesc": "Ukudluliselwa ngokulula kwemali enkulu kwi-Bitcoin.",
     "backupTitle": "Yenza isipele se-BTC yakho ye-wallet",
     "backupDesc": "Yenza isipele kwaye ukhusele isipaji sakho se-Bitcoin usebenzisa ibinzana lokubuyisela kwimeko yesiqhelo.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Akukho qhagamshelo — kuboniswa iibhalansi ezigciniweyo"
   },
   "PinScreen": {
     "attemptsRemaining": "I-PIN engalunganga. {attemptsRemaining: number} imizamo eseleyo.",

@@ -540,7 +540,8 @@
     "btcWalletDesc": "Ελαφρύ μεταφορά μεγαλύτερων ποσών σε Bitcoin.",
     "backupTitle": "Κάντε αντίγραφο ασφαλείας στο πορτοφόλι σας BTC",
     "backupDesc": "Κάντε αντίγραφο ασφαλείας και ασφαλίστε το πορτοφόλι σας Bitcoin χρησιμοποιώντας τη φράση recovery.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Χωρίς σύνδεση — εμφανίζονται αποθηκευμένα υπόλοιπα"
   },
   "PinScreen": {
     "attemptsRemaining": "Λανθασμένο PIN. {attemptsRemaining: number} προσπάθειες που απομένουν.",

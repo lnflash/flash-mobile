@@ -540,7 +540,8 @@
     "btcWalletDesc": "Könnyen átruházza a nagyobb összegeket Bitcoin-ben.",
     "backupTitle": "A BTC pénztárcáját biztonsági mentse meg.",
     "backupDesc": "Támogatja és biztosítsa a Bitcoin pénztárcáját a Recovery phrase használatával.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Nincs kapcsolat — gyorsítótárazott egyenlegek láthatók"
   },
   "PinScreen": {
     "attemptsRemaining": "Helytelen PIN. {attemptsRemaining: number} próbálkozás maradt.",
