@@ -126,7 +126,7 @@ describe("usePlaidLink", () => {
     )
   })
 
-  it("surfaces exchange payload errors and does not refetch", async () => {
+  it("surfaces exchange payload errors, does not refetch, and re-arms for retry", async () => {
     const onLinked = jest.fn()
     mockExchange.mockResolvedValue({
       data: {
@@ -136,20 +136,27 @@ describe("usePlaidLink", () => {
       },
     })
 
-    const handlers = openLinkAndGetHandlers(onLinked)
-    await act(() => handlers.onSuccess({ publicToken: "public-token-1" }))
+    const { result } = renderPlaidLink(onLinked)
+    act(() => result.current.openPlaidLink("link-token-1"))
+    await act(() => lastHandlers().onSuccess({ publicToken: "public-token-1" }))
 
     expect(alertSpy).toHaveBeenCalledWith("Error", "Invalid token")
     expect(onLinked).not.toHaveBeenCalled()
     expect(mockToggleActivityIndicator).toHaveBeenLastCalledWith(false)
+
+    // The guard must release on the payload-error early-return path, or the
+    // user's retry after "Invalid token" silently no-ops until remount.
+    act(() => result.current.openPlaidLink("link-token-2"))
+    expect(create).toHaveBeenCalledTimes(2)
   })
 
-  it("alerts generically and clears the indicator when the exchange throws", async () => {
+  it("alerts generically, clears the indicator, and re-arms when the exchange throws", async () => {
     const onLinked = jest.fn()
     mockExchange.mockRejectedValue(new Error("network down"))
 
-    const handlers = openLinkAndGetHandlers(onLinked)
-    await act(() => handlers.onSuccess({ publicToken: "public-token-1" }))
+    const { result } = renderPlaidLink(onLinked)
+    act(() => result.current.openPlaidLink("link-token-1"))
+    await act(() => lastHandlers().onSuccess({ publicToken: "public-token-1" }))
 
     expect(alertSpy).toHaveBeenCalledWith(
       "Error",
@@ -157,6 +164,11 @@ describe("usePlaidLink", () => {
     )
     expect(onLinked).not.toHaveBeenCalled()
     expect(mockToggleActivityIndicator).toHaveBeenLastCalledWith(false)
+
+    // "Please try again" must actually work: the guard releases on the
+    // thrown-exchange path too.
+    act(() => result.current.openPlaidLink("link-token-2"))
+    expect(create).toHaveBeenCalledTimes(2)
   })
 
   it("ignores a second openPlaidLink while a session is in flight, and re-arms after exit", () => {
