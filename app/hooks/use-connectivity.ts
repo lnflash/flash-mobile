@@ -39,7 +39,14 @@ export const useConnectivity = (): {
         clearTimeout(debounceTimer.current)
         debounceTimer.current = undefined
       }
-      if (wasOfflineRef.current) {
+      // Only a CONFIRMED recovery (true) consumes the offline latch and
+      // pulses. With useNativeReachability:false, NetInfo emits
+      // false → null → true on real recoveries (null while the probe runs):
+      // pulsing at null would fire the reconnect refetch before the API is
+      // actually reachable AND eat the one-shot latch so the true edge never
+      // pulses. null still clears the banner (treat-as-online) — it just
+      // doesn't count as a reconnect.
+      if (isInternetReachable === true && wasOfflineRef.current) {
         wasOfflineRef.current = false
         setJustReconnected(true)
       }

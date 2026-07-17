@@ -112,12 +112,15 @@ export const HomeScreen: React.FC = () => {
   }, [isAuthed, refetchAuthed, refetchRealtimePrice, refetchUpgradeRequest])
 
   // When connectivity returns after an offline period, refresh silently so
-  // balances and transactions recover without the user pulling to refresh
+  // balances and transactions recover without the user pulling to refresh.
+  // These fire on the reconnect edge where the network can still be shaky —
+  // a failed silent refresh must stay silent (no unhandled rejection); the
+  // next pulse or a manual pull-to-refresh retries it.
   const { justReconnected } = useConnectivity()
   useEffect(() => {
     if (justReconnected && isAuthed) {
-      refetchRealtimePrice()
-      refetchAuthed()
+      refetchRealtimePrice().catch(() => {})
+      refetchAuthed().catch(() => {})
     }
   }, [justReconnected, isAuthed, refetchAuthed, refetchRealtimePrice])
 

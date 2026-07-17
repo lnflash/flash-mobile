@@ -72,11 +72,19 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
     )
   }
 
-  // Pure network failures are represented by the offline banner above (with
-  // debounce) — surfacing them here too would flash "offline" on every
-  // transient blip even when retries succeed. Only real API errors show.
+  // Transport-level failures (fetch threw — no HTTP response) are represented
+  // by the offline banner above (with debounce) — surfacing them here too
+  // would flash "offline" on every transient blip even when retries succeed.
+  // Server failures are NOT transient in that sense: Apollo wraps non-2xx
+  // responses as ServerError/ServerParseError (both carry statusCode) with
+  // empty graphQLErrors, and during a backend incident the reachability probe
+  // can stay green — suppressing those would hide the incident entirely, so
+  // they keep displaying like any real error.
   const isTransientNetworkError =
-    error instanceof ApolloError && !error.graphQLErrors?.length && error.networkError
+    error instanceof ApolloError &&
+    !error.graphQLErrors?.length &&
+    error.networkError !== null &&
+    !("statusCode" in error.networkError)
 
   const displayError = isTransientNetworkError ? undefined : error
 

@@ -131,6 +131,83 @@ describe("useConnectivity", () => {
     expect(onReconnect).toHaveBeenCalledTimes(2)
   })
 
+  it("does not pulse for a short blip after an earlier real offline period", () => {
+    // Kills the mutant that drops `wasOfflineRef.current = false` on recovery:
+    // a stale latch would make every later sub-debounce blip fire a refetch.
+    const onReconnect = jest.fn()
+    setReachable(true)
+    const { result, rerender } = renderConnectivity(onReconnect)
+
+    // real offline period → exactly one pulse
+    setReachable(false)
+    rerender()
+    act(() => jest.advanceTimersByTime(3_000))
+    setReachable(true)
+    rerender()
+    expect(onReconnect).toHaveBeenCalledTimes(1)
+
+    // later blip shorter than the debounce → must NOT pulse again
+    setReachable(false)
+    rerender()
+    act(() => jest.advanceTimersByTime(2_000))
+    setReachable(true)
+    rerender()
+    act(() => jest.advanceTimersByTime(10_000))
+    expect(result.current.isOffline).toBe(false)
+    expect(onReconnect).toHaveBeenCalledTimes(1)
+  })
+
+  it("pulses at the confirmed edge of the real NetInfo recovery sequence (false→null→true)", () => {
+    // With useNativeReachability:false, NetInfo emits null (probing) before
+    // true on real recoveries. The pulse must wait for the confirmed edge.
+    const onReconnect = jest.fn()
+    setReachable(true)
+    const { result, rerender } = renderConnectivity(onReconnect)
+
+    setReachable(false)
+    rerender()
+    act(() => jest.advanceTimersByTime(3_000))
+    expect(result.current.isOffline).toBe(true)
+
+    // probe running: banner clears, but no reconnect pulse yet
+    setReachable(null)
+    rerender()
+    expect(result.current.isOffline).toBe(false)
+    expect(onReconnect).not.toHaveBeenCalled()
+
+    // probe confirms: exactly one pulse
+    setReachable(true)
+    rerender()
+    expect(onReconnect).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps the latch through a failed probe (false→null→false) and re-latches", () => {
+    const onReconnect = jest.fn()
+    setReachable(true)
+    const { result, rerender } = renderConnectivity(onReconnect)
+
+    setReachable(false)
+    rerender()
+    act(() => jest.advanceTimersByTime(3_000))
+    expect(result.current.isOffline).toBe(true)
+
+    // probe starts (null) but fails — back to false, still no pulse
+    setReachable(null)
+    rerender()
+    setReachable(false)
+    rerender()
+    expect(onReconnect).not.toHaveBeenCalled()
+
+    // continuous false re-latches the banner after the debounce
+    act(() => jest.advanceTimersByTime(3_000))
+    expect(result.current.isOffline).toBe(true)
+
+    // eventual confirmed recovery still pulses exactly once
+    setReachable(true)
+    rerender()
+    expect(onReconnect).toHaveBeenCalledTimes(1)
+  })
+
   it("restarts the debounce when reachability flaps around it", () => {
     setReachable(true)
     const { result, rerender } = renderConnectivity(jest.fn())

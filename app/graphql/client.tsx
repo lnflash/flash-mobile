@@ -73,6 +73,14 @@ const getAuthorizationHeader = (token: string): string => {
   return `Bearer ${token}`
 }
 
+// NetInfo.configure() must run exactly once per JS session: it tears down the
+// library's shared state and recreates it, which permanently orphans every
+// already-mounted subscriber (useNetInfo never re-subscribes and stale
+// unsubscribe closures no-op — the library's own docs warn to call it only at
+// startup). Guarded here rather than called at module scope because the probe
+// URL comes from persisted app config, which is only available in-component.
+let netInfoConfigured = false
+
 const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
   const { appConfig } = useAppConfig()
 
@@ -95,23 +103,31 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
     // returns 4xx, which still proves the wallet backend is reachable —
     // what we actually care about. The default Google probe produces
     // false "offline" states on networks where it is slow or filtered.
-    NetInfo.configure({
-      reachabilityUrl: appConfig.galoyInstance.graphqlUri,
-      // GET, not HEAD: the API returns 500 to HEAD requests, which would
-      // fail the reachability test below and pin the app "offline"
-      reachabilityMethod: "GET",
-      // Exactly 400: a bare GET to the GraphQL endpoint is answered by the
-      // wallet API with 400 ("no query"). A captive portal intercepting the
-      // probe returns 200/30x, which must read as UNREACHABLE — otherwise the
-      // app shows stale data with no offline indicator while every real
-      // request fails. (If the API's GET behavior ever changes, update this.)
-      reachabilityTest: async (response) => response.status === 400,
-      reachabilityRequestTimeout: 30 * 1000,
-      // While "offline", re-probe every 5s so recovery is quick
-      reachabilityShortTimeout: 5 * 1000,
-      reachabilityLongTimeout: 60 * 1000,
-      useNativeReachability: false,
-    })
+    //
+    // Runs before any useNetInfo subscriber can mount (children render only
+    // once the apollo client exists) and never again — see the
+    // netInfoConfigured comment above. Consequence: a dev-screen instance
+    // switch won't retarget the probe until the next app reload.
+    if (!netInfoConfigured) {
+      netInfoConfigured = true
+      NetInfo.configure({
+        reachabilityUrl: appConfig.galoyInstance.graphqlUri,
+        // GET, not HEAD: the API returns 500 to HEAD requests, which would
+        // fail the reachability test below and pin the app "offline"
+        reachabilityMethod: "GET",
+        // Exactly 400: a bare GET to the GraphQL endpoint is answered by the
+        // wallet API with 400 ("no query"). A captive portal intercepting the
+        // probe returns 200/30x, which must read as UNREACHABLE — otherwise the
+        // app shows stale data with no offline indicator while every real
+        // request fails. (If the API's GET behavior ever changes, update this.)
+        reachabilityTest: async (response) => response.status === 400,
+        reachabilityRequestTimeout: 30 * 1000,
+        // While "offline", re-probe every 5s so recovery is quick
+        reachabilityShortTimeout: 5 * 1000,
+        reachabilityLongTimeout: 60 * 1000,
+        useNativeReachability: false,
+      })
+    }
     ;(async () => {
       const token = appConfig.token
 
