@@ -1672,5 +1672,11 @@
     "genericError": "Something went wrong. Please try again.",
     "alreadyLinkedTitle": "Bank Account Already Linked",
     "alreadyLinkedMessage": "This bank account is already linked to your profile."
+  },
+  "PlaidLink": {
+    "connectedTitle": "Η τράπεζα συνδέθηκε",
+    "connectedBody": "Η τράπεζά σου συνδέεται και θα εμφανιστεί εδώ σύντομα.",
+    "exchangeFailed": "Η σύνδεση της τράπεζας απέτυχε. Δοκίμασε ξανά.",
+    "linkFailed": "Η σύνδεση της τράπεζας απέτυχε. Δοκίμασε ξανά."
   }
 }

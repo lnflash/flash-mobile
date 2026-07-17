@@ -1678,5 +1678,11 @@
     "genericError": "Something went wrong. Please try again.",
     "alreadyLinkedTitle": "Bank Account Already Linked",
     "alreadyLinkedMessage": "This bank account is already linked to your profile."
+  },
+  "PlaidLink": {
+    "connectedTitle": "Benki imeunganishwa",
+    "connectedBody": "Benki yako inaunganishwa na itaonekana hapa hivi karibuni.",
+    "exchangeFailed": "Imeshindwa kuunganisha benki yako. Tafadhali jaribu tena.",
+    "linkFailed": "Kuunganisha benki kumeshindwa. Tafadhali jaribu tena."
   }
 }

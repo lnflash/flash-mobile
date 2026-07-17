@@ -1672,5 +1672,11 @@
     "genericError": "Something went wrong. Please try again.",
     "alreadyLinkedTitle": "Bank Account Already Linked",
     "alreadyLinkedMessage": "This bank account is already linked to your profile."
+  },
+  "PlaidLink": {
+    "connectedTitle": "เชื่อมต่อธนาคารแล้ว",
+    "connectedBody": "กำลังเชื่อมโยงธนาคารของคุณ และจะแสดงที่นี่ในไม่ช้า",
+    "exchangeFailed": "ไม่สามารถเชื่อมโยงธนาคารของคุณได้ กรุณาลองใหม่อีกครั้ง",
+    "linkFailed": "การเชื่อมโยงธนาคารล้มเหลว กรุณาลองใหม่อีกครั้ง"
   }
 }

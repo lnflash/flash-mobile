@@ -1672,5 +1672,11 @@
     "genericError": "Something went wrong. Please try again.",
     "alreadyLinkedTitle": "Bank Account Already Linked",
     "alreadyLinkedMessage": "This bank account is already linked to your profile."
+  },
+  "PlaidLink": {
+    "connectedTitle": "Ibhanki iqhagamshelwe",
+    "connectedBody": "Ibhanki yakho iyaqhagamshelwa kwaye iza kubonakala apha kungekudala.",
+    "exchangeFailed": "Ayikwazanga ukuqhagamshela ibhanki yakho. Nceda uzame kwakhona.",
+    "linkFailed": "Ukuqhagamshelwa kwebhanki akuphumelelanga. Nceda uzame kwakhona."
   }
 }

@@ -1672,5 +1672,11 @@
     "genericError": "Something went wrong. Please try again.",
     "alreadyLinkedTitle": "Bank Account Already Linked",
     "alreadyLinkedMessage": "This bank account is already linked to your profile."
+  },
+  "PlaidLink": {
+    "connectedTitle": "Đã kết nối ngân hàng",
+    "connectedBody": "Ngân hàng của bạn đang được liên kết và sẽ sớm xuất hiện tại đây.",
+    "exchangeFailed": "Không thể liên kết ngân hàng của bạn. Vui lòng thử lại.",
+    "linkFailed": "Liên kết ngân hàng thất bại. Vui lòng thử lại."
   }
 }

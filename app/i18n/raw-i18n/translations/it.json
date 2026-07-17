@@ -1672,5 +1672,11 @@
     "genericError": "Something went wrong. Please try again.",
     "alreadyLinkedTitle": "Bank Account Already Linked",
     "alreadyLinkedMessage": "This bank account is already linked to your profile."
+  },
+  "PlaidLink": {
+    "connectedTitle": "Banca collegata",
+    "connectedBody": "La tua banca è in fase di collegamento e apparirà qui a breve.",
+    "exchangeFailed": "Impossibile collegare la tua banca. Riprova.",
+    "linkFailed": "Collegamento della banca non riuscito. Riprova."
   }
 }
