@@ -540,7 +540,8 @@
     "btcWalletDesc": "Transfiere fácilmente cantidades más grandes en Bitcoin.",
     "backupTitle": "Haga una copia de seguridad de su billetera BTC",
     "backupDesc": "Haga una copia de seguridad y asegure su billetera Bitcoin usando la frase de recuperación.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Sin conexión — mostrando saldos en caché"
   },
   "PinScreen": {
     "attemptsRemaining": "PIN incorrecto. Quedan {attemptsRemaining} intentos.",

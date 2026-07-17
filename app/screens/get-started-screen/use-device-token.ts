@@ -45,7 +45,7 @@ export const getAppCheckToken = async (): Promise<string | undefined> => {
     const result = await instance.getToken(false)
     return result.token
   } catch (err) {
-    console.log("getDeviceToken error", err)
+    console.log("getAppCheckToken error", err)
     return undefined
   }
 }

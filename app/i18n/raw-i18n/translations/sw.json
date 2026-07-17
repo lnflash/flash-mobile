@@ -493,7 +493,8 @@
     "upgradePendingDesc": "Your account upgrade request is under review.",
     "upgradeTitle": "Upgrade your account",
     "upgradeTitlePending": "Upgrade request is pending",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Hakuna muunganisho — salio zilizohifadhiwa zinaonyeshwa"
   },
   "PinScreen": {
     "attemptsRemaining": "Pini sahihi. {attemptsRemaining: number} yamesalia.",

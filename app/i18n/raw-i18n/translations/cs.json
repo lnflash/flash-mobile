@@ -540,7 +540,8 @@
     "btcWalletDesc": "V Bitcoin lze snadno přenést větší částky.",
     "backupTitle": "Zálohujte si peněženku BTC",
     "backupDesc": "Záloha a zabezpečení peněženky Bitcoin pomocí recovery phrase.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Bez připojení — zobrazují se uložené zůstatky"
   },
   "PinScreen": {
     "attemptsRemaining": "Nesprávný kód PIN. {attemptsRemaining} zbývající pokusy.",

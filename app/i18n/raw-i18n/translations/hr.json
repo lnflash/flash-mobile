@@ -540,7 +540,8 @@
     "btcWalletDesc": "Jednostavno prebacite veće količine u Bitcoin.",
     "backupTitle": "Zaštitite svoj BTC novčanik.",
     "backupDesc": "Zaštitite i osigurajte svoj Bitcoin novčanik koristeći frazu recovery.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Nema veze — prikazana su pohranjena stanja"
   },
   "PinScreen": {
     "attemptsRemaining": "Netočan PIN. {attemptsRemaining: number} preostalih pokušaja.",

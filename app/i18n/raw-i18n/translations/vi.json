@@ -540,7 +540,8 @@
     "btcWalletDesc": "Dễ dàng chuyển tiền lớn hơn bằng Bitcoin.",
     "backupTitle": "Bản sao lưu ví BTC của bạn",
     "backupDesc": "Sao lưu và bảo mật ví Bitcoin của bạn bằng cách sử dụng recovery phrase.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Không có kết nối — đang hiển thị số dư đã lưu"
   },
   "PinScreen": {
     "attemptsRemaining": "Mã PIN không chính xác. Còn lại {attemptsRemaining: number} lần thử.",

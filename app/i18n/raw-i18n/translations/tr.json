@@ -540,7 +540,8 @@
     "btcWalletDesc": "Bitcoin'de daha büyük miktarlar kolayca aktarılır.",
     "backupTitle": "BTC cüzdanınızı yedekleyin",
     "backupDesc": "Recovery phrase kullanılarak Bitcoin cüzdanınızı yedekleyin ve koruyun.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Bağlantı yok — önbelleğe alınmış bakiyeler gösteriliyor"
   },
   "PinScreen": {
     "attemptsRemaining": "Yanlış PIN kodu. Kalan deneme hakkınız: {attemptsRemaining: number}",

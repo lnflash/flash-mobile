@@ -540,7 +540,8 @@
     "btcWalletDesc": "Einfache Übertragung größerer Mengen in Bitcoin.",
     "backupTitle": "Backup Ihres BTC-Wallets",
     "backupDesc": "Backup und sichern Sie Ihre Bitcoin Brieftasche mit der Wiederherstellungsphrase.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Keine Verbindung — zwischengespeicherte Salden werden angezeigt"
   },
   "PinScreen": {
     "attemptsRemaining": "Falsche PIN. {attemptsRemaining} verbleibende Versuche.",

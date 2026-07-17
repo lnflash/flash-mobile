@@ -540,7 +540,8 @@
     "btcWalletDesc": "Det er nemt at overføre større beløb i Bitcoin.",
     "backupTitle": "Backup din BTC tegnebog",
     "backupDesc": "Backup og sikre din Bitcoin tegnebog ved hjælp af recovery phrase.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Ingen forbindelse — viser gemte saldi"
   },
   "PinScreen": {
     "attemptsRemaining": "Forkert PIN-kode. {attemptsRemaining: number} forsøg tilbage.",

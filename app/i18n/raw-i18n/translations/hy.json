@@ -540,7 +540,8 @@
     "btcWalletDesc": "Հեշտությամբ փոխանցեք ավելի մեծ գումարներ Bitcoin- ում:",
     "backupTitle": "Պահպանեք ձեր BTC թղթադրամը",
     "backupDesc": "Կառուցեք եւ ապահովեք ձեր Bitcoin դրամապանակը վերականգնման արտահայտությունը օգտագործելով:",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Կապ չկա — ցուցադրվում են պահված մնացորդները"
   },
   "PinScreen": {
     "attemptsRemaining": "Սխալ PIN: {attemptsRemaining: number} փորձեր են մնացել։ ",

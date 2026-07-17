@@ -540,7 +540,8 @@
     "btcWalletDesc": "És fàcil transferir grans quantitats en Bitcoin.",
     "backupTitle": "Backup de la teva cartera BTC",
     "backupDesc": "Backup i segureu la vostra cartera Bitcoin utilitzant la frase recovery.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Sense connexió — es mostren els saldos en memòria cau"
   },
   "PinScreen": {
     "attemptsRemaining": "PIN incorrecte. Queden {attemptsRemaining} intents.",

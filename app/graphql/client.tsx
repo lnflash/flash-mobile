@@ -100,14 +100,18 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
       // GET, not HEAD: the API returns 500 to HEAD requests, which would
       // fail the reachability test below and pin the app "offline"
       reachabilityMethod: "GET",
-      reachabilityTest: async (response) => response.status < 500,
+      // Exactly 400: a bare GET to the GraphQL endpoint is answered by the
+      // wallet API with 400 ("no query"). A captive portal intercepting the
+      // probe returns 200/30x, which must read as UNREACHABLE — otherwise the
+      // app shows stale data with no offline indicator while every real
+      // request fails. (If the API's GET behavior ever changes, update this.)
+      reachabilityTest: async (response) => response.status === 400,
       reachabilityRequestTimeout: 30 * 1000,
       // While "offline", re-probe every 5s so recovery is quick
       reachabilityShortTimeout: 5 * 1000,
       reachabilityLongTimeout: 60 * 1000,
       useNativeReachability: false,
     })
-
     ;(async () => {
       const token = appConfig.token
 

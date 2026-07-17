@@ -67,7 +67,7 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
   if (isOffline) {
     return (
       <View style={styles.wrapper}>
-        <GaloyErrorBox errorMessage="No connection — showing cached balances" />
+        <GaloyErrorBox errorMessage={LL.HomeScreen.offlineShowingCached()} />
       </View>
     )
   }
