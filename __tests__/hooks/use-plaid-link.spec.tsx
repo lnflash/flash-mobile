@@ -201,10 +201,11 @@ describe("usePlaidLink", () => {
   })
 
   it("alerts on a real Plaid exit error, preferring Plaid's user-facing message", () => {
-    const handlers = openLinkAndGetHandlers()
+    const { result } = renderPlaidLink()
+    act(() => result.current.openPlaidLink("link-token-1"))
 
     act(() =>
-      handlers.onExit({
+      lastHandlers().onExit({
         error: {
           errorCode: "INSTITUTION_ERROR",
           errorMessage: "developer detail",
@@ -217,8 +218,13 @@ describe("usePlaidLink", () => {
       "Your bank is temporarily unavailable.",
     )
 
+    // Real-error exits are exactly where users retry (the bank was down) —
+    // the guard must release on this termination path too.
+    act(() => result.current.openPlaidLink("link-token-2"))
+    expect(create).toHaveBeenCalledTimes(2)
+
     alertSpy.mockClear()
-    act(() => handlers.onExit({ error: { errorCode: "-1" } }))
+    act(() => lastHandlers().onExit({ error: { errorCode: "-1" } }))
     expect(alertSpy).toHaveBeenCalledWith(
       "Error",
       "Bank linking failed. Please try again.",
