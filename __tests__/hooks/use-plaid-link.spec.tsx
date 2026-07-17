@@ -3,12 +3,16 @@
  *
  * Contract under test:
  *  - openPlaidLink creates the Plaid session with the backend's linkToken and
- *    opens the native UI.
- *  - onSuccess exchanges { linkToken, publicToken } server-side, then runs
- *    onLinked (webhook-async refetch) and shows the "appears shortly" copy.
+ *    opens the native UI; a second call while a session is in flight is a
+ *    no-op (the SDK's native module is a singleton — see the hook comment).
+ *  - onSuccess exchanges { linkToken, publicToken } server-side; once the
+ *    exchange succeeds the link IS established: the onLinked refetch is
+ *    best-effort and its failure must never be reported as a link failure.
  *  - Exchange payload errors and thrown errors alert and never run onLinked;
  *    the activity indicator is always cleared.
- *  - onExit alerts only for real Plaid failures — plain user cancel is silent.
+ *  - onExit alerts only for a REAL Plaid failure, detected by error CONTENT:
+ *    the iOS bridge always embeds an all-empty error object on a plain user
+ *    cancel (Android omits it) — both cancel shapes must stay silent.
  */
 
 import { Alert } from "react-native"
@@ -46,15 +50,23 @@ import { usePlaidLink } from "@app/hooks/use-plaid-link"
 
 type PlaidHandlers = {
   onSuccess: (success: { publicToken: string }) => Promise<void>
-  onExit: (exit: { error?: { errorMessage?: string } }) => void
+  onExit: (exit: {
+    error?: { errorCode?: string; errorMessage?: string; displayMessage?: string }
+  }) => void
 }
 
+const renderPlaidLink = (onLinked?: jest.Mock) =>
+  renderHook(() => usePlaidLink({ onLinked }))
+
+const lastHandlers = (): PlaidHandlers =>
+  (open as jest.Mock).mock.calls[(open as jest.Mock).mock.calls.length - 1][0]
+
 const openLinkAndGetHandlers = (onLinked?: jest.Mock): PlaidHandlers => {
-  const { result } = renderHook(() => usePlaidLink({ onLinked }))
+  const { result } = renderPlaidLink(onLinked)
   act(() => result.current.openPlaidLink("link-token-1"))
   expect(create).toHaveBeenCalledWith({ token: "link-token-1" })
   expect(open).toHaveBeenCalledTimes(1)
-  return (open as jest.Mock).mock.calls[0][0]
+  return lastHandlers()
 }
 
 describe("usePlaidLink", () => {
@@ -83,9 +95,35 @@ describe("usePlaidLink", () => {
       "Bank connected",
       "Your bank is being linked and will appear here shortly.",
     )
+    // Refetch settles before the user is told the account will appear
+    expect(onLinked.mock.invocationCallOrder[0]).toBeLessThan(
+      alertSpy.mock.invocationCallOrder[0],
+    )
     // Indicator on for the exchange, off before the alert
     expect(mockToggleActivityIndicator).toHaveBeenNthCalledWith(1, true)
     expect(mockToggleActivityIndicator).toHaveBeenNthCalledWith(2, false)
+  })
+
+  it("still reports success when the best-effort refetch rejects", async () => {
+    // The exchange succeeded — the webhook will provision the account. A
+    // refetch failure reported as a link failure makes users re-link and
+    // create duplicate external accounts.
+    const onLinked = jest.fn().mockRejectedValue(new Error("network blip"))
+    mockExchange.mockResolvedValue({
+      data: { bridgeExchangePlaidPublicToken: { errors: [] } },
+    })
+
+    const handlers = openLinkAndGetHandlers(onLinked)
+    await act(() => handlers.onSuccess({ publicToken: "public-token-1" }))
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Bank connected",
+      "Your bank is being linked and will appear here shortly.",
+    )
+    expect(alertSpy).not.toHaveBeenCalledWith(
+      "Error",
+      "Failed to link your bank. Please try again.",
+    )
   })
 
   it("surfaces exchange payload errors and does not refetch", async () => {
@@ -121,24 +159,71 @@ describe("usePlaidLink", () => {
     expect(mockToggleActivityIndicator).toHaveBeenLastCalledWith(false)
   })
 
-  it("alerts on a real Plaid exit error, using its message when present", () => {
+  it("ignores a second openPlaidLink while a session is in flight, and re-arms after exit", () => {
+    const { result } = renderPlaidLink()
+    act(() => result.current.openPlaidLink("link-token-1"))
+    act(() => result.current.openPlaidLink("link-token-2"))
+
+    // Second call is a no-op — one native session only
+    expect(create).toHaveBeenCalledTimes(1)
+    expect(open).toHaveBeenCalledTimes(1)
+
+    // Session terminated (user cancel) → a new session may open
+    act(() => lastHandlers().onExit({}))
+    act(() => result.current.openPlaidLink("link-token-2"))
+    expect(create).toHaveBeenCalledTimes(2)
+    expect(create).toHaveBeenLastCalledWith({ token: "link-token-2" })
+  })
+
+  it("re-arms after a completed session (onSuccess settled)", async () => {
+    mockExchange.mockResolvedValue({
+      data: { bridgeExchangePlaidPublicToken: { errors: [] } },
+    })
+    const { result } = renderPlaidLink()
+
+    act(() => result.current.openPlaidLink("link-token-1"))
+    await act(() => lastHandlers().onSuccess({ publicToken: "public-token-1" }))
+
+    act(() => result.current.openPlaidLink("link-token-2"))
+    expect(create).toHaveBeenCalledTimes(2)
+  })
+
+  it("alerts on a real Plaid exit error, preferring Plaid's user-facing message", () => {
     const handlers = openLinkAndGetHandlers()
 
-    act(() => handlers.onExit({ error: { errorMessage: "INSTITUTION_DOWN" } }))
-    expect(alertSpy).toHaveBeenCalledWith("Error", "INSTITUTION_DOWN")
+    act(() =>
+      handlers.onExit({
+        error: {
+          errorCode: "INSTITUTION_ERROR",
+          errorMessage: "developer detail",
+          displayMessage: "Your bank is temporarily unavailable.",
+        },
+      }),
+    )
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Error",
+      "Your bank is temporarily unavailable.",
+    )
 
     alertSpy.mockClear()
-    act(() => handlers.onExit({ error: { errorMessage: "" } }))
+    act(() => handlers.onExit({ error: { errorCode: "-1" } }))
     expect(alertSpy).toHaveBeenCalledWith(
       "Error",
       "Bank linking failed. Please try again.",
     )
   })
 
-  it("stays silent on a plain user cancel (exit without error)", () => {
+  it("stays silent on user cancel — both platform shapes", () => {
     const handlers = openLinkAndGetHandlers()
 
+    // Android: no error key at all
     act(() => handlers.onExit({}))
+    // iOS: always-present error object with all-empty fields
+    act(() =>
+      handlers.onExit({
+        error: { errorCode: "", errorMessage: "", displayMessage: "" },
+      }),
+    )
     expect(alertSpy).not.toHaveBeenCalled()
   })
 })

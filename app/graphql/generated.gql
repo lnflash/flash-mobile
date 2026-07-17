@@ -87,7 +87,6 @@ mutation BridgeAddExternalAccount {
     externalAccount {
       expiresAt
       linkToken
-      linkUrl
       __typename
     }
     errors {

@@ -1,4 +1,4 @@
-import { useCallback } from "react"
+import { useCallback, useRef } from "react"
 import { Alert } from "react-native"
 import {
   create,
@@ -26,8 +26,17 @@ export const usePlaidLink = ({ onLinked }: { onLinked?: () => unknown } = {}) =>
   const { toggleActivityIndicator } = useActivityIndicator()
   const [exchangePlaidPublicToken] = useBridgeExchangePlaidPublicTokenMutation()
 
+  // The SDK's native module is a singleton: a second create()/open() while a
+  // session is up replaces its handler and stored JS callbacks, cross-wiring
+  // {linkToken, publicToken} pairs or dropping callbacks entirely. Guard from
+  // openPlaidLink until the session terminates (onSuccess settles or onExit).
+  const sessionInFlight = useRef(false)
+
   const openPlaidLink = useCallback(
     (linkToken: string) => {
+      if (sessionInFlight.current) return
+      sessionInFlight.current = true
+
       create({ token: linkToken })
       open({
         onSuccess: async (success: LinkSuccess) => {
@@ -44,20 +53,43 @@ export const usePlaidLink = ({ onLinked }: { onLinked?: () => unknown } = {}) =>
               return
             }
 
-            await onLinked?.()
+            // The exchange succeeded — the link IS established and the webhook
+            // will provision the account. The refetch is best-effort: its
+            // failure (flaky network, unmounted screen) must never be reported
+            // as a failed bank link, or users re-link and create duplicates.
+            try {
+              await onLinked?.()
+            } catch {
+              // best-effort — the next screen focus refetches anyway
+            }
             Alert.alert(LL.PlaidLink.connectedTitle(), LL.PlaidLink.connectedBody())
           } catch (err) {
             toggleActivityIndicator(false)
             Alert.alert(LL.common.error(), LL.PlaidLink.exchangeFailed())
+          } finally {
+            sessionInFlight.current = false
           }
         },
         onExit: (exit: LinkExit) => {
-          // Plaid reports a real failure here — a plain user cancel carries no
-          // error and stays silent.
-          if (exit.error) {
+          sessionInFlight.current = false
+          // A plain user cancel must stay silent — but the iOS bridge ALWAYS
+          // embeds an `error` object (with empty-string fields) in the exit
+          // payload, while Android omits it. Presence is meaningless on iOS;
+          // detect a real failure by content. Real Plaid errors carry a
+          // non-empty errorCode on both platforms.
+          const exitError = exit.error
+          const isRealError = Boolean(
+            exitError &&
+              (exitError.errorCode || exitError.errorMessage || exitError.displayMessage),
+          )
+          if (isRealError && exitError) {
             Alert.alert(
               LL.common.error(),
-              exit.error.errorMessage || LL.PlaidLink.linkFailed(),
+              // displayMessage is Plaid's user-facing copy; errorMessage is
+              // developer-facing and only a fallback.
+              exitError.displayMessage ||
+                exitError.errorMessage ||
+                LL.PlaidLink.linkFailed(),
             )
           }
         },

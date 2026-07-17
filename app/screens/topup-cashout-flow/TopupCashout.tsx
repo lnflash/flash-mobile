@@ -135,30 +135,33 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
           navigation.navigate("CashoutDetails", { type: "bridge" })
         } else {
           toggleActivityIndicator(true)
-          const res = await addExternalAccount()
-          toggleActivityIndicator(false)
+          try {
+            const res = await addExternalAccount()
+            toggleActivityIndicator(false)
 
-          const errors = res.data?.bridgeAddExternalAccount?.errors
-          if (errors && errors.length > 0) {
-            // If Plaid Link is unavailable, offer manual bank entry as fallback
-            if (errors[0].code === "BRIDGE_PLAID_NOT_AVAILABLE") {
-              navigation.navigate("BridgeAddExternalAccount")
+            const errors = res.data?.bridgeAddExternalAccount?.errors
+            if (errors && errors.length > 0) {
+              // If Plaid Link is unavailable, offer manual bank entry as fallback
+              if (errors[0].code === "BRIDGE_PLAID_NOT_AVAILABLE") {
+                navigation.navigate("BridgeAddExternalAccount")
+                return
+              }
+              Alert.alert("Error", errors[0].message)
               return
             }
-            Alert.alert("Error", errors[0].message)
-            return
-          }
 
-          const externalAccount = res.data?.bridgeAddExternalAccount?.externalAccount
-          const linkToken = externalAccount?.linkToken
-          const linkUrl = externalAccount?.linkUrl
-          if (linkToken) {
-            // Preferred path: open Plaid Link with the SDK, then exchange the public token.
-            openPlaidLink(linkToken)
-          } else if (linkUrl) {
-            // Deprecated hosted-URL fallback for backends that don't return a linkToken yet.
-            navigation.navigate("BridgeExternalAccountWebView", { linkUrl })
-          } else {
+            const linkToken =
+              res.data?.bridgeAddExternalAccount?.externalAccount?.linkToken
+            if (linkToken) {
+              openPlaidLink(linkToken)
+            } else {
+              Alert.alert(
+                "Error",
+                "Failed to get external account link. Please try again.",
+              )
+            }
+          } catch (err) {
+            toggleActivityIndicator(false)
             Alert.alert("Error", "Failed to get external account link. Please try again.")
           }
         }

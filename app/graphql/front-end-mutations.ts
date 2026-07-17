@@ -249,7 +249,6 @@ gql`
       externalAccount {
         expiresAt
         linkToken
-        linkUrl
       }
       errors {
         code

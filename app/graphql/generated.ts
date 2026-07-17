@@ -2704,7 +2704,7 @@ export type BridgeInitiateKycMutation = { readonly __typename: 'Mutation', reado
 export type BridgeAddExternalAccountMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type BridgeAddExternalAccountMutation = { readonly __typename: 'Mutation', readonly bridgeAddExternalAccount: { readonly __typename: 'BridgeAddExternalAccountPayload', readonly externalAccount?: { readonly __typename: 'BridgeExternalAccountLink', readonly expiresAt: string, readonly linkToken: string, readonly linkUrl?: string | null } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
+export type BridgeAddExternalAccountMutation = { readonly __typename: 'Mutation', readonly bridgeAddExternalAccount: { readonly __typename: 'BridgeAddExternalAccountPayload', readonly externalAccount?: { readonly __typename: 'BridgeExternalAccountLink', readonly expiresAt: string, readonly linkToken: string } | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
 
 export type BridgeExchangePlaidPublicTokenMutationVariables = Exact<{
   input: BridgeExchangePlaidPublicTokenInput;
@@ -4582,7 +4582,6 @@ export const BridgeAddExternalAccountDocument = gql`
     externalAccount {
       expiresAt
       linkToken
-      linkUrl
     }
     errors {
       code
