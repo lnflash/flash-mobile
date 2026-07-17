@@ -3,12 +3,15 @@
  *
  * Contract under test:
  *  - `isOffline` latches only after reachability is continuously false for
- *    OFFLINE_DEBOUNCE_MS (3s); shorter blips never surface.
- *  - `null` reachability ("not determined yet") counts as online.
+ *    OFFLINE_DEBOUNCE_MS; shorter blips never surface. In particular a SINGLE
+ *    failed NetInfo probe cycle (reachabilityShortTimeout 5s + probe RTT,
+ *    see NetInfo.configure in app/graphql/client.tsx) must be absorbed.
+ *  - `null` reachability ("probing / not determined") counts as online for
+ *    the banner but is NOT a confirmed recovery.
  *  - Recovery clears `isOffline` immediately.
- *  - `justReconnected` pulses exactly once per real offline→online
- *    transition, observable by a consumer effect (the real contract —
- *    the flag self-resets after one render).
+ *  - `justReconnected` pulses exactly once per real offline period, only on
+ *    the confirmed (true) edge, observable by a consumer effect (the real
+ *    contract — the flag self-resets after one render).
  */
 
 import { useEffect } from "react"
@@ -19,7 +22,13 @@ jest.mock("@react-native-community/netinfo", () => ({
   useNetInfo: () => mockUseNetInfo(),
 }))
 
-import { useConnectivity } from "@app/hooks/use-connectivity"
+import { useConnectivity, OFFLINE_DEBOUNCE_MS } from "@app/hooks/use-connectivity"
+
+// One failed-probe recovery cycle: reachabilityShortTimeout (5s, configured
+// in app/graphql/client.tsx) + a generous probe round-trip. The debounce must
+// absorb this — the assertion below fails loudly if the constants decouple.
+const FAILED_PROBE_CYCLE_MS = 5_200
+const SETTLE_MS = OFFLINE_DEBOUNCE_MS + 2_000
 
 const setReachable = (value: boolean | null) =>
   mockUseNetInfo.mockReturnValue({ isInternetReachable: value })
@@ -56,23 +65,28 @@ describe("useConnectivity", () => {
   it("treats undetermined (null) reachability as online", () => {
     setReachable(null)
     const { result } = renderConnectivity(jest.fn())
-    act(() => jest.advanceTimersByTime(10_000))
+    act(() => jest.advanceTimersByTime(SETTLE_MS))
     expect(result.current.isOffline).toBe(false)
   })
 
-  it("does not latch offline for a blip shorter than the debounce", () => {
+  it("absorbs a single failed probe cycle without latching or pulsing", () => {
+    // A lone probe failure (one 502 during a deploy, a killed socket on
+    // foreground) recovers at ~FAILED_PROBE_CYCLE_MS. That must stay inside
+    // the debounce, or every isolated failure flashes the banner.
+    expect(FAILED_PROBE_CYCLE_MS).toBeLessThan(OFFLINE_DEBOUNCE_MS)
+
     const onReconnect = jest.fn()
     setReachable(true)
     const { result, rerender } = renderConnectivity(onReconnect)
 
     setReachable(false)
     rerender()
-    act(() => jest.advanceTimersByTime(2_000))
+    act(() => jest.advanceTimersByTime(FAILED_PROBE_CYCLE_MS))
     expect(result.current.isOffline).toBe(false)
 
     setReachable(true)
     rerender()
-    act(() => jest.advanceTimersByTime(10_000))
+    act(() => jest.advanceTimersByTime(SETTLE_MS))
 
     expect(result.current.isOffline).toBe(false)
     // A blip that never latched must not pulse a reconnect either
@@ -85,7 +99,7 @@ describe("useConnectivity", () => {
 
     setReachable(false)
     rerender()
-    act(() => jest.advanceTimersByTime(2_999))
+    act(() => jest.advanceTimersByTime(OFFLINE_DEBOUNCE_MS - 1))
     expect(result.current.isOffline).toBe(false)
 
     act(() => jest.advanceTimersByTime(1))
@@ -99,7 +113,7 @@ describe("useConnectivity", () => {
 
     setReachable(false)
     rerender()
-    act(() => jest.advanceTimersByTime(3_000))
+    act(() => jest.advanceTimersByTime(OFFLINE_DEBOUNCE_MS))
     expect(result.current.isOffline).toBe(true)
 
     setReachable(true)
@@ -110,7 +124,7 @@ describe("useConnectivity", () => {
 
     // The pulse self-resets and does not re-fire on later renders
     rerender()
-    act(() => jest.advanceTimersByTime(10_000))
+    act(() => jest.advanceTimersByTime(SETTLE_MS))
     expect(onReconnect).toHaveBeenCalledTimes(1)
     expect(result.current.justReconnected).toBe(false)
   })
@@ -123,7 +137,7 @@ describe("useConnectivity", () => {
     for (let i = 0; i < 2; i += 1) {
       setReachable(false)
       rerender()
-      act(() => jest.advanceTimersByTime(3_000))
+      act(() => jest.advanceTimersByTime(OFFLINE_DEBOUNCE_MS))
       setReachable(true)
       rerender()
     }
@@ -141,7 +155,7 @@ describe("useConnectivity", () => {
     // real offline period → exactly one pulse
     setReachable(false)
     rerender()
-    act(() => jest.advanceTimersByTime(3_000))
+    act(() => jest.advanceTimersByTime(OFFLINE_DEBOUNCE_MS))
     setReachable(true)
     rerender()
     expect(onReconnect).toHaveBeenCalledTimes(1)
@@ -149,10 +163,10 @@ describe("useConnectivity", () => {
     // later blip shorter than the debounce → must NOT pulse again
     setReachable(false)
     rerender()
-    act(() => jest.advanceTimersByTime(2_000))
+    act(() => jest.advanceTimersByTime(OFFLINE_DEBOUNCE_MS - 1_000))
     setReachable(true)
     rerender()
-    act(() => jest.advanceTimersByTime(10_000))
+    act(() => jest.advanceTimersByTime(SETTLE_MS))
     expect(result.current.isOffline).toBe(false)
     expect(onReconnect).toHaveBeenCalledTimes(1)
   })
@@ -166,7 +180,7 @@ describe("useConnectivity", () => {
 
     setReachable(false)
     rerender()
-    act(() => jest.advanceTimersByTime(3_000))
+    act(() => jest.advanceTimersByTime(OFFLINE_DEBOUNCE_MS))
     expect(result.current.isOffline).toBe(true)
 
     // probe running: banner clears, but no reconnect pulse yet
@@ -188,7 +202,7 @@ describe("useConnectivity", () => {
 
     setReachable(false)
     rerender()
-    act(() => jest.advanceTimersByTime(3_000))
+    act(() => jest.advanceTimersByTime(OFFLINE_DEBOUNCE_MS))
     expect(result.current.isOffline).toBe(true)
 
     // probe starts (null) but fails — back to false, still no pulse
@@ -199,7 +213,7 @@ describe("useConnectivity", () => {
     expect(onReconnect).not.toHaveBeenCalled()
 
     // continuous false re-latches the banner after the debounce
-    act(() => jest.advanceTimersByTime(3_000))
+    act(() => jest.advanceTimersByTime(OFFLINE_DEBOUNCE_MS))
     expect(result.current.isOffline).toBe(true)
 
     // eventual confirmed recovery still pulses exactly once
@@ -212,15 +226,16 @@ describe("useConnectivity", () => {
     setReachable(true)
     const { result, rerender } = renderConnectivity(jest.fn())
 
-    // false for 2s → true → false for 2s: never a continuous 3s window
+    // two sub-debounce false windows separated by a recovery: never a
+    // continuous OFFLINE_DEBOUNCE_MS window
     setReachable(false)
     rerender()
-    act(() => jest.advanceTimersByTime(2_000))
+    act(() => jest.advanceTimersByTime(OFFLINE_DEBOUNCE_MS - 1_000))
     setReachable(true)
     rerender()
     setReachable(false)
     rerender()
-    act(() => jest.advanceTimersByTime(2_000))
+    act(() => jest.advanceTimersByTime(OFFLINE_DEBOUNCE_MS - 1_000))
     expect(result.current.isOffline).toBe(false)
 
     // but completing the window latches

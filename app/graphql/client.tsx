@@ -122,7 +122,10 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
         // request fails. (If the API's GET behavior ever changes, update this.)
         reachabilityTest: async (response) => response.status === 400,
         reachabilityRequestTimeout: 30 * 1000,
-        // While "offline", re-probe every 5s so recovery is quick
+        // While "offline", re-probe every 5s so recovery is quick. COUPLED to
+        // OFFLINE_DEBOUNCE_MS in app/hooks/use-connectivity.ts, which must
+        // stay ABOVE one full failed-probe cycle (this value + probe RTT) —
+        // see the comment there before changing either constant.
         reachabilityShortTimeout: 5 * 1000,
         reachabilityLongTimeout: 60 * 1000,
         useNativeReachability: false,

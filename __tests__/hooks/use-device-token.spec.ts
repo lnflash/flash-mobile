@@ -50,9 +50,36 @@ describe("getAppCheckToken", () => {
     expect(await getAppCheckToken()).toBe("token-1")
 
     expect(mockInitializeAppCheck).toHaveBeenCalledTimes(1)
+    // Auto-refresh must stay on: getToken(false) is only safe because the SDK
+    // refreshes the cached token before expiry — without it, every token
+    // lifetime ends in a full attestation on the request path.
+    expect(mockInitializeAppCheck).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({ isTokenAutoRefreshEnabled: true }),
+    )
     // Cached token (false), never force refresh
     expect(instance.getToken).toHaveBeenCalledTimes(2)
     expect(instance.getToken).toHaveBeenCalledWith(false)
+  })
+
+  it("initializes once even when calls overlap during init", async () => {
+    // The singleton memoizes the init PROMISE synchronously — refactoring to
+    // memoize-after-await would fire one attestation per concurrent caller
+    // (cold start runs several GraphQL ops + the WS connect in parallel).
+    let resolveInit!: (v: unknown) => void
+    mockInitializeAppCheck.mockReturnValue(
+      new Promise((resolve) => {
+        resolveInit = resolve
+      }),
+    )
+
+    const first = getAppCheckToken()
+    const second = getAppCheckToken()
+    resolveInit(instanceWithToken("token-c"))
+
+    expect(await first).toBe("token-c")
+    expect(await second).toBe("token-c")
+    expect(mockInitializeAppCheck).toHaveBeenCalledTimes(1)
   })
 
   it("returns undefined on init failure and retries initialization next call", async () => {

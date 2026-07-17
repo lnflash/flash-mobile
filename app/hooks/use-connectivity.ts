@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from "react"
 import { useNetInfo } from "@react-native-community/netinfo"
 
-const OFFLINE_DEBOUNCE_MS = 3000
+// COUPLED to the NetInfo probe cadence configured in app/graphql/client.tsx:
+// after a single failed probe, recovery (true) can arrive no earlier than
+// reachabilityShortTimeout (5s) + probe round-trip. The debounce must exceed
+// that full cycle, or every isolated probe failure (one 502 during a deploy,
+// a socket killed while backgrounded) latches the banner before the next
+// probe can clear it. 8s absorbs one failed cycle; only two consecutive
+// failures (a real outage) surface.
+export const OFFLINE_DEBOUNCE_MS = 8000
 
 /**
  * Connectivity state with hysteresis, for UI that reacts to being offline.
