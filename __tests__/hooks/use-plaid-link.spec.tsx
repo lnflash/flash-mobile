@@ -95,13 +95,50 @@ describe("usePlaidLink", () => {
       "Bank connected",
       "Your bank is being linked and will appear here shortly.",
     )
-    // Refetch settles before the user is told the account will appear
-    expect(onLinked.mock.invocationCallOrder[0]).toBeLessThan(
-      alertSpy.mock.invocationCallOrder[0],
-    )
     // Indicator on for the exchange, off before the alert
     expect(mockToggleActivityIndicator).toHaveBeenNthCalledWith(1, true)
     expect(mockToggleActivityIndicator).toHaveBeenNthCalledWith(2, false)
+  })
+
+  it("waits for the refetch to SETTLE before announcing success", async () => {
+    // Pins settle order, not call order: a fire-and-forget refetch
+    // (`onLinked?.()?.catch(...)`) calls onLinked at the same point but
+    // alerts while the refetch is still in flight — the user would dismiss
+    // "Bank connected" onto a stale account list.
+    let resolveRefetch!: () => void
+    const onLinked = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveRefetch = resolve
+        }),
+    )
+    mockExchange.mockResolvedValue({
+      data: { bridgeExchangePlaidPublicToken: { errors: [] } },
+    })
+
+    const { result } = renderPlaidLink(onLinked)
+    act(() => result.current.openPlaidLink("link-token-1"))
+
+    let pending!: Promise<void>
+    act(() => {
+      pending = lastHandlers().onSuccess({ publicToken: "public-token-1" })
+    })
+    // Flush past the exchange await and into the refetch
+    await act(async () => {
+      for (let i = 0; i < 10; i += 1) {
+        await Promise.resolve()
+      }
+    })
+    expect(onLinked).toHaveBeenCalledTimes(1)
+    // Refetch still pending → no success alert yet
+    expect(alertSpy).not.toHaveBeenCalled()
+
+    resolveRefetch()
+    await act(() => pending)
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Bank connected",
+      "Your bank is being linked and will appear here shortly.",
+    )
   })
 
   it("still reports success when the best-effort refetch rejects", async () => {
