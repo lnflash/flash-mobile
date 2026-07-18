@@ -130,6 +130,7 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
           placeholder="John Doe"
           value={fullName}
           errorMsg={fullNameErr}
+          autoCapitalize="words"
           onChangeText={(val) => {
             setFullNameErr(undefined)
             dispatch(setPersonalInfo({ fullName: val }))

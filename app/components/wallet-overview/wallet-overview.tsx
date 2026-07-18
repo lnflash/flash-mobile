@@ -51,13 +51,17 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   const [cashDisplayBalance, setCashDisplayBalance] = useState<string | undefined>(
     persistentState?.cashDisplayBalance || "0",
   )
+  const [cardDisplayBalance, setCardDisplayBalance] = useState<string | undefined>(
+    persistentState?.cardDisplayBalance || undefined,
+  )
 
   useEffect(() => {
     if (
       persistentState.btcDisplayBalance !== btcDisplayBalance ||
       persistentState.cashDisplayBalance !== cashDisplayBalance ||
       persistentState.btcBalance !== btcBalance ||
-      persistentState.cashBalance !== cashBalance
+      persistentState.cashBalance !== cashBalance ||
+      persistentState.cardDisplayBalance !== cardDisplayBalance
     ) {
       updateState((state) => {
         if (state)
@@ -67,43 +71,56 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
             cashDisplayBalance,
             btcBalance,
             cashBalance,
+            cardDisplayBalance,
           }
         return undefined
       })
     }
-  }, [btcDisplayBalance, cashDisplayBalance, btcBalance, cashBalance])
+  }, [btcDisplayBalance, cashDisplayBalance, btcBalance, cashBalance, cardDisplayBalance])
 
   useEffect(() => {
     if (isAuthed) formatBalance()
-  }, [isAuthed, data?.me?.defaultAccount?.wallets, btcWallet?.balance, displayCurrency])
+  }, [
+    isAuthed,
+    data?.me?.defaultAccount?.wallets,
+    btcWallet?.balance,
+    balanceInSats,
+    displayCurrency,
+    // recompute once price conversion becomes ready so the balance isn't stuck blank/stale (ENG-512)
+    moneyAmountToDisplayCurrencyString,
+  ])
 
   const formatBalance = () => {
     const extBtcWalletBalance = toBtcMoneyAmount(btcWallet?.balance ?? NaN)
-    setBtcBalance(
-      formatMoneyAmount({
-        moneyAmount: extBtcWalletBalance,
-      }),
-    )
-    setBtcDisplayBalance(
-      moneyAmountToDisplayCurrencyString({
-        moneyAmount: extBtcWalletBalance,
-      }),
-    )
+    const btcAmount = formatMoneyAmount({ moneyAmount: extBtcWalletBalance })
+    const btcDisplay = moneyAmountToDisplayCurrencyString({
+      moneyAmount: extBtcWalletBalance,
+    })
+    // Only overwrite once we have a real value. On a fresh login the wallet
+    // query can resolve before price conversion is ready (or the Cash wallet
+    // is briefly missing mid USD→USDT cutover); writing the resulting
+    // ""/undefined would clobber the balance and render a blank card (ENG-512).
+    if (btcAmount) setBtcBalance(btcAmount)
+    if (btcDisplay) setBtcDisplayBalance(btcDisplay)
 
     if (data) {
       const extUsdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
       const extUsdWalletBalance = toUsdMoneyAmount(extUsdWallet?.balance ?? NaN)
-      setCashBalance(
-        formatMoneyAmount({
-          moneyAmount: extUsdWalletBalance,
-        }),
-      )
-      setCashDisplayBalance(
-        moneyAmountToDisplayCurrencyString({
-          moneyAmount: extUsdWalletBalance,
-        }),
-      )
+      const cashAmount = formatMoneyAmount({ moneyAmount: extUsdWalletBalance })
+      const cashDisplay = moneyAmountToDisplayCurrencyString({
+        moneyAmount: extUsdWalletBalance,
+      })
+      if (cashAmount) setCashBalance(cashAmount)
+      if (cashDisplay) setCashDisplayBalance(cashDisplay)
     }
+
+    // Flashcard balance comes from the (cached) card HTML via useFlashcard and
+    // runs through the same price conversion — guard it identically so a linked
+    // card never flips to the "Add Flashcard" empty state mid-load (ENG-512).
+    const cardDisplay = moneyAmountToDisplayCurrencyString({
+      moneyAmount: toBtcMoneyAmount(balanceInSats ?? NaN),
+    })
+    if (cardDisplay) setCardDisplayBalance(cardDisplay)
   }
 
   const navigateHandler = (activeTab: string) => {
@@ -124,10 +141,6 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
     if (lnurl) navigation.navigate("Card")
     else readFlashcard()
   }
-
-  const formattedCardBalance = moneyAmountToDisplayCurrencyString({
-    moneyAmount: toBtcMoneyAmount(balanceInSats ?? NaN),
-  })
 
   return (
     <View style={{ marginHorizontal: 20 }}>
@@ -151,16 +164,18 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
           rightIcon={persistentState.backedUpBtcWallet ? undefined : "warning"}
         />
       )}
-      <Balance
-        icon={!!formattedCardBalance ? "flashcard" : "cardAdd"}
-        title={LL.HomeScreen.flashcard()}
-        amount={formattedCardBalance}
-        currency={displayCurrency}
-        emptyText={LL.HomeScreen.addFlashcard()}
-        onPress={onPressFlashcard}
-        onPressRightBtn={() => readFlashcard(false)}
-        rightIcon={"sync"}
-      />
+      {lnurl && (
+        <Balance
+          icon={cardDisplayBalance ? "flashcard" : "cardAdd"}
+          title={LL.HomeScreen.flashcard()}
+          amount={cardDisplayBalance}
+          currency={displayCurrency}
+          emptyText={LL.HomeScreen.addFlashcard()}
+          onPress={onPressFlashcard}
+          onPressRightBtn={() => readFlashcard()}
+          rightIcon={"sync"}
+        />
+      )}
     </View>
   )
 }

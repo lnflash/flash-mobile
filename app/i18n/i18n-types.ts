@@ -2023,6 +2023,10 @@ type RootTranslation = {
 		 */
 		cashout: string
 		/**
+		 * N​o​ ​c​o​n​n​e​c​t​i​o​n​ ​—​ ​s​h​o​w​i​n​g​ ​c​a​c​h​e​d​ ​b​a​l​a​n​c​e​s
+		 */
+		offlineShowingCached: string
+		/**
 		 * R​e​c​e​i​v​e
 		 */
 		receive: string
@@ -2123,22 +2127,6 @@ type RootTranslation = {
 		 * R​e​v​i​e​w​ ​o​u​r​ ​a​v​a​i​l​a​b​l​e​ ​c​u​r​r​e​n​c​y​ ​l​i​s​t​ ​a​n​d​ ​s​e​l​e​c​t​ ​y​o​u​r​ ​c​u​r​r​e​n​c​y​.
 		 */
 		currencyDesc: string
-		/**
-		 * G​e​t​ ​a​ ​F​l​a​s​h​c​a​r​d
-		 */
-		flashcardTitle: string
-		/**
-		 * F​i​n​d​ ​a​ ​F​l​a​s​h​p​o​i​n​t​ ​a​n​d​ ​g​e​t​ ​a​ ​F​l​a​s​h​c​a​r​d​ ​t​o​ ​u​s​e​ ​i​n​ ​d​a​i​l​y​ ​l​i​f​e​.
-		 */
-		flashcardDesc: string
-		/**
-		 * N​o​n​-​c​u​s​t​o​d​i​a​l​ ​w​a​l​l​e​t​s
-		 */
-		nonCustodialWalletTitle: string
-		/**
-		 * L​e​a​r​n​ ​m​o​r​e​ ​a​b​o​u​t​ ​n​o​n​-​c​u​s​t​o​d​i​a​l​ ​w​a​l​l​e​t​s​.
-		 */
-		nonCustodialWalletDesc: string
 		/**
 		 * E​m​a​i​l​ ​a​d​d​r​e​s​s
 		 */
@@ -2246,13 +2234,25 @@ type RootTranslation = {
 	}
 	BridgeKyc: {
 		/**
-		 * I​n​t​e​r​n​a​t​i​o​n​a​l​ ​T​r​a​n​s​f​e​r
+		 * U​S​D​ ​A​c​c​o​u​n​t
 		 */
 		title: string
 		/**
-		 * P​l​e​a​s​e​ ​p​r​o​v​i​d​e​ ​y​o​u​r​ ​d​e​t​a​i​l​s​ ​t​o​ ​s​e​t​ ​u​p​ ​i​n​t​e​r​n​a​t​i​o​n​a​l​ ​t​r​a​n​s​f​e​r​s
+		 * P​l​e​a​s​e​ ​p​r​o​v​i​d​e​ ​y​o​u​r​ ​d​e​t​a​i​l​s​ ​t​o​ ​s​e​t​ ​u​p​ ​y​o​u​r​ ​U​S​D​ ​a​c​c​o​u​n​t
 		 */
 		description: string
+		/**
+		 * V​e​r​i​f​i​c​a​t​i​o​n​ ​p​e​n​d​i​n​g
+		 */
+		pendingTitle: string
+		/**
+		 * Y​o​u​r​ ​i​d​e​n​t​i​t​y​ ​v​e​r​i​f​i​c​a​t​i​o​n​ ​i​s​ ​p​e​n​d​i​n​g​.​ ​P​l​e​a​s​e​ ​w​a​i​t​ ​f​o​r​ ​a​p​p​r​o​v​a​l​.
+		 */
+		pendingBody: string
+		/**
+		 * S​o​m​e​t​h​i​n​g​ ​w​e​n​t​ ​w​r​o​n​g​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		genericError: string
 		/**
 		 * F​u​l​l​ ​N​a​m​e
 		 */
@@ -3240,6 +3240,10 @@ type RootTranslation = {
 		maxAmountConvertError: RequiredParams<'amount'>
 	}
 	SettingsScreen: {
+		/**
+		 * F​l​a​s​h​c​a​r​d
+		 */
+		flashcard: string
 		/**
 		 * P​r​i​n​t​a​b​l​e​ ​S​t​a​t​i​c​ ​Q​R​ ​C​o​d​e
 		 */
@@ -5818,42 +5822,6 @@ type RootTranslation = {
 	}
 	AccountUpgrade: {
 		/**
-		 * A​c​c​o​u​n​t​ ​T​y​p​e
-		 */
-		accountType: string
-		/**
-		 * P​e​r​s​o​n​a​l
-		 */
-		personal: string
-		/**
-		 * S​e​c​u​r​e​ ​y​o​u​r​ ​w​a​l​l​e​t​ ​w​i​t​h​ ​p​h​o​n​e​ ​a​n​d​ ​e​m​a​i​l​.​ ​S​t​a​y​ ​s​a​f​e​ ​a​n​d​ ​r​e​c​o​v​e​r​ ​e​a​s​i​l​y​ ​i​f​ ​n​e​e​d​e​d
-		 */
-		personalDesc: string
-		/**
-		 * P​r​o
-		 */
-		pro: string
-		/**
-		 * A​c​c​e​p​t​ ​p​a​y​m​e​n​t​s​ ​a​n​d​ ​g​e​t​ ​d​i​s​c​o​v​e​r​e​d​ ​o​n​ ​t​h​e​ ​m​a​p​.​ ​R​e​q​u​i​r​e​s​ ​a​ ​b​u​s​i​n​e​s​s​ ​n​a​m​e​ ​a​n​d​ ​l​o​c​a​t​i​o​n​.
-		 */
-		proDesc: string
-		/**
-		 * M​e​r​c​h​a​n​t
-		 */
-		merchant: string
-		/**
-		 * G​i​v​e​ ​r​e​w​a​r​d​s​,​ ​a​p​p​e​a​r​ ​o​n​ ​t​h​e​ ​m​a​p​,​ ​a​n​d​ ​s​e​t​t​l​e​ ​t​o​ ​y​o​u​r​ ​b​a​n​k​.​ ​I​D​ ​a​n​d​ ​b​a​n​k​ ​i​n​f​o​ ​r​e​q​u​i​r​e​d​.
-		 */
-		merchantDesc: string
-		/**
-		 * I​n​t​e​r​n​a​t​i​o​n​a​l
-		 */
-		international: string
-		/**
-		 * G​e​t​ ​a​n​ ​i​n​t​e​r​n​a​t​i​o​n​a​l​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​r​o​u​t​i​n​g​ ​n​u​m​b​e​r​ ​f​o​r​ ​b​a​n​k​ ​t​r​a​n​s​f​e​r​s​.​ ​I​D​ ​r​e​q​u​i​r​e​d​.
-		 */
-		internationalDesc: string
-		/**
 		 * P​e​r​s​o​n​a​l​ ​I​n​f​o​r​m​a​t​i​o​n
 		 */
 		personalInfo: string
@@ -5958,15 +5926,105 @@ type RootTranslation = {
 		 */
 		uploadId: string
 		/**
-		 * Y​o​u​ ​s​u​c​c​e​s​s​f​u​l​l​y​ ​u​p​g​r​a​d​e​d​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​{​a​c​c​o​u​n​t​T​y​p​e​}
-		 * @param {string} accountType
+		 * Y​o​u​r​ ​a​c​c​o​u​n​t​ ​i​s​ ​v​e​r​i​f​i​e​d
 		 */
-		successUpgrade: RequiredParams<'accountType'>
+		successVerified: string
 		/**
-		 * Y​o​u​ ​s​u​c​c​e​s​s​f​u​l​l​y​ ​r​e​q​u​e​s​t​e​d​ ​t​o​ ​u​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​{​a​c​c​o​u​n​t​T​y​p​e​}
-		 * @param {string} accountType
+		 * Y​o​u​r​ ​b​a​n​k​ ​c​a​s​h​-​o​u​t​ ​r​e​q​u​e​s​t​ ​h​a​s​ ​b​e​e​n​ ​s​u​b​m​i​t​t​e​d​ ​f​o​r​ ​r​e​v​i​e​w
 		 */
-		successRequest: RequiredParams<'accountType'>
+		successBankPayoutRequest: string
+		/**
+		 * Y​o​u​r​ ​b​u​s​i​n​e​s​s​ ​u​p​g​r​a​d​e​ ​r​e​q​u​e​s​t​ ​h​a​s​ ​b​e​e​n​ ​s​u​b​m​i​t​t​e​d​ ​f​o​r​ ​r​e​v​i​e​w
+		 */
+		successBusinessRequest: string
+		/**
+		 * Y​o​u​r​ ​F​l​a​s​h​ ​a​c​c​o​u​n​t
+		 */
+		hubEyebrow: string
+		/**
+		 * D​o​ ​m​o​r​e​ ​w​i​t​h​ ​F​l​a​s​h
+		 */
+		hubTitle: string
+		/**
+		 * T​r​i​a​l​ ​a​c​c​o​u​n​t
+		 */
+		statusTrial: string
+		/**
+		 * V​e​r​i​f​i​e​d
+		 */
+		statusVerified: string
+		/**
+		 * B​u​s​i​n​e​s​s
+		 */
+		statusBusiness: string
+		/**
+		 * U​n​a​u​t​h​o​r​i​z​e​d​ ​a​c​c​o​u​n​t
+		 */
+		statusUnauthorized: string
+		/**
+		 * B​a​n​k​ ​p​a​y​o​u​t
+		 */
+		badgeBankPayout: string
+		/**
+		 * U​S​D​ ​a​c​c​o​u​n​t
+		 */
+		badgeUsdAccount: string
+		/**
+		 * W​a​y​s​ ​t​o​ ​g​e​t​ ​p​a​i​d
+		 */
+		sectionGetPaid: string
+		/**
+		 * G​r​o​w
+		 */
+		sectionGrow: string
+		/**
+		 * V​e​r​i​f​y​ ​y​o​u​r​ ​a​c​c​o​u​n​t
+		 */
+		verifyTitle: string
+		/**
+		 * J​u​s​t​ ​y​o​u​r​ ​p​h​o​n​e​ ​n​u​m​b​e​r​ ​·​ ​u​n​l​o​c​k​s​ ​h​i​g​h​e​r​ ​l​i​m​i​t​s​ ​i​n​ ​a​ ​m​i​n​u​t​e
+		 */
+		verifyDesc: string
+		/**
+		 * B​a​n​k​ ​c​a​s​h​-​o​u​t
+		 */
+		bankCashoutTitle: string
+		/**
+		 * C​a​s​h​ ​o​u​t​ ​J​M​D​ ​t​o​ ​y​o​u​r​ ​J​a​m​a​i​c​a​n​ ​b​a​n​k
+		 */
+		bankCashoutDesc: string
+		/**
+		 * U​S​D​ ​V​i​r​t​u​a​l​ ​B​a​n​k​ ​A​c​c​o​u​n​t
+		 */
+		usdAccountTitle: string
+		/**
+		 * Y​o​u​r​ ​o​w​n​ ​U​S​ ​a​c​c​o​u​n​t​ ​&​ ​r​o​u​t​i​n​g​ ​n​u​m​b​e​r​ ​—​ ​r​e​c​e​i​v​e​ ​A​C​H​,​ ​w​i​r​e​s​ ​&​ ​p​a​y​r​o​l​l
+		 */
+		usdAccountDesc: string
+		/**
+		 * V​e​r​i​f​y​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​f​i​r​s​t​ ​t​o​ ​u​n​l​o​c​k
+		 */
+		lockedVerifyFirst: string
+		/**
+		 * B​u​s​i​n​e​s​s
+		 */
+		businessTitle: string
+		/**
+		 * G​e​t​ ​o​n​ ​t​h​e​ ​F​l​a​s​h​ ​m​a​p​ ​&​ ​r​e​w​a​r​d​ ​y​o​u​r​ ​c​u​s​t​o​m​e​r​s
+		 */
+		businessDesc: string
+		/**
+		 * S​e​t​ ​u​p
+		 */
+		setUp: string
+		/**
+		 * O​n
+		 */
+		enabled: string
+		/**
+		 * I​n​ ​r​e​v​i​e​w
+		 */
+		inReview: string
 	}
 }
 
@@ -7945,6 +8003,10 @@ export type TranslationFunctions = {
 		 */
 		cashout: () => LocalizedString
 		/**
+		 * No connection — showing cached balances
+		 */
+		offlineShowingCached: () => LocalizedString
+		/**
 		 * Receive
 		 */
 		receive: () => LocalizedString
@@ -8045,22 +8107,6 @@ export type TranslationFunctions = {
 		 * Review our available currency list and select your currency.
 		 */
 		currencyDesc: () => LocalizedString
-		/**
-		 * Get a Flashcard
-		 */
-		flashcardTitle: () => LocalizedString
-		/**
-		 * Find a Flashpoint and get a Flashcard to use in daily life.
-		 */
-		flashcardDesc: () => LocalizedString
-		/**
-		 * Non-custodial wallets
-		 */
-		nonCustodialWalletTitle: () => LocalizedString
-		/**
-		 * Learn more about non-custodial wallets.
-		 */
-		nonCustodialWalletDesc: () => LocalizedString
 		/**
 		 * Email address
 		 */
@@ -8168,13 +8214,25 @@ export type TranslationFunctions = {
 	}
 	BridgeKyc: {
 		/**
-		 * International Transfer
+		 * USD Account
 		 */
 		title: () => LocalizedString
 		/**
-		 * Please provide your details to set up international transfers
+		 * Please provide your details to set up your USD account
 		 */
 		description: () => LocalizedString
+		/**
+		 * Verification pending
+		 */
+		pendingTitle: () => LocalizedString
+		/**
+		 * Your identity verification is pending. Please wait for approval.
+		 */
+		pendingBody: () => LocalizedString
+		/**
+		 * Something went wrong. Please try again.
+		 */
+		genericError: () => LocalizedString
 		/**
 		 * Full Name
 		 */
@@ -9117,6 +9175,10 @@ export type TranslationFunctions = {
 		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
 	}
 	SettingsScreen: {
+		/**
+		 * Flashcard
+		 */
+		flashcard: () => LocalizedString
 		/**
 		 * Printable Static QR Code
 		 */
@@ -11656,42 +11718,6 @@ export type TranslationFunctions = {
 	}
 	AccountUpgrade: {
 		/**
-		 * Account Type
-		 */
-		accountType: () => LocalizedString
-		/**
-		 * Personal
-		 */
-		personal: () => LocalizedString
-		/**
-		 * Secure your wallet with phone and email. Stay safe and recover easily if needed
-		 */
-		personalDesc: () => LocalizedString
-		/**
-		 * Pro
-		 */
-		pro: () => LocalizedString
-		/**
-		 * Accept payments and get discovered on the map. Requires a business name and location.
-		 */
-		proDesc: () => LocalizedString
-		/**
-		 * Merchant
-		 */
-		merchant: () => LocalizedString
-		/**
-		 * Give rewards, appear on the map, and settle to your bank. ID and bank info required.
-		 */
-		merchantDesc: () => LocalizedString
-		/**
-		 * International
-		 */
-		international: () => LocalizedString
-		/**
-		 * Get an international account and routing number for bank transfers. ID required.
-		 */
-		internationalDesc: () => LocalizedString
-		/**
 		 * Personal Information
 		 */
 		personalInfo: () => LocalizedString
@@ -11796,13 +11822,105 @@ export type TranslationFunctions = {
 		 */
 		uploadId: () => LocalizedString
 		/**
-		 * You successfully upgraded your account to {accountType}
+		 * Your account is verified
 		 */
-		successUpgrade: (arg: { accountType: string }) => LocalizedString
+		successVerified: () => LocalizedString
 		/**
-		 * You successfully requested to upgrade your account to {accountType}
+		 * Your bank cash-out request has been submitted for review
 		 */
-		successRequest: (arg: { accountType: string }) => LocalizedString
+		successBankPayoutRequest: () => LocalizedString
+		/**
+		 * Your business upgrade request has been submitted for review
+		 */
+		successBusinessRequest: () => LocalizedString
+		/**
+		 * Your Flash account
+		 */
+		hubEyebrow: () => LocalizedString
+		/**
+		 * Do more with Flash
+		 */
+		hubTitle: () => LocalizedString
+		/**
+		 * Trial account
+		 */
+		statusTrial: () => LocalizedString
+		/**
+		 * Verified
+		 */
+		statusVerified: () => LocalizedString
+		/**
+		 * Business
+		 */
+		statusBusiness: () => LocalizedString
+		/**
+		 * Unauthorized account
+		 */
+		statusUnauthorized: () => LocalizedString
+		/**
+		 * Bank payout
+		 */
+		badgeBankPayout: () => LocalizedString
+		/**
+		 * USD account
+		 */
+		badgeUsdAccount: () => LocalizedString
+		/**
+		 * Ways to get paid
+		 */
+		sectionGetPaid: () => LocalizedString
+		/**
+		 * Grow
+		 */
+		sectionGrow: () => LocalizedString
+		/**
+		 * Verify your account
+		 */
+		verifyTitle: () => LocalizedString
+		/**
+		 * Just your phone number · unlocks higher limits in a minute
+		 */
+		verifyDesc: () => LocalizedString
+		/**
+		 * Bank cash-out
+		 */
+		bankCashoutTitle: () => LocalizedString
+		/**
+		 * Cash out JMD to your Jamaican bank
+		 */
+		bankCashoutDesc: () => LocalizedString
+		/**
+		 * USD Virtual Bank Account
+		 */
+		usdAccountTitle: () => LocalizedString
+		/**
+		 * Your own US account & routing number — receive ACH, wires & payroll
+		 */
+		usdAccountDesc: () => LocalizedString
+		/**
+		 * Verify your account first to unlock
+		 */
+		lockedVerifyFirst: () => LocalizedString
+		/**
+		 * Business
+		 */
+		businessTitle: () => LocalizedString
+		/**
+		 * Get on the Flash map & reward your customers
+		 */
+		businessDesc: () => LocalizedString
+		/**
+		 * Set up
+		 */
+		setUp: () => LocalizedString
+		/**
+		 * On
+		 */
+		enabled: () => LocalizedString
+		/**
+		 * In review
+		 */
+		inReview: () => LocalizedString
 	}
 }
 

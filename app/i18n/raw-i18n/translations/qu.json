@@ -534,17 +534,14 @@
     "upgradePendingDesc": "Paykunapa contranpi llamk'anankupaq mañakusqankuqa qhawarisqa kashan.",
     "currencyTitle": "Qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi qhichwa simipi",
     "currencyDesc": "Ñoqanchispa qolqeta qhawaychis, chaymantataq qollqeta ajllaychis.",
-    "flashcardTitle": "Qawasun Flashcard",
-    "flashcardDesc": "Flashpoint-ta tarinki, chaymantataq sapa p'unchawpaqmi Flashcard-ta tarinki.",
-    "nonCustodialWalletTitle": "Mana custodial qollqekunaqa",
-    "nonCustodialWalletDesc": "Commons nisqapi suyukunata uyarinakunatapas tarinki kaymantam: Wallet non-custodial.",
     "emailTitle": "E-mail address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address: Email address",
     "emailDesc": "Imaynatá qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki, qhelqasunki.",
     "btcWalletTitle": "BTC qollqeta atiy",
     "btcWalletDesc": "Ashtahuanpish, ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuan ashtahuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuanhuan",
     "backupTitle": "BTC qollqeykita saqey.",
     "backupDesc": "Qhapaq qollqeyki Bitcoin qollqeykita kutichipuspa, allinpaq qhaway.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Mana tinkuy — waqaychasqa qullqikuna rikuchisqa"
   },
   "PinScreen": {
     "attemptsRemaining": "Mana kani PIN. {attemptsRemaining: number} rantiq kani.",
@@ -787,7 +784,8 @@
     "advanceMode": "Bitcoin Account (Advanced Mode) sutiyuq katiguriyapi llamk'apuy",
     "keysManagement": "Qhapaq qollqeta kutichinapaq (wallet backup)",
     "showBtcAccount": "Show Bitcoin cuenta",
-    "hideBtcAccount": "Hide Bitcoin cuenta"
+    "hideBtcAccount": "Hide Bitcoin cuenta",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1474,13 +1472,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Cuenta Tipu",
-    "personal": "Personal  Personal ",
-    "personalDesc": "Qhapaq qollqeykita llamkaywan, correo electrónicowan jark'aq.",
-    "pro": "Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro",
-    "proDesc": "Paykunata chaskiyta munaspaqa, cartapi tarikunchik.",
-    "merchant": "Comerciante sutiyuq p'anqamanqa kay qatiq p'anqakunam t'inkimun:",
-    "merchantDesc": "Qhapaq qollqeta churay, mapapi rikhuriy, qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta qollqeta.",
     "personalInfo": "Qhapaq qhichwa qillqasqan",
     "fullName": "Llumpayta sutin",
     "phoneNumber": "Nombre de teléfono sutiyuq p'anqamanqa kay qatiq p'anqakunam t'inkimun:",
@@ -1507,10 +1498,31 @@
     "accountNum": "Ñawpaq qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa qillqasqa",
     "accountNumPlaceholder": "Paykunapa huñunakuymanta willakuyninkunata willay.",
     "uploadId": "Commons nisqaqa multimidya kapuyninkunayuqmi kay hawa: Upload ID Document.",
-    "successUpgrade": "Qawasqaykimantaqa {accountType: string}-manmi hatuncharqanki.",
-    "successRequest": "Qamkunaqa allinpaqmi mañakurqankichik {accountType: string} sutiyuq p'anqamanqa kay qatiq p'anqakunam t'inkimun:",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Bancoman pagay",
+    "badgeUsdAccount": "USD cuenta",
+    "bankCashoutTitle": "Bancoman horqoy",
+    "bankCashoutDesc": "JMD qullqita Jamaica bancoykiman horqoy",
+    "businessTitle": "Negocio",
+    "businessDesc": "Flash mapapi rikhuriy, rantiqkunata premiay",
+    "enabled": "Hap'ichisqa",
+    "hubEyebrow": "Flash cuentayki",
+    "hubTitle": "Flashwan astawan ruray",
+    "inReview": "Qhawaypi kachkan",
+    "sectionGetPaid": "Imaynata pagasqa kanki",
+    "sectionGrow": "Wiñay",
+    "setUp": "Churay",
+    "statusBusiness": "Negocio",
+    "statusTrial": "Prueba cuenta",
+    "statusUnauthorized": "Mana kamachisqa cuenta",
+    "statusVerified": "Chiqaqchasqa",
+    "successBankPayoutRequest": "Bancoman horqoy mañakuyniyki qhawanapaq apachisqa",
+    "successBusinessRequest": "Negocio wicharichiy mañakuyniyki qhawanapaq apachisqa",
+    "successVerified": "Cuentayki chiqaqchasqa",
+    "usdAccountTitle": "USD virtual banco cuenta",
+    "usdAccountDesc": "Kikiykipa USA cuenta, routing numeroyki — ACH, transferencia, pago chaskiy",
+    "verifyTitle": "Cuentaykita chiqaqchay",
+    "verifyDesc": "Telefono numeroykillawan · aswan hatun limitekuna huk minutopi",
+    "lockedVerifyFirst": "Ñawpaqta cuentaykita chiqaqchay kichanapaq"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1541,8 +1553,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "USD cuenta",
+    "description": "Willakuyniykita quy USD cuentaykita churanapaq",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1555,7 +1567,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Chiqaqchay suyasqa",
+    "pendingBody": "Identidadniyki chiqaqchay suyasqa kachkan. Aprobacionta suyay.",
+    "genericError": "Imapas mana allin. Ama hina kaspa, wakmanta ruray."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

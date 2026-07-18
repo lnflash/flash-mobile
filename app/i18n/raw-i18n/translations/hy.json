@@ -534,17 +534,14 @@
     "upgradePendingDesc": "Ձեր հաշիվի թարմացման խնդրանքն վերանայվում է:",
     "currencyTitle": "Փոխեք ձեր տեղական արժույթը",
     "currencyDesc": "Վերանայեք մեր մատչելի արժույթի ցուցակը եւ ընտրեք ձեր արժույթը:",
-    "flashcardTitle": "Ստացեք Flashcard",
-    "flashcardDesc": "Գտեք Flashpoint եւ ձեռք բերեք Flashcard, որը կօգտագործեք ամենօրյա կյանքում:",
-    "nonCustodialWalletTitle": "Ոչ խնամակալական դրամապանակները",
-    "nonCustodialWalletDesc": "Կարդացեք ավելին ոչ խնամակալական դրամապանակների մասին:",
     "emailTitle": "Էլեկտրոնային հասցեն",
     "emailDesc": "Ավելացրեք ձեր էլ.փոստի հասցեն, որպեսզի ապահովեք ձեր հաշիվը եւ մուտք գործեք էլ.փոստի հասցեն օգտագործելով:",
     "btcWalletTitle": "Հնարավորացնել BTC դրամապանակ",
     "btcWalletDesc": "Հեշտությամբ փոխանցեք ավելի մեծ գումարներ Bitcoin- ում:",
     "backupTitle": "Պահպանեք ձեր BTC թղթադրամը",
     "backupDesc": "Կառուցեք եւ ապահովեք ձեր Bitcoin դրամապանակը վերականգնման արտահայտությունը օգտագործելով:",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Կապ չկա — ցուցադրվում են պահված մնացորդները"
   },
   "PinScreen": {
     "attemptsRemaining": "Սխալ PIN: {attemptsRemaining: number} փորձեր են մնացել։ ",
@@ -787,7 +784,8 @@
     "advanceMode": "Աջակցեք Bitcoin հաշիվը (Ադվանսացված ռեժիմ) ",
     "keysManagement": "Հարցաթղթադրամների կրկնօրինակում",
     "showBtcAccount": "Ցույց տուր Bitcoin հաշիվ",
-    "hideBtcAccount": "Թաքցնել Bitcoin հաշիվ"
+    "hideBtcAccount": "Թաքցնել Bitcoin հաշիվ",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1474,13 +1472,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Հաշվի տեսակ",
-    "personal": "Անձնական",
-    "personalDesc": "Պաշտպանեք ձեր դրամապանակը հեռախոսով եւ էլեկտրոնային փոստով: Պաշտպանեք ձեր անվտանգությունը եւ անհրաժեշտության դեպքում հեշտությամբ վերականգնվեք:",
-    "pro": "Պրո",
-    "proDesc": "Ընդունեք վճարումներ եւ հայտնվեք քարտեզի վրա: Այն պահանջում է բիզնեսի անուն եւ վայր:",
-    "merchant": "Առեւտրի",
-    "merchantDesc": "Տվեք պարգեւներ, հայտնվեք քարտեզում եւ կարգավորվեք ձեր բանկի հետ: Անհրաժեշտ է անձնագիր եւ բանկային տեղեկություններ:",
     "personalInfo": "Անձնական տվյալներ",
     "fullName": "Ամբողջական անունը",
     "phoneNumber": "Հեռախոսահամար ",
@@ -1507,10 +1498,31 @@
     "accountNum": "Բաժնորդագրության թիվը",
     "accountNumPlaceholder": "Տեղադրել ձեր հաշիվի համարը",
     "uploadId": "Բեռնել ID փաստաթուղթ",
-    "successUpgrade": "Դուք հաջողությամբ կատարելագործել եք ձեր հաշիվը մինչեւ {accountType: string}",
-    "successRequest": "Դուք հաջողությամբ խնդրել եք թարմացնել ձեր հաշիվը մինչեւ {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Բանկային վճարում",
+    "badgeUsdAccount": "USD հաշիվ",
+    "bankCashoutTitle": "Կանխիկացում բանկ",
+    "bankCashoutDesc": "Կանխիկացրեք JMD ձեր ջամայկյան բանկ",
+    "businessTitle": "Բիզնես",
+    "businessDesc": "Հայտնվեք Flash-ի քարտեզում և պարգևատրեք ձեր հաճախորդներին",
+    "enabled": "Միացված",
+    "hubEyebrow": "Ձեր Flash հաշիվը",
+    "hubTitle": "Արեք ավելին Flash-ի հետ",
+    "inReview": "Դիտարկվում է",
+    "sectionGetPaid": "Վճարումներ ստանալու եղանակներ",
+    "sectionGrow": "Աճ",
+    "setUp": "Կարգավորել",
+    "statusBusiness": "Բիզնես",
+    "statusTrial": "Փորձնական հաշիվ",
+    "statusUnauthorized": "Չլիազորված հաշիվ",
+    "statusVerified": "Հաստատված",
+    "successBankPayoutRequest": "Ձեր բանկային կանխիկացման հայտը ուղարկվել է դիտարկման",
+    "successBusinessRequest": "Ձեր բիզնես թարմացման հայտը ուղարկվել է դիտարկման",
+    "successVerified": "Ձեր հաշիվը հաստատված է",
+    "usdAccountTitle": "Վիրտուալ USD բանկային հաշիվ",
+    "usdAccountDesc": "Ձեր սեփական ԱՄՆ հաշվի և routing համարը — ստացեք ACH, փոխանցումներ և աշխատավարձ",
+    "verifyTitle": "Հաստատեք ձեր հաշիվը",
+    "verifyDesc": "Միայն ձեր հեռախոսահամարը · ավելի բարձր սահմաններ մեկ րոպեում",
+    "lockedVerifyFirst": "Նախ հաստատեք ձեր հաշիվը՝ բացելու համար"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1541,8 +1553,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "USD հաշիվ",
+    "description": "Խնդրում ենք տրամադրել ձեր տվյալները USD հաշիվը կարգավորելու համար",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1555,7 +1567,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Հաստատումը սպասման մեջ է",
+    "pendingBody": "Ձեր ինքնության հաստատումը սպասման մեջ է։ Խնդրում ենք սպասել հաստատմանը։",
+    "genericError": "Ինչ-որ բան սխալ գնաց։ Խնդրում ենք փորձել կրկին։"
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

@@ -534,17 +534,14 @@
     "upgradePendingDesc": "Uw account upgrade aanvraag is onder review.",
     "currencyTitle": "Verander naar uw lokale valuta",
     "currencyDesc": "Bekijk onze beschikbare valutalijst en selecteer uw valuta.",
-    "flashcardTitle": "Krijg een Flashcard",
-    "flashcardDesc": "Zoek een Flashpoint en krijg een Flashcard om in het dagelijks leven te gebruiken.",
-    "nonCustodialWalletTitle": "Niet-custodiële portemonnees",
-    "nonCustodialWalletDesc": "Leer meer over niet-verzorgingsbeurzen.",
     "emailTitle": "E-mailadres",
     "emailDesc": "Voeg uw e-mailadres toe om uw account te beveiligen en login met behulp van een e-mailadres.",
     "btcWalletTitle": "Enable BTC wallet",
     "btcWalletDesc": "Makkelijk overbrengen van grotere bedragen in Bitcoin.",
     "backupTitle": "Backup je BTC-portemonnee.",
     "backupDesc": "Backup en beveiligen van uw Bitcoin portemonnee met behulp van recovery phrase.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Geen verbinding — opgeslagen saldi worden getoond"
   },
   "PinScreen": {
     "attemptsRemaining": "Onjuiste pincode. {attemptsRemaining: number} resterende pogingen.",
@@ -787,7 +784,8 @@
     "advanceMode": "Enable Bitcoin Account (Advanced Mode) ",
     "keysManagement": "Back-up van het portemonnee",
     "showBtcAccount": "Toon Bitcoin-account",
-    "hideBtcAccount": "Hide Bitcoin account"
+    "hideBtcAccount": "Hide Bitcoin account",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notificatie instellingen",
@@ -1474,13 +1472,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Accountstype",
-    "personal": "Persoonlijk Persoonlijk",
-    "personalDesc": "Beveilig je portemonnee met telefoon en e-mail.",
-    "pro": "Pro Pro",
-    "proDesc": "Accepteer betalingen en word ontdekt op de kaart.Het vereist een bedrijfsnaam en locatie.",
-    "merchant": "Handelaar",
-    "merchantDesc": "Geef beloningen, verschijn op de kaart en maak een afrekening bij je bank.",
     "personalInfo": "Persoonlijke informatie",
     "fullName": "Volledige naam",
     "phoneNumber": "Telefoonnummer ",
@@ -1507,10 +1498,31 @@
     "accountNum": "Accountsummer  Accountsummer ",
     "accountNumPlaceholder": "Voer uw accountnummer in",
     "uploadId": "Upload ID Document",
-    "successUpgrade": "U hebt uw account met succes bijgewerkt naar {accountType: string}",
-    "successRequest": "U heeft met succes verzocht om uw account te upgraden naar {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Bankuitbetaling",
+    "badgeUsdAccount": "USD-rekening",
+    "bankCashoutTitle": "Uitbetalen naar bank",
+    "bankCashoutDesc": "Betaal JMD uit naar je Jamaicaanse bank",
+    "businessTitle": "Bedrijf",
+    "businessDesc": "Kom op de Flash-kaart & beloon je klanten",
+    "enabled": "Aan",
+    "hubEyebrow": "Je Flash-account",
+    "hubTitle": "Doe meer met Flash",
+    "inReview": "In behandeling",
+    "sectionGetPaid": "Manieren om betaald te worden",
+    "sectionGrow": "Groeien",
+    "setUp": "Instellen",
+    "statusBusiness": "Bedrijf",
+    "statusTrial": "Proefaccount",
+    "statusUnauthorized": "Ongeautoriseerd account",
+    "statusVerified": "Geverifieerd",
+    "successBankPayoutRequest": "Je verzoek voor bankuitbetaling is ingediend ter beoordeling",
+    "successBusinessRequest": "Je verzoek voor een bedrijfsupgrade is ingediend ter beoordeling",
+    "successVerified": "Je account is geverifieerd",
+    "usdAccountTitle": "Virtuele USD-bankrekening",
+    "usdAccountDesc": "Je eigen Amerikaanse rekening- en routingnummer — ontvang ACH, overboekingen & salaris",
+    "verifyTitle": "Verifieer je account",
+    "verifyDesc": "Alleen je telefoonnummer · hogere limieten binnen een minuut",
+    "lockedVerifyFirst": "Verifieer eerst je account om te ontgrendelen"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1541,8 +1553,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "USD-rekening",
+    "description": "Geef je gegevens op om je USD-rekening in te stellen",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1555,7 +1567,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Verificatie in behandeling",
+    "pendingBody": "Je identiteitsverificatie is in behandeling. Wacht op goedkeuring.",
+    "genericError": "Er is iets misgegaan. Probeer het opnieuw."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

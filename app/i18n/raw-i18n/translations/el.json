@@ -534,17 +534,14 @@
     "upgradePendingDesc": "Το αίτημα αναβάθμισης του λογαριασμού σας εξετάζεται.",
     "currencyTitle": "Αλλαγή σε τοπικό νόμισμα",
     "currencyDesc": "Εξετάστε τη λίστα των διαθέσιμων νομισμάτων και επιλέξτε το νόμισμά σας.",
-    "flashcardTitle": "Πάρτε ένα Flashcard",
-    "flashcardDesc": "Βρείτε ένα Flashpoint και πάρετε ένα Flashcard για να το χρησιμοποιήσετε στην καθημερινή σας ζωή.",
-    "nonCustodialWalletTitle": "Τα μη φυλακισμένα πορτοφόλια",
-    "nonCustodialWalletDesc": "Μάθετε περισσότερα σχετικά με τα μη φυλακισμένα πορτοφόλια.",
     "emailTitle": "Η διεύθυνση ηλεκτρονικού ταχυδρομείου",
     "emailDesc": "Προσθέστε τη διεύθυνση ηλεκτρονικού ταχυδρομείου σας για να προστατεύσετε το λογαριασμό σας και να συνδεθείτε χρησιμοποιώντας τη διεύθυνση ηλεκτρονικού ταχυδρομείου.",
     "btcWalletTitle": "Επιτρέψτε το BTC wallet",
     "btcWalletDesc": "Ελαφρύ μεταφορά μεγαλύτερων ποσών σε Bitcoin.",
     "backupTitle": "Κάντε αντίγραφο ασφαλείας στο πορτοφόλι σας BTC",
     "backupDesc": "Κάντε αντίγραφο ασφαλείας και ασφαλίστε το πορτοφόλι σας Bitcoin χρησιμοποιώντας τη φράση recovery.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Χωρίς σύνδεση — εμφανίζονται αποθηκευμένα υπόλοιπα"
   },
   "PinScreen": {
     "attemptsRemaining": "Λανθασμένο PIN. {attemptsRemaining: number} προσπάθειες που απομένουν.",
@@ -787,7 +784,8 @@
     "advanceMode": "Επιτρέψτε το λογαριασμό Bitcoin (Advanced Mode)",
     "keysManagement": "Υποστήριξη του πορτοφόλι",
     "showBtcAccount": "Δείξτε λογαριασμό Bitcoin",
-    "hideBtcAccount": "Κρύψτε το λογαριασμό Bitcoin"
+    "hideBtcAccount": "Κρύψτε το λογαριασμό Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Ρυθμίσεις ειδοποιήσεων",
@@ -1474,13 +1472,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Τύπος Λογαριασμού",
-    "personal": "Προσωπικό Προσωπικό",
-    "personalDesc": "Κρατήστε το πορτοφόλι σας ασφαλές με το τηλέφωνο και το ηλεκτρονικό ταχυδρομείο.",
-    "pro": "Το Pro Pro",
-    "proDesc": "Απαιτεί όνομα και τοποθεσία της επιχείρησης.",
-    "merchant": "Εμπορεύτης Εμπορεύτης",
-    "merchantDesc": "Δώστε ανταμοιβές, εμφανιστείτε στον χάρτη και διευθετήστε με την τράπεζά σας.",
     "personalInfo": "Προσωπικές πληροφορίες",
     "fullName": "Ολόκληρο το όνομα",
     "phoneNumber": "Αριθμός τηλεφώνου",
@@ -1507,10 +1498,31 @@
     "accountNum": "Ο αριθμός λογαριασμού ",
     "accountNumPlaceholder": "Εισάγετε τον αριθμό του λογαριασμού σας",
     "uploadId": "Ανεβάστε το αναγνωριστικό έγγραφο.",
-    "successUpgrade": "Αναβαθμίσατε με επιτυχία το λογαριασμό σας σε {accountType: string}",
-    "successRequest": "Ζήτησες με επιτυχία να αναβαθμίσεις το λογαριασμό σου σε {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Πληρωμή σε τράπεζα",
+    "badgeUsdAccount": "Λογαριασμός USD",
+    "bankCashoutTitle": "Ανάληψη σε τράπεζα",
+    "bankCashoutDesc": "Κάνε ανάληψη JMD στην τζαμαϊκανή σου τράπεζα",
+    "businessTitle": "Επιχείρηση",
+    "businessDesc": "Μπες στον χάρτη του Flash & επιβράβευσε τους πελάτες σου",
+    "enabled": "Ενεργό",
+    "hubEyebrow": "Ο λογαριασμός σου στο Flash",
+    "hubTitle": "Κάνε περισσότερα με το Flash",
+    "inReview": "Σε έλεγχο",
+    "sectionGetPaid": "Τρόποι να πληρώνεσαι",
+    "sectionGrow": "Ανάπτυξη",
+    "setUp": "Ρύθμιση",
+    "statusBusiness": "Επιχείρηση",
+    "statusTrial": "Δοκιμαστικός λογαριασμός",
+    "statusUnauthorized": "Μη εξουσιοδοτημένος λογαριασμός",
+    "statusVerified": "Επαληθευμένος",
+    "successBankPayoutRequest": "Το αίτημα ανάληψης σε τράπεζα υποβλήθηκε για έλεγχο",
+    "successBusinessRequest": "Το αίτημα αναβάθμισης σε επιχείρηση υποβλήθηκε για έλεγχο",
+    "successVerified": "Ο λογαριασμός σου επαληθεύτηκε",
+    "usdAccountTitle": "Εικονικός τραπεζικός λογαριασμός USD",
+    "usdAccountDesc": "Δικός σου αριθμός λογαριασμού & routing ΗΠΑ — δέξου ACH, εμβάσματα & μισθοδοσία",
+    "verifyTitle": "Επαλήθευσε τον λογαριασμό σου",
+    "verifyDesc": "Μόνο ο αριθμός τηλεφώνου σου · υψηλότερα όρια σε ένα λεπτό",
+    "lockedVerifyFirst": "Επαλήθευσε πρώτα τον λογαριασμό σου για ξεκλείδωμα"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1541,8 +1553,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "Λογαριασμός USD",
+    "description": "Δώσε τα στοιχεία σου για να ρυθμίσεις τον λογαριασμό σου σε USD",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1555,7 +1567,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Επαλήθευση σε εκκρεμότητα",
+    "pendingBody": "Η επαλήθευση της ταυτότητάς σου εκκρεμεί. Περίμενε την έγκριση.",
+    "genericError": "Κάτι πήγε στραβά. Δοκίμασε ξανά."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

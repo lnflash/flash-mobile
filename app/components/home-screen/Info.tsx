@@ -4,9 +4,8 @@ import { ApolloError } from "@apollo/client"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { useNetInfo } from "@react-native-community/netinfo"
-
 // hooks
+import { useConnectivity } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -37,7 +36,7 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
   const styles = useStyles()
   const { colors, mode } = useTheme().theme
   const { LL } = useI18nContext()
-  const { isInternetReachable } = useNetInfo()
+  const { isOffline } = useConnectivity()
   const { persistentState, updateState } = usePersistentStateContext()
 
   const { isAdvanceMode, unclaimedDeposits = 0 } = persistentState
@@ -65,15 +64,31 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
     navigation.navigate("UnclaimedDepositsList")
   }, [navigation])
 
-  if (isInternetReachable === false) {
+  if (isOffline) {
     return (
       <View style={styles.wrapper}>
-        <GaloyErrorBox errorMessage="Wallet is offline" />
+        <GaloyErrorBox errorMessage={LL.HomeScreen.offlineShowingCached()} />
       </View>
     )
   }
 
-  if (!error && !hasUnclaimedDeposits) {
+  // Transport-level failures (fetch threw — no HTTP response) are represented
+  // by the offline banner above (with debounce) — surfacing them here too
+  // would flash "offline" on every transient blip even when retries succeed.
+  // Server failures are NOT transient in that sense: Apollo wraps non-2xx
+  // responses as ServerError/ServerParseError (both carry statusCode) with
+  // empty graphQLErrors, and during a backend incident the reachability probe
+  // can stay green — suppressing those would hide the incident entirely, so
+  // they keep displaying like any real error.
+  const isTransientNetworkError =
+    error instanceof ApolloError &&
+    !error.graphQLErrors?.length &&
+    error.networkError !== null &&
+    !("statusCode" in error.networkError)
+
+  const displayError = isTransientNetworkError ? undefined : error
+
+  if (!displayError && !hasUnclaimedDeposits) {
     return null
   }
 
@@ -89,8 +104,8 @@ const Info: React.FC<Props> = ({ refreshTriggered, error }) => {
           </Text>
         </View>
       )}
-      {error && hasUnclaimedDeposits && <View style={styles.spacer} />}
-      {error && <GaloyErrorBox errorMessage={getErrorMessages(error)} />}
+      {displayError && hasUnclaimedDeposits && <View style={styles.spacer} />}
+      {displayError && <GaloyErrorBox errorMessage={getErrorMessages(displayError)} />}
     </View>
   )
 }

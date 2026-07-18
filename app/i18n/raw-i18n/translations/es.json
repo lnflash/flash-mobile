@@ -534,17 +534,14 @@
     "upgradePendingDesc": "Su solicitud de actualización de cuenta está siendo revisada.",
     "currencyTitle": "Cambiar a su moneda local",
     "currencyDesc": "Revise nuestra lista de monedas disponibles y seleccione su moneda.",
-    "flashcardTitle": "Obtenga un Flashcard",
-    "flashcardDesc": "Encuentra un Flashpoint y consigue un Flashcard para usar en la vida diaria.",
-    "nonCustodialWalletTitle": "Carteras no custodial",
-    "nonCustodialWalletDesc": "Obtenga más información sobre las billeteras no custodial.",
     "emailTitle": "La dirección de correo electrónico",
     "emailDesc": "Agregue su dirección de correo electrónico para asegurar su cuenta y iniciar sesión utilizando la dirección de correo electrónico.",
     "btcWalletTitle": "Habilitar la billetera BTC",
     "btcWalletDesc": "Transfiere fácilmente cantidades más grandes en Bitcoin.",
     "backupTitle": "Haga una copia de seguridad de su billetera BTC",
     "backupDesc": "Haga una copia de seguridad y asegure su billetera Bitcoin usando la frase de recuperación.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Sin conexión — mostrando saldos en caché"
   },
   "PinScreen": {
     "attemptsRemaining": "PIN incorrecto. Quedan {attemptsRemaining} intentos.",
@@ -787,7 +784,8 @@
     "advanceMode": "Habilitar la cuenta Bitcoin (modo avanzado)",
     "keysManagement": "Backup de billetera",
     "showBtcAccount": "Muestre su cuenta Bitcoin",
-    "hideBtcAccount": "Ocultar la cuenta Bitcoin"
+    "hideBtcAccount": "Ocultar la cuenta Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Configuración de Notificaciones ",
@@ -1474,13 +1472,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Tipo de Cuenta",
-    "personal": "Personal Personal",
-    "personalDesc": "Manténgase seguro y recupere fácilmente si es necesario",
-    "pro": "Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro",
-    "proDesc": "Acceptar pagos y ser descubierto en el mapa requiere un nombre de negocio y ubicación.",
-    "merchant": "Merchant Merchant",
-    "merchantDesc": "Ofrece recompensas, aparece en el mapa y se liquida con su banco. se requiere identificación y información bancaria.",
     "personalInfo": "Información personal",
     "fullName": "nombre completo",
     "phoneNumber": "Número de teléfono ",
@@ -1507,10 +1498,31 @@
     "accountNum": "Número de Cuenta ",
     "accountNumPlaceholder": "Ingrese su número de cuenta",
     "uploadId": "Sube el documento de identificación",
-    "successUpgrade": "Usted ha actualizado con éxito su cuenta a {accountType: string}",
-    "successRequest": "Usted solicitó con éxito actualizar su cuenta a {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Retiro bancario",
+    "badgeUsdAccount": "Cuenta en USD",
+    "bankCashoutTitle": "Retiro bancario",
+    "bankCashoutDesc": "Retira JMD a tu banco jamaiquino",
+    "businessTitle": "Negocio",
+    "businessDesc": "Aparece en el mapa de Flash y premia a tus clientes",
+    "enabled": "Activo",
+    "hubEyebrow": "Tu cuenta de Flash",
+    "hubTitle": "Haz más con Flash",
+    "inReview": "En revisión",
+    "sectionGetPaid": "Formas de recibir pagos",
+    "sectionGrow": "Crece",
+    "setUp": "Configurar",
+    "statusBusiness": "Negocio",
+    "statusTrial": "Cuenta de prueba",
+    "statusUnauthorized": "Cuenta no autorizada",
+    "statusVerified": "Verificada",
+    "successBankPayoutRequest": "Tu solicitud de retiro bancario fue enviada para revisión",
+    "successBusinessRequest": "Tu solicitud de actualización a negocio fue enviada para revisión",
+    "successVerified": "Tu cuenta está verificada",
+    "usdAccountTitle": "Cuenta bancaria virtual en USD",
+    "usdAccountDesc": "Tu propio número de cuenta y routing de EE. UU. — recibe ACH, transferencias y nómina",
+    "verifyTitle": "Verifica tu cuenta",
+    "verifyDesc": "Solo tu número de teléfono · límites más altos en un minuto",
+    "lockedVerifyFirst": "Verifica tu cuenta primero para desbloquear"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1541,8 +1553,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "Cuenta en USD",
+    "description": "Proporciona tus datos para configurar tu cuenta en USD",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1555,7 +1567,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Verificación pendiente",
+    "pendingBody": "La verificación de tu identidad está pendiente. Espera la aprobación.",
+    "genericError": "Algo salió mal. Inténtalo de nuevo."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

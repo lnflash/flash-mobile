@@ -534,17 +534,14 @@
     "upgradePendingDesc": "การขอปรับปรุงบัญชีของคุณกําลังถูกพิจารณา",
     "currencyTitle": "เปลี่ยนไปยังเงินของท้องถิ่นของคุณ",
     "currencyDesc": "ตรวจสอบรายการสกุลเงินที่เรามี และเลือกสกุลเงินของคุณ",
-    "flashcardTitle": "รับ Flashcard",
-    "flashcardDesc": "ค้นหา Flashpoint และใช้ Flashcard ในชีวิตประจําวัน",
-    "nonCustodialWalletTitle": "กระเป๋าเปลือกที่ไม่ใช่ของฝ่ายปกครอง",
-    "nonCustodialWalletDesc": "เรียนรู้เพิ่มเติมเกี่ยวกับกระเป๋าเปลือกที่ไม่ใช่ของฝ่ายปกครอง",
     "emailTitle": "ที่อยู่อีเมล",
     "emailDesc": "เพิ่มเติมที่อยู่อีเมลของคุณเพื่อคุ้มครองบัญชี และเข้าใช้บริการด้วยที่อยู่อีเมล",
     "btcWalletTitle": "Enable BTC wallet",
     "btcWalletDesc": "การโอนเงินจํานวนมากขึ้นง่ายใน Bitcoin",
     "backupTitle": "ทําสํารองกระเป๋าเงิน BTC ของคุณ",
     "backupDesc": "แบ็กคัพและคุ้มครองกระเป๋าเป้ Bitcoin ของคุณ โดยใช้ประโยคการฟื้นฟู.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "ไม่มีการเชื่อมต่อ — แสดงยอดคงเหลือที่บันทึกไว้"
   },
   "PinScreen": {
     "attemptsRemaining": "พินนี้ผิด มีโอกาสใส่พินอีก {attemptsRemaining: number} ครั้ง",
@@ -787,7 +784,8 @@
     "advanceMode": "Enable Bitcoin Account (Advanced Mode) ",
     "keysManagement": "การสํารอง Wallet ",
     "showBtcAccount": "แสดงบัญชี Bitcoin",
-    "hideBtcAccount": "ซ่อนบัญชี Bitcoin"
+    "hideBtcAccount": "ซ่อนบัญชี Bitcoin",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1474,13 +1472,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "ประเภทบัญชี",
-    "personal": "รายละเอียดส่วนตัว",
-    "personalDesc": "ปลอดภัยกระเป๋าเปลือกของคุณด้วยโทรศัพท์และอีเมล ปลอดภัยและฟื้นฟูได้อย่างง่ายดายถ้าต้องการ",
-    "pro": "โปร โปร",
-    "proDesc": "ยอมรับการชําระเงินและได้รับการค้นพบบนแผนที่ จําเป็นต้องมีชื่อและสถานที่ของธุรกิจ",
-    "merchant": "นักค้า",
-    "merchantDesc": "แจกรางวัล ปรากฏบนแผนที่ และชําระเงินกับธนาคารของคุณ จําเป็นต้องมีบัตรประชาชนและข้อมูลธนาคาร",
     "personalInfo": "ข้อมูลส่วนตัว",
     "fullName": "ชื่อเต็ม",
     "phoneNumber": "เบอร์โทรศัพท์",
@@ -1507,10 +1498,31 @@
     "accountNum": "เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี เบอร์บัญชี",
     "accountNumPlaceholder": "กรอกหมายเลขบัญชีของคุณ",
     "uploadId": "อัพโหลด ID Document",
-    "successUpgrade": "คุณได้ปรับปรุงบัญชีของคุณเป็น {accountType: string} ได้สําเร็จ",
-    "successRequest": "คุณขอให้อัพเกรดบัญชีของคุณเป็น {accountType: string} ได้สําเร็จ",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "การจ่ายเงินเข้าธนาคาร",
+    "badgeUsdAccount": "บัญชี USD",
+    "bankCashoutTitle": "ถอนเงินเข้าธนาคาร",
+    "bankCashoutDesc": "ถอน JMD เข้าธนาคารจาเมกาของคุณ",
+    "businessTitle": "ธุรกิจ",
+    "businessDesc": "แสดงบนแผนที่ Flash และให้รางวัลลูกค้าของคุณ",
+    "enabled": "เปิดใช้งาน",
+    "hubEyebrow": "บัญชี Flash ของคุณ",
+    "hubTitle": "ทำได้มากขึ้นกับ Flash",
+    "inReview": "กำลังตรวจสอบ",
+    "sectionGetPaid": "วิธีรับเงิน",
+    "sectionGrow": "เติบโต",
+    "setUp": "ตั้งค่า",
+    "statusBusiness": "ธุรกิจ",
+    "statusTrial": "บัญชีทดลอง",
+    "statusUnauthorized": "บัญชีไม่ได้รับอนุญาต",
+    "statusVerified": "ยืนยันแล้ว",
+    "successBankPayoutRequest": "คำขอถอนเงินเข้าธนาคารของคุณถูกส่งเพื่อตรวจสอบแล้ว",
+    "successBusinessRequest": "คำขออัปเกรดธุรกิจของคุณถูกส่งเพื่อตรวจสอบแล้ว",
+    "successVerified": "บัญชีของคุณได้รับการยืนยันแล้ว",
+    "usdAccountTitle": "บัญชีธนาคารเสมือน USD",
+    "usdAccountDesc": "เลขบัญชีและเลข routing ของสหรัฐเป็นของคุณเอง — รับ ACH โอนเงิน และเงินเดือน",
+    "verifyTitle": "ยืนยันบัญชีของคุณ",
+    "verifyDesc": "ใช้แค่เบอร์โทรศัพท์ · เพิ่มวงเงินภายในหนึ่งนาที",
+    "lockedVerifyFirst": "ยืนยันบัญชีของคุณก่อนเพื่อปลดล็อก"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1541,8 +1553,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "บัญชี USD",
+    "description": "กรุณากรอกข้อมูลของคุณเพื่อตั้งค่าบัญชี USD",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1555,7 +1567,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "การยืนยันอยู่ระหว่างดำเนินการ",
+    "pendingBody": "การยืนยันตัวตนของคุณอยู่ระหว่างดำเนินการ กรุณารอการอนุมัติ",
+    "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

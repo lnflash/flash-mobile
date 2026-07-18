@@ -49,7 +49,7 @@ export type Scalars = {
   /** BOLT11 lightning invoice payment request with the amount included */
   LnPaymentRequest: { input: string; output: string; }
   LnPaymentSecret: { input: string; output: string; }
-  /** A bech32-encoded HTTPS/Onion URL that can be interacted with automatically by a WALLET in a standard way such that a SERVICE can provide extra services or a better experience for the user. Ref: https://github.com/lnurl/luds/blob/luds/01.md */
+  /** A bech32-encoded HTTPS/Onion URL that can be interacted with automatically by a WALLET in a standard way such that a SERVICE can provide extra services or a better experience for the user. Ref: https://github.com/lnurl/luds/blob/luds/01.md  */
   Lnurl: { input: string; output: string; }
   /** Text field in a lightning payment transaction */
   Memo: { input: string; output: string; }
@@ -123,6 +123,40 @@ export type AccountTransactionsArgs = {
   walletIds?: InputMaybe<ReadonlyArray<InputMaybe<Scalars['WalletId']['input']>>>;
 };
 
+export type AccountCapabilities = {
+  readonly __typename: 'AccountCapabilities';
+  /** An approved bank account is on file for payouts. */
+  readonly bankPayout: Scalars['Boolean']['output'];
+  /** Business profile (name and address) on file. */
+  readonly business: Scalars['Boolean']['output'];
+  /** USD account and routing number available (Bridge KYC approved). Orthogonal to the other capabilities. */
+  readonly usdAccount: Scalars['Boolean']['output'];
+  /** Phone and identity verified. */
+  readonly verified: Scalars['Boolean']['output'];
+};
+
+export const AccountCapability = {
+  BankPayout: 'BANK_PAYOUT',
+  Business: 'BUSINESS'
+} as const;
+
+export type AccountCapability = typeof AccountCapability[keyof typeof AccountCapability];
+export type AccountCapabilityUpgradeRequestInput = {
+  readonly address: AddressInput;
+  readonly bankAccount?: InputMaybe<BankAccountInput>;
+  readonly capability: AccountCapability;
+  readonly fullName: Scalars['String']['input'];
+  readonly idDocument?: InputMaybe<Scalars['String']['input']>;
+  readonly terminalsRequested?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type AccountCapabilityUpgradeRequestPayload = {
+  readonly __typename: 'AccountCapabilityUpgradeRequestPayload';
+  readonly errors?: Maybe<ReadonlyArray<Maybe<Error>>>;
+  readonly id?: Maybe<Scalars['String']['output']>;
+  readonly status?: Maybe<Scalars['String']['output']>;
+};
+
 export type AccountDeletePayload = {
   readonly __typename: 'AccountDeletePayload';
   readonly errors: ReadonlyArray<Error>;
@@ -174,6 +208,13 @@ export type AccountLimits = {
   readonly withdrawal: ReadonlyArray<AccountLimit>;
 };
 
+export const AccountStatusHeadline = {
+  Business: 'BUSINESS',
+  Trial: 'TRIAL',
+  Verified: 'VERIFIED'
+} as const;
+
+export type AccountStatusHeadline = typeof AccountStatusHeadline[keyof typeof AccountStatusHeadline];
 export type AccountUpdateDefaultWalletIdInput = {
   readonly walletId: Scalars['WalletId']['input'];
 };
@@ -252,6 +293,101 @@ export type AddressInput = {
   readonly title: Scalars['String']['input'];
 };
 
+export type ApiKey = {
+  readonly __typename: 'ApiKey';
+  readonly createdAt: Scalars['Timestamp']['output'];
+  readonly expiresAt?: Maybe<Scalars['Timestamp']['output']>;
+  readonly id: Scalars['ID']['output'];
+  /** Public key identifier (the keyId in fk_<keyId>_<secret>) */
+  readonly keyId: Scalars['String']['output'];
+  readonly lastUsedAt?: Maybe<Scalars['Timestamp']['output']>;
+  readonly name: Scalars['String']['output'];
+  /** Per-key request rate limit (requests per minute). Null means the platform default applies. */
+  readonly rateLimitPerMinute?: Maybe<Scalars['Int']['output']>;
+  readonly scopes: ReadonlyArray<ApiKeyScope>;
+  /** Effective status: keys past their expiry report EXPIRED even before the stored status catches up */
+  readonly status: ApiKeyStatus;
+};
+
+export type ApiKeyCreateInput = {
+  /** Optional expiration time in seconds. If not set, the key doesn't expire. */
+  readonly expiresIn?: InputMaybe<Scalars['Int']['input']>;
+  /** A descriptive name for the API key (e.g., 'BTCPayServer Integration') */
+  readonly name: Scalars['String']['input'];
+  /** Optional per-key request rate limit (requests per minute, 1-10000). If not set, the platform default applies. */
+  readonly rateLimitPerMinute?: InputMaybe<Scalars['Int']['input']>;
+  /** Permission scopes for the key. Defaults to read-only user access. */
+  readonly scopes?: InputMaybe<ReadonlyArray<ApiKeyScope>>;
+};
+
+export type ApiKeyCreatePayload = {
+  readonly __typename: 'ApiKeyCreatePayload';
+  readonly apiKey?: Maybe<ApiKeyCreated>;
+  readonly errors: ReadonlyArray<Error>;
+};
+
+export type ApiKeyCreated = {
+  readonly __typename: 'ApiKeyCreated';
+  /** The raw API key. Store it securely — it won't be shown again. */
+  readonly apiKey: Scalars['String']['output'];
+  readonly expiresAt?: Maybe<Scalars['Timestamp']['output']>;
+  readonly id: Scalars['ID']['output'];
+  /** Public key identifier (the keyId in fk_<keyId>_<secret>) */
+  readonly keyId: Scalars['String']['output'];
+  readonly name: Scalars['String']['output'];
+  /** Per-key request rate limit (requests per minute). Null means the platform default applies. */
+  readonly rateLimitPerMinute?: Maybe<Scalars['Int']['output']>;
+  readonly scopes: ReadonlyArray<ApiKeyScope>;
+  readonly warning: Scalars['String']['output'];
+};
+
+export type ApiKeyRevokeInput = {
+  readonly id: Scalars['ID']['input'];
+};
+
+export type ApiKeyRevokePayload = {
+  readonly __typename: 'ApiKeyRevokePayload';
+  readonly apiKey?: Maybe<ApiKey>;
+  readonly errors: ReadonlyArray<Error>;
+};
+
+export type ApiKeyRotateInput = {
+  readonly id: Scalars['ID']['input'];
+};
+
+export type ApiKeyRotatePayload = {
+  readonly __typename: 'ApiKeyRotatePayload';
+  readonly apiKey?: Maybe<ApiKeyCreated>;
+  readonly errors: ReadonlyArray<Error>;
+};
+
+/** Permission scopes for API keys (FIP-07) */
+export const ApiKeyScope = {
+  /** Full administrative access */
+  Admin: 'admin',
+  /** Read transaction history */
+  ReadTransactions: 'read_transactions',
+  /** Read-only access to user/account data */
+  ReadUser: 'read_user',
+  /** Read wallet balances and details */
+  ReadWallet: 'read_wallet',
+  /** Create transactions */
+  WriteTransactions: 'write_transactions',
+  /** Modify user/account data */
+  WriteUser: 'write_user',
+  /** Perform wallet operations (send/receive) */
+  WriteWallet: 'write_wallet'
+} as const;
+
+export type ApiKeyScope = typeof ApiKeyScope[keyof typeof ApiKeyScope];
+/** Lifecycle status of an API key (FIP-07) */
+export const ApiKeyStatus = {
+  Active: 'ACTIVE',
+  Expired: 'EXPIRED',
+  Revoked: 'REVOKED'
+} as const;
+
+export type ApiKeyStatus = typeof ApiKeyStatus[keyof typeof ApiKeyStatus];
 export type AuthTokenPayload = {
   readonly __typename: 'AuthTokenPayload';
   readonly authToken?: Maybe<Scalars['AuthToken']['output']>;
@@ -312,7 +448,7 @@ export type BankAccount = {
   /** ERPNext bank account identifier */
   readonly id?: Maybe<Scalars['ID']['output']>;
   readonly isDefault: Scalars['Boolean']['output'];
-  /** An open request to change this account's details, awaiting review. Null when none is pending. */
+  /** The account's in-flight update request when it needs the user's attention — Pending (awaiting review) or Rejected (declined). Null once approved/closed, or when none exists. */
   readonly pendingUpdate?: Maybe<BankAccountUpdateRequest>;
 };
 
@@ -402,11 +538,22 @@ export type BridgeCreateVirtualAccountPayload = {
   readonly virtualAccount?: Maybe<BridgeVirtualAccount>;
 };
 
+export type BridgeDeleteExternalAccountInput = {
+  readonly externalAccountId: Scalars['ID']['input'];
+};
+
+export type BridgeDeleteExternalAccountPayload = {
+  readonly __typename: 'BridgeDeleteExternalAccountPayload';
+  readonly errors: ReadonlyArray<Error>;
+  readonly externalAccount?: Maybe<BridgeExternalAccount>;
+};
+
 export type BridgeExternalAccount = {
   readonly __typename: 'BridgeExternalAccount';
   readonly accountNumberLast4: Scalars['String']['output'];
   readonly bankName: Scalars['String']['output'];
   readonly id: Scalars['ID']['output'];
+  readonly isDefault: Scalars['Boolean']['output'];
   readonly status: Scalars['String']['output'];
 };
 
@@ -453,6 +600,16 @@ export type BridgeRequestWithdrawalPayload = {
   readonly __typename: 'BridgeRequestWithdrawalPayload';
   readonly errors: ReadonlyArray<Error>;
   readonly withdrawal?: Maybe<BridgeWithdrawal>;
+};
+
+export type BridgeSetDefaultExternalAccountInput = {
+  readonly externalAccountId: Scalars['ID']['input'];
+};
+
+export type BridgeSetDefaultExternalAccountPayload = {
+  readonly __typename: 'BridgeSetDefaultExternalAccountPayload';
+  readonly errors: ReadonlyArray<Error>;
+  readonly externalAccount?: Maybe<BridgeExternalAccount>;
 };
 
 export type BridgeVirtualAccount = {
@@ -567,7 +724,8 @@ export type CashWalletCutover = {
 export const CashWalletCutoverState = {
   Complete: 'COMPLETE',
   InProgress: 'IN_PROGRESS',
-  Pre: 'PRE'
+  Pre: 'PRE',
+  RolledBack: 'ROLLED_BACK'
 } as const;
 
 export type CashWalletCutoverState = typeof CashWalletCutoverState[keyof typeof CashWalletCutoverState];
@@ -602,18 +760,21 @@ export type ConsumerAccount = Account & {
   readonly __typename: 'ConsumerAccount';
   readonly btcWallet?: Maybe<BtcWallet>;
   readonly callbackEndpoints: ReadonlyArray<CallbackEndpoint>;
+  readonly capabilities: AccountCapabilities;
   /** return CSV stream, base64 encoded, of the list of transactions in the wallet */
   readonly csvTransactions: Scalars['String']['output'];
   readonly defaultWallet?: Maybe<Wallet>;
   readonly defaultWalletId: Scalars['WalletId']['output'];
   readonly displayCurrency: Scalars['DisplayCurrency']['output'];
   readonly id: Scalars['ID']['output'];
+  /** Internal account level, derived from capabilities (ENG-516). Present capabilities and statusHeadline instead of this. */
   readonly level: AccountLevel;
   readonly limits: AccountLimits;
   readonly notificationSettings: NotificationSettings;
   /** List the quiz questions of the consumer account */
   readonly quiz: ReadonlyArray<Quiz>;
   readonly realtimePrice: RealtimePrice;
+  readonly statusHeadline: AccountStatusHeadline;
   /** A list of all transactions associated with walletIds optionally passed. */
   readonly transactions?: Maybe<TransactionConnection>;
   readonly usdWallet?: Maybe<UsdWallet>;
@@ -1054,6 +1215,7 @@ export type MobileVersions = {
 
 export type Mutation = {
   readonly __typename: 'Mutation';
+  readonly accountCapabilityUpgradeRequest: AccountCapabilityUpgradeRequestPayload;
   readonly accountDelete: AccountDeletePayload;
   readonly accountDisableNotificationCategory: AccountUpdateNotificationSettingsPayload;
   readonly accountDisableNotificationChannel: AccountUpdateNotificationSettingsPayload;
@@ -1061,14 +1223,22 @@ export type Mutation = {
   readonly accountEnableNotificationChannel: AccountUpdateNotificationSettingsPayload;
   readonly accountUpdateDefaultWalletId: AccountUpdateDefaultWalletIdPayload;
   readonly accountUpdateDisplayCurrency: AccountUpdateDisplayCurrencyPayload;
+  /** Generate a new API key for external service authentication. The raw key is only shown once and cannot be retrieved later. */
+  readonly apiKeyCreate: ApiKeyCreatePayload;
+  /** Revoke an API key. Verification stops honoring it immediately; this cannot be undone. */
+  readonly apiKeyRevoke: ApiKeyRevokePayload;
+  /** Rotate an API key: a replacement with a new secret (and keyId) is created with the same name, scopes, and expiry, and the old key is revoked. The new raw key is only shown once. */
+  readonly apiKeyRotate: ApiKeyRotatePayload;
   readonly bankAccountUpdateRequest: BankAccountUpdateRequestPayload;
   readonly bridgeAddExternalAccount: BridgeAddExternalAccountPayload;
   readonly bridgeCancelWithdrawalRequest: BridgeCancelWithdrawalRequestPayload;
   readonly bridgeCreateExternalAccount: BridgeCreateExternalAccountPayload;
   readonly bridgeCreateVirtualAccount: BridgeCreateVirtualAccountPayload;
+  readonly bridgeDeleteExternalAccount: BridgeDeleteExternalAccountPayload;
   readonly bridgeInitiateKyc: BridgeInitiateKycPayload;
   readonly bridgeInitiateWithdrawal: BridgeInitiateWithdrawalPayload;
   readonly bridgeRequestWithdrawal: BridgeRequestWithdrawalPayload;
+  readonly bridgeSetDefaultExternalAccount: BridgeSetDefaultExternalAccountPayload;
   readonly businessAccountUpgradeRequest: AccountUpgradePayload;
   readonly callbackEndpointAdd: CallbackEndpointAddPayload;
   readonly callbackEndpointDelete: SuccessPayload;
@@ -1198,6 +1368,11 @@ export type Mutation = {
 };
 
 
+export type MutationAccountCapabilityUpgradeRequestArgs = {
+  input: AccountCapabilityUpgradeRequestInput;
+};
+
+
 export type MutationAccountDisableNotificationCategoryArgs = {
   input: AccountDisableNotificationCategoryInput;
 };
@@ -1228,6 +1403,21 @@ export type MutationAccountUpdateDisplayCurrencyArgs = {
 };
 
 
+export type MutationApiKeyCreateArgs = {
+  input: ApiKeyCreateInput;
+};
+
+
+export type MutationApiKeyRevokeArgs = {
+  input: ApiKeyRevokeInput;
+};
+
+
+export type MutationApiKeyRotateArgs = {
+  input: ApiKeyRotateInput;
+};
+
+
 export type MutationBankAccountUpdateRequestArgs = {
   input: BankAccountUpdateRequestInput;
 };
@@ -1243,6 +1433,11 @@ export type MutationBridgeCreateExternalAccountArgs = {
 };
 
 
+export type MutationBridgeDeleteExternalAccountArgs = {
+  input: BridgeDeleteExternalAccountInput;
+};
+
+
 export type MutationBridgeInitiateKycArgs = {
   input: BridgeInitiateKycInput;
 };
@@ -1255,6 +1450,11 @@ export type MutationBridgeInitiateWithdrawalArgs = {
 
 export type MutationBridgeRequestWithdrawalArgs = {
   input: BridgeRequestWithdrawalInput;
+};
+
+
+export type MutationBridgeSetDefaultExternalAccountArgs = {
+  input: BridgeSetDefaultExternalAccountInput;
 };
 
 
@@ -1732,6 +1932,8 @@ export type PublicWallet = {
 export type Query = {
   readonly __typename: 'Query';
   readonly accountDefaultWallet: PublicWallet;
+  /** All API keys for the calling account, newest first. Never includes secret material. */
+  readonly apiKeys: ReadonlyArray<ApiKey>;
   readonly beta: Scalars['Boolean']['output'];
   readonly bridgeExternalAccounts?: Maybe<ReadonlyArray<Maybe<BridgeExternalAccount>>>;
   readonly bridgeKycStatus?: Maybe<Scalars['String']['output']>;
@@ -2883,6 +3085,11 @@ export type LevelQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type LevelQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly id: string, readonly level: AccountLevel } } | null };
+
+export type AccountStatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AccountStatusQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly statusHeadline: AccountStatusHeadline, readonly id: string, readonly capabilities: { readonly __typename: 'AccountCapabilities', readonly verified: boolean, readonly bankPayout: boolean, readonly business: boolean, readonly usdAccount: boolean } } } | null };
 
 export type DisplayCurrencyQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6073,6 +6280,51 @@ export function useLevelLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<Leve
 export type LevelQueryHookResult = ReturnType<typeof useLevelQuery>;
 export type LevelLazyQueryHookResult = ReturnType<typeof useLevelLazyQuery>;
 export type LevelQueryResult = Apollo.QueryResult<LevelQuery, LevelQueryVariables>;
+export const AccountStatusDocument = gql`
+    query accountStatus {
+  me {
+    defaultAccount {
+      id
+      ... on ConsumerAccount {
+        statusHeadline
+        capabilities {
+          verified
+          bankPayout
+          business
+          usdAccount
+        }
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useAccountStatusQuery__
+ *
+ * To run a query within a React component, call `useAccountStatusQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAccountStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAccountStatusQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAccountStatusQuery(baseOptions?: Apollo.QueryHookOptions<AccountStatusQuery, AccountStatusQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AccountStatusQuery, AccountStatusQueryVariables>(AccountStatusDocument, options);
+      }
+export function useAccountStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AccountStatusQuery, AccountStatusQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AccountStatusQuery, AccountStatusQueryVariables>(AccountStatusDocument, options);
+        }
+export type AccountStatusQueryHookResult = ReturnType<typeof useAccountStatusQuery>;
+export type AccountStatusLazyQueryHookResult = ReturnType<typeof useAccountStatusLazyQuery>;
+export type AccountStatusQueryResult = Apollo.QueryResult<AccountStatusQuery, AccountStatusQueryVariables>;
 export const DisplayCurrencyDocument = gql`
     query displayCurrency {
   me {

@@ -534,17 +534,14 @@
     "upgradePendingDesc": "A fiókja felújítási kérése felülvizsgálat alatt áll.",
     "currencyTitle": "Cserélj a helyi pénznemben",
     "currencyDesc": "Tekintse át a rendelkezésre álló valuták listáját, és válassza ki a pénznemeit.",
-    "flashcardTitle": "Kapjon egy Flashcard",
-    "flashcardDesc": "Találj egy Flashpoint-t, és szerezz egy Flashcard-t a mindennapi életben.",
-    "nonCustodialWalletTitle": "Nem őrizetbeli pénztárcák",
-    "nonCustodialWalletDesc": "Tudjon meg többet a nem őrizetbeli pénztárcákról.",
     "emailTitle": "E-mail cím",
     "emailDesc": "Adja hozzá az e-mail címét, hogy biztosítsa a fiókját, és lépjen be az e-mail cím használatával.",
     "btcWalletTitle": "Az BTC pénztárca engedélyezése",
     "btcWalletDesc": "Könnyen átruházza a nagyobb összegeket Bitcoin-ben.",
     "backupTitle": "A BTC pénztárcáját biztonsági mentse meg.",
     "backupDesc": "Támogatja és biztosítsa a Bitcoin pénztárcáját a Recovery phrase használatával.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Nincs kapcsolat — gyorsítótárazott egyenlegek láthatók"
   },
   "PinScreen": {
     "attemptsRemaining": "Helytelen PIN. {attemptsRemaining: number} próbálkozás maradt.",
@@ -787,7 +784,8 @@
     "advanceMode": "Lehetővé tegye az Bitcoin fiókot (Advanced Mode)",
     "keysManagement": "Cseppártyás biztonsági mentés",
     "showBtcAccount": "Mutasd meg a Bitcoin fiókot",
-    "hideBtcAccount": "Elrejtse az Bitcoin fiókot"
+    "hideBtcAccount": "Elrejtse az Bitcoin fiókot",
+    "flashcard": "Flashcard"
   },
   "NotificationSettingsScreen": {
     "title": "Értesítési beállítások",
@@ -1474,13 +1472,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Számlatípus",
-    "personal": "Személyes",
-    "personalDesc": "Teljesítsd a pénztárcádat telefonon és e-mailben.",
-    "pro": "Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro Pro",
-    "proDesc": "Elfogadja a kifizetéseket, és felfedezi magát a térképen. Szükséges egy üzleti név és hely.",
-    "merchant": "Kereskedő",
-    "merchantDesc": "Adjon jutalmat, jelenjen meg a térképen, és rendezzen a bankjával.",
     "personalInfo": "Személyes adatok",
     "fullName": "Teljes név",
     "phoneNumber": "Hívási szám",
@@ -1507,10 +1498,31 @@
     "accountNum": "Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszám: Számlaszámla",
     "accountNumPlaceholder": "Írd be a számláid számát",
     "uploadId": "Upload ID Document",
-    "successUpgrade": "Sikeresen frissítette a fiókját {accountType: string}-re.",
-    "successRequest": "Sikeresen kérte, hogy frissítse a fiókját {accountType: string}-re.",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Banki kifizetés",
+    "badgeUsdAccount": "USD-számla",
+    "bankCashoutTitle": "Banki kifizetés",
+    "bankCashoutDesc": "JMD kifizetése jamaicai bankszámládra",
+    "businessTitle": "Vállalkozás",
+    "businessDesc": "Jelenj meg a Flash térképen és jutalmazd a vásárlóidat",
+    "enabled": "Bekapcsolva",
+    "hubEyebrow": "A Flash-fiókod",
+    "hubTitle": "Hozz ki többet a Flashből",
+    "inReview": "Elbírálás alatt",
+    "sectionGetPaid": "Így juthatsz a pénzedhez",
+    "sectionGrow": "Növekedés",
+    "setUp": "Beállítás",
+    "statusBusiness": "Vállalkozás",
+    "statusTrial": "Próbafiók",
+    "statusUnauthorized": "Jogosulatlan fiók",
+    "statusVerified": "Ellenőrzött",
+    "successBankPayoutRequest": "A banki kifizetési kérelmedet elbírálásra beküldtük",
+    "successBusinessRequest": "A vállalkozási bővítési kérelmedet elbírálásra beküldtük",
+    "successVerified": "A fiókod ellenőrizve",
+    "usdAccountTitle": "Virtuális USD-bankszámla",
+    "usdAccountDesc": "Saját amerikai számla- és routingszám — fogadj ACH-t, utalást és fizetést",
+    "verifyTitle": "Ellenőrizd a fiókod",
+    "verifyDesc": "Csak a telefonszámod kell · magasabb limitek egy perc alatt",
+    "lockedVerifyFirst": "Először ellenőrizd a fiókod a feloldáshoz"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1541,8 +1553,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "USD-számla",
+    "description": "Add meg az adataidat az USD-számlád beállításához",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1555,7 +1567,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Ellenőrzés folyamatban",
+    "pendingBody": "A személyazonosságod ellenőrzése folyamatban van. Kérjük, várd meg a jóváhagyást.",
+    "genericError": "Hiba történt. Kérjük, próbáld újra."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

@@ -13,6 +13,7 @@ import { AccountStaticQR } from "./settings/account-static-qr"
 import { TxLimits } from "./settings/account-tx-limits"
 import { PhoneSetting } from "./account/settings/phone"
 import { AccountPOS } from "./settings/account-pos"
+import { AccountFlashcard } from "./settings/account-flashcard"
 import { DefaultWallet } from "./settings/account-default-wallet"
 import { LanguageSetting } from "./settings/preferences-language"
 import { CurrencySetting } from "./settings/preferences-currency"
@@ -61,7 +62,13 @@ gql`
 const items = {
   account: [AccountLevelSetting, TxLimits],
   loginMethods: [EmailSetting, PhoneSetting],
-  waysToGetPaid: [AccountLNAddress, BankAccountsSetting, AccountPOS, AccountStaticQR],
+  waysToGetPaid: [
+    AccountLNAddress,
+    BankAccountsSetting,
+    AccountPOS,
+    AccountStaticQR,
+    AccountFlashcard,
+  ],
   reports: [GenerateReportsSetting],
   wallet: [BackupWallet, ImportWallet],
   preferences: [

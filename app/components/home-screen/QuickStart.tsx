@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { Dimensions, Linking, TouchableOpacity, View } from "react-native"
+import { Dimensions, TouchableOpacity, View } from "react-native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import Carousel from "react-native-reanimated-carousel"
@@ -9,8 +9,6 @@ import * as Keychain from "react-native-keychain"
 // assets
 import Account from "@app/assets/illustrations/account.svg"
 import Dollar from "@app/assets/illustrations/dollar.svg"
-import Flashcard from "@app/assets/icons/empty-flashcard.svg"
-import NonCustodialWallet from "@app/assets/illustrations/non-custodial-wallet.svg"
 import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
 import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 import SocialChat from "@app/assets/illustrations/social-chat.svg"
@@ -93,25 +91,6 @@ const QuickStart = () => {
       onPress: () => navigation.navigate("currency"),
     },
     {
-      type: "flashcard",
-      title: LL.HomeScreen.flashcardTitle(),
-      description: LL.HomeScreen.flashcardDesc(),
-      image: Flashcard,
-      onPress: () => navigation.navigate("Map"),
-    },
-    {
-      type: "nonCustodialWallet",
-      title: LL.HomeScreen.nonCustodialWalletTitle(),
-      description: LL.HomeScreen.nonCustodialWalletDesc(),
-      image: NonCustodialWallet,
-      onPress: () => {
-        onHide("nonCustodialWallet")
-        Linking.openURL(
-          "https://documentation.getflash.io/en/guides/non-custodial-wallets",
-        )
-      },
-    },
-    {
       type: "email",
       title: LL.HomeScreen.emailTitle(),
       description: LL.HomeScreen.emailDesc(),
@@ -152,15 +131,6 @@ const QuickStart = () => {
     persistentState?.closedQuickStartTypes?.includes("currency")
   ) {
     carouselData = carouselData.filter((el) => el.type !== "currency")
-  }
-  if (
-    persistentState.flashcardAdded ||
-    persistentState?.closedQuickStartTypes?.includes("flashcard")
-  ) {
-    carouselData = carouselData.filter((el) => el.type !== "flashcard")
-  }
-  if (persistentState?.closedQuickStartTypes?.includes("nonCustodialWallet")) {
-    carouselData = carouselData.filter((el) => el.type !== "nonCustodialWallet")
   }
   if (
     data?.me?.defaultAccount.level === AccountLevel.Zero ||
