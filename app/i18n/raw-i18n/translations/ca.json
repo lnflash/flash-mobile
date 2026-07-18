@@ -1472,13 +1472,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Tip de compte",
-    "personal": "Personal Personal",
-    "personalDesc": "Segureu la vostra cartera amb el telèfon i el correu electrònic.",
-    "pro": "Pro Pro",
-    "proDesc": "Acceptar pagaments i ser descobert en el mapa requereix un nom i una ubicació comercial.",
-    "merchant": "Merchant Merchant",
-    "merchantDesc": "Dóna recompenses, apareix en el mapa i decideix amb el teu banc.",
     "personalInfo": "Informació personal",
     "fullName": "El nom complet",
     "phoneNumber": "Número de telèfon",
@@ -1505,10 +1498,31 @@
     "accountNum": "Número de compte",
     "accountNumPlaceholder": "Entreu el vostre número de compte",
     "uploadId": "Carrega ID Document",
-    "successUpgrade": "Has actualitzat amb èxit el teu compte a {accountType: string}",
-    "successRequest": "Vostè ha sol·licitat amb èxit una actualització del seu compte a {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Pagament bancari",
+    "badgeUsdAccount": "Compte en USD",
+    "bankCashoutTitle": "Retirada al banc",
+    "bankCashoutDesc": "Retira JMD al teu banc jamaicà",
+    "businessTitle": "Negoci",
+    "businessDesc": "Apareix al mapa de Flash i recompensa els teus clients",
+    "enabled": "Actiu",
+    "hubEyebrow": "El teu compte de Flash",
+    "hubTitle": "Fes més amb Flash",
+    "inReview": "En revisió",
+    "sectionGetPaid": "Maneres de cobrar",
+    "sectionGrow": "Creix",
+    "setUp": "Configura",
+    "statusBusiness": "Negoci",
+    "statusTrial": "Compte de prova",
+    "statusUnauthorized": "Compte no autoritzat",
+    "statusVerified": "Verificat",
+    "successBankPayoutRequest": "La teva sol·licitud de retirada bancària s'ha enviat per a revisió",
+    "successBusinessRequest": "La teva sol·licitud d'actualització a negoci s'ha enviat per a revisió",
+    "successVerified": "El teu compte està verificat",
+    "usdAccountTitle": "Compte bancari virtual en USD",
+    "usdAccountDesc": "El teu propi número de compte i routing dels EUA — rep ACH, transferències i nòmines",
+    "verifyTitle": "Verifica el teu compte",
+    "verifyDesc": "Només el teu número de telèfon · límits més alts en un minut",
+    "lockedVerifyFirst": "Verifica primer el teu compte per desbloquejar-ho"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1539,8 +1553,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "Compte en USD",
+    "description": "Proporciona les teves dades per configurar el teu compte en USD",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1553,7 +1567,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Verificació pendent",
+    "pendingBody": "La verificació de la teva identitat està pendent. Espera l'aprovació.",
+    "genericError": "Alguna cosa ha anat malament. Torna-ho a provar."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

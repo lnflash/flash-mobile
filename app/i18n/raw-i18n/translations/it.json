@@ -1472,13 +1472,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Tipo di conto",
-    "personal": "Personal Personal",
-    "personalDesc": "Assicurare il portafoglio con telefono e e-mail, rimanere al sicuro e recuperare facilmente se necessario",
-    "pro": "Pro Pro",
-    "proDesc": "Accettare pagamenti e farsi scoprire sulla mappa richiede un nome aziendale e una posizione.",
-    "merchant": "Commerciante Commerciante",
-    "merchantDesc": "Dare ricompense, apparire sulla mappa, e regolare con la vostra banca. ID e informazioni bancarie richieste.",
     "personalInfo": "Informazioni personali",
     "fullName": "Nome completo",
     "phoneNumber": "Numero di telefono ",
@@ -1505,10 +1498,31 @@
     "accountNum": "Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto Numero di conto",
     "accountNumPlaceholder": "Inserisci il tuo numero di conto",
     "uploadId": "Upload ID Document",
-    "successUpgrade": "Hai aggiornato con successo il tuo account a {accountType: string}",
-    "successRequest": "Hai richiesto con successo di aggiornare il tuo account a {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Prelievo bancario",
+    "badgeUsdAccount": "Conto in USD",
+    "bankCashoutTitle": "Prelievo bancario",
+    "bankCashoutDesc": "Preleva JMD sulla tua banca giamaicana",
+    "businessTitle": "Attività",
+    "businessDesc": "Compari sulla mappa di Flash e premia i tuoi clienti",
+    "enabled": "Attivo",
+    "hubEyebrow": "Il tuo conto Flash",
+    "hubTitle": "Fai di più con Flash",
+    "inReview": "In revisione",
+    "sectionGetPaid": "Modi per farti pagare",
+    "sectionGrow": "Crescita",
+    "setUp": "Configura",
+    "statusBusiness": "Attività",
+    "statusTrial": "Conto di prova",
+    "statusUnauthorized": "Conto non autorizzato",
+    "statusVerified": "Verificato",
+    "successBankPayoutRequest": "La tua richiesta di prelievo bancario è stata inviata per la revisione",
+    "successBusinessRequest": "La tua richiesta di upgrade ad attività è stata inviata per la revisione",
+    "successVerified": "Il tuo conto è verificato",
+    "usdAccountTitle": "Conto bancario virtuale in USD",
+    "usdAccountDesc": "Il tuo numero di conto e routing USA — ricevi ACH, bonifici e stipendio",
+    "verifyTitle": "Verifica il tuo conto",
+    "verifyDesc": "Basta il tuo numero di telefono · limiti più alti in un minuto",
+    "lockedVerifyFirst": "Verifica prima il tuo conto per sbloccare"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1539,8 +1553,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "Conto in USD",
+    "description": "Fornisci i tuoi dati per configurare il tuo conto in USD",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1553,7 +1567,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Verifica in sospeso",
+    "pendingBody": "La verifica della tua identità è in sospeso. Attendi l'approvazione.",
+    "genericError": "Qualcosa è andato storto. Riprova."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",

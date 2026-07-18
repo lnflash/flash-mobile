@@ -7,9 +7,15 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 
 import { Screen } from "@app/components/screen"
+import { BridgeKycModal } from "@app/components/topup-cashout-flow"
 import { WHATSAPP_SUPPORT_URL } from "@app/config"
+import { AccountLevel } from "@app/graphql/generated"
+import { useAccountStatus } from "@app/hooks/use-account-status"
+import { useBridgeKyc } from "@app/hooks/use-bridge-kyc"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { useAppDispatch } from "@app/store/redux"
+import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
 import { openWhatsAppUrl } from "@app/utils/external"
 import { toastShow } from "@app/utils/toast"
 
@@ -276,6 +282,22 @@ export const BankAccountsScreen: React.FC = () => {
   const { loading, kycApproved, receiveAccount, withdrawGroups, setDefault, refetch } =
     useBankAccounts()
 
+  // The locked card gates on the usdAccount capability (Bridge KYC), so its
+  // CTA launches the KYC flow directly (ENG-516). Bridge has an L1 floor:
+  // unverified accounts are sent through the verify wizard first.
+  const { kycModalVisible, startBridgeKyc, closeKycModal, submitBridgeKyc } =
+    useBridgeKyc()
+  const { capabilities } = useAccountStatus()
+  const dispatch = useAppDispatch()
+  const onVerifyIdentity = () => {
+    if (!capabilities.verified) {
+      dispatch(setAccountUpgrade({ accountType: AccountLevel.One, numOfSteps: 3 }))
+      navigation.navigate("PersonalInformation")
+      return
+    }
+    startBridgeKyc()
+  }
+
   useFocusEffect(
     React.useCallback(() => {
       refetch()
@@ -326,10 +348,7 @@ export const BankAccountsScreen: React.FC = () => {
           <Text type="p3" color={colors.grey1} style={styles.lockedDesc}>
             {LL.BankAccountsScreen.verifyIdentityDescription()}
           </Text>
-          <Pressable
-            style={styles.upgradeButton}
-            onPress={() => navigation.navigate("AccountType")}
-          >
+          <Pressable style={styles.upgradeButton} onPress={onVerifyIdentity}>
             <Icon
               name="shield-checkmark-outline"
               type="ionicon"
@@ -425,6 +444,12 @@ export const BankAccountsScreen: React.FC = () => {
           {LL.BankAccountsScreen.contactSupport()}
         </Text>
       </Pressable>
+
+      <BridgeKycModal
+        visible={kycModalVisible}
+        onClose={closeKycModal}
+        onSubmit={submitBridgeKyc}
+      />
     </Screen>
   )
 }

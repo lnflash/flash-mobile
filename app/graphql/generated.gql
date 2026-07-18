@@ -1216,6 +1216,27 @@ query accountScreen {
   }
 }
 
+query accountStatus {
+  me {
+    defaultAccount {
+      id
+      ... on ConsumerAccount {
+        statusHeadline
+        capabilities {
+          verified
+          bankPayout
+          business
+          usdAccount
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+
 query addressScreen {
   me {
     id
