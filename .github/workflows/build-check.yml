@@ -72,7 +72,13 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@1242409711ff5721add51979e9e11e23ebb7e5a4 # v1
         with:
-          xcode-version: latest-stable
+          # Pinned, not latest-stable: the runner image's own default Xcode is
+          # scheduled to change (macos-15's "latest stable" resolution has
+          # moved before, per this repo's own Xcode-26-migration commits) —
+          # an untested toolchain flip must never land silently on a routine
+          # build. Bump deliberately, in the same PR each time all three
+          # xcode-version pins are updated together.
+          xcode-version: "26.3"
 
       - name: Set NODE_BINARY for Xcode build scripts
         run: |

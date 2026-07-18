@@ -133,7 +133,7 @@ platform :ios do
         # Release only — Debug's build settings must not be touched, since
         # this same project.pbxproj gets committed back to main by the
         # version-bump step below.
-        build_configuration: "Release",
+        build_configurations: ["Release"],
         profile_name: profile,
         code_sign_identity: "Apple Distribution",
         # Developer Portal team ID (per Appfile's team_id), NOT the App Store
@@ -227,7 +227,7 @@ platform :ios do
         # Release only — Debug's build settings must not be touched, since
         # this same project.pbxproj gets committed back to main by the
         # version-bump step below.
-        build_configuration: "Release",
+        build_configurations: ["Release"],
         profile_name: profile,
         code_sign_identity: "Apple Distribution",
         # Developer Portal team ID (per Appfile's team_id), NOT the App Store
@@ -332,6 +332,21 @@ platform :ios do
 
     profile_name = ENV["sigh_com.flashapp.alt_appstore_profile-name"] || "match AppStore com.flashapp.alt"
 
+    # Unlike build_app's xcargs below (which only override signing for the
+    # export/archive step), this makes the project's own DEVELOPMENT_TEAM
+    # agree with the team match() actually fetched com.flashapp.alt's
+    # certificate/profile for — a disagreement here is a documented xcodebuild
+    # signing-resolution failure class. Mirrors the main app's fix.
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ios/LNFlash.xcodeproj",
+      targets: ["LNFlash-Alt"],
+      build_configurations: ["Release"],
+      profile_name: profile_name,
+      code_sign_identity: "Apple Distribution",
+      team_id: ENV["TEAM_ID"] || "27HU729V9P"
+    )
+
     build_app(
       workspace: "ios/LNFlash.xcworkspace",
       scheme: "LNFlash-Alt",
@@ -392,6 +407,21 @@ platform :ios do
     cocoapods(podfile: "ios/Podfile", clean_install: true)
 
     profile_name = ENV["sigh_com.flashapp.alt_appstore_profile-name"] || "match AppStore com.flashapp.alt"
+
+    # Unlike build_app's xcargs below (which only override signing for the
+    # export/archive step), this makes the project's own DEVELOPMENT_TEAM
+    # agree with the team match() actually fetched com.flashapp.alt's
+    # certificate/profile for — a disagreement here is a documented xcodebuild
+    # signing-resolution failure class. Mirrors the main app's fix.
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ios/LNFlash.xcodeproj",
+      targets: ["LNFlash-Alt"],
+      build_configurations: ["Release"],
+      profile_name: profile_name,
+      code_sign_identity: "Apple Distribution",
+      team_id: ENV["TEAM_ID"] || "27HU729V9P"
+    )
 
     build_app(
       workspace: "ios/LNFlash.xcworkspace",

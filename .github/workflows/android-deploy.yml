@@ -14,6 +14,10 @@ on:
           - beta
           - release
           - promote_to_beta
+      ref:
+        description: "REQUIRED for release: exact commit/tag that was beta-tested (e.g. android/v0.6.2-46). Leave blank for beta or promote_to_beta (the latter doesn't build from source at all) — release defaults to the branch selected above, which silently ships main's current tip instead of a tested build."
+        required: false
+        type: string
 
 concurrency:
   group: android-deploy
@@ -32,6 +36,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # Tag pushes: github.ref is the tag itself, correct by default.
+          # workflow_dispatch: falls back to whichever branch was picked in
+          # the "Use workflow from" selector (usually main's tip) unless the
+          # ref input above pins something else — see that input's
+          # description for why release dispatches should always set it.
+          ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
 
       - name: Configure git
@@ -144,9 +154,26 @@ jobs:
           # Tag-triggered runs are a detached HEAD, so target main explicitly.
           # The GITHUB_TOKEN push cannot re-trigger this workflow (Actions
           # anti-recursion), so the bump tag never loops.
-          git fetch origin main
-          git rebase -X theirs --autostash origin/main
-          git push origin HEAD:main --follow-tags
+          #
+          # Retried: this repo's three deploy workflows run in parallel and
+          # each ends with exactly this push, so a coordinated multi-platform
+          # release can race here — by this point the store upload has
+          # already succeeded, so a plain non-fast-forward rejection must not
+          # fail the job (that reads as "nothing shipped" when it actually
+          # did, and invites an operator to re-run the whole lane, including
+          # a second real upload).
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase -X theirs --autostash origin/main
+            if git push origin HEAD:main --follow-tags; then
+              exit 0
+            fi
+            echo "::warning::Push attempt $attempt failed, retrying..." >&2
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 5))
+          done
+          echo "::error::Failed to push version bump after 5 attempts — the store upload above already succeeded; push manually or re-run just this step." >&2
+          exit 1
 
       - name: Clean up sensitive files
         if: always()
