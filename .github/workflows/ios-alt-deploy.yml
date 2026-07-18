@@ -95,7 +95,8 @@ jobs:
         if: success()
         run: |
           BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          git pull --rebase --autostash origin "$BRANCH"
+          git fetch origin "$BRANCH"
+          git rebase -X theirs --autostash origin/"$BRANCH"
           git push origin "$BRANCH" --follow-tags
 
       - name: Upload artifacts on failure
