@@ -10,7 +10,14 @@ def version_from_git_tag(platform)
   if tag.empty?
     tag = `git describe --tags --match 'v*' --abbrev=0 2>/dev/null`.strip
   end
-  tag.gsub(%r{^(ios-alt|ios|android)/}, "").gsub(/^v/, "")
+  raw = tag.gsub(%r{^(ios-alt|ios|android)/}, "").gsub(/^v/, "")
+  # Every successful beta/release run tags itself as "<prefix>/v#{version}-#{build}"
+  # (see add_git_tag below), so the NEXT invocation's `git describe --abbrev=0`
+  # — whenever HEAD isn't a fresh, exactly-tagged commit (e.g. a workflow_dispatch
+  # with no new tag) — resolves to that already-dashed tag, not a clean "x.y.z".
+  # Extract just the leading semver so we never feed "0.6.1-45" (or worse, a
+  # git-describe-appended "-N-gSHA" on top of that) into increment_version_number.
+  raw[/\A\d+\.\d+\.\d+/] || raw
 end
 
 def update_ios_version_from_tag(tag_prefix = "ios")
@@ -98,7 +105,11 @@ platform :ios do
 
     increment_build_number(
       build_number: latest_testflight_build_number(api_key: api_key) + 1,
-      xcodeproj: "ios/LNFlash.xcodeproj"
+      xcodeproj: "ios/LNFlash.xcodeproj",
+      # Scoped: this xcodeproj also holds the Alt app's target, and an
+      # unscoped call bumps CURRENT_PROJECT_VERSION for every target in the
+      # project — stomping the other app's build-number setting on every run.
+      target: "LNFlash"
     )
 
     cocoapods(podfile: "ios/Podfile", clean_install: true)
@@ -119,9 +130,18 @@ platform :ios do
         use_automatic_signing: false,
         path: "ios/LNFlash.xcodeproj",
         targets: [target_name],
+        # Release only — Debug's build settings must not be touched, since
+        # this same project.pbxproj gets committed back to main by the
+        # version-bump step below.
+        build_configuration: "Release",
         profile_name: profile,
         code_sign_identity: "Apple Distribution",
-        team_id: "H7UAM79QQP"
+        # Developer Portal team ID (per Appfile's team_id), NOT the App Store
+        # Connect / itc_team_id (H7UAM79QQP) — this account has distinct IDs
+        # for the two roles, and update_code_signing_settings' team_id: sets
+        # the project's DEVELOPMENT_TEAM, which Xcode resolves against the
+        # Developer Portal.
+        team_id: ENV["TEAM_ID"] || "27HU729V9P"
       )
     end
 
@@ -179,7 +199,11 @@ platform :ios do
 
     increment_build_number(
       build_number: latest_testflight_build_number(api_key: api_key) + 1,
-      xcodeproj: "ios/LNFlash.xcodeproj"
+      xcodeproj: "ios/LNFlash.xcodeproj",
+      # Scoped: this xcodeproj also holds the Alt app's target, and an
+      # unscoped call bumps CURRENT_PROJECT_VERSION for every target in the
+      # project — stomping the other app's build-number setting on every run.
+      target: "LNFlash"
     )
 
     cocoapods(podfile: "ios/Podfile", clean_install: true)
@@ -200,9 +224,18 @@ platform :ios do
         use_automatic_signing: false,
         path: "ios/LNFlash.xcodeproj",
         targets: [target_name],
+        # Release only — Debug's build settings must not be touched, since
+        # this same project.pbxproj gets committed back to main by the
+        # version-bump step below.
+        build_configuration: "Release",
         profile_name: profile,
         code_sign_identity: "Apple Distribution",
-        team_id: "H7UAM79QQP"
+        # Developer Portal team ID (per Appfile's team_id), NOT the App Store
+        # Connect / itc_team_id (H7UAM79QQP) — this account has distinct IDs
+        # for the two roles, and update_code_signing_settings' team_id: sets
+        # the project's DEVELOPMENT_TEAM, which Xcode resolves against the
+        # Developer Portal.
+        team_id: ENV["TEAM_ID"] || "27HU729V9P"
       )
     end
 
@@ -290,7 +323,9 @@ platform :ios do
 
     increment_build_number(
       build_number: latest_testflight_build_number(api_key: api_key, app_identifier: "com.flashapp.alt") + 1,
-      xcodeproj: "ios/LNFlash.xcodeproj"
+      xcodeproj: "ios/LNFlash.xcodeproj",
+      # Scoped: see the main app's lane for why this must not be project-wide.
+      target: "LNFlash-Alt"
     )
 
     cocoapods(podfile: "ios/Podfile", clean_install: true)
@@ -349,7 +384,9 @@ platform :ios do
 
     increment_build_number(
       build_number: latest_testflight_build_number(api_key: api_key, app_identifier: "com.flashapp.alt") + 1,
-      xcodeproj: "ios/LNFlash.xcodeproj"
+      xcodeproj: "ios/LNFlash.xcodeproj",
+      # Scoped: see the main app's lane for why this must not be project-wide.
+      target: "LNFlash-Alt"
     )
 
     cocoapods(podfile: "ios/Podfile", clean_install: true)

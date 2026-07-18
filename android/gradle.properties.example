@@ -1,4 +1,9 @@
 # Project-wide Gradle settings.
+#
+# build-check.yml builds Android debug from a straight copy of this file, as
+# a proxy for android-deploy.yml's real release config. Every non-secret line
+# below must also appear in that workflow's "Create gradle.properties"
+# heredoc, or a green build-check stops proving the real deploy build works.
 
 # Specifies the JVM arguments used for the daemon process.
 org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g

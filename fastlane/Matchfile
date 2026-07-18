@@ -5,8 +5,13 @@
 # Replace with your actual certificates repository
 git_url(ENV["MATCH_GIT_URL"] || "https://github.com/lnflash/flash-mobile-certificates.git")
 
-# App identifier
-app_identifier(["com.flash.pos"])
+# App identifier — every match() call site in the Fastfile passes its own
+# explicit app_identifier:, so this default is only consulted by a manual/local
+# `fastlane match ...` invocation that omits one. It must name a real bundle ID
+# in this account (previously "com.flash.pos", which matches nothing here and
+# risked a manual match run silently operating against an unrelated app or a
+# different team's identifier).
+app_identifier(["com.lnflash"])
 
 # Storage mode
 storage_mode("git")

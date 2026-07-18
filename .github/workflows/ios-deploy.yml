@@ -31,7 +31,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: feat/automated-deployment
           fetch-depth: 0
 
       - name: Configure git
@@ -40,7 +39,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # v1 (v1.319.0) — floating branch, not a tag; re-pin periodically
         with:
           ruby-version: "3.2"
 
@@ -54,16 +53,20 @@ jobs:
           cache: "yarn"
 
       - name: Create .env from secrets
-        run: echo "${{ secrets.DOT_ENV }}" > .env
+        env:
+          DOT_ENV: ${{ secrets.DOT_ENV }}
+        run: printenv DOT_ENV > .env
 
       - name: Create GoogleService-Info.plist from secrets
-        run: echo '${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}' > ios/LNFlash/GoogleService-Info.plist
+        env:
+          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+        run: printenv GOOGLE_SERVICE_INFO_PLIST > ios/LNFlash/GoogleService-Info.plist
 
       - name: Install JS dependencies
         run: yarn install --frozen-lockfile
 
       - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@1242409711ff5721add51979e9e11e23ebb7e5a4 # v1
         with:
           xcode-version: latest-stable
 
@@ -75,22 +78,30 @@ jobs:
 
       - name: Determine lane
         id: lane
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_LANE: ${{ github.event.inputs.lane }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "lane=${{ github.event.inputs.lane }}" >> $GITHUB_OUTPUT
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            case "$INPUT_LANE" in
+              beta|release) ;;
+              *) echo "::error::Unrecognized lane input: $INPUT_LANE" >&2; exit 1 ;;
+            esac
+            echo "lane=$INPUT_LANE" >> "$GITHUB_OUTPUT"
           else
-            echo "lane=beta" >> $GITHUB_OUTPUT
+            echo "lane=beta" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run Fastlane
         env:
           CI: "true"
+          LANE: ${{ steps.lane.outputs.lane }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
-        run: bundle exec fastlane ios ${{ steps.lane.outputs.lane }}
+        run: bundle exec fastlane ios "$LANE"
 
       - name: Push version bump
         if: success()
