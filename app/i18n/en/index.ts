@@ -644,6 +644,7 @@ const en: BaseTranslation = {
   },
   HomeScreen: {
     cashout: "Cash Out",
+    offlineShowingCached: "No connection — showing cached balances",
     receive: "Receive",
     reload: "Reload Card",
     balance: "Refresh Balance",
@@ -700,8 +701,11 @@ const en: BaseTranslation = {
     minimumAmount: "Minimum amount is $1.00"
   },
   BridgeKyc: {
-    title: "International Transfer",
-    description: "Please provide your details to set up international transfers",
+    title: "USD Account",
+    description: "Please provide your details to set up your USD account",
+    pendingTitle: "Verification pending",
+    pendingBody: "Your identity verification is pending. Please wait for approval.",
+    genericError: "Something went wrong. Please try again.",
     fullName: "Full Name",
     fullNamePlaceholder: "Enter your full name",
     email: "Email",
@@ -1749,15 +1753,6 @@ const en: BaseTranslation = {
     }
   },
   AccountUpgrade: {
-      accountType: "Account Type",
-      personal: "Personal",
-      personalDesc: "Secure your wallet with phone and email. Stay safe and recover easily if needed",
-      pro: "Pro",
-      proDesc: "Accept payments and get discovered on the map. Requires a business name and location.",
-      merchant: "Merchant",
-      merchantDesc: "Give rewards, appear on the map, and settle to your bank. ID and bank info required.",
-      international: "International",
-      internationalDesc: "Get an international account and routing number for bank transfers. ID required.",
       personalInfo: "Personal Information",
       fullName: "Full name",
       phoneNumber: "Phone Number",
@@ -1783,9 +1778,32 @@ const en: BaseTranslation = {
       selectCurrency: "Select Currency",
       accountNum: "Account Number",
       accountNumPlaceholder: "Enter your account number",
-      uploadId: "Upload ID Document",     
-      successUpgrade: "You successfully upgraded your account to {accountType: string}",
-      successRequest: "You successfully requested to upgrade your account to {accountType: string}"
+      uploadId: "Upload ID Document",
+      successVerified: "Your account is verified",
+      successBankPayoutRequest: "Your bank cash-out request has been submitted for review",
+      successBusinessRequest: "Your business upgrade request has been submitted for review",
+      hubEyebrow: "Your Flash account",
+      hubTitle: "Do more with Flash",
+      statusTrial: "Trial account",
+      statusVerified: "Verified",
+      statusBusiness: "Business",
+      statusUnauthorized: "Unauthorized account",
+      badgeBankPayout: "Bank payout",
+      badgeUsdAccount: "USD account",
+      sectionGetPaid: "Ways to get paid",
+      sectionGrow: "Grow",
+      verifyTitle: "Verify your account",
+      verifyDesc: "Just your phone number · unlocks higher limits in a minute",
+      bankCashoutTitle: "Bank cash-out",
+      bankCashoutDesc: "Cash out JMD to your Jamaican bank",
+      usdAccountTitle: "USD Virtual Bank Account",
+      usdAccountDesc: "Your own US account & routing number — receive ACH, wires & payroll",
+      lockedVerifyFirst: "Verify your account first to unlock",
+      businessTitle: "Business",
+      businessDesc: "Get on the Flash map & reward your customers",
+      setUp: "Set up",
+      enabled: "On",
+      inReview: "In review"
     }
 }
 

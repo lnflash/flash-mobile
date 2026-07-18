@@ -540,7 +540,8 @@
     "btcWalletDesc": "Il est facile de transférer de plus grandes quantités en Bitcoin.",
     "backupTitle": "Faites une sauvegarde de votre portefeuille BTC",
     "backupDesc": "Faites une sauvegarde et sécurisez votre portefeuille Bitcoin en utilisant la phrase recovery.",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "offlineShowingCached": "Pas de connexion — soldes en cache affichés"
   },
   "PinScreen": {
     "attemptsRemaining": "NIP incorrect. {attemptsRemaining: number} tentatives restantes.",
@@ -1471,13 +1472,6 @@
     }
   },
   "AccountUpgrade": {
-    "accountType": "Type de compte",
-    "personal": "Personnel  Personnel",
-    "personalDesc": "Sécurisez votre portefeuille par téléphone et par courrier électronique.",
-    "pro": "Pro Pro",
-    "proDesc": "Accepter les paiements et être découvert sur la carte.",
-    "merchant": "Le commerçant",
-    "merchantDesc": "Donnez des récompenses, apparaissez sur la carte et réglez-vous auprès de votre banque.",
     "personalInfo": "Informations personnelles ",
     "fullName": "Nom complet",
     "phoneNumber": "Numéro de téléphone ",
@@ -1504,10 +1498,31 @@
     "accountNum": "Numéro de compte ",
     "accountNumPlaceholder": "Entrez votre numéro de compte",
     "uploadId": "Téléchargez le document d'identification ",
-    "successUpgrade": "Vous avez réussi à mettre à niveau votre compte à {accountType: string}",
-    "successRequest": "Vous avez demandé avec succès de mettre à niveau votre compte à {accountType: string}",
-    "international": "International",
-    "internationalDesc": "Get an international account and routing number for bank transfers. ID required."
+    "badgeBankPayout": "Retrait bancaire",
+    "badgeUsdAccount": "Compte en USD",
+    "bankCashoutTitle": "Retrait bancaire",
+    "bankCashoutDesc": "Retirez des JMD vers votre banque jamaïcaine",
+    "businessTitle": "Entreprise",
+    "businessDesc": "Apparaissez sur la carte Flash et récompensez vos clients",
+    "enabled": "Activé",
+    "hubEyebrow": "Votre compte Flash",
+    "hubTitle": "Faites plus avec Flash",
+    "inReview": "En cours d'examen",
+    "sectionGetPaid": "Façons d'être payé",
+    "sectionGrow": "Développer",
+    "setUp": "Configurer",
+    "statusBusiness": "Entreprise",
+    "statusTrial": "Compte d'essai",
+    "statusUnauthorized": "Compte non autorisé",
+    "statusVerified": "Vérifié",
+    "successBankPayoutRequest": "Votre demande de retrait bancaire a été soumise pour examen",
+    "successBusinessRequest": "Votre demande de passage en compte entreprise a été soumise pour examen",
+    "successVerified": "Votre compte est vérifié",
+    "usdAccountTitle": "Compte bancaire virtuel en USD",
+    "usdAccountDesc": "Vos propres numéros de compte et de routage US — recevez ACH, virements et salaires",
+    "verifyTitle": "Vérifiez votre compte",
+    "verifyDesc": "Seulement votre numéro de téléphone · limites plus élevées en une minute",
+    "lockedVerifyFirst": "Vérifiez d'abord votre compte pour débloquer"
   },
   "CashWalletCutover": {
     "title": "Cash Wallet Updated",
@@ -1538,8 +1553,8 @@
     "minimumAmount": "Minimum amount is $1.00"
   },
   "BridgeKyc": {
-    "title": "International Transfer",
-    "description": "Please provide your details to set up international transfers",
+    "title": "Compte en USD",
+    "description": "Veuillez fournir vos informations pour configurer votre compte en USD",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter your full name",
     "email": "Email",
@@ -1552,7 +1567,10 @@
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
     "invalidEmail": "Please enter a valid email address",
-    "kycTypeRequired": "Please select an account type"
+    "kycTypeRequired": "Please select an account type",
+    "pendingTitle": "Vérification en attente",
+    "pendingBody": "La vérification de votre identité est en attente. Veuillez attendre l'approbation.",
+    "genericError": "Une erreur s'est produite. Veuillez réessayer."
   },
   "FygaroWebViewScreen": {
     "title": "Fygaro Payment",
