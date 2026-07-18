@@ -1690,5 +1690,12 @@
     "genericError": "Something went wrong. Please try again.",
     "alreadyLinkedTitle": "Bank Account Already Linked",
     "alreadyLinkedMessage": "This bank account is already linked to your profile."
+  },
+  "PlaidLink": {
+    "connectedTitle": "Bank disambungkan",
+    "connectedBody": "Bank anda sedang dipautkan dan akan muncul di sini tidak lama lagi.",
+    "exchangeFailed": "Gagal memautkan bank anda. Sila cuba lagi.",
+    "linkFailed": "Pemautan bank gagal. Sila cuba lagi.",
+    "linkTokenFailed": "Gagal mendapatkan pautan akaun luaran. Sila cuba lagi."
   }
 }

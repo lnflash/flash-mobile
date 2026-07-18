@@ -1690,5 +1690,12 @@
     "genericError": "Something went wrong. Please try again.",
     "alreadyLinkedTitle": "Bank Account Already Linked",
     "alreadyLinkedMessage": "This bank account is already linked to your profile."
+  },
+  "PlaidLink": {
+    "connectedTitle": "Bank összekapcsolva",
+    "connectedBody": "A bankod összekapcsolása folyamatban van, hamarosan itt megjelenik.",
+    "exchangeFailed": "Nem sikerült összekapcsolni a bankodat. Kérjük, próbáld újra.",
+    "linkFailed": "A bank összekapcsolása nem sikerült. Kérjük, próbáld újra.",
+    "linkTokenFailed": "Nem sikerült lekérni a külső számla hivatkozását. Kérjük, próbáld újra."
   }
 }
