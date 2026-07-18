@@ -12,6 +12,7 @@ import { WHATSAPP_SUPPORT_URL } from "@app/config"
 import { AccountLevel } from "@app/graphql/generated"
 import { useAccountStatus } from "@app/hooks/use-account-status"
 import { useBridgeKyc } from "@app/hooks/use-bridge-kyc"
+import { usePlaidLink } from "@app/hooks/use-plaid-link"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useAppDispatch } from "@app/store/redux"
@@ -298,6 +299,16 @@ export const BankAccountsScreen: React.FC = () => {
     startBridgeKyc()
   }
 
+  // Add-bank-account is Plaid-first (ENG-524): request a linkToken and open
+  // Plaid Link; BRIDGE_PLAID_NOT_AVAILABLE falls back to the manual
+  // bank-details form. The linked account arrives via Bridge's webhook, so
+  // refetch on link.
+  const { linkBankAccount } = usePlaidLink({
+    onLinked: refetch,
+    onManualEntry: () =>
+      navigation.navigate("BridgeAddExternalAccount", { returnTo: "BankAccounts" }),
+  })
+
   useFocusEffect(
     React.useCallback(() => {
       refetch()
@@ -425,9 +436,7 @@ export const BankAccountsScreen: React.FC = () => {
       <Pressable
         style={[styles.primaryButton, !kycApproved && styles.disabled]}
         disabled={!kycApproved}
-        onPress={() =>
-          navigation.navigate("BridgeAddExternalAccount", { returnTo: "BankAccounts" })
-        }
+        onPress={linkBankAccount}
       >
         <Icon name="add" type="ionicon" size={20} color={colors.white} />
         <Text type="p1" bold color={colors.white}>

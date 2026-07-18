@@ -1690,5 +1690,12 @@
     "genericError": "Something went wrong. Please try again.",
     "alreadyLinkedTitle": "Bank Account Already Linked",
     "alreadyLinkedMessage": "This bank account is already linked to your profile."
+  },
+  "PlaidLink": {
+    "connectedTitle": "Banco tinkisqa",
+    "connectedBody": "Bancoyki tinkichkan, kaypi rikhurinqa ratolla.",
+    "exchangeFailed": "Mana atirqachu bancoykita tinkiy. Ama hina kaspa, wakmanta ruray.",
+    "linkFailed": "Banco tinkiy mana atisqa. Ama hina kaspa, wakmanta ruray.",
+    "linkTokenFailed": "Mana atirqachu hawa cuenta t'inkita chaskiyta. Ama hina kaspa, wakmanta ruray."
   }
 }

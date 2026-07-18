@@ -2017,6 +2017,28 @@ type RootTranslation = {
 		 */
 		getDirections: string
 	}
+	PlaidLink: {
+		/**
+		 * B​a​n​k​ ​c​o​n​n​e​c​t​e​d
+		 */
+		connectedTitle: string
+		/**
+		 * Y​o​u​r​ ​b​a​n​k​ ​i​s​ ​b​e​i​n​g​ ​l​i​n​k​e​d​ ​a​n​d​ ​w​i​l​l​ ​a​p​p​e​a​r​ ​h​e​r​e​ ​s​h​o​r​t​l​y​.
+		 */
+		connectedBody: string
+		/**
+		 * F​a​i​l​e​d​ ​t​o​ ​l​i​n​k​ ​y​o​u​r​ ​b​a​n​k​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		exchangeFailed: string
+		/**
+		 * B​a​n​k​ ​l​i​n​k​i​n​g​ ​f​a​i​l​e​d​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		linkFailed: string
+		/**
+		 * F​a​i​l​e​d​ ​t​o​ ​g​e​t​ ​e​x​t​e​r​n​a​l​ ​a​c​c​o​u​n​t​ ​l​i​n​k​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		linkTokenFailed: string
+	}
 	HomeScreen: {
 		/**
 		 * C​a​s​h​ ​O​u​t
@@ -7996,6 +8018,28 @@ export type TranslationFunctions = {
 		 * Get Directions
 		 */
 		getDirections: () => LocalizedString
+	}
+	PlaidLink: {
+		/**
+		 * Bank connected
+		 */
+		connectedTitle: () => LocalizedString
+		/**
+		 * Your bank is being linked and will appear here shortly.
+		 */
+		connectedBody: () => LocalizedString
+		/**
+		 * Failed to link your bank. Please try again.
+		 */
+		exchangeFailed: () => LocalizedString
+		/**
+		 * Bank linking failed. Please try again.
+		 */
+		linkFailed: () => LocalizedString
+		/**
+		 * Failed to get external account link. Please try again.
+		 */
+		linkTokenFailed: () => LocalizedString
 	}
 	HomeScreen: {
 		/**

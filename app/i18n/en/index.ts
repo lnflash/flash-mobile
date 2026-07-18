@@ -636,6 +636,13 @@ const en: BaseTranslation = {
     viewInGoogleMaps: "View in Google Maps",
     getDirections: "Get Directions",
   },
+  PlaidLink: {
+    connectedTitle: "Bank connected",
+    connectedBody: "Your bank is being linked and will appear here shortly.",
+    exchangeFailed: "Failed to link your bank. Please try again.",
+    linkFailed: "Bank linking failed. Please try again.",
+    linkTokenFailed: "Failed to get external account link. Please try again.",
+  },
   HomeScreen: {
     cashout: "Cash Out",
     offlineShowingCached: "No connection — showing cached balances",
