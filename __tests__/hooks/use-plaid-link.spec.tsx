@@ -260,6 +260,22 @@ describe("usePlaidLink", () => {
     act(() => result.current.openPlaidLink("link-token-2"))
     expect(create).toHaveBeenCalledTimes(2)
 
+    // Middle rung: no display copy (empty string, the iOS bridge shape) —
+    // Plaid's developer message is still more actionable than the generic
+    // fallback and must not be skipped over.
+    alertSpy.mockClear()
+    act(() =>
+      lastHandlers().onExit({
+        error: {
+          errorCode: "ITEM_LOGIN_REQUIRED",
+          errorMessage: "developer detail",
+          displayMessage: "",
+        },
+      }),
+    )
+    expect(alertSpy).toHaveBeenCalledWith("Error", "developer detail")
+    act(() => result.current.openPlaidLink("link-token-3"))
+
     alertSpy.mockClear()
     act(() => lastHandlers().onExit({ error: { errorCode: "-1" } }))
     expect(alertSpy).toHaveBeenCalledWith(
