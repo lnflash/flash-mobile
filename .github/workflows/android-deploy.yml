@@ -48,6 +48,11 @@ jobs:
           DOT_ENV: ${{ secrets.DOT_ENV }}
         run: printenv DOT_ENV > .env
 
+      - name: Create google-services.json from secrets
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: printenv GOOGLE_SERVICES_JSON > android/app/google-services.json
+
       - name: Install JS dependencies
         run: yarn install --frozen-lockfile
 
@@ -117,6 +122,7 @@ jobs:
         if: always()
         run: |
           rm -f android/app/release-keystore.jks
+          rm -f android/app/google-services.json
           rm -f google-play-key.json
 
       - name: Upload artifacts on failure
