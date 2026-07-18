@@ -66,6 +66,12 @@ const openLinkAndGetHandlers = (onLinked?: jest.Mock): PlaidHandlers => {
   act(() => result.current.openPlaidLink("link-token-1"))
   expect(create).toHaveBeenCalledWith({ token: "link-token-1" })
   expect(open).toHaveBeenCalledTimes(1)
+  // create() BEFORE open() is the SDK's one hard native precondition:
+  // Android throws LinkException("Create must be called before open."),
+  // iOS short-circuits open() into an error exit ("Create was not called.").
+  expect((create as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+    (open as jest.Mock).mock.invocationCallOrder[0],
+  )
   return lastHandlers()
 }
 
@@ -222,6 +228,10 @@ describe("usePlaidLink", () => {
     act(() => result.current.openPlaidLink("link-token-2"))
     expect(create).toHaveBeenCalledTimes(2)
     expect(create).toHaveBeenLastCalledWith({ token: "link-token-2" })
+    // create-before-open holds on the retry session too
+    expect((create as jest.Mock).mock.invocationCallOrder[1]).toBeLessThan(
+      (open as jest.Mock).mock.invocationCallOrder[1],
+    )
   })
 
   it("re-arms after a completed session (onSuccess settled)", async () => {
