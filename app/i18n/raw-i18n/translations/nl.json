@@ -1695,6 +1695,7 @@
     "connectedTitle": "Bank gekoppeld",
     "connectedBody": "Je bank wordt gekoppeld en verschijnt hier binnenkort.",
     "exchangeFailed": "Kon je bank niet koppelen. Probeer het opnieuw.",
-    "linkFailed": "Bankkoppeling mislukt. Probeer het opnieuw."
+    "linkFailed": "Bankkoppeling mislukt. Probeer het opnieuw.",
+    "linkTokenFailed": "Kon de link voor de externe rekening niet ophalen. Probeer het opnieuw."
   }
 }

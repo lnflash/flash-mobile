@@ -1695,6 +1695,7 @@
     "connectedTitle": "Banka připojena",
     "connectedBody": "Vaše banka se propojuje a brzy se zde zobrazí.",
     "exchangeFailed": "Propojení banky se nezdařilo. Zkuste to prosím znovu.",
-    "linkFailed": "Propojení banky selhalo. Zkuste to prosím znovu."
+    "linkFailed": "Propojení banky selhalo. Zkuste to prosím znovu.",
+    "linkTokenFailed": "Nepodařilo se získat odkaz externího účtu. Zkuste to prosím znovu."
   }
 }

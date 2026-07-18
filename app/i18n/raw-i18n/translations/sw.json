@@ -1701,6 +1701,7 @@
     "connectedTitle": "Benki imeunganishwa",
     "connectedBody": "Benki yako inaunganishwa na itaonekana hapa hivi karibuni.",
     "exchangeFailed": "Imeshindwa kuunganisha benki yako. Tafadhali jaribu tena.",
-    "linkFailed": "Kuunganisha benki kumeshindwa. Tafadhali jaribu tena."
+    "linkFailed": "Kuunganisha benki kumeshindwa. Tafadhali jaribu tena.",
+    "linkTokenFailed": "Imeshindwa kupata kiungo cha akaunti ya nje. Tafadhali jaribu tena."
   }
 }

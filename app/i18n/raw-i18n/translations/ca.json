@@ -1695,6 +1695,7 @@
     "connectedTitle": "Banc connectat",
     "connectedBody": "El teu banc s'està vinculant i apareixerà aquí aviat.",
     "exchangeFailed": "No s'ha pogut vincular el teu banc. Torna-ho a provar.",
-    "linkFailed": "La vinculació del banc ha fallat. Torna-ho a provar."
+    "linkFailed": "La vinculació del banc ha fallat. Torna-ho a provar.",
+    "linkTokenFailed": "No s'ha pogut obtenir l'enllaç del compte extern. Torna-ho a provar."
   }
 }

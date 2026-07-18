@@ -21,8 +21,10 @@ import { renderHook, act } from "@testing-library/react-hooks"
 import { create, open } from "react-native-plaid-link-sdk"
 
 const mockExchange = jest.fn()
+const mockAddExternalAccount = jest.fn()
 jest.mock("@app/graphql/generated", () => ({
   useBridgeExchangePlaidPublicTokenMutation: () => [mockExchange],
+  useBridgeAddExternalAccountMutation: () => [mockAddExternalAccount],
 }))
 
 const mockToggleActivityIndicator = jest.fn()
@@ -41,6 +43,7 @@ jest.mock("@app/i18n/i18n-react", () => ({
         connectedBody: () => "Your bank is being linked and will appear here shortly.",
         exchangeFailed: () => "Failed to link your bank. Please try again.",
         linkFailed: () => "Bank linking failed. Please try again.",
+        linkTokenFailed: () => "Failed to get external account link. Please try again.",
       },
     },
   }),
@@ -55,8 +58,8 @@ type PlaidHandlers = {
   }) => void
 }
 
-const renderPlaidLink = (onLinked?: jest.Mock) =>
-  renderHook(() => usePlaidLink({ onLinked }))
+const renderPlaidLink = (onLinked?: jest.Mock, onManualEntry?: jest.Mock) =>
+  renderHook(() => usePlaidLink({ onLinked, onManualEntry }))
 
 const lastHandlers = (): PlaidHandlers =>
   (open as jest.Mock).mock.calls[(open as jest.Mock).mock.calls.length - 1][0]
@@ -292,6 +295,151 @@ describe("usePlaidLink", () => {
       "Error",
       "Bank linking failed. Please try again.",
     )
+  })
+
+  it("linkBankAccount requests a token and opens Plaid with it", async () => {
+    mockAddExternalAccount.mockResolvedValue({
+      data: {
+        bridgeAddExternalAccount: {
+          errors: [],
+          externalAccount: { linkToken: "server-token", expiresAt: "later" },
+        },
+      },
+    })
+
+    const { result } = renderPlaidLink()
+    await act(() => result.current.linkBankAccount())
+
+    expect(mockAddExternalAccount).toHaveBeenCalledTimes(1)
+    expect(create).toHaveBeenCalledWith({ token: "server-token" })
+    expect(open).toHaveBeenCalledTimes(1)
+    // Indicator paired around the token request
+    expect(mockToggleActivityIndicator).toHaveBeenNthCalledWith(1, true)
+    expect(mockToggleActivityIndicator).toHaveBeenNthCalledWith(2, false)
+  })
+
+  it("linkBankAccount falls back to manual entry on BRIDGE_PLAID_NOT_AVAILABLE and re-arms", async () => {
+    const onManualEntry = jest.fn()
+    mockAddExternalAccount.mockResolvedValue({
+      data: {
+        bridgeAddExternalAccount: {
+          errors: [{ code: "BRIDGE_PLAID_NOT_AVAILABLE", message: "no plaid" }],
+        },
+      },
+    })
+
+    const { result } = renderPlaidLink(undefined, onManualEntry)
+    await act(() => result.current.linkBankAccount())
+
+    expect(onManualEntry).toHaveBeenCalledTimes(1)
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(create).not.toHaveBeenCalled()
+
+    // Guard released — a retry reaches the mutation again
+    await act(() => result.current.linkBankAccount())
+    expect(mockAddExternalAccount).toHaveBeenCalledTimes(2)
+  })
+
+  it("linkBankAccount alerts other payload errors and re-arms", async () => {
+    mockAddExternalAccount.mockResolvedValue({
+      data: { bridgeAddExternalAccount: { errors: [{ code: "X", message: "boom" }] } },
+    })
+
+    const { result } = renderPlaidLink()
+    await act(() => result.current.linkBankAccount())
+    expect(alertSpy).toHaveBeenCalledWith("Error", "boom")
+
+    await act(() => result.current.linkBankAccount())
+    expect(mockAddExternalAccount).toHaveBeenCalledTimes(2)
+  })
+
+  it("linkBankAccount alerts when no linkToken is returned and re-arms", async () => {
+    mockAddExternalAccount.mockResolvedValue({
+      data: { bridgeAddExternalAccount: { errors: [], externalAccount: null } },
+    })
+
+    const { result } = renderPlaidLink()
+    await act(() => result.current.linkBankAccount())
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Error",
+      "Failed to get external account link. Please try again.",
+    )
+
+    await act(() => result.current.linkBankAccount())
+    expect(mockAddExternalAccount).toHaveBeenCalledTimes(2)
+  })
+
+  it("linkBankAccount alerts, clears the indicator, and re-arms when the mutation throws", async () => {
+    mockAddExternalAccount.mockRejectedValueOnce(new Error("network"))
+
+    const { result } = renderPlaidLink()
+    await act(() => result.current.linkBankAccount())
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Error",
+      "Failed to get external account link. Please try again.",
+    )
+    expect(mockToggleActivityIndicator).toHaveBeenLastCalledWith(false)
+
+    mockAddExternalAccount.mockResolvedValueOnce({
+      data: {
+        bridgeAddExternalAccount: {
+          errors: [],
+          externalAccount: { linkToken: "t2" },
+        },
+      },
+    })
+    await act(() => result.current.linkBankAccount())
+    expect(create).toHaveBeenCalledWith({ token: "t2" })
+  })
+
+  it("linkBankAccount holds one guard across token request + session (double-tap mints one token)", async () => {
+    let resolveAdd!: (v: unknown) => void
+    mockAddExternalAccount.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAdd = resolve
+      }),
+    )
+
+    const { result } = renderPlaidLink()
+    let first!: Promise<void>
+    act(() => {
+      first = result.current.linkBankAccount()
+    })
+    // Second tap while the token request is in flight — must not mint a token
+    act(() => {
+      result.current.linkBankAccount()
+    })
+    expect(mockAddExternalAccount).toHaveBeenCalledTimes(1)
+
+    resolveAdd({
+      data: {
+        bridgeAddExternalAccount: {
+          errors: [],
+          externalAccount: { linkToken: "t1" },
+        },
+      },
+    })
+    await act(() => first)
+    expect(create).toHaveBeenCalledTimes(1)
+
+    // Session open → still guarded
+    act(() => {
+      result.current.linkBankAccount()
+    })
+    expect(mockAddExternalAccount).toHaveBeenCalledTimes(1)
+
+    // Session exits → re-armed
+    act(() => lastHandlers().onExit({}))
+    mockAddExternalAccount.mockResolvedValue({
+      data: {
+        bridgeAddExternalAccount: {
+          errors: [],
+          externalAccount: { linkToken: "t2" },
+        },
+      },
+    })
+    await act(() => result.current.linkBankAccount())
+    expect(mockAddExternalAccount).toHaveBeenCalledTimes(2)
   })
 
   it("stays silent on user cancel — both platform shapes", () => {

@@ -1695,6 +1695,7 @@
     "connectedTitle": "Banka bağlandı",
     "connectedBody": "Bankanız bağlanıyor ve kısa süre içinde burada görünecek.",
     "exchangeFailed": "Bankanız bağlanamadı. Lütfen tekrar deneyin.",
-    "linkFailed": "Banka bağlantısı başarısız oldu. Lütfen tekrar deneyin."
+    "linkFailed": "Banka bağlantısı başarısız oldu. Lütfen tekrar deneyin.",
+    "linkTokenFailed": "Harici hesap bağlantısı alınamadı. Lütfen tekrar deneyin."
   }
 }

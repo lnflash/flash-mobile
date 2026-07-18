@@ -1695,6 +1695,7 @@
     "connectedTitle": "Bank verbunden",
     "connectedBody": "Deine Bank wird verknüpft und erscheint hier in Kürze.",
     "exchangeFailed": "Deine Bank konnte nicht verknüpft werden. Bitte versuche es erneut.",
-    "linkFailed": "Bankverknüpfung fehlgeschlagen. Bitte versuche es erneut."
+    "linkFailed": "Bankverknüpfung fehlgeschlagen. Bitte versuche es erneut.",
+    "linkTokenFailed": "Der Link für das externe Konto konnte nicht abgerufen werden. Bitte versuche es erneut."
   }
 }

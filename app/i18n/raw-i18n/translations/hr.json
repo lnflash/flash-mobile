@@ -1695,6 +1695,7 @@
     "connectedTitle": "Banka povezana",
     "connectedBody": "Vaša banka se povezuje i uskoro će se pojaviti ovdje.",
     "exchangeFailed": "Povezivanje banke nije uspjelo. Pokušajte ponovno.",
-    "linkFailed": "Povezivanje banke nije uspjelo. Pokušajte ponovno."
+    "linkFailed": "Povezivanje banke nije uspjelo. Pokušajte ponovno.",
+    "linkTokenFailed": "Dohvaćanje poveznice vanjskog računa nije uspjelo. Pokušajte ponovno."
   }
 }

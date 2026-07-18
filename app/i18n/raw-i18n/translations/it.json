@@ -1695,6 +1695,7 @@
     "connectedTitle": "Banca collegata",
     "connectedBody": "La tua banca è in fase di collegamento e apparirà qui a breve.",
     "exchangeFailed": "Impossibile collegare la tua banca. Riprova.",
-    "linkFailed": "Collegamento della banca non riuscito. Riprova."
+    "linkFailed": "Collegamento della banca non riuscito. Riprova.",
+    "linkTokenFailed": "Impossibile ottenere il link del conto esterno. Riprova."
   }
 }

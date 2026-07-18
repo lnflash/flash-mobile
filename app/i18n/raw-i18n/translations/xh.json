@@ -1695,6 +1695,7 @@
     "connectedTitle": "Ibhanki iqhagamshelwe",
     "connectedBody": "Ibhanki yakho iyaqhagamshelwa kwaye iza kubonakala apha kungekudala.",
     "exchangeFailed": "Ayikwazanga ukuqhagamshela ibhanki yakho. Nceda uzame kwakhona.",
-    "linkFailed": "Ukuqhagamshelwa kwebhanki akuphumelelanga. Nceda uzame kwakhona."
+    "linkFailed": "Ukuqhagamshelwa kwebhanki akuphumelelanga. Nceda uzame kwakhona.",
+    "linkTokenFailed": "Ayikwazanga ukufumana ikhonkco le-akhawunti yangaphandle. Nceda uzame kwakhona."
   }
 }

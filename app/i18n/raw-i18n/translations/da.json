@@ -1695,6 +1695,7 @@
     "connectedTitle": "Bank forbundet",
     "connectedBody": "Din bank bliver tilknyttet og vises her snart.",
     "exchangeFailed": "Kunne ikke tilknytte din bank. Prøv venligst igen.",
-    "linkFailed": "Banktilknytning mislykkedes. Prøv venligst igen."
+    "linkFailed": "Banktilknytning mislykkedes. Prøv venligst igen.",
+    "linkTokenFailed": "Kunne ikke hente linket til den eksterne konto. Prøv venligst igen."
   }
 }

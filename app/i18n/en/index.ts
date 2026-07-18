@@ -641,6 +641,7 @@ const en: BaseTranslation = {
     connectedBody: "Your bank is being linked and will appear here shortly.",
     exchangeFailed: "Failed to link your bank. Please try again.",
     linkFailed: "Bank linking failed. Please try again.",
+    linkTokenFailed: "Failed to get external account link. Please try again.",
   },
   HomeScreen: {
     cashout: "Cash Out",

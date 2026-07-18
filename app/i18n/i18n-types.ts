@@ -2034,6 +2034,10 @@ type RootTranslation = {
 		 * B​a​n​k​ ​l​i​n​k​i​n​g​ ​f​a​i​l​e​d​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
 		 */
 		linkFailed: string
+		/**
+		 * F​a​i​l​e​d​ ​t​o​ ​g​e​t​ ​e​x​t​e​r​n​a​l​ ​a​c​c​o​u​n​t​ ​l​i​n​k​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		linkTokenFailed: string
 	}
 	HomeScreen: {
 		/**
@@ -8032,6 +8036,10 @@ export type TranslationFunctions = {
 		 * Bank linking failed. Please try again.
 		 */
 		linkFailed: () => LocalizedString
+		/**
+		 * Failed to get external account link. Please try again.
+		 */
+		linkTokenFailed: () => LocalizedString
 	}
 	HomeScreen: {
 		/**

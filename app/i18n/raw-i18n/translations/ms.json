@@ -1695,6 +1695,7 @@
     "connectedTitle": "Bank disambungkan",
     "connectedBody": "Bank anda sedang dipautkan dan akan muncul di sini tidak lama lagi.",
     "exchangeFailed": "Gagal memautkan bank anda. Sila cuba lagi.",
-    "linkFailed": "Pemautan bank gagal. Sila cuba lagi."
+    "linkFailed": "Pemautan bank gagal. Sila cuba lagi.",
+    "linkTokenFailed": "Gagal mendapatkan pautan akaun luaran. Sila cuba lagi."
   }
 }

@@ -1695,6 +1695,7 @@
     "connectedTitle": "Banco tinkisqa",
     "connectedBody": "Bancoyki tinkichkan, kaypi rikhurinqa ratolla.",
     "exchangeFailed": "Mana atirqachu bancoykita tinkiy. Ama hina kaspa, wakmanta ruray.",
-    "linkFailed": "Banco tinkiy mana atisqa. Ama hina kaspa, wakmanta ruray."
+    "linkFailed": "Banco tinkiy mana atisqa. Ama hina kaspa, wakmanta ruray.",
+    "linkTokenFailed": "Mana atirqachu hawa cuenta t'inkita chaskiyta. Ama hina kaspa, wakmanta ruray."
   }
 }
