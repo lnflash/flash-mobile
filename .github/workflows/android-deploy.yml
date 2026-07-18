@@ -19,6 +19,9 @@ concurrency:
   group: android-deploy
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   deploy:
     name: Deploy Android
@@ -114,10 +117,12 @@ jobs:
       - name: Push version bump
         if: success() && steps.lane.outputs.lane != 'promote_to_beta'
         run: |
-          BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          git fetch origin "$BRANCH"
-          git rebase -X theirs --autostash origin/"$BRANCH"
-          git push origin "$BRANCH" --follow-tags
+          # Tag-triggered runs are a detached HEAD, so target main explicitly.
+          # The GITHUB_TOKEN push cannot re-trigger this workflow (Actions
+          # anti-recursion), so the bump tag never loops.
+          git fetch origin main
+          git rebase -X theirs --autostash origin/main
+          git push origin HEAD:main --follow-tags
 
       - name: Clean up sensitive files
         if: always()
