@@ -20,14 +20,13 @@ def version_from_git_tag(platform)
   raw[/\A\d+\.\d+\.\d+/] || raw
 end
 
-def update_ios_version_from_tag(tag_prefix = "ios")
+def update_ios_version_from_tag(tag_prefix, target_names)
   version = version_from_git_tag(tag_prefix)
   unless version.empty?
-    increment_version_number(
-      version_number: version,
-      xcodeproj: "ios/LNFlash.xcodeproj"
-    )
-    UI.message("iOS version set to #{version}")
+    target_names.each do |target_name|
+      set_marketing_version("ios/LNFlash.xcodeproj", target_name, version)
+    end
+    UI.message("iOS version set to #{version} for #{target_names.join(', ')}")
   end
 end
 
@@ -102,6 +101,23 @@ def current_project_version_for(xcodeproj_path, target_name)
   config.build_settings["CURRENT_PROJECT_VERSION"]
 end
 
+# increment_version_number has the identical agvtool per-target gap as
+# increment_build_number above: its available_options is only
+# [:bump_type, :version_number, :version_appendix, :xcodeproj] in the pinned
+# fastlane 2.237.0 source, and its underlying XcodeprojHelper writes
+# MARKETING_VERSION to every target in the project. Scoped the same way.
+def set_marketing_version(xcodeproj_path, target_name, version)
+  require "xcodeproj"
+  project = Xcodeproj::Project.open(xcodeproj_path)
+  target = project.targets.find { |t| t.name == target_name }
+  UI.user_error!("Target '#{target_name}' not found in #{xcodeproj_path}") unless target
+  target.build_configurations.each do |config|
+    config.build_settings["MARKETING_VERSION"] = version.to_s
+  end
+  project.save
+  version.to_s
+end
+
 # ---------------------------------------------------------------------------
 # iOS
 # ---------------------------------------------------------------------------
@@ -150,13 +166,16 @@ platform :ios do
 
     setup_signing
 
-    update_ios_version_from_tag
+    update_ios_version_from_tag("ios", ["LNFlash", "FlashWidgetExtension", "FlashWatch Watch App", "FlashWatchComplicationExtension"])
 
-    set_current_project_version(
-      "ios/LNFlash.xcodeproj",
-      "LNFlash",
-      latest_testflight_build_number(api_key: api_key) + 1
-    )
+    # LNFlash embeds FlashWidgetExtension + "FlashWatch Watch App" (which
+    # itself embeds FlashWatchComplicationExtension) into the same .ipa —
+    # App Store Connect processing rejects a container/embedded
+    # CFBundleVersion mismatch, so every real target must move together.
+    ios_build_number = latest_testflight_build_number(api_key: api_key) + 1
+    ["LNFlash", "FlashWidgetExtension", "FlashWatch Watch App", "FlashWatchComplicationExtension"].each do |target_name|
+      set_current_project_version("ios/LNFlash.xcodeproj", target_name, ios_build_number)
+    end
 
     # deployment: true fails loudly if Podfile/Podfile.lock ever disagree,
     # instead of silently re-resolving an unreviewed pod graph mid-release.
@@ -243,13 +262,16 @@ platform :ios do
 
     setup_signing
 
-    update_ios_version_from_tag
+    update_ios_version_from_tag("ios", ["LNFlash", "FlashWidgetExtension", "FlashWatch Watch App", "FlashWatchComplicationExtension"])
 
-    set_current_project_version(
-      "ios/LNFlash.xcodeproj",
-      "LNFlash",
-      latest_testflight_build_number(api_key: api_key) + 1
-    )
+    # LNFlash embeds FlashWidgetExtension + "FlashWatch Watch App" (which
+    # itself embeds FlashWatchComplicationExtension) into the same .ipa —
+    # App Store Connect processing rejects a container/embedded
+    # CFBundleVersion mismatch, so every real target must move together.
+    ios_build_number = latest_testflight_build_number(api_key: api_key) + 1
+    ["LNFlash", "FlashWidgetExtension", "FlashWatch Watch App", "FlashWatchComplicationExtension"].each do |target_name|
+      set_current_project_version("ios/LNFlash.xcodeproj", target_name, ios_build_number)
+    end
 
     # deployment: true fails loudly if Podfile/Podfile.lock ever disagree,
     # instead of silently re-resolving an unreviewed pod graph mid-release.
@@ -366,7 +388,7 @@ platform :ios do
 
     setup_signing_alt
 
-    update_ios_version_from_tag("ios-alt")
+    update_ios_version_from_tag("ios-alt", ["LNFlash-Alt"])
 
     set_current_project_version(
       "ios/LNFlash.xcodeproj",
@@ -443,7 +465,7 @@ platform :ios do
 
     setup_signing_alt
 
-    update_ios_version_from_tag("ios-alt")
+    update_ios_version_from_tag("ios-alt", ["LNFlash-Alt"])
 
     set_current_project_version(
       "ios/LNFlash.xcodeproj",
@@ -530,6 +552,10 @@ platform :android do
       flags: "--no-daemon --stacktrace"
     )
 
+    # Store listing (description, images, changelogs) is managed manually via
+    # Play Console, not from fastlane/metadata/android/en-US/ — that scaffold
+    # exists for a possible future automation pass but nothing in this Fastfile
+    # reads it today. Same on all three upload_to_play_store calls below.
     upload_to_play_store(
       track: "internal",
       aab: "android/app/build/outputs/bundle/release/app-release.aab",

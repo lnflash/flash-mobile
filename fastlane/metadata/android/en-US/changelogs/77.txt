@@ -1,5 +1,0 @@
-Flash Mobile App – Version v0.5.2 Release Notes
-
-• Fixed missing contacts not appearing in contact list
-• Fixed address suggestions not showing when searching locations
-• Performance and compatibility improvements
