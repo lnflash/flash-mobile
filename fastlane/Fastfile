@@ -62,7 +62,38 @@ def update_android_version_from_tag
     gradle_path = File.join(Dir.pwd, "..", "android", "app", "build.gradle")
     content = File.read(gradle_path)
     current = content.match(/versionName\s+"([^"]+)"/)[1]
-    refuse_version_regression!(current, version, "Android versionName")
+
+    # refuse_version_regression! alone only catches a regression relative to
+    # the locally checked-out build.gradle. Play enforces no ordering on
+    # versionName at all (unlike versionCode, which it hard-rejects if
+    # reused/lower) — if a previous run's real upload succeeded but its
+    # version-bump commit never made it back to main (the "Push version
+    # bump" step exhausted its retries), local state can still show the OLD
+    # version while Play's track already has a NEWER one live, and nothing
+    # else in this pipeline would catch that. Fold in Play's actual release
+    # names from both tracks, mirroring increment_android_version_code's own
+    # live-versionCode cross-check below (same graceful-degrade-on-
+    # query-failure pattern). Filters to plain dot-numeric strings only —
+    # Play release names are free-form and can be hand-edited in Play
+    # Console to something Gem::Version can't parse.
+    live_names = []
+    begin
+      require "supply/reader"
+      ["internal", "production"].each do |track|
+        google_play_track_version_codes(track: track) # also populates Supply.config for the read below
+        live_names += Supply::Reader.new.track_release_names
+      end
+      live_names = live_names.select { |v| v =~ /\A\d+(\.\d+)*\z/ }
+    rescue => e
+      UI.important(
+        "Could not query Play Console for existing release names (#{e.message}) " \
+        "— falling back to local git/file state only. Expected on the very first " \
+        "release, before either track has a build; investigate otherwise."
+      )
+    end
+    baseline = ([current] + live_names).compact.max_by { |v| Gem::Version.new(v) }
+    refuse_version_regression!(baseline, version, "Android versionName")
+
     content = content.gsub(/versionName\s+"[^"]+"/, "versionName \"#{version}\"")
     File.write(gradle_path, content)
     UI.message("Android versionName set to #{version}")
