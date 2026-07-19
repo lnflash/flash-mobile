@@ -45,12 +45,61 @@ end
 def increment_android_version_code
   gradle_path = File.join(Dir.pwd, "..", "android", "app", "build.gradle")
   content = File.read(gradle_path)
-  current_code = content.match(/versionCode\s+(\d+)/)[1].to_i
+  local_code = content.match(/versionCode\s+(\d+)/)[1].to_i
+
+  # The checked-out ref can be older than main's tip (workflow_dispatch's ref
+  # input exists precisely so a release can pin an exact beta-tested commit),
+  # so the locally-committed versionCode can lag what a later beta already
+  # pushed to Play. Query the real ceiling across both tracks Play rejects
+  # any reused versionCode outright, so trusting local state alone risks a
+  # collision on exactly the release-promotion flow this pipeline exists for.
+  live_codes = []
+  begin
+    live_codes = google_play_track_version_codes(track: "internal") +
+                 google_play_track_version_codes(track: "production")
+  rescue => e
+    UI.important(
+      "Could not query Play Console for existing version codes (#{e.message}) " \
+      "— falling back to the locally committed versionCode. Expected on the " \
+      "very first release, before either track has a build; investigate otherwise."
+    )
+  end
+
+  current_code = [local_code, *live_codes].max
   new_code = current_code + 1
   content = content.gsub(/versionCode\s+\d+/, "versionCode #{new_code}")
   File.write(gradle_path, content)
-  UI.message("Android versionCode incremented: #{current_code} → #{new_code}")
+  UI.message("Android versionCode incremented: #{current_code} → #{new_code} (local: #{local_code}, live max: #{live_codes.max || "n/a"})")
   new_code
+end
+
+# increment_build_number / get_build_number are agvtool-based and have no
+# concept of "target" at all (confirmed against the pinned fastlane 2.237.0
+# action source — :target is not a valid option and agvtool itself has no
+# per-target scoping mechanism), so they can't be used to bump one target's
+# build number without touching every target sharing this xcodeproj. These
+# two helpers do the same job the update_code_signing_settings action already
+# does internally: read/write the target's own build settings directly via
+# the xcodeproj gem (an existing fastlane dependency — no new gem needed).
+def set_current_project_version(xcodeproj_path, target_name, build_number)
+  require "xcodeproj"
+  project = Xcodeproj::Project.open(xcodeproj_path)
+  target = project.targets.find { |t| t.name == target_name }
+  UI.user_error!("Target '#{target_name}' not found in #{xcodeproj_path}") unless target
+  target.build_configurations.each do |config|
+    config.build_settings["CURRENT_PROJECT_VERSION"] = build_number.to_s
+  end
+  project.save
+  build_number.to_s
+end
+
+def current_project_version_for(xcodeproj_path, target_name)
+  require "xcodeproj"
+  project = Xcodeproj::Project.open(xcodeproj_path)
+  target = project.targets.find { |t| t.name == target_name }
+  UI.user_error!("Target '#{target_name}' not found in #{xcodeproj_path}") unless target
+  config = target.build_configurations.find { |c| c.name == "Release" } || target.build_configurations.first
+  config.build_settings["CURRENT_PROJECT_VERSION"]
 end
 
 # ---------------------------------------------------------------------------
@@ -103,16 +152,15 @@ platform :ios do
 
     update_ios_version_from_tag
 
-    increment_build_number(
-      build_number: latest_testflight_build_number(api_key: api_key) + 1,
-      xcodeproj: "ios/LNFlash.xcodeproj",
-      # Scoped: this xcodeproj also holds the Alt app's target, and an
-      # unscoped call bumps CURRENT_PROJECT_VERSION for every target in the
-      # project — stomping the other app's build-number setting on every run.
-      target: "LNFlash"
+    set_current_project_version(
+      "ios/LNFlash.xcodeproj",
+      "LNFlash",
+      latest_testflight_build_number(api_key: api_key) + 1
     )
 
-    cocoapods(podfile: "ios/Podfile", clean_install: true)
+    # deployment: true fails loudly if Podfile/Podfile.lock ever disagree,
+    # instead of silently re-resolving an unreviewed pod graph mid-release.
+    cocoapods(podfile: "ios/Podfile", clean_install: true, deployment: true)
 
     profile_main = ENV["sigh_com.lnflash_appstore_profile-name"] || "match AppStore com.lnflash"
     profile_widget = ENV["sigh_com.lnflash.FlashWidget_appstore_profile-name"] || "match AppStore com.lnflash.FlashWidget"
@@ -170,7 +218,7 @@ platform :ios do
     )
 
     version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash")
-    build = get_build_number(xcodeproj: "ios/LNFlash.xcodeproj")
+    build = current_project_version_for("ios/LNFlash.xcodeproj", "LNFlash")
 
     if is_ci
       git_commit(
@@ -197,16 +245,15 @@ platform :ios do
 
     update_ios_version_from_tag
 
-    increment_build_number(
-      build_number: latest_testflight_build_number(api_key: api_key) + 1,
-      xcodeproj: "ios/LNFlash.xcodeproj",
-      # Scoped: this xcodeproj also holds the Alt app's target, and an
-      # unscoped call bumps CURRENT_PROJECT_VERSION for every target in the
-      # project — stomping the other app's build-number setting on every run.
-      target: "LNFlash"
+    set_current_project_version(
+      "ios/LNFlash.xcodeproj",
+      "LNFlash",
+      latest_testflight_build_number(api_key: api_key) + 1
     )
 
-    cocoapods(podfile: "ios/Podfile", clean_install: true)
+    # deployment: true fails loudly if Podfile/Podfile.lock ever disagree,
+    # instead of silently re-resolving an unreviewed pod graph mid-release.
+    cocoapods(podfile: "ios/Podfile", clean_install: true, deployment: true)
 
     profile_main = ENV["sigh_com.lnflash_appstore_profile-name"] || "match AppStore com.lnflash"
     profile_widget = ENV["sigh_com.lnflash.FlashWidget_appstore_profile-name"] || "match AppStore com.lnflash.FlashWidget"
@@ -267,7 +314,7 @@ platform :ios do
     )
 
     version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash")
-    build = get_build_number(xcodeproj: "ios/LNFlash.xcodeproj")
+    build = current_project_version_for("ios/LNFlash.xcodeproj", "LNFlash")
 
     if is_ci
       git_commit(
@@ -321,14 +368,15 @@ platform :ios do
 
     update_ios_version_from_tag("ios-alt")
 
-    increment_build_number(
-      build_number: latest_testflight_build_number(api_key: api_key, app_identifier: "com.flashapp.alt") + 1,
-      xcodeproj: "ios/LNFlash.xcodeproj",
-      # Scoped: see the main app's lane for why this must not be project-wide.
-      target: "LNFlash-Alt"
+    set_current_project_version(
+      "ios/LNFlash.xcodeproj",
+      "LNFlash-Alt",
+      latest_testflight_build_number(api_key: api_key, app_identifier: "com.flashapp.alt") + 1
     )
 
-    cocoapods(podfile: "ios/Podfile", clean_install: true)
+    # deployment: true fails loudly if Podfile/Podfile.lock ever disagree,
+    # instead of silently re-resolving an unreviewed pod graph mid-release.
+    cocoapods(podfile: "ios/Podfile", clean_install: true, deployment: true)
 
     profile_name = ENV["sigh_com.flashapp.alt_appstore_profile-name"] || "match AppStore com.flashapp.alt"
 
@@ -370,7 +418,7 @@ platform :ios do
     )
 
     version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash-Alt")
-    build = get_build_number(xcodeproj: "ios/LNFlash.xcodeproj")
+    build = current_project_version_for("ios/LNFlash.xcodeproj", "LNFlash-Alt")
 
     if is_ci
       git_commit(
@@ -397,14 +445,15 @@ platform :ios do
 
     update_ios_version_from_tag("ios-alt")
 
-    increment_build_number(
-      build_number: latest_testflight_build_number(api_key: api_key, app_identifier: "com.flashapp.alt") + 1,
-      xcodeproj: "ios/LNFlash.xcodeproj",
-      # Scoped: see the main app's lane for why this must not be project-wide.
-      target: "LNFlash-Alt"
+    set_current_project_version(
+      "ios/LNFlash.xcodeproj",
+      "LNFlash-Alt",
+      latest_testflight_build_number(api_key: api_key, app_identifier: "com.flashapp.alt") + 1
     )
 
-    cocoapods(podfile: "ios/Podfile", clean_install: true)
+    # deployment: true fails loudly if Podfile/Podfile.lock ever disagree,
+    # instead of silently re-resolving an unreviewed pod graph mid-release.
+    cocoapods(podfile: "ios/Podfile", clean_install: true, deployment: true)
 
     profile_name = ENV["sigh_com.flashapp.alt_appstore_profile-name"] || "match AppStore com.flashapp.alt"
 
@@ -449,7 +498,7 @@ platform :ios do
     )
 
     version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash-Alt")
-    build = get_build_number(xcodeproj: "ios/LNFlash.xcodeproj")
+    build = current_project_version_for("ios/LNFlash.xcodeproj", "LNFlash-Alt")
 
     if is_ci
       git_commit(

@@ -32,6 +32,23 @@ jobs:
     timeout-minutes: 90
 
     steps:
+      # Runs before Checkout: enforcement, not just documentation. The ref
+      # input's description said "REQUIRED for release", but required: false
+      # means GitHub's UI never enforces that — a release dispatch left blank
+      # would otherwise silently build whatever the "Use workflow from"
+      # selector resolved to (usually main's tip) instead of the exact
+      # beta-tested commit, straight through to an App Store upload.
+      - name: Validate release ref
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          INPUT_LANE: ${{ github.event.inputs.lane }}
+          INPUT_REF: ${{ github.event.inputs.ref }}
+        run: |
+          if [ "$INPUT_LANE" = "release" ] && [ -z "$INPUT_REF" ]; then
+            echo "::error::lane=release requires the ref input (exact beta-tested commit/tag, e.g. ios/v0.6.2-46) — refusing to build whatever ref the workflow-from selector picked. Re-run with ref set." >&2
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -39,7 +56,8 @@ jobs:
           # workflow_dispatch: falls back to whichever branch was picked in
           # the "Use workflow from" selector (usually main's tip) unless the
           # ref input above pins something else — see that input's
-          # description for why release dispatches should always set it.
+          # description for why release dispatches should always set it, and
+          # the Validate release ref step above for why it can't be skipped.
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
 
@@ -54,7 +72,10 @@ jobs:
           ruby-version: "3.2"
 
       - name: Install Ruby dependencies
-        run: bundle install --jobs 4 --retry 3
+        # --frozen: hard-fail if Gemfile/Gemfile.lock disagree, instead of
+        # silently re-resolving an unaudited gem graph in the job that holds
+        # every signing/upload credential.
+        run: bundle install --frozen --jobs 4 --retry 3
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

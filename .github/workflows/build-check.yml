@@ -48,7 +48,9 @@ jobs:
           ruby-version: "3.2"
 
       - name: Install Ruby dependencies
-        run: bundle install --jobs 4 --retry 3
+        # --frozen: hard-fail if Gemfile/Gemfile.lock disagree, instead of
+        # silently re-resolving an unaudited gem graph.
+        run: bundle install --frozen --jobs 4 --retry 3
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -67,7 +69,9 @@ jobs:
           restore-keys: pods-${{ runner.os }}-
 
       - name: Install CocoaPods
-        run: bundle exec pod install --project-directory=ios
+        # --deployment: mirrors the Fastfile's cocoapods(deployment: true) —
+        # fail loudly on Podfile/Podfile.lock drift instead of re-resolving.
+        run: bundle exec pod install --project-directory=ios --deployment
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@1242409711ff5721add51979e9e11e23ebb7e5a4 # v1
@@ -111,7 +115,9 @@ jobs:
           ruby-version: "3.2"
 
       - name: Install Ruby dependencies
-        run: bundle install --jobs 4 --retry 3
+        # --frozen: hard-fail if Gemfile/Gemfile.lock disagree, instead of
+        # silently re-resolving an unaudited gem graph.
+        run: bundle install --frozen --jobs 4 --retry 3
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
