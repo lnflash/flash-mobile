@@ -97,7 +97,18 @@ jobs:
           printenv GOOGLE_SERVICE_INFO_PLIST_ALT > ios/LNFlash-Alt/GoogleService-Info.plist
 
       - name: Install JS dependencies
-        run: yarn install --frozen-lockfile
+        # --ignore-scripts: the postinstall hook (package.json) runs
+        # `pod install` whenever `pod` is on PATH, which the earlier bundle
+        # install step already put there on this runner — a full, unpinned,
+        # non-deployment CocoaPods resolution whose result is immediately
+        # discarded by the Fastfile's own cocoapods(deployment: true) call
+        # moments later. A transient CocoaPods hiccup here would fail the
+        # job before the real, deployment-verified pod install ever runs.
+        # Run only the JS-relevant postinstall steps explicitly instead.
+        run: |
+          yarn install --frozen-lockfile --ignore-scripts
+          yarn jetify
+          yarn patch-package
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@1242409711ff5721add51979e9e11e23ebb7e5a4 # v1
@@ -153,10 +164,32 @@ jobs:
           # fail the job (that reads as "nothing shipped" when it actually
           # did, and invites an operator to re-run the whole lane, including
           # a second real upload).
+          #
+          # Re-tag on every iteration: rebase moves HEAD to a new SHA but
+          # never touches existing tag refs, so a tag created by this run's
+          # Fastlane lane (add_git_tag, always annotated) still points at the
+          # pre-rebase commit after a losing race. --follow-tags silently
+          # skips it on retry (it already "exists" on the remote by name from
+          # the earlier partial push), leaving it permanently orphaned from
+          # main. -f -a re-annotates it onto the rebased HEAD every time, and
+          # it's pushed explicitly with --force — safe here specifically
+          # because nothing outside this same job could have observed or
+          # relied on a tag that was only just accidentally half-published
+          # moments earlier by this same retry loop. The branch push stays a
+          # normal, non-force push.
           for attempt in 1 2 3 4 5; do
             git fetch origin main
+            release_tags=$(git tag --points-at HEAD)
             git rebase -X theirs --autostash origin/main
-            if git push origin HEAD:main --follow-tags; then
+            for t in $release_tags; do
+              git tag -f -a "$t" HEAD -m "$t"
+            done
+            push_ok=true
+            git push origin HEAD:main || push_ok=false
+            for t in $release_tags; do
+              git push origin "refs/tags/$t" --force || push_ok=false
+            done
+            if [ "$push_ok" = true ]; then
               exit 0
             fi
             echo "::warning::Push attempt $attempt failed, retrying..." >&2

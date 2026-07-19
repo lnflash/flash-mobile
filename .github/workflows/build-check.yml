@@ -59,7 +59,18 @@ jobs:
           cache: "yarn"
 
       - name: Install JS dependencies
-        run: yarn install --frozen-lockfile
+        # --ignore-scripts: the postinstall hook (package.json) runs
+        # `pod install` whenever `pod` is on PATH, which the earlier bundle
+        # install step already put there on this runner — a full, unpinned,
+        # non-deployment CocoaPods resolution whose result is immediately
+        # discarded by the explicit --deployment pod install below. A
+        # transient CocoaPods hiccup here would fail the job before the
+        # real, deployment-verified pod install ever runs. Run only the
+        # JS-relevant postinstall steps explicitly instead.
+        run: |
+          yarn install --frozen-lockfile --ignore-scripts
+          yarn jetify
+          yarn patch-package
 
       - name: Cache CocoaPods
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
