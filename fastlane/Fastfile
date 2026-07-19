@@ -20,10 +20,36 @@ def version_from_git_tag(platform)
   raw[/\A\d+\.\d+\.\d+/] || raw
 end
 
+# version_from_git_tag resolves the NEAREST reachable tag by commit-graph
+# distance (git describe), not the highest semver, and is independent of
+# whatever version is already committed in the project files. A beta run
+# with no new tag pinned (workflow_dispatch with a blank ref — explicitly
+# sanctioned for beta/promote_to_beta by these workflows' own ref input
+# description) resolves to whatever the last real tag was, which can be
+# OLDER than a version a previous run already committed to main. Refusing
+# to move backwards here is the only thing standing between that and a
+# silently regressed version string shipping to a real store listing —
+# versionCode/build-number still increment correctly and independently
+# (they're sourced from Play/App Store Connect, not from this comparison),
+# so nothing else in this pipeline would catch it.
+def refuse_version_regression!(current, candidate, what)
+  return unless current
+  if Gem::Version.new(candidate) < Gem::Version.new(current)
+    UI.user_error!(
+      "Refusing to regress #{what} from #{current} to #{candidate} (resolved from the nearest matching " \
+      "git tag). This usually means this lane ran with no new tag pinned while a newer version was " \
+      "already committed to main by a previous run. Push a new tag for the intended version, or pin ref " \
+      "explicitly to the tag you actually want."
+    )
+  end
+end
+
 def update_ios_version_from_tag(tag_prefix, target_names)
   version = version_from_git_tag(tag_prefix)
   unless version.empty?
     target_names.each do |target_name|
+      current = current_marketing_version_for("ios/LNFlash.xcodeproj", target_name)
+      refuse_version_regression!(current, version, "#{target_name}'s MARKETING_VERSION")
       set_marketing_version("ios/LNFlash.xcodeproj", target_name, version)
     end
     UI.message("iOS version set to #{version} for #{target_names.join(', ')}")
@@ -35,6 +61,8 @@ def update_android_version_from_tag
   unless version.empty?
     gradle_path = File.join(Dir.pwd, "..", "android", "app", "build.gradle")
     content = File.read(gradle_path)
+    current = content.match(/versionName\s+"([^"]+)"/)[1]
+    refuse_version_regression!(current, version, "Android versionName")
     content = content.gsub(/versionName\s+"[^"]+"/, "versionName \"#{version}\"")
     File.write(gradle_path, content)
     UI.message("Android versionName set to #{version}")
@@ -115,6 +143,15 @@ def current_project_version_for(xcodeproj_path, target_name)
   UI.user_error!("Target '#{target_name}' not found in #{xcodeproj_path}") unless target
   config = target.build_configurations.find { |c| c.name == "Release" } || target.build_configurations.first
   config.build_settings["CURRENT_PROJECT_VERSION"]
+end
+
+def current_marketing_version_for(xcodeproj_path, target_name)
+  require "xcodeproj"
+  project = Xcodeproj::Project.open(resolve_xcodeproj_path(xcodeproj_path))
+  target = project.targets.find { |t| t.name == target_name }
+  UI.user_error!("Target '#{target_name}' not found in #{xcodeproj_path}") unless target
+  config = target.build_configurations.find { |c| c.name == "Release" } || target.build_configurations.first
+  config.build_settings["MARKETING_VERSION"]
 end
 
 # increment_version_number has the identical agvtool per-target gap as

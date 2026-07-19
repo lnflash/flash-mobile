@@ -14,11 +14,14 @@ fi
 LANE="${1:-beta}"
 
 # release ships straight to real users (Play production track, 10% staged
-# rollout) with none of the CI-side guardrails android-deploy.yml enforces
-# (release-ref validation, pinned toolchain, --frozen/--deployment lockfile
-# checks). This script exists for local beta testing only.
+# rollout); promote_to_beta pushes the internal build to Play's beta
+# (open/closed testing) track, a materially different and possibly much
+# larger audience than internal testing — neither gets android-deploy.yml's
+# guardrails (release-ref validation, pinned toolchain, --frozen/--deployment
+# lockfile checks) when run this way. This script exists for local beta
+# (internal-track) testing only.
 case "$LANE" in
-  release)
+  release|promote_to_beta)
     echo "Error: '$LANE' ships to real users and must run via GitHub Actions workflow_dispatch on android-deploy.yml, not locally." >&2
     exit 1
     ;;
