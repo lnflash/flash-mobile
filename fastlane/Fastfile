@@ -80,9 +80,25 @@ end
 # two helpers do the same job the update_code_signing_settings action already
 # does internally: read/write the target's own build settings directly via
 # the xcodeproj gem (an existing fastlane dependency — no new gem needed).
+# xcodeproj_path is always passed as a project-root-relative string (e.g.
+# "ios/LNFlash.xcodeproj"), but these are plain Ruby methods, not registered
+# fastlane Actions — fastlane's Runner#execute chdirs the ENTIRE lane body
+# into the fastlane/ folder (runner.rb) and only chdirs back out to the
+# project root inside Runner#execute_action's own wrapper, which wraps real
+# Actions only. A bare method call like this never gets that treatment, so
+# resolving xcodeproj_path directly against Dir.pwd looks for
+# fastlane/ios/LNFlash.xcodeproj and crashes. __dir__ anchors to the
+# Fastfile's own location on disk regardless of the caller's CWD — confirmed
+# via the real fastlane 2.237.0 CLI (not just this comment): the naive
+# version crashes with "Unable to open .../fastlane/ios/LNFlash.xcodeproj",
+# this version doesn't.
+def resolve_xcodeproj_path(xcodeproj_path)
+  File.expand_path(File.join(__dir__, "..", xcodeproj_path))
+end
+
 def set_current_project_version(xcodeproj_path, target_name, build_number)
   require "xcodeproj"
-  project = Xcodeproj::Project.open(xcodeproj_path)
+  project = Xcodeproj::Project.open(resolve_xcodeproj_path(xcodeproj_path))
   target = project.targets.find { |t| t.name == target_name }
   UI.user_error!("Target '#{target_name}' not found in #{xcodeproj_path}") unless target
   target.build_configurations.each do |config|
@@ -94,7 +110,7 @@ end
 
 def current_project_version_for(xcodeproj_path, target_name)
   require "xcodeproj"
-  project = Xcodeproj::Project.open(xcodeproj_path)
+  project = Xcodeproj::Project.open(resolve_xcodeproj_path(xcodeproj_path))
   target = project.targets.find { |t| t.name == target_name }
   UI.user_error!("Target '#{target_name}' not found in #{xcodeproj_path}") unless target
   config = target.build_configurations.find { |c| c.name == "Release" } || target.build_configurations.first
@@ -108,7 +124,7 @@ end
 # MARKETING_VERSION to every target in the project. Scoped the same way.
 def set_marketing_version(xcodeproj_path, target_name, version)
   require "xcodeproj"
-  project = Xcodeproj::Project.open(xcodeproj_path)
+  project = Xcodeproj::Project.open(resolve_xcodeproj_path(xcodeproj_path))
   target = project.targets.find { |t| t.name == target_name }
   UI.user_error!("Target '#{target_name}' not found in #{xcodeproj_path}") unless target
   target.build_configurations.each do |config|
