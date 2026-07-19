@@ -61,6 +61,24 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
 
+      - name: Validate release ref is not main's tip
+        # The earlier "Validate release ref" step only rejects a BLANK ref —
+        # it can't tell a real beta-tested tag apart from any other non-empty
+        # string that currently happens to resolve to main's tip, like the
+        # literal branch name "main". That's functionally identical to
+        # leaving the field blank, the exact scenario this whole guardrail
+        # exists to prevent. Checked here, after checkout, using plain local
+        # git state (fetch-depth: 0 above already has full history) instead
+        # of trying to pre-validate a ref format that's also allowed to be a
+        # raw commit SHA per the input's own description.
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.lane == 'release'
+        run: |
+          git fetch origin main
+          if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; then
+            echo "::error::The checked-out ref resolves to the exact same commit as main's current tip — indistinguishable from shipping main's untested tip. Set ref to the exact beta-tested tag (e.g. ios/v0.6.2-46), not a moving branch name like 'main'." >&2
+            exit 1
+          fi
+
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
@@ -194,7 +212,7 @@ jobs:
             git rebase --abort 2>/dev/null || true
             sleep $((attempt * 5))
           done
-          echo "::error::Failed to push version bump after 5 attempts — the store upload above already succeeded; push manually or re-run just this step." >&2
+          echo "::error::Failed to push version bump after 5 attempts. The store upload above ALREADY SUCCEEDED — do NOT use GitHub's 'Re-run failed jobs', it reruns this entire job from Checkout onward, including a SECOND real TestFlight upload. To recover: on your own machine, fetch origin/main, manually recreate this run's version-bump commit (see the version/build numbers logged earlier in this job) and its git tag, then 'git push origin HEAD:main --follow-tags' from that clean checkout. Do not re-dispatch this workflow for this release." >&2
           exit 1
 
       - name: Upload artifacts on failure

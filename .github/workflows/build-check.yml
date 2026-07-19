@@ -120,16 +120,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # v1 (v1.319.0) — floating branch, not a tag; re-pin periodically
-        with:
-          ruby-version: "3.2"
-
-      - name: Install Ruby dependencies
-        # --frozen: hard-fail if Gemfile/Gemfile.lock disagree, instead of
-        # silently re-resolving an unaudited gem graph.
-        run: bundle install --frozen --jobs 4 --retry 3
-
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -143,6 +133,16 @@ jobs:
           java-version: "17"
 
       - name: Install JS dependencies
+        # No Ruby/bundle setup in this job — nothing below it uses
+        # bundle/fastlane (Android Debug builds go straight through
+        # ./gradlew). Ruby/bundle setup was removed deliberately: it
+        # installs the cocoapods gem (an unconditional Gemfile dependency)
+        # onto this Linux runner's PATH, which makes package.json's
+        # postinstall hook attempt a real `pod install` against ios/Podfile
+        # — CocoaPods shells out to Xcode-only tooling (xcodebuild, xcrun)
+        # that doesn't exist on Linux, so it always crashes and fails this
+        # step. This exact bug already happened once in android-deploy.yml
+        # (fixed there by dropping Ruby setup) before recurring here.
         run: yarn install --frozen-lockfile
 
       - name: Setup Android SDK
