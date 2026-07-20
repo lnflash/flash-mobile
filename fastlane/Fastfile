@@ -5,11 +5,15 @@ opt_out_usage
 # ---------------------------------------------------------------------------
 
 def version_from_git_tag(platform)
-  # Try platform-specific tag first (ios/v1.2.3, ios-alt/v1.2.3, android/v1.2.3), then generic v1.2.3
+  # Platform-prefixed tags only (ios/v1.2.3, ios-alt/v1.2.3, android/v1.2.3)
+  # — deliberately no generic "v*" fallback (removed: it could resolve a
+  # long-stale, unrelated legacy tag whenever HEAD has no reachable
+  # platform tag yet, which refuse_version_regression! below would then
+  # treat as a real regression and hard-fail on — exactly on this
+  # pipeline's own first activation. Returning empty is safe: both callers'
+  # `unless version.empty?` guard already leaves the committed version
+  # untouched rather than writing anything wrong.)
   tag = `git describe --tags --match '#{platform}/v*' --abbrev=0 2>/dev/null`.strip
-  if tag.empty?
-    tag = `git describe --tags --match 'v*' --abbrev=0 2>/dev/null`.strip
-  end
   raw = tag.gsub(%r{^(ios-alt|ios|android)/}, "").gsub(/^v/, "")
   # Every successful beta/release run tags itself as "<prefix>/v#{version}-#{build}"
   # (see add_git_tag below), so the NEXT invocation's `git describe --abbrev=0`
