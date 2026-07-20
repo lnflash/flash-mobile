@@ -1,3 +1,4 @@
+import React from "react"
 import { View } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
@@ -57,9 +58,7 @@ export const UpgradeTrialAccount: React.FC = () => {
             : LL.TransactionLimitsScreen.editRequest()
         }
         btnStyle={upgradePending ? { backgroundColor: "#FF7e1c" } : {}}
-        onPress={() =>
-          navigation.navigate(upgradePending ? "PersonalInformation" : "AccountType")
-        }
+        onPress={() => navigation.navigate("AccountType")}
       />
     )
   } else {
