@@ -52,6 +52,28 @@ jobs:
             exit 1
           fi
 
+      # Moved before Checkout: this only depends on github.event_name/
+      # github.event.inputs.lane, never on repo state, so there's no reason
+      # to burn a full Checkout + toolchain install on a dispatch with an
+      # unrecognized lane value that was always going to fail here anyway —
+      # e.g. a typo from a hand-built `gh workflow run` call, which bypasses
+      # the dropdown's UI-only restriction.
+      - name: Determine lane
+        id: lane
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_LANE: ${{ github.event.inputs.lane }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            case "$INPUT_LANE" in
+              beta|release|promote_to_beta) ;;
+              *) echo "::error::Unrecognized lane input: $INPUT_LANE" >&2; exit 1 ;;
+            esac
+            echo "lane=$INPUT_LANE" >> "$GITHUB_OUTPUT"
+          else
+            echo "lane=beta" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -180,22 +202,6 @@ jobs:
         env:
           GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
         run: printenv GOOGLE_PLAY_JSON_KEY > google-play-key.json
-
-      - name: Determine lane
-        id: lane
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          INPUT_LANE: ${{ github.event.inputs.lane }}
-        run: |
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            case "$INPUT_LANE" in
-              beta|release|promote_to_beta) ;;
-              *) echo "::error::Unrecognized lane input: $INPUT_LANE" >&2; exit 1 ;;
-            esac
-            echo "lane=$INPUT_LANE" >> "$GITHUB_OUTPUT"
-          else
-            echo "lane=beta" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Run Fastlane
         env:

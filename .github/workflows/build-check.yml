@@ -21,6 +21,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          # This workflow runs on every pull_request (including forks) and
+          # every step after this one runs install-time code from external
+          # registries (bundle/yarn/pod install) — nothing here ever needs
+          # to push, so don't leave GITHUB_TOKEN sitting in .git/config for
+          # untrusted code to read.
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -41,6 +48,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          # This workflow runs on every pull_request (including forks) and
+          # every step after this one runs install-time code from external
+          # registries (bundle/yarn/pod install) — nothing here ever needs
+          # to push, so don't leave GITHUB_TOKEN sitting in .git/config for
+          # untrusted code to read.
+          persist-credentials: false
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # v1 (v1.319.0) — floating branch, not a tag; re-pin periodically
@@ -122,6 +136,23 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build | xcpretty --color
 
+      - name: Build iOS Alt (Debug)
+        # This PR ships a dedicated deploy pipeline (ios-alt-deploy.yml) and
+        # its own Info.plist/signing logic for LNFlash-Alt — without this
+        # step, a break scoped to just that target's build settings would
+        # stay green here and surface only mid-deploy against real App
+        # Store Connect credentials, defeating this job's purpose as a
+        # predictive pre-merge gate.
+        run: |
+          xcodebuild \
+            -workspace ios/LNFlash.xcworkspace \
+            -scheme LNFlash-Alt \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO \
+            build | xcpretty --color
+
   android-build:
     name: Android Build Check
     runs-on: ubuntu-latest
@@ -129,6 +160,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          # This workflow runs on every pull_request (including forks) and
+          # every step after this one runs install-time code from external
+          # registries (bundle/yarn/pod install) — nothing here ever needs
+          # to push, so don't leave GITHUB_TOKEN sitting in .git/config for
+          # untrusted code to read.
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0

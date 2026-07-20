@@ -21,7 +21,43 @@ def version_from_git_tag(platform)
   # with no new tag) — resolves to that already-dashed tag, not a clean "x.y.z".
   # Extract just the leading semver so we never feed "0.6.1-45" (or worse, a
   # git-describe-appended "-N-gSHA" on top of that) into increment_version_number.
-  raw[/\A\d+\.\d+\.\d+/] || raw
+  candidate = raw[/\A\d+\.\d+\.\d+/] || raw
+  return "" if candidate.empty?
+  # A tag matching the trigger glob (e.g. "ios/v-hotfix", "android/v.1.2")
+  # doesn't guarantee the remainder is a real version — refuse_version_regression!
+  # feeds this straight into Gem::Version.new, which raises a raw ArgumentError
+  # on anything else. Fail loudly and clearly here instead, before that lane
+  # ever touches signing/build/upload.
+  unless candidate.match?(/\A\d+(\.\d+){0,2}\z/)
+    UI.user_error!("Tag '#{tag}' does not resolve to a valid version (got '#{candidate}') — expected '#{platform}/vX.Y.Z[-build]'. Fix or delete the tag and re-push.")
+  end
+  candidate
+end
+
+# Every lane's post-upload git_commit + add_git_tag was previously unguarded:
+# if either raised (a transient git error, a tag collision against something
+# pushed out-of-band, a runner timeout), the lane exited non-zero with no
+# indication the store upload immediately before it had already succeeded —
+# and the GitHub Actions "Push version bump" step, the ONLY place carrying
+# that warning, is skipped outright by its own `if: success()` guard when
+# the lane itself already failed. Centralizing this ensures the warning
+# fires regardless of which of the two calls breaks, before the job goes
+# red for what looks like an ordinary CI failure.
+def commit_and_tag_after_upload!(paths:, message:, tag:, force: false)
+  return unless is_ci
+  begin
+    git_commit(path: paths, message: message, allow_nothing_to_commit: true)
+    add_git_tag(tag: tag, force: force)
+  rescue => e
+    UI.error(
+      "Post-upload git bookkeeping failed (#{e.message}) — the store upload above ALREADY SUCCEEDED. " \
+      "Do NOT use GitHub's 'Re-run failed jobs' or re-dispatch this workflow; that would trigger a SECOND " \
+      "real upload. Recover manually: fetch origin/main, recreate this commit yourself " \
+      "(message: \"#{message}\"), and push it — no --follow-tags, no separate tag push (see the workflow " \
+      "YAML's own 'Push version bump' step for why)."
+    )
+    raise
+  end
 end
 
 # version_from_git_tag resolves the NEAREST reachable tag by commit-graph
@@ -327,14 +363,11 @@ platform :ios do
     version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash")
     build = current_project_version_for("ios/LNFlash.xcodeproj", "LNFlash")
 
-    if is_ci
-      git_commit(
-        path: ["ios/LNFlash.xcodeproj/project.pbxproj", "ios/LNFlash/Info.plist"],
-        message: "chore(ios): bump version to #{version} (#{build}) [skip ci]",
-        allow_nothing_to_commit: true
-      )
-      add_git_tag(tag: "ios/v#{version}-#{build}")
-    end
+    commit_and_tag_after_upload!(
+      paths: ["ios/LNFlash.xcodeproj/project.pbxproj", "ios/LNFlash/Info.plist"],
+      message: "chore(ios): bump version to #{version} (#{build}) [skip ci]",
+      tag: "ios/v#{version}-#{build}"
+    )
   end
 
   desc "Deploy to App Store (release)"
@@ -426,14 +459,12 @@ platform :ios do
     version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash")
     build = current_project_version_for("ios/LNFlash.xcodeproj", "LNFlash")
 
-    if is_ci
-      git_commit(
-        path: ["ios/LNFlash.xcodeproj/project.pbxproj", "ios/LNFlash/Info.plist"],
-        message: "chore(ios): release version #{version} (#{build}) [skip ci]",
-        allow_nothing_to_commit: true
-      )
-      add_git_tag(tag: "ios/release/v#{version}-#{build}", force: true)
-    end
+    commit_and_tag_after_upload!(
+      paths: ["ios/LNFlash.xcodeproj/project.pbxproj", "ios/LNFlash/Info.plist"],
+      message: "chore(ios): release version #{version} (#{build}) [skip ci]",
+      tag: "ios/release/v#{version}-#{build}",
+      force: true
+    )
   end
 
   # ---------------------------------------------------------------------------
@@ -530,14 +561,11 @@ platform :ios do
     version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash-Alt")
     build = current_project_version_for("ios/LNFlash.xcodeproj", "LNFlash-Alt")
 
-    if is_ci
-      git_commit(
-        path: ["ios/LNFlash.xcodeproj/project.pbxproj"],
-        message: "chore(ios-alt): bump version to #{version} (#{build}) [skip ci]",
-        allow_nothing_to_commit: true
-      )
-      add_git_tag(tag: "ios-alt/v#{version}-#{build}")
-    end
+    commit_and_tag_after_upload!(
+      paths: ["ios/LNFlash.xcodeproj/project.pbxproj"],
+      message: "chore(ios-alt): bump version to #{version} (#{build}) [skip ci]",
+      tag: "ios-alt/v#{version}-#{build}"
+    )
   end
 
   desc "Deploy Alt to App Store (release)"
@@ -610,14 +638,12 @@ platform :ios do
     version = get_version_number(xcodeproj: "ios/LNFlash.xcodeproj", target: "LNFlash-Alt")
     build = current_project_version_for("ios/LNFlash.xcodeproj", "LNFlash-Alt")
 
-    if is_ci
-      git_commit(
-        path: ["ios/LNFlash.xcodeproj/project.pbxproj"],
-        message: "chore(ios-alt): release version #{version} (#{build}) [skip ci]",
-        allow_nothing_to_commit: true
-      )
-      add_git_tag(tag: "ios-alt/release/v#{version}-#{build}", force: true)
-    end
+    commit_and_tag_after_upload!(
+      paths: ["ios/LNFlash.xcodeproj/project.pbxproj"],
+      message: "chore(ios-alt): release version #{version} (#{build}) [skip ci]",
+      tag: "ios-alt/release/v#{version}-#{build}",
+      force: true
+    )
   end
 end
 
@@ -657,14 +683,11 @@ platform :android do
     content = File.read(gradle_path)
     version_name = content.match(/versionName\s+"([^"]+)"/)[1]
 
-    if is_ci
-      git_commit(
-        path: ["android/app/build.gradle"],
-        message: "chore(android): bump version to #{version_name} (#{version_code}) [skip ci]",
-        allow_nothing_to_commit: true
-      )
-      add_git_tag(tag: "android/v#{version_name}-#{version_code}")
-    end
+    commit_and_tag_after_upload!(
+      paths: ["android/app/build.gradle"],
+      message: "chore(android): bump version to #{version_name} (#{version_code}) [skip ci]",
+      tag: "android/v#{version_name}-#{version_code}"
+    )
   end
 
   desc "Deploy to Google Play Production (release)"
@@ -695,14 +718,12 @@ platform :android do
     content = File.read(gradle_path)
     version_name = content.match(/versionName\s+"([^"]+)"/)[1]
 
-    if is_ci
-      git_commit(
-        path: ["android/app/build.gradle"],
-        message: "chore(android): release version #{version_name} (#{version_code}) [skip ci]",
-        allow_nothing_to_commit: true
-      )
-      add_git_tag(tag: "android/release/v#{version_name}-#{version_code}", force: true)
-    end
+    commit_and_tag_after_upload!(
+      paths: ["android/app/build.gradle"],
+      message: "chore(android): release version #{version_name} (#{version_code}) [skip ci]",
+      tag: "android/release/v#{version_name}-#{version_code}",
+      force: true
+    )
   end
 
   desc "Promote Internal Testing to Beta"
