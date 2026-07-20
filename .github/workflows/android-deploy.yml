@@ -120,6 +120,16 @@ jobs:
         # --frozen: hard-fail if Gemfile/Gemfile.lock disagree, instead of
         # silently re-resolving an unaudited gem graph in the job that holds
         # every signing/upload credential.
+        # BUNDLE_FORCE_RUBY_PLATFORM: Gemfile.lock's PLATFORMS is "ruby" only
+        # and its CHECKSUMS only cover the generic ruby-platform gem builds.
+        # Without this, Bundler transparently substitutes precompiled
+        # platform-specific binaries (e.g. ffi) that have no matching
+        # checksum entry, silently defeating --frozen's verification for
+        # those gems on both the macOS and Linux runners here. Restores the
+        # .bundle/config setting removed in ed3cb79a (which also dropped an
+        # unrelated, CI-irrelevant BUNDLE_PATH line — not restored).
+        env:
+          BUNDLE_FORCE_RUBY_PLATFORM: "true"
         run: bundle install --frozen --jobs 4 --retry 3
 
       - name: Setup JDK
