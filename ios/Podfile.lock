@@ -192,6 +192,7 @@ PODS:
     - nanopb/encode (= 3.30910.0)
   - nanopb/decode (3.30910.0)
   - nanopb/encode (3.30910.0)
+  - Plaid (6.4.7)
   - PromisesObjC (2.4.0)
   - PromisesSwift (2.4.0):
     - PromisesObjC (= 2.4.0)
@@ -1521,6 +1522,28 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - react-native-plaid-link-sdk (12.8.3):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - Plaid (~> 6.4.3)
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - react-native-randombytes (3.6.2):
     - React-Core
   - react-native-safe-area-context (5.7.0):
@@ -2669,6 +2692,7 @@ DEPENDENCIES:
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-nfc-manager (from `../node_modules/react-native-nfc-manager`)
   - react-native-pager-view (from `../node_modules/react-native-pager-view`)
+  - react-native-plaid-link-sdk (from `../node_modules/react-native-plaid-link-sdk`)
   - react-native-randombytes (from `../node_modules/react-native-randombytes`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - react-native-secure-key-store (from `../node_modules/react-native-secure-key-store`)
@@ -2762,6 +2786,7 @@ SPEC REPOS:
     - GoogleUtilities
     - GT3Captcha-iOS-xcframework
     - nanopb
+    - Plaid
     - PromisesObjC
     - PromisesSwift
     - SocketRocket
@@ -2874,6 +2899,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-nfc-manager"
   react-native-pager-view:
     :path: "../node_modules/react-native-pager-view"
+  react-native-plaid-link-sdk:
+    :path: "../node_modules/react-native-plaid-link-sdk"
   react-native-randombytes:
     :path: "../node_modules/react-native-randombytes"
   react-native-safe-area-context:
@@ -3042,6 +3069,7 @@ SPEC CHECKSUMS:
   GT3Captcha-iOS-xcframework: b1ed0eef381afccd76d384bed6597fe2bd48c8aa
   hermes-engine: ccc24d29d650ea725d582a9a53d57cd417fbdb53
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
+  Plaid: 2f4e0d6deb335e141ac62e082a872414ca058b74
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
   RCT-Folly: 36fe2295e44b10d831836cc0d1daec5f8abcf809
@@ -3086,6 +3114,7 @@ SPEC CHECKSUMS:
   react-native-netinfo: dba12aca306f7081f3c1ef597f4840073b1b1647
   react-native-nfc-manager: c8891e460b4943b695d63f7f4effc6345bbefc83
   react-native-pager-view: dcfa9627ad282529a547f4fea89652df1de41385
+  react-native-plaid-link-sdk: 073e17f9bb849aa1b49af2d7b1b899dea65ce542
   react-native-randombytes: 4eeddad82d1fd57adda1cd5beffe67d041c9d6de
   react-native-safe-area-context: e88b83d859a7e849a9defbcf33d125cbfb45c98e
   react-native-secure-key-store: eb45b44bdec3f48e9be5cdfca0f49ddf64892ea6
