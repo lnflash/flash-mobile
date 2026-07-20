@@ -1696,5 +1696,12 @@
     "genericError": "Something went wrong. Please try again.",
     "alreadyLinkedTitle": "Bank Account Already Linked",
     "alreadyLinkedMessage": "This bank account is already linked to your profile."
+  },
+  "PlaidLink": {
+    "connectedTitle": "تم ربط البنك",
+    "connectedBody": "يتم ربط بنكك وسيظهر هنا قريبًا.",
+    "exchangeFailed": "فشل ربط البنك. يرجى المحاولة مرة أخرى.",
+    "linkFailed": "فشل ربط البنك. يرجى المحاولة مرة أخرى.",
+    "linkTokenFailed": "فشل الحصول على رابط الحساب الخارجي. يرجى المحاولة مرة أخرى."
   }
 }

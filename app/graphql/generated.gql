@@ -86,7 +86,7 @@ mutation BridgeAddExternalAccount {
   bridgeAddExternalAccount {
     externalAccount {
       expiresAt
-      linkUrl
+      linkToken
       __typename
     }
     errors {
@@ -133,6 +133,18 @@ mutation BridgeCreateExternalAccount($input: BridgeCreateExternalAccountInput!) 
       message
       __typename
     }
+    __typename
+  }
+}
+
+mutation BridgeExchangePlaidPublicToken($input: BridgeExchangePlaidPublicTokenInput!) {
+  bridgeExchangePlaidPublicToken(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    message
     __typename
   }
 }

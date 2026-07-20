@@ -1690,5 +1690,12 @@
     "genericError": "Something went wrong. Please try again.",
     "alreadyLinkedTitle": "Bank Account Already Linked",
     "alreadyLinkedMessage": "This bank account is already linked to your profile."
+  },
+  "PlaidLink": {
+    "connectedTitle": "Банка повезана",
+    "connectedBody": "Ваша банка се повезује и ускоро ће се појавити овде.",
+    "exchangeFailed": "Повезивање банке није успело. Покушајте поново.",
+    "linkFailed": "Повезивање банке није успело. Покушајте поново.",
+    "linkTokenFailed": "Преузимање везе спољног рачуна није успело. Покушајте поново."
   }
 }

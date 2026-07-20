@@ -492,6 +492,16 @@ type BridgeDeleteExternalAccountPayload {
   externalAccount: BridgeExternalAccount
 }
 
+input BridgeExchangePlaidPublicTokenInput {
+  linkToken: String!
+  publicToken: String!
+}
+
+type BridgeExchangePlaidPublicTokenPayload {
+  errors: [Error!]!
+  message: String
+}
+
 type BridgeExternalAccount {
   accountNumberLast4: String!
   bankName: String!
@@ -502,7 +512,8 @@ type BridgeExternalAccount {
 
 type BridgeExternalAccountLink {
   expiresAt: String!
-  linkUrl: String!
+  linkToken: String!
+  linkUrl: String @deprecated(reason: "Use linkToken with the Plaid Link SDK. Hosted-URL linking is being retired; this field is best-effort and may be null.")
 }
 
 input BridgeInitiateKycInput {
@@ -1276,6 +1287,7 @@ type Mutation {
   bridgeCreateExternalAccount(input: BridgeCreateExternalAccountInput!): BridgeCreateExternalAccountPayload!
   bridgeCreateVirtualAccount: BridgeCreateVirtualAccountPayload!
   bridgeDeleteExternalAccount(input: BridgeDeleteExternalAccountInput!): BridgeDeleteExternalAccountPayload!
+  bridgeExchangePlaidPublicToken(input: BridgeExchangePlaidPublicTokenInput!): BridgeExchangePlaidPublicTokenPayload!
   bridgeInitiateKyc(input: BridgeInitiateKycInput!): BridgeInitiateKycPayload!
   bridgeInitiateWithdrawal(input: BridgeInitiateWithdrawalInput!): BridgeInitiateWithdrawalPayload!
   bridgeRequestWithdrawal(input: BridgeRequestWithdrawalInput!): BridgeRequestWithdrawalPayload!

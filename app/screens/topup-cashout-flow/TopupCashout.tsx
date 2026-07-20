@@ -21,12 +21,12 @@ import ArrowUp from "@app/assets/icons/arrow-up-from-bracket.svg"
 // hooks
 import {
   AccountLevel,
-  useBridgeAddExternalAccountMutation,
   useBridgeExternalAccountsQuery,
   useBridgeInitiateKycMutation,
   useBridgeKycStatusQuery,
 } from "@app/graphql/generated"
 import { useActivityIndicator, useTransferFlags } from "@app/hooks"
+import { usePlaidLink } from "@app/hooks/use-plaid-link"
 import { useLevel } from "@app/graphql/level-context"
 
 type Props = StackScreenProps<RootStackParamList, "TopupCashout">
@@ -50,7 +50,6 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false)
 
   const [initiateBridgeKyc] = useBridgeInitiateKycMutation()
-  const [addExternalAccount] = useBridgeAddExternalAccountMutation()
 
   const { data: kycStatusData, refetch: refetchKycStatus } = useBridgeKycStatusQuery({
     fetchPolicy: "cache-and-network",
@@ -111,6 +110,14 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
     [currentLevel, navigation],
   )
 
+  // Plaid Link + server-side public_token exchange (ENG-524); the linked
+  // account arrives asynchronously via Bridge's webhook, so refetch on link.
+  // BRIDGE_PLAID_NOT_AVAILABLE falls back to the manual bank-details form.
+  const { linkBankAccount } = usePlaidLink({
+    onLinked: refetchExternalAccounts,
+    onManualEntry: () => navigation.navigate("BridgeAddExternalAccount"),
+  })
+
   const checkBridgeKyc = useCallback(
     async (type: "topup" | "settle") => {
       if (!bridgeEnabled) return
@@ -129,39 +136,18 @@ const TopupCashout: React.FC<Props> = ({ navigation }) => {
         ) {
           navigation.navigate("CashoutDetails", { type: "bridge" })
         } else {
-          toggleActivityIndicator(true)
-          const res = await addExternalAccount()
-          toggleActivityIndicator(false)
-
-          const errors = res.data?.bridgeAddExternalAccount?.errors
-          if (errors && errors.length > 0) {
-            // If Plaid Link is unavailable, offer manual bank entry as fallback
-            if (errors[0].code === "BRIDGE_PLAID_NOT_AVAILABLE") {
-              navigation.navigate("BridgeAddExternalAccount")
-              return
-            }
-            Alert.alert("Error", errors[0].message)
-            return
-          }
-
-          const linkUrl = res.data?.bridgeAddExternalAccount?.externalAccount?.linkUrl
-          if (linkUrl) {
-            navigation.navigate("BridgeExternalAccountWebView", { linkUrl })
-          } else {
-            Alert.alert("Error", "Failed to get external account link. Please try again.")
-          }
+          await linkBankAccount()
         }
       } else {
         setBridgeKycModalVisible(true)
       }
     },
     [
-      addExternalAccount,
       bridgeEnabled,
       externalAccountsData?.bridgeExternalAccounts,
       kycStatusData?.bridgeKycStatus,
+      linkBankAccount,
       navigation,
-      toggleActivityIndicator,
     ],
   )
 
