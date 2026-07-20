@@ -237,7 +237,7 @@ jobs:
             git rebase --abort 2>/dev/null || true
             sleep $((attempt * 5))
           done
-          echo "::error::Failed to push version bump after 5 attempts. The store upload above ALREADY SUCCEEDED — do NOT use GitHub's 'Re-run failed jobs', it reruns this entire job from Checkout onward, including a SECOND real TestFlight upload. To recover: on your own machine, fetch origin/main, manually recreate this run's version-bump commit (see the version/build numbers logged earlier in this job) and its git tag, then 'git push origin HEAD:main --follow-tags' from that clean checkout. Do not re-dispatch this workflow for this release." >&2
+          echo "::error::Failed to push version bump after 5 attempts. The store upload above ALREADY SUCCEEDED — do NOT use GitHub's 'Re-run failed jobs', it reruns this entire job from Checkout onward, including a SECOND real TestFlight upload. To recover: on your own machine, fetch origin/main, manually recreate this run's version-bump commit ONLY (see the version/build numbers logged earlier in this job), then 'git push origin HEAD:main' — commit only, no tag, no --follow-tags. Do NOT push a matching ios/vX.Y.Z-N tag from your own machine: only this job's own GITHUB_TOKEN-authenticated push is exempt from GitHub's tag-trigger anti-recursion protection, so a human-pushed tag would re-trigger a full new beta run and cause the exact second upload this message is warning against. Do not re-dispatch this workflow for this release." >&2
           exit 1
 
       - name: Upload artifacts on failure
