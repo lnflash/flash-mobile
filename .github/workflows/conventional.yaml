@@ -2,13 +2,17 @@ name: "Conventional commits"
 on:
   pull_request:
     branches: [main, feat/fygaro]
+
+permissions:
+  pull-requests: write
+
 jobs:
   conventional:
     name: "Conventional commits"
     runs-on: ubuntu-latest
     steps:
     - name: Conventional PR
-      uses: Namchee/conventional-pr@v0.12.1
+      uses: Namchee/conventional-pr@d5139479d879132c4b7a97cf56b5aae285b80d77 # v0.12.1
       with:
         access_token: ${{ secrets.GITHUB_TOKEN }}
         message: this PR needs to be updated to follow conventional commits message

@@ -11,93 +11,51 @@ This document outlines the steps to release the Flash app to **Google Play Conso
 - ✅ Release keystore (Android) & distribution certificate/provisioning profile (iOS)
 - ✅ Correct bundle identifiers and app names
 - ✅ Firebase properly configured (if used)
-- ✅ Required environment variables/secrets set (e.g., via `.env`, CI/CD, or Vault)
+- ✅ Required secrets configured in GitHub Actions (match/App Store Connect API key, Android keystore, Google Play service account JSON, etc. — see `.env.fastlane.example` for the equivalent local-testing variables)
 
 ---
 
-## 🚀 Release to Google Play Console (Android)
+## 🚀 Releasing (GitHub Actions, all platforms)
 
-### 1. **Update Version Info**
+The manual Xcode/Transporter/Play-Console-upload process this doc used to
+describe has been replaced by three GitHub Actions workflows —
+`ios-deploy.yml`, `ios-alt-deploy.yml`, `android-deploy.yml` — that build,
+sign, and upload directly from CI. Version/build numbers are computed
+automatically (from git tags, and cross-checked against what's already live
+on TestFlight/Play); do not hand-edit `versionCode`/`versionName` in
+`android/app/build.gradle` or `Version`/`Build` in Xcode as a release step —
+the pipeline owns those fields and will commit its own bumps back to `main`.
 
-In `android/app/build.gradle`:
+### Beta (TestFlight / Play internal track — no user exposure)
 
-```groovy
-versionCode  <increment this>
-versionName  "<update version name>"
-```
+Either:
+- **Tag push**: `git tag ios/vX.Y.Z && git push origin ios/vX.Y.Z` (or
+  `android/vX.Y.Z`, `ios-alt/vX.Y.Z`) — triggers the matching workflow's
+  `beta`/`beta_alt` lane automatically.
+- **workflow_dispatch**: run the workflow from the Actions tab with
+  `lane: beta`, `ref` left blank (defaults to the current branch tip).
 
-### 2. **Build AAB**
+### Release (App Store / Play production — reaches real users)
 
-Use the following command:
+`workflow_dispatch` only, `lane: release` (or `release_alt`), with `ref` set
+to the **exact tag produced by a successful beta run** (e.g. `ios/v0.6.2-46`
+— the platform prefix, version, and build number are all required; the
+workflow rejects a blank ref or one that doesn't resolve to a real beta tag).
+iOS/iOS-Alt still require a manual "Submit for Review" click in App Store
+Connect afterward; Android release lane on Google Play starts landing at a
+10% staged rollout automatically.
 
-```bash
-yarn aab-android
-```
-
-> Make sure `yarn aab-android` is defined in your `package.json` scripts. Example:
-
-```json
-"scripts": {
-  "aab-android": "cd android && ./gradlew bundleRelease"
-}
-```
-
-### 3. **Upload to Google Play Console**
-
-- Go to [Google Play Console](https://play.google.com/console)
-- Select your app → **Testing** → **Open Testing** → **Create New Release**
-- Upload `app-release.aab` from `android/app/build/outputs/bundle/release/`
-- Fill in changelog and version info
-- Roll out to testers
-- After testing, promote the release to **Production**
-
----
-
-## 🍏 Release to App Store Connect (iOS)
-
-### 1. **Update Version Info**
-
-In Xcode:
-
-- Open the `.xcworkspace` project
-- Select your target > **Build Settings**
-- Update:
-  - `Version` (e.g., 1.0.1)
-  - `Build` (increment this number)
-
-### 2. **Archive the iOS App**
-
-- Select a real device or `Any iOS Device (arm64)`
-- Go to **Product** > **Archive**
-- Wait for the build to complete and archive to appear in Organizer
-
-### 3. **Upload via Xcode or Transporter**
-
-- In Xcode Organizer, select the archive > **Distribute App**
-- Choose **App Store Connect** → **Upload**
-- Validate and upload
-- Alternatively, export `.ipa` and upload via [Transporter](https://apps.apple.com/us/app/transporter/id1450874784)
-
-### 4. **Submit for Review**
-
-- Go to [App Store Connect](https://appstoreconnect.apple.com/)
-- Select your app > **+ New Version**
-- Enter version number and notes
-- Assign the uploaded build
-- Fill in required info and submit for review
+**Never** push a bare `vX.Y.Z` tag (no platform prefix) expecting it to
+trigger anything — that convention is gone, and the pipeline's own version
+resolution deliberately does not recognize it.
 
 ---
 
 ## 📝 Post-Release
 
 - ✅ Monitor logs, Crashlytics, or analytics
-- ✅ Update release notes in GitHub
-- ✅ Tag release in Git:
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
+- The pipeline tags and commits the version bump back to `main`
+  automatically — no manual git tagging step is needed.
 
 ---
 
