@@ -80,7 +80,6 @@ const QuickStart = () => {
         : LL.HomeScreen.upgradePendingDesc(),
       image: Account,
       pending: upgradePending,
-      disabled: upgradePending,
       onPress: () => navigation.navigate("AccountType"),
     },
     {
