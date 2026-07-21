@@ -265,13 +265,29 @@ platform :ios do
         timeout: 3600,
         lock_when_sleeps: false
       )
+
+      # Ensure the CI keychain is in the search list and the codesign
+      # partition list — without both, xcodebuild cannot find the
+      # signing certificate even though match installs it, and reports
+      # "No profile for team … matching …" for every target.
+      keychain_path = File.expand_path("~/Library/Keychains/ci_keychain-db")
+      login_keychain = File.expand_path("~/Library/Keychains/login.keychain-db")
+      sh("security list-keychains -d user -s #{keychain_path.shellescape} #{login_keychain.shellescape}")
+      sh("security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k #{ENV['MATCH_PASSWORD'].shellescape} #{keychain_path.shellescape}", log: false)
+
       match(
         type: "appstore",
         app_identifier: app_identifiers,
         keychain_name: "ci_keychain",
         keychain_password: ENV["MATCH_PASSWORD"],
-        readonly: true
+        readonly: true,
+        verbose: true
       )
+
+      # Log installed profiles count for debugging
+      profiles_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
+      UI.message("Provisioning profiles installed: #{Dir.glob(File.join(profiles_dir, '*.mobileprovision')).count}")
+      sh("security find-identity -v -p codesigning #{keychain_path.shellescape} | head -5 || true")
     else
       match(type: "appstore", app_identifier: app_identifiers, readonly: true)
     end
@@ -482,13 +498,24 @@ platform :ios do
         timeout: 3600,
         lock_when_sleeps: false
       )
+
+      keychain_path = File.expand_path("~/Library/Keychains/ci_keychain-db")
+      login_keychain = File.expand_path("~/Library/Keychains/login.keychain-db")
+      sh("security list-keychains -d user -s #{keychain_path.shellescape} #{login_keychain.shellescape}")
+      sh("security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k #{ENV['MATCH_PASSWORD'].shellescape} #{keychain_path.shellescape}", log: false)
+
       match(
         type: "appstore",
         app_identifier: "com.flashapp.alt",
         keychain_name: "ci_keychain",
         keychain_password: ENV["MATCH_PASSWORD"],
-        readonly: true
+        readonly: true,
+        verbose: true
       )
+
+      profiles_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
+      UI.message("Provisioning profiles installed: #{Dir.glob(File.join(profiles_dir, '*.mobileprovision')).count}")
+      sh("security find-identity -v -p codesigning #{keychain_path.shellescape} | head -5 || true")
     else
       match(type: "appstore", app_identifier: "com.flashapp.alt", readonly: true)
     end
@@ -521,11 +548,10 @@ platform :ios do
 
     profile_name = ENV["sigh_com.flashapp.alt_appstore_profile-name"] || "match AppStore com.flashapp.alt"
 
-    # Unlike build_app's xcargs below (which only override signing for the
-    # export/archive step), this makes the project's own DEVELOPMENT_TEAM
-    # agree with the team match() actually fetched com.flashapp.alt's
-    # certificate/profile for — a disagreement here is a documented xcodebuild
-    # signing-resolution failure class. Mirrors the main app's fix.
+    # Makes the project's own DEVELOPMENT_TEAM agree with the team match()
+    # actually fetched com.flashapp.alt's certificate/profile for — a
+    # disagreement is a documented xcodebuild signing-resolution failure
+    # class. Mirrors the main app's fix.
     update_code_signing_settings(
       use_automatic_signing: false,
       path: "ios/LNFlash.xcodeproj",
@@ -595,11 +621,10 @@ platform :ios do
 
     profile_name = ENV["sigh_com.flashapp.alt_appstore_profile-name"] || "match AppStore com.flashapp.alt"
 
-    # Unlike build_app's xcargs below (which only override signing for the
-    # export/archive step), this makes the project's own DEVELOPMENT_TEAM
-    # agree with the team match() actually fetched com.flashapp.alt's
-    # certificate/profile for — a disagreement here is a documented xcodebuild
-    # signing-resolution failure class. Mirrors the main app's fix.
+    # Makes the project's own DEVELOPMENT_TEAM agree with the team match()
+    # actually fetched com.flashapp.alt's certificate/profile for — a
+    # disagreement is a documented xcodebuild signing-resolution failure
+    # class. Mirrors the main app's fix.
     update_code_signing_settings(
       use_automatic_signing: false,
       path: "ios/LNFlash.xcodeproj",
