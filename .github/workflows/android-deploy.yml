@@ -83,7 +83,7 @@ jobs:
           # ref input above pins something else — see that input's
           # description for why release dispatches should always set it, and
           # the Validate release ref step above for why it can't be skipped.
-          ref: ${{ github.event.inputs.ref || github.ref }}
+          ref: feat/activate-store-deploy
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
