@@ -266,14 +266,10 @@ platform :ios do
         lock_when_sleeps: false
       )
 
-      # Ensure the CI keychain is in the search list and the codesign
-      # partition list — without both, xcodebuild cannot find the
-      # signing certificate even though match installs it, and reports
-      # "No profile for team … matching …" for every target.
+      # Ensure login keychain is in the search list alongside ci_keychain.
       keychain_path = File.expand_path("~/Library/Keychains/ci_keychain-db")
       login_keychain = File.expand_path("~/Library/Keychains/login.keychain-db")
       sh("security list-keychains -d user -s #{keychain_path.shellescape} #{login_keychain.shellescape}")
-      sh("security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k #{ENV['MATCH_PASSWORD'].shellescape} #{keychain_path.shellescape}", log: false)
 
       match(
         type: "appstore",
@@ -284,7 +280,11 @@ platform :ios do
         verbose: true
       )
 
-      # Log installed profiles count for debugging
+      # Grant codesign access to the imported certificates — must run
+      # AFTER match (which populates the keychain), not before.
+      sh("security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k #{ENV['MATCH_PASSWORD'].shellescape} #{keychain_path.shellescape}", log: false)
+
+      # Debug: verify profiles and signing identities
       profiles_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
       UI.message("Provisioning profiles installed: #{Dir.glob(File.join(profiles_dir, '*.mobileprovision')).count}")
       sh("security find-identity -v -p codesigning #{keychain_path.shellescape} | head -5 || true")
@@ -502,7 +502,6 @@ platform :ios do
       keychain_path = File.expand_path("~/Library/Keychains/ci_keychain-db")
       login_keychain = File.expand_path("~/Library/Keychains/login.keychain-db")
       sh("security list-keychains -d user -s #{keychain_path.shellescape} #{login_keychain.shellescape}")
-      sh("security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k #{ENV['MATCH_PASSWORD'].shellescape} #{keychain_path.shellescape}", log: false)
 
       match(
         type: "appstore",
@@ -512,6 +511,8 @@ platform :ios do
         readonly: true,
         verbose: true
       )
+
+      sh("security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k #{ENV['MATCH_PASSWORD'].shellescape} #{keychain_path.shellescape}", log: false)
 
       profiles_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
       UI.message("Provisioning profiles installed: #{Dir.glob(File.join(profiles_dir, '*.mobileprovision')).count}")

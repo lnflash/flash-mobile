@@ -25,6 +25,11 @@ concurrency:
 
 permissions:
   contents: write
+  # Required when the branch under test modifies .github/workflows/ files
+  # (GITHUB_TOKEN can't push workflow changes without this). Safe to keep
+  # permanently — the token is only injected in the Push step, after
+  # build/sign/upload, and only for HEAD:main pushes.
+  workflows: write
 
 jobs:
   deploy:
