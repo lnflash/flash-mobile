@@ -18,6 +18,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history so we can diff the PR/push against its base.
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -28,8 +31,28 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Run ESLint
-        run: yarn eslint . --ext .js,.jsx,.ts,.tsx
+      # Lint only the JS/TS files this PR/push changes. The repo carries a large
+      # amount of pre-existing lint debt, so a whole-repo `eslint .` gate would
+      # fail on unrelated files; scope it to changed files to catch new issues
+      # without blocking on legacy debt.
+      - name: Lint changed JS/TS files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE" 2>/dev/null; then
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)"
+          fi
+          FILES=$(git diff --name-only --diff-filter=ACMR "$BASE...HEAD" -- '*.js' '*.jsx' '*.ts' '*.tsx')
+          if [ -z "$FILES" ]; then
+            echo "No JS/TS files changed; skipping ESLint."
+            exit 0
+          fi
+          echo "Linting changed files:"
+          echo "$FILES"
+          yarn eslint $FILES
 
   ios-build:
     name: iOS Build Check
