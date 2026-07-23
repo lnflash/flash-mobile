@@ -54,6 +54,16 @@ const CashWalletCutoverModal = () => {
       swipeDirection={["down"]}
       style={styles.modal}
       useNativeDriverForBackdrop
+      /**
+       * Render inline instead of through the native modal host. RCTModalHostView
+       * is broken under Fabric/New Architecture on Android (see #545): it
+       * wrongly measures the flex:1 content container, so this bottom-anchored
+       * (justifyContent: "flex-end") sheet is positioned off-screen while its
+       * full-screen backdrop keeps capturing touches — the dismiss button
+       * becomes unreachable and the app appears frozen. coverScreen={false}
+       * takes react-native-modal's inline render path and measures correctly.
+       */
+      coverScreen={false}
     >
       <View style={styles.sheet}>
         <View style={styles.handle} />
