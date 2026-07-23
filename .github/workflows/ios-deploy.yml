@@ -18,6 +18,10 @@ concurrency:
   group: ios-deploy
   cancel-in-progress: false
 
+# The deploy pushes a version-bump commit + tag back to the repo.
+permissions:
+  contents: write
+
 jobs:
   deploy:
     name: Deploy iOS
@@ -92,10 +96,12 @@ jobs:
       - name: Push version bump
         if: success()
         run: |
-          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          # Tag-triggered runs check out in detached HEAD, so resolve the target
+          # branch explicitly (git rev-parse --abbrev-ref HEAD would give "HEAD").
+          BRANCH="${{ github.event.repository.default_branch }}"
           git fetch origin "$BRANCH"
-          git rebase -X theirs --autostash origin/"$BRANCH"
-          git push origin "$BRANCH" --follow-tags
+          git rebase -X theirs --autostash "origin/$BRANCH"
+          git push origin "HEAD:$BRANCH" --follow-tags
 
       - name: Upload artifacts on failure
         if: failure()
