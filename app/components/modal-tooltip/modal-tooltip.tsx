@@ -66,7 +66,10 @@ export const ModalTooltip: React.FC<ModalTooltipProps> = ({
       <Modal
         isVisible={isVisible}
         onBackdropPress={toggleModal}
-        coverScreen
+        // RCTModalHostView wrongly measures under Fabric on Android, pushing this
+        // bottom-anchored (justifyContent: flex-end) sheet off-screen; render
+        // inline instead. See #545.
+        coverScreen={false}
         style={styles.modalStyle}
         backdropOpacity={0.3}
         backdropColor={colors.grey3}

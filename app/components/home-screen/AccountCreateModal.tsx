@@ -34,6 +34,9 @@ const AccountCreateModal: React.FC<Props> = ({ modalVisible, setModalVisible }) 
     <View>
       <Modal
         style={styles.modal}
+        // Content is bottom-pinned via a flex spacer; the broken Fabric modal
+        // host on Android (see #545) wrongly measures it off-screen. Render inline.
+        coverScreen={false}
         isVisible={modalVisible}
         swipeDirection={modalVisible ? ["down"] : ["up"]}
         onSwipeComplete={() => setModalVisible(false)}

@@ -116,6 +116,9 @@ const ContactModal: React.FC<Props> = ({
       backdropColor={colors.grey3}
       onBackdropPress={toggleModal}
       style={styles.modal}
+      // Bottom-anchored sheet; render inline to avoid the broken Fabric modal
+      // host on Android (see #545), which would push it off-screen.
+      coverScreen={false}
     >
       {contactOptionList.map((item) => {
         if (item.hidden) return null

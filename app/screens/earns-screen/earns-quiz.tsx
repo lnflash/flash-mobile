@@ -294,6 +294,9 @@ export const EarnQuiz = ({ route }: Props) => {
     <Screen backgroundColor={colors._lighterGrey} unsafe>
       <Modal
         style={{ marginHorizontal: 0, marginBottom: 0, flexGrow: 1 }}
+        // Quiz card is bottom-pinned via a flex spacer; the broken Fabric modal
+        // host on Android (see #545) wrongly measures it off-screen. Render inline.
+        coverScreen={false}
         isVisible={quizVisible}
         swipeDirection={quizVisible ? ["down"] : ["up"]}
         onSwipeComplete={() => setQuizVisible(false)}
