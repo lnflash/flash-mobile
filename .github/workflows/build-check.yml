@@ -113,6 +113,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Android native builds (New Arch C++/NDK + large build intermediates on
+      # top of node_modules) can exhaust the ~14 GB free on ubuntu runners.
+      # Reclaim space up front by dropping toolchains this job doesn't use.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/.ghcup /opt/ghc /usr/share/dotnet /usr/share/swift || true
+          sudo docker system prune -af || true
+          df -h /
+
       # No Ruby/CocoaPods here: the Android build doesn't need them, and
       # installing CocoaPods puts `pod` on PATH. The yarn postinstall
       # (`... if which pod; then (cd ios; pod install); fi`) would then run
