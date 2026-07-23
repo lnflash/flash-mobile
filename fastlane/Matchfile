@@ -1,0 +1,28 @@
+# Matchfile - Fastlane Match Configuration
+# For more information: https://docs.fastlane.tools/actions/match/
+
+# Git URL for storing certificates and profiles
+# Replace with your actual certificates repository
+git_url(ENV["MATCH_GIT_URL"] || "https://github.com/lnflash/flash-mobile-certificates.git")
+
+# App identifier
+app_identifier(["com.flash.pos"])
+
+# Storage mode
+storage_mode("git")
+
+# Type of provisioning profile
+type("appstore") # Can be: appstore, adhoc, development, enterprise
+
+# Git branch to use
+git_branch("main")
+
+# Should the command fail if not all certificates and profiles are present?
+# In CI, we want to be strict (readonly means don't create new certificates)
+readonly(ENV["CI"] == "true")
+
+# Username (Apple ID)
+username(ENV["APPLE_ID"])
+
+# Team ID
+team_id(ENV["TEAM_ID"])

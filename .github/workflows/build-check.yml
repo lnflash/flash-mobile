@@ -1,0 +1,174 @@
+name: Build Check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: build-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so we can diff the PR/push against its base.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # Lint only the JS/TS files this PR/push changes. The repo carries a large
+      # amount of pre-existing lint debt, so a whole-repo `eslint .` gate would
+      # fail on unrelated files; scope it to changed files to catch new issues
+      # without blocking on legacy debt.
+      - name: Lint changed JS/TS files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE" 2>/dev/null; then
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)"
+          fi
+          FILES=$(git diff --name-only --diff-filter=ACMR "$BASE...HEAD" -- '*.js' '*.jsx' '*.ts' '*.tsx')
+          if [ -z "$FILES" ]; then
+            echo "No JS/TS files changed; skipping ESLint."
+            exit 0
+          fi
+          echo "Linting changed files:"
+          echo "$FILES"
+          yarn eslint $FILES
+
+  ios-build:
+    name: iOS Build Check
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+
+      - name: Install Ruby dependencies
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "yarn"
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-
+
+      - name: Install CocoaPods
+        run: bundle exec pod install --project-directory=ios
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Build iOS (Debug)
+        run: |
+          xcodebuild \
+            -workspace ios/LNFlash.xcworkspace \
+            -scheme LNFlash \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO \
+            build | xcpretty --color
+
+  android-build:
+    name: Android Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Android native builds (New Arch C++/NDK + large build intermediates on
+      # top of node_modules) can exhaust the ~14 GB free on ubuntu runners.
+      # Reclaim space up front by dropping toolchains this job doesn't use.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/.ghcup /opt/ghc /usr/share/dotnet /usr/share/swift || true
+          sudo docker system prune -af || true
+          df -h /
+
+      # No Ruby/CocoaPods here: the Android build doesn't need them, and
+      # installing CocoaPods puts `pod` on PATH. The yarn postinstall
+      # (`... if which pod; then (cd ios; pod install); fi`) would then run
+      # iOS pod install on this Linux runner and fail at ios/Podfile.
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "yarn"
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup gradle.properties
+        run: cp android/gradle.properties.example android/gradle.properties
+
+      - name: Generate debug keystore
+        run: |
+          keytool -genkeypair \
+            -v \
+            -storetype PKCS12 \
+            -keystore android/app/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Build Android (Debug)
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: android/app/build/outputs/apk/debug/
+          retention-days: 7

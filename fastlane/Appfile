@@ -1,0 +1,10 @@
+app_identifier(ENV["APP_IDENTIFIER"] || "com.lnflash")
+
+apple_id(ENV["APPLE_ID"])
+itc_team_id(ENV["ITC_TEAM_ID"] || "H7UAM79QQP")
+team_id(ENV["TEAM_ID"] || "27HU729V9P")
+
+for_platform :android do
+  package_name(ENV["ANDROID_PACKAGE_NAME"] || "com.lnflash")
+  json_key_file(ENV["GOOGLE_PLAY_JSON_KEY_PATH"] || "google-play-key.json")
+end

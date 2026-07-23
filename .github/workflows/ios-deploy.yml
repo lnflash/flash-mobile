@@ -1,0 +1,108 @@
+name: iOS Deploy
+
+on:
+  push:
+    tags:
+      - "ios/v*"
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: "Fastlane lane to run"
+        required: true
+        type: choice
+        options:
+          - beta
+          - release
+
+concurrency:
+  group: ios-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy iOS
+    runs-on: macos-15
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+
+      - name: Install Ruby dependencies
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "yarn"
+
+      - name: Create .env from secrets
+        run: echo "${{ secrets.DOT_ENV }}" > .env
+
+      - name: Create GoogleService-Info.plist from secrets
+        run: echo '${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}' > ios/LNFlash/GoogleService-Info.plist
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Set NODE_BINARY for Xcode build scripts
+        run: |
+          NODE_PATH=$(command -v node)
+          echo "export NODE_BINARY=$NODE_PATH" > ios/.xcode.env
+          echo "export NODE_BINARY=$NODE_PATH" > ios/.xcode.env.local
+
+      - name: Determine lane
+        id: lane
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "lane=${{ github.event.inputs.lane }}" >> $GITHUB_OUTPUT
+          else
+            echo "lane=beta" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Fastlane
+        env:
+          CI: "true"
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: bundle exec fastlane ios ${{ steps.lane.outputs.lane }}
+
+      - name: Push version bump
+        if: success()
+        run: |
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          git fetch origin "$BRANCH"
+          git rebase -X theirs --autostash origin/"$BRANCH"
+          git push origin "$BRANCH" --follow-tags
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-artifacts
+          path: |
+            build/
+            fastlane/report.xml
+            ~/Library/Logs/gym/

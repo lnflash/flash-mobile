@@ -1,0 +1,136 @@
+name: Android Deploy
+
+on:
+  push:
+    tags:
+      - "android/v*"
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: "Fastlane lane to run"
+        required: true
+        type: choice
+        options:
+          - beta
+          - release
+          - promote_to_beta
+
+concurrency:
+  group: android-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "yarn"
+
+      - name: Create .env from secrets
+        env:
+          DOT_ENV: ${{ secrets.DOT_ENV }}
+        run: printenv DOT_ENV > .env
+
+      - name: Create google-services.json from secrets
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: printenv GOOGLE_SERVICES_JSON > android/app/google-services.json
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+
+      - name: Install Ruby dependencies
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-keystore.jks
+
+      - name: Create gradle.properties
+        run: |
+          cat > android/gradle.properties << 'EOF'
+          org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g
+          android.useAndroidX=true
+          reactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64
+          newArchEnabled=true
+          hermesEnabled=true
+          MYAPP_UPLOAD_STORE_FILE=release-keystore.jks
+          MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
+          MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: Setup Google Play JSON key
+        env:
+          GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
+        run: printenv GOOGLE_PLAY_JSON_KEY > google-play-key.json
+
+      - name: Determine lane
+        id: lane
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "lane=${{ github.event.inputs.lane }}" >> $GITHUB_OUTPUT
+          else
+            echo "lane=beta" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Fastlane
+        env:
+          CI: "true"
+          GOOGLE_PLAY_JSON_KEY_PATH: google-play-key.json
+        run: bundle exec fastlane android ${{ steps.lane.outputs.lane }}
+
+      - name: Push version bump
+        if: success() && steps.lane.outputs.lane != 'promote_to_beta'
+        run: |
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          git fetch origin "$BRANCH"
+          git rebase -X theirs --autostash origin/"$BRANCH"
+          git push origin "$BRANCH" --follow-tags
+
+      - name: Clean up sensitive files
+        if: always()
+        run: |
+          rm -f android/app/release-keystore.jks
+          rm -f android/app/google-services.json
+          rm -f google-play-key.json
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-artifacts
+          path: |
+            android/app/build/outputs/
+            fastlane/report.xml
