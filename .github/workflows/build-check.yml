@@ -113,13 +113,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.2"
-
-      - name: Install Ruby dependencies
-        run: bundle install --jobs 4 --retry 3
+      # No Ruby/CocoaPods here: the Android build doesn't need them, and
+      # installing CocoaPods puts `pod` on PATH. The yarn postinstall
+      # (`... if which pod; then (cd ios; pod install); fi`) would then run
+      # iOS pod install on this Linux runner and fail at ios/Podfile.
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
