@@ -31,11 +31,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      # Lint only the JS/TS files this PR/push changes. The repo carries a large
-      # amount of pre-existing lint debt, so a whole-repo `eslint .` gate would
-      # fail on unrelated files; scope it to changed files to catch new issues
-      # without blocking on legacy debt.
-      - name: Lint changed JS/TS files
+      # Lint only the lines this PR/push changes. The repo carries a large amount
+      # of pre-existing lint debt, so a whole-repo (or whole-file) `eslint` gate fails
+      # on untouched legacy code as soon as a PR edits any part of such a file.
+      # scripts/ci/lint-changed.mjs runs ESLint on the changed files but only fails
+      # on errors that land on added/modified lines.
+      - name: Lint changed JS/TS lines
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE="${{ github.event.pull_request.base.sha }}"
@@ -45,14 +46,7 @@ jobs:
           if [ -z "$BASE" ] || ! git cat-file -e "$BASE" 2>/dev/null; then
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)"
           fi
-          FILES=$(git diff --name-only --diff-filter=ACMR "$BASE...HEAD" -- '*.js' '*.jsx' '*.ts' '*.tsx')
-          if [ -z "$FILES" ]; then
-            echo "No JS/TS files changed; skipping ESLint."
-            exit 0
-          fi
-          echo "Linting changed files:"
-          echo "$FILES"
-          yarn eslint $FILES
+          BASE_SHA="$BASE" node scripts/ci/lint-changed.mjs
 
   ios-build:
     name: iOS Build Check
