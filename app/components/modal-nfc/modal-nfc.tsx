@@ -219,6 +219,9 @@ export const ModalNfc: React.FC<{
       swipeThreshold={50}
       propagateSwipe
       style={styles.modal}
+      // Content is bottom-pinned via a flex spacer; the broken Fabric modal
+      // host on Android (see #545) wrongly measures it off-screen. Render inline.
+      coverScreen={false}
     >
       <Pressable style={styles.flex} onPress={dismiss}></Pressable>
       <SafeAreaView style={styles.modalForeground}>
