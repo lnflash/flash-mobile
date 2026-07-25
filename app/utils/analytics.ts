@@ -212,3 +212,13 @@ export const logFeaturedViewOpened = (params: LogFeaturedViewOpenedParams) => {
     is_first_access: params.isFirstAccess,
   })
 }
+
+// A Plaid Link failure that happens inside the Plaid webview (rate limit, IP
+// block, institution error, ...) — never reaches the backend, so this is the
+// only place it can be recorded. The error_code dimension lets us confirm the
+// cause (e.g. IP-based rate limiting) across affected users.
+export const logPlaidLinkFailure = ({ errorCode }: { errorCode: string }) => {
+  getAnalytics().logEvent("plaid_link_failure", {
+    error_code: errorCode,
+  })
+}

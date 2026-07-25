@@ -444,6 +444,24 @@ export const BankAccountsScreen: React.FC = () => {
         </Text>
       </Pressable>
 
+      {/* Manual entry: bypasses Plaid Link (and its phone/OTP step) entirely,
+          routing straight to bridgeCreateExternalAccount. Always available so a
+          user blocked inside the Plaid webview (e.g. OTP rate limit) still has a
+          path in — not just the BRIDGE_PLAID_NOT_AVAILABLE fallback. */}
+      {kycApproved && (
+        <Pressable
+          style={styles.manualEntryButton}
+          onPress={() =>
+            navigation.navigate("BridgeAddExternalAccount", { returnTo: "BankAccounts" })
+          }
+        >
+          <Icon name="create-outline" type="ionicon" size={18} color={colors.primary} />
+          <Text type="p2" bold color={colors.primary}>
+            {LL.BankAccountsScreen.enterBankDetailsManually()}
+          </Text>
+        </Pressable>
+      )}
+
       <Pressable
         style={styles.supportButton}
         onPress={() => openWhatsAppUrl(WHATSAPP_SUPPORT_URL)}
@@ -614,12 +632,21 @@ const useStyles = makeStyles(({ colors }) => ({
     minHeight: 56,
     borderRadius: 12,
     marginTop: 12,
-    marginBottom: 24,
+    marginBottom: 8,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     columnGap: 8,
     backgroundColor: colors.primary,
+  },
+  manualEntryButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    marginBottom: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    columnGap: 8,
   },
   disabled: {
     opacity: 0.5,
