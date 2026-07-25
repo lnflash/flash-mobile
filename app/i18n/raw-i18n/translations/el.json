@@ -1653,7 +1653,8 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}",
+    "enterBankDetailsManually": "Enter bank details manually"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1696,6 +1697,7 @@
     "connectedBody": "Η τράπεζά σου συνδέεται και θα εμφανιστεί εδώ σύντομα.",
     "exchangeFailed": "Η σύνδεση της τράπεζας απέτυχε. Δοκίμασε ξανά.",
     "linkFailed": "Η σύνδεση της τράπεζας απέτυχε. Δοκίμασε ξανά.",
-    "linkTokenFailed": "Αποτυχία λήψης συνδέσμου εξωτερικού λογαριασμού. Δοκίμασε ξανά."
+    "linkTokenFailed": "Αποτυχία λήψης συνδέσμου εξωτερικού λογαριασμού. Δοκίμασε ξανά.",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   }
 }

@@ -1653,7 +1653,8 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}",
+    "enterBankDetailsManually": "Enter bank details manually"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1696,6 +1697,7 @@
     "connectedBody": "กำลังเชื่อมโยงธนาคารของคุณ และจะแสดงที่นี่ในไม่ช้า",
     "exchangeFailed": "ไม่สามารถเชื่อมโยงธนาคารของคุณได้ กรุณาลองใหม่อีกครั้ง",
     "linkFailed": "การเชื่อมโยงธนาคารล้มเหลว กรุณาลองใหม่อีกครั้ง",
-    "linkTokenFailed": "ไม่สามารถรับลิงก์บัญชีภายนอกได้ กรุณาลองใหม่อีกครั้ง"
+    "linkTokenFailed": "ไม่สามารถรับลิงก์บัญชีภายนอกได้ กรุณาลองใหม่อีกครั้ง",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   }
 }

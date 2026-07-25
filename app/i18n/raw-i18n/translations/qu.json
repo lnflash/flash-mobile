@@ -1653,7 +1653,8 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}",
+    "enterBankDetailsManually": "Enter bank details manually"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1696,6 +1697,7 @@
     "connectedBody": "Bancoyki tinkichkan, kaypi rikhurinqa ratolla.",
     "exchangeFailed": "Mana atirqachu bancoykita tinkiy. Ama hina kaspa, wakmanta ruray.",
     "linkFailed": "Banco tinkiy mana atisqa. Ama hina kaspa, wakmanta ruray.",
-    "linkTokenFailed": "Mana atirqachu hawa cuenta t'inkita chaskiyta. Ama hina kaspa, wakmanta ruray."
+    "linkTokenFailed": "Mana atirqachu hawa cuenta t'inkita chaskiyta. Ama hina kaspa, wakmanta ruray.",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   }
 }

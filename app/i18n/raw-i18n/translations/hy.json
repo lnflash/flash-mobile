@@ -1653,7 +1653,8 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}",
+    "enterBankDetailsManually": "Enter bank details manually"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1696,6 +1697,7 @@
     "connectedBody": "Ձեր բանկը կապվում է և շուտով կհայտնվի այստեղ։",
     "exchangeFailed": "Չհաջողվեց կապել ձեր բանկը։ Խնդրում ենք փորձել կրկին։",
     "linkFailed": "Բանկի կապումը ձախողվեց։ Խնդրում ենք փորձել կրկին։",
-    "linkTokenFailed": "Չհաջողվեց ստանալ արտաքին հաշվի հղումը։ Խնդրում ենք փորձել կրկին։"
+    "linkTokenFailed": "Չհաջողվեց ստանալ արտաքին հաշվի հղումը։ Խնդրում ենք փորձել կրկին։",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   }
 }

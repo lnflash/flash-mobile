@@ -1653,7 +1653,8 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}",
+    "enterBankDetailsManually": "Enter bank details manually"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1696,6 +1697,7 @@
     "connectedBody": "Bank anda sedang dipautkan dan akan muncul di sini tidak lama lagi.",
     "exchangeFailed": "Gagal memautkan bank anda. Sila cuba lagi.",
     "linkFailed": "Pemautan bank gagal. Sila cuba lagi.",
-    "linkTokenFailed": "Gagal mendapatkan pautan akaun luaran. Sila cuba lagi."
+    "linkTokenFailed": "Gagal mendapatkan pautan akaun luaran. Sila cuba lagi.",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   }
 }

@@ -1653,7 +1653,8 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}",
+    "enterBankDetailsManually": "Enter bank details manually"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1696,6 +1697,7 @@
     "connectedBody": "Seu banco está sendo vinculado e aparecerá aqui em breve.",
     "exchangeFailed": "Não foi possível vincular seu banco. Tente novamente.",
     "linkFailed": "A vinculação do banco falhou. Tente novamente.",
-    "linkTokenFailed": "Não foi possível obter o link da conta externa. Tente novamente."
+    "linkTokenFailed": "Não foi possível obter o link da conta externa. Tente novamente.",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   }
 }

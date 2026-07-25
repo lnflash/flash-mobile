@@ -1653,7 +1653,8 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}",
+    "enterBankDetailsManually": "Enter bank details manually"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1696,6 +1697,7 @@
     "connectedBody": "Ibhanki yakho iyaqhagamshelwa kwaye iza kubonakala apha kungekudala.",
     "exchangeFailed": "Ayikwazanga ukuqhagamshela ibhanki yakho. Nceda uzame kwakhona.",
     "linkFailed": "Ukuqhagamshelwa kwebhanki akuphumelelanga. Nceda uzame kwakhona.",
-    "linkTokenFailed": "Ayikwazanga ukufumana ikhonkco le-akhawunti yangaphandle. Nceda uzame kwakhona."
+    "linkTokenFailed": "Ayikwazanga ukufumana ikhonkco le-akhawunti yangaphandle. Nceda uzame kwakhona.",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   }
 }

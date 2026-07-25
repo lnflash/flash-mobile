@@ -1654,7 +1654,8 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}",
+    "enterBankDetailsManually": "Enter bank details manually"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1697,6 +1698,7 @@
     "connectedBody": "Jou bank word gekoppel en sal binnekort hier verskyn.",
     "exchangeFailed": "Kon nie jou bank koppel nie. Probeer asseblief weer.",
     "linkFailed": "Bankkoppeling het misluk. Probeer asseblief weer.",
-    "linkTokenFailed": "Kon nie die eksterne rekeningskakel kry nie. Probeer asseblief weer."
+    "linkTokenFailed": "Kon nie die eksterne rekeningskakel kry nie. Probeer asseblief weer.",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   }
 }

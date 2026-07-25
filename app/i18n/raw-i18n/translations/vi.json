@@ -1653,7 +1653,8 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}",
+    "enterBankDetailsManually": "Enter bank details manually"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1696,6 +1697,7 @@
     "connectedBody": "Ngân hàng của bạn đang được liên kết và sẽ sớm xuất hiện tại đây.",
     "exchangeFailed": "Không thể liên kết ngân hàng của bạn. Vui lòng thử lại.",
     "linkFailed": "Liên kết ngân hàng thất bại. Vui lòng thử lại.",
-    "linkTokenFailed": "Không thể lấy liên kết tài khoản bên ngoài. Vui lòng thử lại."
+    "linkTokenFailed": "Không thể lấy liên kết tài khoản bên ngoài. Vui lòng thử lại.",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   }
 }
