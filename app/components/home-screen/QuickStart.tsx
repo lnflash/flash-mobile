@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { Dimensions, TouchableOpacity, View } from "react-native"
+import { Dimensions, Image, TouchableOpacity, View } from "react-native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import Carousel from "react-native-reanimated-carousel"
@@ -12,6 +12,7 @@ import Dollar from "@app/assets/illustrations/dollar.svg"
 import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
 import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 import SocialChat from "@app/assets/illustrations/social-chat.svg"
+import FriendsIcon from "@app/assets/images/heart-symbol.png"
 
 // components
 import { AdvancedModeModal } from "../advanced-mode-modal"
@@ -70,6 +71,13 @@ const QuickStart = () => {
   const upgradePending = status === "Pending"
 
   let carouselData = [
+    {
+      type: "invite",
+      title: LL.HomeScreen.inviteTitle(),
+      description: LL.HomeScreen.inviteDesc(),
+      image: FriendsIcon,
+      onPress: () => navigation.navigate("InviteFriend"),
+    },
     {
       type: "upgrade",
       title: !upgradePending
@@ -159,6 +167,9 @@ const QuickStart = () => {
   ) {
     carouselData = carouselData.filter((el) => el.type !== "socialPost")
   }
+  if (persistentState?.closedQuickStartTypes?.includes("invite")) {
+    carouselData = carouselData.filter((el) => el.type !== "invite")
+  }
 
   const onHide = (type: string) => {
     updateState((state: any) => {
@@ -174,7 +185,9 @@ const QuickStart = () => {
   }
 
   const renderItem = ({ item, index }: RenderItemProps) => {
-    const Image = item.image
+    const ImageOrAsset = item.image
+    const isAsset = typeof ImageOrAsset === "number"
+    const isHeartIcon = item.type === "invite" && isAsset
     return (
       <TouchableOpacity
         onPress={item.onPress}
@@ -185,7 +198,14 @@ const QuickStart = () => {
           item.pending ? { borderColor: colors._orange } : {},
         ]}
       >
-        <Image height={width / 3} width={width / 3} />
+        {isAsset ? (
+          <Image
+            source={ImageOrAsset}
+            style={[styles.imageStyle, isHeartIcon && styles.heartIconRotation]}
+          />
+        ) : (
+          <ImageOrAsset height={width / 3} width={width / 3} />
+        )}
         <View style={styles.texts}>
           <Text
             type="h1"
@@ -251,6 +271,14 @@ const useStyles = makeStyles(({ colors }) => ({
     top: 0,
     right: 0,
     padding: 5,
+  },
+  imageStyle: {
+    width: width / 3,
+    height: width / 3,
+    resizeMode: "contain",
+  },
+  heartIconRotation: {
+    transform: [{ rotate: "-25deg" }],
   },
 }))
 

@@ -99,6 +99,10 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
     },
     getInitialURL: async () => {
       const url = await Linking.getInitialURL()
+      // Invite URLs are handled by InviteDeepLinkHandler, not the navigation container
+      if (url && url.includes("invite")) {
+        return null
+      }
       if (Boolean(url) && isAuthed && !isAppLocked) {
         return url
       }
@@ -108,6 +112,11 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
       console.log("listener", listener)
       const onReceiveURL = ({ url }: { url: string }) => {
         console.log("onReceiveURL", url)
+        // Invite URLs are handled by InviteDeepLinkHandler, not the navigation container
+        if (url && url.includes("invite")) {
+          console.log("Skipping invite URL in navigation container")
+          return
+        }
         listener(url)
       }
       // Listen to incoming links from deep linking

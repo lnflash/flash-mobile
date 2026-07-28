@@ -2137,6 +2137,8 @@ type RootTranslation = {
 		 * U​n​l​o​c​k​ ​y​o​u​r​ ​f​u​l​l​ ​p​o​t​e​n​t​i​a​l​!​ ​U​p​g​r​a​d​e​ ​t​o​ ​b​o​o​s​t​ ​v​i​s​i​b​i​l​i​t​y​,​ ​l​i​m​i​t​s​,​ ​a​n​d​ ​p​a​y​o​u​t​s​.
 		 */
 		upgradeDesc: string
+		inviteTitle: string
+		inviteDesc: string
 		/**
 		 * Y​o​u​r​ ​a​c​c​o​u​n​t​ ​u​p​g​r​a​d​e​ ​r​e​q​u​e​s​t​ ​i​s​ ​u​n​d​e​r​ ​r​e​v​i​e​w​.
 		 */
@@ -3419,6 +3421,21 @@ type RootTranslation = {
 		 * H​i​d​e​ ​B​i​t​c​o​i​n​ ​a​c​c​o​u​n​t
 		 */
 		hideBtcAccount: string
+		inviteFriend: string
+	}
+	InviteFriend: {
+		invitation: string
+		title: string
+		subtitle: string
+		phoneNumber: string
+		email: string
+		invite: string
+		or: string
+		/**
+		 * @param {string} value
+		 */
+		invitationSuccessTitle: RequiredParams<'value'>
+		done: string
 	}
 	NotificationSettingsScreen: {
 		/**
@@ -8139,6 +8156,8 @@ export type TranslationFunctions = {
 		 * Unlock your full potential! Upgrade to boost visibility, limits, and payouts.
 		 */
 		upgradeDesc: () => LocalizedString
+		inviteTitle: () => LocalizedString
+		inviteDesc: () => LocalizedString
 		/**
 		 * Your account upgrade request is under review.
 		 */
@@ -9375,6 +9394,18 @@ export type TranslationFunctions = {
 		 * Hide Bitcoin account
 		 */
 		hideBtcAccount: () => LocalizedString
+		inviteFriend: () => LocalizedString
+	}
+	InviteFriend: {
+		invitation: () => LocalizedString
+		title: () => LocalizedString
+		subtitle: () => LocalizedString
+		phoneNumber: () => LocalizedString
+		email: () => LocalizedString
+		invite: () => LocalizedString
+		or: () => LocalizedString
+		invitationSuccessTitle: (arg: { value: string }) => LocalizedString
+		done: () => LocalizedString
 	}
 	NotificationSettingsScreen: {
 		/**

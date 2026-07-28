@@ -26,6 +26,7 @@ import { loadAllLocales } from "./i18n/i18n-util.sync"
 import { AppStateWrapper } from "./navigation/app-state"
 import { NavigationContainerWrapper } from "./navigation/navigation-container-wrapper"
 import { RootStack } from "./navigation/root-navigator"
+import { InviteDeepLinkHandler } from "./screens/invite-friend/InviteDeepLinkHandler"
 import theme from "./rne-theme/theme"
 import { ErrorScreen } from "./screens/error-screen"
 import { PersistentStateProvider } from "./store/persistent-state"
@@ -104,7 +105,9 @@ export const App = () => {
                                     <PushNotificationComponent />
                                     <BreezProvider>
                                       <FlashcardProvider>
-                                        <RootStack />
+                                        <InviteDeepLinkHandler>
+                                          <RootStack />
+                                        </InviteDeepLinkHandler>
                                       </FlashcardProvider>
                                     </BreezProvider>
                                     <GaloyToast />

@@ -44,6 +44,13 @@
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="flash" />
         </intent-filter>
+        <!-- Invite-a-friend deep links (flash://invite/...) handled by InviteDeepLinkHandler -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="flash" android:host="invite" />
+        </intent-filter>
       </activity>
 
       <!-- Home-screen widget: live BTC price + Scan/Receive quick actions -->
