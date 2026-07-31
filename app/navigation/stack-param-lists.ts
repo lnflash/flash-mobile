@@ -20,12 +20,7 @@ import { NavigatorScreenParams } from "@react-navigation/native"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
-  getStarted?: {
-    inviteToken?: string
-    prefilledContact?: string
-    contactMethod?: string
-    inviterUsername?: string
-  }
+  getStarted: undefined
   UsernameSet?: { insideApp?: boolean }
   Welcome: undefined
   liteDeviceAccount: {
@@ -119,11 +114,7 @@ export type RootStackParamList = {
     lnurl: string
   }
   phoneFlow?: NavigatorScreenParams<PhoneValidationStackParamList>
-  phoneRegistrationInitiate?: {
-    inviteToken?: string
-    prefilledPhone?: string
-    inviterUsername?: string
-  }
+  phoneRegistrationInitiate: undefined
   makeNostrPost: undefined
   postSuccess: { postContent: string; userNpub: string; event: Event }
   contactDetails: { contactPubkey: string }
@@ -144,11 +135,7 @@ export type RootStackParamList = {
   accountScreen: undefined
   notificationSettingsScreen: undefined
   transactionLimitsScreen: undefined
-  emailRegistrationInitiate?: {
-    inviteToken?: string
-    prefilledEmail?: string
-    inviterUsername?: string
-  }
+  emailRegistrationInitiate: undefined
   emailRegistrationValidate: { email: string; emailRegistrationId: string }
   emailLoginInitiate: undefined
   emailLoginValidate: { email: string; emailLoginId: string }

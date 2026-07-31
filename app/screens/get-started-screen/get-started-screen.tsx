@@ -29,7 +29,7 @@ const width = Dimensions.get("screen").width
 
 type Props = StackScreenProps<RootStackParamList, "getStarted">
 
-export const GetStartedScreen: React.FC<Props> = ({ navigation, route }) => {
+export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
   const isFocused = useIsFocused()
   const { mode, colors } = useTheme().theme
   const { LL } = useI18nContext()
@@ -41,9 +41,6 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [secretMenuCounter, setSecretMenuCounter] = useState(0)
-
-  const { inviteToken, prefilledContact, contactMethod, inviterUsername } =
-    route.params || {}
 
   const AppLogo = mode === "dark" ? AppLogoDarkMode : AppLogoLightMode
 
@@ -79,24 +76,7 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation, route }) => {
         index: 0,
         routes: [{ name: "authenticationCheck" }],
       })
-    } else if (inviteToken && prefilledContact) {
-      // If we have an invite token, go to registration with prefilled contact
-      if (contactMethod === "EMAIL") {
-        navigation.navigate("emailRegistrationInitiate", {
-          inviteToken,
-          prefilledEmail: prefilledContact,
-          inviterUsername,
-        })
-      } else {
-        // For SMS or WHATSAPP
-        navigation.navigate("phoneRegistrationInitiate", {
-          inviteToken,
-          prefilledPhone: prefilledContact,
-          inviterUsername,
-        })
-      }
     } else {
-      // No invite, go to normal phone login flow
       navigation.navigate("phoneFlow")
     }
   }

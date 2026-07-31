@@ -1,30 +1,78 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { Linking, Alert } from "react-native"
 import { useNavigation, NavigationProp } from "@react-navigation/native"
-import {
-  useRedeemInviteMutation,
-  useInvitePreviewLazyQuery,
-  RedeemInviteMutationFn,
-} from "@app/graphql/generated"
+import { useInvitePreviewLazyQuery, RedeemInviteMutationFn } from "@app/graphql/generated"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
+// Deep-link entry for invite redemption.
+//
+// The app registers ONLY the `flash://` custom scheme on both platforms, so the
+// links this hook can actually receive look like `flash://invite?token=…`.
+// The backend sends invitees `https://getflash.io/invite?token=…` links (custom
+// schemes are not tappable in WhatsApp/SMS/email). For those links to reach the
+// app, getflash.io must serve either:
+//   - a landing page at /invite that redirects to flash://invite?token=… , or
+//   - App Links / Universal Links assets (assetlinks.json + AASA) plus the
+//     matching intent-filter/entitlement in a future release.
+// Neither can be shipped from this repo — the getflash.io landing redirect is
+// an activation dependency for the invite feature.
+
+const PENDING_INVITE_KEY = "pendingInviteToken"
+
+// Matches the backend's INVITE_EXPIRY_HOURS (24h): a stored token older than
+// this is expired server-side anyway, so discard instead of redeeming. Also
+// bounds how long an un-redeemed token can linger on a shared device.
+const PENDING_INVITE_MAX_AGE_MS = 24 * 60 * 60 * 1000
+
+type PendingInvite = { token: string; storedAt: number }
+
+const storePendingInvite = async (token: string) => {
+  const record: PendingInvite = { token, storedAt: Date.now() }
+  await AsyncStorage.setItem(PENDING_INVITE_KEY, JSON.stringify(record))
+}
+
+// Returns the stored token, or null. Discards expired or malformed values.
+const readPendingInvite = async (): Promise<string | null> => {
+  const raw = await AsyncStorage.getItem(PENDING_INVITE_KEY)
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as PendingInvite
+    if (!parsed?.token) throw new Error("malformed pending invite")
+    if (Date.now() - (parsed.storedAt || 0) > PENDING_INVITE_MAX_AGE_MS) {
+      await AsyncStorage.removeItem(PENDING_INVITE_KEY)
+      return null
+    }
+    return parsed.token
+  } catch {
+    // Unparseable value (or pre-JSON legacy format) — discard it.
+    await AsyncStorage.removeItem(PENDING_INVITE_KEY)
+    return null
+  }
+}
+
 export const useInviteDeepLink = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>()
-  const [redeemInvite] = useRedeemInviteMutation()
   const [fetchInvitePreview] = useInvitePreviewLazyQuery()
   const isAuthed = useIsAuthed()
 
-  useEffect(() => {
-    // Handle initial URL (when app is opened from link)
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleDeepLink(url)
-      }
-    })
+  // getInitialURL keeps returning the launch URL for the whole process
+  // lifetime; re-processing it on auth changes would resurrect an
+  // already-redeemed token and fire spurious alerts. Handle it exactly once.
+  const initialUrlHandled = useRef(false)
 
-    // Handle URL changes (when app is already open)
+  useEffect(() => {
+    if (!initialUrlHandled.current) {
+      initialUrlHandled.current = true
+      Linking.getInitialURL().then((url) => {
+        if (url) {
+          handleDeepLink(url)
+        }
+      })
+    }
+
+    // Handle URL events while the app is already open
     const subscription = Linking.addEventListener("url", (event) => {
       handleDeepLink(event.url)
     })
@@ -32,7 +80,7 @@ export const useInviteDeepLink = () => {
     return () => {
       subscription.remove()
     }
-  }, [isAuthed, navigation, redeemInvite, fetchInvitePreview])
+  }, [isAuthed, navigation, fetchInvitePreview])
 
   const handleDeepLink = async (url: string) => {
     // Only handle invite URLs
@@ -40,39 +88,40 @@ export const useInviteDeepLink = () => {
       return
     }
 
-    // Parse the URL to get the token
-    // Expected format: flash://invite?token=xxxxx or https://getflash.io/invite?token=xxxxx
-    const tokenRegex = /[?&]token=([a-f0-9]{40})/
-
-    const tokenMatch = url.match(tokenRegex)
+    // Extract the token generically — the backend owns token format
+    // validation. Anchoring a length/charset here would silently drop or
+    // truncate tokens if the backend format ever changes.
+    const tokenMatch = url.match(/[?&]token=([^&#\s]+)/)
     if (!tokenMatch || !tokenMatch[1]) {
       return
     }
 
-    const token = tokenMatch[1]
+    const token = decodeURIComponent(tokenMatch[1])
 
     try {
-      // Store token for later use (after signup/login)
-      await AsyncStorage.setItem("pendingInviteToken", token)
+      if (!isAuthed) {
+        // Store for redemption after signup/login. Never store for an authed
+        // session: the current account can't redeem it, and a lingering token
+        // would be redeemed by whichever account logs in next on this device.
+        await storePendingInvite(token)
+      }
 
       // Fetch invite preview to get details
       const { data: previewData, error } = await fetchInvitePreview({
         variables: { token },
         fetchPolicy: "network-only", // Force fresh fetch, bypass cache
-        context: {
-          // Add a header to indicate this is the recipient requesting their own invite
-          headers: {
-            "X-Invite-Recipient": "true",
-          },
-        },
       })
 
       if (error) {
+        // Transient failure — keep any stored token so post-signup redemption
+        // can still succeed.
         Alert.alert("Error", "Unable to fetch invitation details. Please try again.")
         return
       }
 
       if (!previewData?.invitePreview?.isValid) {
+        // Known-invalid token: don't leave it around for a doomed redemption.
+        await AsyncStorage.removeItem(PENDING_INVITE_KEY)
         Alert.alert(
           "Invalid Invitation",
           "This invitation link is invalid or has expired.",
@@ -82,8 +131,6 @@ export const useInviteDeepLink = () => {
       }
 
       const { contact, method, inviterUsername } = previewData.invitePreview
-
-      // Backend now returns full contact for the intended recipient
 
       if (isAuthed) {
         // Existing user - show message but don't redeem
@@ -96,7 +143,6 @@ export const useInviteDeepLink = () => {
         )
       } else {
         // If not logged in, navigate to phone login flow (which handles both login and registration)
-        // Store the invite details for use after successful authentication
         // Add a small delay to ensure navigation is ready
         setTimeout(() => {
           if (method === "EMAIL") {
@@ -125,13 +171,35 @@ export const useInviteDeepLink = () => {
   }
 }
 
+// Backend ValidationError messages that permanently invalidate a token —
+// retrying can never succeed, so the stored token is cleared when seen.
+const TERMINAL_REDEEM_ERRORS = [
+  "expired",
+  "already been used",
+  "invalid invitation token",
+  "your own invitation",
+]
+
+const isTerminalRedeemError = (message: string) => {
+  const normalized = message.toLowerCase()
+  return TERMINAL_REDEEM_ERRORS.some((s) => normalized.includes(s))
+}
+
+// Guards against concurrent redemption attempts (e.g. a Welcome-screen
+// remount double-firing before the first attempt clears the token).
+let redeemInFlight = false
+
 // Helper function to check and redeem pending invite after login
 export const redeemPendingInvite = async (
   redeemInviteMutation: RedeemInviteMutationFn,
   showAlert = true,
 ) => {
+  if (redeemInFlight) {
+    return { success: false, message: "Redemption already in progress" }
+  }
+  redeemInFlight = true
   try {
-    const token = await AsyncStorage.getItem("pendingInviteToken")
+    const token = await readPendingInvite()
 
     if (!token) {
       return { success: false, message: "No pending invite" }
@@ -144,10 +212,8 @@ export const redeemPendingInvite = async (
       },
     })
 
-    // Clear the token after attempting redemption
-    await AsyncStorage.removeItem("pendingInviteToken")
-
     if (data?.redeemInvite?.success) {
+      await AsyncStorage.removeItem(PENDING_INVITE_KEY)
       if (showAlert) {
         Alert.alert(
           "Welcome!",
@@ -158,6 +224,11 @@ export const redeemPendingInvite = async (
       return { success: true, message: "Invite redeemed successfully" }
     } else if (data?.redeemInvite?.errors?.[0]) {
       const errorMessage = data.redeemInvite.errors[0]
+      // Clear the token only for terminal errors; a transient server failure
+      // keeps it so a later attempt can still redeem.
+      if (isTerminalRedeemError(errorMessage)) {
+        await AsyncStorage.removeItem(PENDING_INVITE_KEY)
+      }
       // Only show alert for non-duplicate errors
       if (showAlert && !errorMessage.includes("already been used")) {
         Alert.alert("Notice", errorMessage)
@@ -165,9 +236,13 @@ export const redeemPendingInvite = async (
       return { success: false, message: errorMessage }
     }
 
+    // Ambiguous response — keep the token for retry.
     return { success: false, message: "Unknown error" }
   } catch (error) {
+    // Thrown/network errors are transient — keep the token for retry.
     console.error("Error redeeming pending invite:", error)
     return { success: false, message: "Error redeeming invite" }
+  } finally {
+    redeemInFlight = false
   }
 }
