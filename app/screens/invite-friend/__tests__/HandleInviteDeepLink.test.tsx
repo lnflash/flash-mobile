@@ -2,10 +2,7 @@ import React from "react"
 import { Alert, Linking } from "react-native"
 import { render, waitFor } from "@testing-library/react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import {
-  redeemPendingInvite,
-  useInviteDeepLink,
-} from "../HandleInviteDeepLink"
+import { redeemPendingInvite, useInviteDeepLink } from "../HandleInviteDeepLink"
 import { InviteDeepLinkHandler } from "../InviteDeepLinkHandler"
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
@@ -54,19 +51,27 @@ describe("redeemPendingInvite", () => {
 
   it("redeems a stored token, clears it, and alerts on success", async () => {
     asyncStorage.getItem.mockResolvedValue("tok-123")
-    const redeem = jest.fn().mockResolvedValue({ data: { redeemInvite: { success: true } } })
+    const redeem = jest
+      .fn()
+      .mockResolvedValue({ data: { redeemInvite: { success: true } } })
 
     const result = await redeemPendingInvite(redeem, true)
 
     expect(redeem).toHaveBeenCalledWith({ variables: { input: { token: "tok-123" } } })
     expect(asyncStorage.removeItem).toHaveBeenCalledWith("pendingInviteToken")
-    expect(Alert.alert).toHaveBeenCalledWith("Welcome!", expect.any(String), expect.any(Array))
+    expect(Alert.alert).toHaveBeenCalledWith(
+      "Welcome!",
+      expect.any(String),
+      expect.any(Array),
+    )
     expect(result).toEqual({ success: true, message: "Invite redeemed successfully" })
   })
 
   it("does not alert on success when showAlert is false", async () => {
     asyncStorage.getItem.mockResolvedValue("tok-123")
-    const redeem = jest.fn().mockResolvedValue({ data: { redeemInvite: { success: true } } })
+    const redeem = jest
+      .fn()
+      .mockResolvedValue({ data: { redeemInvite: { success: true } } })
 
     const result = await redeemPendingInvite(redeem, false)
 
@@ -76,9 +81,9 @@ describe("redeemPendingInvite", () => {
 
   it("surfaces a non-duplicate error via a Notice alert", async () => {
     asyncStorage.getItem.mockResolvedValue("tok-123")
-    const redeem = jest
-      .fn()
-      .mockResolvedValue({ data: { redeemInvite: { success: false, errors: ["Invite expired"] } } })
+    const redeem = jest.fn().mockResolvedValue({
+      data: { redeemInvite: { success: false, errors: ["Invite expired"] } },
+    })
 
     const result = await redeemPendingInvite(redeem, true)
 
@@ -89,7 +94,9 @@ describe("redeemPendingInvite", () => {
   it("suppresses the alert for an already-used invite", async () => {
     asyncStorage.getItem.mockResolvedValue("tok-123")
     const redeem = jest.fn().mockResolvedValue({
-      data: { redeemInvite: { success: false, errors: ["This invite has already been used"] } },
+      data: {
+        redeemInvite: { success: false, errors: ["This invite has already been used"] },
+      },
     })
 
     const result = await redeemPendingInvite(redeem, true)
@@ -127,7 +134,7 @@ describe("useInviteDeepLink", () => {
   beforeEach(() => {
     jest
       .spyOn(Linking, "addEventListener")
-      .mockReturnValue({ remove: jest.fn() } as any)
+      .mockReturnValue({ remove: jest.fn() } as never)
   })
 
   it("ignores non-invite deep links", async () => {
@@ -171,7 +178,10 @@ describe("useInviteDeepLink", () => {
       () =>
         expect(mockNavigate).toHaveBeenCalledWith(
           "emailLoginInitiate",
-          expect.objectContaining({ inviteToken: token, prefilledEmail: "friend@example.com" }),
+          expect.objectContaining({
+            inviteToken: token,
+            prefilledEmail: "friend@example.com",
+          }),
         ),
       { timeout: 2000 },
     )
@@ -182,7 +192,9 @@ describe("InviteDeepLinkHandler", () => {
   it("renders its children (and mounts the deep-link hook without throwing)", () => {
     mockUseIsAuthed.mockReturnValue(false)
     jest.spyOn(Linking, "getInitialURL").mockResolvedValue(null)
-    jest.spyOn(Linking, "addEventListener").mockReturnValue({ remove: jest.fn() } as any)
+    jest
+      .spyOn(Linking, "addEventListener")
+      .mockReturnValue({ remove: jest.fn() } as never)
 
     const { toJSON } = render(
       <InviteDeepLinkHandler>

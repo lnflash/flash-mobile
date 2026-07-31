@@ -476,6 +476,22 @@ mutation captchaRequestAuthCode($input: CaptchaRequestAuthCodeInput!) {
   }
 }
 
+mutation createInvite($input: CreateInviteInput!) {
+  createInvite(input: $input) {
+    invite {
+      id
+      contact
+      method
+      status
+      createdAt
+      expiresAt
+      __typename
+    }
+    errors
+    __typename
+  }
+}
+
 mutation deviceNotificationTokenCreate($input: DeviceNotificationTokenCreateInput!) {
   deviceNotificationTokenCreate(input: $input) {
     errors {
@@ -725,6 +741,14 @@ mutation quizCompleted($input: QuizCompletedInput!) {
       completed
       __typename
     }
+    __typename
+  }
+}
+
+mutation redeemInvite($input: RedeemInviteInput!) {
+  redeemInvite(input: $input) {
+    success
+    errors
     __typename
   }
 }
@@ -1459,6 +1483,17 @@ query homeUnauthed {
   }
 }
 
+query invitePreview($token: String!) {
+  invitePreview(token: $token) {
+    contact
+    method
+    isValid
+    inviterUsername
+    expiresAt
+    __typename
+  }
+}
+
 query language {
   me {
     id
@@ -2051,38 +2086,3 @@ subscription realtimePriceWs($currency: DisplayCurrency!) {
     __typename
   }
 }
-mutation createInvite($input: CreateInviteInput!) {
-  createInvite(input: $input) {
-    invite {
-      id
-      contact
-      method
-      status
-      createdAt
-      expiresAt
-      __typename
-    }
-    errors
-    __typename
-  }
-}
-
-mutation redeemInvite($input: RedeemInviteInput!) {
-  redeemInvite(input: $input) {
-    success
-    errors
-    __typename
-  }
-}
-
-query invitePreview($token: String!) {
-  invitePreview(token: $token) {
-    contact
-    method
-    isValid
-    inviterUsername
-    expiresAt
-    __typename
-  }
-}
-

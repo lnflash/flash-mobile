@@ -34,8 +34,8 @@ const PhoneNumberInput: React.FC<Props> = ({
   const styles = useStyles()
   const { mode } = useTheme().theme
 
-  const { data, loading } = useSupportedCountriesQuery()
-  const { isWhatsAppSupported, isSmsSupported, supportedCountries } = useMemo(() => {
+  const { data } = useSupportedCountriesQuery()
+  const { supportedCountries } = useMemo(() => {
     const currentCountry = data?.globals?.supportedCountries.find(
       (country) => country.id === countryCode,
     )
@@ -66,7 +66,7 @@ const PhoneNumberInput: React.FC<Props> = ({
         <CountryPicker
           theme={mode === "dark" ? DARK_THEME : DEFAULT_THEME}
           countryCode={countryCode || DEFAULT_COUNTRY_CODE}
-          countryCodes={supportedCountries as any}
+          countryCodes={supportedCountries}
           onSelect={(country) => setCountryCode(country.cca2)}
           renderFlagButton={({ countryCode, onOpen }) =>
             countryCode && (

@@ -541,7 +541,9 @@
     "backupTitle": "BTC qollqeykita saqey.",
     "backupDesc": "Qhapaq qollqeyki Bitcoin qollqeykita kutichipuspa, allinpaq qhaway.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Mana tinkuy — waqaychasqa qullqikuna rikuchisqa"
+    "offlineShowingCached": "Mana tinkuy — waqaychasqa qullqikuna rikuchisqa",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Mana kani PIN. {attemptsRemaining: number} rantiq kani.",
@@ -785,7 +787,8 @@
     "keysManagement": "Qhapaq qollqeta kutichinapaq (wallet backup)",
     "showBtcAccount": "Show Bitcoin cuenta",
     "hideBtcAccount": "Hide Bitcoin cuenta",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Mana atirqachu bancoykita tinkiy. Ama hina kaspa, wakmanta ruray.",
     "linkFailed": "Banco tinkiy mana atisqa. Ama hina kaspa, wakmanta ruray.",
     "linkTokenFailed": "Mana atirqachu hawa cuenta t'inkita chaskiyta. Ama hina kaspa, wakmanta ruray."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

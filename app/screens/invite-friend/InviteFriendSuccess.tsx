@@ -25,7 +25,6 @@ const InviteFriendSuccess: React.FC<Props> = ({ navigation, route }) => {
 
   // Get the contact from route params, or use default
   const contact = route.params?.contact || "your friend"
-  const method = route.params?.method || "EMAIL"
 
   const onPressDone = () => {
     navigation.popToTop()
@@ -35,19 +34,16 @@ const InviteFriendSuccess: React.FC<Props> = ({ navigation, route }) => {
     <Screen unsafe backgroundColor={colors.accent02}>
       <View style={styles.container}>
         <SendSuccess width={width / 1.2} height={width / 1.2} />
-        <Text type="h02" color={colors.white} style={{ textAlign: "center" }}>
+        <Text type="h02" color={colors.white} style={styles.title}>
           {LL.InviteFriend.invitationSuccessTitle({ value: contact })}
         </Text>
       </View>
       <PrimaryBtn
         label={LL.InviteFriend.done()}
         onPress={onPressDone}
-        btnStyle={{
-          backgroundColor: "#fff",
-          marginBottom: bottom + 10,
-          marginHorizontal: 20,
-        }}
-        txtStyle={{ color: "#002118" }}
+        // eslint-disable-next-line react-native/no-inline-styles
+        btnStyle={[styles.doneBtn, { marginBottom: bottom + 10 }]}
+        txtStyle={styles.doneBtnText}
       />
     </Screen>
   )
@@ -55,10 +51,24 @@ const InviteFriendSuccess: React.FC<Props> = ({ navigation, route }) => {
 
 export default InviteFriendSuccess
 
-const useStyles = makeStyles(() => ({
+// Brand text color for the Done button; no exact theme token, kept as a named
+// const so react-native/no-color-literals passes.
+const DONE_BTN_TEXT_COLOR = "#002118"
+
+const useStyles = makeStyles(({ colors }) => ({
   container: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  title: {
+    textAlign: "center",
+  },
+  doneBtn: {
+    backgroundColor: colors.white,
+    marginHorizontal: 20,
+  },
+  doneBtnText: {
+    color: DONE_BTN_TEXT_COLOR,
   },
 }))

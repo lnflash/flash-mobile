@@ -61,7 +61,7 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation, route }) => {
   }, [navigation, secretMenuCounter])
 
   useEffect(() => {
-    if (!!lnurl && isFocused) navigation.navigate("Card")
+    if (Boolean(lnurl) && isFocused) navigation.navigate("Card")
   }, [lnurl])
 
   const handleCreateDeviceAccount = async () => {
@@ -79,27 +79,25 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation, route }) => {
         index: 0,
         routes: [{ name: "authenticationCheck" }],
       })
-    } else {
+    } else if (inviteToken && prefilledContact) {
       // If we have an invite token, go to registration with prefilled contact
-      if (inviteToken && prefilledContact) {
-        if (contactMethod === "EMAIL") {
-          navigation.navigate("emailRegistrationInitiate", {
-            inviteToken,
-            prefilledEmail: prefilledContact,
-            inviterUsername,
-          })
-        } else {
-          // For SMS or WHATSAPP
-          navigation.navigate("phoneRegistrationInitiate", {
-            inviteToken,
-            prefilledPhone: prefilledContact,
-            inviterUsername,
-          })
-        }
+      if (contactMethod === "EMAIL") {
+        navigation.navigate("emailRegistrationInitiate", {
+          inviteToken,
+          prefilledEmail: prefilledContact,
+          inviterUsername,
+        })
       } else {
-        // No invite, go to normal phone login flow
-        navigation.navigate("phoneFlow")
+        // For SMS or WHATSAPP
+        navigation.navigate("phoneRegistrationInitiate", {
+          inviteToken,
+          prefilledPhone: prefilledContact,
+          inviterUsername,
+        })
       }
+    } else {
+      // No invite, go to normal phone login flow
+      navigation.navigate("phoneFlow")
     }
   }
 

@@ -141,7 +141,7 @@ const QuickStart = () => {
   }
   if (
     data?.me?.defaultAccount.level === AccountLevel.Zero ||
-    !!data?.me?.email?.address ||
+    Boolean(data?.me?.email?.address) ||
     persistentState?.closedQuickStartTypes?.includes("email")
   ) {
     carouselData = carouselData.filter((el) => el.type !== "email")
@@ -186,7 +186,10 @@ const QuickStart = () => {
 
   const renderItem = ({ item, index }: RenderItemProps) => {
     const ImageOrAsset = item.image
-    const isAsset = typeof ImageOrAsset === "number"
+    // SVG imports resolve to React components (functions); raster assets (png via
+    // require) resolve to a number in-app and to a stub object/string under jest.
+    // Keying off "not a component" detects the asset correctly in both.
+    const isAsset = typeof ImageOrAsset !== "function"
     const isHeartIcon = item.type === "invite" && isAsset
     return (
       <TouchableOpacity
@@ -245,9 +248,8 @@ const QuickStart = () => {
         />
       </View>
     )
-  } else {
-    return <View style={{ height: 20 }} />
   }
+  return <View style={{ height: 20 }} />
 }
 
 const useStyles = makeStyles(({ colors }) => ({

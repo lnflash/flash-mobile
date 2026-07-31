@@ -59,7 +59,7 @@ export const ContactPicker: React.FC<ContactPickerProps> = ({
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([])
   const [searchText, setSearchText] = useState("")
   const [loading, setLoading] = useState(false)
-  const [permissionGranted, setPermissionGranted] = useState(false)
+  const [, setPermissionGranted] = useState(false)
 
   // Request permission and load contacts when modal opens
   useEffect(() => {
@@ -87,8 +87,8 @@ export const ContactPicker: React.FC<ContactPickerProps> = ({
         // On iOS, we can open settings
         Alert.alert(
           "Permission Denied",
-          
-            "Contacts permission has been denied. Please enable it in Settings.",
+
+          "Contacts permission has been denied. Please enable it in Settings.",
           [
             { text: LL.common.cancel?.() || "Cancel", onPress: onClose, style: "cancel" },
             {
@@ -113,8 +113,8 @@ export const ContactPicker: React.FC<ContactPickerProps> = ({
           // User denied and selected "Don't ask again" or permission is blocked
           Alert.alert(
             "Permission Denied",
-            
-              "Contacts permission has been denied. Please enable it in Settings.",
+
+            "Contacts permission has been denied. Please enable it in Settings.",
             [
               {
                 text: LL.common.cancel?.() || "Cancel",
@@ -186,8 +186,8 @@ export const ContactPicker: React.FC<ContactPickerProps> = ({
           console.error("Error loading contacts:", error)
           Alert.alert(
             LL.common.error?.() || "Error",
-            
-              "Failed to load contacts. Please try again.",
+
+            "Failed to load contacts. Please try again.",
           )
         })
     } finally {
@@ -223,7 +223,6 @@ export const ContactPicker: React.FC<ContactPickerProps> = ({
   const handleSelectContact = (contact: Contact) => {
     const totalPhones = contact.phoneNumbers.length
     const totalEmails = contact.emailAddresses.length
-    const totalOptions = totalPhones + totalEmails
 
     // Case a: Only one phone number and no email
     if (totalPhones === 1 && totalEmails === 0) {
@@ -268,11 +267,7 @@ export const ContactPicker: React.FC<ContactPickerProps> = ({
     options.push({ text: LL.common.cancel?.() || "Cancel", style: "cancel" })
 
     // Show the selection dialog
-    Alert.alert(
-      "Select Contact Method",
-      undefined,
-      options,
-    )
+    Alert.alert("Select Contact Method", undefined, options)
   }
 
   const renderContact = ({ item }: { item: Contact }) => {
@@ -364,10 +359,7 @@ export const ContactPicker: React.FC<ContactPickerProps> = ({
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>
-                  {searchText
-                    ? "No contacts found"
-                    : 
-                      "No contacts with phone numbers"}
+                  {searchText ? "No contacts found" : "No contacts with phone numbers"}
                 </Text>
               </View>
             }

@@ -541,7 +541,9 @@
     "backupTitle": "Պահպանեք ձեր BTC թղթադրամը",
     "backupDesc": "Կառուցեք եւ ապահովեք ձեր Bitcoin դրամապանակը վերականգնման արտահայտությունը օգտագործելով:",
     "transfer": "Transfer",
-    "offlineShowingCached": "Կապ չկա — ցուցադրվում են պահված մնացորդները"
+    "offlineShowingCached": "Կապ չկա — ցուցադրվում են պահված մնացորդները",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Սխալ PIN: {attemptsRemaining: number} փորձեր են մնացել։ ",
@@ -785,7 +787,8 @@
     "keysManagement": "Հարցաթղթադրամների կրկնօրինակում",
     "showBtcAccount": "Ցույց տուր Bitcoin հաշիվ",
     "hideBtcAccount": "Թաքցնել Bitcoin հաշիվ",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Չհաջողվեց կապել ձեր բանկը։ Խնդրում ենք փորձել կրկին։",
     "linkFailed": "Բանկի կապումը ձախողվեց։ Խնդրում ենք փորձել կրկին։",
     "linkTokenFailed": "Չհաջողվեց ստանալ արտաքին հաշվի հղումը։ Խնդրում ենք փորձել կրկին։"
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

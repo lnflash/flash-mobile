@@ -541,7 +541,9 @@
     "backupTitle": "Yenza isipele se-BTC yakho ye-wallet",
     "backupDesc": "Yenza isipele kwaye ukhusele isipaji sakho se-Bitcoin usebenzisa ibinzana lokubuyisela kwimeko yesiqhelo.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Akukho qhagamshelo — kuboniswa iibhalansi ezigciniweyo"
+    "offlineShowingCached": "Akukho qhagamshelo — kuboniswa iibhalansi ezigciniweyo",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "I-PIN engalunganga. {attemptsRemaining: number} imizamo eseleyo.",
@@ -785,7 +787,8 @@
     "keysManagement": "Isipele seWallets ",
     "showBtcAccount": "Bonisa i-akhawunti ye-Bitcoin",
     "hideBtcAccount": "Fihla iakhawunti ye-Bitcoin",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Izilungiselelo Zokwazisa",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Ayikwazanga ukuqhagamshela ibhanki yakho. Nceda uzame kwakhona.",
     "linkFailed": "Ukuqhagamshelwa kwebhanki akuphumelelanga. Nceda uzame kwakhona.",
     "linkTokenFailed": "Ayikwazanga ukufumana ikhonkco le-akhawunti yangaphandle. Nceda uzame kwakhona."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

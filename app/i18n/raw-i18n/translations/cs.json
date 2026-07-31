@@ -541,7 +541,9 @@
     "backupTitle": "Zálohujte si peněženku BTC",
     "backupDesc": "Záloha a zabezpečení peněženky Bitcoin pomocí recovery phrase.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Bez připojení — zobrazují se uložené zůstatky"
+    "offlineShowingCached": "Bez připojení — zobrazují se uložené zůstatky",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Nesprávný kód PIN. {attemptsRemaining} zbývající pokusy.",
@@ -785,7 +787,8 @@
     "keysManagement": "Záložní záloha peněženky",
     "showBtcAccount": "Zobrazit Bitcoin účet",
     "hideBtcAccount": "Schovat účet Bitcoin",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Propojení banky se nezdařilo. Zkuste to prosím znovu.",
     "linkFailed": "Propojení banky selhalo. Zkuste to prosím znovu.",
     "linkTokenFailed": "Nepodařilo se získat odkaz externího účtu. Zkuste to prosím znovu."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

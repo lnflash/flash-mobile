@@ -32,8 +32,16 @@ jest.mock("@app/i18n/i18n-react", () => ({
 // the top of ContactPicker, so stub the native bridges to keep import side effects inert.
 jest.mock("react-native-contacts", () => ({ getAll: jest.fn().mockResolvedValue([]) }))
 jest.mock("react-native-permissions", () => ({
-  PERMISSIONS: { IOS: { CONTACTS: "ios.contacts" }, ANDROID: { READ_CONTACTS: "android.contacts" } },
-  RESULTS: { GRANTED: "granted", DENIED: "denied", BLOCKED: "blocked", UNAVAILABLE: "unavailable" },
+  PERMISSIONS: {
+    IOS: { CONTACTS: "ios.contacts" },
+    ANDROID: { READ_CONTACTS: "android.contacts" },
+  },
+  RESULTS: {
+    GRANTED: "granted",
+    DENIED: "denied",
+    BLOCKED: "blocked",
+    UNAVAILABLE: "unavailable",
+  },
   check: jest.fn().mockResolvedValue("denied"),
   request: jest.fn().mockResolvedValue("denied"),
   openSettings: jest.fn(),
@@ -72,8 +80,8 @@ const createInviteMock = (
 
 const renderScreen = (mocks: MockedResponse[] = []) => {
   const navigate = jest.fn()
-  const navigation = { navigate } as any
-  const route = { key: "InviteFriend", name: "InviteFriend", params: undefined } as any
+  const navigation = { navigate } as never
+  const route = { key: "InviteFriend", name: "InviteFriend", params: undefined } as never
   const utils = render(
     <ThemeProvider theme={theme}>
       <MockedProvider mocks={mocks} addTypename={false}>
@@ -85,10 +93,7 @@ const renderScreen = (mocks: MockedResponse[] = []) => {
 }
 
 // Switch to the Email tab and type an address. Returns nothing; asserts happen in tests.
-const enterEmail = async (
-  utils: ReturnType<typeof renderScreen>,
-  address: string,
-) => {
+const enterEmail = async (utils: ReturnType<typeof renderScreen>, address: string) => {
   const { getByText, getByPlaceholderText } = utils
   // Wait for i18n + screen to mount (TypesafeI18n gates rendering until the locale loads).
   await waitFor(() => expect(getByText(EMAIL_TAB)).toBeTruthy())

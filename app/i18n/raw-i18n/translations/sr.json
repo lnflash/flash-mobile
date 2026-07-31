@@ -541,7 +541,9 @@
     "backupTitle": "Заштити свој BTC новчаник",
     "backupDesc": "Заштити и осигурати свој Bitcoin новчаник користећи фразу за опоравак.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Нема везе — приказана су сачувана стања"
+    "offlineShowingCached": "Нема везе — приказана су сачувана стања",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Неисправан ПИН. Преостало је {attemptsRemaining: number} покушаја.",
@@ -785,7 +787,8 @@
     "keysManagement": "Резерван новчаника ",
     "showBtcAccount": "Показати Bitcoin рачун",
     "hideBtcAccount": "Скријте рачун Bitcoin",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Повезивање банке није успело. Покушајте поново.",
     "linkFailed": "Повезивање банке није успело. Покушајте поново.",
     "linkTokenFailed": "Преузимање везе спољног рачуна није успело. Покушајте поново."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

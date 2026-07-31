@@ -541,7 +541,9 @@
     "backupTitle": "Bản sao lưu ví BTC của bạn",
     "backupDesc": "Sao lưu và bảo mật ví Bitcoin của bạn bằng cách sử dụng recovery phrase.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Không có kết nối — đang hiển thị số dư đã lưu"
+    "offlineShowingCached": "Không có kết nối — đang hiển thị số dư đã lưu",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Mã PIN không chính xác. Còn lại {attemptsRemaining: number} lần thử.",
@@ -785,7 +787,8 @@
     "keysManagement": "Căn khoán dự phòng ví",
     "showBtcAccount": "Xem tài khoản Bitcoin",
     "hideBtcAccount": "ẩn tài khoản Bitcoin",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Không thể liên kết ngân hàng của bạn. Vui lòng thử lại.",
     "linkFailed": "Liên kết ngân hàng thất bại. Vui lòng thử lại.",
     "linkTokenFailed": "Không thể lấy liên kết tài khoản bên ngoài. Vui lòng thử lại."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

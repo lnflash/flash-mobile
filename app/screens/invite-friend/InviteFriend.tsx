@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { View, Alert, TouchableOpacity, ScrollView } from "react-native"
+import { View, Alert, TouchableOpacity } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { CountryCode } from "react-native-country-picker-modal"
@@ -95,7 +95,7 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
 
   const onSubmit = async () => {
     // Validate inputs based on selected method
-    let contact: string = ""
+    let contact = ""
     let method: InviteMethod = InviteMethod.Email
 
     if (inputMethod === "email") {

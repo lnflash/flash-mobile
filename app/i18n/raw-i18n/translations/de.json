@@ -541,7 +541,9 @@
     "backupTitle": "Backup Ihres BTC-Wallets",
     "backupDesc": "Backup und sichern Sie Ihre Bitcoin Brieftasche mit der Wiederherstellungsphrase.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Keine Verbindung — zwischengespeicherte Salden werden angezeigt"
+    "offlineShowingCached": "Keine Verbindung — zwischengespeicherte Salden werden angezeigt",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Falsche PIN. {attemptsRemaining} verbleibende Versuche.",
@@ -785,7 +787,8 @@
     "keysManagement": "Wallet-Backup",
     "showBtcAccount": "Zeigen Sie das Bitcoin-Konto",
     "hideBtcAccount": "Verstecken Sie das Bitcoin-Konto",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Deine Bank konnte nicht verknüpft werden. Bitte versuche es erneut.",
     "linkFailed": "Bankverknüpfung fehlgeschlagen. Bitte versuche es erneut.",
     "linkTokenFailed": "Der Link für das externe Konto konnte nicht abgerufen werden. Bitte versuche es erneut."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

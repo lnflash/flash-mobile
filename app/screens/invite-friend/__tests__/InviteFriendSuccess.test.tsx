@@ -29,8 +29,8 @@ jest.mock("react-native-safe-area-context", () => {
 
 const renderSuccess = (params?: { contact?: string; method?: string }) => {
   const popToTop = jest.fn()
-  const navigation = { popToTop } as any
-  const route = { key: "s", name: "InviteFriendSuccess", params } as any
+  const navigation = { popToTop } as never
+  const route = { key: "s", name: "InviteFriendSuccess", params } as never
   const utils = render(
     <ThemeProvider theme={theme}>
       <InviteFriendSuccess navigation={navigation} route={route} />
@@ -43,7 +43,10 @@ describe("InviteFriendSuccess screen", () => {
   afterEach(() => jest.clearAllMocks())
 
   it("renders the success title with the contact from route params", () => {
-    const { getByText } = renderSuccess({ contact: "friend@example.com", method: "EMAIL" })
+    const { getByText } = renderSuccess({
+      contact: "friend@example.com",
+      method: "EMAIL",
+    })
     expect(getByText("Invitation has been sent to friend@example.com")).toBeTruthy()
   })
 

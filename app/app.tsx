@@ -92,37 +92,37 @@ export const App = () => {
             <PersistentStateProvider>
               <ChatContextProvider>
                 {/* NIP-29 group chat is mounted per-group by the chat screen, not globally. */}
-                  <ActivityIndicatorProvider>
-                    <TypesafeI18n locale={detectDefaultLocale()}>
-                      <ThemeProvider theme={theme}>
-                        <GaloyClient>
-                          <FeatureFlagContextProvider>
-                            <ErrorBoundary FallbackComponent={ErrorScreen}>
-                              <NavigationContainerWrapper>
-                                <RootSiblingParent>
-                                  <NotificationsProvider>
-                                    <AppStateWrapper />
-                                    <PushNotificationComponent />
-                                    <BreezProvider>
-                                      <FlashcardProvider>
-                                        <InviteDeepLinkHandler>
-                                          <RootStack />
-                                        </InviteDeepLinkHandler>
-                                      </FlashcardProvider>
-                                    </BreezProvider>
-                                    <GaloyToast />
-                                    <NetworkErrorComponent />
-                                  </NotificationsProvider>
-                                </RootSiblingParent>
-                              </NavigationContainerWrapper>
-                            </ErrorBoundary>
-                            <ThemeSyncGraphql />
-                            <NostrKeyEnsurer />
-                          </FeatureFlagContextProvider>
-                        </GaloyClient>
-                      </ThemeProvider>
-                    </TypesafeI18n>
-                  </ActivityIndicatorProvider>
+                <ActivityIndicatorProvider>
+                  <TypesafeI18n locale={detectDefaultLocale()}>
+                    <ThemeProvider theme={theme}>
+                      <GaloyClient>
+                        <FeatureFlagContextProvider>
+                          <ErrorBoundary FallbackComponent={ErrorScreen}>
+                            <NavigationContainerWrapper>
+                              <RootSiblingParent>
+                                <NotificationsProvider>
+                                  <AppStateWrapper />
+                                  <PushNotificationComponent />
+                                  <BreezProvider>
+                                    <FlashcardProvider>
+                                      <InviteDeepLinkHandler>
+                                        <RootStack />
+                                      </InviteDeepLinkHandler>
+                                    </FlashcardProvider>
+                                  </BreezProvider>
+                                  <GaloyToast />
+                                  <NetworkErrorComponent />
+                                </NotificationsProvider>
+                              </RootSiblingParent>
+                            </NavigationContainerWrapper>
+                          </ErrorBoundary>
+                          <ThemeSyncGraphql />
+                          <NostrKeyEnsurer />
+                        </FeatureFlagContextProvider>
+                      </GaloyClient>
+                    </ThemeProvider>
+                  </TypesafeI18n>
+                </ActivityIndicatorProvider>
               </ChatContextProvider>
             </PersistentStateProvider>
           </PersistGate>
@@ -131,4 +131,3 @@ export const App = () => {
     </SafeAreaProvider>
   )
 }
-

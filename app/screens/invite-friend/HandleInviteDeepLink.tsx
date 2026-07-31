@@ -4,6 +4,7 @@ import { useNavigation, NavigationProp } from "@react-navigation/native"
 import {
   useRedeemInviteMutation,
   useInvitePreviewLazyQuery,
+  RedeemInviteMutationFn,
 } from "@app/graphql/generated"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -103,7 +104,7 @@ export const useInviteDeepLink = () => {
               inviteToken: token,
               prefilledEmail: contact,
               inviterUsername: inviterUsername || undefined,
-            } as any)
+            } as never)
           } else {
             // For SMS or WHATSAPP, go to phone login flow
             navigation.navigate("phoneFlow", {
@@ -113,7 +114,7 @@ export const useInviteDeepLink = () => {
                 prefilledPhone: contact,
                 inviterUsername: inviterUsername || undefined,
               },
-            } as any)
+            } as never)
           }
         }, 500)
       }
@@ -126,7 +127,7 @@ export const useInviteDeepLink = () => {
 
 // Helper function to check and redeem pending invite after login
 export const redeemPendingInvite = async (
-  redeemInviteMutation: any,
+  redeemInviteMutation: RedeemInviteMutationFn,
   showAlert = true,
 ) => {
   try {
