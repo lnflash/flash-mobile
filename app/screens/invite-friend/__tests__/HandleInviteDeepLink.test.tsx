@@ -147,13 +147,53 @@ describe("redeemPendingInvite", () => {
     asyncStorage.getItem.mockResolvedValue(storedInvite("tok-123"))
     const redeem = jest.fn().mockResolvedValue({
       data: {
-        redeemInvite: { success: false, errors: ["This invite has already been used"] },
+        redeemInvite: {
+          success: false,
+          errors: ["This invitation has already been used"],
+        },
       },
     })
 
     const result = await redeemPendingInvite(redeem, true)
 
     expect(Alert.alert).not.toHaveBeenCalled()
+    expect(asyncStorage.removeItem).toHaveBeenCalledWith("pendingInviteToken")
+    expect(result.success).toBe(false)
+  })
+
+  it("silently clears the token for the one-reward-per-invitee rejection", async () => {
+    // Emitted by the resolver's pre-check AND its duplicate-key race path —
+    // permanent for this account, and not worth nagging the user about.
+    asyncStorage.getItem.mockResolvedValue(storedInvite("tok-123"))
+    const redeem = jest.fn().mockResolvedValue({
+      data: {
+        redeemInvite: {
+          success: false,
+          errors: ["You have already redeemed an invitation"],
+        },
+      },
+    })
+
+    const result = await redeemPendingInvite(redeem, true)
+
+    expect(Alert.alert).not.toHaveBeenCalled()
+    expect(asyncStorage.removeItem).toHaveBeenCalledWith("pendingInviteToken")
+    expect(result.success).toBe(false)
+  })
+
+  it("clears the token for a revoked invite ('no longer valid')", async () => {
+    asyncStorage.getItem.mockResolvedValue(storedInvite("tok-123"))
+    const redeem = jest.fn().mockResolvedValue({
+      data: {
+        redeemInvite: {
+          success: false,
+          errors: ["This invitation is no longer valid"],
+        },
+      },
+    })
+
+    const result = await redeemPendingInvite(redeem, true)
+
     expect(asyncStorage.removeItem).toHaveBeenCalledWith("pendingInviteToken")
     expect(result.success).toBe(false)
   })

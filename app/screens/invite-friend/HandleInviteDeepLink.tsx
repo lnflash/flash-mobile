@@ -184,12 +184,11 @@ export const useInviteDeepLink = () => {
 }
 
 // Backend error messages that permanently invalidate a token — retrying can
-// never succeed, so the stored token is cleared when seen. Sources in the
-// flash repo: the app layer (src/app/invite/redeem-invite.ts) AND the GraphQL
-// resolver (src/graphql/public/root/mutation/redeem-invite.ts), which emits
-// the "new users only" / "different phone number" strings. Substring-matching
+// never succeed, so the stored token is cleared when seen. Source of truth in
+// the flash repo: the GraphQL resolver
+// (src/graphql/public/root/mutation/redeem-invite.ts). Substring-matching
 // prose across repos is fragile — machine-readable error codes would be the
-// durable fix.
+// durable fix; keep this list in sync when the resolver's errors change.
 const TERMINAL_REDEEM_ERRORS = [
   "expired",
   "already been used",
@@ -197,7 +196,15 @@ const TERMINAL_REDEEM_ERRORS = [
   "your own invitation",
   "for new users only",
   "a different phone number",
+  // one-reward-per-invitee invariant (pre-check + duplicate-key race)
+  "already redeemed an invitation",
+  // revoked invites
+  "no longer valid",
 ]
+
+// Terminal errors that shouldn't nag the user with an alert — the invite is
+// simply consumed/duplicate from their point of view.
+const SILENT_REDEEM_ERRORS = ["already been used", "already redeemed an invitation"]
 
 const isTerminalRedeemError = (message: string) => {
   const normalized = message.toLowerCase()
@@ -249,7 +256,10 @@ export const redeemPendingInvite = async (
         await AsyncStorage.removeItem(PENDING_INVITE_KEY)
       }
       // Only show alert for non-duplicate errors
-      if (showAlert && !errorMessage.includes("already been used")) {
+      const isSilent = SILENT_REDEEM_ERRORS.some((s) =>
+        errorMessage.toLowerCase().includes(s),
+      )
+      if (showAlert && !isSilent) {
         Alert.alert("Notice", errorMessage)
       }
       return { success: false, message: errorMessage }
