@@ -46,7 +46,7 @@ const readPendingInvite = async (): Promise<string | null> => {
     }
     return parsed.token
   } catch {
-    // Unparseable value (or pre-JSON legacy format) — discard it.
+    // Unparsable value (or pre-JSON legacy format) — discard it.
     await AsyncStorage.removeItem(PENDING_INVITE_KEY)
     return null
   }
@@ -262,6 +262,10 @@ export const redeemPendingInvite = async (
     console.error("Error redeeming pending invite:", error)
     return { success: false, message: "Error redeeming invite" }
   } finally {
+    // Safe: the guard is set synchronously before any await, and this reset
+    // doesn't depend on the variable's in-between value — a documented
+    // require-atomic-updates false-positive pattern.
+    // eslint-disable-next-line require-atomic-updates
     redeemInFlight = false
   }
 }
