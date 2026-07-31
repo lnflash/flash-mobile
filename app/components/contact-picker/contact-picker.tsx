@@ -149,47 +149,45 @@ export const ContactPicker: React.FC<ContactPickerProps> = ({
   const loadContacts = async () => {
     setLoading(true)
     try {
-      Contacts.getAll()
-        .then((contactsList) => {
-          // Filter contacts with phone numbers or email addresses and sort alphabetically
-          const contactsWithContactInfo = contactsList
-            .filter(
-              (contact) =>
-                (contact.phoneNumbers && contact.phoneNumbers.length > 0) ||
-                (contact.emailAddresses && contact.emailAddresses.length > 0),
-            )
-            .map((contact) => ({
-              givenName: contact.givenName || "",
-              familyName: contact.familyName || "",
-              phoneNumbers:
-                contact.phoneNumbers?.map((phone) => ({
-                  label: phone.label || "mobile",
-                  number: phone.number,
-                })) || [],
-              emailAddresses:
-                contact.emailAddresses?.map((email) => ({
-                  label: email.label || "personal",
-                  email: email.email,
-                })) || [],
-              recordID: contact.recordID,
-            }))
-            .sort((a, b) => {
-              const nameA = `${a.givenName} ${a.familyName}`.toLowerCase()
-              const nameB = `${b.givenName} ${b.familyName}`.toLowerCase()
-              return nameA.localeCompare(nameB)
-            })
-
-          setContacts(contactsWithContactInfo)
-          setFilteredContacts(contactsWithContactInfo)
+      // Await the read so the loading spinner actually covers it — a floated
+      // promise here made the finally clear `loading` before contacts arrived.
+      const contactsList = await Contacts.getAll()
+      // Filter contacts with phone numbers or email addresses and sort alphabetically
+      const contactsWithContactInfo = contactsList
+        .filter(
+          (contact) =>
+            (contact.phoneNumbers && contact.phoneNumbers.length > 0) ||
+            (contact.emailAddresses && contact.emailAddresses.length > 0),
+        )
+        .map((contact) => ({
+          givenName: contact.givenName || "",
+          familyName: contact.familyName || "",
+          phoneNumbers:
+            contact.phoneNumbers?.map((phone) => ({
+              label: phone.label || "mobile",
+              number: phone.number,
+            })) || [],
+          emailAddresses:
+            contact.emailAddresses?.map((email) => ({
+              label: email.label || "personal",
+              email: email.email,
+            })) || [],
+          recordID: contact.recordID,
+        }))
+        .sort((a, b) => {
+          const nameA = `${a.givenName} ${a.familyName}`.toLowerCase()
+          const nameB = `${b.givenName} ${b.familyName}`.toLowerCase()
+          return nameA.localeCompare(nameB)
         })
-        .catch((error) => {
-          console.error("Error loading contacts:", error)
-          Alert.alert(
-            LL.common.error?.() || "Error",
 
-            "Failed to load contacts. Please try again.",
-          )
-        })
+      setContacts(contactsWithContactInfo)
+      setFilteredContacts(contactsWithContactInfo)
+    } catch (error) {
+      console.error("Error loading contacts:", error)
+      Alert.alert(
+        LL.common.error?.() || "Error",
+        "Failed to load contacts. Please try again.",
+      )
     } finally {
       setLoading(false)
     }

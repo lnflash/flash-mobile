@@ -96,7 +96,14 @@ export const useInviteDeepLink = () => {
       return
     }
 
-    const token = decodeURIComponent(tokenMatch[1])
+    // Malformed %-encoding must not throw out of this async handler; fall
+    // back to the raw captured value — the backend validates tokens anyway.
+    let token: string
+    try {
+      token = decodeURIComponent(tokenMatch[1])
+    } catch {
+      token = tokenMatch[1]
+    }
 
     try {
       if (!isAuthed) {
@@ -113,9 +120,22 @@ export const useInviteDeepLink = () => {
       })
 
       if (error) {
-        // Transient failure — keep any stored token so post-signup redemption
-        // can still succeed.
-        Alert.alert("Error", "Unable to fetch invitation details. Please try again.")
+        if (error.networkError) {
+          // Genuinely transient (offline, server unreachable) — keep any
+          // stored token so post-signup redemption can still succeed.
+          Alert.alert("Error", "Unable to fetch invitation details. Please try again.")
+          return
+        }
+        // GraphQL error: the backend throws for malformed/unknown tokens
+        // (only existing-but-expired/used invites come back as isValid:false),
+        // so this token can never redeem — don't leave it stored for a doomed
+        // redemption and a stray post-signup alert.
+        await AsyncStorage.removeItem(PENDING_INVITE_KEY)
+        Alert.alert(
+          "Invalid Invitation",
+          "This invitation link is invalid or has expired.",
+          [{ text: "OK" }],
+        )
         return
       }
 
@@ -130,7 +150,7 @@ export const useInviteDeepLink = () => {
         return
       }
 
-      const { contact, method, inviterUsername } = previewData.invitePreview
+      const { method, inviterUsername } = previewData.invitePreview
 
       if (isAuthed) {
         // Existing user - show message but don't redeem
@@ -142,25 +162,17 @@ export const useInviteDeepLink = () => {
           [{ text: "OK" }],
         )
       } else {
-        // If not logged in, navigate to phone login flow (which handles both login and registration)
+        // If not logged in, navigate to phone login flow (which handles both
+        // login and registration). No params: the login/registration screens
+        // don't consume invite context — redemption rides the stored token
+        // (redeemPendingInvite) after signup completes.
         // Add a small delay to ensure navigation is ready
         setTimeout(() => {
           if (method === "EMAIL") {
-            navigation.navigate("emailLoginInitiate", {
-              inviteToken: token,
-              prefilledEmail: contact,
-              inviterUsername: inviterUsername || undefined,
-            } as never)
+            navigation.navigate("emailLoginInitiate")
           } else {
             // For SMS or WHATSAPP, go to phone login flow
-            navigation.navigate("phoneFlow", {
-              screen: "phoneLoginInitiate",
-              params: {
-                inviteToken: token,
-                prefilledPhone: contact,
-                inviterUsername: inviterUsername || undefined,
-              },
-            } as never)
+            navigation.navigate("phoneFlow", { screen: "phoneLoginInitiate" })
           }
         }, 500)
       }
@@ -171,13 +183,20 @@ export const useInviteDeepLink = () => {
   }
 }
 
-// Backend ValidationError messages that permanently invalidate a token —
-// retrying can never succeed, so the stored token is cleared when seen.
+// Backend error messages that permanently invalidate a token — retrying can
+// never succeed, so the stored token is cleared when seen. Sources in the
+// flash repo: the app layer (src/app/invite/redeem-invite.ts) AND the GraphQL
+// resolver (src/graphql/public/root/mutation/redeem-invite.ts), which emits
+// the "new users only" / "different phone number" strings. Substring-matching
+// prose across repos is fragile — machine-readable error codes would be the
+// durable fix.
 const TERMINAL_REDEEM_ERRORS = [
   "expired",
   "already been used",
   "invalid invitation token",
   "your own invitation",
+  "for new users only",
+  "a different phone number",
 ]
 
 const isTerminalRedeemError = (message: string) => {

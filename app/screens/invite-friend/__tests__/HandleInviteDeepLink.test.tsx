@@ -158,6 +158,25 @@ describe("redeemPendingInvite", () => {
     expect(result.success).toBe(false)
   })
 
+  it("clears the token for the resolver's 'new users only' terminal error", async () => {
+    // Emitted by the GraphQL resolver (not the app layer): permanent for this
+    // account, so the token must not be kept for a doomed retry.
+    asyncStorage.getItem.mockResolvedValue(storedInvite("tok-123"))
+    const redeem = jest.fn().mockResolvedValue({
+      data: {
+        redeemInvite: {
+          success: false,
+          errors: ["This invitation is for new users only"],
+        },
+      },
+    })
+
+    const result = await redeemPendingInvite(redeem, true)
+
+    expect(asyncStorage.removeItem).toHaveBeenCalledWith("pendingInviteToken")
+    expect(result.success).toBe(false)
+  })
+
   it("keeps the token when the response has neither success nor errors", async () => {
     asyncStorage.getItem.mockResolvedValue(storedInvite("tok-123"))
     const redeem = jest.fn().mockResolvedValue({ data: { redeemInvite: {} } })
@@ -253,17 +272,11 @@ describe("useInviteDeepLink", () => {
     )
     // No spoofable recipient header is sent — the backend ignores it.
     expect(mockFetchPreview.mock.calls[0][0]).not.toHaveProperty("context")
-    await waitFor(
-      () =>
-        expect(mockNavigate).toHaveBeenCalledWith(
-          "emailLoginInitiate",
-          expect.objectContaining({
-            inviteToken: token,
-            prefilledEmail: "friend@example.com",
-          }),
-        ),
-      { timeout: 2000 },
-    )
+    // No params: the login screens don't consume invite context — redemption
+    // rides the stored token after signup.
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("emailLoginInitiate"), {
+      timeout: 2000,
+    })
   })
 
   it("routes an unauthed WHATSAPP invite into the phone login flow", async () => {
@@ -278,13 +291,9 @@ describe("useInviteDeepLink", () => {
 
     await waitFor(
       () =>
-        expect(mockNavigate).toHaveBeenCalledWith(
-          "phoneFlow",
-          expect.objectContaining({
-            screen: "phoneLoginInitiate",
-            params: expect.objectContaining({ inviteToken: token }),
-          }),
-        ),
+        expect(mockNavigate).toHaveBeenCalledWith("phoneFlow", {
+          screen: "phoneLoginInitiate",
+        }),
       { timeout: 2000 },
     )
   })
@@ -322,6 +331,70 @@ describe("useInviteDeepLink", () => {
         expect.objectContaining({ variables: { token: "abc+def_123" } }),
       ),
     )
+  })
+
+  it("falls back to the raw token when %-decoding fails (no crash)", async () => {
+    mockUseIsAuthed.mockReturnValue(false)
+    jest.spyOn(Linking, "getInitialURL").mockResolvedValue("flash://invite?token=%zz")
+    mockFetchPreview.mockResolvedValue(validPreview("EMAIL"))
+
+    render(<HookHost />)
+
+    // decodeURIComponent("%zz") throws URIError; the raw captured value must
+    // be passed through instead of an unhandled rejection.
+    await waitFor(() =>
+      expect(mockFetchPreview).toHaveBeenCalledWith(
+        expect.objectContaining({ variables: { token: "%zz" } }),
+      ),
+    )
+  })
+
+  it("keeps the stored token on a network error fetching the preview", async () => {
+    const token = "g".repeat(40)
+    mockUseIsAuthed.mockReturnValue(false)
+    jest
+      .spyOn(Linking, "getInitialURL")
+      .mockResolvedValue(`flash://invite?token=${token}`)
+    mockFetchPreview.mockResolvedValue({
+      error: { networkError: new Error("offline") },
+    })
+
+    render(<HookHost />)
+
+    await waitFor(() =>
+      expect(Alert.alert).toHaveBeenCalledWith(
+        "Error",
+        "Unable to fetch invitation details. Please try again.",
+      ),
+    )
+    expect(asyncStorage.setItem).toHaveBeenCalled()
+    expect(asyncStorage.removeItem).not.toHaveBeenCalled()
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it("clears the stored token on a GraphQL error fetching the preview", async () => {
+    const token = "h".repeat(40)
+    mockUseIsAuthed.mockReturnValue(false)
+    jest
+      .spyOn(Linking, "getInitialURL")
+      .mockResolvedValue(`flash://invite?token=${token}`)
+    // The backend throws GraphQL errors for malformed/unknown tokens — a
+    // retry can never succeed, so the doomed token must not linger.
+    mockFetchPreview.mockResolvedValue({
+      error: { graphQLErrors: [{ message: "Invalid or expired invitation" }] },
+    })
+
+    render(<HookHost />)
+
+    await waitFor(() =>
+      expect(Alert.alert).toHaveBeenCalledWith(
+        "Invalid Invitation",
+        expect.any(String),
+        expect.any(Array),
+      ),
+    )
+    expect(asyncStorage.removeItem).toHaveBeenCalledWith("pendingInviteToken")
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 
   it("alerts an authed user without storing the token", async () => {
