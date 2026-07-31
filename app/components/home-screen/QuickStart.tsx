@@ -249,10 +249,13 @@ const QuickStart = () => {
       </View>
     )
   }
-  return <View style={{ height: 20 }} />
+  return <View style={styles.spacer} />
 }
 
 const useStyles = makeStyles(({ colors }) => ({
+  spacer: {
+    height: 20,
+  },
   itemContainer: {
     flexDirection: "row",
     alignItems: "center",
