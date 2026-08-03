@@ -874,6 +874,14 @@ type Globals {
   """
   nodesIds: [String!]!
 
+  """
+  Whether referral-reward entry points (e.g. the "invite a
+  friend" home-screen card) should be shown to the user. Controlled by the
+  instance-wide referralReward feature flag; when false the referral payout is
+  disabled, so reward-promising UI must stay hidden.
+  """
+  referralRewardEnabled: Boolean!
+
   """A list of countries and their supported auth channels"""
   supportedCountries: [Country!]!
 

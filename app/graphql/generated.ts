@@ -910,6 +910,13 @@ export type Globals = {
    * This can be used to know if an invoice belongs to one of our nodes.
    */
   readonly nodesIds: ReadonlyArray<Scalars['String']['output']>;
+  /**
+   * Whether referral-reward entry points (e.g. the "invite a
+   * friend" home-screen card) should be shown to the user. Controlled by the
+   * instance-wide referralReward feature flag; when false the referral payout is
+   * disabled, so reward-promising UI must stay hidden.
+   */
+  readonly referralRewardEnabled: Scalars['Boolean']['output'];
   /** A list of countries and their supported auth channels */
   readonly supportedCountries: ReadonlyArray<Country>;
   /**
@@ -3225,6 +3232,11 @@ export type CaptchaCreateChallengeMutationVariables = Exact<{ [key: string]: nev
 
 
 export type CaptchaCreateChallengeMutation = { readonly __typename: 'Mutation', readonly captchaCreateChallenge: { readonly __typename: 'CaptchaCreateChallengePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string }>, readonly result?: { readonly __typename: 'CaptchaCreateChallengeResult', readonly id: string, readonly challengeCode: string, readonly newCaptcha: boolean, readonly failbackMode: boolean } | null } };
+
+export type ReferralRewardFlagQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ReferralRewardFlagQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly referralRewardEnabled: boolean } | null };
 
 export type TransferFlagsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6713,6 +6725,40 @@ export function useCaptchaCreateChallengeMutation(baseOptions?: Apollo.MutationH
 export type CaptchaCreateChallengeMutationHookResult = ReturnType<typeof useCaptchaCreateChallengeMutation>;
 export type CaptchaCreateChallengeMutationResult = Apollo.MutationResult<CaptchaCreateChallengeMutation>;
 export type CaptchaCreateChallengeMutationOptions = Apollo.BaseMutationOptions<CaptchaCreateChallengeMutation, CaptchaCreateChallengeMutationVariables>;
+export const ReferralRewardFlagDocument = gql`
+    query referralRewardFlag {
+  globals {
+    referralRewardEnabled
+  }
+}
+    `;
+
+/**
+ * __useReferralRewardFlagQuery__
+ *
+ * To run a query within a React component, call `useReferralRewardFlagQuery` and pass it any options that fit your needs.
+ * When your component renders, `useReferralRewardFlagQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useReferralRewardFlagQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useReferralRewardFlagQuery(baseOptions?: Apollo.QueryHookOptions<ReferralRewardFlagQuery, ReferralRewardFlagQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ReferralRewardFlagQuery, ReferralRewardFlagQueryVariables>(ReferralRewardFlagDocument, options);
+      }
+export function useReferralRewardFlagLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ReferralRewardFlagQuery, ReferralRewardFlagQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ReferralRewardFlagQuery, ReferralRewardFlagQueryVariables>(ReferralRewardFlagDocument, options);
+        }
+export type ReferralRewardFlagQueryHookResult = ReturnType<typeof useReferralRewardFlagQuery>;
+export type ReferralRewardFlagLazyQueryHookResult = ReturnType<typeof useReferralRewardFlagLazyQuery>;
+export type ReferralRewardFlagQueryResult = Apollo.QueryResult<ReferralRewardFlagQuery, ReferralRewardFlagQueryVariables>;
 export const TransferFlagsDocument = gql`
     query transferFlags {
   globals {

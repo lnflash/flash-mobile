@@ -18,7 +18,7 @@ import FriendsIcon from "@app/assets/images/heart-symbol.png"
 import { AdvancedModeModal } from "../advanced-mode-modal"
 
 // hooks
-import { useAccountUpgrade } from "@app/hooks"
+import { useAccountUpgrade, useReferralRewardFlag } from "@app/hooks"
 import { useAppSelector } from "@app/store/redux"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
@@ -56,6 +56,7 @@ const QuickStart = () => {
   const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
 
   const { data, loading } = useHomeAuthedQuery()
+  const { referralRewardEnabled } = useReferralRewardFlag()
 
   useAccountUpgrade()
 
@@ -168,6 +169,13 @@ const QuickStart = () => {
     carouselData = carouselData.filter((el) => el.type !== "socialPost")
   }
   if (persistentState?.closedQuickStartTypes?.includes("invite")) {
+    carouselData = carouselData.filter((el) => el.type !== "invite")
+  }
+  // The invite card promises a referral reward ("Get rewards for inviting
+  // friends"). Hide it unless rewards are actually enabled instance-wide — the
+  // backend globals flag is the source of truth, so the card and the payout
+  // can never disagree. Defaults hidden while the flag is still loading.
+  if (!referralRewardEnabled) {
     carouselData = carouselData.filter((el) => el.type !== "invite")
   }
 

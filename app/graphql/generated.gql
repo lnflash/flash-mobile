@@ -1694,6 +1694,13 @@ query realtimePriceUnauthed($currency: DisplayCurrency!) {
   }
 }
 
+query referralRewardFlag {
+  globals {
+    referralRewardEnabled
+    __typename
+  }
+}
+
 query scanningQRCodeScreen {
   globals {
     network
