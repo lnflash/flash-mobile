@@ -291,7 +291,7 @@ describe("useInviteDeepLink", () => {
     expect(Alert.alert).not.toHaveBeenCalled()
   })
 
-  it("stores the token (JSON) and routes an unauthed EMAIL invite to email login", async () => {
+  it("stores the token (JSON) and routes an unauthed EMAIL invite into the phone login flow", async () => {
     const token = "a".repeat(40)
     mockUseIsAuthed.mockReturnValue(false)
     jest
@@ -312,11 +312,16 @@ describe("useInviteDeepLink", () => {
     )
     // No spoofable recipient header is sent — the backend ignores it.
     expect(mockFetchPreview.mock.calls[0][0]).not.toHaveProperty("context")
-    // No params: the login screens don't consume invite context — redemption
-    // rides the stored token after signup.
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("emailLoginInitiate"), {
-      timeout: 2000,
-    })
+    // Invite channel and signup method are decoupled: an EMAIL invite routes
+    // to PHONE signup (email signup does not exist), and redemption rides the
+    // stored token after signup — same path as SMS/WhatsApp invites.
+    await waitFor(
+      () =>
+        expect(mockNavigate).toHaveBeenCalledWith("phoneFlow", {
+          screen: "phoneLoginInitiate",
+        }),
+      { timeout: 2000 },
+    )
   })
 
   it("routes an unauthed WHATSAPP invite into the phone login flow", async () => {

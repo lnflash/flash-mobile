@@ -150,7 +150,7 @@ export const useInviteDeepLink = () => {
         return
       }
 
-      const { method, inviterUsername } = previewData.invitePreview
+      const { inviterUsername } = previewData.invitePreview
 
       if (isAuthed) {
         // Existing user - show message but don't redeem
@@ -166,14 +166,14 @@ export const useInviteDeepLink = () => {
         // login and registration). No params: the login/registration screens
         // don't consume invite context — redemption rides the stored token
         // (redeemPendingInvite) after signup completes.
-        // Add a small delay to ensure navigation is ready
+        //
+        // All invitees sign up by PHONE regardless of the invite channel
+        // (email/SMS/WhatsApp). Invite channel and signup method are decoupled:
+        // redemption ignores email-match, so an email invite still redeems
+        // after a phone signup. (Email-based signup does not exist yet.)
+        // Add a small delay to ensure navigation is ready.
         setTimeout(() => {
-          if (method === "EMAIL") {
-            navigation.navigate("emailLoginInitiate")
-          } else {
-            // For SMS or WHATSAPP, go to phone login flow
-            navigation.navigate("phoneFlow", { screen: "phoneLoginInitiate" })
-          }
+          navigation.navigate("phoneFlow", { screen: "phoneLoginInitiate" })
         }, 500)
       }
     } catch (error) {
