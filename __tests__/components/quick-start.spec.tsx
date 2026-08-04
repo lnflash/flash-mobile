@@ -17,6 +17,8 @@ jest.mock("@app/store/redux", () => ({
 }))
 jest.mock("@app/hooks", () => ({
   useAccountUpgrade: jest.fn(),
+  // Rewards enabled -> the invite card renders (matches default behavior).
+  useReferralRewardFlag: jest.fn(() => ({ referralRewardEnabled: true, loading: false })),
 }))
 jest.mock("@app/store/persistent-state", () => ({
   usePersistentStateContext: () => ({
