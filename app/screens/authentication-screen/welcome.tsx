@@ -28,13 +28,10 @@ export const Welcome: React.FC<Props> = ({ navigation }) => {
   const [redeemInviteMutation] = useRedeemInviteMutation()
 
   useEffect(() => {
-    // Check and redeem pending invite when user reaches Welcome screen
+    // Check and redeem pending invite when user reaches Welcome screen.
+    // Fire-and-forget: redeemPendingInvite handles its own errors/alerts.
     if (isAuthed) {
-      redeemPendingInvite(redeemInviteMutation, true).then((result) => {
-        if (result.success) {
-          console.log("Invite redeemed successfully after onboarding")
-        }
-      })
+      redeemPendingInvite(redeemInviteMutation, true)
     }
   }, [isAuthed, redeemInviteMutation])
 

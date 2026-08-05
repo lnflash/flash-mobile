@@ -109,12 +109,12 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
       return null
     },
     subscribe: (listener) => {
-      console.log("listener", listener)
       const onReceiveURL = ({ url }: { url: string }) => {
-        console.log("onReceiveURL", url)
+        // Never log the URL itself: invite links carry one-time tokens and
+        // console output survives into release builds (no remove-console).
+        console.log("onReceiveURL", { hasUrl: Boolean(url) })
         // Invite URLs are handled by InviteDeepLinkHandler, not the navigation container
         if (url && url.includes("invite")) {
-          console.log("Skipping invite URL in navigation container")
           return
         }
         listener(url)
