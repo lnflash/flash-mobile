@@ -22,6 +22,7 @@ import { OnDeviceSecuritySetting } from "./settings/sp-security"
 import { NeedHelpSetting } from "./settings/community-need-help"
 import { NotificationSetting } from "./settings/sp-notifications"
 import { JoinCommunitySetting } from "./settings/community-join"
+import { InviteFriendSetting } from "./settings/invite-friend"
 import { NostrSecret } from "./settings/nostr-secret"
 import { BackupWallet } from "./settings/backup-wallet"
 import { ImportWallet } from "./settings/import-wallet"
@@ -89,7 +90,7 @@ const items = {
     ExportSparkLogsSetting,
     //  ApiAccessSetting
   ],
-  community: [JoinCommunitySetting],
+  community: [JoinCommunitySetting, InviteFriendSetting],
 }
 
 export const SettingsScreen: React.FC = () => {

@@ -502,7 +502,9 @@
     "upgradeTitle": "Upgrade your account",
     "upgradeTitlePending": "Upgrade request is pending",
     "transfer": "Transfer",
-    "offlineShowingCached": "Geen verbinding — gekasde saldo's word gewys"
+    "offlineShowingCached": "Geen verbinding — gekasde saldo's word gewys",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Verkeerde PIN. {attemptsRemaining: number} probeerslae oor. ",
@@ -746,7 +748,8 @@
     "showSeedPhrase": "Reveal recovery phrase",
     "staticQr": "Printable Static QR Code",
     "staticQrCopied": "Your static QR code link has been copied",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notaverstellings",
@@ -1698,5 +1701,16 @@
     "exchangeFailed": "Kon nie jou bank koppel nie. Probeer asseblief weer.",
     "linkFailed": "Bankkoppeling het misluk. Probeer asseblief weer.",
     "linkTokenFailed": "Kon nie die eksterne rekeningskakel kry nie. Probeer asseblief weer."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

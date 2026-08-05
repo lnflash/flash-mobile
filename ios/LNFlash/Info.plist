@@ -96,6 +96,8 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Activate your camera to scan QR codes and record videos for posts</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Access your contacts to easily invite friends to Flash</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record audio for video posts</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

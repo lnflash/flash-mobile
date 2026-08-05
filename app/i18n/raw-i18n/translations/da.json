@@ -541,7 +541,9 @@
     "backupTitle": "Backup din BTC tegnebog",
     "backupDesc": "Backup og sikre din Bitcoin tegnebog ved hjælp af recovery phrase.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Ingen forbindelse — viser gemte saldi"
+    "offlineShowingCached": "Ingen forbindelse — viser gemte saldi",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Forkert PIN-kode. {attemptsRemaining: number} forsøg tilbage.",
@@ -785,7 +787,8 @@
     "keysManagement": "Bankmandskabs sikkerhedskopiering",
     "showBtcAccount": "Vis Bitcoin konto",
     "hideBtcAccount": "Hide Bitcoin konto",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notifikationsindstillinger",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Kunne ikke tilknytte din bank. Prøv venligst igen.",
     "linkFailed": "Banktilknytning mislykkedes. Prøv venligst igen.",
     "linkTokenFailed": "Kunne ikke hente linket til den eksterne konto. Prøv venligst igen."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

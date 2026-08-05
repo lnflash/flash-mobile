@@ -541,7 +541,9 @@
     "backupTitle": "Κάντε αντίγραφο ασφαλείας στο πορτοφόλι σας BTC",
     "backupDesc": "Κάντε αντίγραφο ασφαλείας και ασφαλίστε το πορτοφόλι σας Bitcoin χρησιμοποιώντας τη φράση recovery.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Χωρίς σύνδεση — εμφανίζονται αποθηκευμένα υπόλοιπα"
+    "offlineShowingCached": "Χωρίς σύνδεση — εμφανίζονται αποθηκευμένα υπόλοιπα",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Λανθασμένο PIN. {attemptsRemaining: number} προσπάθειες που απομένουν.",
@@ -785,7 +787,8 @@
     "keysManagement": "Υποστήριξη του πορτοφόλι",
     "showBtcAccount": "Δείξτε λογαριασμό Bitcoin",
     "hideBtcAccount": "Κρύψτε το λογαριασμό Bitcoin",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Ρυθμίσεις ειδοποιήσεων",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Η σύνδεση της τράπεζας απέτυχε. Δοκίμασε ξανά.",
     "linkFailed": "Η σύνδεση της τράπεζας απέτυχε. Δοκίμασε ξανά.",
     "linkTokenFailed": "Αποτυχία λήψης συνδέσμου εξωτερικού λογαριασμού. Δοκίμασε ξανά."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

@@ -1,6 +1,7 @@
 ENV['RCT_NEW_ARCH_ENABLED'] = '1'
 require_relative '../node_modules/react-native/scripts/react_native_pods'
 require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+require_relative '../node_modules/react-native-permissions/scripts/setup'
 
 platform :ios, '15.1'
 prepare_react_native_project!
@@ -14,6 +15,9 @@ end
 $RNFirebaseAnalyticsWithoutAdIdSupport=true
 
 target 'LNFlash' do
+  # react-native-permissions: only the Contacts handler is needed (invite-a-friend)
+  setup_permissions(['Contacts'])
+
   config = use_native_modules!
 
   use_react_native!(

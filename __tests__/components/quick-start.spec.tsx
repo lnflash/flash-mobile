@@ -3,6 +3,7 @@ import { createTheme, ThemeProvider } from "@rneui/themed"
 import { render, fireEvent } from "@testing-library/react-native"
 
 import { i18nObject } from "../../app/i18n/i18n-util"
+import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import QuickStart from "../../app/components/home-screen/QuickStart"
 
 const mockNavigate = jest.fn()
@@ -16,6 +17,8 @@ jest.mock("@app/store/redux", () => ({
 }))
 jest.mock("@app/hooks", () => ({
   useAccountUpgrade: jest.fn(),
+  // Rewards enabled -> the invite card renders (matches default behavior).
+  useReferralRewardFlag: jest.fn(() => ({ referralRewardEnabled: true, loading: false })),
 }))
 jest.mock("@app/store/persistent-state", () => ({
   usePersistentStateContext: () => ({
@@ -62,6 +65,7 @@ jest.mock("react-native-reanimated-carousel", () => {
   }
 })
 
+loadLocale("en")
 const en = i18nObject("en")
 
 const renderQuickStart = () =>

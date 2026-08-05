@@ -494,7 +494,9 @@
     "upgradeTitle": "Upgrade your account",
     "upgradeTitlePending": "Upgrade request is pending",
     "transfer": "Transfer",
-    "offlineShowingCached": "لا يوجد اتصال — يتم عرض الأرصدة المخزنة"
+    "offlineShowingCached": "لا يوجد اتصال — يتم عرض الأرصدة المخزنة",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "رمز شخصي خاطئ. بقي {attemptsRemaining} محاولات.",
@@ -740,7 +742,8 @@
     "showSeedPhrase": "Reveal recovery phrase",
     "staticQr": "Printable Static QR Code",
     "staticQrCopied": "Your static QR code link has been copied",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1703,5 +1706,16 @@
     "exchangeFailed": "فشل ربط البنك. يرجى المحاولة مرة أخرى.",
     "linkFailed": "فشل ربط البنك. يرجى المحاولة مرة أخرى.",
     "linkTokenFailed": "فشل الحصول على رابط الحساب الخارجي. يرجى المحاولة مرة أخرى."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

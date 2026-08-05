@@ -541,7 +541,9 @@
     "backupTitle": "Simpan balik dompet BTC anda",
     "backupDesc": "Simpan balik dan selamatkan dompet Bitcoin anda menggunakan frasa pemulihan.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Tiada sambungan — baki cache dipaparkan"
+    "offlineShowingCached": "Tiada sambungan — baki cache dipaparkan",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Salah No PIN. {Percubaan yang tinggal: number} kali lagi percubaan.",
@@ -785,7 +787,8 @@
     "keysManagement": "Cadangan simpanan dompet",
     "showBtcAccount": "Tunjukkan akaun Bitcoin",
     "hideBtcAccount": "Sembunyikan akaun Bitcoin",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Tetapan Notifikasi",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Gagal memautkan bank anda. Sila cuba lagi.",
     "linkFailed": "Pemautan bank gagal. Sila cuba lagi.",
     "linkTokenFailed": "Gagal mendapatkan pautan akaun luaran. Sila cuba lagi."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

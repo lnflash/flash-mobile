@@ -58,7 +58,7 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
   }, [navigation, secretMenuCounter])
 
   useEffect(() => {
-    if (!!lnurl && isFocused) navigation.navigate("Card")
+    if (Boolean(lnurl) && isFocused) navigation.navigate("Card")
   }, [lnurl])
 
   const handleCreateDeviceAccount = async () => {

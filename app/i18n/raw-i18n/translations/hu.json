@@ -541,7 +541,9 @@
     "backupTitle": "A BTC pénztárcáját biztonsági mentse meg.",
     "backupDesc": "Támogatja és biztosítsa a Bitcoin pénztárcáját a Recovery phrase használatával.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Nincs kapcsolat — gyorsítótárazott egyenlegek láthatók"
+    "offlineShowingCached": "Nincs kapcsolat — gyorsítótárazott egyenlegek láthatók",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Helytelen PIN. {attemptsRemaining: number} próbálkozás maradt.",
@@ -785,7 +787,8 @@
     "keysManagement": "Cseppártyás biztonsági mentés",
     "showBtcAccount": "Mutasd meg a Bitcoin fiókot",
     "hideBtcAccount": "Elrejtse az Bitcoin fiókot",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Értesítési beállítások",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Nem sikerült összekapcsolni a bankodat. Kérjük, próbáld újra.",
     "linkFailed": "A bank összekapcsolása nem sikerült. Kérjük, próbáld újra.",
     "linkTokenFailed": "Nem sikerült lekérni a külső számla hivatkozását. Kérjük, próbáld újra."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

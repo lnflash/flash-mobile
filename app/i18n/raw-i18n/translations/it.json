@@ -541,7 +541,9 @@
     "backupTitle": "Fare un backup del tuo portafoglio BTC",
     "backupDesc": "Backup e proteggere il tuo portafoglio Bitcoin utilizzando la frase recovery.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Nessuna connessione — vengono mostrati i saldi in cache"
+    "offlineShowingCached": "Nessuna connessione — vengono mostrati i saldi in cache",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "PIN errato. Hai {attemptsRemaining: number} tentativi rimanenti.",
@@ -785,7 +787,8 @@
     "keysManagement": "Backup del portafoglio",
     "showBtcAccount": "Mostra l'account Bitcoin",
     "hideBtcAccount": "Nascondere un account Bitcoin",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Impossibile collegare la tua banca. Riprova.",
     "linkFailed": "Collegamento della banca non riuscito. Riprova.",
     "linkTokenFailed": "Impossibile ottenere il link del conto esterno. Riprova."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

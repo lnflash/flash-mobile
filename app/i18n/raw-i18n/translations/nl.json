@@ -541,7 +541,9 @@
     "backupTitle": "Backup je BTC-portemonnee.",
     "backupDesc": "Backup en beveiligen van uw Bitcoin portemonnee met behulp van recovery phrase.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Geen verbinding — opgeslagen saldi worden getoond"
+    "offlineShowingCached": "Geen verbinding — opgeslagen saldi worden getoond",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Onjuiste pincode. {attemptsRemaining: number} resterende pogingen.",
@@ -785,7 +787,8 @@
     "keysManagement": "Back-up van het portemonnee",
     "showBtcAccount": "Toon Bitcoin-account",
     "hideBtcAccount": "Hide Bitcoin account",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notificatie instellingen",
@@ -1697,5 +1700,16 @@
     "exchangeFailed": "Kon je bank niet koppelen. Probeer het opnieuw.",
     "linkFailed": "Bankkoppeling mislukt. Probeer het opnieuw.",
     "linkTokenFailed": "Kon de link voor de externe rekening niet ophalen. Probeer het opnieuw."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }
