@@ -434,7 +434,13 @@ export const BankAccountsScreen: React.FC = () => {
       )}
 
       <Pressable
-        style={[styles.primaryButton, !kycApproved && styles.disabled]}
+        style={[
+          styles.primaryButton,
+          // The manual-entry button below (kycApproved-gated) carries the 24px
+          // bottom spacing; when it's hidden, restore it here.
+          !kycApproved && styles.primaryButtonNoManual,
+          !kycApproved && styles.disabled,
+        ]}
         disabled={!kycApproved}
         onPress={linkBankAccount}
       >
@@ -638,6 +644,9 @@ const useStyles = makeStyles(({ colors }) => ({
     flexDirection: "row",
     columnGap: 8,
     backgroundColor: colors.primary,
+  },
+  primaryButtonNoManual: {
+    marginBottom: 24,
   },
   manualEntryButton: {
     minHeight: 44,
