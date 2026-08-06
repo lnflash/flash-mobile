@@ -35,7 +35,15 @@ import type {
   LnurlPayRequestDetails,
 } from "@breeztech/breez-sdk-spark-react-native"
 import { API_KEY, BREEZ_LNURL_DOMAIN } from "@env"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { appendLog, initLogBuffer } from "./log-buffer"
+import {
+  BreezFeeError,
+  LnurlLimits,
+  classifyBreezSdkError,
+  lnurlLimitsFromPayRequest,
+  validateAmountWithinLimits,
+} from "./fee-errors"
 
 // Constants
 export const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
@@ -245,7 +253,7 @@ export const fetchBreezFee = async (
   paymentRequest: string,
   amountSats: number,
   selectedFeeType?: "fast" | "medium" | "slow",
-): Promise<{ fee: number | null; err: unknown }> => {
+): Promise<{ fee: number | null; err: BreezFeeError | null }> => {
   try {
     const sdk = getSDKInstance()
 
@@ -281,6 +289,17 @@ export const fetchBreezFee = async (
       const payRequest = lnurlPayRequestDetailsFromInput(parsed)
 
       if (payRequest) {
+        // Validate against the receiver's advertised LUD-06 bounds before
+        // preparing — the SDK rejects out-of-range amounts with an opaque
+        // error, while this yields the actual limit for the UI to display.
+        const boundsErr = validateAmountWithinLimits(
+          amountSats,
+          lnurlLimitsFromPayRequest(payRequest),
+        )
+        if (boundsErr) {
+          return { fee: null, err: boundsErr }
+        }
+
         const prepareResponse = await sdk.prepareLnurlPay({
           amount: BigInt(amountSats),
           payRequest,
@@ -294,16 +313,49 @@ export const fetchBreezFee = async (
         return { fee: Number(prepareResponse.feeSats), err: null }
       }
 
-      return { fee: null, err: `Wrong payment type ${paymentType}: ${paymentRequest}` }
+      return {
+        fee: null,
+        err: {
+          kind: "unsupported",
+          message: `Wrong payment type ${paymentType}: ${paymentRequest}`,
+        },
+      }
     }
 
-    return { fee: null, err: `Wrong payment type ${paymentType}: ${paymentRequest}` }
-  } catch (err) {
-    console.log("FETCH BREEZ FEE ERROR", err)
     return {
       fee: null,
-      err: "Failed to fetch the fee. Please make sure you have enough balance to cover the payment and the network fee.",
+      err: {
+        kind: "unsupported",
+        message: `Wrong payment type ${paymentType}: ${paymentRequest}`,
+      },
     }
+  } catch (err) {
+    console.log("FETCH BREEZ FEE ERROR", err)
+    try {
+      getCrashlytics().recordError(err instanceof Error ? err : new Error(String(err)))
+    } catch {
+      // crashlytics unavailable — never let reporting mask the fee error
+    }
+    return { fee: null, err: classifyBreezSdkError(err) }
+  }
+}
+
+/**
+ * Resolve the receiver's LNURL-pay sat limits for a lightning address or
+ * LNURL string, so send screens can validate the amount as the user types.
+ * Returns null on any failure — callers fall back to validation at fee-fetch
+ * time.
+ */
+export const fetchLnurlLimits = async (
+  destination: string,
+): Promise<LnurlLimits | null> => {
+  try {
+    const parsed = await parse(destination)
+    const payRequest = lnurlPayRequestDetailsFromInput(parsed)
+    return lnurlLimitsFromPayRequest(payRequest ?? undefined)
+  } catch (err) {
+    console.log("FETCH LNURL LIMITS ERROR", err)
+    return null
   }
 }
 

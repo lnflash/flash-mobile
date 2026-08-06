@@ -746,7 +746,12 @@
     "minAmountInvoiceError": "A számlán szereplő összeg kevesebb, mint a minimális {amount: number} összeg.",
     "maxAmountInvoiceError": "A számlán szereplő összeg nagyobb, mint a maximális {amount: number} összeg.",
     "minAmountConvertError": "A konverziós összeg kevesebb, mint a minimális összeg {amount: number}",
-    "maxAmountConvertError": "A konverziós összeg nagyobb, mint a maximális {amount: number} összeg."
+    "maxAmountConvertError": "A konverziós összeg nagyobb, mint a maximális {amount: number} összeg.",
+    "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
+    "maxReceiveAmountError": "The most this recipient can receive per payment is {amount: string}",
+    "insufficientBalanceForFee": "Your balance can't cover this amount plus the network fee",
+    "feeFetchNetworkError": "Could not calculate the network fee. Please check your connection and try again.",
+    "feeFetchFailed": "Could not calculate the network fee. Please try again."
   },
   "SettingsScreen": {
     "staticQr": "Nyomtatható statikus QR-kód",

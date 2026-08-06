@@ -21,6 +21,7 @@ import {
   payLightningBreez,
   receivePaymentBreez,
 } from "@app/utils/breez-sdk"
+import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useDisplayCurrency } from "./use-display-currency"
 import { PaymentType } from "@galoymoney/client"
@@ -110,12 +111,15 @@ export const useSwap = () => {
             }
           }
         } else {
+          const formatSats = (sats: number) => {
+            const walletAmount = toBtcMoneyAmount(sats)
+            // @ts-ignore: Unreachable code error
+            const displayAmount = convertMoneyAmount(walletAmount, DisplayCurrency)
+            return formatDisplayAndWalletAmount({ displayAmount, walletAmount })
+          }
           return {
             data: null,
-            err:
-              LL.SendBitcoinScreen.amountExceed({
-                balance: formattedBtcBalance,
-              }) + " (amount + fee)",
+            err: breezFeeErrorMessage(feeRes.err, LL, formatSats),
           }
         }
       } else {

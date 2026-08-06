@@ -10,11 +10,12 @@ import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 // types
 import { WalletCurrency } from "@app/graphql/generated"
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
-import { DisplayCurrency } from "@app/types/amounts"
+import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 
 // utils
 import { testProps } from "@app/utils/testProps"
 import { fetchBreezFee } from "@app/utils/breez-sdk"
+import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
 
 // assets
 import Cash from "@app/assets/icons/cash.svg"
@@ -70,17 +71,27 @@ const ConfirmationWalletFee: React.FC<Props> = ({
           status: "set",
           amount: { amount: fee, currency: "BTC", currencyCode: "BTC" },
         })
-      } else if (fee === "null" && err === "null") {
-        setFee({
-          status: "unset",
-          amount: undefined,
-        })
-      } else {
+      } else if (err) {
         setFee({
           status: "error",
           amount: undefined,
         })
-        setPaymentError(`${err}`)
+        const formatSats = (sats: number) => {
+          const walletAmount = toBtcMoneyAmount(sats)
+          return formatDisplayAndWalletAmount({
+            displayAmount: paymentDetail.convertMoneyAmount(
+              walletAmount,
+              DisplayCurrency,
+            ),
+            walletAmount,
+          })
+        }
+        setPaymentError(breezFeeErrorMessage(err, LL, formatSats))
+      } else {
+        setFee({
+          status: "unset",
+          amount: undefined,
+        })
       }
     }
   }
