@@ -40,8 +40,8 @@ export const toastShow = ({
     type === "error"
       ? translations.common.error()
       : type === "warning"
-        ? translations.common.warning()
-        : translations.common.success()
+      ? translations.common.warning()
+      : translations.common.success()
 
   Toast.show({
     type,
