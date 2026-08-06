@@ -4,7 +4,12 @@ import { View } from "react-native"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useBreez, useDisplayCurrency, usePriceConversion } from "@app/hooks"
+import {
+  useBreez,
+  useDisplayCurrency,
+  useFormatSats,
+  usePriceConversion,
+} from "@app/hooks"
 
 // components
 import { GaloyTertiaryButton } from "@app/components/atomic/galoy-tertiary-button"
@@ -15,10 +20,8 @@ import { NoteInput } from "@app/components/note-input"
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
 import { WalletCurrency } from "@app/graphql/generated"
 import {
-  DisplayCurrency,
   isNonZeroMoneyAmount,
   MoneyAmount,
-  toBtcMoneyAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
 
@@ -65,15 +68,7 @@ const DetailAmountNote: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentDetail, receiverLimits])
 
-  const formatSats = (sats: number): string => {
-    const walletAmount = toBtcMoneyAmount(sats)
-    return convertMoneyAmount
-      ? formatDisplayAndWalletAmount({
-          displayAmount: convertMoneyAmount(walletAmount, DisplayCurrency),
-          walletAmount,
-        })
-      : `${sats} sats`
-  }
+  const formatSats = useFormatSats()
 
   const checkErrorMessage = () => {
     if (!convertMoneyAmount) return null

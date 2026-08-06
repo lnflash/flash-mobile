@@ -24,6 +24,7 @@ import {
 import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useDisplayCurrency } from "./use-display-currency"
+import { useFormatSats } from "./use-format-sats"
 import { PaymentType } from "@galoymoney/client"
 
 export const useSwap = () => {
@@ -32,6 +33,7 @@ export const useSwap = () => {
 
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
+  const formatSats = useFormatSats()
 
   const [lnUsdInvoiceFeeProbe] = useLnUsdInvoiceFeeProbeMutation()
   const [lnUsdInvoiceCreate] = useLnUsdInvoiceCreateMutation()
@@ -111,12 +113,6 @@ export const useSwap = () => {
             }
           }
         } else {
-          const formatSats = (sats: number) => {
-            const walletAmount = toBtcMoneyAmount(sats)
-            // @ts-ignore: Unreachable code error
-            const displayAmount = convertMoneyAmount(walletAmount, DisplayCurrency)
-            return formatDisplayAndWalletAmount({ displayAmount, walletAmount })
-          }
           return {
             data: null,
             err: breezFeeErrorMessage(feeRes.err, LL, formatSats),

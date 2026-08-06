@@ -31,6 +31,7 @@ import { useLevel } from "@app/graphql/level-context"
 import {
   useActivityIndicator,
   useBreez,
+  useFormatSats,
   useIbexFee,
   usePriceConversion,
 } from "@app/hooks"
@@ -47,9 +48,10 @@ import { Satoshis } from "lnurl-pay/dist/types/types"
 import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { requestInvoice, utils } from "lnurl-pay"
-import { fetchBreezFee, fetchLnurlLimits } from "@app/utils/breez-sdk"
-import { LnurlLimits } from "@app/utils/breez-sdk/fee-errors"
+import { fetchBreezFee, fetchLnurlPayRequest } from "@app/utils/breez-sdk"
+import { LnurlLimits, lnurlLimitsFromPayRequest } from "@app/utils/breez-sdk/fee-errors"
 import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
+import type { LnurlPayRequestDetails } from "@breeztech/breez-sdk-spark-react-native"
 
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 
@@ -72,6 +74,8 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const [isLoadingLnurl, setIsLoadingLnurl] = useState(false)
   const [paymentDetail, setPaymentDetail] = useState<PaymentDetail<WalletCurrency>>()
   const [receiverLimits, setReceiverLimits] = useState<LnurlLimits | null>(null)
+  const [receiverPayRequest, setReceiverPayRequest] =
+    useState<LnurlPayRequestDetails | null>(null)
   const [asyncErrorMessage, setAsyncErrorMessage] = useState("")
   const [selectedFeeType, setSelectedFeeType] = useState<"fast" | "medium" | "slow">()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -147,11 +151,13 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     if (!paymentDetail) return
     if (paymentDetail.sendingWalletDescriptor.currency !== "BTC") {
       setReceiverLimits(null)
+      setReceiverPayRequest(null)
       return
     }
     const { paymentType } = paymentDetail
     if (paymentType !== "intraledger" && paymentType !== "lnurl") {
       setReceiverLimits(null)
+      setReceiverPayRequest(null)
       return
     }
 
@@ -164,9 +170,13 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     }
 
     let cancelled = false
-    fetchLnurlLimits(flashUserAddress || paymentDetail.destination).then((limits) => {
-      if (!cancelled) setReceiverLimits(limits)
-    })
+    fetchLnurlPayRequest(flashUserAddress || paymentDetail.destination).then(
+      (payRequest) => {
+        if (cancelled) return
+        setReceiverPayRequest(payRequest)
+        setReceiverLimits(lnurlLimitsFromPayRequest(payRequest ?? undefined))
+      },
+    )
     return () => {
       cancelled = true
     }
@@ -178,15 +188,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     flashUserAddress,
   ])
 
-  const formatSats = (sats: number): string => {
-    const walletAmount = toBtcMoneyAmount(sats)
-    return _convertMoneyAmount
-      ? formatDisplayAndWalletAmount({
-          displayAmount: _convertMoneyAmount(walletAmount, DisplayCurrency),
-          walletAmount,
-        })
-      : `${sats} sats`
-  }
+  const formatSats = useFormatSats()
 
   const fetchSendingFee = async (pd: PaymentDetail<WalletCurrency>) => {
     if (pd) {
@@ -196,6 +198,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           !!flashUserAddress ? flashUserAddress : pd?.destination,
           pd?.settlementAmount.amount,
           selectedFeeType,
+          receiverPayRequest ?? undefined,
         )
         if (fee === null && err) {
           setAsyncErrorMessage(breezFeeErrorMessage(err, LL, formatSats))

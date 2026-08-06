@@ -39,7 +39,6 @@ import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { appendLog, initLogBuffer } from "./log-buffer"
 import {
   BreezFeeError,
-  LnurlLimits,
   classifyBreezSdkError,
   lnurlLimitsFromPayRequest,
   validateAmountWithinLimits,
@@ -253,6 +252,9 @@ export const fetchBreezFee = async (
   paymentRequest: string,
   amountSats: number,
   selectedFeeType?: "fast" | "medium" | "slow",
+  // Pass a payRequest already resolved via fetchLnurlPayRequest to skip the
+  // second network round-trip to the receiver's LNURL service.
+  knownPayRequest?: LnurlPayRequestDetails,
 ): Promise<{ fee: number | null; err: BreezFeeError | null }> => {
   try {
     const sdk = getSDKInstance()
@@ -285,8 +287,8 @@ export const fetchBreezFee = async (
     }
 
     if (paymentType === "intraledger" || paymentType === "lnurl") {
-      const parsed = await parse(paymentRequest)
-      const payRequest = lnurlPayRequestDetailsFromInput(parsed)
+      const payRequest =
+        knownPayRequest ?? lnurlPayRequestDetailsFromInput(await parse(paymentRequest))
 
       if (payRequest) {
         // Validate against the receiver's advertised LUD-06 bounds before
@@ -341,20 +343,19 @@ export const fetchBreezFee = async (
 }
 
 /**
- * Resolve the receiver's LNURL-pay sat limits for a lightning address or
- * LNURL string, so send screens can validate the amount as the user types.
- * Returns null on any failure — callers fall back to validation at fee-fetch
- * time.
+ * Resolve the receiver's LNURL-pay request for a lightning address or LNURL
+ * string, so send screens can validate the amount as the user types and reuse
+ * the result at fee-fetch time. Returns null on any failure — callers fall
+ * back to resolution inside fetchBreezFee.
  */
-export const fetchLnurlLimits = async (
+export const fetchLnurlPayRequest = async (
   destination: string,
-): Promise<LnurlLimits | null> => {
+): Promise<LnurlPayRequestDetails | null> => {
   try {
     const parsed = await parse(destination)
-    const payRequest = lnurlPayRequestDetailsFromInput(parsed)
-    return lnurlLimitsFromPayRequest(payRequest ?? undefined)
+    return lnurlPayRequestDetailsFromInput(parsed)
   } catch (err) {
-    console.log("FETCH LNURL LIMITS ERROR", err)
+    console.log("FETCH LNURL PAY REQUEST ERROR", err)
     return null
   }
 }

@@ -6,11 +6,12 @@ import { makeStyles, Text } from "@rneui/themed"
 // hooks
 import useFee, { FeeType } from "@app/screens/send-bitcoin-screen/use-fee"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
+import { useFormatSats } from "@app/hooks/use-format-sats"
 
 // types
 import { WalletCurrency } from "@app/graphql/generated"
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
-import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
+import { DisplayCurrency } from "@app/types/amounts"
 
 // utils
 import { testProps } from "@app/utils/testProps"
@@ -47,6 +48,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
   const styles = useStyles()
   const getLightningFee = useFee(getFee ? getFee : null)
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
+  const formatSats = useFormatSats()
 
   useEffect(() => {
     getSendingFee()
@@ -76,16 +78,6 @@ const ConfirmationWalletFee: React.FC<Props> = ({
           status: "error",
           amount: undefined,
         })
-        const formatSats = (sats: number) => {
-          const walletAmount = toBtcMoneyAmount(sats)
-          return formatDisplayAndWalletAmount({
-            displayAmount: paymentDetail.convertMoneyAmount(
-              walletAmount,
-              DisplayCurrency,
-            ),
-            walletAmount,
-          })
-        }
         setPaymentError(breezFeeErrorMessage(err, LL, formatSats))
       } else {
         setFee({
