@@ -12,6 +12,8 @@ import {
   useBridgeExchangePlaidPublicTokenMutation,
 } from "@app/graphql/generated"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { logPlaidLinkFailure } from "@app/utils/analytics"
+import { toastShow } from "@app/utils/toast"
 
 import { useActivityIndicator } from "./useActivityIndicator"
 
@@ -104,20 +106,34 @@ export const usePlaidLink = ({
             exitError &&
               (exitError.errorCode || exitError.errorMessage || exitError.displayMessage),
           )
-          if (isRealError && exitError) {
-            Alert.alert(
-              LL.common.error(),
-              // displayMessage is Plaid's user-facing copy; errorMessage is
-              // developer-facing and only a fallback.
-              exitError.displayMessage ||
-                exitError.errorMessage ||
-                LL.PlaidLink.linkFailed(),
-            )
+          if (!isRealError) return
+
+          // Plaid failed inside its own webview — rate limit, IP block,
+          // institution error, etc. — before the user ever reaches our
+          // exchange call. Record the Plaid errorCode (the only place it is
+          // observable) so we can confirm the cause, then auto-route the user
+          // straight to the manual bank-details form so a Plaid-side block
+          // never dead-ends them. This covers the phone/OTP rate-limit case,
+          // which never surfaces to the backend.
+          logPlaidLinkFailure({ errorCode: exitError?.errorCode || "UNKNOWN" })
+
+          if (onManualEntry) {
+            toastShow({ type: "warning", message: LL.PlaidLink.unavailableBody() })
+            onManualEntry()
+            return
           }
+          Alert.alert(
+            LL.common.error(),
+            // displayMessage is Plaid's user-facing copy; errorMessage is
+            // developer-facing and only a fallback.
+            exitError?.displayMessage ||
+              exitError?.errorMessage ||
+              LL.PlaidLink.linkFailed(),
+          )
         },
       })
     },
-    [exchangePlaidPublicToken, onLinked, toggleActivityIndicator, LL],
+    [exchangePlaidPublicToken, onLinked, onManualEntry, toggleActivityIndicator, LL],
   )
 
   const openPlaidLink = useCallback(

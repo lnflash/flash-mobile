@@ -117,6 +117,7 @@ const en: BaseTranslation = {
     upgradeYourAccount: "Upgrade your account",
     noWithdrawalAccounts: "No withdrawal accounts yet. Add one to cash out.",
     addBankAccount: "Add bank account",
+    enterBankDetailsManually: "Enter bank details manually",
     contactSupport: "Contact Support",
     flashUsdAccount: "Your Flash USD account",
     receivingSetupPending:
@@ -642,6 +643,8 @@ const en: BaseTranslation = {
     exchangeFailed: "Failed to link your bank. Please try again.",
     linkFailed: "Bank linking failed. Please try again.",
     linkTokenFailed: "Failed to get external account link. Please try again.",
+    unavailableBody:
+      "Bank linking is unavailable right now — enter your bank details manually instead.",
   },
   HomeScreen: {
     cashout: "Cash Out",

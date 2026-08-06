@@ -1625,6 +1625,7 @@
     "upgradeYourAccount": "Upgrade your account",
     "noWithdrawalAccounts": "No withdrawal accounts yet. Add one to cash out.",
     "addBankAccount": "Add bank account",
+    "enterBankDetailsManually": "Enter bank details manually",
     "contactSupport": "Contact Support",
     "flashUsdAccount": "Your Flash USD account",
     "receivingSetupPending": "Your bank transfer details are being set up. Check back soon.",
@@ -1699,7 +1700,8 @@
     "connectedBody": "La tua banca è in fase di collegamento e apparirà qui a breve.",
     "exchangeFailed": "Impossibile collegare la tua banca. Riprova.",
     "linkFailed": "Collegamento della banca non riuscito. Riprova.",
-    "linkTokenFailed": "Impossibile ottenere il link del conto esterno. Riprova."
+    "linkTokenFailed": "Impossibile ottenere il link del conto esterno. Riprova.",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   },
   "InviteFriend": {
     "invitation": "Invitation",

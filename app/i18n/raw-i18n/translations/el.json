@@ -1625,6 +1625,7 @@
     "upgradeYourAccount": "Upgrade your account",
     "noWithdrawalAccounts": "No withdrawal accounts yet. Add one to cash out.",
     "addBankAccount": "Add bank account",
+    "enterBankDetailsManually": "Enter bank details manually",
     "contactSupport": "Contact Support",
     "flashUsdAccount": "Your Flash USD account",
     "receivingSetupPending": "Your bank transfer details are being set up. Check back soon.",
@@ -1699,7 +1700,8 @@
     "connectedBody": "Η τράπεζά σου συνδέεται και θα εμφανιστεί εδώ σύντομα.",
     "exchangeFailed": "Η σύνδεση της τράπεζας απέτυχε. Δοκίμασε ξανά.",
     "linkFailed": "Η σύνδεση της τράπεζας απέτυχε. Δοκίμασε ξανά.",
-    "linkTokenFailed": "Αποτυχία λήψης συνδέσμου εξωτερικού λογαριασμού. Δοκίμασε ξανά."
+    "linkTokenFailed": "Αποτυχία λήψης συνδέσμου εξωτερικού λογαριασμού. Δοκίμασε ξανά.",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   },
   "InviteFriend": {
     "invitation": "Invitation",

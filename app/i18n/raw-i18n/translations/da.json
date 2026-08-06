@@ -1625,6 +1625,7 @@
     "upgradeYourAccount": "Upgrade your account",
     "noWithdrawalAccounts": "No withdrawal accounts yet. Add one to cash out.",
     "addBankAccount": "Add bank account",
+    "enterBankDetailsManually": "Enter bank details manually",
     "contactSupport": "Contact Support",
     "flashUsdAccount": "Your Flash USD account",
     "receivingSetupPending": "Your bank transfer details are being set up. Check back soon.",
@@ -1699,7 +1700,8 @@
     "connectedBody": "Din bank bliver tilknyttet og vises her snart.",
     "exchangeFailed": "Kunne ikke tilknytte din bank. Prøv venligst igen.",
     "linkFailed": "Banktilknytning mislykkedes. Prøv venligst igen.",
-    "linkTokenFailed": "Kunne ikke hente linket til den eksterne konto. Prøv venligst igen."
+    "linkTokenFailed": "Kunne ikke hente linket til den eksterne konto. Prøv venligst igen.",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   },
   "InviteFriend": {
     "invitation": "Invitation",

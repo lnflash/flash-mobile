@@ -36,9 +36,16 @@ export const toastShow = ({
   //
   // a potential solution:
   // https://github.com/calintamas/react-native-toast-message/issues/164#issuecomment-803556361
+  const title =
+    type === "error"
+      ? translations.common.error()
+      : type === "warning"
+      ? translations.common.warning()
+      : translations.common.success()
+
   Toast.show({
     type,
-    text1: type === "error" ? translations.common.error() : translations.common.success(),
+    text1: title,
     text2: translatedMessage,
     position,
     onHide,

@@ -434,7 +434,13 @@ export const BankAccountsScreen: React.FC = () => {
       )}
 
       <Pressable
-        style={[styles.primaryButton, !kycApproved && styles.disabled]}
+        style={[
+          styles.primaryButton,
+          // The manual-entry button below (kycApproved-gated) carries the 24px
+          // bottom spacing; when it's hidden, restore it here.
+          !kycApproved && styles.primaryButtonNoManual,
+          !kycApproved && styles.disabled,
+        ]}
         disabled={!kycApproved}
         onPress={linkBankAccount}
       >
@@ -443,6 +449,24 @@ export const BankAccountsScreen: React.FC = () => {
           {LL.BankAccountsScreen.addBankAccount()}
         </Text>
       </Pressable>
+
+      {/* Manual entry: bypasses Plaid Link (and its phone/OTP step) entirely,
+          routing straight to bridgeCreateExternalAccount. Always available so a
+          user blocked inside the Plaid webview (e.g. OTP rate limit) still has a
+          path in — not just the BRIDGE_PLAID_NOT_AVAILABLE fallback. */}
+      {kycApproved && (
+        <Pressable
+          style={styles.manualEntryButton}
+          onPress={() =>
+            navigation.navigate("BridgeAddExternalAccount", { returnTo: "BankAccounts" })
+          }
+        >
+          <Icon name="create-outline" type="ionicon" size={18} color={colors.primary} />
+          <Text type="p2" bold color={colors.primary}>
+            {LL.BankAccountsScreen.enterBankDetailsManually()}
+          </Text>
+        </Pressable>
+      )}
 
       <Pressable
         style={styles.supportButton}
@@ -614,12 +638,24 @@ const useStyles = makeStyles(({ colors }) => ({
     minHeight: 56,
     borderRadius: 12,
     marginTop: 12,
-    marginBottom: 24,
+    marginBottom: 8,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     columnGap: 8,
     backgroundColor: colors.primary,
+  },
+  primaryButtonNoManual: {
+    marginBottom: 24,
+  },
+  manualEntryButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    marginBottom: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    columnGap: 8,
   },
   disabled: {
     opacity: 0.5,

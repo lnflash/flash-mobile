@@ -10,9 +10,15 @@
  *    best-effort and its failure must never be reported as a link failure.
  *  - Exchange payload errors and thrown errors alert and never run onLinked;
  *    the activity indicator is always cleared.
- *  - onExit alerts only for a REAL Plaid failure, detected by error CONTENT:
- *    the iOS bridge always embeds an all-empty error object on a plain user
- *    cancel (Android omits it) — both cancel shapes must stay silent.
+ *  - onExit acts only on a REAL Plaid failure, detected by error CONTENT: the
+ *    iOS bridge always embeds an all-empty error object on a plain user cancel
+ *    (Android omits it) — both cancel shapes must stay silent.
+ *  - A real Plaid failure happens INSIDE the webview (rate limit, IP block,
+ *    institution error) and never reaches the backend, so onExit logs the
+ *    errorCode (the only place it is observable) and, when the caller provides
+ *    onManualEntry, auto-routes to the manual bank-details form (with a toast)
+ *    instead of dead-ending the user. Without onManualEntry it falls back to a
+ *    plain error alert.
  */
 
 import { Alert } from "react-native"
@@ -44,12 +50,22 @@ jest.mock("@app/i18n/i18n-react", () => ({
         exchangeFailed: () => "Failed to link your bank. Please try again.",
         linkFailed: () => "Bank linking failed. Please try again.",
         linkTokenFailed: () => "Failed to get external account link. Please try again.",
+        unavailableBody: () =>
+          "Bank linking is unavailable right now — enter your bank details manually instead.",
       },
     },
   }),
 }))
 
+jest.mock("@app/utils/analytics", () => ({ logPlaidLinkFailure: jest.fn() }))
+jest.mock("@app/utils/toast", () => ({ toastShow: jest.fn() }))
+
 import { usePlaidLink } from "@app/hooks/use-plaid-link"
+import { logPlaidLinkFailure } from "@app/utils/analytics"
+import { toastShow } from "@app/utils/toast"
+
+const mockLogPlaidLinkFailure = logPlaidLinkFailure as jest.Mock
+const mockToastShow = toastShow as jest.Mock
 
 type PlaidHandlers = {
   onSuccess: (success: { publicToken: string }) => Promise<void>
@@ -297,6 +313,72 @@ describe("usePlaidLink", () => {
     )
   })
 
+  it("logs the errorCode even on the alert path (no onManualEntry)", () => {
+    const { result } = renderPlaidLink()
+    act(() => result.current.openPlaidLink("link-token-1"))
+
+    act(() =>
+      lastHandlers().onExit({
+        error: { errorCode: "INSTITUTION_ERROR", displayMessage: "Bank down." },
+      }),
+    )
+
+    // The in-webview failure is only observable here — record it regardless of
+    // whether a manual-entry fallback exists.
+    expect(mockLogPlaidLinkFailure).toHaveBeenCalledWith({
+      errorCode: "INSTITUTION_ERROR",
+    })
+    expect(alertSpy).toHaveBeenCalledWith("Error", "Bank down.")
+    expect(mockToastShow).not.toHaveBeenCalled()
+  })
+
+  it("auto-navigates to manual entry (with toast) and logs on a real Plaid failure", () => {
+    const onManualEntry = jest.fn()
+    const { result } = renderPlaidLink(undefined, onManualEntry)
+    act(() => result.current.openPlaidLink("link-token-1"))
+
+    act(() =>
+      lastHandlers().onExit({
+        error: {
+          errorCode: "RATE_LIMIT_EXCEEDED",
+          displayMessage: "rate limit exceeded",
+        },
+      }),
+    )
+
+    expect(mockLogPlaidLinkFailure).toHaveBeenCalledWith({
+      errorCode: "RATE_LIMIT_EXCEEDED",
+    })
+    // Auto-routes straight to the manual form — no blocking prompt/alert.
+    expect(onManualEntry).toHaveBeenCalledTimes(1)
+    expect(alertSpy).not.toHaveBeenCalled()
+    // A non-blocking toast explains why the form opened.
+    expect(mockToastShow).toHaveBeenCalledWith({
+      type: "warning",
+      message:
+        "Bank linking is unavailable right now — enter your bank details manually instead.",
+    })
+
+    // The guard still releases on this termination path — a retry can re-open.
+    act(() => result.current.openPlaidLink("link-token-2"))
+    expect(create).toHaveBeenCalledTimes(2)
+  })
+
+  it("records UNKNOWN when a real Plaid error carries no errorCode", () => {
+    const onManualEntry = jest.fn()
+    const { result } = renderPlaidLink(undefined, onManualEntry)
+    act(() => result.current.openPlaidLink("link-token-1"))
+
+    act(() =>
+      lastHandlers().onExit({
+        error: { errorCode: "", displayMessage: "Something went wrong" },
+      }),
+    )
+
+    expect(mockLogPlaidLinkFailure).toHaveBeenCalledWith({ errorCode: "UNKNOWN" })
+    expect(onManualEntry).toHaveBeenCalledTimes(1)
+  })
+
   it("linkBankAccount requests a token and opens Plaid with it", async () => {
     mockAddExternalAccount.mockResolvedValue({
       data: {
@@ -454,5 +536,8 @@ describe("usePlaidLink", () => {
       }),
     )
     expect(alertSpy).not.toHaveBeenCalled()
+    // A cancel is not a failure — nothing is logged and no fallback fires.
+    expect(mockLogPlaidLinkFailure).not.toHaveBeenCalled()
+    expect(mockToastShow).not.toHaveBeenCalled()
   })
 })

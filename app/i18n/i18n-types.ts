@@ -398,6 +398,10 @@ type RootTranslation = {
 		 */
 		addBankAccount: string
 		/**
+		 * E​n​t​e​r​ ​b​a​n​k​ ​d​e​t​a​i​l​s​ ​m​a​n​u​a​l​l​y
+		 */
+		enterBankDetailsManually: string
+		/**
 		 * C​o​n​t​a​c​t​ ​S​u​p​p​o​r​t
 		 */
 		contactSupport: string
@@ -2038,6 +2042,10 @@ type RootTranslation = {
 		 * F​a​i​l​e​d​ ​t​o​ ​g​e​t​ ​e​x​t​e​r​n​a​l​ ​a​c​c​o​u​n​t​ ​l​i​n​k​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
 		 */
 		linkTokenFailed: string
+		/**
+		 * B​a​n​k​ ​l​i​n​k​i​n​g​ ​i​s​ ​u​n​a​v​a​i​l​a​b​l​e​ ​r​i​g​h​t​ ​n​o​w​ ​—​ ​e​n​t​e​r​ ​y​o​u​r​ ​b​a​n​k​ ​d​e​t​a​i​l​s​ ​m​a​n​u​a​l​l​y​ ​i​n​s​t​e​a​d​.
+		 */
+		unavailableBody: string
 	}
 	HomeScreen: {
 		/**
@@ -6459,6 +6467,10 @@ export type TranslationFunctions = {
 		 */
 		addBankAccount: () => LocalizedString
 		/**
+		 * Enter bank details manually
+		 */
+		enterBankDetailsManually: () => LocalizedString
+		/**
 		 * Contact Support
 		 */
 		contactSupport: () => LocalizedString
@@ -8091,6 +8103,10 @@ export type TranslationFunctions = {
 		 * Failed to get external account link. Please try again.
 		 */
 		linkTokenFailed: () => LocalizedString
+		/**
+		 * Bank linking is unavailable right now — enter your bank details manually instead.
+		 */
+		unavailableBody: () => LocalizedString
 	}
 	HomeScreen: {
 		/**

@@ -1625,6 +1625,7 @@
     "upgradeYourAccount": "Upgrade your account",
     "noWithdrawalAccounts": "No withdrawal accounts yet. Add one to cash out.",
     "addBankAccount": "Add bank account",
+    "enterBankDetailsManually": "Enter bank details manually",
     "contactSupport": "Contact Support",
     "flashUsdAccount": "Your Flash USD account",
     "receivingSetupPending": "Your bank transfer details are being set up. Check back soon.",
@@ -1699,7 +1700,8 @@
     "connectedBody": "Bank anda sedang dipautkan dan akan muncul di sini tidak lama lagi.",
     "exchangeFailed": "Gagal memautkan bank anda. Sila cuba lagi.",
     "linkFailed": "Pemautan bank gagal. Sila cuba lagi.",
-    "linkTokenFailed": "Gagal mendapatkan pautan akaun luaran. Sila cuba lagi."
+    "linkTokenFailed": "Gagal mendapatkan pautan akaun luaran. Sila cuba lagi.",
+    "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
   },
   "InviteFriend": {
     "invitation": "Invitation",
