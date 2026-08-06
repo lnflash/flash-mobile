@@ -286,6 +286,16 @@ gql`
     }
   }
 
+  query invitePreview($token: String!) {
+    invitePreview(token: $token) {
+      contact
+      method
+      isValid
+      inviterUsername
+      expiresAt
+    }
+  }
+
   query LatestAccountUpgradeRequest {
     latestAccountUpgradeRequest {
       errors {

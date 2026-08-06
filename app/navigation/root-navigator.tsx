@@ -89,6 +89,8 @@ import {
   TransactionHistoryTabs,
   USDTransactionHistory,
   SignInViaQRCode,
+  InviteFriend,
+  InviteFriendSuccess,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -718,6 +720,16 @@ export const RootStack = () => {
         <RootNavigator.Screen
           name="paymentSuccess"
           component={PaymentSuccessScreen}
+          options={{ headerShown: false }}
+        />
+        <RootNavigator.Screen
+          name="InviteFriend"
+          component={InviteFriend}
+          options={{ headerShown: true, title: "Invitation" }}
+        />
+        <RootNavigator.Screen
+          name="InviteFriendSuccess"
+          component={InviteFriendSuccess}
           options={{ headerShown: false }}
         />
       </RootNavigator.Group>

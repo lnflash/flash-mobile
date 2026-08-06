@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { Dimensions, TouchableOpacity, View } from "react-native"
+import { Dimensions, Image, TouchableOpacity, View } from "react-native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackNavigationProp } from "@react-navigation/stack"
 import Carousel from "react-native-reanimated-carousel"
@@ -12,12 +12,13 @@ import Dollar from "@app/assets/illustrations/dollar.svg"
 import GoldWallet from "@app/assets/illustrations/gold-wallet.svg"
 import SecureWallet from "@app/assets/illustrations/secure-wallet.svg"
 import SocialChat from "@app/assets/illustrations/social-chat.svg"
+import FriendsIcon from "@app/assets/images/heart-symbol.png"
 
 // components
 import { AdvancedModeModal } from "../advanced-mode-modal"
 
 // hooks
-import { useAccountUpgrade } from "@app/hooks"
+import { useAccountUpgrade, useReferralRewardFlag } from "@app/hooks"
 import { useAppSelector } from "@app/store/redux"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
@@ -55,6 +56,7 @@ const QuickStart = () => {
   const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
 
   const { data, loading } = useHomeAuthedQuery()
+  const { referralRewardEnabled } = useReferralRewardFlag()
 
   useAccountUpgrade()
 
@@ -70,6 +72,13 @@ const QuickStart = () => {
   const upgradePending = status === "Pending"
 
   let carouselData = [
+    {
+      type: "invite",
+      title: LL.HomeScreen.inviteTitle(),
+      description: LL.HomeScreen.inviteDesc(),
+      image: FriendsIcon,
+      onPress: () => navigation.navigate("InviteFriend"),
+    },
     {
       type: "upgrade",
       title: !upgradePending
@@ -133,7 +142,7 @@ const QuickStart = () => {
   }
   if (
     data?.me?.defaultAccount.level === AccountLevel.Zero ||
-    !!data?.me?.email?.address ||
+    Boolean(data?.me?.email?.address) ||
     persistentState?.closedQuickStartTypes?.includes("email")
   ) {
     carouselData = carouselData.filter((el) => el.type !== "email")
@@ -159,6 +168,16 @@ const QuickStart = () => {
   ) {
     carouselData = carouselData.filter((el) => el.type !== "socialPost")
   }
+  if (persistentState?.closedQuickStartTypes?.includes("invite")) {
+    carouselData = carouselData.filter((el) => el.type !== "invite")
+  }
+  // The invite card promises a referral reward ("Get rewards for inviting
+  // friends"). Hide it unless rewards are actually enabled instance-wide — the
+  // backend globals flag is the source of truth, so the card and the payout
+  // can never disagree. Defaults hidden while the flag is still loading.
+  if (!referralRewardEnabled) {
+    carouselData = carouselData.filter((el) => el.type !== "invite")
+  }
 
   const onHide = (type: string) => {
     updateState((state: any) => {
@@ -174,7 +193,12 @@ const QuickStart = () => {
   }
 
   const renderItem = ({ item, index }: RenderItemProps) => {
-    const Image = item.image
+    const ImageOrAsset = item.image
+    // SVG imports resolve to React components (functions); raster assets (png via
+    // require) resolve to a number in-app and to a stub object/string under jest.
+    // Keying off "not a component" detects the asset correctly in both.
+    const isAsset = typeof ImageOrAsset !== "function"
+    const isHeartIcon = item.type === "invite" && isAsset
     return (
       <TouchableOpacity
         onPress={item.onPress}
@@ -185,7 +209,14 @@ const QuickStart = () => {
           item.pending ? { borderColor: colors._orange } : {},
         ]}
       >
-        <Image height={width / 3} width={width / 3} />
+        {isAsset ? (
+          <Image
+            source={ImageOrAsset}
+            style={[styles.imageStyle, isHeartIcon && styles.heartIconRotation]}
+          />
+        ) : (
+          <ImageOrAsset height={width / 3} width={width / 3} />
+        )}
         <View style={styles.texts}>
           <Text
             type="h1"
@@ -225,12 +256,14 @@ const QuickStart = () => {
         />
       </View>
     )
-  } else {
-    return <View style={{ height: 20 }} />
   }
+  return <View style={styles.spacer} />
 }
 
 const useStyles = makeStyles(({ colors }) => ({
+  spacer: {
+    height: 20,
+  },
   itemContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -251,6 +284,14 @@ const useStyles = makeStyles(({ colors }) => ({
     top: 0,
     right: 0,
     padding: 5,
+  },
+  imageStyle: {
+    width: width / 3,
+    height: width / 3,
+    resizeMode: "contain",
+  },
+  heartIconRotation: {
+    transform: [{ rotate: "-25deg" }],
   },
 }))
 

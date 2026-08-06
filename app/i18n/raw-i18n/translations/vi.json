@@ -541,7 +541,9 @@
     "backupTitle": "Bản sao lưu ví BTC của bạn",
     "backupDesc": "Sao lưu và bảo mật ví Bitcoin của bạn bằng cách sử dụng recovery phrase.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Không có kết nối — đang hiển thị số dư đã lưu"
+    "offlineShowingCached": "Không có kết nối — đang hiển thị số dư đã lưu",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Mã PIN không chính xác. Còn lại {attemptsRemaining: number} lần thử.",
@@ -785,7 +787,8 @@
     "keysManagement": "Căn khoán dự phòng ví",
     "showBtcAccount": "Xem tài khoản Bitcoin",
     "hideBtcAccount": "ẩn tài khoản Bitcoin",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",
@@ -1622,6 +1625,7 @@
     "upgradeYourAccount": "Upgrade your account",
     "noWithdrawalAccounts": "No withdrawal accounts yet. Add one to cash out.",
     "addBankAccount": "Add bank account",
+    "enterBankDetailsManually": "Enter bank details manually",
     "contactSupport": "Contact Support",
     "flashUsdAccount": "Your Flash USD account",
     "receivingSetupPending": "Your bank transfer details are being set up. Check back soon.",
@@ -1653,8 +1657,7 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}",
-    "enterBankDetailsManually": "Enter bank details manually"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1699,5 +1702,16 @@
     "linkFailed": "Liên kết ngân hàng thất bại. Vui lòng thử lại.",
     "linkTokenFailed": "Không thể lấy liên kết tài khoản bên ngoài. Vui lòng thử lại.",
     "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

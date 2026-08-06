@@ -541,7 +541,9 @@
     "backupTitle": "Backup de la teva cartera BTC",
     "backupDesc": "Backup i segureu la vostra cartera Bitcoin utilitzant la frase recovery.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Sense connexió — es mostren els saldos en memòria cau"
+    "offlineShowingCached": "Sense connexió — es mostren els saldos en memòria cau",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "PIN incorrecte. Queden {attemptsRemaining} intents.",
@@ -785,7 +787,8 @@
     "keysManagement": "Backup de cartera",
     "showBtcAccount": "Mostreu el compte Bitcoin",
     "hideBtcAccount": "Escondir un compte Bitcoin",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Configuració de notificacions",
@@ -1622,6 +1625,7 @@
     "upgradeYourAccount": "Upgrade your account",
     "noWithdrawalAccounts": "No withdrawal accounts yet. Add one to cash out.",
     "addBankAccount": "Add bank account",
+    "enterBankDetailsManually": "Enter bank details manually",
     "contactSupport": "Contact Support",
     "flashUsdAccount": "Your Flash USD account",
     "receivingSetupPending": "Your bank transfer details are being set up. Check back soon.",
@@ -1653,8 +1657,7 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}",
-    "enterBankDetailsManually": "Enter bank details manually"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1699,5 +1702,16 @@
     "linkFailed": "La vinculació del banc ha fallat. Torna-ho a provar.",
     "linkTokenFailed": "No s'ha pogut obtenir l'enllaç del compte extern. Torna-ho a provar.",
     "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }

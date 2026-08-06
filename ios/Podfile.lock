@@ -1423,6 +1423,27 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - react-native-contacts (8.0.10):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - react-native-date-picker (5.0.13):
     - DoubleConversion
     - glog
@@ -2337,6 +2358,27 @@ PODS:
     - RNNotifee/NotifeeCore (= 7.9.0)
   - RNNotifee/NotifeeCore (7.9.0):
     - React-Core
+  - RNPermissions (4.1.5):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - RNQrGenerator (1.4.6):
     - React
     - ZXingObjC
@@ -2681,6 +2723,7 @@ DEPENDENCIES:
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-aes (from `../node_modules/react-native-aes-crypto`)
   - react-native-config (from `../node_modules/react-native-config`)
+  - react-native-contacts (from `../node_modules/react-native-contacts`)
   - react-native-date-picker (from `../node_modules/react-native-date-picker`)
   - react-native-fingerprint-scanner (from `../node_modules/react-native-fingerprint-scanner`)
   - "react-native-geetest-module (from `../node_modules/@galoymoney/react-native-geetest-module`)"
@@ -2748,6 +2791,7 @@ DEPENDENCIES:
   - RNKeychain (from `../node_modules/react-native-keychain`)
   - RNLocalize (from `../node_modules/react-native-localize`)
   - "RNNotifee (from `../node_modules/@notifee/react-native`)"
+  - RNPermissions (from `../node_modules/react-native-permissions`)
   - RNQrGenerator (from `../node_modules/rn-qr-generator`)
   - RNRate (from `../node_modules/react-native-rate`)
   - RNReactNativeHapticFeedback (from `../node_modules/react-native-haptic-feedback`)
@@ -2877,6 +2921,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-aes-crypto"
   react-native-config:
     :path: "../node_modules/react-native-config"
+  react-native-contacts:
+    :path: "../node_modules/react-native-contacts"
   react-native-date-picker:
     :path: "../node_modules/react-native-date-picker"
   react-native-fingerprint-scanner:
@@ -3011,6 +3057,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-localize"
   RNNotifee:
     :path: "../node_modules/@notifee/react-native"
+  RNPermissions:
+    :path: "../node_modules/react-native-permissions"
   RNQrGenerator:
     :path: "../node_modules/rn-qr-generator"
   RNRate:
@@ -3072,7 +3120,7 @@ SPEC CHECKSUMS:
   Plaid: 2f4e0d6deb335e141ac62e082a872414ca058b74
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
-  RCT-Folly: 36fe2295e44b10d831836cc0d1daec5f8abcf809
+  RCT-Folly: e78785aa9ba2ed998ea4151e314036f6c49e6d82
   RCTDeprecation: 664055db806cce35c3c1b43c84414dd66e117ae6
   RCTRequired: dc9a83fa1012054f94430d210337ca3a1afe6fc0
   RCTTypeSafety: 031cefa254a1df313a196f105b8fcffdab1c5ab6
@@ -3103,6 +3151,7 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: d03753688e2abf135edcd4160ab3ce7526da8b0d
   react-native-aes: bed3ca6c47c5a5ebd5bac683efdf737c874f6d3f
   react-native-config: 1340fe63a5fb3f3d5a44b50838d72f000aac5b7f
+  react-native-contacts: 6fdf6c03fd56b6f57cfafc7c0792deea04ed739e
   react-native-date-picker: 729d0384b49f516c6712625aa571d55af5cdb1e0
   react-native-fingerprint-scanner: 91bf6825709dd7bd3abc4588a4772eb097a2b2d8
   react-native-geetest-module: 7bb2e8c1cde8ae3aa797abaf1842715ab4f20adb
@@ -3170,6 +3219,7 @@ SPEC CHECKSUMS:
   RNKeychain: 455cc7002480eac3d24f67b4329ec80c7d901edc
   RNLocalize: 8bf466de4c92d4721b254aabe1ff0a1456e7b9f4
   RNNotifee: 271cfeb505183d2cd1b858c14c3968b6ca30a642
+  RNPermissions: fdc6f698343b18dcaf92df26de623833f0b957e8
   RNQrGenerator: af2f0888eb81b8ff99517a3929d6399444dcc56d
   RNRate: 7641919330e0d6688ad885a985b4bd697ed7d14c
   RNReactNativeHapticFeedback: 2ccad599e946fa6e202e491fd120d61ea275223a
@@ -3185,6 +3235,6 @@ SPEC CHECKSUMS:
   Yoga: 1fd059161b449018342943b095a6d4e69bcaa719
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: 5fb436eeba6baf9573a64415e1ce1c825f455232
+PODFILE CHECKSUM: 19006009741842ea8c26c54d8c62cc996ccfb3ac
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.17.0

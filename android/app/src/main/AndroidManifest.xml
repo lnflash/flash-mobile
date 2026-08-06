@@ -13,7 +13,9 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
     <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" tools:node="remove" /> 
+    <!-- Invite-a-friend contact picker (react-native-contacts declares none itself) -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" tools:node="remove" />
 
     <!-- TODO android:roundIcon="@mipmap/ic_launcher_round" -->
     <application
@@ -43,6 +45,13 @@
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="flash" />
+        </intent-filter>
+        <!-- Invite-a-friend deep links (flash://invite/...) handled by InviteDeepLinkHandler -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="flash" android:host="invite" />
         </intent-filter>
       </activity>
 

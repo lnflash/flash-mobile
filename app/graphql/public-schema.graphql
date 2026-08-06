@@ -874,6 +874,14 @@ type Globals {
   """
   nodesIds: [String!]!
 
+  """
+  Whether referral-reward entry points (e.g. the "invite a
+  friend" home-screen card) should be shown to the user. Controlled by the
+  instance-wide referralReward feature flag; when false the referral payout is
+  disabled, so reward-promising UI must stay hidden.
+  """
+  referralRewardEnabled: Boolean!
+
   """A list of countries and their supported auth channels"""
   supportedCountries: [Country!]!
 
@@ -1296,6 +1304,8 @@ type Mutation {
   callbackEndpointAdd(input: CallbackEndpointAddInput!): CallbackEndpointAddPayload!
   callbackEndpointDelete(input: CallbackEndpointDeleteInput!): SuccessPayload!
   captchaCreateChallenge: CaptchaCreateChallengePayload!
+  createInvite(input: CreateInviteInput!): CreateInvitePayload!
+  redeemInvite(input: RedeemInviteInput!): RedeemInvitePayload!
   captchaRequestAuthCode(input: CaptchaRequestAuthCodeInput!): SuccessPayload!
   deviceNotificationTokenCreate(input: DeviceNotificationTokenCreateInput!): SuccessPayload!
   feedbackSubmit(input: FeedbackSubmitInput!): SuccessPayload!
@@ -1678,6 +1688,7 @@ type Query {
   bridgeWithdrawals: [BridgeWithdrawal]
   btcPrice(currency: DisplayCurrency! = "USD"): Price @deprecated(reason: "Deprecated in favor of realtimePrice")
   btcPriceList(range: PriceGraphRange!): [PricePoint]
+  invitePreview(token: String!): InvitePreview
   businessMapMarkers: [MapMarker!]!
   cashWalletCutover: CashWalletCutover!
   currencyList: [Currency!]!
@@ -2364,4 +2375,52 @@ type npubByUsername {
 
   """Optional immutable user friendly identifier."""
   username: Username
+}
+input CreateInviteInput {
+  contact: String!
+  method: InviteMethod!
+}
+
+type CreateInvitePayload {
+  errors: [String!]!
+  invite: Invite
+}
+
+type Invite {
+  contact: String!
+  createdAt: String!
+  expiresAt: String!
+  id: ID!
+  method: InviteMethod!
+  status: InviteStatus!
+}
+
+enum InviteMethod {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+type InvitePreview {
+  contact: String!
+  expiresAt: String!
+  inviterUsername: String
+  isValid: Boolean!
+  method: String!
+}
+
+enum InviteStatus {
+  ACCEPTED
+  EXPIRED
+  PENDING
+  SENT
+}
+
+input RedeemInviteInput {
+  token: String!
+}
+
+type RedeemInvitePayload {
+  errors: [String!]!
+  success: Boolean!
 }

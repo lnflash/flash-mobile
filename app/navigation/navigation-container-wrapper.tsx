@@ -99,15 +99,24 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
     },
     getInitialURL: async () => {
       const url = await Linking.getInitialURL()
+      // Invite URLs are handled by InviteDeepLinkHandler, not the navigation container
+      if (url && url.includes("invite")) {
+        return null
+      }
       if (Boolean(url) && isAuthed && !isAppLocked) {
         return url
       }
       return null
     },
     subscribe: (listener) => {
-      console.log("listener", listener)
       const onReceiveURL = ({ url }: { url: string }) => {
-        console.log("onReceiveURL", url)
+        // Never log the URL itself: invite links carry one-time tokens and
+        // console output survives into release builds (no remove-console).
+        console.log("onReceiveURL", { hasUrl: Boolean(url) })
+        // Invite URLs are handled by InviteDeepLinkHandler, not the navigation container
+        if (url && url.includes("invite")) {
+          return
+        }
         listener(url)
       }
       // Listen to incoming links from deep linking

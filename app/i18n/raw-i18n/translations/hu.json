@@ -541,7 +541,9 @@
     "backupTitle": "A BTC pénztárcáját biztonsági mentse meg.",
     "backupDesc": "Támogatja és biztosítsa a Bitcoin pénztárcáját a Recovery phrase használatával.",
     "transfer": "Transfer",
-    "offlineShowingCached": "Nincs kapcsolat — gyorsítótárazott egyenlegek láthatók"
+    "offlineShowingCached": "Nincs kapcsolat — gyorsítótárazott egyenlegek láthatók",
+    "inviteTitle": "Invite Friends",
+    "inviteDesc": "Get rewards for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Helytelen PIN. {attemptsRemaining: number} próbálkozás maradt.",
@@ -785,7 +787,8 @@
     "keysManagement": "Cseppártyás biztonsági mentés",
     "showBtcAccount": "Mutasd meg a Bitcoin fiókot",
     "hideBtcAccount": "Elrejtse az Bitcoin fiókot",
-    "flashcard": "Flashcard"
+    "flashcard": "Flashcard",
+    "inviteFriend": "Invite a friend"
   },
   "NotificationSettingsScreen": {
     "title": "Értesítési beállítások",
@@ -1622,6 +1625,7 @@
     "upgradeYourAccount": "Upgrade your account",
     "noWithdrawalAccounts": "No withdrawal accounts yet. Add one to cash out.",
     "addBankAccount": "Add bank account",
+    "enterBankDetailsManually": "Enter bank details manually",
     "contactSupport": "Contact Support",
     "flashUsdAccount": "Your Flash USD account",
     "receivingSetupPending": "Your bank transfer details are being set up. Check back soon.",
@@ -1653,8 +1657,7 @@
     "confirmTitle": "Submit changes?",
     "confirmMessage": "Cash-outs keep going to your current account until the new details are approved.",
     "updateSubmitted": "Update submitted for review",
-    "lastRequestDeclined": "Your last request was declined: {reason: string}",
-    "enterBankDetailsManually": "Enter bank details manually"
+    "lastRequestDeclined": "Your last request was declined: {reason: string}"
   },
   "BridgeAddExternalAccount": {
     "title": "Add Bank Account",
@@ -1699,5 +1702,16 @@
     "linkFailed": "A bank összekapcsolása nem sikerült. Kérjük, próbáld újra.",
     "linkTokenFailed": "Nem sikerült lekérni a külső számla hivatkozását. Kérjük, próbáld újra.",
     "unavailableBody": "Bank linking is unavailable right now — enter your bank details manually instead."
+  },
+  "InviteFriend": {
+    "invitation": "Invitation",
+    "title": "Invite a friend to Flash!",
+    "subtitle": "Enter a phone number or email address to invite a friend. By inviting a friend, you confirm that the recipient has given consent to receive this invitation.",
+    "phoneNumber": "Enter phone number",
+    "email": "Enter email address",
+    "invite": "Invite",
+    "or": "OR",
+    "invitationSuccessTitle": "Invitation has been sent to {value: string}",
+    "done": "Done"
   }
 }
