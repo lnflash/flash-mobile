@@ -168,6 +168,7 @@ export type RootStackParamList = {
   SignInViaQRCode: undefined
   Nip29GroupChat: { groupId: string }
   InviteFriend: undefined
+  MyReferrals: undefined
   InviteFriendSuccess?: {
     contact: string
     method: string

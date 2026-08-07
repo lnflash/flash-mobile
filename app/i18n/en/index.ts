@@ -1054,6 +1054,20 @@ const en: BaseTranslation = {
     invitationSuccessTitle: "Invitation has been sent to {value: string}",
     done: "Done"
   },
+  MyReferrals: {
+    title: "My Referrals",
+    viewMine: "View my referrals",
+    totalEarned: "Total earned",
+    friendsJoined: "Friends joined",
+    pendingCount: "Pending rewards: {count: number}",
+    earned: "Joined — you earned {amount: string}",
+    joinedRewardPending: "Joined — reward pending",
+    joined: "Joined",
+    invited: "Invited",
+    expired: "Expired",
+    empty: "No invites yet — invite a friend to get started.",
+    loadFailed: "Couldn't load your referrals. Pull to retry."
+  },
   NotificationSettingsScreen: {
     title: "Notification Settings",
     pushNotifications: "Push Notifications",

@@ -91,6 +91,7 @@ import {
   SignInViaQRCode,
   InviteFriend,
   InviteFriendSuccess,
+  MyReferrals,
 } from "@app/screens"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { NotificationSettingsScreen } from "@app/screens/settings-screen/notifications-screen"
@@ -731,6 +732,11 @@ export const RootStack = () => {
           name="InviteFriendSuccess"
           component={InviteFriendSuccess}
           options={{ headerShown: false }}
+        />
+        <RootNavigator.Screen
+          name="MyReferrals"
+          component={MyReferrals}
+          options={{ headerShown: true, title: "My Referrals" }}
         />
       </RootNavigator.Group>
     </RootNavigator.Navigator>

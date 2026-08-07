@@ -1785,6 +1785,27 @@ export type MutationUserUpdateUsernameArgs = {
   input: UserUpdateUsernameInput;
 };
 
+export type MyReferralInvite = {
+  readonly __typename: 'MyReferralInvite';
+  readonly contact: Scalars['String']['output'];
+  readonly createdAt: Scalars['String']['output'];
+  readonly id: Scalars['ID']['output'];
+  readonly method: InviteMethod;
+  readonly myRewardCents?: Maybe<Scalars['Int']['output']>;
+  readonly redeemedAt?: Maybe<Scalars['String']['output']>;
+  readonly rewardPending: Scalars['Boolean']['output'];
+  readonly status: InviteStatus;
+};
+
+export type MyReferrals = {
+  readonly __typename: 'MyReferrals';
+  readonly acceptedCount: Scalars['Int']['output'];
+  readonly invites: ReadonlyArray<MyReferralInvite>;
+  readonly pendingRewardCount: Scalars['Int']['output'];
+  readonly totalEarnedCents: Scalars['Int']['output'];
+  readonly totalInvites: Scalars['Int']['output'];
+};
+
 export type MyUpdatesPayload = {
   readonly __typename: 'MyUpdatesPayload';
   readonly errors: ReadonlyArray<Error>;
@@ -2041,6 +2062,7 @@ export type Query = {
   readonly lnInvoicePaymentStatus: LnInvoicePaymentStatusPayload;
   readonly me?: Maybe<User>;
   readonly mobileVersions?: Maybe<ReadonlyArray<Maybe<MobileVersions>>>;
+  readonly myReferrals: MyReferrals;
   readonly npubByUsername?: Maybe<NpubByUsername>;
   readonly onChainTxFee: OnChainTxFee;
   readonly onChainUsdTxFee: OnChainUsdTxFee;
@@ -2091,6 +2113,12 @@ export type QueryIsFlashNpubArgs = {
 
 export type QueryLnInvoicePaymentStatusArgs = {
   input: LnInvoicePaymentStatusInput;
+};
+
+
+export type QueryMyReferralsArgs = {
+  afterId?: InputMaybe<Scalars['ID']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -3139,6 +3167,14 @@ export type NpubByUsernameQueryVariables = Exact<{
 
 
 export type NpubByUsernameQuery = { readonly __typename: 'Query', readonly npubByUsername?: { readonly __typename: 'npubByUsername', readonly npub?: string | null, readonly username?: string | null } | null };
+
+export type MyReferralsQueryVariables = Exact<{
+  first?: InputMaybe<Scalars['Int']['input']>;
+  afterId?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type MyReferralsQuery = { readonly __typename: 'Query', readonly myReferrals: { readonly __typename: 'MyReferrals', readonly totalInvites: number, readonly acceptedCount: number, readonly totalEarnedCents: number, readonly pendingRewardCount: number, readonly invites: ReadonlyArray<{ readonly __typename: 'MyReferralInvite', readonly id: string, readonly contact: string, readonly method: InviteMethod, readonly status: InviteStatus, readonly createdAt: string, readonly redeemedAt?: string | null, readonly myRewardCents?: number | null, readonly rewardPending: boolean }> } };
 
 export type InvitePreviewQueryVariables = Exact<{
   token: Scalars['String']['input'];
@@ -6004,6 +6040,55 @@ export function useNpubByUsernameLazyQuery(baseOptions?: Apollo.LazyQueryHookOpt
 export type NpubByUsernameQueryHookResult = ReturnType<typeof useNpubByUsernameQuery>;
 export type NpubByUsernameLazyQueryHookResult = ReturnType<typeof useNpubByUsernameLazyQuery>;
 export type NpubByUsernameQueryResult = Apollo.QueryResult<NpubByUsernameQuery, NpubByUsernameQueryVariables>;
+export const MyReferralsDocument = gql`
+    query myReferrals($first: Int, $afterId: ID) {
+  myReferrals(first: $first, afterId: $afterId) {
+    totalInvites
+    acceptedCount
+    totalEarnedCents
+    pendingRewardCount
+    invites {
+      id
+      contact
+      method
+      status
+      createdAt
+      redeemedAt
+      myRewardCents
+      rewardPending
+    }
+  }
+}
+    `;
+
+/**
+ * __useMyReferralsQuery__
+ *
+ * To run a query within a React component, call `useMyReferralsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMyReferralsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMyReferralsQuery({
+ *   variables: {
+ *      first: // value for 'first'
+ *      afterId: // value for 'afterId'
+ *   },
+ * });
+ */
+export function useMyReferralsQuery(baseOptions?: Apollo.QueryHookOptions<MyReferralsQuery, MyReferralsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyReferralsQuery, MyReferralsQueryVariables>(MyReferralsDocument, options);
+      }
+export function useMyReferralsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyReferralsQuery, MyReferralsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyReferralsQuery, MyReferralsQueryVariables>(MyReferralsDocument, options);
+        }
+export type MyReferralsQueryHookResult = ReturnType<typeof useMyReferralsQuery>;
+export type MyReferralsLazyQueryHookResult = ReturnType<typeof useMyReferralsLazyQuery>;
+export type MyReferralsQueryResult = Apollo.QueryResult<MyReferralsQuery, MyReferralsQueryVariables>;
 export const InvitePreviewDocument = gql`
     query invitePreview($token: String!) {
   invitePreview(token: $token) {

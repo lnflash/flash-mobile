@@ -3501,6 +3501,58 @@ type RootTranslation = {
 		 */
 		done: string
 	}
+	MyReferrals: {
+		/**
+		 * M​y​ ​R​e​f​e​r​r​a​l​s
+		 */
+		title: string
+		/**
+		 * V​i​e​w​ ​m​y​ ​r​e​f​e​r​r​a​l​s
+		 */
+		viewMine: string
+		/**
+		 * T​o​t​a​l​ ​e​a​r​n​e​d
+		 */
+		totalEarned: string
+		/**
+		 * F​r​i​e​n​d​s​ ​j​o​i​n​e​d
+		 */
+		friendsJoined: string
+		/**
+		 * P​e​n​d​i​n​g​ ​r​e​w​a​r​d​s​:​ ​{​c​o​u​n​t​}
+		 * @param {number} count
+		 */
+		pendingCount: RequiredParams<'count'>
+		/**
+		 * J​o​i​n​e​d​ ​—​ ​y​o​u​ ​e​a​r​n​e​d​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
+		 */
+		earned: RequiredParams<'amount'>
+		/**
+		 * J​o​i​n​e​d​ ​—​ ​r​e​w​a​r​d​ ​p​e​n​d​i​n​g
+		 */
+		joinedRewardPending: string
+		/**
+		 * J​o​i​n​e​d
+		 */
+		joined: string
+		/**
+		 * I​n​v​i​t​e​d
+		 */
+		invited: string
+		/**
+		 * E​x​p​i​r​e​d
+		 */
+		expired: string
+		/**
+		 * N​o​ ​i​n​v​i​t​e​s​ ​y​e​t​ ​—​ ​i​n​v​i​t​e​ ​a​ ​f​r​i​e​n​d​ ​t​o​ ​g​e​t​ ​s​t​a​r​t​e​d​.
+		 */
+		empty: string
+		/**
+		 * C​o​u​l​d​n​'​t​ ​l​o​a​d​ ​y​o​u​r​ ​r​e​f​e​r​r​a​l​s​.​ ​P​u​l​l​ ​t​o​ ​r​e​t​r​y​.
+		 */
+		loadFailed: string
+	}
 	NotificationSettingsScreen: {
 		/**
 		 * N​o​t​i​f​i​c​a​t​i​o​n​ ​S​e​t​t​i​n​g​s
@@ -9534,6 +9586,56 @@ export type TranslationFunctions = {
 		 * Done
 		 */
 		done: () => LocalizedString
+	}
+	MyReferrals: {
+		/**
+		 * My Referrals
+		 */
+		title: () => LocalizedString
+		/**
+		 * View my referrals
+		 */
+		viewMine: () => LocalizedString
+		/**
+		 * Total earned
+		 */
+		totalEarned: () => LocalizedString
+		/**
+		 * Friends joined
+		 */
+		friendsJoined: () => LocalizedString
+		/**
+		 * Pending rewards: {count}
+		 */
+		pendingCount: (arg: { count: number }) => LocalizedString
+		/**
+		 * Joined — you earned {amount}
+		 */
+		earned: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Joined — reward pending
+		 */
+		joinedRewardPending: () => LocalizedString
+		/**
+		 * Joined
+		 */
+		joined: () => LocalizedString
+		/**
+		 * Invited
+		 */
+		invited: () => LocalizedString
+		/**
+		 * Expired
+		 */
+		expired: () => LocalizedString
+		/**
+		 * No invites yet — invite a friend to get started.
+		 */
+		empty: () => LocalizedString
+		/**
+		 * Couldn't load your referrals. Pull to retry.
+		 */
+		loadFailed: () => LocalizedString
 	}
 	NotificationSettingsScreen: {
 		/**

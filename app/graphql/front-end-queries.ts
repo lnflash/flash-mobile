@@ -286,6 +286,25 @@ gql`
     }
   }
 
+  query myReferrals($first: Int, $afterId: ID) {
+    myReferrals(first: $first, afterId: $afterId) {
+      totalInvites
+      acceptedCount
+      totalEarnedCents
+      pendingRewardCount
+      invites {
+        id
+        contact
+        method
+        status
+        createdAt
+        redeemedAt
+        myRewardCents
+        rewardPending
+      }
+    }
+  }
+
   query invitePreview($token: String!) {
     invitePreview(token: $token) {
       contact
