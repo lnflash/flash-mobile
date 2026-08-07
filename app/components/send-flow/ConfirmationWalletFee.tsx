@@ -62,12 +62,12 @@ const ConfirmationWalletFee: React.FC<Props> = ({
     ) {
       setFee(getLightningFee)
     } else {
-      const { fee, err } = await fetchBreezFee(
+      const { fee, err } = await fetchBreezFee({
         paymentType,
-        !!flashUserAddress ? flashUserAddress : paymentDetail.destination,
-        settlementAmount.amount,
+        paymentRequest: flashUserAddress || paymentDetail.destination,
+        amountSats: settlementAmount.amount,
         selectedFeeType,
-      )
+      })
       if (fee !== null) {
         setFee({
           status: "set",

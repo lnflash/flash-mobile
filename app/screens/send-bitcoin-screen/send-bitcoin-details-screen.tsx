@@ -193,13 +193,13 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const fetchSendingFee = async (pd: PaymentDetail<WalletCurrency>) => {
     if (pd) {
       if (pd?.sendingWalletDescriptor.currency === "BTC") {
-        const { fee, err } = await fetchBreezFee(
-          pd?.paymentType,
-          !!flashUserAddress ? flashUserAddress : pd?.destination,
-          pd?.settlementAmount.amount,
+        const { fee, err } = await fetchBreezFee({
+          paymentType: pd.paymentType,
+          paymentRequest: flashUserAddress || pd.destination,
+          amountSats: pd.settlementAmount.amount,
           selectedFeeType,
-          receiverPayRequest ?? undefined,
-        )
+          knownPayRequest: receiverPayRequest ?? undefined,
+        })
         if (fee === null && err) {
           setAsyncErrorMessage(breezFeeErrorMessage(err, LL, formatSats))
           return false

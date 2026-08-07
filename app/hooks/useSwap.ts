@@ -84,11 +84,11 @@ export const useSwap = () => {
 
       if (invoiceRes.data?.lnUsdInvoiceCreate.invoice) {
         // get the sending fee probe
-        const feeRes = await fetchBreezFee(
-          PaymentType.Lightning,
-          invoiceRes.data?.lnUsdInvoiceCreate.invoice?.paymentRequest,
-          settlementSendAmount.amount,
-        )
+        const feeRes = await fetchBreezFee({
+          paymentType: PaymentType.Lightning,
+          paymentRequest: invoiceRes.data?.lnUsdInvoiceCreate.invoice?.paymentRequest,
+          amountSats: settlementSendAmount.amount,
+        })
         console.log("FEE RES>>>>>>>>", feeRes)
         if (!feeRes.err) {
           // check if (amount + fee) is larger than balance

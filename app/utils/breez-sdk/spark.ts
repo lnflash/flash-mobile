@@ -247,15 +247,23 @@ const extractFeeFromPaymentMethod = (
   return BigInt(0)
 }
 
-export const fetchBreezFee = async (
-  paymentType: PaymentType,
-  paymentRequest: string,
-  amountSats: number,
-  selectedFeeType?: "fast" | "medium" | "slow",
-  // Pass a payRequest already resolved via fetchLnurlPayRequest to skip the
-  // second network round-trip to the receiver's LNURL service.
-  knownPayRequest?: LnurlPayRequestDetails,
-): Promise<{ fee: number | null; err: BreezFeeError | null }> => {
+export type FetchBreezFeeArgs = {
+  paymentType: PaymentType
+  paymentRequest: string
+  amountSats: number
+  selectedFeeType?: "fast" | "medium" | "slow"
+  // A payRequest already resolved via fetchLnurlPayRequest — skips the second
+  // network round-trip to the receiver's LNURL service.
+  knownPayRequest?: LnurlPayRequestDetails
+}
+
+export const fetchBreezFee = async ({
+  paymentType,
+  paymentRequest,
+  amountSats,
+  selectedFeeType,
+  knownPayRequest,
+}: FetchBreezFeeArgs): Promise<{ fee: number | null; err: BreezFeeError | null }> => {
   try {
     const sdk = getSDKInstance()
 
