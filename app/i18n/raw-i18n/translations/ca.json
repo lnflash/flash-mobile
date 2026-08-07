@@ -746,7 +746,12 @@
     "minAmountInvoiceError": "L'import de la factura és inferior a l'import mínim {amount: number}",
     "maxAmountInvoiceError": "L'import de la factura és superior al màxim de {amount: number}",
     "minAmountConvertError": "La quantitat de conversió és menor que la quantitat mínima requerida {amount: number}",
-    "maxAmountConvertError": "La quantitat de conversió és major que la quantitat màxima {amount: number}"
+    "maxAmountConvertError": "La quantitat de conversió és major que la quantitat màxima {amount: number}",
+    "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
+    "maxReceiveAmountError": "The most this recipient can receive per payment is {amount: string}",
+    "insufficientBalanceForFee": "Your balance can't cover this amount plus the network fee",
+    "feeFetchNetworkError": "Could not calculate the network fee. Please check your connection and try again.",
+    "feeFetchFailed": "Could not calculate the network fee. Please try again."
   },
   "SettingsScreen": {
     "staticQr": "Imprentable QR Static Code",

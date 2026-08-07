@@ -746,7 +746,12 @@
     "minAmountInvoiceError": "Iznos na računu je manji od minimalnog iznosa {amount: number}",
     "maxAmountInvoiceError": "Iznos na računu je veći od maksimalnog iznosa {amount: number}",
     "minAmountConvertError": "Iznos konverzije je manji od minimalnog potrebnog iznosa {amount: number}",
-    "maxAmountConvertError": "Iznos konverzije je veći od maksimalnog iznosa {amount: number}"
+    "maxAmountConvertError": "Iznos konverzije je veći od maksimalnog iznosa {amount: number}",
+    "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
+    "maxReceiveAmountError": "The most this recipient can receive per payment is {amount: string}",
+    "insufficientBalanceForFee": "Your balance can't cover this amount plus the network fee",
+    "feeFetchNetworkError": "Could not calculate the network fee. Please check your connection and try again.",
+    "feeFetchFailed": "Could not calculate the network fee. Please try again."
   },
   "SettingsScreen": {
     "staticQr": "Statikno štampanje QR Code",

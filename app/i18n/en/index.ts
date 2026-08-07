@@ -991,7 +991,12 @@ const en: BaseTranslation = {
 		minAmountInvoiceError: "The amount on the invoice is less than minimum amount {amount: number}",
 		maxAmountInvoiceError: "The amount on the invoice is greater than maximum amount {amount: number}",
 		minAmountConvertError: "The conversion amount is less than minimum required amount {amount: number}",
-		maxAmountConvertError: "The conversion amount is greater than maximum amount {amount: number}"
+		maxAmountConvertError: "The conversion amount is greater than maximum amount {amount: number}",
+    minReceiveAmountError: "The minimum this recipient can receive is {amount: string}",
+    maxReceiveAmountError: "The most this recipient can receive per payment is {amount: string}",
+    insufficientBalanceForFee: "Your balance can't cover this amount plus the network fee",
+    feeFetchNetworkError: "Could not calculate the network fee. Please check your connection and try again.",
+    feeFetchFailed: "Could not calculate the network fee. Please try again."
   },
   SettingsScreen: {
     flashcard: "Flashcard",

@@ -746,7 +746,12 @@
     "minAmountInvoiceError": "El importe de la factura es inferior al monto mínimo de {amount: number}",
     "maxAmountInvoiceError": "El monto de la factura es mayor que el monto máximo de {amount: number}",
     "minAmountConvertError": "El importe de conversión es menor que el importe mínimo requerido {amount: number}",
-    "maxAmountConvertError": "La cantidad de conversión es mayor que la cantidad máxima de {amount: number}"
+    "maxAmountConvertError": "La cantidad de conversión es mayor que la cantidad máxima de {amount: number}",
+    "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
+    "maxReceiveAmountError": "The most this recipient can receive per payment is {amount: string}",
+    "insufficientBalanceForFee": "Your balance can't cover this amount plus the network fee",
+    "feeFetchNetworkError": "Could not calculate the network fee. Please check your connection and try again.",
+    "feeFetchFailed": "Could not calculate the network fee. Please try again."
   },
   "SettingsScreen": {
     "staticQr": "Se puede imprimir un código estático QR",

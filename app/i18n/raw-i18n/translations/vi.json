@@ -746,7 +746,12 @@
     "minAmountInvoiceError": "Số tiền trên hóa đơn là ít hơn số tiền tối thiểu {amount: number}",
     "maxAmountInvoiceError": "Số tiền trên hóa đơn lớn hơn số tiền tối đa {amount: number}",
     "minAmountConvertError": "Số tiền chuyển đổi nhỏ hơn số tiền tối thiểu cần thiết {amount: number}",
-    "maxAmountConvertError": "Số tiền chuyển đổi lớn hơn số tiền tối đa {amount: number}"
+    "maxAmountConvertError": "Số tiền chuyển đổi lớn hơn số tiền tối đa {amount: number}",
+    "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
+    "maxReceiveAmountError": "The most this recipient can receive per payment is {amount: string}",
+    "insufficientBalanceForFee": "Your balance can't cover this amount plus the network fee",
+    "feeFetchNetworkError": "Could not calculate the network fee. Please check your connection and try again.",
+    "feeFetchFailed": "Could not calculate the network fee. Please try again."
   },
   "SettingsScreen": {
     "staticQr": "Có thể in được Static QR Code",

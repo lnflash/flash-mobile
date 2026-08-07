@@ -35,7 +35,14 @@ import type {
   LnurlPayRequestDetails,
 } from "@breeztech/breez-sdk-spark-react-native"
 import { API_KEY, BREEZ_LNURL_DOMAIN } from "@env"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { appendLog, initLogBuffer } from "./log-buffer"
+import {
+  BreezFeeError,
+  classifyBreezSdkError,
+  lnurlLimitsFromPayRequest,
+  validateAmountWithinLimits,
+} from "./fee-errors"
 
 // Constants
 export const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
@@ -240,12 +247,23 @@ const extractFeeFromPaymentMethod = (
   return BigInt(0)
 }
 
-export const fetchBreezFee = async (
-  paymentType: PaymentType,
-  paymentRequest: string,
-  amountSats: number,
-  selectedFeeType?: "fast" | "medium" | "slow",
-): Promise<{ fee: number | null; err: unknown }> => {
+export type FetchBreezFeeArgs = {
+  paymentType: PaymentType
+  paymentRequest: string
+  amountSats: number
+  selectedFeeType?: "fast" | "medium" | "slow"
+  // A payRequest already resolved via fetchLnurlPayRequest — skips the second
+  // network round-trip to the receiver's LNURL service.
+  knownPayRequest?: LnurlPayRequestDetails
+}
+
+export const fetchBreezFee = async ({
+  paymentType,
+  paymentRequest,
+  amountSats,
+  selectedFeeType,
+  knownPayRequest,
+}: FetchBreezFeeArgs): Promise<{ fee: number | null; err: BreezFeeError | null }> => {
   try {
     const sdk = getSDKInstance()
 
@@ -277,10 +295,21 @@ export const fetchBreezFee = async (
     }
 
     if (paymentType === "intraledger" || paymentType === "lnurl") {
-      const parsed = await parse(paymentRequest)
-      const payRequest = lnurlPayRequestDetailsFromInput(parsed)
+      const payRequest =
+        knownPayRequest ?? lnurlPayRequestDetailsFromInput(await parse(paymentRequest))
 
       if (payRequest) {
+        // Validate against the receiver's advertised LUD-06 bounds before
+        // preparing — the SDK rejects out-of-range amounts with an opaque
+        // error, while this yields the actual limit for the UI to display.
+        const boundsErr = validateAmountWithinLimits(
+          amountSats,
+          lnurlLimitsFromPayRequest(payRequest),
+        )
+        if (boundsErr) {
+          return { fee: null, err: boundsErr }
+        }
+
         const prepareResponse = await sdk.prepareLnurlPay({
           amount: BigInt(amountSats),
           payRequest,
@@ -294,16 +323,48 @@ export const fetchBreezFee = async (
         return { fee: Number(prepareResponse.feeSats), err: null }
       }
 
-      return { fee: null, err: `Wrong payment type ${paymentType}: ${paymentRequest}` }
+      return {
+        fee: null,
+        err: {
+          kind: "unsupported",
+          message: `Wrong payment type ${paymentType}: ${paymentRequest}`,
+        },
+      }
     }
 
-    return { fee: null, err: `Wrong payment type ${paymentType}: ${paymentRequest}` }
-  } catch (err) {
-    console.log("FETCH BREEZ FEE ERROR", err)
     return {
       fee: null,
-      err: "Failed to fetch the fee. Please make sure you have enough balance to cover the payment and the network fee.",
+      err: {
+        kind: "unsupported",
+        message: `Wrong payment type ${paymentType}: ${paymentRequest}`,
+      },
     }
+  } catch (err) {
+    console.log("FETCH BREEZ FEE ERROR", err)
+    try {
+      getCrashlytics().recordError(err instanceof Error ? err : new Error(String(err)))
+    } catch {
+      // crashlytics unavailable — never let reporting mask the fee error
+    }
+    return { fee: null, err: classifyBreezSdkError(err) }
+  }
+}
+
+/**
+ * Resolve the receiver's LNURL-pay request for a lightning address or LNURL
+ * string, so send screens can validate the amount as the user types and reuse
+ * the result at fee-fetch time. Returns null on any failure — callers fall
+ * back to resolution inside fetchBreezFee.
+ */
+export const fetchLnurlPayRequest = async (
+  destination: string,
+): Promise<LnurlPayRequestDetails | null> => {
+  try {
+    const parsed = await parse(destination)
+    return lnurlPayRequestDetailsFromInput(parsed)
+  } catch (err) {
+    console.log("FETCH LNURL PAY REQUEST ERROR", err)
+    return null
   }
 }
 

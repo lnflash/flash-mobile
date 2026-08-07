@@ -31,6 +31,7 @@ import { useLevel } from "@app/graphql/level-context"
 import {
   useActivityIndicator,
   useBreez,
+  useFormatSats,
   useIbexFee,
   usePriceConversion,
 } from "@app/hooks"
@@ -47,7 +48,10 @@ import { Satoshis } from "lnurl-pay/dist/types/types"
 import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { requestInvoice, utils } from "lnurl-pay"
-import { fetchBreezFee } from "@app/utils/breez-sdk"
+import { fetchBreezFee, fetchLnurlPayRequest } from "@app/utils/breez-sdk"
+import { LnurlLimits, lnurlLimitsFromPayRequest } from "@app/utils/breez-sdk/fee-errors"
+import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
+import type { LnurlPayRequestDetails } from "@breeztech/breez-sdk-spark-react-native"
 
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 
@@ -69,6 +73,9 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const [isLoadingLnurl, setIsLoadingLnurl] = useState(false)
   const [paymentDetail, setPaymentDetail] = useState<PaymentDetail<WalletCurrency>>()
+  const [receiverLimits, setReceiverLimits] = useState<LnurlLimits | null>(null)
+  const [receiverPayRequest, setReceiverPayRequest] =
+    useState<LnurlPayRequestDetails | null>(null)
   const [asyncErrorMessage, setAsyncErrorMessage] = useState("")
   const [selectedFeeType, setSelectedFeeType] = useState<"fast" | "medium" | "slow">()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -137,24 +144,71 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     zeroDisplayAmount,
   ])
 
+  // Resolve the receiver's LNURL-pay limits once per destination so the
+  // amount can be validated as the user types (BTC wallet pays Flash
+  // addresses and LNURL destinations through LNURL-pay).
+  useEffect(() => {
+    if (!paymentDetail) return
+    if (paymentDetail.sendingWalletDescriptor.currency !== "BTC") {
+      setReceiverLimits(null)
+      setReceiverPayRequest(null)
+      return
+    }
+    const { paymentType } = paymentDetail
+    if (paymentType !== "intraledger" && paymentType !== "lnurl") {
+      setReceiverLimits(null)
+      setReceiverPayRequest(null)
+      return
+    }
+
+    if (paymentType === "lnurl" && paymentDetail.lnurlParams) {
+      setReceiverLimits({
+        minSats: paymentDetail.lnurlParams.min,
+        maxSats: paymentDetail.lnurlParams.max,
+      })
+      return
+    }
+
+    let cancelled = false
+    fetchLnurlPayRequest(flashUserAddress || paymentDetail.destination).then(
+      (payRequest) => {
+        if (cancelled) return
+        setReceiverPayRequest(payRequest)
+        setReceiverLimits(lnurlLimitsFromPayRequest(payRequest ?? undefined))
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    paymentDetail?.paymentType,
+    paymentDetail?.sendingWalletDescriptor.currency,
+    paymentDetail?.destination,
+    flashUserAddress,
+  ])
+
+  const formatSats = useFormatSats()
+
   const fetchSendingFee = async (pd: PaymentDetail<WalletCurrency>) => {
     if (pd) {
       if (pd?.sendingWalletDescriptor.currency === "BTC") {
-        const { fee, err }: { fee: any; err: any } = await fetchBreezFee(
-          pd?.paymentType,
-          !!flashUserAddress ? flashUserAddress : pd?.destination,
-          pd?.settlementAmount.amount,
+        const { fee, err } = await fetchBreezFee({
+          paymentType: pd.paymentType,
+          paymentRequest: flashUserAddress || pd.destination,
+          amountSats: pd.settlementAmount.amount,
           selectedFeeType,
-        )
+          knownPayRequest: receiverPayRequest ?? undefined,
+        })
         if (fee === null && err) {
-          const error = err?.message || err
-          const errMsg = error.includes("not enough funds")
-            ? `${error} (amount + fee)`
-            : error
-          setAsyncErrorMessage(errMsg)
+          setAsyncErrorMessage(breezFeeErrorMessage(err, LL, formatSats))
           return false
         }
-        if (_convertMoneyAmount && pd.settlementAmount.amount + fee > btcWallet.balance) {
+        if (
+          _convertMoneyAmount &&
+          fee !== null &&
+          pd.settlementAmount.amount + fee > btcWallet.balance
+        ) {
           const amount = formatDisplayAndWalletAmount({
             displayAmount: _convertMoneyAmount(btcBalanceMoneyAmount, DisplayCurrency),
             walletAmount: btcBalanceMoneyAmount,
@@ -397,6 +451,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           setPaymentDetail={setPaymentDetail}
           setAsyncErrorMessage={setAsyncErrorMessage}
           invoiceAmount={invoiceAmount}
+          receiverLimits={receiverLimits}
         />
         {paymentDetail.sendingWalletDescriptor.currency === "BTC" &&
           paymentDetail.paymentType === "onchain" && (

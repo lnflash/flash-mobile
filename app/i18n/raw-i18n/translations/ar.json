@@ -700,7 +700,12 @@
     "onchainMinAmountInvoiceError": "The amount you entered is less than the minimum amount required to send an on-chain transaction {amount: number}. Please consider sending this amount via Lightning!",
     "placeholder": "Username, invoice, or address",
     "send": "Send",
-    "suggestionInput": "Enter your suggestion"
+    "suggestionInput": "Enter your suggestion",
+    "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
+    "maxReceiveAmountError": "The most this recipient can receive per payment is {amount: string}",
+    "insufficientBalanceForFee": "Your balance can't cover this amount plus the network fee",
+    "feeFetchNetworkError": "Could not calculate the network fee. Please check your connection and try again.",
+    "feeFetchFailed": "Could not calculate the network fee. Please try again."
   },
   "SettingsScreen": {
     "activated": "تم التفعيل",

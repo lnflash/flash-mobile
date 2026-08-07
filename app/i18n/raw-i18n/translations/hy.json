@@ -746,7 +746,12 @@
     "minAmountInvoiceError": "Բաքսի գումարը պակաս է նվազագույն գումարի {amount: number}",
     "maxAmountInvoiceError": "Բաքսի գումարը գերազանցում է առավելագույն գումարը {amount: number}",
     "minAmountConvertError": "Փոխակերպման գումարը պակաս է նվազագույն պահանջվող գումարի {amount: number}",
-    "maxAmountConvertError": "Փոխակերպման գումարը գերազանցում է առավելագույն գումարը {amount: number}"
+    "maxAmountConvertError": "Փոխակերպման գումարը գերազանցում է առավելագույն գումարը {amount: number}",
+    "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
+    "maxReceiveAmountError": "The most this recipient can receive per payment is {amount: string}",
+    "insufficientBalanceForFee": "Your balance can't cover this amount plus the network fee",
+    "feeFetchNetworkError": "Could not calculate the network fee. Please check your connection and try again.",
+    "feeFetchFailed": "Could not calculate the network fee. Please try again."
   },
   "SettingsScreen": {
     "staticQr": "Տպագրելի ստատիկ QR կոդ",

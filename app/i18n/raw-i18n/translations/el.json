@@ -746,7 +746,12 @@
     "minAmountInvoiceError": "Το ποσό στο τιμολόγιο είναι μικρότερο από το ελάχιστο ποσό {amount: number}",
     "maxAmountInvoiceError": "Το ποσό στο τιμολόγιο είναι μεγαλύτερο από το μέγιστο ποσό {amount: number}",
     "minAmountConvertError": "Το ποσό μετατροπής είναι μικρότερο από το ελάχιστο απαιτούμενο ποσό {amount: number}",
-    "maxAmountConvertError": "Το ποσό μετατροπής είναι μεγαλύτερο από το μέγιστο ποσό {amount: number}"
+    "maxAmountConvertError": "Το ποσό μετατροπής είναι μεγαλύτερο από το μέγιστο ποσό {amount: number}",
+    "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
+    "maxReceiveAmountError": "The most this recipient can receive per payment is {amount: string}",
+    "insufficientBalanceForFee": "Your balance can't cover this amount plus the network fee",
+    "feeFetchNetworkError": "Could not calculate the network fee. Please check your connection and try again.",
+    "feeFetchFailed": "Could not calculate the network fee. Please try again."
   },
   "SettingsScreen": {
     "staticQr": "Τυπώσιμο Στατικό Κώδικα QR",

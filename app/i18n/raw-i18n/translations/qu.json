@@ -746,7 +746,12 @@
     "minAmountInvoiceError": "Invoicupi qollqeqa, {amount: number} qollqenmanta pisimmi.",
     "maxAmountInvoiceError": "Invoicupi qollqeqa {amount: number} qollqenmanta aswan hatunmi.",
     "minAmountConvertError": "Qhapaq kaqmanta kutimuyqa aswan pisi kanqa {amount: number}.",
-    "maxAmountConvertError": "Qhapaq kaqmanta kutimuyqa aswan hatunmi {amount: number}."
+    "maxAmountConvertError": "Qhapaq kaqmanta kutimuyqa aswan hatunmi {amount: number}.",
+    "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
+    "maxReceiveAmountError": "The most this recipient can receive per payment is {amount: string}",
+    "insufficientBalanceForFee": "Your balance can't cover this amount plus the network fee",
+    "feeFetchNetworkError": "Could not calculate the network fee. Please check your connection and try again.",
+    "feeFetchFailed": "Could not calculate the network fee. Please try again."
   },
   "SettingsScreen": {
     "staticQr": "Printable Static QR Code sutiyuq p'anqamanqa kay qatiq p'anqakunam t'inkimun:",

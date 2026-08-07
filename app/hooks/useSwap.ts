@@ -21,8 +21,10 @@ import {
   payLightningBreez,
   receivePaymentBreez,
 } from "@app/utils/breez-sdk"
+import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useDisplayCurrency } from "./use-display-currency"
+import { useFormatSats } from "./use-format-sats"
 import { PaymentType } from "@galoymoney/client"
 
 export const useSwap = () => {
@@ -31,6 +33,7 @@ export const useSwap = () => {
 
   const { convertMoneyAmount } = usePriceConversion()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
+  const formatSats = useFormatSats()
 
   const [lnUsdInvoiceFeeProbe] = useLnUsdInvoiceFeeProbeMutation()
   const [lnUsdInvoiceCreate] = useLnUsdInvoiceCreateMutation()
@@ -81,11 +84,11 @@ export const useSwap = () => {
 
       if (invoiceRes.data?.lnUsdInvoiceCreate.invoice) {
         // get the sending fee probe
-        const feeRes = await fetchBreezFee(
-          PaymentType.Lightning,
-          invoiceRes.data?.lnUsdInvoiceCreate.invoice?.paymentRequest,
-          settlementSendAmount.amount,
-        )
+        const feeRes = await fetchBreezFee({
+          paymentType: PaymentType.Lightning,
+          paymentRequest: invoiceRes.data?.lnUsdInvoiceCreate.invoice?.paymentRequest,
+          amountSats: settlementSendAmount.amount,
+        })
         console.log("FEE RES>>>>>>>>", feeRes)
         if (!feeRes.err) {
           // check if (amount + fee) is larger than balance
@@ -112,10 +115,7 @@ export const useSwap = () => {
         } else {
           return {
             data: null,
-            err:
-              LL.SendBitcoinScreen.amountExceed({
-                balance: formattedBtcBalance,
-              }) + " (amount + fee)",
+            err: breezFeeErrorMessage(feeRes.err, LL, formatSats),
           }
         }
       } else {

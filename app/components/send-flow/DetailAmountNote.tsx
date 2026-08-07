@@ -4,7 +4,12 @@ import { View } from "react-native"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useBreez, useDisplayCurrency, usePriceConversion } from "@app/hooks"
+import {
+  useBreez,
+  useDisplayCurrency,
+  useFormatSats,
+  usePriceConversion,
+} from "@app/hooks"
 
 // components
 import { GaloyTertiaryButton } from "@app/components/atomic/galoy-tertiary-button"
@@ -22,6 +27,8 @@ import {
 
 // utils
 import { testProps } from "../../utils/testProps"
+import { LnurlLimits, validateAmountWithinLimits } from "@app/utils/breez-sdk/fee-errors"
+import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
 
 type Props = {
   selectedFeeType?: "fast" | "medium" | "slow"
@@ -30,6 +37,7 @@ type Props = {
   setPaymentDetail: (val: PaymentDetail<WalletCurrency>) => void
   setAsyncErrorMessage: (val: string) => void
   invoiceAmount?: MoneyAmount<WalletCurrency>
+  receiverLimits?: LnurlLimits | null
 }
 
 const DetailAmountNote: React.FC<Props> = ({
@@ -39,6 +47,7 @@ const DetailAmountNote: React.FC<Props> = ({
   setPaymentDetail,
   setAsyncErrorMessage,
   invoiceAmount,
+  receiverLimits,
 }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
@@ -56,10 +65,34 @@ const DetailAmountNote: React.FC<Props> = ({
 
   useEffect(() => {
     checkErrorMessage()
-  }, [paymentDetail])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentDetail, receiverLimits])
+
+  const formatSats = useFormatSats()
 
   const checkErrorMessage = () => {
     if (!convertMoneyAmount) return null
+    if (
+      paymentDetail?.sendingWalletDescriptor.currency === "BTC" &&
+      (paymentDetail?.paymentType === "intraledger" ||
+        paymentDetail?.paymentType === "lnurl")
+    ) {
+      // BTC wallet pays these destinations via LNURL-pay — validate against
+      // the receiver's advertised limits as the user types.
+      if (
+        paymentDetail.canSetAmount &&
+        isNonZeroMoneyAmount(paymentDetail.settlementAmount)
+      ) {
+        const limitErr = validateAmountWithinLimits(
+          paymentDetail.settlementAmount.amount,
+          receiverLimits ?? null,
+        )
+        setAsyncErrorMessage(
+          limitErr ? breezFeeErrorMessage(limitErr, LL, formatSats) : "",
+        )
+      }
+      return null
+    }
     if (
       paymentDetail?.sendingWalletDescriptor.currency === "USD" ||
       paymentDetail?.sendingWalletDescriptor.currency === "USDT"

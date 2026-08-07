@@ -746,7 +746,12 @@
     "minAmountInvoiceError": "Het bedrag op de factuur is minder dan het minimum bedrag {amount: number}",
     "maxAmountInvoiceError": "Het bedrag op de factuur is groter dan het maximale bedrag {amount: number}",
     "minAmountConvertError": "Het conversiebedrag is minder dan het minimale vereiste bedrag {amount: number}.",
-    "maxAmountConvertError": "Het conversiebedrag is groter dan het maximale bedrag {amount: number}"
+    "maxAmountConvertError": "Het conversiebedrag is groter dan het maximale bedrag {amount: number}",
+    "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
+    "maxReceiveAmountError": "The most this recipient can receive per payment is {amount: string}",
+    "insufficientBalanceForFee": "Your balance can't cover this amount plus the network fee",
+    "feeFetchNetworkError": "Could not calculate the network fee. Please check your connection and try again.",
+    "feeFetchFailed": "Could not calculate the network fee. Please try again."
   },
   "SettingsScreen": {
     "staticQr": "Printable Static QR Code",

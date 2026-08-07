@@ -746,7 +746,12 @@
     "minAmountInvoiceError": "Výše na fakturě je menší než minimální částka {amount: number}",
     "maxAmountInvoiceError": "Výše na fakturě je větší než maximální částka {amount: number}",
     "minAmountConvertError": "Výše konverze je menší než minimální požadovaná částka {amount: number}",
-    "maxAmountConvertError": "Výše konverze je větší než maximální částka {amount: number}"
+    "maxAmountConvertError": "Výše konverze je větší než maximální částka {amount: number}",
+    "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
+    "maxReceiveAmountError": "The most this recipient can receive per payment is {amount: string}",
+    "insufficientBalanceForFee": "Your balance can't cover this amount plus the network fee",
+    "feeFetchNetworkError": "Could not calculate the network fee. Please check your connection and try again.",
+    "feeFetchFailed": "Could not calculate the network fee. Please try again."
   },
   "SettingsScreen": {
     "staticQr": "Tiskovatelný statický kód QR Code",

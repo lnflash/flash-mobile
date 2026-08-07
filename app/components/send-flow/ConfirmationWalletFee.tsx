@@ -6,6 +6,7 @@ import { makeStyles, Text } from "@rneui/themed"
 // hooks
 import useFee, { FeeType } from "@app/screens/send-bitcoin-screen/use-fee"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
+import { useFormatSats } from "@app/hooks/use-format-sats"
 
 // types
 import { WalletCurrency } from "@app/graphql/generated"
@@ -15,6 +16,7 @@ import { DisplayCurrency } from "@app/types/amounts"
 // utils
 import { testProps } from "@app/utils/testProps"
 import { fetchBreezFee } from "@app/utils/breez-sdk"
+import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
 
 // assets
 import Cash from "@app/assets/icons/cash.svg"
@@ -46,6 +48,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
   const styles = useStyles()
   const getLightningFee = useFee(getFee ? getFee : null)
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
+  const formatSats = useFormatSats()
 
   useEffect(() => {
     getSendingFee()
@@ -59,28 +62,28 @@ const ConfirmationWalletFee: React.FC<Props> = ({
     ) {
       setFee(getLightningFee)
     } else {
-      const { fee, err } = await fetchBreezFee(
+      const { fee, err } = await fetchBreezFee({
         paymentType,
-        !!flashUserAddress ? flashUserAddress : paymentDetail.destination,
-        settlementAmount.amount,
+        paymentRequest: flashUserAddress || paymentDetail.destination,
+        amountSats: settlementAmount.amount,
         selectedFeeType,
-      )
+      })
       if (fee !== null) {
         setFee({
           status: "set",
           amount: { amount: fee, currency: "BTC", currencyCode: "BTC" },
         })
-      } else if (fee === "null" && err === "null") {
-        setFee({
-          status: "unset",
-          amount: undefined,
-        })
-      } else {
+      } else if (err) {
         setFee({
           status: "error",
           amount: undefined,
         })
-        setPaymentError(`${err}`)
+        setPaymentError(breezFeeErrorMessage(err, LL, formatSats))
+      } else {
+        setFee({
+          status: "unset",
+          amount: undefined,
+        })
       }
     }
   }

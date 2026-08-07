@@ -3276,6 +3276,28 @@ type RootTranslation = {
 		 * @param {number} amount
 		 */
 		maxAmountConvertError: RequiredParams<'amount'>
+		/**
+		 * T​h​e​ ​m​i​n​i​m​u​m​ ​t​h​i​s​ ​r​e​c​i​p​i​e​n​t​ ​c​a​n​ ​r​e​c​e​i​v​e​ ​i​s​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
+		 */
+		minReceiveAmountError: RequiredParams<'amount'>
+		/**
+		 * T​h​e​ ​m​o​s​t​ ​t​h​i​s​ ​r​e​c​i​p​i​e​n​t​ ​c​a​n​ ​r​e​c​e​i​v​e​ ​p​e​r​ ​p​a​y​m​e​n​t​ ​i​s​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
+		 */
+		maxReceiveAmountError: RequiredParams<'amount'>
+		/**
+		 * Y​o​u​r​ ​b​a​l​a​n​c​e​ ​c​a​n​'​t​ ​c​o​v​e​r​ ​t​h​i​s​ ​a​m​o​u​n​t​ ​p​l​u​s​ ​t​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e
+		 */
+		insufficientBalanceForFee: string
+		/**
+		 * C​o​u​l​d​ ​n​o​t​ ​c​a​l​c​u​l​a​t​e​ ​t​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​.​ ​P​l​e​a​s​e​ ​c​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		feeFetchNetworkError: string
+		/**
+		 * C​o​u​l​d​ ​n​o​t​ ​c​a​l​c​u​l​a​t​e​ ​t​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		feeFetchFailed: string
 	}
 	SettingsScreen: {
 		/**
@@ -9292,6 +9314,26 @@ export type TranslationFunctions = {
 		 * The conversion amount is greater than maximum amount {amount}
 		 */
 		maxAmountConvertError: (arg: { amount: number }) => LocalizedString
+		/**
+		 * The minimum this recipient can receive is {amount}
+		 */
+		minReceiveAmountError: (arg: { amount: string }) => LocalizedString
+		/**
+		 * The most this recipient can receive per payment is {amount}
+		 */
+		maxReceiveAmountError: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Your balance can't cover this amount plus the network fee
+		 */
+		insufficientBalanceForFee: () => LocalizedString
+		/**
+		 * Could not calculate the network fee. Please check your connection and try again.
+		 */
+		feeFetchNetworkError: () => LocalizedString
+		/**
+		 * Could not calculate the network fee. Please try again.
+		 */
+		feeFetchFailed: () => LocalizedString
 	}
 	SettingsScreen: {
 		/**
