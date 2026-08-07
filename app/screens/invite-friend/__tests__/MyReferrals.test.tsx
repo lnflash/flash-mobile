@@ -123,10 +123,10 @@ describe("MyReferrals screen", () => {
   })
 
   it("shows a pending-reward row and the pending count", () => {
-    withData(
-      [invite({ id: "p", status: InviteStatus.Accepted, rewardPending: true })],
-      { pendingRewardCount: 1, acceptedCount: 1 },
-    )
+    withData([invite({ id: "p", status: InviteStatus.Accepted, rewardPending: true })], {
+      pendingRewardCount: 1,
+      acceptedCount: 1,
+    })
     const screen = renderScreen()
     expect(screen.getByText("Joined — reward pending")).toBeTruthy()
     expect(screen.getByText("Pending rewards: 1")).toBeTruthy()
