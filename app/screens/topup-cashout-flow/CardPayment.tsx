@@ -27,6 +27,9 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 type Props = StackScreenProps<RootStackParamList, "CardPayment">
 
+// Fygaro hosted payment-button path.
+const FYGARO_PAYMENT_BUTTON_PATH = "/pb/bd4a34c1-3d24-4315-a2b8-627518f70916"
+
 const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   const isAuthed = useIsAuthed()
   const styles = useStyles()
@@ -37,19 +40,38 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   const [error, setError] = useState(false)
 
   // Get authenticated user data to extract username for webhook processing
-  const { data } = useHomeAuthedQuery({ skip: !isAuthed, fetchPolicy: "cache-first" })
+  const {
+    data,
+    loading: usernameLoading,
+    refetch,
+  } = useHomeAuthedQuery({
+    skip: !isAuthed,
+    fetchPolicy: "cache-first",
+  })
   const { amount, wallet } = route.params
-  const username = data?.me?.username || "user"
+  const username = data?.me?.username
 
   /**
    * Build Fygaro payment URL with critical parameters:
    * - amount: The payment amount in USD
-   * - client_reference: Flash username (CRITICAL: used by webhook to identify user)
+   * - custom_reference: Flash username (CRITICAL: ties the payment to a Flash
+   *   account — Fygaro's checkout reads `custom_reference`; the previously used
+   *   `client_reference` is silently ignored and left every payment unattributed)
+   * - client_note: target wallet, recorded on the Fygaro payment for ops/audit
+   *   (informational only — the backend credits the USD cash wallet regardless)
+   *
+   * The URL is only built once the username is known: a payment without a real
+   * username cannot be credited to anyone, so the WebView must never load with
+   * a placeholder reference.
    *
    * NOTE: The user will enter their email directly on Fygaro's form to avoid
    * double entry. The email is only for Fygaro's records, not for Flash processing.
    */
-  const paymentUrl = `https://fygaro.com/en/pb/bd4a34c1-3d24-4315-a2b8-627518f70916?amount=${amount}&client_reference=${username}`
+  const paymentUrl = username
+    ? `https://fygaro.com/en${FYGARO_PAYMENT_BUTTON_PATH}?amount=${amount}&custom_reference=${encodeURIComponent(
+        username,
+      )}&client_note=${encodeURIComponent(`wallet:${wallet}`)}`
+    : null
 
   /**
    * Domain whitelist for security.
@@ -90,9 +112,14 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   /**
    * Monitors URL changes to detect payment completion.
    *
-   * Payment providers redirect to specific URLs on success/failure:
-   * - Success: URL contains "success" or "payment_success"
-   * - Failure: URL contains "error", "failed", or "cancelled"
+   * Outcome signals, in order of authority:
+   * - `?success=1|0` query param: Fygaro's checkout returns to the
+   *   payment-button URL itself with this param after external-processor
+   *   flows (PayPal), so it must be read even on the /pb/ path.
+   * - Keywords ("success", "error", "failed", "cancelled") matched against
+   *   host+path ONLY — never the query string, which embeds the
+   *   user-controlled username (custom_reference): a username like
+   *   "success-story" must never fake a payment outcome.
    *
    * On success: Navigate to success screen (webhook will handle actual crediting)
    * On failure: Show error alert and allow retry
@@ -101,7 +128,18 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
    * This frontend handling is just for UX feedback.
    */
   const handleNavigationStateChange = ({ url }: { url: string }) => {
-    if (url.includes("success") || url.includes("payment_success")) {
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      // about:/blob:/data: and other non-hierarchical URLs carry no outcome
+      return
+    }
+
+    const successParam = parsed.searchParams.get("success")
+    const hostAndPath = `${parsed.host}${parsed.pathname}`
+
+    if (successParam === "1" || hostAndPath.includes("success")) {
       // Payment succeeded - navigate to success screen
       // The webhook will handle the actual wallet credit
       navigation.navigate("paymentSuccess", {
@@ -110,9 +148,10 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         transactionId: `txn_${Date.now()}`, // Temporary ID for UI
       })
     } else if (
-      url.includes("error") ||
-      url.includes("failed") ||
-      url.includes("cancelled")
+      successParam === "0" ||
+      hostAndPath.includes("error") ||
+      hostAndPath.includes("failed") ||
+      hostAndPath.includes("cancelled")
     ) {
       // Payment failed - show error and allow retry
       Alert.alert("Payment Failed", "Your payment was not completed. Please try again.", [
@@ -150,10 +189,20 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   const handleRetry = () => {
     setError(false)
     setIsLoading(true)
+    if (!paymentUrl) {
+      // The username never resolved, so there is no WebView to reload — and
+      // cache-first won't re-ask the server on its own. Refetch the account
+      // query; a failure lands back on the error screen.
+      refetch?.().catch(() => setError(true))
+      return
+    }
     webViewRef.current?.reload()
   }
 
-  if (error) {
+  // A settled account query with no username means the payment could never be
+  // attributed to an account — treat it like a load failure instead of letting
+  // an unattributable charge go through.
+  if (error || (!usernameLoading && !paymentUrl)) {
     return (
       <Screen>
         <View style={styles.centerContainer}>
@@ -173,7 +222,7 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   return (
     <Screen>
       <View style={styles.container}>
-        {isLoading && (
+        {(isLoading || !paymentUrl) && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text type="p1" style={styles.loadingText}>
@@ -181,126 +230,127 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
             </Text>
           </View>
         )}
-        <WebView
-          ref={webViewRef}
-          source={{ uri: paymentUrl }}
-          onNavigationStateChange={handleNavigationStateChange}
-          onLoadEnd={() => {
-            setIsLoading(false)
-            setError(false)
-          }}
-          onError={() => {
-            setIsLoading(false)
-            setError(true)
-          }}
-          /**
-           * URL navigation filter for security and iOS compatibility.
-           *
-           * This callback determines which URLs the WebView can navigate to.
-           * Platform-specific logic:
-           *
-           * iOS:
-           * - Allows about:, blob:, data: schemes (prevents warnings)
-           * - Allows all HTTPS URLs (PayPal requires many domains)
-           * - Blocks HTTP to enforce encryption
-           *
-           * Android:
-           * - Uses strict domain whitelist
-           * - More restrictive but more secure
-           *
-           * The iOS approach is less restrictive due to PayPal's complex
-           * redirect flow that uses many subdomains not in our whitelist.
-           */
-          onShouldStartLoadWithRequest={({ url }) => {
-            // Allow about: URLs (used for iframes) to prevent iOS warnings
-            if (url.startsWith("about:")) {
-              return true
-            }
+        {paymentUrl && (
+          <WebView
+            ref={webViewRef}
+            source={{ uri: paymentUrl }}
+            onNavigationStateChange={handleNavigationStateChange}
+            onLoadEnd={() => {
+              setIsLoading(false)
+              setError(false)
+            }}
+            onError={() => {
+              setIsLoading(false)
+              setError(true)
+            }}
+            /**
+             * URL navigation filter for security and iOS compatibility.
+             *
+             * This callback determines which URLs the WebView can navigate to.
+             * Platform-specific logic:
+             *
+             * iOS:
+             * - Allows about:, blob:, data: schemes (prevents warnings)
+             * - Allows all HTTPS URLs (PayPal requires many domains)
+             * - Blocks HTTP to enforce encryption
+             *
+             * Android:
+             * - Uses strict domain whitelist
+             * - More restrictive but more secure
+             *
+             * The iOS approach is less restrictive due to PayPal's complex
+             * redirect flow that uses many subdomains not in our whitelist.
+             */
+            onShouldStartLoadWithRequest={({ url }) => {
+              // Allow about: URLs (used for iframes) to prevent iOS warnings
+              if (url.startsWith("about:")) {
+                return true
+              }
 
-            // Allow blob: and data: URLs for embedded content
-            if (url.startsWith("blob:") || url.startsWith("data:")) {
-              return true
-            }
+              // Allow blob: and data: URLs for embedded content
+              if (url.startsWith("blob:") || url.startsWith("data:")) {
+                return true
+              }
 
-            // iOS: Allow HTTPS and internal URLs
-            // Less restrictive due to PayPal's complex domain requirements
-            if (Platform.OS === "ios") {
-              return url.startsWith("https://") || !url.startsWith("http")
-            }
+              // iOS: Allow HTTPS and internal URLs
+              // Less restrictive due to PayPal's complex domain requirements
+              if (Platform.OS === "ios") {
+                return url.startsWith("https://") || !url.startsWith("http")
+              }
 
-            // Android: Use domain whitelist for stricter security
-            return isAllowedDomain(url)
-          }}
-          style={styles.webView}
-          javaScriptEnabled
-          domStorageEnabled
-          startInLoadingState
-          scalesPageToFit={false}
-          bounces={false}
-          scrollEnabled
-          allowsBackForwardNavigationGestures
-          allowsInlineMediaPlayback
-          allowsFullscreenVideo={false}
-          allowFileAccess={false}
-          allowUniversalAccessFromFileURLs={false}
-          mixedContentMode="never"
-          originWhitelist={["https://*", "http://*", "about:*", "data:*", "blob:*"]}
-          sharedCookiesEnabled
-          thirdPartyCookiesEnabled
-          cacheEnabled
-          incognito={false}
-          webviewDebuggingEnabled={__DEV__}
-          automaticallyAdjustContentInsets={false}
-          contentInsetAdjustmentBehavior="never"
-          allowsLinkPreview={false}
-          injectedJavaScriptForMainFrameOnly
-          /**
-           * Custom User Agent for iOS to prevent zoom issues.
-           *
-           * CRITICAL: This desktop user agent prevents iOS WebView from:
-           * - Auto-zooming when users tap input fields
-           * - Showing mobile-specific layouts that break
-           * - Triggering viewport zoom on focus
-           *
-           * Without this, iOS WebView zooms in when users tap the
-           * payment form fields, creating a poor user experience.
-           *
-           * Android doesn't need this workaround.
-           */
-          userAgent={
-            Platform.OS === "ios"
-              ? "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-              : undefined
-          }
-          dataDetectorTypes={["none"]}
-          /**
-           * Pre-content JavaScript injection for early zoom prevention.
-           *
-           * Executes BEFORE the page content loads to:
-           * - Force viewport meta tag with no zoom
-           * - Set touch-action CSS to prevent pinch zoom
-           * - Run on multiple events to catch dynamic content
-           *
-           * This is the first line of defense against iOS zoom issues.
-           */
-          injectedJavaScriptBeforeContentLoaded={`(function(){const forceViewport=()=>{const content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';document.querySelectorAll('meta[name="viewport"]').forEach(m=>m.remove());const meta=document.createElement('meta');meta.name='viewport';meta.content=content;if(document.head){document.head.insertBefore(meta,document.head.firstChild)}else{document.documentElement.appendChild(meta)}};forceViewport();document.addEventListener('DOMContentLoaded',forceViewport);window.addEventListener('load',forceViewport);if(document.documentElement){document.documentElement.style.touchAction='pan-x pan-y'}true})();`}
-          /**
-           * Post-content JavaScript injection for comprehensive zoom prevention.
-           *
-           * This aggressive approach handles:
-           * 1. Viewport meta tag enforcement
-           * 2. CSS styles to prevent zoom (16px font size is key)
-           * 3. Focus event handlers to reset zoom on input focus
-           * 4. MutationObserver to handle dynamically added inputs
-           * 5. Double-tap prevention
-           *
-           * The 16px font size is critical - iOS auto-zooms on inputs
-           * with font size less than 16px.
-           *
-           * Combined with desktop user agent, this completely prevents
-           * the iOS zoom issue that occurs when users tap payment form fields.
-           */
-          injectedJavaScript={`(function(){
+              // Android: Use domain whitelist for stricter security
+              return isAllowedDomain(url)
+            }}
+            style={styles.webView}
+            javaScriptEnabled
+            domStorageEnabled
+            startInLoadingState
+            scalesPageToFit={false}
+            bounces={false}
+            scrollEnabled
+            allowsBackForwardNavigationGestures
+            allowsInlineMediaPlayback
+            allowsFullscreenVideo={false}
+            allowFileAccess={false}
+            allowUniversalAccessFromFileURLs={false}
+            mixedContentMode="never"
+            originWhitelist={["https://*", "http://*", "about:*", "data:*", "blob:*"]}
+            sharedCookiesEnabled
+            thirdPartyCookiesEnabled
+            cacheEnabled
+            incognito={false}
+            webviewDebuggingEnabled={__DEV__}
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
+            allowsLinkPreview={false}
+            injectedJavaScriptForMainFrameOnly
+            /**
+             * Custom User Agent for iOS to prevent zoom issues.
+             *
+             * CRITICAL: This desktop user agent prevents iOS WebView from:
+             * - Auto-zooming when users tap input fields
+             * - Showing mobile-specific layouts that break
+             * - Triggering viewport zoom on focus
+             *
+             * Without this, iOS WebView zooms in when users tap the
+             * payment form fields, creating a poor user experience.
+             *
+             * Android doesn't need this workaround.
+             */
+            userAgent={
+              Platform.OS === "ios"
+                ? "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                : undefined
+            }
+            dataDetectorTypes={["none"]}
+            /**
+             * Pre-content JavaScript injection for early zoom prevention.
+             *
+             * Executes BEFORE the page content loads to:
+             * - Force viewport meta tag with no zoom
+             * - Set touch-action CSS to prevent pinch zoom
+             * - Run on multiple events to catch dynamic content
+             *
+             * This is the first line of defense against iOS zoom issues.
+             */
+            injectedJavaScriptBeforeContentLoaded={`(function(){const forceViewport=()=>{const content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';document.querySelectorAll('meta[name="viewport"]').forEach(m=>m.remove());const meta=document.createElement('meta');meta.name='viewport';meta.content=content;if(document.head){document.head.insertBefore(meta,document.head.firstChild)}else{document.documentElement.appendChild(meta)}};forceViewport();document.addEventListener('DOMContentLoaded',forceViewport);window.addEventListener('load',forceViewport);if(document.documentElement){document.documentElement.style.touchAction='pan-x pan-y'}true})();`}
+            /**
+             * Post-content JavaScript injection for comprehensive zoom prevention.
+             *
+             * This aggressive approach handles:
+             * 1. Viewport meta tag enforcement
+             * 2. CSS styles to prevent zoom (16px font size is key)
+             * 3. Focus event handlers to reset zoom on input focus
+             * 4. MutationObserver to handle dynamically added inputs
+             * 5. Double-tap prevention
+             *
+             * The 16px font size is critical - iOS auto-zooms on inputs
+             * with font size less than 16px.
+             *
+             * Combined with desktop user agent, this completely prevents
+             * the iOS zoom issue that occurs when users tap payment form fields.
+             */
+            injectedJavaScript={`(function(){
             // Zoom prevention code only
             document.querySelectorAll('meta[name="viewport"]').forEach(m=>m.remove());
             const meta=document.createElement('meta');
@@ -340,7 +390,8 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
 
             true
           })();`}
-        />
+          />
+        )}
       </View>
     </Screen>
   )

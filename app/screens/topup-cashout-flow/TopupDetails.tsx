@@ -104,10 +104,13 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
           paymentType: route.params.paymentType,
         })
       } else {
-        // Card payment flow via Fygaro WebView
+        // Card payment flow via Fygaro WebView.
+        // Card top-ups credit the USD wallet only — the BTC option is not
+        // offered for card payments, and the wallet is pinned here so the
+        // Fygaro record (client_note) can never claim otherwise.
         navigation.navigate("CardPayment", {
           amount: parseFloat(amount),
-          wallet: selectedWallet, // Will be sent to webhook via metadata
+          wallet: "USD",
         })
       }
     } catch (error) {
@@ -138,7 +141,9 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     },
   ]
 
-  if (persistentState.isAdvanceMode) {
+  // Card top-ups are USD-only: Fygaro payments are recorded and credited in
+  // USD, so the BTC wallet option is only offered for bank-transfer flows.
+  if (persistentState.isAdvanceMode && route.params.paymentType !== "card") {
     walletButtons.push({
       id: "BTC",
       text: LL.TopupDetails.btcWallet(),
@@ -170,6 +175,11 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
             onPress={setSelectedWallet}
             style={styles.buttonGroup}
           />
+          {route.params.paymentType === "card" && (
+            <Text type="p3" style={styles.usdOnlyNote}>
+              {LL.TopupDetails.usdOnlyNotice()}
+            </Text>
+          )}
         </View>
 
         <View style={styles.fieldContainer}>
@@ -247,6 +257,10 @@ const useStyles = makeStyles(({ colors }) => (props: { bottom: number }) => ({
   },
   buttonGroup: {
     marginTop: 8,
+  },
+  usdOnlyNote: {
+    marginTop: 8,
+    color: colors.grey2,
   },
   primaryButton: {
     marginHorizontal: 20,

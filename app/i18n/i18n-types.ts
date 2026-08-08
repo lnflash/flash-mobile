@@ -2269,6 +2269,10 @@ type RootTranslation = {
 		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​i​s​ ​$​1​.​0​0
 		 */
 		minimumAmount: string
+		/**
+		 * C​a​r​d​ ​p​a​y​m​e​n​t​s​ ​t​o​p​ ​u​p​ ​y​o​u​r​ ​U​S​D​ ​w​a​l​l​e​t
+		 */
+		usdOnlyNotice: string
 	}
 	BridgeKyc: {
 		/**
@@ -8404,6 +8408,10 @@ export type TranslationFunctions = {
 		 * Minimum amount is $1.00
 		 */
 		minimumAmount: () => LocalizedString
+		/**
+		 * Card payments top up your USD wallet
+		 */
+		usdOnlyNotice: () => LocalizedString
 	}
 	BridgeKyc: {
 		/**
