@@ -358,6 +358,13 @@ gql`
     }
   }
 
+  query CashoutRate {
+    cashoutRate {
+      exchangeRate
+      feeBasisPoints
+    }
+  }
+
   query BankAccounts {
     me {
       id

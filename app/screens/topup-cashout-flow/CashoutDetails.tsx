@@ -14,6 +14,7 @@ import {
   useBankAccountsQuery,
   useBridgeExternalAccountsQuery,
   useBridgeRequestWithdrawalMutation,
+  useCashoutRateQuery,
   useCashoutScreenQuery,
   useRequestCashoutMutation,
   WalletCurrency,
@@ -33,6 +34,7 @@ import { View } from "react-native"
 import { PrimaryBtn } from "@app/components/buttons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { loadDefaultWithdrawAccountId } from "@app/screens/settings-screen/bank-accounts/default-account-store"
+import { estimateJmdReceiveCents } from "./cashout-estimate"
 
 type Props = StackScreenProps<RootStackParamList, "CashoutDetails">
 
@@ -75,6 +77,13 @@ const CashoutDetails = ({ navigation, route }: Props) => {
     returnPartialData: true,
   })
 
+  // The settlement rate the offer will lock (NCB via ERPNext) — NOT the
+  // realtimePrice display rate, which is mid-market and overstates the payout.
+  const { data: rateData } = useCashoutRateQuery({
+    fetchPolicy: "cache-and-network",
+    skip: isBridge,
+  })
+
   if (!convertMoneyAmount) {
     return null
   }
@@ -82,6 +91,15 @@ const CashoutDetails = ({ navigation, route }: Props) => {
   const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
   const settlementSendAmount = convertMoneyAmount(moneyAmount, WalletCurrency.Usd)
+  const cashoutRate = rateData?.cashoutRate
+  const estimatedJmdCents =
+    !isBridge && cashoutRate && settlementSendAmount.amount > 0
+      ? estimateJmdReceiveCents(
+          settlementSendAmount.amount,
+          cashoutRate.exchangeRate,
+          cashoutRate.feeBasisPoints,
+        )
+      : null
   const accountsLoading = isBridge ? bridgeLoading : bankLoading
   const isValidAmount =
     settlementSendAmount.amount > 0 &&
@@ -218,6 +236,23 @@ const CashoutDetails = ({ navigation, route }: Props) => {
           />
         </View>
         <CashoutPercentage setAmountToBalancePercentage={setAmountToBalancePercentage} />
+        {estimatedJmdCents !== null && cashoutRate && (
+          <View style={styles.rateInfo}>
+            <Text type="bm" bold>
+              {LL.Cashout.estimatedReceive({
+                amount: `J$${(estimatedJmdCents / 100).toFixed(2)}`,
+              })}
+            </Text>
+            <Text type="caption" color={colors.grey3}>
+              {LL.Cashout.settlementRate({
+                rate: `J$${(cashoutRate.exchangeRate / 100).toFixed(2)}`,
+              })}
+            </Text>
+            <Text type="caption" color={colors.grey3}>
+              {LL.Cashout.estimatedReceiveNote()}
+            </Text>
+          </View>
+        )}
         {Boolean(errorMsg) && (
           <Text type="bm" color={colors.red}>
             {errorMsg}
@@ -244,6 +279,10 @@ const useStyles = makeStyles(() => ({
   },
   amountLabel: {
     marginBottom: 5,
+  },
+  rateInfo: {
+    marginTop: 16,
+    gap: 2,
   },
   nextButton: {
     marginHorizontal: 20,

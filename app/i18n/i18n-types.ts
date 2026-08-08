@@ -286,6 +286,20 @@ type RootTranslation = {
 		 */
 		exchangeRate: string
 		/**
+		 * S​e​t​t​l​e​m​e​n​t​ ​r​a​t​e​:​ ​U​S​$​1​ ​=​ ​{​r​a​t​e​}
+		 * @param {string} rate
+		 */
+		settlementRate: RequiredParams<'rate'>
+		/**
+		 * Y​o​u​'​l​l​ ​r​e​c​e​i​v​e​ ​a​b​o​u​t​ ​{​a​m​o​u​n​t​}​ ​i​n​ ​y​o​u​r​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 * @param {string} amount
+		 */
+		estimatedReceive: RequiredParams<'amount'>
+		/**
+		 * F​i​n​a​l​ ​a​m​o​u​n​t​ ​i​s​ ​c​o​n​f​i​r​m​e​d​ ​o​n​ ​t​h​e​ ​n​e​x​t​ ​s​c​r​e​e​n
+		 */
+		estimatedReceiveNote: string
+		/**
 		 * S​e​n​d​ ​A​m​o​u​n​t
 		 */
 		sendAmount: string
@@ -6376,6 +6390,18 @@ export type TranslationFunctions = {
 		 * Exchange Rate
 		 */
 		exchangeRate: () => LocalizedString
+		/**
+		 * Settlement rate: US$1 = {rate}
+		 */
+		settlementRate: (arg: { rate: string }) => LocalizedString
+		/**
+		 * You'll receive about {amount} in your bank account
+		 */
+		estimatedReceive: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Final amount is confirmed on the next screen
+		 */
+		estimatedReceiveNote: () => LocalizedString
 		/**
 		 * Send Amount
 		 */
