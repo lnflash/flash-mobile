@@ -2154,7 +2154,7 @@ type RootTranslation = {
 		 */
 		inviteTitle: string
 		/**
-		 * G​e​t​ ​r​e​w​a​r​d​s​ ​f​o​r​ ​i​n​v​i​t​i​n​g​ ​f​r​i​e​n​d​s​ ​t​o​ ​F​l​a​s​h
+		 * G​e​t​ ​u​p​ ​t​o​ ​U​S​$​5​ ​f​o​r​ ​i​n​v​i​t​i​n​g​ ​f​r​i​e​n​d​s​ ​t​o​ ​F​l​a​s​h
 		 */
 		inviteDesc: string
 		/**
