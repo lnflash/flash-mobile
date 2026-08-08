@@ -704,7 +704,8 @@ const en: BaseTranslation = {
     btcWallet: "BTC Wallet",
     invalidEmail: "Please enter a valid email address",
     invalidAmount: "Please enter a valid amount",
-    minimumAmount: "Minimum amount is $1.00"
+    minimumAmount: "Minimum amount is $1.00",
+    usdOnlyNotice: "Card payments top up your USD wallet"
   },
   BridgeKyc: {
     title: "USD Account",
