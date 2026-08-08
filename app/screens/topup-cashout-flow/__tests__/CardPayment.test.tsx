@@ -1,5 +1,5 @@
 import React from "react"
-import { render, waitFor } from "@testing-library/react-native"
+import { fireEvent, render, waitFor } from "@testing-library/react-native"
 import { ThemeProvider } from "@rneui/themed"
 import theme from "@app/rne-theme/theme"
 import { i18nObject } from "../../../i18n/i18n-util"
@@ -69,6 +69,7 @@ beforeEach(() => {
   mockUseHomeAuthedQuery.mockReturnValue({
     data: { me: { username: "alice" } },
     loading: false,
+    refetch: jest.fn(() => Promise.resolve()),
   })
 })
 
@@ -107,7 +108,11 @@ describe("CardPayment payment URL", () => {
 
 describe("CardPayment username gating", () => {
   it("does not mount the WebView while the username is still loading", () => {
-    mockUseHomeAuthedQuery.mockReturnValue({ data: undefined, loading: true })
+    mockUseHomeAuthedQuery.mockReturnValue({
+      data: undefined,
+      loading: true,
+      refetch: jest.fn(() => Promise.resolve()),
+    })
 
     const { getAllByText } = renderCardPayment()
 
@@ -119,6 +124,7 @@ describe("CardPayment username gating", () => {
     mockUseHomeAuthedQuery.mockReturnValue({
       data: { me: { username: null } },
       loading: false,
+      refetch: jest.fn(() => Promise.resolve()),
     })
 
     const { getAllByText } = renderCardPayment()
@@ -126,9 +132,39 @@ describe("CardPayment username gating", () => {
     expect(mockWebView).not.toHaveBeenCalled()
     expect(getAllByText(en.FygaroWebViewScreen.error()).length).toBeGreaterThan(0)
   })
+
+  it("Retry refetches the account query when the username never resolved", () => {
+    const refetch = jest.fn(() => Promise.resolve())
+    mockUseHomeAuthedQuery.mockReturnValue({
+      data: { me: { username: null } },
+      loading: false,
+      refetch,
+    })
+
+    const { getAllByText } = renderCardPayment()
+    fireEvent.press(getAllByText(en.FygaroWebViewScreen.retry())[0])
+
+    expect(refetch).toHaveBeenCalled()
+  })
 })
 
 describe("CardPayment navigation callbacks", () => {
+  it("ignores navigation events for the payment-button URL itself, even when the username contains a trigger word", () => {
+    mockUseHomeAuthedQuery.mockReturnValue({
+      data: { me: { username: "success-story" } },
+      loading: false,
+      refetch: jest.fn(() => Promise.resolve()),
+    })
+    const { navigate, goBack } = renderCardPayment()
+
+    const props = lastWebViewProps()
+    expect(props.source.uri).toContain("success")
+    props.onNavigationStateChange({ url: props.source.uri })
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(goBack).not.toHaveBeenCalled()
+  })
+
   it("navigates to paymentSuccess with the original amount and wallet on a success URL", async () => {
     const { navigate } = renderCardPayment({ amount: 10, wallet: "USD" })
 

@@ -27,6 +27,10 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 type Props = StackScreenProps<RootStackParamList, "CardPayment">
 
+// Fygaro hosted payment-button path. Shared between the payment URL and the
+// navigation-state guard below so the two can never drift apart.
+const FYGARO_PAYMENT_BUTTON_PATH = "/pb/bd4a34c1-3d24-4315-a2b8-627518f70916"
+
 const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   const isAuthed = useIsAuthed()
   const styles = useStyles()
@@ -37,7 +41,11 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   const [error, setError] = useState(false)
 
   // Get authenticated user data to extract username for webhook processing
-  const { data, loading: usernameLoading } = useHomeAuthedQuery({
+  const {
+    data,
+    loading: usernameLoading,
+    refetch,
+  } = useHomeAuthedQuery({
     skip: !isAuthed,
     fetchPolicy: "cache-first",
   })
@@ -50,7 +58,8 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
    * - custom_reference: Flash username (CRITICAL: ties the payment to a Flash
    *   account — Fygaro's checkout reads `custom_reference`; the previously used
    *   `client_reference` is silently ignored and left every payment unattributed)
-   * - client_note: target wallet (always USD — card top-ups are USD-only)
+   * - client_note: target wallet, recorded on the Fygaro payment for ops/audit
+   *   (informational only — the backend credits the USD cash wallet regardless)
    *
    * The URL is only built once the username is known: a payment without a real
    * username cannot be credited to anyone, so the WebView must never load with
@@ -60,7 +69,7 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
    * double entry. The email is only for Fygaro's records, not for Flash processing.
    */
   const paymentUrl = username
-    ? `https://fygaro.com/en/pb/bd4a34c1-3d24-4315-a2b8-627518f70916?amount=${amount}&custom_reference=${encodeURIComponent(
+    ? `https://fygaro.com/en${FYGARO_PAYMENT_BUTTON_PATH}?amount=${amount}&custom_reference=${encodeURIComponent(
         username,
       )}&client_note=${encodeURIComponent(`wallet:${wallet}`)}`
     : null
@@ -115,6 +124,13 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
    * This frontend handling is just for UX feedback.
    */
   const handleNavigationStateChange = ({ url }: { url: string }) => {
+    // Never pattern-match the payment-button URL itself: it embeds the
+    // user-controlled username (custom_reference), so a username containing
+    // "success"/"failed"/"error"/"cancelled" would otherwise fake a payment
+    // outcome the moment the page loads.
+    if (url.includes(FYGARO_PAYMENT_BUTTON_PATH)) {
+      return
+    }
     if (url.includes("success") || url.includes("payment_success")) {
       // Payment succeeded - navigate to success screen
       // The webhook will handle the actual wallet credit
@@ -164,6 +180,13 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   const handleRetry = () => {
     setError(false)
     setIsLoading(true)
+    if (!paymentUrl) {
+      // The username never resolved, so there is no WebView to reload — and
+      // cache-first won't re-ask the server on its own. Refetch the account
+      // query; a failure lands back on the error screen.
+      refetch?.().catch(() => setError(true))
+      return
+    }
     webViewRef.current?.reload()
   }
 
