@@ -543,7 +543,7 @@
     "transfer": "Transfer",
     "offlineShowingCached": "ไม่มีการเชื่อมต่อ — แสดงยอดคงเหลือที่บันทึกไว้",
     "inviteTitle": "Invite Friends",
-    "inviteDesc": "Get rewards for inviting friends to Flash"
+    "inviteDesc": "Get up to US$5 for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "พินนี้ผิด มีโอกาสใส่พินอีก {attemptsRemaining: number} ครั้ง",

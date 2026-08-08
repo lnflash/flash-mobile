@@ -543,7 +543,7 @@
     "transfer": "Transfer",
     "offlineShowingCached": "Không có kết nối — đang hiển thị số dư đã lưu",
     "inviteTitle": "Invite Friends",
-    "inviteDesc": "Get rewards for inviting friends to Flash"
+    "inviteDesc": "Get up to US$5 for inviting friends to Flash"
   },
   "PinScreen": {
     "attemptsRemaining": "Mã PIN không chính xác. Còn lại {attemptsRemaining: number} lần thử.",
