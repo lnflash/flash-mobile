@@ -23,9 +23,9 @@ describe("pickDefaultBankAccount", () => {
   })
 
   it("is case-insensitive on currency", () => {
-    expect(
-      pickDefaultBankAccount([{ id: "j1", currency: "jmd" }, usd("u1")])?.id,
-    ).toBe("j1")
+    expect(pickDefaultBankAccount([{ id: "j1", currency: "jmd" }, usd("u1")])?.id).toBe(
+      "j1",
+    )
   })
 })
 

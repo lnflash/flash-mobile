@@ -33,9 +33,8 @@ export const pickDefaultBankAccount = <T extends SelectableBankAccount>(
  * the outcome (JMD accounts always win the selection when any exist), so the
  * preview can decide before the async stored id loads.
  */
-export const selectsJmdPayout = (
-  accounts: readonly SelectableBankAccount[],
-): boolean => pickDefaultBankAccount(accounts)?.currency.toUpperCase() === "JMD"
+export const selectsJmdPayout = (accounts: readonly SelectableBankAccount[]): boolean =>
+  pickDefaultBankAccount(accounts)?.currency.toUpperCase() === "JMD"
 
 /**
  * Mirrors the backend cashout quote math (flash CashoutManager.createOffer):
