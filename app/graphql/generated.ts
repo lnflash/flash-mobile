@@ -762,6 +762,14 @@ export type CashoutOffer = {
   readonly walletId: Scalars['WalletId']['output'];
 };
 
+export type CashoutRate = {
+  readonly __typename: 'CashoutRate';
+  /** JMD cents per 1 USD at which a JMD cashout would settle right now — the same rate a cashout offer locks in. */
+  readonly exchangeRate: Scalars['JMDCents']['output'];
+  /** Flash cashout service fee in basis points, deducted from the USD amount before conversion. */
+  readonly feeBasisPoints: Scalars['Int']['output'];
+};
+
 export type CentAmountPayload = {
   readonly __typename: 'CentAmountPayload';
   readonly amount?: Maybe<Scalars['USDCents']['output']>;
@@ -2049,6 +2057,7 @@ export type Query = {
   readonly btcPriceList?: Maybe<ReadonlyArray<Maybe<PricePoint>>>;
   readonly businessMapMarkers: ReadonlyArray<MapMarker>;
   readonly cashWalletCutover: CashWalletCutover;
+  readonly cashoutRate: CashoutRate;
   readonly colorScheme: Scalars['String']['output'];
   readonly currencyList: ReadonlyArray<Currency>;
   readonly feedbackModalShown: Scalars['Boolean']['output'];
@@ -3202,6 +3211,11 @@ export type BridgeVirtualAccountQueryVariables = Exact<{ [key: string]: never; }
 
 
 export type BridgeVirtualAccountQuery = { readonly __typename: 'Query', readonly bridgeVirtualAccount?: { readonly __typename: 'BridgeVirtualAccount', readonly accountNumber?: string | null, readonly accountNumberLast4?: string | null, readonly bankName?: string | null, readonly id?: string | null, readonly kycLink?: string | null, readonly message?: string | null, readonly pending?: boolean | null, readonly routingNumber?: string | null, readonly tosLink?: string | null } | null };
+
+export type CashoutRateQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CashoutRateQuery = { readonly __typename: 'Query', readonly cashoutRate: { readonly __typename: 'CashoutRate', readonly exchangeRate: number, readonly feeBasisPoints: number } };
 
 export type BankAccountsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6302,6 +6316,41 @@ export function useBridgeVirtualAccountLazyQuery(baseOptions?: Apollo.LazyQueryH
 export type BridgeVirtualAccountQueryHookResult = ReturnType<typeof useBridgeVirtualAccountQuery>;
 export type BridgeVirtualAccountLazyQueryHookResult = ReturnType<typeof useBridgeVirtualAccountLazyQuery>;
 export type BridgeVirtualAccountQueryResult = Apollo.QueryResult<BridgeVirtualAccountQuery, BridgeVirtualAccountQueryVariables>;
+export const CashoutRateDocument = gql`
+    query CashoutRate {
+  cashoutRate {
+    exchangeRate
+    feeBasisPoints
+  }
+}
+    `;
+
+/**
+ * __useCashoutRateQuery__
+ *
+ * To run a query within a React component, call `useCashoutRateQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCashoutRateQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCashoutRateQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useCashoutRateQuery(baseOptions?: Apollo.QueryHookOptions<CashoutRateQuery, CashoutRateQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<CashoutRateQuery, CashoutRateQueryVariables>(CashoutRateDocument, options);
+      }
+export function useCashoutRateLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<CashoutRateQuery, CashoutRateQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<CashoutRateQuery, CashoutRateQueryVariables>(CashoutRateDocument, options);
+        }
+export type CashoutRateQueryHookResult = ReturnType<typeof useCashoutRateQuery>;
+export type CashoutRateLazyQueryHookResult = ReturnType<typeof useCashoutRateLazyQuery>;
+export type CashoutRateQueryResult = Apollo.QueryResult<CashoutRateQuery, CashoutRateQueryVariables>;
 export const BankAccountsDocument = gql`
     query BankAccounts {
   me {

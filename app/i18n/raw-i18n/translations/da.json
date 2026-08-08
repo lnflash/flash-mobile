@@ -85,7 +85,10 @@
     "accountType": "Account Type",
     "currency": "Currency",
     "noBankAccountFound": "No bank account found. Please add a bank account first.",
-    "noExternalAccountFound": "No external account found. Please add an external account first."
+    "noExternalAccountFound": "No external account found. Please add an external account first.",
+    "settlementRate": "Settlement rate: US$1 = {rate}",
+    "estimatedReceive": "You'll receive about {amount} in your bank account",
+    "estimatedReceiveNote": "Final amount is confirmed on the next screen"
   },
   "ConversionDetailsScreen": {
     "title": "Konverter",

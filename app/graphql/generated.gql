@@ -1124,6 +1124,14 @@ query CashWalletCutover {
   }
 }
 
+query CashoutRate {
+  cashoutRate {
+    exchangeRate
+    feeBasisPoints
+    __typename
+  }
+}
+
 query ExportCsvSetting($walletIds: [WalletId!]!) {
   me {
     id
