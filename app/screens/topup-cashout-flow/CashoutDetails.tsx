@@ -34,7 +34,11 @@ import { View } from "react-native"
 import { PrimaryBtn } from "@app/components/buttons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { loadDefaultWithdrawAccountId } from "@app/screens/settings-screen/bank-accounts/default-account-store"
-import { estimateJmdReceiveCents } from "./cashout-estimate"
+import {
+  estimateJmdReceiveCents,
+  pickDefaultBankAccount,
+  selectsJmdPayout,
+} from "./cashout-estimate"
 
 type Props = StackScreenProps<RootStackParamList, "CashoutDetails">
 
@@ -92,8 +96,11 @@ const CashoutDetails = ({ navigation, route }: Props) => {
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
   const settlementSendAmount = convertMoneyAmount(moneyAmount, WalletCurrency.Usd)
   const cashoutRate = rateData?.cashoutRate
+  // Only preview JMD when the payout will actually settle in JMD — a user
+  // whose only cashout account is USD gets a USD payout with no conversion.
+  const jmdPayout = selectsJmdPayout(bankAccountsData?.me?.bankAccounts ?? [])
   const estimatedJmdCents =
-    !isBridge && cashoutRate && settlementSendAmount.amount > 0
+    !isBridge && jmdPayout && cashoutRate && settlementSendAmount.amount > 0
       ? estimateJmdReceiveCents(
           settlementSendAmount.amount,
           cashoutRate.exchangeRate,
@@ -121,16 +128,7 @@ const CashoutDetails = ({ navigation, route }: Props) => {
 
     const localBankAccounts = bankAccountsData?.me?.bankAccounts ?? []
     const storedDefaultId = await loadDefaultWithdrawAccountId("JMD")
-    const jmdBankAccounts = localBankAccounts.filter(
-      (el) => el.currency.toUpperCase() === "JMD",
-    )
-    const defaultBankAccount =
-      jmdBankAccounts.find((el) => el.id === storedDefaultId) ||
-      jmdBankAccounts.find((el) => el.isDefault) ||
-      jmdBankAccounts[0] ||
-      localBankAccounts.find((el) => el.id === storedDefaultId) ||
-      localBankAccounts.find((el) => el.isDefault) ||
-      localBankAccounts[0]
+    const defaultBankAccount = pickDefaultBankAccount(localBankAccounts, storedDefaultId)
 
     if (!defaultBankAccount?.id) {
       setErrorMsg(LL.Cashout.noBankAccountFound())

@@ -1,4 +1,56 @@
-import { estimateJmdReceiveCents } from "@app/screens/topup-cashout-flow/cashout-estimate"
+import {
+  estimateJmdReceiveCents,
+  pickDefaultBankAccount,
+  selectsJmdPayout,
+} from "@app/screens/topup-cashout-flow/cashout-estimate"
+
+const jmd = (id: string, isDefault = false) => ({ id, currency: "JMD", isDefault })
+const usd = (id: string, isDefault = false) => ({ id, currency: "USD", isDefault })
+
+describe("pickDefaultBankAccount", () => {
+  it("prefers the stored default among JMD accounts", () => {
+    const accounts = [usd("u1", true), jmd("j1", true), jmd("j2")]
+    expect(pickDefaultBankAccount(accounts, "j2")?.id).toBe("j2")
+  })
+
+  it("falls back stored-JMD → default-JMD → first-JMD → stored → default → first", () => {
+    expect(pickDefaultBankAccount([usd("u1"), jmd("j1", true), jmd("j2")])?.id).toBe("j1")
+    expect(pickDefaultBankAccount([usd("u1"), jmd("j1"), jmd("j2")])?.id).toBe("j1")
+    expect(pickDefaultBankAccount([usd("u1"), usd("u2")], "u2")?.id).toBe("u2")
+    expect(pickDefaultBankAccount([usd("u1"), usd("u2", true)])?.id).toBe("u2")
+    expect(pickDefaultBankAccount([usd("u1"), usd("u2")])?.id).toBe("u1")
+    expect(pickDefaultBankAccount([])).toBeUndefined()
+  })
+
+  it("is case-insensitive on currency", () => {
+    expect(
+      pickDefaultBankAccount([{ id: "j1", currency: "jmd" }, usd("u1")])?.id,
+    ).toBe("j1")
+  })
+})
+
+describe("selectsJmdPayout", () => {
+  it("is true when any JMD account exists — even if the stored default is USD", () => {
+    // JMD accounts always win the selection chain, so the preview can decide
+    // before the async stored-default id loads.
+    expect(selectsJmdPayout([usd("u1", true), jmd("j1")])).toBe(true)
+  })
+
+  it("is false for USD-only or empty account lists", () => {
+    expect(selectsJmdPayout([usd("u1"), usd("u2", true)])).toBe(false)
+    expect(selectsJmdPayout([])).toBe(false)
+  })
+
+  it("agrees with pickDefaultBankAccount for every stored-default choice", () => {
+    // The equivalence the preview relies on: no storedDefaultId value can
+    // flip the payout currency away from what selectsJmdPayout reports.
+    const accounts = [usd("u1", true), jmd("j1"), usd("u2"), jmd("j2", true)]
+    for (const stored of [undefined, "u1", "u2", "j1", "j2", "missing"]) {
+      const picked = pickDefaultBankAccount(accounts, stored)
+      expect(picked?.currency === "JMD").toBe(selectsJmdPayout(accounts))
+    }
+  })
+})
 
 describe("estimateJmdReceiveCents", () => {
   // Mirrors backend math: fee (bps) off the USD amount first, then convert at
