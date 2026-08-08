@@ -8289,7 +8289,7 @@ export type TranslationFunctions = {
 		 */
 		inviteTitle: () => LocalizedString
 		/**
-		 * Get rewards for inviting friends to Flash
+		 * Get up to US$5 for inviting friends to Flash
 		 */
 		inviteDesc: () => LocalizedString
 		/**
