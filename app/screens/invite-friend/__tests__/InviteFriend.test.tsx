@@ -12,6 +12,9 @@ import InviteFriend from "../InviteFriend"
 jest.mock("@app/i18n/i18n-react", () => ({
   useI18nContext: () => ({
     LL: {
+      MyReferrals: {
+        viewMine: () => "View my referrals",
+      },
       InviteFriend: {
         title: () => "Invite a friend to Flash!",
         subtitle: () => "Enter a phone number or email address to invite a friend.",

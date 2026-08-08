@@ -1265,6 +1265,25 @@ type MobileVersions {
   platform: String!
 }
 
+type MyReferralInvite {
+  contact: String!
+  createdAt: String!
+  id: ID!
+  method: InviteMethod!
+  myRewardCents: Int
+  redeemedAt: String
+  rewardPending: Boolean!
+  status: InviteStatus!
+}
+
+type MyReferrals {
+  acceptedCount: Int!
+  invites: [MyReferralInvite!]!
+  pendingRewardCount: Int!
+  totalEarnedCents: Int!
+  totalInvites: Int!
+}
+
 type Mutation {
   accountCapabilityUpgradeRequest(input: AccountCapabilityUpgradeRequestInput!): AccountCapabilityUpgradeRequestPayload!
   accountDelete: AccountDeletePayload!
@@ -1698,6 +1717,7 @@ type Query {
   lnInvoicePaymentStatus(input: LnInvoicePaymentStatusInput!): LnInvoicePaymentStatusPayload!
   me: User
   mobileVersions: [MobileVersions]
+  myReferrals(afterId: ID, first: Int): MyReferrals!
   npubByUsername(username: Username!): npubByUsername
   onChainTxFee(address: OnChainAddress!, amount: SatAmount!, speed: PayoutSpeed = FAST, walletId: WalletId!): OnChainTxFee!
   onChainUsdTxFee(address: OnChainAddress!, amount: FractionalCentAmount!, speed: PayoutSpeed = FAST, walletId: WalletId!): OnChainUsdTxFee!

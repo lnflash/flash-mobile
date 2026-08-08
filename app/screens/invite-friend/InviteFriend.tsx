@@ -353,6 +353,16 @@ const InviteFriend: React.FC<Props> = ({ navigation }) => {
         btnStyle={styles.submitButton}
       />
 
+      {/* The user's own invite history + earnings */}
+      <TouchableOpacity
+        style={styles.myReferralsLink}
+        onPress={() => navigation.navigate("MyReferrals")}
+      >
+        <Text type="p2" bold color={colors.primary}>
+          {LL.MyReferrals.viewMine()}
+        </Text>
+      </TouchableOpacity>
+
       {/* Contact Picker Modal */}
       <ContactPicker
         visible={showContactPicker}
@@ -493,6 +503,10 @@ const useStyles = makeStyles(({ colors }) => ({
     color: colors.grey3,
     textAlign: "center",
     paddingHorizontal: 16,
+  },
+  myReferralsLink: {
+    alignItems: "center",
+    paddingVertical: 14,
   },
   submitButton: {
     marginBottom: 10,
