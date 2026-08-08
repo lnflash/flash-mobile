@@ -1,4 +1,5 @@
 import React from "react"
+import { Alert } from "react-native"
 import { fireEvent, render, waitFor } from "@testing-library/react-native"
 import { ThemeProvider } from "@rneui/themed"
 import theme from "@app/rne-theme/theme"
@@ -163,6 +164,39 @@ describe("CardPayment navigation callbacks", () => {
 
     expect(navigate).not.toHaveBeenCalled()
     expect(goBack).not.toHaveBeenCalled()
+  })
+
+  it("fires success when Fygaro returns to the payment-button URL with ?success=1 (real PayPal return shape)", async () => {
+    const { navigate } = renderCardPayment({ amount: 10, wallet: "USD" })
+
+    lastWebViewProps().onNavigationStateChange({
+      url: "https://www.fygaro.com/en/pb/bd4a34c1-3d24-4315-a2b8-627518f70916/?success=1&custom_reference=alice",
+    })
+
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith("paymentSuccess", {
+        amount: 10,
+        wallet: "USD",
+        transactionId: expect.stringMatching(/^txn_/),
+      }),
+    )
+  })
+
+  it("fires the failure alert when Fygaro returns with ?success=0", () => {
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { navigate } = renderCardPayment()
+
+    lastWebViewProps().onNavigationStateChange({
+      url: "https://www.fygaro.com/en/pb/bd4a34c1-3d24-4315-a2b8-627518f70916/?success=0&custom_reference=alice",
+    })
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Payment Failed",
+      expect.any(String),
+      expect.anything(),
+    )
+    alertSpy.mockRestore()
   })
 
   it("navigates to paymentSuccess with the original amount and wallet on a success URL", async () => {

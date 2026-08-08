@@ -27,8 +27,7 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 type Props = StackScreenProps<RootStackParamList, "CardPayment">
 
-// Fygaro hosted payment-button path. Shared between the payment URL and the
-// navigation-state guard below so the two can never drift apart.
+// Fygaro hosted payment-button path.
 const FYGARO_PAYMENT_BUTTON_PATH = "/pb/bd4a34c1-3d24-4315-a2b8-627518f70916"
 
 const CardPayment: React.FC<Props> = ({ navigation, route }) => {
@@ -113,9 +112,14 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   /**
    * Monitors URL changes to detect payment completion.
    *
-   * Payment providers redirect to specific URLs on success/failure:
-   * - Success: URL contains "success" or "payment_success"
-   * - Failure: URL contains "error", "failed", or "cancelled"
+   * Outcome signals, in order of authority:
+   * - `?success=1|0` query param: Fygaro's checkout returns to the
+   *   payment-button URL itself with this param after external-processor
+   *   flows (PayPal), so it must be read even on the /pb/ path.
+   * - Keywords ("success", "error", "failed", "cancelled") matched against
+   *   host+path ONLY — never the query string, which embeds the
+   *   user-controlled username (custom_reference): a username like
+   *   "success-story" must never fake a payment outcome.
    *
    * On success: Navigate to success screen (webhook will handle actual crediting)
    * On failure: Show error alert and allow retry
@@ -124,14 +128,18 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
    * This frontend handling is just for UX feedback.
    */
   const handleNavigationStateChange = ({ url }: { url: string }) => {
-    // Never pattern-match the payment-button URL itself: it embeds the
-    // user-controlled username (custom_reference), so a username containing
-    // "success"/"failed"/"error"/"cancelled" would otherwise fake a payment
-    // outcome the moment the page loads.
-    if (url.includes(FYGARO_PAYMENT_BUTTON_PATH)) {
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      // about:/blob:/data: and other non-hierarchical URLs carry no outcome
       return
     }
-    if (url.includes("success") || url.includes("payment_success")) {
+
+    const successParam = parsed.searchParams.get("success")
+    const hostAndPath = `${parsed.host}${parsed.pathname}`
+
+    if (successParam === "1" || hostAndPath.includes("success")) {
       // Payment succeeded - navigate to success screen
       // The webhook will handle the actual wallet credit
       navigation.navigate("paymentSuccess", {
@@ -140,9 +148,10 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         transactionId: `txn_${Date.now()}`, // Temporary ID for UI
       })
     } else if (
-      url.includes("error") ||
-      url.includes("failed") ||
-      url.includes("cancelled")
+      successParam === "0" ||
+      hostAndPath.includes("error") ||
+      hostAndPath.includes("failed") ||
+      hostAndPath.includes("cancelled")
     ) {
       // Payment failed - show error and allow retry
       Alert.alert("Payment Failed", "Your payment was not completed. Please try again.", [
