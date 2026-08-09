@@ -13,8 +13,8 @@
  * - Desktop user agent spoofing on iOS to prevent mobile-specific issues
  */
 
-import React, { useState, useRef } from "react"
-import { View, ActivityIndicator, Alert, Platform } from "react-native"
+import React, { useState, useRef, useLayoutEffect } from "react"
+import { View, ActivityIndicator, Alert, Platform, TouchableOpacity } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -50,6 +50,31 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   })
   const { amount, wallet } = route.params
   const username = data?.me?.username
+
+  /**
+   * Persistent header exit. The payment can complete entirely inside
+   * Fygaro's page (SPA state change, PayPal modal) with no URL change for
+   * onNavigationStateChange to detect — leaving the user stranded in the
+   * WebView with only back-navigation through the whole top-up stack. The
+   * header Done button guarantees a one-tap path straight home; leaving
+   * early is safe because crediting is webhook-driven on the backend, not
+   * dependent on this screen.
+   */
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: LL.FygaroWebViewScreen.title(),
+      headerRight: () => (
+        <TouchableOpacity
+          style={styles.headerDone}
+          onPress={() => navigation.navigate("Primary")}
+        >
+          <Text type="p1" color={colors.primary}>
+            {LL.PaymentSuccessScreen.done()}
+          </Text>
+        </TouchableOpacity>
+      ),
+    })
+  }, [navigation, LL, colors.primary, styles.headerDone])
 
   /**
    * Build Fygaro payment URL with critical parameters:
@@ -417,6 +442,7 @@ const useStyles = makeStyles(() => ({
     zIndex: 1,
   },
   loadingText: { marginTop: 16, textAlign: "center" },
+  headerDone: { paddingHorizontal: 16, paddingVertical: 8 },
   errorText: { textAlign: "center", marginBottom: 24 },
   retryButton: { marginTop: 16 },
   webView: { flex: 1 },

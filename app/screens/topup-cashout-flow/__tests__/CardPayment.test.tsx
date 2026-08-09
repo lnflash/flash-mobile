@@ -40,8 +40,9 @@ const renderCardPayment = ({
   wallet = "USD",
   navigate = jest.fn(),
   goBack = jest.fn(),
+  setOptions = jest.fn(),
 } = {}) => {
-  const navigation = { navigate, goBack } as never
+  const navigation = { navigate, goBack, setOptions } as never
   const route = {
     key: "CardPayment",
     name: "CardPayment",
@@ -52,7 +53,7 @@ const renderCardPayment = ({
       <CardPayment navigation={navigation} route={route} />
     </ThemeProvider>,
   )
-  return { ...utils, navigate, goBack }
+  return { ...utils, navigate, goBack, setOptions }
 }
 
 // The test renderer occasionally issues a stray zero-arg invocation of the
@@ -146,6 +147,33 @@ describe("CardPayment username gating", () => {
     fireEvent.press(getAllByText(en.FygaroWebViewScreen.retry())[0])
 
     expect(refetch).toHaveBeenCalled()
+  })
+})
+
+describe("CardPayment header exit", () => {
+  it("provides a persistent header Done button that navigates straight home", () => {
+    const { navigate, setOptions } = renderCardPayment()
+
+    const options = (setOptions as jest.Mock).mock.calls.at(-1)?.[0]
+    expect(options?.headerRight).toBeDefined()
+
+    const { getAllByText } = render(
+      <ThemeProvider theme={theme}>{options.headerRight()}</ThemeProvider>,
+    )
+    fireEvent.press(getAllByText(en.PaymentSuccessScreen.done())[0])
+
+    expect(navigate).toHaveBeenCalledWith("Primary")
+  })
+
+  it("keeps the header exit available while the username is still loading", () => {
+    mockUseHomeAuthedQuery.mockReturnValue({
+      data: undefined,
+      loading: true,
+      refetch: jest.fn(() => Promise.resolve()),
+    })
+    const { setOptions } = renderCardPayment()
+
+    expect((setOptions as jest.Mock).mock.calls.at(-1)?.[0]?.headerRight).toBeDefined()
   })
 })
 
