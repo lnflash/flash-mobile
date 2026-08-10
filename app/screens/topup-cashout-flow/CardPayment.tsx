@@ -13,8 +13,8 @@
  * - Desktop user agent spoofing on iOS to prevent mobile-specific issues
  */
 
-import React, { useState, useRef } from "react"
-import { View, ActivityIndicator, Alert, Platform } from "react-native"
+import React, { useState, useRef, useLayoutEffect } from "react"
+import { View, ActivityIndicator, Alert, Platform, TouchableOpacity } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -29,6 +29,12 @@ type Props = StackScreenProps<RootStackParamList, "CardPayment">
 
 // Fygaro hosted payment-button path.
 const FYGARO_PAYMENT_BUTTON_PATH = "/pb/bd4a34c1-3d24-4315-a2b8-627518f70916"
+
+// Static style for the header Done button. Kept at module scope (not in
+// makeStyles) so the header useLayoutEffect can depend on stable values only —
+// makeStyles returns a fresh styles object every render, which would re-run
+// the effect and rebuild the header on each render.
+const headerDoneStyle = { paddingHorizontal: 16, paddingVertical: 8 }
 
 const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   const isAuthed = useIsAuthed()
@@ -50,6 +56,31 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   })
   const { amount, wallet } = route.params
   const username = data?.me?.username
+
+  /**
+   * Persistent header exit. The payment can complete entirely inside
+   * Fygaro's page (SPA state change, PayPal modal) with no URL change for
+   * onNavigationStateChange to detect — leaving the user stranded in the
+   * WebView with only back-navigation through the whole top-up stack. The
+   * header Done button guarantees a one-tap path straight home; leaving
+   * early is safe because crediting is webhook-driven on the backend, not
+   * dependent on this screen.
+   */
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: LL.FygaroWebViewScreen.title(),
+      headerRight: () => (
+        <TouchableOpacity
+          style={headerDoneStyle}
+          onPress={() => navigation.navigate("Primary")}
+        >
+          <Text type="p1" color={colors.primary}>
+            {LL.PaymentSuccessScreen.done()}
+          </Text>
+        </TouchableOpacity>
+      ),
+    })
+  }, [navigation, LL, colors.primary])
 
   /**
    * Build Fygaro payment URL with critical parameters:
