@@ -115,6 +115,21 @@ jobs:
           GOOGLE_PLAY_JSON_KEY_PATH: google-play-key.json
         run: bundle exec fastlane android ${{ steps.lane.outputs.lane }}
 
+      # The beta/release lanes build only the Play AAB; the split APKs attached
+      # to GitHub releases come from this step (signing config is already in
+      # the generated gradle.properties above).
+      - name: Build release APKs
+        if: success() && steps.lane.outputs.lane != 'promote_to_beta'
+        run: cd android && ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Upload release APKs
+        if: success() && steps.lane.outputs.lane != 'promote_to_beta'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apks
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
       - name: Push version bump
         if: success() && steps.lane.outputs.lane != 'promote_to_beta'
         run: |
