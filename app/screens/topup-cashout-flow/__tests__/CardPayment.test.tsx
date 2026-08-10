@@ -1,6 +1,6 @@
 import React from "react"
 import { Alert } from "react-native"
-import { fireEvent, render, waitFor } from "@testing-library/react-native"
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native"
 import { ThemeProvider } from "@rneui/themed"
 import theme from "@app/rne-theme/theme"
 import { i18nObject } from "../../../i18n/i18n-util"
@@ -12,10 +12,18 @@ import CardPayment from "../CardPayment"
 loadAllLocales()
 
 // Deterministic, synchronous i18n (the real TypesafeI18n loads its dictionary
-// asynchronously, leaving LL-derived labels empty on first render).
-jest.mock("@app/i18n/i18n-react", () => ({
-  useI18nContext: () => ({ LL: i18nObject("en") }),
-}))
+// asynchronously, leaving LL-derived labels empty on first render). LL is
+// cached so it stays referentially stable across renders, matching the real
+// context — the header-effect memoization test below depends on that.
+jest.mock("@app/i18n/i18n-react", () => {
+  let cachedLL: ReturnType<typeof i18nObject> | undefined
+  return {
+    useI18nContext: () => {
+      cachedLL = cachedLL ?? i18nObject("en")
+      return { LL: cachedLL }
+    },
+  }
+})
 
 jest.mock("@app/graphql/is-authed-context", () => ({
   useIsAuthed: () => true,
@@ -63,6 +71,7 @@ const lastWebViewProps = () => {
   return calls[calls.length - 1][0] as {
     source: { uri: string }
     onNavigationStateChange: (event: { url: string }) => void
+    onLoadEnd: () => void
   }
 }
 
@@ -174,6 +183,22 @@ describe("CardPayment header exit", () => {
     const { setOptions } = renderCardPayment()
 
     expect((setOptions as jest.Mock).mock.calls.at(-1)?.[0]?.headerRight).toBeDefined()
+  })
+
+  it("does not re-run the header effect on unrelated re-renders", () => {
+    const { setOptions } = renderCardPayment()
+    expect(setOptions).toHaveBeenCalledTimes(1)
+
+    // A WebView load completing flips isLoading and re-renders the screen.
+    // The header effect's deps are all referentially stable, so setOptions
+    // must not fire again. (A makeStyles-derived dep breaks this: makeStyles
+    // returns a fresh styles object every render, re-running the effect and
+    // rebuilding the header on each render.)
+    act(() => {
+      lastWebViewProps().onLoadEnd()
+    })
+
+    expect(setOptions).toHaveBeenCalledTimes(1)
   })
 })
 

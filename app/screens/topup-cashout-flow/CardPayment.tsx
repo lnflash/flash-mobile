@@ -30,6 +30,12 @@ type Props = StackScreenProps<RootStackParamList, "CardPayment">
 // Fygaro hosted payment-button path.
 const FYGARO_PAYMENT_BUTTON_PATH = "/pb/bd4a34c1-3d24-4315-a2b8-627518f70916"
 
+// Static style for the header Done button. Kept at module scope (not in
+// makeStyles) so the header useLayoutEffect can depend on stable values only —
+// makeStyles returns a fresh styles object every render, which would re-run
+// the effect and rebuild the header on each render.
+const headerDoneStyle = { paddingHorizontal: 16, paddingVertical: 8 }
+
 const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   const isAuthed = useIsAuthed()
   const styles = useStyles()
@@ -65,7 +71,7 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
       headerTitle: LL.FygaroWebViewScreen.title(),
       headerRight: () => (
         <TouchableOpacity
-          style={styles.headerDone}
+          style={headerDoneStyle}
           onPress={() => navigation.navigate("Primary")}
         >
           <Text type="p1" color={colors.primary}>
@@ -74,7 +80,7 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         </TouchableOpacity>
       ),
     })
-  }, [navigation, LL, colors.primary, styles.headerDone])
+  }, [navigation, LL, colors.primary])
 
   /**
    * Build Fygaro payment URL with critical parameters:
@@ -442,7 +448,6 @@ const useStyles = makeStyles(() => ({
     zIndex: 1,
   },
   loadingText: { marginTop: 16, textAlign: "center" },
-  headerDone: { paddingHorizontal: 16, paddingVertical: 8 },
   errorText: { textAlign: "center", marginBottom: 24 },
   retryButton: { marginTop: 16 },
   webView: { flex: 1 },
