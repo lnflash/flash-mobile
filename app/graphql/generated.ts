@@ -893,6 +893,25 @@ export type FeesInformation = {
   readonly deposit: DepositFeesInformation;
 };
 
+/**
+ * Fee and minimum-amount parameters for Fygaro card top-ups. Percentages are
+ * whole-number percents (e.g. 2.99 means 2.99%); fixed amounts and the minimum
+ * are in USD. Null when the instance's Fygaro settings are unavailable.
+ */
+export type FygaroTopupInfo = {
+  readonly __typename: 'FygaroTopupInfo';
+  /** Flash fixed fee, in USD. */
+  readonly flashFeeFixed: Scalars['Float']['output'];
+  /** Flash percentage fee (e.g. 2.0 for 2%). */
+  readonly flashFeePercent: Scalars['Float']['output'];
+  /** Minimum top-up amount, in USD. */
+  readonly minimumAmount: Scalars['Float']['output'];
+  /** Payment-processor fixed fee, in USD (e.g. 0.49). */
+  readonly processorFeeFixed: Scalars['Float']['output'];
+  /** Payment-processor percentage fee (e.g. 2.99 for 2.99%). */
+  readonly processorFeePercent: Scalars['Float']['output'];
+};
+
 /** Provides global settings for the application which might have an impact for the user. */
 export type Globals = {
   readonly __typename: 'Globals';
@@ -908,6 +927,12 @@ export type Globals = {
    */
   readonly cashoutEnabled: Scalars['Boolean']['output'];
   readonly feesInformation: FeesInformation;
+  /**
+   * Fee and minimum-amount parameters for Fygaro card top-ups, used to preview
+   * the net amount the user will receive and to enforce the minimum. Null when
+   * the instance's Fygaro settings are unavailable.
+   */
+  readonly fygaroTopup?: Maybe<FygaroTopupInfo>;
   /** The domain name for lightning addresses accepted by this Galoy instance */
   readonly lightningAddressDomain: Scalars['String']['output'];
   readonly lightningAddressDomainAliases: ReadonlyArray<Scalars['String']['output']>;
@@ -3291,7 +3316,7 @@ export type ReferralRewardFlagQuery = { readonly __typename: 'Query', readonly g
 export type TransferFlagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type TransferFlagsQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly topupEnabled: boolean, readonly cashoutEnabled: boolean, readonly bridgeEnabled: boolean } | null };
+export type TransferFlagsQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly topupEnabled: boolean, readonly cashoutEnabled: boolean, readonly bridgeEnabled: boolean, readonly fygaroTopup?: { readonly __typename: 'FygaroTopupInfo', readonly minimumAmount: number, readonly processorFeePercent: number, readonly processorFeeFixed: number, readonly flashFeePercent: number, readonly flashFeeFixed: number } | null } | null };
 
 export type LnNoAmountInvoiceFeeProbeMutationVariables = Exact<{
   input: LnNoAmountInvoiceFeeProbeInput;
@@ -6899,6 +6924,13 @@ export const TransferFlagsDocument = gql`
     topupEnabled
     cashoutEnabled
     bridgeEnabled
+    fygaroTopup {
+      minimumAmount
+      processorFeePercent
+      processorFeeFixed
+      flashFeePercent
+      flashFeeFixed
+    }
   }
 }
     `;

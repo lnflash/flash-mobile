@@ -9,6 +9,13 @@ gql`
       topupEnabled
       cashoutEnabled
       bridgeEnabled
+      fygaroTopup {
+        minimumAmount
+        processorFeePercent
+        processorFeeFixed
+        flashFeePercent
+        flashFeeFixed
+      }
     }
   }
 `
