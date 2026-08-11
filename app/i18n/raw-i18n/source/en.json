@@ -666,7 +666,9 @@
         "btcWallet": "BTC Wallet",
         "invalidEmail": "Please enter a valid email address",
         "invalidAmount": "Please enter a valid amount",
-        "minimumAmount": "Minimum amount is $1.00",
+        "minimumAmount": "Minimum amount is {amount: string}",
+        "youllReceive": "You'll receive {amount: string}",
+        "feeNote": "After card and processing fees",
         "usdOnlyNotice": "Card payments top up your USD wallet"
     },
     "BridgeKyc": {

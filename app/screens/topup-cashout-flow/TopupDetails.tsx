@@ -36,10 +36,19 @@ import { ButtonGroup } from "@app/components/button-group"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useTransferFlagsQuery } from "@app/graphql/generated"
+
+// utils
+import { estimateTopupNet } from "./topup-fee-estimate"
 
 // assets
 import Cash from "@app/assets/icons/cash.svg"
 import Bitcoin from "@app/assets/icons/bitcoin.svg"
+
+// Card top-ups are gated to at least $10 unless the backend overrides it. Used
+// when Globals.fygaroTopup is null (settings unavailable) so the floor never
+// silently drops back to the old $1.
+const DEFAULT_CARD_MINIMUM = 10
 
 type Props = StackScreenProps<RootStackParamList, "TopupDetails">
 
@@ -64,15 +73,39 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   const [amount, setAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
+  const isCard = route.params.paymentType === "card"
+
+  // Fee params + minimum for card top-ups, sourced from the same globals query
+  // the topup/cashout entry screen already fetched (cache-warm on arrival).
+  // fygaroTopup is null when the instance's Fygaro settings are unavailable —
+  // callers must degrade gracefully (hide the net line, fall back on the min).
+  const { data: flagsData } = useTransferFlagsQuery({ fetchPolicy: "cache-and-network" })
+  const fygaroTopup = flagsData?.globals?.fygaroTopup ?? null
+
+  // Card flow enforces the backend minimum (default $10); other flows keep the
+  // long-standing $1 floor.
+  const minimumAmount = isCard ? fygaroTopup?.minimumAmount ?? DEFAULT_CARD_MINIMUM : 1
+
   /**
-   * Validates the entered amount.
-   * Minimum topup amount is $1.00 to prevent micro-transactions
-   * that would be unprofitable due to processing fees.
+   * Validates the entered amount against the active minimum. Micro-transactions
+   * are unprofitable once processing fees are applied, so card top-ups enforce
+   * the backend-provided floor.
    */
   const validateAmount = (amount: string): boolean => {
     const numAmount = parseFloat(amount)
-    return !isNaN(numAmount) && numAmount >= 1.0
+    return !isNaN(numAmount) && numAmount >= minimumAmount
   }
+
+  // "You'll receive" net preview — only for card top-ups, only when the fee
+  // params are available, and only once the amount clears the enforced minimum.
+  // A null fygaroTopup hides the line rather than showing a guessed (and wrong)
+  // number; a below-minimum amount hides it too, so we never promise a concrete
+  // receive figure for a gross that Continue will refuse.
+  const grossAmount = parseFloat(amount)
+  const netAmount =
+    isCard && fygaroTopup && !isNaN(grossAmount) && grossAmount >= minimumAmount
+      ? estimateTopupNet(grossAmount, fygaroTopup)
+      : null
 
   /**
    * Handles the continue button press.
@@ -87,7 +120,10 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
    */
   const handleContinue = async () => {
     if (!validateAmount(amount)) {
-      Alert.alert("Invalid Amount", LL.TopupDetails.minimumAmount())
+      Alert.alert(
+        "Invalid Amount",
+        LL.TopupDetails.minimumAmount({ amount: `$${minimumAmount.toFixed(2)}` }),
+      )
       return
     }
 
@@ -204,6 +240,16 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
               </View>
             </InputAccessoryView>
           )}
+          {netAmount !== null && (
+            <View style={styles.receiveInfo}>
+              <Text type="p1" bold>
+                {LL.TopupDetails.youllReceive({ amount: `$${netAmount.toFixed(2)}` })}
+              </Text>
+              <Text type="p3" style={styles.receiveNote}>
+                {LL.TopupDetails.feeNote()}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
       <PrimaryBtn
@@ -260,6 +306,13 @@ const useStyles = makeStyles(({ colors }) => (props: { bottom: number }) => ({
   },
   usdOnlyNote: {
     marginTop: 8,
+    color: colors.grey2,
+  },
+  receiveInfo: {
+    marginTop: 12,
+    rowGap: 2,
+  },
+  receiveNote: {
     color: colors.grey2,
   },
   primaryButton: {

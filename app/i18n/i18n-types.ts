@@ -2280,9 +2280,19 @@ type RootTranslation = {
 		 */
 		invalidAmount: string
 		/**
-		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​i​s​ ​$​1​.​0​0
+		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​i​s​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
 		 */
-		minimumAmount: string
+		minimumAmount: RequiredParams<'amount'>
+		/**
+		 * Y​o​u​'​l​l​ ​r​e​c​e​i​v​e​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
+		 */
+		youllReceive: RequiredParams<'amount'>
+		/**
+		 * A​f​t​e​r​ ​c​a​r​d​ ​a​n​d​ ​p​r​o​c​e​s​s​i​n​g​ ​f​e​e​s
+		 */
+		feeNote: string
 		/**
 		 * C​a​r​d​ ​p​a​y​m​e​n​t​s​ ​t​o​p​ ​u​p​ ​y​o​u​r​ ​U​S​D​ ​w​a​l​l​e​t
 		 */
@@ -8431,9 +8441,17 @@ export type TranslationFunctions = {
 		 */
 		invalidAmount: () => LocalizedString
 		/**
-		 * Minimum amount is $1.00
+		 * Minimum amount is {amount}
 		 */
-		minimumAmount: () => LocalizedString
+		minimumAmount: (arg: { amount: string }) => LocalizedString
+		/**
+		 * You'll receive {amount}
+		 */
+		youllReceive: (arg: { amount: string }) => LocalizedString
+		/**
+		 * After card and processing fees
+		 */
+		feeNote: () => LocalizedString
 		/**
 		 * Card payments top up your USD wallet
 		 */

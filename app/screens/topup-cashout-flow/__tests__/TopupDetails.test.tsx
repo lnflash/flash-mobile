@@ -1,10 +1,12 @@
 import React from "react"
+import { Alert } from "react-native"
 import { render, fireEvent } from "@testing-library/react-native"
 import { ThemeProvider } from "@rneui/themed"
 import theme from "@app/rne-theme/theme"
 import { i18nObject } from "../../../i18n/i18n-util"
 import { loadAllLocales } from "../../../i18n/i18n-util.sync"
 import TopupDetails from "../TopupDetails"
+import { estimateTopupNet } from "../topup-fee-estimate"
 
 // Without this, i18nObject("en") resolves every key to "" and text queries
 // match arbitrary empty text nodes.
@@ -20,6 +22,37 @@ const mockPersistentState = { isAdvanceMode: true }
 jest.mock("@app/store/persistent-state", () => ({
   usePersistentStateContext: () => ({ persistentState: mockPersistentState }),
 }))
+
+// The screen reads the Fygaro fee params + minimum from the transferFlags
+// globals query; mock the generated hook the way CardPayment's tests mock
+// useHomeAuthedQuery. Default: fee params present, $10 minimum.
+const mockUseTransferFlagsQuery = jest.fn()
+jest.mock("@app/graphql/generated", () => ({
+  useTransferFlagsQuery: (...args: unknown[]) => mockUseTransferFlagsQuery(...args),
+}))
+
+const FEE_PARAMS = {
+  __typename: "FygaroTopupInfo" as const,
+  minimumAmount: 10,
+  processorFeePercent: 2.99,
+  processorFeeFixed: 0.49,
+  flashFeePercent: 2,
+  flashFeeFixed: 0,
+}
+
+const flagsResult = (fygaroTopup: typeof FEE_PARAMS | null) => ({
+  data: {
+    globals: {
+      __typename: "Globals",
+      topupEnabled: true,
+      cashoutEnabled: true,
+      bridgeEnabled: false,
+      fygaroTopup,
+    },
+  },
+  loading: false,
+  refetch: jest.fn(() => Promise.resolve()),
+})
 
 jest.mock("react-native-safe-area-context", () => {
   const actual = jest.requireActual("react-native-safe-area-context")
@@ -52,6 +85,7 @@ const renderTopupDetails = ({
 beforeEach(() => {
   jest.clearAllMocks()
   mockPersistentState.isAdvanceMode = true
+  mockUseTransferFlagsQuery.mockReturnValue(flagsResult(FEE_PARAMS))
 })
 
 describe("TopupDetails wallet options", () => {
@@ -88,5 +122,143 @@ describe("TopupDetails card continue", () => {
       amount: 10,
       wallet: "USD",
     })
+  })
+})
+
+describe("TopupDetails $10 minimum", () => {
+  it("rejects a $5 card top-up and states the real minimum", () => {
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "5")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Invalid Amount",
+      en.TopupDetails.minimumAmount({ amount: "$10.00" }),
+    )
+    alertSpy.mockRestore()
+  })
+
+  it("falls back to a $10 minimum when fygaroTopup is null", () => {
+    mockUseTransferFlagsQuery.mockReturnValue(flagsResult(null))
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "5")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Invalid Amount",
+      en.TopupDetails.minimumAmount({ amount: "$10.00" }),
+    )
+    alertSpy.mockRestore()
+  })
+})
+
+describe("TopupDetails net preview", () => {
+  it("shows 'you'll receive' net after fees as the user types (10 → $9.01)", () => {
+    const { getByPlaceholderText, queryByText } = renderTopupDetails({
+      paymentType: "card",
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "10")
+
+    expect(queryByText(en.TopupDetails.youllReceive({ amount: "$9.01" }))).not.toBeNull()
+  })
+
+  it("reproduces the backend's cent rounding on non-round amounts (10.25 → $9.24)", () => {
+    // Guards against the float model, which would over-promise $9.25 here while
+    // the backend credits $9.24.
+    const { getByPlaceholderText, queryByText } = renderTopupDetails({
+      paymentType: "card",
+    })
+
+    fireEvent.changeText(
+      getByPlaceholderText(en.TopupDetails.amountPlaceholder()),
+      "10.25",
+    )
+
+    expect(queryByText(en.TopupDetails.youllReceive({ amount: "$9.24" }))).not.toBeNull()
+    expect(queryByText(en.TopupDetails.youllReceive({ amount: "$9.25" }))).toBeNull()
+  })
+
+  it("hides the net line for amounts below the enforced minimum", () => {
+    // A $5 card top-up is below the $10 floor and Continue will refuse it, so
+    // the screen must not promise a concrete receive figure for it.
+    const { getByPlaceholderText, queryByText } = renderTopupDetails({
+      paymentType: "card",
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "5")
+
+    expect(queryByText(en.TopupDetails.feeNote())).toBeNull()
+  })
+
+  it("hides the net line when fygaroTopup is null (no guessed number)", () => {
+    mockUseTransferFlagsQuery.mockReturnValue(flagsResult(null))
+    const { getByPlaceholderText, queryByText } = renderTopupDetails({
+      paymentType: "card",
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "10")
+
+    expect(queryByText(en.TopupDetails.feeNote())).toBeNull()
+  })
+
+  it("does not show the net line for bank transfers", () => {
+    const { getByPlaceholderText, queryByText } = renderTopupDetails({
+      paymentType: "bankTransfer",
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "10")
+
+    expect(queryByText(en.TopupDetails.feeNote())).toBeNull()
+  })
+})
+
+describe("estimateTopupNet", () => {
+  it("subtracts processor (%+fixed) and flash (%+fixed) fees from the gross", () => {
+    // 10 - (10*2.99% + 0.49) - (10*2%) = 10 - 0.789 - 0.20 = 9.011
+    const net = estimateTopupNet(10, {
+      processorFeePercent: 2.99,
+      processorFeeFixed: 0.49,
+      flashFeePercent: 2,
+      flashFeeFixed: 0,
+    })
+    expect(net.toFixed(2)).toBe("9.01")
+  })
+
+  it("matches the backend's per-component cent rounding on non-round amounts", () => {
+    // The float model (round only the final total) yields $9.25 here; the
+    // backend rounds each fee to the nearest cent first:
+    //   gross      = 1025c
+    //   processor  = round(1025*2.99/100)=31 + round(0.49*100)=49 = 80c
+    //   flash      = round(1025*2/100)=21 + 0                     = 21c
+    //   net        = 1025 - 80 - 21                               = 924c
+    // so the credited amount is $9.24, not $9.25.
+    const net = estimateTopupNet(10.25, {
+      processorFeePercent: 2.99,
+      processorFeeFixed: 0.49,
+      flashFeePercent: 2,
+      flashFeeFixed: 0,
+    })
+    expect(net.toFixed(2)).toBe("9.24")
+  })
+
+  it("never returns a negative net when fixed fees exceed the gross", () => {
+    const net = estimateTopupNet(0.25, {
+      processorFeePercent: 2.99,
+      processorFeeFixed: 0.49,
+      flashFeePercent: 2,
+      flashFeeFixed: 0,
+    })
+    expect(net).toBe(0)
   })
 })

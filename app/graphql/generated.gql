@@ -2009,6 +2009,14 @@ query transferFlags {
     topupEnabled
     cashoutEnabled
     bridgeEnabled
+    fygaroTopup {
+      minimumAmount
+      processorFeePercent
+      processorFeeFixed
+      flashFeePercent
+      flashFeeFixed
+      __typename
+    }
     __typename
   }
 }
