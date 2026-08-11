@@ -173,6 +173,34 @@ describe("TopupDetails net preview", () => {
     expect(queryByText(en.TopupDetails.youllReceive({ amount: "$9.01" }))).not.toBeNull()
   })
 
+  it("reproduces the backend's cent rounding on non-round amounts (10.25 → $9.24)", () => {
+    // Guards against the float model, which would over-promise $9.25 here while
+    // the backend credits $9.24.
+    const { getByPlaceholderText, queryByText } = renderTopupDetails({
+      paymentType: "card",
+    })
+
+    fireEvent.changeText(
+      getByPlaceholderText(en.TopupDetails.amountPlaceholder()),
+      "10.25",
+    )
+
+    expect(queryByText(en.TopupDetails.youllReceive({ amount: "$9.24" }))).not.toBeNull()
+    expect(queryByText(en.TopupDetails.youllReceive({ amount: "$9.25" }))).toBeNull()
+  })
+
+  it("hides the net line for amounts below the enforced minimum", () => {
+    // A $5 card top-up is below the $10 floor and Continue will refuse it, so
+    // the screen must not promise a concrete receive figure for it.
+    const { getByPlaceholderText, queryByText } = renderTopupDetails({
+      paymentType: "card",
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "5")
+
+    expect(queryByText(en.TopupDetails.feeNote())).toBeNull()
+  })
+
   it("hides the net line when fygaroTopup is null (no guessed number)", () => {
     mockUseTransferFlagsQuery.mockReturnValue(flagsResult(null))
     const { getByPlaceholderText, queryByText } = renderTopupDetails({
@@ -205,6 +233,23 @@ describe("estimateTopupNet", () => {
       flashFeeFixed: 0,
     })
     expect(net.toFixed(2)).toBe("9.01")
+  })
+
+  it("matches the backend's per-component cent rounding on non-round amounts", () => {
+    // The float model (round only the final total) yields $9.25 here; the
+    // backend rounds each fee to the nearest cent first:
+    //   gross      = 1025c
+    //   processor  = round(1025*2.99/100)=31 + round(0.49*100)=49 = 80c
+    //   flash      = round(1025*2/100)=21 + 0                     = 21c
+    //   net        = 1025 - 80 - 21                               = 924c
+    // so the credited amount is $9.24, not $9.25.
+    const net = estimateTopupNet(10.25, {
+      processorFeePercent: 2.99,
+      processorFeeFixed: 0.49,
+      flashFeePercent: 2,
+      flashFeeFixed: 0,
+    })
+    expect(net.toFixed(2)).toBe("9.24")
   })
 
   it("never returns a negative net when fixed fees exceed the gross", () => {

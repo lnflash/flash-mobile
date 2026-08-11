@@ -96,12 +96,14 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     return !isNaN(numAmount) && numAmount >= minimumAmount
   }
 
-  // "You'll receive" net preview — only for card top-ups and only when the fee
-  // params are available. A null fygaroTopup hides the line rather than showing
-  // a guessed (and wrong) number.
+  // "You'll receive" net preview — only for card top-ups, only when the fee
+  // params are available, and only once the amount clears the enforced minimum.
+  // A null fygaroTopup hides the line rather than showing a guessed (and wrong)
+  // number; a below-minimum amount hides it too, so we never promise a concrete
+  // receive figure for a gross that Continue will refuse.
   const grossAmount = parseFloat(amount)
   const netAmount =
-    isCard && fygaroTopup && !isNaN(grossAmount) && grossAmount > 0
+    isCard && fygaroTopup && !isNaN(grossAmount) && grossAmount >= minimumAmount
       ? estimateTopupNet(grossAmount, fygaroTopup)
       : null
 
