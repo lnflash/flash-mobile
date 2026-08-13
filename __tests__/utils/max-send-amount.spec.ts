@@ -241,6 +241,56 @@ describe("computeMaxSendAmount", () => {
     expect(negative).toEqual({ amount: 100_000, reason: "fee-unavailable" })
     expect(nan).toEqual({ amount: 100_000, reason: "fee-unavailable" })
   })
+
+  // On-device repro (2026-08-13): USD cash balance arrives as FRACTIONAL
+  // cents (109.9346 = $1.099346 at IBEX). Offering it un-floored produced a
+  // $1.10 invoice — rounded half-up downstream — and IBEX rejected the send:
+  // "insufficient balance. Current Balance: 1.099346 ... invoice amount:
+  // 1.100000". Max must only ever offer whole minor units.
+  describe("fractional balances (fractional-cent USD wallets)", () => {
+    it("floors a fractional intraledger balance to whole cents", async () => {
+      const result = await computeMaxSendAmount({
+        paymentType: "intraledger",
+        balance: 109.9346,
+        fetchFee: async () => 0,
+      })
+
+      expect(result).toEqual({ amount: 109, reason: "intraledger-full-balance" })
+    })
+
+    it("floors the external-send max after subtracting the fee", async () => {
+      const result = await computeMaxSendAmount({
+        paymentType: "lightning",
+        balance: 109.9346,
+        fetchFee: async () => 0,
+      })
+
+      expect(result).toEqual({ amount: 109, reason: "fee-reserved", feeReserved: 0 })
+    })
+
+    it("floors a fractional recipient cap before offering it", async () => {
+      const result = await computeMaxSendAmount({
+        paymentType: "lnurl",
+        balance: 500,
+        fetchFee: async () => 0,
+        recipientCap: 123.75,
+      })
+
+      expect(result).toEqual({ amount: 123, reason: "recipient-cap" })
+    })
+
+    it("treats a sub-cent balance as zero", async () => {
+      const fetchFee = jest.fn(async () => 0)
+      const result = await computeMaxSendAmount({
+        paymentType: "lightning",
+        balance: 0.9346,
+        fetchFee,
+      })
+
+      expect(result).toEqual({ amount: 0, reason: "zero-balance" })
+      expect(fetchFee).not.toHaveBeenCalled()
+    })
+  })
 })
 
 describe("effectiveMaxPaymentType", () => {

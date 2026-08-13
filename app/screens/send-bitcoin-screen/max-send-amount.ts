@@ -180,15 +180,31 @@ export const computeMaxSendAmount = async ({
     return { amount: 0, reason: "zero-balance" }
   }
 
-  const hasRecipientCap =
+  // Balances arrive in the wallet's minor units but can be FRACTIONAL: the
+  // API reports USD cash balances in fractional cents (e.g. 109.9346 for
+  // $1.099346 held at IBEX). Payments send whole minor units and the
+  // rounding between here and the mutation is half-up, so offering a
+  // fractional max overdraws by up to half a cent and the send dies at
+  // IBEX with "insufficient balance" (found on-device: balance 1.099346,
+  // MAX produced a 1.100000 invoice). Floor everything we might offer;
+  // sats are already integers so this is a no-op for the BTC wallet.
+  const spendableBalance = Math.floor(balance)
+  if (spendableBalance <= 0) {
+    return { amount: 0, reason: "zero-balance" }
+  }
+
+  const flooredCap =
     recipientCap !== null && recipientCap !== undefined && recipientCap >= 0
+      ? Math.floor(recipientCap)
+      : null
+  const hasRecipientCap = flooredCap !== null
 
   let result: MaxSendResult
   if (paymentType === "intraledger") {
     // Flash-to-Flash from the custodial USD wallet — no fee, no API call.
     // Callers must pass effectiveMaxPaymentType so BTC-wallet intraledger
     // sends (which settle via LNURL-pay with a real fee) never hit this arm.
-    result = { amount: balance, reason: "intraledger-full-balance" }
+    result = { amount: spendableBalance, reason: "intraledger-full-balance" }
   } else {
     // Probe at the cap-clamped amount, not the raw balance: LNURL fee probes
     // bounds-validate against the receiver's LUD-06 maxSendable, so a
@@ -196,19 +212,24 @@ export const computeMaxSendAmount = async ({
     // amount with zero fee headroom and a confirm-time dead-end in the band
     // where balance − cap < fee. Probing slightly above the final amount is
     // safe: fees are monotone, so the estimate is conservative.
-    const probeAmount = hasRecipientCap ? Math.min(balance, recipientCap) : balance
+    const probeAmount =
+      flooredCap === null ? spendableBalance : Math.min(spendableBalance, flooredCap)
     const fee = await feeOrNull(fetchFee, probeAmount, timeoutMs)
     result =
       fee === null
-        ? { amount: balance, reason: "fee-unavailable" }
-        : { amount: Math.max(balance - fee, 0), reason: "fee-reserved", feeReserved: fee }
+        ? { amount: spendableBalance, reason: "fee-unavailable" }
+        : {
+            amount: Math.max(Math.floor(spendableBalance - fee), 0),
+            reason: "fee-reserved",
+            feeReserved: fee,
+          }
   }
 
   // LNURL receivers advertise a maxSendable bound (LUD-06) — never offer more
   // than the recipient can accept. Applies to BTC-wallet intraledger sends
   // too, which settle via LNURL-pay under the hood.
-  if (hasRecipientCap && result.amount > recipientCap) {
-    return { amount: recipientCap, reason: "recipient-cap" }
+  if (hasRecipientCap && flooredCap !== null && result.amount > flooredCap) {
+    return { amount: flooredCap, reason: "recipient-cap" }
   }
 
   return result
