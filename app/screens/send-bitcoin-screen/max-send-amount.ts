@@ -8,6 +8,75 @@
 // dependency tree.
 export type MaxSendPaymentType = "intraledger" | "lightning" | "lnurl" | "onchain"
 
+// Matches WalletCurrency without importing the generated GraphQL tree.
+export type MaxSendWalletCurrency = "BTC" | "USD"
+
+/**
+ * Whether the MAX chip supports a payment type at all.
+ *
+ * Onchain is excluded: its fee estimate requires the user's selected fee
+ * speed, which has not been chosen yet when the amount screen opens, and the
+ * onchain flow already has its own send-all "Max" affordance
+ * (DetailAmountNote / canSendMax). Supporting it here needs both problems
+ * solved together — out of scope for the chip.
+ */
+export const maxChipSupportsPaymentType = (paymentType: MaxSendPaymentType): boolean =>
+  paymentType !== "onchain"
+
+/**
+ * The payment type the max computation should use.
+ *
+ * BTC-wallet "intraledger" sends settle via LNURL-pay under the hood with a
+ * real Breez fee — only the custodial USD wallet is truly fee-free between
+ * Flash accounts. Route BTC-wallet intraledger through the LNURL fee path so
+ * MAX reserves that fee instead of claiming there is none.
+ */
+export const effectiveMaxPaymentType = (
+  walletCurrency: MaxSendWalletCurrency,
+  paymentType: MaxSendPaymentType,
+): MaxSendPaymentType => {
+  if (walletCurrency === "BTC" && paymentType === "intraledger") {
+    return "lnurl"
+  }
+  return paymentType
+}
+
+export type ResolveRecipientCapArgs = {
+  walletCurrency: MaxSendWalletCurrency
+  paymentType: MaxSendPaymentType
+  /** Receiver's resolved LNURL maxSendable in sats (BTC-wallet path). */
+  receiverMaxSats?: number | null
+  /** The destination's lnurlParams.max in sats (USD-wallet LNURL path). */
+  lnurlParamsMaxSats?: number | null
+  /** Convert sats into the sending wallet's minor units. */
+  convertSatsToWallet: (sats: number) => number
+}
+
+/**
+ * Receiver's LNURL maxSendable bound in the sending wallet's minor units,
+ * or null when no cap applies.
+ *
+ * The BTC wallet pays Flash addresses and LNURL destinations through
+ * LNURL-pay, so its cap comes from the resolved pay request (already in
+ * sats — the wallet's minor unit). The USD wallet only has a cap for
+ * explicit LNURL destinations, advertised in sats and converted here.
+ */
+export const resolveRecipientCap = ({
+  walletCurrency,
+  paymentType,
+  receiverMaxSats,
+  lnurlParamsMaxSats,
+  convertSatsToWallet,
+}: ResolveRecipientCapArgs): number | null => {
+  if (walletCurrency === "BTC") {
+    return receiverMaxSats ?? null
+  }
+  if (paymentType === "lnurl" && lnurlParamsMaxSats) {
+    return convertSatsToWallet(lnurlParamsMaxSats)
+  }
+  return null
+}
+
 export type MaxSendReason =
   | "zero-balance"
   | "intraledger-full-balance"
@@ -21,6 +90,36 @@ export type MaxSendResult = {
   reason: MaxSendReason
   /** Set when reason is "fee-reserved" — the estimated fee held back. */
   feeReserved?: number
+}
+
+/** Which info-row note (if any) a max result warrants. */
+export type MaxSendNote =
+  | { kind: "none" }
+  | { kind: "intraledger" }
+  | { kind: "fee-reserved"; feeReserved: number }
+  | { kind: "recipient-cap"; cap: number }
+
+/**
+ * Note selection for a max result. Kept pure so the wording decision is
+ * unit-testable; the caller maps kinds onto localized strings.
+ *
+ * A fee-reserved result with a zero fee (legitimately reachable — e.g.
+ * Spark-address payments report fee 0) gets no note: "~$0.00 reserved for
+ * the network fee" is nonsense to a user.
+ */
+export const noteForResult = (result: MaxSendResult): MaxSendNote => {
+  switch (result.reason) {
+    case "intraledger-full-balance":
+      return { kind: "intraledger" }
+    case "fee-reserved":
+      return result.feeReserved
+        ? { kind: "fee-reserved", feeReserved: result.feeReserved }
+        : { kind: "none" }
+    case "recipient-cap":
+      return { kind: "recipient-cap", cap: result.amount }
+    default:
+      return { kind: "none" }
+  }
 }
 
 export type ComputeMaxSendAmountArgs = {
@@ -70,13 +169,18 @@ export const computeMaxSendAmount = async ({
   recipientCap,
   timeoutMs = FEE_ESTIMATE_TIMEOUT_MS,
 }: ComputeMaxSendAmountArgs): Promise<MaxSendResult> => {
-  if (balance <= 0) {
+  // NaN (wallet balance still loading) must land here too — NaN fails every
+  // comparison, so without the isFinite check it would sail through the
+  // zero-balance guard and fill the number pad with the literal "NaN".
+  if (!Number.isFinite(balance) || balance <= 0) {
     return { amount: 0, reason: "zero-balance" }
   }
 
   let result: MaxSendResult
   if (paymentType === "intraledger") {
-    // Flash-to-Flash — no fee between Flash accounts, no API call.
+    // Flash-to-Flash from the custodial USD wallet — no fee, no API call.
+    // Callers must pass effectiveMaxPaymentType so BTC-wallet intraledger
+    // sends (which settle via LNURL-pay with a real fee) never hit this arm.
     result = { amount: balance, reason: "intraledger-full-balance" }
   } else {
     const fee = await feeOrNull(fetchFee, timeoutMs)

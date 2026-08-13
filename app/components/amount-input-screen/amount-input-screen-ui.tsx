@@ -22,7 +22,7 @@ import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { getCashWallet } from "@app/graphql/wallets-utils"
 import { testProps } from "@app/utils/testProps"
 
-export type MaxChipState = "available" | "active" | "disabled"
+export type MaxChipState = "available" | "computing" | "active" | "disabled"
 
 export type AmountInputScreenUIProps = {
   walletCurrency: WalletCurrency
@@ -104,12 +104,14 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
                   accessibilityState={{
                     disabled: maxChipState === "disabled",
                     selected: maxChipState === "active",
+                    busy: maxChipState === "computing",
                   }}
                   disabled={maxChipState === "disabled"}
                   onPress={onMaxPress}
                   style={[
                     styles.maxChip,
                     maxChipState === "active" && styles.maxChipActive,
+                    maxChipState === "computing" && styles.maxChipComputing,
                     maxChipState === "disabled" && styles.maxChipDisabled,
                   ]}
                 >
@@ -186,6 +188,11 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   maxChipActive: {
     backgroundColor: colors.primary,
+  },
+  // Subtle in-flight feedback while the fee estimate runs, so the tap
+  // doesn't look like it did nothing.
+  maxChipComputing: {
+    opacity: 0.5,
   },
   maxChipDisabled: {
     borderColor: colors.grey3,

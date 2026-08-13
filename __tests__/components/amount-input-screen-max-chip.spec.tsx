@@ -1,6 +1,6 @@
 import * as React from "react"
 import { createTheme, ThemeProvider } from "@rneui/themed"
-import { fireEvent, render, waitFor } from "@testing-library/react-native"
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native"
 
 import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
@@ -213,6 +213,92 @@ describe("AmountInputScreen MAX chip", () => {
         expect.objectContaining({ selected: true }),
       )
     })
+  })
+
+  it("shows a computing state while the fee estimate is in flight", async () => {
+    let resolveCompute!: (result: { amount: typeof maxSats; note?: string }) => void
+    const compute = jest.fn(
+      () =>
+        new Promise<{ amount: typeof maxSats; note?: string }>((resolve) => {
+          resolveCompute = resolve
+        }),
+    )
+    const { getByTestId } = renderScreen({ compute })
+
+    fireEvent.press(getByTestId("Max Amount Chip"))
+
+    await waitFor(() => {
+      expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+        expect.objectContaining({ busy: true }),
+      )
+    })
+
+    await act(async () => {
+      resolveCompute({ amount: maxSats, note: "Test fee note" })
+    })
+
+    await waitFor(() => {
+      expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+        expect.objectContaining({ busy: false, selected: true }),
+      )
+    })
+  })
+
+  it("drops the in-flight computation when the user types before it resolves", async () => {
+    let resolveCompute!: (result: { amount: typeof maxSats; note?: string }) => void
+    const compute = jest.fn(
+      () =>
+        new Promise<{ amount: typeof maxSats; note?: string }>((resolve) => {
+          resolveCompute = resolve
+        }),
+    )
+    const { getByTestId, getByText, queryByTestId, queryByText } = renderScreen({
+      compute,
+    })
+
+    fireEvent.press(getByTestId("Max Amount Chip"))
+    // The user types while the fee fetch is still running…
+    fireEvent.press(getByTestId("key-1"))
+
+    // …so the late resolve must not overwrite their amount.
+    await act(async () => {
+      resolveCompute({ amount: maxSats, note: "Test fee note" })
+    })
+
+    expect(getByText("$1")).toBeTruthy()
+    expect(queryByText("$20.00")).toBeNull()
+    expect(queryByTestId("Max Amount Note")).toBeNull()
+    expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+      expect.objectContaining({ selected: false }),
+    )
+  })
+
+  it("drops the in-flight computation when the user toggles currency before it resolves", async () => {
+    let resolveCompute!: (result: { amount: typeof maxSats; note?: string }) => void
+    const compute = jest.fn(
+      () =>
+        new Promise<{ amount: typeof maxSats; note?: string }>((resolve) => {
+          resolveCompute = resolve
+        }),
+    )
+    const { getByTestId, getByText, queryByTestId, queryByText } = renderScreen({
+      compute,
+    })
+
+    fireEvent.press(getByTestId("Max Amount Chip"))
+    // The user toggles the entry currency mid-flight (secondary row press).
+    fireEvent.press(getByText(/0 SAT/))
+
+    await act(async () => {
+      resolveCompute({ amount: maxSats, note: "Test fee note" })
+    })
+
+    // The stale resolve must neither fill the max nor revert the toggle.
+    expect(queryByText(/1,000/)).toBeNull()
+    expect(queryByTestId("Max Amount Note")).toBeNull()
+    expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+      expect.objectContaining({ selected: false }),
+    )
   })
 
   it("is greyed out and inert when the balance is zero", () => {

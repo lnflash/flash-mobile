@@ -186,9 +186,21 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   // the user edits it; the currency toggle keeps the same underlying amount so
   // it does not clear the state.
   const [appliedMax, setAppliedMax] = useState<{ note?: string } | null>(null)
+  const [isComputingMax, setIsComputingMax] = useState(false)
   const maxComputeInFlight = useRef(false)
+  // The fee fetch behind compute() can take seconds. Every user edit
+  // (key press, clear, currency toggle) bumps this generation; a resolve
+  // whose tap-time generation no longer matches is dropped so it can never
+  // overwrite what the user did while it was in flight.
+  const editGeneration = useRef(0)
+  // Read the target currency at resolve time, not from the tap-time closure.
+  const currencyRef = useRef(numberPadState.currency)
+  useEffect(() => {
+    currencyRef.current = numberPadState.currency
+  }, [numberPadState.currency])
 
   const onKeyPress = (key: Key) => {
+    editGeneration.current += 1
     setAppliedMax(null)
     dispatchNumberPadAction({
       action: NumberPadReducerActionType.HandleKeyPress,
@@ -199,6 +211,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   }
 
   const onClear = () => {
+    editGeneration.current += 1
     setAppliedMax(null)
     dispatchNumberPadAction({
       action: NumberPadReducerActionType.ClearAmount,
@@ -221,6 +234,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   const onToggleCurrency =
     secondaryNewAmount &&
     (() => {
+      editGeneration.current += 1
       setNumberPadAmount({
         ...secondaryNewAmount,
         amount: Math.round(secondaryNewAmount.amount),
@@ -234,13 +248,20 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
             return
           }
           maxComputeInFlight.current = true
+          setIsComputingMax(true)
+          const generationAtTap = editGeneration.current
           maxAmountButton
             .compute()
             .then((result) => {
               if (!result) {
                 return
               }
-              const converted = convertMoneyAmount(result.amount, numberPadState.currency)
+              // The user typed, cleared, or toggled currency while the fee
+              // fetch was in flight — their edit wins; drop the stale max.
+              if (editGeneration.current !== generationAtTap) {
+                return
+              }
+              const converted = convertMoneyAmount(result.amount, currencyRef.current)
               // Floor so the filled display amount never converts back to
               // more than the computed max in wallet terms.
               setNumberPadAmount({
@@ -255,6 +276,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
             })
             .finally(() => {
               maxComputeInFlight.current = false
+              setIsComputingMax(false)
             })
         }
       : undefined
@@ -263,6 +285,8 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   if (maxAmountButton) {
     if (maxAmountButton.disabled) {
       maxChipState = "disabled"
+    } else if (isComputingMax) {
+      maxChipState = "computing"
     } else {
       maxChipState = appliedMax ? "active" : "available"
     }
