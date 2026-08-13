@@ -127,12 +127,15 @@ export type ComputeMaxSendAmountArgs = {
   /** Wallet balance in the wallet's minor units (sats or cents). */
   balance: number
   /**
-   * Resolve the estimated fee for sending (approximately) the full balance,
-   * in wallet minor units. Resolve null when no estimate is available — the
+   * Resolve the estimated fee for sending `probeAmount` (the balance clamped
+   * to the recipient cap, in wallet minor units). Probing at the capped
+   * amount matters: LNURL fee probes bounds-validate against the receiver's
+   * LUD-06 limits, so a full-balance probe is guaranteed to fail whenever
+   * the cap binds. Resolve null when no estimate is available — the
    * computation then falls back to the full balance so the existing
    * pre-validation surfaces the typed fee error instead of blocking the tap.
    */
-  fetchFee: () => Promise<number | null>
+  fetchFee: (probeAmount: number) => Promise<number | null>
   /** Receiver's LNURL maxSendable converted to wallet minor units, if known. */
   recipientCap?: number | null
   /** Fee estimates slower than this fall back to the full balance. */
@@ -142,13 +145,14 @@ export type ComputeMaxSendAmountArgs = {
 const FEE_ESTIMATE_TIMEOUT_MS = 10_000
 
 const feeOrNull = async (
-  fetchFee: () => Promise<number | null>,
+  fetchFee: (probeAmount: number) => Promise<number | null>,
+  probeAmount: number,
   timeoutMs: number,
 ): Promise<number | null> => {
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     const fee = await Promise.race([
-      fetchFee(),
+      fetchFee(probeAmount),
       new Promise<null>((resolve) => {
         timer = setTimeout(() => resolve(null), timeoutMs)
       }),
@@ -176,6 +180,9 @@ export const computeMaxSendAmount = async ({
     return { amount: 0, reason: "zero-balance" }
   }
 
+  const hasRecipientCap =
+    recipientCap !== null && recipientCap !== undefined && recipientCap >= 0
+
   let result: MaxSendResult
   if (paymentType === "intraledger") {
     // Flash-to-Flash from the custodial USD wallet — no fee, no API call.
@@ -183,7 +190,14 @@ export const computeMaxSendAmount = async ({
     // sends (which settle via LNURL-pay with a real fee) never hit this arm.
     result = { amount: balance, reason: "intraledger-full-balance" }
   } else {
-    const fee = await feeOrNull(fetchFee, timeoutMs)
+    // Probe at the cap-clamped amount, not the raw balance: LNURL fee probes
+    // bounds-validate against the receiver's LUD-06 maxSendable, so a
+    // full-balance probe fails whenever the cap binds — leaving the clamped
+    // amount with zero fee headroom and a confirm-time dead-end in the band
+    // where balance − cap < fee. Probing slightly above the final amount is
+    // safe: fees are monotone, so the estimate is conservative.
+    const probeAmount = hasRecipientCap ? Math.min(balance, recipientCap) : balance
+    const fee = await feeOrNull(fetchFee, probeAmount, timeoutMs)
     result =
       fee === null
         ? { amount: balance, reason: "fee-unavailable" }
@@ -193,12 +207,7 @@ export const computeMaxSendAmount = async ({
   // LNURL receivers advertise a maxSendable bound (LUD-06) — never offer more
   // than the recipient can accept. Applies to BTC-wallet intraledger sends
   // too, which settle via LNURL-pay under the hood.
-  if (
-    recipientCap !== null &&
-    recipientCap !== undefined &&
-    recipientCap >= 0 &&
-    result.amount > recipientCap
-  ) {
+  if (hasRecipientCap && result.amount > recipientCap) {
     return { amount: recipientCap, reason: "recipient-cap" }
   }
 

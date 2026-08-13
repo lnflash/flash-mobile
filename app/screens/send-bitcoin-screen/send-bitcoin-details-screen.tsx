@@ -448,22 +448,28 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     // type routes BTC-wallet intraledger through the fee path.
     const maxPaymentType = effectiveMaxPaymentType(maxWalletCurrency, pd.paymentType)
 
-    const fetchFee = async (): Promise<number | null> => {
+    // probeAmount is the balance clamped to the recipient cap (computed by
+    // computeMaxSendAmount). Probing at the raw balance would trip the LUD-06
+    // bounds validation inside fetchBreezFee whenever the cap binds, losing
+    // the fee estimate exactly when the fee headroom check matters.
+    const fetchFee = async (probeAmount: number): Promise<number | null> => {
       if (isBtcWallet) {
         const { fee, err } = await fetchBreezFee({
           paymentType: pd.paymentType,
           paymentRequest: flashUserAddress || pd.destination,
-          amountSats: balanceMoneyAmount.amount,
+          amountSats: probeAmount,
           selectedFeeType,
           knownPayRequest: receiverPayRequest ?? undefined,
         })
         return err ? null : fee
       }
-      // USD wallet: probe with the full balance through the same fee probes
-      // the send flow already uses. LNURL destinations have no probe before
-      // an invoice exists — getIbexFee resolves undefined and the
-      // computation falls back to the full balance.
-      const fee = await getIbexFee(setAmountFn(balanceMoneyAmount).getFee)
+      // USD wallet: probe through the same fee probes the send flow already
+      // uses. LNURL destinations have no probe before an invoice exists —
+      // getIbexFee resolves undefined and the computation falls back to the
+      // full balance.
+      const fee = await getIbexFee(
+        setAmountFn({ ...balanceMoneyAmount, amount: probeAmount }).getFee,
+      )
       return fee?.amount ?? null
     }
 

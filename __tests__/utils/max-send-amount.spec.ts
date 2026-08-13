@@ -93,6 +93,56 @@ describe("computeMaxSendAmount", () => {
     expect(result).toEqual({ amount: 150_000, reason: "recipient-cap" })
   })
 
+  it("probes the fee at the full balance when there is no recipient cap", async () => {
+    const fetchFee = jest.fn(async () => 260)
+
+    await computeMaxSendAmount({
+      paymentType: "lightning",
+      balance: 100_000,
+      fetchFee,
+    })
+
+    expect(fetchFee).toHaveBeenCalledWith(100_000)
+  })
+
+  it("probes the fee at the capped amount when the cap binds (LUD-06 bounds would reject a full-balance probe)", async () => {
+    const fetchFee = jest.fn(async () => 500)
+
+    await computeMaxSendAmount({
+      paymentType: "lnurl",
+      balance: 1_000_000,
+      fetchFee,
+      recipientCap: 150_000,
+    })
+
+    expect(fetchFee).toHaveBeenCalledWith(150_000)
+  })
+
+  it("reserves the fee below the cap when the cap is within fee distance of the balance", async () => {
+    // balance 100_000, receiver max 99_900, fee 300: a full-balance probe
+    // would fail LUD-06 bounds validation (fee null), MAX would fill 99_900
+    // with no fee headroom, and confirm-time 99_900 + 300 > 100_000 would
+    // dead-end. Probing at the capped amount keeps the estimate, so MAX
+    // fills 99_700 — confirm-safe (99_700 + 300 = 100_000).
+    const fetchFee = jest.fn(async (probeAmount: number) =>
+      probeAmount > 99_900 ? null : 300,
+    )
+
+    const result = await computeMaxSendAmount({
+      paymentType: "lnurl",
+      balance: 100_000,
+      fetchFee,
+      recipientCap: 99_900,
+    })
+
+    expect(fetchFee).toHaveBeenCalledWith(99_900)
+    expect(result).toEqual({
+      amount: 99_700,
+      reason: "fee-reserved",
+      feeReserved: 300,
+    })
+  })
+
   it("keeps balance minus fee when the recipient cap is not binding", async () => {
     const result = await computeMaxSendAmount({
       paymentType: "lnurl",
