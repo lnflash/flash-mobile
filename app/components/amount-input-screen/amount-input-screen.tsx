@@ -10,8 +10,8 @@ import {
   MoneyAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
-import { useCallback, useEffect, useReducer } from "react"
-import { AmountInputScreenUI } from "./amount-input-screen-ui"
+import { useCallback, useEffect, useReducer, useRef, useState } from "react"
+import { AmountInputScreenUI, MaxChipState } from "./amount-input-screen-ui"
 import {
   Key,
   NumberPadNumber,
@@ -19,6 +19,25 @@ import {
   NumberPadReducerActionType,
   NumberPadReducerState,
 } from "./number-pad-reducer"
+
+export type MaxAmountButtonResult = {
+  /** The computed max, in the sending wallet's currency. */
+  amount: MoneyAmount<WalletOrDisplayCurrency>
+  /** Info-row note explaining the computation (fee reserved, no fee, cap). */
+  note?: string
+}
+
+/**
+ * Optional MAX chip on the balance header. The amount screen stays free of
+ * payment knowledge — callers (the send flow) provide the computation; when
+ * the prop is absent no chip renders.
+ */
+export type MaxAmountButton = {
+  /** Grey the chip out (zero balance) — it stays visible but inert. */
+  disabled?: boolean
+  /** Compute the max sendable amount. Must resolve — never hang the tap. */
+  compute: () => Promise<MaxAmountButtonResult | null>
+}
 
 export type AmountInputScreenProps = {
   goBack: () => void
@@ -28,6 +47,7 @@ export type AmountInputScreenProps = {
   convertMoneyAmount: ConvertMoneyAmount
   maxAmount?: MoneyAmount<WalletOrDisplayCurrency>
   minAmount?: MoneyAmount<WalletOrDisplayCurrency>
+  maxAmountButton?: MaxAmountButton
 }
 
 const formatNumberPadNumber = (numberPadNumber: NumberPadNumber) => {
@@ -131,6 +151,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   convertMoneyAmount,
   maxAmount,
   minAmount,
+  maxAmountButton,
 }) => {
   const {
     currencyInfo,
@@ -161,7 +182,14 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
     displayAmount: convertMoneyAmount(newPrimaryAmount, DisplayCurrency),
   })
 
+  // MAX chip: solid ("active") from the moment the tap fills the amount until
+  // the user edits it; the currency toggle keeps the same underlying amount so
+  // it does not clear the state.
+  const [appliedMax, setAppliedMax] = useState<{ note?: string } | null>(null)
+  const maxComputeInFlight = useRef(false)
+
   const onKeyPress = (key: Key) => {
+    setAppliedMax(null)
     dispatchNumberPadAction({
       action: NumberPadReducerActionType.HandleKeyPress,
       payload: {
@@ -171,6 +199,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   }
 
   const onClear = () => {
+    setAppliedMax(null)
     dispatchNumberPadAction({
       action: NumberPadReducerActionType.ClearAmount,
     })
@@ -197,6 +226,47 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
         amount: Math.round(secondaryNewAmount.amount),
       })
     })
+
+  const onMaxPress =
+    maxAmountButton && !maxAmountButton.disabled
+      ? () => {
+          if (maxComputeInFlight.current) {
+            return
+          }
+          maxComputeInFlight.current = true
+          maxAmountButton
+            .compute()
+            .then((result) => {
+              if (!result) {
+                return
+              }
+              const converted = convertMoneyAmount(result.amount, numberPadState.currency)
+              // Floor so the filled display amount never converts back to
+              // more than the computed max in wallet terms.
+              setNumberPadAmount({
+                ...converted,
+                amount: Math.floor(converted.amount),
+              })
+              setAppliedMax({ note: result.note })
+            })
+            .catch(() => {
+              // The computation is expected to resolve with a fallback; a
+              // rejection must never crash or block the tap.
+            })
+            .finally(() => {
+              maxComputeInFlight.current = false
+            })
+        }
+      : undefined
+
+  let maxChipState: MaxChipState | undefined
+  if (maxAmountButton) {
+    if (maxAmountButton.disabled) {
+      maxChipState = "disabled"
+    } else {
+      maxChipState = appliedMax ? "active" : "available"
+    }
+  }
 
   useEffect(() => {
     if (initialAmount) {
@@ -255,10 +325,13 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
       }
       secondaryCurrencySymbol={secondaryCurrencyInfo?.symbol}
       errorMessage={errorMessage}
+      infoMessage={appliedMax?.note}
       onKeyPress={onKeyPress}
       onClearAmount={onClear}
       onToggleCurrency={onToggleCurrency}
       setAmountDisabled={Boolean(errorMessage)}
+      maxChipState={maxChipState}
+      onMaxPress={onMaxPress}
       onSetAmountPress={setAmount && (() => setAmount(newPrimaryAmount))}
       goBack={goBack}
     />

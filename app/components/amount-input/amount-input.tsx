@@ -10,6 +10,7 @@ import {
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
 import { testProps } from "@app/utils/testProps"
+import { MaxAmountButton } from "../amount-input-screen"
 import { AmountInputModal } from "./amount-input-modal"
 import { AmountInputButton } from "./amount-input-button"
 
@@ -20,6 +21,7 @@ export type AmountInputProps = {
   setAmount?: (moneyAmount: MoneyAmount<WalletOrDisplayCurrency>) => void
   maxAmount?: MoneyAmount<WalletOrDisplayCurrency>
   minAmount?: MoneyAmount<WalletOrDisplayCurrency>
+  maxAmountButton?: MaxAmountButton
   canSetAmount?: boolean
   isSendingMax?: boolean
   showValuesIfDisabled?: boolean
@@ -33,6 +35,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   setAmount,
   maxAmount,
   minAmount,
+  maxAmountButton,
   convertMoneyAmount,
   canSetAmount = true,
   isSendingMax = false,
@@ -118,6 +121,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         onSetAmount={onSetAmount}
         maxAmount={maxAmount}
         minAmount={minAmount}
+        maxAmountButton={maxAmountButton}
         close={() => setIsSettingAmount(false)}
       />
     </>

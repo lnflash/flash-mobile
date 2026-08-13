@@ -1361,7 +1361,11 @@
     "enterAmount": "Унесите износ",
     "setAmount": "Поставите износ",
     "maxAmountExceeded": "Износ не сме прелазити {maxAmount: string}.",
-    "minAmountNotMet": "Износ мора бити најмање {minAmount: string}."
+    "minAmountNotMet": "Износ мора бити најмање {minAmount: string}.",
+    "max": "MAX",
+    "maxNoteIntraledger": "Full balance — no fee between Flash accounts",
+    "maxNoteFeeReserved": "~{fee: string} reserved for the network fee — final fee shown on confirm",
+    "maxNoteRecipientCap": "Capped at {max: string} — the most this recipient can receive per payment"
   },
   "AmountInputButton": {
     "tapToSetAmount": "Додирните да бисте поставили износ",

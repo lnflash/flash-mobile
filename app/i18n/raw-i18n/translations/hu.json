@@ -1361,7 +1361,11 @@
     "enterAmount": "Adja meg az összeget",
     "setAmount": "Összeg beállítása",
     "maxAmountExceeded": "Az összeg nem haladhatja meg a következőt: {maxAmount: string}.",
-    "minAmountNotMet": "Az összeg legalább ennyi kell legyen: {minAmount: string}."
+    "minAmountNotMet": "Az összeg legalább ennyi kell legyen: {minAmount: string}.",
+    "max": "MAX",
+    "maxNoteIntraledger": "Full balance — no fee between Flash accounts",
+    "maxNoteFeeReserved": "~{fee: string} reserved for the network fee — final fee shown on confirm",
+    "maxNoteRecipientCap": "Capped at {max: string} — the most this recipient can receive per payment"
   },
   "AmountInputButton": {
     "tapToSetAmount": "Összeg beállítása",

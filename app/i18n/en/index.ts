@@ -1669,6 +1669,12 @@ const en: BaseTranslation = {
     setAmount: "Set Amount",
     maxAmountExceeded: "Amount must not exceed {maxAmount: string}.",
     minAmountNotMet: "Amount must be at least {minAmount: string}.",
+    max: "MAX",
+    maxNoteIntraledger: "Full balance — no fee between Flash accounts",
+    maxNoteFeeReserved:
+      "~{fee: string} reserved for the network fee — final fee shown on confirm",
+    maxNoteRecipientCap:
+      "Capped at {max: string} — the most this recipient can receive per payment",
   },
   AmountInputButton: {
     tapToSetAmount: "Add an amount",

@@ -20,6 +20,9 @@ import Sync from "@app/assets/icons/sync.svg"
 // utils
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { getCashWallet } from "@app/graphql/wallets-utils"
+import { testProps } from "@app/utils/testProps"
+
+export type MaxChipState = "available" | "active" | "disabled"
 
 export type AmountInputScreenUIProps = {
   walletCurrency: WalletCurrency
@@ -30,7 +33,10 @@ export type AmountInputScreenUIProps = {
   secondaryCurrencyFormattedAmount?: string
   secondaryCurrencyCode?: string
   errorMessage?: string
+  infoMessage?: string
   setAmountDisabled?: boolean
+  maxChipState?: MaxChipState
+  onMaxPress?: () => void
   onKeyPress: (key: Key) => void
   onToggleCurrency?: () => void
   onClearAmount: () => void
@@ -47,10 +53,13 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
   secondaryCurrencyFormattedAmount,
   secondaryCurrencyCode,
   errorMessage,
+  infoMessage,
   onKeyPress,
   onToggleCurrency,
   onSetAmountPress,
   setAmountDisabled,
+  maxChipState,
+  onMaxPress,
   goBack,
 }) => {
   const styles = useStyles()
@@ -84,9 +93,38 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
             <Text type="p1" bold>
               Balance
             </Text>
-            <Text type="p1" bold>
-              {balanceText}
-            </Text>
+            <View style={styles.balanceValueRow}>
+              <Text type="p1" bold>
+                {balanceText}
+              </Text>
+              {maxChipState && (
+                <TouchableOpacity
+                  {...testProps("Max Amount Chip")}
+                  accessibilityRole="button"
+                  accessibilityState={{
+                    disabled: maxChipState === "disabled",
+                    selected: maxChipState === "active",
+                  }}
+                  disabled={maxChipState === "disabled"}
+                  onPress={onMaxPress}
+                  style={[
+                    styles.maxChip,
+                    maxChipState === "active" && styles.maxChipActive,
+                    maxChipState === "disabled" && styles.maxChipDisabled,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.maxChipText,
+                      maxChipState === "active" && styles.maxChipTextActive,
+                      maxChipState === "disabled" && styles.maxChipTextDisabled,
+                    ]}
+                  >
+                    {LL.AmountInputScreen.max()}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
           <TouchableOpacity style={styles.close} onPress={goBack}>
             <Icon type="ionicon" name={"close"} size={40} />
@@ -110,7 +148,13 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
       </View>
       <View style={styles.bottomContainer}>
         <View style={styles.infoContainer}>
-          {errorMessage && <GaloyErrorBox errorMessage={errorMessage} />}
+          {errorMessage ? (
+            <GaloyErrorBox errorMessage={errorMessage} />
+          ) : infoMessage ? (
+            <Text {...testProps("Max Amount Note")} style={styles.infoText}>
+              {infoMessage}
+            </Text>
+          ) : null}
         </View>
         <CurrencyKeyboard onPress={onKeyPress} />
         <PrimaryBtn
@@ -124,9 +168,42 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
   )
 }
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles(({ colors }) => ({
   amountInputScreenContainer: {
     flex: 1,
+  },
+  balanceValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  maxChip: {
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  maxChipActive: {
+    backgroundColor: colors.primary,
+  },
+  maxChipDisabled: {
+    borderColor: colors.grey3,
+  },
+  maxChipText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  maxChipTextActive: {
+    color: colors._white,
+  },
+  maxChipTextDisabled: {
+    color: colors.grey3,
+  },
+  infoText: {
+    textAlign: "center",
+    color: colors.grey2,
   },
   topContainer: {
     alignItems: "center",

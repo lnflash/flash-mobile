@@ -3,7 +3,7 @@ import { makeStyles } from "@rneui/themed"
 import { Modal, SafeAreaView } from "react-native"
 
 // components
-import { AmountInputScreen } from "../amount-input-screen"
+import { AmountInputScreen, MaxAmountButton } from "../amount-input-screen"
 
 // types
 import { WalletCurrency } from "@app/graphql/generated"
@@ -17,6 +17,7 @@ export type AmountInputModalProps = {
   onSetAmount?: (moneyAmount: MoneyAmount<WalletOrDisplayCurrency>) => void
   maxAmount?: MoneyAmount<WalletOrDisplayCurrency>
   minAmount?: MoneyAmount<WalletOrDisplayCurrency>
+  maxAmountButton?: MaxAmountButton
   isOpen: boolean
   close: () => void
 }
@@ -27,6 +28,7 @@ export const AmountInputModal: React.FC<AmountInputModalProps> = ({
   onSetAmount,
   maxAmount,
   minAmount,
+  maxAmountButton,
   convertMoneyAmount,
   isOpen,
   close,
@@ -43,6 +45,7 @@ export const AmountInputModal: React.FC<AmountInputModalProps> = ({
           setAmount={onSetAmount}
           maxAmount={maxAmount}
           minAmount={minAmount}
+          maxAmountButton={maxAmountButton}
           goBack={close}
         />
       </SafeAreaView>
