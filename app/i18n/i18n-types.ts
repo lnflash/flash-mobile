@@ -5422,6 +5422,10 @@ type RootTranslation = {
 		 */
 		contactUs: string
 		/**
+		 * A​p​p​ ​c​h​a​t
+		 */
+		appChat: string
+		/**
 		 * J​o​i​n​ ​t​h​e​ ​c​o​m​m​u​n​i​t​y
 		 */
 		joinTheCommunity: string
@@ -11505,6 +11509,10 @@ export type TranslationFunctions = {
 		 * Need help? Contact us.
 		 */
 		contactUs: () => LocalizedString
+		/**
+		 * App chat
+		 */
+		appChat: () => LocalizedString
 		/**
 		 * Join the community
 		 */

@@ -1625,6 +1625,7 @@ const en: BaseTranslation = {
   },
   support: {
     contactUs: "Need help? Contact us.",
+    appChat: "App chat",
     joinTheCommunity: "Join the community",
     whatsapp: "WhatsApp",
     email: "Email",

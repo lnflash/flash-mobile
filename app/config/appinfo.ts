@@ -1,4 +1,13 @@
+import Config from "react-native-config"
 import { AndroidMarket } from "react-native-rate"
+
+// Flash Support nostr identity (hex pubkey). Customers reach support via
+// NIP-17 DMs to this key; the nostr-dm-bridge in flash-support-infra relays
+// the conversation into Chatwoot. Overridable via env for staging/test.
+// npub1qcesn86prsd9v4y48g4gzxg6gnsunlvhnnuq3kvdhftl7n2yrtyshlsgv9
+export const SUPPORT_CHAT_PUBKEY =
+  Config.SUPPORT_CHAT_PUBKEY ||
+  "0633099f411c1a5654953a2a81191a44e1c9fd979cf808d98dba57ff4d441ac9"
 
 export const WHATSAPP_CONTACT_NUMBER = "+18762909250"
 export const WHATSAPP_SUPPORT_URL = "https://wa.flashapp.me"

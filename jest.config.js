@@ -32,6 +32,7 @@ module.exports = {
   rootDir: ".",
   moduleNameMapper: {
     "^@app/utils/breez-sdk$": ["<rootDir>__mocks__/breez-sdk.js"],
+    "^react-native-config$": ["<rootDir>__mocks__/react-native-config.js"],
     "^@app/(.*)$": ["<rootDir>app/$1"],
     "^@mocks/(.*)$": ["<rootDir>__mocks__/$1"],
     "^@env$": ["<rootDir>__mocks__/@env.js"],
