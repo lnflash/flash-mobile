@@ -1325,6 +1325,9 @@
   },
   "support": {
     "contactUs": "¿Necesitas ayuda? Contáctanos.",
+    "appChat": "App chat",
+    "chatUnavailableTitle": "Chat Unavailable",
+    "chatUnavailableMessage": "In-app chat isn't available on this device yet. You can reach support by email instead.",
     "joinTheCommunity": "Unete a la comunidad",
     "whatsapp": "WhatsApp",
     "email": "Correo electrónico",

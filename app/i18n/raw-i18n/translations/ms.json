@@ -1325,6 +1325,9 @@
   },
   "support": {
     "contactUs": "Perlu bantuan? Hubungi kami.",
+    "appChat": "App chat",
+    "chatUnavailableTitle": "Chat Unavailable",
+    "chatUnavailableMessage": "In-app chat isn't available on this device yet. You can reach support by email instead.",
     "joinTheCommunity": "Jadi sebahagian daripada komuniti",
     "whatsapp": "WhatsApp",
     "email": "Emel",

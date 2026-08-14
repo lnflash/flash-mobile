@@ -1,5 +1,5 @@
-import React from "react"
-import { Linking } from "react-native"
+import React, { useEffect, useState } from "react"
+import { Alert, Linking } from "react-native"
 import { getReadableVersion } from "react-native-device-info"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
@@ -36,25 +36,77 @@ export const NeedHelpSetting: React.FC = () => {
   )
 }
 
+// Builds the mailto: URL for the email support channel; shared between the
+// Email row and the App chat fallback for users without a local nostr key.
+const useSupportEmailUrl = () => {
+  const { LL } = useI18nContext()
+  const { appConfig } = useAppConfig()
+  const bankName = appConfig.galoyInstance.name
+
+  const contactMessageBody = LL.support.defaultSupportMessage({
+    os: isIos ? "iOS" : "Android",
+    version: getReadableVersion(),
+    bankName,
+  })
+  const contactMessageSubject = LL.support.defaultEmailSubject({ bankName })
+
+  return `mailto:${CONTACT_EMAIL_ADDRESS}?subject=${encodeURIComponent(
+    contactMessageSubject,
+  )}&body=${encodeURIComponent(contactMessageBody)}`
+}
+
 const AppChat = () => {
   const { LL } = useI18nContext()
   const { navigate } = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { userPublicKey } = useChatContext()
   const { persistentState, updateState } = usePersistentStateContext()
+  const supportEmailUrl = useSupportEmailUrl()
+  // groupId waiting for the Chat tab to mount after chatEnabled flips on.
+  const [pendingGroupId, setPendingGroupId] = useState<string | null>(null)
+
+  const goToSupportChat = (groupId: string) =>
+    navigate("Primary", {
+      screen: "Chat",
+      params: { screen: "messages", params: { groupId } },
+    })
+
+  // The Chat tab only mounts once chatEnabled is set. Effects run after the
+  // commit in which the navigator re-rendered with the Chat route registered,
+  // so navigating from here is deterministic — unlike a timeout, which races
+  // the re-render on a busy JS thread.
+  useEffect(() => {
+    if (pendingGroupId && persistentState.chatEnabled) {
+      setPendingGroupId(null)
+      goToSupportChat(pendingGroupId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingGroupId, persistentState.chatEnabled])
 
   const openAppChat = () => {
-    if (!userPublicKey) return
+    if (!userPublicKey) {
+      // No local nostr key (e.g. account restored on a new device where the
+      // backend npub exists but the secret never made it over). Surface the
+      // state and offer the email channel instead of silently doing nothing.
+      Alert.alert(
+        LL.support.chatUnavailableTitle(),
+        LL.support.chatUnavailableMessage(),
+        [
+          { text: LL.common.cancel(), style: "cancel" },
+          {
+            text: LL.support.email(),
+            onPress: () => Linking.openURL(supportEmailUrl),
+          },
+        ],
+      )
+      return
+    }
     const groupId = getGroupId([userPublicKey, SUPPORT_CHAT_PUBKEY])
-    const goToSupportChat = () =>
-      navigate("Primary", {
-        screen: "Chat",
-        params: { screen: "messages", params: { groupId } },
-      })
 
     if (persistentState.chatEnabled) {
-      goToSupportChat()
+      goToSupportChat(groupId)
     } else {
-      updateState((state: any) => {
+      setPendingGroupId(groupId)
+      updateState((state) => {
         if (state)
           return {
             ...state,
@@ -62,9 +114,6 @@ const AppChat = () => {
           }
         return undefined
       })
-      // The Chat tab only mounts once chatEnabled is set; defer navigation
-      // until the navigator has re-rendered with the Chat route registered.
-      setTimeout(goToSupportChat, 300)
     }
   }
 
@@ -91,14 +140,6 @@ const Discord = () => {
 
 const WhatsApp = () => {
   const { LL } = useI18nContext()
-  const { appConfig } = useAppConfig()
-
-  const bankName = appConfig.galoyInstance.name
-  const contactMessageBody = LL.support.defaultSupportMessage({
-    os: isIos ? "iOS" : "Android",
-    version: getReadableVersion(),
-    bankName,
-  })
 
   return (
     <SettingsRow
@@ -111,30 +152,13 @@ const WhatsApp = () => {
 
 const Email = () => {
   const { LL } = useI18nContext()
-  const { appConfig } = useAppConfig()
-  const bankName = appConfig.galoyInstance.name
-
-  const contactMessageBody = LL.support.defaultSupportMessage({
-    os: isIos ? "iOS" : "Android",
-    version: getReadableVersion(),
-    bankName,
-  })
-
-  const contactMessageSubject = LL.support.defaultEmailSubject({
-    bankName,
-  })
+  const supportEmailUrl = useSupportEmailUrl()
 
   return (
     <SettingsRow
       title={LL.support.email()}
       leftIcon="mail-outline"
-      action={() =>
-        Linking.openURL(
-          `mailto:${CONTACT_EMAIL_ADDRESS}?subject=${encodeURIComponent(
-            contactMessageSubject,
-          )}&body=${encodeURIComponent(contactMessageBody)}`,
-        )
-      }
+      action={() => Linking.openURL(supportEmailUrl)}
     />
   )
 }

@@ -1626,6 +1626,9 @@ const en: BaseTranslation = {
   support: {
     contactUs: "Need help? Contact us.",
     appChat: "App chat",
+    chatUnavailableTitle: "Chat Unavailable",
+    chatUnavailableMessage:
+      "In-app chat isn't available on this device yet. You can reach support by email instead.",
     joinTheCommunity: "Join the community",
     whatsapp: "WhatsApp",
     email: "Email",
