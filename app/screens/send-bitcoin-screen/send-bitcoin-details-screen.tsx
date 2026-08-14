@@ -47,13 +47,7 @@ import { Satoshis } from "lnurl-pay/dist/types/types"
 // utils
 import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
-import {
-  computeMaxSendAmount,
-  effectiveMaxPaymentType,
-  maxChipSupportsPaymentType,
-  noteForResult,
-  resolveRecipientCap,
-} from "./max-send-amount"
+import { buildMaxAmountButton } from "./max-amount-button"
 import { MaxAmountButton } from "@app/components/amount-input-screen"
 import { requestInvoice, utils } from "lnurl-pay"
 import { fetchBreezFee, fetchLnurlPayRequest } from "@app/utils/breez-sdk"
@@ -422,108 +416,43 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
 
   // MAX chip on the amount screen (issue #512). Payment knowledge stays here
   // in the send flow — the amount screen just renders the chip and applies
-  // the computed amount.
-  const buildMaxAmountButton = (): MaxAmountButton | undefined => {
-    if (!paymentDetail?.canSetAmount) {
+  // the computed amount. The glue itself lives in the dependency-injected
+  // factory (max-amount-button.ts) so it is unit-testable; this only binds
+  // the screen's hooks and payment detail into it.
+  const buildMaxButtonForPaymentDetail = (): MaxAmountButton | undefined => {
+    if (!paymentDetail) {
       return undefined
     }
     const pd = paymentDetail
-    // Onchain is out of scope for the chip: its fee needs the user's selected
-    // speed (not chosen yet at this point) and the onchain flow already has
-    // its own send-all "Max" affordance (DetailAmountNote / canSendMax).
-    if (!maxChipSupportsPaymentType(pd.paymentType)) {
-      return undefined
-    }
-    const setAmountFn = pd.setAmount
-    if (!setAmountFn) {
-      return undefined
-    }
     const walletCurrency = pd.sendingWalletDescriptor.currency
     const isBtcWallet = walletCurrency === WalletCurrency.Btc
-    const maxWalletCurrency = isBtcWallet ? ("BTC" as const) : ("USD" as const)
-    const balanceMoneyAmount = isBtcWallet ? btcBalanceMoneyAmount : usdBalanceMoneyAmount
 
-    // BTC-wallet intraledger sends settle via LNURL-pay with a real Breez
-    // fee — only USD-wallet intraledger is truly fee-free. The effective
-    // type routes BTC-wallet intraledger through the fee path.
-    const maxPaymentType = effectiveMaxPaymentType(maxWalletCurrency, pd.paymentType)
-
-    // probeAmount is the balance clamped to the recipient cap (computed by
-    // computeMaxSendAmount). Probing at the raw balance would trip the LUD-06
-    // bounds validation inside fetchBreezFee whenever the cap binds, losing
-    // the fee estimate exactly when the fee headroom check matters.
-    const fetchFee = async (probeAmount: number): Promise<number | null> => {
-      if (isBtcWallet) {
-        const { fee, err } = await fetchBreezFee({
-          paymentType: pd.paymentType,
-          paymentRequest: flashUserAddress || pd.destination,
-          amountSats: probeAmount,
-          selectedFeeType,
-          knownPayRequest: receiverPayRequest ?? undefined,
-        })
-        return err ? null : fee
-      }
-      // USD wallet: probe through the same fee probes the send flow already
-      // uses. LNURL destinations have no probe before an invoice exists —
-      // getIbexFee resolves undefined and the computation falls back to the
-      // full balance.
-      const fee = await getIbexFee(
-        setAmountFn({ ...balanceMoneyAmount, amount: probeAmount }).getFee,
-      )
-      return fee?.amount ?? null
-    }
-
-    // Receiver's LNURL maxSendable bound, in wallet minor units.
-    const recipientCap = resolveRecipientCap({
-      walletCurrency: maxWalletCurrency,
+    return buildMaxAmountButton({
+      canSetAmount: pd.canSetAmount,
       paymentType: pd.paymentType,
+      walletCurrency: isBtcWallet ? ("BTC" as const) : ("USD" as const),
+      balanceMoneyAmount: isBtcWallet ? btcBalanceMoneyAmount : usdBalanceMoneyAmount,
+      destination: pd.destination,
+      flashUserAddress,
+      selectedFeeType,
+      knownPayRequest: receiverPayRequest ?? undefined,
       receiverMaxSats: receiverLimits?.maxSats ?? null,
       lnurlParamsMaxSats: pd.paymentType === "lnurl" ? pd.lnurlParams?.max ?? null : null,
       convertSatsToWallet: (sats) =>
         pd.convertMoneyAmount(toBtcMoneyAmount(sats), walletCurrency).amount,
-    })
-
-    return {
-      // `!(x > 0)` rather than `x <= 0`: a NaN balance (wallets still
-      // loading — the screen queries with returnPartialData) must disable
-      // the chip too, and NaN fails every comparison.
-      disabled: !(balanceMoneyAmount.amount > 0),
-      compute: async () => {
-        const result = await computeMaxSendAmount({
-          paymentType: maxPaymentType,
-          balance: balanceMoneyAmount.amount,
-          fetchFee,
-          recipientCap,
-        })
-
-        const noteDecision = noteForResult(result)
-        let note: string | undefined
-        if (noteDecision.kind === "intraledger") {
-          note = LL.AmountInputScreen.maxNoteIntraledger()
-        } else if (noteDecision.kind === "fee-reserved") {
-          const feeString = moneyAmountToDisplayCurrencyString({
-            moneyAmount: { ...balanceMoneyAmount, amount: noteDecision.feeReserved },
-          })
-          note = feeString
-            ? LL.AmountInputScreen.maxNoteFeeReserved({ fee: feeString })
-            : undefined
-        } else if (noteDecision.kind === "recipient-cap") {
-          const capString = moneyAmountToDisplayCurrencyString({
-            moneyAmount: { ...balanceMoneyAmount, amount: noteDecision.cap },
-          })
-          note = capString
-            ? LL.AmountInputScreen.maxNoteRecipientCap({ max: capString })
-            : undefined
-        }
-
-        return {
-          amount: { ...balanceMoneyAmount, amount: result.amount },
-          note,
-        }
+      fetchBreezFee,
+      setAmount: pd.setAmount,
+      getIbexFee,
+      formatDisplayAmount: (moneyAmount) =>
+        moneyAmountToDisplayCurrencyString({ moneyAmount }),
+      strings: {
+        intraledger: () => LL.AmountInputScreen.maxNoteIntraledger(),
+        feeReserved: (fee) => LL.AmountInputScreen.maxNoteFeeReserved({ fee }),
+        recipientCap: (max) => LL.AmountInputScreen.maxNoteRecipientCap({ max }),
       },
-    }
+    })
   }
-  const maxAmountButton = buildMaxAmountButton()
+  const maxAmountButton = buildMaxButtonForPaymentDetail()
 
   const amountStatus = isValidAmount({
     paymentDetail,

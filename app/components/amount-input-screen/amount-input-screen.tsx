@@ -308,6 +308,14 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
 
   useEffect(() => {
     if (initialAmount) {
+      // A new initial amount means the caller committed or replaced the
+      // amount (e.g. Set Amount closed the modal and it reopened while this
+      // component stayed mounted). Any applied-MAX chip state and any MAX
+      // computation still in flight refer to the pre-commit amount — clear
+      // the chip and invalidate late resolves so a stale max can neither
+      // overwrite the committed amount nor claim it as the computed max.
+      editGeneration.current += 1
+      setAppliedMax(null)
       setNumberPadAmount(initialAmount)
     }
   }, [initialAmount, setNumberPadAmount])

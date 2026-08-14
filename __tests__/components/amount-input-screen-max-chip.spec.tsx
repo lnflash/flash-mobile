@@ -353,6 +353,95 @@ describe("AmountInputScreen MAX chip", () => {
     )
   })
 
+  // Set Amount closes the modal but the component stays mounted; reopening
+  // feeds the committed amount back down as a fresh initialAmount. Both the
+  // applied-MAX chip state and any still-in-flight MAX computation refer to
+  // the pre-commit amount and must be discarded.
+  describe("initialAmount reset (commit closed and reopened the modal)", () => {
+    const screenWithInitialAmount = (
+      maxAmountButton: MaxAmountButton,
+      initialAmount?: MoneyAmount<WalletOrDisplayCurrency>,
+    ) => (
+      <ThemeProvider theme={createTheme({})}>
+        <AmountInputScreen
+          goBack={jest.fn()}
+          setAmount={jest.fn()}
+          initialAmount={initialAmount}
+          walletCurrency={WalletCurrency.Btc}
+          convertMoneyAmount={convertMoneyAmount}
+          maxAmountButton={maxAmountButton}
+        />
+      </ThemeProvider>
+    )
+
+    const committedAmount: MoneyAmount<WalletOrDisplayCurrency> = {
+      amount: 500,
+      currency: "DisplayCurrency",
+      currencyCode: "USD",
+    }
+
+    it("clears the applied MAX chip and note when a new initial amount arrives", async () => {
+      const maxAmountButton: MaxAmountButton = {
+        compute: jest.fn(async () => ({ amount: maxSats, note: "Test fee note" })),
+      }
+      const { getByTestId, getByText, queryByTestId, rerender } = render(
+        screenWithInitialAmount(maxAmountButton),
+      )
+
+      fireEvent.press(getByTestId("Max Amount Chip"))
+      await waitFor(() => {
+        expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+          expect.objectContaining({ selected: true }),
+        )
+      })
+
+      // The user commits a different amount; the pad reopens with it.
+      rerender(screenWithInitialAmount(maxAmountButton, committedAmount))
+
+      // The pad shows the committed amount — the chip must not stay solid
+      // asserting it is the computed max, and the stale fee note must go.
+      await waitFor(() => {
+        expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+          expect.objectContaining({ selected: false }),
+        )
+      })
+      expect(getByText("$5.00")).toBeTruthy()
+      expect(queryByTestId("Max Amount Note")).toBeNull()
+    })
+
+    it("drops a MAX resolve that lands after the amount was committed", async () => {
+      let resolveCompute!: (result: { amount: typeof maxSats; note?: string }) => void
+      const maxAmountButton: MaxAmountButton = {
+        compute: jest.fn(
+          () =>
+            new Promise<{ amount: typeof maxSats; note?: string }>((resolve) => {
+              resolveCompute = resolve
+            }),
+        ),
+      }
+      const { getByTestId, getByText, queryByTestId, queryByText, rerender } = render(
+        screenWithInitialAmount(maxAmountButton),
+      )
+
+      fireEvent.press(getByTestId("Max Amount Chip"))
+      // The user taps Set Amount while the fee fetch is still in flight —
+      // the committed amount comes back down as a new initialAmount…
+      rerender(screenWithInitialAmount(maxAmountButton, committedAmount))
+
+      // …so the late resolve must neither fill the pad nor light the chip.
+      await act(async () => {
+        resolveCompute({ amount: maxSats, note: "Test fee note" })
+      })
+
+      expect(getByText("$5.00")).toBeTruthy()
+      expect(queryByText("$20.00")).toBeNull()
+      expect(queryByTestId("Max Amount Note")).toBeNull()
+      expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+        expect.objectContaining({ selected: false }),
+      )
+    })
+  })
+
   it("is greyed out and inert when the balance is zero", () => {
     const compute = jest.fn(async () => ({ amount: maxSats }))
     const { getByTestId } = renderScreen({ disabled: true, compute })
