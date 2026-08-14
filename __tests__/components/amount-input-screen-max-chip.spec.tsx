@@ -140,6 +140,58 @@ describe("AmountInputScreen MAX chip", () => {
     expect(queryByTestId("Max Amount Chip")).toBeNull()
   })
 
+  it("steps the fill down when the display round-trip would overdraw the max", async () => {
+    // The on-device overdraw class: the pad holds a coarser currency than
+    // the wallet and the converter rounds. 1 display cent = 10 sats here:
+    // a 109-sat max forward-rounds to 11 cents, which round-trips back to
+    // 110 sats — more than the max. The fill must step down to 10 cents
+    // (100 sats); offering 11 would overdraw at send time.
+    const CENT_TO_SATS = 10
+    const roundingConvert = (<W extends WalletOrDisplayCurrency>(
+      moneyAmount: MoneyAmount<WalletOrDisplayCurrency>,
+      toCurrency: W,
+    ): MoneyAmount<W> => {
+      const inSats =
+        moneyAmount.currency === "BTC"
+          ? moneyAmount.amount
+          : moneyAmount.amount * CENT_TO_SATS
+      const amount = toCurrency === "BTC" ? inSats : Math.round(inSats / CENT_TO_SATS)
+      return {
+        amount,
+        currency: toCurrency,
+        currencyCode: toCurrency === "BTC" ? "SAT" : "USD",
+      } as MoneyAmount<W>
+    }) as ConvertMoneyAmount
+
+    const compute = jest.fn(async () => ({
+      amount: {
+        amount: 109,
+        currency: WalletCurrency.Btc,
+        currencyCode: "SAT",
+      } as MoneyAmount<WalletOrDisplayCurrency>,
+    }))
+
+    const { getByTestId, getByText } = render(
+      <ThemeProvider theme={createTheme({})}>
+        <AmountInputScreen
+          goBack={jest.fn()}
+          setAmount={jest.fn()}
+          walletCurrency={WalletCurrency.Btc}
+          convertMoneyAmount={roundingConvert}
+          maxAmountButton={{ compute }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.press(getByTestId("Max Amount Chip"))
+
+    // 10 display cents = $0.10; the naive round(10.9) = 11-cent fill would
+    // render $0.11 and overdraw to 110 sats at send time.
+    await waitFor(() => {
+      expect(getByText("$0.10")).toBeTruthy()
+    })
+  })
+
   it("renders an outlined (available) chip when the prop is provided", () => {
     const { getByTestId } = renderScreen({
       compute: jest.fn(async () => ({ amount: maxSats })),

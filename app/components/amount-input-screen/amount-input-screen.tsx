@@ -262,11 +262,25 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
                 return
               }
               const converted = convertMoneyAmount(result.amount, currencyRef.current)
-              // Floor so the filled display amount never converts back to
-              // more than the computed max in wallet terms.
+              // The pad may hold a DIFFERENT currency than the wallet (e.g.
+              // JMD display over a USD wallet). The send path converts the
+              // pad amount BACK to wallet units and rounds, so a display
+              // amount that merely floors here can still round-trip above
+              // the computed max and overdraw (found on-device: $1.099346
+              // spendable → J$ fill → $1.10 sent → IBEX rejects). Step the
+              // filled amount down until its round-trip stays within max.
+              let fillAmount = Math.floor(converted.amount)
+              const roundTripsAboveMax = (amount: number) =>
+                Math.round(
+                  convertMoneyAmount({ ...converted, amount }, result.amount.currency)
+                    .amount,
+                ) > result.amount.amount
+              while (fillAmount > 0 && roundTripsAboveMax(fillAmount)) {
+                fillAmount -= 1
+              }
               setNumberPadAmount({
                 ...converted,
-                amount: Math.floor(converted.amount),
+                amount: fillAmount,
               })
               setAppliedMax({ note: result.note })
             })
