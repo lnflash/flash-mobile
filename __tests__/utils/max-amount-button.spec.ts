@@ -120,6 +120,32 @@ describe("buildMaxAmountButton", () => {
 
       await expect(button?.compute()).resolves.toBeNull()
     })
+
+    it("resolves null when the fee estimate meets or exceeds the balance", async () => {
+      // { amount: 0, reason: "fee-reserved" } — not "zero-balance" — must
+      // also leave the pad untouched (BTC wallet with 20 sats, fee 26).
+      const button = buildMaxAmountButton(
+        makeArgs({
+          walletCurrency: "BTC",
+          balanceMoneyAmount: { ...btcBalance, amount: 20 },
+          fetchBreezFee: jest.fn(async () => ({ fee: 26, err: null })),
+        }),
+      )
+
+      await expect(button?.compute()).resolves.toBeNull()
+    })
+
+    it("resolves null when the receiver advertises a zero maxSendable cap", async () => {
+      const button = buildMaxAmountButton(
+        makeArgs({
+          walletCurrency: "BTC",
+          balanceMoneyAmount: btcBalance,
+          receiverMaxSats: 0,
+        }),
+      )
+
+      await expect(button?.compute()).resolves.toBeNull()
+    })
   })
 
   describe("Breez fetchFee adapter (BTC wallet)", () => {

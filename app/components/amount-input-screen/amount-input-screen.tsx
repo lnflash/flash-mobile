@@ -235,9 +235,22 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
     secondaryNewAmount &&
     (() => {
       editGeneration.current += 1
+      const toggledAmount = Math.round(secondaryNewAmount.amount)
+      // A toggle normally keeps the same underlying amount, so the MAX chip
+      // stays solid. But when the pad holds a sub-display-unit amount (the
+      // wallet-units dust fill), rounding to the other currency CHANGES the
+      // amount — up to double the computed max, or down to an empty pad.
+      // A lossy toggle drops the MAX claim; a faithful one keeps it.
+      const roundTrip = convertMoneyAmount(
+        { ...secondaryNewAmount, amount: toggledAmount },
+        newPrimaryAmount.currency,
+      )
+      if (roundTrip.amount !== newPrimaryAmount.amount) {
+        setAppliedMax(null)
+      }
       setNumberPadAmount({
         ...secondaryNewAmount,
-        amount: Math.round(secondaryNewAmount.amount),
+        amount: toggledAmount,
       })
     })
 

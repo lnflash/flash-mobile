@@ -324,6 +324,64 @@ describe("AmountInputScreen MAX chip", () => {
     })
   })
 
+  it("clears the chip on a lossy currency toggle (dust fill)", async () => {
+    // After a wallet-units dust fill (5 SAT = 0.5 display cents), toggling
+    // currency rounds to 1 cent = 10 sats — DOUBLE the computed max. The
+    // toggle must drop the MAX claim instead of asserting 10 sats is max.
+    const CENT_TO_SATS = 10
+    const flooringConvert = (<W extends WalletOrDisplayCurrency>(
+      moneyAmount: MoneyAmount<WalletOrDisplayCurrency>,
+      toCurrency: W,
+    ): MoneyAmount<W> => {
+      const inSats =
+        moneyAmount.currency === "BTC"
+          ? moneyAmount.amount
+          : moneyAmount.amount * CENT_TO_SATS
+      const amount = toCurrency === "BTC" ? Math.round(inSats) : inSats / CENT_TO_SATS
+      return {
+        amount,
+        currency: toCurrency,
+        currencyCode: toCurrency === "BTC" ? "SAT" : "USD",
+      } as MoneyAmount<W>
+    }) as ConvertMoneyAmount
+
+    const compute = jest.fn(async () => ({
+      amount: {
+        amount: 5,
+        currency: WalletCurrency.Btc,
+        currencyCode: "SAT",
+      } as MoneyAmount<WalletOrDisplayCurrency>,
+    }))
+
+    const { getByTestId, getByText } = render(
+      <ThemeProvider theme={createTheme({})}>
+        <AmountInputScreen
+          goBack={jest.fn()}
+          setAmount={jest.fn()}
+          walletCurrency={WalletCurrency.Btc}
+          convertMoneyAmount={flooringConvert}
+          maxAmountButton={{ compute }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.press(getByTestId("Max Amount Chip"))
+    await waitFor(() => {
+      expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+        expect.objectContaining({ selected: true }),
+      )
+    })
+
+    // Secondary row holds the 0.5-cent display amount; pressing it toggles.
+    fireEvent.press(getByText(/0.5 USD/))
+
+    await waitFor(() => {
+      expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+        expect.objectContaining({ selected: false }),
+      )
+    })
+  })
+
   it("shows a computing state while the fee estimate is in flight", async () => {
     let resolveCompute!: (result: { amount: typeof maxSats; note?: string }) => void
     const compute = jest.fn(

@@ -161,10 +161,13 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
         recipientCap,
       })
 
-      // Nothing spendable (the balance raced to zero — or to a sub-cent
-      // residue — after the chip rendered enabled): leave the pad untouched
-      // rather than filling an empty amount under a solid MAX chip.
-      if (result.reason === "zero-balance") {
+      // Nothing spendable: leave the pad untouched rather than filling an
+      // empty amount under a solid MAX chip. A zero max arrives on several
+      // routes, not just "zero-balance" — a fee estimate that meets or
+      // exceeds the balance yields { amount: 0, reason: "fee-reserved" },
+      // and a receiver advertising maxSendable 0 yields a zero cap — so
+      // gate on the amount itself.
+      if (result.amount <= 0) {
         return null
       }
 
