@@ -192,6 +192,63 @@ describe("AmountInputScreen MAX chip", () => {
     })
   })
 
+  it("fills the max in wallet units when it floors to zero display units", async () => {
+    // Dust-balance class: a positive wallet max worth under one display
+    // minor unit. 1 display cent = 10 sats here, so a 5-sat max converts
+    // to 0.5 cents and floors to 0. Filling 0 would empty the pad under a
+    // solid MAX chip (Set Amount ready to commit $0) — the fill must fall
+    // back to wallet units and show the true 5-sat max instead.
+    const CENT_TO_SATS = 10
+    const flooringConvert = (<W extends WalletOrDisplayCurrency>(
+      moneyAmount: MoneyAmount<WalletOrDisplayCurrency>,
+      toCurrency: W,
+    ): MoneyAmount<W> => {
+      const inSats =
+        moneyAmount.currency === "BTC"
+          ? moneyAmount.amount
+          : moneyAmount.amount * CENT_TO_SATS
+      const amount = toCurrency === "BTC" ? Math.round(inSats) : inSats / CENT_TO_SATS
+      return {
+        amount,
+        currency: toCurrency,
+        currencyCode: toCurrency === "BTC" ? "SAT" : "USD",
+      } as MoneyAmount<W>
+    }) as ConvertMoneyAmount
+
+    const compute = jest.fn(async () => ({
+      amount: {
+        amount: 5,
+        currency: WalletCurrency.Btc,
+        currencyCode: "SAT",
+      } as MoneyAmount<WalletOrDisplayCurrency>,
+      note: "Test fee note",
+    }))
+
+    const { getByTestId, getByText } = render(
+      <ThemeProvider theme={createTheme({})}>
+        <AmountInputScreen
+          goBack={jest.fn()}
+          setAmount={jest.fn()}
+          walletCurrency={WalletCurrency.Btc}
+          convertMoneyAmount={flooringConvert}
+          maxAmountButton={{ compute }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.press(getByTestId("Max Amount Chip"))
+
+    // The pad switches to wallet units and shows the true max — not an
+    // empty $0 amount under a solid chip.
+    await waitFor(() => {
+      expect(getByText(/5 SAT/)).toBeTruthy()
+    })
+    expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+      expect.objectContaining({ selected: true }),
+    )
+    expect(getByTestId("Max Amount Note").props.children).toBe("Test fee note")
+  })
+
   it("renders an outlined (available) chip when the prop is provided", () => {
     const { getByTestId } = renderScreen({
       compute: jest.fn(async () => ({ amount: maxSats })),

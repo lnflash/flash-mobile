@@ -278,10 +278,22 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
               while (fillAmount > 0 && roundTripsAboveMax(fillAmount)) {
                 fillAmount -= 1
               }
-              setNumberPadAmount({
-                ...converted,
-                amount: fillAmount,
-              })
+              // A positive wallet-units max can still floor (or step) down to
+              // zero display units — e.g. a dust BTC balance worth under one
+              // display cent. Filling 0 would empty the pad under a solid MAX
+              // chip and leave Set Amount ready to commit a zero amount. Fill
+              // in wallet units instead: the pad switches currency (as the
+              // toggle does) and shows the true max, which needs no display
+              // round-trip — the computation already floors it to whole
+              // wallet minor units.
+              if (fillAmount === 0 && result.amount.amount > 0) {
+                setNumberPadAmount(result.amount)
+              } else {
+                setNumberPadAmount({
+                  ...converted,
+                  amount: fillAmount,
+                })
+              }
               setAppliedMax({ note: result.note })
             })
             .catch(() => {
