@@ -13,6 +13,7 @@ import {
   DisplayCurrency,
   MoneyAmount,
   toBtcMoneyAmount,
+  toSpendableBalance,
   toUsdMoneyAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
@@ -51,17 +52,23 @@ export const useSwap = () => {
   const btcBalance = toBtcMoneyAmount(btcWallet?.balance ?? NaN)
   const usdBalance = toUsdMoneyAmount(usdWallet?.balance ?? NaN)
 
-  // @ts-ignore: Unreachable code error
-  const convertedBTCBalance = convertMoneyAmount(btcBalance, DisplayCurrency) // @ts-ignore: Unreachable code error
-  const convertedUsdBalance = convertMoneyAmount(usdBalance, DisplayCurrency)
+  // Display-only floored balances — the fee/balance checks below keep the raw
+  // amounts (#690)
+  const spendableBtcBalance = toSpendableBalance(btcBalance)
+  const spendableUsdBalance = toSpendableBalance(usdBalance)
+
+  // @ts-expect-error: convertMoneyAmount is undefined until the realtime price loads
+  const convertedBTCBalance = convertMoneyAmount(spendableBtcBalance, DisplayCurrency)
+  // @ts-expect-error: convertMoneyAmount is undefined until the realtime price loads
+  const convertedUsdBalance = convertMoneyAmount(spendableUsdBalance, DisplayCurrency)
 
   const formattedBtcBalance = formatDisplayAndWalletAmount({
     displayAmount: convertedBTCBalance,
-    walletAmount: btcBalance,
+    walletAmount: spendableBtcBalance,
   })
   const formattedUsdBalance = formatDisplayAndWalletAmount({
     displayAmount: convertedUsdBalance,
-    walletAmount: usdBalance,
+    walletAmount: spendableUsdBalance,
   })
 
   const prepareBtcToUsd = async (

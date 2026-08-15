@@ -15,7 +15,12 @@ import Cash from "@app/assets/icons/cash.svg"
 import Bitcoin from "@app/assets/icons/bitcoin.svg"
 
 // types
-import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import {
+  DisplayCurrency,
+  toBtcMoneyAmount,
+  toSpendableBalance,
+  toUsdMoneyAmount,
+} from "@app/types/amounts"
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
 import { Wallet, WalletCurrency } from "@app/graphql/generated"
 import { testProps } from "../../utils/testProps"
@@ -44,8 +49,9 @@ const ChooseWallet: React.FC<Props> = ({
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
   const { sendingWalletDescriptor, convertMoneyAmount } = paymentDetail
 
-  const btcBalanceMoneyAmount = toBtcMoneyAmount(btcWallet.balance || btcWallet?.balance)
-  const usdBalanceMoneyAmount = toUsdMoneyAmount(usdWallet?.balance)
+  // Display-only balances — floor to whole spendable minor units (#690)
+  const btcBalanceMoneyAmount = toSpendableBalance(toBtcMoneyAmount(btcWallet?.balance))
+  const usdBalanceMoneyAmount = toSpendableBalance(toUsdMoneyAmount(usdWallet?.balance))
 
   const btcWalletText = formatDisplayAndWalletAmount({
     displayAmount: convertMoneyAmount(btcBalanceMoneyAmount, DisplayCurrency),

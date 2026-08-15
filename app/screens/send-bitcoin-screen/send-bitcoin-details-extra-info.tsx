@@ -8,7 +8,7 @@ import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useNavigation } from "@react-navigation/native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { StackNavigationProp } from "@react-navigation/stack"
-import { toBtcMoneyAmount } from "@app/types/amounts"
+import { toSpendableBalance } from "@app/types/amounts"
 
 export type SendBitcoinDetailsExtraInfoProps = {
   errorMessage?: string
@@ -58,7 +58,10 @@ export const SendBitcoinDetailsExtraInfo = ({
       return (
         <GaloyErrorBox
           errorMessage={LL.SendBitcoinScreen.amountExceed({
-            balance: formatMoneyAmount({ moneyAmount: amountStatus.balance }),
+            // Display-only: floor the balance shown in the error message (#690)
+            balance: formatMoneyAmount({
+              moneyAmount: toSpendableBalance(amountStatus.balance),
+            }),
           })}
         />
       )

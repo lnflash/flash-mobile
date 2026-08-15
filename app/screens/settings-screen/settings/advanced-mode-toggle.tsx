@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 
 import { SettingsRow } from "../row"
-import { toBtcMoneyAmount } from "@app/types/amounts"
+import { toBtcMoneyAmount, toSpendableBalance } from "@app/types/amounts"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { Alert, Platform } from "react-native"
 import { useSettingsScreenQuery } from "@app/graphql/generated"
@@ -69,7 +69,10 @@ export const AdvancedModeToggle: React.FC = () => {
   const toggleAdvanceMode = async () => {
     if (isAdvanceMode) {
       if (btcWallet.balance && btcWallet.balance > 0) {
-        const btcWalletBalance = toBtcMoneyAmount(btcWallet.balance || 0)
+        // Display-only: floor the balance shown in the warning (#690)
+        const btcWalletBalance = toSpendableBalance(
+          toBtcMoneyAmount(btcWallet.balance || 0),
+        )
         const convertedBalance =
           moneyAmountToDisplayCurrencyString({
             moneyAmount: btcWalletBalance,

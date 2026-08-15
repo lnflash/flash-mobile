@@ -27,6 +27,7 @@ import {
   DisplayCurrency,
   MoneyAmount,
   toBtcMoneyAmount,
+  toSpendableBalance,
   toUsdMoneyAmount,
   toWalletAmount,
   WalletOrDisplayCurrency,
@@ -74,17 +75,21 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
 
   if (!convertMoneyAmount) return null
 
-  const convertedBTCBalance = convertMoneyAmount(btcBalance, DisplayCurrency)
-  const convertedUsdBalance = convertMoneyAmount(usdBalance, DisplayCurrency)
+  // Display-only floored balances — validation below keeps the raw amounts (#690)
+  const spendableBtcBalance = toSpendableBalance(btcBalance)
+  const spendableUsdBalance = toSpendableBalance(usdBalance)
+
+  const convertedBTCBalance = convertMoneyAmount(spendableBtcBalance, DisplayCurrency)
+  const convertedUsdBalance = convertMoneyAmount(spendableUsdBalance, DisplayCurrency)
   const settlementSendAmount = convertMoneyAmount(moneyAmount, fromWalletCurrency)
 
   const formattedBtcBalance = formatDisplayAndWalletAmount({
     displayAmount: convertedBTCBalance,
-    walletAmount: btcBalance,
+    walletAmount: spendableBtcBalance,
   })
   const formattedUsdBalance = formatDisplayAndWalletAmount({
     displayAmount: convertedUsdBalance,
-    walletAmount: usdBalance,
+    walletAmount: spendableUsdBalance,
   })
 
   const fromWalletBalance = fromWalletCurrency === "BTC" ? btcBalance : usdBalance

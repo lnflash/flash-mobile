@@ -14,7 +14,11 @@ import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import useLogout from "@app/hooks/use-logout"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import {
+  toBtcMoneyAmount,
+  toSpendableBalance,
+  toUsdMoneyAmount,
+} from "@app/types/amounts"
 import { StackNavigationProp } from "@react-navigation/stack"
 import React from "react"
 import { Alert, TextInput, View } from "react-native"
@@ -166,15 +170,18 @@ export const AccountScreen = () => {
   let btcBalanceWarning = ""
   let balancePositive = false
   if (usdWalletBalance.amount > 0) {
+    // Display-only: floor the balance shown in the warning (#690)
     const balance =
-      formatMoneyAmount && formatMoneyAmount({ moneyAmount: usdWalletBalance })
+      formatMoneyAmount &&
+      formatMoneyAmount({ moneyAmount: toSpendableBalance(usdWalletBalance) })
     usdBalanceWarning = LL.AccountScreen.usdBalanceWarning({ balance })
     balancePositive = true
   }
 
   if (btcWalletBalance.amount > 0) {
     const balance =
-      formatMoneyAmount && formatMoneyAmount({ moneyAmount: btcWalletBalance })
+      formatMoneyAmount &&
+      formatMoneyAmount({ moneyAmount: toSpendableBalance(btcWalletBalance) })
     btcBalanceWarning = LL.AccountScreen.btcBalanceWarning({ balance })
     balancePositive = true
   }

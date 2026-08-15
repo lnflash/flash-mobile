@@ -24,7 +24,11 @@ import { useAccountDeleteMutation, useSettingsScreenQuery } from "@app/graphql/g
 // utils
 import { CONTACT_EMAIL_ADDRESS } from "@app/config"
 import { getCashWallet } from "@app/graphql/wallets-utils"
-import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import {
+  toBtcMoneyAmount,
+  toSpendableBalance,
+  toUsdMoneyAmount,
+} from "@app/types/amounts"
 
 export const Delete = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -52,15 +56,18 @@ export const Delete = () => {
   let btcBalanceWarning = ""
   let balancePositive = false
   if (usdWalletBalance.amount > 0) {
+    // Display-only: floor the balance shown in the warning (#690)
     const balance =
-      formatMoneyAmount && formatMoneyAmount({ moneyAmount: usdWalletBalance })
+      formatMoneyAmount &&
+      formatMoneyAmount({ moneyAmount: toSpendableBalance(usdWalletBalance) })
     usdBalanceWarning = LL.AccountScreen.usdBalanceWarning({ balance })
     balancePositive = true
   }
 
   if (btcWalletBalance.amount > 0) {
     const balance =
-      formatMoneyAmount && formatMoneyAmount({ moneyAmount: btcWalletBalance })
+      formatMoneyAmount &&
+      formatMoneyAmount({ moneyAmount: toSpendableBalance(btcWalletBalance) })
     btcBalanceWarning = LL.AccountScreen.btcBalanceWarning({ balance })
     balancePositive = true
   }
