@@ -5,7 +5,7 @@ import theme from "@app/rne-theme/theme"
 import { i18nObject } from "../../../i18n/i18n-util"
 import { loadAllLocales } from "../../../i18n/i18n-util.sync"
 import { TransactionLimitsScreen } from "../transaction-limits-screen"
-import { AccountLevel, LevelContextProvider } from "@app/graphql/level-context"
+import { AccountLevel } from "@app/graphql/level-context"
 
 loadAllLocales()
 
@@ -41,10 +41,20 @@ jest.mock("@app/components/transaction-limits", () => {
 const mockUseAccountLimitsQuery = jest.fn()
 const mockUseTransferFlagsQuery = jest.fn()
 const mockUseCardTopupLimitsQuery = jest.fn()
+const mockUseLevelQuery = jest.fn()
 jest.mock("@app/graphql/generated", () => ({
   useAccountLimitsQuery: (...args: unknown[]) => mockUseAccountLimitsQuery(...args),
   useTransferFlagsQuery: (...args: unknown[]) => mockUseTransferFlagsQuery(...args),
   useCardTopupLimitsQuery: (...args: unknown[]) => mockUseCardTopupLimitsQuery(...args),
+  useLevelQuery: (...args: unknown[]) => mockUseLevelQuery(...args),
+}))
+
+// The ACH section is gated on the same resolved bridge flag the topup entry
+// screen uses (backend bridgeEnabled AND the Firebase kill switch). Mocked at
+// the hook level so the test doesn't stand up Firebase remote config.
+const mockUseTransferFlags = jest.fn()
+jest.mock("@app/hooks/use-transfer-flags", () => ({
+  useTransferFlags: (...args: unknown[]) => mockUseTransferFlags(...args),
 }))
 
 const en = i18nObject("en")
@@ -92,21 +102,32 @@ const DAILY_LIMITS = {
   l3DailyLimit: 2500,
 }
 
-const renderScreen = (level: AccountLevel = AccountLevel.One) =>
-  render(
+const renderScreen = (level: AccountLevel = AccountLevel.One) => {
+  // useCardTopupLimit resolves the level from the level query directly
+  // (cache-and-network), not from the useLevel() context — see the hook.
+  mockUseLevelQuery.mockReturnValue({
+    data:
+      level === AccountLevel.NonAuth
+        ? undefined
+        : {
+            me: {
+              __typename: "User" as const,
+              id: "user-1",
+              defaultAccount: {
+                __typename: "ConsumerAccount" as const,
+                id: "acct-1",
+                level,
+              },
+            },
+          },
+    loading: false,
+  })
+  return render(
     <ThemeProvider theme={theme}>
-      <LevelContextProvider
-        value={{
-          isAtLeastLevelZero: level !== AccountLevel.NonAuth,
-          isAtLeastLevelOne:
-            level !== AccountLevel.NonAuth && level !== AccountLevel.Zero,
-          currentLevel: level,
-        }}
-      >
-        <TransactionLimitsScreen />
-      </LevelContextProvider>
+      <TransactionLimitsScreen />
     </ThemeProvider>,
   )
+}
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -119,6 +140,8 @@ beforeEach(() => {
     data: { globals: { __typename: "Globals", fygaroTopup: DAILY_LIMITS } },
     loading: false,
   })
+  mockUseLevelQuery.mockReturnValue({ data: undefined, loading: false })
+  mockUseTransferFlags.mockReturnValue({ bridgeEnabled: true })
 })
 
 describe("TransactionLimitsScreen", () => {
@@ -175,11 +198,25 @@ describe("TransactionLimitsScreen", () => {
     expect(queryByText(en.TransactionLimitsScreen.bankTransferAch())).not.toBeNull()
   })
 
-  it("always shows the ACH bank-transfer minimum", () => {
+  it("shows the ACH bank-transfer minimum when bridge is enabled", () => {
     const { queryByText } = renderScreen(AccountLevel.One)
 
     expect(queryByText(en.TransactionLimitsScreen.bankTransferAch())).not.toBeNull()
     expect(queryByText(en.BankTransfer.achMinimumNotice())).not.toBeNull()
+  })
+
+  it("hides the ACH section when bridge is disabled on this instance", () => {
+    // Same gate the topup entry screen uses to offer bridge (backend
+    // bridgeEnabled AND the Firebase kill switch): a bridge-less instance
+    // must not advertise an ACH rail the app offers nowhere.
+    mockUseTransferFlags.mockReturnValue({ bridgeEnabled: false })
+    const { queryByText } = renderScreen(AccountLevel.One)
+
+    expect(queryByText(en.TransactionLimitsScreen.bankTransferAch())).toBeNull()
+    expect(queryByText(en.BankTransfer.achMinimumNotice())).toBeNull()
+    // The rest of the screen renders untouched.
+    expect(queryByText(en.TransactionLimitsScreen.withdraw())).not.toBeNull()
+    expect(queryByText(en.TransactionLimitsScreen.cardTopup())).not.toBeNull()
   })
 
   it("renders the Stablesat convert limits when the account has them", () => {

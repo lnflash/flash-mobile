@@ -7,7 +7,7 @@ import { i18nObject } from "../../../i18n/i18n-util"
 import { loadAllLocales } from "../../../i18n/i18n-util.sync"
 import TopupDetails from "../TopupDetails"
 import { estimateTopupNet } from "../topup-fee-estimate"
-import { AccountLevel, LevelContextProvider } from "@app/graphql/level-context"
+import { AccountLevel } from "@app/graphql/level-context"
 
 // Without this, i18nObject("en") resolves every key to "" and text queries
 // match arbitrary empty text nodes.
@@ -25,14 +25,24 @@ jest.mock("@app/store/persistent-state", () => ({
 }))
 
 // The screen reads the Fygaro fee params + minimum from the transferFlags
-// globals query, and the per-level daily caps from the separate
-// cardTopupLimits query (isolated so an old backend failing it cannot take
-// transferFlags — and the home screen's Transfer button — down with it).
+// globals query, the per-level daily caps from the separate cardTopupLimits
+// query (isolated so an old backend failing it cannot take transferFlags —
+// and the home screen's Transfer button — down with it), and the account
+// level from the level query, fetched cache-and-network directly by
+// useCardTopupLimit (NOT via the cache-only useLevel() context, whose
+// cold-start "NonAuth" reading once let level-0 users past the card gate).
 const mockUseTransferFlagsQuery = jest.fn()
 const mockUseCardTopupLimitsQuery = jest.fn()
+const mockUseLevelQuery = jest.fn()
 jest.mock("@app/graphql/generated", () => ({
   useTransferFlagsQuery: (...args: unknown[]) => mockUseTransferFlagsQuery(...args),
   useCardTopupLimitsQuery: (...args: unknown[]) => mockUseCardTopupLimitsQuery(...args),
+  useLevelQuery: (...args: unknown[]) => mockUseLevelQuery(...args),
+}))
+
+let mockIsAuthed = true
+jest.mock("@app/graphql/is-authed-context", () => ({
+  useIsAuthed: () => mockIsAuthed,
 }))
 
 const FEE_PARAMS = {
@@ -78,6 +88,27 @@ const limitsUnavailableResult = () => ({
   error: new Error("GRAPHQL_VALIDATION_FAILED"),
 })
 
+const levelResult = (
+  level: "ZERO" | "ONE" | "TWO" | "THREE" | null,
+  loading = false,
+) => ({
+  data:
+    level === null
+      ? undefined
+      : {
+          me: {
+            __typename: "User" as const,
+            id: "user-1",
+            defaultAccount: {
+              __typename: "ConsumerAccount" as const,
+              id: "acct-1",
+              level,
+            },
+          },
+        },
+  loading,
+})
+
 jest.mock("react-native-safe-area-context", () => {
   const actual = jest.requireActual("react-native-safe-area-context")
   return {
@@ -91,10 +122,18 @@ const en = i18nObject("en")
 const renderTopupDetails = ({
   paymentType = "card" as "card" | "bankTransfer" | "bridge",
   navigate = jest.fn(),
-  // Default NonAuth mirrors the bare context default: without a level the
-  // screen applies no client-side daily cap (the webhook still gates).
+  // Default NonAuth = an authed user whose level query SETTLED without a
+  // level (e.g. network failure): the documented degrade path — no
+  // client-side daily cap, the webhook still gates. A level still in flight
+  // is a different state ("levelLoading" below) and must hold the flow.
   level = AccountLevel.NonAuth as AccountLevel,
+  levelLoading = false,
 } = {}) => {
+  mockUseLevelQuery.mockReturnValue(
+    levelLoading
+      ? levelResult(null, true)
+      : levelResult(level === AccountLevel.NonAuth ? null : level),
+  )
   const navigation = { navigate } as never
   const route = {
     key: "TopupDetails",
@@ -103,16 +142,7 @@ const renderTopupDetails = ({
   } as never
   const utils = render(
     <ThemeProvider theme={theme}>
-      <LevelContextProvider
-        value={{
-          isAtLeastLevelZero: level !== AccountLevel.NonAuth,
-          isAtLeastLevelOne:
-            level !== AccountLevel.NonAuth && level !== AccountLevel.Zero,
-          currentLevel: level,
-        }}
-      >
-        <TopupDetails navigation={navigation} route={route} />
-      </LevelContextProvider>
+      <TopupDetails navigation={navigation} route={route} />
     </ThemeProvider>,
   )
   return { ...utils, navigate }
@@ -121,8 +151,10 @@ const renderTopupDetails = ({
 beforeEach(() => {
   jest.clearAllMocks()
   mockPersistentState.isAdvanceMode = true
+  mockIsAuthed = true
   mockUseTransferFlagsQuery.mockReturnValue(flagsResult(FEE_PARAMS))
   mockUseCardTopupLimitsQuery.mockReturnValue(limitsResult(DAILY_LIMITS))
+  mockUseLevelQuery.mockReturnValue(levelResult(null))
 })
 
 describe("TopupDetails wallet options", () => {
@@ -364,6 +396,62 @@ describe("TopupDetails per-level daily limit", () => {
     alertSpy.mockRestore()
   })
 
+  it("holds Continue while an authed user's level is still resolving (cold start)", () => {
+    // The cold-start/deep-link window: the level query is still in flight, so
+    // the screen cannot yet distinguish a level-0 user (refuse) from a
+    // leveled one (allow). It must hold — Continue shows a spinner and cannot
+    // be pressed — rather than degrade to "no block" and let a level-0 charge
+    // be captured by Fygaro and stranded in manual review.
+    const { getByPlaceholderText, queryAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+      levelLoading: true,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "50")
+
+    // PrimaryBtn's loading state replaces the label with a spinner and
+    // disables the touchable — there is no Continue to press.
+    expect(queryAllByText(en.TopupDetails.continue())).toHaveLength(0)
+    expect(navigate).not.toHaveBeenCalled()
+  })
+
+  it("does not hold bank transfers on a still-loading level (the hold is card-only)", () => {
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "bankTransfer",
+      levelLoading: true,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "50")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).toHaveBeenCalledWith("BankTransfer", {
+      amount: 50,
+      wallet: "USD",
+      paymentType: "bankTransfer",
+    })
+  })
+
+  it("fetches the level cache-and-network for an authed user (not cache-only)", () => {
+    // Pin of the fix itself: the level must be fetched directly with
+    // cache-and-network, not read from the cache-only useLevel() context —
+    // the context reports "NonAuth" for an authed level-0 user on a cold
+    // start, which is exactly the gap that let a charge through.
+    renderTopupDetails({ paymentType: "card", level: AccountLevel.One })
+
+    expect(mockUseLevelQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ fetchPolicy: "cache-and-network", skip: false }),
+    )
+  })
+
+  it("skips the level query when signed out", () => {
+    mockIsAuthed = false
+    renderTopupDetails({ paymentType: "card" })
+
+    expect(mockUseLevelQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: true }),
+    )
+  })
+
   it("does not block level-0 bank transfers (the refusal is card-only)", () => {
     const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
       paymentType: "bankTransfer",
@@ -443,6 +531,19 @@ describe("TopupDetails net preview", () => {
     const { getByPlaceholderText, queryByText } = renderTopupDetails({
       paymentType: "card",
       level: AccountLevel.Zero,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "50")
+
+    expect(queryByText(en.TopupDetails.feeNote())).toBeNull()
+  })
+
+  it("hides the net line while the level is still resolving (card flow)", () => {
+    // A still-loading level may yet resolve to 0, whose card top-up Continue
+    // refuses — so the screen must not promise a receive figure meanwhile.
+    const { getByPlaceholderText, queryByText } = renderTopupDetails({
+      paymentType: "card",
+      levelLoading: true,
     })
 
     fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "50")

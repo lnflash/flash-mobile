@@ -14,6 +14,7 @@ import { useAccountLimitsQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "@app/hooks"
 import { useCardTopupLimit } from "@app/hooks/use-card-topup-limit"
+import { useTransferFlags } from "@app/hooks/use-transfer-flags"
 
 gql`
   query accountLimits {
@@ -58,6 +59,12 @@ export const TransactionLimitsScreen = () => {
   // from accountLimits — undefined hides the section (level 0 / settings
   // unavailable) rather than showing a guessed number.
   const { fygaroTopup, dailyLimit } = useCardTopupLimit()
+
+  // The ACH section is gated on the same flag the topup entry screen uses to
+  // offer bridge (backend bridgeEnabled AND the bridgeTopupEnabled Firebase
+  // kill switch) — an instance without bridge must not advertise an ACH rail
+  // the app will not offer anywhere.
+  const { bridgeEnabled } = useTransferFlags()
 
   const { name: bankName } = appConfig.galoyInstance
 
@@ -152,13 +159,17 @@ export const TransactionLimitsScreen = () => {
           </View>
         </>
       )}
-      <View style={styles.divider}></View>
-      <View style={styles.limitWrapper}>
-        <Text adjustsFontSizeToFit style={styles.valueFieldType}>
-          {LL.TransactionLimitsScreen.bankTransferAch()}
-        </Text>
-        <Text style={styles.limitNote}>{LL.BankTransfer.achMinimumNotice()}</Text>
-      </View>
+      {bridgeEnabled && (
+        <>
+          <View style={styles.divider}></View>
+          <View style={styles.limitWrapper}>
+            <Text adjustsFontSizeToFit style={styles.valueFieldType}>
+              {LL.TransactionLimitsScreen.bankTransferAch()}
+            </Text>
+            <Text style={styles.limitNote}>{LL.BankTransfer.achMinimumNotice()}</Text>
+          </View>
+        </>
+      )}
       <View style={styles.divider}></View>
       <View style={styles.infoWrapper}>
         <View style={styles.infoTitleWrapper}>

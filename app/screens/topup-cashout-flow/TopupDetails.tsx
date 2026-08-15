@@ -85,14 +85,22 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // the trailing 24h total, which the webhook enforces authoritatively before
   // crediting — but it stops the obvious case where a single charge already
   // exceeds the cap, BEFORE the card is charged and the money is stuck in
-  // manual review. Unknown level (NonAuth) or null fygaroTopup degrades to
-  // "no client-side cap": the server still gates, and blocking top-ups on
+  // manual review. Unresolvable level (NonAuth) or null fygaroTopup degrades
+  // to "no client-side cap": the server still gates, and blocking top-ups on
   // missing metadata would be worse than a manual-review fallback.
   // AccountLevel.Zero is NOT part of that degrade path — the webhook fails
   // CLOSED for level 0 (no-daily-limit-for-level), so handleContinue refuses
   // card top-ups for level 0 outright rather than letting the charge be
-  // captured and stranded.
-  const { fygaroTopup, dailyLimit: levelDailyLimit, currentLevel } = useCardTopupLimit()
+  // captured and stranded. And a level that is merely still LOADING is not
+  // "unresolvable": while levelLoading is true the card flow holds (Continue
+  // disabled) instead of degrading, so a cold start can't misread an authed
+  // level-0 user as NonAuth and wave them through.
+  const {
+    fygaroTopup,
+    dailyLimit: levelDailyLimit,
+    currentLevel,
+    levelLoading,
+  } = useCardTopupLimit()
 
   // Card flow enforces the backend minimum (default $10); other flows keep the
   // long-standing $1 floor.
@@ -102,6 +110,11 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // handleContinue. Shared between the Continue refusal and the net-preview
   // gate so the screen never promises a receive figure Continue will refuse.
   const cardBlockedForLevel = isCard && currentLevel === AccountLevel.Zero
+
+  // While a signed-in user's level is still resolving on the card flow, the
+  // level gate cannot run yet — hold Continue (spinner) rather than letting
+  // the "no block" degrade path fire before the level is known.
+  const cardLevelPending = isCard && levelLoading
 
   const dailyLimit = isCard ? levelDailyLimit : undefined
 
@@ -124,12 +137,14 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // params are available, and only once the amount clears the enforced minimum.
   // A null fygaroTopup hides the line rather than showing a guessed (and wrong)
   // number; a below-minimum amount hides it too, as does a level-0 user (whose
-  // card top-up Continue refuses outright), so we never promise a concrete
-  // receive figure for a gross that Continue will refuse.
+  // card top-up Continue refuses outright) and a still-resolving level (which
+  // may yet turn out to be 0), so we never promise a concrete receive figure
+  // for a gross that Continue will refuse.
   const grossAmount = parseFloat(amount)
   const netAmount =
     isCard &&
     !cardBlockedForLevel &&
+    !cardLevelPending &&
     fygaroTopup &&
     !isNaN(grossAmount) &&
     grossAmount >= minimumAmount &&
@@ -149,14 +164,25 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
    * to ensure the correct wallet is credited.
    */
   const handleContinue = async () => {
+    // The card flow needs a resolved level before the level gate below can
+    // run; the Continue button is already disabled while it loads, and this
+    // guard backstops that.
+    if (cardLevelPending) {
+      return
+    }
+
     // Level-0 accounts cannot card top-up at all: the webhook fails CLOSED
     // for level 0 (no-daily-limit-for-level), so a level-0 charge would be
     // captured by Fygaro and stranded in manual review — the exact failure
     // this screen's pre-checks exist to prevent. The home screen already
     // hides the Transfer button for level 0 (home-screen/Buttons.tsx), but
     // that is a cross-file invariant this screen cannot rely on: refuse here
-    // too so a deep link (or a future un-hiding of that button) can never
-    // charge a level-0 card.
+    // too, so a deep link (or a future un-hiding of that button) hits this
+    // gate as well. The guarantee is: whenever the user's level RESOLVES to
+    // 0 the charge is refused, and while an authed user's level is still
+    // resolving the flow holds. If the level genuinely cannot be resolved
+    // (level query failed), we degrade to the webhook's manual-review
+    // fallback rather than hard-blocking on missing metadata.
     if (cardBlockedForLevel) {
       Alert.alert("Upgrade Required", LL.TopupDetails.upgradeRequired())
       return
@@ -316,7 +342,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
       <PrimaryBtn
         label={LL.TopupDetails.continue()}
         onPress={handleContinue}
-        loading={isLoading}
+        loading={isLoading || cardLevelPending}
         btnStyle={styles.primaryButton}
       />
     </Screen>
