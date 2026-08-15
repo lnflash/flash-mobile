@@ -43,6 +43,9 @@ const BankTransfer: React.FC<Props> = ({ navigation, route }) => {
         <Text type="p1" style={styles.desc}>
           {LL.BankTransfer.desc1({ amount: amount + fee })}
         </Text>
+        <Text type="p3" style={styles.achNote}>
+          {LL.BankTransfer.achMinimumNotice()}
+        </Text>
         <View style={styles.fieldContainer}>
           <Text type="bl">{LL.BankTransfer.bankName()}</Text>
           <Text type="p1" bold>
@@ -118,6 +121,10 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   desc: {
     marginBottom: 15,
+  },
+  achNote: {
+    marginBottom: 15,
+    color: colors.grey2,
   },
   messageContainer: {
     flex: 1,

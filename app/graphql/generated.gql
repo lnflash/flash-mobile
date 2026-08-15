@@ -1349,6 +1349,18 @@ query businessMapMarkers {
   }
 }
 
+query cardTopupLimits {
+  globals {
+    fygaroTopup {
+      l1DailyLimit
+      l2DailyLimit
+      l3DailyLimit
+      __typename
+    }
+    __typename
+  }
+}
+
 query cashoutScreen {
   me {
     id

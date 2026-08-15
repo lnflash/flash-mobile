@@ -904,6 +904,12 @@ export type FygaroTopupInfo = {
   readonly flashFeeFixed: Scalars['Float']['output'];
   /** Flash percentage fee (e.g. 2.0 for 2%). */
   readonly flashFeePercent: Scalars['Float']['output'];
+  /** Maximum gross card top-up per rolling 24h for level-1 accounts, in USD. */
+  readonly l1DailyLimit: Scalars['Float']['output'];
+  /** Maximum gross card top-up per rolling 24h for level-2 accounts, in USD. */
+  readonly l2DailyLimit: Scalars['Float']['output'];
+  /** Maximum gross card top-up per rolling 24h for level-3 (Business) accounts, in USD. */
+  readonly l3DailyLimit: Scalars['Float']['output'];
   /** Minimum top-up amount, in USD. */
   readonly minimumAmount: Scalars['Float']['output'];
   /** Payment-processor fixed fee, in USD (e.g. 0.49). */
@@ -3292,6 +3298,11 @@ export type AccountStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AccountStatusQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly statusHeadline: AccountStatusHeadline, readonly id: string, readonly capabilities: { readonly __typename: 'AccountCapabilities', readonly verified: boolean, readonly bankPayout: boolean, readonly business: boolean, readonly usdAccount: boolean } } } | null };
+
+export type CardTopupLimitsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CardTopupLimitsQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly fygaroTopup?: { readonly __typename: 'FygaroTopupInfo', readonly l1DailyLimit: number, readonly l2DailyLimit: number, readonly l3DailyLimit: number } | null } | null };
 
 export type DisplayCurrencyQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6767,6 +6778,44 @@ export function useAccountStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOpti
 export type AccountStatusQueryHookResult = ReturnType<typeof useAccountStatusQuery>;
 export type AccountStatusLazyQueryHookResult = ReturnType<typeof useAccountStatusLazyQuery>;
 export type AccountStatusQueryResult = Apollo.QueryResult<AccountStatusQuery, AccountStatusQueryVariables>;
+export const CardTopupLimitsDocument = gql`
+    query cardTopupLimits {
+  globals {
+    fygaroTopup {
+      l1DailyLimit
+      l2DailyLimit
+      l3DailyLimit
+    }
+  }
+}
+    `;
+
+/**
+ * __useCardTopupLimitsQuery__
+ *
+ * To run a query within a React component, call `useCardTopupLimitsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCardTopupLimitsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCardTopupLimitsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useCardTopupLimitsQuery(baseOptions?: Apollo.QueryHookOptions<CardTopupLimitsQuery, CardTopupLimitsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<CardTopupLimitsQuery, CardTopupLimitsQueryVariables>(CardTopupLimitsDocument, options);
+      }
+export function useCardTopupLimitsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<CardTopupLimitsQuery, CardTopupLimitsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<CardTopupLimitsQuery, CardTopupLimitsQueryVariables>(CardTopupLimitsDocument, options);
+        }
+export type CardTopupLimitsQueryHookResult = ReturnType<typeof useCardTopupLimitsQuery>;
+export type CardTopupLimitsLazyQueryHookResult = ReturnType<typeof useCardTopupLimitsLazyQuery>;
+export type CardTopupLimitsQueryResult = Apollo.QueryResult<CardTopupLimitsQuery, CardTopupLimitsQueryVariables>;
 export const DisplayCurrencyDocument = gql`
     query displayCurrency {
   me {

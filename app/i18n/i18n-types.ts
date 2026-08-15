@@ -2285,6 +2285,20 @@ type RootTranslation = {
 		 */
 		minimumAmount: RequiredParams<'amount'>
 		/**
+		 * Y​o​u​r​ ​d​a​i​l​y​ ​c​a​r​d​ ​t​o​p​-​u​p​ ​l​i​m​i​t​ ​i​s​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
+		 */
+		dailyLimitAmount: RequiredParams<'amount'>
+		/**
+		 * D​a​i​l​y​ ​c​a​r​d​ ​t​o​p​-​u​p​ ​l​i​m​i​t​:​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
+		 */
+		dailyLimitInfo: RequiredParams<'amount'>
+		/**
+		 * C​a​r​d​ ​t​o​p​-​u​p​s​ ​a​r​e​ ​n​o​t​ ​a​v​a​i​l​a​b​l​e​ ​f​o​r​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​l​e​v​e​l​.​ ​U​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​e​n​a​b​l​e​ ​t​h​e​m​.
+		 */
+		upgradeRequired: string
+		/**
 		 * Y​o​u​'​l​l​ ​r​e​c​e​i​v​e​ ​{​a​m​o​u​n​t​}
 		 * @param {string} amount
 		 */
@@ -2395,6 +2409,10 @@ type RootTranslation = {
 		 * B​a​n​k​ ​T​r​a​n​s​f​e​r
 		 */
 		title: string
+		/**
+		 * T​h​e​ ​m​i​n​i​m​u​m​ ​d​e​p​o​s​i​t​ ​i​s​ ​U​S​$​2​0​ ​w​h​e​n​ ​t​o​p​p​i​n​g​ ​u​p​ ​v​i​a​ ​A​C​H​ ​b​a​n​k​ ​t​r​a​n​s​f​e​r
+		 */
+		achMinimumNotice: string
 		/**
 		 * Y​o​u​r​ ​o​r​d​e​r​ ​h​a​s​ ​b​e​e​n​ ​c​r​e​a​t​e​d​.​ ​T​o​ ​c​o​m​p​l​e​t​e​ ​t​h​e​ ​o​r​d​e​r​,​ ​p​l​e​a​s​e​ ​t​r​a​n​s​f​e​r​ ​$​{​a​m​o​u​n​t​}​ ​U​S​D​ ​t​o​ ​t​h​e​ ​b​a​n​k​ ​d​e​t​a​i​l​s​ ​p​r​o​v​i​d​e​d​ ​b​e​l​o​w​.
 		 * @param {number} amount
@@ -4370,6 +4388,19 @@ type RootTranslation = {
 		 * S​t​a​b​l​e​s​a​t​ ​T​r​a​n​s​f​e​r​s
 		 */
 		stablesatTransfers: string
+		/**
+		 * C​a​r​d​ ​T​o​p​-​U​p
+		 */
+		cardTopup: string
+		/**
+		 * M​i​n​i​m​u​m​ ​c​a​r​d​ ​t​o​p​-​u​p​ ​i​s​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
+		 */
+		cardTopupMinimum: RequiredParams<'amount'>
+		/**
+		 * B​a​n​k​ ​T​r​a​n​s​f​e​r​ ​(​A​C​H​)
+		 */
+		bankTransferAch: string
 		/**
 		 * S​e​n​d​ ​t​o​ ​{​b​a​n​k​N​a​m​e​}​ ​U​s​e​r
 		 * @param {string} bankName
@@ -8475,6 +8506,18 @@ export type TranslationFunctions = {
 		 */
 		minimumAmount: (arg: { amount: string }) => LocalizedString
 		/**
+		 * Your daily card top-up limit is {amount}
+		 */
+		dailyLimitAmount: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Daily card top-up limit: {amount}
+		 */
+		dailyLimitInfo: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Card top-ups are not available for your account level. Upgrade your account to enable them.
+		 */
+		upgradeRequired: () => LocalizedString
+		/**
 		 * You'll receive {amount}
 		 */
 		youllReceive: (arg: { amount: string }) => LocalizedString
@@ -8584,6 +8627,10 @@ export type TranslationFunctions = {
 		 * Bank Transfer
 		 */
 		title: () => LocalizedString
+		/**
+		 * The minimum deposit is US$20 when topping up via ACH bank transfer
+		 */
+		achMinimumNotice: () => LocalizedString
 		/**
 		 * Your order has been created. To complete the order, please transfer ${amount} USD to the bank details provided below.
 		 */
@@ -10501,6 +10548,18 @@ export type TranslationFunctions = {
 		 * Stablesat Transfers
 		 */
 		stablesatTransfers: () => LocalizedString
+		/**
+		 * Card Top-Up
+		 */
+		cardTopup: () => LocalizedString
+		/**
+		 * Minimum card top-up is {amount}
+		 */
+		cardTopupMinimum: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Bank Transfer (ACH)
+		 */
+		bankTransferAch: () => LocalizedString
 		/**
 		 * Send to {bankName} User
 		 */

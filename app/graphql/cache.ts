@@ -69,6 +69,22 @@ export const createCache = () =>
         // singleton: only cache latest version:
         // https://www.apollographql.com/docs/react/caching/cache-configuration/#customizing-cache-ids
         keyFields: [],
+        fields: {
+          // FygaroTopupInfo has no id, so it is embedded in the Globals
+          // record rather than normalized. Two simultaneously-watched
+          // queries select DISJOINT subsets of it (transferFlags: fees +
+          // minimum; cardTopupLimits: per-level daily limits — split on
+          // purpose, see use-transfer-flags.ts / use-card-topup-limit.ts).
+          // Without a merge policy each response wholesale-replaces the
+          // object, destroying the other query's cached fields: the
+          // clobbered watcher's diff turns incomplete, Apollo refetches,
+          // that response clobbers the first query's fields, and the two
+          // cache-and-network watchers ping-pong forever — with dailyLimit
+          // (and the enforced minimum) reading undefined in every window
+          // between clobber and refetch. merge: true shallow-merges
+          // existing + incoming so both selections coexist.
+          fygaroTopup: { merge: true },
+        },
       },
       RealtimePrice: {
         keyFields: [],

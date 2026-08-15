@@ -13,6 +13,8 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAccountLimitsQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useAppConfig } from "@app/hooks"
+import { useCardTopupLimit } from "@app/hooks/use-card-topup-limit"
+import { useTransferFlags } from "@app/hooks/use-transfer-flags"
 
 gql`
   query accountLimits {
@@ -52,6 +54,17 @@ export const TransactionLimitsScreen = () => {
     fetchPolicy: "no-cache",
     skip: !useIsAuthed(),
   })
+
+  // Card top-up caps come from the backend globals (per account level), not
+  // from accountLimits — undefined hides the section (level 0 / settings
+  // unavailable) rather than showing a guessed number.
+  const { fygaroTopup, dailyLimit } = useCardTopupLimit()
+
+  // The ACH section is gated on the same flag the topup entry screen uses to
+  // offer bridge (backend bridgeEnabled AND the bridgeTopupEnabled Firebase
+  // kill switch) — an instance without bridge must not advertise an ACH rail
+  // the app will not offer anywhere.
+  const { bridgeEnabled } = useTransferFlags()
 
   const { name: bankName } = appConfig.galoyInstance
 
@@ -112,6 +125,51 @@ export const TransactionLimitsScreen = () => {
           <TransactionLimitsPeriod key={index} {...data} />
         ))}
       </View>
+      {(data?.me?.defaultAccount.limits?.convert?.length ?? 0) > 0 && (
+        <>
+          <View style={styles.divider}></View>
+          <View style={styles.limitWrapper}>
+            <Text adjustsFontSizeToFit style={styles.valueFieldType}>
+              {LL.TransactionLimitsScreen.stablesatTransfers()}
+            </Text>
+            {data?.me?.defaultAccount.limits?.convert.map((data, index: number) => (
+              <TransactionLimitsPeriod key={index} {...data} />
+            ))}
+          </View>
+        </>
+      )}
+      {dailyLimit !== undefined && (
+        <>
+          <View style={styles.divider}></View>
+          <View style={styles.limitWrapper}>
+            <Text adjustsFontSizeToFit style={styles.valueFieldType}>
+              {LL.TransactionLimitsScreen.cardTopup()}
+            </Text>
+            <TransactionLimitsPeriod
+              totalLimit={Math.round(dailyLimit * 100)}
+              interval={86400}
+            />
+            {fygaroTopup && (
+              <Text style={styles.limitNote}>
+                {LL.TransactionLimitsScreen.cardTopupMinimum({
+                  amount: `$${fygaroTopup.minimumAmount.toFixed(2)}`,
+                })}
+              </Text>
+            )}
+          </View>
+        </>
+      )}
+      {bridgeEnabled && (
+        <>
+          <View style={styles.divider}></View>
+          <View style={styles.limitWrapper}>
+            <Text adjustsFontSizeToFit style={styles.valueFieldType}>
+              {LL.TransactionLimitsScreen.bankTransferAch()}
+            </Text>
+            <Text style={styles.limitNote}>{LL.BankTransfer.achMinimumNotice()}</Text>
+          </View>
+        </>
+      )}
       <View style={styles.divider}></View>
       <View style={styles.infoWrapper}>
         <View style={styles.infoTitleWrapper}>
@@ -147,6 +205,11 @@ const useStyles = makeStyles(({ colors }) => ({
     fontWeight: "bold",
     color: colors.green,
     maxWidth: "50%",
+  },
+  limitNote: {
+    fontSize: 14,
+    color: colors.grey1,
+    marginTop: 4,
   },
   divider: {
     marginVertical: 0,
