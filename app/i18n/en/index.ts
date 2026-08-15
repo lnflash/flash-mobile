@@ -709,6 +709,7 @@ const en: BaseTranslation = {
     invalidAmount: "Please enter a valid amount",
     minimumAmount: "Minimum amount is {amount: string}",
     dailyLimitAmount: "Your daily card top-up limit is {amount: string}",
+    dailyLimitInfo: "Daily card top-up limit: {amount: string}",
     upgradeRequired: "Card top-ups are not available for your account level. Upgrade your account to enable them.",
     youllReceive: "You'll receive {amount: string}",
     feeNote: "After card and processing fees",
@@ -742,6 +743,7 @@ const en: BaseTranslation = {
   },
   BankTransfer: {
     title: "Bank Transfer",
+    achMinimumNotice: "The minimum deposit is US$20 when topping up via ACH bank transfer",
     desc1: "Your order has been created. To complete the order, please transfer ${amount: number} USD to the bank details provided below.",
     desc2: "Use {code: string} as the reference description. This unique code will help us associate the payment with your Flash account and process the Bitcoin transfer.",
     desc3: "After we have received your payment, you will be credited with ${amount: number} USD in your Cash wallet, with a ${fee: number} USD fee deducted. You can then choose when you convert those USD to Bitcoin on your own using the Convert functionality in the mobile app.",
@@ -1321,6 +1323,9 @@ const en: BaseTranslation = {
     unlimited: "Unlimited",
     remaining: "Remaining",
     stablesatTransfers: "Stablesat Transfers",
+    cardTopup: "Card Top-Up",
+    cardTopupMinimum: "Minimum card top-up is {amount: string}",
+    bankTransferAch: "Bank Transfer (ACH)",
     internalSend: "Send to {bankName: string} User",
     error: "Unable to fetch limits at this time",
     contactUsMessageBody:

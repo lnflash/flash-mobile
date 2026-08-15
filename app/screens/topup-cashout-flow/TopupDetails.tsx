@@ -36,8 +36,8 @@ import { ButtonGroup } from "@app/components/button-group"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { useTransferFlagsQuery } from "@app/graphql/generated"
-import { AccountLevel, useLevel } from "@app/graphql/level-context"
+import { useCardTopupLimit } from "@app/hooks/use-card-topup-limit"
+import { AccountLevel } from "@app/graphql/level-context"
 
 // utils
 import { estimateTopupNet } from "./topup-fee-estimate"
@@ -76,43 +76,33 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
 
   const isCard = route.params.paymentType === "card"
 
-  // Fee params + minimum for card top-ups, sourced from the same globals query
-  // the topup/cashout entry screen already fetched (cache-warm on arrival).
+  // Fee params, minimum, and per-level daily cap for card top-ups, sourced
+  // from the backend globals (cache-warm from the topup/cashout entry screen).
   // fygaroTopup is null when the instance's Fygaro settings are unavailable —
   // callers must degrade gracefully (hide the net line, fall back on the min).
-  const { data: flagsData } = useTransferFlagsQuery({ fetchPolicy: "cache-and-network" })
-  const fygaroTopup = flagsData?.globals?.fygaroTopup ?? null
+  //
+  // The daily cap is a PER-TRANSACTION pre-check only — the client cannot see
+  // the trailing 24h total, which the webhook enforces authoritatively before
+  // crediting — but it stops the obvious case where a single charge already
+  // exceeds the cap, BEFORE the card is charged and the money is stuck in
+  // manual review. Unknown level (NonAuth) or null fygaroTopup degrades to
+  // "no client-side cap": the server still gates, and blocking top-ups on
+  // missing metadata would be worse than a manual-review fallback.
+  // AccountLevel.Zero is NOT part of that degrade path — the webhook fails
+  // CLOSED for level 0 (no-daily-limit-for-level), so handleContinue refuses
+  // card top-ups for level 0 outright rather than letting the charge be
+  // captured and stranded.
+  const { fygaroTopup, dailyLimit: levelDailyLimit, currentLevel } = useCardTopupLimit()
 
   // Card flow enforces the backend minimum (default $10); other flows keep the
   // long-standing $1 floor.
   const minimumAmount = isCard ? fygaroTopup?.minimumAmount ?? DEFAULT_CARD_MINIMUM : 1
-
-  // Per-level daily cap on card top-ups, from the same globals payload. This
-  // is a PER-TRANSACTION pre-check only — the client cannot see the trailing
-  // 24h total, which the webhook enforces authoritatively before crediting —
-  // but it stops the obvious case where a single charge already exceeds the
-  // cap, BEFORE the card is charged and the money is stuck in manual review.
-  // Unknown level (NonAuth) or null fygaroTopup degrades to "no client-side
-  // cap": the server still gates, and blocking top-ups on missing metadata
-  // would be worse than a manual-review fallback. AccountLevel.Zero is NOT
-  // part of that degrade path — the webhook fails CLOSED for level 0
-  // (no-daily-limit-for-level), so handleContinue refuses card top-ups for
-  // level 0 outright rather than letting the charge be captured and stranded.
-  const { currentLevel } = useLevel()
 
   // Level-0 accounts cannot card top-up at all — see the comment in
   // handleContinue. Shared between the Continue refusal and the net-preview
   // gate so the screen never promises a receive figure Continue will refuse.
   const cardBlockedForLevel = isCard && currentLevel === AccountLevel.Zero
 
-  const levelDailyLimit =
-    currentLevel === AccountLevel.One
-      ? fygaroTopup?.l1DailyLimit
-      : currentLevel === AccountLevel.Two
-      ? fygaroTopup?.l2DailyLimit
-      : currentLevel === AccountLevel.Three
-      ? fygaroTopup?.l3DailyLimit
-      : undefined
   const dailyLimit = isCard ? levelDailyLimit : undefined
 
   /**
@@ -301,6 +291,16 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
               </View>
             </InputAccessoryView>
           )}
+          {dailyLimit !== undefined && (
+            <Text type="p3" style={styles.limitNote}>
+              {LL.TopupDetails.dailyLimitInfo({ amount: `$${dailyLimit.toFixed(2)}` })}
+            </Text>
+          )}
+          {route.params.paymentType === "bridge" && (
+            <Text type="p3" style={styles.limitNote}>
+              {LL.BankTransfer.achMinimumNotice()}
+            </Text>
+          )}
           {netAmount !== null && (
             <View style={styles.receiveInfo}>
               <Text type="p1" bold>
@@ -366,6 +366,10 @@ const useStyles = makeStyles(({ colors }) => (props: { bottom: number }) => ({
     marginTop: 8,
   },
   usdOnlyNote: {
+    marginTop: 8,
+    color: colors.grey2,
+  },
+  limitNote: {
     marginTop: 8,
     color: colors.grey2,
   },

@@ -178,6 +178,46 @@ describe("TopupDetails $10 minimum", () => {
   })
 })
 
+describe("TopupDetails limit info labels", () => {
+  it("shows the user's daily card limit under the amount field", () => {
+    const { queryByText } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    expect(
+      queryByText(en.TopupDetails.dailyLimitInfo({ amount: "$125.00" })),
+    ).not.toBeNull()
+  })
+
+  it("shows no limit label when the level is unknown (no guessed number)", () => {
+    const { queryByText } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.NonAuth,
+    })
+
+    expect(queryByText(en.TopupDetails.dailyLimitInfo({ amount: "$125.00" }))).toBeNull()
+  })
+
+  it("shows the ACH minimum-deposit notice in the bridge flow", () => {
+    const { queryByText } = renderTopupDetails({
+      paymentType: "bridge",
+      level: AccountLevel.One,
+    })
+
+    expect(queryByText(en.BankTransfer.achMinimumNotice())).not.toBeNull()
+  })
+
+  it("does not show the ACH notice in the card flow", () => {
+    const { queryByText } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    expect(queryByText(en.BankTransfer.achMinimumNotice())).toBeNull()
+  })
+})
+
 describe("TopupDetails per-level daily limit", () => {
   it("rejects a card top-up over the L1 daily cap and states the limit", () => {
     const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
