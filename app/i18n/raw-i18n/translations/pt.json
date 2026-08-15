@@ -1361,7 +1361,11 @@
     "enterAmount": "Introduza Montante",
     "setAmount": "Defina Montante",
     "maxAmountExceeded": "Valor não deve exceder {maxAmount: string}.",
-    "minAmountNotMet": "Valor deve ser no mínimo {maxAmount: string}."
+    "minAmountNotMet": "Valor deve ser no mínimo {maxAmount: string}.",
+    "max": "MAX",
+    "maxNoteIntraledger": "Full balance — no fee between Flash accounts",
+    "maxNoteFeeReserved": "~{fee: string} reserved for the network fee — final fee shown on confirm",
+    "maxNoteRecipientCap": "Capped at {max: string} — the most this recipient can receive per payment"
   },
   "AmountInputButton": {
     "tapToSetAmount": "Toque para inserir quantidade",

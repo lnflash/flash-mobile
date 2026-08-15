@@ -47,6 +47,8 @@ import { Satoshis } from "lnurl-pay/dist/types/types"
 // utils
 import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
+import { buildMaxAmountButton } from "./max-amount-button"
+import { MaxAmountButton } from "@app/components/amount-input-screen"
 import { requestInvoice, utils } from "lnurl-pay"
 import { fetchBreezFee, fetchLnurlPayRequest } from "@app/utils/breez-sdk"
 import { LnurlLimits, lnurlLimitsFromPayRequest } from "@app/utils/breez-sdk/fee-errors"
@@ -64,7 +66,11 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const { btcWallet } = useBreez()
   const { persistentState } = usePersistentStateContext()
   const { convertMoneyAmount: _convertMoneyAmount } = usePriceConversion()
-  const { zeroDisplayAmount, formatDisplayAndWalletAmount } = useDisplayCurrency()
+  const {
+    zeroDisplayAmount,
+    formatDisplayAndWalletAmount,
+    moneyAmountToDisplayCurrencyString,
+  } = useDisplayCurrency()
   const { toggleActivityIndicator } = useActivityIndicator()
   const getIbexFee = useIbexFee()
 
@@ -408,6 +414,46 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
       }
     })
 
+  // MAX chip on the amount screen (issue #512). Payment knowledge stays here
+  // in the send flow — the amount screen just renders the chip and applies
+  // the computed amount. The glue itself lives in the dependency-injected
+  // factory (max-amount-button.ts) so it is unit-testable; this only binds
+  // the screen's hooks and payment detail into it.
+  const buildMaxButtonForPaymentDetail = (): MaxAmountButton | undefined => {
+    if (!paymentDetail) {
+      return undefined
+    }
+    const pd = paymentDetail
+    const walletCurrency = pd.sendingWalletDescriptor.currency
+    const isBtcWallet = walletCurrency === WalletCurrency.Btc
+
+    return buildMaxAmountButton({
+      canSetAmount: pd.canSetAmount,
+      paymentType: pd.paymentType,
+      walletCurrency: isBtcWallet ? ("BTC" as const) : ("USD" as const),
+      balanceMoneyAmount: isBtcWallet ? btcBalanceMoneyAmount : usdBalanceMoneyAmount,
+      destination: pd.destination,
+      flashUserAddress,
+      selectedFeeType,
+      knownPayRequest: receiverPayRequest ?? undefined,
+      receiverMaxSats: receiverLimits?.maxSats ?? null,
+      lnurlParamsMaxSats: pd.paymentType === "lnurl" ? pd.lnurlParams?.max ?? null : null,
+      convertSatsToWallet: (sats) =>
+        pd.convertMoneyAmount(toBtcMoneyAmount(sats), walletCurrency).amount,
+      fetchBreezFee,
+      setAmount: pd.setAmount,
+      getIbexFee,
+      formatDisplayAmount: (moneyAmount) =>
+        moneyAmountToDisplayCurrencyString({ moneyAmount }),
+      strings: {
+        intraledger: () => LL.AmountInputScreen.maxNoteIntraledger(),
+        feeReserved: (fee) => LL.AmountInputScreen.maxNoteFeeReserved({ fee }),
+        recipientCap: (max) => LL.AmountInputScreen.maxNoteRecipientCap({ max }),
+      },
+    })
+  }
+  const maxAmountButton = buildMaxButtonForPaymentDetail()
+
   const amountStatus = isValidAmount({
     paymentDetail,
     usdWalletAmount: usdBalanceMoneyAmount,
@@ -452,6 +498,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           setAsyncErrorMessage={setAsyncErrorMessage}
           invoiceAmount={invoiceAmount}
           receiverLimits={receiverLimits}
+          maxAmountButton={maxAmountButton}
         />
         {paymentDetail.sendingWalletDescriptor.currency === "BTC" &&
           paymentDetail.paymentType === "onchain" && (

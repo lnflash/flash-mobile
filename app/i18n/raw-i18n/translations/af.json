@@ -1198,7 +1198,11 @@
     "enterAmount": "Voer bedrag in",
     "setAmount": "Stel bedrag",
     "maxAmountExceeded": "Bedrag mag nie {maxAmount: string} oorskry nie.",
-    "minAmountNotMet": "Bedrag moet minstens {minAmount: string} wees."
+    "minAmountNotMet": "Bedrag moet minstens {minAmount: string} wees.",
+    "max": "MAX",
+    "maxNoteIntraledger": "Full balance — no fee between Flash accounts",
+    "maxNoteFeeReserved": "~{fee: string} reserved for the network fee — final fee shown on confirm",
+    "maxNoteRecipientCap": "Capped at {max: string} — the most this recipient can receive per payment"
   },
   "AmountInputButton": {
     "tapToSetAmount": "Tik om bedrag te stel",

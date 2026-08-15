@@ -1361,7 +1361,11 @@
     "enterAmount": "Εισάγετε Ποσό",
     "setAmount": "Ορίστε Ποσό",
     "maxAmountExceeded": "Το ποσό δεν πρέπει να ξεπερνά {maxAmount: string}.",
-    "minAmountNotMet": "Το ποσό πρέπει να είναι τουλάχιστον {minAmount: string}."
+    "minAmountNotMet": "Το ποσό πρέπει να είναι τουλάχιστον {minAmount: string}.",
+    "max": "MAX",
+    "maxNoteIntraledger": "Full balance — no fee between Flash accounts",
+    "maxNoteFeeReserved": "~{fee: string} reserved for the network fee — final fee shown on confirm",
+    "maxNoteRecipientCap": "Capped at {max: string} — the most this recipient can receive per payment"
   },
   "AmountInputButton": {
     "tapToSetAmount": "Πατήστε για να ορίσετε ποσό",

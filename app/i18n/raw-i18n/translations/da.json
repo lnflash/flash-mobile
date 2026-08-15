@@ -1361,7 +1361,11 @@
     "enterAmount": "Indtast beløb",
     "setAmount": "Vælg beløb",
     "maxAmountExceeded": "Beløbet må ikke overstige {maxAmount: string}.",
-    "minAmountNotMet": "Beløbet skal være mindst {minAmount: string}."
+    "minAmountNotMet": "Beløbet skal være mindst {minAmount: string}.",
+    "max": "MAX",
+    "maxNoteIntraledger": "Full balance — no fee between Flash accounts",
+    "maxNoteFeeReserved": "~{fee: string} reserved for the network fee — final fee shown on confirm",
+    "maxNoteRecipientCap": "Capped at {max: string} — the most this recipient can receive per payment"
   },
   "AmountInputButton": {
     "tapToSetAmount": "Vælg beløb",

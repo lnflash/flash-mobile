@@ -10,8 +10,8 @@ import {
   MoneyAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
-import { useCallback, useEffect, useReducer } from "react"
-import { AmountInputScreenUI } from "./amount-input-screen-ui"
+import { useCallback, useEffect, useReducer, useRef, useState } from "react"
+import { AmountInputScreenUI, MaxChipState } from "./amount-input-screen-ui"
 import {
   Key,
   NumberPadNumber,
@@ -19,6 +19,25 @@ import {
   NumberPadReducerActionType,
   NumberPadReducerState,
 } from "./number-pad-reducer"
+
+export type MaxAmountButtonResult = {
+  /** The computed max, in the sending wallet's currency. */
+  amount: MoneyAmount<WalletOrDisplayCurrency>
+  /** Info-row note explaining the computation (fee reserved, no fee, cap). */
+  note?: string
+}
+
+/**
+ * Optional MAX chip on the balance header. The amount screen stays free of
+ * payment knowledge — callers (the send flow) provide the computation; when
+ * the prop is absent no chip renders.
+ */
+export type MaxAmountButton = {
+  /** Grey the chip out (zero balance) — it stays visible but inert. */
+  disabled?: boolean
+  /** Compute the max sendable amount. Must resolve — never hang the tap. */
+  compute: () => Promise<MaxAmountButtonResult | null>
+}
 
 export type AmountInputScreenProps = {
   goBack: () => void
@@ -28,6 +47,7 @@ export type AmountInputScreenProps = {
   convertMoneyAmount: ConvertMoneyAmount
   maxAmount?: MoneyAmount<WalletOrDisplayCurrency>
   minAmount?: MoneyAmount<WalletOrDisplayCurrency>
+  maxAmountButton?: MaxAmountButton
 }
 
 const formatNumberPadNumber = (numberPadNumber: NumberPadNumber) => {
@@ -131,6 +151,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   convertMoneyAmount,
   maxAmount,
   minAmount,
+  maxAmountButton,
 }) => {
   const {
     currencyInfo,
@@ -161,7 +182,26 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
     displayAmount: convertMoneyAmount(newPrimaryAmount, DisplayCurrency),
   })
 
+  // MAX chip: solid ("active") from the moment the tap fills the amount until
+  // the user edits it; the currency toggle keeps the same underlying amount so
+  // it does not clear the state.
+  const [appliedMax, setAppliedMax] = useState<{ note?: string } | null>(null)
+  const [isComputingMax, setIsComputingMax] = useState(false)
+  const maxComputeInFlight = useRef(false)
+  // The fee fetch behind compute() can take seconds. Every user edit
+  // (key press, clear, currency toggle) bumps this generation; a resolve
+  // whose tap-time generation no longer matches is dropped so it can never
+  // overwrite what the user did while it was in flight.
+  const editGeneration = useRef(0)
+  // Read the target currency at resolve time, not from the tap-time closure.
+  const currencyRef = useRef(numberPadState.currency)
+  useEffect(() => {
+    currencyRef.current = numberPadState.currency
+  }, [numberPadState.currency])
+
   const onKeyPress = (key: Key) => {
+    editGeneration.current += 1
+    setAppliedMax(null)
     dispatchNumberPadAction({
       action: NumberPadReducerActionType.HandleKeyPress,
       payload: {
@@ -171,6 +211,8 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   }
 
   const onClear = () => {
+    editGeneration.current += 1
+    setAppliedMax(null)
     dispatchNumberPadAction({
       action: NumberPadReducerActionType.ClearAmount,
     })
@@ -192,14 +234,113 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   const onToggleCurrency =
     secondaryNewAmount &&
     (() => {
+      editGeneration.current += 1
+      const toggledAmount = Math.round(secondaryNewAmount.amount)
+      // A toggle normally keeps the same underlying amount, so the MAX chip
+      // stays solid. But when the pad holds a sub-display-unit amount (the
+      // wallet-units dust fill), rounding to the other currency CHANGES the
+      // amount — up to double the computed max, or down to an empty pad.
+      // A lossy toggle drops the MAX claim; a faithful one keeps it.
+      const roundTrip = convertMoneyAmount(
+        { ...secondaryNewAmount, amount: toggledAmount },
+        newPrimaryAmount.currency,
+      )
+      if (roundTrip.amount !== newPrimaryAmount.amount) {
+        setAppliedMax(null)
+      }
       setNumberPadAmount({
         ...secondaryNewAmount,
-        amount: Math.round(secondaryNewAmount.amount),
+        amount: toggledAmount,
       })
     })
 
+  const onMaxPress =
+    maxAmountButton && !maxAmountButton.disabled
+      ? () => {
+          if (maxComputeInFlight.current) {
+            return
+          }
+          maxComputeInFlight.current = true
+          setIsComputingMax(true)
+          const generationAtTap = editGeneration.current
+          maxAmountButton
+            .compute()
+            .then((result) => {
+              if (!result) {
+                return
+              }
+              // The user typed, cleared, or toggled currency while the fee
+              // fetch was in flight — their edit wins; drop the stale max.
+              if (editGeneration.current !== generationAtTap) {
+                return
+              }
+              const converted = convertMoneyAmount(result.amount, currencyRef.current)
+              // The pad may hold a DIFFERENT currency than the wallet (e.g.
+              // JMD display over a USD wallet). The send path converts the
+              // pad amount BACK to wallet units and rounds, so a display
+              // amount that merely floors here can still round-trip above
+              // the computed max and overdraw (found on-device: $1.099346
+              // spendable → J$ fill → $1.10 sent → IBEX rejects). Step the
+              // filled amount down until its round-trip stays within max.
+              let fillAmount = Math.floor(converted.amount)
+              const roundTripsAboveMax = (amount: number) =>
+                Math.round(
+                  convertMoneyAmount({ ...converted, amount }, result.amount.currency)
+                    .amount,
+                ) > result.amount.amount
+              while (fillAmount > 0 && roundTripsAboveMax(fillAmount)) {
+                fillAmount -= 1
+              }
+              // A positive wallet-units max can still floor (or step) down to
+              // zero display units — e.g. a dust BTC balance worth under one
+              // display cent. Filling 0 would empty the pad under a solid MAX
+              // chip and leave Set Amount ready to commit a zero amount. Fill
+              // in wallet units instead: the pad switches currency (as the
+              // toggle does) and shows the true max, which needs no display
+              // round-trip — the computation already floors it to whole
+              // wallet minor units.
+              if (fillAmount === 0 && result.amount.amount > 0) {
+                setNumberPadAmount(result.amount)
+              } else {
+                setNumberPadAmount({
+                  ...converted,
+                  amount: fillAmount,
+                })
+              }
+              setAppliedMax({ note: result.note })
+            })
+            .catch(() => {
+              // The computation is expected to resolve with a fallback; a
+              // rejection must never crash or block the tap.
+            })
+            .finally(() => {
+              maxComputeInFlight.current = false
+              setIsComputingMax(false)
+            })
+        }
+      : undefined
+
+  let maxChipState: MaxChipState | undefined
+  if (maxAmountButton) {
+    if (maxAmountButton.disabled) {
+      maxChipState = "disabled"
+    } else if (isComputingMax) {
+      maxChipState = "computing"
+    } else {
+      maxChipState = appliedMax ? "active" : "available"
+    }
+  }
+
   useEffect(() => {
     if (initialAmount) {
+      // A new initial amount means the caller committed or replaced the
+      // amount (e.g. Set Amount closed the modal and it reopened while this
+      // component stayed mounted). Any applied-MAX chip state and any MAX
+      // computation still in flight refer to the pre-commit amount — clear
+      // the chip and invalidate late resolves so a stale max can neither
+      // overwrite the committed amount nor claim it as the computed max.
+      editGeneration.current += 1
+      setAppliedMax(null)
       setNumberPadAmount(initialAmount)
     }
   }, [initialAmount, setNumberPadAmount])
@@ -255,10 +396,13 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
       }
       secondaryCurrencySymbol={secondaryCurrencyInfo?.symbol}
       errorMessage={errorMessage}
+      infoMessage={appliedMax?.note}
       onKeyPress={onKeyPress}
       onClearAmount={onClear}
       onToggleCurrency={onToggleCurrency}
       setAmountDisabled={Boolean(errorMessage)}
+      maxChipState={maxChipState}
+      onMaxPress={onMaxPress}
       onSetAmountPress={setAmount && (() => setAmount(newPrimaryAmount))}
       goBack={goBack}
     />

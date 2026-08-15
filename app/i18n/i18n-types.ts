@@ -5563,6 +5563,24 @@ type RootTranslation = {
 		 * @param {string} minAmount
 		 */
 		minAmountNotMet: RequiredParams<'minAmount'>
+		/**
+		 * M​A​X
+		 */
+		max: string
+		/**
+		 * F​u​l​l​ ​b​a​l​a​n​c​e​ ​—​ ​n​o​ ​f​e​e​ ​b​e​t​w​e​e​n​ ​F​l​a​s​h​ ​a​c​c​o​u​n​t​s
+		 */
+		maxNoteIntraledger: string
+		/**
+		 * ~​{​f​e​e​}​ ​r​e​s​e​r​v​e​d​ ​f​o​r​ ​t​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​—​ ​f​i​n​a​l​ ​f​e​e​ ​s​h​o​w​n​ ​o​n​ ​c​o​n​f​i​r​m
+		 * @param {string} fee
+		 */
+		maxNoteFeeReserved: RequiredParams<'fee'>
+		/**
+		 * C​a​p​p​e​d​ ​a​t​ ​{​m​a​x​}​ ​—​ ​t​h​e​ ​m​o​s​t​ ​t​h​i​s​ ​r​e​c​i​p​i​e​n​t​ ​c​a​n​ ​r​e​c​e​i​v​e​ ​p​e​r​ ​p​a​y​m​e​n​t
+		 * @param {string} max
+		 */
+		maxNoteRecipientCap: RequiredParams<'max'>
 	}
 	AmountInputButton: {
 		/**
@@ -11637,6 +11655,22 @@ export type TranslationFunctions = {
 		 * Amount must be at least {minAmount}.
 		 */
 		minAmountNotMet: (arg: { minAmount: string }) => LocalizedString
+		/**
+		 * MAX
+		 */
+		max: () => LocalizedString
+		/**
+		 * Full balance — no fee between Flash accounts
+		 */
+		maxNoteIntraledger: () => LocalizedString
+		/**
+		 * ~{fee} reserved for the network fee — final fee shown on confirm
+		 */
+		maxNoteFeeReserved: (arg: { fee: string }) => LocalizedString
+		/**
+		 * Capped at {max} — the most this recipient can receive per payment
+		 */
+		maxNoteRecipientCap: (arg: { max: string }) => LocalizedString
 	}
 	AmountInputButton: {
 		/**

@@ -14,6 +14,7 @@ import {
 // components
 import { GaloyTertiaryButton } from "@app/components/atomic/galoy-tertiary-button"
 import { AmountInput } from "@app/components/amount-input/amount-input"
+import { MaxAmountButton } from "@app/components/amount-input-screen"
 import { NoteInput } from "@app/components/note-input"
 
 // types
@@ -38,6 +39,7 @@ type Props = {
   setAsyncErrorMessage: (val: string) => void
   invoiceAmount?: MoneyAmount<WalletCurrency>
   receiverLimits?: LnurlLimits | null
+  maxAmountButton?: MaxAmountButton
 }
 
 const DetailAmountNote: React.FC<Props> = ({
@@ -48,6 +50,7 @@ const DetailAmountNote: React.FC<Props> = ({
   setAsyncErrorMessage,
   invoiceAmount,
   receiverLimits,
+  maxAmountButton,
 }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
@@ -209,6 +212,7 @@ const DetailAmountNote: React.FC<Props> = ({
             walletCurrency={sendingWalletDescriptor.currency}
             canSetAmount={paymentDetail.canSetAmount}
             isSendingMax={paymentDetail.isSendingMax}
+            maxAmountButton={maxAmountButton}
           />
         </View>
       </View>

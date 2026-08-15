@@ -1361,7 +1361,11 @@
     "enterAmount": "Yanapaq qillqa",
     "setAmount": "Qillqay",
     "maxAmountExceeded": "Kaymi ayqin rantiytaqa kani kaypi qatiq {maxAmount: string} sutiyuqmi kayanman",
-    "minAmountNotMet": "Kaymi kanchu huk mikhunan kani kaypi qatiq {minAmount: string} sutiyuqmi kayanman"
+    "minAmountNotMet": "Kaymi kanchu huk mikhunan kani kaypi qatiq {minAmount: string} sutiyuqmi kayanman",
+    "max": "MAX",
+    "maxNoteIntraledger": "Full balance — no fee between Flash accounts",
+    "maxNoteFeeReserved": "~{fee: string} reserved for the network fee — final fee shown on confirm",
+    "maxNoteRecipientCap": "Capped at {max: string} — the most this recipient can receive per payment"
   },
   "AmountInputButton": {
     "tapToSetAmount": "Chimpuy ruranichu kaymi kanchu",
