@@ -2015,6 +2015,9 @@ query transferFlags {
       processorFeeFixed
       flashFeePercent
       flashFeeFixed
+      l1DailyLimit
+      l2DailyLimit
+      l3DailyLimit
       __typename
     }
     __typename

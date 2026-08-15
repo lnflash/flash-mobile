@@ -904,6 +904,12 @@ export type FygaroTopupInfo = {
   readonly flashFeeFixed: Scalars['Float']['output'];
   /** Flash percentage fee (e.g. 2.0 for 2%). */
   readonly flashFeePercent: Scalars['Float']['output'];
+  /** Maximum gross card top-up per rolling 24h for level-1 accounts, in USD. */
+  readonly l1DailyLimit: Scalars['Float']['output'];
+  /** Maximum gross card top-up per rolling 24h for level-2 accounts, in USD. */
+  readonly l2DailyLimit: Scalars['Float']['output'];
+  /** Maximum gross card top-up per rolling 24h for level-3 (Business) accounts, in USD. */
+  readonly l3DailyLimit: Scalars['Float']['output'];
   /** Minimum top-up amount, in USD. */
   readonly minimumAmount: Scalars['Float']['output'];
   /** Payment-processor fixed fee, in USD (e.g. 0.49). */
@@ -3316,7 +3322,7 @@ export type ReferralRewardFlagQuery = { readonly __typename: 'Query', readonly g
 export type TransferFlagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type TransferFlagsQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly topupEnabled: boolean, readonly cashoutEnabled: boolean, readonly bridgeEnabled: boolean, readonly fygaroTopup?: { readonly __typename: 'FygaroTopupInfo', readonly minimumAmount: number, readonly processorFeePercent: number, readonly processorFeeFixed: number, readonly flashFeePercent: number, readonly flashFeeFixed: number } | null } | null };
+export type TransferFlagsQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly topupEnabled: boolean, readonly cashoutEnabled: boolean, readonly bridgeEnabled: boolean, readonly fygaroTopup?: { readonly __typename: 'FygaroTopupInfo', readonly minimumAmount: number, readonly processorFeePercent: number, readonly processorFeeFixed: number, readonly flashFeePercent: number, readonly flashFeeFixed: number, readonly l1DailyLimit: number, readonly l2DailyLimit: number, readonly l3DailyLimit: number } | null } | null };
 
 export type LnNoAmountInvoiceFeeProbeMutationVariables = Exact<{
   input: LnNoAmountInvoiceFeeProbeInput;
@@ -6930,6 +6936,9 @@ export const TransferFlagsDocument = gql`
       processorFeeFixed
       flashFeePercent
       flashFeeFixed
+      l1DailyLimit
+      l2DailyLimit
+      l3DailyLimit
     }
   }
 }

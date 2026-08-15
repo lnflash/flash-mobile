@@ -37,6 +37,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useTransferFlagsQuery } from "@app/graphql/generated"
+import { AccountLevel, useLevel } from "@app/graphql/level-context"
 
 // utils
 import { estimateTopupNet } from "./topup-fee-estimate"
@@ -86,6 +87,25 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // long-standing $1 floor.
   const minimumAmount = isCard ? fygaroTopup?.minimumAmount ?? DEFAULT_CARD_MINIMUM : 1
 
+  // Per-level daily cap on card top-ups, from the same globals payload. This
+  // is a PER-TRANSACTION pre-check only — the client cannot see the trailing
+  // 24h total, which the webhook enforces authoritatively before crediting —
+  // but it stops the obvious case where a single charge already exceeds the
+  // cap, BEFORE the card is charged and the money is stuck in manual review.
+  // Unknown level or null fygaroTopup degrades to "no client-side cap": the
+  // server still gates, and blocking top-ups on missing metadata would be
+  // worse than a manual-review fallback.
+  const { currentLevel } = useLevel()
+  const levelDailyLimit =
+    currentLevel === AccountLevel.One
+      ? fygaroTopup?.l1DailyLimit
+      : currentLevel === AccountLevel.Two
+      ? fygaroTopup?.l2DailyLimit
+      : currentLevel === AccountLevel.Three
+      ? fygaroTopup?.l3DailyLimit
+      : undefined
+  const dailyLimit = isCard ? levelDailyLimit : undefined
+
   /**
    * Validates the entered amount against the active minimum. Micro-transactions
    * are unprofitable once processing fees are applied, so card top-ups enforce
@@ -96,6 +116,11 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     return !isNaN(numAmount) && numAmount >= minimumAmount
   }
 
+  const exceedsDailyLimit = (amount: string): boolean => {
+    const numAmount = parseFloat(amount)
+    return dailyLimit !== undefined && !isNaN(numAmount) && numAmount > dailyLimit
+  }
+
   // "You'll receive" net preview — only for card top-ups, only when the fee
   // params are available, and only once the amount clears the enforced minimum.
   // A null fygaroTopup hides the line rather than showing a guessed (and wrong)
@@ -103,7 +128,11 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // receive figure for a gross that Continue will refuse.
   const grossAmount = parseFloat(amount)
   const netAmount =
-    isCard && fygaroTopup && !isNaN(grossAmount) && grossAmount >= minimumAmount
+    isCard &&
+    fygaroTopup &&
+    !isNaN(grossAmount) &&
+    grossAmount >= minimumAmount &&
+    !exceedsDailyLimit(amount)
       ? estimateTopupNet(grossAmount, fygaroTopup)
       : null
 
@@ -123,6 +152,14 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
       Alert.alert(
         "Invalid Amount",
         LL.TopupDetails.minimumAmount({ amount: `$${minimumAmount.toFixed(2)}` }),
+      )
+      return
+    }
+
+    if (exceedsDailyLimit(amount) && dailyLimit !== undefined) {
+      Alert.alert(
+        "Invalid Amount",
+        LL.TopupDetails.dailyLimitAmount({ amount: `$${dailyLimit.toFixed(2)}` }),
       )
       return
     }

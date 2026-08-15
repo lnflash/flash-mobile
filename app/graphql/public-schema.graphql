@@ -871,6 +871,17 @@ type FygaroTopupInfo {
 
   """Flash fixed fee, in USD."""
   flashFeeFixed: Float!
+
+  """Maximum gross card top-up per rolling 24h for level-1 accounts, in USD."""
+  l1DailyLimit: Float!
+
+  """Maximum gross card top-up per rolling 24h for level-2 accounts, in USD."""
+  l2DailyLimit: Float!
+
+  """
+  Maximum gross card top-up per rolling 24h for level-3 (Business) accounts, in USD.
+  """
+  l3DailyLimit: Float!
 }
 
 """

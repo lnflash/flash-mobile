@@ -708,6 +708,7 @@ const en: BaseTranslation = {
     invalidEmail: "Please enter a valid email address",
     invalidAmount: "Please enter a valid amount",
     minimumAmount: "Minimum amount is {amount: string}",
+    dailyLimitAmount: "Your daily card top-up limit is {amount: string}",
     youllReceive: "You'll receive {amount: string}",
     feeNote: "After card and processing fees",
     usdOnlyNotice: "Card payments top up your USD wallet"

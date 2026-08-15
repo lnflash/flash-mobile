@@ -2285,6 +2285,11 @@ type RootTranslation = {
 		 */
 		minimumAmount: RequiredParams<'amount'>
 		/**
+		 * Y​o​u​r​ ​d​a​i​l​y​ ​c​a​r​d​ ​t​o​p​-​u​p​ ​l​i​m​i​t​ ​i​s​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
+		 */
+		dailyLimitAmount: RequiredParams<'amount'>
+		/**
 		 * Y​o​u​'​l​l​ ​r​e​c​e​i​v​e​ ​{​a​m​o​u​n​t​}
 		 * @param {string} amount
 		 */
@@ -8444,6 +8449,10 @@ export type TranslationFunctions = {
 		 * Minimum amount is {amount}
 		 */
 		minimumAmount: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Your daily card top-up limit is {amount}
+		 */
+		dailyLimitAmount: (arg: { amount: string }) => LocalizedString
 		/**
 		 * You'll receive {amount}
 		 */

@@ -15,6 +15,9 @@ gql`
         processorFeeFixed
         flashFeePercent
         flashFeeFixed
+        l1DailyLimit
+        l2DailyLimit
+        l3DailyLimit
       }
     }
   }

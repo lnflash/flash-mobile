@@ -7,6 +7,7 @@ import { i18nObject } from "../../../i18n/i18n-util"
 import { loadAllLocales } from "../../../i18n/i18n-util.sync"
 import TopupDetails from "../TopupDetails"
 import { estimateTopupNet } from "../topup-fee-estimate"
+import { AccountLevel, LevelContextProvider } from "@app/graphql/level-context"
 
 // Without this, i18nObject("en") resolves every key to "" and text queries
 // match arbitrary empty text nodes.
@@ -38,6 +39,9 @@ const FEE_PARAMS = {
   processorFeeFixed: 0.49,
   flashFeePercent: 2,
   flashFeeFixed: 0,
+  l1DailyLimit: 125,
+  l2DailyLimit: 1000,
+  l3DailyLimit: 2500,
 }
 
 const flagsResult = (fygaroTopup: typeof FEE_PARAMS | null) => ({
@@ -67,6 +71,9 @@ const en = i18nObject("en")
 const renderTopupDetails = ({
   paymentType = "card" as "card" | "bankTransfer" | "bridge",
   navigate = jest.fn(),
+  // Default NonAuth mirrors the bare context default: without a level the
+  // screen applies no client-side daily cap (the webhook still gates).
+  level = AccountLevel.NonAuth as AccountLevel,
 } = {}) => {
   const navigation = { navigate } as never
   const route = {
@@ -76,7 +83,16 @@ const renderTopupDetails = ({
   } as never
   const utils = render(
     <ThemeProvider theme={theme}>
-      <TopupDetails navigation={navigation} route={route} />
+      <LevelContextProvider
+        value={{
+          isAtLeastLevelZero: level !== AccountLevel.NonAuth,
+          isAtLeastLevelOne:
+            level !== AccountLevel.NonAuth && level !== AccountLevel.Zero,
+          currentLevel: level,
+        }}
+      >
+        <TopupDetails navigation={navigation} route={route} />
+      </LevelContextProvider>
     </ThemeProvider>,
   )
   return { ...utils, navigate }
@@ -159,6 +175,89 @@ describe("TopupDetails $10 minimum", () => {
       en.TopupDetails.minimumAmount({ amount: "$10.00" }),
     )
     alertSpy.mockRestore()
+  })
+})
+
+describe("TopupDetails per-level daily limit", () => {
+  it("rejects a card top-up over the L1 daily cap and states the limit", () => {
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "130")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Invalid Amount",
+      en.TopupDetails.dailyLimitAmount({ amount: "$125.00" }),
+    )
+    alertSpy.mockRestore()
+  })
+
+  it("allows a card top-up landing exactly ON the L1 cap (inclusive)", () => {
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "125")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).toHaveBeenCalledWith("CardPayment", { amount: 125, wallet: "USD" })
+  })
+
+  it("applies the cap for the user's own level ($130 clears L2)", () => {
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.Two,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "130")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).toHaveBeenCalledWith("CardPayment", { amount: 130, wallet: "USD" })
+  })
+
+  it("hides the net preview for an over-cap amount (Continue would refuse it)", () => {
+    const { getByPlaceholderText, queryByText } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "130")
+
+    expect(queryByText(en.TopupDetails.feeNote())).toBeNull()
+  })
+
+  it("applies no client-side cap when the level is unknown (server still gates)", () => {
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.NonAuth,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "130")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).toHaveBeenCalledWith("CardPayment", { amount: 130, wallet: "USD" })
+  })
+
+  it("does not cap bank transfers", () => {
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "bankTransfer",
+      level: AccountLevel.One,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "130")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).toHaveBeenCalledWith("BankTransfer", {
+      amount: 130,
+      wallet: "USD",
+      paymentType: "bankTransfer",
+    })
   })
 })
 
