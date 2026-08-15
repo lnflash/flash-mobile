@@ -99,6 +99,12 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // (no-daily-limit-for-level), so handleContinue refuses card top-ups for
   // level 0 outright rather than letting the charge be captured and stranded.
   const { currentLevel } = useLevel()
+
+  // Level-0 accounts cannot card top-up at all — see the comment in
+  // handleContinue. Shared between the Continue refusal and the net-preview
+  // gate so the screen never promises a receive figure Continue will refuse.
+  const cardBlockedForLevel = isCard && currentLevel === AccountLevel.Zero
+
   const levelDailyLimit =
     currentLevel === AccountLevel.One
       ? fygaroTopup?.l1DailyLimit
@@ -127,11 +133,13 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // "You'll receive" net preview — only for card top-ups, only when the fee
   // params are available, and only once the amount clears the enforced minimum.
   // A null fygaroTopup hides the line rather than showing a guessed (and wrong)
-  // number; a below-minimum amount hides it too, so we never promise a concrete
+  // number; a below-minimum amount hides it too, as does a level-0 user (whose
+  // card top-up Continue refuses outright), so we never promise a concrete
   // receive figure for a gross that Continue will refuse.
   const grossAmount = parseFloat(amount)
   const netAmount =
     isCard &&
+    !cardBlockedForLevel &&
     fygaroTopup &&
     !isNaN(grossAmount) &&
     grossAmount >= minimumAmount &&
@@ -159,7 +167,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     // that is a cross-file invariant this screen cannot rely on: refuse here
     // too so a deep link (or a future un-hiding of that button) can never
     // charge a level-0 card.
-    if (isCard && currentLevel === AccountLevel.Zero) {
+    if (cardBlockedForLevel) {
       Alert.alert("Upgrade Required", LL.TopupDetails.upgradeRequired())
       return
     }

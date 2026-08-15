@@ -355,6 +355,20 @@ describe("TopupDetails net preview", () => {
     expect(queryByText(en.TopupDetails.feeNote())).toBeNull()
   })
 
+  it("hides the net line for level 0 on the card flow (Continue would refuse it)", () => {
+    // A level-0 card top-up is refused outright by handleContinue (the webhook
+    // fails closed for level 0), so the screen must not first promise a
+    // concrete receive figure for an amount Continue will then refuse.
+    const { getByPlaceholderText, queryByText } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.Zero,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "50")
+
+    expect(queryByText(en.TopupDetails.feeNote())).toBeNull()
+  })
+
   it("hides the net line when fygaroTopup is null (no guessed number)", () => {
     mockUseTransferFlagsQuery.mockReturnValue(flagsResult(null))
     const { getByPlaceholderText, queryByText } = renderTopupDetails({
