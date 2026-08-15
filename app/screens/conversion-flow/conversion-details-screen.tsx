@@ -26,6 +26,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import {
   DisplayCurrency,
   MoneyAmount,
+  percentageOfBalance,
   toBtcMoneyAmount,
   toSpendableBalance,
   toUsdMoneyAmount,
@@ -107,7 +108,9 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
 
     setMoneyAmount(
       toWalletAmount({
-        amount: Math.round((fromBalance * percentage) / 100),
+        // Floor to the spendable balance — the raw balance can hold fractional
+        // cents, and rounding it up filled an amount the swap can't fill (#696).
+        amount: percentageOfBalance(fromBalance, percentage),
         currency: fromWalletCurrency,
       }),
     )
