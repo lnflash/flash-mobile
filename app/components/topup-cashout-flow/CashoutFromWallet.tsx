@@ -10,7 +10,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useDisplayCurrency, usePriceConversion } from "@app/hooks"
 
 // types
-import { DisplayCurrency, UsdMoneyAmount } from "@app/types/amounts"
+import { DisplayCurrency, toSpendableBalance, UsdMoneyAmount } from "@app/types/amounts"
 
 type Props = {
   usdBalance: UsdMoneyAmount
@@ -24,10 +24,12 @@ const CashoutFromWallet: React.FC<Props> = ({ usdBalance }) => {
 
   if (!convertMoneyAmount) return null
 
-  const convertedUsdBalance = convertMoneyAmount(usdBalance, DisplayCurrency)
+  // Display-only: floor to whole spendable minor units before conversion (#690)
+  const spendableUsdBalance = toSpendableBalance(usdBalance)
+  const convertedUsdBalance = convertMoneyAmount(spendableUsdBalance, DisplayCurrency)
   const formattedUsdBalance = formatDisplayAndWalletAmount({
     displayAmount: convertedUsdBalance,
-    walletAmount: usdBalance,
+    walletAmount: spendableUsdBalance,
   })
 
   return (

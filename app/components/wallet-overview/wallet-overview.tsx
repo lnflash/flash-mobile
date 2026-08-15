@@ -16,7 +16,11 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useBreez, useFlashcard } from "@app/hooks"
 
 // utils
-import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import {
+  toBtcMoneyAmount,
+  toSpendableBalance,
+  toUsdMoneyAmount,
+} from "@app/types/amounts"
 import { getCashWallet } from "@app/graphql/wallets-utils"
 
 type Props = {
@@ -91,7 +95,11 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   ])
 
   const formatBalance = () => {
-    const extBtcWalletBalance = toBtcMoneyAmount(btcWallet?.balance ?? NaN)
+    // Balances here are display-only — floor to whole spendable minor units
+    // so the cards never show money the user can't send (#690).
+    const extBtcWalletBalance = toSpendableBalance(
+      toBtcMoneyAmount(btcWallet?.balance ?? NaN),
+    )
     const btcAmount = formatMoneyAmount({ moneyAmount: extBtcWalletBalance })
     const btcDisplay = moneyAmountToDisplayCurrencyString({
       moneyAmount: extBtcWalletBalance,
@@ -105,7 +113,9 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
 
     if (data) {
       const extUsdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
-      const extUsdWalletBalance = toUsdMoneyAmount(extUsdWallet?.balance ?? NaN)
+      const extUsdWalletBalance = toSpendableBalance(
+        toUsdMoneyAmount(extUsdWallet?.balance ?? NaN),
+      )
       const cashAmount = formatMoneyAmount({ moneyAmount: extUsdWalletBalance })
       const cashDisplay = moneyAmountToDisplayCurrencyString({
         moneyAmount: extUsdWalletBalance,

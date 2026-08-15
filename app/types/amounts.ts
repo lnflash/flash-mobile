@@ -88,6 +88,31 @@ export const toWalletAmount = <T extends WalletCurrency>({
   }
 }
 
+/**
+ * Floors a wallet balance to whole minor units (cents / sats) for DISPLAY.
+ *
+ * The API can report USD cash-wallet balances in fractional cents (e.g.
+ * `109.9346` = $1.099346 held at IBEX). Sub-minor-unit residue is not
+ * spendable, so displayed balances must floor to the whole minor unit BEFORE
+ * any display-currency conversion — otherwise round-to-nearest formatting
+ * shows users money they cannot send (#690). BTC sat balances are already
+ * integers, so this is a no-op for them.
+ *
+ * `Math.floor` (toward negative infinity) is used deliberately: it preserves
+ * the invariant `displayed <= actual` even for negative amounts. `NaN`
+ * passes through unchanged so missing balances keep their existing rendering.
+ *
+ * Display-only: never use this for validation or to build send amounts.
+ */
+export const toSpendableBalance = <T extends WalletCurrency>(
+  balance: WalletAmount<T>,
+): WalletAmount<T> => {
+  return {
+    ...balance,
+    amount: Math.floor(balance.amount),
+  }
+}
+
 export const toDisplayAmount = ({
   amount,
   currencyCode,

@@ -18,7 +18,11 @@ import { useBreez, useDisplayCurrency } from "@app/hooks"
 import Sync from "@app/assets/icons/sync.svg"
 
 // utils
-import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import {
+  toBtcMoneyAmount,
+  toSpendableBalance,
+  toUsdMoneyAmount,
+} from "@app/types/amounts"
 import { getCashWallet } from "@app/graphql/wallets-utils"
 
 export type AmountInputScreenUIProps = {
@@ -63,14 +67,16 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
   const { data } = useWalletOverviewScreenQuery({ fetchPolicy: "cache-only" })
 
   const balanceText = useMemo(() => {
+    // Floor to whole spendable minor units before display conversion so the
+    // header never shows a balance the user can't actually send (#690).
     if (walletCurrency === WalletCurrency.Btc) {
       return moneyAmountToDisplayCurrencyString({
-        moneyAmount: toBtcMoneyAmount(btcWallet?.balance ?? 0),
+        moneyAmount: toSpendableBalance(toBtcMoneyAmount(btcWallet?.balance ?? 0)),
       })
     }
     const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
     return moneyAmountToDisplayCurrencyString({
-      moneyAmount: toUsdMoneyAmount(usdWallet?.balance ?? 0),
+      moneyAmount: toSpendableBalance(toUsdMoneyAmount(usdWallet?.balance ?? 0)),
     })
   }, [walletCurrency, btcWallet?.balance, data, moneyAmountToDisplayCurrencyString])
 

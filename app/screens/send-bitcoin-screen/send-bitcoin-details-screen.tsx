@@ -45,7 +45,12 @@ import { PaymentDetail } from "./payment-details/index.types"
 import { Satoshis } from "lnurl-pay/dist/types/types"
 
 // utils
-import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import {
+  DisplayCurrency,
+  toBtcMoneyAmount,
+  toSpendableBalance,
+  toUsdMoneyAmount,
+} from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { requestInvoice, utils } from "lnurl-pay"
 import { fetchBreezFee, fetchLnurlPayRequest } from "@app/utils/breez-sdk"
@@ -209,9 +214,11 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           fee !== null &&
           pd.settlementAmount.amount + fee > btcWallet.balance
         ) {
+          // Display-only: floor the balance shown in the error message (#690)
+          const spendableBalance = toSpendableBalance(btcBalanceMoneyAmount)
           const amount = formatDisplayAndWalletAmount({
-            displayAmount: _convertMoneyAmount(btcBalanceMoneyAmount, DisplayCurrency),
-            walletAmount: btcBalanceMoneyAmount,
+            displayAmount: _convertMoneyAmount(spendableBalance, DisplayCurrency),
+            walletAmount: spendableBalance,
           })
           setAsyncErrorMessage(
             LL.SendBitcoinScreen.amountExceed({
@@ -227,9 +234,11 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           estimatedFee &&
           pd.settlementAmount.amount + estimatedFee?.amount > usdBalanceMoneyAmount.amount
         ) {
+          // Display-only: floor the balance shown in the error message (#690)
+          const spendableBalance = toSpendableBalance(usdBalanceMoneyAmount)
           const amount = formatDisplayAndWalletAmount({
-            displayAmount: _convertMoneyAmount(usdBalanceMoneyAmount, DisplayCurrency),
-            walletAmount: usdBalanceMoneyAmount,
+            displayAmount: _convertMoneyAmount(spendableBalance, DisplayCurrency),
+            walletAmount: spendableBalance,
           })
           setAsyncErrorMessage(
             LL.SendBitcoinScreen.amountExceed({

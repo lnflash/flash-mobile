@@ -28,6 +28,7 @@ import {
   lessThanOrEqualTo,
   moneyAmountIsCurrencyType,
   toBtcMoneyAmount,
+  toSpendableBalance,
   toUsdMoneyAmount,
   ZeroBtcMoneyAmount,
   ZeroUsdMoneyAmount,
@@ -95,8 +96,10 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   }, [usdWallet, btcWallet, fee])
 
   const setWalletText = () => {
-    const btcBalanceMoneyAmount = toBtcMoneyAmount(btcWallet?.balance)
-    const usdBalanceMoneyAmount = toUsdMoneyAmount(usdWallet?.balance)
+    // Display-only balances — floor to whole spendable minor units (#690).
+    // validateAmount() below builds its own unfloored copies for validation.
+    const btcBalanceMoneyAmount = toSpendableBalance(toBtcMoneyAmount(btcWallet?.balance))
+    const usdBalanceMoneyAmount = toSpendableBalance(toUsdMoneyAmount(usdWallet?.balance))
 
     const btcWalletText = formatDisplayAndWalletAmount({
       displayAmount: convertMoneyAmount(btcBalanceMoneyAmount, DisplayCurrency),
