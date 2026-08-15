@@ -14,6 +14,16 @@ export const moneyAmountIsCurrencyType = <T extends WalletOrDisplayCurrency>(
   return moneyAmount.currency === currency
 }
 
+// Positive wallet-currency guard. `moneyAmountIsCurrencyType(x, DisplayCurrency)`
+// cannot narrow its FALSE branch (MoneyAmount<WalletOrDisplayCurrency> is not a
+// union type), so use this to prove an amount is a WalletAmount, e.g. before
+// toSpendableBalance.
+export const moneyAmountIsWalletAmount = (
+  moneyAmount: MoneyAmount<WalletOrDisplayCurrency>,
+): moneyAmount is WalletAmount<WalletCurrency> => {
+  return moneyAmount.currency !== DisplayCurrency
+}
+
 export type MoneyAmount<T extends WalletOrDisplayCurrency> = {
   amount: number
   currency: T

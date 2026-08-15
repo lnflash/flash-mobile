@@ -50,9 +50,7 @@ const ChooseWallet: React.FC<Props> = ({
   const { sendingWalletDescriptor, convertMoneyAmount } = paymentDetail
 
   // Display-only balances — floor to whole spendable minor units (#690)
-  const btcBalanceMoneyAmount = toSpendableBalance(
-    toBtcMoneyAmount(btcWallet.balance || btcWallet?.balance),
-  )
+  const btcBalanceMoneyAmount = toSpendableBalance(toBtcMoneyAmount(btcWallet?.balance))
   const usdBalanceMoneyAmount = toSpendableBalance(toUsdMoneyAmount(usdWallet?.balance))
 
   const btcWalletText = formatDisplayAndWalletAmount({

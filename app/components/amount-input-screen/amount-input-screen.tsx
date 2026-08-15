@@ -8,6 +8,8 @@ import {
   greaterThan,
   lessThan,
   MoneyAmount,
+  moneyAmountIsWalletAmount,
+  toSpendableBalance,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
 import { useCallback, useEffect, useReducer } from "react"
@@ -209,16 +211,29 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
     maxAmount && convertMoneyAmount(maxAmount, newPrimaryAmount.currency)
   const minAmountInPrimaryCurrency =
     minAmount && convertMoneyAmount(minAmount, newPrimaryAmount.currency)
+  // Display-side max for the error string only (#690): a wallet-currency
+  // maxAmount can carry fractional-cent residue (e.g. 109.9346 cents) that
+  // round-to-nearest formatting overstates as "$1.10" — the exact amount the
+  // validation below rejects. Floor wallet amounts to whole spendable minor
+  // units BEFORE conversion so the message matches the displayed balance.
+  // Validation deliberately keeps using the raw maxAmountInPrimaryCurrency.
+  const displayMaxAmount =
+    maxAmount &&
+    convertMoneyAmount(
+      moneyAmountIsWalletAmount(maxAmount) ? toSpendableBalance(maxAmount) : maxAmount,
+      newPrimaryAmount.currency,
+    )
 
   if (
     maxAmountInPrimaryCurrency &&
+    displayMaxAmount &&
     greaterThan({
       value: convertMoneyAmount(newPrimaryAmount, maxAmountInPrimaryCurrency.currency),
       greaterThan: maxAmountInPrimaryCurrency,
     })
   ) {
     errorMessage = LL.AmountInputScreen.maxAmountExceeded({
-      maxAmount: formatMoneyAmount({ moneyAmount: maxAmountInPrimaryCurrency }),
+      maxAmount: formatMoneyAmount({ moneyAmount: displayMaxAmount }),
     })
   } else if (
     minAmountInPrimaryCurrency &&

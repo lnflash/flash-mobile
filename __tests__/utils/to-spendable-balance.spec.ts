@@ -1,5 +1,7 @@
 import { WalletCurrency } from "@app/graphql/generated"
 import {
+  DisplayCurrency,
+  moneyAmountIsWalletAmount,
   toBtcMoneyAmount,
   toSpendableBalance,
   toUsdMoneyAmount,
@@ -49,5 +51,33 @@ describe("toSpendableBalance", () => {
     const original = toUsdMoneyAmount(109.9346)
     toSpendableBalance(original)
     expect(original.amount).toEqual(109.9346)
+  })
+})
+
+// Guard used to route a WalletOrDisplayCurrency amount into toSpendableBalance
+// (e.g. the amount-input max-exceeded error string, #690).
+describe("moneyAmountIsWalletAmount", () => {
+  it("accepts wallet-currency amounts", () => {
+    expect(moneyAmountIsWalletAmount(toUsdMoneyAmount(109.9346))).toBe(true)
+    expect(moneyAmountIsWalletAmount(toBtcMoneyAmount(158))).toBe(true)
+  })
+
+  it("rejects display-currency amounts", () => {
+    expect(
+      moneyAmountIsWalletAmount({
+        amount: 200,
+        currency: DisplayCurrency,
+        currencyCode: "USD",
+      }),
+    ).toBe(false)
+  })
+
+  it("narrows so toSpendableBalance can floor a wallet max amount", () => {
+    const maxAmount = toUsdMoneyAmount(109.9346)
+    const floored = moneyAmountIsWalletAmount(maxAmount)
+      ? toSpendableBalance(maxAmount)
+      : maxAmount
+    expect(floored.amount).toEqual(109)
+    expect(floored.currency).toEqual(WalletCurrency.Usd)
   })
 })
