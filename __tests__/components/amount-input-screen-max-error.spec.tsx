@@ -85,12 +85,41 @@ const mockConvertMoneyAmount = <W extends WalletOrDisplayCurrency>(
   currencyCode: toCurrency === WalletCurrency.Btc ? "sats" : "USD",
 })
 
+// Non-identity USD<->display conversion (1 display minor unit = 1.005 USD
+// cents). The raw-vs-floored validation distinction is only observable when
+// the entered amount converts into the (floor(max), rawMax] gap — with the
+// identity conversion and integer number-pad entries that gap is unreachable,
+// so the raw-validation test below needs a real rate.
+const USD_CENTS_PER_DISPLAY_MINOR_UNIT = 1.005
+
+const mockRateBasedConvertMoneyAmount = <W extends WalletOrDisplayCurrency>(
+  moneyAmount: MoneyAmount<WalletOrDisplayCurrency>,
+  toCurrency: W,
+): MoneyAmount<W> => {
+  let amount = moneyAmount.amount
+  if (moneyAmount.currency === DisplayCurrency && toCurrency === WalletCurrency.Usd) {
+    amount = moneyAmount.amount * USD_CENTS_PER_DISPLAY_MINOR_UNIT
+  } else if (
+    moneyAmount.currency === WalletCurrency.Usd &&
+    toCurrency === DisplayCurrency
+  ) {
+    amount = moneyAmount.amount / USD_CENTS_PER_DISPLAY_MINOR_UNIT
+  }
+  return {
+    amount,
+    currency: toCurrency,
+    currencyCode: toCurrency === WalletCurrency.Btc ? "sats" : "USD",
+  }
+}
+
 const renderWithMaxAmount = ({
   enteredDisplayAmount,
   maxAmount,
+  convertMoneyAmount = mockConvertMoneyAmount,
 }: {
   enteredDisplayAmount: number
   maxAmount: MoneyAmount<WalletOrDisplayCurrency>
+  convertMoneyAmount?: typeof mockConvertMoneyAmount
 }) =>
   render(
     <AmountInputScreen
@@ -102,7 +131,7 @@ const renderWithMaxAmount = ({
       }}
       setAmount={jest.fn()}
       walletCurrency={WalletCurrency.Usd}
-      convertMoneyAmount={mockConvertMoneyAmount}
+      convertMoneyAmount={convertMoneyAmount}
       maxAmount={maxAmount}
     />,
   )
@@ -134,13 +163,29 @@ describe("AmountInputScreen max-exceeded error floors wallet balances (#690)", (
   })
 
   it("still validates against the raw balance (validation unchanged)", () => {
-    // $1.09 entered against a raw max of 109.9346 cents is allowed — no error
+    // Rate-based conversion: the entered 109 display cents convert to
+    // 109 * 1.005 = 109.545 USD cents — inside the (109, 109.9346] gap between
+    // the floored and raw max. Raw validation permits it; validating against
+    // the floored displayMaxAmount (109 cents = ~108.46 display cents) would
+    // reject it. This test fails if validation ever switches to the floored max.
     const screen = renderWithMaxAmount({
       enteredDisplayAmount: 109,
       maxAmount: toUsdMoneyAmount(109.9346),
+      convertMoneyAmount: mockRateBasedConvertMoneyAmount,
     })
 
     expect(screen.queryByText(/Amount must not exceed/)).toBeNull()
+
+    // Same rate, one display cent more: 110 * 1.005 = 110.55 USD cents exceeds
+    // the raw max — the error path is live, so the assertion above is not
+    // passing vacuously.
+    const overMax = renderWithMaxAmount({
+      enteredDisplayAmount: 110,
+      maxAmount: toUsdMoneyAmount(109.9346),
+      convertMoneyAmount: mockRateBasedConvertMoneyAmount,
+    })
+
+    expect(overMax.queryByText(/Amount must not exceed/)).toBeTruthy()
   })
 
   it("leaves display-currency max amounts untouched", () => {
