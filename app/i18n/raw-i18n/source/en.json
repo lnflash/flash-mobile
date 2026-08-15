@@ -668,6 +668,7 @@
         "invalidAmount": "Please enter a valid amount",
         "minimumAmount": "Minimum amount is {amount: string}",
         "dailyLimitAmount": "Your daily card top-up limit is {amount: string}",
+        "upgradeRequired": "Card top-ups are not available for your account level. Upgrade your account to enable them.",
         "youllReceive": "You'll receive {amount: string}",
         "feeNote": "After card and processing fees",
         "usdOnlyNotice": "Card payments top up your USD wallet"

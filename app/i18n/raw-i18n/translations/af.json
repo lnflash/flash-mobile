@@ -1563,6 +1563,8 @@
     "invalidEmail": "Please enter a valid email address",
     "invalidAmount": "Please enter a valid amount",
     "minimumAmount": "Minimum amount is {amount}",
+    "dailyLimitAmount": "Your daily card top-up limit is {amount}",
+    "upgradeRequired": "Card top-ups are not available for your account level. Upgrade your account to enable them.",
     "youllReceive": "You'll receive {amount}",
     "feeNote": "After card and processing fees",
     "usdOnlyNotice": "Card payments top up your USD wallet"

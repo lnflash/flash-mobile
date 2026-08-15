@@ -2290,6 +2290,10 @@ type RootTranslation = {
 		 */
 		dailyLimitAmount: RequiredParams<'amount'>
 		/**
+		 * C​a​r​d​ ​t​o​p​-​u​p​s​ ​a​r​e​ ​n​o​t​ ​a​v​a​i​l​a​b​l​e​ ​f​o​r​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​l​e​v​e​l​.​ ​U​p​g​r​a​d​e​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​t​o​ ​e​n​a​b​l​e​ ​t​h​e​m​.
+		 */
+		upgradeRequired: string
+		/**
 		 * Y​o​u​'​l​l​ ​r​e​c​e​i​v​e​ ​{​a​m​o​u​n​t​}
 		 * @param {string} amount
 		 */
@@ -8453,6 +8457,10 @@ export type TranslationFunctions = {
 		 * Your daily card top-up limit is {amount}
 		 */
 		dailyLimitAmount: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Card top-ups are not available for your account level. Upgrade your account to enable them.
+		 */
+		upgradeRequired: () => LocalizedString
 		/**
 		 * You'll receive {amount}
 		 */

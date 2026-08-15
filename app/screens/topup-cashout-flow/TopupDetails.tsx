@@ -92,9 +92,12 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // 24h total, which the webhook enforces authoritatively before crediting —
   // but it stops the obvious case where a single charge already exceeds the
   // cap, BEFORE the card is charged and the money is stuck in manual review.
-  // Unknown level or null fygaroTopup degrades to "no client-side cap": the
-  // server still gates, and blocking top-ups on missing metadata would be
-  // worse than a manual-review fallback.
+  // Unknown level (NonAuth) or null fygaroTopup degrades to "no client-side
+  // cap": the server still gates, and blocking top-ups on missing metadata
+  // would be worse than a manual-review fallback. AccountLevel.Zero is NOT
+  // part of that degrade path — the webhook fails CLOSED for level 0
+  // (no-daily-limit-for-level), so handleContinue refuses card top-ups for
+  // level 0 outright rather than letting the charge be captured and stranded.
   const { currentLevel } = useLevel()
   const levelDailyLimit =
     currentLevel === AccountLevel.One
@@ -148,6 +151,19 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
    * to ensure the correct wallet is credited.
    */
   const handleContinue = async () => {
+    // Level-0 accounts cannot card top-up at all: the webhook fails CLOSED
+    // for level 0 (no-daily-limit-for-level), so a level-0 charge would be
+    // captured by Fygaro and stranded in manual review — the exact failure
+    // this screen's pre-checks exist to prevent. The home screen already
+    // hides the Transfer button for level 0 (home-screen/Buttons.tsx), but
+    // that is a cross-file invariant this screen cannot rely on: refuse here
+    // too so a deep link (or a future un-hiding of that button) can never
+    // charge a level-0 card.
+    if (isCard && currentLevel === AccountLevel.Zero) {
+      Alert.alert("Upgrade Required", LL.TopupDetails.upgradeRequired())
+      return
+    }
+
     if (!validateAmount(amount)) {
       Alert.alert(
         "Invalid Amount",

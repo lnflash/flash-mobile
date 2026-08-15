@@ -244,6 +244,61 @@ describe("TopupDetails per-level daily limit", () => {
     expect(navigate).toHaveBeenCalledWith("CardPayment", { amount: 130, wallet: "USD" })
   })
 
+  it("applies no client-side cap for a leveled user when fygaroTopup is null", () => {
+    // The other half of the documented degrade path: a known level (L1) but
+    // missing Fygaro settings must mean "no client-side cap" (the webhook
+    // still gates), not a crash and not a spurious block on missing metadata.
+    mockUseTransferFlagsQuery.mockReturnValue(flagsResult(null))
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "130")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).toHaveBeenCalledWith("CardPayment", { amount: 130, wallet: "USD" })
+  })
+
+  it("refuses card top-up outright for level 0 (webhook fails closed for L0)", () => {
+    // Level 0 must NOT fall into the "no client-side cap" degrade bucket: the
+    // webhook has no daily limit for level 0 and fails closed, so a level-0
+    // charge would be captured and stranded in manual review. The home
+    // screen hides the Transfer button for level 0, but this screen cannot
+    // rely on that cross-file invariant (deep links, future UI changes).
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.Zero,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "50")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Upgrade Required",
+      en.TopupDetails.upgradeRequired(),
+    )
+    alertSpy.mockRestore()
+  })
+
+  it("does not block level-0 bank transfers (the refusal is card-only)", () => {
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "bankTransfer",
+      level: AccountLevel.Zero,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "50")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).toHaveBeenCalledWith("BankTransfer", {
+      amount: 50,
+      wallet: "USD",
+      paymentType: "bankTransfer",
+    })
+  })
+
   it("does not cap bank transfers", () => {
     const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
       paymentType: "bankTransfer",
