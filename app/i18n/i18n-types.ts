@@ -5422,6 +5422,18 @@ type RootTranslation = {
 		 */
 		contactUs: string
 		/**
+		 * A​p​p​ ​c​h​a​t
+		 */
+		appChat: string
+		/**
+		 * C​h​a​t​ ​U​n​a​v​a​i​l​a​b​l​e
+		 */
+		chatUnavailableTitle: string
+		/**
+		 * I​n​-​a​p​p​ ​c​h​a​t​ ​i​s​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​o​n​ ​t​h​i​s​ ​d​e​v​i​c​e​ ​y​e​t​.​ ​Y​o​u​ ​c​a​n​ ​r​e​a​c​h​ ​s​u​p​p​o​r​t​ ​b​y​ ​e​m​a​i​l​ ​i​n​s​t​e​a​d​.
+		 */
+		chatUnavailableMessage: string
+		/**
 		 * J​o​i​n​ ​t​h​e​ ​c​o​m​m​u​n​i​t​y
 		 */
 		joinTheCommunity: string
@@ -11523,6 +11535,18 @@ export type TranslationFunctions = {
 		 * Need help? Contact us.
 		 */
 		contactUs: () => LocalizedString
+		/**
+		 * App chat
+		 */
+		appChat: () => LocalizedString
+		/**
+		 * Chat Unavailable
+		 */
+		chatUnavailableTitle: () => LocalizedString
+		/**
+		 * In-app chat isn't available on this device yet. You can reach support by email instead.
+		 */
+		chatUnavailableMessage: () => LocalizedString
 		/**
 		 * Join the community
 		 */

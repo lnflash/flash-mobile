@@ -1161,6 +1161,9 @@
   },
   "support": {
     "contactUs": "Benodig jy hulp? Kontak ons. ",
+    "appChat": "App chat",
+    "chatUnavailableTitle": "Chat Unavailable",
+    "chatUnavailableMessage": "In-app chat isn't available on this device yet. You can reach support by email instead.",
     "joinTheCommunity": "Sluit aan by die gemeenskap",
     "whatsapp": "WhatsApp",
     "email": "E-pos",
