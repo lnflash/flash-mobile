@@ -25,6 +25,7 @@ import { useActivityIndicator, useDisplayCurrency, usePriceConversion } from "@a
 // utils
 import {
   MoneyAmount,
+  percentageOfBalance,
   toUsdMoneyAmount,
   toWalletAmount,
   WalletOrDisplayCurrency,
@@ -206,7 +207,9 @@ const CashoutDetails = ({ navigation, route }: Props) => {
   const setAmountToBalancePercentage = (percentage: number) => {
     setMoneyAmount(
       toWalletAmount({
-        amount: Math.round((usdBalance.amount * percentage) / 100),
+        // Floor to the spendable balance — the raw balance can hold fractional
+        // cents, and rounding it up filled an unsendable amount (#696).
+        amount: percentageOfBalance(usdBalance.amount, percentage),
         currency: WalletCurrency.Usd,
       }),
     )

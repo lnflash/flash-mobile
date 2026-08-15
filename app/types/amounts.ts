@@ -112,7 +112,9 @@ export const toWalletAmount = <T extends WalletCurrency>({
  * the invariant `displayed <= actual` even for negative amounts. `NaN`
  * passes through unchanged so missing balances keep their existing rendering.
  *
- * Display-only: never use this for validation or to build send amounts.
+ * Use for display and for pre-filling amounts (MAX chip #689, percentage
+ * quick-buttons via `percentageOfBalance` #696) — never for validation,
+ * which compares against the raw balance.
  */
 export const toSpendableBalance = <T extends WalletCurrency>(
   balance: WalletAmount<T>,
@@ -121,6 +123,23 @@ export const toSpendableBalance = <T extends WalletCurrency>(
     ...balance,
     amount: Math.floor(balance.amount),
   }
+}
+
+/**
+ * Computes a percentage quick-button amount from a raw wallet balance.
+ *
+ * Every quick-set amount must be spendable: the balance is floored to whole
+ * minor units first (raw balances can carry fractional cents, see
+ * `toSpendableBalance` above), then the percentage result is floored again,
+ * so the returned amount is always a whole minor unit that is <= the
+ * spendable balance (#696). At 100% this returns exactly the spendable
+ * balance, matching the MAX chip (#689) and the displayed balances (#695).
+ *
+ * `NaN` propagates so a missing balance keeps the existing invalid-amount
+ * handling at the call sites.
+ */
+export const percentageOfBalance = (balance: number, percentage: number): number => {
+  return Math.floor((Math.floor(balance) * percentage) / 100)
 }
 
 export const toDisplayAmount = ({
