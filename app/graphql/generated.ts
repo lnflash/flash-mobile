@@ -3299,6 +3299,11 @@ export type AccountStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type AccountStatusQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly statusHeadline: AccountStatusHeadline, readonly id: string, readonly capabilities: { readonly __typename: 'AccountCapabilities', readonly verified: boolean, readonly bankPayout: boolean, readonly business: boolean, readonly usdAccount: boolean } } } | null };
 
+export type CardTopupLimitsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CardTopupLimitsQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly fygaroTopup?: { readonly __typename: 'FygaroTopupInfo', readonly l1DailyLimit: number, readonly l2DailyLimit: number, readonly l3DailyLimit: number } | null } | null };
+
 export type DisplayCurrencyQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -3322,7 +3327,7 @@ export type ReferralRewardFlagQuery = { readonly __typename: 'Query', readonly g
 export type TransferFlagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type TransferFlagsQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly topupEnabled: boolean, readonly cashoutEnabled: boolean, readonly bridgeEnabled: boolean, readonly fygaroTopup?: { readonly __typename: 'FygaroTopupInfo', readonly minimumAmount: number, readonly processorFeePercent: number, readonly processorFeeFixed: number, readonly flashFeePercent: number, readonly flashFeeFixed: number, readonly l1DailyLimit: number, readonly l2DailyLimit: number, readonly l3DailyLimit: number } | null } | null };
+export type TransferFlagsQuery = { readonly __typename: 'Query', readonly globals?: { readonly __typename: 'Globals', readonly topupEnabled: boolean, readonly cashoutEnabled: boolean, readonly bridgeEnabled: boolean, readonly fygaroTopup?: { readonly __typename: 'FygaroTopupInfo', readonly minimumAmount: number, readonly processorFeePercent: number, readonly processorFeeFixed: number, readonly flashFeePercent: number, readonly flashFeeFixed: number } | null } | null };
 
 export type LnNoAmountInvoiceFeeProbeMutationVariables = Exact<{
   input: LnNoAmountInvoiceFeeProbeInput;
@@ -6773,6 +6778,44 @@ export function useAccountStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOpti
 export type AccountStatusQueryHookResult = ReturnType<typeof useAccountStatusQuery>;
 export type AccountStatusLazyQueryHookResult = ReturnType<typeof useAccountStatusLazyQuery>;
 export type AccountStatusQueryResult = Apollo.QueryResult<AccountStatusQuery, AccountStatusQueryVariables>;
+export const CardTopupLimitsDocument = gql`
+    query cardTopupLimits {
+  globals {
+    fygaroTopup {
+      l1DailyLimit
+      l2DailyLimit
+      l3DailyLimit
+    }
+  }
+}
+    `;
+
+/**
+ * __useCardTopupLimitsQuery__
+ *
+ * To run a query within a React component, call `useCardTopupLimitsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCardTopupLimitsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCardTopupLimitsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useCardTopupLimitsQuery(baseOptions?: Apollo.QueryHookOptions<CardTopupLimitsQuery, CardTopupLimitsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<CardTopupLimitsQuery, CardTopupLimitsQueryVariables>(CardTopupLimitsDocument, options);
+      }
+export function useCardTopupLimitsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<CardTopupLimitsQuery, CardTopupLimitsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<CardTopupLimitsQuery, CardTopupLimitsQueryVariables>(CardTopupLimitsDocument, options);
+        }
+export type CardTopupLimitsQueryHookResult = ReturnType<typeof useCardTopupLimitsQuery>;
+export type CardTopupLimitsLazyQueryHookResult = ReturnType<typeof useCardTopupLimitsLazyQuery>;
+export type CardTopupLimitsQueryResult = Apollo.QueryResult<CardTopupLimitsQuery, CardTopupLimitsQueryVariables>;
 export const DisplayCurrencyDocument = gql`
     query displayCurrency {
   me {
@@ -6936,9 +6979,6 @@ export const TransferFlagsDocument = gql`
       processorFeeFixed
       flashFeePercent
       flashFeeFixed
-      l1DailyLimit
-      l2DailyLimit
-      l3DailyLimit
     }
   }
 }

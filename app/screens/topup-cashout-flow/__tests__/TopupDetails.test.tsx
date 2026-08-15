@@ -25,11 +25,14 @@ jest.mock("@app/store/persistent-state", () => ({
 }))
 
 // The screen reads the Fygaro fee params + minimum from the transferFlags
-// globals query; mock the generated hook the way CardPayment's tests mock
-// useHomeAuthedQuery. Default: fee params present, $10 minimum.
+// globals query, and the per-level daily caps from the separate
+// cardTopupLimits query (isolated so an old backend failing it cannot take
+// transferFlags — and the home screen's Transfer button — down with it).
 const mockUseTransferFlagsQuery = jest.fn()
+const mockUseCardTopupLimitsQuery = jest.fn()
 jest.mock("@app/graphql/generated", () => ({
   useTransferFlagsQuery: (...args: unknown[]) => mockUseTransferFlagsQuery(...args),
+  useCardTopupLimitsQuery: (...args: unknown[]) => mockUseCardTopupLimitsQuery(...args),
 }))
 
 const FEE_PARAMS = {
@@ -39,6 +42,10 @@ const FEE_PARAMS = {
   processorFeeFixed: 0.49,
   flashFeePercent: 2,
   flashFeeFixed: 0,
+}
+
+const DAILY_LIMITS = {
+  __typename: "FygaroTopupInfo" as const,
   l1DailyLimit: 125,
   l2DailyLimit: 1000,
   l3DailyLimit: 2500,
@@ -56,6 +63,19 @@ const flagsResult = (fygaroTopup: typeof FEE_PARAMS | null) => ({
   },
   loading: false,
   refetch: jest.fn(() => Promise.resolve()),
+})
+
+const limitsResult = (fygaroTopup: typeof DAILY_LIMITS | null) => ({
+  data: { globals: { __typename: "Globals", fygaroTopup } },
+  loading: false,
+})
+
+// What an old backend (schema without the daily-limit fields) produces: the
+// query fails validation, so there is no data at all.
+const limitsUnavailableResult = () => ({
+  data: undefined,
+  loading: false,
+  error: new Error("GRAPHQL_VALIDATION_FAILED"),
 })
 
 jest.mock("react-native-safe-area-context", () => {
@@ -102,6 +122,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockPersistentState.isAdvanceMode = true
   mockUseTransferFlagsQuery.mockReturnValue(flagsResult(FEE_PARAMS))
+  mockUseCardTopupLimitsQuery.mockReturnValue(limitsResult(DAILY_LIMITS))
 })
 
 describe("TopupDetails wallet options", () => {
@@ -175,6 +196,24 @@ describe("TopupDetails $10 minimum", () => {
       en.TopupDetails.minimumAmount({ amount: "$10.00" }),
     )
     alertSpy.mockRestore()
+  })
+})
+
+describe("TopupDetails against a backend without the daily-limit fields", () => {
+  // Regression pin for the test-env outage: the limits live in their own
+  // query precisely so an old backend failing it degrades to "no client-side
+  // cap" — top-ups keep working and no limit label is shown.
+  it("still allows card top-ups and shows no limit label", () => {
+    mockUseCardTopupLimitsQuery.mockReturnValue(limitsUnavailableResult())
+    const { getByPlaceholderText, getAllByText, queryByText, navigate } =
+      renderTopupDetails({ paymentType: "card", level: AccountLevel.One })
+
+    expect(queryByText(en.TopupDetails.dailyLimitInfo({ amount: "$125.00" }))).toBeNull()
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "130")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).toHaveBeenCalledWith("CardPayment", { amount: 130, wallet: "USD" })
   })
 })
 
@@ -288,7 +327,9 @@ describe("TopupDetails per-level daily limit", () => {
     // The other half of the documented degrade path: a known level (L1) but
     // missing Fygaro settings must mean "no client-side cap" (the webhook
     // still gates), not a crash and not a spurious block on missing metadata.
+    // Settings-unavailable nulls fygaroTopup in BOTH queries.
     mockUseTransferFlagsQuery.mockReturnValue(flagsResult(null))
+    mockUseCardTopupLimitsQuery.mockReturnValue(limitsResult(null))
     const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
       paymentType: "card",
       level: AccountLevel.One,

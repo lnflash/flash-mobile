@@ -40,9 +40,11 @@ jest.mock("@app/components/transaction-limits", () => {
 
 const mockUseAccountLimitsQuery = jest.fn()
 const mockUseTransferFlagsQuery = jest.fn()
+const mockUseCardTopupLimitsQuery = jest.fn()
 jest.mock("@app/graphql/generated", () => ({
   useAccountLimitsQuery: (...args: unknown[]) => mockUseAccountLimitsQuery(...args),
   useTransferFlagsQuery: (...args: unknown[]) => mockUseTransferFlagsQuery(...args),
+  useCardTopupLimitsQuery: (...args: unknown[]) => mockUseCardTopupLimitsQuery(...args),
 }))
 
 const en = i18nObject("en")
@@ -81,6 +83,10 @@ const FYGARO_TOPUP = {
   processorFeeFixed: 0.49,
   flashFeePercent: 2,
   flashFeeFixed: 0,
+}
+
+const DAILY_LIMITS = {
+  __typename: "FygaroTopupInfo" as const,
   l1DailyLimit: 125,
   l2DailyLimit: 1000,
   l3DailyLimit: 2500,
@@ -107,6 +113,10 @@ beforeEach(() => {
   mockUseAccountLimitsQuery.mockReturnValue(accountLimitsResult())
   mockUseTransferFlagsQuery.mockReturnValue({
     data: { globals: { __typename: "Globals", fygaroTopup: FYGARO_TOPUP } },
+    loading: false,
+  })
+  mockUseCardTopupLimitsQuery.mockReturnValue({
+    data: { globals: { __typename: "Globals", fygaroTopup: DAILY_LIMITS } },
     loading: false,
   })
 })
@@ -140,9 +150,29 @@ describe("TransactionLimitsScreen", () => {
       data: { globals: { __typename: "Globals", fygaroTopup: null } },
       loading: false,
     })
+    mockUseCardTopupLimitsQuery.mockReturnValue({
+      data: { globals: { __typename: "Globals", fygaroTopup: null } },
+      loading: false,
+    })
     const { queryByText } = renderScreen(AccountLevel.One)
 
     expect(queryByText(en.TransactionLimitsScreen.cardTopup())).toBeNull()
+  })
+
+  it("hides only the card section on a backend without the daily-limit fields", () => {
+    // Old backend: the isolated cardTopupLimits query fails validation and
+    // returns no data; the rest of the screen (fed by other queries) must
+    // render untouched.
+    mockUseCardTopupLimitsQuery.mockReturnValue({
+      data: undefined,
+      loading: false,
+      error: new Error("GRAPHQL_VALIDATION_FAILED"),
+    })
+    const { queryByText } = renderScreen(AccountLevel.One)
+
+    expect(queryByText(en.TransactionLimitsScreen.cardTopup())).toBeNull()
+    expect(queryByText(en.TransactionLimitsScreen.withdraw())).not.toBeNull()
+    expect(queryByText(en.TransactionLimitsScreen.bankTransferAch())).not.toBeNull()
   })
 
   it("always shows the ACH bank-transfer minimum", () => {

@@ -15,9 +15,6 @@ gql`
         processorFeeFixed
         flashFeePercent
         flashFeeFixed
-        l1DailyLimit
-        l2DailyLimit
-        l3DailyLimit
       }
     }
   }
@@ -28,6 +25,13 @@ gql`
  *
  * The backend is the source of truth for bridge; the Firebase remote-config
  * flag (bridgeTopupEnabled) must also be on, acting as a client-side kill switch.
+ *
+ * DO NOT add newly-introduced schema fields to the query above. It gates the
+ * home screen's Transfer button: one unknown field fails the WHOLE query with
+ * GRAPHQL_VALIDATION_FAILED on any backend that predates the field, and the
+ * button vanishes for every user. New/optional metadata belongs in its own
+ * query so it can degrade alone (see use-card-topup-limit.ts, which exists
+ * because this exact outage happened with the daily-limit fields).
  */
 export const useTransferFlags = () => {
   const { bridgeTopupEnabled } = useFeatureFlags()
