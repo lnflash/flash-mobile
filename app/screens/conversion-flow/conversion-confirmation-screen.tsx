@@ -61,9 +61,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
       const error =
         err instanceof Error ? err : new Error(`Non-Error thrown: ${String(err)}`)
       getCrashlytics().recordError(error)
-      handlePaymentError(
-        err instanceof Error ? error : new Error(LL.errors.generic()),
-      )
+      handlePaymentError(err instanceof Error ? error : new Error(LL.errors.generic()))
     }
   }
 
