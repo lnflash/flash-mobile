@@ -78,7 +78,7 @@ export type RootStackParamList = {
     lnInvoice: string
     fromWalletCurrency: WalletCurrency
   }
-  conversionSuccess: undefined
+  conversionSuccess: { pending?: boolean } | undefined
   sendBitcoinSuccess: {
     unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
     walletCurrency: WalletCurrency

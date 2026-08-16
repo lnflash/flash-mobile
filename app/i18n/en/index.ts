@@ -215,6 +215,9 @@ const en: BaseTranslation = {
   ConversionSuccessScreen: {
     title: "Conversion Success",
     message: "Conversion successful",
+    pendingMessage: "Conversion in progress",
+    pendingDescription:
+      "This usually completes in a moment. Check your transaction history to confirm it went through.",
   },
   EarnScreen: {
     earnSats: "Earn {formattedNumber|sats}",
@@ -1542,6 +1545,7 @@ const en: BaseTranslation = {
     security: "Security",
     send: "Send",
     setAnAmount: "set an amount",
+    somethingWentWrong: "Something went wrong. Please try again later.",
     share: "Share",
     shareBitcoin: "Share Bitcoin Address",
     shareLightning: "Share Lightning Invoice",

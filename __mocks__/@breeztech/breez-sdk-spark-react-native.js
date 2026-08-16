@@ -11,10 +11,15 @@ const PaymentType = {
   Receive: "Receive",
 }
 
+// Mirrors the real SDK enum (generated/breez_sdk_spark: Completed = 0,
+// Pending = 1, Failed = 2). It previously exported string values under a
+// "Complete" key, so app code comparing against PaymentStatus.Completed —
+// app/types/transactions.ts and useSwap — silently compared against undefined
+// under test and took the wrong branch.
 const PaymentStatus = {
-  Pending: "Pending",
-  Complete: "Complete",
-  Failed: "Failed",
+  Completed: 0,
+  Pending: 1,
+  Failed: 2,
 }
 
 class Bolt11Invoice {

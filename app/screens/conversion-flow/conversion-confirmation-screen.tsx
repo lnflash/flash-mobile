@@ -49,13 +49,15 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
       try {
         toggleActivityIndicator(true)
         const res = await swap(lnInvoice, fromWalletCurrency, moneyAmount.amount)
-        if (res) {
-          handlePaymentSuccess()
-        }
+        handlePaymentComplete(res.status === "pending")
       } catch (err) {
         if (err instanceof Error) {
           getCrashlytics().recordError(err)
           handlePaymentError(err)
+        } else {
+          // A non-Error rejection used to leave the spinner up forever with no
+          // message; never leave the screen stuck.
+          handlePaymentError(new Error(LL.common.somethingWentWrong()))
         }
       }
     }
@@ -67,10 +69,13 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
     toastShow({ message: error.message })
   }
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentComplete = (pending: boolean) => {
     toggleActivityIndicator(false)
     navigation.dispatch((state) => {
-      const routes = [{ name: "Primary" }, { name: "conversionSuccess" }]
+      const routes = [
+        { name: "Primary" },
+        { name: "conversionSuccess", params: { pending } },
+      ]
       return CommonActions.reset({
         ...state,
         routes,
