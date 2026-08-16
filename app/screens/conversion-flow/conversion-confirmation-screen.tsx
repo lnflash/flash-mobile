@@ -53,14 +53,17 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
       const res = await swap(lnInvoice, fromWalletCurrency, moneyAmount.amount)
       handlePaymentComplete(res.status === "pending")
     } catch (err) {
-      if (err instanceof Error) {
-        getCrashlytics().recordError(err)
-        handlePaymentError(err)
-      } else {
-        // A non-Error rejection used to leave the spinner up forever with no
-        // message; never leave the screen stuck.
-        handlePaymentError(new Error(LL.errors.generic()))
-      }
+      // A non-Error rejection (an Apollo link or a Breez binding throwing a
+      // string) used to leave the spinner up forever with no message. Wrap it
+      // rather than branching: the least diagnosable failure is the one that
+      // most needs a Crashlytics record, and it carries the raw value so the
+      // report is not just the generic copy.
+      const error =
+        err instanceof Error ? err : new Error(`Non-Error thrown: ${String(err)}`)
+      getCrashlytics().recordError(error)
+      handlePaymentError(
+        err instanceof Error ? error : new Error(LL.errors.generic()),
+      )
     }
   }
 

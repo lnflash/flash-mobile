@@ -166,6 +166,21 @@ describe("ConversionConfirmationScreen", () => {
     expect(mockToggleActivityIndicator).toHaveBeenLastCalledWith(false)
   })
 
+  it("still reports a non-Error rejection to Crashlytics, carrying the raw value", async () => {
+    // The least diagnosable failure is the one that most needs a crash report:
+    // the user only ever sees the generic copy, so without this the cause is
+    // lost entirely.
+    mockSwap.mockRejectedValue("not an Error")
+
+    const { getByText } = renderScreen()
+    await pressConvert(getByText)
+
+    expect(mockRecordError).toHaveBeenCalledTimes(1)
+    const [recorded] = mockRecordError.mock.calls[0]
+    expect(recorded).toBeInstanceOf(Error)
+    expect((recorded as Error).message).toContain("not an Error")
+  })
+
   it("is not a silent dead tap when the prepared invoice is empty", async () => {
     // `prepareBtcToUsd` can hand this screen `lnInvoice: ""`. The button used to
     // be wrapped in `if (lnInvoice)`, so the tap did nothing at all — no
