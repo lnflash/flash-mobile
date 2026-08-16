@@ -56,25 +56,54 @@ jest.mock("@app/graphql/wallets-utils", () => ({
   getCashWallet: (wallets: { id: string }[] | undefined) => wallets?.[0],
 }))
 
-// Stubs that expose exactly what these tests drive: a way to set a valid
-// amount, and the amount-validation error the Next button is allowed to gate on.
+const mockRecordError = jest.fn()
+jest.mock("@react-native-firebase/crashlytics", () => ({
+  getCrashlytics: () => ({
+    recordError: (...args: unknown[]) => mockRecordError(...args),
+  }),
+}))
+
+// Stubs that expose exactly what these tests drive: a way to flip the swap
+// direction, two distinct amounts, and the amount-validation error the Next
+// button is allowed to gate on.
 jest.mock("@app/components/swap-flow", () => {
   const react = jest.requireActual("react")
   const { Text, TouchableOpacity } = jest.requireActual("react-native")
+  const pressable = (label: string, onPress: () => void) =>
+    react.createElement(
+      TouchableOpacity,
+      { onPress, key: label },
+      react.createElement(Text, null, label),
+    )
   return {
-    SwapWallets: () => null,
-    ConversionAmountError: ({ errorMsg }: { errorMsg?: string }) =>
-      errorMsg ? react.createElement(Text, null, `amount-error:${errorMsg}`) : null,
+    SwapWallets: ({
+      setFromWalletCurrency,
+    }: {
+      setFromWalletCurrency: (c: string) => void
+    }) => pressable("swap-to-usd", () => setFromWalletCurrency("USD")),
+    ConversionAmountError: ({
+      errorMsg,
+      setErrorMsg,
+    }: {
+      errorMsg?: string
+      setErrorMsg: (msg?: string) => void
+    }) =>
+      react.createElement(react.Fragment, null, [
+        // Stands in for the real component's balance-exceeded validation.
+        pressable("trigger-amount-error", () => setErrorMsg("balance exceeded")),
+        errorMsg
+          ? react.createElement(Text, { key: "err" }, `amount-error:${errorMsg}`)
+          : null,
+      ]),
     PercentageAmount: ({
       setAmountToBalancePercentage,
     }: {
       setAmountToBalancePercentage: (p: number) => void
     }) =>
-      react.createElement(
-        TouchableOpacity,
-        { onPress: () => setAmountToBalancePercentage(100) },
-        react.createElement(Text, null, "set-max"),
-      ),
+      react.createElement(react.Fragment, null, [
+        pressable("set-max", () => setAmountToBalancePercentage(100)),
+        pressable("set-half", () => setAmountToBalancePercentage(50)),
+      ]),
   }
 })
 
@@ -124,11 +153,13 @@ const renderScreen = () => {
   return { ...utils, navigate }
 }
 
-const setMaxAmount = (getByText: (t: string) => unknown) => {
+const press = (getByText: (t: string) => unknown, label: string) => {
   act(() => {
-    fireEvent.press(getByText("set-max") as never)
+    fireEvent.press(getByText(label) as never)
   })
 }
+
+const setMaxAmount = (getByText: (t: string) => unknown) => press(getByText, "set-max")
 
 const pressNext = async (getByText: (t: string) => unknown) => {
   await act(async () => {
@@ -197,6 +228,10 @@ describe("ConversionDetailsScreen", () => {
     expect(navigate).not.toHaveBeenCalled()
     expect(mockToggleActivityIndicator).toHaveBeenLastCalledWith(false)
     expect(getByText(NEXT_ENABLED)).toBeTruthy()
+    // Surfacing it on screen is not the same as reporting it: without this the
+    // field failure rate of the probe is invisible.
+    expect(mockRecordError).toHaveBeenCalledWith(expect.any(Error))
+    expect(mockRecordError.mock.calls[0][0].message).toBe("probe timed out")
   })
 
   it("falls back to a translated message when the prepare step rejects with a non-Error", async () => {
@@ -208,13 +243,87 @@ describe("ConversionDetailsScreen", () => {
 
     expect(getByText(LL.errors.generic())).toBeTruthy()
     expect(mockToggleActivityIndicator).toHaveBeenLastCalledWith(false)
+    expect(mockRecordError).toHaveBeenCalledWith(expect.any(Error))
+    expect(mockRecordError.mock.calls[0][0].message).toBe("not an Error")
+  })
+
+  it("routes a USD balance through prepareUsdToBtc, not prepareBtcToUsd", async () => {
+    // The USD direction is the one whose swallowed probe error this PR is
+    // about; without this the `prepareUsdToBtc` branch of the ternary is never
+    // executed and could be deleted with the suite still green.
+    mockPrepareUsdToBtc.mockResolvedValue({
+      data: {
+        moneyAmount: { amount: 541, currency: "USD", currencyCode: "USD" },
+        sendingFee: 1,
+        receivingFee: 0,
+        lnInvoice: "lnbc-usd-invoice",
+      },
+      err: null,
+    })
+
+    const { getByText, navigate } = renderScreen()
+    press(getByText, "swap-to-usd")
+    setMaxAmount(getByText)
+    await pressNext(getByText)
+
+    expect(mockPrepareUsdToBtc).toHaveBeenCalledTimes(1)
+    expect(mockPrepareUsdToBtc).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 541, currency: "USD" }),
+    )
+    expect(mockPrepareBtcToUsd).not.toHaveBeenCalled()
+    expect(navigate).toHaveBeenCalledWith(
+      "conversionConfirmation",
+      expect.objectContaining({
+        lnInvoice: "lnbc-usd-invoice",
+        fromWalletCurrency: "USD",
+      }),
+    )
   })
 
   it("still lets the amount-validation error gate the Next button", () => {
-    // The separation must not disable the gate that is supposed to exist: with
-    // no amount entered, Next stays disabled.
+    // The separation must not disable the gate that is supposed to exist: a
+    // balance-exceeded error blocks Next even with an otherwise valid amount.
     const { getByText } = renderScreen()
 
     expect(getByText(NEXT_DISABLED)).toBeTruthy()
+
+    setMaxAmount(getByText)
+    expect(getByText(NEXT_ENABLED)).toBeTruthy()
+
+    press(getByText, "trigger-amount-error")
+    expect(getByText("amount-error:balance exceeded")).toBeTruthy()
+    expect(getByText(NEXT_DISABLED)).toBeTruthy()
+  })
+
+  it("drops a stale submit error when the direction flips", async () => {
+    // The message describes one prepare request; flipping the direction makes
+    // it describe a request that no longer matches what is on screen.
+    mockPrepareBtcToUsd.mockResolvedValue({
+      data: null,
+      err: "An error occurred. Contact support",
+    })
+
+    const { getByText, queryByText } = renderScreen()
+    setMaxAmount(getByText)
+    await pressNext(getByText)
+    expect(getByText("An error occurred. Contact support")).toBeTruthy()
+
+    press(getByText, "swap-to-usd")
+    expect(queryByText("An error occurred. Contact support")).toBeNull()
+  })
+
+  it("drops a stale submit error when the amount changes", async () => {
+    mockPrepareBtcToUsd.mockResolvedValue({
+      data: null,
+      err: "An error occurred. Contact support",
+    })
+
+    const { getByText, queryByText } = renderScreen()
+    setMaxAmount(getByText)
+    await pressNext(getByText)
+    expect(getByText("An error occurred. Contact support")).toBeTruthy()
+
+    press(getByText, "set-half")
+    expect(queryByText("An error occurred. Contact support")).toBeNull()
   })
 })

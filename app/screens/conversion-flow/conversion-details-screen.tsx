@@ -1,6 +1,7 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { ScrollView } from "react-native"
 import { makeStyles, Text } from "@rneui/themed"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { StackScreenProps } from "@react-navigation/stack"
 
 // components
@@ -65,6 +66,16 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const [fromWalletCurrency, setFromWalletCurrency] = useState<WalletCurrency>("BTC")
   const [moneyAmount, setMoneyAmount] =
     useState<MoneyAmount<WalletOrDisplayCurrency>>(zeroDisplayAmount)
+
+  // A submit error describes one specific prepare request. Flipping the
+  // direction or editing the amount invalidates it, so drop it on the same keys
+  // `ConversionAmountError` re-validates on — otherwise "An error occurred"
+  // stays pinned under inputs it no longer refers to. Keyed on `moneyAmount`
+  // rather than the derived `settlementSendAmount` only because the latter is
+  // computed after this component's early return.
+  useEffect(() => {
+    setSubmitErrorMsg(undefined)
+  }, [fromWalletCurrency, moneyAmount.amount])
 
   useRealtimePriceQuery({
     fetchPolicy: "network-only",
@@ -142,6 +153,9 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
       // Neither prepare* function is total: the Breez invoice call and the
       // Apollo fee probe both reject on a network failure. Without this the
       // spinner stayed up forever on the most common probe failure.
+      // Report it too — swallowing it into on-screen text alone would make the
+      // probe failure rate invisible in the field.
+      getCrashlytics().recordError(err instanceof Error ? err : new Error(String(err)))
       setSubmitErrorMsg(err instanceof Error ? err.message : LL.errors.generic())
     } finally {
       toggleActivityIndicator(false)
