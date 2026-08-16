@@ -53,9 +53,7 @@
   },
   "ConversionSuccessScreen": {
     "title": "Ubadilishaji umekamilika kwa ufanisi",
-    "message": "Ubadilishaji umekamilika",
-    "pendingMessage": "Conversion in progress",
-    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
+    "message": "Ubadilishaji umekamilika"
   },
   "EarnScreen": {
     "earnSats": "Pata {formattedNumber|sats}",
@@ -1081,8 +1079,7 @@
     "securityAndPrivacy": "Security and Privacy",
     "stablesatsUsd": "Cash (USD)",
     "submit": "Submit",
-    "trialAccount": "Trial Account",
-    "somethingWentWrong": "Something went wrong. Please try again later."
+    "trialAccount": "Trial Account"
   },
   "errors": {
     "generic": "Kumekuwa na kosa.\nTafadhali jaribu tena.",

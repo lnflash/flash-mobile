@@ -104,9 +104,7 @@
   },
   "ConversionSuccessScreen": {
     "title": "Հաջող փոխակերպում",
-    "message": "Փոխակերպումը հաջողությամբ է կատարվել",
-    "pendingMessage": "Conversion in progress",
-    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
+    "message": "Փոխակերպումը հաջողությամբ է կատարվել"
   },
   "EarnScreen": {
     "earnSats": "Վաստակել  {formattedNumber|sats}",
@@ -1269,8 +1267,7 @@
     "thisMonth": "Այս ամիս",
     "prevMonths": "Նախորդ ամիսները",
     "problemMaybeReauth": "Չհաջողվեց հաստատել Ձեր հարցումը։ Խնդրում ենք փորձել մեկ րոպե հետո։ Խնդրի չվերանալու դեպքում մենք առաջարկում ենք, որ դուրս դուրս գաք համակարգից և կրկին մուտք գործեք։ դուք կարող եք դուրս գալ գնալով Կարգավորումներ > Հաշիվ > Դորս գալ ",
-    "warning": "Զգուշացում",
-    "somethingWentWrong": "Something went wrong. Please try again later."
+    "warning": "Զգուշացում"
   },
   "NostrQuickStart": {
     "postHeading": "Կատարեք ձեր առաջին սոցիալական գրառումը:",

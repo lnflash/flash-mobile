@@ -53,9 +53,7 @@
   },
   "ConversionSuccessScreen": {
     "title": "نجح التحويل",
-    "message": "تم التحويل بنجاح",
-    "pendingMessage": "Conversion in progress",
-    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
+    "message": "تم التحويل بنجاح"
   },
   "EarnScreen": {
     "earnSats": "اجنِ {formattedNumber|sats}",
@@ -1081,8 +1079,7 @@
     "securityAndPrivacy": "Security and Privacy",
     "stablesatsUsd": "Cash (USD)",
     "submit": "Submit",
-    "trialAccount": "Trial Account",
-    "somethingWentWrong": "Something went wrong. Please try again later."
+    "trialAccount": "Trial Account"
   },
   "errors": {
     "generic": "كان هناك خطأ.\nالرجاء معاودة المحاولة في وقت لاحق.",

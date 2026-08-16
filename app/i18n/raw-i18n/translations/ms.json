@@ -104,9 +104,7 @@
   },
   "ConversionSuccessScreen": {
     "title": "penukaran berjaya",
-    "message": "Penukaran telah berjaya",
-    "pendingMessage": "Conversion in progress",
-    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
+    "message": "Penukaran telah berjaya"
   },
   "EarnScreen": {
     "earnSats": "Dapat {formattedNumber|sats}",
@@ -1269,8 +1267,7 @@
     "thisMonth": "Bulan ini",
     "prevMonths": "Bulan lepas",
     "problemMaybeReauth": "Ada masalah dengan permohonan anda. Silancuba lagi dalam seminit dua. Jika masalah masih terjadi, kami cadangkan anda untuk log keluar dan log masuk semula. Anda boleh log keluar dengan pergi ke bahagian Tetapan > Akaun > Log Keluar",
-    "warning": "Amaran",
-    "somethingWentWrong": "Something went wrong. Please try again later."
+    "warning": "Amaran"
   },
   "NostrQuickStart": {
     "postHeading": "Buatlah catatan sosial pertama anda!",

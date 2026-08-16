@@ -104,9 +104,7 @@
   },
   "ConversionSuccessScreen": {
     "title": "แลกเปลี่ยนเสร็จสิ้น",
-    "message": "การแลกเปลี่ยนสำเร็จแล้ว",
-    "pendingMessage": "Conversion in progress",
-    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
+    "message": "การแลกเปลี่ยนสำเร็จแล้ว"
   },
   "EarnScreen": {
     "earnSats": "ได้รับ {formattedNumber|sats}",
@@ -1269,8 +1267,7 @@
     "thisMonth": "เดือนนี้",
     "prevMonths": "เดือนที่ผ่านมา",
     "problemMaybeReauth": "There was a problem with your request. Please retry in one minute. If the problem persist, we recommend that you log out and log back in. You can log out by going into Settings > Account > Log out",
-    "warning": "Warning",
-    "somethingWentWrong": "Something went wrong. Please try again later."
+    "warning": "Warning"
   },
   "NostrQuickStart": {
     "postHeading": "ทําโพสต์ทางสังคมครั้งแรกของคุณ!",

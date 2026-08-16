@@ -18,8 +18,8 @@ const useStyles = makeStyles(() => ({
     marginTop: 20,
     textAlign: "center",
   },
-  pendingDescription: {
-    marginTop: 12,
+  pendingText: {
+    marginTop: 20,
     textAlign: "center",
     paddingHorizontal: 24,
   },
@@ -58,14 +58,15 @@ export const ConversionSuccessScreen = () => {
           <GaloyIcon name={pending ? "payment-pending" : "payment-success"} size={128} />
         </SuccessIconAnimation>
         <SuccessTextAnimation>
-          <Text type="h2" style={styles.successText}>
-            {pending
-              ? LL.ConversionSuccessScreen.pendingMessage()
-              : LL.ConversionSuccessScreen.message()}
-          </Text>
-          {pending && (
-            <Text type="p2" style={styles.pendingDescription}>
-              {LL.ConversionSuccessScreen.pendingDescription()}
+          {pending ? (
+            // Same copy the send flow already uses for an unconfirmed payment
+            // (payment-status-indicator.tsx), so it is translated everywhere.
+            <Text type="p1" style={styles.pendingText}>
+              {LL.SendBitcoinScreen.notConfirmed()}
+            </Text>
+          ) : (
+            <Text type="h2" style={styles.successText}>
+              {LL.ConversionSuccessScreen.message()}
             </Text>
           )}
         </SuccessTextAnimation>

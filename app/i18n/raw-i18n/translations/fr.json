@@ -104,9 +104,7 @@
   },
   "ConversionSuccessScreen": {
     "title": "Conversion réalisée avec succès",
-    "message": "Conversion réussie",
-    "pendingMessage": "Conversion in progress",
-    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
+    "message": "Conversion réussie"
   },
   "EarnScreen": {
     "earnSats": "Gagner {formattedNumber|sats}",
@@ -1269,8 +1267,7 @@
     "thisMonth": "Ce mois-ci",
     "prevMonths": "Mois derniers",
     "problemMaybeReauth": "Il y a eu un problème avec votre demande. Merci de réessayer dans une minute. Si le problème persiste, nous vous conseillons de vous déconnecter et de vous connecter à nouveau. Vous pouvez vous déconnecter en allant dans Réglages > Compte > Déconnexion",
-    "warning": "Alerte",
-    "somethingWentWrong": "Something went wrong. Please try again later."
+    "warning": "Alerte"
   },
   "NostrQuickStart": {
     "postHeading": "Faites votre premier article sur les réseaux sociaux!",

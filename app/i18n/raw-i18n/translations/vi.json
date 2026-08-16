@@ -104,9 +104,7 @@
   },
   "ConversionSuccessScreen": {
     "title": "Chuyển đổi thành công",
-    "message": "Chuyễn đổi đã thành công",
-    "pendingMessage": "Conversion in progress",
-    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
+    "message": "Chuyễn đổi đã thành công"
   },
   "EarnScreen": {
     "earnSats": "Kiếm được {formattedNumber|sats}",
@@ -1269,8 +1267,7 @@
     "thisMonth": "Tháng này",
     "prevMonths": "Những tháng trước",
     "problemMaybeReauth": "There was a problem with your request. Please retry in one minute. If the problem persist, we recommend that you log out and log back in. You can log out by going into Settings > Account > Log out",
-    "warning": "Warning",
-    "somethingWentWrong": "Something went wrong. Please try again later."
+    "warning": "Warning"
   },
   "NostrQuickStart": {
     "postHeading": "Hãy thực hiện bài đăng xã hội đầu tiên của bạn!",

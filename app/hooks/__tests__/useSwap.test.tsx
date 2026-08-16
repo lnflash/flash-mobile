@@ -17,6 +17,10 @@ const mockLnUsdInvoiceCreate = jest.fn()
 
 jest.mock("@app/graphql/generated", () => ({
   WalletCurrency: { Btc: "BTC", Usd: "USD", Usdt: "USDT" },
+  // Taken from the real generated module, not re-declared: a codegen change to
+  // the enum must fail here rather than silently drop every payment into the
+  // hook's `default:` branch at runtime.
+  PaymentSendResult: jest.requireActual("@app/graphql/generated").PaymentSendResult,
   HomeAuthedDocument: "HomeAuthedDocument",
   useLnInvoicePaymentSendMutation: () => [
     (...args: unknown[]) => mockLnInvoicePaymentSend(...args),
@@ -69,6 +73,10 @@ jest.mock("../use-format-sats", () => ({
 const mockPayLightningBreez = payLightningBreez as jest.Mock
 const mockReceivePaymentBreez = receivePaymentBreez as jest.Mock
 
+// The real generated enum, so these tests break if codegen renames a value
+// rather than passing against stale literals.
+const { PaymentSendResult } = jest.requireActual("@app/graphql/generated")
+
 const sendResult = (status: string | null, errors: { message: string }[] = []) => ({
   data: { lnInvoicePaymentSend: { status, errors } },
 })
@@ -79,7 +87,7 @@ beforeEach(() => jest.clearAllMocks())
 
 describe("useSwap — swap() result reporting", () => {
   it("reports a settled payment as success", async () => {
-    mockLnInvoicePaymentSend.mockResolvedValue(sendResult("SUCCESS"))
+    mockLnInvoicePaymentSend.mockResolvedValue(sendResult(PaymentSendResult.Success))
 
     const { current } = renderUseSwap()
     await expect(current.swap("lnbc1", "USD", 540)).resolves.toEqual({
@@ -90,7 +98,7 @@ describe("useSwap — swap() result reporting", () => {
   it("reports PENDING as pending, not success", async () => {
     // The regression: pending was returned as `true` and rendered as a
     // completed conversion, so a payment that moved no funds looked settled.
-    mockLnInvoicePaymentSend.mockResolvedValue(sendResult("PENDING"))
+    mockLnInvoicePaymentSend.mockResolvedValue(sendResult(PaymentSendResult.Pending))
 
     const { current } = renderUseSwap()
     await expect(current.swap("lnbc1", "USD", 540)).resolves.toEqual({
@@ -98,15 +106,35 @@ describe("useSwap — swap() result reporting", () => {
     })
   })
 
-  it("throws the server error even when it accompanies a PENDING status", async () => {
-    // The API reports a payment it could not confirm as PENDING carrying an
-    // error; status must not win over that error.
+  it("defensively throws a server error that arrives with a non-failed status", async () => {
+    // The server does not pair an error with a non-failed status today — it
+    // returns FAILURE + errors, or a status with an empty errors array. This
+    // pins the defensive ordering so a future PENDING-carrying-an-error
+    // response cannot render as an ordinary in-flight conversion.
     mockLnInvoicePaymentSend.mockResolvedValue(
-      sendResult("PENDING", [{ message: "We could not confirm the status" }]),
+      sendResult(PaymentSendResult.Pending, [
+        { message: "We could not confirm the status" },
+      ]),
     )
 
     const { current } = renderUseSwap()
     await expect(current.swap("lnbc1", "USD", 540)).rejects.toThrow(/could not confirm/i)
+  })
+
+  it("throws on a FAILURE the server reported without an error message", async () => {
+    mockLnInvoicePaymentSend.mockResolvedValue(sendResult(PaymentSendResult.Failure))
+
+    const { current } = renderUseSwap()
+    await expect(current.swap("lnbc1", "USD", 540)).rejects.toThrow()
+  })
+
+  it("throws a translated message when the invoice was already paid", async () => {
+    mockLnInvoicePaymentSend.mockResolvedValue(sendResult(PaymentSendResult.AlreadyPaid))
+
+    const { current } = renderUseSwap()
+    await expect(current.swap("lnbc1", "USD", 540)).rejects.toThrow(
+      i18nObject("en").ReceiveScreen.invoicePaid(),
+    )
   })
 
   it("throws on an unrecognised status instead of resolving", async () => {
@@ -114,6 +142,14 @@ describe("useSwap — swap() result reporting", () => {
 
     const { current } = renderUseSwap()
     await expect(current.swap("lnbc1", "USD", 540)).rejects.toThrow()
+  })
+
+  it("throws when no invoice was produced instead of resolving", async () => {
+    // `prepareBtcToUsd` can hand the confirmation screen `lnInvoice: ""`; the
+    // Convert button must not be a silent dead tap.
+    const { current } = renderUseSwap()
+    await expect(current.swap("", "USD", 540)).rejects.toThrow()
+    expect(mockLnInvoicePaymentSend).not.toHaveBeenCalled()
   })
 
   it("throws when a Breez send fails rather than resolving undefined", async () => {

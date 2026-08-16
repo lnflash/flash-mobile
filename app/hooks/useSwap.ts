@@ -1,5 +1,6 @@
 import {
   HomeAuthedDocument,
+  PaymentSendResult,
   useConversionScreenQuery,
   useLnInvoicePaymentSendMutation,
   useLnUsdInvoiceCreateMutation,
@@ -92,7 +93,6 @@ export const useSwap = () => {
           },
         },
       })
-      console.log("INVOICE RES>>>>>>>>", invoiceRes.data?.lnUsdInvoiceCreate)
 
       if (invoiceRes.data?.lnUsdInvoiceCreate.invoice) {
         // get the sending fee probe
@@ -101,7 +101,6 @@ export const useSwap = () => {
           paymentRequest: invoiceRes.data?.lnUsdInvoiceCreate.invoice?.paymentRequest,
           amountSats: settlementSendAmount.amount,
         })
-        console.log("FEE RES>>>>>>>>", feeRes)
         if (!feeRes.err) {
           // check if (amount + fee) is larger than balance
           if ((feeRes.fee || 0) + settlementSendAmount.amount > btcBalance.amount) {
@@ -149,7 +148,6 @@ export const useSwap = () => {
         convertedAmount.amount,
         "Swap USD to BTC",
       )
-      console.log("INVOICE RES>>>>>>>>", invoiceRes)
       if (invoiceRes.paymentRequest) {
         // get the sending fee probe
         const feeRes = await lnUsdInvoiceFeeProbe({
@@ -170,7 +168,7 @@ export const useSwap = () => {
 
         const probedFee = feeRes.data?.lnUsdInvoiceFeeProbe.amount
         if (probedFee === null || probedFee === undefined) {
-          return { data: null, err: LL.common.somethingWentWrong() }
+          return { data: null, err: LL.errors.generic() }
         }
         const sendingFee = probedFee
         if (sendingFee + settlementSendAmount.amount > usdBalance.amount) {
@@ -206,7 +204,7 @@ export const useSwap = () => {
     amount: number,
   ): Promise<SwapResult> => {
     if (!lnInvoice || !usdWallet) {
-      throw new Error(LL.common.somethingWentWrong())
+      throw new Error(LL.errors.generic())
     }
 
     if (fromWalletCurrency === "USD" || fromWalletCurrency === "USDT") {
@@ -221,24 +219,31 @@ export const useSwap = () => {
       })
 
       const payload = res.data?.lnInvoicePaymentSend
-      // Errors outrank status: a payment the server could not confirm comes
-      // back as PENDING *carrying* an error, so reading status first would
-      // render it as an ordinary in-flight conversion.
+      // Errors are checked before status. The server never pairs an error with
+      // a non-failed status today — `lnInvoicePaymentSend` returns
+      // `{status: FAILURE, errors: [...]}` or `{status, errors: []}`, never
+      // both — so this is defensive: it keeps a future PENDING-with-error
+      // response from rendering as an ordinary in-flight conversion.
       const errorMessage = payload?.errors?.[0]?.message
       if (errorMessage) throw new Error(errorMessage)
 
       switch (payload?.status) {
-        case "SUCCESS":
+        case PaymentSendResult.Success:
           return { status: "success" }
-        case "PENDING":
+        case PaymentSendResult.Pending:
           // NOT success: the payment may still fail. Reporting pending as
           // settled is how a conversion that moved no funds showed a success
           // screen.
           return { status: "pending" }
-        case "ALREADY_PAID":
-          throw new Error("Invoice is already paid")
+        case PaymentSendResult.AlreadyPaid:
+          throw new Error(LL.ReceiveScreen.invoicePaid())
+        case PaymentSendResult.Failure:
+          // A failure the server reported without an accompanying error.
+          throw new Error(LL.errors.generic())
         default:
-          throw new Error(LL.common.somethingWentWrong())
+          // Missing, or a status this client build does not know about —
+          // never assume an unrecognised status means the funds moved.
+          throw new Error(LL.errors.generic())
       }
     }
 
@@ -246,10 +251,10 @@ export const useSwap = () => {
     // Previously a failed Breez send returned undefined here, which the
     // confirmation screen read as "no result" and silently ignored.
     if (!res.success) {
-      throw new Error(res.error || LL.common.somethingWentWrong())
+      throw new Error(res.error || LL.errors.generic())
     }
     if (res.payment?.payment?.status === PaymentStatus.Failed) {
-      throw new Error(LL.common.somethingWentWrong())
+      throw new Error(LL.errors.generic())
     }
     // Anything not explicitly Completed is reported as still in flight rather
     // than assumed settled.

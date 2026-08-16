@@ -104,9 +104,7 @@
   },
   "ConversionSuccessScreen": {
     "title": "Uspjeh konverzije",
-    "message": "Konverzija uspješna",
-    "pendingMessage": "Conversion in progress",
-    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
+    "message": "Konverzija uspješna"
   },
   "EarnScreen": {
     "earnSats": "Zaradi {formattedNumber|sats}",
@@ -1269,8 +1267,7 @@
     "thisMonth": "Ovaj mjesec",
     "prevMonths": "Prethodni mjeseci",
     "problemMaybeReauth": "Došlo je do problema s vašim zahtjevom. Pokušajte ponovno za jednu minutu. Ako se problem nastavi, preporučujemo da se odjavite i ponovno prijavite. Možete se odjaviti tako da odete u Postavke > Račun > Odjava",
-    "warning": "Warning",
-    "somethingWentWrong": "Something went wrong. Please try again later."
+    "warning": "Warning"
   },
   "NostrQuickStart": {
     "postHeading": "Napravi svoj prvi društveni post!",

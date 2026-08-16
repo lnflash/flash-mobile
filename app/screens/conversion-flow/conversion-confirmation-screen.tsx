@@ -45,20 +45,21 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
   const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const convertHandler = async () => {
-    if (lnInvoice) {
-      try {
-        toggleActivityIndicator(true)
-        const res = await swap(lnInvoice, fromWalletCurrency, moneyAmount.amount)
-        handlePaymentComplete(res.status === "pending")
-      } catch (err) {
-        if (err instanceof Error) {
-          getCrashlytics().recordError(err)
-          handlePaymentError(err)
-        } else {
-          // A non-Error rejection used to leave the spinner up forever with no
-          // message; never leave the screen stuck.
-          handlePaymentError(new Error(LL.common.somethingWentWrong()))
-        }
+    // No `if (lnInvoice)` guard: an empty invoice used to make this button a
+    // silent dead tap. `swap()` throws on a missing invoice and the catch below
+    // surfaces it.
+    try {
+      toggleActivityIndicator(true)
+      const res = await swap(lnInvoice, fromWalletCurrency, moneyAmount.amount)
+      handlePaymentComplete(res.status === "pending")
+    } catch (err) {
+      if (err instanceof Error) {
+        getCrashlytics().recordError(err)
+        handlePaymentError(err)
+      } else {
+        // A non-Error rejection used to leave the spinner up forever with no
+        // message; never leave the screen stuck.
+        handlePaymentError(new Error(LL.errors.generic()))
       }
     }
   }

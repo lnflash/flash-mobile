@@ -746,14 +746,6 @@ type RootTranslation = {
 		 * C​o​n​v​e​r​s​i​o​n​ ​s​u​c​c​e​s​s​f​u​l
 		 */
 		message: string
-		/**
-		 * C​o​n​v​e​r​s​i​o​n​ ​i​n​ ​p​r​o​g​r​e​s​s
-		 */
-		pendingMessage: string
-		/**
-		 * T​h​i​s​ ​u​s​u​a​l​l​y​ ​c​o​m​p​l​e​t​e​s​ ​i​n​ ​a​ ​m​o​m​e​n​t​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​ ​t​o​ ​c​o​n​f​i​r​m​ ​i​t​ ​w​e​n​t​ ​t​h​r​o​u​g​h​.
-		 */
-		pendingDescription: string
 	}
 	EarnScreen: {
 		/**
@@ -5158,10 +5150,6 @@ type RootTranslation = {
 		 */
 		setAnAmount: string
 		/**
-		 * S​o​m​e​t​h​i​n​g​ ​w​e​n​t​ ​w​r​o​n​g​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​ ​l​a​t​e​r​.
-		 */
-		somethingWentWrong: string
-		/**
 		 * S​h​a​r​e
 		 */
 		share: string
@@ -6983,14 +6971,6 @@ export type TranslationFunctions = {
 		 * Conversion successful
 		 */
 		message: () => LocalizedString
-		/**
-		 * Conversion in progress
-		 */
-		pendingMessage: () => LocalizedString
-		/**
-		 * This usually completes in a moment. Check your transaction history to confirm it went through.
-		 */
-		pendingDescription: () => LocalizedString
 	}
 	EarnScreen: {
 		/**
@@ -11312,10 +11292,6 @@ export type TranslationFunctions = {
 		 * set an amount
 		 */
 		setAnAmount: () => LocalizedString
-		/**
-		 * Something went wrong. Please try again later.
-		 */
-		somethingWentWrong: () => LocalizedString
 		/**
 		 * Share
 		 */
