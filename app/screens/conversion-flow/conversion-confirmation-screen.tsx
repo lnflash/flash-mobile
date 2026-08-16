@@ -45,19 +45,23 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
   const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const convertHandler = async () => {
-    if (lnInvoice) {
-      try {
-        toggleActivityIndicator(true)
-        const res = await swap(lnInvoice, fromWalletCurrency, moneyAmount.amount)
-        if (res) {
-          handlePaymentSuccess()
-        }
-      } catch (err) {
-        if (err instanceof Error) {
-          getCrashlytics().recordError(err)
-          handlePaymentError(err)
-        }
-      }
+    // No `if (lnInvoice)` guard: an empty invoice used to make this button a
+    // silent dead tap. `swap()` throws on a missing invoice and the catch below
+    // surfaces it.
+    try {
+      toggleActivityIndicator(true)
+      const res = await swap(lnInvoice, fromWalletCurrency, moneyAmount.amount)
+      handlePaymentComplete(res.status === "pending")
+    } catch (err) {
+      // A non-Error rejection (an Apollo link or a Breez binding throwing a
+      // string) used to leave the spinner up forever with no message. Wrap it
+      // rather than branching: the least diagnosable failure is the one that
+      // most needs a Crashlytics record, and it carries the raw value so the
+      // report is not just the generic copy.
+      const error =
+        err instanceof Error ? err : new Error(`Non-Error thrown: ${String(err)}`)
+      getCrashlytics().recordError(error)
+      handlePaymentError(err instanceof Error ? error : new Error(LL.errors.generic()))
     }
   }
 
@@ -67,10 +71,13 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
     toastShow({ message: error.message })
   }
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentComplete = (pending: boolean) => {
     toggleActivityIndicator(false)
     navigation.dispatch((state) => {
-      const routes = [{ name: "Primary" }, { name: "conversionSuccess" }]
+      const routes = [
+        { name: "Primary" },
+        { name: "conversionSuccess", params: { pending } },
+      ]
       return CommonActions.reset({
         ...state,
         routes,

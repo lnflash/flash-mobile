@@ -1,5 +1,6 @@
 import {
   HomeAuthedDocument,
+  PaymentSendResult,
   useConversionScreenQuery,
   useLnInvoicePaymentSendMutation,
   useLnUsdInvoiceCreateMutation,
@@ -27,6 +28,11 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useDisplayCurrency } from "./use-display-currency"
 import { useFormatSats } from "./use-format-sats"
 import { PaymentType } from "@galoymoney/client"
+import { PaymentStatus } from "@breeztech/breez-sdk-spark-react-native"
+
+// A swap that reached the network but has not settled is NOT a success — the
+// screens render the two differently.
+export type SwapResult = { status: "success" | "pending" }
 
 export const useSwap = () => {
   const { LL } = useI18nContext()
@@ -87,7 +93,6 @@ export const useSwap = () => {
           },
         },
       })
-      console.log("INVOICE RES>>>>>>>>", invoiceRes.data?.lnUsdInvoiceCreate)
 
       if (invoiceRes.data?.lnUsdInvoiceCreate.invoice) {
         // get the sending fee probe
@@ -96,7 +101,6 @@ export const useSwap = () => {
           paymentRequest: invoiceRes.data?.lnUsdInvoiceCreate.invoice?.paymentRequest,
           amountSats: settlementSendAmount.amount,
         })
-        console.log("FEE RES>>>>>>>>", feeRes)
         if (!feeRes.err) {
           // check if (amount + fee) is larger than balance
           if ((feeRes.fee || 0) + settlementSendAmount.amount > btcBalance.amount) {
@@ -144,7 +148,6 @@ export const useSwap = () => {
         convertedAmount.amount,
         "Swap USD to BTC",
       )
-      console.log("INVOICE RES>>>>>>>>", invoiceRes)
       if (invoiceRes.paymentRequest) {
         // get the sending fee probe
         const feeRes = await lnUsdInvoiceFeeProbe({
@@ -155,9 +158,19 @@ export const useSwap = () => {
             },
           },
         })
-        console.log("FEE RES>>>>>>>>", feeRes.data?.lnUsdInvoiceFeeProbe)
+        // A probe that failed used to fall through as fee 0, so the user
+        // continued to confirmation on a fee we never obtained and met a
+        // generic error at send time instead of the real reason here.
+        const probeError = feeRes.data?.lnUsdInvoiceFeeProbe.errors?.[0]?.message
+        if (probeError) {
+          return { data: null, err: probeError }
+        }
 
-        const sendingFee = feeRes.data?.lnUsdInvoiceFeeProbe.amount || 0
+        const probedFee = feeRes.data?.lnUsdInvoiceFeeProbe.amount
+        if (probedFee === null || probedFee === undefined) {
+          return { data: null, err: LL.errors.generic() }
+        }
+        const sendingFee = probedFee
         if (sendingFee + settlementSendAmount.amount > usdBalance.amount) {
           return {
             data: null,
@@ -189,36 +202,64 @@ export const useSwap = () => {
     lnInvoice: string,
     fromWalletCurrency: WalletCurrency,
     amount: number,
-  ) => {
-    if (lnInvoice && usdWallet) {
-      if (fromWalletCurrency === "USD" || fromWalletCurrency === "USDT") {
-        const res = await lnInvoicePaymentSend({
-          variables: {
-            input: {
-              walletId: usdWallet.id,
-              paymentRequest: lnInvoice,
-              memo: "Swap USD to BTC",
-            },
-          },
-        })
+  ): Promise<SwapResult> => {
+    if (!lnInvoice || !usdWallet) {
+      throw new Error(LL.errors.generic())
+    }
 
-        const status = res.data?.lnInvoicePaymentSend.status
-        if (status === "PENDING" || status === "SUCCESS") {
-          return true
-        } else if (status === "ALREADY_PAID") {
-          throw new Error("Invoice is already paid")
-        } else {
-          const error = res.data?.lnInvoicePaymentSend.errors[0].message
-          throw new Error(error || "Something went wrong")
-        }
-      } else {
-        const res = await payLightningBreez(lnInvoice, amount)
-        console.log(">>>>>>>>>?????????", res.payment)
-        if (res.success) {
-          return true
-        }
+    if (fromWalletCurrency === "USD" || fromWalletCurrency === "USDT") {
+      const res = await lnInvoicePaymentSend({
+        variables: {
+          input: {
+            walletId: usdWallet.id,
+            paymentRequest: lnInvoice,
+            memo: "Swap USD to BTC",
+          },
+        },
+      })
+
+      const payload = res.data?.lnInvoicePaymentSend
+      // Errors are checked before status. The server never pairs an error with
+      // a non-failed status today — `lnInvoicePaymentSend` returns
+      // `{status: FAILURE, errors: [...]}` or `{status, errors: []}`, never
+      // both — so this is defensive: it keeps a future PENDING-with-error
+      // response from rendering as an ordinary in-flight conversion.
+      const errorMessage = payload?.errors?.[0]?.message
+      if (errorMessage) throw new Error(errorMessage)
+
+      switch (payload?.status) {
+        case PaymentSendResult.Success:
+          return { status: "success" }
+        case PaymentSendResult.Pending:
+          // NOT success: the payment may still fail. Reporting pending as
+          // settled is how a conversion that moved no funds showed a success
+          // screen.
+          return { status: "pending" }
+        case PaymentSendResult.AlreadyPaid:
+          throw new Error(LL.ReceiveScreen.invoicePaid())
+        case PaymentSendResult.Failure:
+          // A failure the server reported without an accompanying error.
+          throw new Error(LL.errors.generic())
+        default:
+          // Missing, or a status this client build does not know about —
+          // never assume an unrecognised status means the funds moved.
+          throw new Error(LL.errors.generic())
       }
     }
+
+    const res = await payLightningBreez(lnInvoice, amount)
+    // Previously a failed Breez send returned undefined here, which the
+    // confirmation screen read as "no result" and silently ignored.
+    if (!res.success) {
+      throw new Error(res.error || LL.errors.generic())
+    }
+    if (res.payment?.payment?.status === PaymentStatus.Failed) {
+      throw new Error(LL.errors.generic())
+    }
+    // Anything not explicitly Completed is reported as still in flight rather
+    // than assumed settled.
+    const settled = res.payment?.payment?.status === PaymentStatus.Completed
+    return { status: settled ? "success" : "pending" }
   }
 
   return { prepareBtcToUsd, prepareUsdToBtc, swap }

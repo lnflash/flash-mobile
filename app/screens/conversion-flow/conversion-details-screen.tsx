@@ -1,6 +1,7 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { ScrollView } from "react-native"
-import { makeStyles } from "@rneui/themed"
+import { makeStyles, Text } from "@rneui/themed"
+import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { StackScreenProps } from "@react-navigation/stack"
 
 // components
@@ -57,9 +58,24 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const { prepareBtcToUsd, prepareUsdToBtc } = useSwap()
 
   const [errorMsg, setErrorMsg] = useState<string>()
+  // Kept separate from `errorMsg`: only the amount-validation error may gate the
+  // Next button. `ConversionAmountError` clears `errorMsg` from an effect keyed
+  // on the amount, so a submit-time error parked there would grey the button out
+  // until the user happened to nudge the amount.
+  const [submitErrorMsg, setSubmitErrorMsg] = useState<string>()
   const [fromWalletCurrency, setFromWalletCurrency] = useState<WalletCurrency>("BTC")
   const [moneyAmount, setMoneyAmount] =
     useState<MoneyAmount<WalletOrDisplayCurrency>>(zeroDisplayAmount)
+
+  // A submit error describes one specific prepare request. Flipping the
+  // direction or editing the amount invalidates it, so drop it on the same keys
+  // `ConversionAmountError` re-validates on — otherwise "An error occurred"
+  // stays pinned under inputs it no longer refers to. Keyed on `moneyAmount`
+  // rather than the derived `settlementSendAmount` only because the latter is
+  // computed after this component's early return.
+  useEffect(() => {
+    setSubmitErrorMsg(undefined)
+  }, [fromWalletCurrency, moneyAmount.amount])
 
   useRealtimePriceQuery({
     fetchPolicy: "network-only",
@@ -117,21 +133,33 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   const moveToNextScreen = async () => {
+    setSubmitErrorMsg(undefined)
     toggleActivityIndicator(true)
-    const { data, err } =
-      fromWalletCurrency === "USD" || fromWalletCurrency === "USDT"
-        ? await prepareUsdToBtc(settlementSendAmount)
-        : await prepareBtcToUsd(settlementSendAmount)
+    try {
+      const { data, err } =
+        fromWalletCurrency === "USD" || fromWalletCurrency === "USDT"
+          ? await prepareUsdToBtc(settlementSendAmount)
+          : await prepareBtcToUsd(settlementSendAmount)
 
-    if (data) {
-      navigation.navigate("conversionConfirmation", {
-        ...data,
-        fromWalletCurrency,
-      })
-    } else {
-      setErrorMsg(err)
+      if (data) {
+        navigation.navigate("conversionConfirmation", {
+          ...data,
+          fromWalletCurrency,
+        })
+      } else {
+        setSubmitErrorMsg(err || LL.errors.generic())
+      }
+    } catch (err) {
+      // Neither prepare* function is total: the Breez invoice call and the
+      // Apollo fee probe both reject on a network failure. Without this the
+      // spinner stayed up forever on the most common probe failure.
+      // Report it too — swallowing it into on-screen text alone would make the
+      // probe failure rate invisible in the field.
+      getCrashlytics().recordError(err instanceof Error ? err : new Error(String(err)))
+      setSubmitErrorMsg(err instanceof Error ? err.message : LL.errors.generic())
+    } finally {
+      toggleActivityIndicator(false)
     }
-    toggleActivityIndicator(false)
   }
 
   return (
@@ -160,11 +188,12 @@ export const ConversionDetailsScreen: React.FC<Props> = ({ navigation }) => {
           fromWalletCurrency={fromWalletCurrency}
           setAmountToBalancePercentage={setAmountToBalancePercentage}
         />
+        {submitErrorMsg && <Text style={styles.submitErrMsg}>{submitErrorMsg}</Text>}
       </ScrollView>
       <PrimaryBtn
         label={LL.common.next()}
         btnStyle={styles.btnStyle}
-        disabled={!isValidAmount || !!errorMsg}
+        disabled={!isValidAmount || Boolean(errorMsg)}
         onPress={moveToNextScreen}
       />
     </Screen>
@@ -178,5 +207,9 @@ const useStyles = makeStyles(({ colors }) => ({
   btnStyle: {
     marginHorizontal: 20,
     marginBottom: 20,
+  },
+  submitErrMsg: {
+    marginTop: 10,
+    color: colors.error,
   },
 }))
