@@ -122,6 +122,49 @@ describe("ConfirmationWalletFee — Breez BTC sends", () => {
     })
   })
 
+  it("does not clear an error it never set when the quote succeeds", async () => {
+    // Confirm is enabled while the fee is still loading, so the screen can
+    // set a send-failure paymentError while the mount-time quote is in
+    // flight. The quote resolving successfully must not wipe that message —
+    // hasAttemptedSend never resets on the BTC branch, so the user would be
+    // stuck at a disabled Confirm with no visible reason.
+    mockFetchBreezFee.mockResolvedValueOnce({ fee: 1230, err: null })
+
+    const { setFee, setPaymentError } = renderFee()
+
+    await waitFor(() =>
+      expect(setFee).toHaveBeenLastCalledWith(expect.objectContaining({ status: "set" })),
+    )
+    expect(setPaymentError).not.toHaveBeenCalled()
+  })
+
+  it("clears a fee error only once — later successes leave other errors alone", async () => {
+    mockFetchBreezFee
+      .mockResolvedValueOnce({ fee: null, err: { kind: "sdk", message: "boom" } })
+      .mockResolvedValueOnce({ fee: 1230, err: null })
+      .mockResolvedValueOnce({ fee: 999, err: null })
+
+    const { setFee, setPaymentError, rerenderWith } = renderFee()
+
+    await waitFor(() => expect(setPaymentError).toHaveBeenCalled())
+    rerenderWith({ selectedFeeType: "fast" })
+    await waitFor(() => expect(setPaymentError).toHaveBeenLastCalledWith(""))
+    const clearCalls = setPaymentError.mock.calls.length
+
+    // The fee error was already cleared; a further successful quote must not
+    // issue another clear (which could wipe a send failure set in between).
+    rerenderWith({ selectedFeeType: "slow" })
+    await waitFor(() =>
+      expect(setFee).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          status: "set",
+          amount: expect.objectContaining({ amount: 999 }),
+        }),
+      ),
+    )
+    expect(setPaymentError.mock.calls).toHaveLength(clearCalls)
+  })
+
   it("drops a stale in-flight result instead of overwriting a newer one", async () => {
     let resolveFirst!: (value: { fee: number | null; err: unknown }) => void
     mockFetchBreezFee
@@ -137,9 +180,7 @@ describe("ConfirmationWalletFee — Breez BTC sends", () => {
     rerenderWith({ selectedFeeType: "fast" })
 
     await waitFor(() =>
-      expect(setFee).toHaveBeenLastCalledWith(
-        expect.objectContaining({ status: "set" }),
-      ),
+      expect(setFee).toHaveBeenLastCalledWith(expect.objectContaining({ status: "set" })),
     )
     const feeCalls = setFee.mock.calls.length
     const errorCalls = setPaymentError.mock.calls.length
@@ -147,10 +188,12 @@ describe("ConfirmationWalletFee — Breez BTC sends", () => {
     // The first (superseded) fetch fails late — it must not touch state.
     resolveFirst({ fee: null, err: { kind: "sdk", message: "stale failure" } })
     await waitFor(() => expect(mockFetchBreezFee).toHaveBeenCalledTimes(2))
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0)
+    })
 
-    expect(setFee.mock.calls.length).toBe(feeCalls)
-    expect(setPaymentError.mock.calls.length).toBe(errorCalls)
+    expect(setFee.mock.calls).toHaveLength(feeCalls)
+    expect(setPaymentError.mock.calls).toHaveLength(errorCalls)
     expect(setFee).toHaveBeenLastCalledWith(expect.objectContaining({ status: "set" }))
   })
 

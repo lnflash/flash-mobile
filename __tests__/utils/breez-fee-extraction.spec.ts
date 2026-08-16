@@ -22,9 +22,7 @@ describe("extractFeeFromPaymentMethod", () => {
     expect(extractFeeFromPaymentMethod(bitcoinAddressMethod, "medium")).toEqual(
       BigInt(810),
     )
-    expect(extractFeeFromPaymentMethod(bitcoinAddressMethod, "slow")).toEqual(
-      BigInt(420),
-    )
+    expect(extractFeeFromPaymentMethod(bitcoinAddressMethod, "slow")).toEqual(BigInt(420))
   })
 
   it("defaults to medium when no speed is selected — never a silent 0", () => {

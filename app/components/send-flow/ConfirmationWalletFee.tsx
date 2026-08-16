@@ -58,6 +58,11 @@ const ConfirmationWalletFee: React.FC<Props> = ({
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
   const formatSats = useFormatSats()
   const breezFeeRequestId = useRef(0)
+  // True only while the current paymentError was set by the quote effect
+  // below. The screen also writes paymentError (send failures), and Confirm
+  // stays enabled while a quote is still loading — so a quote resolving
+  // successfully after a failed send must not wipe the send-failure message.
+  const feeErrorActive = useRef(false)
 
   useEffect(() => {
     if (!isGaloyWalletSend) return
@@ -67,7 +72,8 @@ const ConfirmationWalletFee: React.FC<Props> = ({
 
   useEffect(() => {
     if (isGaloyWalletSend) return
-    const requestId = ++breezFeeRequestId.current
+    breezFeeRequestId.current += 1
+    const requestId = breezFeeRequestId.current
     const fetchQuote = async () => {
       setFee({ status: "loading", amount: undefined })
       const { fee, err } = await fetchBreezFee({
@@ -84,15 +90,21 @@ const ConfirmationWalletFee: React.FC<Props> = ({
           status: "set",
           amount: { amount: fee, currency: "BTC", currencyCode: "BTC" },
         })
-        // Clear any error a previous attempt left behind, or Confirm stays
-        // disabled under a successfully loaded fee.
-        setPaymentError("")
+        // Clear a fee error a previous attempt left behind, or Confirm stays
+        // disabled under a successfully loaded fee. Scoped to errors this
+        // effect set: clearing unconditionally would wipe a send-failure
+        // error the screen set while this quote was still in flight.
+        if (feeErrorActive.current) {
+          setPaymentError("")
+          feeErrorActive.current = false
+        }
       } else if (err) {
         setFee({
           status: "error",
           amount: undefined,
         })
         setPaymentError(breezFeeErrorMessage(err, LL, formatSats))
+        feeErrorActive.current = true
       } else {
         setFee({
           status: "unset",
