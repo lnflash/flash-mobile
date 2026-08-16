@@ -104,7 +104,9 @@
   },
   "ConversionSuccessScreen": {
     "title": "Επιτυχία Μετατροπής",
-    "message": "Επιτυχής μετατροπή"
+    "message": "Επιτυχής μετατροπή",
+    "pendingMessage": "Conversion in progress",
+    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
   },
   "EarnScreen": {
     "earnSats": "Κερδίστε {formattedNumber|sats}",
@@ -1267,7 +1269,8 @@
     "thisMonth": "Αυτό τον μήνα",
     "prevMonths": "Προηγούμενοι μήνες",
     "problemMaybeReauth": "Υπήρξε πρόβλημα με το αίτημά σας. Επαναλάβετε την προσπάθεια σε ένα λεπτό. Εάν το πρόβλημα επιμένει, σας συνιστούμε να αποσυνδεθείτε και να συνδεθείτε ξανά. Μπορείτε να αποσυνδεθείτε πηγαίνοντας στις Ρυθμίσεις > Λογαριασμός > Αποσύνδεση",
-    "warning": "Προσοχή"
+    "warning": "Προσοχή",
+    "somethingWentWrong": "Something went wrong. Please try again later."
   },
   "NostrQuickStart": {
     "postHeading": "Κάντε την πρώτη σας κοινωνική δημοσίευση!",

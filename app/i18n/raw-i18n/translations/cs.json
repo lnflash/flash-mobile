@@ -104,7 +104,9 @@
   },
   "ConversionSuccessScreen": {
     "title": "Úspěšný převod",
-    "message": "Úspěšný převod"
+    "message": "Úspěšný převod",
+    "pendingMessage": "Conversion in progress",
+    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
   },
   "EarnScreen": {
     "earnSats": "Získejte {formattedNumber|sats}",
@@ -1267,7 +1269,8 @@
     "thisMonth": "Tento měsíc",
     "prevMonths": "Předchozí měsíce",
     "problemMaybeReauth": "Ve vašem požadavku se vyskytl problém. Zkuste to prosím znovu za minutu. Pokud problém přetrvává, doporučujeme se odhlásit a znovu přihlásit. Odhlásit se můžete v Nastavení > Účet > Odhlásit se.",
-    "warning": "Upozornění"
+    "warning": "Upozornění",
+    "somethingWentWrong": "Something went wrong. Please try again later."
   },
   "NostrQuickStart": {
     "postHeading": "Udělejte svůj první sociální příspěvek!",

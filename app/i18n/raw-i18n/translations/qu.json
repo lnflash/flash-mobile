@@ -104,7 +104,9 @@
   },
   "ConversionSuccessScreen": {
     "title": "Unanchayninmi kamachi",
-    "message": "Unanchayninmi kamarichik"
+    "message": "Unanchayninmi kamarichik",
+    "pendingMessage": "Conversion in progress",
+    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
   },
   "EarnScreen": {
     "earnSats": "Kanaykumanta kawsanki {formattedNumber|sats}",
@@ -1267,7 +1269,8 @@
     "thisMonth": "Kay killapi",
     "prevMonths": "Qhipa killapi",
     "problemMaybeReauth": "Ñuqaq kaniyta munanichuqchu. Qhipa kaniyta qayna kani. Mana kaniyta munanichuqchu, ñuqaqa chaskisqa kaniyta kaniy. Chaskisqa kaniyta kaniy, Ajustisqa > Cuenta > Chaskisqa kaniyta kaniy.",
-    "warning": "Warning"
+    "warning": "Warning",
+    "somethingWentWrong": "Something went wrong. Please try again later."
   },
   "NostrQuickStart": {
     "postHeading": "¡Qhapaq kaq publicacionniykita ruray!",

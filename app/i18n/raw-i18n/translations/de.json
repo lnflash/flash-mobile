@@ -104,7 +104,9 @@
   },
   "ConversionSuccessScreen": {
     "title": "Umtausch erfolgreich",
-    "message": "Das hat geklappt!"
+    "message": "Das hat geklappt!",
+    "pendingMessage": "Conversion in progress",
+    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
   },
   "EarnScreen": {
     "earnSats": "Verdiene {formattedNumber|sats}",
@@ -1267,7 +1269,8 @@
     "thisMonth": "Dieser Monat",
     "prevMonths": "Vorherige Monate",
     "problemMaybeReauth": "Es gab ein Problem mit deiner Anfrage. Bitte versuche es in einer Minute erneut. Wenn das Problem weiterhin besteht, versuche dich aus- und wieder einzuloggen. Du kannst dich ausloggen unter Einstellungen > Account > Log out",
-    "warning": "Warnung"
+    "warning": "Warnung",
+    "somethingWentWrong": "Something went wrong. Please try again later."
   },
   "NostrQuickStart": {
     "postHeading": "Machen Sie Ihren ersten sozialen Beitrag!",

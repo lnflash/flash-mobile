@@ -104,7 +104,9 @@
   },
   "ConversionSuccessScreen": {
     "title": "Conversió efectuada amb èxit",
-    "message": "Conversió efectuada amb èxit"
+    "message": "Conversió efectuada amb èxit",
+    "pendingMessage": "Conversion in progress",
+    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
   },
   "EarnScreen": {
     "earnSats": "Guanya {formattedNumber|sats}",
@@ -1267,7 +1269,8 @@
     "thisMonth": "Aquest mes",
     "prevMonths": "Mesos anteriors",
     "problemMaybeReauth": "There was a problem with your request. Please retry in one minute. If the problem persist, we recommend that you log out and log back in. You can log out by going into Settings > Account > Log out",
-    "warning": "Warning"
+    "warning": "Warning",
+    "somethingWentWrong": "Something went wrong. Please try again later."
   },
   "NostrQuickStart": {
     "postHeading": "Fes el teu primer post social!",

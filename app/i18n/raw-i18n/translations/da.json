@@ -104,7 +104,9 @@
   },
   "ConversionSuccessScreen": {
     "title": "Konvertering lykkedes",
-    "message": "Konvertering vel afsluttet"
+    "message": "Konvertering vel afsluttet",
+    "pendingMessage": "Conversion in progress",
+    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
   },
   "EarnScreen": {
     "earnSats": "Optjen {formattedNumber|sats}",
@@ -1267,7 +1269,8 @@
     "thisMonth": "Denne måned",
     "prevMonths": "Forrige måneder",
     "problemMaybeReauth": "Der opstod et problem med din anmodning. Prøv igen om et minut. Hvis problemet fortsætter, anbefaler vi, at du logger ud og logger ind igen. Du kan logge ud ved at gå til Indstillinger > Konto > Log ud",
-    "warning": "Advarsel"
+    "warning": "Advarsel",
+    "somethingWentWrong": "Something went wrong. Please try again later."
   },
   "NostrQuickStart": {
     "postHeading": "Gør dit første sociale indlæg!",

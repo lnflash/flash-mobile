@@ -62,7 +62,9 @@
   },
   "ConversionSuccessScreen": {
     "title": "Omskakeling sukses",
-    "message": "Omskakeling suksesvol"
+    "message": "Omskakeling suksesvol",
+    "pendingMessage": "Conversion in progress",
+    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
   },
   "EarnScreen": {
     "earnSats": "Verdien {formattedNumber|sats}",
@@ -1137,7 +1139,8 @@
     "request": "Request Pin",
     "revealSeed": "Write down recovery phrase",
     "securityAndPrivacy": "Security and Privacy",
-    "trialAccount": "Trial Account"
+    "trialAccount": "Trial Account",
+    "somethingWentWrong": "Something went wrong. Please try again later."
   },
   "errors": {
     "generic": "Daar was 'n fout.\nProbeer asseblief later weer.",

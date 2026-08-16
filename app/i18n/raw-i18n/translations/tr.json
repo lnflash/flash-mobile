@@ -104,7 +104,9 @@
   },
   "ConversionSuccessScreen": {
     "title": "Çevirme başarısı",
-    "message": "Çevirme başarılı"
+    "message": "Çevirme başarılı",
+    "pendingMessage": "Conversion in progress",
+    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
   },
   "EarnScreen": {
     "earnSats": "Kazan {formattedNumber|sats}",
@@ -1267,7 +1269,8 @@
     "thisMonth": "Bu ay",
     "prevMonths": "Geçmiş aylar",
     "problemMaybeReauth": "İsteğinizle ilgili bir sorun oluştu. Lütfen bir dakika içinde tekrar deneyin. Sorun devam ederse, oturumu kapatıp tekrar giriş yapmanızı öneririz. Ayarlar > Hesap > Oturumu kapat seçeneğine giderek oturumu kapatabilirsiniz",
-    "warning": "Uyarı"
+    "warning": "Uyarı",
+    "somethingWentWrong": "Something went wrong. Please try again later."
   },
   "NostrQuickStart": {
     "postHeading": "İlk sosyal yayınınızı yapın!",

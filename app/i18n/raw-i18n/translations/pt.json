@@ -104,7 +104,9 @@
   },
   "ConversionSuccessScreen": {
     "title": "Sucesso na Conversão",
-    "message": "Conversão Sucedida"
+    "message": "Conversão Sucedida",
+    "pendingMessage": "Conversion in progress",
+    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
   },
   "EarnScreen": {
     "earnSats": "Ganhe {formattedNumber|sats}",
@@ -1267,7 +1269,8 @@
     "thisMonth": "Este mês",
     "prevMonths": "Meses anteriores",
     "problemMaybeReauth": "Houve um problema com o seu pedido. Tente novamente em um minuto. Se o problema persistir, recomendamos que você saia e faça entre na app novamente. Você pode sair acessando Configurações > Conta > Sair",
-    "warning": "Aviso"
+    "warning": "Aviso",
+    "somethingWentWrong": "Something went wrong. Please try again later."
   },
   "NostrQuickStart": {
     "postHeading": "Faça seu primeiro post social!",

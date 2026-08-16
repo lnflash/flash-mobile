@@ -104,7 +104,9 @@
   },
   "ConversionSuccessScreen": {
     "title": "Wissel geslaagd",
-    "message": "Wissel geslaagd"
+    "message": "Wissel geslaagd",
+    "pendingMessage": "Conversion in progress",
+    "pendingDescription": "This usually completes in a moment. Check your transaction history to confirm it went through."
   },
   "EarnScreen": {
     "earnSats": "Verdien {formattedNumber|sats}",
@@ -1267,7 +1269,8 @@
     "thisMonth": "Deze maand",
     "prevMonths": "Vorige maanden",
     "problemMaybeReauth": "Er was een probleem met je verzoek. Probeer het over een minuut opnieuw. Als het probleem zich blijft voordoen, raden we u aan uit te loggen en weer in te loggen. U kunt uitloggen door naar Instellingen > Account > Uitloggen te gaan.",
-    "warning": "Warning"
+    "warning": "Warning",
+    "somethingWentWrong": "Something went wrong. Please try again later."
   },
   "NostrQuickStart": {
     "postHeading": "Maak je eerste sociale bericht!",
