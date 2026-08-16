@@ -8,7 +8,6 @@ import {
   ReceivePaymentMethod,
   Seed,
   SdkBuilder,
-  SendPaymentMethod_Tags,
   SendPaymentOptions,
   InputType_Tags,
   OnchainConfirmationSpeed,
@@ -26,7 +25,6 @@ import type {
   DepositInfo,
   RefundDepositResponse,
   RecommendedFees,
-  SendPaymentMethod,
   LnurlPayResponse,
   LightningAddressInfo,
   Payment,
@@ -43,6 +41,7 @@ import {
   lnurlLimitsFromPayRequest,
   validateAmountWithinLimits,
 } from "./fee-errors"
+import { extractFeeFromPaymentMethod } from "./fee-extraction"
 
 // Constants
 export const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
@@ -221,31 +220,8 @@ export const fetchRecommendedFees = async (): Promise<RecommendedFees> => {
   }
 }
 
-const extractFeeFromPaymentMethod = (
-  paymentMethod: SendPaymentMethod,
-  selectedFeeType?: "fast" | "medium" | "slow",
-): bigint => {
-  if (paymentMethod?.tag === SendPaymentMethod_Tags.Bolt11Invoice) {
-    return paymentMethod.inner?.lightningFeeSats ?? BigInt(0)
-  }
-  if (paymentMethod?.tag === SendPaymentMethod_Tags.BitcoinAddress) {
-    const feeQuote = paymentMethod.inner.feeQuote
-
-    if (selectedFeeType === "slow")
-      return feeQuote.speedSlow.userFeeSat + feeQuote.speedSlow.l1BroadcastFeeSat
-    if (selectedFeeType === "medium")
-      return feeQuote.speedMedium.userFeeSat + feeQuote.speedMedium.l1BroadcastFeeSat
-    if (selectedFeeType === "fast")
-      return feeQuote.speedFast.userFeeSat + feeQuote.speedFast.l1BroadcastFeeSat
-  }
-  if (paymentMethod?.tag === SendPaymentMethod_Tags.SparkAddress) {
-    return paymentMethod.inner?.fee ?? BigInt(0)
-  }
-  if (paymentMethod?.tag === SendPaymentMethod_Tags.SparkInvoice) {
-    return paymentMethod.inner?.fee ?? BigInt(0)
-  }
-  return BigInt(0)
-}
+// Fee extraction lives in ./fee-extraction (SDK-import-free) so it is
+// unit-testable under plain jest.
 
 export type FetchBreezFeeArgs = {
   paymentType: PaymentType

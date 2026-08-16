@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React, { useEffect, useRef } from "react"
 import { ActivityIndicator, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles, Text } from "@rneui/themed"
@@ -46,33 +46,47 @@ const ConfirmationWalletFee: React.FC<Props> = ({
   const { sendingWalletDescriptor, getFee, settlementAmount, paymentType } = paymentDetail
   const { LL } = useI18nContext()
   const styles = useStyles()
-  const getLightningFee = useFee(getFee ? getFee : null)
+  const isGaloyWalletSend =
+    sendingWalletDescriptor.currency === "USD" ||
+    sendingWalletDescriptor.currency === "USDT"
+  // The galoy fee probe only applies to USD/USDT sends. For the Breez BTC
+  // wallet it queried galoy with a non-galoy wallet id (guaranteed error), and
+  // each state transition of the probe re-fired the Breez quote fetch below —
+  // overlapping fetches whose transient failure left a stale, sticky
+  // paymentError that kept Confirm disabled under a successfully loaded fee.
+  const getLightningFee = useFee(isGaloyWalletSend && getFee ? getFee : null)
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
   const formatSats = useFormatSats()
+  const breezFeeRequestId = useRef(0)
 
   useEffect(() => {
-    getSendingFee()
-  }, [getLightningFee])
+    if (!isGaloyWalletSend) return
+    setFee(getLightningFee)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGaloyWalletSend, getLightningFee])
 
-  const getSendingFee = async () => {
-    setFee({ status: "loading", amount: undefined })
-    if (
-      sendingWalletDescriptor.currency === "USD" ||
-      sendingWalletDescriptor.currency === "USDT"
-    ) {
-      setFee(getLightningFee)
-    } else {
+  useEffect(() => {
+    if (isGaloyWalletSend) return
+    const requestId = ++breezFeeRequestId.current
+    const fetchQuote = async () => {
+      setFee({ status: "loading", amount: undefined })
       const { fee, err } = await fetchBreezFee({
         paymentType,
         paymentRequest: flashUserAddress || paymentDetail.destination,
         amountSats: settlementAmount.amount,
         selectedFeeType,
       })
+      // A newer fetch owns the state — a stale result (success or failure)
+      // must not overwrite it.
+      if (requestId !== breezFeeRequestId.current) return
       if (fee !== null) {
         setFee({
           status: "set",
           amount: { amount: fee, currency: "BTC", currencyCode: "BTC" },
         })
+        // Clear any error a previous attempt left behind, or Confirm stays
+        // disabled under a successfully loaded fee.
+        setPaymentError("")
       } else if (err) {
         setFee({
           status: "error",
@@ -86,7 +100,16 @@ const ConfirmationWalletFee: React.FC<Props> = ({
         })
       }
     }
-  }
+    fetchQuote()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isGaloyWalletSend,
+    paymentType,
+    flashUserAddress,
+    paymentDetail.destination,
+    settlementAmount.amount,
+    selectedFeeType,
+  ])
 
   let feeDisplayText = ""
   if (fee.amount) {
