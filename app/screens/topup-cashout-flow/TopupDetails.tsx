@@ -120,7 +120,9 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // their own limits and are not touched by the Fygaro allowance; asking for it
   // here would only tempt this screen into applying a card cap to a rail it has
   // nothing to do with.
-  const { allowance } = useCardTopupAllowance({ skip: !isCard })
+  const { allowance, loading: allowanceLoading } = useCardTopupAllowance({
+    skip: !isCard,
+  })
 
   // Card flow enforces the backend minimum (default $10); other flows keep the
   // long-standing $1 floor.
@@ -135,6 +137,13 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // level gate cannot run yet — hold Continue (spinner) rather than letting
   // the "no block" degrade path fire before the level is known.
   const cardLevelPending = isCard && levelLoading
+  // The allowance query is network-only, so it is ALWAYS a round trip, while
+  // the level resolves instantly from a warm cache. Without this the gap
+  // between them is a window where Continue is enabled and the screen quotes
+  // the flat cap — so the customer is invited to spend $125 they do not have
+  // and refused a moment later. Same posture the level already takes: hold the
+  // flow rather than treat "not known yet" as "no limit".
+  const cardAllowancePending = isCard && allowanceLoading && !allowance
 
   const dailyLimit = isCard ? levelDailyLimit : undefined
 
@@ -187,6 +196,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     isCard &&
     !cardBlockedForLevel &&
     !cardLevelPending &&
+    !cardAllowancePending &&
     fygaroTopup &&
     !isNaN(grossAmount) &&
     grossAmount >= minimumAmount &&
@@ -209,7 +219,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     // The card flow needs a resolved level before the level gate below can
     // run; the Continue button is already disabled while it loads, and this
     // guard backstops that.
-    if (cardLevelPending) {
+    if (cardLevelPending || cardAllowancePending) {
       return
     }
 
@@ -400,7 +410,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
                 </Text>
               )}
             </>
-          ) : (
+          ) : cardAllowancePending ? null : (
             dailyLimit !== undefined && (
               <Text type="p3" style={styles.limitNote}>
                 {LL.TopupDetails.dailyLimitInfo({ amount: `$${dailyLimit.toFixed(2)}` })}
@@ -427,7 +437,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
       <PrimaryBtn
         label={LL.TopupDetails.continue()}
         onPress={handleContinue}
-        loading={isLoading || cardLevelPending}
+        loading={isLoading || cardLevelPending || cardAllowancePending}
         btnStyle={styles.primaryButton}
       />
     </Screen>

@@ -402,6 +402,37 @@ describe("TopupDetails per-level daily limit", () => {
     alertSpy.mockRestore()
   })
 
+  it("holds Continue while the allowance is still in flight", async () => {
+    // The allowance is network-only (always a round trip); the level resolves
+    // instantly from cache. That gap used to be a window where Continue was
+    // enabled and the screen quoted the FLAT cap — inviting a $125 top-up from
+    // someone with $25 left, then refusing it a moment later.
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+      data: undefined,
+      loading: true,
+      refetch: jest.fn(),
+    })
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, queryAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "60")
+
+    // Continue is in its loading state, so there is no label to press — the
+    // flow is held rather than waved through on a number we do not have yet.
+    expect(queryAllByText(en.TopupDetails.continue())).toHaveLength(0)
+    expect(navigate).not.toHaveBeenCalled()
+    // And it does not advertise the flat cap it is about to contradict.
+    expect(
+      queryAllByText(en.TopupDetails.dailyLimitInfo({ amount: "$125.00" }), {
+        exact: false,
+      }),
+    ).toHaveLength(0)
+    alertSpy.mockRestore()
+  })
+
   it("blocks against what is REMAINING, not the flat cap — the jaceth2009 case", () => {
     // 2026-08-16: $100, $80 and $60 all passed the client against a $125 cap,
     // because each is individually under it and the app had no idea $180 was

@@ -48,7 +48,7 @@ const headerDoneStyle = { paddingHorizontal: 16, paddingVertical: 8 }
  */
 type CheckoutState =
   | { status: "requesting" }
-  | { status: "ready"; url: string; checkoutId?: string; expiresAtSeconds?: number }
+  | { status: "ready"; url: string; checkoutId?: string }
   /**
    * The server refused, for a reason the CUSTOMER can act on, and carries the
    * server's own sentence with it. Distinct from every other no-URL state on
@@ -57,19 +57,6 @@ type CheckoutState =
    * to change the amount, never to retry the identical request.
    */
   | { status: "refused"; message: string }
-  /**
-   * The signed link outlived its expiry while the customer was still looking at
-   * it. Past that moment the payment provider rejects the URL, so the form on
-   * screen can only fail — a fresh link is the sole way forward.
-   */
-  | { status: "expired" }
-
-/**
- * setTimeout coerces any delay above the 32-bit ceiling back into range and
- * fires it IMMEDIATELY. An absurdly distant expiry must therefore be ignored
- * rather than scheduled, or it would declare the link dead on arrival.
- */
-const MAX_TIMEOUT_MS = 2_147_483_647
 
 /**
  * Build Fygaro payment URL with critical parameters:
@@ -195,7 +182,6 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
           status: "ready",
           url: result.url,
           checkoutId: result.checkoutId,
-          expiresAtSeconds: result.expiresAtSeconds,
         })
         return
       }
@@ -237,32 +223,6 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
 
   const paymentUrl = checkout.status === "ready" ? checkout.url : null
   const checkoutId = checkout.status === "ready" ? checkout.checkoutId : undefined
-  const expiresAtSeconds =
-    checkout.status === "ready" ? checkout.expiresAtSeconds : undefined
-
-  /**
-   * Retire the link the moment it expires.
-   *
-   * The signed URL stops being accepted at `expiresAt` — the provider rejects
-   * it from then on. Nothing on this screen used to notice, so a customer who
-   * stepped away (a call, a hunt for their card) came back to a form that could
-   * only fail, with no explanation and no obvious way forward.
-   *
-   * Only signed links carry an expiry; the legacy device-built URL has none, so
-   * this stays dormant for it.
-   */
-  useEffect(() => {
-    if (expiresAtSeconds === undefined || !Number.isFinite(expiresAtSeconds)) return
-
-    const msRemaining = expiresAtSeconds * 1000 - Date.now()
-    if (msRemaining > MAX_TIMEOUT_MS) return
-
-    const timer = setTimeout(
-      () => setCheckout({ status: "expired" }),
-      Math.max(msRemaining, 0),
-    )
-    return () => clearTimeout(timer)
-  }, [expiresAtSeconds])
 
   /**
    * Domain whitelist for security.
@@ -424,29 +384,6 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
           </Text>
           <PrimaryBtn
             label={LL.TopupDetails.changeAmount()}
-            onPress={() => navigation.goBack()}
-            btnStyle={styles.retryButton}
-          />
-        </View>
-      </Screen>
-    )
-  }
-
-  // The link lapsed while the customer was on it. Nothing has been charged, and
-  // the only way forward is a fresh link — so say so, rather than leaving them
-  // filling in a form the provider will reject.
-  if (checkout.status === "expired") {
-    return (
-      <Screen>
-        <View style={styles.centerContainer}>
-          <Text type="h2" style={[styles.noticeTitle, { color: colors.error }]}>
-            {LL.FygaroWebViewScreen.expiredTitle()}
-          </Text>
-          <Text type="p1" style={styles.bodyText}>
-            {LL.FygaroWebViewScreen.expiredMessage()}
-          </Text>
-          <PrimaryBtn
-            label={LL.FygaroWebViewScreen.startAgain()}
             onPress={() => navigation.goBack()}
             btnStyle={styles.retryButton}
           />

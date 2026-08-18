@@ -65,17 +65,12 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
   )
   const [fetchStatus] = useFygaroTopupStatusLazyQuery({ fetchPolicy: "network-only" })
 
-  // Read inside the interval without making it a dependency — re-creating the
-  // timer on every tick would restart the window and the screen would never
-  // leave "checking".
-  const startedAtRef = useRef(Date.now())
   const resolvedRef = useRef(false)
 
   useEffect(() => {
     if (!checkoutId) return
 
     let cancelled = false
-    startedAtRef.current = Date.now()
     resolvedRef.current = false
 
     let timer: ReturnType<typeof setInterval> | undefined
@@ -130,19 +125,23 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
         // HELD_FOR_REVIEW (which no amount of retrying changes, by definition)
         // cost exactly the same.
         stopPolling()
-        return
       }
+    }
 
-      // No terminal answer. Once the fast window closes the screen stops
-      // waiting and says what it knows — the customer has been charged, and a
-      // spinner past this point reads as "something is broken".
-      if (
-        !resolvedRef.current &&
-        Date.now() - startedAtRef.current >= FAST_POLL_WINDOW_MS
-      ) {
-        resolvedRef.current = true
-        setResolution({ phase: "pending" })
-      }
+    // The deadline is its OWN timer, not a check inside tick, and that is the
+    // whole point. Every path to resolving the screen used to sit behind
+    // `await fetchStatus(...)`, so a request that never settles never reached
+    // it — and React Native sets no default network timeout on Android, while
+    // this app's HttpLink (app/graphql/client.tsx) passes no AbortController.
+    // A stalled connection therefore produces a promise that hangs rather than
+    // one that rejects, and the customer sat on "Confirming your top-up"
+    // indefinitely, on the screen they land on immediately after being charged.
+    // A deadline that depends on the thing it is a deadline FOR is not a
+    // deadline.
+    const resolveAtDeadline = () => {
+      if (resolvedRef.current || cancelled) return
+      resolvedRef.current = true
+      setResolution({ phase: "pending" })
     }
 
     timer = setInterval(tick, FAST_POLL_MS)
@@ -151,6 +150,7 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
     // late credit still upgrades "pending" to "credited" without the customer
     // watching a spinner for a minute.
     handover = setTimeout(() => {
+      resolveAtDeadline()
       if (timer) clearInterval(timer)
       timer = setInterval(tick, SLOW_POLL_MS)
     }, FAST_POLL_WINDOW_MS)

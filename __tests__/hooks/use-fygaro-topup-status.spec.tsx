@@ -153,6 +153,24 @@ describe("useFygaroTopupStatus", () => {
     expect(mockFetchStatus.mock.calls.length).toBeGreaterThan(callsAtResolution)
   })
 
+  it("resolves even when the request NEVER settles", async () => {
+    // The deadline must not depend on the thing it is a deadline for. React
+    // Native sets no default network timeout on Android and this app's HttpLink
+    // passes no AbortController, so a stalled connection yields a promise that
+    // hangs rather than rejects. With the resolution living inside the poll,
+    // that left the customer on "Confirming your top-up" forever — on the
+    // screen they land on immediately after being charged.
+    mockFetchStatus.mockReturnValue(new Promise(() => undefined))
+    const { result } = renderHook(() => useFygaroTopupStatus("intent-1"))
+    expect(result.current.phase).toBe("checking")
+
+    await act(async () => {
+      jest.advanceTimersByTime(11_000)
+    })
+
+    expect(result.current.phase).toBe("pending")
+  })
+
   it("resolves straight to pending with no checkout id, and asks nothing", async () => {
     // A legacy device-built link has no id to ask about. "We have your payment
     // and are crediting it" is the honest version of the old success screen.

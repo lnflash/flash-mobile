@@ -68,7 +68,7 @@ const CUSTOMER_REFUSAL_CODES = new Set([
 ])
 
 export const useFygaroCheckout = () => {
-  const [createCheckout, { loading }] = useFygaroCheckoutCreateMutation()
+  const [createCheckout] = useFygaroCheckoutCreateMutation()
 
   // MUST stay referentially stable. Apollo's `useMutation` calls
   // `setResult({ loading: true })` synchronously the moment the mutate function
@@ -119,5 +119,8 @@ export const useFygaroCheckout = () => {
     [createCheckout],
   )
 
-  return { requestCheckout, requesting: loading }
+  // Only what a caller uses. CardPayment models its own request status because
+  // it must distinguish "asking" from "asked and fell back", which a bare
+  // `loading` cannot express — so exporting one invites the wrong check.
+  return { requestCheckout }
 }

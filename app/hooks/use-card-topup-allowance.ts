@@ -49,7 +49,7 @@ export type CardTopupAllowance = {
  */
 export const useCardTopupAllowance = ({ skip = false }: { skip?: boolean } = {}) => {
   const isAuthed = useIsAuthed()
-  const { data, loading, refetch } = useFygaroTopupAllowanceQuery({
+  const { data, loading } = useFygaroTopupAllowanceQuery({
     skip: skip || !isAuthed,
     fetchPolicy: "network-only",
   })
@@ -64,5 +64,5 @@ export const useCardTopupAllowance = ({ skip = false }: { skip?: boolean } = {})
       }
     : undefined
 
-  return { allowance, loading, refetch }
+  return { allowance, loading }
 }

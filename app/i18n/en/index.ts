@@ -752,9 +752,6 @@ const en: BaseTranslation = {
     // The signed link stops working at its expiry and the provider rejects it
     // from then on. Without this the customer keeps filling in a form that can
     // only fail, and is told nothing about why.
-    expiredTitle: "This payment link has expired",
-    expiredMessage:
-      "Payment links are only valid for a short time. Nothing has been charged — start the top-up again to get a fresh one.",
     startAgain: "Start again"
   },
   BankTransfer: {

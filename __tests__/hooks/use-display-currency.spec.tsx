@@ -162,8 +162,7 @@ describe("usePriceConversion", () => {
 
       await waitFor(
         () =>
-          result.current.displayCurrency === "JPY" &&
-          result.current.fractionDigits === 0,
+          result.current.displayCurrency === "JPY" && result.current.fractionDigits === 0,
       )
 
       const res = result.current.moneyAmountToMajorUnitOrSats({
