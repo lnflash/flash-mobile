@@ -3400,14 +3400,14 @@ export type FygaroCheckoutCreateMutationVariables = Exact<{
 }>;
 
 
-export type FygaroCheckoutCreateMutation = { readonly __typename: 'Mutation', readonly fygaroCheckoutCreate: { readonly __typename: 'FygaroCheckoutCreatePayload', readonly remainingAllowance?: number | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null }>, readonly checkout?: { readonly __typename: 'FygaroCheckout', readonly url: string, readonly checkoutId: string, readonly expiresAt: number, readonly amount: number } | null } };
+export type FygaroCheckoutCreateMutation = { readonly __typename: 'Mutation', readonly fygaroCheckoutCreate: { readonly __typename: 'FygaroCheckoutCreatePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null }>, readonly checkout?: { readonly __typename: 'FygaroCheckout', readonly url: string, readonly checkoutId: string, readonly expiresAt: number } | null } };
 
 export type FygaroTopupStatusQueryVariables = Exact<{
   checkoutId: Scalars['String']['input'];
 }>;
 
 
-export type FygaroTopupStatusQuery = { readonly __typename: 'Query', readonly fygaroTopupStatus?: { readonly __typename: 'FygaroTopupStatus', readonly state: FygaroTopupState, readonly authorizedAmount: number, readonly netAmount?: number | null, readonly reason?: string | null } | null };
+export type FygaroTopupStatusQuery = { readonly __typename: 'Query', readonly fygaroTopupStatus?: { readonly __typename: 'FygaroTopupStatus', readonly state: FygaroTopupState, readonly netAmount?: number | null, readonly reason?: string | null } | null };
 
 export type CaptchaCreateChallengeMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -7032,12 +7032,10 @@ export const FygaroCheckoutCreateDocument = gql`
       message
       code
     }
-    remainingAllowance
     checkout {
       url
       checkoutId
       expiresAt
-      amount
     }
   }
 }
@@ -7072,7 +7070,6 @@ export const FygaroTopupStatusDocument = gql`
     query fygaroTopupStatus($checkoutId: String!) {
   fygaroTopupStatus(checkoutId: $checkoutId) {
     state
-    authorizedAmount
     netAmount
     reason
   }

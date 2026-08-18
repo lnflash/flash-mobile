@@ -38,17 +38,38 @@ const FYGARO_PAYMENT_BUTTON_PATH = "/pb/bd4a34c1-3d24-4315-a2b8-627518f70916"
 const headerDoneStyle = { paddingHorizontal: 16, paddingVertical: 8 }
 
 /**
- * Where the checkout request has got to. Modelled explicitly because the two
- * states that both have no URL are NOT the same thing: "the server has not
- * answered yet" is the normal first second of every card top-up, and "there is
- * no URL and there is not going to be one" is a failure. Collapsing them into
- * `url === null` put the "Something went wrong / Retry" screen in front of
- * every customer on first paint.
+ * Where the checkout request has got to. Modelled explicitly because the states
+ * that all have no URL are NOT the same thing: "the server has not answered
+ * yet" is the normal first second of every card top-up, while a refusal and an
+ * expiry are each a definite answer with its own wording and its own next step.
+ * Collapsing them into `url === null` put the "Something went wrong / Retry"
+ * screen in front of every customer on first paint, and later put it in front
+ * of refusals whose actual reason the customer never got to read.
  */
 type CheckoutState =
   | { status: "requesting" }
-  | { status: "ready"; url: string; checkoutId?: string }
-  | { status: "failed" }
+  | { status: "ready"; url: string; checkoutId?: string; expiresAtSeconds?: number }
+  /**
+   * The server refused, for a reason the CUSTOMER can act on, and carries the
+   * server's own sentence with it. Distinct from every other no-URL state on
+   * purpose: a refusal is not "something went wrong", it is a specific answer
+   * ("you have $4.48 left of today's limit") and the only useful next step is
+   * to change the amount, never to retry the identical request.
+   */
+  | { status: "refused"; message: string }
+  /**
+   * The signed link outlived its expiry while the customer was still looking at
+   * it. Past that moment the payment provider rejects the URL, so the form on
+   * screen can only fail — a fresh link is the sole way forward.
+   */
+  | { status: "expired" }
+
+/**
+ * setTimeout coerces any delay above the 32-bit ceiling back into range and
+ * fires it IMMEDIATELY. An absurdly distant expiry must therefore be ignored
+ * rather than scheduled, or it would declare the link dead on arrival.
+ */
+const MAX_TIMEOUT_MS = 2_147_483_647
 
 /**
  * Build Fygaro payment URL with critical parameters:
@@ -174,6 +195,7 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
           status: "ready",
           url: result.url,
           checkoutId: result.checkoutId,
+          expiresAtSeconds: result.expiresAtSeconds,
         })
         return
       }
@@ -182,7 +204,14 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         // Nothing has been charged. Show the server's wording — it is the only
         // side that knows which limit was tripped and by how much — and send
         // them back to change the amount.
-        setCheckout({ status: "failed" })
+        //
+        // The message goes into STATE, not only into the alert. An alert is
+        // cancelable by default on Android, so the back button dismisses it
+        // without ever firing `goBack`; when the reason lived only in the alert
+        // the customer was left on a generic "Something went wrong / Retry",
+        // with the one thing they needed to read already gone and a button that
+        // could only re-request the same refused amount.
+        setCheckout({ status: "refused", message: result.message })
         const { LL: currentLL, navigation: currentNavigation } = checkoutDeps.current
         Alert.alert(currentLL.TopupDetails.cannotTopUp(), result.message, [
           { text: currentLL.common.ok(), onPress: () => currentNavigation.goBack() },
@@ -208,6 +237,32 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
 
   const paymentUrl = checkout.status === "ready" ? checkout.url : null
   const checkoutId = checkout.status === "ready" ? checkout.checkoutId : undefined
+  const expiresAtSeconds =
+    checkout.status === "ready" ? checkout.expiresAtSeconds : undefined
+
+  /**
+   * Retire the link the moment it expires.
+   *
+   * The signed URL stops being accepted at `expiresAt` — the provider rejects
+   * it from then on. Nothing on this screen used to notice, so a customer who
+   * stepped away (a call, a hunt for their card) came back to a form that could
+   * only fail, with no explanation and no obvious way forward.
+   *
+   * Only signed links carry an expiry; the legacy device-built URL has none, so
+   * this stays dormant for it.
+   */
+  useEffect(() => {
+    if (expiresAtSeconds === undefined || !Number.isFinite(expiresAtSeconds)) return
+
+    const msRemaining = expiresAtSeconds * 1000 - Date.now()
+    if (msRemaining > MAX_TIMEOUT_MS) return
+
+    const timer = setTimeout(
+      () => setCheckout({ status: "expired" }),
+      Math.max(msRemaining, 0),
+    )
+    return () => clearTimeout(timer)
+  }, [expiresAtSeconds])
 
   /**
    * Domain whitelist for security.
@@ -338,9 +393,11 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
       return
     }
     if (checkout.status !== "ready") {
-      // The checkout attempt settled without a URL. Reloading nothing would
-      // leave the customer on the error screen forever, so ask the server
-      // again from scratch.
+      // No URL to reload. Reloading nothing would leave the customer on the
+      // error screen forever, so ask the server again from scratch. (Refusals
+      // and expiries never reach this — they have their own screens, and
+      // neither offers a Retry, because re-asking for the same amount on the
+      // same day cannot produce a different answer.)
       checkoutRequested.current = false
       setCheckout({ status: "requesting" })
       setCheckoutAttempt((attempt) => attempt + 1)
@@ -349,16 +406,67 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
     webViewRef.current?.reload()
   }, [username, refetch, checkout.status])
 
-  // Only two things put the customer on the error screen, and "the server has
-  // not answered yet" is neither of them:
+  // A refusal has an answer attached, and it is not the generic error screen's.
+  // The customer asked for more than their remaining allowance, or below the
+  // minimum, or from a level that cannot card top-up — the server said which,
+  // in words meant for them — and the one action that can succeed is changing
+  // the amount. Offering "Retry" here re-requests the identical amount and is
+  // refused for the identical reason.
+  if (checkout.status === "refused") {
+    return (
+      <Screen>
+        <View style={styles.centerContainer}>
+          <Text type="h2" style={[styles.noticeTitle, { color: colors.error }]}>
+            {LL.TopupDetails.cannotTopUp()}
+          </Text>
+          <Text type="p1" style={styles.bodyText}>
+            {checkout.message}
+          </Text>
+          <PrimaryBtn
+            label={LL.TopupDetails.changeAmount()}
+            onPress={() => navigation.goBack()}
+            btnStyle={styles.retryButton}
+          />
+        </View>
+      </Screen>
+    )
+  }
+
+  // The link lapsed while the customer was on it. Nothing has been charged, and
+  // the only way forward is a fresh link — so say so, rather than leaving them
+  // filling in a form the provider will reject.
+  if (checkout.status === "expired") {
+    return (
+      <Screen>
+        <View style={styles.centerContainer}>
+          <Text type="h2" style={[styles.noticeTitle, { color: colors.error }]}>
+            {LL.FygaroWebViewScreen.expiredTitle()}
+          </Text>
+          <Text type="p1" style={styles.bodyText}>
+            {LL.FygaroWebViewScreen.expiredMessage()}
+          </Text>
+          <PrimaryBtn
+            label={LL.FygaroWebViewScreen.startAgain()}
+            onPress={() => navigation.goBack()}
+            btnStyle={styles.retryButton}
+          />
+        </View>
+      </Screen>
+    )
+  }
+
+  // Only two things put the customer on the GENERIC error screen, and "the
+  // server has not answered yet" is neither of them:
   //  - a settled account query with no username, so the payment could never be
   //    attributed to an account (better an error than an unattributable charge)
-  //  - a settled checkout attempt that produced no URL at all
+  //  - the WebView itself failing to load
+  // Refusals and expiries have their own screens above, because both have
+  // something specific to say and a next step that is not "Retry".
   // While the checkout request is still in flight the screen shows the spinner
   // below. Deriving this from `!paymentUrl` alone made the FIRST paint of every
   // card top-up "Something went wrong", for as long as the round trip took.
   const usernameMissing = !usernameLoading && !username
-  if (error || usernameMissing || checkout.status === "failed") {
+  if (error || usernameMissing) {
     return (
       <Screen>
         <View style={styles.centerContainer}>
@@ -574,6 +682,10 @@ const useStyles = makeStyles(() => ({
   },
   loadingText: { marginTop: 16, textAlign: "center" },
   errorText: { textAlign: "center", marginBottom: 24 },
+  // The refusal and expiry screens carry a headline AND a sentence, so the
+  // headline sits closer to its own body than the bare error screen's does.
+  noticeTitle: { textAlign: "center", marginBottom: 12 },
+  bodyText: { textAlign: "center", marginBottom: 12 },
   retryButton: { marginTop: 16 },
   webView: { flex: 1 },
 }))

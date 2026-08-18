@@ -6,11 +6,15 @@ import { FygaroTopupState, useFygaroTopupStatusLazyQuery } from "@app/graphql/ge
 // Isolated for the same reason as the other card-top-up operations: an older
 // backend rejects the whole document over one unknown field, and losing the
 // status poll must not take anything else with it.
+//
+// Only the fields this hook actually reads. `authorizedAmount` was selected and
+// then used nowhere — the screen already has the gross amount from the route
+// params, and an unused field is one more thing an older backend can reject the
+// whole document over.
 gql`
   query fygaroTopupStatus($checkoutId: String!) {
     fygaroTopupStatus(checkoutId: $checkoutId) {
       state
-      authorizedAmount
       netAmount
       reason
     }
@@ -106,8 +110,14 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
         status = data?.fygaroTopupStatus
       } catch {
         // A failed poll tells us nothing about the payment, so it must not
-        // change what the customer is being shown.
-        return
+        // change what the customer is being shown — but it must not hold the
+        // spinner either. Deliberately NO early return: `status` stays
+        // undefined, so the terminal branch below is skipped while the
+        // fast-window branch still resolves the screen to `pending`. Returning
+        // here meant that a customer on a flaky connection (or an older backend
+        // that rejects the query outright) sat on "Confirming your top-up"
+        // forever — every timer eventually cleared with the phase still
+        // `checking`, on the screen they land on straight after being charged.
       }
       if (cancelled) return
 

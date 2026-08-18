@@ -521,12 +521,10 @@ mutation fygaroCheckoutCreate($input: FygaroCheckoutCreateInput!) {
       code
       __typename
     }
-    remainingAllowance
     checkout {
       url
       checkoutId
       expiresAt
-      amount
       __typename
     }
     __typename
@@ -1474,7 +1472,6 @@ query fygaroTopupAllowance {
 query fygaroTopupStatus($checkoutId: String!) {
   fygaroTopupStatus(checkoutId: $checkoutId) {
     state
-    authorizedAmount
     netAmount
     reason
     __typename

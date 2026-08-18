@@ -696,6 +696,9 @@ const en: BaseTranslation = {
   TopupDetails: {
     title: "Card Payment",
     cannotTopUp: "Can't top up this amount",
+    // The only action that can succeed after a refusal. A "Retry" would
+    // re-request the SAME amount and be refused again for the same reason.
+    changeAmount: "Change amount",
     // Rendered together, because "you've spent $0 and have $65 of $125" is
     // otherwise unexplainable to the person reading it.
     allowanceRemaining: "{remaining} of {limit} left today",
@@ -745,7 +748,14 @@ const en: BaseTranslation = {
     title: "Fygaro Payment",
     loading: "Loading payment page...",
     error: "Failed to load payment page",
-    retry: "Retry"
+    retry: "Retry",
+    // The signed link stops working at its expiry and the provider rejects it
+    // from then on. Without this the customer keeps filling in a form that can
+    // only fail, and is told nothing about why.
+    expiredTitle: "This payment link has expired",
+    expiredMessage:
+      "Payment links are only valid for a short time. Nothing has been charged — start the top-up again to get a fresh one.",
+    startAgain: "Start again"
   },
   BankTransfer: {
     title: "Bank Transfer",
@@ -790,7 +800,13 @@ const en: BaseTranslation = {
       "This payment is on hold for review. Nothing more is needed from you right now — we'll be in touch.",
     failedTitle: "Payment not credited",
     failedMessage: "We couldn't credit this payment yet. We're on it.",
+    // "Crediting to" is only true while the money is actually on its way. Held
+    // and failed are the two phases where it is NOT, so they get the neutral
+    // label instead — otherwise "Payment on hold" is followed one row later by
+    // "Crediting to: USD Wallet", which is the same false claim moved down the
+    // screen.
     destinationWallet: "Crediting to",
+    wallet: "Wallet",
     amountCredited: "Credited",
     amountSent: "Amount Sent",
     depositedTo: "Deposited to",

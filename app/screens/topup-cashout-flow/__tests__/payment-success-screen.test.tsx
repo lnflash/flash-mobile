@@ -3,9 +3,10 @@ import { ActivityIndicator } from "react-native"
 import { render, fireEvent } from "@testing-library/react-native"
 import { ThemeProvider } from "@rneui/themed"
 import theme from "@app/rne-theme/theme"
-import { i18nObject } from "../../../i18n/i18n-util"
+import { i18nObject, locales } from "../../../i18n/i18n-util"
 import { loadAllLocales } from "../../../i18n/i18n-util.sync"
 import PaymentSuccessScreen from "../payment-success-screen"
+import type { Locales } from "../../../i18n/i18n-types"
 import type { FygaroTopupResolution } from "@app/hooks/use-fygaro-topup-status"
 
 // Without this, i18nObject("en") resolves every key to "" and text queries
@@ -95,8 +96,11 @@ describe("PaymentSuccessScreen copy per phase", () => {
     expect(queryByText(en.PaymentSuccessScreen.pendingMessage())).not.toBeNull()
     expect(queryByText("⏱")).not.toBeNull()
     // "Deposited to" would be the old lie: nothing has been deposited yet.
+    // "Crediting to" IS true here, and only here among the uncredited phases —
+    // pending is the one where the money really is on its way.
     expect(queryByText(`${en.PaymentSuccessScreen.destinationWallet()}:`)).not.toBeNull()
     expect(queryByText(`${en.PaymentSuccessScreen.depositedTo()}:`)).toBeNull()
+    expect(queryByText(`${en.PaymentSuccessScreen.wallet()}:`)).toBeNull()
   })
 
   it("renders the server's reason verbatim on a held payment", () => {
@@ -122,6 +126,12 @@ describe("PaymentSuccessScreen copy per phase", () => {
     expect(queryByText(en.PaymentSuccessScreen.heldTitle())).not.toBeNull()
     expect(queryByText(en.PaymentSuccessScreen.heldMessage())).not.toBeNull()
     expect(queryByText("⏱")).toBeNull()
+    // ...and the DETAIL ROW may not say it either. "Payment on hold", then
+    // "This payment is on hold for review", then "Crediting to: USD Wallet" is
+    // the same false claim, moved one row down the screen.
+    expect(queryByText(`${en.PaymentSuccessScreen.destinationWallet()}:`)).toBeNull()
+    expect(queryByText(`${en.PaymentSuccessScreen.depositedTo()}:`)).toBeNull()
+    expect(queryByText(`${en.PaymentSuccessScreen.wallet()}:`)).not.toBeNull()
   })
 
   it("NEVER tells a failed customer we are crediting their wallet either", () => {
@@ -131,6 +141,21 @@ describe("PaymentSuccessScreen copy per phase", () => {
     expect(queryByText(en.PaymentSuccessScreen.failedTitle())).not.toBeNull()
     expect(queryByText(en.PaymentSuccessScreen.failedMessage())).not.toBeNull()
     expect(queryByText("⚠")).not.toBeNull()
+    // "Payment not credited" directly above "Crediting to: USD Wallet".
+    expect(queryByText(`${en.PaymentSuccessScreen.destinationWallet()}:`)).toBeNull()
+    expect(queryByText(`${en.PaymentSuccessScreen.depositedTo()}:`)).toBeNull()
+    expect(queryByText(`${en.PaymentSuccessScreen.wallet()}:`)).not.toBeNull()
+  })
+
+  it("still names the wallet on the stalled phases — neutrally", () => {
+    // Dropping the row entirely would be the other overcorrection: an account
+    // with both wallets still needs to know WHICH one this payment was for.
+    const held = renderScreen({ phase: "held" })
+    expect(held.queryByText("USD Wallet")).not.toBeNull()
+    held.unmount()
+
+    const failed = renderScreen({ phase: "failed" })
+    expect(failed.queryByText("USD Wallet")).not.toBeNull()
   })
 
   it("renders the server's reason verbatim on a failed payment", () => {
@@ -150,6 +175,48 @@ describe("PaymentSuccessScreen copy per phase", () => {
     const failed = renderScreen({ phase: "failed" })
     expect(failed.queryByText(en.PaymentSuccessScreen.receivedTitle())).toBeNull()
     expect(failed.queryByText(en.PaymentSuccessScreen.heldTitle())).toBeNull()
+  })
+})
+
+describe("PaymentSuccessScreen copy in EVERY language", () => {
+  // Each locale dictionary is `merge({}, en, rawTranslated)` (app/i18n/es/index.ts
+  // and its 20 siblings), so a stale entry in raw-i18n/translations/<locale>.json
+  // WINS over the corrected English. Rewriting `en` alone therefore fixed this
+  // screen for English speakers and left everyone else on "Payment Successful /
+  // Your payment has been processed successfully" — the precise claim the screen
+  // was rebuilt to stop making, for a payment that may never have been credited.
+
+  const phaseKeys = [
+    "checkingTitle",
+    "checkingMessage",
+    "receivedTitle",
+    "pendingMessage",
+    "heldTitle",
+    "heldMessage",
+    "failedTitle",
+    "failedMessage",
+    "destinationWallet",
+    "wallet",
+    "amountCredited",
+  ] as const
+
+  locales.forEach((locale: Locales) => {
+    it(`never claims success in the old wording (${locale})`, () => {
+      const L = i18nObject(locale)
+
+      expect(L.PaymentSuccessScreen.title()).not.toBe("Payment Successful")
+      expect(L.PaymentSuccessScreen.successMessage()).not.toBe(
+        "Your payment has been processed successfully",
+      )
+    })
+
+    it(`carries every payment-outcome phase (${locale})`, () => {
+      // A missing key resolves to "" and would render a blank headline on the
+      // screen a customer lands on immediately after being charged.
+      const L = i18nObject(locale).PaymentSuccessScreen
+
+      phaseKeys.forEach((key) => expect(L[key]()).not.toBe(""))
+    })
   })
 })
 

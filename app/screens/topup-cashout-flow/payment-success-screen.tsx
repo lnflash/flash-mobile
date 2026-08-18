@@ -111,8 +111,15 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
 
             <View style={styles.detailRow}>
               <Text type="p1" style={[styles.detailLabel, { color: colors.grey1 }]}>
+                {/* Three labels, because there are three truths. Credited: the
+                    money is there. Pending: it is on its way. Held or failed:
+                    it is neither, so the row may only name the wallet — the
+                    headline says "Payment on hold" and "Crediting to" one row
+                    below it would put the claim straight back on the screen. */}
                 {credited
                   ? LL.PaymentSuccessScreen.depositedTo()
+                  : stalled
+                  ? LL.PaymentSuccessScreen.wallet()
                   : LL.PaymentSuccessScreen.destinationWallet()}
                 :
               </Text>

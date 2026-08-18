@@ -169,11 +169,20 @@ describe("CardPayment payment URL", () => {
 })
 
 describe("CardPayment signed checkout", () => {
-  const signed = (url: string, checkoutId: string) => ({
+  const signed = (url: string, checkoutId: string, expiresAt?: number) => ({
     data: {
       fygaroCheckoutCreate: {
         errors: [],
-        checkout: { url, checkoutId },
+        checkout: { url, checkoutId, expiresAt },
+      },
+    },
+  })
+
+  const refused = (message: string) => ({
+    data: {
+      fygaroCheckoutCreate: {
+        errors: [{ code: "FYGARO_DAILY_ALLOWANCE_EXCEEDED", message }],
+        checkout: null,
       },
     },
   })
@@ -291,12 +300,145 @@ describe("CardPayment signed checkout", () => {
     alertSpy.mockRestore()
   })
 
+  it("leaves the refusal ON SCREEN, not only in an alert the back button can dismiss", async () => {
+    // Alert.alert is cancelable by default on Android: the hardware back button
+    // dismisses it without ever running the OK handler, so `goBack` never
+    // fires. With the server's wording living only inside that alert, the
+    // customer was left staring at the generic "Something went wrong" — reason
+    // gone — next to a Retry that re-requested the identical amount and was
+    // refused for the identical reason.
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    mockCreateCheckout.mockResolvedValueOnce(
+      refused("You have $4.48 left of today's top-up limit"),
+    )
+
+    const { findAllByText, queryAllByText, getAllByText } = renderCardPayment()
+
+    // The alert is deliberately never confirmed here — this is the dismissed
+    // case. What is behind it has to stand on its own.
+    const onScreen = await findAllByText("You have $4.48 left of today's top-up limit")
+    expect(onScreen.length).toBeGreaterThan(0)
+    expect(queryAllByText(en.FygaroWebViewScreen.error())).toHaveLength(0)
+    expect(queryAllByText(en.FygaroWebViewScreen.retry())).toHaveLength(0)
+    expect(getAllByText(en.TopupDetails.cannotTopUp()).length).toBeGreaterThan(0)
+
+    alertSpy.mockRestore()
+  })
+
+  it("offers 'Change amount' instead of a Retry that cannot succeed", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    mockCreateCheckout.mockResolvedValueOnce(
+      refused("You have $4.48 left of today's top-up limit"),
+    )
+
+    const { findAllByText, getAllByText, goBack } = renderCardPayment()
+    await findAllByText("You have $4.48 left of today's top-up limit")
+
+    fireEvent.press(getAllByText(en.TopupDetails.changeAmount())[0])
+
+    expect(goBack).toHaveBeenCalled()
+    // And it did NOT re-ask for the same amount on the way out: the second
+    // request would be refused identically, and each one holds allowance.
+    expect(mockCreateCheckout).toHaveBeenCalledTimes(1)
+
+    alertSpy.mockRestore()
+  })
+
   it("falls back to the legacy link when the checkout mutation throws (old backend)", async () => {
     mockCreateCheckout.mockRejectedValueOnce(new Error("Cannot query field"))
 
     await renderAndSettle()
 
     expect(lastWebViewProps().source.uri).toContain("custom_reference=alice")
+  })
+})
+
+describe("CardPayment signed-link expiry", () => {
+  const signedUntil = (expiresAt: number) => ({
+    data: {
+      fygaroCheckoutCreate: {
+        errors: [],
+        checkout: {
+          url: "https://www.fygaro.com/en/pb/signed?jwt=abc",
+          checkoutId: "i",
+          expiresAt,
+        },
+      },
+    },
+  })
+
+  afterEach(() => jest.useRealTimers())
+
+  it("retires the link the moment it expires under the customer", async () => {
+    // Past expiresAt the provider rejects the URL outright. Nothing used to
+    // notice, so someone who stepped away came back and typed their card into a
+    // form that could only fail, with no explanation on screen.
+    jest.useFakeTimers()
+    mockCreateCheckout.mockResolvedValueOnce(
+      signedUntil(Math.floor(Date.now() / 1000) + 600),
+    )
+
+    const { queryAllByText, getAllByText, goBack } = renderCardPayment()
+    await act(async () => {})
+
+    // Still live: the WebView is mounted and nothing is claiming otherwise.
+    expect(mockWebView).toHaveBeenCalled()
+    expect(queryAllByText(en.FygaroWebViewScreen.expiredTitle())).toHaveLength(0)
+
+    act(() => {
+      jest.advanceTimersByTime(600_000)
+    })
+
+    expect(getAllByText(en.FygaroWebViewScreen.expiredTitle()).length).toBeGreaterThan(0)
+    fireEvent.press(getAllByText(en.FygaroWebViewScreen.startAgain())[0])
+    expect(goBack).toHaveBeenCalled()
+  })
+
+  it("says so straight away for a link that is already past its expiry", async () => {
+    jest.useFakeTimers()
+    mockCreateCheckout.mockResolvedValueOnce(
+      signedUntil(Math.floor(Date.now() / 1000) - 60),
+    )
+
+    const { getAllByText } = renderCardPayment()
+    await act(async () => {})
+    act(() => {
+      jest.advanceTimersByTime(1)
+    })
+
+    expect(getAllByText(en.FygaroWebViewScreen.expiredTitle()).length).toBeGreaterThan(0)
+  })
+
+  it("does not declare an absurdly distant expiry dead on arrival", async () => {
+    // setTimeout coerces any delay past the 32-bit ceiling back into range and
+    // fires it IMMEDIATELY — scheduling one would kill a perfectly good link
+    // the instant it loaded.
+    jest.useFakeTimers()
+    mockCreateCheckout.mockResolvedValueOnce(
+      signedUntil(Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365),
+    )
+
+    const { queryAllByText } = renderCardPayment()
+    await act(async () => {})
+    act(() => {
+      jest.advanceTimersByTime(5_000)
+    })
+
+    expect(queryAllByText(en.FygaroWebViewScreen.expiredTitle())).toHaveLength(0)
+    expect(mockWebView).toHaveBeenCalled()
+  })
+
+  it("never starts the clock for a legacy link, which has no expiry to read", async () => {
+    jest.useFakeTimers()
+    // Default mock: signed checkout unavailable, so the device-built URL loads.
+    const { queryAllByText } = renderCardPayment()
+    await act(async () => {})
+    act(() => {
+      jest.advanceTimersByTime(60 * 60 * 1000)
+    })
+
+    expect(queryAllByText(en.FygaroWebViewScreen.expiredTitle())).toHaveLength(0)
+    expect(mockWebView).toHaveBeenCalled()
   })
 })
 

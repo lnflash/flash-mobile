@@ -21,7 +21,11 @@ describe("useFygaroCheckout", () => {
       data: {
         fygaroCheckoutCreate: {
           errors: [],
-          checkout: { url: "https://fygaro.com/en/pb/x?jwt=abc", checkoutId: "intent-1" },
+          checkout: {
+            url: "https://fygaro.com/en/pb/x?jwt=abc",
+            checkoutId: "intent-1",
+            expiresAt: 1_755_000_000,
+          },
         },
       },
     })
@@ -30,6 +34,47 @@ describe("useFygaroCheckout", () => {
       kind: "signed",
       url: "https://fygaro.com/en/pb/x?jwt=abc",
       checkoutId: "intent-1",
+      expiresAtSeconds: 1_755_000_000,
+    })
+  })
+
+  it("carries the expiry through, because the link stops working at it", async () => {
+    // Past expiresAt the provider rejects the URL. A caller with no deadline
+    // leaves the customer typing card details into a page that can only fail.
+    mockCreateCheckout.mockResolvedValue({
+      data: {
+        fygaroCheckoutCreate: {
+          errors: [],
+          checkout: {
+            url: "https://x",
+            checkoutId: "intent-1",
+            expiresAt: 1_755_000_600,
+          },
+        },
+      },
+    })
+
+    expect(await ask()).toMatchObject({ expiresAtSeconds: 1_755_000_600 })
+  })
+
+  it("stays signed when the server omits the expiry, rather than inventing one", async () => {
+    // expiresAt is non-null in the schema, but a client that computes a NaN
+    // deadline off a missing field would declare a perfectly good link dead on
+    // arrival. No expiry means no clock to watch — not a dead link.
+    mockCreateCheckout.mockResolvedValue({
+      data: {
+        fygaroCheckoutCreate: {
+          errors: [],
+          checkout: { url: "https://x", checkoutId: "intent-1" },
+        },
+      },
+    })
+
+    expect(await ask()).toEqual({
+      kind: "signed",
+      url: "https://x",
+      checkoutId: "intent-1",
+      expiresAtSeconds: undefined,
     })
   })
 
@@ -59,7 +104,6 @@ describe("useFygaroCheckout", () => {
               message: "You have $4.48 left of today's top-up limit",
             },
           ],
-          remainingAllowance: 448,
         },
       },
     })
@@ -68,7 +112,6 @@ describe("useFygaroCheckout", () => {
       kind: "refused",
       code: "FYGARO_DAILY_ALLOWANCE_EXCEEDED",
       message: "You have $4.48 left of today's top-up limit",
-      remainingAllowanceCents: 448,
     })
   })
 
@@ -87,7 +130,6 @@ describe("useFygaroCheckout", () => {
               message: "You have $4.48 left of today's top-up limit",
             },
           ],
-          remainingAllowance: 448,
         },
       },
     })
@@ -96,7 +138,6 @@ describe("useFygaroCheckout", () => {
       kind: "refused",
       code: "FYGARO_DAILY_ALLOWANCE_EXCEEDED",
       message: "You have $4.48 left of today's top-up limit",
-      remainingAllowanceCents: 448,
     })
   })
 

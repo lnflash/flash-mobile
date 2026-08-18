@@ -2236,6 +2236,10 @@ type RootTranslation = {
 		 */
 		cannotTopUp: string
 		/**
+		 * C​h​a​n​g​e​ ​a​m​o​u​n​t
+		 */
+		changeAmount: string
+		/**
 		 * {​r​e​m​a​i​n​i​n​g​}​ ​o​f​ ​{​l​i​m​i​t​}​ ​l​e​f​t​ ​t​o​d​a​y
 		 * @param {unknown} limit
 		 * @param {unknown} remaining
@@ -2423,6 +2427,18 @@ type RootTranslation = {
 		 * R​e​t​r​y
 		 */
 		retry: string
+		/**
+		 * T​h​i​s​ ​p​a​y​m​e​n​t​ ​l​i​n​k​ ​h​a​s​ ​e​x​p​i​r​e​d
+		 */
+		expiredTitle: string
+		/**
+		 * P​a​y​m​e​n​t​ ​l​i​n​k​s​ ​a​r​e​ ​o​n​l​y​ ​v​a​l​i​d​ ​f​o​r​ ​a​ ​s​h​o​r​t​ ​t​i​m​e​.​ ​N​o​t​h​i​n​g​ ​h​a​s​ ​b​e​e​n​ ​c​h​a​r​g​e​d​ ​—​ ​s​t​a​r​t​ ​t​h​e​ ​t​o​p​-​u​p​ ​a​g​a​i​n​ ​t​o​ ​g​e​t​ ​a​ ​f​r​e​s​h​ ​o​n​e​.
+		 */
+		expiredMessage: string
+		/**
+		 * S​t​a​r​t​ ​a​g​a​i​n
+		 */
+		startAgain: string
 	}
 	BankTransfer: {
 		/**
@@ -2556,6 +2572,10 @@ type RootTranslation = {
 		 * C​r​e​d​i​t​i​n​g​ ​t​o
 		 */
 		destinationWallet: string
+		/**
+		 * W​a​l​l​e​t
+		 */
+		wallet: string
 		/**
 		 * C​r​e​d​i​t​e​d
 		 */
@@ -8510,6 +8530,10 @@ export type TranslationFunctions = {
 		 */
 		cannotTopUp: () => LocalizedString
 		/**
+		 * Change amount
+		 */
+		changeAmount: () => LocalizedString
+		/**
 		 * {remaining} of {limit} left today
 		 */
 		allowanceRemaining: (arg: { limit: unknown, remaining: unknown }) => LocalizedString
@@ -8689,6 +8713,18 @@ export type TranslationFunctions = {
 		 * Retry
 		 */
 		retry: () => LocalizedString
+		/**
+		 * This payment link has expired
+		 */
+		expiredTitle: () => LocalizedString
+		/**
+		 * Payment links are only valid for a short time. Nothing has been charged — start the top-up again to get a fresh one.
+		 */
+		expiredMessage: () => LocalizedString
+		/**
+		 * Start again
+		 */
+		startAgain: () => LocalizedString
 	}
 	BankTransfer: {
 		/**
@@ -8817,6 +8853,10 @@ export type TranslationFunctions = {
 		 * Crediting to
 		 */
 		destinationWallet: () => LocalizedString
+		/**
+		 * Wallet
+		 */
+		wallet: () => LocalizedString
 		/**
 		 * Credited
 		 */

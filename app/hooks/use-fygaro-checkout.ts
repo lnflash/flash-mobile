@@ -8,6 +8,12 @@ import { useFygaroCheckoutCreateMutation } from "@app/graphql/generated"
 // rejects the WHOLE document over one unknown field. Alone in here, an old
 // backend costs us the signed URL and nothing else, and the caller falls back
 // to the device-built link that has always worked.
+//
+// Only the fields the caller actually uses. `amount` (the authorised cents,
+// echoed back) and `remainingAllowance` were both selected and read nowhere:
+// the screen already knows the amount it asked for, and the refusal renders the
+// server's sentence, which states the remaining allowance in words. Every
+// unused field is one more thing an older backend can reject the document over.
 gql`
   mutation fygaroCheckoutCreate($input: FygaroCheckoutCreateInput!) {
     fygaroCheckoutCreate(input: $input) {
@@ -15,12 +21,10 @@ gql`
         message
         code
       }
-      remainingAllowance
       checkout {
         url
         checkoutId
         expiresAt
-        amount
       }
     }
   }
@@ -32,11 +36,19 @@ export type FygaroCheckoutRefusal = {
   // only place that knows which threshold was tripped and by how much.
   message: string
   code?: string
-  remainingAllowanceCents?: number
 }
 
 export type FygaroCheckoutResult =
-  | { kind: "signed"; url: string; checkoutId: string }
+  // `expiresAtSeconds` is seconds since epoch, and it is load-bearing rather
+  // than decoration: past it the payment provider rejects the URL outright. A
+  // customer who left the WebView open would otherwise be typing card details
+  // into a page that can only fail, with nothing on screen saying why.
+  //
+  // Optional despite the schema marking it non-null, because a client that
+  // crashes — or worse, computes a NaN deadline and declares the link dead on
+  // arrival — over a field the server did not send is a worse failure than one
+  // that simply stops watching the clock.
+  | { kind: "signed"; url: string; checkoutId: string; expiresAtSeconds?: number }
   | FygaroCheckoutRefusal
   // The server could not authorise for a reason that is NOT about this
   // customer: the feature is switched off, the backend is older than the
@@ -89,12 +101,7 @@ export const useFygaroCheckout = () => {
       // to end.
       const refusal = errors.find((e) => e.code && CUSTOMER_REFUSAL_CODES.has(e.code))
       if (refusal?.code) {
-        return {
-          kind: "refused",
-          message: refusal.message,
-          code: refusal.code,
-          remainingAllowanceCents: payload.remainingAllowance ?? undefined,
-        }
+        return { kind: "refused", message: refusal.message, code: refusal.code }
       }
       // Errors, but none of them the customer's to fix. Ours — degrade.
       if (errors.length > 0) return { kind: "unavailable" }
@@ -102,7 +109,12 @@ export const useFygaroCheckout = () => {
       const checkout = payload.checkout
       if (!checkout?.url || !checkout.checkoutId) return { kind: "unavailable" }
 
-      return { kind: "signed", url: checkout.url, checkoutId: checkout.checkoutId }
+      return {
+        kind: "signed",
+        url: checkout.url,
+        checkoutId: checkout.checkoutId,
+        expiresAtSeconds: checkout.expiresAt ?? undefined,
+      }
     },
     [createCheckout],
   )
