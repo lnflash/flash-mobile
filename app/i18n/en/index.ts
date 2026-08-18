@@ -695,6 +695,12 @@ const en: BaseTranslation = {
   },
   TopupDetails: {
     title: "Card Payment",
+    cannotTopUp: "Can't top up this amount",
+    // Rendered together, because "you've spent $0 and have $65 of $125" is
+    // otherwise unexplainable to the person reading it.
+    allowanceRemaining: "{remaining} of {limit} left today",
+    allowanceHeld: "{held} is held by a payment link you haven't completed",
+    allowanceResets: "More becomes available {when}",
     bankTransfer: "Bank Transfer",
     email: "Email",
     emailPlaceholder: "Enter your email address",
@@ -764,8 +770,18 @@ const en: BaseTranslation = {
 		routingNumber: "Routing Number"
   },
   PaymentSuccessScreen: {
-    title: "Payment Successful",
-    successMessage: "Your payment has been processed successfully",
+    title: "Top-up Complete",
+    successMessage: "Your payment has been credited to your wallet",
+    checkingTitle: "Confirming your top-up",
+    checkingMessage: "We're checking with your wallet — this usually takes a few seconds",
+    // Deliberately NOT "successful". Fygaro capturing the card and Flash
+    // crediting the wallet are different events; this screen may only claim
+    // the first until the backend confirms the second.
+    receivedTitle: "Payment received",
+    pendingMessage:
+      "We've received your payment and are crediting your wallet. We'll let you know as soon as it lands.",
+    destinationWallet: "Crediting to",
+    amountCredited: "Credited",
     amountSent: "Amount Sent",
     depositedTo: "Deposited to",
     transactionId: "Transaction ID",

@@ -2232,6 +2232,26 @@ type RootTranslation = {
 		 */
 		title: string
 		/**
+		 * C​a​n​'​t​ ​t​o​p​ ​u​p​ ​t​h​i​s​ ​a​m​o​u​n​t
+		 */
+		cannotTopUp: string
+		/**
+		 * {​r​e​m​a​i​n​i​n​g​}​ ​o​f​ ​{​l​i​m​i​t​}​ ​l​e​f​t​ ​t​o​d​a​y
+		 * @param {unknown} limit
+		 * @param {unknown} remaining
+		 */
+		allowanceRemaining: RequiredParams<'limit' | 'remaining'>
+		/**
+		 * {​h​e​l​d​}​ ​i​s​ ​h​e​l​d​ ​b​y​ ​a​ ​p​a​y​m​e​n​t​ ​l​i​n​k​ ​y​o​u​ ​h​a​v​e​n​'​t​ ​c​o​m​p​l​e​t​e​d
+		 * @param {unknown} held
+		 */
+		allowanceHeld: RequiredParams<'held'>
+		/**
+		 * M​o​r​e​ ​b​e​c​o​m​e​s​ ​a​v​a​i​l​a​b​l​e​ ​{​w​h​e​n​}
+		 * @param {unknown} when
+		 */
+		allowanceResets: RequiredParams<'when'>
+		/**
 		 * B​a​n​k​ ​T​r​a​n​s​f​e​r
 		 */
 		bankTransfer: string
@@ -2493,13 +2513,37 @@ type RootTranslation = {
 	}
 	PaymentSuccessScreen: {
 		/**
-		 * P​a​y​m​e​n​t​ ​S​u​c​c​e​s​s​f​u​l
+		 * T​o​p​-​u​p​ ​C​o​m​p​l​e​t​e
 		 */
 		title: string
 		/**
-		 * Y​o​u​r​ ​p​a​y​m​e​n​t​ ​h​a​s​ ​b​e​e​n​ ​p​r​o​c​e​s​s​e​d​ ​s​u​c​c​e​s​s​f​u​l​l​y
+		 * Y​o​u​r​ ​p​a​y​m​e​n​t​ ​h​a​s​ ​b​e​e​n​ ​c​r​e​d​i​t​e​d​ ​t​o​ ​y​o​u​r​ ​w​a​l​l​e​t
 		 */
 		successMessage: string
+		/**
+		 * C​o​n​f​i​r​m​i​n​g​ ​y​o​u​r​ ​t​o​p​-​u​p
+		 */
+		checkingTitle: string
+		/**
+		 * W​e​'​r​e​ ​c​h​e​c​k​i​n​g​ ​w​i​t​h​ ​y​o​u​r​ ​w​a​l​l​e​t​ ​—​ ​t​h​i​s​ ​u​s​u​a​l​l​y​ ​t​a​k​e​s​ ​a​ ​f​e​w​ ​s​e​c​o​n​d​s
+		 */
+		checkingMessage: string
+		/**
+		 * P​a​y​m​e​n​t​ ​r​e​c​e​i​v​e​d
+		 */
+		receivedTitle: string
+		/**
+		 * W​e​'​v​e​ ​r​e​c​e​i​v​e​d​ ​y​o​u​r​ ​p​a​y​m​e​n​t​ ​a​n​d​ ​a​r​e​ ​c​r​e​d​i​t​i​n​g​ ​y​o​u​r​ ​w​a​l​l​e​t​.​ ​W​e​'​l​l​ ​l​e​t​ ​y​o​u​ ​k​n​o​w​ ​a​s​ ​s​o​o​n​ ​a​s​ ​i​t​ ​l​a​n​d​s​.
+		 */
+		pendingMessage: string
+		/**
+		 * C​r​e​d​i​t​i​n​g​ ​t​o
+		 */
+		destinationWallet: string
+		/**
+		 * C​r​e​d​i​t​e​d
+		 */
+		amountCredited: string
 		/**
 		 * A​m​o​u​n​t​ ​S​e​n​t
 		 */
@@ -8454,6 +8498,22 @@ export type TranslationFunctions = {
 		 */
 		title: () => LocalizedString
 		/**
+		 * Can't top up this amount
+		 */
+		cannotTopUp: () => LocalizedString
+		/**
+		 * {remaining} of {limit} left today
+		 */
+		allowanceRemaining: (arg: { limit: unknown, remaining: unknown }) => LocalizedString
+		/**
+		 * {held} is held by a payment link you haven't completed
+		 */
+		allowanceHeld: (arg: { held: unknown }) => LocalizedString
+		/**
+		 * More becomes available {when}
+		 */
+		allowanceResets: (arg: { when: unknown }) => LocalizedString
+		/**
 		 * Bank Transfer
 		 */
 		bankTransfer: () => LocalizedString
@@ -8706,13 +8766,37 @@ export type TranslationFunctions = {
 	}
 	PaymentSuccessScreen: {
 		/**
-		 * Payment Successful
+		 * Top-up Complete
 		 */
 		title: () => LocalizedString
 		/**
-		 * Your payment has been processed successfully
+		 * Your payment has been credited to your wallet
 		 */
 		successMessage: () => LocalizedString
+		/**
+		 * Confirming your top-up
+		 */
+		checkingTitle: () => LocalizedString
+		/**
+		 * We're checking with your wallet — this usually takes a few seconds
+		 */
+		checkingMessage: () => LocalizedString
+		/**
+		 * Payment received
+		 */
+		receivedTitle: () => LocalizedString
+		/**
+		 * We've received your payment and are crediting your wallet. We'll let you know as soon as it lands.
+		 */
+		pendingMessage: () => LocalizedString
+		/**
+		 * Crediting to
+		 */
+		destinationWallet: () => LocalizedString
+		/**
+		 * Credited
+		 */
+		amountCredited: () => LocalizedString
 		/**
 		 * Amount Sent
 		 */

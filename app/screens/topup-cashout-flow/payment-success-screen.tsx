@@ -1,5 +1,5 @@
 import React from "react"
-import { View } from "react-native"
+import { View, ActivityIndicator } from "react-native"
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
@@ -7,6 +7,7 @@ import { Screen } from "@app/components/screen"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { PrimaryBtn } from "@app/components/buttons"
+import { useFygaroTopupStatus } from "@app/hooks/use-fygaro-topup-status"
 
 type PaymentSuccessScreenProps = {
   navigation: StackNavigationProp<RootStackParamList, "paymentSuccess">
@@ -20,31 +21,61 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
   const route = useRoute<RouteProp<RootStackParamList, "paymentSuccess">>()
   const styles = useStyles()
 
-  const { amount, wallet, transactionId } = route.params
+  const { amount, wallet, checkoutId } = route.params
+  // What the BACKEND says happened, not what the payment page implied.
+  const resolution = useFygaroTopupStatus(checkoutId)
 
   const handleDone = () => {
     // Navigate back to home screen
     navigation.navigate("Primary")
   }
 
-  const handleViewTransaction = () => {
-    // TODO: Navigate to transaction details
-    console.log("Navigate to transaction details:", transactionId)
-    handleDone()
-  }
+  const credited = resolution.phase === "credited"
+  const checking = resolution.phase === "checking"
+  const refused = resolution.phase === "held" || resolution.phase === "failed"
+
+  // The headline is the one thing this screen got wrong before: it claimed a
+  // completed deposit off a Fygaro redirect. Each branch now says only what is
+  // actually known at that moment.
+  const title = checking
+    ? LL.PaymentSuccessScreen.checkingTitle()
+    : credited
+    ? LL.PaymentSuccessScreen.title()
+    : refused
+    ? LL.PaymentSuccessScreen.receivedTitle()
+    : LL.PaymentSuccessScreen.receivedTitle()
+
+  const message = checking
+    ? LL.PaymentSuccessScreen.checkingMessage()
+    : credited
+    ? LL.PaymentSuccessScreen.successMessage()
+    : resolution.phase === "held" || resolution.phase === "failed"
+    ? resolution.reason ?? LL.PaymentSuccessScreen.pendingMessage()
+    : LL.PaymentSuccessScreen.pendingMessage()
 
   return (
     <Screen>
       <View style={styles.container}>
         <View style={styles.successContainer}>
-          <Text style={[styles.successIcon, { color: colors.success }]}>✓</Text>
+          {checking ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : (
+            <Text
+              style={[
+                styles.successIcon,
+                { color: credited ? colors.success : colors.warning },
+              ]}
+            >
+              {credited ? "✓" : "⏱"}
+            </Text>
+          )}
 
           <Text type="h1" style={styles.title}>
-            {LL.PaymentSuccessScreen.title()}
+            {title}
           </Text>
 
           <Text type="p1" style={[styles.message, { color: colors.grey1 }]}>
-            {LL.PaymentSuccessScreen.successMessage()}
+            {message}
           </Text>
 
           <View style={styles.detailsContainer}>
@@ -59,31 +90,29 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
 
             <View style={styles.detailRow}>
               <Text type="p1" style={[styles.detailLabel, { color: colors.grey1 }]}>
-                {LL.PaymentSuccessScreen.depositedTo()}:
+                {credited
+                  ? LL.PaymentSuccessScreen.depositedTo()
+                  : LL.PaymentSuccessScreen.destinationWallet()}
+                :
               </Text>
               <Text type="p1" style={[styles.detailValue, { color: colors.black }]}>
                 {wallet} Wallet
               </Text>
             </View>
 
-            <View style={styles.detailRow}>
-              <Text type="p1" style={[styles.detailLabel, { color: colors.grey1 }]}>
-                {LL.PaymentSuccessScreen.transactionId()}:
-              </Text>
-              <Text type="p1" style={[styles.detailValue, { color: colors.black }]}>
-                {transactionId}
-              </Text>
-            </View>
+            {credited && resolution.netAmountCents !== undefined && (
+              <View style={styles.detailRow}>
+                <Text type="p1" style={[styles.detailLabel, { color: colors.grey1 }]}>
+                  {LL.PaymentSuccessScreen.amountCredited()}:
+                </Text>
+                <Text type="p1" style={[styles.detailValue, { color: colors.black }]}>
+                  ${(resolution.netAmountCents / 100).toFixed(2)}
+                </Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.buttonContainer}>
-            <PrimaryBtn
-              label={LL.PaymentSuccessScreen.viewTransaction()}
-              onPress={handleViewTransaction}
-              type="outline"
-              btnStyle={styles.secondaryButton}
-            />
-
             <PrimaryBtn
               label={LL.PaymentSuccessScreen.done()}
               onPress={handleDone}

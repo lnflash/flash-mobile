@@ -514,6 +514,25 @@ mutation feedbackSubmit($input: FeedbackSubmitInput!) {
   }
 }
 
+mutation fygaroCheckoutCreate($input: FygaroCheckoutCreateInput!) {
+  fygaroCheckoutCreate(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    remainingAllowance
+    checkout {
+      url
+      checkoutId
+      expiresAt
+      amount
+      __typename
+    }
+    __typename
+  }
+}
+
 mutation intraLedgerPaymentSend($input: IntraLedgerPaymentSendInput!) {
   intraLedgerPaymentSend(input: $input) {
     errors {
@@ -1440,6 +1459,28 @@ query displayCurrency {
 
 query feedbackModalShown {
   feedbackModalShown @client
+}
+
+query fygaroTopupAllowance {
+  fygaroTopupAllowance {
+    limit
+    spent
+    held
+    remaining
+    resetsAt
+    holdsExpireAt
+    __typename
+  }
+}
+
+query fygaroTopupStatus($checkoutId: String!) {
+  fygaroTopupStatus(checkoutId: $checkoutId) {
+    state
+    authorizedAmount
+    netAmount
+    reason
+    __typename
+  }
 }
 
 query hasPromptedSetDefaultAccount {

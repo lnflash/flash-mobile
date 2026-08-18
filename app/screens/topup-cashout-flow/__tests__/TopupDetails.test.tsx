@@ -38,6 +38,17 @@ jest.mock("@app/graphql/generated", () => ({
   useTransferFlagsQuery: (...args: unknown[]) => mockUseTransferFlagsQuery(...args),
   useCardTopupLimitsQuery: (...args: unknown[]) => mockUseCardTopupLimitsQuery(...args),
   useLevelQuery: (...args: unknown[]) => mockUseLevelQuery(...args),
+  useFygaroTopupAllowanceQuery: (...args: unknown[]) =>
+    mockUseFygaroTopupAllowanceQuery(...args),
+}))
+
+// Default: the allowance cannot be established, so these tests exercise the
+// FLAT per-level cap fallback they were written against. The allowance path
+// has its own cases below.
+const mockUseFygaroTopupAllowanceQuery: jest.Mock = jest.fn(() => ({
+  data: undefined,
+  loading: false,
+  refetch: jest.fn(),
 }))
 
 let mockIsAuthed = true
@@ -153,6 +164,13 @@ beforeEach(() => {
   mockPersistentState.isAdvanceMode = true
   mockIsAuthed = true
   mockUseTransferFlagsQuery.mockReturnValue(flagsResult(FEE_PARAMS))
+  // Reset per test: mockReturnValue survives clearAllMocks, so one case
+  // supplying an allowance would silently change every case after it.
+  mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+    data: undefined,
+    loading: false,
+    refetch: jest.fn(),
+  })
   mockUseCardTopupLimitsQuery.mockReturnValue(limitsResult(DAILY_LIMITS))
   mockUseLevelQuery.mockReturnValue(levelResult(null))
 })
@@ -302,10 +320,76 @@ describe("TopupDetails per-level daily limit", () => {
 
     expect(navigate).not.toHaveBeenCalled()
     expect(alertSpy).toHaveBeenCalledWith(
-      "Invalid Amount",
+      // Was a hard-coded English "Invalid Amount"; now localized like the rest.
+      en.TopupDetails.cannotTopUp(),
       en.TopupDetails.dailyLimitAmount({ amount: "$125.00" }),
     )
     alertSpy.mockRestore()
+  })
+
+  it("blocks against what is REMAINING, not the flat cap — the jaceth2009 case", () => {
+    // 2026-08-16: $100, $80 and $60 all passed the client against a $125 cap,
+    // because each is individually under it and the app had no idea $180 was
+    // already spent. Two were captured by Fygaro and never credited.
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+      data: {
+        fygaroTopupAllowance: {
+          limit: 12500,
+          spent: 10000,
+          held: 0,
+          remaining: 2500,
+          resetsAt: null,
+          holdsExpireAt: null,
+        },
+      },
+      loading: false,
+      refetch: jest.fn(),
+    })
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    // $60 is comfortably under the $125 cap and would have sailed through
+    // before; only $25 is actually left.
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "60")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      en.TopupDetails.cannotTopUp(),
+      // Names what is LEFT. Telling them the limit is $125 invites the same
+      // amount again.
+      en.TopupDetails.allowanceRemaining({ remaining: "$25.00", limit: "$125.00" }),
+    )
+    alertSpy.mockRestore()
+  })
+
+  it("allows an amount within the remaining allowance", () => {
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+      data: {
+        fygaroTopupAllowance: {
+          limit: 12500,
+          spent: 10000,
+          held: 0,
+          remaining: 2500,
+          resetsAt: null,
+          holdsExpireAt: null,
+        },
+      },
+      loading: false,
+      refetch: jest.fn(),
+    })
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "25")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).toHaveBeenCalled()
   })
 
   it("allows a card top-up landing exactly ON the L1 cap (inclusive)", () => {

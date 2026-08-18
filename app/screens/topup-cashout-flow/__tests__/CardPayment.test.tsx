@@ -32,6 +32,15 @@ jest.mock("@app/graphql/is-authed-context", () => ({
 const mockUseHomeAuthedQuery = jest.fn()
 jest.mock("@app/graphql/generated", () => ({
   useHomeAuthedQuery: (...args: unknown[]) => mockUseHomeAuthedQuery(...args),
+  useFygaroCheckoutCreateMutation: () => [mockCreateCheckout, { loading: false }],
+}))
+
+// Default: signed checkout is unavailable (the flag is off in production as of
+// this writing), so these tests exercise the LEGACY device-built URL that must
+// keep working. The signed path has its own coverage in
+// __tests__/hooks/use-fygaro-checkout.spec.tsx.
+const mockCreateCheckout: jest.Mock = jest.fn(async () => ({
+  data: { fygaroCheckoutCreate: { errors: [], checkout: null } },
 }))
 
 // Capture WebView props so tests can assert on the payment URL and drive the
@@ -66,6 +75,19 @@ const renderCardPayment = ({
 
 // The test renderer occasionally issues a stray zero-arg invocation of the
 // component function; only calls that actually carried props are meaningful.
+// The screen now asks the server to authorise and sign the link before it
+// loads anything, so the WebView appears one tick later than it used to. Tests
+// must let that settle instead of reading the very first render — the old
+// synchronous read is exactly what would hide a regression where the editable
+// link loads before the signed one arrives.
+const renderAndSettle = async (...args: Parameters<typeof renderCardPayment>) => {
+  const rendered = renderCardPayment(...args)
+  await waitFor(() =>
+    expect(mockWebView.mock.calls.filter((c) => c[0]).length).toBeGreaterThan(0),
+  )
+  return rendered
+}
+
 const lastWebViewProps = () => {
   const calls = mockWebView.mock.calls.filter((call) => call[0])
   return calls[calls.length - 1][0] as {
@@ -85,8 +107,8 @@ beforeEach(() => {
 })
 
 describe("CardPayment payment URL", () => {
-  it("passes the username as custom_reference (the parameter Fygaro's checkout reads)", () => {
-    renderCardPayment()
+  it("passes the username as custom_reference (the parameter Fygaro's checkout reads)", async () => {
+    await renderAndSettle()
 
     const { uri } = lastWebViewProps().source
     expect(uri).toContain("custom_reference=alice")
@@ -96,21 +118,21 @@ describe("CardPayment payment URL", () => {
     expect(uri).not.toContain("client_reference")
   })
 
-  it("records the target wallet in client_note", () => {
-    renderCardPayment({ wallet: "USD" })
+  it("records the target wallet in client_note", async () => {
+    await renderAndSettle({ wallet: "USD" })
 
     expect(lastWebViewProps().source.uri).toContain(
       `client_note=${encodeURIComponent("wallet:USD")}`,
     )
   })
 
-  it("URL-encodes usernames that contain reserved characters", () => {
+  it("URL-encodes usernames that contain reserved characters", async () => {
     mockUseHomeAuthedQuery.mockReturnValue({
       data: { me: { username: "álice+test" } },
       loading: false,
     })
 
-    renderCardPayment()
+    await renderAndSettle()
 
     const { uri } = lastWebViewProps().source
     expect(uri).toContain(`custom_reference=${encodeURIComponent("álice+test")}`)
@@ -118,7 +140,7 @@ describe("CardPayment payment URL", () => {
 })
 
 describe("CardPayment username gating", () => {
-  it("does not mount the WebView while the username is still loading", () => {
+  it("does not mount the WebView while the username is still loading", async () => {
     mockUseHomeAuthedQuery.mockReturnValue({
       data: undefined,
       loading: true,
@@ -131,7 +153,7 @@ describe("CardPayment username gating", () => {
     expect(getAllByText(en.FygaroWebViewScreen.loading()).length).toBeGreaterThan(0)
   })
 
-  it("shows the error screen instead of an unattributable payment when no username exists", () => {
+  it("shows the error screen instead of an unattributable payment when no username exists", async () => {
     mockUseHomeAuthedQuery.mockReturnValue({
       data: { me: { username: null } },
       loading: false,
@@ -144,7 +166,7 @@ describe("CardPayment username gating", () => {
     expect(getAllByText(en.FygaroWebViewScreen.error()).length).toBeGreaterThan(0)
   })
 
-  it("Retry refetches the account query when the username never resolved", () => {
+  it("Retry refetches the account query when the username never resolved", async () => {
     const refetch = jest.fn(() => Promise.resolve())
     mockUseHomeAuthedQuery.mockReturnValue({
       data: { me: { username: null } },
@@ -160,8 +182,8 @@ describe("CardPayment username gating", () => {
 })
 
 describe("CardPayment header exit", () => {
-  it("provides a persistent header Done button that navigates straight home", () => {
-    const { navigate, setOptions } = renderCardPayment()
+  it("provides a persistent header Done button that navigates straight home", async () => {
+    const { navigate, setOptions } = await renderAndSettle()
 
     const options = (setOptions as jest.Mock).mock.calls.at(-1)?.[0]
     expect(options?.headerRight).toBeDefined()
@@ -174,7 +196,7 @@ describe("CardPayment header exit", () => {
     expect(navigate).toHaveBeenCalledWith("Primary")
   })
 
-  it("keeps the header exit available while the username is still loading", () => {
+  it("keeps the header exit available while the username is still loading", async () => {
     mockUseHomeAuthedQuery.mockReturnValue({
       data: undefined,
       loading: true,
@@ -185,8 +207,8 @@ describe("CardPayment header exit", () => {
     expect((setOptions as jest.Mock).mock.calls.at(-1)?.[0]?.headerRight).toBeDefined()
   })
 
-  it("does not re-run the header effect on unrelated re-renders", () => {
-    const { setOptions } = renderCardPayment()
+  it("does not re-run the header effect on unrelated re-renders", async () => {
+    const { setOptions } = await renderAndSettle()
     expect(setOptions).toHaveBeenCalledTimes(1)
 
     // A WebView load completing flips isLoading and re-renders the screen.
@@ -203,13 +225,13 @@ describe("CardPayment header exit", () => {
 })
 
 describe("CardPayment navigation callbacks", () => {
-  it("ignores navigation events for the payment-button URL itself, even when the username contains a trigger word", () => {
+  it("ignores navigation events for the payment-button URL itself, even when the username contains a trigger word", async () => {
     mockUseHomeAuthedQuery.mockReturnValue({
       data: { me: { username: "success-story" } },
       loading: false,
       refetch: jest.fn(() => Promise.resolve()),
     })
-    const { navigate, goBack } = renderCardPayment()
+    const { navigate, goBack } = await renderAndSettle()
 
     const props = lastWebViewProps()
     expect(props.source.uri).toContain("success")
@@ -220,7 +242,7 @@ describe("CardPayment navigation callbacks", () => {
   })
 
   it("fires success when Fygaro returns to the payment-button URL with ?success=1 (real PayPal return shape)", async () => {
-    const { navigate } = renderCardPayment({ amount: 10, wallet: "USD" })
+    const { navigate } = await renderAndSettle({ amount: 10, wallet: "USD" })
 
     lastWebViewProps().onNavigationStateChange({
       url: "https://www.fygaro.com/en/pb/bd4a34c1-3d24-4315-a2b8-627518f70916/?success=1&custom_reference=alice",
@@ -230,14 +252,17 @@ describe("CardPayment navigation callbacks", () => {
       expect(navigate).toHaveBeenCalledWith("paymentSuccess", {
         amount: 10,
         wallet: "USD",
-        transactionId: expect.stringMatching(/^txn_/),
+        // No fabricated id any more: the success screen asks the backend what
+        // happened, and undefined here means the legacy device-built link (this
+        // test's default), which has no checkout to ask about.
+        checkoutId: undefined,
       }),
     )
   })
 
-  it("fires the failure alert when Fygaro returns with ?success=0", () => {
+  it("fires the failure alert when Fygaro returns with ?success=0", async () => {
     const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
-    const { navigate } = renderCardPayment()
+    const { navigate } = await renderAndSettle()
 
     lastWebViewProps().onNavigationStateChange({
       url: "https://www.fygaro.com/en/pb/bd4a34c1-3d24-4315-a2b8-627518f70916/?success=0&custom_reference=alice",
@@ -253,7 +278,7 @@ describe("CardPayment navigation callbacks", () => {
   })
 
   it("navigates to paymentSuccess with the original amount and wallet on a success URL", async () => {
-    const { navigate } = renderCardPayment({ amount: 10, wallet: "USD" })
+    const { navigate } = await renderAndSettle({ amount: 10, wallet: "USD" })
 
     lastWebViewProps().onNavigationStateChange({
       url: "https://www.fygaro.com/en/checkout/payment_success",
@@ -263,7 +288,10 @@ describe("CardPayment navigation callbacks", () => {
       expect(navigate).toHaveBeenCalledWith("paymentSuccess", {
         amount: 10,
         wallet: "USD",
-        transactionId: expect.stringMatching(/^txn_/),
+        // No fabricated id any more: the success screen asks the backend what
+        // happened, and undefined here means the legacy device-built link (this
+        // test's default), which has no checkout to ask about.
+        checkoutId: undefined,
       }),
     )
   })

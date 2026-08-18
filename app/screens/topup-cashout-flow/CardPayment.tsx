@@ -13,7 +13,7 @@
  * - Desktop user agent spoofing on iOS to prevent mobile-specific issues
  */
 
-import React, { useState, useRef, useLayoutEffect } from "react"
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react"
 import { View, ActivityIndicator, Alert, Platform, TouchableOpacity } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
@@ -24,6 +24,7 @@ import { PrimaryBtn } from "@app/components/buttons"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { useFygaroCheckout } from "@app/hooks/use-fygaro-checkout"
 
 type Props = StackScreenProps<RootStackParamList, "CardPayment">
 
@@ -44,6 +45,14 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   const webViewRef = useRef<WebView>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
+  // `url: null` until the server has answered, so the WebView never loads the
+  // editable link while a signed one is still on its way.
+  const [checkout, setCheckout] = useState<{
+    url: string | null
+    checkoutId: string | undefined
+  }>({ url: null, checkoutId: undefined })
+  const checkoutRequested = useRef(false)
+  const { requestCheckout } = useFygaroCheckout()
 
   // Get authenticated user data to extract username for webhook processing
   const {
@@ -98,11 +107,68 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
    * NOTE: The user will enter their email directly on Fygaro's form to avoid
    * double entry. The email is only for Fygaro's records, not for Flash processing.
    */
-  const paymentUrl = username
+  const legacyPaymentUrl = username
     ? `https://fygaro.com/en${FYGARO_PAYMENT_BUTTON_PATH}?amount=${amount}&custom_reference=${encodeURIComponent(
         username,
       )}&client_note=${encodeURIComponent(`wallet:${wallet}`)}`
     : null
+
+  /**
+   * Ask the server to authorise this top-up and sign the link, and fall back to
+   * the device-built URL above when it will not or cannot.
+   *
+   * The signed link is the point: its amount lives inside a JWT rather than an
+   * editable query parameter, and the allowance is checked BEFORE the card is
+   * charged rather than after — which is the only moment refusing costs the
+   * customer nothing. A refusal here is free; the same refusal at the webhook
+   * means they have already paid.
+   *
+   * Runs once per mount, keyed on the username being known. Re-requesting on
+   * every render would mint a fresh reservation each time and eat the
+   * customer's own allowance while they sit on the screen.
+   */
+  useEffect(() => {
+    if (!username || checkoutRequested.current) return
+    checkoutRequested.current = true
+
+    let cancelled = false
+    const run = async () => {
+      const result = await requestCheckout(Math.round(amount * 100))
+      if (cancelled) return
+
+      if (result.kind === "signed") {
+        setCheckout({ url: result.url, checkoutId: result.checkoutId })
+        return
+      }
+
+      if (result.kind === "refused") {
+        // Nothing has been charged. Show the server's wording — it is the only
+        // side that knows which limit was tripped and by how much — and send
+        // them back to change the amount.
+        setCheckout({ url: null, checkoutId: undefined })
+        Alert.alert(LL.TopupDetails.cannotTopUp(), result.message, [
+          { text: LL.common.ok(), onPress: () => navigation.goBack() },
+        ])
+        return
+      }
+
+      // `unavailable`: signed checkout is off, the backend predates it, or the
+      // request failed. None of those are the customer's fault, so fall back to
+      // the link that has always worked rather than blocking the top-up.
+      setCheckout({ url: legacyPaymentUrl, checkoutId: undefined })
+    }
+    run().catch(() => {
+      // The request itself already degrades to `unavailable` internally; this
+      // only guards against an unexpected throw leaving an unhandled rejection.
+      setCheckout({ url: legacyPaymentUrl, checkoutId: undefined })
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [username, amount, legacyPaymentUrl, requestCheckout, LL, navigation])
+
+  const paymentUrl = checkout.url
 
   /**
    * Domain whitelist for security.
@@ -173,10 +239,15 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
     if (successParam === "1" || hostAndPath.includes("success")) {
       // Payment succeeded - navigate to success screen
       // The webhook will handle the actual wallet credit
+      // The Fygaro redirect proves the CARD was charged. It says nothing about
+      // whether Flash credited the wallet, and those are different events —
+      // this screen used to assert the second from the first, and told one
+      // customer "Deposited to <wallet>" three times for two payments that were
+      // never credited. Hand over the checkout id so the next screen can ask.
       navigation.navigate("paymentSuccess", {
         amount,
         wallet,
-        transactionId: `txn_${Date.now()}`, // Temporary ID for UI
+        checkoutId: checkout.checkoutId,
       })
     } else if (
       successParam === "0" ||

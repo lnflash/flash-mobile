@@ -36,6 +36,7 @@ import { ButtonGroup } from "@app/components/button-group"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useCardTopupAllowance } from "@app/hooks/use-card-topup-allowance"
 import { useCardTopupLimit } from "@app/hooks/use-card-topup-limit"
 import { AccountLevel } from "@app/graphql/level-context"
 
@@ -102,6 +103,13 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     levelLoading,
   } = useCardTopupLimit()
 
+  // What is ACTUALLY left today, as the backend computes it — including unpaid
+  // checkout links this account is still holding. The flat per-level cap below
+  // is the fallback for when this cannot be established (older backend, feature
+  // off, ERPNext unreadable), never a substitute: showing $125 to someone with
+  // $25 left is how a customer gets charged for a top-up we then refuse.
+  const { allowance } = useCardTopupAllowance()
+
   // Card flow enforces the backend minimum (default $10); other flows keep the
   // long-standing $1 floor.
   const minimumAmount = isCard ? fygaroTopup?.minimumAmount ?? DEFAULT_CARD_MINIMUM : 1
@@ -128,9 +136,25 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     return !isNaN(numAmount) && numAmount >= minimumAmount
   }
 
+  /**
+   * Whether this amount is more than the account may still top up today.
+   *
+   * Prefers the REMAINING allowance over the flat per-level cap, and that is
+   * the whole point. Checking each amount against the flat cap is why one
+   * account paid $100, $80 and $60 against a $125 limit on 2026-08-16 without
+   * the app objecting once — every amount is individually under $125, and the
+   * client had no idea $180 was already spent. Two of those three were captured
+   * by Fygaro and never credited.
+   *
+   * Falls back to the flat cap when the allowance cannot be established, which
+   * is strictly the old behaviour: weaker, but the pre-charge check still
+   * refuses before any card is charged.
+   */
   const exceedsDailyLimit = (amount: string): boolean => {
     const numAmount = parseFloat(amount)
-    return dailyLimit !== undefined && !isNaN(numAmount) && numAmount > dailyLimit
+    if (isNaN(numAmount)) return false
+    if (allowance) return numAmount > allowance.remainingCents / 100
+    return dailyLimit !== undefined && numAmount > dailyLimit
   }
 
   // "You'll receive" net preview — only for card top-ups, only when the fee
@@ -196,10 +220,23 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
       return
     }
 
-    if (exceedsDailyLimit(amount) && dailyLimit !== undefined) {
+    if (exceedsDailyLimit(amount)) {
+      // Name the number the customer can act on. When the allowance is known
+      // that is what is LEFT, not the flat cap — telling someone with $25 left
+      // that their limit is $125 is how they retry the same amount and fail
+      // again. The `dailyLimit !== undefined` guard that used to sit on this
+      // branch is gone: it silently skipped the block whenever the level query
+      // had failed but the allowance was perfectly readable.
       Alert.alert(
-        "Invalid Amount",
-        LL.TopupDetails.dailyLimitAmount({ amount: `$${dailyLimit.toFixed(2)}` }),
+        LL.TopupDetails.cannotTopUp(),
+        allowance
+          ? LL.TopupDetails.allowanceRemaining({
+              remaining: `$${(allowance.remainingCents / 100).toFixed(2)}`,
+              limit: `$${(allowance.limitCents / 100).toFixed(2)}`,
+            })
+          : LL.TopupDetails.dailyLimitAmount({
+              amount: `$${(dailyLimit ?? 0).toFixed(2)}`,
+            }),
       )
       return
     }
@@ -317,10 +354,30 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
               </View>
             </InputAccessoryView>
           )}
-          {dailyLimit !== undefined && (
-            <Text type="p3" style={styles.limitNote}>
-              {LL.TopupDetails.dailyLimitInfo({ amount: `$${dailyLimit.toFixed(2)}` })}
-            </Text>
+          {isCard && allowance ? (
+            <>
+              <Text type="p3" style={styles.limitNote}>
+                {LL.TopupDetails.allowanceRemaining({
+                  remaining: `$${(allowance.remainingCents / 100).toFixed(2)}`,
+                  limit: `$${(allowance.limitCents / 100).toFixed(2)}`,
+                })}
+              </Text>
+              {allowance.heldCents > 0 && (
+                // Without this line, "you have spent nothing and $65 is left of
+                // $125" reads as a bug. The hold is the whole difference.
+                <Text type="p3" style={styles.limitNote}>
+                  {LL.TopupDetails.allowanceHeld({
+                    held: `$${(allowance.heldCents / 100).toFixed(2)}`,
+                  })}
+                </Text>
+              )}
+            </>
+          ) : (
+            dailyLimit !== undefined && (
+              <Text type="p3" style={styles.limitNote}>
+                {LL.TopupDetails.dailyLimitInfo({ amount: `$${dailyLimit.toFixed(2)}` })}
+              </Text>
+            )
           )}
           {route.params.paymentType === "bridge" && (
             <Text type="p3" style={styles.limitNote}>
