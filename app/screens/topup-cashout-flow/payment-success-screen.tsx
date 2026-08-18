@@ -32,7 +32,11 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
 
   const credited = resolution.phase === "credited"
   const checking = resolution.phase === "checking"
-  const refused = resolution.phase === "held" || resolution.phase === "failed"
+  const held = resolution.phase === "held"
+  const failed = resolution.phase === "failed"
+  // Held and failed share an icon and a colour, and nothing else: they are the
+  // two phases where the money is not on its way to the wallet.
+  const stalled = held || failed
 
   // The headline is the one thing this screen got wrong before: it claimed a
   // completed deposit off a Fygaro redirect. Each branch now says only what is
@@ -41,16 +45,25 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
     ? LL.PaymentSuccessScreen.checkingTitle()
     : credited
     ? LL.PaymentSuccessScreen.title()
-    : refused
-    ? LL.PaymentSuccessScreen.receivedTitle()
+    : held
+    ? LL.PaymentSuccessScreen.heldTitle()
+    : failed
+    ? LL.PaymentSuccessScreen.failedTitle()
     : LL.PaymentSuccessScreen.receivedTitle()
 
+  // `reason` is Maybe<String> — the backend sends one when the state needs one,
+  // and null otherwise. Held and failed therefore need their OWN fallbacks:
+  // falling through to pendingMessage told customers whose payment was frozen
+  // for manual review that we were "crediting your wallet", which is the exact
+  // class of false claim this screen exists to remove.
   const message = checking
     ? LL.PaymentSuccessScreen.checkingMessage()
     : credited
     ? LL.PaymentSuccessScreen.successMessage()
-    : resolution.phase === "held" || resolution.phase === "failed"
-    ? resolution.reason ?? LL.PaymentSuccessScreen.pendingMessage()
+    : held
+    ? resolution.reason ?? LL.PaymentSuccessScreen.heldMessage()
+    : failed
+    ? resolution.reason ?? LL.PaymentSuccessScreen.failedMessage()
     : LL.PaymentSuccessScreen.pendingMessage()
 
   return (
@@ -63,10 +76,18 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
             <Text
               style={[
                 styles.successIcon,
-                { color: credited ? colors.success : colors.warning },
+                {
+                  color: credited
+                    ? colors.success
+                    : stalled
+                    ? colors.error
+                    : colors.warning,
+                },
               ]}
             >
-              {credited ? "✓" : "⏱"}
+              {/* A clock says "on its way". Held and failed are not on their
+                  way, so they must not wear the waiting icon. */}
+              {credited ? "✓" : stalled ? "⚠" : "⏱"}
             </Text>
           )}
 
@@ -174,9 +195,6 @@ const useStyles = makeStyles(({ colors }) => ({
     gap: 16,
   },
   primaryButton: {
-    marginTop: 8,
-  },
-  secondaryButton: {
     marginTop: 8,
   },
 }))

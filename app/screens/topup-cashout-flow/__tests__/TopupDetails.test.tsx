@@ -5,7 +5,7 @@ import { ThemeProvider } from "@rneui/themed"
 import theme from "@app/rne-theme/theme"
 import { i18nObject } from "../../../i18n/i18n-util"
 import { loadAllLocales } from "../../../i18n/i18n-util.sync"
-import TopupDetails from "../TopupDetails"
+import TopupDetails, { formatHoldExpiry } from "../TopupDetails"
 import { estimateTopupNet } from "../topup-fee-estimate"
 import { AccountLevel } from "@app/graphql/level-context"
 
@@ -50,6 +50,30 @@ const mockUseFygaroTopupAllowanceQuery: jest.Mock = jest.fn(() => ({
   loading: false,
   refetch: jest.fn(),
 }))
+
+const allowanceResult = ({
+  limit,
+  held,
+  remaining,
+  holdsExpireAt = null,
+}: {
+  limit: number
+  held: number
+  remaining: number
+  holdsExpireAt?: number | null
+}) => ({
+  data: {
+    fygaroTopupAllowance: {
+      __typename: "FygaroTopupAllowance" as const,
+      limit,
+      held,
+      remaining,
+      holdsExpireAt,
+    },
+  },
+  loading: false,
+  refetch: jest.fn(),
+})
 
 let mockIsAuthed = true
 jest.mock("@app/graphql/is-authed-context", () => ({
@@ -288,6 +312,57 @@ describe("TopupDetails limit info labels", () => {
     expect(queryByText(en.TopupDetails.dailyLimitInfo({ amount: "$125.00" }))).toBeNull()
   })
 
+  it("shows remaining, the hold, and when the hold lapses", () => {
+    // "You've spent nothing and $65 is left of $125" reads as a bug on its own.
+    // The hold explains the gap; the expiry answers the question the hold
+    // immediately provokes — when do I get the rest back?
+    const holdsExpireAt = Date.UTC(2026, 7, 18, 21, 30) / 1000
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue(
+      allowanceResult({ limit: 12500, held: 6000, remaining: 6500, holdsExpireAt }),
+    )
+    const { queryByText } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    expect(
+      queryByText(
+        en.TopupDetails.allowanceRemaining({ remaining: "$65.00", limit: "$125.00" }),
+      ),
+    ).not.toBeNull()
+    expect(queryByText(en.TopupDetails.allowanceHeld({ held: "$60.00" }))).not.toBeNull()
+    expect(
+      queryByText(
+        en.TopupDetails.allowanceResets({
+          when: formatHoldExpiry(new Date(holdsExpireAt * 1000)),
+        }),
+      ),
+    ).not.toBeNull()
+  })
+
+  it("shows no hold-expiry line when nothing is held", () => {
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue(
+      allowanceResult({
+        limit: 12500,
+        held: 0,
+        remaining: 12500,
+        holdsExpireAt: Date.UTC(2026, 7, 18, 21, 30) / 1000,
+      }),
+    )
+    const { queryByText } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    expect(
+      queryByText(
+        en.TopupDetails.allowanceResets({
+          when: formatHoldExpiry(new Date(Date.UTC(2026, 7, 18, 21, 30))),
+        }),
+      ),
+    ).toBeNull()
+  })
+
   it("shows the ACH minimum-deposit notice in the bridge flow", () => {
     const { queryByText } = renderTopupDetails({
       paymentType: "bridge",
@@ -331,20 +406,9 @@ describe("TopupDetails per-level daily limit", () => {
     // 2026-08-16: $100, $80 and $60 all passed the client against a $125 cap,
     // because each is individually under it and the app had no idea $180 was
     // already spent. Two were captured by Fygaro and never credited.
-    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
-      data: {
-        fygaroTopupAllowance: {
-          limit: 12500,
-          spent: 10000,
-          held: 0,
-          remaining: 2500,
-          resetsAt: null,
-          holdsExpireAt: null,
-        },
-      },
-      loading: false,
-      refetch: jest.fn(),
-    })
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue(
+      allowanceResult({ limit: 12500, held: 0, remaining: 2500 }),
+    )
     const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
     const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
       paymentType: "card",
@@ -367,20 +431,9 @@ describe("TopupDetails per-level daily limit", () => {
   })
 
   it("allows an amount within the remaining allowance", () => {
-    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
-      data: {
-        fygaroTopupAllowance: {
-          limit: 12500,
-          spent: 10000,
-          held: 0,
-          remaining: 2500,
-          resetsAt: null,
-          holdsExpireAt: null,
-        },
-      },
-      loading: false,
-      refetch: jest.fn(),
-    })
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue(
+      allowanceResult({ limit: 12500, held: 0, remaining: 2500 }),
+    )
     const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
       paymentType: "card",
       level: AccountLevel.One,
@@ -390,6 +443,62 @@ describe("TopupDetails per-level daily limit", () => {
     fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
 
     expect(navigate).toHaveBeenCalled()
+  })
+
+  it("does NOT apply the card allowance to a bank transfer", () => {
+    // The Fygaro allowance is the CARD allowance. Applying it to a wire capped
+    // a $500 bank transfer at whatever was left of a $125 card limit — and the
+    // limit note is card-only, so the refusal arrived out of nowhere with a
+    // number the customer had never been shown.
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue(
+      allowanceResult({ limit: 12500, held: 0, remaining: 2500 }),
+    )
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "bankTransfer",
+      level: AccountLevel.One,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "500")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(navigate).toHaveBeenCalledWith("BankTransfer", {
+      amount: 500,
+      wallet: "USD",
+      paymentType: "bankTransfer",
+    })
+    alertSpy.mockRestore()
+  })
+
+  it("does NOT apply the card allowance to a Bridge deposit", () => {
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue(
+      allowanceResult({ limit: 12500, held: 0, remaining: 2500 }),
+    )
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+      paymentType: "bridge",
+      level: AccountLevel.One,
+    })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "500")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(navigate).toHaveBeenCalledWith("BankTransfer", {
+      amount: 500,
+      wallet: "USD",
+      paymentType: "bridge",
+    })
+    alertSpy.mockRestore()
+  })
+
+  it("does not even ask for the card allowance off the card flow", () => {
+    renderTopupDetails({ paymentType: "bankTransfer", level: AccountLevel.One })
+
+    expect(mockUseFygaroTopupAllowanceQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: true }),
+    )
   })
 
   it("allows a card top-up landing exactly ON the L1 cap (inclusive)", () => {

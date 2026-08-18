@@ -1464,10 +1464,8 @@ query feedbackModalShown {
 query fygaroTopupAllowance {
   fygaroTopupAllowance {
     limit
-    spent
     held
     remaining
-    resetsAt
     holdsExpireAt
     __typename
   }

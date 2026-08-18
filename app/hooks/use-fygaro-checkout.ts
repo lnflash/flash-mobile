@@ -1,3 +1,4 @@
+import { useCallback } from "react"
 import { gql } from "@apollo/client"
 
 import { useFygaroCheckoutCreateMutation } from "@app/graphql/generated"
@@ -57,40 +58,54 @@ const CUSTOMER_REFUSAL_CODES = new Set([
 export const useFygaroCheckout = () => {
   const [createCheckout, { loading }] = useFygaroCheckoutCreateMutation()
 
-  const requestCheckout = async (amountCents: number): Promise<FygaroCheckoutResult> => {
-    let payload
-    try {
-      const { data } = await createCheckout({
-        variables: { input: { amount: amountCents } },
-      })
-      payload = data?.fygaroCheckoutCreate
-    } catch {
-      // Network error, or a backend without this mutation. Neither is the
-      // customer's problem and neither should stop them topping up.
-      return { kind: "unavailable" }
-    }
+  // MUST stay referentially stable. Apollo's `useMutation` calls
+  // `setResult({ loading: true })` synchronously the moment the mutate function
+  // is invoked, which re-renders every consumer of this hook. A plain arrow here
+  // would hand the caller a NEW function on that re-render — and CardPayment's
+  // checkout effect depends on it, so the effect would tear down and cancel the
+  // very request it had just started, leaving the WebView with no URL forever.
+  const requestCheckout = useCallback(
+    async (amountCents: number): Promise<FygaroCheckoutResult> => {
+      let payload
+      try {
+        const { data } = await createCheckout({
+          variables: { input: { amount: amountCents } },
+        })
+        payload = data?.fygaroCheckoutCreate
+      } catch {
+        // Network error, or a backend without this mutation. Neither is the
+        // customer's problem and neither should stop them topping up.
+        return { kind: "unavailable" }
+      }
 
-    if (!payload) return { kind: "unavailable" }
+      if (!payload) return { kind: "unavailable" }
 
-    const error = payload.errors?.[0]
-    if (error) {
-      const code = error.code ?? undefined
-      if (code && CUSTOMER_REFUSAL_CODES.has(code)) {
+      const errors = payload.errors ?? []
+      // Search the WHOLE array, not just the head. A refusal the customer can
+      // act on must win over anything else the server happens to report
+      // alongside it: if an unrelated error sorted first, the caller would fall
+      // back to the legacy editable link and the customer would be charged for
+      // a top-up the webhook then refuses — the exact incident this hook exists
+      // to end.
+      const refusal = errors.find((e) => e.code && CUSTOMER_REFUSAL_CODES.has(e.code))
+      if (refusal?.code) {
         return {
           kind: "refused",
-          message: error.message,
-          code,
+          message: refusal.message,
+          code: refusal.code,
           remainingAllowanceCents: payload.remainingAllowance ?? undefined,
         }
       }
-      return { kind: "unavailable" }
-    }
+      // Errors, but none of them the customer's to fix. Ours — degrade.
+      if (errors.length > 0) return { kind: "unavailable" }
 
-    const checkout = payload.checkout
-    if (!checkout?.url || !checkout.checkoutId) return { kind: "unavailable" }
+      const checkout = payload.checkout
+      if (!checkout?.url || !checkout.checkoutId) return { kind: "unavailable" }
 
-    return { kind: "signed", url: checkout.url, checkoutId: checkout.checkoutId }
-  }
+      return { kind: "signed", url: checkout.url, checkoutId: checkout.checkoutId }
+    },
+    [createCheckout],
+  )
 
   return { requestCheckout, requesting: loading }
 }

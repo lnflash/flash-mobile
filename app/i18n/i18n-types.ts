@@ -2247,8 +2247,8 @@ type RootTranslation = {
 		 */
 		allowanceHeld: RequiredParams<'held'>
 		/**
-		 * M​o​r​e​ ​b​e​c​o​m​e​s​ ​a​v​a​i​l​a​b​l​e​ ​{​w​h​e​n​}
-		 * @param {unknown} when
+		 * M​o​r​e​ ​b​e​c​o​m​e​s​ ​a​v​a​i​l​a​b​l​e​ ​a​t​ ​{​w​h​e​n​}
+		 * @param {string} when
 		 */
 		allowanceResets: RequiredParams<'when'>
 		/**
@@ -2537,6 +2537,22 @@ type RootTranslation = {
 		 */
 		pendingMessage: string
 		/**
+		 * P​a​y​m​e​n​t​ ​o​n​ ​h​o​l​d
+		 */
+		heldTitle: string
+		/**
+		 * T​h​i​s​ ​p​a​y​m​e​n​t​ ​i​s​ ​o​n​ ​h​o​l​d​ ​f​o​r​ ​r​e​v​i​e​w​.​ ​N​o​t​h​i​n​g​ ​m​o​r​e​ ​i​s​ ​n​e​e​d​e​d​ ​f​r​o​m​ ​y​o​u​ ​r​i​g​h​t​ ​n​o​w​ ​—​ ​w​e​'​l​l​ ​b​e​ ​i​n​ ​t​o​u​c​h​.
+		 */
+		heldMessage: string
+		/**
+		 * P​a​y​m​e​n​t​ ​n​o​t​ ​c​r​e​d​i​t​e​d
+		 */
+		failedTitle: string
+		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​c​r​e​d​i​t​ ​t​h​i​s​ ​p​a​y​m​e​n​t​ ​y​e​t​.​ ​W​e​'​r​e​ ​o​n​ ​i​t​.
+		 */
+		failedMessage: string
+		/**
 		 * C​r​e​d​i​t​i​n​g​ ​t​o
 		 */
 		destinationWallet: string
@@ -2553,17 +2569,9 @@ type RootTranslation = {
 		 */
 		depositedTo: string
 		/**
-		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
-		 */
-		transactionId: string
-		/**
 		 * D​o​n​e
 		 */
 		done: string
-		/**
-		 * V​i​e​w​ ​T​r​a​n​s​a​c​t​i​o​n
-		 */
-		viewTransaction: string
 	}
 	PinScreen: {
 		/**
@@ -8510,9 +8518,9 @@ export type TranslationFunctions = {
 		 */
 		allowanceHeld: (arg: { held: unknown }) => LocalizedString
 		/**
-		 * More becomes available {when}
+		 * More becomes available at {when}
 		 */
-		allowanceResets: (arg: { when: unknown }) => LocalizedString
+		allowanceResets: (arg: { when: string }) => LocalizedString
 		/**
 		 * Bank Transfer
 		 */
@@ -8790,6 +8798,22 @@ export type TranslationFunctions = {
 		 */
 		pendingMessage: () => LocalizedString
 		/**
+		 * Payment on hold
+		 */
+		heldTitle: () => LocalizedString
+		/**
+		 * This payment is on hold for review. Nothing more is needed from you right now — we'll be in touch.
+		 */
+		heldMessage: () => LocalizedString
+		/**
+		 * Payment not credited
+		 */
+		failedTitle: () => LocalizedString
+		/**
+		 * We couldn't credit this payment yet. We're on it.
+		 */
+		failedMessage: () => LocalizedString
+		/**
 		 * Crediting to
 		 */
 		destinationWallet: () => LocalizedString
@@ -8806,17 +8830,9 @@ export type TranslationFunctions = {
 		 */
 		depositedTo: () => LocalizedString
 		/**
-		 * Transaction ID
-		 */
-		transactionId: () => LocalizedString
-		/**
 		 * Done
 		 */
 		done: () => LocalizedString
-		/**
-		 * View Transaction
-		 */
-		viewTransaction: () => LocalizedString
 	}
 	PinScreen: {
 		/**

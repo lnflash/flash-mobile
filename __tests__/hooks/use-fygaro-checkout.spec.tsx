@@ -72,6 +72,34 @@ describe("useFygaroCheckout", () => {
     })
   })
 
+  it("finds the customer's refusal even when another error is listed first", async () => {
+    // Only the head of the array used to be inspected. A non-customer error
+    // sorted ahead of the refusal handed the customer the legacy editable link
+    // and let them pay for a top-up the webhook then refused — money captured,
+    // wallet uncredited, which is the precise incident this hook exists to end.
+    mockCreateCheckout.mockResolvedValue({
+      data: {
+        fygaroCheckoutCreate: {
+          errors: [
+            { code: "SOME_UNRELATED_SERVER_ERROR", message: "internal" },
+            {
+              code: "FYGARO_DAILY_ALLOWANCE_EXCEEDED",
+              message: "You have $4.48 left of today's top-up limit",
+            },
+          ],
+          remainingAllowance: 448,
+        },
+      },
+    })
+
+    expect(await ask(8000)).toEqual({
+      kind: "refused",
+      code: "FYGARO_DAILY_ALLOWANCE_EXCEEDED",
+      message: "You have $4.48 left of today's top-up limit",
+      remainingAllowanceCents: 448,
+    })
+  })
+
   it("treats OUR faults as unavailable, so the top-up is not blocked", async () => {
     // Signed checkout being switched off is not the customer's problem. Blocking
     // their top-up over our own config would be a worse outcome than the

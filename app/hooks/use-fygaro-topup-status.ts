@@ -74,6 +74,21 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
     startedAtRef.current = Date.now()
     resolvedRef.current = false
 
+    let timer: ReturnType<typeof setInterval> | undefined
+    let handover: ReturnType<typeof setTimeout> | undefined
+    let stop: ReturnType<typeof setTimeout> | undefined
+
+    // Every timer this effect owns, in one place, so a terminal answer and an
+    // unmount can both put the polling down completely.
+    const stopPolling = () => {
+      if (timer) clearInterval(timer)
+      if (handover) clearTimeout(handover)
+      if (stop) clearTimeout(stop)
+      timer = undefined
+      handover = undefined
+      stop = undefined
+    }
+
     const apply = (state: FygaroTopupState, reason?: string, netAmount?: number) => {
       if (state === "CREDITED") {
         setResolution({ phase: "credited", netAmountCents: netAmount })
@@ -99,6 +114,12 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
       if (status && isTerminal(status.state)) {
         resolvedRef.current = true
         apply(status.state, status.reason ?? undefined, status.netAmount ?? undefined)
+        // Terminal means terminal — there is no later answer to wait for. Left
+        // running, a CREDITED at t≈1s still cost ~21 more network-only round
+        // trips and ~21 re-renders over the next 70 seconds, and
+        // HELD_FOR_REVIEW (which no amount of retrying changes, by definition)
+        // cost exactly the same.
+        stopPolling()
         return
       }
 
@@ -114,27 +135,25 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
       }
     }
 
-    tick().catch(() => undefined)
-    let timer = setInterval(tick, FAST_POLL_MS)
+    timer = setInterval(tick, FAST_POLL_MS)
 
     // Hand over to the quiet poll at the same moment the screen resolves, so a
     // late credit still upgrades "pending" to "credited" without the customer
     // watching a spinner for a minute.
-    const handover = setTimeout(() => {
-      clearInterval(timer)
+    handover = setTimeout(() => {
+      if (timer) clearInterval(timer)
       timer = setInterval(tick, SLOW_POLL_MS)
     }, FAST_POLL_WINDOW_MS)
 
-    const stop = setTimeout(
-      () => clearInterval(timer),
-      FAST_POLL_WINDOW_MS + SLOW_POLL_WINDOW_MS,
-    )
+    stop = setTimeout(stopPolling, FAST_POLL_WINDOW_MS + SLOW_POLL_WINDOW_MS)
+
+    // Fired last, so a terminal answer arriving on this first poll can clear
+    // timers that already exist.
+    tick().catch(() => undefined)
 
     return () => {
       cancelled = true
-      clearInterval(timer)
-      clearTimeout(handover)
-      clearTimeout(stop)
+      stopPolling()
     }
   }, [checkoutId, fetchStatus])
 

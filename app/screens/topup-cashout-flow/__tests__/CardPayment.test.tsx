@@ -30,10 +30,39 @@ jest.mock("@app/graphql/is-authed-context", () => ({
 }))
 
 const mockUseHomeAuthedQuery = jest.fn()
-jest.mock("@app/graphql/generated", () => ({
-  useHomeAuthedQuery: (...args: unknown[]) => mockUseHomeAuthedQuery(...args),
-  useFygaroCheckoutCreateMutation: () => [mockCreateCheckout, { loading: false }],
-}))
+jest.mock("@app/graphql/generated", () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useCallback, useState } = require("react")
+  return {
+    useHomeAuthedQuery: (...args: unknown[]) => mockUseHomeAuthedQuery(...args),
+    /**
+     * A mutation hook that RE-RENDERS on invocation, like the real one.
+     *
+     * Apollo's `useMutation` calls `setResult({ loading: true })` synchronously
+     * inside the mutate function (@apollo/client useMutation.js), so invoking a
+     * mutation immediately re-renders the calling component. A mock returning a
+     * constant `{ loading: false }` never does — and that difference hid a bug
+     * that killed card top-ups outright: the checkout effect's dependency
+     * changed on that re-render, the cleanup cancelled the in-flight request,
+     * the answer was discarded, and the WebView never received a URL.
+     *
+     * Every CardPayment test now runs against a mutation that behaves like
+     * production, so that class of bug fails CI instead of shipping.
+     */
+    useFygaroCheckoutCreateMutation: () => {
+      const [loading, setLoading] = useState(false)
+      const mutate = useCallback(async (...args: unknown[]) => {
+        setLoading(true)
+        try {
+          return await mockCreateCheckout(...args)
+        } finally {
+          setLoading(false)
+        }
+      }, [])
+      return [mutate, { loading }]
+    },
+  }
+})
 
 // Default: signed checkout is unavailable (the flag is off in production as of
 // this writing), so these tests exercise the LEGACY device-built URL that must
@@ -136,6 +165,138 @@ describe("CardPayment payment URL", () => {
 
     const { uri } = lastWebViewProps().source
     expect(uri).toContain(`custom_reference=${encodeURIComponent("álice+test")}`)
+  })
+})
+
+describe("CardPayment signed checkout", () => {
+  const signed = (url: string, checkoutId: string) => ({
+    data: {
+      fygaroCheckoutCreate: {
+        errors: [],
+        checkout: { url, checkoutId },
+      },
+    },
+  })
+
+  it("loads the SIGNED url and hands the server's checkoutId to the success screen", async () => {
+    // The whole point of the mutation: the amount lives inside a JWT instead of
+    // an editable query parameter, and the id is what lets the next screen ask
+    // what actually happened instead of guessing from a redirect.
+    mockCreateCheckout.mockResolvedValueOnce(
+      signed("https://www.fygaro.com/en/pb/signed?jwt=abc", "intent-7"),
+    )
+    const { navigate } = await renderAndSettle({ amount: 60, wallet: "USD" })
+
+    const { uri } = lastWebViewProps().source
+    expect(uri).toBe("https://www.fygaro.com/en/pb/signed?jwt=abc")
+    // The editable link must not be what loads when a signed one exists.
+    expect(uri).not.toContain("custom_reference")
+
+    lastWebViewProps().onNavigationStateChange({
+      url: "https://www.fygaro.com/en/checkout/payment_success",
+    })
+
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith("paymentSuccess", {
+        amount: 60,
+        wallet: "USD",
+        checkoutId: "intent-7",
+      }),
+    )
+  })
+
+  it("sends the amount in CENTS", async () => {
+    mockCreateCheckout.mockResolvedValueOnce(signed("https://x", "intent-7"))
+    await renderAndSettle({ amount: 60 })
+
+    expect(mockCreateCheckout).toHaveBeenCalledWith({
+      variables: { input: { amount: 6000 } },
+    })
+  })
+
+  it("asks exactly once, even though invoking the mutation re-renders the screen", async () => {
+    // A fresh reservation per render would eat the customer's own daily
+    // allowance while they sat on the screen looking at the form.
+    mockCreateCheckout.mockResolvedValueOnce(signed("https://x", "intent-7"))
+    await renderAndSettle()
+
+    expect(mockCreateCheckout).toHaveBeenCalledTimes(1)
+  })
+
+  it("shows the loading spinner, NOT the error screen, while the request is in flight", async () => {
+    // The error screen used to be the first paint of every card top-up: the
+    // URL is null until the server answers, and the error branch was derived
+    // from "no url". On a slow link the customer sat on "Something went wrong"
+    // for the whole round trip.
+    let answer: (value: unknown) => void = () => undefined
+    mockCreateCheckout.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve
+        }),
+    )
+
+    const { getAllByText, queryAllByText } = renderCardPayment()
+
+    expect(queryAllByText(en.FygaroWebViewScreen.error())).toHaveLength(0)
+    expect(getAllByText(en.FygaroWebViewScreen.loading()).length).toBeGreaterThan(0)
+    expect(mockWebView).not.toHaveBeenCalled()
+
+    await act(async () => {
+      answer(signed("https://www.fygaro.com/en/pb/signed?jwt=abc", "intent-7"))
+    })
+
+    expect(lastWebViewProps().source.uri).toBe(
+      "https://www.fygaro.com/en/pb/signed?jwt=abc",
+    )
+  })
+
+  it("shows the server's refusal and sends the customer back, charging nothing", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    mockCreateCheckout.mockResolvedValueOnce({
+      data: {
+        fygaroCheckoutCreate: {
+          errors: [
+            {
+              code: "FYGARO_DAILY_ALLOWANCE_EXCEEDED",
+              message: "You have $4.48 left of today's top-up limit",
+            },
+          ],
+          checkout: null,
+        },
+      },
+    })
+
+    const { goBack } = renderCardPayment()
+    await waitFor(() => expect(alertSpy).toHaveBeenCalled())
+
+    // The server's wording, verbatim — it is the only side that knows which
+    // threshold was tripped and by how much.
+    expect(alertSpy).toHaveBeenCalledWith(
+      en.TopupDetails.cannotTopUp(),
+      "You have $4.48 left of today's top-up limit",
+      expect.anything(),
+    )
+    // And nothing is loaded: a refusal before the card is charged is free.
+    expect(mockWebView).not.toHaveBeenCalled()
+
+    const [, , buttons] = alertSpy.mock.calls[0] as unknown as [
+      string,
+      string,
+      { onPress: () => void }[],
+    ]
+    buttons[0].onPress()
+    expect(goBack).toHaveBeenCalled()
+
+    alertSpy.mockRestore()
+  })
+
+  it("falls back to the legacy link when the checkout mutation throws (old backend)", async () => {
+    mockCreateCheckout.mockRejectedValueOnce(new Error("Cannot query field"))
+
+    await renderAndSettle()
+
+    expect(lastWebViewProps().source.uri).toContain("custom_reference=alice")
   })
 })
 

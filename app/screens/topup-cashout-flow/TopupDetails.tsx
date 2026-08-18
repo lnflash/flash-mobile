@@ -52,6 +52,12 @@ import Bitcoin from "@app/assets/icons/bitcoin.svg"
 // silently drops back to the old $1.
 const DEFAULT_CARD_MINIMUM = 10
 
+// Checkout holds lapse within the day, so the clock time is the useful part.
+// Exported for the test that pins the rendered line, so the expectation is
+// derived the same way rather than hard-coding one machine's locale.
+export const formatHoldExpiry = (at: Date): string =>
+  at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+
 type Props = StackScreenProps<RootStackParamList, "TopupDetails">
 
 const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
@@ -103,12 +109,18 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     levelLoading,
   } = useCardTopupLimit()
 
-  // What is ACTUALLY left today, as the backend computes it — including unpaid
-  // checkout links this account is still holding. The flat per-level cap below
-  // is the fallback for when this cannot be established (older backend, feature
-  // off, ERPNext unreadable), never a substitute: showing $125 to someone with
-  // $25 left is how a customer gets charged for a top-up we then refuse.
-  const { allowance } = useCardTopupAllowance()
+  // What is ACTUALLY left today for CARD top-ups, as the backend computes it —
+  // including unpaid checkout links this account is still holding. The flat
+  // per-level cap below is the fallback for when this cannot be established
+  // (older backend, feature off, ERPNext unreadable), never a substitute:
+  // showing $125 to someone with $25 left is how a customer gets charged for a
+  // top-up we then refuse.
+  //
+  // Skipped off the card flow entirely. Bank transfers and Bridge deposits have
+  // their own limits and are not touched by the Fygaro allowance; asking for it
+  // here would only tempt this screen into applying a card cap to a rail it has
+  // nothing to do with.
+  const { allowance } = useCardTopupAllowance({ skip: !isCard })
 
   // Card flow enforces the backend minimum (default $10); other flows keep the
   // long-standing $1 floor.
@@ -149,11 +161,17 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
    * Falls back to the flat cap when the allowance cannot be established, which
    * is strictly the old behaviour: weaker, but the pre-charge check still
    * refuses before any card is charged.
+   *
+   * CARD ONLY, both halves of it — same as `dailyLimit` above. The Fygaro
+   * allowance says nothing about a bank transfer or a Bridge deposit, and
+   * applying it to them capped a $500 wire at whatever was left of a $125 card
+   * allowance, with an alert quoting a limit note the non-card screen does not
+   * even show.
    */
   const exceedsDailyLimit = (amount: string): boolean => {
     const numAmount = parseFloat(amount)
     if (isNaN(numAmount)) return false
-    if (allowance) return numAmount > allowance.remainingCents / 100
+    if (isCard && allowance) return numAmount > allowance.remainingCents / 100
     return dailyLimit !== undefined && numAmount > dailyLimit
   }
 
@@ -229,7 +247,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
       // had failed but the allowance was perfectly readable.
       Alert.alert(
         LL.TopupDetails.cannotTopUp(),
-        allowance
+        isCard && allowance
           ? LL.TopupDetails.allowanceRemaining({
               remaining: `$${(allowance.remainingCents / 100).toFixed(2)}`,
               limit: `$${(allowance.limitCents / 100).toFixed(2)}`,
@@ -368,6 +386,16 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
                 <Text type="p3" style={styles.limitNote}>
                   {LL.TopupDetails.allowanceHeld({
                     held: `$${(allowance.heldCents / 100).toFixed(2)}`,
+                  })}
+                </Text>
+              )}
+              {allowance.heldCents > 0 && allowance.holdsExpireAt && (
+                // And the immediate follow-up question — "when do I get the
+                // rest back?" — answered in the same breath, so nobody has to
+                // guess whether the hold is minutes or days.
+                <Text type="p3" style={styles.limitNote}>
+                  {LL.TopupDetails.allowanceResets({
+                    when: formatHoldExpiry(allowance.holdsExpireAt),
                   })}
                 </Text>
               )}

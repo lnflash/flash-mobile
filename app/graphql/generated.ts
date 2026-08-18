@@ -3378,7 +3378,7 @@ export type AccountStatusQuery = { readonly __typename: 'Query', readonly me?: {
 export type FygaroTopupAllowanceQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type FygaroTopupAllowanceQuery = { readonly __typename: 'Query', readonly fygaroTopupAllowance?: { readonly __typename: 'FygaroTopupAllowance', readonly limit: number, readonly spent: number, readonly held: number, readonly remaining: number, readonly resetsAt?: number | null, readonly holdsExpireAt?: number | null } | null };
+export type FygaroTopupAllowanceQuery = { readonly __typename: 'Query', readonly fygaroTopupAllowance?: { readonly __typename: 'FygaroTopupAllowance', readonly limit: number, readonly held: number, readonly remaining: number, readonly holdsExpireAt?: number | null } | null };
 
 export type CardTopupLimitsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6877,10 +6877,8 @@ export const FygaroTopupAllowanceDocument = gql`
     query fygaroTopupAllowance {
   fygaroTopupAllowance {
     limit
-    spent
     held
     remaining
-    resetsAt
     holdsExpireAt
   }
 }

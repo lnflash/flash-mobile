@@ -13,7 +13,7 @@
  * - Desktop user agent spoofing on iOS to prevent mobile-specific issues
  */
 
-import React, { useState, useRef, useEffect, useLayoutEffect } from "react"
+import React, { useCallback, useState, useRef, useEffect, useLayoutEffect } from "react"
 import { View, ActivityIndicator, Alert, Platform, TouchableOpacity } from "react-native"
 import { StackScreenProps } from "@react-navigation/stack"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
@@ -37,6 +37,40 @@ const FYGARO_PAYMENT_BUTTON_PATH = "/pb/bd4a34c1-3d24-4315-a2b8-627518f70916"
 // the effect and rebuild the header on each render.
 const headerDoneStyle = { paddingHorizontal: 16, paddingVertical: 8 }
 
+/**
+ * Where the checkout request has got to. Modelled explicitly because the two
+ * states that both have no URL are NOT the same thing: "the server has not
+ * answered yet" is the normal first second of every card top-up, and "there is
+ * no URL and there is not going to be one" is a failure. Collapsing them into
+ * `url === null` put the "Something went wrong / Retry" screen in front of
+ * every customer on first paint.
+ */
+type CheckoutState =
+  | { status: "requesting" }
+  | { status: "ready"; url: string; checkoutId?: string }
+  | { status: "failed" }
+
+/**
+ * Build Fygaro payment URL with critical parameters:
+ * - amount: The payment amount in USD
+ * - custom_reference: Flash username (CRITICAL: ties the payment to a Flash
+ *   account — Fygaro's checkout reads `custom_reference`; the previously used
+ *   `client_reference` is silently ignored and left every payment unattributed)
+ * - client_note: target wallet, recorded on the Fygaro payment for ops/audit
+ *   (informational only — the backend credits the USD cash wallet regardless)
+ *
+ * Only ever called with a known username: a payment without a real username
+ * cannot be credited to anyone, so the WebView must never load with a
+ * placeholder reference.
+ *
+ * NOTE: The user will enter their email directly on Fygaro's form to avoid
+ * double entry. The email is only for Fygaro's records, not for Flash processing.
+ */
+const buildLegacyPaymentUrl = (username: string, amount: number, wallet: string) =>
+  `https://fygaro.com/en${FYGARO_PAYMENT_BUTTON_PATH}?amount=${amount}&custom_reference=${encodeURIComponent(
+    username,
+  )}&client_note=${encodeURIComponent(`wallet:${wallet}`)}`
+
 const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   const isAuthed = useIsAuthed()
   const styles = useStyles()
@@ -45,13 +79,13 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   const webViewRef = useRef<WebView>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
-  // `url: null` until the server has answered, so the WebView never loads the
+  // No URL until the server has answered, so the WebView never loads the
   // editable link while a signed one is still on its way.
-  const [checkout, setCheckout] = useState<{
-    url: string | null
-    checkoutId: string | undefined
-  }>({ url: null, checkoutId: undefined })
+  const [checkout, setCheckout] = useState<CheckoutState>({ status: "requesting" })
   const checkoutRequested = useRef(false)
+  // Bumped by Retry to re-run the checkout effect after a settled attempt that
+  // produced no URL.
+  const [checkoutAttempt, setCheckoutAttempt] = useState(0)
   const { requestCheckout } = useFygaroCheckout()
 
   // Get authenticated user data to extract username for webhook processing
@@ -92,30 +126,27 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   }, [navigation, LL, colors.primary])
 
   /**
-   * Build Fygaro payment URL with critical parameters:
-   * - amount: The payment amount in USD
-   * - custom_reference: Flash username (CRITICAL: ties the payment to a Flash
-   *   account — Fygaro's checkout reads `custom_reference`; the previously used
-   *   `client_reference` is silently ignored and left every payment unattributed)
-   * - client_note: target wallet, recorded on the Fygaro payment for ops/audit
-   *   (informational only — the backend credits the USD cash wallet regardless)
+   * Everything the checkout effect needs but which must NOT be able to restart
+   * it. `LL` and `navigation` are only read when a refusal has to be announced,
+   * and a change in either is no reason to abandon an in-flight reservation —
+   * so they are read through a ref instead of sitting in the dependency array.
    *
-   * The URL is only built once the username is known: a payment without a real
-   * username cannot be credited to anyone, so the WebView must never load with
-   * a placeholder reference.
-   *
-   * NOTE: The user will enter their email directly on Fygaro's form to avoid
-   * double entry. The email is only for Fygaro's records, not for Flash processing.
+   * This is not hypothetical tidiness. Apollo's `useMutation` calls
+   * `setResult({ loading: true })` synchronously as the mutation is invoked, so
+   * the screen re-renders while the request is in flight; any unstable
+   * dependency at that moment runs the cleanup below, sets `cancelled = true`,
+   * and the re-run bails on `checkoutRequested.current`. The answer then lands
+   * on a cancelled run, `setCheckout` never fires, and the WebView never gets a
+   * URL — card top-ups dead on arrival.
    */
-  const legacyPaymentUrl = username
-    ? `https://fygaro.com/en${FYGARO_PAYMENT_BUTTON_PATH}?amount=${amount}&custom_reference=${encodeURIComponent(
-        username,
-      )}&client_note=${encodeURIComponent(`wallet:${wallet}`)}`
-    : null
+  const checkoutDeps = useRef({ LL, navigation })
+  useLayoutEffect(() => {
+    checkoutDeps.current = { LL, navigation }
+  })
 
   /**
    * Ask the server to authorise this top-up and sign the link, and fall back to
-   * the device-built URL above when it will not or cannot.
+   * the device-built URL when it will not or cannot.
    *
    * The signed link is the point: its amount lives inside a JWT rather than an
    * editable query parameter, and the allowance is checked BEFORE the card is
@@ -131,13 +162,19 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
     if (!username || checkoutRequested.current) return
     checkoutRequested.current = true
 
+    const legacyPaymentUrl = buildLegacyPaymentUrl(username, amount, wallet)
+
     let cancelled = false
     const run = async () => {
       const result = await requestCheckout(Math.round(amount * 100))
       if (cancelled) return
 
       if (result.kind === "signed") {
-        setCheckout({ url: result.url, checkoutId: result.checkoutId })
+        setCheckout({
+          status: "ready",
+          url: result.url,
+          checkoutId: result.checkoutId,
+        })
         return
       }
 
@@ -145,9 +182,10 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         // Nothing has been charged. Show the server's wording — it is the only
         // side that knows which limit was tripped and by how much — and send
         // them back to change the amount.
-        setCheckout({ url: null, checkoutId: undefined })
-        Alert.alert(LL.TopupDetails.cannotTopUp(), result.message, [
-          { text: LL.common.ok(), onPress: () => navigation.goBack() },
+        setCheckout({ status: "failed" })
+        const { LL: currentLL, navigation: currentNavigation } = checkoutDeps.current
+        Alert.alert(currentLL.TopupDetails.cannotTopUp(), result.message, [
+          { text: currentLL.common.ok(), onPress: () => currentNavigation.goBack() },
         ])
         return
       }
@@ -155,20 +193,21 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
       // `unavailable`: signed checkout is off, the backend predates it, or the
       // request failed. None of those are the customer's fault, so fall back to
       // the link that has always worked rather than blocking the top-up.
-      setCheckout({ url: legacyPaymentUrl, checkoutId: undefined })
+      setCheckout({ status: "ready", url: legacyPaymentUrl })
     }
     run().catch(() => {
       // The request itself already degrades to `unavailable` internally; this
       // only guards against an unexpected throw leaving an unhandled rejection.
-      setCheckout({ url: legacyPaymentUrl, checkoutId: undefined })
+      if (!cancelled) setCheckout({ status: "ready", url: legacyPaymentUrl })
     })
 
     return () => {
       cancelled = true
     }
-  }, [username, amount, legacyPaymentUrl, requestCheckout, LL, navigation])
+  }, [username, amount, wallet, checkoutAttempt, requestCheckout])
 
-  const paymentUrl = checkout.url
+  const paymentUrl = checkout.status === "ready" ? checkout.url : null
+  const checkoutId = checkout.status === "ready" ? checkout.checkoutId : undefined
 
   /**
    * Domain whitelist for security.
@@ -247,7 +286,7 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
       navigation.navigate("paymentSuccess", {
         amount,
         wallet,
-        checkoutId: checkout.checkoutId,
+        checkoutId,
       })
     } else if (
       successParam === "0" ||
@@ -288,23 +327,38 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
     }
   }
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     setError(false)
     setIsLoading(true)
-    if (!paymentUrl) {
+    if (!username) {
       // The username never resolved, so there is no WebView to reload — and
       // cache-first won't re-ask the server on its own. Refetch the account
       // query; a failure lands back on the error screen.
       refetch?.().catch(() => setError(true))
       return
     }
+    if (checkout.status !== "ready") {
+      // The checkout attempt settled without a URL. Reloading nothing would
+      // leave the customer on the error screen forever, so ask the server
+      // again from scratch.
+      checkoutRequested.current = false
+      setCheckout({ status: "requesting" })
+      setCheckoutAttempt((attempt) => attempt + 1)
+      return
+    }
     webViewRef.current?.reload()
-  }
+  }, [username, refetch, checkout.status])
 
-  // A settled account query with no username means the payment could never be
-  // attributed to an account — treat it like a load failure instead of letting
-  // an unattributable charge go through.
-  if (error || (!usernameLoading && !paymentUrl)) {
+  // Only two things put the customer on the error screen, and "the server has
+  // not answered yet" is neither of them:
+  //  - a settled account query with no username, so the payment could never be
+  //    attributed to an account (better an error than an unattributable charge)
+  //  - a settled checkout attempt that produced no URL at all
+  // While the checkout request is still in flight the screen shows the spinner
+  // below. Deriving this from `!paymentUrl` alone made the FIRST paint of every
+  // card top-up "Something went wrong", for as long as the round trip took.
+  const usernameMissing = !usernameLoading && !username
+  if (error || usernameMissing || checkout.status === "failed") {
     return (
       <Screen>
         <View style={styles.centerContainer}>

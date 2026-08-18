@@ -700,7 +700,7 @@ const en: BaseTranslation = {
     // otherwise unexplainable to the person reading it.
     allowanceRemaining: "{remaining} of {limit} left today",
     allowanceHeld: "{held} is held by a payment link you haven't completed",
-    allowanceResets: "More becomes available {when}",
+    allowanceResets: "More becomes available at {when: string}",
     bankTransfer: "Bank Transfer",
     email: "Email",
     emailPlaceholder: "Enter your email address",
@@ -780,13 +780,21 @@ const en: BaseTranslation = {
     receivedTitle: "Payment received",
     pendingMessage:
       "We've received your payment and are crediting your wallet. We'll let you know as soon as it lands.",
+    // Held and failed are NOT pending, and must never borrow pendingMessage's
+    // wording: a held payment is explicitly not being credited — it is terminal
+    // until a human acts — so "we are crediting your wallet" would be exactly
+    // the false claim this screen was rebuilt to stop making. The backend sends
+    // a reason when it has one; these are what we say when it does not.
+    heldTitle: "Payment on hold",
+    heldMessage:
+      "This payment is on hold for review. Nothing more is needed from you right now — we'll be in touch.",
+    failedTitle: "Payment not credited",
+    failedMessage: "We couldn't credit this payment yet. We're on it.",
     destinationWallet: "Crediting to",
     amountCredited: "Credited",
     amountSent: "Amount Sent",
     depositedTo: "Deposited to",
-    transactionId: "Transaction ID",
-    done: "Done",
-    viewTransaction: "View Transaction"
+    done: "Done"
   },
   PinScreen: {
     attemptsRemaining: "Incorrect PIN. {attemptsRemaining: number} attempts remaining.",
