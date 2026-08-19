@@ -1,4 +1,5 @@
 import { renderHook } from "@testing-library/react-native"
+import { ApolloError } from "@apollo/client"
 
 const mockCreateCheckout = jest.fn()
 
@@ -401,6 +402,73 @@ describe("useFygaroCheckout", () => {
     })
 
     expect(await ask()).toEqual({ kind: "serverError" })
+  })
+
+  it("REFUSES when the mutation RESOLVES carrying an ApolloError instead of rejecting", async () => {
+    // Every refusal above reaches the catch block because `createCheckout`
+    // REJECTS — and Apollo stops rejecting the moment anyone adds an `onError`.
+    // `useMutation`'s own catch returns `{ data: undefined, errors: error }`
+    // rather than rethrowing whenever an onError exists on either the hook
+    // options or the execute options
+    // (@apollo/client/react/hooks/useMutation.js). So one line —
+    // `useFygaroCheckoutCreateMutation({ onError })`, added for Sentry or for a
+    // log, by someone who never opened this file — would send every 5xx, 429,
+    // 403 and thrown resolver past the catch to `!payload`, answer
+    // `unavailable`, and put CardPayment back on `buildLegacyPaymentUrl`: the
+    // editable `?amount=` link with no pre-charge allowance check. The card is
+    // captured; the webhook, reading the same broken dependency, cannot credit
+    // it. A control that inverts silently on a benign edit in another file is
+    // not a control, so the RESOLVED envelope is read too.
+    mockCreateCheckout.mockResolvedValue({
+      data: undefined,
+      errors: new ApolloError({ errorMessage: "Unexpected error" }),
+    })
+
+    expect(await ask()).toEqual({ kind: "serverError" })
+  })
+
+  it("REFUSES on a resolved response whose top-level errors array is populated", async () => {
+    // The other shape the envelope carries errors in: a plain `FetchResult`
+    // `errors` array, which is what any non-`none` errorPolicy delivers. Same
+    // rule, same answer — the server ANSWERED with a failure, so it is refused
+    // rather than degraded, whichever route the answer arrived by.
+    mockCreateCheckout.mockResolvedValue({
+      data: { fygaroCheckoutCreate: null },
+      errors: [
+        {
+          message: "Unexpected error",
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        },
+      ],
+    })
+
+    expect(await ask()).toEqual({ kind: "serverError" })
+  })
+
+  it("still signs when the resolved envelope carries an EMPTY errors array", async () => {
+    // The negative twin, and the reason the envelope check asks for CONTENT
+    // rather than truthiness: `[]` is truthy in JS, so reading a bare `errors`
+    // as a refusal would fail CLOSED on every single top-up the moment anything
+    // started reporting an empty array. Fail-closed is the right direction for
+    // an answer; it is not a licence to refuse an answer that said nothing.
+    mockCreateCheckout.mockResolvedValue({
+      data: {
+        fygaroCheckoutCreate: {
+          errors: [],
+          checkout: {
+            url: "https://fygaro.com/en/pb/x?jwt=abc",
+            checkoutId: "intent-1",
+          },
+        },
+      },
+      errors: [],
+    })
+
+    expect(await ask()).toEqual({
+      kind: "signed",
+      url: "https://fygaro.com/en/pb/x?jwt=abc",
+      checkoutId: "intent-1",
+    })
   })
 
   it("treats a success payload with no url as unavailable", async () => {

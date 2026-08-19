@@ -142,6 +142,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     allowance,
     loading: allowanceLoading,
     refreshing: allowanceRefreshing,
+    stale: allowanceStale,
     refetch: refetchAllowance,
   } = useCardTopupAllowance({
     skip: !isCard,
@@ -259,8 +260,22 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
    * So the deadline releases the hold, and this discards the figure with it.
    * Past it the screen falls back to the flat cap — the same place the
    * first-load case lands — rather than repeating a number it knows is stale.
+   *
+   * And a refresh that FAILS is the same superseded figure by the shorter road.
+   * The deadline only ever governs a refresh that STALLS — one still sitting in
+   * `NetworkStatus.refetch` — but a rejected refetch never passes through that
+   * status at all: Apollo hands it to useQuery's error observer, which re-serves
+   * the previous `data` with `loading: false` and `NetworkStatus.error` (see
+   * `stale` in use-card-topup-allowance). Nothing about the resulting render
+   * says "this number is old", so gating on it is the stall case with the wait
+   * removed: the customer comes back from minting a $60 hold, the focus refetch
+   * dies on the wire, and the screen goes straight back to promising the whole
+   * $125 it had before. No deadline applies here — there is no round trip left
+   * to wait out — so this discards the figure immediately and the flat cap
+   * takes over.
    */
-  const allowanceSuperseded = isCard && allowanceRefreshing && allowanceDeadlinePassed
+  const allowanceSuperseded =
+    isCard && ((allowanceRefreshing && allowanceDeadlinePassed) || allowanceStale)
   const usableAllowance = allowanceSuperseded ? undefined : allowance
 
   const dailyLimit = isCard ? levelDailyLimit : undefined

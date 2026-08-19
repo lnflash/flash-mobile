@@ -104,11 +104,16 @@ export const useFygaroCheckout = () => {
   const requestCheckout = useCallback(
     async (amountCents: number): Promise<FygaroCheckoutResult> => {
       let payload
+      // The server's answer on the RESOLVED path, which is not always `data`.
+      // Read below, before anything is inferred from `payload` being absent —
+      // see the note at `envelopeRefused`.
+      let envelopeErrors: unknown
       try {
-        const { data } = await createCheckout({
+        const { data, errors } = await createCheckout({
           variables: { input: { amount: amountCents } },
         })
         payload = data?.fygaroCheckoutCreate
+        envelopeErrors = errors
       } catch (e) {
         // Look at WHAT was thrown. A blanket degrade here contradicts the rule
         // stated above — "an error the server DID return" is not `unavailable`
@@ -209,6 +214,39 @@ export const useFygaroCheckout = () => {
         if (graphQLErrors.length > 0 && !schemaReject) return { kind: "serverError" }
         return { kind: "unavailable" }
       }
+
+      /**
+       * A resolved response carrying `errors` is the server having ANSWERED
+       * with a failure, and it must refuse exactly like the thrown one above.
+       *
+       * Everything the catch block does rests on `createCheckout` REJECTING —
+       * and Apollo stops rejecting the moment anyone adds an `onError`.
+       * `useMutation`'s own catch returns `{ data: undefined, errors: error }`
+       * instead of rethrowing whenever an onError exists on either the hook
+       * options or the execute options
+       * (@apollo/client/react/hooks/useMutation.js). So a one-line
+       * `useFygaroCheckoutCreateMutation({ onError })` added for Sentry, or for
+       * a log line, silently inverts this entire control: every 5xx, 429, 403
+       * and thrown resolver would stop reaching the catch, `payload` would be
+       * undefined, the next line would answer `unavailable`, and CardPayment
+       * would load `buildLegacyPaymentUrl` — the editable `?amount=` link with
+       * no pre-charge allowance check. That is the 2026-08-16 incident,
+       * reachable by a benign edit in another file.
+       *
+       * Checked BEFORE `!payload` because that is the shape this arrives in:
+       * `data` is `void 0` on that path, so "no payload" would otherwise be
+       * read as "the server never answered" when it plainly did.
+       *
+       * Non-EMPTY, deliberately. An empty array is not an answer of failure,
+       * and `[]` is truthy — reading it as one would refuse every top-up the
+       * moment a partial-error `errorPolicy` started reporting one. The value
+       * is an array on the normal resolved path and an ApolloError on the
+       * onError path, so both shapes are asked the same question.
+       */
+      const envelopeRefused = Array.isArray(envelopeErrors)
+        ? envelopeErrors.length > 0
+        : Boolean(envelopeErrors)
+      if (envelopeRefused) return { kind: "serverError" }
 
       if (!payload) return { kind: "unavailable" }
 

@@ -108,5 +108,35 @@ export const useCardTopupAllowance = ({ skip = false }: { skip?: boolean } = {})
    */
   const refreshing = networkStatus === NetworkStatus.refetch
 
-  return { allowance, loading, refreshing, refetch: refresh }
+  /**
+   * A refresh was asked for and did NOT land, so `allowance` above is a figure
+   * we know to be superseded and will not be corrected on its own.
+   *
+   * This is the failure door `refreshing` leaves open, and it is the refetch's
+   * MOST LIKELY outcome, not an exotic one. A refetch that rejects never passes
+   * through `NetworkStatus.refetch`: Apollo routes it via
+   * `ObservableQuery.reportError` into useQuery's observer error handler, which
+   * sets `{ data: previousResult.data, error, loading: false, networkStatus:
+   * NetworkStatus.error }` (@apollo/client/react/hooks/useQuery.js). So the
+   * PRE-reservation figure is still served, `loading` is false, and `refreshing`
+   * is false — a screen gating money on it cannot tell the difference between
+   * "fresh" and "the refresh we fired on focus died on the wire".
+   *
+   * Concretely, and this is the exact loop the on-focus refetch exists to close:
+   * L1, $125 cap, nothing held. The customer enters $60, Continue mints a $60
+   * server hold, they back out of the Fygaro page. The focus refetch fires, their
+   * connection drops for that one round trip, and it rejects (swallowed by the
+   * `.catch` in `refresh` above). Without this flag the screen re-renders
+   * "$125.00 of $125.00 left today", shows no held line, gates Continue against
+   * $125, waves through another $65 — a SECOND hold, $125 held, $0 available —
+   * and the customer is locked out of card top-ups until both holds lapse.
+   *
+   * The `allowance` half is what separates a failed REFRESH from a failed FIRST
+   * load: a retained figure alongside a failed attempt can only mean there was a
+   * previous result to retain. A first load that fails has no data at all, so
+   * `allowance` is already `undefined` and the caller is already on the flat cap.
+   */
+  const stale = networkStatus === NetworkStatus.error && Boolean(allowance)
+
+  return { allowance, loading, refreshing, stale, refetch: refresh }
 }

@@ -76,6 +76,17 @@ const mockUseFygaroTopupAllowanceQuery: jest.Mock = jest.fn(() => ({
   refetch: jest.fn(),
 }))
 
+const networkStatusFor = ({
+  refetching,
+  failed,
+}: {
+  refetching: boolean
+  failed: boolean
+}) => {
+  if (failed) return NetworkStatus.error
+  return refetching ? NetworkStatus.refetch : NetworkStatus.ready
+}
+
 const allowanceResult = ({
   limit,
   held,
@@ -85,12 +96,21 @@ const allowanceResult = ({
   // `notifyOnNetworkStatusChange: true`: the PREVIOUS data is still served, so
   // the figure on screen is the stale one and the screen must not gate on it.
   refetching = false,
+  // What Apollo reports when that refetch REJECTS — which is the failure this
+  // mock never used to be able to express. A rejected refetch never passes
+  // through `NetworkStatus.refetch` at all: `ObservableQuery.reportError` hands
+  // it to useQuery's error observer, which sets `{ data: previousResult.data,
+  // error, loading: false, networkStatus: NetworkStatus.error }`. So the stale
+  // figure is STILL served, nothing is loading, nothing is refetching, and
+  // nothing in the result says the number is old.
+  failed = false,
 }: {
   limit: number
   held: number
   remaining: number
   holdsExpireAt?: number | null
   refetching?: boolean
+  failed?: boolean
 }) => ({
   data: {
     fygaroTopupAllowance: {
@@ -101,8 +121,9 @@ const allowanceResult = ({
       holdsExpireAt,
     },
   },
-  loading: refetching,
-  networkStatus: refetching ? NetworkStatus.refetch : NetworkStatus.ready,
+  loading: !failed && refetching,
+  error: failed ? new Error("Network request failed") : undefined,
+  networkStatus: networkStatusFor({ refetching, failed }),
   refetch: jest.fn(),
 })
 
@@ -1098,6 +1119,157 @@ describe("TopupDetails allowance refresh on return", () => {
     } finally {
       jest.useRealTimers()
     }
+  })
+
+  it("DISCARDS the figure when the refresh FAILS, instead of re-promising it", () => {
+    // The failure door the deadline leaves open, and it is the refetch's MOST
+    // LIKELY failure, not an exotic one. A rejected refetch never passes
+    // through `NetworkStatus.refetch`, so `refreshing` is false, no deadline is
+    // ever armed, and the pre-reservation figure is served back as if it were
+    // fresh (see `stale` in use-card-topup-allowance).
+    //
+    // The loop that reopens, exactly as the on-focus refetch was written to
+    // close it: L1, $125 cap, nothing held. The customer enters $60, Continue
+    // mints a $60 server hold, they back out of the Fygaro page. The focus
+    // refetch fires and their connection drops for that one round trip. The
+    // screen re-renders "$125.00 of $125.00 left today", shows no held line,
+    // gates against $125, and waves through another $65 — a SECOND hold, $125
+    // held, $0 available, and the customer locked out of card top-ups until
+    // both lapse.
+    const refetch = jest.fn(() => {
+      // The refresh died on the wire: the PRE-hold figure is still served, and
+      // nothing in the result admits it.
+      mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+        ...allowanceResult({
+          limit: 12500,
+          held: 0,
+          remaining: 12500,
+          failed: true,
+        }),
+        refetch,
+      })
+    })
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+      ...allowanceResult({ limit: 12500, held: 0, remaining: 12500 }),
+      refetch,
+    })
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, getAllByText, queryByText, navigate, rerenderScreen } =
+      renderTopupDetails({ paymentType: "card", level: AccountLevel.One })
+
+    // Before leaving, the settled figure is quoted — that half must not change.
+    expect(
+      queryByText(
+        en.TopupDetails.allowanceRemaining({ remaining: "$125.00", limit: "$125.00" }),
+      ),
+    ).not.toBeNull()
+
+    returnToScreen()
+    rerenderScreen()
+
+    expect(refetch).toHaveBeenCalledTimes(1)
+    // The screen stops repeating a number it knows the server has superseded,
+    // and falls back to the flat cap — the same place the stalled-refresh and
+    // first-load cases land.
+    expect(
+      queryByText(
+        en.TopupDetails.allowanceRemaining({ remaining: "$125.00", limit: "$125.00" }),
+      ),
+    ).toBeNull()
+    expect(
+      queryByText(en.TopupDetails.dailyLimitInfo({ amount: "$125.00" })),
+    ).not.toBeNull()
+
+    // And Continue stops consulting the stale figure too: $200 is refused
+    // naming the flat cap, not a "$125.00 of $125.00 left today" that has not
+    // been true since the hold was minted.
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "200")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      en.TopupDetails.cannotTopUp(),
+      en.TopupDetails.dailyLimitAmount({ amount: "$125.00" }),
+    )
+    alertSpy.mockRestore()
+  })
+
+  it("hides the HELD line too when the refresh fails, rather than under-reporting it", () => {
+    // The held line is the other half of the same promise. A stale figure taken
+    // after one hold and before the next still says "$60.00 is held" while the
+    // server is holding $120 — a sentence that reads as authoritative and is
+    // simply wrong. Nothing partial survives a figure we know is superseded.
+    const refetch = jest.fn(() => {
+      mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+        ...allowanceResult({
+          limit: 12500,
+          held: 6000,
+          remaining: 6500,
+          holdsExpireAt: Date.UTC(2026, 7, 18, 21, 30) / 1000,
+          failed: true,
+        }),
+        refetch,
+      })
+    })
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+      ...allowanceResult({
+        limit: 12500,
+        held: 6000,
+        remaining: 6500,
+        holdsExpireAt: Date.UTC(2026, 7, 18, 21, 30) / 1000,
+      }),
+      refetch,
+    })
+    const { queryByText, rerenderScreen } = renderTopupDetails({
+      paymentType: "card",
+      level: AccountLevel.One,
+    })
+
+    returnToScreen()
+    rerenderScreen()
+
+    expect(queryByText(en.TopupDetails.allowanceHeld({ held: "$60.00" }))).toBeNull()
+    expect(
+      queryByText(
+        en.TopupDetails.allowanceResets({
+          when: formatHoldExpiry(new Date(Date.UTC(2026, 7, 18, 21, 30))),
+        }),
+      ),
+    ).toBeNull()
+    expect(
+      queryByText(en.TopupDetails.dailyLimitInfo({ amount: "$125.00" })),
+    ).not.toBeNull()
+  })
+
+  it("does not hold Continue after a failed refresh — there is nothing left to wait for", () => {
+    // A failed refresh is SETTLED: no round trip is in flight, so holding the
+    // flow on it would be a permanent unlabelled spinner. The figure is
+    // discarded; the screen stays usable on the flat cap.
+    const refetch = jest.fn(() => {
+      mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+        ...allowanceResult({
+          limit: 12500,
+          held: 0,
+          remaining: 12500,
+          failed: true,
+        }),
+        refetch,
+      })
+    })
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+      ...allowanceResult({ limit: 12500, held: 0, remaining: 12500 }),
+      refetch,
+    })
+    const { getByPlaceholderText, getAllByText, navigate, rerenderScreen } =
+      renderTopupDetails({ paymentType: "card", level: AccountLevel.One })
+
+    returnToScreen()
+    rerenderScreen()
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "60")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).toHaveBeenCalledWith("CardPayment", { amount: 60, wallet: "USD" })
   })
 
   it("keeps quoting and gating on the allowance when NO refresh is in flight", () => {
