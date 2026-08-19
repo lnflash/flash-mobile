@@ -351,6 +351,69 @@ describe("CardPayment signed checkout", () => {
 
     expect(lastWebViewProps().source.uri).toContain("custom_reference=alice")
   })
+
+  it("falls back to the legacy link when the request never settles AT ALL", async () => {
+    // A hang is not an error, and nothing under this mutation will ever turn it
+    // into one: Apollo's HttpLink is constructed bare (no fetchOptions, no
+    // AbortController) and RetryLink only retries on an `error`, which a hang
+    // never produces. React Native sets no default network timeout on Android
+    // either. So on a stalled connection the promise neither resolves nor
+    // rejects, the try/catch inside use-fygaro-checkout never fires, and
+    // without a deadline `checkout` stays "requesting" forever — a permanent
+    // "Loading…" with no WebView, no error screen and no Retry. That is a
+    // REGRESSION on the behaviour this screen had before the signed link: the
+    // URL was built synchronously, so the same dead network reached the
+    // WebView's own onError and its working Retry.
+    jest.useFakeTimers()
+    try {
+      mockCreateCheckout.mockImplementationOnce(
+        () =>
+          new Promise(() => {
+            // Never settles: the hang a stalled connection actually produces.
+          }),
+      )
+
+      const { getAllByText } = renderCardPayment({ amount: 25 })
+
+      // In flight: the spinner, and nothing loaded.
+      expect(getAllByText(en.FygaroWebViewScreen.loading()).length).toBeGreaterThan(0)
+      expect(mockWebView).not.toHaveBeenCalled()
+
+      await act(async () => {
+        jest.advanceTimersByTime(11_000)
+      })
+
+      // Past the deadline the customer gets the link that has always worked,
+      // not a spinner that never ends.
+      const { uri } = lastWebViewProps().source
+      expect(uri).toContain("custom_reference=alice")
+      expect(uri).toContain("amount=25")
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it("does not wait out the deadline when the server answers promptly", async () => {
+    // The deadline must not become the latency: a signed link that arrives in
+    // time is loaded in time.
+    jest.useFakeTimers()
+    try {
+      mockCreateCheckout.mockResolvedValueOnce(
+        signed("https://www.fygaro.com/en/pb/signed?jwt=abc", "intent-7"),
+      )
+
+      renderCardPayment()
+      await act(async () => {
+        jest.advanceTimersByTime(0)
+      })
+
+      expect(lastWebViewProps().source.uri).toBe(
+        "https://www.fygaro.com/en/pb/signed?jwt=abc",
+      )
+    } finally {
+      jest.useRealTimers()
+    }
+  })
 })
 
 describe("CardPayment username gating", () => {

@@ -24,12 +24,38 @@ import { PrimaryBtn } from "@app/components/buttons"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useHomeAuthedQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { useFygaroCheckout } from "@app/hooks/use-fygaro-checkout"
+import {
+  useFygaroCheckout,
+  type FygaroCheckoutResult,
+} from "@app/hooks/use-fygaro-checkout"
 
 type Props = StackScreenProps<RootStackParamList, "CardPayment">
 
 // Fygaro hosted payment-button path.
 const FYGARO_PAYMENT_BUTTON_PATH = "/pb/bd4a34c1-3d24-4315-a2b8-627518f70916"
+
+/**
+ * How long the screen waits for the signed link before loading the one that has
+ * always worked.
+ *
+ * The deadline is a SEPARATE timer, not a check inside the request, for the
+ * same reason it is one in use-fygaro-topup-status.ts and TopupDetails.tsx: a
+ * deadline that depends on the thing it is a deadline FOR is not a deadline.
+ * Nothing under `requestCheckout` will ever time this out — React Native sets
+ * no default network timeout on Android and this app's HttpLink
+ * (app/graphql/client.tsx) passes no AbortController, so a stalled connection
+ * produces a promise that HANGS rather than one that rejects. Apollo's RetryLink
+ * only retries on an error, which a hang never produces. Without this the
+ * checkout state stays `requesting` forever: a permanent "Loading…" with no
+ * WebView, no error screen and no Retry — worse than the behaviour before the
+ * signed link existed, where a dead network at least reached the WebView's own
+ * onError and its working Retry.
+ *
+ * Long enough that a merely slow round trip still wins the race (the signed
+ * link is worth waiting for, and giving up early wastes a reservation the
+ * server may have minted), short enough that nobody is stranded.
+ */
+const CHECKOUT_DEADLINE_MS = 10_000
 
 // Static style for the header Done button. Kept at module scope (not in
 // makeStyles) so the header useLayoutEffect can depend on stable values only —
@@ -170,8 +196,24 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
     const legacyPaymentUrl = buildLegacyPaymentUrl(username, amount, wallet)
 
     let cancelled = false
+    let deadline: ReturnType<typeof setTimeout> | undefined
     const run = async () => {
-      const result = await requestCheckout(Math.round(amount * 100))
+      // Whichever answer arrives first wins, and the deadline's answer is
+      // `unavailable` — a request that never settles is "a server that never
+      // answered", the same category as the network failure that already
+      // degrades to the legacy link. A late answer landing after the deadline
+      // is deliberately ignored: by then the WebView is mounted and the
+      // customer may already be typing card details into it.
+      const result = await Promise.race<FygaroCheckoutResult>([
+        requestCheckout(Math.round(amount * 100)),
+        new Promise<FygaroCheckoutResult>((resolve) => {
+          deadline = setTimeout(
+            () => resolve({ kind: "unavailable" }),
+            CHECKOUT_DEADLINE_MS,
+          )
+        }),
+      ])
+      if (deadline) clearTimeout(deadline)
       if (cancelled) return
 
       if (result.kind === "signed") {
@@ -202,9 +244,10 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         return
       }
 
-      // `unavailable`: signed checkout is off, the backend predates it, or the
-      // request failed. None of those are the customer's fault, so fall back to
-      // the link that has always worked rather than blocking the top-up.
+      // `unavailable`: signed checkout is off, the backend predates it, the
+      // request failed, or it never answered inside the deadline. None of those
+      // are the customer's fault, so fall back to the link that has always
+      // worked rather than blocking the top-up.
       setCheckout({ status: "ready", url: legacyPaymentUrl })
     }
     run().catch(() => {
@@ -215,6 +258,7 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
 
     return () => {
       cancelled = true
+      if (deadline) clearTimeout(deadline)
     }
   }, [username, amount, wallet, requestCheckout])
 

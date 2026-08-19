@@ -13,7 +13,7 @@
  * routing to the appropriate flow based on the selected payment type.
  */
 
-import React, { useEffect, useState } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import {
   View,
   TextInput,
@@ -25,6 +25,7 @@ import {
 } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
+import { useFocusEffect } from "@react-navigation/native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
@@ -137,9 +138,51 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // their own limits and are not touched by the Fygaro allowance; asking for it
   // here would only tempt this screen into applying a card cap to a rail it has
   // nothing to do with.
-  const { allowance, loading: allowanceLoading } = useCardTopupAllowance({
+  const {
+    allowance,
+    loading: allowanceLoading,
+    refetch: refetchAllowance,
+  } = useCardTopupAllowance({
     skip: !isCard,
   })
+
+  /**
+   * Refresh the allowance every time the customer comes BACK to this screen.
+   *
+   * This screen is not unmounted when it pushes CardPayment, and asking for a
+   * checkout mints a reservation — so the figure it is still rendering is stale
+   * the moment the customer returns. Concretely: $65 left, they enter $60 and
+   * tap Continue, the server holds $60, and then they are refused (or simply
+   * back out of the payment page). Both routes home call `goBack()` — the
+   * refusal screen's "Change amount" and the refusal alert's OK — landing them
+   * on a screen still promising "$65.00 of $125.00 left today" and still gating
+   * Continue against $65. They are invited to try again and refused again. That
+   * is precisely the "the app invites a top-up that will be refused" failure the
+   * allowance was added to end.
+   *
+   * `refetchAllowance` is read through a ref so the focus callback's only
+   * dependency is `isCard`, which never changes for a given screen instance. A
+   * callback whose identity moves re-runs `useFocusEffect` while the screen is
+   * still focused, and each re-run is another network-only round trip.
+   */
+  const refetchAllowanceRef = useRef(refetchAllowance)
+  useEffect(() => {
+    refetchAllowanceRef.current = refetchAllowance
+  })
+  // The mount fetch is already `network-only`, so the FIRST focus (a screen is
+  // focused as it mounts) has nothing to refresh and would only duplicate the
+  // request in flight. Returns to the screen are the whole point.
+  const skipFirstFocus = useRef(true)
+  useFocusEffect(
+    useCallback(() => {
+      if (!isCard) return
+      if (skipFirstFocus.current) {
+        skipFirstFocus.current = false
+        return
+      }
+      refetchAllowanceRef.current()
+    }, [isCard]),
+  )
 
   // Card flow enforces the backend minimum (default $10); other flows keep the
   // long-standing $1 floor.

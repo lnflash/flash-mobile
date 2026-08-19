@@ -1,3 +1,4 @@
+import { useCallback } from "react"
 import { gql } from "@apollo/client"
 
 import { useFygaroTopupAllowanceQuery } from "@app/graphql/generated"
@@ -46,13 +47,38 @@ export type CardTopupAllowance = {
  * `skip` exists because this is the CARD allowance and nothing else. Firing it
  * on a bank-transfer or Bridge screen costs a round trip and — worse — invites
  * the caller to apply a card limit to a rail that has entirely different ones.
+ *
+ * `refetch` exists because this number goes stale the moment the customer
+ * leaves the screen. Asking for a checkout MINTS a reservation, so someone who
+ * enters $60 against $65 remaining and then comes back — refused, or simply
+ * having backed out of the payment page — is looking at a figure that is now
+ * $60 too high, on a screen that never unmounted. Without a refresh the app
+ * invites the very top-up it is about to refuse, which is the failure this
+ * whole allowance exists to end.
  */
 export const useCardTopupAllowance = ({ skip = false }: { skip?: boolean } = {}) => {
   const isAuthed = useIsAuthed()
-  const { data, loading } = useFygaroTopupAllowanceQuery({
-    skip: skip || !isAuthed,
+  const skipped = skip || !isAuthed
+  const { data, loading, refetch } = useFygaroTopupAllowanceQuery({
+    skip: skipped,
     fetchPolicy: "network-only",
   })
+
+  /**
+   * Re-ask for the allowance. Safe to call from anywhere, which is the point of
+   * wrapping Apollo's own `refetch`:
+   *
+   * - It is a no-op while the query is skipped. Apollo's `refetch` ignores
+   *   `skip` and fires the request anyway, so an unguarded one would ask for the
+   *   CARD allowance on a bank-transfer screen — or while signed out.
+   * - It swallows rejections. `refetch` rejects on a network error; nothing here
+   *   can act on that (the screen keeps whatever figure it already had), but an
+   *   unhandled rejection out of a focus handler is a red screen in dev.
+   */
+  const refresh = useCallback(() => {
+    if (skipped) return
+    Promise.resolve(refetch?.()).catch(() => undefined)
+  }, [skipped, refetch])
 
   const raw = data?.fygaroTopupAllowance
   const allowance: CardTopupAllowance | undefined = raw
@@ -64,5 +90,5 @@ export const useCardTopupAllowance = ({ skip = false }: { skip?: boolean } = {})
       }
     : undefined
 
-  return { allowance, loading }
+  return { allowance, loading, refetch: refresh }
 }

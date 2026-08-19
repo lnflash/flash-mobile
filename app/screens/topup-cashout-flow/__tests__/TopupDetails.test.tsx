@@ -24,6 +24,30 @@ jest.mock("@app/store/persistent-state", () => ({
   usePersistentStateContext: () => ({ persistentState: mockPersistentState }),
 }))
 
+// The real useFocusEffect reads a navigation object that only exists inside a
+// NavigationContainer. This stand-in keeps its two behaviours that matter here:
+// it runs the callback on mount (a pushed screen mounts focused) and again on
+// every subsequent focus — which `returnToScreen()` drives, standing in for the
+// customer coming back from CardPayment.
+let focusHandler: (() => void) | undefined
+jest.mock("@react-navigation/native", () => {
+  const actual = jest.requireActual("@react-navigation/native")
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useEffect } = require("react")
+  return {
+    ...actual,
+    useFocusEffect: (callback: () => void) => {
+      focusHandler = callback
+      useEffect(() => callback(), [callback])
+    },
+  }
+})
+
+const returnToScreen = () =>
+  act(() => {
+    focusHandler?.()
+  })
+
 // The screen reads the Fygaro fee params + minimum from the transferFlags
 // globals query, the per-level daily caps from the separate cardTopupLimits
 // query (isolated so an old backend failing it cannot take transferFlags —
@@ -175,16 +199,27 @@ const renderTopupDetails = ({
     name: "TopupDetails",
     params: { paymentType },
   } as never
-  const utils = render(
+  // A fresh element each time: React bails out of re-rendering a subtree whose
+  // element is referentially identical, so reusing one would make
+  // `rerenderScreen` a no-op.
+  const element = () => (
     <ThemeProvider theme={theme}>
       <TopupDetails navigation={navigation} route={route} />
-    </ThemeProvider>,
+    </ThemeProvider>
   )
-  return { ...utils, navigate }
+  const utils = render(element())
+  return {
+    ...utils,
+    navigate,
+    // Stands in for Apollo delivering new data and re-rendering the screen —
+    // the thing a refetch actually causes.
+    rerenderScreen: () => utils.rerender(element()),
+  }
 }
 
 beforeEach(() => {
   jest.clearAllMocks()
+  focusHandler = undefined
   mockPersistentState.isAdvanceMode = true
   mockIsAuthed = true
   mockUseTransferFlagsQuery.mockReturnValue(flagsResult(FEE_PARAMS))
@@ -785,6 +820,86 @@ describe("TopupDetails per-level daily limit", () => {
       wallet: "USD",
       paymentType: "bankTransfer",
     })
+  })
+})
+
+describe("TopupDetails allowance refresh on return", () => {
+  it("re-asks for the allowance when the customer comes back, and gates on the NEW figure", () => {
+    // This screen is not unmounted when it pushes CardPayment, and asking for a
+    // checkout MINTS a reservation. $65 left, enter $60, tap Continue: the
+    // server now holds $60, so $5 is left. Both ways back from a refusal call
+    // goBack() — the refusal screen's "Change amount" and the refusal alert's
+    // OK — landing the customer on a screen still rendering "$65.00 of $125.00
+    // left today" and still gating Continue against $65. They are invited to
+    // try again and refused again: exactly the "app invites a top-up that will
+    // be refused" failure the allowance was added to end.
+    const refetch = jest.fn(() => {
+      // What the server says once that $60 reservation exists.
+      mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+        ...allowanceResult({ limit: 12500, held: 12000, remaining: 500 }),
+        refetch,
+      })
+    })
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+      ...allowanceResult({ limit: 12500, held: 6000, remaining: 6500 }),
+      refetch,
+    })
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, getAllByText, queryByText, navigate, rerenderScreen } =
+      renderTopupDetails({ paymentType: "card", level: AccountLevel.One })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "60")
+    expect(
+      queryByText(
+        en.TopupDetails.allowanceRemaining({ remaining: "$65.00", limit: "$125.00" }),
+      ),
+    ).not.toBeNull()
+    // The mount fetch is already network-only, so the first focus has nothing
+    // to refresh and must not duplicate the request already in flight.
+    expect(refetch).not.toHaveBeenCalled()
+
+    returnToScreen()
+    rerenderScreen()
+
+    expect(refetch).toHaveBeenCalledTimes(1)
+    // The rendered figure moves...
+    expect(
+      queryByText(
+        en.TopupDetails.allowanceRemaining({ remaining: "$5.00", limit: "$125.00" }),
+      ),
+    ).not.toBeNull()
+    expect(
+      queryByText(
+        en.TopupDetails.allowanceRemaining({ remaining: "$65.00", limit: "$125.00" }),
+      ),
+    ).toBeNull()
+
+    // ...and so does the gate: the same $60 is refused here, for free, instead
+    // of on a payment page that would refuse it again.
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      en.TopupDetails.cannotTopUp(),
+      en.TopupDetails.allowanceRemaining({ remaining: "$5.00", limit: "$125.00" }),
+    )
+    alertSpy.mockRestore()
+  })
+
+  it("does not re-ask for the CARD allowance on a bank transfer", () => {
+    // Same reason the query is skipped there in the first place: the Fygaro
+    // allowance says nothing about a wire, and Apollo's own refetch ignores
+    // `skip`.
+    const refetch = jest.fn()
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+      ...allowanceResult({ limit: 12500, held: 0, remaining: 2500 }),
+      refetch,
+    })
+    renderTopupDetails({ paymentType: "bankTransfer", level: AccountLevel.One })
+
+    returnToScreen()
+
+    expect(refetch).not.toHaveBeenCalled()
   })
 })
 
