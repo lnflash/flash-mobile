@@ -1383,7 +1383,9 @@
     "versionNotSupported": "Ова верзија мобилне апликације више није подржана",
     "updateMandatory": "Ажурирање је обавезно",
     "tapHereUpdate": "Додирните овде да бисте ажурирали сада",
-    "contactSupport": "Контактирајте Подршку"
+    "contactSupport": "Контактирајте Подршку",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Непожељени депозити",

@@ -1383,7 +1383,9 @@
     "versionNotSupported": "Kay warmi versiónqa kanmanmi kaypiyta munanki",
     "updateMandatory": "Yachaynin rurasqanmi hamurqan",
     "tapHereUpdate": "Chimpuykachun qhipaqa imanallaqachu",
-    "contactSupport": "Kausaynin yachaykuna"
+    "contactSupport": "Kausaynin yachaykuna",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Manan willasqa depositosqa kanchu.",

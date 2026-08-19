@@ -1162,7 +1162,9 @@
     "versionNotSupported": "لم يعد إصدار جوالك هذا مدعومًا",
     "updateMandatory": "هذا التحديث إلزامي",
     "tapHereUpdate": "إضغط هنا للتحديث الان",
-    "contactSupport": "اتصل بالدعم الفني"
+    "contactSupport": "اتصل بالدعم الفني",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "AccountUpgrade": {
     "accountNum": "Account Number",

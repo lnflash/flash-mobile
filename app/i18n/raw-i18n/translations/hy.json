@@ -1383,7 +1383,9 @@
     "versionNotSupported": "Բջջային տարբերակն այլևս չի աջակցվում։ ",
     "updateMandatory": "Թարմացումը պարտադիր է",
     "tapHereUpdate": "Սեղմել՝ հիմա թարմացնելու համար",
-    "contactSupport": "Կապ հաստատել աջակցության ծառայության հետ"
+    "contactSupport": "Կապ հաստատել աջակցության ծառայության հետ",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Unclaimed Deposits",

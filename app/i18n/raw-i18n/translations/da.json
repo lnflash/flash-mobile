@@ -1383,7 +1383,9 @@
     "versionNotSupported": "Denne mobilversion understøttes ikke længere",
     "updateMandatory": "Opdatering er påkrævet",
     "tapHereUpdate": "Tryk her for at opdatere nu",
-    "contactSupport": "Kontakt support"
+    "contactSupport": "Kontakt support",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Unclaimed Deposits",

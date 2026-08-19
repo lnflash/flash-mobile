@@ -1383,7 +1383,9 @@
     "versionNotSupported": "Deze mobiele versie wordt niet meer ondersteund",
     "updateMandatory": "Updaten is verplicht",
     "tapHereUpdate": "Click hier om te updaten",
-    "contactSupport": "Contact Klantenservice"
+    "contactSupport": "Contact Klantenservice",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Unclaimed Deposits",

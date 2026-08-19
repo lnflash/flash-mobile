@@ -1383,7 +1383,9 @@
     "versionNotSupported": "Bu mobil sürüm artık desteklenmiyor",
     "updateMandatory": "Güncelleme gerekli",
     "tapHereUpdate": "Güncellemek için buraya tıkla",
-    "contactSupport": "Desteğe danışınız"
+    "contactSupport": "Desteğe danışınız",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "İddia edilmeyen Para Yatırımları",

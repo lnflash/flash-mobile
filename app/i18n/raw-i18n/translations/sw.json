@@ -1162,7 +1162,9 @@
     "versionNotSupported": "Toleo hili la simu ya mkononi halitumiki tena",
     "updateMandatory": "Usasishaji ni wa lazima",
     "tapHereUpdate": "Guza hapa ili kusasisha sasa",
-    "contactSupport": "Wasiliana na Usaidizi"
+    "contactSupport": "Wasiliana na Usaidizi",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "AccountUpgrade": {
     "accountNum": "Account Number",

@@ -6,6 +6,7 @@ import { MockedProvider } from "@apollo/client/testing"
 import { createCache } from "../../graphql/cache"
 import { IsAuthedContextProvider } from "../../graphql/is-authed-context"
 import mocks from "../../graphql/mocks"
+import { AppUpdateProvider } from "../../components/app-update/app-update"
 
 export default {
   title: "Home Screen",
@@ -13,7 +14,11 @@ export default {
   decorators: [
     (Story) => (
       <MockedProvider mocks={mocks} cache={createCache()}>
-        <StoryScreen>{Story()}</StoryScreen>
+        {/* app.tsx mounts this above the navigator; the home screen's update
+            banner reads it. */}
+        <AppUpdateProvider>
+          <StoryScreen>{Story()}</StoryScreen>
+        </AppUpdateProvider>
       </MockedProvider>
     ),
   ],

@@ -1699,6 +1699,8 @@ const en: BaseTranslation = {
     updateMandatory: "Update is mandatory",
     tapHereUpdate: "Tap here to update now",
     contactSupport: "Contact Support",
+    couldNotOpenStore: "Couldn't open the app store. Tap Contact Support below for help.",
+    couldNotOpenSupport: "Couldn't open your email app. Please email {email: string} directly.",
   },
   RefundFlow: {
     refundListTitle: "Unclaimed Deposits",

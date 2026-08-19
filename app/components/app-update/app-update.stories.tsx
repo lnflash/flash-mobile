@@ -1,5 +1,5 @@
 import React from "react"
-import { AppUpdate, AppUpdateModal } from "./app-update"
+import { AppUpdate, AppUpdateModal, AppUpdateProvider } from "./app-update"
 import { StoryScreen } from "../../../.storybook/views"
 import { Meta } from "@storybook/react"
 import { MockedProvider } from "@apollo/client/testing"
@@ -82,7 +82,11 @@ export default {
 
 export const UpdateAvailable = () => (
   <MockedProvider mocks={updateAvailable} cache={createCache()}>
-    <AppUpdate />
+    {/* AppUpdate reads the shared version check; in the app the provider is
+        mounted once in app.tsx, above both the gate and the navigator. */}
+    <AppUpdateProvider>
+      <AppUpdate />
+    </AppUpdateProvider>
   </MockedProvider>
 )
 
@@ -97,6 +101,24 @@ export const UpdateRequiredModal = () => {
         <GaloyPrimaryButton onPress={openModal} title="Open Modal" />
 
         <AppUpdateModal isVisible={visible} linkUpgrade={closeModal} />
+      </View>
+    </MockedProvider>
+  )
+}
+
+// The store link can fail to open (an Android device with no Play Store). A
+// toast is swallowed behind a modal, so the gate says so inline instead.
+export const UpdateRequiredModalStoreLinkFailed = () => {
+  const [visible, setVisible] = React.useState(false)
+
+  const openModal = () => setVisible(true)
+  const closeModal = () => setVisible(false)
+  return (
+    <MockedProvider mocks={updateRequired} cache={createCache()}>
+      <View>
+        <GaloyPrimaryButton onPress={openModal} title="Open Modal" />
+
+        <AppUpdateModal isVisible={visible} linkUpgrade={closeModal} openFailed />
       </View>
     </MockedProvider>
   )

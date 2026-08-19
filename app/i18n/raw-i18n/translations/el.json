@@ -1383,7 +1383,9 @@
     "versionNotSupported": "Αυτή η έκδοση για κινητά δεν υποστηρίζεται πλέον",
     "updateMandatory": "Η Ενημέρωση είναι υποχρεωτική",
     "tapHereUpdate": "Πατήστε εδώ για να ανανεώσετε τώρα",
-    "contactSupport": "Επικοινωνήστε με την Υποστήριξη"
+    "contactSupport": "Επικοινωνήστε με την Υποστήριξη",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Ανεκδικημένες καταθέσεις",

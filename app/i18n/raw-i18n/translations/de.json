@@ -1383,7 +1383,9 @@
     "versionNotSupported": "Diese mobile Version wird nicht mehr unterstützt",
     "updateMandatory": "Das Update ist zwingend erforderlich",
     "tapHereUpdate": "Klicke hier, um jetzt zu updaten",
-    "contactSupport": "Support kontaktieren"
+    "contactSupport": "Support kontaktieren",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Unbekannte Einzahlungen",

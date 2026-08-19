@@ -1383,7 +1383,9 @@
     "versionNotSupported": "Aquesta versió per a mòbils ja no s'admet",
     "updateMandatory": "L'actualització és obligatòria",
     "tapHereUpdate": "Prem aquí per actualitzar ara",
-    "contactSupport": "Contacta amb suport"
+    "contactSupport": "Contacta amb suport",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Unclaimed Deposits",
