@@ -2427,10 +2427,6 @@ type RootTranslation = {
 		 * R​e​t​r​y
 		 */
 		retry: string
-		/**
-		 * S​t​a​r​t​ ​a​g​a​i​n
-		 */
-		startAgain: string
 	}
 	BankTransfer: {
 		/**
@@ -8713,10 +8709,6 @@ export type TranslationFunctions = {
 		 * Retry
 		 */
 		retry: () => LocalizedString
-		/**
-		 * Start again
-		 */
-		startAgain: () => LocalizedString
 	}
 	BankTransfer: {
 		/**

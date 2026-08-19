@@ -3402,7 +3402,7 @@ export type FygaroCheckoutCreateMutationVariables = Exact<{
 }>;
 
 
-export type FygaroCheckoutCreateMutation = { readonly __typename: 'Mutation', readonly fygaroCheckoutCreate: { readonly __typename: 'FygaroCheckoutCreatePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null }>, readonly checkout?: { readonly __typename: 'FygaroCheckout', readonly url: string, readonly checkoutId: string, readonly expiresAt: number } | null } };
+export type FygaroCheckoutCreateMutation = { readonly __typename: 'Mutation', readonly fygaroCheckoutCreate: { readonly __typename: 'FygaroCheckoutCreatePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null }>, readonly checkout?: { readonly __typename: 'FygaroCheckout', readonly url: string, readonly checkoutId: string } | null } };
 
 export type FygaroTopupStatusQueryVariables = Exact<{
   checkoutId: Scalars['String']['input'];
@@ -7037,7 +7037,6 @@ export const FygaroCheckoutCreateDocument = gql`
     checkout {
       url
       checkoutId
-      expiresAt
     }
   }
 }

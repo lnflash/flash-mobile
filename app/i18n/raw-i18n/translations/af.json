@@ -1609,10 +1609,7 @@
     "title": "Fygaro Payment",
     "loading": "Loading payment page...",
     "error": "Failed to load payment page",
-    "retry": "Retry",
-    "expiredTitle": "This payment link has expired",
-    "expiredMessage": "Payment links are only valid for a short time. Nothing has been charged — start the top-up again to get a fresh one.",
-    "startAgain": "Start again"
+    "retry": "Retry"
   },
   "BankTransfer": {
     "title": "Bank Transfer",
@@ -1645,6 +1642,8 @@
     "checkingTitle": "Confirming your top-up",
     "checkingMessage": "We're checking with your wallet — this usually takes a few seconds",
     "receivedTitle": "Payment received",
+    "unconfirmedTitle": "We haven't seen this payment yet",
+    "unconfirmedMessage": "If your card was charged, we'll credit your wallet and let you know. If it wasn't, nothing has left your account and you can try again.",
     "pendingMessage": "We've received your payment and are crediting your wallet. We'll let you know as soon as it lands.",
     "heldTitle": "Payment on hold",
     "heldMessage": "This payment is on hold for review. Nothing more is needed from you right now — we'll be in touch.",

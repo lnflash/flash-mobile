@@ -1,6 +1,6 @@
 import React from "react"
 import { Alert } from "react-native"
-import { render, fireEvent } from "@testing-library/react-native"
+import { act, render, fireEvent } from "@testing-library/react-native"
 import { ThemeProvider } from "@rneui/themed"
 import theme from "@app/rne-theme/theme"
 import { i18nObject } from "../../../i18n/i18n-util"
@@ -431,6 +431,85 @@ describe("TopupDetails per-level daily limit", () => {
       }),
     ).toHaveLength(0)
     alertSpy.mockRestore()
+  })
+
+  it("stops holding Continue once the allowance has had long enough", async () => {
+    // Nothing in the stack ever times this query out: it is network-only, React
+    // Native sets no default network timeout on Android, and this app's HttpLink
+    // passes no AbortController — so a stalled connection hangs rather than
+    // rejects and `loading` stays true forever. Held on that, Continue is a
+    // permanent unlabelled spinner and handleContinue early-returns: the card
+    // top-up flow becomes unstartable, with no error and no escape, on a screen
+    // that worked before the allowance was added. Past the deadline the
+    // documented flat-cap fallback applies.
+    jest.useFakeTimers()
+    try {
+      mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+        data: undefined,
+        loading: true,
+        refetch: jest.fn(),
+      })
+      const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+        paymentType: "card",
+        level: AccountLevel.One,
+      })
+
+      act(() => {
+        jest.advanceTimersByTime(6_000)
+      })
+
+      fireEvent.changeText(
+        getByPlaceholderText(en.TopupDetails.amountPlaceholder()),
+        "60",
+      )
+      // $60 is under the flat $125 L1 cap, so the fallback gate lets it through.
+      fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+      expect(navigate).toHaveBeenCalledWith("CardPayment", {
+        amount: 60,
+        wallet: "USD",
+      })
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it("still applies the flat cap after the allowance deadline, rather than no cap", async () => {
+    // Degrading to "no limit" would be the other overcorrection: the flat cap is
+    // weaker than the allowance but it is what this screen enforced before the
+    // allowance existed, and it still refuses before any card is charged.
+    jest.useFakeTimers()
+    try {
+      mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+        data: undefined,
+        loading: true,
+        refetch: jest.fn(),
+      })
+      const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+      const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+        paymentType: "card",
+        level: AccountLevel.One,
+      })
+
+      act(() => {
+        jest.advanceTimersByTime(6_000)
+      })
+
+      fireEvent.changeText(
+        getByPlaceholderText(en.TopupDetails.amountPlaceholder()),
+        "200",
+      )
+      fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+      expect(navigate).not.toHaveBeenCalled()
+      expect(alertSpy).toHaveBeenCalledWith(
+        en.TopupDetails.cannotTopUp(),
+        en.TopupDetails.dailyLimitAmount({ amount: "$125.00" }),
+      )
+      alertSpy.mockRestore()
+    } finally {
+      jest.useRealTimers()
+    }
   })
 
   it("blocks against what is REMAINING, not the flat cap — the jaceth2009 case", () => {

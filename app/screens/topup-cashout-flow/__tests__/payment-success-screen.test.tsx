@@ -191,6 +191,8 @@ describe("PaymentSuccessScreen copy in EVERY language", () => {
     "checkingMessage",
     "receivedTitle",
     "pendingMessage",
+    "unconfirmedTitle",
+    "unconfirmedMessage",
     "heldTitle",
     "heldMessage",
     "failedTitle",
@@ -241,5 +243,35 @@ describe("PaymentSuccessScreen exit", () => {
     expect(queryByText(en.PaymentSuccessScreen.receivedTitle())).toBeNull()
     expect(queryByText(en.PaymentSuccessScreen.pendingMessage())).toBeNull()
     expect(queryByText(en.PaymentSuccessScreen.title())).toBeNull()
+  })
+
+  it("NEVER tells an unconfirmed customer we are crediting their wallet either", () => {
+    // `unconfirmed` was added to the hook after the label ternary was written
+    // and fell through it to "Crediting to" — so a customer whose card was
+    // DECLINED got "We haven't seen this payment yet" with "Crediting to: USD
+    // Wallet" two rows below it and the ⏱ "on its way" icon above it. The same
+    // assertions held and failed already carry; their absence here is why it
+    // shipped.
+    const { queryByText } = renderScreen({ phase: "unconfirmed" })
+
+    expect(queryByText(`${en.PaymentSuccessScreen.destinationWallet()}:`)).toBeNull()
+    expect(queryByText(`${en.PaymentSuccessScreen.depositedTo()}:`)).toBeNull()
+    expect(queryByText(`${en.PaymentSuccessScreen.wallet()}:`)).not.toBeNull()
+    // ...and the wallet is still named, so an account with more than one knows
+    // which payment this was.
+    expect(queryByText("USD Wallet")).not.toBeNull()
+    // A clock says "on its way". Nothing is on its way here.
+    expect(queryByText("⏱")).toBeNull()
+    expect(queryByText("⚠")).not.toBeNull()
+  })
+
+  it("stays neutral about the wallet while it is still checking", () => {
+    // The spinner phase knows even less than `unconfirmed` does. "Crediting to"
+    // under "Confirming your top-up" is a verdict the screen has not been given.
+    const { queryByText } = renderScreen({ phase: "checking" })
+
+    expect(queryByText(`${en.PaymentSuccessScreen.destinationWallet()}:`)).toBeNull()
+    expect(queryByText(`${en.PaymentSuccessScreen.depositedTo()}:`)).toBeNull()
+    expect(queryByText(`${en.PaymentSuccessScreen.wallet()}:`)).not.toBeNull()
   })
 })

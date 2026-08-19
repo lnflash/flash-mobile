@@ -40,11 +40,11 @@ const headerDoneStyle = { paddingHorizontal: 16, paddingVertical: 8 }
 /**
  * Where the checkout request has got to. Modelled explicitly because the states
  * that all have no URL are NOT the same thing: "the server has not answered
- * yet" is the normal first second of every card top-up, while a refusal and an
- * expiry are each a definite answer with its own wording and its own next step.
- * Collapsing them into `url === null` put the "Something went wrong / Retry"
- * screen in front of every customer on first paint, and later put it in front
- * of refusals whose actual reason the customer never got to read.
+ * yet" is the normal first second of every card top-up, while a refusal is a
+ * definite answer with its own wording and its own next step. Collapsing them
+ * into `url === null` put the "Something went wrong / Retry" screen in front of
+ * every customer on first paint, and later put it in front of refusals whose
+ * actual reason the customer never got to read.
  */
 type CheckoutState =
   | { status: "requesting" }
@@ -91,9 +91,6 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   // editable link while a signed one is still on its way.
   const [checkout, setCheckout] = useState<CheckoutState>({ status: "requesting" })
   const checkoutRequested = useRef(false)
-  // Bumped by Retry to re-run the checkout effect after a settled attempt that
-  // produced no URL.
-  const [checkoutAttempt, setCheckoutAttempt] = useState(0)
   const { requestCheckout } = useFygaroCheckout()
 
   // Get authenticated user data to extract username for webhook processing
@@ -219,7 +216,7 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
     return () => {
       cancelled = true
     }
-  }, [username, amount, wallet, checkoutAttempt, requestCheckout])
+  }, [username, amount, wallet, requestCheckout])
 
   const paymentUrl = checkout.status === "ready" ? checkout.url : null
   const checkoutId = checkout.status === "ready" ? checkout.checkoutId : undefined
@@ -352,19 +349,15 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
       refetch?.().catch(() => setError(true))
       return
     }
-    if (checkout.status !== "ready") {
-      // No URL to reload. Reloading nothing would leave the customer on the
-      // error screen forever, so ask the server again from scratch. (Refusals
-      // and expiries never reach this — they have their own screens, and
-      // neither offers a Retry, because re-asking for the same amount on the
-      // same day cannot produce a different answer.)
-      checkoutRequested.current = false
-      setCheckout({ status: "requesting" })
-      setCheckoutAttempt((attempt) => attempt + 1)
-      return
-    }
+    // Nothing else can put the customer here. The generic error screen renders
+    // only on `error || usernameMissing`; the missing username is handled above,
+    // and `error` is set exclusively by the WebView's `onError` — which requires
+    // a mounted WebView, which requires `status === "ready"`. A branch for
+    // re-requesting a failed checkout would be dead code: a request that fails
+    // resolves to `unavailable` and loads the legacy URL, so it is never the
+    // reason anyone is looking at this button.
     webViewRef.current?.reload()
-  }, [username, refetch, checkout.status])
+  }, [username, refetch])
 
   // A refusal has an answer attached, and it is not the generic error screen's.
   // The customer asked for more than their remaining allowance, or below the
@@ -397,8 +390,8 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   //  - a settled account query with no username, so the payment could never be
   //    attributed to an account (better an error than an unattributable charge)
   //  - the WebView itself failing to load
-  // Refusals and expiries have their own screens above, because both have
-  // something specific to say and a next step that is not "Retry".
+  // A refusal has its own screen above, because it has something specific to
+  // say and a next step that is not "Retry".
   // While the checkout request is still in flight the screen shows the spinner
   // below. Deriving this from `!paymentUrl` alone made the FIRST paint of every
   // card top-up "Something went wrong", for as long as the round trip took.
@@ -619,8 +612,8 @@ const useStyles = makeStyles(() => ({
   },
   loadingText: { marginTop: 16, textAlign: "center" },
   errorText: { textAlign: "center", marginBottom: 24 },
-  // The refusal and expiry screens carry a headline AND a sentence, so the
-  // headline sits closer to its own body than the bare error screen's does.
+  // The refusal screen carries a headline AND a sentence, so the headline sits
+  // closer to its own body than the bare error screen's does.
   noticeTitle: { textAlign: "center", marginBottom: 12 },
   bodyText: { textAlign: "center", marginBottom: 12 },
   retryButton: { marginTop: 16 },

@@ -13,7 +13,7 @@
  * routing to the appropriate flow based on the selected payment type.
  */
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import {
   View,
   TextInput,
@@ -57,6 +57,23 @@ const DEFAULT_CARD_MINIMUM = 10
 // derived the same way rather than hard-coding one machine's locale.
 export const formatHoldExpiry = (at: Date): string =>
   at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+
+/**
+ * How long Continue may be held waiting for the allowance before the screen
+ * falls back to the flat per-level cap.
+ *
+ * A deadline is required, not optional. The allowance query is `network-only`
+ * and nothing in the stack will ever time it out: React Native sets no default
+ * network timeout on Android and this app's HttpLink (app/graphql/client.tsx)
+ * passes no AbortController, so a stalled connection produces a promise that
+ * hangs rather than one that rejects. Without this, `allowanceLoading` stays
+ * true forever, Continue renders a permanent unlabelled spinner and
+ * `handleContinue` early-returns — the card top-up flow becomes unstartable,
+ * with no error and no way out. Past the deadline the documented flat-cap
+ * degrade path applies, which is strictly what this screen did before the
+ * allowance existed.
+ */
+const ALLOWANCE_DEADLINE_MS = 5_000
 
 type Props = StackScreenProps<RootStackParamList, "TopupDetails">
 
@@ -143,7 +160,21 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // the flat cap — so the customer is invited to spend $125 they do not have
   // and refused a moment later. Same posture the level already takes: hold the
   // flow rather than treat "not known yet" as "no limit".
-  const cardAllowancePending = isCard && allowanceLoading && !allowance
+  //
+  // But only until the deadline. "Not known yet" becomes "not knowable" at some
+  // point, and past that the flat cap is a worse gate than the allowance yet a
+  // far better one than a screen the customer cannot leave.
+  const [allowanceDeadlinePassed, setAllowanceDeadlinePassed] = useState(false)
+  useEffect(() => {
+    if (!isCard) return undefined
+    const timer = setTimeout(
+      () => setAllowanceDeadlinePassed(true),
+      ALLOWANCE_DEADLINE_MS,
+    )
+    return () => clearTimeout(timer)
+  }, [isCard])
+  const cardAllowancePending =
+    isCard && allowanceLoading && !allowance && !allowanceDeadlinePassed
 
   const dailyLimit = isCard ? levelDailyLimit : undefined
 

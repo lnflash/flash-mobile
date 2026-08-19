@@ -10,10 +10,11 @@ import { useFygaroCheckoutCreateMutation } from "@app/graphql/generated"
 // to the device-built link that has always worked.
 //
 // Only the fields the caller actually uses. `amount` (the authorised cents,
-// echoed back) and `remainingAllowance` were both selected and read nowhere:
-// the screen already knows the amount it asked for, and the refusal renders the
-// server's sentence, which states the remaining allowance in words. Every
-// unused field is one more thing an older backend can reject the document over.
+// echoed back), `remainingAllowance` and `expiresAt` were all selected and read
+// nowhere: the screen already knows the amount it asked for, the refusal renders
+// the server's sentence (which states the remaining allowance in words), and
+// nothing watches the clock on the link. Every unused field is one more thing an
+// older backend can reject the document over.
 gql`
   mutation fygaroCheckoutCreate($input: FygaroCheckoutCreateInput!) {
     fygaroCheckoutCreate(input: $input) {
@@ -24,7 +25,6 @@ gql`
       checkout {
         url
         checkoutId
-        expiresAt
       }
     }
   }
@@ -39,33 +39,38 @@ export type FygaroCheckoutRefusal = {
 }
 
 export type FygaroCheckoutResult =
-  // `expiresAtSeconds` is seconds since epoch, and it is load-bearing rather
-  // than decoration: past it the payment provider rejects the URL outright. A
-  // customer who left the WebView open would otherwise be typing card details
-  // into a page that can only fail, with nothing on screen saying why.
-  //
-  // Optional despite the schema marking it non-null, because a client that
-  // crashes — or worse, computes a NaN deadline and declares the link dead on
-  // arrival — over a field the server did not send is a worse failure than one
-  // that simply stops watching the clock.
-  | { kind: "signed"; url: string; checkoutId: string; expiresAtSeconds?: number }
+  | { kind: "signed"; url: string; checkoutId: string }
   | FygaroCheckoutRefusal
-  // The server could not authorise for a reason that is NOT about this
-  // customer: the feature is switched off, the backend is older than the
-  // mutation, or the network failed. Falling back to the device-built URL keeps
-  // top-ups working exactly as they do today — worse than a signed link, but a
-  // dead Top Up button would be worse than both.
+  // The server never answered at all — the network failed, the backend predates
+  // the mutation, or the payload came back empty. Falling back to the
+  // device-built URL keeps top-ups working exactly as they do today: worse than
+  // a signed link, but a dead Top Up button would be worse than both.
+  //
+  // Note what is NOT here: an error the server DID return. See DEGRADE_CODES.
   | { kind: "unavailable" }
 
-// Refusals the customer caused, and can act on. Anything else is ours, and
-// blocking their top-up over our own misconfiguration would be the wrong call.
-const CUSTOMER_REFUSAL_CODES = new Set([
-  "FYGARO_BELOW_MINIMUM",
-  "FYGARO_ABOVE_SINGLE_PAYMENT_LIMIT",
-  "FYGARO_DAILY_ALLOWANCE_EXCEEDED",
-  "FYGARO_CHECKOUT_ALREADY_OPEN",
-  "FYGARO_LEVEL_NOT_ELIGIBLE",
-])
+/**
+ * The only error codes that may fall back to the legacy editable link.
+ *
+ * This is an allowlist of OUR faults, and it is deliberately inverted from what
+ * it replaced. The previous version allowlisted the refusals it recognised and
+ * degraded on everything else — which cannot be maintained from this side of the
+ * wire, because the server owns the enum (flash `src/graphql/error-map.ts`) and
+ * grows it without this file. It was already out of date: it had no
+ * `FYGARO_ALLOWANCE_UNAVAILABLE`, the code the backend returns when it
+ * deliberately fails CLOSED because it could not measure the allowance at all
+ * (ERPNext settings/history unreadable, or the Redis reservation index down).
+ * That unknown code fell through to "degrade", loaded the legacy `?amount=` URL,
+ * and let the customer be charged during exactly the outage in which the server
+ * had just refused to authorise — while the webhook, reading the same
+ * unavailable data, 500s without crediting. Card captured, wallet not credited:
+ * the 2026-08-16 incident, reproduced by the change meant to end it.
+ *
+ * Inverted, an unrecognised code is a refusal. The cost of getting that wrong is
+ * a customer told to change their amount when they did not have to; the cost of
+ * the other mistake is a charge we cannot credit.
+ */
+const DEGRADE_CODES = new Set(["FYGARO_CHECKOUT_DISABLED"])
 
 export const useFygaroCheckout = () => {
   const [createCheckout] = useFygaroCheckoutCreateMutation()
@@ -93,17 +98,23 @@ export const useFygaroCheckout = () => {
       if (!payload) return { kind: "unavailable" }
 
       const errors = payload.errors ?? []
-      // Search the WHOLE array, not just the head. A refusal the customer can
-      // act on must win over anything else the server happens to report
-      // alongside it: if an unrelated error sorted first, the caller would fall
-      // back to the legacy editable link and the customer would be charged for
-      // a top-up the webhook then refuses — the exact incident this hook exists
-      // to end.
-      const refusal = errors.find((e) => e.code && CUSTOMER_REFUSAL_CODES.has(e.code))
-      if (refusal?.code) {
-        return { kind: "refused", message: refusal.message, code: refusal.code }
+      // Search the WHOLE array, not just the head. A refusal must win over
+      // anything else the server happens to report alongside it: if a degradable
+      // error sorted first, the caller would fall back to the legacy editable
+      // link and the customer would be charged for a top-up the webhook then
+      // refuses — the exact incident this hook exists to end.
+      //
+      // A missing code counts as a refusal too. The server declined to
+      // authorise; not being able to name why is no reason to charge anyway.
+      const refusal = errors.find((e) => !e.code || !DEGRADE_CODES.has(e.code))
+      if (refusal) {
+        return {
+          kind: "refused",
+          message: refusal.message,
+          code: refusal.code ?? undefined,
+        }
       }
-      // Errors, but none of them the customer's to fix. Ours — degrade.
+      // Every error was one of ours (the feature is switched off). Degrade.
       if (errors.length > 0) return { kind: "unavailable" }
 
       const checkout = payload.checkout
@@ -113,7 +124,6 @@ export const useFygaroCheckout = () => {
         kind: "signed",
         url: checkout.url,
         checkoutId: checkout.checkoutId,
-        expiresAtSeconds: checkout.expiresAt ?? undefined,
       }
     },
     [createCheckout],

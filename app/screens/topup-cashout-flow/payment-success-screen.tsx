@@ -34,13 +34,22 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
   const checking = resolution.phase === "checking"
   const held = resolution.phase === "held"
   const failed = resolution.phase === "failed"
-  // Held and failed share an icon and a colour, and nothing else: they are the
-  // two phases where the money is not on its way to the wallet.
+  // Held and failed share a COLOUR, and nothing else: they are the two phases
+  // where something is known to have gone wrong.
   const stalled = held || failed
   // No payment observed. Distinct from `pending` — which means the provider
   // told us it HAS the payment — because the page closes on a decline exactly
   // as it does on a success.
   const unconfirmed = resolution.phase === "unconfirmed"
+  // The screen may only imply money is moving to the wallet in the two phases
+  // where it actually is. Everything else — held, failed, unconfirmed, and
+  // "still checking" — must stay neutral, because a clock icon and a "Crediting
+  // to" row are each the same assertion the headline is carefully not making.
+  // Enumerated as an ALLOWLIST rather than `!stalled`, so a phase added later
+  // has to opt IN to claiming a credit: `unconfirmed` was added to this hook
+  // after the label was written and silently inherited "Crediting to: USD
+  // Wallet" under the headline "We haven't seen this payment yet".
+  const claimsCredit = credited || resolution.phase === "pending"
 
   // The headline is the one thing this screen got wrong before: it claimed a
   // completed deposit off a Fygaro redirect. Each branch now says only what is
@@ -93,9 +102,11 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
                 },
               ]}
             >
-              {/* A clock says "on its way". Held and failed are not on their
-                  way, so they must not wear the waiting icon. */}
-              {credited ? "✓" : stalled ? "⚠" : "⏱"}
+              {/* A clock says "on its way". Only `pending` is — held, failed
+                  and unconfirmed are not, so none of them may wear the waiting
+                  icon. The COLOUR splits differently on purpose: unconfirmed
+                  is not an error, nothing is known to have gone wrong. */}
+              {credited ? "✓" : claimsCredit ? "⏱" : "⚠"}
             </Text>
           )}
 
@@ -120,15 +131,16 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
             <View style={styles.detailRow}>
               <Text type="p1" style={[styles.detailLabel, { color: colors.grey1 }]}>
                 {/* Three labels, because there are three truths. Credited: the
-                    money is there. Pending: it is on its way. Held or failed:
-                    it is neither, so the row may only name the wallet — the
-                    headline says "Payment on hold" and "Crediting to" one row
-                    below it would put the claim straight back on the screen. */}
+                    money is there. Pending: it is on its way. Anything else —
+                    held, failed, unconfirmed, still checking — is neither, so
+                    the row may only name the wallet. "Payment on hold" (or "We
+                    haven't seen this payment yet") with "Crediting to" one row
+                    below it puts the claim straight back on the screen. */}
                 {credited
                   ? LL.PaymentSuccessScreen.depositedTo()
-                  : stalled
-                  ? LL.PaymentSuccessScreen.wallet()
-                  : LL.PaymentSuccessScreen.destinationWallet()}
+                  : claimsCredit
+                  ? LL.PaymentSuccessScreen.destinationWallet()
+                  : LL.PaymentSuccessScreen.wallet()}
                 :
               </Text>
               <Text type="p1" style={[styles.detailValue, { color: colors.black }]}>

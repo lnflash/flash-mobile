@@ -62,7 +62,9 @@ export const usePriceConversion = () => {
         [WalletCurrency.Btc]: {
           [DisplayCurrency]: displayCurrencyPerSat,
           [WalletCurrency.Usd]: displayCurrencyPerSat * (1 / displayCurrencyPerCent),
-          [WalletCurrency.Usdt]: displayCurrencyPerSat * (1 / displayCurrencyPerCent),
+          [WalletCurrency.Usdt]:
+            displayCurrencyPerSat *
+            (1 / displayCurrencyPerCent),
           [WalletCurrency.Btc]: 1,
         },
         [WalletCurrency.Usd]: {
@@ -72,15 +74,17 @@ export const usePriceConversion = () => {
           [WalletCurrency.Usdt]: 1,
         },
         [WalletCurrency.Usdt]: {
-          [DisplayCurrency]: displayCurrencyPerCent,
-          [WalletCurrency.Btc]: displayCurrencyPerCent * (1 / displayCurrencyPerSat),
-          [WalletCurrency.Usd]: 1,
+          [DisplayCurrency]: displayCurrencyPerCent ,
+          [WalletCurrency.Btc]:
+            (displayCurrencyPerCent ) *
+            (1 / displayCurrencyPerSat),
+          [WalletCurrency.Usd]: 1 ,
           [WalletCurrency.Usdt]: 1,
         },
         [DisplayCurrency]: {
           [WalletCurrency.Btc]: 1 / displayCurrencyPerSat,
           [WalletCurrency.Usd]: 1 / displayCurrencyPerCent,
-          [WalletCurrency.Usdt]: 1 / displayCurrencyPerCent,
+          [WalletCurrency.Usdt]: (1 / displayCurrencyPerCent),
           [DisplayCurrency]: 1,
         },
       }

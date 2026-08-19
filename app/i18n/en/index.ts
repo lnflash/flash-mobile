@@ -748,11 +748,7 @@ const en: BaseTranslation = {
     title: "Fygaro Payment",
     loading: "Loading payment page...",
     error: "Failed to load payment page",
-    retry: "Retry",
-    // The signed link stops working at its expiry and the provider rejects it
-    // from then on. Without this the customer keeps filling in a form that can
-    // only fail, and is told nothing about why.
-    startAgain: "Start again"
+    retry: "Retry"
   },
   BankTransfer: {
     title: "Bank Transfer",

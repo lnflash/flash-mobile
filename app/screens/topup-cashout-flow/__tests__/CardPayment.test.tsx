@@ -169,11 +169,11 @@ describe("CardPayment payment URL", () => {
 })
 
 describe("CardPayment signed checkout", () => {
-  const signed = (url: string, checkoutId: string, expiresAt?: number) => ({
+  const signed = (url: string, checkoutId: string) => ({
     data: {
       fygaroCheckoutCreate: {
         errors: [],
-        checkout: { url, checkoutId, expiresAt },
+        checkout: { url, checkoutId },
       },
     },
   })

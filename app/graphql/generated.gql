@@ -524,7 +524,6 @@ mutation fygaroCheckoutCreate($input: FygaroCheckoutCreateInput!) {
     checkout {
       url
       checkoutId
-      expiresAt
       __typename
     }
     __typename

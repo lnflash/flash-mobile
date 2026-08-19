@@ -24,7 +24,6 @@ describe("useFygaroCheckout", () => {
           checkout: {
             url: "https://fygaro.com/en/pb/x?jwt=abc",
             checkoutId: "intent-1",
-            expiresAt: 1_755_000_000,
           },
         },
       },
@@ -34,47 +33,6 @@ describe("useFygaroCheckout", () => {
       kind: "signed",
       url: "https://fygaro.com/en/pb/x?jwt=abc",
       checkoutId: "intent-1",
-      expiresAtSeconds: 1_755_000_000,
-    })
-  })
-
-  it("carries the expiry through, because the link stops working at it", async () => {
-    // Past expiresAt the provider rejects the URL. A caller with no deadline
-    // leaves the customer typing card details into a page that can only fail.
-    mockCreateCheckout.mockResolvedValue({
-      data: {
-        fygaroCheckoutCreate: {
-          errors: [],
-          checkout: {
-            url: "https://x",
-            checkoutId: "intent-1",
-            expiresAt: 1_755_000_600,
-          },
-        },
-      },
-    })
-
-    expect(await ask()).toMatchObject({ expiresAtSeconds: 1_755_000_600 })
-  })
-
-  it("stays signed when the server omits the expiry, rather than inventing one", async () => {
-    // expiresAt is non-null in the schema, but a client that computes a NaN
-    // deadline off a missing field would declare a perfectly good link dead on
-    // arrival. No expiry means no clock to watch — not a dead link.
-    mockCreateCheckout.mockResolvedValue({
-      data: {
-        fygaroCheckoutCreate: {
-          errors: [],
-          checkout: { url: "https://x", checkoutId: "intent-1" },
-        },
-      },
-    })
-
-    expect(await ask()).toEqual({
-      kind: "signed",
-      url: "https://x",
-      checkoutId: "intent-1",
-      expiresAtSeconds: undefined,
     })
   })
 
@@ -115,16 +73,16 @@ describe("useFygaroCheckout", () => {
     })
   })
 
-  it("finds the customer's refusal even when another error is listed first", async () => {
-    // Only the head of the array used to be inspected. A non-customer error
-    // sorted ahead of the refusal handed the customer the legacy editable link
-    // and let them pay for a top-up the webhook then refused — money captured,
-    // wallet uncredited, which is the precise incident this hook exists to end.
+  it("finds the refusal even when a degradable error is listed first", async () => {
+    // Only the head of the array used to be inspected. A degradable error sorted
+    // ahead of the refusal handed the customer the legacy editable link and let
+    // them pay for a top-up the webhook then refused — money captured, wallet
+    // uncredited, which is the precise incident this hook exists to end.
     mockCreateCheckout.mockResolvedValue({
       data: {
         fygaroCheckoutCreate: {
           errors: [
-            { code: "SOME_UNRELATED_SERVER_ERROR", message: "internal" },
+            { code: "FYGARO_CHECKOUT_DISABLED", message: "unavailable" },
             {
               code: "FYGARO_DAILY_ALLOWANCE_EXCEEDED",
               message: "You have $4.48 left of today's top-up limit",
@@ -141,10 +99,80 @@ describe("useFygaroCheckout", () => {
     })
   })
 
-  it("treats OUR faults as unavailable, so the top-up is not blocked", async () => {
-    // Signed checkout being switched off is not the customer's problem. Blocking
-    // their top-up over our own config would be a worse outcome than the
-    // editable link they have always had.
+  it("REFUSES when the server could not measure the allowance", async () => {
+    // FYGARO_ALLOWANCE_UNAVAILABLE is the backend deliberately failing CLOSED:
+    // ERPNext settings/history unreadable, or the Redis reservation index down,
+    // so it cannot tell whether this top-up is within the limit
+    // (flash src/graphql/public/root/mutation/fygaro-checkout-create.ts). It was
+    // missing from the old hand-copied allowlist, so it degraded to the legacy
+    // editable link and the customer was charged during exactly the outage the
+    // server had just refused for — while the webhook, reading the same
+    // unavailable data, 500s without crediting.
+    mockCreateCheckout.mockResolvedValue({
+      data: {
+        fygaroCheckoutCreate: {
+          errors: [
+            {
+              code: "FYGARO_ALLOWANCE_UNAVAILABLE",
+              message: "Could not check your top-up allowance right now",
+            },
+          ],
+        },
+      },
+    })
+
+    expect(await ask()).toEqual({
+      kind: "refused",
+      code: "FYGARO_ALLOWANCE_UNAVAILABLE",
+      message: "Could not check your top-up allowance right now",
+    })
+  })
+
+  it("refuses on a code it has never heard of, rather than charging anyway", async () => {
+    // The server owns this enum and grows it without this file, so an allowlist
+    // of recognised refusals fails OPEN on every code added upstream. Inverted,
+    // an unknown code costs a customer an unnecessary "change the amount"; the
+    // other way round it costs them a charge we cannot credit.
+    mockCreateCheckout.mockResolvedValue({
+      data: {
+        fygaroCheckoutCreate: {
+          errors: [
+            { code: "FYGARO_SOME_FUTURE_REFUSAL", message: "We can't do that yet" },
+          ],
+        },
+      },
+    })
+
+    expect(await ask()).toEqual({
+      kind: "refused",
+      code: "FYGARO_SOME_FUTURE_REFUSAL",
+      message: "We can't do that yet",
+    })
+  })
+
+  it("refuses on an error with no code at all", async () => {
+    // The server declined to authorise. Not being able to name why is no reason
+    // to send the customer to the editable link and charge them anyway.
+    mockCreateCheckout.mockResolvedValue({
+      data: {
+        fygaroCheckoutCreate: {
+          errors: [{ message: "Something went wrong" }],
+        },
+      },
+    })
+
+    expect(await ask()).toEqual({
+      kind: "refused",
+      code: undefined,
+      message: "Something went wrong",
+    })
+  })
+
+  it("treats the feature being switched OFF as unavailable, so the top-up is not blocked", async () => {
+    // The one error that is ours alone. Signed checkout being disabled is not
+    // the customer's problem, and it says nothing about their allowance —
+    // blocking their top-up over our own config would be a worse outcome than
+    // the editable link they have always had.
     mockCreateCheckout.mockResolvedValue({
       data: {
         fygaroCheckoutCreate: {

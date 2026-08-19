@@ -162,7 +162,11 @@ describe("useFygaroTopupStatus", () => {
     // hangs rather than rejects. With the resolution living inside the poll,
     // that left the customer on "Confirming your top-up" forever — on the
     // screen they land on immediately after being charged.
-    mockFetchStatus.mockReturnValue(new Promise(() => undefined))
+    mockFetchStatus.mockReturnValue(
+      new Promise(() => {
+        // Deliberately never settles.
+      }),
+    )
     const { result } = renderHook(() => useFygaroTopupStatus("intent-1"))
     expect(result.current.phase).toBe("checking")
 
