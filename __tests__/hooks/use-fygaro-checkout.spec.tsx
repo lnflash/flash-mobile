@@ -192,6 +192,65 @@ describe("useFygaroCheckout", () => {
     expect(await ask()).toEqual({ kind: "unavailable" })
   })
 
+  it("still degrades when an OLD BACKEND rejects the document by schema validation", async () => {
+    // The rejection an old backend actually produces, in the shape Apollo
+    // delivers it: a top-level GraphQL error carrying GRAPHQL_VALIDATION_FAILED.
+    // This one is OUR fault (we shipped a document the server predates), so it
+    // is the case the fallback exists for and must keep degrading — otherwise
+    // every instance running an older backend loses card top-ups entirely.
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [
+        {
+          message: 'Cannot query field "fygaroCheckoutCreate" on type "Mutation".',
+          extensions: { code: "GRAPHQL_VALIDATION_FAILED" },
+        },
+      ],
+    })
+
+    expect(await ask()).toEqual({ kind: "unavailable" })
+  })
+
+  it("REFUSES when the server throws instead of answering — the door with no test", async () => {
+    // `useMutation` here has no errorPolicy and none is set globally
+    // (app/graphql/client.tsx builds its ApolloClient with no defaultOptions),
+    // so the default `errorPolicy: "none"` makes client.mutate REJECT whenever
+    // the response carries top-level GraphQL errors — not only when the network
+    // died. ERPNext or Redis down means the resolver throws instead of mapping
+    // to FYGARO_ALLOWANCE_UNAVAILABLE, and blanket-degrading there loaded the
+    // legacy editable `?amount=` link: the card is captured and the webhook,
+    // reading the same unavailable data, fails without crediting. That is the
+    // 2026-08-16 incident, reached through the one path the payload branch
+    // above does not cover.
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [
+        { message: "Unexpected error", extensions: { code: "INTERNAL_SERVER_ERROR" } },
+      ],
+    })
+
+    expect(await ask()).toEqual({ kind: "serverError" })
+  })
+
+  it("refuses on a top-level error with no extensions at all", async () => {
+    // Same rule as the payload branch: the server declined to authorise, and
+    // not being able to name why is no reason to charge anyway.
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [{ message: "Something went wrong" }],
+    })
+
+    expect(await ask()).toEqual({ kind: "serverError" })
+  })
+
+  it("degrades on a pure transport failure, which carries no graphQLErrors", async () => {
+    // A dead network says nothing about the customer's allowance, and the
+    // legacy link is exactly the status quo there.
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [],
+      networkError: new Error("Network request failed"),
+    })
+
+    expect(await ask()).toEqual({ kind: "unavailable" })
+  })
+
   it("treats a success payload with no url as unavailable", async () => {
     // Never hand a null url to the WebView and call it signed.
     mockCreateCheckout.mockResolvedValue({

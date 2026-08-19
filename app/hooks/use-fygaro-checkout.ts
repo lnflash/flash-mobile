@@ -1,5 +1,5 @@
 import { useCallback } from "react"
-import { gql } from "@apollo/client"
+import { gql, type ApolloError } from "@apollo/client"
 
 import { useFygaroCheckoutCreateMutation } from "@app/graphql/generated"
 
@@ -53,6 +53,14 @@ export type FygaroCheckoutResult =
   // must NOT degrade to the editable legacy link. Minted by the caller's
   // deadline, never by this hook.
   | { kind: "timedOut" }
+  // The server DID answer, and its answer was a top-level GraphQL error rather
+  // than a payload: the resolver threw instead of mapping the failure to a
+  // code. Like `timedOut`, and unlike `unavailable`, this must not degrade to
+  // the editable legacy link — the server refused to authorise, and the
+  // webhook reading the same broken dependency will refuse to credit. Carries
+  // no message because there is no sentence meant for a customer in a thrown
+  // exception; the caller supplies localised copy.
+  | { kind: "serverError" }
 
 /**
  * The only error codes that may fall back to the legacy editable link.
@@ -94,9 +102,35 @@ export const useFygaroCheckout = () => {
           variables: { input: { amount: amountCents } },
         })
         payload = data?.fygaroCheckoutCreate
-      } catch {
-        // Network error, or a backend without this mutation. Neither is the
-        // customer's problem and neither should stop them topping up.
+      } catch (e) {
+        // Look at WHAT was thrown. A blanket degrade here contradicts the rule
+        // stated above — "an error the server DID return" is not `unavailable`
+        // — because `useMutation` has no errorPolicy set here and none is set
+        // globally (app/graphql/client.tsx builds its ApolloClient with no
+        // defaultOptions), so the default `errorPolicy: "none"` makes
+        // `client.mutate` REJECT on top-level GraphQL errors, not only on a
+        // dead network (@apollo/client/react/hooks/useMutation.js — the
+        // `.then` builds an ApolloError from `response.errors` and throws it).
+        //
+        // That is the 2026-08-16 incident through the one door with no test:
+        // ERPNext or Redis is down, the resolver throws instead of mapping to
+        // FYGARO_ALLOWANCE_UNAVAILABLE, the mutate rejects — and degrading
+        // loads the legacy editable `?amount=` link, the card is captured, and
+        // the webhook (reading the same unavailable data) fails without
+        // crediting.
+        //
+        // The inverted-allowlist argument that governs `payload.errors`
+        // applies verbatim here: only OUR faults may degrade. A transport
+        // failure is ours. A document the backend cannot parse or validate is
+        // ours (it predates this mutation, or we rolled back). Anything else
+        // is the server having refused, and is refused back.
+        const graphQLErrors = (e as ApolloError | undefined)?.graphQLErrors ?? []
+        const schemaReject = graphQLErrors.some(
+          (g) =>
+            g.extensions?.code === "GRAPHQL_VALIDATION_FAILED" ||
+            g.extensions?.code === "GRAPHQL_PARSE_FAILED",
+        )
+        if (graphQLErrors.length > 0 && !schemaReject) return { kind: "serverError" }
         return { kind: "unavailable" }
       }
 

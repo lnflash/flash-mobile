@@ -177,17 +177,73 @@ describe("useFygaroTopupStatus", () => {
     expect(result.current.phase).toBe("unconfirmed")
   })
 
-  it("resolves straight to pending with no checkout id, and asks nothing", async () => {
+  it("resolves to `unaskable` with no checkout id, and asks nothing", async () => {
     // A legacy device-built link has no id to ask about — but the app only
     // reaches this screen on a Fygaro SUCCESS redirect, which IS evidence the
     // card was charged. What it is not evidence of is Flash crediting the
-    // wallet, which is the distinction this screen exists to draw. So
-    // `pending`, not `unconfirmed`: the latter is for the signed path, where we
-    // can actually ask and the server tells us it has seen nothing.
+    // wallet, which is the distinction this hook exists to draw.
+    //
+    // Its own phase, not `pending`. `pending` means the backend SAID it has the
+    // payment and is crediting it, and the screen renders that as "We've
+    // received your payment and are crediting your wallet" with a ⏱ and
+    // "Crediting to: USD Wallet". Returning it here made that claim for every
+    // card top-up in production — the signed checkout is off by default — from
+    // a Fygaro redirect, without asking anyone. In the incident shape (an
+    // over-limit capture landing in HELD_FOR_REVIEW) the credit never comes.
+    // And not `unconfirmed` either: that is for the signed path, where we can
+    // ask and the server tells us it has seen nothing.
     const { result } = renderHook(() => useFygaroTopupStatus(undefined))
 
-    expect(result.current.phase).toBe("pending")
+    expect(result.current.phase).toBe("unaskable")
     expect(mockFetchStatus).not.toHaveBeenCalled()
+  })
+
+  it("never has two polls in flight at once", async () => {
+    // `setInterval` does not wait for an async callback. A round trip longer
+    // than the 1s cadence — exactly the condition that makes this poll matter —
+    // used to stack requests: the fast window alone fired ~10 concurrent
+    // network-only status queries, and the slow window ~12 more, all aimed at
+    // the backend the customer is waiting on, on the screen they land on
+    // straight after being charged. No wrong state resulted; it was simply a
+    // self-inflicted request storm.
+    mockFetchStatus.mockReturnValue(
+      new Promise(() => {
+        // Deliberately never settles: the slow round trip, taken to its limit.
+      }),
+    )
+    renderHook(() => useFygaroTopupStatus("intent-1"))
+
+    await act(async () => {
+      jest.advanceTimersByTime(11_000)
+    })
+
+    expect(mockFetchStatus).toHaveBeenCalledTimes(1)
+  })
+
+  it("resumes the normal cadence as soon as a slow poll answers", async () => {
+    // The guard must throttle overlap, not the poll itself: once the round trip
+    // is over the next interval fires as usual.
+    let answer: (value: unknown) => void = () => undefined
+    mockFetchStatus.mockReturnValueOnce(
+      new Promise((resolve) => {
+        answer = resolve
+      }),
+    )
+    renderHook(() => useFygaroTopupStatus("intent-1"))
+
+    await act(async () => {
+      jest.advanceTimersByTime(4_000)
+    })
+    expect(mockFetchStatus).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      answer({ data: { fygaroTopupStatus: null } })
+    })
+    await act(async () => {
+      jest.advanceTimersByTime(3_000)
+    })
+
+    expect(mockFetchStatus.mock.calls.length).toBeGreaterThan(1)
   })
 
   it("says PENDING only once the server has confirmed it has the payment", async () => {

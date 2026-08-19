@@ -2240,6 +2240,22 @@ type RootTranslation = {
 		 */
 		checkoutTimedOut: string
 		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​s​e​t​ ​u​p​ ​y​o​u​r​ ​p​a​y​m​e​n​t​.​ ​N​o​t​h​i​n​g​ ​h​a​s​ ​b​e​e​n​ ​c​h​a​r​g​e​d​ ​—​ ​p​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		checkoutFailed: string
+		/**
+		 * U​p​g​r​a​d​e​ ​r​e​q​u​i​r​e​d
+		 */
+		upgradeRequiredTitle: string
+		/**
+		 * I​n​v​a​l​i​d​ ​a​m​o​u​n​t
+		 */
+		invalidAmountTitle: string
+		/**
+		 * F​a​i​l​e​d​ ​t​o​ ​i​n​i​t​i​a​t​e​ ​p​a​y​m​e​n​t​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		paymentSetupFailed: string
+		/**
 		 * C​h​a​n​g​e​ ​a​m​o​u​n​t
 		 */
 		changeAmount: string
@@ -2431,6 +2447,14 @@ type RootTranslation = {
 		 * R​e​t​r​y
 		 */
 		retry: string
+		/**
+		 * P​a​y​m​e​n​t​ ​f​a​i​l​e​d
+		 */
+		paymentFailedTitle: string
+		/**
+		 * Y​o​u​r​ ​p​a​y​m​e​n​t​ ​w​a​s​ ​n​o​t​ ​c​o​m​p​l​e​t​e​d​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		paymentFailedMessage: string
 	}
 	BankTransfer: {
 		/**
@@ -2552,6 +2576,10 @@ type RootTranslation = {
 		 * W​e​'​v​e​ ​r​e​c​e​i​v​e​d​ ​y​o​u​r​ ​p​a​y​m​e​n​t​ ​a​n​d​ ​a​r​e​ ​c​r​e​d​i​t​i​n​g​ ​y​o​u​r​ ​w​a​l​l​e​t​.​ ​W​e​'​l​l​ ​l​e​t​ ​y​o​u​ ​k​n​o​w​ ​a​s​ ​s​o​o​n​ ​a​s​ ​i​t​ ​l​a​n​d​s​.
 		 */
 		pendingMessage: string
+		/**
+		 * W​e​'​v​e​ ​r​e​c​e​i​v​e​d​ ​y​o​u​r​ ​p​a​y​m​e​n​t​.​ ​W​e​'​l​l​ ​c​o​n​f​i​r​m​ ​i​t​ ​a​n​d​ ​l​e​t​ ​y​o​u​ ​k​n​o​w​ ​o​n​c​e​ ​i​t​'​s​ ​c​r​e​d​i​t​e​d​.
+		 */
+		unaskableMessage: string
 		/**
 		 * P​a​y​m​e​n​t​ ​o​n​ ​h​o​l​d
 		 */
@@ -8534,6 +8562,22 @@ export type TranslationFunctions = {
 		 */
 		checkoutTimedOut: () => LocalizedString
 		/**
+		 * We couldn't set up your payment. Nothing has been charged — please try again.
+		 */
+		checkoutFailed: () => LocalizedString
+		/**
+		 * Upgrade required
+		 */
+		upgradeRequiredTitle: () => LocalizedString
+		/**
+		 * Invalid amount
+		 */
+		invalidAmountTitle: () => LocalizedString
+		/**
+		 * Failed to initiate payment. Please try again.
+		 */
+		paymentSetupFailed: () => LocalizedString
+		/**
 		 * Change amount
 		 */
 		changeAmount: () => LocalizedString
@@ -8717,6 +8761,14 @@ export type TranslationFunctions = {
 		 * Retry
 		 */
 		retry: () => LocalizedString
+		/**
+		 * Payment failed
+		 */
+		paymentFailedTitle: () => LocalizedString
+		/**
+		 * Your payment was not completed. Please try again.
+		 */
+		paymentFailedMessage: () => LocalizedString
 	}
 	BankTransfer: {
 		/**
@@ -8833,6 +8885,10 @@ export type TranslationFunctions = {
 		 * We've received your payment and are crediting your wallet. We'll let you know as soon as it lands.
 		 */
 		pendingMessage: () => LocalizedString
+		/**
+		 * We've received your payment. We'll confirm it and let you know once it's credited.
+		 */
+		unaskableMessage: () => LocalizedString
 		/**
 		 * Payment on hold
 		 */

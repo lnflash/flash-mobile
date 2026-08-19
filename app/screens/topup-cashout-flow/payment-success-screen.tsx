@@ -41,6 +41,10 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
   // told us it HAS the payment — because the page closes on a decline exactly
   // as it does on a success.
   const unconfirmed = resolution.phase === "unconfirmed"
+  // A legacy device-built link: there is no checkout id, so nobody was asked.
+  // The redirect is evidence the CARD was charged and evidence of nothing
+  // else, so this phase may say "received" and must not say "crediting".
+  const unaskable = resolution.phase === "unaskable"
   // The screen may only imply money is moving to the wallet in the two phases
   // where it actually is. Everything else — held, failed, unconfirmed, and
   // "still checking" — must stay neutral, because a clock icon and a "Crediting
@@ -49,6 +53,10 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
   // has to opt IN to claiming a credit: `unconfirmed` was added to this hook
   // after the label was written and silently inherited "Crediting to: USD
   // Wallet" under the headline "We haven't seen this payment yet".
+  //
+  // `unaskable` is deliberately NOT on it. It is the phase every card top-up
+  // in production lands in while the signed checkout is off, and "Crediting
+  // to" there is a claim made without asking anyone.
   const claimsCredit = credited || resolution.phase === "pending"
 
   // The headline is the one thing this screen got wrong before: it claimed a
@@ -81,6 +89,12 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
     ? resolution.reason ?? LL.PaymentSuccessScreen.failedMessage()
     : unconfirmed
     ? LL.PaymentSuccessScreen.unconfirmedMessage()
+    : unaskable
+    ? // "We'll confirm it", not "we are crediting your wallet": nothing has
+      // been asked and nothing has answered. `pendingMessage` is correct for a
+      // real PROCESSING answer, where the backend has actually said it is
+      // crediting; it is not correct for "we have no id and cannot ask".
+      LL.PaymentSuccessScreen.unaskableMessage()
     : LL.PaymentSuccessScreen.pendingMessage()
 
   return (
@@ -102,10 +116,11 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
                 },
               ]}
             >
-              {/* A clock says "on its way". Only `pending` is — held, failed
-                  and unconfirmed are not, so none of them may wear the waiting
-                  icon. The COLOUR splits differently on purpose: unconfirmed
-                  is not an error, nothing is known to have gone wrong. */}
+              {/* A clock says "on its way". Only `pending` is — held, failed,
+                  unconfirmed and unaskable are not, so none of them may wear
+                  the waiting icon. The COLOUR splits differently on purpose:
+                  unconfirmed and unaskable are not errors, nothing is known to
+                  have gone wrong. */}
               {credited ? "✓" : claimsCredit ? "⏱" : "⚠"}
             </Text>
           )}
@@ -132,10 +147,11 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
               <Text type="p1" style={[styles.detailLabel, { color: colors.grey1 }]}>
                 {/* Three labels, because there are three truths. Credited: the
                     money is there. Pending: it is on its way. Anything else —
-                    held, failed, unconfirmed, still checking — is neither, so
-                    the row may only name the wallet. "Payment on hold" (or "We
-                    haven't seen this payment yet") with "Crediting to" one row
-                    below it puts the claim straight back on the screen. */}
+                    held, failed, unconfirmed, unaskable, still checking — is
+                    neither, so the row may only name the wallet. "Payment on
+                    hold" (or "We haven't seen this payment yet") with
+                    "Crediting to" one row below it puts the claim straight back
+                    on the screen. */}
                 {credited
                   ? LL.PaymentSuccessScreen.depositedTo()
                   : claimsCredit

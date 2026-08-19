@@ -103,6 +103,45 @@ describe("PaymentSuccessScreen copy per phase", () => {
     expect(queryByText(`${en.PaymentSuccessScreen.wallet()}:`)).toBeNull()
   })
 
+  it("does NOT claim to be crediting a wallet nobody was asked about", () => {
+    // `unaskable` is a legacy device-built link: no checkout id, so nothing was
+    // asked and nothing answered. It is also EVERY card top-up in production
+    // while `fygaro.checkout.enabled` is off, which is what made this the
+    // widest-reach claim on the screen.
+    //
+    // It used to resolve to `pending`, so the screen said "We've received your
+    // payment and are crediting your wallet. We'll let you know as soon as it
+    // lands", with ⏱ above it and "Crediting to: USD Wallet" below — an
+    // assertion about crediting made from a Fygaro redirect, structurally the
+    // same claim this PR exists to remove. In the incident shape (over-limit
+    // capture → HELD_FOR_REVIEW) it never lands.
+    const { queryByText } = renderScreen({ phase: "unaskable" })
+
+    expect(queryByText(en.PaymentSuccessScreen.unaskableMessage())).not.toBeNull()
+    expect(queryByText(en.PaymentSuccessScreen.pendingMessage())).toBeNull()
+    // The payment itself IS evidenced — the screen is only reached on a success
+    // redirect — so the headline may still say received.
+    expect(queryByText(en.PaymentSuccessScreen.receivedTitle())).not.toBeNull()
+    // ...but nothing may imply the money is on its way to a wallet.
+    expect(queryByText("⏱")).toBeNull()
+    expect(queryByText(`${en.PaymentSuccessScreen.destinationWallet()}:`)).toBeNull()
+    expect(queryByText(`${en.PaymentSuccessScreen.depositedTo()}:`)).toBeNull()
+    // The wallet is still named neutrally, the same way `unconfirmed` does it,
+    // so an account with more than one knows which payment this was.
+    expect(queryByText(`${en.PaymentSuccessScreen.wallet()}:`)).not.toBeNull()
+    expect(queryByText("USD Wallet")).not.toBeNull()
+  })
+
+  it("keeps `pending` saying we are crediting — it is the phase the backend confirmed", () => {
+    // The other half: splitting `unaskable` out must not water down the real
+    // PROCESSING answer, where the backend HAS said it is crediting.
+    const { queryByText } = renderScreen({ phase: "pending" })
+
+    expect(queryByText(en.PaymentSuccessScreen.pendingMessage())).not.toBeNull()
+    expect(queryByText(en.PaymentSuccessScreen.unaskableMessage())).toBeNull()
+    expect(queryByText("⏱")).not.toBeNull()
+  })
+
   it("renders the server's reason verbatim on a held payment", () => {
     const { queryByText } = renderScreen({
       phase: "held",
@@ -191,6 +230,7 @@ describe("PaymentSuccessScreen copy in EVERY language", () => {
     "checkingMessage",
     "receivedTitle",
     "pendingMessage",
+    "unaskableMessage",
     "unconfirmedTitle",
     "unconfirmedMessage",
     "heldTitle",

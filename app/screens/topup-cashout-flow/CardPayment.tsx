@@ -248,6 +248,21 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         return
       }
 
+      if (result.kind === "serverError") {
+        // The server answered, and its answer was an exception. It did not
+        // authorise this top-up, and whatever is broken behind it (ERPNext,
+        // the reservation index) is the same thing the webhook has to read
+        // before it can credit. Refusing costs the customer nothing here;
+        // handing them the editable link costs them a capture we cannot
+        // credit. No server sentence exists to render, so this is the one
+        // refusal whose wording is ours.
+        setCheckout({
+          status: "refused",
+          message: checkoutDeps.current.LL.TopupDetails.checkoutFailed(),
+        })
+        return
+      }
+
       if (result.kind === "timedOut") {
         // Refuse rather than charge. Nothing has been taken at this point, so
         // "try again" costs the customer nothing — whereas handing them an
@@ -268,9 +283,22 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
       setCheckout({ status: "ready", url: legacyPaymentUrl })
     }
     run().catch(() => {
-      // The request itself already degrades to `unavailable` internally; this
-      // only guards against an unexpected throw leaving an unhandled rejection.
-      if (!cancelled) setCheckout({ status: "ready", url: legacyPaymentUrl })
+      // Fail CLOSED. This catch sits downstream of the refusal branch: that
+      // branch writes `{status:"refused"}` and only THEN calls Alert.alert, so
+      // anything throwing after the state write (a stubbed-out Alert, a
+      // navigation object torn down mid-flight) used to land here and replace
+      // the refusal with the editable legacy link the server had just refused.
+      //
+      // Nothing reaching here is a known-safe degrade either: `requestCheckout`
+      // converts every legitimate one to `unavailable` internally, and that is
+      // handled above. So the only honest answer left is "we could not set this
+      // up", which charges nobody.
+      if (!cancelled) {
+        setCheckout({
+          status: "refused",
+          message: checkoutDeps.current.LL.TopupDetails.checkoutFailed(),
+        })
+      }
     })
 
     return () => {
@@ -367,10 +395,15 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
       hostAndPath.includes("failed") ||
       hostAndPath.includes("cancelled")
     ) {
-      // Payment failed - show error and allow retry
-      Alert.alert("Payment Failed", "Your payment was not completed. Please try again.", [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ])
+      // Payment failed - show error and allow retry.
+      // Localised like every other outcome message on this screen: a raw
+      // English literal here fixes the failure path for English speakers only,
+      // which is the exact argument that got the success path translated.
+      Alert.alert(
+        LL.FygaroWebViewScreen.paymentFailedTitle(),
+        LL.FygaroWebViewScreen.paymentFailedMessage(),
+        [{ text: LL.common.ok(), onPress: () => navigation.goBack() }],
+      )
     }
   }
 

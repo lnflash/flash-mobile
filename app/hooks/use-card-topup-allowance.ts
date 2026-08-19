@@ -1,5 +1,5 @@
 import { useCallback } from "react"
-import { gql } from "@apollo/client"
+import { gql, NetworkStatus } from "@apollo/client"
 
 import { useFygaroTopupAllowanceQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -55,13 +55,22 @@ export type CardTopupAllowance = {
  * $60 too high, on a screen that never unmounted. Without a refresh the app
  * invites the very top-up it is about to refuse, which is the failure this
  * whole allowance exists to end.
+ *
+ * `notifyOnNetworkStatusChange` is what makes that refresh visible. Without it
+ * Apollo keeps serving the PREVIOUS `data` and never flips `loading` during a
+ * refetch, so the refresh closes only half the loop: for the whole round trip
+ * after the customer returns from a refusal the screen still renders the old
+ * figure and still gates against it, and tapping Continue in that window —
+ * precisely what someone just told to change their amount does — is waved
+ * through into another reservation the server refuses.
  */
 export const useCardTopupAllowance = ({ skip = false }: { skip?: boolean } = {}) => {
   const isAuthed = useIsAuthed()
   const skipped = skip || !isAuthed
-  const { data, loading, refetch } = useFygaroTopupAllowanceQuery({
+  const { data, loading, refetch, networkStatus } = useFygaroTopupAllowanceQuery({
     skip: skipped,
     fetchPolicy: "network-only",
+    notifyOnNetworkStatusChange: true,
   })
 
   /**
@@ -90,5 +99,14 @@ export const useCardTopupAllowance = ({ skip = false }: { skip?: boolean } = {})
       }
     : undefined
 
-  return { allowance, loading, refetch: refresh }
+  /**
+   * A refetch is in flight and `allowance` above is therefore the OLD figure.
+   * Exposed separately from `loading` because the two say different things and
+   * callers need both: `loading && !allowance` is "we have never had a number",
+   * while this is "the number on screen is about to be replaced". Callers that
+   * gate money on the figure must hold on either.
+   */
+  const refreshing = networkStatus === NetworkStatus.refetch
+
+  return { allowance, loading, refreshing, refetch: refresh }
 }

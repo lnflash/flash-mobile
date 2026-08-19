@@ -141,6 +141,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   const {
     allowance,
     loading: allowanceLoading,
+    refreshing: allowanceRefreshing,
     refetch: refetchAllowance,
   } = useCardTopupAllowance({
     skip: !isCard,
@@ -207,17 +208,34 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // But only until the deadline. "Not known yet" becomes "not knowable" at some
   // point, and past that the flat cap is a worse gate than the allowance yet a
   // far better one than a screen the customer cannot leave.
+  //
+  // Two ways the figure can be untrustworthy, and both must hold the flow:
+  //  - we have never had one (first load), or
+  //  - the one we are holding is being REPLACED right now. That is the return
+  //    from CardPayment: asking for a checkout mints a reservation, so the $65
+  //    still rendered here is $60 too high until the refetch lands. Waving
+  //    Continue through on it invites exactly the top-up the server just
+  //    refused — the failure the on-focus refetch was added to end, left half
+  //    open because Apollo keeps serving the old data through a refetch.
+  const allowanceUnsettled =
+    isCard && ((allowanceLoading && !allowance) || allowanceRefreshing)
   const [allowanceDeadlinePassed, setAllowanceDeadlinePassed] = useState(false)
   useEffect(() => {
-    if (!isCard) return undefined
+    // Armed per HOLD, not once per mount. A mount-only timer has always
+    // expired by the time the customer comes back from the payment screen,
+    // which would make the deadline bound the first hold and none of the
+    // later ones.
+    if (!allowanceUnsettled) {
+      setAllowanceDeadlinePassed(false)
+      return undefined
+    }
     const timer = setTimeout(
       () => setAllowanceDeadlinePassed(true),
       ALLOWANCE_DEADLINE_MS,
     )
     return () => clearTimeout(timer)
-  }, [isCard])
-  const cardAllowancePending =
-    isCard && allowanceLoading && !allowance && !allowanceDeadlinePassed
+  }, [allowanceUnsettled])
+  const cardAllowancePending = allowanceUnsettled && !allowanceDeadlinePassed
 
   const dailyLimit = isCard ? levelDailyLimit : undefined
 
@@ -310,13 +328,19 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     // (level query failed), we degrade to the webhook's manual-review
     // fallback rather than hard-blocking on missing metadata.
     if (cardBlockedForLevel) {
-      Alert.alert("Upgrade Required", LL.TopupDetails.upgradeRequired())
+      // Localised, like the body it sits above. A raw English title on a
+      // translated message is the same half-fix as translating the success
+      // path and leaving the failure path in English.
+      Alert.alert(
+        LL.TopupDetails.upgradeRequiredTitle(),
+        LL.TopupDetails.upgradeRequired(),
+      )
       return
     }
 
     if (!validateAmount(amount)) {
       Alert.alert(
-        "Invalid Amount",
+        LL.TopupDetails.invalidAmountTitle(),
         LL.TopupDetails.minimumAmount({ amount: `$${minimumAmount.toFixed(2)}` }),
       )
       return
@@ -366,7 +390,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
         })
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to initiate payment. Please try again.")
+      Alert.alert(LL.common.error(), LL.TopupDetails.paymentSetupFailed())
     } finally {
       setIsLoading(false)
     }

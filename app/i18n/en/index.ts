@@ -698,6 +698,17 @@ const en: BaseTranslation = {
     cannotTopUp: "Can't top up this amount",
     checkoutTimedOut:
       "We couldn't reach Flash to set up your payment. Nothing has been charged — please check your connection and try again.",
+    // Used when the server answered with an exception rather than a decision,
+    // and when anything else unexpected goes wrong setting the payment up. It
+    // fails CLOSED, so it must say plainly that no money moved.
+    checkoutFailed:
+      "We couldn't set up your payment. Nothing has been charged — please try again.",
+    // Alert titles. Localised for the same reason their message bodies are: an
+    // English title over a translated sentence fixes the screen for English
+    // speakers only.
+    upgradeRequiredTitle: "Upgrade required",
+    invalidAmountTitle: "Invalid amount",
+    paymentSetupFailed: "Failed to initiate payment. Please try again.",
     // The only action that can succeed after a refusal. A "Retry" would
     // re-request the SAME amount and be refused again for the same reason.
     changeAmount: "Change amount",
@@ -750,7 +761,11 @@ const en: BaseTranslation = {
     title: "Fygaro Payment",
     loading: "Loading payment page...",
     error: "Failed to load payment page",
-    retry: "Retry"
+    retry: "Retry",
+    // The failure counterpart of every payment-outcome message on this flow.
+    // It was the one left as an English literal.
+    paymentFailedTitle: "Payment failed",
+    paymentFailedMessage: "Your payment was not completed. Please try again."
   },
   BankTransfer: {
     title: "Bank Transfer",
@@ -791,6 +806,13 @@ const en: BaseTranslation = {
       "If your card was charged, we'll credit your wallet and let you know. If it wasn't, nothing has left your account and you can try again.",
     pendingMessage:
       "We've received your payment and are crediting your wallet. We'll let you know as soon as it lands.",
+    // For a legacy device-built link, which carries no checkout id: a payment
+    // happened, and nobody has been asked what became of it. Deliberately NOT
+    // pendingMessage — "we are crediting your wallet" is a claim the backend
+    // has to make, and here it has not been asked. This is the phase every
+    // card top-up lands in while the signed checkout is switched off.
+    unaskableMessage:
+      "We've received your payment. We'll confirm it and let you know once it's credited.",
     // Held and failed are NOT pending, and must never borrow pendingMessage's
     // wording: a held payment is explicitly not being credited — it is terminal
     // until a human acts — so "we are crediting your wallet" would be exactly

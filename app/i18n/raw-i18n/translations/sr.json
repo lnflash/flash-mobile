@@ -1582,7 +1582,12 @@
     "changeAmount": "Change amount",
     "allowanceRemaining": "{remaining} of {limit} left today",
     "allowanceHeld": "{held} is held by a payment link you haven't completed",
-    "allowanceResets": "More becomes available at {when: string}"
+    "allowanceResets": "More becomes available at {when: string}",
+    "checkoutTimedOut": "We couldn't reach Flash to set up your payment. Nothing has been charged — please check your connection and try again.",
+    "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
+    "upgradeRequiredTitle": "Upgrade required",
+    "invalidAmountTitle": "Invalid amount",
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "USD рачун",
@@ -1608,7 +1613,9 @@
     "title": "Fygaro Payment",
     "loading": "Loading payment page...",
     "error": "Failed to load payment page",
-    "retry": "Retry"
+    "retry": "Retry",
+    "paymentFailedTitle": "Payment failed",
+    "paymentFailedMessage": "Your payment was not completed. Please try again."
   },
   "BankTransfer": {
     "title": "Bank Transfer",
@@ -1650,7 +1657,8 @@
     "failedMessage": "We couldn't credit this payment yet. We're on it.",
     "destinationWallet": "Crediting to",
     "wallet": "Wallet",
-    "amountCredited": "Credited"
+    "amountCredited": "Credited",
+    "unaskableMessage": "We've received your payment. We'll confirm it and let you know once it's credited."
   },
   "BankAccountsScreen": {
     "title": "Bank accounts",

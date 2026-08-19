@@ -1,5 +1,6 @@
 import React from "react"
 import { Alert } from "react-native"
+import { NetworkStatus } from "@apollo/client"
 import { act, render, fireEvent } from "@testing-library/react-native"
 import { ThemeProvider } from "@rneui/themed"
 import theme from "@app/rne-theme/theme"
@@ -80,11 +81,16 @@ const allowanceResult = ({
   held,
   remaining,
   holdsExpireAt = null,
+  // What Apollo reports while a refetch is in flight with
+  // `notifyOnNetworkStatusChange: true`: the PREVIOUS data is still served, so
+  // the figure on screen is the stale one and the screen must not gate on it.
+  refetching = false,
 }: {
   limit: number
   held: number
   remaining: number
   holdsExpireAt?: number | null
+  refetching?: boolean
 }) => ({
   data: {
     fygaroTopupAllowance: {
@@ -95,7 +101,8 @@ const allowanceResult = ({
       holdsExpireAt,
     },
   },
-  loading: false,
+  loading: refetching,
+  networkStatus: refetching ? NetworkStatus.refetch : NetworkStatus.ready,
   refetch: jest.fn(),
 })
 
@@ -283,7 +290,9 @@ describe("TopupDetails $10 minimum", () => {
 
     expect(navigate).not.toHaveBeenCalled()
     expect(alertSpy).toHaveBeenCalledWith(
-      "Invalid Amount",
+      // Localized like the body it sits above — it used to be a raw English
+      // literal on a translated message.
+      en.TopupDetails.invalidAmountTitle(),
       en.TopupDetails.minimumAmount({ amount: "$10.00" }),
     )
     alertSpy.mockRestore()
@@ -301,7 +310,9 @@ describe("TopupDetails $10 minimum", () => {
 
     expect(navigate).not.toHaveBeenCalled()
     expect(alertSpy).toHaveBeenCalledWith(
-      "Invalid Amount",
+      // Localized like the body it sits above — it used to be a raw English
+      // literal on a translated message.
+      en.TopupDetails.invalidAmountTitle(),
       en.TopupDetails.minimumAmount({ amount: "$10.00" }),
     )
     alertSpy.mockRestore()
@@ -728,7 +739,7 @@ describe("TopupDetails per-level daily limit", () => {
 
     expect(navigate).not.toHaveBeenCalled()
     expect(alertSpy).toHaveBeenCalledWith(
-      "Upgrade Required",
+      en.TopupDetails.upgradeRequiredTitle(),
       en.TopupDetails.upgradeRequired(),
     )
     alertSpy.mockRestore()
@@ -884,6 +895,113 @@ describe("TopupDetails allowance refresh on return", () => {
       en.TopupDetails.allowanceRemaining({ remaining: "$5.00", limit: "$125.00" }),
     )
     alertSpy.mockRestore()
+  })
+
+  it("holds Continue while that refresh is still in flight, instead of gating on the stale figure", () => {
+    // The other half of the loop the on-focus refetch opened. Apollo keeps
+    // serving the PREVIOUS data through a refetch, and without
+    // `notifyOnNetworkStatusChange` it does not even flip `loading` — so for
+    // the whole round trip after the customer comes back from a refusal the
+    // screen still renders "$65.00 of $125.00 left today" and still gates
+    // against $65. Tapping Continue in that window — precisely what someone
+    // just told to change their amount does — used to be waved through, into
+    // another reservation the server refuses.
+    const refetch = jest.fn(() => {
+      // The refetch is now IN FLIGHT: stale $65 still served, network busy.
+      mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+        ...allowanceResult({
+          limit: 12500,
+          held: 6000,
+          remaining: 6500,
+          refetching: true,
+        }),
+        refetch,
+      })
+    })
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+      ...allowanceResult({ limit: 12500, held: 6000, remaining: 6500 }),
+      refetch,
+    })
+    const {
+      getByPlaceholderText,
+      getAllByText,
+      queryAllByText,
+      navigate,
+      rerenderScreen,
+    } = renderTopupDetails({ paymentType: "card", level: AccountLevel.One })
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "60")
+    // Before leaving, $60 against $65 is allowed.
+    expect(getAllByText(en.TopupDetails.continue()).length).toBeGreaterThan(0)
+
+    returnToScreen()
+    rerenderScreen()
+
+    // Continue is in its loading state, so there is no label to press: the
+    // flow is held on a number we know is being replaced, rather than waved
+    // through on one we know is too high.
+    expect(refetch).toHaveBeenCalledTimes(1)
+    expect(queryAllByText(en.TopupDetails.continue())).toHaveLength(0)
+    expect(navigate).not.toHaveBeenCalled()
+
+    // And once the answer lands, the screen gates on the NEW figure.
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+      ...allowanceResult({ limit: 12500, held: 12000, remaining: 500 }),
+      refetch,
+    })
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    rerenderScreen()
+
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      en.TopupDetails.cannotTopUp(),
+      en.TopupDetails.allowanceRemaining({ remaining: "$5.00", limit: "$125.00" }),
+    )
+    alertSpy.mockRestore()
+  })
+
+  it("does not hold Continue for ever if the refresh never answers", () => {
+    // The same reason the first-load hold has a deadline: nothing in the stack
+    // times this query out, so a stalled connection would otherwise leave
+    // Continue a permanent unlabelled spinner on a screen the customer cannot
+    // start a top-up from. Past the deadline the stale figure is a worse gate
+    // than a fresh one and a far better one than no screen at all.
+    jest.useFakeTimers()
+    try {
+      const refetch = jest.fn()
+      mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+        ...allowanceResult({
+          limit: 12500,
+          held: 6000,
+          remaining: 6500,
+          refetching: true,
+        }),
+        refetch,
+      })
+      const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
+        paymentType: "card",
+        level: AccountLevel.One,
+      })
+
+      act(() => {
+        jest.advanceTimersByTime(6_000)
+      })
+
+      fireEvent.changeText(
+        getByPlaceholderText(en.TopupDetails.amountPlaceholder()),
+        "60",
+      )
+      fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+      expect(navigate).toHaveBeenCalledWith("CardPayment", {
+        amount: 60,
+        wallet: "USD",
+      })
+    } finally {
+      jest.useRealTimers()
+    }
   })
 
   it("does not re-ask for the CARD allowance on a bank transfer", () => {

@@ -46,10 +46,17 @@ export type FygaroTopupResolution =
   | { phase: "pending" }
   // No payment has been observed for this checkout — and the payment page
   // closes on a decline exactly as it does on a success, so this is NOT
-  // "we've received your payment". It also covers the case where we could not
-  // ask at all, because "we don't know" and "we have it" are different things
-  // and only one of them is safe to assert.
+  // "we've received your payment".
   | { phase: "unconfirmed" }
+  // There is nobody to ask: a legacy device-built link carries no checkout id.
+  // Distinct from `pending`, which is a real PROCESSING answer — the backend
+  // saying it HAS the payment and is crediting it. Collapsing the two put
+  // "we are crediting your wallet" on the screen of every card top-up in
+  // production (the signed checkout is off by default), asserted from a Fygaro
+  // redirect without asking anyone: structurally the same claim this hook
+  // exists to remove. In the incident shape — an over-limit capture landing in
+  // HELD_FOR_REVIEW — the credit never comes.
+  | { phase: "unaskable" }
   | { phase: "held"; reason?: string }
   | { phase: "failed"; reason?: string }
 
@@ -61,13 +68,15 @@ const isTerminal = (state: FygaroTopupState) =>
  * Fygaro redirect as proof of deposit.
  *
  * `checkoutId` is undefined for a legacy device-built link, which has no id to
- * ask about. That resolves straight to `pending` — we know a payment happened
- * and genuinely cannot say more, which is the truthful version of the screen
- * that used to claim "Deposited to <wallet>".
+ * ask about. That resolves straight to `unaskable` — the screen is only reached
+ * on a Fygaro success redirect, so a payment did happen, but nobody has told us
+ * anything about the credit and there is no one to ask. Deliberately not
+ * `pending`: that phase means the backend SAID it is crediting, and claiming it
+ * without asking is the failure this hook exists to remove.
  */
 export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
   const [resolution, setResolution] = useState<FygaroTopupResolution>(
-    checkoutId ? { phase: "checking" } : { phase: "pending" },
+    checkoutId ? { phase: "checking" } : { phase: "unaskable" },
   )
   const [fetchStatus] = useFygaroTopupStatusLazyQuery({ fetchPolicy: "network-only" })
 
@@ -75,6 +84,9 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
   // Whether the server has ever answered PROCESSING for this checkout. Held in
   // a ref because the deadline reads it from a timer, outside React's render.
   const observedProcessingRef = useRef(false)
+  // Whether a status round trip is already out. Also a ref, and for the same
+  // reason: the interval callbacks that read it live outside React's render.
+  const inFlightRef = useRef(false)
 
   useEffect(() => {
     if (!checkoutId) return
@@ -82,6 +94,9 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
     let cancelled = false
     observedProcessingRef.current = false
     resolvedRef.current = false
+    // A new checkout starts clean: the previous run's request, if any, is
+    // abandoned by `cancelled` and must not keep this one from polling.
+    inFlightRef.current = false
 
     let timer: ReturnType<typeof setInterval> | undefined
     let handover: ReturnType<typeof setTimeout> | undefined
@@ -148,6 +163,33 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
       }
     }
 
+    /**
+     * What the timers actually call: one poll at a time.
+     *
+     * `setInterval` does not wait for an async callback, so without this a
+     * round trip longer than FAST_POLL_MS — exactly the condition that makes
+     * this poll matter — stacks requests. On a 4s connection the fast window
+     * alone fired ~10 concurrent `network-only` status queries and the slow
+     * window ~12 more, all aimed at the backend the customer is waiting on, on
+     * the screen they land on straight after being charged. Nothing shown was
+     * ever wrong (the terminal and `resolvedRef` guards hold); it was simply a
+     * self-inflicted request storm.
+     *
+     * The mutex is released from a `.finally` on the promise rather than
+     * inside `tick`, so the flag is only ever written from synchronous code.
+     * Everything in `tick` after the await is synchronous anyway, so no
+     * cadence is lost — only the pile-up.
+     */
+    const runTick = () => {
+      if (inFlightRef.current) return
+      inFlightRef.current = true
+      tick()
+        .catch(() => undefined)
+        .finally(() => {
+          inFlightRef.current = false
+        })
+    }
+
     // The deadline is its OWN timer, not a check inside tick, and that is the
     // whole point. Every path to resolving the screen used to sit behind
     // `await fetchStatus(...)`, so a request that never settles never reached
@@ -171,7 +213,7 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
       setResolution({ phase: observedProcessingRef.current ? "pending" : "unconfirmed" })
     }
 
-    timer = setInterval(tick, FAST_POLL_MS)
+    timer = setInterval(runTick, FAST_POLL_MS)
 
     // Hand over to the quiet poll at the same moment the screen resolves, so a
     // late credit still upgrades "pending" to "credited" without the customer
@@ -179,14 +221,14 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
     handover = setTimeout(() => {
       resolveAtDeadline()
       if (timer) clearInterval(timer)
-      timer = setInterval(tick, SLOW_POLL_MS)
+      timer = setInterval(runTick, SLOW_POLL_MS)
     }, FAST_POLL_WINDOW_MS)
 
     stop = setTimeout(stopPolling, FAST_POLL_WINDOW_MS + SLOW_POLL_WINDOW_MS)
 
     // Fired last, so a terminal answer arriving on this first poll can clear
     // timers that already exist.
-    tick().catch(() => undefined)
+    runTick()
 
     return () => {
       cancelled = true

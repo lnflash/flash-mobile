@@ -352,6 +352,49 @@ describe("CardPayment signed checkout", () => {
     expect(lastWebViewProps().source.uri).toContain("custom_reference=alice")
   })
 
+  it("REFUSES when the server throws instead of answering, rather than handing over the editable link", async () => {
+    // ERPNext or Redis down: the resolver throws instead of mapping the failure
+    // to a code, so the mutate rejects with a top-level GraphQL error. Degrading
+    // there loads the legacy `?amount=` link, the card is captured, and the
+    // webhook — reading the same unavailable data — fails without crediting.
+    mockCreateCheckout.mockRejectedValueOnce({
+      graphQLErrors: [
+        { message: "Unexpected error", extensions: { code: "INTERNAL_SERVER_ERROR" } },
+      ],
+    })
+
+    const { findAllByText } = renderCardPayment()
+
+    expect(
+      (await findAllByText(en.TopupDetails.checkoutFailed())).length,
+    ).toBeGreaterThan(0)
+    expect(mockWebView).not.toHaveBeenCalled()
+  })
+
+  it("does not let a throw AFTER the refusal replace it with the editable link", async () => {
+    // The outer `run().catch(...)` sits downstream of the branch that must fail
+    // closed: the refusal writes its state and only THEN calls Alert.alert, so
+    // anything throwing after the write used to land in a catch that set
+    // `{status:"ready", url: legacyPaymentUrl}` — handing the customer the
+    // editable link the server had just refused. Alert.alert throwing stands in
+    // for any post-write failure.
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {
+      throw new Error("alert exploded")
+    })
+    mockCreateCheckout.mockResolvedValueOnce(
+      refused("You have $4.48 left of today's top-up limit"),
+    )
+
+    const { findAllByText, queryAllByText } = renderCardPayment()
+
+    // Still a refusal, and still nothing loaded: the customer is not charged.
+    expect((await findAllByText(en.TopupDetails.cannotTopUp())).length).toBeGreaterThan(0)
+    expect(mockWebView).not.toHaveBeenCalled()
+    expect(queryAllByText(en.FygaroWebViewScreen.error())).toHaveLength(0)
+
+    alertSpy.mockRestore()
+  })
+
   it("falls back to the legacy link when the request never settles AT ALL", async () => {
     // A hang is not an error, and nothing under this mutation will ever turn it
     // into one: Apollo's HttpLink is constructed bare (no fetchOptions, no
@@ -551,10 +594,36 @@ describe("CardPayment navigation callbacks", () => {
 
     expect(navigate).not.toHaveBeenCalled()
     expect(alertSpy).toHaveBeenCalledWith(
-      "Payment Failed",
-      expect.any(String),
+      en.FygaroWebViewScreen.paymentFailedTitle(),
+      en.FygaroWebViewScreen.paymentFailedMessage(),
       expect.anything(),
     )
+    alertSpy.mockRestore()
+  })
+
+  it("localises the failure alert instead of hard-coding English", async () => {
+    // Every other payment-outcome message on this flow was translated across
+    // `en` and 23 locale files; this one — the FAILURE counterpart — was left
+    // as a raw literal, which fixes the screen for English speakers only. The
+    // keys must resolve, and must not be the old literals by accident.
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    await renderAndSettle()
+
+    lastWebViewProps().onNavigationStateChange({
+      url: "https://www.fygaro.com/en/pb/bd4a34c1-3d24-4315-a2b8-627518f70916/?success=0",
+    })
+
+    const [title, message, buttons] = alertSpy.mock.calls[0] as unknown as [
+      string,
+      string,
+      { text: string }[],
+    ]
+    expect(title).not.toBe("")
+    expect(message).not.toBe("")
+    // The OK button too — it used to be a bare "OK" literal next to a
+    // localised alert everywhere else on this screen.
+    expect(buttons[0].text).toBe(en.common.ok())
+
     alertSpy.mockRestore()
   })
 
