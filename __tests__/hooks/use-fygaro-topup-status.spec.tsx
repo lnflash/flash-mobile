@@ -53,9 +53,11 @@ describe("useFygaroTopupStatus", () => {
     })
   })
 
-  it("NEVER spins past the fast window — it resolves to pending", async () => {
-    // The contract: no spinner past 10s. A customer who has just been charged
-    // is owed a definite answer, and "still loading" is not one.
+  it("NEVER spins past the fast window — and does not claim receipt", async () => {
+    // The contract: no spinner past 10s. A customer is owed a definite answer,
+    // and "still loading" is not one. But with no PROCESSING observed, the
+    // honest answer is "we haven't seen it" — a declined card closes the
+    // payment page exactly as a successful one does.
     const { result } = renderHook(() => useFygaroTopupStatus("intent-1"))
     expect(result.current.phase).toBe("checking")
 
@@ -63,10 +65,10 @@ describe("useFygaroTopupStatus", () => {
       jest.advanceTimersByTime(11_000)
     })
 
-    expect(result.current.phase).toBe("pending")
+    expect(result.current.phase).toBe("unconfirmed")
   })
 
-  it("still upgrades to credited after it has resolved to pending", async () => {
+  it("still upgrades to credited after it has resolved", async () => {
     // The transient webhook paths deliberately 500 so Fygaro retries, which can
     // take minutes. Resolving the screen must not stop us noticing the credit.
     const { result } = renderHook(() => useFygaroTopupStatus("intent-1"))
@@ -74,7 +76,7 @@ describe("useFygaroTopupStatus", () => {
     await act(async () => {
       jest.advanceTimersByTime(11_000)
     })
-    expect(result.current.phase).toBe("pending")
+    expect(result.current.phase).toBe("unconfirmed")
 
     mockFetchStatus.mockResolvedValue(reply("CREDITED", { netAmount: 5652 }))
     await act(async () => {
@@ -143,7 +145,7 @@ describe("useFygaroTopupStatus", () => {
     await act(async () => {
       jest.advanceTimersByTime(11_000)
     })
-    expect(result.current.phase).toBe("pending")
+    expect(result.current.phase).toBe("unconfirmed")
     const callsAtResolution = mockFetchStatus.mock.calls.length
 
     await act(async () => {
@@ -168,16 +170,50 @@ describe("useFygaroTopupStatus", () => {
       jest.advanceTimersByTime(11_000)
     })
 
-    expect(result.current.phase).toBe("pending")
+    expect(result.current.phase).toBe("unconfirmed")
   })
 
   it("resolves straight to pending with no checkout id, and asks nothing", async () => {
-    // A legacy device-built link has no id to ask about. "We have your payment
-    // and are crediting it" is the honest version of the old success screen.
+    // A legacy device-built link has no id to ask about — but the app only
+    // reaches this screen on a Fygaro SUCCESS redirect, which IS evidence the
+    // card was charged. What it is not evidence of is Flash crediting the
+    // wallet, which is the distinction this screen exists to draw. So
+    // `pending`, not `unconfirmed`: the latter is for the signed path, where we
+    // can actually ask and the server tells us it has seen nothing.
     const { result } = renderHook(() => useFygaroTopupStatus(undefined))
 
     expect(result.current.phase).toBe("pending")
     expect(mockFetchStatus).not.toHaveBeenCalled()
+  })
+
+  it("says PENDING only once the server has confirmed it has the payment", async () => {
+    // PROCESSING means the provider told us the payment exists. That is the one
+    // signal that licenses "we've received your payment".
+    mockFetchStatus.mockResolvedValue(reply("PROCESSING"))
+    const { result } = renderHook(() => useFygaroTopupStatus("intent-1"))
+
+    await act(async () => {
+      jest.advanceTimersByTime(11_000)
+    })
+
+    expect(result.current.phase).toBe("pending")
+  })
+
+  it("upgrades unconfirmed to pending when a later poll confirms the payment", async () => {
+    // The quiet poll catching up must be able to improve the answer — but only
+    // ever in that direction.
+    const { result } = renderHook(() => useFygaroTopupStatus("intent-1"))
+    await act(async () => {
+      jest.advanceTimersByTime(11_000)
+    })
+    expect(result.current.phase).toBe("unconfirmed")
+
+    mockFetchStatus.mockResolvedValue(reply("PROCESSING"))
+    await act(async () => {
+      jest.advanceTimersByTime(6_000)
+    })
+
+    expect(result.current.phase).toBe("pending")
   })
 
   it("a failed poll does not change what the customer is being shown", async () => {
@@ -193,7 +229,7 @@ describe("useFygaroTopupStatus", () => {
     expect(result.current.phase).toBe("checking")
   })
 
-  it("still resolves to pending when EVERY poll fails — a spinner is not an answer", async () => {
+  it("still resolves when EVERY poll fails — a spinner is not an answer", async () => {
     // The other half of "a failed poll changes nothing": it must change nothing
     // ON SCREEN, and must not hold the spinner either. Returning early from the
     // catch skipped the fast-window check entirely, so on a flaky connection —
@@ -208,7 +244,7 @@ describe("useFygaroTopupStatus", () => {
       jest.advanceTimersByTime(11_000)
     })
 
-    expect(result.current.phase).toBe("pending")
+    expect(result.current.phase).toBe("unconfirmed")
   })
 
   it("does not sit on `checking` once every timer is dead", async () => {
@@ -221,7 +257,7 @@ describe("useFygaroTopupStatus", () => {
       jest.advanceTimersByTime(101_000)
     })
 
-    expect(result.current.phase).toBe("pending")
+    expect(result.current.phase).toBe("unconfirmed")
   })
 
   it("a poll that fails AFTER a terminal answer cannot un-resolve the screen", async () => {

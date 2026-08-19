@@ -2541,6 +2541,14 @@ type RootTranslation = {
 		 */
 		receivedTitle: string
 		/**
+		 * W​e​ ​h​a​v​e​n​'​t​ ​s​e​e​n​ ​t​h​i​s​ ​p​a​y​m​e​n​t​ ​y​e​t
+		 */
+		unconfirmedTitle: string
+		/**
+		 * I​f​ ​y​o​u​r​ ​c​a​r​d​ ​w​a​s​ ​c​h​a​r​g​e​d​,​ ​w​e​'​l​l​ ​c​r​e​d​i​t​ ​y​o​u​r​ ​w​a​l​l​e​t​ ​a​n​d​ ​l​e​t​ ​y​o​u​ ​k​n​o​w​.​ ​I​f​ ​i​t​ ​w​a​s​n​'​t​,​ ​n​o​t​h​i​n​g​ ​h​a​s​ ​l​e​f​t​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​y​o​u​ ​c​a​n​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		unconfirmedMessage: string
+		/**
 		 * W​e​'​v​e​ ​r​e​c​e​i​v​e​d​ ​y​o​u​r​ ​p​a​y​m​e​n​t​ ​a​n​d​ ​a​r​e​ ​c​r​e​d​i​t​i​n​g​ ​y​o​u​r​ ​w​a​l​l​e​t​.​ ​W​e​'​l​l​ ​l​e​t​ ​y​o​u​ ​k​n​o​w​ ​a​s​ ​s​o​o​n​ ​a​s​ ​i​t​ ​l​a​n​d​s​.
 		 */
 		pendingMessage: string
@@ -8813,6 +8821,14 @@ export type TranslationFunctions = {
 		 * Payment received
 		 */
 		receivedTitle: () => LocalizedString
+		/**
+		 * We haven't seen this payment yet
+		 */
+		unconfirmedTitle: () => LocalizedString
+		/**
+		 * If your card was charged, we'll credit your wallet and let you know. If it wasn't, nothing has left your account and you can try again.
+		 */
+		unconfirmedMessage: () => LocalizedString
 		/**
 		 * We've received your payment and are crediting your wallet. We'll let you know as soon as it lands.
 		 */

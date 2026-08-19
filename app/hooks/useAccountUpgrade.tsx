@@ -210,14 +210,14 @@ export const useAccountUpgrade = () => {
           city,
           country,
           line1,
-          line2: line2,
+          line2,
           postalCode,
           state,
           title: businessName,
         },
-        bankAccount: bankAccount,
+        bankAccount,
         level: accountType,
-        idDocument: idDocument,
+        idDocument,
         fullName,
         terminalsRequested: businessInfo.terminalRequested ? 1 : 0,
       }
@@ -247,7 +247,7 @@ export const useAccountUpgrade = () => {
       dispatch(setAccountUpgrade({ status: "Pending" }))
 
       return {
-        success: !!upgradeResponse?.id,
+        success: Boolean(upgradeResponse?.id),
       }
     } catch (err) {
       console.error("Account upgrade failed:", err)

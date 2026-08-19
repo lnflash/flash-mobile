@@ -785,6 +785,12 @@ const en: BaseTranslation = {
     // crediting the wallet are different events; this screen may only claim
     // the first until the backend confirms the second.
     receivedTitle: "Payment received",
+    // Deliberately does not say "received": a declined card closes the payment
+    // page exactly as a successful one does, so at this point we genuinely do
+    // not know whether there is money to credit.
+    unconfirmedTitle: "We haven't seen this payment yet",
+    unconfirmedMessage:
+      "If your card was charged, we'll credit your wallet and let you know. If it wasn't, nothing has left your account and you can try again.",
     pendingMessage:
       "We've received your payment and are crediting your wallet. We'll let you know as soon as it lands.",
     // Held and failed are NOT pending, and must never borrow pendingMessage's

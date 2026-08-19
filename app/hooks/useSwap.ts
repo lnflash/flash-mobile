@@ -111,30 +111,26 @@ export const useSwap = () => {
                   balance: formattedBtcBalance,
                 }) + " (amount + fee)",
             }
-          } else {
-            return {
-              data: {
-                moneyAmount: settlementSendAmount,
-                sendingFee: feeRes.fee || 0,
-                receivingFee: 0,
-                lnInvoice:
-                  invoiceRes.data?.lnUsdInvoiceCreate.invoice?.paymentRequest || "",
-              },
-              err: null,
-            }
           }
-        } else {
           return {
-            data: null,
-            err: breezFeeErrorMessage(feeRes.err, LL, formatSats),
+            data: {
+              moneyAmount: settlementSendAmount,
+              sendingFee: feeRes.fee || 0,
+              receivingFee: 0,
+              lnInvoice:
+                invoiceRes.data?.lnUsdInvoiceCreate.invoice?.paymentRequest || "",
+            },
+            err: null,
           }
         }
-      } else {
-        return { data: null, err: invoiceRes.data?.lnUsdInvoiceCreate.errors[0].message }
+        return {
+          data: null,
+          err: breezFeeErrorMessage(feeRes.err, LL, formatSats),
+        }
       }
-    } else {
-      return { data: null, err: "Something went wrong. Please, try again later." }
+      return { data: null, err: invoiceRes.data?.lnUsdInvoiceCreate.errors[0].message }
     }
+    return { data: null, err: "Something went wrong. Please, try again later." }
   }
 
   const prepareUsdToBtc = async (
@@ -179,23 +175,20 @@ export const useSwap = () => {
                 balance: formattedUsdBalance,
               }) + " (amount + fee)",
           }
-        } else {
-          return {
-            data: {
-              moneyAmount: settlementSendAmount, // @ts-ignore: Unreachable code error
-              sendingFee: convertMoneyAmount(toUsdMoneyAmount(sendingFee), "BTC").amount,
-              receivingFee: Number(invoiceRes.fee),
-              lnInvoice: invoiceRes.paymentRequest,
-            },
-            err: null,
-          }
         }
-      } else {
-        return { data: null, err: "Something went wrong. Please, try again later." }
+        return {
+          data: {
+            moneyAmount: settlementSendAmount, // @ts-ignore: Unreachable code error
+            sendingFee: convertMoneyAmount(toUsdMoneyAmount(sendingFee), "BTC").amount,
+            receivingFee: Number(invoiceRes.fee),
+            lnInvoice: invoiceRes.paymentRequest,
+          },
+          err: null,
+        }
       }
-    } else {
       return { data: null, err: "Something went wrong. Please, try again later." }
     }
+    return { data: null, err: "Something went wrong. Please, try again later." }
   }
 
   const swap = async (

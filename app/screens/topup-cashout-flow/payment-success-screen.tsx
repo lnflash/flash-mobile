@@ -37,6 +37,10 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
   // Held and failed share an icon and a colour, and nothing else: they are the
   // two phases where the money is not on its way to the wallet.
   const stalled = held || failed
+  // No payment observed. Distinct from `pending` — which means the provider
+  // told us it HAS the payment — because the page closes on a decline exactly
+  // as it does on a success.
+  const unconfirmed = resolution.phase === "unconfirmed"
 
   // The headline is the one thing this screen got wrong before: it claimed a
   // completed deposit off a Fygaro redirect. Each branch now says only what is
@@ -49,6 +53,8 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
     ? LL.PaymentSuccessScreen.heldTitle()
     : failed
     ? LL.PaymentSuccessScreen.failedTitle()
+    : unconfirmed
+    ? LL.PaymentSuccessScreen.unconfirmedTitle()
     : LL.PaymentSuccessScreen.receivedTitle()
 
   // `reason` is Maybe<String> — the backend sends one when the state needs one,
@@ -64,6 +70,8 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
     ? resolution.reason ?? LL.PaymentSuccessScreen.heldMessage()
     : failed
     ? resolution.reason ?? LL.PaymentSuccessScreen.failedMessage()
+    : unconfirmed
+    ? LL.PaymentSuccessScreen.unconfirmedMessage()
     : LL.PaymentSuccessScreen.pendingMessage()
 
   return (

@@ -965,15 +965,17 @@ export const FygaroTopupState = {
   Failed: 'FAILED',
   /** Captured and deliberately not credited. Terminal until a human acts, so retrying achieves nothing — show the reason. */
   HeldForReview: 'HELD_FOR_REVIEW',
-  /** We have the payment and are crediting it. Not yet terminal — keep polling, then fall back to telling the customer they will be notified. */
-  Processing: 'PROCESSING'
+  /** We have the payment — the provider told us so — and are crediting it. Not yet terminal, so keep polling, then fall back to telling the customer they will be notified. */
+  Processing: 'PROCESSING',
+  /** No payment has been observed for this checkout. The customer may still be on the payment page, the card may have been declined, the page may have been cancelled — or we may be momentarily unable to check. NEVER render this as 'payment received': the payment page closes on a decline exactly as it does on a success. Keep polling, then fall back to 'we'll let you know'. */
+  Unconfirmed: 'UNCONFIRMED'
 } as const;
 
 export type FygaroTopupState = typeof FygaroTopupState[keyof typeof FygaroTopupState];
 export type FygaroTopupStatus = {
   readonly __typename: 'FygaroTopupStatus';
-  /** The amount this checkout was authorised for. */
-  readonly authorizedAmount: Scalars['CentAmount']['output'];
+  /** The amount this checkout was authorised for. Null ONLY when the checkout record could not be read (state UNCONFIRMED, transient): the amount lives on that record. The client already knows what it asked for, so this is an echo, never the source of truth for what was charged. */
+  readonly authorizedAmount?: Maybe<Scalars['CentAmount']['output']>;
   /** What reached the wallet, after fees. Present once credited. */
   readonly netAmount?: Maybe<Scalars['CentAmount']['output']>;
   /** Customer-facing explanation, present when the state needs one. Reasons the customer can act on are named plainly; our own faults are not blamed on them. */

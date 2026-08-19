@@ -228,4 +228,18 @@ describe("PaymentSuccessScreen exit", () => {
 
     expect(mockNavigate).toHaveBeenCalledWith("Primary")
   })
+
+  it("does NOT claim receipt when no payment has been observed", async () => {
+    // The payment page closes on a decline exactly as it does on a success, so
+    // "we've received your payment" here would tell someone whose card bounced
+    // that we have their money — the same false claim this screen removes, one
+    // state later.
+    const { queryByText } = renderScreen({ phase: "unconfirmed" })
+
+    expect(queryByText(en.PaymentSuccessScreen.unconfirmedTitle())).toBeTruthy()
+    expect(queryByText(en.PaymentSuccessScreen.unconfirmedMessage())).toBeTruthy()
+    expect(queryByText(en.PaymentSuccessScreen.receivedTitle())).toBeNull()
+    expect(queryByText(en.PaymentSuccessScreen.pendingMessage())).toBeNull()
+    expect(queryByText(en.PaymentSuccessScreen.title())).toBeNull()
+  })
 })

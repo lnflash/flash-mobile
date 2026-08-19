@@ -41,9 +41,15 @@ export type FygaroTopupResolution =
   // may show a spinner.
   | { phase: "checking" }
   | { phase: "credited"; netAmountCents?: number }
-  // We have the payment; the credit has not landed (or we cannot tell). Not an
-  // error, and emphatically not "Payment Successful".
+  // The provider TOLD us it has the payment; the credit has not landed yet.
+  // Not an error, and emphatically not "Payment Successful".
   | { phase: "pending" }
+  // No payment has been observed for this checkout — and the payment page
+  // closes on a decline exactly as it does on a success, so this is NOT
+  // "we've received your payment". It also covers the case where we could not
+  // ask at all, because "we don't know" and "we have it" are different things
+  // and only one of them is safe to assert.
+  | { phase: "unconfirmed" }
   | { phase: "held"; reason?: string }
   | { phase: "failed"; reason?: string }
 
@@ -66,11 +72,15 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
   const [fetchStatus] = useFygaroTopupStatusLazyQuery({ fetchPolicy: "network-only" })
 
   const resolvedRef = useRef(false)
+  // Whether the server has ever answered PROCESSING for this checkout. Held in
+  // a ref because the deadline reads it from a timer, outside React's render.
+  const observedProcessingRef = useRef(false)
 
   useEffect(() => {
     if (!checkoutId) return
 
     let cancelled = false
+    observedProcessingRef.current = false
     resolvedRef.current = false
 
     let timer: ReturnType<typeof setInterval> | undefined
@@ -116,6 +126,16 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
       }
       if (cancelled) return
 
+      if (status?.state === "PROCESSING") observedProcessingRef.current = true
+
+      if (status?.state === "PROCESSING" && resolvedRef.current) {
+        // The quiet poll caught up: we now know the payment exists, so stop
+        // saying we have not seen it. Only ever an upgrade — never the reverse.
+        setResolution((current) =>
+          current.phase === "unconfirmed" ? { phase: "pending" } : current,
+        )
+      }
+
       if (status && isTerminal(status.state)) {
         resolvedRef.current = true
         apply(status.state, status.reason ?? undefined, status.netAmount ?? undefined)
@@ -141,7 +161,14 @@ export const useFygaroTopupStatus = (checkoutId: string | undefined) => {
     const resolveAtDeadline = () => {
       if (resolvedRef.current || cancelled) return
       resolvedRef.current = true
-      setResolution({ phase: "pending" })
+      // Only claim receipt if the server actually said PROCESSING — i.e. the
+      // provider told us the payment exists. UNCONFIRMED, or no answer at all,
+      // resolves to `unconfirmed`: a declined card closes the payment page
+      // exactly like a successful one, so defaulting to "we've received your
+      // payment" would tell someone whose card bounced that we have their
+      // money. That is the same false claim this whole change removes, one
+      // screen later.
+      setResolution({ phase: observedProcessingRef.current ? "pending" : "unconfirmed" })
     }
 
     timer = setInterval(tick, FAST_POLL_MS)

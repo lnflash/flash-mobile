@@ -1,11 +1,10 @@
 import * as Keychain from "react-native-keychain"
+import { nip19, generateSecretKey, getPublicKey, SimplePool } from "nostr-tools"
 import {
-  nip19,
-  generateSecretKey,
-  getPublicKey,
-  SimplePool,
-} from "nostr-tools"
-import { createContactListEvent, ensureContactListExists, setPreferredRelay } from "@app/utils/nostr"
+  createContactListEvent,
+  ensureContactListExists,
+  setPreferredRelay,
+} from "@app/utils/nostr"
 import { getSigner, createSignerFromKey, clearSigner } from "@app/nostr/signer"
 import {
   publishEventToRelays,
@@ -90,9 +89,9 @@ const useNostrProfile = () => {
     const username = dataAuthed?.me?.username || undefined
     let lud16
     if (username) lud16 = `${username}@${lnDomain}`
-    let secretKey = generateSecretKey()
+    const secretKey = generateSecretKey()
     const nostrSecret = nip19.nsecEncode(secretKey)
-    let newNpub = nip19.npubEncode(getPublicKey(secretKey))
+    const newNpub = nip19.npubEncode(getPublicKey(secretKey))
 
     console.log("🔑 Creating new Nostr key...")
     console.log("Username:", username || "(no username yet)")
@@ -163,20 +162,20 @@ const useNostrProfile = () => {
     try {
       const baseProfileContent = username
         ? {
-          name: username,
-          username: username,
-          flash_username: username,
-          lud16: lud16,
-          nip05: `${username}@${lnDomain}`,
-          ...(pictureUrl && { picture: pictureUrl }),
-          ...(bannerUrl && { banner: bannerUrl }),
-        }
+            name: username,
+            username,
+            flash_username: username,
+            lud16,
+            nip05: `${username}@${lnDomain}`,
+            ...(pictureUrl && { picture: pictureUrl }),
+            ...(bannerUrl && { banner: bannerUrl }),
+          }
         : {
-          name: "Flash User",
-          about: "Flash wallet user",
-          ...(pictureUrl && { picture: pictureUrl }),
-          ...(bannerUrl && { banner: bannerUrl }),
-        }
+            name: "Flash User",
+            about: "Flash wallet user",
+            ...(pictureUrl && { picture: pictureUrl }),
+            ...(bannerUrl && { banner: bannerUrl }),
+          }
 
       // Merge with any additional content passed in (e.g., from username screen)
       const profileContent = {
@@ -351,7 +350,7 @@ const useNostrProfile = () => {
           kinds: [0],
           authors: [pubkey],
         })
-        return { relay, found: !!profile }
+        return { relay, found: Boolean(profile) }
       } catch (error) {
         return { relay, found: false }
       }
@@ -394,9 +393,8 @@ const useNostrProfile = () => {
         await saveNewNostrKey(undefined, content)
         console.log("Profile created with images and content, returning early")
         return { successCount: 1, totalRelays: 1, successfulRelays: [] }
-      } else {
-        throw Error("Could not verify npub")
       }
+      throw Error("Could not verify npub")
     }
     const pubKey = await signer.getPublicKey()
     console.log(`🔑 Publishing with pubkey: ${pubKey}`)
@@ -428,9 +426,10 @@ const useNostrProfile = () => {
     const coreRelays = ["wss://relay.flashapp.me", "wss://relay.islandbitcoin.com"]
     const coreSuccess = successfulRelays.some((relay) => coreRelays.includes(relay))
     console.log(
-      `\n🎯 Core relay status: ${coreSuccess
-        ? "✅ At least one core relay succeeded"
-        : "⚠️ No core relays succeeded"
+      `\n🎯 Core relay status: ${
+        coreSuccess
+          ? "✅ At least one core relay succeeded"
+          : "⚠️ No core relays succeeded"
       }`,
     )
 
