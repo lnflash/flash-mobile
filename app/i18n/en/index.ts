@@ -696,6 +696,12 @@ const en: BaseTranslation = {
   TopupDetails: {
     title: "Card Payment",
     cannotTopUp: "Can't top up this amount",
+    // The headline for the refusals that are NOT about the amount: the backend
+    // threw, or never answered. "Can't top up this amount" over those tells a
+    // customer their $50 is the problem while ERPNext is down, and the button
+    // below it ("Change amount") sends them to try $40, then $30, into the
+    // identical error.
+    checkoutProblemTitle: "Couldn't start your payment",
     checkoutTimedOut:
       "We couldn't reach Flash to set up your payment. Nothing has been charged — please check your connection and try again.",
     // Used when the server answered with an exception rather than a decision,

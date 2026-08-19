@@ -363,11 +363,51 @@ describe("CardPayment signed checkout", () => {
       ],
     })
 
+    const { findAllByText, queryAllByText, getAllByText, goBack } = renderCardPayment()
+
+    expect(
+      (await findAllByText(en.TopupDetails.checkoutFailed())).length,
+    ).toBeGreaterThan(0)
+    expect(mockWebView).not.toHaveBeenCalled()
+
+    // ...and it does NOT blame the amount. The body says "We couldn't set up
+    // your payment — please try again"; putting that under "Can't top up this
+    // amount", above a button whose only label is "Change amount", tells a
+    // customer their $50 is the problem while ERPNext is down. They try $40,
+    // then $30, hit the identical server error each time, and conclude their
+    // account is limited.
+    expect(getAllByText(en.TopupDetails.checkoutProblemTitle()).length).toBeGreaterThan(0)
+    expect(queryAllByText(en.TopupDetails.cannotTopUp())).toHaveLength(0)
+    expect(queryAllByText(en.TopupDetails.changeAmount())).toHaveLength(0)
+
+    // The action agrees with the sentence: try again, from the amount screen.
+    fireEvent.press(getAllByText(en.FygaroWebViewScreen.retry())[0])
+    expect(goBack).toHaveBeenCalled()
+  })
+
+  it("REFUSES on a 5xx instead of handing over the editable link", async () => {
+    // The same incident through the HTTP door rather than the GraphQL one. An
+    // ingress restart, a rolling deploy, an OOM-killed pod, or a 500 out of a
+    // failed apollo-server context function all arrive as a ServerError on
+    // `networkError` with an EMPTY `graphQLErrors`
+    // (@apollo/client/link/http/parseAndCheckHttpResponse.js), so splitting on
+    // `graphQLErrors` alone degraded here — loading `buildLegacyPaymentUrl`,
+    // the editable `?amount=` link with no pre-charge allowance check. The
+    // customer pays; the webhook, reading the same 5xx backend, cannot credit.
+    mockCreateCheckout.mockRejectedValueOnce({
+      graphQLErrors: [],
+      networkError: Object.assign(
+        new Error("Response not successful: Received status code 502"),
+        { statusCode: 502 },
+      ),
+    })
+
     const { findAllByText } = renderCardPayment()
 
     expect(
       (await findAllByText(en.TopupDetails.checkoutFailed())).length,
     ).toBeGreaterThan(0)
+    // Nothing loaded at all — least of all the editable link.
     expect(mockWebView).not.toHaveBeenCalled()
   })
 
@@ -388,7 +428,16 @@ describe("CardPayment signed checkout", () => {
     const { findAllByText, queryAllByText } = renderCardPayment()
 
     // Still a refusal, and still nothing loaded: the customer is not charged.
-    expect((await findAllByText(en.TopupDetails.cannotTopUp())).length).toBeGreaterThan(0)
+    // The catch writes the same "we couldn't set this up" copy the serverError
+    // branch does, so it gets the same headline and the same button — the point
+    // being that the WebView never mounts, not which of the two refusal
+    // headlines is showing.
+    expect(
+      (await findAllByText(en.TopupDetails.checkoutFailed())).length,
+    ).toBeGreaterThan(0)
+    expect(queryAllByText(en.TopupDetails.checkoutProblemTitle()).length).toBeGreaterThan(
+      0,
+    )
     expect(mockWebView).not.toHaveBeenCalled()
     expect(queryAllByText(en.FygaroWebViewScreen.error())).toHaveLength(0)
 
@@ -435,6 +484,16 @@ describe("CardPayment signed checkout", () => {
       const { queryAllByText } = screen
       expect(mockWebView).not.toHaveBeenCalled()
       expect(queryAllByText(en.TopupDetails.checkoutTimedOut()).length).toBeGreaterThan(0)
+
+      // And the refusal does not blame the amount, which nothing ever judged:
+      // "check your connection and try again" under "Can't top up this amount",
+      // above a "Change amount" button, contradicts itself on a money screen.
+      expect(
+        queryAllByText(en.TopupDetails.checkoutProblemTitle()).length,
+      ).toBeGreaterThan(0)
+      expect(queryAllByText(en.TopupDetails.cannotTopUp())).toHaveLength(0)
+      expect(queryAllByText(en.TopupDetails.changeAmount())).toHaveLength(0)
+      expect(queryAllByText(en.FygaroWebViewScreen.retry()).length).toBeGreaterThan(0)
     } finally {
       jest.useRealTimers()
     }

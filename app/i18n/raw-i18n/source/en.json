@@ -655,6 +655,7 @@
     "TopupDetails": {
         "title": "Card Payment",
         "cannotTopUp": "Can't top up this amount",
+        "checkoutProblemTitle": "Couldn't start your payment",
         "checkoutTimedOut": "We couldn't reach Flash to set up your payment. Nothing has been charged — please check your connection and try again.",
         "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
         "upgradeRequiredTitle": "Upgrade required",

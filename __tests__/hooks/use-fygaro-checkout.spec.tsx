@@ -242,10 +242,65 @@ describe("useFygaroCheckout", () => {
 
   it("degrades on a pure transport failure, which carries no graphQLErrors", async () => {
     // A dead network says nothing about the customer's allowance, and the
-    // legacy link is exactly the status quo there.
+    // legacy link is exactly the status quo there. Note what it does NOT carry:
+    // a `statusCode`. Nothing answered, so there is no status line — which is
+    // precisely what separates this from the 5xx case below.
     mockCreateCheckout.mockRejectedValue({
       graphQLErrors: [],
       networkError: new Error("Network request failed"),
+    })
+
+    expect(await ask()).toEqual({ kind: "unavailable" })
+  })
+
+  it("REFUSES on a 5xx, which arrives with NO graphQLErrors at all", async () => {
+    // The shape Apollo actually delivers an HTTP failure in: every response
+    // with `status >= 300` becomes a ServerError on `networkError`
+    // (@apollo/client/link/http/parseAndCheckHttpResponse.js) with
+    // `statusCode` stamped on it by throwServerError, and `graphQLErrors`
+    // stays EMPTY. So splitting on `graphQLErrors` alone sent a 502/503/504
+    // from the ingress — or a 500 from a failed apollo-server context
+    // function, which is what an ERPNext/Redis failure upstream of the
+    // resolver produces — straight down the degrade path, into the editable
+    // `?amount=` link with no pre-charge allowance check. The card is
+    // captured; the webhook, reading the same 5xx backend, cannot credit it.
+    //
+    // `fygaroCheckoutCreate` is on `noRetryOperations` (it mints a
+    // reservation), so the RetryLink no longer hides a transient 502 either:
+    // the first one lands here.
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [],
+      networkError: Object.assign(
+        new Error("Response not successful: Received status code 502"),
+        { statusCode: 502 },
+      ),
+    })
+
+    expect(await ask()).toEqual({ kind: "serverError" })
+  })
+
+  it("still degrades on the 400 an OLD BACKEND rejects an unknown field with", async () => {
+    // The rollback path, pinned. apollo-server answers a validation failure
+    // with HTTP 400, so it too arrives as a ServerError with an empty
+    // `graphQLErrors` — the real errors are inside `networkError.result`. This
+    // one IS our fault (we shipped a document the server predates), so it must
+    // keep degrading, or every instance on an older backend loses card top-ups
+    // outright the moment 5xx starts refusing.
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [],
+      networkError: Object.assign(
+        new Error("Response not successful: Received status code 400"),
+        {
+          statusCode: 400,
+          result: {
+            errors: [
+              {
+                message: 'Cannot query field "fygaroCheckoutCreate" on type "Mutation".',
+              },
+            ],
+          },
+        },
+      ),
     })
 
     expect(await ask()).toEqual({ kind: "unavailable" })

@@ -1579,6 +1579,7 @@
     "feeNote": "After card and processing fees",
     "usdOnlyNotice": "Card payments top up your USD wallet",
     "cannotTopUp": "Can't top up this amount",
+    "checkoutProblemTitle": "Couldn't start your payment",
     "changeAmount": "Change amount",
     "allowanceRemaining": "{remaining} of {limit} left today",
     "allowanceHeld": "{held} is held by a payment link you haven't completed",

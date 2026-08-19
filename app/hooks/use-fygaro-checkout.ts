@@ -46,6 +46,10 @@ export type FygaroCheckoutResult =
   // device-built URL keeps top-ups working exactly as they do today: worse than
   // a signed link, but a dead Top Up button would be worse than both.
   //
+  // "The network failed" means no status line came back. A 5xx is NOT this: the
+  // server answered, and what it answered was its own failure. See the catch
+  // below.
+  //
   // Note what is NOT here: an error the server DID return. See DEGRADE_CODES.
   | { kind: "unavailable" }
   // The request outlived its deadline. Kept apart from `unavailable` because
@@ -121,15 +125,44 @@ export const useFygaroCheckout = () => {
         //
         // The inverted-allowlist argument that governs `payload.errors`
         // applies verbatim here: only OUR faults may degrade. A transport
-        // failure is ours. A document the backend cannot parse or validate is
-        // ours (it predates this mutation, or we rolled back). Anything else
-        // is the server having refused, and is refused back.
-        const graphQLErrors = (e as ApolloError | undefined)?.graphQLErrors ?? []
+        // failure — no status line at all — is ours. A document the backend
+        // cannot parse or validate is ours (it predates this mutation, or we
+        // rolled back). Anything else is the server having refused, and is
+        // refused back.
+        const err = e as ApolloError | undefined
+        const graphQLErrors = err?.graphQLErrors ?? []
+
+        // Splitting on `graphQLErrors` ALONE is not enough, because an HTTP
+        // failure never populates it. Apollo turns EVERY response with
+        // `status >= 300` into a `ServerError` on `networkError`
+        // (@apollo/client/link/http/parseAndCheckHttpResponse.js) and
+        // `throwServerError` (link/utils/throwServerError.js) stamps
+        // `statusCode` on it — `graphQLErrors` stays `[]`. So a 502/503/504
+        // from the ingress (restart, rolling deploy, OOM-killed pod), or a 500
+        // out of a failed apollo-server-express context function — exactly what
+        // an ERPNext or Redis failure UPSTREAM of the resolver produces — used
+        // to land on the degrade path and hand over the editable `?amount=`
+        // link with no pre-charge allowance check at all. Card captured, and
+        // the webhook reading the same 5xx backend cannot credit it: the
+        // 2026-08-16 incident, through the last door left open.
+        //
+        // `fygaroCheckoutCreate` is on `noRetryOperations` (it mints a
+        // reservation), so the RetryLink no longer papers over a transient 502
+        // either — the first one arrives straight here.
+        const status = (err?.networkError as { statusCode?: number } | null)?.statusCode
+
         const schemaReject = graphQLErrors.some(
           (g) =>
             g.extensions?.code === "GRAPHQL_VALIDATION_FAILED" ||
             g.extensions?.code === "GRAPHQL_PARSE_FAILED",
         )
+        // The server answered, and its answer was its own failure. Whatever is
+        // broken behind a 5xx is the same thing the webhook must read before it
+        // can credit, so refuse. 4xx deliberately still degrades: that is the
+        // status an older backend rejects an unknown field with (apollo-server
+        // answers a validation failure with 400), and degrading is the whole
+        // reason the legacy link is still here.
+        if (typeof status === "number" && status >= 500) return { kind: "serverError" }
         if (graphQLErrors.length > 0 && !schemaReject) return { kind: "serverError" }
         return { kind: "unavailable" }
       }

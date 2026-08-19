@@ -76,13 +76,23 @@ type CheckoutState =
   | { status: "requesting" }
   | { status: "ready"; url: string; checkoutId?: string }
   /**
-   * The server refused, for a reason the CUSTOMER can act on, and carries the
-   * server's own sentence with it. Distinct from every other no-URL state on
-   * purpose: a refusal is not "something went wrong", it is a specific answer
-   * ("you have $4.48 left of today's limit") and the only useful next step is
-   * to change the amount, never to retry the identical request.
+   * The top-up was not authorised, and nothing has been charged.
+   *
+   * `retryable` splits the two kinds of "not authorised", because they have
+   * opposite next steps and the screen used to give both the same one:
+   *
+   * - `false`/absent — the SERVER refused this AMOUNT, in its own words ("you
+   *   have $4.48 left of today's limit"). Changing the amount is the only
+   *   action that can succeed; a retry re-requests the identical amount and is
+   *   refused identically.
+   * - `true` — nothing was decided about the amount at all: the backend threw,
+   *   or we never heard back. Headlining that with "Can't top up this amount"
+   *   over a "Change amount" button tells a customer their $50 is the problem
+   *   while ERPNext is down, so they try $40, then $30, hit the identical error
+   *   each time, and conclude their account is limited. Same failure, three
+   *   wasted attempts and a support ticket.
    */
-  | { status: "refused"; message: string }
+  | { status: "refused"; message: string; retryable?: boolean }
 
 /**
  * Build Fygaro payment URL with critical parameters:
@@ -259,6 +269,9 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         setCheckout({
           status: "refused",
           message: checkoutDeps.current.LL.TopupDetails.checkoutFailed(),
+          // The amount was never the problem — nothing got as far as judging
+          // it — so the next step is "try again", not "change amount".
+          retryable: true,
         })
         return
       }
@@ -272,6 +285,10 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         setCheckout({
           status: "refused",
           message: checkoutDeps.current.LL.TopupDetails.checkoutTimedOut(),
+          // Nobody judged the amount here either — we simply did not wait long
+          // enough to hear. "Check your connection and try again" is the body
+          // copy; the button has to agree with it.
+          retryable: true,
         })
         return
       }
@@ -297,6 +314,9 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         setCheckout({
           status: "refused",
           message: checkoutDeps.current.LL.TopupDetails.checkoutFailed(),
+          // Same wording as the `serverError` branch, so the same headline and
+          // the same button: whatever went wrong here, it was not the amount.
+          retryable: true,
         })
       }
     })
@@ -454,23 +474,38 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   }, [username, refetch])
 
   // A refusal has an answer attached, and it is not the generic error screen's.
-  // The customer asked for more than their remaining allowance, or below the
-  // minimum, or from a level that cannot card top-up — the server said which,
-  // in words meant for them — and the one action that can succeed is changing
-  // the amount. Offering "Retry" here re-requests the identical amount and is
-  // refused for the identical reason.
+  // Which answer depends on WHO refused, and the headline and the button have
+  // to agree with the sentence between them:
+  //
+  //  - Not retryable: the server judged the AMOUNT — more than the remaining
+  //    allowance, below the minimum, a level that cannot card top-up — and said
+  //    which, in words meant for the customer. Changing the amount is the only
+  //    action that can succeed; a "Retry" re-requests the identical amount and
+  //    is refused for the identical reason.
+  //  - Retryable: nothing judged the amount. "We couldn't set up your payment"
+  //    under "Can't top up this amount", above a button that says the fix is to
+  //    change it, sends someone whose backend is down to retry $50, $40, $30
+  //    into the same error and conclude their account is limited.
   if (checkout.status === "refused") {
     return (
       <Screen>
         <View style={styles.centerContainer}>
           <Text type="h2" style={[styles.noticeTitle, { color: colors.error }]}>
-            {LL.TopupDetails.cannotTopUp()}
+            {checkout.retryable
+              ? LL.TopupDetails.checkoutProblemTitle()
+              : LL.TopupDetails.cannotTopUp()}
           </Text>
           <Text type="p1" style={styles.bodyText}>
             {checkout.message}
           </Text>
           <PrimaryBtn
-            label={LL.TopupDetails.changeAmount()}
+            // Both go back to the amount screen — that is where "try again"
+            // starts from, since the request is made on entry to this one.
+            label={
+              checkout.retryable
+                ? LL.FygaroWebViewScreen.retry()
+                : LL.TopupDetails.changeAmount()
+            }
             onPress={() => navigation.goBack()}
             btnStyle={styles.retryButton}
           />

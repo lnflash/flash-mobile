@@ -657,6 +657,32 @@ describe("TopupDetails per-level daily limit", () => {
     )
   })
 
+  it("asks for the allowance in the only two ways that make the refresh work", () => {
+    // Both options are load-bearing and neither is observable through this
+    // mock, which hand-writes `networkStatus` into its fixture rather than
+    // getting it from Apollo. Without an assertion here, deleting either line
+    // from use-card-topup-allowance.ts leaves all of these tests green while
+    // production breaks:
+    //
+    //  - `notifyOnNetworkStatusChange: true` is what makes the on-focus refetch
+    //    visible. Without it `useQuery` stops re-rendering on loading-state
+    //    changes, `networkStatus` never reaches `refetch`, `refreshing` is
+    //    permanently false — and Continue is waved through on exactly the
+    //    stale figure the refetch was added to replace.
+    //  - `network-only` is what makes it a REFRESH. A cached allowance is a
+    //    stale allowance, and staleness is the entire failure this query
+    //    exists to end.
+    renderTopupDetails({ paymentType: "card", level: AccountLevel.One })
+
+    expect(mockUseFygaroTopupAllowanceQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: false,
+        fetchPolicy: "network-only",
+        notifyOnNetworkStatusChange: true,
+      }),
+    )
+  })
+
   it("allows a card top-up landing exactly ON the L1 cap (inclusive)", () => {
     const { getByPlaceholderText, getAllByText, navigate } = renderTopupDetails({
       paymentType: "card",
