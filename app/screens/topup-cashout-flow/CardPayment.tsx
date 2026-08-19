@@ -369,14 +369,23 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
   /**
    * Monitors URL changes to detect payment completion.
    *
-   * Outcome signals, in order of authority:
+   * Outcome signals, in order of authority — and the order they are READ in,
+   * which is the same thing:
    * - `?success=1|0` query param: Fygaro's checkout returns to the
    *   payment-button URL itself with this param after external-processor
-   *   flows (PayPal), so it must be read even on the /pb/ path.
+   *   flows (PayPal), so it must be read even on the /pb/ path. It is the
+   *   explicit answer, so `success=0` is checked FIRST — the keyword pass used
+   *   to run ahead of it, and Fygaro's own decline return
+   *   (`.../checkout/payment_success?success=0`) contains "success" in its
+   *   path, so a declined card matched the success branch and the `success=0`
+   *   arm was unreachable for that shape. The customer was then shown
+   *   "Payment received", which is precisely the false claim this flow exists
+   *   to delete.
    * - Keywords ("success", "error", "failed", "cancelled") matched against
    *   host+path ONLY — never the query string, which embeds the
    *   user-controlled username (custom_reference): a username like
-   *   "success-story" must never fake a payment outcome.
+   *   "success-story" must never fake a payment outcome. These are the
+   *   fallback for redirects that carry no `success` param at all.
    *
    * On success: Navigate to success screen (webhook will handle actual crediting)
    * On failure: Show error alert and allow retry
@@ -396,6 +405,23 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
     const successParam = parsed.searchParams.get("success")
     const hostAndPath = `${parsed.host}${parsed.pathname}`
 
+    // Payment failed - show error and allow retry.
+    // Localised like every other outcome message on this screen: a raw
+    // English literal here fixes the failure path for English speakers only,
+    // which is the exact argument that got the success path translated.
+    const reportFailure = () =>
+      Alert.alert(
+        LL.FygaroWebViewScreen.paymentFailedTitle(),
+        LL.FygaroWebViewScreen.paymentFailedMessage(),
+        [{ text: LL.common.ok(), onPress: () => navigation.goBack() }],
+      )
+
+    // The authoritative signal, above the guesswork. Fygaro said no.
+    if (successParam === "0") {
+      reportFailure()
+      return
+    }
+
     if (successParam === "1" || hostAndPath.includes("success")) {
       // Payment succeeded - navigate to success screen
       // The webhook will handle the actual wallet credit
@@ -409,21 +435,15 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         wallet,
         checkoutId,
       })
-    } else if (
-      successParam === "0" ||
+      return
+    }
+
+    if (
       hostAndPath.includes("error") ||
       hostAndPath.includes("failed") ||
       hostAndPath.includes("cancelled")
     ) {
-      // Payment failed - show error and allow retry.
-      // Localised like every other outcome message on this screen: a raw
-      // English literal here fixes the failure path for English speakers only,
-      // which is the exact argument that got the success path translated.
-      Alert.alert(
-        LL.FygaroWebViewScreen.paymentFailedTitle(),
-        LL.FygaroWebViewScreen.paymentFailedMessage(),
-        [{ text: LL.common.ok(), onPress: () => navigation.goBack() }],
-      )
+      reportFailure()
     }
   }
 

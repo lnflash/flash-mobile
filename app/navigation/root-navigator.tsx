@@ -133,7 +133,6 @@ import {
   BridgeExternalAccountWebView,
   BridgeAddExternalAccount,
   TopupDetails,
-  TopupSuccess,
   TopupCashout,
   CardPayment,
   CashoutDetails,
@@ -713,11 +712,6 @@ export const RootStack = () => {
         <RootNavigator.Screen name="TopupDetails" component={TopupDetails} />
         <RootNavigator.Screen name="BankTransfer" component={BankTransfer} />
         <RootNavigator.Screen name="CardPayment" component={CardPayment} />
-        <RootNavigator.Screen
-          name="TopupSuccess"
-          component={TopupSuccess}
-          options={{ headerShown: false }}
-        />
         <RootNavigator.Screen
           name="paymentSuccess"
           component={PaymentSuccessScreen}

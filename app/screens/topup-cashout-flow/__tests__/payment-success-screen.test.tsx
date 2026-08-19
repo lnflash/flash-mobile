@@ -213,6 +213,46 @@ describe("PaymentSuccessScreen copy per phase", () => {
     expect(queryByText(en.PaymentSuccessScreen.failedMessage())).toBeNull()
   })
 
+  it("never renders a BLANK body when the reason is an empty string", () => {
+    // `reason` is a String the backend fills in "when the state needs one", and
+    // an empty one is not null: it sailed through `??` and rendered nothing at
+    // all under "Payment on hold". A customer who has just been charged is
+    // looking at this screen, so a blank body is the one thing it cannot show.
+    const held = renderScreen({ phase: "held", reason: "" })
+    expect(held.queryByText(en.PaymentSuccessScreen.heldMessage())).not.toBeNull()
+    held.unmount()
+
+    const failed = renderScreen({ phase: "failed", reason: "" })
+    expect(failed.queryByText(en.PaymentSuccessScreen.failedMessage())).not.toBeNull()
+  })
+
+  it("shows the credited-confirmed headline in NO phase but credited", () => {
+    // `PaymentSuccessScreen.title` was repurposed from the generic "Payment
+    // Successful" to "Top-up Complete", which the new vocabulary defines as
+    // "the backend confirmed the credit". It is therefore a money claim, and
+    // only the phase that polled for it may make it. TopupSuccess.tsx used to
+    // render this same key under a full-screen green success animation without
+    // asking the backend anything; it was unreachable, and has been deleted
+    // rather than left for the next person to route to.
+    const uncredited = [
+      { phase: "checking" },
+      { phase: "pending" },
+      { phase: "unaskable" },
+      { phase: "unconfirmed" },
+      { phase: "held" },
+      { phase: "failed" },
+    ] as const
+
+    uncredited.forEach((resolution) => {
+      const screen = renderScreen(resolution)
+      expect(screen.queryByText(en.PaymentSuccessScreen.title())).toBeNull()
+      screen.unmount()
+    })
+
+    const credited = renderScreen({ phase: "credited" })
+    expect(credited.queryByText(en.PaymentSuccessScreen.title())).not.toBeNull()
+  })
+
   it("gives held and failed headlines of their own, not the received one", () => {
     // Both title branches used to read `receivedTitle`, so "on hold" and
     // "not credited" both announced themselves as a received payment.

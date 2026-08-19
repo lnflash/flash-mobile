@@ -992,8 +992,7 @@ describe("TopupDetails allowance refresh on return", () => {
     // The same reason the first-load hold has a deadline: nothing in the stack
     // times this query out, so a stalled connection would otherwise leave
     // Continue a permanent unlabelled spinner on a screen the customer cannot
-    // start a top-up from. Past the deadline the stale figure is a worse gate
-    // than a fresh one and a far better one than no screen at all.
+    // start a top-up from.
     jest.useFakeTimers()
     try {
       const refetch = jest.fn()
@@ -1028,6 +1027,105 @@ describe("TopupDetails allowance refresh on return", () => {
     } finally {
       jest.useRealTimers()
     }
+  })
+
+  it("DISCARDS the superseded figure past the deadline instead of quoting it", () => {
+    // The deadline releases the hold for both reasons the figure can be
+    // untrustworthy, and only one of them has a safe fallback. On a first load
+    // there is no number at all and the flat cap applies — documented, fine.
+    // On a REFRESH there is a number, and it is the pre-reservation one: this
+    // is the return from CardPayment, where asking for a checkout has just
+    // minted a $60 hold. Gating and quoting on it means the screen still says
+    // "$65.00 of $125.00 left today" after the server has already taken $60,
+    // waves the same $60 through, mints a SECOND hold, is refused again, and
+    // extends the customer's lockout — reopening the exact loop the on-focus
+    // refetch was added to close.
+    jest.useFakeTimers()
+    try {
+      const refetch = jest.fn()
+      mockUseFygaroTopupAllowanceQuery.mockReturnValue({
+        ...allowanceResult({
+          limit: 12500,
+          held: 6000,
+          remaining: 6500,
+          refetching: true,
+        }),
+        refetch,
+      })
+      const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+      const {
+        getByPlaceholderText,
+        getAllByText,
+        queryAllByText,
+        queryByText,
+        navigate,
+      } = renderTopupDetails({ paymentType: "card", level: AccountLevel.One })
+
+      // Before the deadline the flow is simply HELD: Continue is a spinner with
+      // no label, so nothing can be acted on either way.
+      expect(queryAllByText(en.TopupDetails.continue())).toHaveLength(0)
+
+      act(() => {
+        jest.advanceTimersByTime(6_000)
+      })
+
+      // Past the deadline the screen is usable again — and it quotes the FLAT
+      // cap, not the number it knows the server has already superseded.
+      expect(
+        queryByText(
+          en.TopupDetails.allowanceRemaining({ remaining: "$65.00", limit: "$125.00" }),
+        ),
+      ).toBeNull()
+      expect(queryByText(en.TopupDetails.allowanceHeld({ held: "$60.00" }))).toBeNull()
+      expect(
+        queryByText(en.TopupDetails.dailyLimitInfo({ amount: "$125.00" })),
+      ).not.toBeNull()
+
+      // And the gate is the flat cap too: $200 is refused, naming $125 rather
+      // than a "$65.00 left" that has not been true since the hold was minted.
+      fireEvent.changeText(
+        getByPlaceholderText(en.TopupDetails.amountPlaceholder()),
+        "200",
+      )
+      fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+      expect(navigate).not.toHaveBeenCalled()
+      expect(alertSpy).toHaveBeenCalledWith(
+        en.TopupDetails.cannotTopUp(),
+        en.TopupDetails.dailyLimitAmount({ amount: "$125.00" }),
+      )
+      alertSpy.mockRestore()
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it("keeps quoting and gating on the allowance when NO refresh is in flight", () => {
+    // The other half: discarding a superseded figure must not discard a settled
+    // one. With the query at rest the allowance is the best number the screen
+    // has, and the flat cap would invite a $60 top-up against $25 remaining.
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue(
+      allowanceResult({ limit: 12500, held: 0, remaining: 2500 }),
+    )
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, getAllByText, queryByText, navigate } =
+      renderTopupDetails({ paymentType: "card", level: AccountLevel.One })
+
+    expect(
+      queryByText(
+        en.TopupDetails.allowanceRemaining({ remaining: "$25.00", limit: "$125.00" }),
+      ),
+    ).not.toBeNull()
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "60")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      en.TopupDetails.cannotTopUp(),
+      en.TopupDetails.allowanceRemaining({ remaining: "$25.00", limit: "$125.00" }),
+    )
+    alertSpy.mockRestore()
   })
 
   it("does not re-ask for the CARD allowance on a bank transfer", () => {

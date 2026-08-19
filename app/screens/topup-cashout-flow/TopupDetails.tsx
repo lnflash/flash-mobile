@@ -237,6 +237,32 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   }, [allowanceUnsettled])
   const cardAllowancePending = allowanceUnsettled && !allowanceDeadlinePassed
 
+  /**
+   * The allowance this screen is allowed to ACT on, which is not always the one
+   * Apollo is still serving.
+   *
+   * The deadline releases the hold for both of the reasons the figure can be
+   * untrustworthy, but only one of them has a safe fallback:
+   *
+   *  - First load (`allowanceLoading && !allowance`): there is no figure at
+   *    all, so past the deadline the flat per-level cap applies. Documented,
+   *    weaker, fine.
+   *  - Refresh (`allowanceRefreshing`): there IS a figure, and it is the
+   *    PRE-reservation one. This is the return from CardPayment, where asking
+   *    for a checkout has just minted a hold. Gating on it, or quoting it, is
+   *    quoting a number we know the server has already superseded: the screen
+   *    would still say "$65.00 of $125.00 left today" after $60 of it was
+   *    taken, wave the customer through on $60, mint a SECOND hold, refuse them
+   *    again, and extend their lockout — reopening the exact loop the on-focus
+   *    refetch was added to close.
+   *
+   * So the deadline releases the hold, and this discards the figure with it.
+   * Past it the screen falls back to the flat cap — the same place the
+   * first-load case lands — rather than repeating a number it knows is stale.
+   */
+  const allowanceSuperseded = isCard && allowanceRefreshing && allowanceDeadlinePassed
+  const usableAllowance = allowanceSuperseded ? undefined : allowance
+
   const dailyLimit = isCard ? levelDailyLimit : undefined
 
   /**
@@ -259,9 +285,11 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
    * client had no idea $180 was already spent. Two of those three were captured
    * by Fygaro and never credited.
    *
-   * Falls back to the flat cap when the allowance cannot be established, which
-   * is strictly the old behaviour: weaker, but the pre-charge check still
-   * refuses before any card is charged.
+   * Falls back to the flat cap when the allowance cannot be established — or
+   * when the one we are holding has been superseded by a reservation we know
+   * was just minted (see `usableAllowance`) — which is strictly the old
+   * behaviour: weaker, but the pre-charge check still refuses before any card
+   * is charged.
    *
    * CARD ONLY, both halves of it — same as `dailyLimit` above. The Fygaro
    * allowance says nothing about a bank transfer or a Bridge deposit, and
@@ -272,7 +300,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   const exceedsDailyLimit = (amount: string): boolean => {
     const numAmount = parseFloat(amount)
     if (isNaN(numAmount)) return false
-    if (isCard && allowance) return numAmount > allowance.remainingCents / 100
+    if (isCard && usableAllowance) return numAmount > usableAllowance.remainingCents / 100
     return dailyLimit !== undefined && numAmount > dailyLimit
   }
 
@@ -355,10 +383,10 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
       // had failed but the allowance was perfectly readable.
       Alert.alert(
         LL.TopupDetails.cannotTopUp(),
-        isCard && allowance
+        isCard && usableAllowance
           ? LL.TopupDetails.allowanceRemaining({
-              remaining: `$${(allowance.remainingCents / 100).toFixed(2)}`,
-              limit: `$${(allowance.limitCents / 100).toFixed(2)}`,
+              remaining: `$${(usableAllowance.remainingCents / 100).toFixed(2)}`,
+              limit: `$${(usableAllowance.limitCents / 100).toFixed(2)}`,
             })
           : LL.TopupDetails.dailyLimitAmount({
               amount: `$${(dailyLimit ?? 0).toFixed(2)}`,
@@ -480,30 +508,30 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
               </View>
             </InputAccessoryView>
           )}
-          {isCard && allowance ? (
+          {isCard && usableAllowance ? (
             <>
               <Text type="p3" style={styles.limitNote}>
                 {LL.TopupDetails.allowanceRemaining({
-                  remaining: `$${(allowance.remainingCents / 100).toFixed(2)}`,
-                  limit: `$${(allowance.limitCents / 100).toFixed(2)}`,
+                  remaining: `$${(usableAllowance.remainingCents / 100).toFixed(2)}`,
+                  limit: `$${(usableAllowance.limitCents / 100).toFixed(2)}`,
                 })}
               </Text>
-              {allowance.heldCents > 0 && (
+              {usableAllowance.heldCents > 0 && (
                 // Without this line, "you have spent nothing and $65 is left of
                 // $125" reads as a bug. The hold is the whole difference.
                 <Text type="p3" style={styles.limitNote}>
                   {LL.TopupDetails.allowanceHeld({
-                    held: `$${(allowance.heldCents / 100).toFixed(2)}`,
+                    held: `$${(usableAllowance.heldCents / 100).toFixed(2)}`,
                   })}
                 </Text>
               )}
-              {allowance.heldCents > 0 && allowance.holdsExpireAt && (
+              {usableAllowance.heldCents > 0 && usableAllowance.holdsExpireAt && (
                 // And the immediate follow-up question — "when do I get the
                 // rest back?" — answered in the same breath, so nobody has to
                 // guess whether the hold is minutes or days.
                 <Text type="p3" style={styles.limitNote}>
                   {LL.TopupDetails.allowanceResets({
-                    when: formatHoldExpiry(allowance.holdsExpireAt),
+                    when: formatHoldExpiry(usableAllowance.holdsExpireAt),
                   })}
                 </Text>
               )}

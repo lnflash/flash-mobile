@@ -79,14 +79,20 @@ const PaymentSuccessScreen: React.FC<PaymentSuccessScreenProps> = () => {
   // falling through to pendingMessage told customers whose payment was frozen
   // for manual review that we were "crediting your wallet", which is the exact
   // class of false claim this screen exists to remove.
+  //
+  // `||`, not `??`. `??` only catches null and undefined, so an EMPTY reason —
+  // a state the backend filled in with "" — passed straight through and
+  // rendered a blank body under "Payment on hold": nothing at all, on the
+  // screen a customer lands on immediately after being charged, which is the
+  // one place this screen cannot afford to say nothing.
   const message = checking
     ? LL.PaymentSuccessScreen.checkingMessage()
     : credited
     ? LL.PaymentSuccessScreen.successMessage()
     : held
-    ? resolution.reason ?? LL.PaymentSuccessScreen.heldMessage()
+    ? resolution.reason || LL.PaymentSuccessScreen.heldMessage()
     : failed
-    ? resolution.reason ?? LL.PaymentSuccessScreen.failedMessage()
+    ? resolution.reason || LL.PaymentSuccessScreen.failedMessage()
     : unconfirmed
     ? LL.PaymentSuccessScreen.unconfirmedMessage()
     : unaskable

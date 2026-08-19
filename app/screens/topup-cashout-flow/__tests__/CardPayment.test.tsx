@@ -660,6 +660,60 @@ describe("CardPayment navigation callbacks", () => {
     alertSpy.mockRestore()
   })
 
+  it("believes ?success=0 over a path that merely CONTAINS the word success", async () => {
+    // The explicit outcome used to lose to the keyword heuristic: the success
+    // branch (`successParam === "1" || hostAndPath.includes("success")`) was
+    // evaluated first, so Fygaro's own decline return — which comes back on the
+    // /checkout/payment_success path with `?success=0` — matched it, and the
+    // `success=0` arm below was unreachable for that shape. The customer whose
+    // card was DECLINED was sent to the success screen, where a legacy link
+    // resolves to `unaskable` and the headline reads "Payment received". That
+    // is the precise false claim this flow exists to delete, reached from a
+    // payment that never happened.
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { navigate } = await renderAndSettle()
+
+    lastWebViewProps().onNavigationStateChange({
+      url: "https://www.fygaro.com/en/checkout/payment_success?success=0&custom_reference=alice",
+    })
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      en.FygaroWebViewScreen.paymentFailedTitle(),
+      en.FygaroWebViewScreen.paymentFailedMessage(),
+      expect.anything(),
+    )
+    alertSpy.mockRestore()
+  })
+
+  it("still uses the keyword fallback when there is no success param to believe", async () => {
+    // The other half: demoting the heuristic must not disable it. Redirects
+    // that carry no `success` param at all are still read from host+path.
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { navigate, goBack } = await renderAndSettle({ amount: 10, wallet: "USD" })
+
+    lastWebViewProps().onNavigationStateChange({
+      url: "https://www.fygaro.com/en/checkout/payment_failed",
+    })
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      en.FygaroWebViewScreen.paymentFailedTitle(),
+      en.FygaroWebViewScreen.paymentFailedMessage(),
+      expect.anything(),
+    )
+
+    const [, , buttons] = alertSpy.mock.calls[0] as unknown as [
+      string,
+      string,
+      { onPress: () => void }[],
+    ]
+    buttons[0].onPress()
+    expect(goBack).toHaveBeenCalled()
+
+    alertSpy.mockRestore()
+  })
+
   it("localises the failure alert instead of hard-coding English", async () => {
     // Every other payment-outcome message on this flow was translated across
     // `en` and 23 locale files; this one — the FAILURE counterpart — was left

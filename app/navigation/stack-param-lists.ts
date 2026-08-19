@@ -203,7 +203,6 @@ export type RootStackParamList = {
     amount: number
     wallet: string
   }
-  TopupSuccess: undefined
   paymentSuccess: {
     amount: number
     wallet: string

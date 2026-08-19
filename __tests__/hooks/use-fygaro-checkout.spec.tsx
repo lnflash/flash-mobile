@@ -279,13 +279,56 @@ describe("useFygaroCheckout", () => {
     expect(await ask()).toEqual({ kind: "serverError" })
   })
 
+  it("REFUSES on a 429, which is the gateway answering too", async () => {
+    // The rule is "an error the server DID return is a refusal", and for a
+    // while it only held for 5xx. Every other status the server answers with
+    // arrives in the identical shape — a ServerError on `networkError` with an
+    // EMPTY `graphQLErrors` — so a rate-limited checkout fell through to
+    // `unavailable` and CardPayment loaded `buildLegacyPaymentUrl`: the
+    // editable `?amount=` link, with no pre-charge allowance check at all.
+    //
+    // `fygaroCheckoutCreate` is on `noRetryOperations` (it mints a
+    // reservation), so the 429 is not retried away — the first one lands here,
+    // the app degrades, and the customer is charged for an over-limit top-up
+    // the webhook then parks in HELD_FOR_REVIEW. That is the 2026-08-16
+    // incident, reproduced through a status nobody was checking.
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [],
+      networkError: Object.assign(
+        new Error("Response not successful: Received status code 429"),
+        { statusCode: 429 },
+      ),
+    })
+
+    expect(await ask()).toEqual({ kind: "serverError" })
+  })
+
+  it("REFUSES on a 403, and on the 401 a revoked token produces", async () => {
+    // The persisted cache is what makes this reachable: `useHomeAuthedQuery`
+    // serves the username `cache-first`, so the screen still looks signed in
+    // while the token behind it is dead. Degrading there hands that customer
+    // the editable link on an account nothing has authorised.
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [],
+      networkError: Object.assign(new Error("Forbidden"), { statusCode: 403 }),
+    })
+    expect(await ask()).toEqual({ kind: "serverError" })
+
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [],
+      networkError: Object.assign(new Error("Unauthorized"), { statusCode: 401 }),
+    })
+    expect(await ask()).toEqual({ kind: "serverError" })
+  })
+
   it("still degrades on the 400 an OLD BACKEND rejects an unknown field with", async () => {
     // The rollback path, pinned. apollo-server answers a validation failure
     // with HTTP 400, so it too arrives as a ServerError with an empty
-    // `graphQLErrors` — the real errors are inside `networkError.result`. This
+    // `graphQLErrors` — the real errors are inside `networkError.result`, which
+    // is why the hook has to READ that body rather than trust the status. This
     // one IS our fault (we shipped a document the server predates), so it must
     // keep degrading, or every instance on an older backend loses card top-ups
-    // outright the moment 5xx starts refusing.
+    // outright the moment the other statuses start refusing.
     mockCreateCheckout.mockRejectedValue({
       graphQLErrors: [],
       networkError: Object.assign(
@@ -304,6 +347,60 @@ describe("useFygaroCheckout", () => {
     })
 
     expect(await ask()).toEqual({ kind: "unavailable" })
+  })
+
+  it("degrades on the 400 an old backend produces with a PARSE/VALIDATION code", async () => {
+    // The same rejection as above in the other shape apollo-server sends it:
+    // the reason in `extensions.code` rather than spelled out in the message.
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [],
+      networkError: Object.assign(new Error("Bad Request"), {
+        statusCode: 400,
+        result: {
+          errors: [
+            {
+              message: "Syntax Error: Unexpected Name.",
+              extensions: { code: "GRAPHQL_PARSE_FAILED" },
+            },
+          ],
+        },
+      }),
+    })
+
+    expect(await ask()).toEqual({ kind: "unavailable" })
+  })
+
+  it("REFUSES on a 400 that is NOT a schema rejection", async () => {
+    // The negative twin of the test above, and the whole reason the 400 branch
+    // reads the body instead of the status. A 400 is not automatically "the
+    // backend predates this mutation" — it is also what a gateway answers a
+    // malformed or rate-limited request with, and treating every 400 as our own
+    // fault is the same fail-OPEN the 5xx-only rule was. Degrading here would
+    // hand over the editable `?amount=` link on a request the server refused.
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [],
+      networkError: Object.assign(
+        new Error("Response not successful: Received status code 400"),
+        {
+          statusCode: 400,
+          result: { errors: [{ message: "Rate limit exceeded" }] },
+        },
+      ),
+    })
+
+    expect(await ask()).toEqual({ kind: "serverError" })
+  })
+
+  it("REFUSES on a 400 with no readable body at all", async () => {
+    // Nothing proves this was our document being rejected, so the inverted rule
+    // applies: an answer we cannot positively identify as our fault is the
+    // server having refused.
+    mockCreateCheckout.mockRejectedValue({
+      graphQLErrors: [],
+      networkError: Object.assign(new Error("Bad Request"), { statusCode: 400 }),
+    })
+
+    expect(await ask()).toEqual({ kind: "serverError" })
   })
 
   it("treats a success payload with no url as unavailable", async () => {
