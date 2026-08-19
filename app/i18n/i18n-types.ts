@@ -2236,6 +2236,10 @@ type RootTranslation = {
 		 */
 		cannotTopUp: string
 		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​r​e​a​c​h​ ​F​l​a​s​h​ ​t​o​ ​s​e​t​ ​u​p​ ​y​o​u​r​ ​p​a​y​m​e​n​t​.​ ​N​o​t​h​i​n​g​ ​h​a​s​ ​b​e​e​n​ ​c​h​a​r​g​e​d​ ​—​ ​p​l​e​a​s​e​ ​c​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		checkoutTimedOut: string
+		/**
 		 * C​h​a​n​g​e​ ​a​m​o​u​n​t
 		 */
 		changeAmount: string
@@ -8525,6 +8529,10 @@ export type TranslationFunctions = {
 		 * Can't top up this amount
 		 */
 		cannotTopUp: () => LocalizedString
+		/**
+		 * We couldn't reach Flash to set up your payment. Nothing has been charged — please check your connection and try again.
+		 */
+		checkoutTimedOut: () => LocalizedString
 		/**
 		 * Change amount
 		 */

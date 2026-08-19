@@ -48,6 +48,11 @@ export type FygaroCheckoutResult =
   //
   // Note what is NOT here: an error the server DID return. See DEGRADE_CODES.
   | { kind: "unavailable" }
+  // The request outlived its deadline. Kept apart from `unavailable` because
+  // the server may have decided — and refused — without us hearing it, so this
+  // must NOT degrade to the editable legacy link. Minted by the caller's
+  // deadline, never by this hook.
+  | { kind: "timedOut" }
 
 /**
  * The only error codes that may fall back to the legacy editable link.

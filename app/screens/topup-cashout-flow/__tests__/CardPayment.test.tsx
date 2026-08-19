@@ -373,7 +373,8 @@ describe("CardPayment signed checkout", () => {
           }),
       )
 
-      const { getAllByText } = renderCardPayment({ amount: 25 })
+      const screen = renderCardPayment({ amount: 25 })
+      const { getAllByText } = screen
 
       // In flight: the spinner, and nothing loaded.
       expect(getAllByText(en.FygaroWebViewScreen.loading()).length).toBeGreaterThan(0)
@@ -383,11 +384,14 @@ describe("CardPayment signed checkout", () => {
         jest.advanceTimersByTime(11_000)
       })
 
-      // Past the deadline the customer gets the link that has always worked,
-      // not a spinner that never ends.
-      const { uri } = lastWebViewProps().source
-      expect(uri).toContain("custom_reference=alice")
-      expect(uri).toContain("amount=25")
+      // Past the deadline the customer gets a definite answer — and it is a
+      // REFUSAL, not the editable legacy link. A timeout is not "the server has
+      // no opinion": it may have decided, and refused, and we simply did not
+      // wait to hear it. Handing over an editable link there would charge
+      // someone the backend was in the middle of protecting.
+      const { queryAllByText } = screen
+      expect(mockWebView).not.toHaveBeenCalled()
+      expect(queryAllByText(en.TopupDetails.checkoutTimedOut()).length).toBeGreaterThan(0)
     } finally {
       jest.useRealTimers()
     }

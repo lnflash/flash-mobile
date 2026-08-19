@@ -696,6 +696,8 @@ const en: BaseTranslation = {
   TopupDetails: {
     title: "Card Payment",
     cannotTopUp: "Can't top up this amount",
+    checkoutTimedOut:
+      "We couldn't reach Flash to set up your payment. Nothing has been charged — please check your connection and try again.",
     // The only action that can succeed after a refusal. A "Retry" would
     // re-request the SAME amount and be refused again for the same reason.
     changeAmount: "Change amount",

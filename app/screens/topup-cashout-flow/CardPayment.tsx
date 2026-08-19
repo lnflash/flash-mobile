@@ -198,19 +198,23 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
     let cancelled = false
     let deadline: ReturnType<typeof setTimeout> | undefined
     const run = async () => {
-      // Whichever answer arrives first wins, and the deadline's answer is
-      // `unavailable` — a request that never settles is "a server that never
-      // answered", the same category as the network failure that already
-      // degrades to the legacy link. A late answer landing after the deadline
-      // is deliberately ignored: by then the WebView is mounted and the
-      // customer may already be typing card details into it.
+      // Whichever answer arrives first wins. The deadline's answer is its OWN
+      // kind, deliberately not `unavailable`.
+      //
+      // `unavailable` means the server has no opinion — the request never
+      // reached it, the backend predates the mutation, or the feature is off —
+      // and the legacy editable link is then exactly the status quo. A TIMEOUT
+      // is different in the way that matters: the server may well have decided,
+      // and refused, and we simply did not wait to hear it. Degrading to the
+      // legacy link there would charge a customer the backend was in the middle
+      // of protecting — the 2026-08-16 incident through a different door.
+      //
+      // A late answer landing after the deadline is deliberately ignored: by
+      // then the customer may already be typing card details.
       const result = await Promise.race<FygaroCheckoutResult>([
         requestCheckout(Math.round(amount * 100)),
         new Promise<FygaroCheckoutResult>((resolve) => {
-          deadline = setTimeout(
-            () => resolve({ kind: "unavailable" }),
-            CHECKOUT_DEADLINE_MS,
-          )
+          deadline = setTimeout(() => resolve({ kind: "timedOut" }), CHECKOUT_DEADLINE_MS)
         }),
       ])
       if (deadline) clearTimeout(deadline)
@@ -244,10 +248,23 @@ const CardPayment: React.FC<Props> = ({ navigation, route }) => {
         return
       }
 
-      // `unavailable`: signed checkout is off, the backend predates it, the
-      // request failed, or it never answered inside the deadline. None of those
-      // are the customer's fault, so fall back to the link that has always
-      // worked rather than blocking the top-up.
+      if (result.kind === "timedOut") {
+        // Refuse rather than charge. Nothing has been taken at this point, so
+        // "try again" costs the customer nothing — whereas handing them an
+        // editable link the server may have been about to refuse costs them a
+        // capture we then cannot credit. Free to say no now, expensive later:
+        // that asymmetry is the whole reason this screen asks the server first.
+        setCheckout({
+          status: "refused",
+          message: checkoutDeps.current.LL.TopupDetails.checkoutTimedOut(),
+        })
+        return
+      }
+
+      // `unavailable`: signed checkout is off, the backend predates it, or the
+      // request never reached a server that could have an opinion. None of
+      // those are the customer's fault and none of them withhold a decision, so
+      // fall back to the link that has always worked rather than blocking.
       setCheckout({ status: "ready", url: legacyPaymentUrl })
     }
     run().catch(() => {
