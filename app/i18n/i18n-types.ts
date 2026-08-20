@@ -5738,7 +5738,7 @@ type RootTranslation = {
 		 */
 		maxNoteFeeUnknown: string
 		/**
-		 * T​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​i​s​ ​m​o​r​e​ ​t​h​a​n​ ​t​h​i​s​ ​b​a​l​a​n​c​e​ ​c​a​n​ ​c​o​v​e​r​ ​—​ ​n​o​t​h​i​n​g​ ​t​o​ ​s​e​n​d​ ​r​i​g​h​t​ ​n​o​w
+		 * T​h​i​s​ ​b​a​l​a​n​c​e​ ​i​s​ ​t​o​o​ ​s​m​a​l​l​ ​t​o​ ​s​e​n​d​ ​a​f​t​e​r​ ​t​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​—​ ​n​o​t​h​i​n​g​ ​t​o​ ​s​e​n​d​ ​r​i​g​h​t​ ​n​o​w
 		 */
 		maxNoteFeeTooLarge: string
 	}
@@ -11980,7 +11980,7 @@ export type TranslationFunctions = {
 		 */
 		maxNoteFeeUnknown: () => LocalizedString
 		/**
-		 * The network fee is more than this balance can cover — nothing to send right now
+		 * This balance is too small to send after the network fee — nothing to send right now
 		 */
 		maxNoteFeeTooLarge: () => LocalizedString
 	}

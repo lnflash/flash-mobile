@@ -26,6 +26,7 @@ const strings = {
   feeReserved: (fee: string) => `fee note: ${fee}`,
   recipientCap: (max: string) => `cap note: ${max}`,
   feeUnknown: () => "fee unknown note",
+  recipientMin: (minSats: number) => `min note: ${minSats} sats`,
   feeTooLarge: () => "fee too large note",
 }
 
@@ -541,5 +542,47 @@ describe("a fee bigger than the balance is explained, not swallowed", () => {
 
     expect(result?.amount).toBeUndefined()
     expect(result?.note).toBe("fee too large note")
+  })
+})
+
+describe("a typed Breez bounds error keeps its message", () => {
+  // Before this PR a null fee still filled the balance, so committing it
+  // surfaced the receiver's minimum. Now that nothing is proposed, the MAX
+  // note is the only place that reason can still reach the user — telling
+  // them "couldn't estimate the fee" when the real answer is "this recipient
+  // won't accept less than 1,000 sats" sends them nowhere.
+  it("reports the receiver's minimum rather than a generic estimate failure", async () => {
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        balanceMoneyAmount: btcBalance,
+        fetchBreezFee: jest.fn(async () => ({
+          fee: null,
+          err: { kind: "amount-below-min", minSats: 1_000 },
+        })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("min note: 1000 sats")
+  })
+
+  it("falls back to the generic note for an untyped failure", async () => {
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        balanceMoneyAmount: btcBalance,
+        fetchBreezFee: jest.fn(async () => ({
+          fee: null,
+          err: { kind: "network", message: "offline" },
+        })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.note).toBe("fee unknown note")
   })
 })

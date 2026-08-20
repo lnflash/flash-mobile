@@ -32,6 +32,8 @@ export type MaxAmountButtonStrings = {
   recipientCap: (max: string) => string
   /** maxNoteFeeUnknown — shown when the destination cannot be priced. */
   feeUnknown: () => string
+  /** minReceiveAmountError — the receiver's own lower bound, in sats. */
+  recipientMin: (minSats: number) => string
   /** maxNoteFeeTooLarge — shown when the fee swallows the whole balance. */
   feeTooLarge: () => string
 }
@@ -135,6 +137,14 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
 
   const withAmount = (amount: number): M => ({ ...balanceMoneyAmount, amount })
 
+  // The Breez probe returns a TYPED reason (below the receiver's minimum,
+  // above their maximum, offline...). Collapsing it into the same null as a
+  // network blip costs the user the only actionable half of the message: on
+  // main a null fee still filled the balance, so committing it surfaced
+  // "The minimum this recipient can receive is N sats". Now that no amount is
+  // proposed, this is the only place that reason can still reach them.
+  let lastFeeError: { kind: string; minSats?: number } | null = null
+
   // Note kind → localized string. Undefined only where there is genuinely
   // nothing worth saying: an unremarkable result, or a money note with no
   // display rate to format it against.
@@ -148,8 +158,13 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
       }
       case "fee-too-large":
         return strings.feeTooLarge()
-      case "fee-unknown":
-        return strings.feeUnknown()
+      case "fee-unknown": {
+        // Prefer the receiver's own lower bound over a generic "couldn't
+        // estimate": it is the half of the message the user can act on.
+        const minSats =
+          lastFeeError?.kind === "amount-below-min" ? lastFeeError.minSats : undefined
+        return minSats ? strings.recipientMin(minSats) : strings.feeUnknown()
+      }
       case "recipient-cap": {
         const capString = formatDisplayAmount(withAmount(decision.cap))
         return capString ? strings.recipientCap(capString) : undefined
@@ -172,6 +187,7 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
         selectedFeeType,
         knownPayRequest,
       })
+      lastFeeError = (err as { kind: string; minSats?: number } | null) ?? null
       return err ? null : fee
     }
     // USD wallet. An LNURL destination has no invoice yet, so there is

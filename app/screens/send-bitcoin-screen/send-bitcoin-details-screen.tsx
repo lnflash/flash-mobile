@@ -416,7 +416,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           navigation.navigate("sendBitcoinConfirmation", {
             paymentDetail: paymentDetailForConfirmation,
             flashUserAddress,
-            selectedFeeType: selectedFeeType,
+            selectedFeeType,
             invoiceAmount,
           })
         }
@@ -486,6 +486,10 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         feeReserved: (fee) => LL.AmountInputScreen.maxNoteFeeReserved({ fee }),
         recipientCap: (max) => LL.AmountInputScreen.maxNoteRecipientCap({ max }),
         feeUnknown: () => LL.AmountInputScreen.maxNoteFeeUnknown(),
+        recipientMin: (minSats) =>
+          LL.SendBitcoinScreen.minReceiveAmountError({
+            amount: `${minSats} sats`,
+          }),
         feeTooLarge: () => LL.AmountInputScreen.maxNoteFeeTooLarge(),
       },
     })
@@ -561,9 +565,8 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
       </Screen>
     )
-  } else {
-    return null
   }
+  return null
 }
 export default SendBitcoinDetailsScreen
 

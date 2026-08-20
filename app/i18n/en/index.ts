@@ -1763,7 +1763,7 @@ const en: BaseTranslation = {
     maxNoteFeeUnknown:
       "Couldn't estimate the network fee right now — tap MAX again or enter an amount",
     maxNoteFeeTooLarge:
-      "The network fee is more than this balance can cover — nothing to send right now",
+      "This balance is too small to send after the network fee — nothing to send right now",
   },
   AmountInputButton: {
     tapToSetAmount: "Add an amount",
