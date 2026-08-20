@@ -23,7 +23,11 @@ import {
   Network as NetworkLibGaloy,
   PaymentType,
 } from "@galoymoney/client"
-import { isHeldInvoiceExpired, willTransmitHeldInvoice } from "./invoice-expiry"
+import {
+  isHeldInvoiceExpired,
+  noteInvoiceFirstSight,
+  willTransmitHeldInvoice,
+} from "./invoice-expiry"
 import { useActivityIndicator, useBreez } from "@app/hooks"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 
@@ -204,10 +208,16 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   // The device clock as it read on the way into this screen — before the user
   // could have paused on it. `Date.now()` inside the guard is read off the
   // same clock, so the difference between the two is an elapsed duration that
-  // no clock offset can inflate. This is the guard's primary signal; see
-  // invoice-expiry.ts. `useRef` so it survives re-renders (fee updates, wallet
-  // text) and is captured exactly once per mount.
-  const firstSeenSeconds = useRef(Math.floor(Date.now() / 1000)).current
+
+  // Start the clock on this invoice as soon as the screen shows it, not when
+  // Confirm is tapped. Registering on tap would miss the user who simply sits
+  // here past the 60s lifetime and taps once — their first reading would be
+  // the tap itself, so no time would appear to have elapsed.
+  useEffect(() => {
+    if (paymentDetail.paymentRequest) {
+      noteInvoiceFirstSight(paymentDetail.paymentRequest, Math.floor(Date.now() / 1000))
+    }
+  }, [paymentDetail.paymentRequest])
 
   // Held invoices perish: IBEX caps Flash receive invoices at 60 seconds, so
   // an invoice minted when the user left the amount screen can easily be dead
@@ -230,7 +240,6 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
       isHeldInvoiceExpired({
         paymentRequest: paymentDetail.paymentRequest,
         nowSeconds: Math.floor(Date.now() / 1000),
-        firstSeenSeconds,
         decode: (paymentRequest, network) =>
           decodeInvoiceString(paymentRequest, network as NetworkLibGaloy),
       }),
@@ -238,7 +247,6 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
       paymentDetail.paymentRequest,
       paymentDetail.paymentType,
       sendingWalletDescriptor?.currency,
-      firstSeenSeconds,
     ],
   )
 
@@ -352,7 +360,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         <PrimaryBtn
           loading={sendPaymentLoading}
           label={LL.SendBitcoinConfirmationScreen.title()}
-          disabled={!isValidAmount || hasAttemptedSend || !!paymentError}
+          disabled={!isValidAmount || hasAttemptedSend || Boolean(paymentError)}
           onPress={handleSendPayment}
         />
       </View>

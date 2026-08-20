@@ -52,6 +52,48 @@ import type { PaymentType } from "@galoymoney/client"
  */
 export const CLOCK_SKEW_GRACE_SECONDS = 120
 
+// When each bolt11 was first seen, keyed by the invoice itself rather than by a
+// screen mount.
+//
+// This is what makes the elapsed-time signal survive the reported retry. After
+// a failed send the confirm screen disables its button, so the user goes Back,
+// changes the amount and comes forward again — remounting the screen but
+// reusing the SAME bolt11, because setAmount only rebuilds the detail around
+// it. A per-mount reading restarts at zero there and the invoice looks fresh;
+// keyed by the invoice, the original sighting is still on record and the guard
+// can see that a full lifetime has passed under the user.
+const firstSightByInvoice = new Map<string, number>()
+
+// A send flow visits a handful of invoices; this cap only stops a very long
+// session from growing the map without bound.
+const MAX_TRACKED_INVOICES = 50
+
+/**
+ * Record (once) when this device first saw `paymentRequest`, and return that
+ * reading. It shares a clock with `nowSeconds`, so the difference is a true
+ * elapsed duration — a handset ten minutes fast reads zero on a fresh invoice,
+ * exactly like a correct one.
+ */
+export const noteInvoiceFirstSight = (
+  paymentRequest: string,
+  nowSeconds: number,
+): number => {
+  const seen = firstSightByInvoice.get(paymentRequest)
+  if (seen !== undefined) return seen
+
+  if (firstSightByInvoice.size >= MAX_TRACKED_INVOICES) {
+    const oldest = firstSightByInvoice.keys().next()
+    if (!oldest.done) firstSightByInvoice.delete(oldest.value)
+  }
+  firstSightByInvoice.set(paymentRequest, nowSeconds)
+  return nowSeconds
+}
+
+/** Test seam — module state would otherwise leak between cases. */
+export const resetInvoiceFirstSight = (): void => {
+  firstSightByInvoice.clear()
+}
+
 export type InvoiceExpiryArgs = {
   /** Decoded bolt11 `timeExpireDate`, in epoch SECONDS. */
   timeExpireDate?: number | null
@@ -123,27 +165,21 @@ export const isInvoiceExpired = ({
     // Flash receive invoice, per IBEX's cap.
     const lifetimeSeconds = timeExpireDate - timestamp
 
-    // (1) Primary signal. Both readings come from the device clock, so this
-    // is a true elapsed duration: a handset ten minutes fast reads 0 here on
-    // a fresh invoice, exactly like a correct one. It can only fire once the
-    // invoice's entire lifetime has genuinely passed under the user's nose.
-    if (nowSeconds - firstSeenSeconds > lifetimeSeconds) return true
-
-    // (2) Mute the backstop when this screen's *first* reading already put
-    // the invoice well past its lifetime. That reading cannot distinguish a
-    // genuinely stale invoice from a fast handset — and a genuinely stale one
-    // barely exists here, because parsePaymentDestination already rejects an
-    // expired bolt11 at paste/scan time (@galoymoney/client's
-    // lightningInvoiceHasExpired). What is left is overwhelmingly skew: an
-    // LNURL detail mints its invoice on the way into this screen, so "already
-    // long dead on arrival" is the signature of a wrong clock, not a wrong
-    // invoice. Signal (1) still covers this user; the backstop would only be
-    // guessing, and guessing wrong costs them the payment.
-    if (firstSeenSeconds - timestamp > lifetimeSeconds + CLOCK_SKEW_GRACE_SECONDS) {
-      return false
-    }
+    // Sole signal when it is available. Both readings come from the device
+    // clock, so this is a true elapsed duration: a handset ten minutes fast
+    // reads zero on a fresh invoice, exactly like a correct one. It fires
+    // only once the invoice's whole lifetime has passed under the user.
+    //
+    // The absolute comparison below is deliberately NOT consulted as a
+    // second opinion here. It cannot tell a stale invoice from a fast clock,
+    // so letting it override this would block good payments on skewed
+    // handsets — and blocking a send that would have worked is the one
+    // failure this guard must not introduce.
+    return nowSeconds - firstSeenSeconds > lifetimeSeconds
   }
 
+  // Fallback for invoices with no usable issue time, where no elapsed
+  // duration can be computed. Skew moves this one, hence the grace window.
   return nowSeconds > timeExpireDate + CLOCK_SKEW_GRACE_SECONDS
 }
 
@@ -176,8 +212,6 @@ export type HeldInvoiceExpiredArgs = {
   paymentRequest?: string
   /** Current time in epoch SECONDS. */
   nowSeconds: number
-  /** Device-clock reading from when the confirm screen mounted, in SECONDS. */
-  firstSeenSeconds?: number | null
   /** Injected so this decision stays testable without the screen. */
   decode: (
     paymentRequest: string,
@@ -196,7 +230,6 @@ export type HeldInvoiceExpiredArgs = {
 export const isHeldInvoiceExpired = ({
   paymentRequest,
   nowSeconds,
-  firstSeenSeconds,
   decode,
 }: HeldInvoiceExpiredArgs): boolean => {
   if (!paymentRequest) return false
@@ -204,13 +237,17 @@ export const isHeldInvoiceExpired = ({
   const network = networkForPaymentRequest(paymentRequest)
   if (!network) return false
 
+  // Resolved here rather than passed in: the reading has to be per-invoice to
+  // survive a remount, and every caller would otherwise have to know that.
+  const seenAt = noteInvoiceFirstSight(paymentRequest, nowSeconds)
+
   try {
     const { timeExpireDate, timestamp } = decode(paymentRequest, network)
     return isInvoiceExpired({
       timeExpireDate,
       timestamp,
       nowSeconds,
-      firstSeenSeconds,
+      firstSeenSeconds: seenAt,
     })
   } catch {
     return false

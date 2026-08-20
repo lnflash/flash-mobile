@@ -5,6 +5,7 @@ import { Intraledger } from "../../app/screens/send-bitcoin-screen/send-bitcoin-
 import { ContextForScreen } from "./helper"
 
 import SendBitcoinConfirmationScreen from "@app/screens/send-bitcoin-screen/send-bitcoin-confirmation-screen"
+import { resetInvoiceFirstSight } from "@app/screens/send-bitcoin-screen/invoice-expiry"
 import {
   createAmountLightningPaymentDetails,
   createLnurlPaymentDetails,
@@ -172,6 +173,10 @@ describe("expired held invoice", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.spyOn(Date, "now").mockReturnValue(MOUNTED_MS)
+    // First-sight readings are keyed by invoice in module state so they
+    // survive a screen remount in production. Clear them between cases, or a
+    // fixture reused across tests carries the previous test's clock in.
+    resetInvoiceFirstSight()
   })
 
   afterEach(() => {
