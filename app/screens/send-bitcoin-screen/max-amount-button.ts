@@ -220,13 +220,7 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
     // nothing for the plain IBEX probe to price — mint one at the probe
     // amount and price that instead.
     if (paymentType === "lnurl") {
-      // The receiver's floor, checked before we ask them for an invoice.
-      // Below it the mint throws a bare Error("Invalid amount") that reads as
-      // "couldn't estimate the fee — tap MAX again", and no number of taps
-      // ever will: a $4.42 balance is 221 sats against a 1_000-sat
-      // minSendable. Report the bound instead — the only half of this the
-      // user can act on. (The recipient cap handles the other end: it clamps
-      // the probe, so a probe amount can only ever be too small here.)
+      // Probe-input half of the receiver's floor; see `receiverMinSats`.
       if (recipientMin !== null && recipientMin.wallet > probeAmount) {
         lastFeeError = { kind: "amount-below-min", minSats: recipientMin.sats }
         return null
@@ -265,22 +259,10 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
         recipientCap,
       })
 
-      // The receiver's floor guards the probe INPUT; this guards the number
-      // the chip actually puts in the pad — the other half of the same bound,
-      // and the half the user sees. They are not the same check: the fee is
-      // subtracted between them, so any balance in [min, min + fee + slack)
-      // clears the probe and still lands below the floor. On the BTC wallet
-      // that shows as a chip filling 499 sats under "~2,500 sats reserved for
-      // the network fee" with "the minimum this recipient can receive is
-      // 1,000 sats" painted directly beneath it; on the USD wallet, where no
-      // local check compares like units, it shows as the LNURL mint throwing
-      // Error("Invalid amount") on Next and the screen blaming the fetch —
-      // ENG-554's own symptom, reproduced by the chip meant to end it.
-      //
-      // The cap is applied to the result (max-send-amount.ts), so the floor
-      // must be too. Propose nothing and name the bound: no amount over this
-      // balance is sendable to this receiver, so the tap has no number to
-      // offer — only the reason.
+      // Result half of the same floor; see `receiverMinSats`. Distinct from
+      // the probe-input check because the fee is subtracted between them, so
+      // a balance in [min, min + fee + slack) clears the probe and still
+      // lands below the floor.
       if (
         recipientMin !== null &&
         result.amount > 0 &&
