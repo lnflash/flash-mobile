@@ -634,7 +634,8 @@
     "totalExceed": "الإجمالي أكبر من ميزانيتك التي تبلغ {balance}",
     "maxFeeSelected": "هذا هو الحد الأقصى للرسوم التي ستُقتضى منك لهذه المعاملة. قد تكون أقل من ذلك عند إتمام الدفع.",
     "feeError": "فشل في حساب العمولة",
-    "breezFeeText": "There may be a small fee for routing"
+    "breezFeeText": "There may be a small fee for routing",
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "أسماء المستخدمين في {bankName} أصبحت عناوين في {bankName}",

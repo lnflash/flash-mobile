@@ -3157,6 +3157,10 @@ type RootTranslation = {
 		 * T​h​e​r​e​ ​m​a​y​ ​b​e​ ​a​ ​s​m​a​l​l​ ​f​e​e​ ​f​o​r​ ​r​o​u​t​i​n​g
 		 */
 		breezFeeText: string
+		/**
+		 * T​h​i​s​ ​i​n​v​o​i​c​e​ ​e​x​p​i​r​e​d​ ​b​e​f​o​r​e​ ​t​h​e​ ​p​a​y​m​e​n​t​ ​w​a​s​ ​s​e​n​t​.​ ​G​o​ ​b​a​c​k​ ​a​n​d​ ​c​o​n​f​i​r​m​ ​a​g​a​i​n​ ​t​o​ ​g​e​t​ ​a​ ​f​r​e​s​h​ ​o​n​e​.
+		 */
+		heldInvoiceExpired: string
 	}
 	SendBitcoinDestinationScreen: {
 		/**
@@ -9479,6 +9483,10 @@ export type TranslationFunctions = {
 		 * There may be a small fee for routing
 		 */
 		breezFeeText: () => LocalizedString
+		/**
+		 * This invoice expired before the payment was sent. Go back and confirm again to get a fresh one.
+		 */
+		heldInvoiceExpired: () => LocalizedString
 	}
 	SendBitcoinDestinationScreen: {
 		/**

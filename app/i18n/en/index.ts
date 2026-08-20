@@ -993,7 +993,9 @@ const en: BaseTranslation = {
     maxFeeSelected:
       "This is the maximum fee you will be charged for this transaction.  It may end up being less once the payment has been made.",
     feeError: "Failed to calculate fee",
-    breezFeeText: "There may be a small fee for routing"
+    breezFeeText: "There may be a small fee for routing",
+    heldInvoiceExpired:
+      "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   SendBitcoinDestinationScreen: {
     usernameNowAddress:

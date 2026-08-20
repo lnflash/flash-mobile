@@ -199,6 +199,11 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
 
   return {
     destination: paymentRequest,
+    // Same string as `destination` here, but named for what it is. The
+    // confirm screen checks the invoice's expiry before sending (ENG-555)
+    // and must not have to know which detail type stores the bolt11 where —
+    // an LNURL detail's `destination` is an address, not an invoice.
+    paymentRequest,
     memo,
     convertMoneyAmount,
     setConvertMoneyAmount,
@@ -342,6 +347,11 @@ export const createAmountLightningPaymentDetails = <T extends WalletCurrency>(
 
   return {
     destination: paymentRequest,
+    // Same string as `destination` here, but named for what it is. The
+    // confirm screen checks the invoice's expiry before sending (ENG-555)
+    // and must not have to know which detail type stores the bolt11 where —
+    // an LNURL detail's `destination` is an address, not an invoice.
+    paymentRequest,
     destinationSpecifiedAmount: paymentRequestAmount,
     convertMoneyAmount,
     memo,
@@ -481,6 +491,12 @@ export const createLnurlPaymentDetails = <T extends WalletCurrency>(
     unitOfAccountAmount,
     paymentType: PaymentType.Lnurl,
     destination: lnurl,
+    // The bolt11 minted for this send, once setInvoice has attached one.
+    // Surfaced because it perishes: IBEX caps these at 60s, so the confirm
+    // screen has to be able to tell whether the one it is holding is still
+    // alive (ENG-555). `destination` is the lightning address here, not the
+    // invoice, so it cannot answer that question.
+    paymentRequest,
     settlementAmount,
     memo,
     settlementAmountIsEstimated: sendingWalletDescriptor.currency !== WalletCurrency.Btc,

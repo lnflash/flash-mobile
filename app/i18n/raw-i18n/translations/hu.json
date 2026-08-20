@@ -684,7 +684,8 @@
     "totalExceed": "Az összeg meghaladja az egyenleged, amely {balance: string}",
     "maxFeeSelected": "Ez a maximális díj, amit ezen tranzakcióért felszámíthatunk. Lehet, hogy kevesebb lesz, miután a fizetés megtörtént.",
     "feeError": "Nem sikerült kiszámítani a díjat",
-    "breezFeeText": "Lehet, hogy egy kis díj van a útvonalért"
+    "breezFeeText": "Lehet, hogy egy kis díj van a útvonalért",
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "Mostantól a {bankName: string} felhasználónevek {bankName: string} címek is.",

@@ -684,7 +684,8 @@
     "totalExceed": "Der Gesamtbetrag übersteigt dein Guthaben von {balance}",
     "maxFeeSelected": "Dies ist die maximale Transaktionsgebühr. Die tatsächlich gezahlte Gebühr kann weniger betragen.",
     "feeError": "Gebühr konnte nicht berechnet werden",
-    "breezFeeText": "There may be a small fee for routing"
+    "breezFeeText": "There may be a small fee for routing",
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "{bankName} Benutzernamen sind nun {bankName} Adressen.",

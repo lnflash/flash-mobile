@@ -684,7 +684,8 @@
     "totalExceed": "Το συνολικό ποσό υπερβαίνει το υπόλοιπό σας {balance: string}",
     "maxFeeSelected": "Αυτή είναι τα περισσότερα τέλη που θα χρεωθείτε για αυτή τη συναλλαγή. Μπορεί να είναι λιγότερα όταν πραγματοποιηθεί η πληρωμή.",
     "feeError": "Απέτυχε ο υπολογισμός των τελών",
-    "breezFeeText": "There may be a small fee for routing"
+    "breezFeeText": "There may be a small fee for routing",
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "Τα ονόματα χρηστών {bankName: string} είναι τώρα διευθύνσεις {bankName: string}.",

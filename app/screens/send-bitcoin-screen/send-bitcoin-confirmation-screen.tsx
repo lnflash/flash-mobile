@@ -18,6 +18,16 @@ import { PrimaryBtn } from "@app/components/buttons"
 // hooks
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useSendPayment } from "./use-send-payment"
+import {
+  decodeInvoiceString,
+  Network as NetworkLibGaloy,
+  PaymentType,
+} from "@galoymoney/client"
+import {
+  isHeldInvoiceExpired,
+  noteInvoiceFirstSight,
+  willTransmitHeldInvoice,
+} from "./invoice-expiry"
 import { useActivityIndicator, useBreez } from "@app/hooks"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 
@@ -42,7 +52,11 @@ import { FeeType } from "./use-fee"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // utils
-import { logPaymentAttempt, logPaymentResult } from "@app/utils/analytics"
+import {
+  logPaymentAttempt,
+  logPaymentBlockedExpiredInvoice,
+  logPaymentResult,
+} from "@app/utils/analytics"
 import { getCashWallet } from "@app/graphql/wallets-utils"
 import { useChatContext } from "../chat/chatContext"
 import { addToContactList } from "@app/utils/nostr"
@@ -191,8 +205,81 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     }
   }, [flashUserAddress, npubByUsernameQuery, promptForContactList, contactsEvent])
 
+  // Start the clock on this invoice as soon as the screen shows it, not when
+  // Confirm is tapped. Registering on tap would miss the user who simply sits
+  // here past the 60s lifetime and taps once — their first reading would be
+  // the tap itself, so no time would appear to have elapsed.
+  //
+  // A no-op for a bolt11 the amount screen already registered (the reading is
+  // keyed by the invoice, and the first one wins); it earns its keep for the
+  // freshly minted LNURL invoice, whose first sighting really is here.
+  useEffect(() => {
+    if (paymentDetail.paymentRequest) {
+      noteInvoiceFirstSight(paymentDetail.paymentRequest, Math.floor(Date.now() / 1000))
+    }
+  }, [paymentDetail.paymentRequest])
+
+  // Held invoices perish: IBEX caps Flash receive invoices at 60 seconds, so
+  // an invoice minted when the user left the amount screen can easily be dead
+  // by the time they confirm — or on a retry after a first failure. Sending it
+  // anyway spends a round trip to come back as the generic "Something went
+  // wrong", which sends the user (and support) after the wrong cause.
+  //
+  // Only checked when the held bolt11 is the one that will actually go out:
+  // the Breez BTC wallet re-mints at send time on the LNURL/intraledger paths,
+  // where a stale held invoice is irrelevant. The lifetime is read off the
+  // invoice, which removes any dependence on when we *recorded* minting it,
+  // and the elapsed-since-first-sight reading (registered when the destination is
+  // parsed — payment-destination/lightning.ts) removes any dependence on the device
+  // clock agreeing with the issuer's.
+  const heldInvoiceHasExpired = useCallback(
+    () =>
+      willTransmitHeldInvoice({
+        sendingWalletCurrency: sendingWalletDescriptor?.currency,
+        paymentType: paymentDetail.paymentType,
+      }) &&
+      isHeldInvoiceExpired({
+        paymentRequest: paymentDetail.paymentRequest,
+        nowSeconds: Math.floor(Date.now() / 1000),
+        decode: (paymentRequest, network) =>
+          decodeInvoiceString(paymentRequest, network as NetworkLibGaloy),
+      }),
+    [
+      paymentDetail.paymentRequest,
+      paymentDetail.paymentType,
+      sendingWalletDescriptor?.currency,
+    ],
+  )
+
   const handleSendPayment = useCallback(async () => {
     if (sendPayment && sendingWalletDescriptor?.currency) {
+      if (heldInvoiceHasExpired()) {
+        // A refusal here is the whole point of ENG-555, so it has to be
+        // countable: without an event the failure just changes shape from
+        // "Something went wrong" to "Confirm did nothing", and support is
+        // back where it started. Logged before the copy so the event fires
+        // whichever remedy the user is shown.
+        logPaymentBlockedExpiredInvoice({
+          paymentType: paymentDetail.paymentType,
+          sendingWallet: sendingWalletDescriptor.currency,
+        })
+        // Only an LNURL send can honour "go back and confirm again" — the
+        // details screen re-mints on every pass forward, no edit required
+        // (which matters for a fixed-amount LNURL such as a flashcard reload,
+        // where the amount field is disabled and there is nothing to change).
+        // A payee-minted bolt11 (scanned or pasted) is fixed: going back and
+        // forward returns the *same* invoice. Those users need a new invoice
+        // from whoever they are paying.
+        setPaymentError(
+          paymentDetail.paymentType === PaymentType.Lnurl
+            ? LL.SendBitcoinConfirmationScreen.heldInvoiceExpired()
+            : LL.SendBitcoinDestinationScreen.expiredInvoice(),
+        )
+        ReactNativeHapticFeedback.trigger("notificationError", {
+          ignoreAndroidSystemSettings: true,
+        })
+        return
+      }
       console.log("Starting animation and sending payment")
       try {
         logPaymentAttempt({
@@ -242,7 +329,13 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     } else {
       return null
     }
-  }, [paymentType, sendPayment, sendingWalletDescriptor?.currency])
+  }, [
+    paymentType,
+    sendPayment,
+    sendingWalletDescriptor?.currency,
+    heldInvoiceHasExpired,
+    LL,
+  ])
 
   return (
     <Screen preset="scroll" style={styles.screenStyle} keyboardOffset="navigationHeader">
@@ -268,7 +361,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         <PrimaryBtn
           loading={sendPaymentLoading}
           label={LL.SendBitcoinConfirmationScreen.title()}
-          disabled={!isValidAmount || hasAttemptedSend || !!paymentError}
+          disabled={!isValidAmount || hasAttemptedSend || Boolean(paymentError)}
           onPress={handleSendPayment}
         />
       </View>

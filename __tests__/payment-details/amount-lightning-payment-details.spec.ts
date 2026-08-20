@@ -34,6 +34,11 @@ describe("amount lightning payment details", () => {
     expect(paymentDetails).toEqual(
       expect.objectContaining({
         destination: defaultParams.paymentRequest,
+        // The confirm screen checks this bolt11's expiry before sending
+        // (ENG-555). It is optional on the shared PaymentDetail type, so
+        // dropping it here would silently disable that check rather than
+        // fail to compile.
+        paymentRequest: defaultParams.paymentRequest,
         destinationSpecifiedAmount: defaultParams.paymentRequestAmount,
         settlementAmount: defaultParams.convertMoneyAmount(
           defaultParams.paymentRequestAmount,

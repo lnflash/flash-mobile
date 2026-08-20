@@ -52,6 +52,7 @@ import {
   toUsdMoneyAmount,
 } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
+import { noteInvoiceFirstSight } from "./invoice-expiry"
 import { buildMaxAmountButton } from "./max-amount-button"
 import { maxAmountButtonStrings } from "./max-amount-button-strings"
 import {
@@ -165,6 +166,28 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     defaultWallet,
     zeroDisplayAmount,
   ])
+
+  // Backstop reading of the expiry clock, not the primary one. A scanned or
+  // pasted bolt11 has already been registered at parse time, one instant after
+  // it was certified alive (payment-destination/lightning.ts) — and that is
+  // the reading that matters, since the pause on the destination screen and in
+  // ConfirmDestinationModal happens before this screen ever mounts (ENG-555).
+  //
+  // This call exists for anything holding a bolt11 that did not arrive through
+  // that path, and because the time spent HERE picking a wallet and typing an
+  // amount is itself unbounded, while the confirm screen's own reading starts
+  // at its mount and would see zero elapsed time.
+  //
+  // Registration is idempotent and keyed by the bolt11 itself, so both the
+  // parse-time reading and the confirm screen's identical call resolve to the
+  // earliest sighting. LNURL details have no invoice until Next mints one, so
+  // nothing is recorded for them here — which is correct: their first sighting
+  // really is on the confirm screen.
+  useEffect(() => {
+    if (paymentDetail?.paymentRequest) {
+      noteInvoiceFirstSight(paymentDetail.paymentRequest, Math.floor(Date.now() / 1000))
+    }
+  }, [paymentDetail?.paymentRequest])
 
   // Resolve the receiver's LNURL-pay limits once per destination so the
   // amount can be validated as the user types (BTC wallet pays Flash

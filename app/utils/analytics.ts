@@ -98,6 +98,27 @@ export const logPaymentAttempt = (params: LogPaymentAttemptParams) => {
   })
 }
 
+type LogPaymentBlockedExpiredInvoiceParams = {
+  paymentType: ParsedPaymentType
+  sendingWallet: WalletCurrency
+}
+
+/**
+ * The send flow refused to transmit an invoice it could see had already
+ * expired (ENG-555). Distinct from `payment_attempt`, which is not logged in
+ * that case because nothing is attempted — without this event a blocked send
+ * leaves no client trace and, since no request goes out, no server trace
+ * either, which is exactly the diagnosis dead-end the guard exists to end.
+ */
+export const logPaymentBlockedExpiredInvoice = (
+  params: LogPaymentBlockedExpiredInvoiceParams,
+) => {
+  getAnalytics().logEvent("payment_blocked_expired_invoice", {
+    payment_type: params.paymentType,
+    sending_wallet: params.sendingWallet,
+  })
+}
+
 type LogPaymentResultParams = {
   paymentType: ParsedPaymentType
   sendingWallet: WalletCurrency
