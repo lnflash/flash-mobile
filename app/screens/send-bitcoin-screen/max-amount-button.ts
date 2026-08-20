@@ -77,8 +77,12 @@ export type BuildMaxAmountButtonArgs<M extends MoneyAmountShape, F, P> = {
    * invoice at the probe amount purely to price it; it is never paid, and the
    * send flow mints its own on Next. Resolve null when the destination cannot
    * be priced.
+   *
+   * Required, like fetchBreezFee and getIbexFee: a caller that forgets to wire
+   * it must fail to compile, not silently degrade every USD LNURL send to
+   * "couldn't estimate".
    */
-  probeLnurlFee?: (probeAmount: number) => Promise<number | null>
+  probeLnurlFee: (probeAmount: number) => Promise<number | null>
   /** moneyAmountToDisplayCurrencyString — undefined when no rate is known. */
   formatDisplayAmount: (moneyAmount: M) => string | undefined
   strings: MaxAmountButtonStrings
@@ -147,7 +151,7 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
     // nothing for the plain IBEX probe to price — mint one at the probe
     // amount and price that instead.
     if (paymentType === "lnurl") {
-      return probeLnurlFee ? probeLnurlFee(probeAmount) : null
+      return probeLnurlFee(probeAmount)
     }
     const fee = await getIbexFee(setAmount(withAmount(probeAmount)).getFee)
     return fee?.amount ?? null

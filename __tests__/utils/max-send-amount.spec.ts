@@ -27,8 +27,10 @@ describe("computeMaxSendAmount", () => {
       fetchFee: async () => 320,
     })
 
+    // 100_000 − 320 fee − 1 unit of slack: the estimate was priced against
+    // the probe invoice, not the one the send will actually pay.
     expect(result).toEqual({
-      amount: 99_680,
+      amount: 99_679,
       reason: "fee-reserved",
       feeReserved: 320,
     })
@@ -42,7 +44,7 @@ describe("computeMaxSendAmount", () => {
     })
 
     expect(result).toEqual({
-      amount: 99_740,
+      amount: 99_739,
       reason: "fee-reserved",
       feeReserved: 260,
     })
@@ -127,7 +129,8 @@ describe("computeMaxSendAmount", () => {
     // would fail LUD-06 bounds validation (fee null), MAX would fill 99_900
     // with no fee headroom, and confirm-time 99_900 + 300 > 100_000 would
     // dead-end. Probing at the capped amount keeps the estimate, so MAX
-    // fills 99_700 — confirm-safe (99_700 + 300 = 100_000).
+    // fills 99_699 — confirm-safe with a unit to spare
+    // (99_699 + 300 = 99_999 < 100_000).
     const fetchFee = jest.fn(async (probeAmount: number) =>
       probeAmount > 99_900 ? null : 300,
     )
@@ -141,7 +144,7 @@ describe("computeMaxSendAmount", () => {
 
     expect(fetchFee).toHaveBeenCalledWith(99_900)
     expect(result).toEqual({
-      amount: 99_700,
+      amount: 99_699,
       reason: "fee-reserved",
       feeReserved: 300,
     })
@@ -156,7 +159,7 @@ describe("computeMaxSendAmount", () => {
     })
 
     expect(result).toEqual({
-      amount: 99_500,
+      amount: 99_499,
       reason: "fee-reserved",
       feeReserved: 500,
     })
@@ -272,7 +275,7 @@ describe("computeMaxSendAmount", () => {
         fetchFee: async () => 0,
       })
 
-      expect(result).toEqual({ amount: 109, reason: "fee-reserved", feeReserved: 0 })
+      expect(result).toEqual({ amount: 108, reason: "fee-reserved", feeReserved: 0 })
     })
 
     it("floors a fractional recipient cap before offering it", async () => {
@@ -455,7 +458,7 @@ describe("an unpriceable destination is never guessed at (ENG-554)", () => {
       fetchFee: async () => 2,
     })
 
-    expect(result).toEqual({ amount: 440, reason: "fee-reserved", feeReserved: 2 })
+    expect(result).toEqual({ amount: 439, reason: "fee-reserved", feeReserved: 2 })
   })
 
   it("probes at the amount it is about to offer, not some other one", async () => {
@@ -472,5 +475,70 @@ describe("an unpriceable destination is never guessed at (ENG-554)", () => {
     expect(noteForResult({ amount: 0, reason: "fee-unavailable" })).toEqual({
       kind: "fee-unknown",
     })
+  })
+})
+
+describe("the reserved fee leaves slack for the invoice the send actually pays", () => {
+  // The probe prices a THROWAWAY invoice minted at the probe amount; pressing
+  // Next mints a fresh invoice at balance − fee and re-prices that one.
+  // Amount-monotonicity says a smaller amount is not dearer on the same route
+  // — it says nothing about invoice-to-invoice route variance. So the max
+  // reserves ceil(fee) plus one whole minor unit.
+  it("rounds a fractional fee up rather than leaving sub-unit margin", async () => {
+    const result = await computeMaxSendAmount({
+      paymentType: "lnurl",
+      balance: 442,
+      fetchFee: async () => 0.5,
+    })
+
+    // Not 441 (442 − 0.5 floored): ceil(0.5) = 1, then a unit of slack.
+    expect(result).toEqual({ amount: 440, reason: "fee-reserved", feeReserved: 0.5 })
+  })
+
+  it("survives the confirm-time re-price that used to dead-end the send", async () => {
+    // The regression band, exactly: balance 442¢, probe fee 0.5¢. The old
+    // `floor(balance - fee)` filled 441¢; the final invoice priced at 1.5¢ and
+    // fetchSendingFee blocked with "amount exceeds balance (amount + fee)".
+    const balance = 442
+    const confirmTimeFee = 1.5
+
+    const result = await computeMaxSendAmount({
+      paymentType: "lnurl",
+      balance,
+      fetchFee: async () => 0.5,
+    })
+
+    expect(result.amount + confirmTimeFee).toBeLessThanOrEqual(balance)
+  })
+
+  it("reserves the slack for a zero fee too (the estimate is not a cap)", async () => {
+    const result = await computeMaxSendAmount({
+      paymentType: "lightning",
+      balance: 100_000,
+      fetchFee: async () => 0,
+    })
+
+    expect(result).toEqual({ amount: 99_999, reason: "fee-reserved", feeReserved: 0 })
+  })
+
+  it("still never goes negative when the slack would push below zero", async () => {
+    const result = await computeMaxSendAmount({
+      paymentType: "lightning",
+      balance: 1,
+      fetchFee: async () => 0,
+    })
+
+    expect(result).toEqual({ amount: 0, reason: "fee-reserved", feeReserved: 0 })
+  })
+
+  it("leaves the fee-free intraledger arm at the full balance", async () => {
+    // No probe, no invoice, no re-price — nothing to leave slack for.
+    const result = await computeMaxSendAmount({
+      paymentType: "intraledger",
+      balance: 100_000,
+      fetchFee: jest.fn(),
+    })
+
+    expect(result).toEqual({ amount: 100_000, reason: "intraledger-full-balance" })
   })
 })

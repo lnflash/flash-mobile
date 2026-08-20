@@ -188,10 +188,19 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
     displayAmount: convertMoneyAmount(newPrimaryAmount, DisplayCurrency),
   })
 
-  // MAX chip: solid ("active") from the moment the tap fills the amount until
+  // MAX chip: solid ("active") from the moment the tap FILLS the amount until
   // the user edits it; the currency toggle keeps the same underlying amount so
   // it does not clear the state.
-  const [appliedMax, setAppliedMax] = useState<{ note?: string } | null>(null)
+  //
+  // `applied` is deliberately separate from `note`: a tap can end with a note
+  // and no fill (an unpriceable destination explains itself without proposing
+  // an amount). That must leave the chip outlined and unselected — a solid,
+  // VoiceOver-"selected" MAX over an unchanged $0 pad claims a max was applied
+  // when none was.
+  const [appliedMax, setAppliedMax] = useState<{
+    note?: string
+    applied: boolean
+  } | null>(null)
   const [isComputingMax, setIsComputingMax] = useState(false)
   const maxComputeInFlight = useRef(false)
   // The fee fetch behind compute() can take seconds. Every user edit
@@ -276,10 +285,12 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
                 return
               }
               // Explained-but-empty: nothing to fill, but the user still
-              // needs to know why the chip did nothing.
+              // needs to know why the chip did nothing. `applied: false` keeps
+              // the chip outlined — no max was applied, so it must not claim
+              // one (visually or to VoiceOver).
               if (!result.amount) {
                 if (editGeneration.current === generationAtTap) {
-                  setAppliedMax({ note: result.note })
+                  setAppliedMax({ note: result.note, applied: false })
                 }
                 return
               }
@@ -322,7 +333,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
                   amount: fillAmount,
                 })
               }
-              setAppliedMax({ note: result.note })
+              setAppliedMax({ note: result.note, applied: true })
             })
             .catch(() => {
               // The computation is expected to resolve with a fallback; a
@@ -342,7 +353,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
     } else if (isComputingMax) {
       maxChipState = "computing"
     } else {
-      maxChipState = appliedMax ? "active" : "available"
+      maxChipState = appliedMax?.applied ? "active" : "available"
     }
   }
 

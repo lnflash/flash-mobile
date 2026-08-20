@@ -5734,7 +5734,7 @@ type RootTranslation = {
 		 */
 		maxNoteRecipientCap: RequiredParams<'max'>
 		/**
-		 * C​o​u​l​d​n​'​t​ ​e​s​t​i​m​a​t​e​ ​t​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​f​o​r​ ​t​h​i​s​ ​d​e​s​t​i​n​a​t​i​o​n​ ​—​ ​e​n​t​e​r​ ​a​n​ ​a​m​o​u​n​t​ ​t​o​ ​c​o​n​t​i​n​u​e
+		 * C​o​u​l​d​n​'​t​ ​e​s​t​i​m​a​t​e​ ​t​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​r​i​g​h​t​ ​n​o​w​ ​—​ ​t​a​p​ ​M​A​X​ ​a​g​a​i​n​ ​o​r​ ​e​n​t​e​r​ ​a​n​ ​a​m​o​u​n​t
 		 */
 		maxNoteFeeUnknown: string
 	}
@@ -11972,7 +11972,7 @@ export type TranslationFunctions = {
 		 */
 		maxNoteRecipientCap: (arg: { max: string }) => LocalizedString
 		/**
-		 * Couldn't estimate the network fee for this destination — enter an amount to continue
+		 * Couldn't estimate the network fee right now — tap MAX again or enter an amount
 		 */
 		maxNoteFeeUnknown: () => LocalizedString
 	}

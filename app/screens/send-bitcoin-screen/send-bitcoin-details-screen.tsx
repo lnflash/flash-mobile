@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback, useRef } from "react"
 import { View, Alert } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -53,8 +53,9 @@ import {
 } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { buildMaxAmountButton } from "./max-amount-button"
+import { priceLnurlSend } from "./lnurl-fee-probe"
 import { MaxAmountButton } from "@app/components/amount-input-screen"
-import { requestInvoice, utils } from "lnurl-pay"
+import { requestInvoice, requestInvoiceWithServiceParams, utils } from "lnurl-pay"
 import { fetchBreezFee, fetchLnurlPayRequest } from "@app/utils/breez-sdk"
 import { LnurlLimits, lnurlLimitsFromPayRequest } from "@app/utils/breez-sdk/fee-errors"
 import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
@@ -63,11 +64,6 @@ import type { LnurlPayRequestDetails } from "@breeztech/breez-sdk-spark-react-na
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 
 const network = "mainnet" // data?.globals?.network
-
-// The MAX chip's LNURL price check hits the receiver's LNURL service; keep it
-// well under the chip's own 10s fee budget so a slow receiver degrades to
-// "couldn't estimate" instead of holding the tap.
-const LNURL_PROBE_TIMEOUT_MS = 7000
 
 const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
@@ -95,6 +91,11 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const [asyncErrorMessage, setAsyncErrorMessage] = useState("")
   const [selectedFeeType, setSelectedFeeType] = useState<"fast" | "medium" | "slow">()
   const [isProcessing, setIsProcessing] = useState(false)
+  // Prices already obtained from the LNURL probe, for the life of this screen.
+  // Keyed by destination + sending wallet + probe amount: the probe amount is
+  // in the sending wallet's minor units, so 1000 sats and 1000 cents to the
+  // same address are different questions with different answers.
+  const lnurlProbeCache = useRef(new Map<string, number>())
   const { data } = useSendBitcoinDetailsScreenQuery({
     fetchPolicy: "cache-first",
     returnPartialData: true,
@@ -415,7 +416,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           navigation.navigate("sendBitcoinConfirmation", {
             paymentDetail: paymentDetailForConfirmation,
             flashUserAddress,
-            selectedFeeType,
+            selectedFeeType: selectedFeeType,
             invoiceAmount,
           })
         }
@@ -448,35 +449,31 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     // paid — pressing Next mints a fresh one for the actual send, which
     // matters because these expire in 60s.
     const probeLnurlFee = async (probeAmount: number): Promise<number | null> => {
-      if (pd.paymentType !== "lnurl" || !pd.setAmount) return null
-      try {
-        const probeDetail = pd.setAmount({
-          ...(isBtcWallet ? btcBalanceMoneyAmount : usdBalanceMoneyAmount),
-          amount: probeAmount,
-        })
-        const btcProbeAmount = probeDetail.convertMoneyAmount(
-          probeDetail.unitOfAccountAmount,
-          "BTC",
-        )
-        const { invoice } = await withTimeout(
-          requestInvoice({
-            lnUrlOrAddress: pd.destination,
-            tokens: utils.toSats(btcProbeAmount.amount),
-          }),
-          LNURL_PROBE_TIMEOUT_MS,
-        )
-        if (probeDetail.paymentType !== "lnurl") return null
-        const pricedDetail = probeDetail.setInvoice({
-          paymentRequest: invoice,
-          paymentRequestAmount: btcProbeAmount,
-        })
-        const fee = await getIbexFee(pricedDetail.getFee)
-        return fee?.amount ?? null
-      } catch {
-        // Unpriceable — the computation declines to propose an amount rather
-        // than guessing one the send would refuse.
-        return null
-      }
+      // Each completed probe mints a REAL invoice at the receiver. Without
+      // memoization, tap MAX → edit → tap MAX again leaves two orphaned
+      // invoices; against a Flash-address or flashcard receiver each is a real
+      // record, and against rate-limited services (BTCPay, LNbits) repeated
+      // taps trip the limit and the destination becomes unpriceable for the
+      // rest of the session. Cache successes only: a transient failure must
+      // not brand a destination unpriceable — the note invites another tap.
+      const cacheKey = `${pd.destination}:${walletCurrency}:${probeAmount}`
+      const cached = lnurlProbeCache.current.get(cacheKey)
+      if (cached !== undefined) return cached
+
+      const fee = await priceLnurlSend({
+        detail: pd,
+        probeAmount,
+        balanceMoneyAmount: isBtcWallet ? btcBalanceMoneyAmount : usdBalanceMoneyAmount,
+        // The params-taking variant: pd.lnurlParams is already resolved, so
+        // this is one round-trip to the receiver's callback rather than two
+        // (re-resolving the pay service first) inside the probe's budget.
+        requestInvoice: ({ params, sats }) =>
+          requestInvoiceWithServiceParams({ params, tokens: utils.toSats(sats) }),
+        getIbexFee,
+      })
+
+      if (fee !== null) lnurlProbeCache.current.set(cacheKey, fee)
+      return fee
     }
 
     return buildMaxAmountButton({
@@ -577,8 +574,9 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
       </Screen>
     )
+  } else {
+    return null
   }
-  return null
 }
 export default SendBitcoinDetailsScreen
 

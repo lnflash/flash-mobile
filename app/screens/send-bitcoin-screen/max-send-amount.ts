@@ -143,7 +143,10 @@ export type ComputeMaxSendAmountArgs = {
   fetchFee: (probeAmount: number) => Promise<number | null>
   /** Receiver's LNURL maxSendable converted to wallet minor units, if known. */
   recipientCap?: number | null
-  /** Fee estimates slower than this fall back to the full balance. */
+  /**
+   * Fee estimates slower than this are treated as unavailable — no amount is
+   * proposed.
+   */
   timeoutMs?: number
 }
 
@@ -164,7 +167,7 @@ const feeOrNull = async (
     ])
     return typeof fee === "number" && Number.isFinite(fee) && fee >= 0 ? fee : null
   } catch {
-    // A failed estimate must never block the tap — fall back to full balance.
+    // A failed estimate yields no proposal; the caller explains why.
     return null
   } finally {
     clearTimeout(timer)
@@ -232,8 +235,22 @@ export const computeMaxSendAmount = async ({
       // explains why instead of filling the pad with something doomed.
       result = { amount: 0, reason: "fee-unavailable" }
     } else {
+      // Reserve the fee ROUNDED UP plus one whole minor unit of slack.
+      //
+      // The estimate is not a cap. It was priced against a different invoice
+      // than the one the send will pay: this probe mints a throwaway invoice
+      // at the probe amount, and pressing Next mints a fresh one at
+      // balance − fee and re-prices THAT (send-bitcoin-details-screen.tsx,
+      // goToNextScreen). Amount-monotonicity says a smaller amount does not
+      // cost more on the same route; it says nothing about invoice-to-invoice
+      // route variance. Without slack the failure band is narrow but real —
+      // balance 442¢, probe fee 0.5¢ → MAX fills 441¢, the final invoice
+      // prices at 1.5¢, and fetchSendingFee blocks with "amount exceeds
+      // balance (amount + fee)". MAX filling an amount the very next screen
+      // refuses is exactly the bug this code exists to kill, so it gives up
+      // one minor unit to stay on the safe side of it.
       result = {
-        amount: Math.max(Math.floor(spendableBalance - fee), 0),
+        amount: Math.max(spendableBalance - Math.ceil(fee) - 1, 0),
         reason: "fee-reserved",
         feeReserved: fee,
       }

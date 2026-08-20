@@ -47,6 +47,9 @@ const makeArgs = (overrides: Partial<TestArgs> = {}): TestArgs => ({
     getFee: { probeAmount: amount.amount },
   })),
   getIbexFee: jest.fn(async () => ({ amount: 0 })),
+  // Required, like fetchBreezFee and getIbexFee — a caller that forgets it
+  // must not compile. Defaults to unpriceable; LNURL cases override it.
+  probeLnurlFee: jest.fn(async () => null),
   formatDisplayAmount: (moneyAmount: TestMoneyAmount) =>
     `$${(moneyAmount.amount / 100).toFixed(2)}`,
   strings,
@@ -169,7 +172,8 @@ describe("buildMaxAmountButton", () => {
         selectedFeeType: undefined,
         knownPayRequest: undefined,
       })
-      expect(result?.amount).toEqual({ ...btcBalance, amount: 99_750 })
+      // 100_000 − 250 fee − 1 unit of slack for the confirm-time re-price.
+      expect(result?.amount).toEqual({ ...btcBalance, amount: 99_749 })
     })
 
     it("prefers the flash user address over the raw destination", async () => {
@@ -262,7 +266,7 @@ describe("buildMaxAmountButton", () => {
       const result = await button?.compute()
 
       expect(fetchBreezFee).toHaveBeenCalled()
-      expect(result?.amount).toEqual({ ...btcBalance, amount: 99_700 })
+      expect(result?.amount).toEqual({ ...btcBalance, amount: 99_699 })
       expect(result?.note).toBe("fee note: $3.00")
     })
 
@@ -298,7 +302,7 @@ describe("buildMaxAmountButton", () => {
       // The probe detail is the balance with the probe amount swapped in.
       expect(setAmount).toHaveBeenCalledWith({ ...usdBalance, amount: 10_000 })
       expect(getIbexFee).toHaveBeenCalledWith({ probeAmount: 10_000 })
-      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_970 })
+      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_969 })
       expect(result?.note).toBe("fee note: $0.30")
     })
 
@@ -376,7 +380,9 @@ describe("buildMaxAmountButton", () => {
 
       const result = await button?.compute()
 
-      expect(result?.amount).toEqual(usdBalance)
+      // Still a unit below the balance: a zero estimate is not a promise that
+      // the invoice the send mints will also be free.
+      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_999 })
       expect(result?.note).toBeUndefined()
     })
 
@@ -390,7 +396,7 @@ describe("buildMaxAmountButton", () => {
 
       const result = await button?.compute()
 
-      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_875 })
+      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_874 })
       expect(result?.note).toBeUndefined()
     })
 
@@ -429,7 +435,7 @@ describe("LNURL destinations are priced, not guessed (ENG-554)", () => {
     // The invoice-less IBEX probe must not be consulted for LNURL — it is
     // the path that silently returned nothing and started all this.
     expect(getIbexFee).not.toHaveBeenCalled()
-    expect(result?.amount).toEqual({ ...usdBalance, amount: 10_000 - 37 })
+    expect(result?.amount).toEqual({ ...usdBalance, amount: 10_000 - 37 - 1 })
     expect(result?.note).toEqual("fee note: $0.37")
   })
 
@@ -437,15 +443,6 @@ describe("LNURL destinations are priced, not guessed (ENG-554)", () => {
     const button = buildMaxAmountButton(
       makeArgs({ paymentType: "lnurl", probeLnurlFee: jest.fn(async () => null) }),
     )
-
-    const result = await button?.compute()
-
-    expect(result?.amount).toBeUndefined()
-    expect(result?.note).toEqual("fee unknown note")
-  })
-
-  it("declines when no LNURL probe is wired at all", async () => {
-    const button = buildMaxAmountButton(makeArgs({ paymentType: "lnurl" }))
 
     const result = await button?.compute()
 
@@ -463,6 +460,6 @@ describe("LNURL destinations are priced, not guessed (ENG-554)", () => {
     const result = await button?.compute()
 
     expect(probeLnurlFee).not.toHaveBeenCalled()
-    expect(result?.amount).toEqual({ ...usdBalance, amount: 10_000 - 12 })
+    expect(result?.amount).toEqual({ ...usdBalance, amount: 10_000 - 12 - 1 })
   })
 })
