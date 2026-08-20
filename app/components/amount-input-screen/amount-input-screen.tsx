@@ -23,8 +23,12 @@ import {
 } from "./number-pad-reducer"
 
 export type MaxAmountButtonResult = {
-  /** The computed max, in the sending wallet's currency. */
-  amount: MoneyAmount<WalletOrDisplayCurrency>
+  /**
+   * The computed max, in the sending wallet's currency. Absent when the
+   * computation declined to propose one — an unpriceable destination, say —
+   * in which case `note` carries the reason and the pad is left alone.
+   */
+  amount?: MoneyAmount<WalletOrDisplayCurrency>
   /** Info-row note explaining the computation (fee reserved, no fee, cap). */
   note?: string
 }
@@ -184,10 +188,19 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
     displayAmount: convertMoneyAmount(newPrimaryAmount, DisplayCurrency),
   })
 
-  // MAX chip: solid ("active") from the moment the tap fills the amount until
+  // MAX chip: solid ("active") from the moment the tap FILLS the amount until
   // the user edits it; the currency toggle keeps the same underlying amount so
   // it does not clear the state.
-  const [appliedMax, setAppliedMax] = useState<{ note?: string } | null>(null)
+  //
+  // `applied` is deliberately separate from `note`: a tap can end with a note
+  // and no fill (an unpriceable destination explains itself without proposing
+  // an amount). That must leave the chip outlined and unselected — a solid,
+  // VoiceOver-"selected" MAX over an unchanged $0 pad claims a max was applied
+  // when none was.
+  const [appliedMax, setAppliedMax] = useState<{
+    note?: string
+    applied: boolean
+  } | null>(null)
   const [isComputingMax, setIsComputingMax] = useState(false)
   const maxComputeInFlight = useRef(false)
   // The fee fetch behind compute() can take seconds. Every user edit
@@ -271,12 +284,23 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
               if (!result) {
                 return
               }
+              // Explained-but-empty: nothing to fill, but the user still
+              // needs to know why the chip did nothing. `applied: false` keeps
+              // the chip outlined — no max was applied, so it must not claim
+              // one (visually or to VoiceOver).
+              if (!result.amount) {
+                if (editGeneration.current === generationAtTap) {
+                  setAppliedMax({ note: result.note, applied: false })
+                }
+                return
+              }
+              const resultAmount = result.amount
               // The user typed, cleared, or toggled currency while the fee
               // fetch was in flight — their edit wins; drop the stale max.
               if (editGeneration.current !== generationAtTap) {
                 return
               }
-              const converted = convertMoneyAmount(result.amount, currencyRef.current)
+              const converted = convertMoneyAmount(resultAmount, currencyRef.current)
               // The pad may hold a DIFFERENT currency than the wallet (e.g.
               // JMD display over a USD wallet). The send path converts the
               // pad amount BACK to wallet units and rounds, so a display
@@ -287,9 +311,9 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
               let fillAmount = Math.floor(converted.amount)
               const roundTripsAboveMax = (amount: number) =>
                 Math.round(
-                  convertMoneyAmount({ ...converted, amount }, result.amount.currency)
+                  convertMoneyAmount({ ...converted, amount }, resultAmount.currency)
                     .amount,
-                ) > result.amount.amount
+                ) > resultAmount.amount
               while (fillAmount > 0 && roundTripsAboveMax(fillAmount)) {
                 fillAmount -= 1
               }
@@ -301,15 +325,15 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
               // toggle does) and shows the true max, which needs no display
               // round-trip — the computation already floors it to whole
               // wallet minor units.
-              if (fillAmount === 0 && result.amount.amount > 0) {
-                setNumberPadAmount(result.amount)
+              if (fillAmount === 0 && resultAmount.amount > 0) {
+                setNumberPadAmount(resultAmount)
               } else {
                 setNumberPadAmount({
                   ...converted,
                   amount: fillAmount,
                 })
               }
-              setAppliedMax({ note: result.note })
+              setAppliedMax({ note: result.note, applied: true })
             })
             .catch(() => {
               // The computation is expected to resolve with a fallback; a
@@ -329,7 +353,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
     } else if (isComputingMax) {
       maxChipState = "computing"
     } else {
-      maxChipState = appliedMax ? "active" : "available"
+      maxChipState = appliedMax?.applied ? "active" : "available"
     }
   }
 

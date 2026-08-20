@@ -25,6 +25,9 @@ const strings = {
   intraledger: () => "intraledger note",
   feeReserved: (fee: string) => `fee note: ${fee}`,
   recipientCap: (max: string) => `cap note: ${max}`,
+  feeUnknown: () => "fee unknown note",
+  recipientMin: (minSats: number) => `min note: ${minSats} sats`,
+  feeTooLarge: () => "fee too large note",
 }
 
 type TestArgs = BuildMaxAmountButtonArgs<TestMoneyAmount, TestGetFee, TestPayRequest>
@@ -40,12 +43,16 @@ const makeArgs = (overrides: Partial<TestArgs> = {}): TestArgs => ({
   knownPayRequest: undefined,
   receiverMaxSats: null,
   lnurlParamsMaxSats: null,
+  receiverMinSats: null,
   convertSatsToWallet: (sats: number) => sats,
   fetchBreezFee: jest.fn(async () => ({ fee: 0, err: null })),
   setAmount: jest.fn((amount: TestMoneyAmount) => ({
     getFee: { probeAmount: amount.amount },
   })),
   getIbexFee: jest.fn(async () => ({ amount: 0 })),
+  // Required, like fetchBreezFee and getIbexFee — a caller that forgets it
+  // must not compile. Defaults to unpriceable; LNURL cases override it.
+  probeLnurlFee: jest.fn(async () => null),
   formatDisplayAmount: (moneyAmount: TestMoneyAmount) =>
     `$${(moneyAmount.amount / 100).toFixed(2)}`,
   strings,
@@ -121,9 +128,11 @@ describe("buildMaxAmountButton", () => {
       await expect(button?.compute()).resolves.toBeNull()
     })
 
-    it("resolves null when the fee estimate meets or exceeds the balance", async () => {
-      // { amount: 0, reason: "fee-reserved" } — not "zero-balance" — must
-      // also leave the pad untouched (BTC wallet with 20 sats, fee 26).
+    it("fills nothing but says why when the fee meets or exceeds the balance", async () => {
+      // { amount: 0, reason: "fee-exceeds-balance" } — not "zero-balance" —
+      // must leave the pad untouched (BTC wallet with 20 sats, fee 26). It
+      // used to resolve null, which the amount screen drops on the floor: the
+      // chip spun and then said nothing at all.
       const button = buildMaxAmountButton(
         makeArgs({
           walletCurrency: "BTC",
@@ -132,15 +141,39 @@ describe("buildMaxAmountButton", () => {
         }),
       )
 
-      await expect(button?.compute()).resolves.toBeNull()
+      const result = await button?.compute()
+
+      expect(result?.amount).toBeUndefined()
+      expect(result?.note).toBe("fee too large note")
     })
 
-    it("resolves null when the receiver advertises a zero maxSendable cap", async () => {
+    it("says why when the receiver advertises a zero maxSendable cap", async () => {
+      // The third silent-zero route: a receiver that can accept nothing. The
+      // cap note is the honest explanation — it names the limit that bound.
       const button = buildMaxAmountButton(
         makeArgs({
           walletCurrency: "BTC",
           balanceMoneyAmount: btcBalance,
           receiverMaxSats: 0,
+        }),
+      )
+
+      const result = await button?.compute()
+
+      expect(result?.amount).toBeUndefined()
+      expect(result?.note).toBe("cap note: $0.00")
+    })
+
+    it("resolves null when a zero max has nothing worth saying", async () => {
+      // No display rate, so the cap note cannot be formatted. A result of
+      // `{ note: undefined }` would set chip state for no visible reason;
+      // null keeps the tap inert instead.
+      const button = buildMaxAmountButton(
+        makeArgs({
+          walletCurrency: "BTC",
+          balanceMoneyAmount: btcBalance,
+          receiverMaxSats: 0,
+          formatDisplayAmount: () => undefined,
         }),
       )
 
@@ -168,7 +201,8 @@ describe("buildMaxAmountButton", () => {
         selectedFeeType: undefined,
         knownPayRequest: undefined,
       })
-      expect(result?.amount).toEqual({ ...btcBalance, amount: 99_750 })
+      // 100_000 − 250 fee − 1 unit of slack for the confirm-time re-price.
+      expect(result?.amount).toEqual({ ...btcBalance, amount: 99_749 })
     })
 
     it("prefers the flash user address over the raw destination", async () => {
@@ -241,9 +275,10 @@ describe("buildMaxAmountButton", () => {
 
       const result = await button?.compute()
 
-      // fee-unavailable falls back to the full balance — no fee subtracted.
-      expect(result?.amount).toEqual(btcBalance)
-      expect(result?.note).toBeUndefined()
+      // Nothing could price it, so nothing is proposed — the note is the
+      // whole result, and the pad is left for the user to fill.
+      expect(result?.amount).toBeUndefined()
+      expect(result?.note).toEqual("fee unknown note")
     })
 
     it("routes BTC-wallet intraledger through the fee path (not the no-fee arm)", async () => {
@@ -260,7 +295,7 @@ describe("buildMaxAmountButton", () => {
       const result = await button?.compute()
 
       expect(fetchBreezFee).toHaveBeenCalled()
-      expect(result?.amount).toEqual({ ...btcBalance, amount: 99_700 })
+      expect(result?.amount).toEqual({ ...btcBalance, amount: 99_699 })
       expect(result?.note).toBe("fee note: $3.00")
     })
 
@@ -296,18 +331,19 @@ describe("buildMaxAmountButton", () => {
       // The probe detail is the balance with the probe amount swapped in.
       expect(setAmount).toHaveBeenCalledWith({ ...usdBalance, amount: 10_000 })
       expect(getIbexFee).toHaveBeenCalledWith({ probeAmount: 10_000 })
-      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_970 })
+      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_969 })
       expect(result?.note).toBe("fee note: $0.30")
     })
 
     it("probes at the cap-clamped amount when the LNURL cap binds", async () => {
-      const setAmount = jest.fn((amount: TestMoneyAmount) => ({
-        getFee: { probeAmount: amount.amount },
-      }))
+      // Probing at the raw balance trips the receiver's LUD-06 bounds check
+      // whenever the cap binds, losing the estimate exactly where the fee
+      // headroom matters most.
+      const probeLnurlFee = jest.fn(async () => 10)
       const button = buildMaxAmountButton(
         makeArgs({
           paymentType: "lnurl",
-          setAmount,
+          probeLnurlFee,
           // 2 wallet minor units per sat.
           convertSatsToWallet: (sats: number) => sats * 2,
           lnurlParamsMaxSats: 2_000,
@@ -316,18 +352,20 @@ describe("buildMaxAmountButton", () => {
 
       await button?.compute()
 
-      expect(setAmount).toHaveBeenCalledWith({ ...usdBalance, amount: 4_000 })
+      expect(probeLnurlFee).toHaveBeenCalledWith(4_000)
     })
 
-    it("falls back to the full balance when no IBEX estimate is available", async () => {
+    it("proposes nothing when no IBEX estimate is available", async () => {
+      // Offering the full balance here is what made the send fail with a
+      // generic error (ENG-554); a guessed reserve would be no more honest.
       const button = buildMaxAmountButton(
         makeArgs({ getIbexFee: jest.fn(async () => undefined) }),
       )
 
       const result = await button?.compute()
 
-      expect(result?.amount).toEqual(usdBalance)
-      expect(result?.note).toBeUndefined()
+      expect(result?.amount).toBeUndefined()
+      expect(result?.note).toEqual("fee unknown note")
     })
 
     it("never calls the Breez probe for a USD wallet", async () => {
@@ -371,7 +409,9 @@ describe("buildMaxAmountButton", () => {
 
       const result = await button?.compute()
 
-      expect(result?.amount).toEqual(usdBalance)
+      // Still a unit below the balance: a zero estimate is not a promise that
+      // the invoice the send mints will also be free.
+      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_999 })
       expect(result?.note).toBeUndefined()
     })
 
@@ -385,7 +425,7 @@ describe("buildMaxAmountButton", () => {
 
       const result = await button?.compute()
 
-      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_875 })
+      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_874 })
       expect(result?.note).toBeUndefined()
     })
 
@@ -395,7 +435,7 @@ describe("buildMaxAmountButton", () => {
           paymentType: "lnurl",
           convertSatsToWallet: (sats: number) => sats * 2,
           lnurlParamsMaxSats: 2_000,
-          getIbexFee: jest.fn(async () => ({ amount: 0 })),
+          probeLnurlFee: jest.fn(async () => 0),
         }),
       )
 
@@ -404,5 +444,317 @@ describe("buildMaxAmountButton", () => {
       expect(result?.amount).toEqual({ ...usdBalance, amount: 4_000 })
       expect(result?.note).toBe("cap note: $40.00")
     })
+  })
+})
+
+describe("LNURL destinations are priced, not guessed (ENG-554)", () => {
+  // An LNURL payment detail has no getFee until an invoice is attached, so
+  // the plain IBEX probe cannot price it at all. probeLnurlFee mints a
+  // throwaway invoice purely to price the send.
+  it("prices an LNURL destination through probeLnurlFee", async () => {
+    const probeLnurlFee = jest.fn(async () => 37)
+    const getIbexFee = jest.fn(async () => ({ amount: 999 }))
+    const button = buildMaxAmountButton(
+      makeArgs({ paymentType: "lnurl", probeLnurlFee, getIbexFee }),
+    )
+
+    const result = await button?.compute()
+
+    expect(probeLnurlFee).toHaveBeenCalledWith(usdBalance.amount)
+    // The invoice-less IBEX probe must not be consulted for LNURL — it is
+    // the path that silently returned nothing and started all this.
+    expect(getIbexFee).not.toHaveBeenCalled()
+    expect(result?.amount).toEqual({ ...usdBalance, amount: 10_000 - 37 - 1 })
+    expect(result?.note).toEqual("fee note: $0.37")
+  })
+
+  it("declines to propose an amount when the LNURL probe cannot price it", async () => {
+    const button = buildMaxAmountButton(
+      makeArgs({ paymentType: "lnurl", probeLnurlFee: jest.fn(async () => null) }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toEqual("fee unknown note")
+  })
+
+  it("reports the receiver's minimum instead of asking for an impossible invoice", async () => {
+    // lnurl-pay bounds-checks client-side and throws a bare
+    // Error("Invalid amount") below minSendable, which the probe collapses
+    // into the same null as a network blip. The user is then told to tap MAX
+    // again — and no number of taps can make a $4.42 balance (221 sats at
+    // 2¢/sat) reach a 1_000-sat minimum. The bound is the only actionable
+    // half of the message, and on this path nothing else can surface it.
+    const probeLnurlFee = jest.fn(async () => null)
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        balanceMoneyAmount: { ...usdBalance, amount: 442 },
+        receiverMinSats: 1_000,
+        convertSatsToWallet: (sats: number) => sats * 2,
+        probeLnurlFee,
+      }),
+    )
+
+    const result = await button?.compute()
+
+    // Nothing was asked of the receiver — the answer was knowable locally.
+    expect(probeLnurlFee).not.toHaveBeenCalled()
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("min note: 1000 sats")
+  })
+
+  it("still probes when the balance clears the receiver's minimum", async () => {
+    const probeLnurlFee = jest.fn(async () => 37)
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        receiverMinSats: 1_000,
+        convertSatsToWallet: (sats: number) => sats * 2,
+        probeLnurlFee,
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(probeLnurlFee).toHaveBeenCalledWith(10_000)
+    expect(result?.amount).toEqual({ ...usdBalance, amount: 10_000 - 37 - 1 })
+  })
+
+  it("does not borrow the minimum's message for an ordinary probe failure", async () => {
+    // A destination with a known minimum the balance clears, whose probe then
+    // fails for an unrelated reason, must not be reported as below-minimum.
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        receiverMinSats: 1_000,
+        convertSatsToWallet: (sats: number) => sats * 2,
+        probeLnurlFee: jest.fn(async () => null),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.note).toBe("fee unknown note")
+  })
+
+  it("probes as before when the receiver advertises no minimum", async () => {
+    const probeLnurlFee = jest.fn(async () => 37)
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        balanceMoneyAmount: { ...usdBalance, amount: 442 },
+        receiverMinSats: null,
+        probeLnurlFee,
+      }),
+    )
+
+    await button?.compute()
+
+    expect(probeLnurlFee).toHaveBeenCalledWith(442)
+  })
+
+  // The probe guard checks the amount going IN; the fee is subtracted after
+  // it. Every balance in [min, min + fee + slack) therefore clears the probe
+  // and still leaves the chip proposing less than the receiver will accept —
+  // the cap is applied to the result, so the floor has to be too.
+  it("proposes nothing when the fee drops a cleared balance back under the minimum", async () => {
+    // BTC wallet, 3_000 sats, LNURL receiver with minSendable 1_000, Breez
+    // channel-open fee 2_500. The probe at 3_000 clears the floor, the
+    // computation returns 3_000 − 2_500 − 1 = 499, and the chip used to fill
+    // 499 sats under "~2,500 sats reserved for the network fee" — with "the
+    // minimum this recipient can receive is 1,000 sats" painted directly
+    // beneath it by DetailAmountNote.
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        paymentType: "lnurl",
+        balanceMoneyAmount: { ...btcBalance, amount: 3_000 },
+        receiverMinSats: 1_000,
+        fetchBreezFee: jest.fn(async () => ({ fee: 2_500, err: null })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("min note: 1000 sats")
+  })
+
+  it("proposes nothing on the USD path when the fee drops the amount under the minimum", async () => {
+    // USD wallet at 2¢/sat holding 2_010¢ (1_005 sats) against the same
+    // 1_000-sat floor: the probe guard passes (2_000 ≤ 2_010), the 20¢ fee
+    // leaves 1_989¢ = 994 sats, and nothing downstream catches it — the USD
+    // path has no working local min check, so Next asks the LNURL mint for an
+    // impossible invoice, lnurl-pay throws Error("Invalid amount"), and the
+    // screen blames the fetch. ENG-554's own symptom, out of the chip written
+    // to prevent it.
+    const probeLnurlFee = jest.fn(async () => 20)
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        balanceMoneyAmount: { ...usdBalance, amount: 2_010 },
+        receiverMinSats: 1_000,
+        convertSatsToWallet: (sats: number) => sats * 2,
+        probeLnurlFee,
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(probeLnurlFee).toHaveBeenCalledWith(2_010)
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("min note: 1000 sats")
+  })
+
+  it("still proposes an amount that lands exactly on the receiver's minimum", async () => {
+    // The floor is inclusive: 2_020¢ (1_010 sats) less a 19¢ fee and 1¢ of
+    // slack is 2_000¢ — exactly 1_000 sats. Rejecting this would make the
+    // guard eat sends the receiver would have accepted.
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        balanceMoneyAmount: { ...usdBalance, amount: 2_020 },
+        receiverMinSats: 1_000,
+        convertSatsToWallet: (sats: number) => sats * 2,
+        probeLnurlFee: jest.fn(async () => 19),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toEqual({ ...usdBalance, amount: 2_000 })
+    expect(result?.note).toBe("fee note: $0.19")
+  })
+
+  it("names the minimum, not the cap, when the cap clamps beneath the floor", async () => {
+    // A receiver advertising maxSendable 900 against minSendable 1_000 — a
+    // window nothing fits through. The cap wins the clamp and the result is
+    // 900 sats, which the floor then rejects: "recipient can receive at most
+    // 900" would be true and useless, because 900 is also unsendable.
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        paymentType: "lnurl",
+        balanceMoneyAmount: btcBalance,
+        receiverMinSats: 1_000,
+        receiverMaxSats: 900,
+        fetchBreezFee: jest.fn(async () => ({ fee: 250, err: null })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("min note: 1000 sats")
+  })
+
+  it("leaves non-LNURL USD sends on the ordinary IBEX probe", async () => {
+    const probeLnurlFee = jest.fn(async () => 37)
+    const getIbexFee = jest.fn(async () => ({ amount: 12 }))
+    const button = buildMaxAmountButton(
+      makeArgs({ paymentType: "lightning", probeLnurlFee, getIbexFee }),
+    )
+
+    const result = await button?.compute()
+
+    expect(probeLnurlFee).not.toHaveBeenCalled()
+    expect(result?.amount).toEqual({ ...usdBalance, amount: 10_000 - 12 - 1 })
+  })
+})
+
+describe("a fee bigger than the balance is explained, not swallowed", () => {
+  // The reported case: a BTC wallet holding 2_000 sats against a Breez
+  // channel-open fee of 2_500. MAX has nothing to offer — but the tap used to
+  // resolve null, which amount-input-screen drops without a word, so the chip
+  // spun, went back to outlined, and the user was told nothing.
+  it("returns the fee-too-large note for 2_000 sats against a 2_500-sat fee", async () => {
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        balanceMoneyAmount: { ...btcBalance, amount: 2_000 },
+        fetchBreezFee: jest.fn(async () => ({ fee: 2_500, err: null })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result).not.toBeNull()
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("fee too large note")
+  })
+
+  it("distinguishes an unaffordable fee from an unpriceable destination", async () => {
+    // Same empty pad, different next move: top up versus tap MAX again.
+    const unpriceable = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        balanceMoneyAmount: { ...btcBalance, amount: 2_000 },
+        fetchBreezFee: jest.fn(async () => ({ fee: null, err: "probe failed" })),
+      }),
+    )
+
+    expect((await unpriceable?.compute())?.note).toBe("fee unknown note")
+  })
+
+  it("explains the boundary the confirm-time slack pushed to zero", async () => {
+    // balance 2_500 with a 2_499-sat fee: one sat on the old arithmetic, zero
+    // once a unit of slack is reserved. Zero with no note would be a silent
+    // regression against the previous release, so it must speak.
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        balanceMoneyAmount: { ...btcBalance, amount: 2_500 },
+        fetchBreezFee: jest.fn(async () => ({ fee: 2_499, err: null })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("fee too large note")
+  })
+})
+
+describe("a typed Breez bounds error keeps its message", () => {
+  // Before this PR a null fee still filled the balance, so committing it
+  // surfaced the receiver's minimum. Now that nothing is proposed, the MAX
+  // note is the only place that reason can still reach the user — telling
+  // them "couldn't estimate the fee" when the real answer is "this recipient
+  // won't accept less than 1,000 sats" sends them nowhere.
+  it("reports the receiver's minimum rather than a generic estimate failure", async () => {
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        balanceMoneyAmount: btcBalance,
+        fetchBreezFee: jest.fn(async () => ({
+          fee: null,
+          err: { kind: "amount-below-min", minSats: 1_000 },
+        })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("min note: 1000 sats")
+  })
+
+  it("falls back to the generic note for an untyped failure", async () => {
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        balanceMoneyAmount: btcBalance,
+        fetchBreezFee: jest.fn(async () => ({
+          fee: null,
+          err: { kind: "network", message: "offline" },
+        })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.note).toBe("fee unknown note")
   })
 })

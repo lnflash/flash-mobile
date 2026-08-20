@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback, useRef } from "react"
 import { View, Alert } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -53,6 +53,12 @@ import {
 } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { buildMaxAmountButton } from "./max-amount-button"
+import { maxAmountButtonStrings } from "./max-amount-button-strings"
+import {
+  makeLnurlFeeProbe,
+  makeLnurlProbeCache,
+  mintProbeInvoice,
+} from "./lnurl-fee-probe"
 import { MaxAmountButton } from "@app/components/amount-input-screen"
 import { requestInvoice, utils } from "lnurl-pay"
 import { fetchBreezFee, fetchLnurlPayRequest } from "@app/utils/breez-sdk"
@@ -90,6 +96,11 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const [asyncErrorMessage, setAsyncErrorMessage] = useState("")
   const [selectedFeeType, setSelectedFeeType] = useState<"fast" | "medium" | "slow">()
   const [isProcessing, setIsProcessing] = useState(false)
+  // What the LNURL probe already asked the receiver, for the life of this
+  // screen: completed prices and outstanding invoice mints. Every probe that
+  // reaches the receiver mints a real invoice, so the memo is what keeps
+  // repeated MAX taps from orphaning invoices and tripping rate limits.
+  const lnurlProbeCache = useRef(makeLnurlProbeCache())
   const { data } = useSendBitcoinDetailsScreenQuery({
     fetchPolicy: "cache-first",
     returnPartialData: true,
@@ -410,7 +421,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           navigation.navigate("sendBitcoinConfirmation", {
             paymentDetail: paymentDetailForConfirmation,
             flashUserAddress,
-            selectedFeeType: selectedFeeType,
+            selectedFeeType,
             invoiceAmount,
           })
         }
@@ -436,6 +447,25 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     const walletCurrency = pd.sendingWalletDescriptor.currency
     const isBtcWallet = walletCurrency === WalletCurrency.Btc
 
+    // Price an LNURL destination by minting a throwaway invoice for the probe
+    // amount. An LNURL payment detail has no `getFee` until an invoice is
+    // attached, so without this the IBEX probe returns nothing and MAX has no
+    // basis for a number (ENG-554). This invoice is only ever priced, never
+    // paid — pressing Next mints a fresh one for the actual send, which
+    // matters because these expire in 60s.
+    const probeLnurlFee = makeLnurlFeeProbe({
+      detail: pd,
+      destination: pd.destination,
+      walletCurrency,
+      balanceMoneyAmount: isBtcWallet ? btcBalanceMoneyAmount : usdBalanceMoneyAmount,
+      // Uses the params-taking lnurl-pay call (pd.lnurlParams is already
+      // resolved, so one round-trip to the receiver's callback rather than
+      // two) and enforces whole sats before the Satoshis cast.
+      requestInvoice: mintProbeInvoice,
+      getIbexFee,
+      cache: lnurlProbeCache.current,
+    })
+
     return buildMaxAmountButton({
       canSetAmount: pd.canSetAmount,
       paymentType: pd.paymentType,
@@ -447,18 +477,24 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
       knownPayRequest: receiverPayRequest ?? undefined,
       receiverMaxSats: receiverLimits?.maxSats ?? null,
       lnurlParamsMaxSats: pd.paymentType === "lnurl" ? pd.lnurlParams?.max ?? null : null,
+      // receiverLimits is resolved for the BTC wallet only; the USD LNURL
+      // path reads the same bound straight off the detail's resolved params
+      // (mirroring lnurlParamsMaxSats above), and that is the path where the
+      // minimum has no other way to reach the user.
+      receiverMinSats:
+        receiverLimits?.minSats ??
+        (pd.paymentType === "lnurl" ? pd.lnurlParams?.min ?? null : null),
       convertSatsToWallet: (sats) =>
         pd.convertMoneyAmount(toBtcMoneyAmount(sats), walletCurrency).amount,
       fetchBreezFee,
       setAmount: pd.setAmount,
       getIbexFee,
+      probeLnurlFee,
       formatDisplayAmount: (moneyAmount) =>
         moneyAmountToDisplayCurrencyString({ moneyAmount }),
-      strings: {
-        intraledger: () => LL.AmountInputScreen.maxNoteIntraledger(),
-        feeReserved: (fee) => LL.AmountInputScreen.maxNoteFeeReserved({ fee }),
-        recipientCap: (max) => LL.AmountInputScreen.maxNoteRecipientCap({ max }),
-      },
+      // Bound to the same formatSats the fee-error banner uses, so the
+      // receiver's minimum reads identically wherever it surfaces.
+      strings: maxAmountButtonStrings(LL, formatSats),
     })
   }
   const maxAmountButton = buildMaxButtonForPaymentDetail()
@@ -532,9 +568,8 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
       </Screen>
     )
-  } else {
-    return null
   }
+  return null
 }
 export default SendBitcoinDetailsScreen
 

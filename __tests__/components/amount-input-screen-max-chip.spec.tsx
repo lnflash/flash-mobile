@@ -280,6 +280,64 @@ describe("AmountInputScreen MAX chip", () => {
     expect(getByTestId("Max Amount Note").props.children).toBe("Test fee note")
   })
 
+  describe("explained-but-empty results (an unpriceable destination)", () => {
+    // compute() can resolve a note with NO amount: the destination could not
+    // be priced, so nothing is proposed and the user is told why. The pad is
+    // untouched, so the chip must stay outlined — a solid chip over an
+    // unchanged $0 pad claims a max was applied when none was, and VoiceOver
+    // reads it as selected.
+    const noteOnly = () => ({
+      compute: jest.fn(async () => ({ note: "Couldn't estimate the network fee" })),
+    })
+
+    it("shows the note without going solid", async () => {
+      const { getByTestId } = renderScreen(noteOnly())
+
+      fireEvent.press(getByTestId("Max Amount Chip"))
+
+      await waitFor(() => {
+        expect(getByTestId("Max Amount Note").props.children).toBe(
+          "Couldn't estimate the network fee",
+        )
+      })
+      expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+        expect.objectContaining({ selected: false, disabled: false, busy: false }),
+      )
+    })
+
+    it("leaves the amount alone", async () => {
+      const { getByTestId, getByText, queryByText } = renderScreen(noteOnly())
+
+      fireEvent.press(getByTestId("Max Amount Chip"))
+
+      await waitFor(() => {
+        expect(getByTestId("Max Amount Note")).toBeTruthy()
+      })
+      // Still the empty pad it started on: 1,000 sats would have rendered
+      // "$20.00" (as the fill test above asserts) — nothing was filled in.
+      expect(getByText("$0")).toBeTruthy()
+      expect(queryByText("$20.00")).toBeNull()
+    })
+
+    it("clears the note once the user starts entering an amount", async () => {
+      const { getByTestId, queryByTestId } = renderScreen(noteOnly())
+
+      fireEvent.press(getByTestId("Max Amount Chip"))
+      await waitFor(() => {
+        expect(getByTestId("Max Amount Note")).toBeTruthy()
+      })
+
+      fireEvent.press(getByTestId("key-1"))
+
+      await waitFor(() => {
+        expect(queryByTestId("Max Amount Note")).toBeNull()
+      })
+      expect(getByTestId("Max Amount Chip").props.accessibilityState).toEqual(
+        expect.objectContaining({ selected: false }),
+      )
+    })
+  })
+
   it("returns to outlined and hides the note the moment the user edits the amount", async () => {
     const { getByTestId, queryByTestId } = renderScreen({
       compute: jest.fn(async () => ({ amount: maxSats, note: "Test fee note" })),

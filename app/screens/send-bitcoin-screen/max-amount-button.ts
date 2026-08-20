@@ -12,6 +12,7 @@ import {
   computeMaxSendAmount,
   effectiveMaxPaymentType,
   maxChipSupportsPaymentType,
+  MaxSendNote,
   MaxSendPaymentType,
   MaxSendWalletCurrency,
   noteForResult,
@@ -29,6 +30,12 @@ export type MaxAmountButtonStrings = {
   feeReserved: (fee: string) => string
   /** maxNoteRecipientCap: "Recipient can receive at most {max}." */
   recipientCap: (max: string) => string
+  /** maxNoteFeeUnknown — shown when the destination cannot be priced. */
+  feeUnknown: () => string
+  /** minReceiveAmountError — the receiver's own lower bound, in sats. */
+  recipientMin: (minSats: number) => string
+  /** maxNoteFeeTooLarge — shown when the fee swallows the whole balance. */
+  feeTooLarge: () => string
 }
 
 export type BuildMaxAmountButtonArgs<M extends MoneyAmountShape, F, P> = {
@@ -51,6 +58,21 @@ export type BuildMaxAmountButtonArgs<M extends MoneyAmountShape, F, P> = {
   receiverMaxSats: number | null
   /** The destination's lnurlParams.max in sats (USD-wallet LNURL path). */
   lnurlParamsMaxSats: number | null
+  /**
+   * Receiver's LNURL minSendable in sats, or null when unknown.
+   *
+   * The Breez probe reports this itself (as an `amount-below-min` error), but
+   * the LNURL mint does not: lnurl-pay throws a bare Error("Invalid amount")
+   * client-side for a sat count outside [min, max], which collapses into the
+   * same null as a network blip and produces "couldn't estimate the fee — tap
+   * MAX again" — a retry loop that cannot succeed. Checking here is what turns
+   * that into the receiver's actual minimum.
+   *
+   * It bounds two things, on every wallet: the amount probed (above) and the
+   * amount proposed (in `compute`). The fee is subtracted between them, so
+   * clearing the first says nothing about clearing the second.
+   */
+  receiverMinSats: number | null
   /** Convert sats into the sending wallet's minor units. */
   convertSatsToWallet: (sats: number) => number
   /** Breez fee probe (BTC wallet). */
@@ -65,6 +87,22 @@ export type BuildMaxAmountButtonArgs<M extends MoneyAmountShape, F, P> = {
   setAmount?: (amount: M) => { getFee?: F }
   /** IBEX fee probe (USD wallet) over a probe detail's getFee. */
   getIbexFee: (getFee: F | undefined) => Promise<MoneyAmountShape | undefined>
+  /**
+   * Price an LNURL send of `probeAmount` (wallet minor units).
+   *
+   * An LNURL detail only gains a `getFee` once an invoice is attached
+   * (payment-details/lightning.ts sets canGetFee false until then), so the
+   * plain IBEX probe cannot price this destination at all — that gap is what
+   * made MAX offer an unsendable amount. Implementations mint a throwaway
+   * invoice at the probe amount purely to price it; it is never paid, and the
+   * send flow mints its own on Next. Resolve null when the destination cannot
+   * be priced.
+   *
+   * Required, like fetchBreezFee and getIbexFee: a caller that forgets to wire
+   * it must fail to compile, not silently degrade every USD LNURL send to
+   * "couldn't estimate".
+   */
+  probeLnurlFee: (probeAmount: number) => Promise<number | null>
   /** moneyAmountToDisplayCurrencyString — undefined when no rate is known. */
   formatDisplayAmount: (moneyAmount: M) => string | undefined
   strings: MaxAmountButtonStrings
@@ -73,7 +111,7 @@ export type BuildMaxAmountButtonArgs<M extends MoneyAmountShape, F, P> = {
 /** Structurally matches the amount screen's MaxAmountButton prop. */
 export type BuiltMaxAmountButton<M extends MoneyAmountShape> = {
   disabled: boolean
-  compute: () => Promise<{ amount: M; note?: string } | null>
+  compute: () => Promise<{ amount?: M; note?: string } | null>
 }
 
 export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
@@ -87,10 +125,12 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
   knownPayRequest,
   receiverMaxSats,
   lnurlParamsMaxSats,
+  receiverMinSats,
   convertSatsToWallet,
   fetchBreezFee,
   setAmount,
   getIbexFee,
+  probeLnurlFee,
   formatDisplayAmount,
   strings,
 }: BuildMaxAmountButtonArgs<M, F, P>): BuiltMaxAmountButton<M> | undefined => {
@@ -113,6 +153,53 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
 
   const withAmount = (amount: number): M => ({ ...balanceMoneyAmount, amount })
 
+  // The receiver's LUD-06 floor, carried in both units: sats for the message
+  // (the receiver advertises it in sats, and that is what their error will say)
+  // and wallet minor units for every comparison against an amount. Resolved
+  // once so the probe guard and the result guard can never drift apart —
+  // they are the two halves of one bound.
+  const recipientMin =
+    receiverMinSats !== null && Number.isFinite(receiverMinSats)
+      ? { sats: receiverMinSats, wallet: convertSatsToWallet(receiverMinSats) }
+      : null
+
+  // The Breez probe returns a TYPED reason (below the receiver's minimum,
+  // above their maximum, offline...). Collapsing it into the same null as a
+  // network blip costs the user the only actionable half of the message: on
+  // main a null fee still filled the balance, so committing it surfaced
+  // "The minimum this recipient can receive is N sats". Now that no amount is
+  // proposed, this is the only place that reason can still reach them.
+  let lastFeeError: { kind: string; minSats?: number } | null = null
+
+  // Note kind → localized string. Undefined only where there is genuinely
+  // nothing worth saying: an unremarkable result, or a money note with no
+  // display rate to format it against.
+  const noteFor = (decision: MaxSendNote): string | undefined => {
+    switch (decision.kind) {
+      case "intraledger":
+        return strings.intraledger()
+      case "fee-reserved": {
+        const feeString = formatDisplayAmount(withAmount(decision.feeReserved))
+        return feeString ? strings.feeReserved(feeString) : undefined
+      }
+      case "fee-too-large":
+        return strings.feeTooLarge()
+      case "fee-unknown": {
+        // Prefer the receiver's own lower bound over a generic "couldn't
+        // estimate": it is the half of the message the user can act on.
+        const minSats =
+          lastFeeError?.kind === "amount-below-min" ? lastFeeError.minSats : undefined
+        return minSats ? strings.recipientMin(minSats) : strings.feeUnknown()
+      }
+      case "recipient-cap": {
+        const capString = formatDisplayAmount(withAmount(decision.cap))
+        return capString ? strings.recipientCap(capString) : undefined
+      }
+      default:
+        return undefined
+    }
+  }
+
   // probeAmount is the balance clamped to the recipient cap (computed by
   // computeMaxSendAmount). Probing at the raw balance would trip the LUD-06
   // bounds validation inside fetchBreezFee whenever the cap binds, losing
@@ -126,12 +213,23 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
         selectedFeeType,
         knownPayRequest,
       })
+      lastFeeError = (err as { kind: string; minSats?: number } | null) ?? null
       return err ? null : fee
     }
-    // USD wallet: probe through the same fee probes the send flow already
-    // uses. LNURL destinations have no probe before an invoice exists —
-    // getIbexFee resolves undefined and the computation falls back to the
-    // full balance.
+    // USD wallet. An LNURL destination has no invoice yet, so there is
+    // nothing for the plain IBEX probe to price — mint one at the probe
+    // amount and price that instead.
+    if (paymentType === "lnurl") {
+      // Probe-input half of the receiver's floor; see `receiverMinSats`.
+      if (recipientMin !== null && recipientMin.wallet > probeAmount) {
+        lastFeeError = { kind: "amount-below-min", minSats: recipientMin.sats }
+        return null
+      }
+      // Clear a minimum recorded by an earlier tap: a later generic failure
+      // must not borrow its message.
+      lastFeeError = null
+      return probeLnurlFee(probeAmount)
+    }
     const fee = await getIbexFee(setAmount(withAmount(probeAmount)).getFee)
     return fee?.amount ?? null
   }
@@ -161,26 +259,34 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
         recipientCap,
       })
 
-      // Nothing spendable: leave the pad untouched rather than filling an
-      // empty amount under a solid MAX chip. A zero max arrives on several
-      // routes, not just "zero-balance" — a fee estimate that meets or
-      // exceeds the balance yields { amount: 0, reason: "fee-reserved" },
-      // and a receiver advertising maxSendable 0 yields a zero cap — so
-      // gate on the amount itself.
-      if (result.amount <= 0) {
-        return null
+      // Result half of the same floor; see `receiverMinSats`. Distinct from
+      // the probe-input check because the fee is subtracted between them, so
+      // a balance in [min, min + fee + slack) clears the probe and still
+      // lands below the floor.
+      if (
+        recipientMin !== null &&
+        result.amount > 0 &&
+        result.amount < recipientMin.wallet
+      ) {
+        return { note: strings.recipientMin(recipientMin.sats) }
       }
 
-      const noteDecision = noteForResult(result)
-      let note: string | undefined
-      if (noteDecision.kind === "intraledger") {
-        note = strings.intraledger()
-      } else if (noteDecision.kind === "fee-reserved") {
-        const feeString = formatDisplayAmount(withAmount(noteDecision.feeReserved))
-        note = feeString ? strings.feeReserved(feeString) : undefined
-      } else if (noteDecision.kind === "recipient-cap") {
-        const capString = formatDisplayAmount(withAmount(noteDecision.cap))
-        note = capString ? strings.recipientCap(capString) : undefined
+      const note = noteFor(noteForResult(result))
+
+      // Nothing spendable: leave the pad untouched rather than filling an
+      // empty amount under a solid MAX chip. A zero max arrives on several
+      // routes, not just "zero-balance" — a fee that swallows the balance
+      // yields { amount: 0, reason: "fee-exceeds-balance" }, an unpriceable
+      // destination yields "fee-unavailable", and a receiver advertising
+      // maxSendable 0 yields a zero cap — so gate on the amount itself.
+      //
+      // Each of those the user can act on (top up, retry, enter an amount by
+      // hand) explains itself: a tap that proposes nothing and says nothing
+      // is indistinguishable from a broken chip. Only a wordless zero — the
+      // zero-balance route, which cannot be tapped because the chip is
+      // disabled for it — falls through to null.
+      if (result.amount <= 0) {
+        return note ? { note } : null
       }
 
       return {
