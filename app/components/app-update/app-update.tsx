@@ -82,13 +82,29 @@ const openSupportEmail = (subject: string, body: string) =>
 export const GATED_BUNDLE_ID = "com.lnflash"
 
 // Resolves true when the store page opened, false when the link could not be
-// handled (an Android device with no Play Store — see the TODO above). Callers
-// decide how to surface the failure: the soft banner can afford a toast, the
-// blocking gate cannot (toastShow is dropped when a modal is already up —
-// documented FIXME in utils/toast) and shows the message inside the modal.
+// handled. Callers decide how to surface the failure: the soft banner can afford
+// a toast, the blocking gate cannot (toastShow is dropped when a modal is
+// already up — documented FIXME in utils/toast) and shows the message inside the
+// modal.
+//
+// Android tries the `market://` scheme first. Only an installed store app claims
+// it (Play Store, and AppGallery for the listings it carries), whereas
+// PLAY_STORE_LINK is an https URL that any browser handles — so going straight
+// to the web link means the store-less device the failure text was written for
+// never reaches the catch, and a hard-blocked user lands on a page they cannot
+// install from with no hint that Contact Support is the way out. The https link
+// stays as the fallback for devices that have a browser but no store app.
 const openInStore = async (): Promise<boolean> => {
   try {
-    // TODO: differentiate between PlayStore and Huawei AppGallery
+    if (!isIos) {
+      try {
+        await Linking.openURL(`market://details?id=${DeviceInfo.getBundleId()}`)
+        return true
+      } catch (err) {
+        // Not fatal on its own — a de-Googled device may still have a browser.
+        console.warn({ err }, "no store app handled market://, trying the web link")
+      }
+    }
     await Linking.openURL(storeLink())
     return true
   } catch (err) {
@@ -171,7 +187,15 @@ export const AppUpdate: React.FC = () => {
   const linkUpgrade = () =>
     openInStore().then((opened) => {
       if (!opened) {
-        toastShow({ message: (translations) => translations.errors.generic() })
+        // Nothing is covering the screen here, so a toast is reachable — but it
+        // has to be the banner's wording, not the gate's: `couldNotOpenStore`
+        // sends the user to a Contact Support button that only exists inside the
+        // blocking modal. `currentTranslation` is what makes the toast render in
+        // the user's locale (utils/toast falls back to English without it).
+        toastShow({
+          message: (translations) => translations.AppUpdate.couldNotOpenStoreBanner(),
+          currentTranslation: LL,
+        })
       }
     })
 
@@ -237,7 +261,11 @@ export const AppUpdateModal = ({
 }: {
   linkUpgrade: () => void
   isVisible: boolean
-  contactSupport?: (subject: string, body: string) => void
+  // Required, not optional: this is one of only two escapes from a modal with no
+  // dismiss, no backdrop press and a swallowed back button. An omitted handler
+  // would compile fine and ship a dead button under text that tells the user to
+  // tap it.
+  contactSupport: (subject: string, body: string) => void
   openFailed?: boolean
   contactFailed?: boolean
 }) => {
@@ -285,7 +313,7 @@ export const AppUpdateModal = ({
         )}
         <GaloySecondaryButton
           buttonStyle={styles.button}
-          onPress={() => contactSupport?.(LL.AppUpdate.versionNotSupported(), message)}
+          onPress={() => contactSupport(LL.AppUpdate.versionNotSupported(), message)}
           title={LL.AppUpdate.contactSupport()}
         />
         {contactFailed && (

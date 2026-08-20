@@ -1222,6 +1222,7 @@
     "tapHereUpdate": "Tik hier om op te gradeer",
     "contactSupport": "Kontak Ondersteuning",
     "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenStoreBanner": "Couldn't open the app store. You can keep using Flash and update later.",
     "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "AccountUpgrade": {

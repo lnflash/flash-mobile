@@ -110,20 +110,30 @@ describe("app.tsx wiring", () => {
   // app.tsx cannot be rendered under jest — it pulls Firebase, reanimated and a
   // pile of native modules in at import time — so the mount is asserted against
   // the source. Deleting the boundary from the root tree has to fail something.
+  //
+  // Every pattern below is deliberately formatting-tolerant: prettier is free to
+  // wrap an opening tag across lines, and either tag may grow a prop. A spec
+  // that failed on a reformat while the mount was perfectly intact would be a
+  // false alarm, and false alarms get tests deleted.
   const source = fs.readFileSync(path.join(__dirname, "../../app/app.tsx"), "utf8")
 
+  // `<AppUpdateBoundary>`, `<AppUpdateBoundary\n  key={…}>`, `<AppUpdateBoundary `…
+  const OPENING_TAG = /<AppUpdateBoundary[\s>]/
+  const CLOSING_TAG = /<\/AppUpdateBoundary\s*>/
+  const ROOT_STACK = /<RootStack[\s/>]/
+
   it("mounts the boundary in the root component tree", () => {
-    expect(source).toContain(
-      'import { AppUpdateBoundary } from "./components/app-update/app-update-boundary"',
+    expect(source).toMatch(
+      /import\s*\{[^}]*\bAppUpdateBoundary\b[^}]*\}\s*from\s*["'][^"']*app-update-boundary["']/,
     )
-    expect(source).toContain("<AppUpdateBoundary>")
-    expect(source).toContain("</AppUpdateBoundary>")
+    expect(source).toMatch(OPENING_TAG)
+    expect(source).toMatch(CLOSING_TAG)
   })
 
   it("wraps the navigator, so deep-link cold starts cannot bypass the gate", () => {
-    const opened = source.indexOf("<AppUpdateBoundary>")
-    const rootStack = source.indexOf("<RootStack />")
-    const closed = source.indexOf("</AppUpdateBoundary>")
+    const opened = source.search(OPENING_TAG)
+    const rootStack = source.search(ROOT_STACK)
+    const closed = source.search(CLOSING_TAG)
 
     expect(opened).toBeGreaterThan(-1)
     expect(rootStack).toBeGreaterThan(opened)

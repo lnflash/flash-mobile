@@ -90,6 +90,12 @@ export const UpdateAvailable = () => (
   </MockedProvider>
 )
 
+// Stands in for the mail composer the gate opens in the app. Contact Support is
+// one of only two escapes from this modal, so a story that renders it has to
+// wire it — a dead button here would misrepresent the thing being reviewed.
+const logContactSupport = (subject: string, body: string) =>
+  console.log("contactSupport", { subject, body })
+
 export const UpdateRequiredModal = () => {
   const [visible, setVisible] = React.useState(false)
 
@@ -100,14 +106,20 @@ export const UpdateRequiredModal = () => {
       <View>
         <GaloyPrimaryButton onPress={openModal} title="Open Modal" />
 
-        <AppUpdateModal isVisible={visible} linkUpgrade={closeModal} />
+        <AppUpdateModal
+          isVisible={visible}
+          linkUpgrade={closeModal}
+          contactSupport={logContactSupport}
+        />
       </View>
     </MockedProvider>
   )
 }
 
-// The store link can fail to open (an Android device with no Play Store). A
-// toast is swallowed behind a modal, so the gate says so inline instead.
+// The store link can fail to open (an Android device with neither a store app
+// nor a browser that takes the https listing). A toast is swallowed behind a
+// modal, so the gate says so inline instead — and the text it renders points at
+// Contact Support, which is why that button is wired here too.
 export const UpdateRequiredModalStoreLinkFailed = () => {
   const [visible, setVisible] = React.useState(false)
 
@@ -118,7 +130,12 @@ export const UpdateRequiredModalStoreLinkFailed = () => {
       <View>
         <GaloyPrimaryButton onPress={openModal} title="Open Modal" />
 
-        <AppUpdateModal isVisible={visible} linkUpgrade={closeModal} openFailed />
+        <AppUpdateModal
+          isVisible={visible}
+          linkUpgrade={closeModal}
+          contactSupport={logContactSupport}
+          openFailed
+        />
       </View>
     </MockedProvider>
   )

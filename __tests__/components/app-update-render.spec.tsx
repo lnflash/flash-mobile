@@ -35,10 +35,6 @@ jest.mock("@app/i18n/i18n-react", () => ({
   useI18nContext: () => ({ LL: i18nObject("en") }),
 }))
 
-// The gate's second escape hatch. Module-scope so the specs can assert on it —
-// a mock nobody asserts on lets a regression that unwires the button ship green.
-jest.mock("@app/components/contact-modal", () => ({}))
-
 jest.mock("@app/components/version", () => ({
   VersionComponent: () => null,
 }))
@@ -164,6 +160,14 @@ describe("AppUpdate (home banner)", () => {
 
     // Nothing is covering the screen on this path, so a toast is reachable.
     expect(mockToastShow).toHaveBeenCalledTimes(1)
+
+    const [{ message, currentTranslation }] = mockToastShow.mock.calls[0]
+    // utils/toast falls back to i18nObject("en") when currentTranslation is
+    // absent, so leaving it off ships an English toast to every locale.
+    expect(currentTranslation).toBeDefined()
+    // The banner has no Contact Support button, so it must not borrow the
+    // gate's copy, which tells the user to tap one.
+    expect(message(LL)).toBe(LL.AppUpdate.couldNotOpenStoreBanner())
   })
 
   it("hides the banner when the update is required — the gate's modal owns it", () => {

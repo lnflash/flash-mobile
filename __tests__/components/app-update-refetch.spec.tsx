@@ -22,10 +22,6 @@ jest.mock("@app/i18n/i18n-react", () => ({
   useI18nContext: () => ({ LL: i18nObject("en") }),
 }))
 
-jest.mock("@app/components/contact-modal", () => ({
-  openWhatsAppAction: jest.fn(),
-}))
-
 jest.mock("@app/components/version", () => ({
   VersionComponent: () => null,
 }))

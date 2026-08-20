@@ -5,7 +5,7 @@
 import * as React from "react"
 import { Linking } from "react-native"
 import { createTheme, ThemeProvider } from "@rneui/themed"
-import { render, fireEvent } from "@testing-library/react-native"
+import { render, fireEvent, act } from "@testing-library/react-native"
 
 import { PLAY_STORE_LINK } from "@app/config"
 import { i18nObject } from "../../app/i18n/i18n-util"
@@ -38,14 +38,13 @@ jest.mock("@app/i18n/i18n-react", () => ({
   useI18nContext: () => ({ LL: i18nObject("en") }),
 }))
 
-jest.mock("@app/components/contact-modal", () => ({}))
-
 jest.mock("@app/components/version", () => ({
   VersionComponent: () => null,
 }))
 
+const mockToastShow = jest.fn()
 jest.mock("../../app/utils/toast", () => ({
-  toastShow: jest.fn(),
+  toastShow: (...args: unknown[]) => mockToastShow(...args),
 }))
 
 jest.mock("react-native-modal", () => {
@@ -67,6 +66,7 @@ import {
   AppUpdate,
   AppUpdateGate,
   AppUpdateProvider,
+  GATED_BUNDLE_ID,
 } from "../../app/components/app-update/app-update"
 
 loadLocale("en")
@@ -101,18 +101,71 @@ describe("app update on Android", () => {
     jest.clearAllMocks()
   })
 
-  it("sends the blocking modal's update button to the Play Store", () => {
+  it("sends the blocking modal's update button to the installed store app", async () => {
     mockMobileVersions = versions(95, 96)
     const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined)
 
+    const { getByText, queryByText } = renderWithTheme(<AppUpdateGate />)
+
+    await act(async () => {
+      fireEvent.press(getByText(LL.AppUpdate.tapHereUpdate()))
+    })
+
+    // market:// is claimed only by an installed store app, so it lands the user
+    // where they can actually install the update. The modal cannot be
+    // dismissed: an Android user sent anywhere else has no way out of the gate.
+    expect(openURL).toHaveBeenCalledTimes(1)
+    expect(openURL).toHaveBeenCalledWith(`market://details?id=${GATED_BUNDLE_ID}`)
+    expect(queryByText(LL.AppUpdate.couldNotOpenStore())).toBeNull()
+  })
+
+  it("falls back to the web listing when no store app handles market://", async () => {
+    mockMobileVersions = versions(95, 96)
+    const openURL = jest
+      .spyOn(Linking, "openURL")
+      .mockImplementation(async (url: string) => {
+        if (url.startsWith("market://")) {
+          throw new Error("no activity found to handle intent")
+        }
+      })
+    jest.spyOn(console, "warn").mockImplementation(() => {})
+
+    const { getByText, queryByText } = renderWithTheme(<AppUpdateGate />)
+
+    await act(async () => {
+      fireEvent.press(getByText(LL.AppUpdate.tapHereUpdate()))
+    })
+
+    // A device with a browser but no store app still gets the listing — a web
+    // page is a worse landing spot than the store app, but it is not a failure.
+    expect(openURL.mock.calls.map(String)).toEqual([
+      `market://details?id=${GATED_BUNDLE_ID}`,
+      PLAY_STORE_LINK,
+    ])
+    expect(queryByText(LL.AppUpdate.couldNotOpenStore())).toBeNull()
+  })
+
+  it("surfaces the failure when nothing on the device will take the link", async () => {
+    mockMobileVersions = versions(95, 96)
+    // A de-Googled device with no store app and no browser that claims the
+    // https listing. Going straight to PLAY_STORE_LINK made this path
+    // unreachable — any browser resolves an https URL — so a hard-blocked user
+    // got no hint at all that Contact Support was the way out.
+    jest
+      .spyOn(Linking, "openURL")
+      .mockRejectedValue(new Error("no activity found to handle intent"))
+    jest.spyOn(console, "warn").mockImplementation(() => {})
+    jest.spyOn(console, "error").mockImplementation(() => {})
+
     const { getByText } = renderWithTheme(<AppUpdateGate />)
 
-    fireEvent.press(getByText(LL.AppUpdate.tapHereUpdate()))
+    await act(async () => {
+      fireEvent.press(getByText(LL.AppUpdate.tapHereUpdate()))
+    })
 
-    // The modal cannot be dismissed: an Android user sent to the App Store has
-    // no way out of the gate at all.
-    expect(openURL).toHaveBeenCalledTimes(1)
-    expect(openURL).toHaveBeenCalledWith(PLAY_STORE_LINK)
+    expect(getByText(LL.AppUpdate.couldNotOpenStore())).toBeTruthy()
+    // A toast would be swallowed behind the modal (FIXME in utils/toast).
+    expect(mockToastShow).not.toHaveBeenCalled()
   })
 
   it("tells support the blocked device is on Android", () => {
@@ -132,15 +185,46 @@ describe("app update on Android", () => {
     expect(decodeURIComponent(mailto as string)).toContain("Android")
   })
 
-  it("sends the home banner to the Play Store", () => {
+  it("sends the home banner to the installed store app", async () => {
     mockMobileVersions = versions(1, 95)
     const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined)
 
     const { getByText } = renderWithTheme(<AppUpdate />)
 
-    fireEvent.press(getByText(LL.HomeScreen.updateAvailable()))
+    await act(async () => {
+      fireEvent.press(getByText(LL.HomeScreen.updateAvailable()))
+    })
 
     expect(openURL).toHaveBeenCalledTimes(1)
-    expect(openURL).toHaveBeenCalledWith(PLAY_STORE_LINK)
+    expect(openURL).toHaveBeenCalledWith(`market://details?id=${GATED_BUNDLE_ID}`)
+    expect(mockToastShow).not.toHaveBeenCalled()
+  })
+
+  it("toasts the banner's own wording, in the user's locale, when nothing opens", async () => {
+    mockMobileVersions = versions(1, 95)
+    jest
+      .spyOn(Linking, "openURL")
+      .mockRejectedValue(new Error("no activity found to handle intent"))
+    jest.spyOn(console, "warn").mockImplementation(() => {})
+    jest.spyOn(console, "error").mockImplementation(() => {})
+
+    const { getByText } = renderWithTheme(<AppUpdate />)
+
+    await act(async () => {
+      fireEvent.press(getByText(LL.HomeScreen.updateAvailable()))
+    })
+
+    expect(mockToastShow).toHaveBeenCalledTimes(1)
+    const [{ message, currentTranslation }] = mockToastShow.mock.calls[0]
+
+    // Without currentTranslation, utils/toast falls back to i18nObject("en") —
+    // a Spanish user gets an English toast and analytics records isTranslated
+    // false for every one of them.
+    expect(currentTranslation).toBeDefined()
+    // The gate's couldNotOpenStore points at a Contact Support button that only
+    // exists inside the blocking modal. On the home screen that button is not
+    // there, so the banner needs its own line.
+    expect(message(LL)).toBe(LL.AppUpdate.couldNotOpenStoreBanner())
+    expect(message(LL)).not.toBe(LL.AppUpdate.couldNotOpenStore())
   })
 })
