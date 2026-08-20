@@ -77,3 +77,28 @@ describe("testing isUpdateAvailableOrRequired with android abi", () => {
     expect(result.available).toBe(false)
   })
 })
+
+describe("testing isUpdateAvailableOrRequired with missing or unknown data", () => {
+  it("reports nothing when mobileVersions has not loaded", () => {
+    for (const mobileVersions of [null, undefined]) {
+      const result = isUpdateAvailableOrRequired({
+        buildNumber: 150,
+        mobileVersions,
+        OS,
+      })
+      expect(result.required).toBe(false)
+      expect(result.available).toBe(false)
+    }
+  })
+
+  it("reports nothing for a platform missing from the response", () => {
+    const result = isUpdateAvailableOrRequired({
+      buildNumber: 150,
+      mobileVersions,
+      OS: "windows" as Platform["OS"],
+    })
+    // NaN comparisons are false on purpose — never block on bad data.
+    expect(result.required).toBe(false)
+    expect(result.available).toBe(false)
+  })
+})

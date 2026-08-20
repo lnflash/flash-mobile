@@ -1383,7 +1383,10 @@
     "versionNotSupported": "Esta versión para móviles ya no es compatible",
     "updateMandatory": "La actualización es obligatoria",
     "tapHereUpdate": "Pulse para actualizar ahora",
-    "contactSupport": "Contacte con soporte"
+    "contactSupport": "Contacte con soporte",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenStoreBanner": "Couldn't open the app store. You can keep using Flash and update later.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Los depósitos no reclamados",

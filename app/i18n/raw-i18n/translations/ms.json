@@ -1383,7 +1383,10 @@
     "versionNotSupported": "Telefon pintar ini tidak lagi boleh gunakan aplikasi ini",
     "updateMandatory": "Kemaskini adalah wajib",
     "tapHereUpdate": "Tekan sini untuk kemaskini sekarang",
-    "contactSupport": "Hubungi pasukan sokongan"
+    "contactSupport": "Hubungi pasukan sokongan",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenStoreBanner": "Couldn't open the app store. You can keep using Flash and update later.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Deposit Unclaimed",

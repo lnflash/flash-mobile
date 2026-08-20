@@ -1383,7 +1383,10 @@
     "versionNotSupported": "La version mobile n’est plus supportée",
     "updateMandatory": "La mise à jour est obligatoire",
     "tapHereUpdate": "Appuyez ici pour mettre à jour maintenant",
-    "contactSupport": "Contacter l’Aide"
+    "contactSupport": "Contacter l’Aide",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenStoreBanner": "Couldn't open the app store. You can keep using Flash and update later.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Les dépôts non réclamés",

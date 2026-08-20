@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView } from "react-native"
 import { useTheme } from "@rneui/themed"
 
 // components
+import { AppUpdate } from "@app/components/app-update/app-update"
 import WalletOverview from "@app/components/wallet-overview/wallet-overview"
 import { SetDefaultAccountModal } from "@app/components/set-default-account-modal"
 import { UnVerifiedSeedModal } from "@app/components/unverified-seed-modal"
@@ -147,6 +148,7 @@ export const HomeScreen: React.FC = () => {
           setDefaultAccountModalVisible={setDefaultAccountModalVisible}
         />
         <QuickStart />
+        <AppUpdate />
         <Transactions
           refreshTriggered={refreshTriggered}
           loadingAuthed={loadingAuthed}

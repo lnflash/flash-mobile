@@ -1383,7 +1383,10 @@
     "versionNotSupported": "Tato mobilní verze již není podporována",
     "updateMandatory": "Aktualizace je povinná",
     "tapHereUpdate": "Klepněte zde pro aktualizaci",
-    "contactSupport": "Kontaktovat podporu"
+    "contactSupport": "Kontaktovat podporu",
+    "couldNotOpenStore": "Couldn't open the app store. Tap Contact Support below for help.",
+    "couldNotOpenStoreBanner": "Couldn't open the app store. You can keep using Flash and update later.",
+    "couldNotOpenSupport": "Couldn't open your email app. Please email {email} directly."
   },
   "RefundFlow": {
     "refundListTitle": "Nedokládané vklady",

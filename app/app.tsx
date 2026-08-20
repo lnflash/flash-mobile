@@ -43,6 +43,7 @@ import PolyfillCrypto from "react-native-webview-crypto"
 import { ActivityIndicatorProvider } from "./contexts/ActivityIndicatorContext"
 import { BreezProvider } from "./contexts/BreezContext"
 import { ChatContextProvider } from "./screens/chat/chatContext"
+import { AppUpdateBoundary } from "./components/app-update/app-update-boundary"
 import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { FlashcardProvider } from "./contexts/Flashcard"
@@ -101,17 +102,24 @@ export const App = () => {
                             <NavigationContainerWrapper>
                               <RootSiblingParent>
                                 <NotificationsProvider>
-                                  <AppStateWrapper />
-                                  <PushNotificationComponent />
-                                  <BreezProvider>
-                                    <FlashcardProvider>
-                                      <InviteDeepLinkHandler>
-                                        <RootStack />
-                                      </InviteDeepLinkHandler>
-                                    </FlashcardProvider>
-                                  </BreezProvider>
-                                  <GaloyToast />
-                                  <NetworkErrorComponent />
+                                  {/* One version check for the whole tree — the
+                                      home-screen banner inside RootStack reads
+                                      it too — and the blocking gate, which the
+                                      boundary pins as the last sibling so paint
+                                      order cannot be broken from here. */}
+                                  <AppUpdateBoundary>
+                                    <AppStateWrapper />
+                                    <PushNotificationComponent />
+                                    <BreezProvider>
+                                      <FlashcardProvider>
+                                        <InviteDeepLinkHandler>
+                                          <RootStack />
+                                        </InviteDeepLinkHandler>
+                                      </FlashcardProvider>
+                                    </BreezProvider>
+                                    <GaloyToast />
+                                    <NetworkErrorComponent />
+                                  </AppUpdateBoundary>
                                 </NotificationsProvider>
                               </RootSiblingParent>
                             </NavigationContainerWrapper>

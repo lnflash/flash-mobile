@@ -14,21 +14,33 @@ import TypesafeI18n from "@app/i18n/i18n-react"
 import { detectDefaultLocale } from "@app/utils/locale-detector"
 import { Provider } from "react-redux"
 import { store } from "@app/store/redux"
+import { AppUpdateProvider } from "@app/components/app-update/app-update"
 
 const Stack = createStackNavigator()
 
-export const ContextForScreen: React.FC<PropsWithChildren> = ({ children }) => (
+type Props = PropsWithChildren<{
+  // Lets a spec swap in a different GraphQL payload — e.g. mobileVersions above
+  // this device's build number, which the shared mocks deliberately are not.
+  mocks?: typeof mocks
+}>
+
+export const ContextForScreen: React.FC<Props> = ({
+  children,
+  mocks: mocksOverride = mocks,
+}) => (
   <ThemeProvider theme={theme}>
     <NavigationContainer>
       <Stack.Navigator>
         <Stack.Screen name="Home">
           {() => (
             <Provider store={store}>
-              <MockedProvider mocks={mocks} cache={createCache()}>
+              <MockedProvider mocks={mocksOverride} cache={createCache()}>
                 <StoryScreen>
                   <TypesafeI18n locale={detectDefaultLocale()}>
                     <IsAuthedContextProvider value={true}>
-                      {children}
+                      {/* app.tsx mounts this above the navigator, so every
+                          screen has the shared version check available. */}
+                      <AppUpdateProvider>{children}</AppUpdateProvider>
                     </IsAuthedContextProvider>
                   </TypesafeI18n>
                 </StoryScreen>

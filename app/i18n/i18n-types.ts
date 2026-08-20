@@ -5771,6 +5771,19 @@ type RootTranslation = {
 		 * C​o​n​t​a​c​t​ ​S​u​p​p​o​r​t
 		 */
 		contactSupport: string
+		/**
+		 * C​o​u​l​d​n​'​t​ ​o​p​e​n​ ​t​h​e​ ​a​p​p​ ​s​t​o​r​e​.​ ​T​a​p​ ​C​o​n​t​a​c​t​ ​S​u​p​p​o​r​t​ ​b​e​l​o​w​ ​f​o​r​ ​h​e​l​p​.
+		 */
+		couldNotOpenStore: string
+		/**
+		 * C​o​u​l​d​n​'​t​ ​o​p​e​n​ ​t​h​e​ ​a​p​p​ ​s​t​o​r​e​.​ ​Y​o​u​ ​c​a​n​ ​k​e​e​p​ ​u​s​i​n​g​ ​F​l​a​s​h​ ​a​n​d​ ​u​p​d​a​t​e​ ​l​a​t​e​r​.
+		 */
+		couldNotOpenStoreBanner: string
+		/**
+		 * C​o​u​l​d​n​'​t​ ​o​p​e​n​ ​y​o​u​r​ ​e​m​a​i​l​ ​a​p​p​.​ ​P​l​e​a​s​e​ ​e​m​a​i​l​ ​{​e​m​a​i​l​}​ ​d​i​r​e​c​t​l​y​.
+		 * @param {string} email
+		 */
+		couldNotOpenSupport: RequiredParams<'email'>
 	}
 	RefundFlow: {
 		/**
@@ -12003,6 +12016,18 @@ export type TranslationFunctions = {
 		 * Contact Support
 		 */
 		contactSupport: () => LocalizedString
+		/**
+		 * Couldn't open the app store. Tap Contact Support below for help.
+		 */
+		couldNotOpenStore: () => LocalizedString
+		/**
+		 * Couldn't open the app store. You can keep using Flash and update later.
+		 */
+		couldNotOpenStoreBanner: () => LocalizedString
+		/**
+		 * Couldn't open your email app. Please email {email} directly.
+		 */
+		couldNotOpenSupport: (arg: { email: string }) => LocalizedString
 	}
 	RefundFlow: {
 		/**

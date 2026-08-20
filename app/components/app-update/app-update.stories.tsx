@@ -1,5 +1,5 @@
 import React from "react"
-import { AppUpdate, AppUpdateModal } from "./app-update"
+import { AppUpdate, AppUpdateModal, AppUpdateProvider } from "./app-update"
 import { StoryScreen } from "../../../.storybook/views"
 import { Meta } from "@storybook/react"
 import { MockedProvider } from "@apollo/client/testing"
@@ -82,9 +82,19 @@ export default {
 
 export const UpdateAvailable = () => (
   <MockedProvider mocks={updateAvailable} cache={createCache()}>
-    <AppUpdate />
+    {/* AppUpdate reads the shared version check; in the app the provider is
+        mounted once in app.tsx, above both the gate and the navigator. */}
+    <AppUpdateProvider>
+      <AppUpdate />
+    </AppUpdateProvider>
   </MockedProvider>
 )
+
+// Stands in for the mail composer the gate opens in the app. Contact Support is
+// one of only two escapes from this modal, so a story that renders it has to
+// wire it — a dead button here would misrepresent the thing being reviewed.
+const logContactSupport = (subject: string, body: string) =>
+  console.log("contactSupport", { subject, body })
 
 export const UpdateRequiredModal = () => {
   const [visible, setVisible] = React.useState(false)
@@ -96,7 +106,36 @@ export const UpdateRequiredModal = () => {
       <View>
         <GaloyPrimaryButton onPress={openModal} title="Open Modal" />
 
-        <AppUpdateModal isVisible={visible} linkUpgrade={closeModal} />
+        <AppUpdateModal
+          isVisible={visible}
+          linkUpgrade={closeModal}
+          contactSupport={logContactSupport}
+        />
+      </View>
+    </MockedProvider>
+  )
+}
+
+// The store link can fail to open (an Android device with neither a store app
+// nor a browser that takes the https listing). A toast is swallowed behind a
+// modal, so the gate says so inline instead — and the text it renders points at
+// Contact Support, which is why that button is wired here too.
+export const UpdateRequiredModalStoreLinkFailed = () => {
+  const [visible, setVisible] = React.useState(false)
+
+  const openModal = () => setVisible(true)
+  const closeModal = () => setVisible(false)
+  return (
+    <MockedProvider mocks={updateRequired} cache={createCache()}>
+      <View>
+        <GaloyPrimaryButton onPress={openModal} title="Open Modal" />
+
+        <AppUpdateModal
+          isVisible={visible}
+          linkUpgrade={closeModal}
+          contactSupport={logContactSupport}
+          openFailed
+        />
       </View>
     </MockedProvider>
   )
