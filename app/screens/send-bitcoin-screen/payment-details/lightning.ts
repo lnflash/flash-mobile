@@ -481,6 +481,12 @@ export const createLnurlPaymentDetails = <T extends WalletCurrency>(
     unitOfAccountAmount,
     paymentType: PaymentType.Lnurl,
     destination: lnurl,
+    // The bolt11 minted for this send, once setInvoice has attached one.
+    // Surfaced because it perishes: IBEX caps these at 60s, so the confirm
+    // screen has to be able to tell whether the one it is holding is still
+    // alive (ENG-555). `destination` is the lightning address here, not the
+    // invoice, so it cannot answer that question.
+    paymentRequest,
     settlementAmount,
     memo,
     settlementAmountIsEstimated: sendingWalletDescriptor.currency !== WalletCurrency.Btc,

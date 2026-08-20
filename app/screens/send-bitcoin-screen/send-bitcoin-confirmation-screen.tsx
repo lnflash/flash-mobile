@@ -18,6 +18,8 @@ import { PrimaryBtn } from "@app/components/buttons"
 // hooks
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useSendPayment } from "./use-send-payment"
+import { decodeInvoiceString, Network as NetworkLibGaloy } from "@galoymoney/client"
+import { isInvoiceExpired } from "./invoice-expiry"
 import { useActivityIndicator, useBreez } from "@app/hooks"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 
@@ -191,8 +193,42 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     }
   }, [flashUserAddress, npubByUsernameQuery, promptForContactList, contactsEvent])
 
+  // Held invoices perish: IBEX caps Flash receive invoices at 60 seconds, so
+  // an invoice minted when the user left the amount screen can easily be dead
+  // by the time they confirm — or on a retry after a first failure. Sending it
+  // anyway spends a round trip to come back as the generic "Something went
+  // wrong", which sends the user (and support) after the wrong cause. Read the
+  // expiry off the invoice itself rather than timing it locally, so a clock
+  // skew or a backgrounded app cannot fool it.
+  const heldInvoiceHasExpired = useCallback((): boolean => {
+    const paymentRequest = paymentDetail.paymentRequest
+    if (!paymentRequest) return false
+
+    try {
+      const { timeExpireDate } = decodeInvoiceString(
+        paymentRequest,
+        "mainnet" as NetworkLibGaloy,
+      )
+      return isInvoiceExpired({
+        timeExpireDate,
+        nowSeconds: Math.floor(Date.now() / 1000),
+      })
+    } catch {
+      // Undecodable: let the backend be the judge rather than blocking a
+      // send on a parsing quirk.
+      return false
+    }
+  }, [paymentDetail.paymentRequest])
+
   const handleSendPayment = useCallback(async () => {
     if (sendPayment && sendingWalletDescriptor?.currency) {
+      if (heldInvoiceHasExpired()) {
+        setPaymentError(LL.SendBitcoinConfirmationScreen.invoiceExpired())
+        ReactNativeHapticFeedback.trigger("notificationError", {
+          ignoreAndroidSystemSettings: true,
+        })
+        return
+      }
       console.log("Starting animation and sending payment")
       try {
         logPaymentAttempt({
@@ -242,7 +278,13 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     } else {
       return null
     }
-  }, [paymentType, sendPayment, sendingWalletDescriptor?.currency])
+  }, [
+    paymentType,
+    sendPayment,
+    sendingWalletDescriptor?.currency,
+    heldInvoiceHasExpired,
+    LL,
+  ])
 
   return (
     <Screen preset="scroll" style={styles.screenStyle} keyboardOffset="navigationHeader">

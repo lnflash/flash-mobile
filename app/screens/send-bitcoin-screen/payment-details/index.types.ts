@@ -97,6 +97,13 @@ export type SetInvoice<T extends WalletCurrency> = (params: {
 
 type BasePaymentDetail<T extends WalletCurrency> = {
   memo?: string
+  /**
+   * The bolt11 this payment will settle, when one has been minted already.
+   * Present on invoice-backed details; absent for destinations that mint the
+   * invoice later (an LNURL detail only gains one via setInvoice). Callers
+   * must treat it as perishable — see invoice-expiry.ts.
+   */
+  paymentRequest?: string
   paymentType:
     | typeof PaymentType.Intraledger
     | typeof PaymentType.Onchain
