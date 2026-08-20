@@ -1,5 +1,6 @@
 import { WalletCurrency } from "@app/graphql/generated"
 import * as PaymentDetails from "@app/screens/send-bitcoin-screen/payment-details/lightning"
+import { PaymentType } from "@galoymoney/client"
 import { LnUrlPayServiceResponse, Satoshis } from "lnurl-pay/dist/types/types"
 import { createMock } from "ts-auto-mock"
 import {
@@ -90,11 +91,31 @@ describe("lnurl payment details", () => {
     )
   })
 
+  it("exposes the bolt11 only once one has been minted", () => {
+    // The confirm screen checks this bolt11's expiry before sending
+    // (ENG-555), and an LNURL detail's `destination` is the lightning
+    // address, not an invoice — so `paymentRequest` is the only way to reach
+    // it. It is optional on the shared PaymentDetail type, so dropping it
+    // would silently disable that check rather than fail to compile.
+    const beforeMinting = createLnurlPaymentDetails(defaultParamsWithoutInvoice)
+    expect(beforeMinting.paymentRequest).toBe(undefined)
+
+    if (beforeMinting.paymentType !== PaymentType.Lnurl) {
+      throw new Error("expected an lnurl payment detail")
+    }
+    const withInvoice = beforeMinting.setInvoice({
+      paymentRequest: defaultParamsWithInvoice.paymentRequest,
+      paymentRequestAmount: defaultParamsWithInvoice.paymentRequestAmount,
+    })
+    expect(withInvoice.paymentRequest).toBe(defaultParamsWithInvoice.paymentRequest)
+  })
+
   it("properly sets fields with invoice set", () => {
     const paymentDetails = createLnurlPaymentDetails(defaultParamsWithInvoice)
     expect(paymentDetails).toEqual(
       expect.objectContaining({
         destination: defaultParamsWithInvoice.lnurl,
+        paymentRequest: defaultParamsWithInvoice.paymentRequest,
         settlementAmount: defaultParamsWithInvoice.paymentRequestAmount,
         unitOfAccountAmount: defaultParamsWithInvoice.unitOfAccountAmount,
         sendingWalletDescriptor: defaultParamsWithInvoice.sendingWalletDescriptor,

@@ -1,12 +1,11 @@
-import { readFileSync } from "fs"
-import { join } from "path"
-
 import { decodeInvoiceString } from "@galoymoney/client"
 
 import {
+  CLOCK_SKEW_GRACE_SECONDS,
   isHeldInvoiceExpired,
   isInvoiceExpired,
   networkForPaymentRequest,
+  willTransmitHeldInvoice,
 } from "../../app/screens/send-bitcoin-screen/invoice-expiry"
 
 // The real invoice from the ENG-555 report, decoded:
@@ -19,37 +18,117 @@ describe("isInvoiceExpired", () => {
   it("accepts an invoice inside its window", () => {
     // The user's first attempt: 16:40:04Z, 38s before expiry. This one was
     // NOT an expiry failure, and the guard must not claim it was.
-    expect(isInvoiceExpired({ timeExpireDate: EXPIRES, nowSeconds: 1787244004 })).toBe(
-      false,
-    )
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: ISSUED,
+        nowSeconds: 1787244004,
+      }),
+    ).toBe(false)
   })
 
   it("rejects the 19-minute-old retry from the report", () => {
     // Second attempt: 16:58:52Z, ~18 minutes past expiry. Same invoice,
-    // resubmitted, which is what produced a second identical error.
+    // resubmitted, which is what produced a second identical error. Well
+    // clear of the skew grace, so it is still caught.
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: ISSUED,
+        nowSeconds: 1787245132,
+      }),
+    ).toBe(true)
+  })
+
+  it("only refuses once the reading is past plausible clock drift", () => {
+    // `nowSeconds` is the device wall clock, not the issuer's, so the stated
+    // expiry second on its own is not evidence of a dead invoice. The refusal
+    // starts one second past the grace window.
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: ISSUED,
+        nowSeconds: EXPIRES,
+      }),
+    ).toBe(false)
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: ISSUED,
+        nowSeconds: EXPIRES + CLOCK_SKEW_GRACE_SECONDS,
+      }),
+    ).toBe(false)
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: ISSUED,
+        nowSeconds: EXPIRES + CLOCK_SKEW_GRACE_SECONDS + 1,
+      }),
+    ).toBe(true)
+  })
+
+  it("is live for the whole 60-second window", () => {
+    for (let offset = 0; offset < 60; offset += 1) {
+      expect(
+        isInvoiceExpired({
+          timeExpireDate: EXPIRES,
+          timestamp: ISSUED,
+          nowSeconds: ISSUED + offset,
+        }),
+      ).toBe(false)
+    }
+  })
+
+  it("does not kill a fresh invoice on a device whose clock runs fast", () => {
+    // Regression: a handset two minutes ahead of the issuer reads every
+    // freshly minted 60-second Flash invoice as already dead. Failing closed
+    // there would leave that user permanently unable to send — a state the
+    // backend, validating against server time, would never have produced.
+    for (let skew = 1; skew <= CLOCK_SKEW_GRACE_SECONDS; skew += 1) {
+      expect(
+        isInvoiceExpired({
+          timeExpireDate: EXPIRES,
+          timestamp: ISSUED,
+          // Mint instant, as misread by a clock `skew` seconds fast.
+          nowSeconds: ISSUED + skew,
+        }),
+      ).toBe(false)
+    }
+  })
+
+  it("fails open when the device clock is behind the invoice's issue time", () => {
+    // An invoice cannot have been issued in the future: a "now" that precedes
+    // its timestamp proves the local clock is wrong, so nothing derived from
+    // it may block a send.
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: ISSUED,
+        nowSeconds: ISSUED - 1,
+      }),
+    ).toBe(false)
+    // Even a reading long past the expiry is discarded when the same clock
+    // also claims the invoice has not been issued yet.
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: EXPIRES + 10_000,
+        nowSeconds: 1787245132,
+      }),
+    ).toBe(false)
+  })
+
+  it("still decides without a timestamp", () => {
+    // The skew detector is an extra safeguard, not a precondition.
     expect(isInvoiceExpired({ timeExpireDate: EXPIRES, nowSeconds: 1787245132 })).toBe(
       true,
     )
-  })
-
-  it("treats the expiry second itself as expired", () => {
-    // Boundary: bolt11 expiry is inclusive of the deadline, and sending on
-    // the exact second is a race the backend would win anyway.
-    expect(isInvoiceExpired({ timeExpireDate: EXPIRES, nowSeconds: EXPIRES })).toBe(true)
-    expect(isInvoiceExpired({ timeExpireDate: EXPIRES, nowSeconds: EXPIRES - 1 })).toBe(
-      false,
-    )
-  })
-
-  it("is live for the whole 60-second window and dead after it", () => {
-    for (let offset = 0; offset < 60; offset += 1) {
+    expect(isInvoiceExpired({ timeExpireDate: EXPIRES, nowSeconds: ISSUED })).toBe(false)
+    for (const timestamp of [undefined, null, Number.NaN, Infinity]) {
       expect(
-        isInvoiceExpired({ timeExpireDate: EXPIRES, nowSeconds: ISSUED + offset }),
-      ).toBe(false)
+        isInvoiceExpired({ timeExpireDate: EXPIRES, timestamp, nowSeconds: 1787245132 }),
+      ).toBe(true)
     }
-    expect(isInvoiceExpired({ timeExpireDate: EXPIRES, nowSeconds: ISSUED + 60 })).toBe(
-      true,
-    )
   })
 
   it("does not block the send when the expiry is unknown", () => {
@@ -57,49 +136,50 @@ describe("isInvoiceExpired", () => {
     // still rejects a genuinely dead invoice, so a false negative costs
     // nothing beyond the status quo while a false positive costs a payment.
     for (const timeExpireDate of [undefined, null, Number.NaN, Infinity]) {
-      expect(isInvoiceExpired({ timeExpireDate, nowSeconds: 1787245132 })).toBe(false)
+      expect(
+        isInvoiceExpired({ timeExpireDate, timestamp: ISSUED, nowSeconds: 1787245132 }),
+      ).toBe(false)
     }
   })
 
   it("does not block the send when the clock is unusable", () => {
-    expect(isInvoiceExpired({ timeExpireDate: EXPIRES, nowSeconds: Number.NaN })).toBe(
-      false,
-    )
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: ISSUED,
+        nowSeconds: Number.NaN,
+      }),
+    ).toBe(false)
   })
 })
 
-// The guard reads paymentDetail.paymentRequest. If a detail factory does not
-// expose it the check silently passes everything through — and because the
-// field is optional, TypeScript says nothing. The first version of this fix
-// shipped exactly that hole: only the LNURL factory set it, so scanned and
-// pasted invoices (also 60-second Flash invoices) kept failing generically.
-describe("every invoice-backed payment detail exposes its bolt11", () => {
-  const source = readFileSync(
-    join(__dirname, "../../app/screens/send-bitcoin-screen/payment-details/lightning.ts"),
-    "utf8",
-  )
+// The BTC (Breez/Spark) wallet does not transmit the held bolt11 on every
+// path: `useSendPayment` routes BTC + lnurl/intraledger to `payLnurlBreez`,
+// which mints a fresh invoice at send time. Checking the held invoice's
+// expiry there would refuse a payment that would have succeeded.
+describe("willTransmitHeldInvoice", () => {
+  it("is true for every non-BTC wallet, whatever the payment type", () => {
+    for (const sendingWalletCurrency of ["USD", "USDT"] as const) {
+      for (const paymentType of ["lightning", "lnurl", "intraledger"] as const) {
+        expect(willTransmitHeldInvoice({ sendingWalletCurrency, paymentType })).toBe(true)
+      }
+    }
+  })
 
-  const factories = [
-    "createNoAmountLightningPaymentDetails",
-    "createAmountLightningPaymentDetails",
-    "createLnurlPaymentDetails",
-  ]
+  it("is true for BTC + lightning — payLightningBreez sends the held bolt11", () => {
+    expect(
+      willTransmitHeldInvoice({
+        sendingWalletCurrency: "BTC",
+        paymentType: "lightning",
+      }),
+    ).toBe(true)
+  })
 
-  it("every factory returns paymentRequest", () => {
-    for (const factory of factories) {
-      const start = source.indexOf(`export const ${factory}`)
-      expect(start).toBeGreaterThan(-1)
-
-      const nextExport = source.indexOf("export const ", start + 10)
-      const body = source.slice(start, nextExport === -1 ? undefined : nextExport)
-      const returnStart = body.lastIndexOf("return {")
-      const returned = body.slice(returnStart, body.indexOf("as const", returnStart))
-
-      // Named per factory so a failure says which one regressed.
-      expect({
-        factory,
-        exposesPaymentRequest: /^\s{4}paymentRequest,/m.test(returned),
-      }).toEqual({ factory, exposesPaymentRequest: true })
+  it("is false for the BTC paths that re-mint at send time", () => {
+    for (const paymentType of ["lnurl", "intraledger"] as const) {
+      expect(willTransmitHeldInvoice({ sendingWalletCurrency: "BTC", paymentType })).toBe(
+        false,
+      )
     }
   })
 })
@@ -149,6 +229,32 @@ describe("isHeldInvoiceExpired (the decision the confirm screen makes)", () => {
         decode,
       }),
     ).toBe(true)
+  })
+
+  it("reads the issue time off the real invoice and tolerates a fast clock", () => {
+    // Sanity-check the fixture: the decoder really does hand back both
+    // timestamps, so the skew detector below is exercising real data.
+    const decoded = decode(INCIDENT_INVOICE, "mainnet")
+    expect(decoded.timestamp).toBe(ISSUED)
+    expect(decoded.timeExpireDate).toBe(EXPIRES)
+
+    // Confirm tapped at the mint instant on a clock two minutes fast.
+    expect(
+      isHeldInvoiceExpired({
+        paymentRequest: INCIDENT_INVOICE,
+        nowSeconds: ISSUED + CLOCK_SKEW_GRACE_SECONDS,
+        decode,
+      }),
+    ).toBe(false)
+
+    // Same tap on a clock two minutes slow — "now" predates the issue time.
+    expect(
+      isHeldInvoiceExpired({
+        paymentRequest: INCIDENT_INVOICE,
+        nowSeconds: ISSUED - CLOCK_SKEW_GRACE_SECONDS,
+        decode,
+      }),
+    ).toBe(false)
   })
 
   it("fails open with no invoice, a bad prefix, or a decode failure", () => {
