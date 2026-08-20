@@ -7,7 +7,7 @@ import { Linking } from "react-native"
 import { createTheme, ThemeProvider } from "@rneui/themed"
 import { render, fireEvent, act } from "@testing-library/react-native"
 
-import { PLAY_STORE_LINK } from "@app/config"
+import { CONTACT_EMAIL_ADDRESS, PLAY_STORE_LINK } from "@app/config"
 import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 
@@ -168,21 +168,30 @@ describe("app update on Android", () => {
     expect(mockToastShow).not.toHaveBeenCalled()
   })
 
-  it("tells support the blocked device is on Android", () => {
+  it("tells support the blocked device is on Android", async () => {
     mockMobileVersions = versions(95, 96)
+    // Own spy, own act: reading the module-level mock instead would inherit
+    // whatever the preceding test installed, so inserting a test above this one
+    // could silently swap the composer's success path for its failure path.
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined)
 
-    const { getByText } = renderWithTheme(<AppUpdateGate />)
+    const { getByText, queryByText } = renderWithTheme(<AppUpdateGate />)
 
-    fireEvent.press(getByText(LL.AppUpdate.contactSupport()))
+    await act(async () => {
+      fireEvent.press(getByText(LL.AppUpdate.contactSupport()))
+    })
 
     // The Android branch is the one that can lose the store link entirely (no
     // Play Store on the device), so support has to be told which platform it is
     // dealing with.
-    const mailto = (Linking.openURL as jest.Mock).mock.calls
-      .map(String)
-      .find((url) => url.startsWith("mailto:"))
+    const mailto = openURL.mock.calls.map(String).find((url) => url.startsWith("mailto:"))
     expect(mailto).toBeDefined()
     expect(decodeURIComponent(mailto as string)).toContain("Android")
+    // The composer opened, so the last-resort address must stay hidden — this
+    // is what pins the case to the success path.
+    expect(
+      queryByText(LL.AppUpdate.couldNotOpenSupport({ email: CONTACT_EMAIL_ADDRESS })),
+    ).toBeNull()
   })
 
   it("sends the home banner to the installed store app", async () => {
