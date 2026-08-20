@@ -53,9 +53,13 @@ import {
 } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { buildMaxAmountButton } from "./max-amount-button"
-import { makeLnurlFeeProbe, makeLnurlProbeCache } from "./lnurl-fee-probe"
+import {
+  makeLnurlFeeProbe,
+  makeLnurlProbeCache,
+  mintProbeInvoice,
+} from "./lnurl-fee-probe"
 import { MaxAmountButton } from "@app/components/amount-input-screen"
-import { requestInvoice, requestInvoiceWithServiceParams, utils } from "lnurl-pay"
+import { requestInvoice, utils } from "lnurl-pay"
 import { fetchBreezFee, fetchLnurlPayRequest } from "@app/utils/breez-sdk"
 import { LnurlLimits, lnurlLimitsFromPayRequest } from "@app/utils/breez-sdk/fee-errors"
 import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
@@ -453,11 +457,10 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
       destination: pd.destination,
       walletCurrency,
       balanceMoneyAmount: isBtcWallet ? btcBalanceMoneyAmount : usdBalanceMoneyAmount,
-      // The params-taking variant: pd.lnurlParams is already resolved, so
-      // this is one round-trip to the receiver's callback rather than two
-      // (re-resolving the pay service first) inside the probe's budget.
-      requestInvoice: ({ params, sats }) =>
-        requestInvoiceWithServiceParams({ params, tokens: utils.toSats(sats) }),
+      // Uses the params-taking lnurl-pay call (pd.lnurlParams is already
+      // resolved, so one round-trip to the receiver's callback rather than
+      // two) and enforces whole sats before the Satoshis cast.
+      requestInvoice: mintProbeInvoice,
       getIbexFee,
       cache: lnurlProbeCache.current,
     })
@@ -473,6 +476,13 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
       knownPayRequest: receiverPayRequest ?? undefined,
       receiverMaxSats: receiverLimits?.maxSats ?? null,
       lnurlParamsMaxSats: pd.paymentType === "lnurl" ? pd.lnurlParams?.max ?? null : null,
+      // receiverLimits is resolved for the BTC wallet only; the USD LNURL
+      // path reads the same bound straight off the detail's resolved params
+      // (mirroring lnurlParamsMaxSats above), and that is the path where the
+      // minimum has no other way to reach the user.
+      receiverMinSats:
+        receiverLimits?.minSats ??
+        (pd.paymentType === "lnurl" ? pd.lnurlParams?.min ?? null : null),
       convertSatsToWallet: (sats) =>
         pd.convertMoneyAmount(toBtcMoneyAmount(sats), walletCurrency).amount,
       fetchBreezFee,

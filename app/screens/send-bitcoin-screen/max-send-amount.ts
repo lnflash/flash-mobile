@@ -157,7 +157,12 @@ export type ComputeMaxSendAmountArgs = {
   timeoutMs?: number
 }
 
-const FEE_ESTIMATE_TIMEOUT_MS = 10_000
+/**
+ * The whole chip's fee budget. Exported so anything that must stay under it
+ * (the LNURL price probe's own timeout) can assert against this number rather
+ * than a copy of it — a copy silently stops guarding the moment this changes.
+ */
+export const FEE_ESTIMATE_TIMEOUT_MS = 10_000
 
 const feeOrNull = async (
   fetchFee: (probeAmount: number) => Promise<number | null>,

@@ -58,6 +58,17 @@ export type BuildMaxAmountButtonArgs<M extends MoneyAmountShape, F, P> = {
   receiverMaxSats: number | null
   /** The destination's lnurlParams.max in sats (USD-wallet LNURL path). */
   lnurlParamsMaxSats: number | null
+  /**
+   * Receiver's LNURL minSendable in sats, or null when unknown.
+   *
+   * The Breez probe reports this itself (as an `amount-below-min` error), but
+   * the LNURL mint does not: lnurl-pay throws a bare Error("Invalid amount")
+   * client-side for a sat count outside [min, max], which collapses into the
+   * same null as a network blip and produces "couldn't estimate the fee — tap
+   * MAX again" — a retry loop that cannot succeed. Checking here is what turns
+   * that into the receiver's actual minimum.
+   */
+  receiverMinSats: number | null
   /** Convert sats into the sending wallet's minor units. */
   convertSatsToWallet: (sats: number) => number
   /** Breez fee probe (BTC wallet). */
@@ -110,6 +121,7 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
   knownPayRequest,
   receiverMaxSats,
   lnurlParamsMaxSats,
+  receiverMinSats,
   convertSatsToWallet,
   fetchBreezFee,
   setAmount,
@@ -194,6 +206,24 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
     // nothing for the plain IBEX probe to price — mint one at the probe
     // amount and price that instead.
     if (paymentType === "lnurl") {
+      // The receiver's floor, checked before we ask them for an invoice.
+      // Below it the mint throws a bare Error("Invalid amount") that reads as
+      // "couldn't estimate the fee — tap MAX again", and no number of taps
+      // ever will: a $4.42 balance is 221 sats against a 1_000-sat
+      // minSendable. Report the bound instead — the only half of this the
+      // user can act on. (The recipient cap handles the other end: it clamps
+      // the probe, so a probe amount can only ever be too small here.)
+      if (
+        receiverMinSats !== null &&
+        Number.isFinite(receiverMinSats) &&
+        convertSatsToWallet(receiverMinSats) > probeAmount
+      ) {
+        lastFeeError = { kind: "amount-below-min", minSats: receiverMinSats }
+        return null
+      }
+      // Clear a minimum recorded by an earlier tap: a later generic failure
+      // must not borrow its message.
+      lastFeeError = null
       return probeLnurlFee(probeAmount)
     }
     const fee = await getIbexFee(setAmount(withAmount(probeAmount)).getFee)

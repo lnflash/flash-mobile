@@ -43,6 +43,7 @@ const makeArgs = (overrides: Partial<TestArgs> = {}): TestArgs => ({
   knownPayRequest: undefined,
   receiverMaxSats: null,
   lnurlParamsMaxSats: null,
+  receiverMinSats: null,
   convertSatsToWallet: (sats: number) => sats,
   fetchBreezFee: jest.fn(async () => ({ fee: 0, err: null })),
   setAmount: jest.fn((amount: TestMoneyAmount) => ({
@@ -476,6 +477,82 @@ describe("LNURL destinations are priced, not guessed (ENG-554)", () => {
 
     expect(result?.amount).toBeUndefined()
     expect(result?.note).toEqual("fee unknown note")
+  })
+
+  it("reports the receiver's minimum instead of asking for an impossible invoice", async () => {
+    // lnurl-pay bounds-checks client-side and throws a bare
+    // Error("Invalid amount") below minSendable, which the probe collapses
+    // into the same null as a network blip. The user is then told to tap MAX
+    // again — and no number of taps can make a $4.42 balance (221 sats at
+    // 2¢/sat) reach a 1_000-sat minimum. The bound is the only actionable
+    // half of the message, and on this path nothing else can surface it.
+    const probeLnurlFee = jest.fn(async () => null)
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        balanceMoneyAmount: { ...usdBalance, amount: 442 },
+        receiverMinSats: 1_000,
+        convertSatsToWallet: (sats: number) => sats * 2,
+        probeLnurlFee,
+      }),
+    )
+
+    const result = await button?.compute()
+
+    // Nothing was asked of the receiver — the answer was knowable locally.
+    expect(probeLnurlFee).not.toHaveBeenCalled()
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("min note: 1000 sats")
+  })
+
+  it("still probes when the balance clears the receiver's minimum", async () => {
+    const probeLnurlFee = jest.fn(async () => 37)
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        receiverMinSats: 1_000,
+        convertSatsToWallet: (sats: number) => sats * 2,
+        probeLnurlFee,
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(probeLnurlFee).toHaveBeenCalledWith(10_000)
+    expect(result?.amount).toEqual({ ...usdBalance, amount: 10_000 - 37 - 1 })
+  })
+
+  it("does not borrow the minimum's message for an ordinary probe failure", async () => {
+    // A destination with a known minimum the balance clears, whose probe then
+    // fails for an unrelated reason, must not be reported as below-minimum.
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        receiverMinSats: 1_000,
+        convertSatsToWallet: (sats: number) => sats * 2,
+        probeLnurlFee: jest.fn(async () => null),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.note).toBe("fee unknown note")
+  })
+
+  it("probes as before when the receiver advertises no minimum", async () => {
+    const probeLnurlFee = jest.fn(async () => 37)
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        balanceMoneyAmount: { ...usdBalance, amount: 442 },
+        receiverMinSats: null,
+        probeLnurlFee,
+      }),
+    )
+
+    await button?.compute()
+
+    expect(probeLnurlFee).toHaveBeenCalledWith(442)
   })
 
   it("leaves non-LNURL USD sends on the ordinary IBEX probe", async () => {

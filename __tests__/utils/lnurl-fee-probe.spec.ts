@@ -1,10 +1,30 @@
+// The adapter under test is the one line that talks to the real lnurl-pay
+// API, so the library is replaced wholesale. `toSats` stays a passthrough —
+// the real one is a bare cast, and the point of the test is the number that
+// reaches the receiver.
+jest.mock("lnurl-pay", () => ({
+  __esModule: true,
+  requestInvoiceWithServiceParams: jest.fn(),
+  requestInvoice: jest.fn(),
+  utils: { toSats: (value: number) => value },
+}))
+
+import { requestInvoice, requestInvoiceWithServiceParams } from "lnurl-pay"
+import type { LnUrlPayServiceResponse } from "lnurl-pay/dist/types/types"
+
+import { FEE_ESTIMATE_TIMEOUT_MS } from "../../app/screens/send-bitcoin-screen/max-send-amount"
 import {
   LNURL_PROBE_TIMEOUT_MS,
   LnurlProbeDetail,
   makeLnurlFeeProbe,
   makeLnurlProbeCache,
+  MINT_REUSE_TTL_MS,
+  mintProbeInvoice,
   priceLnurlSend,
 } from "../../app/screens/send-bitcoin-screen/lnurl-fee-probe"
+
+const mockedMintCall = requestInvoiceWithServiceParams as unknown as jest.Mock
+const mockedAddressMintCall = requestInvoice as unknown as jest.Mock
 
 type TestMoneyAmount = { amount: number; currency: string; currencyCode: string }
 type TestBtcAmount = { amount: number; currency: "BTC"; currencyCode: "SAT" }
@@ -339,10 +359,55 @@ describe("priceLnurlSend", () => {
     expect(mintInvoice).not.toHaveBeenCalled()
   })
 
-  it("keeps its budget under the MAX chip's own 10s fee budget", () => {
+  it("keeps its budget under the MAX chip's own fee budget", () => {
     // A probe allowed to run the full chip budget would hold the tap instead
-    // of degrading to "couldn't estimate".
-    expect(LNURL_PROBE_TIMEOUT_MS).toBeLessThan(10_000)
+    // of degrading to "couldn't estimate". Asserted against the chip's real
+    // constant, not a copy of today's value: a copy keeps passing after the
+    // chip's budget drops below the probe's, which is the moment the
+    // invariant is actually broken.
+    expect(LNURL_PROBE_TIMEOUT_MS).toBeLessThan(FEE_ESTIMATE_TIMEOUT_MS)
+  })
+})
+
+describe("mintProbeInvoice", () => {
+  // Minimal stand-in: the adapter passes the params straight through, so only
+  // identity matters here.
+  const params = {
+    callback: "https://lnurl.example/cb",
+  } as unknown as LnUrlPayServiceResponse
+
+  beforeEach(() => {
+    mockedMintCall.mockReset()
+    mockedAddressMintCall.mockReset()
+    mockedMintCall.mockResolvedValue({ invoice: "lnbc-real" })
+  })
+
+  it("mints through the params-taking call at the exact whole-sat count", async () => {
+    const minted = await mintProbeInvoice({ params, sats: 221 })
+
+    expect(mockedMintCall).toHaveBeenCalledWith({ params, tokens: 221 })
+    expect(minted.invoice).toBe("lnbc-real")
+  })
+
+  it("does not use the address-taking variant", async () => {
+    // `requestInvoice` re-resolves the receiver's pay service before it can
+    // reach their callback — a second network leg inside a 7s budget, on a
+    // detail that already carries the resolved params.
+    await mintProbeInvoice({ params, sats: 221 })
+
+    expect(mockedAddressMintCall).not.toHaveBeenCalled()
+  })
+
+  it("refuses a fractional amount instead of casting it to Satoshis", async () => {
+    // utils.toSats performs no validation — it brands 220.5 as Satoshis and
+    // the receiver is asked for half a sat.
+    await expect(mintProbeInvoice({ params, sats: 220.5 })).rejects.toThrow(/220\.5 sats/)
+    expect(mockedMintCall).not.toHaveBeenCalled()
+  })
+
+  it("refuses to ask the receiver for a zero-sat invoice", async () => {
+    await expect(mintProbeInvoice({ params, sats: 0 })).rejects.toThrow()
+    expect(mockedMintCall).not.toHaveBeenCalled()
   })
 })
 
@@ -457,10 +522,14 @@ describe("makeLnurlFeeProbe", () => {
     expect(failThenSucceed).toHaveBeenCalledTimes(2)
   })
 
-  it("forgets an answered invoice the fee probe could not price", async () => {
-    // The invoice exists but pricing it failed, and these expire in 60s.
-    // Holding it forever would re-price the same dead invoice on every retry
-    // — caching the null by another route.
+  it("keeps a fresh answered invoice when only the fee leg failed", async () => {
+    // The invoice is FINE — the second leg is what failed. Discarding it on a
+    // failed price throws away a live invoice whenever the route probe is the
+    // slow half: mint answers at 2s, getIbexFee hangs, the 7s budget fires,
+    // and an invoice good for another 53s is dropped. The note then tells the
+    // user to tap MAX again, so the retry mints ANOTHER at the receiver — one
+    // orphaned invoice per tap against a rate-limited service, which is the
+    // exact failure this memo exists to prevent.
     const getFeeOnce = jest
       .fn<Promise<{ amount: number } | undefined>, [TestGetFee | undefined]>()
       .mockResolvedValueOnce(undefined)
@@ -470,6 +539,41 @@ describe("makeLnurlFeeProbe", () => {
 
     expect(await probe(442)).toBeNull()
     expect(await probe(442)).toBe(7)
-    expect(mintInvoice).toHaveBeenCalledTimes(2)
+    expect(mintInvoice).toHaveBeenCalledTimes(1)
+  })
+
+  it("reuses one mint for probe amounts that round to the same sats", async () => {
+    // 441¢ and 442¢ are both 221 sats at 2¢/sat. Same invoice, two prices —
+    // the fee key differs, the mint key does not.
+    const cache = makeLnurlProbeCache()
+
+    expect(await probeFor({ cache })(442)).toBe(7)
+    expect(await probeFor({ cache })(441)).toBe(7)
+    expect(mintInvoice).toHaveBeenCalledTimes(1)
+  })
+
+  it("re-mints once the held invoice has aged out", async () => {
+    // The other side of sharing by sat count: an invoice minted minutes ago
+    // expires (60s from issue), and pricing an expired invoice is a fee IBEX
+    // will refuse at send time. Age retires a mint — nothing else does.
+    const cache = makeLnurlProbeCache()
+    const start = 1_700_000_000_000
+    const clock = jest.spyOn(Date, "now").mockReturnValue(start)
+    try {
+      expect(await probeFor({ cache })(442)).toBe(7)
+
+      clock.mockReturnValue(start + MINT_REUSE_TTL_MS + 1)
+      expect(await probeFor({ cache })(441)).toBe(7)
+
+      expect(mintInvoice).toHaveBeenCalledTimes(2)
+    } finally {
+      clock.mockRestore()
+    }
+  })
+
+  it("keeps the invoice reuse window inside the 60s invoice lifetime", () => {
+    // Reusing an invoice for longer than the receiver keeps it alive hands
+    // IBEX something already dead.
+    expect(MINT_REUSE_TTL_MS).toBeLessThan(60_000)
   })
 })
