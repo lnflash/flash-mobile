@@ -19,6 +19,12 @@ type MoneyAmountShape = { amount: number }
  * The MAX chip's own fee budget is 10s (max-send-amount.ts). Keep the LNURL
  * price check well under it so a slow receiver degrades to "couldn't estimate"
  * instead of holding the tap.
+ *
+ * This bounds the WHOLE price check — the invoice mint and the IBEX fee probe
+ * that follows it — not just the mint. Timing only the mint left the second
+ * leg unbounded, so a 6.9s mint plus a 5s route probe ran 11.9s and only the
+ * chip's outer 10s race stopped it: the margin this constant exists to
+ * guarantee did not apply to the slow destinations it was written for.
  */
 export const LNURL_PROBE_TIMEOUT_MS = 7000
 
@@ -115,22 +121,25 @@ export const priceLnurlSend = async <
       return null
     }
 
-    const minted = await Promise.race([
-      requestInvoice({ params, sats }),
+    // Both legs run inside ONE timer. The IBEX leg is a real route probe that
+    // takes seconds of its own, so racing only the mint bounded half the wait
+    // and let a slow destination hold the chip for its full 10s budget.
+    const setInvoice = probeDetail.setInvoice
+    const priced = await Promise.race([
+      (async () => {
+        const minted = await requestInvoice({ params, sats })
+        const pricedDetail = setInvoice({
+          paymentRequest: minted.invoice,
+          paymentRequestAmount: { ...btcProbeAmount, amount: sats },
+        })
+        const fee = await getIbexFee(pricedDetail.getFee)
+        return fee?.amount ?? null
+      })(),
       new Promise<typeof TIMED_OUT>((resolve) => {
         timer = setTimeout(() => resolve(TIMED_OUT), timeoutMs)
       }),
     ])
-    if (minted === TIMED_OUT) {
-      return null
-    }
-
-    const pricedDetail = probeDetail.setInvoice({
-      paymentRequest: minted.invoice,
-      paymentRequestAmount: { ...btcProbeAmount, amount: sats },
-    })
-    const fee = await getIbexFee(pricedDetail.getFee)
-    return fee?.amount ?? null
+    return priced === TIMED_OUT ? null : priced
   } catch {
     // Unpriceable — the computation declines to propose an amount rather than
     // guessing one the send would refuse.
@@ -139,3 +148,120 @@ export const priceLnurlSend = async <
     clearTimeout(timer)
   }
 }
+
+/** An in-flight or already-answered invoice mint. */
+type MintEntry = { promise: Promise<{ invoice: string }>; settled: boolean }
+
+/**
+ * Per-screen memo for the LNURL price probe. Every probe that reaches the
+ * receiver mints a REAL invoice, so repeated MAX taps orphan invoices at the
+ * receiver and trip rate-limited services (BTCPay, LNbits) until the
+ * destination stops answering at all.
+ *
+ * Two maps, because the two things worth remembering have different lifetimes:
+ * a finished fee is good for the session, while a mint is worth sharing only
+ * while it is the freshest invoice anyone has.
+ */
+export type LnurlProbeCache = {
+  /** Completed fee estimates, keyed by destination + wallet + probe amount. */
+  fees: Map<string, number>
+  /** Invoice mints, keyed by destination + sats. */
+  mints: Map<string, MintEntry>
+}
+
+export const makeLnurlProbeCache = (): LnurlProbeCache => ({
+  fees: new Map(),
+  mints: new Map(),
+})
+
+export type MakeLnurlFeeProbeArgs<
+  M extends MoneyAmountShape,
+  B extends MoneyAmountShape,
+  F,
+  P,
+> = Omit<PriceLnurlSendArgs<M, B, F, P>, "probeAmount"> & {
+  /** Cache-key discriminator — the screen's resolved destination string. */
+  destination: string
+  /** Cache-key discriminator — the sending wallet, whose minor unit the
+   * probe amount is denominated in. */
+  walletCurrency: string
+  cache: LnurlProbeCache
+}
+
+/**
+ * A memoized `probeLnurlFee` for `buildMaxAmountButton`.
+ *
+ * The glue that used to sit inline in the send screen, extracted so the
+ * caching rules are testable — they are the part with teeth:
+ *
+ * - A completed fee is cached; a null is NOT. A transient failure must not
+ *   brand a destination unpriceable for the life of the screen, because the
+ *   note it produces invites the user to tap MAX again.
+ * - The probe amount is part of the fee key. A fee priced for a full-balance
+ *   probe reused for a smaller cap-clamped one would under-reserve.
+ * - The in-flight MINT is shared, not just the finished fee. The 7s budget
+ *   abandons the wait but cannot cancel the request, so the receiver mints and
+ *   returns an invoice regardless. Without this, every destination slower than
+ *   the budget — Tor-hosted, cold serverless, LNbits under load — costs a
+ *   fresh invoice on every tap and never caches anything, which is the exact
+ *   orphan/rate-limit failure the memo exists to prevent.
+ * - A mint that REJECTED is forgotten immediately, and one that answered but
+ *   could not be priced is forgotten once the probe using it gives up: reusing
+ *   a settled-but-unpriceable invoice forever would brand the destination dead
+ *   just as surely as caching the null.
+ */
+export const makeLnurlFeeProbe =
+  <M extends MoneyAmountShape, B extends MoneyAmountShape, F, P>({
+    destination,
+    walletCurrency,
+    cache,
+    requestInvoice,
+    ...priceArgs
+  }: MakeLnurlFeeProbeArgs<M, B, F, P>) =>
+  async (probeAmount: number): Promise<number | null> => {
+    const feeKey = `${destination}:${walletCurrency}:${probeAmount}`
+    const cachedFee = cache.fees.get(feeKey)
+    if (cachedFee !== undefined) {
+      return cachedFee
+    }
+
+    let mintKey: string | undefined
+
+    const fee = await priceLnurlSend({
+      ...priceArgs,
+      probeAmount,
+      requestInvoice: ({ params, sats }) => {
+        mintKey = `${destination}:${sats}`
+        const outstanding = cache.mints.get(mintKey)
+        if (outstanding) {
+          return outstanding.promise
+        }
+        const entry: MintEntry = {
+          promise: requestInvoice({ params, sats }),
+          settled: false,
+        }
+        cache.mints.set(mintKey, entry)
+        const key = mintKey
+        entry.promise.then(
+          () => {
+            entry.settled = true
+          },
+          () => cache.mints.delete(key),
+        )
+        return entry.promise
+      },
+    })
+
+    if (fee !== null) {
+      cache.fees.set(feeKey, fee)
+      return fee
+    }
+    // Unpriced. Keep a mint still in flight — the next tap should await that
+    // invoice rather than ask for another — but drop one that has already
+    // answered, so the retry the note invites gets a fresh invoice instead of
+    // re-pricing the same dead one.
+    if (mintKey && cache.mints.get(mintKey)?.settled) {
+      cache.mints.delete(mintKey)
+    }
+    return null
+  }

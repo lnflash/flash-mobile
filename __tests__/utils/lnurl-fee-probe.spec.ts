@@ -1,6 +1,8 @@
 import {
   LNURL_PROBE_TIMEOUT_MS,
   LnurlProbeDetail,
+  makeLnurlFeeProbe,
+  makeLnurlProbeCache,
   priceLnurlSend,
 } from "../../app/screens/send-bitcoin-screen/lnurl-fee-probe"
 
@@ -216,6 +218,48 @@ describe("priceLnurlSend", () => {
     expect(getIbexFee).not.toHaveBeenCalled()
   })
 
+  it("resolves null when the IBEX leg outlives the probe budget", async () => {
+    // The budget bounds the WHOLE price check, not just the mint. An LN route
+    // probe takes seconds of its own, so timing only the mint left a slow
+    // destination running until the chip's own 10s race cut it off — the
+    // failover margin this timeout exists to guarantee never applied.
+    const fee = await priceLnurlSend({
+      detail: makeLnurlDetail(makeCalls()),
+      probeAmount: 442,
+      balanceMoneyAmount: usdBalance,
+      requestInvoice: mintInvoice,
+      // mint answers instantly; the route probe never does
+      getIbexFee: jest.fn(() => new Promise<undefined>(() => {})),
+      timeoutMs: 10,
+    })
+
+    expect(fee).toBeNull()
+    expect(mintInvoice).toHaveBeenCalled()
+  })
+
+  it("bounds mint plus fee probe together, not each separately", async () => {
+    // Two legs at 60% of the budget each: each is fine alone, the pair is
+    // not. A per-leg timer lets this through with a real fee; only one timer
+    // around the whole check returns null.
+    const budget = 50
+    const after = (ms: number, value: unknown) =>
+      new Promise((resolve) => {
+        setTimeout(() => resolve(value), ms)
+      })
+
+    const fee = await priceLnurlSend({
+      detail: makeLnurlDetail(makeCalls()),
+      probeAmount: 442,
+      balanceMoneyAmount: usdBalance,
+      requestInvoice: () =>
+        after(budget * 0.6, { invoice: "lnbc-221" }) as Promise<{ invoice: string }>,
+      getIbexFee: () => after(budget * 0.6, { amount: 7 }) as Promise<{ amount: number }>,
+      timeoutMs: budget,
+    })
+
+    expect(fee).toBeNull()
+  })
+
   it("resolves null when IBEX cannot price the minted invoice", async () => {
     const fee = await priceLnurlSend({
       detail: makeLnurlDetail(makeCalls()),
@@ -299,5 +343,133 @@ describe("priceLnurlSend", () => {
     // A probe allowed to run the full chip budget would hold the tap instead
     // of degrading to "couldn't estimate".
     expect(LNURL_PROBE_TIMEOUT_MS).toBeLessThan(10_000)
+  })
+})
+
+describe("makeLnurlFeeProbe", () => {
+  // The memo the send screen hands to buildMaxAmountButton. Every probe that
+  // reaches the receiver mints a REAL invoice, so what this remembers — and
+  // for how long — is the difference between one invoice per destination and
+  // one per tap against a rate-limited service.
+  const probeFor = (
+    overrides: {
+      requestInvoice?: (args: {
+        params: TestPayParams
+        sats: number
+      }) => Promise<{ invoice: string }>
+      getIbexFee?: (
+        getFee: TestGetFee | undefined,
+      ) => Promise<{ amount: number } | undefined>
+      cache?: ReturnType<typeof makeLnurlProbeCache>
+      destination?: string
+      timeoutMs?: number
+    } = {},
+  ) =>
+    makeLnurlFeeProbe({
+      detail: makeLnurlDetail(makeCalls()),
+      destination: overrides.destination ?? "sats@flashapp.me",
+      walletCurrency: "USD",
+      balanceMoneyAmount: usdBalance,
+      requestInvoice: overrides.requestInvoice ?? mintInvoice,
+      getIbexFee: overrides.getIbexFee ?? getIbexFee,
+      cache: overrides.cache ?? makeLnurlProbeCache(),
+      timeoutMs: overrides.timeoutMs,
+    })
+
+  it("serves a repeat tap from cache without touching the receiver", async () => {
+    const probe = probeFor()
+
+    expect(await probe(442)).toBe(7)
+    expect(await probe(442)).toBe(7)
+    expect(mintInvoice).toHaveBeenCalledTimes(1)
+    expect(getIbexFee).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps the probe amount in the key so a smaller probe is priced afresh", async () => {
+    // A fee priced for a full-balance probe reused for a cap-clamped one
+    // would under-reserve — the max would exceed what the send can pay.
+    const probe = probeFor()
+
+    expect(await probe(442)).toBe(7)
+    expect(await probe(10_000)).toBe(130)
+    expect(mintInvoice).toHaveBeenCalledTimes(2)
+  })
+
+  it("does not cache a failure — the note invites another tap", async () => {
+    // Inverting the guard to cache nulls would brand a destination
+    // unpriceable for the life of the screen on one transient blip.
+    const getFeeOnce = jest
+      .fn<Promise<{ amount: number } | undefined>, [TestGetFee | undefined]>()
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValue({ amount: 7 })
+    const probe = probeFor({ getIbexFee: getFeeOnce })
+
+    expect(await probe(442)).toBeNull()
+    expect(await probe(442)).toBe(7)
+  })
+
+  it("does not leak prices across destinations", async () => {
+    const cache = makeLnurlProbeCache()
+
+    expect(await probeFor({ cache, destination: "alice@flashapp.me" })(442)).toBe(7)
+    await probeFor({ cache, destination: "bob@flashapp.me" })(442)
+
+    expect(mintInvoice).toHaveBeenCalledTimes(2)
+  })
+
+  it("shares an in-flight mint instead of asking for a second invoice", async () => {
+    // The failure this exists for: any receiver slower than the 7s budget.
+    // Promise.race abandons the wait but cannot cancel the request, so the
+    // receiver mints anyway. Nothing is ever cached, so the retry the note
+    // asks for mints another — one orphaned invoice per tap, forever.
+    let settle: (value: { invoice: string }) => void = () => {}
+    const slowMint = jest.fn(
+      () =>
+        new Promise<{ invoice: string }>((resolve) => {
+          settle = resolve
+        }),
+    )
+    const cache = makeLnurlProbeCache()
+    const probe = probeFor({ cache, requestInvoice: slowMint, timeoutMs: 10 })
+
+    // Tap one gives up on the receiver, which is still minting.
+    expect(await probe(442)).toBeNull()
+
+    // Tap two must await that same mint, not start a new one.
+    const secondTap = probe(442)
+    settle({ invoice: "lnbc-221" })
+
+    expect(await secondTap).toBe(7)
+    expect(slowMint).toHaveBeenCalledTimes(1)
+  })
+
+  it("forgets a mint that rejected", async () => {
+    const failThenSucceed = jest
+      .fn<Promise<{ invoice: string }>, [{ params: TestPayParams; sats: number }]>()
+      .mockRejectedValueOnce(new Error("receiver unreachable"))
+      .mockResolvedValue({ invoice: "lnbc-221" })
+    const cache = makeLnurlProbeCache()
+    const probe = probeFor({ cache, requestInvoice: failThenSucceed })
+
+    expect(await probe(442)).toBeNull()
+    // A cached rejection would make every later tap fail on the dead promise.
+    expect(await probe(442)).toBe(7)
+    expect(failThenSucceed).toHaveBeenCalledTimes(2)
+  })
+
+  it("forgets an answered invoice the fee probe could not price", async () => {
+    // The invoice exists but pricing it failed, and these expire in 60s.
+    // Holding it forever would re-price the same dead invoice on every retry
+    // — caching the null by another route.
+    const getFeeOnce = jest
+      .fn<Promise<{ amount: number } | undefined>, [TestGetFee | undefined]>()
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValue({ amount: 7 })
+    const cache = makeLnurlProbeCache()
+    const probe = probeFor({ cache, getIbexFee: getFeeOnce })
+
+    expect(await probe(442)).toBeNull()
+    expect(await probe(442)).toBe(7)
+    expect(mintInvoice).toHaveBeenCalledTimes(2)
   })
 })

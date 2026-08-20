@@ -232,7 +232,11 @@ describe("computeMaxSendAmount", () => {
       fetchFee: async () => 500,
     })
 
-    expect(result).toEqual({ amount: 0, reason: "fee-reserved", feeReserved: 500 })
+    expect(result).toEqual({
+      amount: 0,
+      reason: "fee-exceeds-balance",
+      feeReserved: 500,
+    })
   })
 
   it("treats a negative or non-finite fee as unavailable", async () => {
@@ -431,6 +435,23 @@ describe("noteForResult", () => {
       kind: "fee-unknown",
     })
   })
+
+  it("a fee that swallowed the balance explains itself too", () => {
+    // The other zero that a user can act on (top up, or send less from
+    // somewhere else). Silence here is what made the chip look broken.
+    expect(
+      noteForResult({ amount: 0, reason: "fee-exceeds-balance", feeReserved: 2_500 }),
+    ).toEqual({ kind: "fee-too-large" })
+  })
+
+  it("says the fee is too large even when the estimate itself was zero", () => {
+    // balance 1 with a zero fee: the slack unit is what emptied it. Falling
+    // back to { kind: "none" } (as the fee-reserved arm does for a zero fee)
+    // would put this straight back to a silent tap.
+    expect(
+      noteForResult({ amount: 0, reason: "fee-exceeds-balance", feeReserved: 0 }),
+    ).toEqual({ kind: "fee-too-large" })
+  })
 })
 
 describe("an unpriceable destination is never guessed at (ENG-554)", () => {
@@ -528,7 +549,14 @@ describe("the reserved fee leaves slack for the invoice the send actually pays",
       fetchFee: async () => 0,
     })
 
-    expect(result).toEqual({ amount: 0, reason: "fee-reserved", feeReserved: 0 })
+    // Zero, and reported as a fee that ate the balance rather than as a fee
+    // that was reserved out of it — the caller owes the user a reason, and
+    // "~0 reserved" is not one.
+    expect(result).toEqual({
+      amount: 0,
+      reason: "fee-exceeds-balance",
+      feeReserved: 0,
+    })
   })
 
   it("leaves the fee-free intraledger arm at the full balance", async () => {
@@ -540,5 +568,64 @@ describe("the reserved fee leaves slack for the invoice the send actually pays",
     })
 
     expect(result).toEqual({ amount: 100_000, reason: "intraledger-full-balance" })
+  })
+})
+
+describe("a fee bigger than the balance is an answer, not a shrug", () => {
+  // The tap has to say something. Clamping to zero under the fee-reserved
+  // banner routed straight to a `null` result in max-amount-button, which the
+  // amount screen drops on the floor: the chip spun, went back to outlined,
+  // and explained nothing.
+  it("reports the fee that swallowed the balance (2_000 sats, 2_500-sat fee)", async () => {
+    // A BTC wallet holding 2_000 sats against a Breez channel-open fee.
+    const result = await computeMaxSendAmount({
+      paymentType: "lnurl",
+      balance: 2_000,
+      fetchFee: async () => 2_500,
+    })
+
+    expect(result).toEqual({
+      amount: 0,
+      reason: "fee-exceeds-balance",
+      feeReserved: 2_500,
+    })
+  })
+
+  it("covers the boundary where the fee exactly consumes the balance", async () => {
+    // balance − ceil(fee) − 1 === 0. Nothing to offer, so it must not report
+    // itself as a reservation.
+    const result = await computeMaxSendAmount({
+      paymentType: "lnurl",
+      balance: 2_500,
+      fetchFee: async () => 2_499,
+    })
+
+    expect(result).toEqual({
+      amount: 0,
+      reason: "fee-exceeds-balance",
+      feeReserved: 2_499,
+    })
+  })
+
+  it("still reserves normally one unit above that boundary", async () => {
+    const result = await computeMaxSendAmount({
+      paymentType: "lnurl",
+      balance: 2_501,
+      fetchFee: async () => 2_499,
+    })
+
+    expect(result).toEqual({ amount: 1, reason: "fee-reserved", feeReserved: 2_499 })
+  })
+
+  it("keeps an unpriceable destination distinct from an unaffordable one", async () => {
+    // Both propose nothing, but the user's next move differs: retry versus
+    // top up. Collapsing them would hand back the wrong note.
+    const unpriceable = await computeMaxSendAmount({
+      paymentType: "lnurl",
+      balance: 2_000,
+      fetchFee: async () => null,
+    })
+
+    expect(unpriceable).toEqual({ amount: 0, reason: "fee-unavailable" })
   })
 })

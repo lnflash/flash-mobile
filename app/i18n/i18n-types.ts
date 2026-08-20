@@ -5737,6 +5737,10 @@ type RootTranslation = {
 		 * C​o​u​l​d​n​'​t​ ​e​s​t​i​m​a​t​e​ ​t​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​r​i​g​h​t​ ​n​o​w​ ​—​ ​t​a​p​ ​M​A​X​ ​a​g​a​i​n​ ​o​r​ ​e​n​t​e​r​ ​a​n​ ​a​m​o​u​n​t
 		 */
 		maxNoteFeeUnknown: string
+		/**
+		 * T​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​i​s​ ​m​o​r​e​ ​t​h​a​n​ ​t​h​i​s​ ​b​a​l​a​n​c​e​ ​c​a​n​ ​c​o​v​e​r​ ​—​ ​n​o​t​h​i​n​g​ ​t​o​ ​s​e​n​d​ ​r​i​g​h​t​ ​n​o​w
+		 */
+		maxNoteFeeTooLarge: string
 	}
 	AmountInputButton: {
 		/**
@@ -11975,6 +11979,10 @@ export type TranslationFunctions = {
 		 * Couldn't estimate the network fee right now — tap MAX again or enter an amount
 		 */
 		maxNoteFeeUnknown: () => LocalizedString
+		/**
+		 * The network fee is more than this balance can cover — nothing to send right now
+		 */
+		maxNoteFeeTooLarge: () => LocalizedString
 	}
 	AmountInputButton: {
 		/**

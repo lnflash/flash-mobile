@@ -53,7 +53,7 @@ import {
 } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { buildMaxAmountButton } from "./max-amount-button"
-import { priceLnurlSend } from "./lnurl-fee-probe"
+import { makeLnurlFeeProbe, makeLnurlProbeCache } from "./lnurl-fee-probe"
 import { MaxAmountButton } from "@app/components/amount-input-screen"
 import { requestInvoice, requestInvoiceWithServiceParams, utils } from "lnurl-pay"
 import { fetchBreezFee, fetchLnurlPayRequest } from "@app/utils/breez-sdk"
@@ -91,11 +91,11 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const [asyncErrorMessage, setAsyncErrorMessage] = useState("")
   const [selectedFeeType, setSelectedFeeType] = useState<"fast" | "medium" | "slow">()
   const [isProcessing, setIsProcessing] = useState(false)
-  // Prices already obtained from the LNURL probe, for the life of this screen.
-  // Keyed by destination + sending wallet + probe amount: the probe amount is
-  // in the sending wallet's minor units, so 1000 sats and 1000 cents to the
-  // same address are different questions with different answers.
-  const lnurlProbeCache = useRef(new Map<string, number>())
+  // What the LNURL probe already asked the receiver, for the life of this
+  // screen: completed prices and outstanding invoice mints. Every probe that
+  // reaches the receiver mints a real invoice, so the memo is what keeps
+  // repeated MAX taps from orphaning invoices and tripping rate limits.
+  const lnurlProbeCache = useRef(makeLnurlProbeCache())
   const { data } = useSendBitcoinDetailsScreenQuery({
     fetchPolicy: "cache-first",
     returnPartialData: true,
@@ -448,33 +448,19 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     // basis for a number (ENG-554). This invoice is only ever priced, never
     // paid — pressing Next mints a fresh one for the actual send, which
     // matters because these expire in 60s.
-    const probeLnurlFee = async (probeAmount: number): Promise<number | null> => {
-      // Each completed probe mints a REAL invoice at the receiver. Without
-      // memoization, tap MAX → edit → tap MAX again leaves two orphaned
-      // invoices; against a Flash-address or flashcard receiver each is a real
-      // record, and against rate-limited services (BTCPay, LNbits) repeated
-      // taps trip the limit and the destination becomes unpriceable for the
-      // rest of the session. Cache successes only: a transient failure must
-      // not brand a destination unpriceable — the note invites another tap.
-      const cacheKey = `${pd.destination}:${walletCurrency}:${probeAmount}`
-      const cached = lnurlProbeCache.current.get(cacheKey)
-      if (cached !== undefined) return cached
-
-      const fee = await priceLnurlSend({
-        detail: pd,
-        probeAmount,
-        balanceMoneyAmount: isBtcWallet ? btcBalanceMoneyAmount : usdBalanceMoneyAmount,
-        // The params-taking variant: pd.lnurlParams is already resolved, so
-        // this is one round-trip to the receiver's callback rather than two
-        // (re-resolving the pay service first) inside the probe's budget.
-        requestInvoice: ({ params, sats }) =>
-          requestInvoiceWithServiceParams({ params, tokens: utils.toSats(sats) }),
-        getIbexFee,
-      })
-
-      if (fee !== null) lnurlProbeCache.current.set(cacheKey, fee)
-      return fee
-    }
+    const probeLnurlFee = makeLnurlFeeProbe({
+      detail: pd,
+      destination: pd.destination,
+      walletCurrency,
+      balanceMoneyAmount: isBtcWallet ? btcBalanceMoneyAmount : usdBalanceMoneyAmount,
+      // The params-taking variant: pd.lnurlParams is already resolved, so
+      // this is one round-trip to the receiver's callback rather than two
+      // (re-resolving the pay service first) inside the probe's budget.
+      requestInvoice: ({ params, sats }) =>
+        requestInvoiceWithServiceParams({ params, tokens: utils.toSats(sats) }),
+      getIbexFee,
+      cache: lnurlProbeCache.current,
+    })
 
     return buildMaxAmountButton({
       canSetAmount: pd.canSetAmount,
@@ -500,6 +486,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         feeReserved: (fee) => LL.AmountInputScreen.maxNoteFeeReserved({ fee }),
         recipientCap: (max) => LL.AmountInputScreen.maxNoteRecipientCap({ max }),
         feeUnknown: () => LL.AmountInputScreen.maxNoteFeeUnknown(),
+        feeTooLarge: () => LL.AmountInputScreen.maxNoteFeeTooLarge(),
       },
     })
   }

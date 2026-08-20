@@ -81,6 +81,7 @@ export type MaxSendReason =
   | "zero-balance"
   | "intraledger-full-balance"
   | "fee-reserved"
+  | "fee-exceeds-balance"
   | "fee-unavailable"
   | "recipient-cap"
 
@@ -88,7 +89,10 @@ export type MaxSendResult = {
   /** Max sendable amount, in the sending wallet's minor units. */
   amount: number
   reason: MaxSendReason
-  /** Set when reason is "fee-reserved" — the estimated fee held back. */
+  /**
+   * Set when reason is "fee-reserved" (the estimated fee held back) or
+   * "fee-exceeds-balance" (the estimated fee that swallowed the balance).
+   */
   feeReserved?: number
 }
 
@@ -97,6 +101,7 @@ export type MaxSendNote =
   | { kind: "none" }
   | { kind: "intraledger" }
   | { kind: "fee-reserved"; feeReserved: number }
+  | { kind: "fee-too-large" }
   | { kind: "fee-unknown" }
   | { kind: "recipient-cap"; cap: number }
 
@@ -118,6 +123,8 @@ export const noteForResult = (result: MaxSendResult): MaxSendNote => {
         : { kind: "none" }
     // No amount was proposed, so the user is owed the reason — otherwise the
     // tap looks broken.
+    case "fee-exceeds-balance":
+      return { kind: "fee-too-large" }
     case "fee-unavailable":
       return { kind: "fee-unknown" }
     case "recipient-cap":
@@ -249,11 +256,17 @@ export const computeMaxSendAmount = async ({
       // balance (amount + fee)". MAX filling an amount the very next screen
       // refuses is exactly the bug this code exists to kill, so it gives up
       // one minor unit to stay on the safe side of it.
-      result = {
-        amount: Math.max(spendableBalance - Math.ceil(fee) - 1, 0),
-        reason: "fee-reserved",
-        feeReserved: fee,
-      }
+      const maxAmount = spendableBalance - Math.ceil(fee) - 1
+      result =
+        maxAmount > 0
+          ? { amount: maxAmount, reason: "fee-reserved", feeReserved: fee }
+          : // The fee (plus its slack) swallows the whole balance. That is a
+            // different outcome from "some of the balance was reserved":
+            // there is nothing to fill, so the user is owed the reason.
+            // Clamping to zero under the fee-reserved banner made the tap a
+            // silent no-op — 2_000 sats against a 2_500-sat channel-open fee
+            // spun the chip and then said nothing at all.
+            { amount: 0, reason: "fee-exceeds-balance", feeReserved: fee }
     }
   }
 

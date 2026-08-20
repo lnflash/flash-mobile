@@ -12,6 +12,7 @@ import {
   computeMaxSendAmount,
   effectiveMaxPaymentType,
   maxChipSupportsPaymentType,
+  MaxSendNote,
   MaxSendPaymentType,
   MaxSendWalletCurrency,
   noteForResult,
@@ -31,6 +32,8 @@ export type MaxAmountButtonStrings = {
   recipientCap: (max: string) => string
   /** maxNoteFeeUnknown — shown when the destination cannot be priced. */
   feeUnknown: () => string
+  /** maxNoteFeeTooLarge — shown when the fee swallows the whole balance. */
+  feeTooLarge: () => string
 }
 
 export type BuildMaxAmountButtonArgs<M extends MoneyAmountShape, F, P> = {
@@ -132,6 +135,30 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
 
   const withAmount = (amount: number): M => ({ ...balanceMoneyAmount, amount })
 
+  // Note kind → localized string. Undefined only where there is genuinely
+  // nothing worth saying: an unremarkable result, or a money note with no
+  // display rate to format it against.
+  const noteFor = (decision: MaxSendNote): string | undefined => {
+    switch (decision.kind) {
+      case "intraledger":
+        return strings.intraledger()
+      case "fee-reserved": {
+        const feeString = formatDisplayAmount(withAmount(decision.feeReserved))
+        return feeString ? strings.feeReserved(feeString) : undefined
+      }
+      case "fee-too-large":
+        return strings.feeTooLarge()
+      case "fee-unknown":
+        return strings.feeUnknown()
+      case "recipient-cap": {
+        const capString = formatDisplayAmount(withAmount(decision.cap))
+        return capString ? strings.recipientCap(capString) : undefined
+      }
+      default:
+        return undefined
+    }
+  }
+
   // probeAmount is the balance clamped to the recipient cap (computed by
   // computeMaxSendAmount). Probing at the raw balance would trip the LUD-06
   // bounds validation inside fetchBreezFee whenever the cap binds, losing
@@ -182,30 +209,22 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
         recipientCap,
       })
 
-      const noteDecision = noteForResult(result)
+      const note = noteFor(noteForResult(result))
 
       // Nothing spendable: leave the pad untouched rather than filling an
       // empty amount under a solid MAX chip. A zero max arrives on several
-      // routes, not just "zero-balance" — a fee estimate that meets or
-      // exceeds the balance yields { amount: 0, reason: "fee-reserved" },
-      // and a receiver advertising maxSendable 0 yields a zero cap — so
-      // gate on the amount itself.
+      // routes, not just "zero-balance" — a fee that swallows the balance
+      // yields { amount: 0, reason: "fee-exceeds-balance" }, an unpriceable
+      // destination yields "fee-unavailable", and a receiver advertising
+      // maxSendable 0 yields a zero cap — so gate on the amount itself.
+      //
+      // Each of those the user can act on (top up, retry, enter an amount by
+      // hand) explains itself: a tap that proposes nothing and says nothing
+      // is indistinguishable from a broken chip. Only a wordless zero — the
+      // zero-balance route, which cannot be tapped because the chip is
+      // disabled for it — falls through to null.
       if (result.amount <= 0) {
-        // An unpriceable destination is the one zero case the user can act
-        // on (enter an amount by hand), so it explains itself instead of
-        // making the tap look broken.
-        return noteDecision.kind === "fee-unknown" ? { note: strings.feeUnknown() } : null
-      }
-
-      let note: string | undefined
-      if (noteDecision.kind === "intraledger") {
-        note = strings.intraledger()
-      } else if (noteDecision.kind === "fee-reserved") {
-        const feeString = formatDisplayAmount(withAmount(noteDecision.feeReserved))
-        note = feeString ? strings.feeReserved(feeString) : undefined
-      } else if (noteDecision.kind === "recipient-cap") {
-        const capString = formatDisplayAmount(withAmount(noteDecision.cap))
-        note = capString ? strings.recipientCap(capString) : undefined
+        return note ? { note } : null
       }
 
       return {

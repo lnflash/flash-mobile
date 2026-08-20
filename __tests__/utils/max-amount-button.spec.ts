@@ -26,6 +26,7 @@ const strings = {
   feeReserved: (fee: string) => `fee note: ${fee}`,
   recipientCap: (max: string) => `cap note: ${max}`,
   feeUnknown: () => "fee unknown note",
+  feeTooLarge: () => "fee too large note",
 }
 
 type TestArgs = BuildMaxAmountButtonArgs<TestMoneyAmount, TestGetFee, TestPayRequest>
@@ -125,9 +126,11 @@ describe("buildMaxAmountButton", () => {
       await expect(button?.compute()).resolves.toBeNull()
     })
 
-    it("resolves null when the fee estimate meets or exceeds the balance", async () => {
-      // { amount: 0, reason: "fee-reserved" } — not "zero-balance" — must
-      // also leave the pad untouched (BTC wallet with 20 sats, fee 26).
+    it("fills nothing but says why when the fee meets or exceeds the balance", async () => {
+      // { amount: 0, reason: "fee-exceeds-balance" } — not "zero-balance" —
+      // must leave the pad untouched (BTC wallet with 20 sats, fee 26). It
+      // used to resolve null, which the amount screen drops on the floor: the
+      // chip spun and then said nothing at all.
       const button = buildMaxAmountButton(
         makeArgs({
           walletCurrency: "BTC",
@@ -136,15 +139,39 @@ describe("buildMaxAmountButton", () => {
         }),
       )
 
-      await expect(button?.compute()).resolves.toBeNull()
+      const result = await button?.compute()
+
+      expect(result?.amount).toBeUndefined()
+      expect(result?.note).toBe("fee too large note")
     })
 
-    it("resolves null when the receiver advertises a zero maxSendable cap", async () => {
+    it("says why when the receiver advertises a zero maxSendable cap", async () => {
+      // The third silent-zero route: a receiver that can accept nothing. The
+      // cap note is the honest explanation — it names the limit that bound.
       const button = buildMaxAmountButton(
         makeArgs({
           walletCurrency: "BTC",
           balanceMoneyAmount: btcBalance,
           receiverMaxSats: 0,
+        }),
+      )
+
+      const result = await button?.compute()
+
+      expect(result?.amount).toBeUndefined()
+      expect(result?.note).toBe("cap note: $0.00")
+    })
+
+    it("resolves null when a zero max has nothing worth saying", async () => {
+      // No display rate, so the cap note cannot be formatted. A result of
+      // `{ note: undefined }` would set chip state for no visible reason;
+      // null keeps the tap inert instead.
+      const button = buildMaxAmountButton(
+        makeArgs({
+          walletCurrency: "BTC",
+          balanceMoneyAmount: btcBalance,
+          receiverMaxSats: 0,
+          formatDisplayAmount: () => undefined,
         }),
       )
 
@@ -461,5 +488,58 @@ describe("LNURL destinations are priced, not guessed (ENG-554)", () => {
 
     expect(probeLnurlFee).not.toHaveBeenCalled()
     expect(result?.amount).toEqual({ ...usdBalance, amount: 10_000 - 12 - 1 })
+  })
+})
+
+describe("a fee bigger than the balance is explained, not swallowed", () => {
+  // The reported case: a BTC wallet holding 2_000 sats against a Breez
+  // channel-open fee of 2_500. MAX has nothing to offer — but the tap used to
+  // resolve null, which amount-input-screen drops without a word, so the chip
+  // spun, went back to outlined, and the user was told nothing.
+  it("returns the fee-too-large note for 2_000 sats against a 2_500-sat fee", async () => {
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        balanceMoneyAmount: { ...btcBalance, amount: 2_000 },
+        fetchBreezFee: jest.fn(async () => ({ fee: 2_500, err: null })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result).not.toBeNull()
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("fee too large note")
+  })
+
+  it("distinguishes an unaffordable fee from an unpriceable destination", async () => {
+    // Same empty pad, different next move: top up versus tap MAX again.
+    const unpriceable = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        balanceMoneyAmount: { ...btcBalance, amount: 2_000 },
+        fetchBreezFee: jest.fn(async () => ({ fee: null, err: "probe failed" })),
+      }),
+    )
+
+    expect((await unpriceable?.compute())?.note).toBe("fee unknown note")
+  })
+
+  it("explains the boundary the confirm-time slack pushed to zero", async () => {
+    // balance 2_500 with a 2_499-sat fee: one sat on the old arithmetic, zero
+    // once a unit of slack is reserved. Zero with no note would be a silent
+    // regression against the previous release, so it must speak.
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        balanceMoneyAmount: { ...btcBalance, amount: 2_500 },
+        fetchBreezFee: jest.fn(async () => ({ fee: 2_499, err: null })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("fee too large note")
   })
 })
