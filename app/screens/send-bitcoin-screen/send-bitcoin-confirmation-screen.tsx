@@ -229,7 +229,8 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   // the Breez BTC wallet re-mints at send time on the LNURL/intraledger paths,
   // where a stale held invoice is irrelevant. The lifetime is read off the
   // invoice, which removes any dependence on when we *recorded* minting it,
-  // and the elapsed-since-mount reading removes any dependence on the device
+  // and the elapsed-since-first-sight reading (registered when the destination is
+  // parsed — payment-destination/lightning.ts) removes any dependence on the device
   // clock agreeing with the issuer's.
   const heldInvoiceHasExpired = useCallback(
     () =>

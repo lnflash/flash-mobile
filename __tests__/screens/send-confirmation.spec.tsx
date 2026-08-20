@@ -82,7 +82,7 @@ describe("expired held invoice", () => {
   const LONG_AFTER_EXPIRY_MS = (EXPIRES + 18 * 60) * 1000
   // An ordinary pause on the confirm screen: 90 seconds, which outlives a
   // 60-second Flash invoice but leaves it younger than expiry + the 120s
-  // clock-skew grace. Only the elapsed-since-mount reading can see this one.
+  // clock-skew grace. Only the elapsed-since-first-sight reading can see this one.
   const AFTER_ORDINARY_PAUSE_MS = MOUNTED_MS + 90 * 1000
 
   const convertMoneyAmount: ConvertMoneyAmount = (moneyAmount, currency) => ({
@@ -227,7 +227,7 @@ describe("expired held invoice", () => {
   it("refuses after an ordinary 90-second pause, which is younger than the grace", async () => {
     // The pause this guard exists to catch, and the one the absolute
     // expiry+120s comparison cannot see: 90 seconds on a 60-second invoice.
-    // Before the elapsed-since-mount reading, this user still spent the
+    // Before the elapsed-since-first-sight reading, this user still spent the
     // doomed round trip and got "Something went wrong".
     const paymentDetail = createAmountLightningPaymentDetails({
       paymentRequest: INCIDENT_INVOICE,
