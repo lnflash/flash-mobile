@@ -721,6 +721,11 @@ const en: BaseTranslation = {
     // Rendered together, because "you've spent $0 and have $65 of $125" is
     // otherwise unexplainable to the person reading it.
     allowanceRemaining: "{remaining} of {limit} left today",
+    // Used when what is left is below the minimum top-up, i.e. it cannot
+    // actually be spent. Naming the figure there ("$5.00 of $125.00 left")
+    // invites an amount that is guaranteed to be refused — the same
+    // offer-then-refuse the pre-charge check exists to stop, moved into copy.
+    allowanceExhausted: "You've used today's {limit} top-up limit",
     allowanceHeld: "{held} is held by a payment link you haven't completed",
     allowanceResets: "More becomes available at {when: string}",
     bankTransfer: "Bank Transfer",

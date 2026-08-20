@@ -2270,6 +2270,11 @@ type RootTranslation = {
 		 */
 		allowanceRemaining: RequiredParams<'limit' | 'remaining'>
 		/**
+		 * Y​o​u​'​v​e​ ​u​s​e​d​ ​t​o​d​a​y​'​s​ ​{​l​i​m​i​t​}​ ​t​o​p​-​u​p​ ​l​i​m​i​t
+		 * @param {unknown} limit
+		 */
+		allowanceExhausted: RequiredParams<'limit'>
+		/**
 		 * {​h​e​l​d​}​ ​i​s​ ​h​e​l​d​ ​b​y​ ​a​ ​p​a​y​m​e​n​t​ ​l​i​n​k​ ​y​o​u​ ​h​a​v​e​n​'​t​ ​c​o​m​p​l​e​t​e​d
 		 * @param {unknown} held
 		 */
@@ -8593,6 +8598,10 @@ export type TranslationFunctions = {
 		 * {remaining} of {limit} left today
 		 */
 		allowanceRemaining: (arg: { limit: unknown, remaining: unknown }) => LocalizedString
+		/**
+		 * You've used today's {limit} top-up limit
+		 */
+		allowanceExhausted: (arg: { limit: unknown }) => LocalizedString
 		/**
 		 * {held} is held by a payment link you haven't completed
 		 */

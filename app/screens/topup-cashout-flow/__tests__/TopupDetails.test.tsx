@@ -579,6 +579,38 @@ describe("TopupDetails per-level daily limit", () => {
     }
   })
 
+  it("does not name a remaining figure the customer cannot actually spend", () => {
+    // $5 left against a $10 minimum. "$5.00 of $125.00 left today" is true and
+    // useless: every amount it invites is below the minimum and refused. That
+    // is offer-then-refuse — the thing the pre-charge check exists to stop —
+    // relocated into copy.
+    mockUseFygaroTopupAllowanceQuery.mockReturnValue(
+      allowanceResult({ limit: 12500, held: 12000, remaining: 500 }),
+    )
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
+    const { getByPlaceholderText, getAllByText, queryAllByText, navigate } =
+      renderTopupDetails({ paymentType: "card", level: AccountLevel.One })
+
+    expect(
+      queryAllByText(en.TopupDetails.allowanceExhausted({ limit: "$125.00" })).length,
+    ).toBeGreaterThan(0)
+    expect(
+      queryAllByText(
+        en.TopupDetails.allowanceRemaining({ remaining: "$5.00", limit: "$125.00" }),
+      ),
+    ).toHaveLength(0)
+
+    fireEvent.changeText(getByPlaceholderText(en.TopupDetails.amountPlaceholder()), "20")
+    fireEvent.press(getAllByText(en.TopupDetails.continue())[0])
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      en.TopupDetails.cannotTopUp(),
+      en.TopupDetails.allowanceExhausted({ limit: "$125.00" }),
+    )
+    alertSpy.mockRestore()
+  })
+
   it("blocks against what is REMAINING, not the flat cap — the jaceth2009 case", () => {
     // 2026-08-16: $100, $80 and $60 all passed the client against a $125 cap,
     // because each is individually under it and the app had no idea $180 was
@@ -894,7 +926,7 @@ describe("TopupDetails allowance refresh on return", () => {
     const refetch = jest.fn(() => {
       // What the server says once that $60 reservation exists.
       mockUseFygaroTopupAllowanceQuery.mockReturnValue({
-        ...allowanceResult({ limit: 12500, held: 12000, remaining: 500 }),
+        ...allowanceResult({ limit: 12500, held: 10000, remaining: 2500 }),
         refetch,
       })
     })
@@ -923,7 +955,7 @@ describe("TopupDetails allowance refresh on return", () => {
     // The rendered figure moves...
     expect(
       queryByText(
-        en.TopupDetails.allowanceRemaining({ remaining: "$5.00", limit: "$125.00" }),
+        en.TopupDetails.allowanceRemaining({ remaining: "$25.00", limit: "$125.00" }),
       ),
     ).not.toBeNull()
     expect(
@@ -939,7 +971,7 @@ describe("TopupDetails allowance refresh on return", () => {
     expect(navigate).not.toHaveBeenCalled()
     expect(alertSpy).toHaveBeenCalledWith(
       en.TopupDetails.cannotTopUp(),
-      en.TopupDetails.allowanceRemaining({ remaining: "$5.00", limit: "$125.00" }),
+      en.TopupDetails.allowanceRemaining({ remaining: "$25.00", limit: "$125.00" }),
     )
     alertSpy.mockRestore()
   })
@@ -993,7 +1025,7 @@ describe("TopupDetails allowance refresh on return", () => {
 
     // And once the answer lands, the screen gates on the NEW figure.
     mockUseFygaroTopupAllowanceQuery.mockReturnValue({
-      ...allowanceResult({ limit: 12500, held: 12000, remaining: 500 }),
+      ...allowanceResult({ limit: 12500, held: 10000, remaining: 2500 }),
       refetch,
     })
     const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => undefined)
@@ -1004,7 +1036,7 @@ describe("TopupDetails allowance refresh on return", () => {
     expect(navigate).not.toHaveBeenCalled()
     expect(alertSpy).toHaveBeenCalledWith(
       en.TopupDetails.cannotTopUp(),
-      en.TopupDetails.allowanceRemaining({ remaining: "$5.00", limit: "$125.00" }),
+      en.TopupDetails.allowanceRemaining({ remaining: "$25.00", limit: "$125.00" }),
     )
     alertSpy.mockRestore()
   })

@@ -312,6 +312,28 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
    * allowance, with an alert quoting a limit note the non-card screen does not
    * even show.
    */
+  /**
+   * What to tell someone whose remaining allowance is below the minimum they
+   * are allowed to top up.
+   *
+   * "$5.00 of $125.00 left today" is true and useless: no amount at or under
+   * $5 clears the $10 minimum, so every number it invites is refused. Naming
+   * the exhausted limit instead is the same honesty the rest of this flow
+   * applies — never offer what will be turned down.
+   */
+  const allowanceCopy = (allowance: {
+    remainingCents: number
+    limitCents: number
+  }): string => {
+    const limit = `$${(allowance.limitCents / 100).toFixed(2)}`
+    return allowance.remainingCents / 100 < minimumAmount
+      ? LL.TopupDetails.allowanceExhausted({ limit })
+      : LL.TopupDetails.allowanceRemaining({
+          remaining: `$${(allowance.remainingCents / 100).toFixed(2)}`,
+          limit,
+        })
+  }
+
   const exceedsDailyLimit = (amount: string): boolean => {
     const numAmount = parseFloat(amount)
     if (isNaN(numAmount)) return false
@@ -399,10 +421,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
       Alert.alert(
         LL.TopupDetails.cannotTopUp(),
         isCard && usableAllowance
-          ? LL.TopupDetails.allowanceRemaining({
-              remaining: `$${(usableAllowance.remainingCents / 100).toFixed(2)}`,
-              limit: `$${(usableAllowance.limitCents / 100).toFixed(2)}`,
-            })
+          ? allowanceCopy(usableAllowance)
           : LL.TopupDetails.dailyLimitAmount({
               amount: `$${(dailyLimit ?? 0).toFixed(2)}`,
             }),
@@ -526,10 +545,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
           {isCard && usableAllowance ? (
             <>
               <Text type="p3" style={styles.limitNote}>
-                {LL.TopupDetails.allowanceRemaining({
-                  remaining: `$${(usableAllowance.remainingCents / 100).toFixed(2)}`,
-                  limit: `$${(usableAllowance.limitCents / 100).toFixed(2)}`,
-                })}
+                {allowanceCopy(usableAllowance)}
               </Text>
               {usableAllowance.heldCents > 0 && (
                 // Without this line, "you have spent nothing and $65 is left of
