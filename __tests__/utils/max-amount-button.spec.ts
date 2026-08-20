@@ -241,9 +241,10 @@ describe("buildMaxAmountButton", () => {
 
       const result = await button?.compute()
 
-      // fee-unavailable falls back to the full balance — no fee subtracted.
-      expect(result?.amount).toEqual(btcBalance)
-      expect(result?.note).toBeUndefined()
+      // No usable estimate, so the backend's fee cap is reserved instead of
+      // offering the whole balance (which the send flow would refuse).
+      expect(result?.amount).toEqual({ ...btcBalance, amount: 99_503 })
+      expect(result?.note).toEqual("fee note: $4.97")
     })
 
     it("routes BTC-wallet intraledger through the fee path (not the no-fee arm)", async () => {
@@ -319,15 +320,18 @@ describe("buildMaxAmountButton", () => {
       expect(setAmount).toHaveBeenCalledWith({ ...usdBalance, amount: 4_000 })
     })
 
-    it("falls back to the full balance when no IBEX estimate is available", async () => {
+    it("reserves the fee cap when no IBEX estimate is available", async () => {
+      // The LNURL case from ENG-554: no invoice exists yet, so getIbexFee
+      // resolves undefined. Offering the full balance here is what made the
+      // send fail with a generic error.
       const button = buildMaxAmountButton(
         makeArgs({ getIbexFee: jest.fn(async () => undefined) }),
       )
 
       const result = await button?.compute()
 
-      expect(result?.amount).toEqual(usdBalance)
-      expect(result?.note).toBeUndefined()
+      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_951 })
+      expect(result?.note).toEqual("fee note: $0.49")
     })
 
     it("never calls the Breez probe for a USD wallet", async () => {
