@@ -48,3 +48,65 @@ export const isInvoiceExpired = ({
 
   return nowSeconds >= timeExpireDate
 }
+
+/** The networks @galoymoney/client's decoder accepts. */
+export type InvoiceNetwork = "mainnet" | "signet" | "regtest"
+
+/**
+ * The network a bolt11 belongs to, read from its human-readable prefix.
+ *
+ * Derived rather than hardcoded so the expiry check works on every build.
+ * The send flow hardcodes "mainnet" elsewhere, which would make this guard
+ * silently useless on a signet or regtest build: the decoder throws on a
+ * prefix mismatch, the catch swallows it, and nothing is ever checked.
+ *
+ * Order matters — "lnbcrt" also starts with "lnbc", so the longer prefix has
+ * to be tested first.
+ */
+export const networkForPaymentRequest = (
+  paymentRequest: string,
+): InvoiceNetwork | undefined => {
+  const pr = paymentRequest.trim().toLowerCase()
+  if (pr.startsWith("lnbcrt")) return "regtest"
+  if (pr.startsWith("lntbs")) return "signet"
+  if (pr.startsWith("lnbc")) return "mainnet"
+  return undefined
+}
+
+export type HeldInvoiceExpiredArgs = {
+  /** The bolt11 the confirm screen is holding, if it has one. */
+  paymentRequest?: string
+  /** Current time in epoch SECONDS. */
+  nowSeconds: number
+  /** Injected so this decision stays testable without the screen. */
+  decode: (
+    paymentRequest: string,
+    network: InvoiceNetwork,
+  ) => { timeExpireDate?: number | null }
+}
+
+/**
+ * Whether the send should be refused because the held invoice is dead.
+ *
+ * Fails open on every unknown: no invoice, an unrecognised prefix, or a
+ * decode failure all resolve to false. The backend still rejects a genuinely
+ * expired invoice, so a false negative only restores today's behaviour —
+ * whereas a false positive blocks a payment that would have worked.
+ */
+export const isHeldInvoiceExpired = ({
+  paymentRequest,
+  nowSeconds,
+  decode,
+}: HeldInvoiceExpiredArgs): boolean => {
+  if (!paymentRequest) return false
+
+  const network = networkForPaymentRequest(paymentRequest)
+  if (!network) return false
+
+  try {
+    const { timeExpireDate } = decode(paymentRequest, network)
+    return isInvoiceExpired({ timeExpireDate, nowSeconds })
+  } catch {
+    return false
+  }
+}

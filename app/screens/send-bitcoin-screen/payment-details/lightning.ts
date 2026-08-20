@@ -199,6 +199,11 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
 
   return {
     destination: paymentRequest,
+    // Same string as `destination` here, but named for what it is. The
+    // confirm screen checks the invoice's expiry before sending (ENG-555)
+    // and must not have to know which detail type stores the bolt11 where —
+    // an LNURL detail's `destination` is an address, not an invoice.
+    paymentRequest,
     memo,
     convertMoneyAmount,
     setConvertMoneyAmount,
@@ -342,6 +347,11 @@ export const createAmountLightningPaymentDetails = <T extends WalletCurrency>(
 
   return {
     destination: paymentRequest,
+    // Same string as `destination` here, but named for what it is. The
+    // confirm screen checks the invoice's expiry before sending (ENG-555)
+    // and must not have to know which detail type stores the bolt11 where —
+    // an LNURL detail's `destination` is an address, not an invoice.
+    paymentRequest,
     destinationSpecifiedAmount: paymentRequestAmount,
     convertMoneyAmount,
     memo,

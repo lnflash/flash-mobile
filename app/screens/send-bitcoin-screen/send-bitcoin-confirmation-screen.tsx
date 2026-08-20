@@ -19,7 +19,7 @@ import { PrimaryBtn } from "@app/components/buttons"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useSendPayment } from "./use-send-payment"
 import { decodeInvoiceString, Network as NetworkLibGaloy } from "@galoymoney/client"
-import { isInvoiceExpired } from "./invoice-expiry"
+import { isHeldInvoiceExpired } from "./invoice-expiry"
 import { useActivityIndicator, useBreez } from "@app/hooks"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 
@@ -200,25 +200,16 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   // wrong", which sends the user (and support) after the wrong cause. Read the
   // expiry off the invoice itself rather than timing it locally, so a clock
   // skew or a backgrounded app cannot fool it.
-  const heldInvoiceHasExpired = useCallback((): boolean => {
-    const paymentRequest = paymentDetail.paymentRequest
-    if (!paymentRequest) return false
-
-    try {
-      const { timeExpireDate } = decodeInvoiceString(
-        paymentRequest,
-        "mainnet" as NetworkLibGaloy,
-      )
-      return isInvoiceExpired({
-        timeExpireDate,
+  const heldInvoiceHasExpired = useCallback(
+    () =>
+      isHeldInvoiceExpired({
+        paymentRequest: paymentDetail.paymentRequest,
         nowSeconds: Math.floor(Date.now() / 1000),
-      })
-    } catch {
-      // Undecodable: let the backend be the judge rather than blocking a
-      // send on a parsing quirk.
-      return false
-    }
-  }, [paymentDetail.paymentRequest])
+        decode: (paymentRequest, network) =>
+          decodeInvoiceString(paymentRequest, network as NetworkLibGaloy),
+      }),
+    [paymentDetail.paymentRequest],
+  )
 
   const handleSendPayment = useCallback(async () => {
     if (sendPayment && sendingWalletDescriptor?.currency) {
@@ -310,7 +301,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         <PrimaryBtn
           loading={sendPaymentLoading}
           label={LL.SendBitcoinConfirmationScreen.title()}
-          disabled={!isValidAmount || hasAttemptedSend || !!paymentError}
+          disabled={!isValidAmount || hasAttemptedSend || Boolean(paymentError)}
           onPress={handleSendPayment}
         />
       </View>
