@@ -685,7 +685,7 @@
     "maxFeeSelected": "Ini adalah cas bayaran maksimum yang akan dikenakan untuk transaksi ini. Tapi cas ni mungkin akan lagi rendah bila bayaran telah dibuat.",
     "feeError": "Gagal untuk kira berapa cas dikenakan",
     "breezFeeText": "There may be a small fee for routing",
-    "invoiceExpired": "This invoice expired before the payment was sent. Go back and enter the amount again to get a fresh one."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "{NamaBank: string} id pengguna sekarang adalah {NamaBank: string} alamatnya.",

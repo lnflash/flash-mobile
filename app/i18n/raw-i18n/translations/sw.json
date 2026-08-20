@@ -635,7 +635,7 @@
     "maxFeeSelected": "Hii ndio ada ya juu zaidi ambayo unawezalipishwa kwa malipo haya. Inaweza kuishia kuwa kidogo malipo yatakapofanyika.",
     "feeError": "Imeshindwa kuhesabu ada",
     "breezFeeText": "There may be a small fee for routing",
-    "invoiceExpired": "This invoice expired before the payment was sent. Go back and enter the amount again to get a fresh one."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "{bankName: string} majina ya watumiaji sasa ni anwani za {bankName: string} ",

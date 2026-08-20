@@ -35,17 +35,20 @@ import type { PaymentType } from "@galoymoney/client"
 // stable property of the payment.
 
 /**
- * How far past the stated expiry we still let a send through, in seconds.
+ * How far past the stated expiry the absolute backstop still lets a send
+ * through, in seconds.
  *
- * `nowSeconds` comes from the device wall clock, which is not authoritative:
- * the issuer's clock is. Without a tolerance the guard fails CLOSED on skew —
- * a handset running two minutes fast would mark every freshly minted 60-second
+ * Comparing `nowSeconds` against the stated expiry compares two *different*
+ * clocks — the device's against the issuer's — and only the issuer's is
+ * authoritative. Without a tolerance that comparison fails CLOSED on skew: a
+ * handset running two minutes fast would mark every freshly minted 60-second
  * Flash invoice expired the instant it was created, and the user could never
  * send at all, where before this guard existed the backend (validating against
  * server time) would have accepted the payment.
  *
- * 120s is chosen to swallow ordinary handset drift while still catching the
- * ENG-555 case with a wide margin — that retry landed ~18 minutes late.
+ * 120s swallows ordinary handset drift. It is not the primary signal — see
+ * `firstSeenSeconds` below, which measures the device clock against *itself*
+ * and so cannot be fooled by any offset at all.
  */
 export const CLOCK_SKEW_GRACE_SECONDS = 120
 
@@ -56,10 +59,35 @@ export type InvoiceExpiryArgs = {
   timestamp?: number | null
   /** Current time in epoch SECONDS, per the device clock. */
   nowSeconds: number
+  /**
+   * The device clock's reading when the confirm screen mounted, in epoch
+   * SECONDS — i.e. before the user could have paused on it.
+   *
+   * Read off the same clock as `nowSeconds`, so `nowSeconds - firstSeenSeconds`
+   * is an elapsed *duration*, not a comparison against someone else's clock:
+   * any constant offset cancels. Optional — omitted, only the absolute
+   * backstop is available.
+   */
+  firstSeenSeconds?: number | null
 }
 
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value)
+
 /**
- * Whether a held invoice is far enough past its expiry to refuse the send.
+ * Whether a held invoice is dead enough to refuse the send.
+ *
+ * Two signals, in order of trustworthiness:
+ *
+ *  1. Elapsed since first sight (primary, offset-immune). The confirm screen
+ *     cannot have mounted before the invoice was minted, so the time it has
+ *     spent in front of *this* user never overstates the invoice's real age.
+ *     Once that exceeds the invoice's whole stated lifetime, the invoice is
+ *     dead whatever the handset thinks the wall-clock time is. This is what
+ *     catches the ordinary confirm-screen pause on a 60-second invoice, which
+ *     the absolute comparison below cannot see until the invoice is 180s old.
+ *  2. Absolute expiry + grace (backstop), for the invoice that was already
+ *     old when the screen first saw it.
  *
  * Fails open on every unknown, and on a device clock that is provably wrong:
  *
@@ -69,6 +97,7 @@ export type InvoiceExpiryArgs = {
  *    costs a payment that would have worked.
  *  - `nowSeconds` before the invoice's own issue time — the device clock is
  *    behind the issuer's, so nothing derived from it can be trusted.
+ *  - A first sighting that already read as long dead — see below.
  *  - Inside CLOCK_SKEW_GRACE_SECONDS past the expiry — plausible drift rather
  *    than a genuinely dead invoice.
  */
@@ -76,20 +105,43 @@ export const isInvoiceExpired = ({
   timeExpireDate,
   timestamp,
   nowSeconds,
+  firstSeenSeconds,
 }: InvoiceExpiryArgs): boolean => {
-  if (typeof timeExpireDate !== "number" || !Number.isFinite(timeExpireDate)) {
-    return false
-  }
-  if (!Number.isFinite(nowSeconds)) return false
+  if (!isFiniteNumber(timeExpireDate)) return false
+  if (!isFiniteNumber(nowSeconds)) return false
 
   // Skew detector: an invoice cannot have been issued in the future, so a
   // "now" that precedes its issue time proves the device clock is behind.
+  if (isFiniteNumber(timestamp) && nowSeconds < timestamp) return false
+
   if (
-    typeof timestamp === "number" &&
-    Number.isFinite(timestamp) &&
-    nowSeconds < timestamp
+    isFiniteNumber(timestamp) &&
+    isFiniteNumber(firstSeenSeconds) &&
+    timeExpireDate > timestamp
   ) {
-    return false
+    // The invoice's own lifetime, straight off the bolt11 — 60 seconds for a
+    // Flash receive invoice, per IBEX's cap.
+    const lifetimeSeconds = timeExpireDate - timestamp
+
+    // (1) Primary signal. Both readings come from the device clock, so this
+    // is a true elapsed duration: a handset ten minutes fast reads 0 here on
+    // a fresh invoice, exactly like a correct one. It can only fire once the
+    // invoice's entire lifetime has genuinely passed under the user's nose.
+    if (nowSeconds - firstSeenSeconds > lifetimeSeconds) return true
+
+    // (2) Mute the backstop when this screen's *first* reading already put
+    // the invoice well past its lifetime. That reading cannot distinguish a
+    // genuinely stale invoice from a fast handset — and a genuinely stale one
+    // barely exists here, because parsePaymentDestination already rejects an
+    // expired bolt11 at paste/scan time (@galoymoney/client's
+    // lightningInvoiceHasExpired). What is left is overwhelmingly skew: an
+    // LNURL detail mints its invoice on the way into this screen, so "already
+    // long dead on arrival" is the signature of a wrong clock, not a wrong
+    // invoice. Signal (1) still covers this user; the backstop would only be
+    // guessing, and guessing wrong costs them the payment.
+    if (firstSeenSeconds - timestamp > lifetimeSeconds + CLOCK_SKEW_GRACE_SECONDS) {
+      return false
+    }
   }
 
   return nowSeconds > timeExpireDate + CLOCK_SKEW_GRACE_SECONDS
@@ -124,6 +176,8 @@ export type HeldInvoiceExpiredArgs = {
   paymentRequest?: string
   /** Current time in epoch SECONDS. */
   nowSeconds: number
+  /** Device-clock reading from when the confirm screen mounted, in SECONDS. */
+  firstSeenSeconds?: number | null
   /** Injected so this decision stays testable without the screen. */
   decode: (
     paymentRequest: string,
@@ -142,6 +196,7 @@ export type HeldInvoiceExpiredArgs = {
 export const isHeldInvoiceExpired = ({
   paymentRequest,
   nowSeconds,
+  firstSeenSeconds,
   decode,
 }: HeldInvoiceExpiredArgs): boolean => {
   if (!paymentRequest) return false
@@ -151,7 +206,12 @@ export const isHeldInvoiceExpired = ({
 
   try {
     const { timeExpireDate, timestamp } = decode(paymentRequest, network)
-    return isInvoiceExpired({ timeExpireDate, timestamp, nowSeconds })
+    return isInvoiceExpired({
+      timeExpireDate,
+      timestamp,
+      nowSeconds,
+      firstSeenSeconds,
+    })
   } catch {
     return false
   }

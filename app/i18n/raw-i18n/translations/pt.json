@@ -685,7 +685,7 @@
     "maxFeeSelected": "Esta é a taxa máxima que será cobrada por esta transação. Pode acabar sendo menor uma vez que o pagamento foi feito.",
     "feeError": "Falha ao calcular a taxa",
     "breezFeeText": "There may be a small fee for routing",
-    "invoiceExpired": "This invoice expired before the payment was sent. Go back and enter the amount again to get a fresh one."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "Nomes de usuário {bankName: string} agora são endereços {bankName: string}.",

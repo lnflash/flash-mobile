@@ -685,7 +685,7 @@
     "maxFeeSelected": "Սա առավելագույն վճարն է, որը Ձեզանից կգանձվի այս գործառնության համար: Վճարումը կատարելուց հետո այն կարող է նվազել։ ",
     "feeError": "Չհաջողվեց հաշվել վճարը",
     "breezFeeText": "There may be a small fee for routing",
-    "invoiceExpired": "This invoice expired before the payment was sent. Go back and enter the amount again to get a fresh one."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "{bankName: string} օգտանունները հիմա {bankName: string} հասցեներն են։ ",

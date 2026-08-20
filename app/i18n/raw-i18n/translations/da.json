@@ -685,7 +685,7 @@
     "maxFeeSelected": "Dette er det maksimale gebyr, du vil blive opkrævet for denne transaktion. Det kan ende med at være mindre, når betalingen er foretaget.",
     "feeError": "Kunne ikke beregne gebyr",
     "breezFeeText": "Der kan være et lille gebyr for routing",
-    "invoiceExpired": "This invoice expired before the payment was sent. Go back and enter the amount again to get a fresh one."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "{bankName: string} brugernavne er nu {bankName: string} adresser.",

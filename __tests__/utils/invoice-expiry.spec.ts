@@ -153,6 +153,149 @@ describe("isInvoiceExpired", () => {
   })
 })
 
+// `firstSeenSeconds` is the device clock as it read when the confirm screen
+// mounted. Subtracting it from `nowSeconds` compares that clock against
+// *itself*, so the result is an elapsed duration and any constant offset
+// cancels. That is what makes it the primary signal: the absolute comparison
+// against the issuer's stated expiry is off by however wrong the handset is.
+describe("isInvoiceExpired with a first-seen reading", () => {
+  const LIFETIME = EXPIRES - ISSUED // 60s, per IBEX's cap on Flash invoices
+
+  it("blocks an ordinary confirm-screen pause the absolute check cannot see", () => {
+    // The case this module exists for: the user opens confirm on a live
+    // 60-second invoice and taps Send 90 seconds later. The invoice is 30s
+    // dead, but only 90s old — inside expiry + 120s grace, so the absolute
+    // comparison alone still waves it through and spends the doomed round
+    // trip. Elapsed-since-mount catches it.
+    const args = {
+      timeExpireDate: EXPIRES,
+      timestamp: ISSUED,
+      firstSeenSeconds: ISSUED,
+      nowSeconds: ISSUED + 90,
+    }
+    expect(isInvoiceExpired(args)).toBe(true)
+    // Proof the absolute term is not what fired: drop the elapsed reading and
+    // the very same moment is allowed through.
+    expect(isInvoiceExpired({ ...args, firstSeenSeconds: undefined })).toBe(false)
+  })
+
+  it("does not fire before the invoice's whole lifetime has elapsed", () => {
+    for (let elapsed = 0; elapsed <= LIFETIME; elapsed += 1) {
+      expect(
+        isInvoiceExpired({
+          timeExpireDate: EXPIRES,
+          timestamp: ISSUED,
+          firstSeenSeconds: ISSUED,
+          nowSeconds: ISSUED + elapsed,
+        }),
+      ).toBe(false)
+    }
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: ISSUED,
+        firstSeenSeconds: ISSUED,
+        nowSeconds: ISSUED + LIFETIME + 1,
+      }),
+    ).toBe(true)
+  })
+
+  it("lets a badly wrong-but-fast handset pay a freshly minted invoice", () => {
+    // Regression: a handset ten minutes fast reads every 60-second invoice as
+    // 600s dead the instant it is minted, so the absolute comparison refuses
+    // an LNURL send that works today — and tells the user to fetch another
+    // invoice, which will read expired too. Unpayable, forever.
+    //
+    // Elapsed-since-mount reads 0 on that handset exactly as it does on a
+    // correct one, and the absolute term is muted because the first sighting
+    // was already impossible (see invoice-expiry.ts).
+    for (const skew of [CLOCK_SKEW_GRACE_SECONDS + 61, 10 * 60, 60 * 60, 26 * 60 * 60]) {
+      // Mount and tap at the mint instant, as misread by the fast clock.
+      expect(
+        isInvoiceExpired({
+          timeExpireDate: EXPIRES,
+          timestamp: ISSUED,
+          firstSeenSeconds: ISSUED + skew,
+          nowSeconds: ISSUED + skew,
+        }),
+      ).toBe(false)
+    }
+  })
+
+  it("still blocks that handset once it has genuinely sat on the invoice", () => {
+    // Fail-open on skew must not become fail-open forever: the same
+    // ten-minutes-fast handset, paused 90 seconds on the confirm screen, is
+    // still refused — the elapsed reading does not care about the offset.
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: ISSUED,
+        firstSeenSeconds: ISSUED + 10 * 60,
+        nowSeconds: ISSUED + 10 * 60 + 90,
+      }),
+    ).toBe(true)
+  })
+
+  it("keeps the absolute backstop for an invoice that aged before we saw it", () => {
+    // A long-lived invoice (1h) scanned 59 minutes in: elapsed-since-mount
+    // will not reach an hour, and the first sighting was plausible, so the
+    // absolute comparison is still the one doing the work.
+    const longIssued = ISSUED
+    const longExpires = ISSUED + 3600
+    const firstSeenSeconds = longIssued + 59 * 60
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: longExpires,
+        timestamp: longIssued,
+        firstSeenSeconds,
+        nowSeconds: longExpires + CLOCK_SKEW_GRACE_SECONDS + 1,
+      }),
+    ).toBe(true)
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: longExpires,
+        timestamp: longIssued,
+        firstSeenSeconds,
+        nowSeconds: longExpires + CLOCK_SKEW_GRACE_SECONDS,
+      }),
+    ).toBe(false)
+  })
+
+  it("ignores the elapsed reading when the invoice states no lifetime", () => {
+    // Without a timestamp there is no lifetime to compare elapsed time
+    // against, and a non-positive one is malformed. Either way the elapsed
+    // term must stay silent rather than fire on a zero-length window.
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        firstSeenSeconds: ISSUED,
+        nowSeconds: ISSUED + 90,
+      }),
+    ).toBe(false)
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: ISSUED,
+        timestamp: ISSUED,
+        firstSeenSeconds: ISSUED,
+        nowSeconds: ISSUED + 90,
+      }),
+    ).toBe(false)
+  })
+
+  it("ignores an unusable first-seen reading", () => {
+    for (const firstSeenSeconds of [undefined, null, Number.NaN, Infinity]) {
+      expect(
+        isInvoiceExpired({
+          timeExpireDate: EXPIRES,
+          timestamp: ISSUED,
+          firstSeenSeconds,
+          nowSeconds: 1787245132,
+        }),
+      ).toBe(true)
+    }
+  })
+})
+
 // The BTC (Breez/Spark) wallet does not transmit the held bolt11 on every
 // path: `useSendPayment` routes BTC + lnurl/intraledger to `payLnurlBreez`,
 // which mints a fresh invoice at send time. Checking the held invoice's
@@ -255,6 +398,32 @@ describe("isHeldInvoiceExpired (the decision the confirm screen makes)", () => {
         decode,
       }),
     ).toBe(false)
+  })
+
+  it("refuses a 90-second pause on the real invoice, on any clock", () => {
+    // End to end through the real decoder: the lifetime is read off the
+    // bolt11 (60s) and compared against time actually spent on the confirm
+    // screen, so the same 90-second pause is caught whether the handset is
+    // right or ten minutes fast.
+    for (const skew of [0, 10 * 60]) {
+      expect(
+        isHeldInvoiceExpired({
+          paymentRequest: INCIDENT_INVOICE,
+          firstSeenSeconds: ISSUED + skew,
+          nowSeconds: ISSUED + skew + 90,
+          decode,
+        }),
+      ).toBe(true)
+      // ...and the same handset, tapping straight away, is not.
+      expect(
+        isHeldInvoiceExpired({
+          paymentRequest: INCIDENT_INVOICE,
+          firstSeenSeconds: ISSUED + skew,
+          nowSeconds: ISSUED + skew,
+          decode,
+        }),
+      ).toBe(false)
+    }
   })
 
   it("fails open with no invoice, a bad prefix, or a decode failure", () => {

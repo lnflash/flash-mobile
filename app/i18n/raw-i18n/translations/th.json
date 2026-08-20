@@ -685,7 +685,7 @@
     "maxFeeSelected": "นี่คือค่าธรรมเนียมสูงสุดที่จะถูกเรียกเก็บในธุรกรรมนี้ได้ มันอาจน้อยกว่านี้เมื่อมีการทำธุรกรรมกันจริงๆ",
     "feeError": "การคำนวณค่าธรรมเนียมล้มเหลว",
     "breezFeeText": "There may be a small fee for routing",
-    "invoiceExpired": "This invoice expired before the payment was sent. Go back and enter the amount again to get a fresh one."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "ชื่อผู้ใช้{bankName: string} เป็นแอดเดรส{bankName: string}ของคุณในขณะนี้",

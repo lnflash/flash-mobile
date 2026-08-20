@@ -14,6 +14,7 @@ import { BreezContext } from "@app/contexts/BreezContext"
 import { WalletCurrency } from "@app/graphql/generated"
 import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 import { payLightningBreez, payLnurlBreez } from "@app/utils/breez-sdk"
+import { getAnalytics } from "@react-native-firebase/analytics"
 import baseTranslation from "@app/i18n/en"
 import type { Translation } from "@app/i18n/i18n-types"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
@@ -59,10 +60,18 @@ describe("expired held invoice", () => {
   // The real invoice from the incident: issued 1787243982, expires 1787244042.
   const INCIDENT_INVOICE =
     "lnbc1p4gwtwwpp5wwulk8jw0llvgjadwzuen6nxh7hgmddplj3evpgjc7n8l5kzqvmqdph2pshjgr5dusyvmrpwd5zq4mpd3kx2apq24ek2u36ypj8yetpv3kkz7qcqzzsxqzpusp5wane88x5twmdlpnu4cqrk4wd6g3tks7xgq798nt9zt68vmcnnp6q9qxpqysgqnszg0ycjk4255es2hdd3ajep3yquuvra6jn4k8shskhpzg80mrl9m9pgylahzq80aw9ekz6e47ycpcf558080xrxn6uljn54lc447rqpn9u06u"
+  const ISSUED = 1787243982
   const EXPIRES = 1787244042
-  // The user's retry from the report, ~18 minutes past expiry — well beyond
-  // the clock-skew grace, so this is a genuinely dead invoice.
+  // The screen opens while the invoice is still alive — which is the only way
+  // it can open, since parsePaymentDestination rejects an already-dead bolt11
+  // at paste/scan time and an LNURL detail mints on the way in.
+  const MOUNTED_MS = (ISSUED + 4) * 1000
+  // The user's retry from the report, ~18 minutes past expiry.
   const LONG_AFTER_EXPIRY_MS = (EXPIRES + 18 * 60) * 1000
+  // An ordinary pause on the confirm screen: 90 seconds, which outlives a
+  // 60-second Flash invoice but leaves it younger than expiry + the 120s
+  // clock-skew grace. Only the elapsed-since-mount reading can see this one.
+  const AFTER_ORDINARY_PAUSE_MS = MOUNTED_MS + 90 * 1000
 
   const convertMoneyAmount: ConvertMoneyAmount = (moneyAmount, currency) => ({
     amount: moneyAmount.amount,
@@ -133,17 +142,36 @@ describe("expired held invoice", () => {
     await act(async () => {})
     await act(async () => {})
 
-    const confirm = () =>
+    // The screen reads the clock twice: once at mount, once when Send is
+    // tapped. Advancing it between the two is what turns "the invoice looks
+    // old" into "the user sat on this invoice", which is the only reading a
+    // wrong device clock cannot fake.
+    const confirm = (atMs: number = LONG_AFTER_EXPIRY_MS) =>
       act(async () => {
+        jest.spyOn(Date, "now").mockReturnValue(atMs)
         fireEvent.press(screen.getByText(en.SendBitcoinConfirmationScreen.title))
       })
 
     return { ...screen, navigate, confirm }
   }
 
+  const blockedEvents = () =>
+    (getAnalytics().logEvent as jest.Mock).mock.calls.filter(
+      ([event]) => event === "payment_blocked_expired_invoice",
+    )
+
+  // Firebase event params are snake_case by convention — app/utils/analytics.ts
+  // turns the rule off file-wide for the same reason.
+  /* eslint-disable camelcase */
+  const blockedEvent = (payment_type: string, sending_wallet: WalletCurrency) => [
+    "payment_blocked_expired_invoice",
+    { payment_type, sending_wallet },
+  ]
+  /* eslint-enable camelcase */
+
   beforeEach(() => {
     jest.clearAllMocks()
-    jest.spyOn(Date, "now").mockReturnValue(LONG_AFTER_EXPIRY_MS)
+    jest.spyOn(Date, "now").mockReturnValue(MOUNTED_MS)
   })
 
   afterEach(() => {
@@ -161,37 +189,115 @@ describe("expired held invoice", () => {
     const { getByText, queryByText, confirm } = await renderConfirmation(paymentDetail)
     await confirm()
 
-    // A scanned or pasted bolt11 cannot be re-minted by going back: setAmount
-    // returns the same invoice, and an amount-carrying invoice has no amount
-    // field at all. Telling this user to re-enter the amount would loop them
-    // forever, so they are told to get a new invoice from the payee.
+    // A scanned or pasted bolt11 cannot be re-minted by going back: going
+    // back and forward returns the same invoice, and an amount-carrying
+    // invoice has no amount field at all. Telling this user to confirm again
+    // would loop them forever, so they are told to get a new invoice from the
+    // payee.
     expect(getByText(en.SendBitcoinDestinationScreen.expiredInvoice)).toBeTruthy()
-    expect(queryByText(en.SendBitcoinConfirmationScreen.invoiceExpired)).toBeNull()
+    expect(queryByText(en.SendBitcoinConfirmationScreen.heldInvoiceExpired)).toBeNull()
     // The whole point of the guard: no doomed round trip.
     expect(payLightningBreez).not.toHaveBeenCalled()
+    // ...and the refusal is countable. logPaymentAttempt deliberately does
+    // not fire here, so without this event a blocked send leaves no trace at
+    // all — client or server — and ENG-555 stays unanswerable.
+    expect(blockedEvents()).toEqual([blockedEvent("lightning", WalletCurrency.Btc)])
+    expect(getAnalytics().logEvent).not.toHaveBeenCalledWith(
+      "payment_attempt",
+      expect.anything(),
+    )
   })
 
-  it("tells an LNURL sender to go back, where a fresh invoice really is minted", async () => {
+  it("refuses after an ordinary 90-second pause, which is younger than the grace", async () => {
+    // The pause this guard exists to catch, and the one the absolute
+    // expiry+120s comparison cannot see: 90 seconds on a 60-second invoice.
+    // Before the elapsed-since-mount reading, this user still spent the
+    // doomed round trip and got "Something went wrong".
+    const paymentDetail = createAmountLightningPaymentDetails({
+      paymentRequest: INCIDENT_INVOICE,
+      paymentRequestAmount: amount,
+      convertMoneyAmount,
+      sendingWalletDescriptor: btcSendingWalletDescriptor,
+    })
+
+    const { getByText, confirm } = await renderConfirmation(paymentDetail)
+    await confirm(AFTER_ORDINARY_PAUSE_MS)
+
+    expect(getByText(en.SendBitcoinDestinationScreen.expiredInvoice)).toBeTruthy()
+    expect(payLightningBreez).not.toHaveBeenCalled()
+    expect(blockedEvents()).toHaveLength(1)
+  })
+
+  // A USD send puts the held bolt11 in the GraphQL mutation input, so the
+  // guard applies — unlike the Breez BTC wallet further down.
+  const usdLnurlPaymentDetail = (lnurlPayParams = lnurlParams()) => {
     const lnurlDetail = createLnurlPaymentDetails({
       lnurl: "someone@flashapp.me",
-      lnurlParams: lnurlParams(),
+      lnurlParams: lnurlPayParams,
       paymentRequest: INCIDENT_INVOICE,
       paymentRequestAmount: amount,
       unitOfAccountAmount: amount,
       convertMoneyAmount,
-      // A USD send puts the held bolt11 in the GraphQL mutation input, so the
-      // guard applies here — unlike the Breez BTC wallet below.
       sendingWalletDescriptor: { currency: WalletCurrency.Usd, id: "testwallet" },
     })
     const sendPaymentMutation = jest.fn()
-    const paymentDetail = { ...lnurlDetail, sendPaymentMutation }
+    return { paymentDetail: { ...lnurlDetail, sendPaymentMutation }, sendPaymentMutation }
+  }
+
+  it("tells an LNURL sender to go back, where a fresh invoice really is minted", async () => {
+    const { paymentDetail, sendPaymentMutation } = usdLnurlPaymentDetail()
 
     const { getByText, queryByText, confirm } = await renderConfirmation(paymentDetail)
-    await confirm()
+    await confirm(AFTER_ORDINARY_PAUSE_MS)
 
-    expect(getByText(en.SendBitcoinConfirmationScreen.invoiceExpired)).toBeTruthy()
+    expect(getByText(en.SendBitcoinConfirmationScreen.heldInvoiceExpired)).toBeTruthy()
     expect(queryByText(en.SendBitcoinDestinationScreen.expiredInvoice)).toBeNull()
     expect(sendPaymentMutation).not.toHaveBeenCalled()
+    expect(blockedEvents()).toEqual([blockedEvent("lnurl", WalletCurrency.Usd)])
+  })
+
+  it("gives a fixed-amount LNURL sender a remedy they can actually follow", async () => {
+    // min === max (a flashcard reload, a fixed-price merchant QR) makes the
+    // amount a destination-specified one, which renders the amount input
+    // disabled. "Enter the amount again" would send this user hunting for a
+    // field that is not there; going back and forward re-mints on its own.
+    const { paymentDetail } = usdLnurlPaymentDetail(
+      createMock<LnUrlPayServiceResponse>({
+        min: 100 as Satoshis,
+        max: 100 as Satoshis,
+      }),
+    )
+    expect(paymentDetail.canSetAmount).toBe(false)
+
+    const { getByText, confirm } = await renderConfirmation(paymentDetail)
+    await confirm(AFTER_ORDINARY_PAUSE_MS)
+
+    const remedy = en.SendBitcoinConfirmationScreen.heldInvoiceExpired
+    expect(getByText(remedy)).toBeTruthy()
+    expect(remedy).not.toMatch(/enter the amount/i)
+  })
+
+  it("does not block a badly fast handset on a freshly minted LNURL invoice", async () => {
+    // A handset more than expiry + 120s fast reads every invoice it is ever
+    // shown as long dead. Refusing on that reading makes an LNURL send
+    // impossible — the "fresh one" the copy promises reads expired too — for
+    // a payment that works today. The elapsed reading is 0 here, exactly as
+    // it is on a correct clock, so the send goes out.
+    const tenMinutesFastMs = (ISSUED + 10 * 60) * 1000
+    jest.spyOn(Date, "now").mockReturnValue(tenMinutesFastMs)
+
+    const { paymentDetail, sendPaymentMutation } = usdLnurlPaymentDetail()
+    sendPaymentMutation.mockResolvedValue({
+      data: { lnInvoicePaymentSend: { status: "SUCCESS", errors: [] } },
+    })
+
+    const { queryByText, confirm } = await renderConfirmation(paymentDetail)
+    await confirm(tenMinutesFastMs)
+
+    expect(queryByText(en.SendBitcoinConfirmationScreen.heldInvoiceExpired)).toBeNull()
+    expect(queryByText(en.SendBitcoinDestinationScreen.expiredInvoice)).toBeNull()
+    expect(blockedEvents()).toHaveLength(0)
+    expect(sendPaymentMutation).toHaveBeenCalled()
   })
 
   it("does not block a BTC LNURL send, which mints a fresh invoice anyway", async () => {
@@ -212,8 +318,9 @@ describe("expired held invoice", () => {
     const { queryByText, navigate, confirm } = await renderConfirmation(paymentDetail)
     await confirm()
 
-    expect(queryByText(en.SendBitcoinConfirmationScreen.invoiceExpired)).toBeNull()
+    expect(queryByText(en.SendBitcoinConfirmationScreen.heldInvoiceExpired)).toBeNull()
     expect(queryByText(en.SendBitcoinDestinationScreen.expiredInvoice)).toBeNull()
+    expect(blockedEvents()).toHaveLength(0)
     expect(payLnurlBreez).toHaveBeenCalled()
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith("sendBitcoinSuccess", expect.anything()),
