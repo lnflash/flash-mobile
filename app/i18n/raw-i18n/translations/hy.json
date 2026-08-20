@@ -1591,7 +1591,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "USD հաշիվ",

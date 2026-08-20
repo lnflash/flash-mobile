@@ -40,8 +40,18 @@ const InforError: React.FC<Props> = ({
       const convertedAmount = convertMoneyAmount(unitOfAccountAmount, WalletCurrency.Usd)
       if (convertedAmount.amount < 1) {
         setHasError(true)
+        // The threshold is one USD cent, so say so in money rather than
+        // handing the string a bare "1" that names no unit.
         setErrorMsg(
-          LL.SendBitcoinScreen.minAmountInvoiceError({ amount: 1 }),
+          LL.SendBitcoinScreen.minAmountInvoiceError({
+            amount: formatMoneyAmount({
+              moneyAmount: {
+                amount: 1,
+                currency: WalletCurrency.Usd,
+                currencyCode: "USD",
+              },
+            }),
+          }),
         )
       } else {
         setHasError(false)
@@ -64,7 +74,7 @@ const InforError: React.FC<Props> = ({
           })}
         </Text>
       )}
-      {!!errorMsg && <Text style={styles.withdrawalErrorText}>{errorMsg}</Text>}
+      {Boolean(errorMsg) && <Text style={styles.withdrawalErrorText}>{errorMsg}</Text>}
     </>
   )
 }

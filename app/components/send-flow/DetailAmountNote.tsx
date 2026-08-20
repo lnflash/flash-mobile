@@ -101,46 +101,52 @@ const DetailAmountNote: React.FC<Props> = ({
       paymentDetail?.sendingWalletDescriptor.currency === "USDT"
     ) {
       if (paymentDetail?.paymentType === "lnurl") {
+        // LUD-06 bounds arrive in SATS; settlementAmount is in the sending
+        // wallet's minor units, which is CENTS on this branch. Comparing them
+        // directly read a 100-sat floor as 100 cents, so a Strike address
+        // (minSendable 100_000 msat = 100 sats, worth cents) refused every
+        // send under $1.00 — over 10x the receiver's real minimum. Convert
+        // the bound into wallet units and compare like with like.
+        const walletCurrency = paymentDetail.sendingWalletDescriptor.currency
+        const satBound = (sats: number): MoneyAmount<WalletCurrency> => ({
+          amount: sats,
+          currency: "BTC",
+          currencyCode: "SAT",
+        })
+        const inWalletUnits = (sats: number) =>
+          convertMoneyAmount(satBound(sats), walletCurrency).amount
+
         if (
           paymentDetail.canSetAmount &&
           isNonZeroMoneyAmount(paymentDetail.settlementAmount) &&
-          paymentDetail.settlementAmount.amount < paymentDetail?.lnurlParams.min
+          paymentDetail.settlementAmount.amount <
+            inWalletUnits(paymentDetail.lnurlParams.min)
         ) {
-          const minAmount: MoneyAmount<WalletCurrency> = {
-            amount: paymentDetail?.lnurlParams.min,
-            currency: "BTC",
-            currencyCode: "SAT",
-          }
-          const convertedUSDAmount = convertMoneyAmount(minAmount, "DisplayCurrency")
+          const minAmount = satBound(paymentDetail.lnurlParams.min)
           setAsyncErrorMessage(
             LL.SendBitcoinScreen.minAmountInvoiceError({
-              amount: Number(
-                formatDisplayAndWalletAmount({
-                  displayAmount: convertedUSDAmount,
-                  walletAmount: minAmount,
-                }),
-              ),
+              // Passed through as the formatted string it already is.
+              // Coercing it with Number() produced literally "NaN" on screen,
+              // because "$0.07 (100 sats)" is not a number.
+              amount: formatDisplayAndWalletAmount({
+                displayAmount: convertMoneyAmount(minAmount, "DisplayCurrency"),
+                walletAmount: minAmount,
+              }),
             }),
           )
         } else if (
           paymentDetail.canSetAmount &&
           isNonZeroMoneyAmount(paymentDetail.settlementAmount) &&
-          paymentDetail.settlementAmount.amount > paymentDetail?.lnurlParams.max
+          paymentDetail.settlementAmount.amount >
+            inWalletUnits(paymentDetail.lnurlParams.max)
         ) {
-          const maxAmount: MoneyAmount<WalletCurrency> = {
-            amount: paymentDetail?.lnurlParams.max,
-            currency: "BTC",
-            currencyCode: "SAT",
-          }
-          const convertedUSDAmount = convertMoneyAmount(maxAmount, "DisplayCurrency")
+          const maxAmount = satBound(paymentDetail.lnurlParams.max)
           setAsyncErrorMessage(
             LL.SendBitcoinScreen.maxAmountInvoiceError({
-              amount: Number(
-                formatDisplayAndWalletAmount({
-                  displayAmount: convertedUSDAmount,
-                  walletAmount: maxAmount,
-                }),
-              ),
+              amount: formatDisplayAndWalletAmount({
+                displayAmount: convertMoneyAmount(maxAmount, "DisplayCurrency"),
+                walletAmount: maxAmount,
+              }),
             }),
           )
         } else {
