@@ -435,6 +435,22 @@ describe("resolveRecipientCap", () => {
     ).toBe(300_000)
   })
 
+  // The doubling rate above is integral, so every case around it stays green
+  // whether or not the cap is quantized. This one pins the quantization
+  // itself: without the "floor" wiring the cap comes back as 6.5 cents, which
+  // the number pad cannot hold.
+  it("USD wallet: floors a fractional converted cap to a whole cent", () => {
+    expect(
+      resolveRecipientCap({
+        walletCurrency: "USD",
+        paymentType: "lnurl",
+        receiverMaxSats: null,
+        lnurlParamsMaxSats: 100,
+        convertSatsToWallet: (sats) => sats * 0.065,
+      }),
+    ).toBe(6)
+  })
+
   it("USD wallet: no cap for non-LNURL payment types", () => {
     expect(
       resolveRecipientCap({
