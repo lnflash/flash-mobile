@@ -41,6 +41,52 @@ export const effectiveMaxPaymentType = (
   return paymentType
 }
 
+/**
+ * Which way to quantize a converted bound.
+ *
+ * "ceil" for a MINIMUM and "floor" for a MAXIMUM — always inward, so the
+ * quantized bound is one the receiver definitely accepts.
+ */
+export type LnurlBoundRounding = "floor" | "ceil"
+
+export type LnurlBoundInWalletUnitsArgs = {
+  /** The receiver's advertised LUD-06 bound, in sats. */
+  sats: number
+  /** Convert sats into the sending wallet's minor units. */
+  convertSatsToWallet: (sats: number) => number
+  rounding: LnurlBoundRounding
+}
+
+/**
+ * An LNURL (LUD-06) bound — advertised in sats — as a WHOLE unit of the
+ * sending wallet's minor currency.
+ *
+ * Amounts are entered and sent in whole minor units, so a fractional bound is
+ * a bound the user can never type. Left fractional, a 100-sat floor at
+ * $64,000/BTC becomes 6.4 cents: the validator refuses 6c, the message rounds
+ * the bound to "$0.06", the user types 6c, and the refusal repeats — a dead
+ * end. Quantizing here means the bound the validator enforces and the bound
+ * the message names are the same number, and that number is typeable.
+ *
+ * The `toPrecision` pass strips float noise before quantizing: 100 sats at
+ * exactly $70,000/BTC converts to 7.000000000000001 cents, and a naive ceil
+ * would name 8c as the floor of a bound that is really 7c. Twelve significant
+ * digits is far finer than any real rate difference and far coarser than the
+ * ~1e-16 relative noise of IEEE-754 arithmetic.
+ */
+export const lnurlBoundInWalletUnits = ({
+  sats,
+  convertSatsToWallet,
+  rounding,
+}: LnurlBoundInWalletUnitsArgs): number => {
+  const converted = convertSatsToWallet(sats)
+  if (!Number.isFinite(converted)) {
+    return converted
+  }
+  const denoised = Number(converted.toPrecision(12))
+  return rounding === "ceil" ? Math.ceil(denoised) : Math.floor(denoised)
+}
+
 export type ResolveRecipientCapArgs = {
   walletCurrency: MaxSendWalletCurrency
   paymentType: MaxSendPaymentType
@@ -72,7 +118,11 @@ export const resolveRecipientCap = ({
     return receiverMaxSats ?? null
   }
   if (paymentType === "lnurl" && lnurlParamsMaxSats) {
-    return convertSatsToWallet(lnurlParamsMaxSats)
+    return lnurlBoundInWalletUnits({
+      sats: lnurlParamsMaxSats,
+      convertSatsToWallet,
+      rounding: "floor",
+    })
   }
   return null
 }

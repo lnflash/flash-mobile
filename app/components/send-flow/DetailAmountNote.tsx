@@ -21,8 +21,11 @@ import { NoteInput } from "@app/components/note-input"
 import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
 import { WalletCurrency } from "@app/graphql/generated"
 import {
+  DisplayCurrency,
   isNonZeroMoneyAmount,
   MoneyAmount,
+  toBtcMoneyAmount,
+  toWalletAmount,
   WalletOrDisplayCurrency,
 } from "@app/types/amounts"
 
@@ -30,6 +33,7 @@ import {
 import { testProps } from "../../utils/testProps"
 import { LnurlLimits, validateAmountWithinLimits } from "@app/utils/breez-sdk/fee-errors"
 import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
+import { lnurlBoundInWalletUnits } from "@app/screens/send-bitcoin-screen/max-send-amount"
 
 type Props = {
   selectedFeeType?: "fast" | "medium" | "slow"
@@ -74,6 +78,8 @@ const DetailAmountNote: React.FC<Props> = ({
   const formatSats = useFormatSats()
 
   const checkErrorMessage = () => {
+    // Gate on the realtime price having loaded: until it has, every sat->cent
+    // conversion below is NaN and every bound would be meaningless.
     if (!convertMoneyAmount) return null
     if (
       paymentDetail?.sendingWalletDescriptor.currency === "BTC" &&
@@ -107,46 +113,69 @@ const DetailAmountNote: React.FC<Props> = ({
         // (minSendable 100_000 msat = 100 sats, worth cents) refused every
         // send under $1.00 — over 10x the receiver's real minimum. Convert
         // the bound into wallet units and compare like with like.
+        //
+        // The conversion goes through paymentDetail.convertMoneyAmount — the
+        // same function settlementAmount itself was derived from, so both
+        // sides of the comparison come from one source of truth. The MAX chip
+        // converts the very same bound the very same way
+        // (send-bitcoin-details-screen.tsx -> resolveRecipientCap), which is
+        // why the quantization rule is shared rather than duplicated here.
         const walletCurrency = paymentDetail.sendingWalletDescriptor.currency
-        const satBound = (sats: number): MoneyAmount<WalletCurrency> => ({
-          amount: sats,
-          currency: "BTC",
-          currencyCode: "SAT",
+        const convertSatsToWallet = (sats: number) =>
+          paymentDetail.convertMoneyAmount(toBtcMoneyAmount(sats), walletCurrency).amount
+
+        // Quantized to whole minor units: the number pad only accepts whole
+        // cents, so a fractional bound is one the user can never satisfy —
+        // and the message would round it to an amount the validator then
+        // refuses. See lnurlBoundInWalletUnits.
+        const minInWallet = lnurlBoundInWalletUnits({
+          sats: paymentDetail.lnurlParams.min,
+          convertSatsToWallet,
+          rounding: "ceil",
         })
-        const inWalletUnits = (sats: number) =>
-          convertMoneyAmount(satBound(sats), walletCurrency).amount
+        const maxInWallet = lnurlBoundInWalletUnits({
+          sats: paymentDetail.lnurlParams.max,
+          convertSatsToWallet,
+          rounding: "floor",
+        })
+
+        // Names the bound in the wallet's own units, so the amount in the
+        // message is exactly the smallest (largest) entry that is accepted.
+        const describeBound = (walletUnits: number) => {
+          const walletAmount = toWalletAmount({
+            amount: walletUnits,
+            currency: walletCurrency,
+          })
+          // Passed through as the formatted string it already is.
+          // Coercing it with Number() produced literally "NaN" on screen,
+          // because "$0.07" is not a number.
+          return formatDisplayAndWalletAmount({
+            displayAmount: paymentDetail.convertMoneyAmount(
+              walletAmount,
+              DisplayCurrency,
+            ),
+            walletAmount,
+          })
+        }
 
         if (
           paymentDetail.canSetAmount &&
           isNonZeroMoneyAmount(paymentDetail.settlementAmount) &&
-          paymentDetail.settlementAmount.amount <
-            inWalletUnits(paymentDetail.lnurlParams.min)
+          paymentDetail.settlementAmount.amount < minInWallet
         ) {
-          const minAmount = satBound(paymentDetail.lnurlParams.min)
           setAsyncErrorMessage(
             LL.SendBitcoinScreen.minAmountInvoiceError({
-              // Passed through as the formatted string it already is.
-              // Coercing it with Number() produced literally "NaN" on screen,
-              // because "$0.07 (100 sats)" is not a number.
-              amount: formatDisplayAndWalletAmount({
-                displayAmount: convertMoneyAmount(minAmount, "DisplayCurrency"),
-                walletAmount: minAmount,
-              }),
+              amount: describeBound(minInWallet),
             }),
           )
         } else if (
           paymentDetail.canSetAmount &&
           isNonZeroMoneyAmount(paymentDetail.settlementAmount) &&
-          paymentDetail.settlementAmount.amount >
-            inWalletUnits(paymentDetail.lnurlParams.max)
+          paymentDetail.settlementAmount.amount > maxInWallet
         ) {
-          const maxAmount = satBound(paymentDetail.lnurlParams.max)
           setAsyncErrorMessage(
             LL.SendBitcoinScreen.maxAmountInvoiceError({
-              amount: formatDisplayAndWalletAmount({
-                displayAmount: convertMoneyAmount(maxAmount, "DisplayCurrency"),
-                walletAmount: maxAmount,
-              }),
+              amount: describeBound(maxInWallet),
             }),
           )
         } else {
