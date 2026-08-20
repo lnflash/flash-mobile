@@ -52,6 +52,7 @@ import {
   toUsdMoneyAmount,
 } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
+import { noteInvoiceFirstSight } from "./invoice-expiry"
 import { buildMaxAmountButton } from "./max-amount-button"
 import { MaxAmountButton } from "@app/components/amount-input-screen"
 import { requestInvoice, utils } from "lnurl-pay"
@@ -154,6 +155,25 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     defaultWallet,
     zeroDisplayAmount,
   ])
+
+  // Start the clock on a held bolt11 here, where it enters the flow, not on
+  // the confirm screen. A scanned or pasted `lightning` destination is carried
+  // through this screen unchanged — nothing re-mints it — and the time spent
+  // here picking a wallet and typing an amount is unbounded, so a 60-second
+  // Flash invoice can easily die before Next is ever tapped (ENG-555). The
+  // confirm screen's own reading would start at its mount and see zero elapsed
+  // time, waving the corpse through.
+  //
+  // Registration is idempotent and keyed by the bolt11 itself, so the confirm
+  // screen's identical call becomes a no-op and the elapsed reading it uses
+  // spans this screen's pause too. LNURL details have no invoice until Next
+  // mints one, so nothing is recorded for them here — which is correct: their
+  // first sighting really is on the confirm screen.
+  useEffect(() => {
+    if (paymentDetail?.paymentRequest) {
+      noteInvoiceFirstSight(paymentDetail.paymentRequest, Math.floor(Date.now() / 1000))
+    }
+  }, [paymentDetail?.paymentRequest])
 
   // Resolve the receiver's LNURL-pay limits once per destination so the
   // amount can be validated as the user types (BTC wallet pays Flash

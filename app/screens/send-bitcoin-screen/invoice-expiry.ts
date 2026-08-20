@@ -62,6 +62,11 @@ export const CLOCK_SKEW_GRACE_SECONDS = 120
 // it. A per-mount reading restarts at zero there and the invoice looks fresh;
 // keyed by the invoice, the original sighting is still on record and the guard
 // can see that a full lifetime has passed under the user.
+//
+// Keying by the invoice is also what lets the reading START on the amount
+// screen, which is where a scanned bolt11 actually enters the flow and where
+// the user's pause is unbounded. Both screens register unconditionally; the
+// first sighting wins, so the later call is a no-op.
 const firstSightByInvoice = new Map<string, number>()
 
 // A send flow visits a handful of invoices; this cap only stops a very long
@@ -102,8 +107,10 @@ export type InvoiceExpiryArgs = {
   /** Current time in epoch SECONDS, per the device clock. */
   nowSeconds: number
   /**
-   * The device clock's reading when the confirm screen mounted, in epoch
-   * SECONDS — i.e. before the user could have paused on it.
+   * The device clock's reading when the send flow first saw this bolt11, in
+   * epoch SECONDS — the amount screen for a scanned/pasted invoice, the
+   * confirm screen for one LNURL minted on the way in. Either way, before the
+   * user could have paused on it.
    *
    * Read off the same clock as `nowSeconds`, so `nowSeconds - firstSeenSeconds`
    * is an elapsed *duration*, not a comparison against someone else's clock:
@@ -121,15 +128,22 @@ const isFiniteNumber = (value: unknown): value is number =>
  *
  * Two signals, in order of trustworthiness:
  *
- *  1. Elapsed since first sight (primary, offset-immune). The confirm screen
- *     cannot have mounted before the invoice was minted, so the time it has
- *     spent in front of *this* user never overstates the invoice's real age.
- *     Once that exceeds the invoice's whole stated lifetime, the invoice is
- *     dead whatever the handset thinks the wall-clock time is. This is what
- *     catches the ordinary confirm-screen pause on a 60-second invoice, which
- *     the absolute comparison below cannot see until the invoice is 180s old.
- *  2. Absolute expiry + grace (backstop), for the invoice that was already
- *     old when the screen first saw it.
+ *  1. Elapsed since first sight (primary, offset-immune). The send flow
+ *     cannot have laid eyes on the invoice before it was minted, so the time
+ *     it has spent in front of *this* user never overstates the invoice's real
+ *     age. Once that exceeds the invoice's whole stated lifetime, the invoice
+ *     is dead whatever the handset thinks the wall-clock time is. This is what
+ *     catches the ordinary pause on a 60-second invoice, which the absolute
+ *     comparison below cannot see until the invoice is 180s old.
+ *  2. Absolute expiry + grace (backstop) — reached ONLY when the invoice
+ *     states no usable issue time, or when no first-sight reading exists. An
+ *     invoice already dead at its first sighting is deliberately NOT caught:
+ *     that reading is indistinguishable from a fast handset clock, so the
+ *     elapsed term wins and the backend does the rejecting. See the tradeoff
+ *     note at the elapsed branch below. What keeps this from mattering in
+ *     practice is registering first sight where the invoice ENTERS the flow
+ *     (send-bitcoin-details-screen.tsx) rather than at confirm-mount, so the
+ *     elapsed reading spans the whole time the invoice was under the user.
  *
  * Fails open on every unknown, and on a device clock that is provably wrong:
  *

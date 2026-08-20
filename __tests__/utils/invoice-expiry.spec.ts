@@ -360,27 +360,81 @@ describe("networkForPaymentRequest", () => {
   })
 })
 
-describe("isHeldInvoiceExpired (the decision the confirm screen makes)", () => {
+describe("isHeldInvoiceExpired (the decision the send flow makes)", () => {
   // Exercised through the real decoder, not a stub: a hand-rolled fake would
   // agree with whatever the guard does and prove nothing.
   const decode = (paymentRequest: string, network: "mainnet" | "signet" | "regtest") =>
     decodeInvoiceString(paymentRequest, network as never)
 
+  // First sightings live in module state so they can survive a remount in
+  // production. Without this, a case silently inherits the previous case's
+  // baseline and passes on borrowed evidence — which is how the retry test
+  // below used to "prove" a verdict the guard could not actually reach.
+  beforeEach(resetInvoiceFirstSight)
+
+  // 16:40:04Z — the user's first attempt, 38s into the 60s window.
+  const FIRST_ATTEMPT = 1787244004
+  // 16:58:52Z — the retry from the report, ~18 minutes past expiry.
+  const RETRY = 1787245132
+
   it("lets the send through 38s into the window (the first attempt)", () => {
     expect(
       isHeldInvoiceExpired({
         paymentRequest: INCIDENT_INVOICE,
-        nowSeconds: 1787244004,
+        nowSeconds: FIRST_ATTEMPT,
         decode,
       }),
     ).toBe(false)
   })
 
   it("refuses the 19-minute-old retry (the second attempt)", () => {
+    // The premise, stated rather than leaked from a neighbouring test: the
+    // send flow met this invoice at the first attempt. The retry reuses the
+    // same bolt11, so the original sighting is still on record and the guard
+    // can see that ~18 minutes have passed under the user.
+    noteInvoiceFirstSight(INCIDENT_INVOICE, FIRST_ATTEMPT)
+
     expect(
       isHeldInvoiceExpired({
         paymentRequest: INCIDENT_INVOICE,
-        nowSeconds: 1787245132,
+        nowSeconds: RETRY,
+        decode,
+      }),
+    ).toBe(true)
+  })
+
+  it("fails open on an invoice it is meeting for the first time", () => {
+    // No prior sighting: elapsed reads 0 by construction, and a "now" this far
+    // past the stated expiry is equally the signature of a handset running
+    // fast — the two are indistinguishable from here. Blocking a send that
+    // would have worked is the one failure this guard must not introduce, so
+    // the elapsed term stays in charge and the backend does the rejecting.
+    //
+    // This is not the ENG-555 path being waved through: there, the amount
+    // screen registers first sight when the invoice is scanned (see
+    // send-bitcoin-details-screen.tsx), so by the time confirm asks, a prior
+    // reading exists and the case above applies. Change that registration and
+    // this expectation is the one that should be revisited.
+    expect(
+      isHeldInvoiceExpired({
+        paymentRequest: INCIDENT_INVOICE,
+        nowSeconds: RETRY,
+        decode,
+      }),
+    ).toBe(false)
+  })
+
+  it("catches the amount-screen pause once first sight is registered there", () => {
+    // The production sequence ENG-555 describes: the invoice is scanned while
+    // alive, the user spends two minutes on the amount screen choosing a
+    // wallet and typing a number, then taps Next. Confirm's own reading would
+    // start here and see nothing; the amount screen's reading spans the pause.
+    noteInvoiceFirstSight(INCIDENT_INVOICE, ISSUED + 4)
+
+    expect(
+      isHeldInvoiceExpired({
+        paymentRequest: INCIDENT_INVOICE,
+        nowSeconds: ISSUED + 4 + 120,
         decode,
       }),
     ).toBe(true)

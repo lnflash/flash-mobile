@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useState } from "react"
 import { View } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -205,14 +205,14 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     }
   }, [flashUserAddress, npubByUsernameQuery, promptForContactList, contactsEvent])
 
-  // The device clock as it read on the way into this screen — before the user
-  // could have paused on it. `Date.now()` inside the guard is read off the
-  // same clock, so the difference between the two is an elapsed duration that
-
   // Start the clock on this invoice as soon as the screen shows it, not when
   // Confirm is tapped. Registering on tap would miss the user who simply sits
   // here past the 60s lifetime and taps once — their first reading would be
   // the tap itself, so no time would appear to have elapsed.
+  //
+  // A no-op for a bolt11 the amount screen already registered (the reading is
+  // keyed by the invoice, and the first one wins); it earns its keep for the
+  // freshly minted LNURL invoice, whose first sighting really is here.
   useEffect(() => {
     if (paymentDetail.paymentRequest) {
       noteInvoiceFirstSight(paymentDetail.paymentRequest, Math.floor(Date.now() / 1000))

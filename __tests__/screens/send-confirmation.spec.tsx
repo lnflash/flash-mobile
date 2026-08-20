@@ -5,7 +5,10 @@ import { Intraledger } from "../../app/screens/send-bitcoin-screen/send-bitcoin-
 import { ContextForScreen } from "./helper"
 
 import SendBitcoinConfirmationScreen from "@app/screens/send-bitcoin-screen/send-bitcoin-confirmation-screen"
-import { resetInvoiceFirstSight } from "@app/screens/send-bitcoin-screen/invoice-expiry"
+import {
+  noteInvoiceFirstSight,
+  resetInvoiceFirstSight,
+} from "@app/screens/send-bitcoin-screen/invoice-expiry"
 import {
   createAmountLightningPaymentDetails,
   createLnurlPaymentDetails,
@@ -63,10 +66,18 @@ describe("expired held invoice", () => {
     "lnbc1p4gwtwwpp5wwulk8jw0llvgjadwzuen6nxh7hgmddplj3evpgjc7n8l5kzqvmqdph2pshjgr5dusyvmrpwd5zq4mpd3kx2apq24ek2u36ypj8yetpv3kkz7qcqzzsxqzpusp5wane88x5twmdlpnu4cqrk4wd6g3tks7xgq798nt9zt68vmcnnp6q9qxpqysgqnszg0ycjk4255es2hdd3ajep3yquuvra6jn4k8shskhpzg80mrl9m9pgylahzq80aw9ekz6e47ycpcf558080xrxn6uljn54lc447rqpn9u06u"
   const ISSUED = 1787243982
   const EXPIRES = 1787244042
-  // The screen opens while the invoice is still alive — which is the only way
-  // it can open, since parsePaymentDestination rejects an already-dead bolt11
-  // at paste/scan time and an LNURL detail mints on the way in.
+  // This screen can perfectly well open on a dead invoice. parsePaymentDestination
+  // only rejects a bolt11 that is already expired at paste/scan time; the
+  // amount screen then holds a `lightning` detail unchanged for as long as the
+  // user takes to pick a wallet and type a number (only `lnurl` re-mints, at
+  // send-bitcoin-details-screen.tsx). So "alive at mount" is the common case,
+  // not the only one — see "refuses an invoice that was already dead when the
+  // screen opened" below.
   const MOUNTED_MS = (ISSUED + 4) * 1000
+  // The scan, four seconds into the 60-second window. Standing in for the
+  // amount screen's own noteInvoiceFirstSight call in the cases that need the
+  // invoice to have been seen before this screen mounted.
+  const SCANNED_SECONDS = ISSUED + 4
   // The user's retry from the report, ~18 minutes past expiry.
   const LONG_AFTER_EXPIRY_MS = (EXPIRES + 18 * 60) * 1000
   // An ordinary pause on the confirm screen: 90 seconds, which outlives a
@@ -231,6 +242,31 @@ describe("expired held invoice", () => {
     expect(getByText(en.SendBitcoinDestinationScreen.expiredInvoice)).toBeTruthy()
     expect(payLightningBreez).not.toHaveBeenCalled()
     expect(blockedEvents()).toHaveLength(1)
+  })
+
+  it("refuses an invoice that was already dead when the screen opened", async () => {
+    // ENG-555's actual shape. The user scanned a live 60-second invoice, then
+    // spent ~18 minutes on the amount screen — nothing there re-mints a
+    // `lightning` detail — so this screen mounts holding a corpse and the very
+    // first tap must be refused. That only works because the amount screen
+    // registered first sight at the scan; seeded here in its place.
+    noteInvoiceFirstSight(INCIDENT_INVOICE, SCANNED_SECONDS)
+    jest.spyOn(Date, "now").mockReturnValue(LONG_AFTER_EXPIRY_MS)
+
+    const paymentDetail = createAmountLightningPaymentDetails({
+      paymentRequest: INCIDENT_INVOICE,
+      paymentRequestAmount: amount,
+      convertMoneyAmount,
+      sendingWalletDescriptor: btcSendingWalletDescriptor,
+    })
+
+    const { getByText, confirm } = await renderConfirmation(paymentDetail)
+    // No pause on this screen at all: mount and tap read the same instant.
+    await confirm(LONG_AFTER_EXPIRY_MS)
+
+    expect(getByText(en.SendBitcoinDestinationScreen.expiredInvoice)).toBeTruthy()
+    expect(payLightningBreez).not.toHaveBeenCalled()
+    expect(blockedEvents()).toEqual([blockedEvent("lightning", WalletCurrency.Btc)])
   })
 
   // A USD send puts the held bolt11 in the GraphQL mutation input, so the
