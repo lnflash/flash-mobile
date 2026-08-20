@@ -1577,7 +1577,18 @@
     "upgradeRequired": "Card top-ups are not available for your account level. Upgrade your account to enable them.",
     "youllReceive": "You'll receive {amount}",
     "feeNote": "After card and processing fees",
-    "usdOnlyNotice": "Card payments top up your USD wallet"
+    "usdOnlyNotice": "Card payments top up your USD wallet",
+    "cannotTopUp": "Can't top up this amount",
+    "checkoutProblemTitle": "Couldn't start your payment",
+    "changeAmount": "Change amount",
+    "allowanceRemaining": "{remaining} of {limit} left today",
+    "allowanceHeld": "{held} is held by a payment link you haven't completed",
+    "allowanceResets": "More becomes available at {when: string}",
+    "checkoutTimedOut": "We couldn't reach Flash to set up your payment. Nothing has been charged — please check your connection and try again.",
+    "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
+    "upgradeRequiredTitle": "Upgrade required",
+    "invalidAmountTitle": "Invalid amount",
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "Akaun USD",
@@ -1603,7 +1614,9 @@
     "title": "Fygaro Payment",
     "loading": "Loading payment page...",
     "error": "Failed to load payment page",
-    "retry": "Retry"
+    "retry": "Retry",
+    "paymentFailedTitle": "Payment failed",
+    "paymentFailedMessage": "Your payment was not completed. Please try again."
   },
   "BankTransfer": {
     "title": "Bank Transfer",
@@ -1628,13 +1641,25 @@
     "routingNumber": "Routing Number"
   },
   "PaymentSuccessScreen": {
-    "title": "Payment Successful",
-    "successMessage": "Your payment has been processed successfully",
+    "title": "Top-up Complete",
+    "successMessage": "Your payment has been credited to your wallet",
     "amountSent": "Amount Sent",
     "depositedTo": "Deposited to",
-    "transactionId": "Transaction ID",
     "done": "Done",
-    "viewTransaction": "View Transaction"
+    "checkingTitle": "Confirming your top-up",
+    "checkingMessage": "We're checking with your wallet — this usually takes a few seconds",
+    "receivedTitle": "Payment received",
+    "unconfirmedTitle": "We haven't seen this payment yet",
+    "unconfirmedMessage": "If your card was charged, we'll credit your wallet and let you know. If it wasn't, nothing has left your account and you can try again.",
+    "pendingMessage": "We've received your payment and are crediting your wallet. We'll let you know as soon as it lands.",
+    "heldTitle": "Payment on hold",
+    "heldMessage": "This payment is on hold for review. Nothing more is needed from you right now — we'll be in touch.",
+    "failedTitle": "Payment not credited",
+    "failedMessage": "We couldn't credit this payment yet. We're on it.",
+    "destinationWallet": "Crediting to",
+    "wallet": "Wallet",
+    "amountCredited": "Credited",
+    "unaskableMessage": "We've received your payment. We'll confirm it and let you know once it's credited."
   },
   "BankAccountsScreen": {
     "title": "Bank accounts",

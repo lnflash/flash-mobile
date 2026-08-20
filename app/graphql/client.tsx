@@ -43,31 +43,7 @@ import { NetworkError } from "@apollo/client/errors"
 import { LevelContainer } from "./level-component"
 import { getAppCheckToken } from "@app/screens/get-started-screen/use-device-token"
 import { WidgetPriceSync } from "@app/components/widget-price-sync"
-
-const noRetryOperations = [
-  "intraLedgerPaymentSend",
-  "intraLedgerUsdPaymentSend",
-
-  "lnInvoiceFeeProbe",
-  "lnInvoicePaymentSend",
-  "lnNoAmountInvoiceFeeProbe",
-  "lnNoAmountInvoicePaymentSend",
-  "lnNoAmountUsdInvoiceFeeProbe",
-  "lnUsdInvoiceFeeProbe",
-  "lnNoAmountUsdInvoicePaymentSend",
-
-  "onChainPaymentSend",
-  "onChainUsdPaymentSend",
-  "onChainUsdPaymentSendAsBtcDenominated",
-  "onChainTxFee",
-  "onChainUsdTxFee",
-  "onChainUsdTxFeeAsBtcDenominated",
-
-  // no need to retry to upload the token
-  // specially as it's running on app start
-  // and can create some unwanted loop when token is not valid
-  "deviceNotificationTokenCreate",
-]
+import { noRetryOperations } from "./no-retry-operations"
 
 const getAuthorizationHeader = (token: string): string => {
   return `Bearer ${token}`

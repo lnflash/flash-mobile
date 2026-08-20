@@ -856,6 +856,113 @@ Fee and minimum-amount parameters for Fygaro card top-ups. Percentages are
 whole-number percents (e.g. 2.99 means 2.99%); fixed amounts and the minimum
 are in USD. Null when the instance's Fygaro settings are unavailable.
 """
+type FygaroCheckout {
+  """
+  The authorised amount, echoed back so the client can display what was signed.
+  """
+  amount: CentAmount!
+
+  """
+  Poll fygaroTopupStatus with this after the payment page closes. Do NOT report success from the payment page alone — the card charge succeeding and Flash crediting the wallet are different events.
+  """
+  checkoutId: String!
+
+  """
+  After this, the URL is rejected by the payment provider and a new one must be requested.
+  """
+  expiresAt: Timestamp!
+
+  """
+  Open this in the payment webview. The amount and the destination account are signed into it and cannot be edited; it stops working at expiresAt.
+  """
+  url: String!
+}
+
+input FygaroCheckoutCreateInput {
+  amount: CentAmount!
+}
+
+type FygaroCheckoutCreatePayload {
+  checkout: FygaroCheckout
+  errors: [Error!]!
+
+  """
+  How much more could be authorised right now, after this request. Card top-up links you have open but have not paid are ALREADY SUBTRACTED, so this is what would be accepted this second — not a statement of what the account has spent today. Present on refusal too, so the client can say how much would go through instead of only saying no. Null when the allowance could not be established.
+  """
+  remainingAllowance: CentAmount
+}
+
+type FygaroTopupAllowance {
+  """
+  Card top-up links this account has open but has not paid. NOT spent — nothing has been charged — but not available either, because paying one would charge it. The common case is a customer who minted a link and closed the page, so this is usually the whole difference between `limit - spent` and `remaining`.
+  """
+  held: CentAmount!
+
+  """
+  When the SOONEST unpaid checkout link expires and its hold on the allowance lifts by itself. Null when `held` is zero. This is the answer to 'why is $65 left when I have spent nothing, and when do I get the rest back?'.
+  """
+  holdsExpireAt: Timestamp
+
+  """The account level's rolling 24-hour cap."""
+  limit: CentAmount!
+
+  """
+  What would still be accepted right now: the cap less BOTH `spent` and `held`. Unpaid checkout links are already subtracted, exactly as the pre-charge check subtracts them, so this is what a new top-up would be measured against — not `limit - spent`. Never negative.
+  """
+  remaining: CentAmount!
+
+  """
+  When the oldest counted PAYMENT ages out and the allowance it spent returns. Covers settled spend only — a hold is not a payment and never moves this. Null when no payment is counted, even if `held` is non-zero; see `holdsExpireAt`.
+  """
+  resetsAt: Timestamp
+
+  """
+  Gross charged in the trailing 24 hours. Payments we captured but did not credit are excluded — they delivered nothing, so they do not spend the allowance.
+  """
+  spent: CentAmount!
+}
+
+enum FygaroTopupState {
+  """Money is in the wallet."""
+  CREDITED
+
+  """
+  We tried to credit and it failed. A provider retry may still resolve it, so this is 'we are on it', not 'contact support'.
+  """
+  FAILED
+
+  """
+  Captured and deliberately not credited. Terminal until a human acts, so retrying achieves nothing — show the reason.
+  """
+  HELD_FOR_REVIEW
+
+  """
+  We have the payment — the provider told us so — and are crediting it. Not yet terminal, so keep polling, then fall back to telling the customer they will be notified.
+  """
+  PROCESSING
+
+  """
+  No payment has been observed for this checkout. The customer may still be on the payment page, the card may have been declined, the page may have been cancelled — or we may be momentarily unable to check. NEVER render this as 'payment received': the payment page closes on a decline exactly as it does on a success. Keep polling, then fall back to 'we'll let you know'.
+  """
+  UNCONFIRMED
+}
+
+type FygaroTopupStatus {
+  """
+  The amount this checkout was authorised for. Null ONLY when the checkout record could not be read (state UNCONFIRMED, transient): the amount lives on that record. The client already knows what it asked for, so this is an echo, never the source of truth for what was charged.
+  """
+  authorizedAmount: CentAmount
+
+  """What reached the wallet, after fees. Present once credited."""
+  netAmount: CentAmount
+
+  """
+  Customer-facing explanation, present when the state needs one. Reasons the customer can act on are named plainly; our own faults are not blamed on them.
+  """
+  reason: String
+  state: FygaroTopupState!
+}
+
 type FygaroTopupInfo {
   """Minimum top-up amount, in USD."""
   minimumAmount: Float!
@@ -1337,6 +1444,7 @@ type MyReferrals {
 }
 
 type Mutation {
+  fygaroCheckoutCreate(input: FygaroCheckoutCreateInput!): FygaroCheckoutCreatePayload!
   accountCapabilityUpgradeRequest(input: AccountCapabilityUpgradeRequestInput!): AccountCapabilityUpgradeRequestPayload!
   accountDelete: AccountDeletePayload!
   accountDisableNotificationCategory(input: AccountDisableNotificationCategoryInput!): AccountUpdateNotificationSettingsPayload!
@@ -1746,6 +1854,8 @@ type PublicWallet {
 }
 
 type Query {
+  fygaroTopupAllowance: FygaroTopupAllowance
+  fygaroTopupStatus(checkoutId: String!): FygaroTopupStatus
   accountDefaultWallet(username: Username!, walletCurrency: WalletCurrency): PublicWallet!
 
   """

@@ -203,11 +203,13 @@ export type RootStackParamList = {
     amount: number
     wallet: string
   }
-  TopupSuccess: undefined
   paymentSuccess: {
     amount: number
     wallet: string
-    transactionId: string
+    // The server-issued checkout id, used to ask what actually became of the
+    // payment. Undefined for a legacy device-built link, which has no id — that
+    // case resolves to "received, crediting" rather than claiming a deposit.
+    checkoutId?: string
   }
 }
 

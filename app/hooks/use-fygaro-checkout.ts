@@ -1,0 +1,317 @@
+import { useCallback } from "react"
+import { gql, type ApolloError } from "@apollo/client"
+
+import { useFygaroCheckoutCreateMutation } from "@app/graphql/generated"
+
+// Isolated from every other operation on purpose, for the same reason
+// `cardTopupLimits` is: a backend that predates these fields — or a rollback —
+// rejects the WHOLE document over one unknown field. Alone in here, an old
+// backend costs us the signed URL and nothing else, and the caller falls back
+// to the device-built link that has always worked.
+//
+// Only the fields the caller actually uses. `amount` (the authorised cents,
+// echoed back), `remainingAllowance` and `expiresAt` were all selected and read
+// nowhere: the screen already knows the amount it asked for, the refusal renders
+// the server's sentence (which states the remaining allowance in words), and
+// nothing watches the clock on the link. Every unused field is one more thing an
+// older backend can reject the document over.
+gql`
+  mutation fygaroCheckoutCreate($input: FygaroCheckoutCreateInput!) {
+    fygaroCheckoutCreate(input: $input) {
+      errors {
+        message
+        code
+      }
+      checkout {
+        url
+        checkoutId
+      }
+    }
+  }
+`
+
+export type FygaroCheckoutRefusal = {
+  kind: "refused"
+  // Server wording, already phrased for the customer. Rendered as-is: it is the
+  // only place that knows which threshold was tripped and by how much.
+  message: string
+  code?: string
+}
+
+export type FygaroCheckoutResult =
+  | { kind: "signed"; url: string; checkoutId: string }
+  | FygaroCheckoutRefusal
+  // The server never answered at all — the network failed, the backend predates
+  // the mutation, or the payload came back empty. Falling back to the
+  // device-built URL keeps top-ups working exactly as they do today: worse than
+  // a signed link, but a dead Top Up button would be worse than both.
+  //
+  // "The network failed" means no status line came back at all. ANY status
+  // line is the server answering, and only one of them may land here: the 400
+  // whose body says our document could not be parsed or validated. A 5xx, a
+  // 401, a 403, a 429 — every one of those is the server having refused, not
+  // the server being absent. See the catch below.
+  //
+  // Note what is NOT here: an error the server DID return. See DEGRADE_CODES.
+  | { kind: "unavailable" }
+  // The request outlived its deadline. Kept apart from `unavailable` because
+  // the server may have decided — and refused — without us hearing it, so this
+  // must NOT degrade to the editable legacy link. Minted by the caller's
+  // deadline, never by this hook.
+  | { kind: "timedOut" }
+  // The server DID answer, and its answer was not a payload: a top-level
+  // GraphQL error (the resolver threw instead of mapping the failure to a
+  // code), or an HTTP status that is not the schema rejection above — a 5xx, a
+  // 401, a 403, a 429. Like `timedOut`, and unlike `unavailable`, this must
+  // not degrade to the editable legacy link — the server refused to authorise,
+  // and the webhook reading the same broken dependency will refuse to credit.
+  // Carries no message because there is no sentence meant for a customer in a
+  // thrown exception; the caller supplies localised copy.
+  | { kind: "serverError" }
+
+/**
+ * The only error codes that may fall back to the legacy editable link.
+ *
+ * This is an allowlist of OUR faults, and it is deliberately inverted from what
+ * it replaced. The previous version allowlisted the refusals it recognised and
+ * degraded on everything else — which cannot be maintained from this side of the
+ * wire, because the server owns the enum (flash `src/graphql/error-map.ts`) and
+ * grows it without this file. It was already out of date: it had no
+ * `FYGARO_ALLOWANCE_UNAVAILABLE`, the code the backend returns when it
+ * deliberately fails CLOSED because it could not measure the allowance at all
+ * (ERPNext settings/history unreadable, or the Redis reservation index down).
+ * That unknown code fell through to "degrade", loaded the legacy `?amount=` URL,
+ * and let the customer be charged during exactly the outage in which the server
+ * had just refused to authorise — while the webhook, reading the same
+ * unavailable data, 500s without crediting. Card captured, wallet not credited:
+ * the 2026-08-16 incident, reproduced by the change meant to end it.
+ *
+ * Inverted, an unrecognised code is a refusal. The cost of getting that wrong is
+ * a customer told to change their amount when they did not have to; the cost of
+ * the other mistake is a charge we cannot credit.
+ */
+const DEGRADE_CODES = new Set(["FYGARO_CHECKOUT_DISABLED"])
+
+export const useFygaroCheckout = () => {
+  const [createCheckout] = useFygaroCheckoutCreateMutation()
+
+  // MUST stay referentially stable. Apollo's `useMutation` calls
+  // `setResult({ loading: true })` synchronously the moment the mutate function
+  // is invoked, which re-renders every consumer of this hook. A plain arrow here
+  // would hand the caller a NEW function on that re-render — and CardPayment's
+  // checkout effect depends on it, so the effect would tear down and cancel the
+  // very request it had just started, leaving the WebView with no URL forever.
+  const requestCheckout = useCallback(
+    async (amountCents: number): Promise<FygaroCheckoutResult> => {
+      let payload
+      // The server's answer on the RESOLVED path, which is not always `data`.
+      // Read below, before anything is inferred from `payload` being absent —
+      // see the note at `envelopeRefused`.
+      let envelopeErrors: unknown
+      try {
+        const { data, errors } = await createCheckout({
+          variables: { input: { amount: amountCents } },
+        })
+        payload = data?.fygaroCheckoutCreate
+        envelopeErrors = errors
+      } catch (e) {
+        // Look at WHAT was thrown. A blanket degrade here contradicts the rule
+        // stated above — "an error the server DID return" is not `unavailable`
+        // — because `useMutation` has no errorPolicy set here and none is set
+        // globally (app/graphql/client.tsx builds its ApolloClient with no
+        // defaultOptions), so the default `errorPolicy: "none"` makes
+        // `client.mutate` REJECT on top-level GraphQL errors, not only on a
+        // dead network (@apollo/client/react/hooks/useMutation.js — the
+        // `.then` builds an ApolloError from `response.errors` and throws it).
+        //
+        // That is the 2026-08-16 incident through the one door with no test:
+        // ERPNext or Redis is down, the resolver throws instead of mapping to
+        // FYGARO_ALLOWANCE_UNAVAILABLE, the mutate rejects — and degrading
+        // loads the legacy editable `?amount=` link, the card is captured, and
+        // the webhook (reading the same unavailable data) fails without
+        // crediting.
+        //
+        // The inverted-allowlist argument that governs `payload.errors`
+        // applies verbatim here: only OUR faults may degrade. A transport
+        // failure — no status line at all — is ours. A document the backend
+        // cannot parse or validate is ours (it predates this mutation, or we
+        // rolled back). Anything else is the server having refused, and is
+        // refused back.
+        const err = e as ApolloError | undefined
+        const graphQLErrors = err?.graphQLErrors ?? []
+
+        // Splitting on `graphQLErrors` ALONE is not enough, because an HTTP
+        // failure never populates it. Apollo turns EVERY response with
+        // `status >= 300` into a `ServerError` on `networkError`
+        // (@apollo/client/link/http/parseAndCheckHttpResponse.js:107, reached
+        // from core/QueryManager.js:778) and `throwServerError`
+        // (link/utils/throwServerError.js) stamps `statusCode` on it —
+        // `graphQLErrors` stays `[]`, and the real errors, if there are any,
+        // live in `networkError.result`.
+        const status = (err?.networkError as { statusCode?: number } | null)?.statusCode
+        const httpErrors =
+          (
+            err?.networkError as {
+              result?: {
+                errors?: { message?: string; extensions?: { code?: string } }[]
+              }
+            } | null
+          )?.result?.errors ?? []
+
+        const schemaReject = graphQLErrors.some(
+          (g) =>
+            g.extensions?.code === "GRAPHQL_VALIDATION_FAILED" ||
+            g.extensions?.code === "GRAPHQL_PARSE_FAILED",
+        )
+
+        // The ONE HTTP answer that may degrade, and only when its body proves
+        // it: a 400 whose errors say the server could not parse or validate the
+        // document we sent. THAT is our fault — the backend predates this
+        // mutation, or we rolled back — and it is the entire reason the legacy
+        // link is still here. apollo-server answers a validation failure with
+        // HTTP 400 and puts the reason in the BODY, so the status alone can
+        // never stand in for it — a bare 400 is also what a gateway answers a
+        // malformed or rate-limited request with, and reading every one of
+        // those as "our fault" is the same fail-OPEN, one status narrower.
+        const httpSchemaReject =
+          status === 400 &&
+          httpErrors.some(
+            (e) =>
+              e.extensions?.code === "GRAPHQL_VALIDATION_FAILED" ||
+              e.extensions?.code === "GRAPHQL_PARSE_FAILED" ||
+              /Cannot query field|GRAPHQL_(VALIDATION|PARSE)_FAILED/.test(
+                e.message ?? "",
+              ),
+          )
+
+        // Inverted exactly like the payload allowlist (DEGRADE_CODES): degrade
+        // only on an answer we can positively identify as our own document
+        // being rejected, and refuse on every other answer the server gave.
+        //
+        // Splitting on `status >= 500` was the same failure one layer up. A 5xx
+        // is the obvious case — an ingress restart, a rolling deploy, an
+        // OOM-killed pod, or a 500 out of a failed apollo-server-express
+        // context function, which is exactly what an ERPNext or Redis failure
+        // UPSTREAM of the resolver produces — but it was never the only status
+        // the server answers with. A 401 from a revoked token, a 403, and the
+        // 429 the gateway rate-limits with all arrive here identically: a
+        // ServerError with an EMPTY `graphQLErrors`. Every one of them used to
+        // fall through to `unavailable`, and CardPayment then loaded
+        // `buildLegacyPaymentUrl` — the editable `?amount=` link with no
+        // pre-charge allowance check at all.
+        //
+        // That is not hypothetical. `fygaroCheckoutCreate` is on
+        // `noRetryOperations` (it mints a reservation), so a 429 lands here on
+        // the first attempt instead of being papered over by the RetryLink,
+        // while `useHomeAuthedQuery` is still serving a username `cache-first`
+        // out of the persisted cache — so the screen looks signed in, degrades,
+        // and the customer is charged for an over-limit top-up the webhook then
+        // parks in HELD_FOR_REVIEW. The 2026-08-16 incident, through whichever
+        // non-5xx door happens to be open.
+        // REFUSING is the residual, and degrading is what has to be earned.
+        //
+        // The previous shape had these the other way round: three positive
+        // tests for `serverError` and `unavailable` as the fall-through. That
+        // reads fine until a throw arrives carrying neither a statusCode nor
+        // graphQLErrors — an Apollo invariant, a cache error, a link bug, or an
+        // @apollo/client upgrade moving the error shapes this file reads
+        // (`networkError.statusCode`, `networkError.result.errors`) — and every
+        // one of those landed on the editable legacy link with no pre-charge
+        // check. A residual that fails OPEN into the capture-without-credit
+        // class this whole change exists to end is the wrong residual,
+        // regardless of how many doors are individually bolted.
+        //
+        // The tests cannot catch that either: they hand this catch block
+        // hand-built error objects, so they assert what we BELIEVE Apollo
+        // throws, not what it throws. A shape change keeps them green while the
+        // residual silently widens. So the unknown shape has to land on the
+        // safe side by construction.
+        //
+        // Two things earn a degrade, both positively identified:
+        if (schemaReject || httpSchemaReject) {
+          // The server rejected our DOCUMENT — an older backend without this
+          // mutation, or a rollback. Ours, and the reason the legacy link is
+          // still here.
+          return { kind: "unavailable" }
+        }
+        if (err?.networkError && status === undefined) {
+          // A transport failure that never reached a server: no status, so no
+          // server ever formed an opinion to overrule. Offline, DNS, a dropped
+          // socket before the response line.
+          return { kind: "unavailable" }
+        }
+        return { kind: "serverError" }
+      }
+
+      /**
+       * A resolved response carrying `errors` is the server having ANSWERED
+       * with a failure, and it must refuse exactly like the thrown one above.
+       *
+       * Everything the catch block does rests on `createCheckout` REJECTING —
+       * and Apollo stops rejecting the moment anyone adds an `onError`.
+       * `useMutation`'s own catch returns `{ data: undefined, errors: error }`
+       * instead of rethrowing whenever an onError exists on either the hook
+       * options or the execute options
+       * (@apollo/client/react/hooks/useMutation.js). So a one-line
+       * `useFygaroCheckoutCreateMutation({ onError })` added for Sentry, or for
+       * a log line, silently inverts this entire control: every 5xx, 429, 403
+       * and thrown resolver would stop reaching the catch, `payload` would be
+       * undefined, the next line would answer `unavailable`, and CardPayment
+       * would load `buildLegacyPaymentUrl` — the editable `?amount=` link with
+       * no pre-charge allowance check. That is the 2026-08-16 incident,
+       * reachable by a benign edit in another file.
+       *
+       * Checked BEFORE `!payload` because that is the shape this arrives in:
+       * `data` is `void 0` on that path, so "no payload" would otherwise be
+       * read as "the server never answered" when it plainly did.
+       *
+       * Non-EMPTY, deliberately. An empty array is not an answer of failure,
+       * and `[]` is truthy — reading it as one would refuse every top-up the
+       * moment a partial-error `errorPolicy` started reporting one. The value
+       * is an array on the normal resolved path and an ApolloError on the
+       * onError path, so both shapes are asked the same question.
+       */
+      const envelopeRefused = Array.isArray(envelopeErrors)
+        ? envelopeErrors.length > 0
+        : Boolean(envelopeErrors)
+      if (envelopeRefused) return { kind: "serverError" }
+
+      if (!payload) return { kind: "unavailable" }
+
+      const errors = payload.errors ?? []
+      // Search the WHOLE array, not just the head. A refusal must win over
+      // anything else the server happens to report alongside it: if a degradable
+      // error sorted first, the caller would fall back to the legacy editable
+      // link and the customer would be charged for a top-up the webhook then
+      // refuses — the exact incident this hook exists to end.
+      //
+      // A missing code counts as a refusal too. The server declined to
+      // authorise; not being able to name why is no reason to charge anyway.
+      const refusal = errors.find((e) => !e.code || !DEGRADE_CODES.has(e.code))
+      if (refusal) {
+        return {
+          kind: "refused",
+          message: refusal.message,
+          code: refusal.code ?? undefined,
+        }
+      }
+      // Every error was one of ours (the feature is switched off). Degrade.
+      if (errors.length > 0) return { kind: "unavailable" }
+
+      const checkout = payload.checkout
+      if (!checkout?.url || !checkout.checkoutId) return { kind: "unavailable" }
+
+      return {
+        kind: "signed",
+        url: checkout.url,
+        checkoutId: checkout.checkoutId,
+      }
+    },
+    [createCheckout],
+  )
+
+  // Only what a caller uses. CardPayment models its own request status because
+  // it must distinguish "asking" from "asked and fell back", which a bare
+  // `loading` cannot express — so exporting one invites the wrong check.
+  return { requestCheckout }
+}

@@ -2232,6 +2232,59 @@ type RootTranslation = {
 		 */
 		title: string
 		/**
+		 * C​a​n​'​t​ ​t​o​p​ ​u​p​ ​t​h​i​s​ ​a​m​o​u​n​t
+		 */
+		cannotTopUp: string
+		/**
+		 * C​o​u​l​d​n​'​t​ ​s​t​a​r​t​ ​y​o​u​r​ ​p​a​y​m​e​n​t
+		 */
+		checkoutProblemTitle: string
+		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​r​e​a​c​h​ ​F​l​a​s​h​ ​t​o​ ​s​e​t​ ​u​p​ ​y​o​u​r​ ​p​a​y​m​e​n​t​.​ ​N​o​t​h​i​n​g​ ​h​a​s​ ​b​e​e​n​ ​c​h​a​r​g​e​d​ ​—​ ​p​l​e​a​s​e​ ​c​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		checkoutTimedOut: string
+		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​s​e​t​ ​u​p​ ​y​o​u​r​ ​p​a​y​m​e​n​t​.​ ​N​o​t​h​i​n​g​ ​h​a​s​ ​b​e​e​n​ ​c​h​a​r​g​e​d​ ​—​ ​p​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		checkoutFailed: string
+		/**
+		 * U​p​g​r​a​d​e​ ​r​e​q​u​i​r​e​d
+		 */
+		upgradeRequiredTitle: string
+		/**
+		 * I​n​v​a​l​i​d​ ​a​m​o​u​n​t
+		 */
+		invalidAmountTitle: string
+		/**
+		 * F​a​i​l​e​d​ ​t​o​ ​i​n​i​t​i​a​t​e​ ​p​a​y​m​e​n​t​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		paymentSetupFailed: string
+		/**
+		 * C​h​a​n​g​e​ ​a​m​o​u​n​t
+		 */
+		changeAmount: string
+		/**
+		 * {​r​e​m​a​i​n​i​n​g​}​ ​o​f​ ​{​l​i​m​i​t​}​ ​l​e​f​t​ ​t​o​d​a​y
+		 * @param {unknown} limit
+		 * @param {unknown} remaining
+		 */
+		allowanceRemaining: RequiredParams<'limit' | 'remaining'>
+		/**
+		 * Y​o​u​'​v​e​ ​u​s​e​d​ ​t​o​d​a​y​'​s​ ​{​l​i​m​i​t​}​ ​t​o​p​-​u​p​ ​l​i​m​i​t
+		 * @param {unknown} limit
+		 */
+		allowanceExhausted: RequiredParams<'limit'>
+		/**
+		 * {​h​e​l​d​}​ ​i​s​ ​h​e​l​d​ ​b​y​ ​a​ ​p​a​y​m​e​n​t​ ​l​i​n​k​ ​y​o​u​ ​h​a​v​e​n​'​t​ ​c​o​m​p​l​e​t​e​d
+		 * @param {unknown} held
+		 */
+		allowanceHeld: RequiredParams<'held'>
+		/**
+		 * M​o​r​e​ ​b​e​c​o​m​e​s​ ​a​v​a​i​l​a​b​l​e​ ​a​t​ ​{​w​h​e​n​}
+		 * @param {string} when
+		 */
+		allowanceResets: RequiredParams<'when'>
+		/**
 		 * B​a​n​k​ ​T​r​a​n​s​f​e​r
 		 */
 		bankTransfer: string
@@ -2403,6 +2456,14 @@ type RootTranslation = {
 		 * R​e​t​r​y
 		 */
 		retry: string
+		/**
+		 * P​a​y​m​e​n​t​ ​f​a​i​l​e​d
+		 */
+		paymentFailedTitle: string
+		/**
+		 * Y​o​u​r​ ​p​a​y​m​e​n​t​ ​w​a​s​ ​n​o​t​ ​c​o​m​p​l​e​t​e​d​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		paymentFailedMessage: string
 	}
 	BankTransfer: {
 		/**
@@ -2493,13 +2554,69 @@ type RootTranslation = {
 	}
 	PaymentSuccessScreen: {
 		/**
-		 * P​a​y​m​e​n​t​ ​S​u​c​c​e​s​s​f​u​l
+		 * T​o​p​-​u​p​ ​C​o​m​p​l​e​t​e
 		 */
 		title: string
 		/**
-		 * Y​o​u​r​ ​p​a​y​m​e​n​t​ ​h​a​s​ ​b​e​e​n​ ​p​r​o​c​e​s​s​e​d​ ​s​u​c​c​e​s​s​f​u​l​l​y
+		 * Y​o​u​r​ ​p​a​y​m​e​n​t​ ​h​a​s​ ​b​e​e​n​ ​c​r​e​d​i​t​e​d​ ​t​o​ ​y​o​u​r​ ​w​a​l​l​e​t
 		 */
 		successMessage: string
+		/**
+		 * C​o​n​f​i​r​m​i​n​g​ ​y​o​u​r​ ​t​o​p​-​u​p
+		 */
+		checkingTitle: string
+		/**
+		 * W​e​'​r​e​ ​c​h​e​c​k​i​n​g​ ​w​i​t​h​ ​y​o​u​r​ ​w​a​l​l​e​t​ ​—​ ​t​h​i​s​ ​u​s​u​a​l​l​y​ ​t​a​k​e​s​ ​a​ ​f​e​w​ ​s​e​c​o​n​d​s
+		 */
+		checkingMessage: string
+		/**
+		 * P​a​y​m​e​n​t​ ​r​e​c​e​i​v​e​d
+		 */
+		receivedTitle: string
+		/**
+		 * W​e​ ​h​a​v​e​n​'​t​ ​s​e​e​n​ ​t​h​i​s​ ​p​a​y​m​e​n​t​ ​y​e​t
+		 */
+		unconfirmedTitle: string
+		/**
+		 * I​f​ ​y​o​u​r​ ​c​a​r​d​ ​w​a​s​ ​c​h​a​r​g​e​d​,​ ​w​e​'​l​l​ ​c​r​e​d​i​t​ ​y​o​u​r​ ​w​a​l​l​e​t​ ​a​n​d​ ​l​e​t​ ​y​o​u​ ​k​n​o​w​.​ ​I​f​ ​i​t​ ​w​a​s​n​'​t​,​ ​n​o​t​h​i​n​g​ ​h​a​s​ ​l​e​f​t​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​a​n​d​ ​y​o​u​ ​c​a​n​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		unconfirmedMessage: string
+		/**
+		 * W​e​'​v​e​ ​r​e​c​e​i​v​e​d​ ​y​o​u​r​ ​p​a​y​m​e​n​t​ ​a​n​d​ ​a​r​e​ ​c​r​e​d​i​t​i​n​g​ ​y​o​u​r​ ​w​a​l​l​e​t​.​ ​W​e​'​l​l​ ​l​e​t​ ​y​o​u​ ​k​n​o​w​ ​a​s​ ​s​o​o​n​ ​a​s​ ​i​t​ ​l​a​n​d​s​.
+		 */
+		pendingMessage: string
+		/**
+		 * W​e​'​v​e​ ​r​e​c​e​i​v​e​d​ ​y​o​u​r​ ​p​a​y​m​e​n​t​.​ ​W​e​'​l​l​ ​c​o​n​f​i​r​m​ ​i​t​ ​a​n​d​ ​l​e​t​ ​y​o​u​ ​k​n​o​w​ ​o​n​c​e​ ​i​t​'​s​ ​c​r​e​d​i​t​e​d​.
+		 */
+		unaskableMessage: string
+		/**
+		 * P​a​y​m​e​n​t​ ​o​n​ ​h​o​l​d
+		 */
+		heldTitle: string
+		/**
+		 * T​h​i​s​ ​p​a​y​m​e​n​t​ ​i​s​ ​o​n​ ​h​o​l​d​ ​f​o​r​ ​r​e​v​i​e​w​.​ ​N​o​t​h​i​n​g​ ​m​o​r​e​ ​i​s​ ​n​e​e​d​e​d​ ​f​r​o​m​ ​y​o​u​ ​r​i​g​h​t​ ​n​o​w​ ​—​ ​w​e​'​l​l​ ​b​e​ ​i​n​ ​t​o​u​c​h​.
+		 */
+		heldMessage: string
+		/**
+		 * P​a​y​m​e​n​t​ ​n​o​t​ ​c​r​e​d​i​t​e​d
+		 */
+		failedTitle: string
+		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​c​r​e​d​i​t​ ​t​h​i​s​ ​p​a​y​m​e​n​t​ ​y​e​t​.​ ​W​e​'​r​e​ ​o​n​ ​i​t​.
+		 */
+		failedMessage: string
+		/**
+		 * C​r​e​d​i​t​i​n​g​ ​t​o
+		 */
+		destinationWallet: string
+		/**
+		 * W​a​l​l​e​t
+		 */
+		wallet: string
+		/**
+		 * C​r​e​d​i​t​e​d
+		 */
+		amountCredited: string
 		/**
 		 * A​m​o​u​n​t​ ​S​e​n​t
 		 */
@@ -2509,17 +2626,9 @@ type RootTranslation = {
 		 */
 		depositedTo: string
 		/**
-		 * T​r​a​n​s​a​c​t​i​o​n​ ​I​D
-		 */
-		transactionId: string
-		/**
 		 * D​o​n​e
 		 */
 		done: string
-		/**
-		 * V​i​e​w​ ​T​r​a​n​s​a​c​t​i​o​n
-		 */
-		viewTransaction: string
 	}
 	PinScreen: {
 		/**
@@ -8454,6 +8563,54 @@ export type TranslationFunctions = {
 		 */
 		title: () => LocalizedString
 		/**
+		 * Can't top up this amount
+		 */
+		cannotTopUp: () => LocalizedString
+		/**
+		 * Couldn't start your payment
+		 */
+		checkoutProblemTitle: () => LocalizedString
+		/**
+		 * We couldn't reach Flash to set up your payment. Nothing has been charged — please check your connection and try again.
+		 */
+		checkoutTimedOut: () => LocalizedString
+		/**
+		 * We couldn't set up your payment. Nothing has been charged — please try again.
+		 */
+		checkoutFailed: () => LocalizedString
+		/**
+		 * Upgrade required
+		 */
+		upgradeRequiredTitle: () => LocalizedString
+		/**
+		 * Invalid amount
+		 */
+		invalidAmountTitle: () => LocalizedString
+		/**
+		 * Failed to initiate payment. Please try again.
+		 */
+		paymentSetupFailed: () => LocalizedString
+		/**
+		 * Change amount
+		 */
+		changeAmount: () => LocalizedString
+		/**
+		 * {remaining} of {limit} left today
+		 */
+		allowanceRemaining: (arg: { limit: unknown, remaining: unknown }) => LocalizedString
+		/**
+		 * You've used today's {limit} top-up limit
+		 */
+		allowanceExhausted: (arg: { limit: unknown }) => LocalizedString
+		/**
+		 * {held} is held by a payment link you haven't completed
+		 */
+		allowanceHeld: (arg: { held: unknown }) => LocalizedString
+		/**
+		 * More becomes available at {when}
+		 */
+		allowanceResets: (arg: { when: string }) => LocalizedString
+		/**
 		 * Bank Transfer
 		 */
 		bankTransfer: () => LocalizedString
@@ -8621,6 +8778,14 @@ export type TranslationFunctions = {
 		 * Retry
 		 */
 		retry: () => LocalizedString
+		/**
+		 * Payment failed
+		 */
+		paymentFailedTitle: () => LocalizedString
+		/**
+		 * Your payment was not completed. Please try again.
+		 */
+		paymentFailedMessage: () => LocalizedString
 	}
 	BankTransfer: {
 		/**
@@ -8706,13 +8871,69 @@ export type TranslationFunctions = {
 	}
 	PaymentSuccessScreen: {
 		/**
-		 * Payment Successful
+		 * Top-up Complete
 		 */
 		title: () => LocalizedString
 		/**
-		 * Your payment has been processed successfully
+		 * Your payment has been credited to your wallet
 		 */
 		successMessage: () => LocalizedString
+		/**
+		 * Confirming your top-up
+		 */
+		checkingTitle: () => LocalizedString
+		/**
+		 * We're checking with your wallet — this usually takes a few seconds
+		 */
+		checkingMessage: () => LocalizedString
+		/**
+		 * Payment received
+		 */
+		receivedTitle: () => LocalizedString
+		/**
+		 * We haven't seen this payment yet
+		 */
+		unconfirmedTitle: () => LocalizedString
+		/**
+		 * If your card was charged, we'll credit your wallet and let you know. If it wasn't, nothing has left your account and you can try again.
+		 */
+		unconfirmedMessage: () => LocalizedString
+		/**
+		 * We've received your payment and are crediting your wallet. We'll let you know as soon as it lands.
+		 */
+		pendingMessage: () => LocalizedString
+		/**
+		 * We've received your payment. We'll confirm it and let you know once it's credited.
+		 */
+		unaskableMessage: () => LocalizedString
+		/**
+		 * Payment on hold
+		 */
+		heldTitle: () => LocalizedString
+		/**
+		 * This payment is on hold for review. Nothing more is needed from you right now — we'll be in touch.
+		 */
+		heldMessage: () => LocalizedString
+		/**
+		 * Payment not credited
+		 */
+		failedTitle: () => LocalizedString
+		/**
+		 * We couldn't credit this payment yet. We're on it.
+		 */
+		failedMessage: () => LocalizedString
+		/**
+		 * Crediting to
+		 */
+		destinationWallet: () => LocalizedString
+		/**
+		 * Wallet
+		 */
+		wallet: () => LocalizedString
+		/**
+		 * Credited
+		 */
+		amountCredited: () => LocalizedString
 		/**
 		 * Amount Sent
 		 */
@@ -8722,17 +8943,9 @@ export type TranslationFunctions = {
 		 */
 		depositedTo: () => LocalizedString
 		/**
-		 * Transaction ID
-		 */
-		transactionId: () => LocalizedString
-		/**
 		 * Done
 		 */
 		done: () => LocalizedString
-		/**
-		 * View Transaction
-		 */
-		viewTransaction: () => LocalizedString
 	}
 	PinScreen: {
 		/**

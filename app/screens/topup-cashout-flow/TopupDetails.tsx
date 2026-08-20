@@ -13,7 +13,7 @@
  * routing to the appropriate flow based on the selected payment type.
  */
 
-import React, { useState } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import {
   View,
   TextInput,
@@ -25,6 +25,7 @@ import {
 } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
+import { useFocusEffect } from "@react-navigation/native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
@@ -36,6 +37,7 @@ import { ButtonGroup } from "@app/components/button-group"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useCardTopupAllowance } from "@app/hooks/use-card-topup-allowance"
 import { useCardTopupLimit } from "@app/hooks/use-card-topup-limit"
 import { AccountLevel } from "@app/graphql/level-context"
 
@@ -50,6 +52,29 @@ import Bitcoin from "@app/assets/icons/bitcoin.svg"
 // when Globals.fygaroTopup is null (settings unavailable) so the floor never
 // silently drops back to the old $1.
 const DEFAULT_CARD_MINIMUM = 10
+
+// Checkout holds lapse within the day, so the clock time is the useful part.
+// Exported for the test that pins the rendered line, so the expectation is
+// derived the same way rather than hard-coding one machine's locale.
+export const formatHoldExpiry = (at: Date): string =>
+  at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+
+/**
+ * How long Continue may be held waiting for the allowance before the screen
+ * falls back to the flat per-level cap.
+ *
+ * A deadline is required, not optional. The allowance query is `network-only`
+ * and nothing in the stack will ever time it out: React Native sets no default
+ * network timeout on Android and this app's HttpLink (app/graphql/client.tsx)
+ * passes no AbortController, so a stalled connection produces a promise that
+ * hangs rather than one that rejects. Without this, `allowanceLoading` stays
+ * true forever, Continue renders a permanent unlabelled spinner and
+ * `handleContinue` early-returns — the card top-up flow becomes unstartable,
+ * with no error and no way out. Past the deadline the documented flat-cap
+ * degrade path applies, which is strictly what this screen did before the
+ * allowance existed.
+ */
+const ALLOWANCE_DEADLINE_MS = 5_000
 
 type Props = StackScreenProps<RootStackParamList, "TopupDetails">
 
@@ -102,6 +127,65 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     levelLoading,
   } = useCardTopupLimit()
 
+  // What is ACTUALLY left today for CARD top-ups, as the backend computes it —
+  // including unpaid checkout links this account is still holding. The flat
+  // per-level cap below is the fallback for when this cannot be established
+  // (older backend, feature off, ERPNext unreadable), never a substitute:
+  // showing $125 to someone with $25 left is how a customer gets charged for a
+  // top-up we then refuse.
+  //
+  // Skipped off the card flow entirely. Bank transfers and Bridge deposits have
+  // their own limits and are not touched by the Fygaro allowance; asking for it
+  // here would only tempt this screen into applying a card cap to a rail it has
+  // nothing to do with.
+  const {
+    allowance,
+    loading: allowanceLoading,
+    refreshing: allowanceRefreshing,
+    stale: allowanceStale,
+    refetch: refetchAllowance,
+  } = useCardTopupAllowance({
+    skip: !isCard,
+  })
+
+  /**
+   * Refresh the allowance every time the customer comes BACK to this screen.
+   *
+   * This screen is not unmounted when it pushes CardPayment, and asking for a
+   * checkout mints a reservation — so the figure it is still rendering is stale
+   * the moment the customer returns. Concretely: $65 left, they enter $60 and
+   * tap Continue, the server holds $60, and then they are refused (or simply
+   * back out of the payment page). Both routes home call `goBack()` — the
+   * refusal screen's "Change amount" and the refusal alert's OK — landing them
+   * on a screen still promising "$65.00 of $125.00 left today" and still gating
+   * Continue against $65. They are invited to try again and refused again. That
+   * is precisely the "the app invites a top-up that will be refused" failure the
+   * allowance was added to end.
+   *
+   * `refetchAllowance` is read through a ref so the focus callback's only
+   * dependency is `isCard`, which never changes for a given screen instance. A
+   * callback whose identity moves re-runs `useFocusEffect` while the screen is
+   * still focused, and each re-run is another network-only round trip.
+   */
+  const refetchAllowanceRef = useRef(refetchAllowance)
+  useEffect(() => {
+    refetchAllowanceRef.current = refetchAllowance
+  })
+  // The mount fetch is already `network-only`, so the FIRST focus (a screen is
+  // focused as it mounts) has nothing to refresh and would only duplicate the
+  // request in flight. Returns to the screen are the whole point.
+  const skipFirstFocus = useRef(true)
+  useFocusEffect(
+    useCallback(() => {
+      if (!isCard) return
+      if (skipFirstFocus.current) {
+        skipFirstFocus.current = false
+        return
+      }
+      refetchAllowanceRef.current()
+    }, [isCard]),
+  )
+
   // Card flow enforces the backend minimum (default $10); other flows keep the
   // long-standing $1 floor.
   const minimumAmount = isCard ? fygaroTopup?.minimumAmount ?? DEFAULT_CARD_MINIMUM : 1
@@ -115,6 +199,84 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
   // level gate cannot run yet — hold Continue (spinner) rather than letting
   // the "no block" degrade path fire before the level is known.
   const cardLevelPending = isCard && levelLoading
+  // The allowance query is network-only, so it is ALWAYS a round trip, while
+  // the level resolves instantly from a warm cache. Without this the gap
+  // between them is a window where Continue is enabled and the screen quotes
+  // the flat cap — so the customer is invited to spend $125 they do not have
+  // and refused a moment later. Same posture the level already takes: hold the
+  // flow rather than treat "not known yet" as "no limit".
+  //
+  // But only until the deadline. "Not known yet" becomes "not knowable" at some
+  // point, and past that the flat cap is a worse gate than the allowance yet a
+  // far better one than a screen the customer cannot leave.
+  //
+  // Two ways the figure can be untrustworthy, and both must hold the flow:
+  //  - we have never had one (first load), or
+  //  - the one we are holding is being REPLACED right now. That is the return
+  //    from CardPayment: asking for a checkout mints a reservation, so the $65
+  //    still rendered here is $60 too high until the refetch lands. Waving
+  //    Continue through on it invites exactly the top-up the server just
+  //    refused — the failure the on-focus refetch was added to end, left half
+  //    open because Apollo keeps serving the old data through a refetch.
+  const allowanceUnsettled =
+    isCard && ((allowanceLoading && !allowance) || allowanceRefreshing)
+  const [allowanceDeadlinePassed, setAllowanceDeadlinePassed] = useState(false)
+  useEffect(() => {
+    // Armed per HOLD, not once per mount. A mount-only timer has always
+    // expired by the time the customer comes back from the payment screen,
+    // which would make the deadline bound the first hold and none of the
+    // later ones.
+    if (!allowanceUnsettled) {
+      setAllowanceDeadlinePassed(false)
+      return undefined
+    }
+    const timer = setTimeout(
+      () => setAllowanceDeadlinePassed(true),
+      ALLOWANCE_DEADLINE_MS,
+    )
+    return () => clearTimeout(timer)
+  }, [allowanceUnsettled])
+  const cardAllowancePending = allowanceUnsettled && !allowanceDeadlinePassed
+
+  /**
+   * The allowance this screen is allowed to ACT on, which is not always the one
+   * Apollo is still serving.
+   *
+   * The deadline releases the hold for both of the reasons the figure can be
+   * untrustworthy, but only one of them has a safe fallback:
+   *
+   *  - First load (`allowanceLoading && !allowance`): there is no figure at
+   *    all, so past the deadline the flat per-level cap applies. Documented,
+   *    weaker, fine.
+   *  - Refresh (`allowanceRefreshing`): there IS a figure, and it is the
+   *    PRE-reservation one. This is the return from CardPayment, where asking
+   *    for a checkout has just minted a hold. Gating on it, or quoting it, is
+   *    quoting a number we know the server has already superseded: the screen
+   *    would still say "$65.00 of $125.00 left today" after $60 of it was
+   *    taken, wave the customer through on $60, mint a SECOND hold, refuse them
+   *    again, and extend their lockout — reopening the exact loop the on-focus
+   *    refetch was added to close.
+   *
+   * So the deadline releases the hold, and this discards the figure with it.
+   * Past it the screen falls back to the flat cap — the same place the
+   * first-load case lands — rather than repeating a number it knows is stale.
+   *
+   * And a refresh that FAILS is the same superseded figure by the shorter road.
+   * The deadline only ever governs a refresh that STALLS — one still sitting in
+   * `NetworkStatus.refetch` — but a rejected refetch never passes through that
+   * status at all: Apollo hands it to useQuery's error observer, which re-serves
+   * the previous `data` with `loading: false` and `NetworkStatus.error` (see
+   * `stale` in use-card-topup-allowance). Nothing about the resulting render
+   * says "this number is old", so gating on it is the stall case with the wait
+   * removed: the customer comes back from minting a $60 hold, the focus refetch
+   * dies on the wire, and the screen goes straight back to promising the whole
+   * $125 it had before. No deadline applies here — there is no round trip left
+   * to wait out — so this discards the figure immediately and the flat cap
+   * takes over.
+   */
+  const allowanceSuperseded =
+    isCard && ((allowanceRefreshing && allowanceDeadlinePassed) || allowanceStale)
+  const usableAllowance = allowanceSuperseded ? undefined : allowance
 
   const dailyLimit = isCard ? levelDailyLimit : undefined
 
@@ -128,9 +290,55 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     return !isNaN(numAmount) && numAmount >= minimumAmount
   }
 
+  /**
+   * Whether this amount is more than the account may still top up today.
+   *
+   * Prefers the REMAINING allowance over the flat per-level cap, and that is
+   * the whole point. Checking each amount against the flat cap is why one
+   * account paid $100, $80 and $60 against a $125 limit on 2026-08-16 without
+   * the app objecting once — every amount is individually under $125, and the
+   * client had no idea $180 was already spent. Two of those three were captured
+   * by Fygaro and never credited.
+   *
+   * Falls back to the flat cap when the allowance cannot be established — or
+   * when the one we are holding has been superseded by a reservation we know
+   * was just minted (see `usableAllowance`) — which is strictly the old
+   * behaviour: weaker, but the pre-charge check still refuses before any card
+   * is charged.
+   *
+   * CARD ONLY, both halves of it — same as `dailyLimit` above. The Fygaro
+   * allowance says nothing about a bank transfer or a Bridge deposit, and
+   * applying it to them capped a $500 wire at whatever was left of a $125 card
+   * allowance, with an alert quoting a limit note the non-card screen does not
+   * even show.
+   */
+  /**
+   * What to tell someone whose remaining allowance is below the minimum they
+   * are allowed to top up.
+   *
+   * "$5.00 of $125.00 left today" is true and useless: no amount at or under
+   * $5 clears the $10 minimum, so every number it invites is refused. Naming
+   * the exhausted limit instead is the same honesty the rest of this flow
+   * applies — never offer what will be turned down.
+   */
+  const allowanceCopy = (allowance: {
+    remainingCents: number
+    limitCents: number
+  }): string => {
+    const limit = `$${(allowance.limitCents / 100).toFixed(2)}`
+    return allowance.remainingCents / 100 < minimumAmount
+      ? LL.TopupDetails.allowanceExhausted({ limit })
+      : LL.TopupDetails.allowanceRemaining({
+          remaining: `$${(allowance.remainingCents / 100).toFixed(2)}`,
+          limit,
+        })
+  }
+
   const exceedsDailyLimit = (amount: string): boolean => {
     const numAmount = parseFloat(amount)
-    return dailyLimit !== undefined && !isNaN(numAmount) && numAmount > dailyLimit
+    if (isNaN(numAmount)) return false
+    if (isCard && usableAllowance) return numAmount > usableAllowance.remainingCents / 100
+    return dailyLimit !== undefined && numAmount > dailyLimit
   }
 
   // "You'll receive" net preview — only for card top-ups, only when the fee
@@ -145,6 +353,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     isCard &&
     !cardBlockedForLevel &&
     !cardLevelPending &&
+    !cardAllowancePending &&
     fygaroTopup &&
     !isNaN(grossAmount) &&
     grossAmount >= minimumAmount &&
@@ -167,7 +376,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     // The card flow needs a resolved level before the level gate below can
     // run; the Continue button is already disabled while it loads, and this
     // guard backstops that.
-    if (cardLevelPending) {
+    if (cardLevelPending || cardAllowancePending) {
       return
     }
 
@@ -184,22 +393,38 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
     // (level query failed), we degrade to the webhook's manual-review
     // fallback rather than hard-blocking on missing metadata.
     if (cardBlockedForLevel) {
-      Alert.alert("Upgrade Required", LL.TopupDetails.upgradeRequired())
+      // Localised, like the body it sits above. A raw English title on a
+      // translated message is the same half-fix as translating the success
+      // path and leaving the failure path in English.
+      Alert.alert(
+        LL.TopupDetails.upgradeRequiredTitle(),
+        LL.TopupDetails.upgradeRequired(),
+      )
       return
     }
 
     if (!validateAmount(amount)) {
       Alert.alert(
-        "Invalid Amount",
+        LL.TopupDetails.invalidAmountTitle(),
         LL.TopupDetails.minimumAmount({ amount: `$${minimumAmount.toFixed(2)}` }),
       )
       return
     }
 
-    if (exceedsDailyLimit(amount) && dailyLimit !== undefined) {
+    if (exceedsDailyLimit(amount)) {
+      // Name the number the customer can act on. When the allowance is known
+      // that is what is LEFT, not the flat cap — telling someone with $25 left
+      // that their limit is $125 is how they retry the same amount and fail
+      // again. The `dailyLimit !== undefined` guard that used to sit on this
+      // branch is gone: it silently skipped the block whenever the level query
+      // had failed but the allowance was perfectly readable.
       Alert.alert(
-        "Invalid Amount",
-        LL.TopupDetails.dailyLimitAmount({ amount: `$${dailyLimit.toFixed(2)}` }),
+        LL.TopupDetails.cannotTopUp(),
+        isCard && usableAllowance
+          ? allowanceCopy(usableAllowance)
+          : LL.TopupDetails.dailyLimitAmount({
+              amount: `$${(dailyLimit ?? 0).toFixed(2)}`,
+            }),
       )
       return
     }
@@ -227,7 +452,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
         })
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to initiate payment. Please try again.")
+      Alert.alert(LL.common.error(), LL.TopupDetails.paymentSetupFailed())
     } finally {
       setIsLoading(false)
     }
@@ -317,10 +542,37 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
               </View>
             </InputAccessoryView>
           )}
-          {dailyLimit !== undefined && (
-            <Text type="p3" style={styles.limitNote}>
-              {LL.TopupDetails.dailyLimitInfo({ amount: `$${dailyLimit.toFixed(2)}` })}
-            </Text>
+          {isCard && usableAllowance ? (
+            <>
+              <Text type="p3" style={styles.limitNote}>
+                {allowanceCopy(usableAllowance)}
+              </Text>
+              {usableAllowance.heldCents > 0 && (
+                // Without this line, "you have spent nothing and $65 is left of
+                // $125" reads as a bug. The hold is the whole difference.
+                <Text type="p3" style={styles.limitNote}>
+                  {LL.TopupDetails.allowanceHeld({
+                    held: `$${(usableAllowance.heldCents / 100).toFixed(2)}`,
+                  })}
+                </Text>
+              )}
+              {usableAllowance.heldCents > 0 && usableAllowance.holdsExpireAt && (
+                // And the immediate follow-up question — "when do I get the
+                // rest back?" — answered in the same breath, so nobody has to
+                // guess whether the hold is minutes or days.
+                <Text type="p3" style={styles.limitNote}>
+                  {LL.TopupDetails.allowanceResets({
+                    when: formatHoldExpiry(usableAllowance.holdsExpireAt),
+                  })}
+                </Text>
+              )}
+            </>
+          ) : cardAllowancePending ? null : (
+            dailyLimit !== undefined && (
+              <Text type="p3" style={styles.limitNote}>
+                {LL.TopupDetails.dailyLimitInfo({ amount: `$${dailyLimit.toFixed(2)}` })}
+              </Text>
+            )
           )}
           {route.params.paymentType === "bridge" && (
             <Text type="p3" style={styles.limitNote}>
@@ -342,7 +594,7 @@ const TopupDetails: React.FC<Props> = ({ navigation, route }) => {
       <PrimaryBtn
         label={LL.TopupDetails.continue()}
         onPress={handleContinue}
-        loading={isLoading || cardLevelPending}
+        loading={isLoading || cardLevelPending || cardAllowancePending}
         btnStyle={styles.primaryButton}
       />
     </Screen>

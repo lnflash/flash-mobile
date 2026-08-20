@@ -695,6 +695,39 @@ const en: BaseTranslation = {
   },
   TopupDetails: {
     title: "Card Payment",
+    cannotTopUp: "Can't top up this amount",
+    // The headline for the refusals that are NOT about the amount: the backend
+    // threw, or never answered. "Can't top up this amount" over those tells a
+    // customer their $50 is the problem while ERPNext is down, and the button
+    // below it ("Change amount") sends them to try $40, then $30, into the
+    // identical error.
+    checkoutProblemTitle: "Couldn't start your payment",
+    checkoutTimedOut:
+      "We couldn't reach Flash to set up your payment. Nothing has been charged — please check your connection and try again.",
+    // Used when the server answered with an exception rather than a decision,
+    // and when anything else unexpected goes wrong setting the payment up. It
+    // fails CLOSED, so it must say plainly that no money moved.
+    checkoutFailed:
+      "We couldn't set up your payment. Nothing has been charged — please try again.",
+    // Alert titles. Localised for the same reason their message bodies are: an
+    // English title over a translated sentence fixes the screen for English
+    // speakers only.
+    upgradeRequiredTitle: "Upgrade required",
+    invalidAmountTitle: "Invalid amount",
+    paymentSetupFailed: "Failed to initiate payment. Please try again.",
+    // The only action that can succeed after a refusal. A "Retry" would
+    // re-request the SAME amount and be refused again for the same reason.
+    changeAmount: "Change amount",
+    // Rendered together, because "you've spent $0 and have $65 of $125" is
+    // otherwise unexplainable to the person reading it.
+    allowanceRemaining: "{remaining} of {limit} left today",
+    // Used when what is left is below the minimum top-up, i.e. it cannot
+    // actually be spent. Naming the figure there ("$5.00 of $125.00 left")
+    // invites an amount that is guaranteed to be refused — the same
+    // offer-then-refuse the pre-charge check exists to stop, moved into copy.
+    allowanceExhausted: "You've used today's {limit} top-up limit",
+    allowanceHeld: "{held} is held by a payment link you haven't completed",
+    allowanceResets: "More becomes available at {when: string}",
     bankTransfer: "Bank Transfer",
     email: "Email",
     emailPlaceholder: "Enter your email address",
@@ -739,7 +772,11 @@ const en: BaseTranslation = {
     title: "Fygaro Payment",
     loading: "Loading payment page...",
     error: "Failed to load payment page",
-    retry: "Retry"
+    retry: "Retry",
+    // The failure counterpart of every payment-outcome message on this flow.
+    // It was the one left as an English literal.
+    paymentFailedTitle: "Payment failed",
+    paymentFailedMessage: "Your payment was not completed. Please try again."
   },
   BankTransfer: {
     title: "Bank Transfer",
@@ -764,13 +801,50 @@ const en: BaseTranslation = {
 		routingNumber: "Routing Number"
   },
   PaymentSuccessScreen: {
-    title: "Payment Successful",
-    successMessage: "Your payment has been processed successfully",
+    title: "Top-up Complete",
+    successMessage: "Your payment has been credited to your wallet",
+    checkingTitle: "Confirming your top-up",
+    checkingMessage: "We're checking with your wallet — this usually takes a few seconds",
+    // Deliberately NOT "successful". Fygaro capturing the card and Flash
+    // crediting the wallet are different events; this screen may only claim
+    // the first until the backend confirms the second.
+    receivedTitle: "Payment received",
+    // Deliberately does not say "received": a declined card closes the payment
+    // page exactly as a successful one does, so at this point we genuinely do
+    // not know whether there is money to credit.
+    unconfirmedTitle: "We haven't seen this payment yet",
+    unconfirmedMessage:
+      "If your card was charged, we'll credit your wallet and let you know. If it wasn't, nothing has left your account and you can try again.",
+    pendingMessage:
+      "We've received your payment and are crediting your wallet. We'll let you know as soon as it lands.",
+    // For a legacy device-built link, which carries no checkout id: a payment
+    // happened, and nobody has been asked what became of it. Deliberately NOT
+    // pendingMessage — "we are crediting your wallet" is a claim the backend
+    // has to make, and here it has not been asked. This is the phase every
+    // card top-up lands in while the signed checkout is switched off.
+    unaskableMessage:
+      "We've received your payment. We'll confirm it and let you know once it's credited.",
+    // Held and failed are NOT pending, and must never borrow pendingMessage's
+    // wording: a held payment is explicitly not being credited — it is terminal
+    // until a human acts — so "we are crediting your wallet" would be exactly
+    // the false claim this screen was rebuilt to stop making. The backend sends
+    // a reason when it has one; these are what we say when it does not.
+    heldTitle: "Payment on hold",
+    heldMessage:
+      "This payment is on hold for review. Nothing more is needed from you right now — we'll be in touch.",
+    failedTitle: "Payment not credited",
+    failedMessage: "We couldn't credit this payment yet. We're on it.",
+    // "Crediting to" is only true while the money is actually on its way. Held
+    // and failed are the two phases where it is NOT, so they get the neutral
+    // label instead — otherwise "Payment on hold" is followed one row later by
+    // "Crediting to: USD Wallet", which is the same false claim moved down the
+    // screen.
+    destinationWallet: "Crediting to",
+    wallet: "Wallet",
+    amountCredited: "Credited",
     amountSent: "Amount Sent",
     depositedTo: "Deposited to",
-    transactionId: "Transaction ID",
-    done: "Done",
-    viewTransaction: "View Transaction"
+    done: "Done"
   },
   PinScreen: {
     attemptsRemaining: "Incorrect PIN. {attemptsRemaining: number} attempts remaining.",

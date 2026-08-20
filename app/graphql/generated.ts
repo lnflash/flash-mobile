@@ -898,6 +898,46 @@ export type FeesInformation = {
  * whole-number percents (e.g. 2.99 means 2.99%); fixed amounts and the minimum
  * are in USD. Null when the instance's Fygaro settings are unavailable.
  */
+export type FygaroCheckout = {
+  readonly __typename: 'FygaroCheckout';
+  /** The authorised amount, echoed back so the client can display what was signed. */
+  readonly amount: Scalars['CentAmount']['output'];
+  /** Poll fygaroTopupStatus with this after the payment page closes. Do NOT report success from the payment page alone — the card charge succeeding and Flash crediting the wallet are different events. */
+  readonly checkoutId: Scalars['String']['output'];
+  /** After this, the URL is rejected by the payment provider and a new one must be requested. */
+  readonly expiresAt: Scalars['Timestamp']['output'];
+  /** Open this in the payment webview. The amount and the destination account are signed into it and cannot be edited; it stops working at expiresAt. */
+  readonly url: Scalars['String']['output'];
+};
+
+export type FygaroCheckoutCreateInput = {
+  readonly amount: Scalars['CentAmount']['input'];
+};
+
+export type FygaroCheckoutCreatePayload = {
+  readonly __typename: 'FygaroCheckoutCreatePayload';
+  readonly checkout?: Maybe<FygaroCheckout>;
+  readonly errors: ReadonlyArray<Error>;
+  /** How much more could be authorised right now, after this request. Card top-up links you have open but have not paid are ALREADY SUBTRACTED, so this is what would be accepted this second — not a statement of what the account has spent today. Present on refusal too, so the client can say how much would go through instead of only saying no. Null when the allowance could not be established. */
+  readonly remainingAllowance?: Maybe<Scalars['CentAmount']['output']>;
+};
+
+export type FygaroTopupAllowance = {
+  readonly __typename: 'FygaroTopupAllowance';
+  /** Card top-up links this account has open but has not paid. NOT spent — nothing has been charged — but not available either, because paying one would charge it. The common case is a customer who minted a link and closed the page, so this is usually the whole difference between `limit - spent` and `remaining`. */
+  readonly held: Scalars['CentAmount']['output'];
+  /** When the SOONEST unpaid checkout link expires and its hold on the allowance lifts by itself. Null when `held` is zero. This is the answer to 'why is $65 left when I have spent nothing, and when do I get the rest back?'. */
+  readonly holdsExpireAt?: Maybe<Scalars['Timestamp']['output']>;
+  /** The account level's rolling 24-hour cap. */
+  readonly limit: Scalars['CentAmount']['output'];
+  /** What would still be accepted right now: the cap less BOTH `spent` and `held`. Unpaid checkout links are already subtracted, exactly as the pre-charge check subtracts them, so this is what a new top-up would be measured against — not `limit - spent`. Never negative. */
+  readonly remaining: Scalars['CentAmount']['output'];
+  /** When the oldest counted PAYMENT ages out and the allowance it spent returns. Covers settled spend only — a hold is not a payment and never moves this. Null when no payment is counted, even if `held` is non-zero; see `holdsExpireAt`. */
+  readonly resetsAt?: Maybe<Scalars['Timestamp']['output']>;
+  /** Gross charged in the trailing 24 hours. Payments we captured but did not credit are excluded — they delivered nothing, so they do not spend the allowance. */
+  readonly spent: Scalars['CentAmount']['output'];
+};
+
 export type FygaroTopupInfo = {
   readonly __typename: 'FygaroTopupInfo';
   /** Flash fixed fee, in USD. */
@@ -916,6 +956,31 @@ export type FygaroTopupInfo = {
   readonly processorFeeFixed: Scalars['Float']['output'];
   /** Payment-processor percentage fee (e.g. 2.99 for 2.99%). */
   readonly processorFeePercent: Scalars['Float']['output'];
+};
+
+export const FygaroTopupState = {
+  /** Money is in the wallet. */
+  Credited: 'CREDITED',
+  /** We tried to credit and it failed. A provider retry may still resolve it, so this is 'we are on it', not 'contact support'. */
+  Failed: 'FAILED',
+  /** Captured and deliberately not credited. Terminal until a human acts, so retrying achieves nothing — show the reason. */
+  HeldForReview: 'HELD_FOR_REVIEW',
+  /** We have the payment — the provider told us so — and are crediting it. Not yet terminal, so keep polling, then fall back to telling the customer they will be notified. */
+  Processing: 'PROCESSING',
+  /** No payment has been observed for this checkout. The customer may still be on the payment page, the card may have been declined, the page may have been cancelled — or we may be momentarily unable to check. NEVER render this as 'payment received': the payment page closes on a decline exactly as it does on a success. Keep polling, then fall back to 'we'll let you know'. */
+  Unconfirmed: 'UNCONFIRMED'
+} as const;
+
+export type FygaroTopupState = typeof FygaroTopupState[keyof typeof FygaroTopupState];
+export type FygaroTopupStatus = {
+  readonly __typename: 'FygaroTopupStatus';
+  /** The amount this checkout was authorised for. Null ONLY when the checkout record could not be read (state UNCONFIRMED, transient): the amount lives on that record. The client already knows what it asked for, so this is an echo, never the source of truth for what was charged. */
+  readonly authorizedAmount?: Maybe<Scalars['CentAmount']['output']>;
+  /** What reached the wallet, after fees. Present once credited. */
+  readonly netAmount?: Maybe<Scalars['CentAmount']['output']>;
+  /** Customer-facing explanation, present when the state needs one. Reasons the customer can act on are named plainly; our own faults are not blamed on them. */
+  readonly reason?: Maybe<Scalars['String']['output']>;
+  readonly state: FygaroTopupState;
 };
 
 /** Provides global settings for the application which might have an impact for the user. */
@@ -1352,6 +1417,7 @@ export type Mutation = {
   readonly createInvite: CreateInvitePayload;
   readonly deviceNotificationTokenCreate: SuccessPayload;
   readonly feedbackSubmit: SuccessPayload;
+  readonly fygaroCheckoutCreate: FygaroCheckoutCreatePayload;
   readonly idDocumentUploadUrlGenerate: IdDocumentUploadUrlPayload;
   /**
    * Start the Cashout process;
@@ -1602,6 +1668,11 @@ export type MutationDeviceNotificationTokenCreateArgs = {
 
 export type MutationFeedbackSubmitArgs = {
   input: FeedbackSubmitInput;
+};
+
+
+export type MutationFygaroCheckoutCreateArgs = {
+  input: FygaroCheckoutCreateInput;
 };
 
 
@@ -2092,6 +2163,8 @@ export type Query = {
   readonly colorScheme: Scalars['String']['output'];
   readonly currencyList: ReadonlyArray<Currency>;
   readonly feedbackModalShown: Scalars['Boolean']['output'];
+  readonly fygaroTopupAllowance?: Maybe<FygaroTopupAllowance>;
+  readonly fygaroTopupStatus?: Maybe<FygaroTopupStatus>;
   readonly globals?: Maybe<Globals>;
   readonly hasPromptedSetDefaultAccount: Scalars['Boolean']['output'];
   readonly hiddenBalanceToolTip: Scalars['Boolean']['output'];
@@ -2138,6 +2211,11 @@ export type QueryBtcPriceArgs = {
 
 export type QueryBtcPriceListArgs = {
   range: PriceGraphRange;
+};
+
+
+export type QueryFygaroTopupStatusArgs = {
+  checkoutId: Scalars['String']['input'];
 };
 
 
@@ -3299,6 +3377,11 @@ export type AccountStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type AccountStatusQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly statusHeadline: AccountStatusHeadline, readonly id: string, readonly capabilities: { readonly __typename: 'AccountCapabilities', readonly verified: boolean, readonly bankPayout: boolean, readonly business: boolean, readonly usdAccount: boolean } } } | null };
 
+export type FygaroTopupAllowanceQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type FygaroTopupAllowanceQuery = { readonly __typename: 'Query', readonly fygaroTopupAllowance?: { readonly __typename: 'FygaroTopupAllowance', readonly limit: number, readonly held: number, readonly remaining: number, readonly holdsExpireAt?: number | null } | null };
+
 export type CardTopupLimitsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -3313,6 +3396,20 @@ export type CurrencyListQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type CurrencyListQuery = { readonly __typename: 'Query', readonly currencyList: ReadonlyArray<{ readonly __typename: 'Currency', readonly id: string, readonly flag: string, readonly name: string, readonly symbol: string, readonly fractionDigits: number }> };
+
+export type FygaroCheckoutCreateMutationVariables = Exact<{
+  input: FygaroCheckoutCreateInput;
+}>;
+
+
+export type FygaroCheckoutCreateMutation = { readonly __typename: 'Mutation', readonly fygaroCheckoutCreate: { readonly __typename: 'FygaroCheckoutCreatePayload', readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly message: string, readonly code?: string | null }>, readonly checkout?: { readonly __typename: 'FygaroCheckout', readonly url: string, readonly checkoutId: string } | null } };
+
+export type FygaroTopupStatusQueryVariables = Exact<{
+  checkoutId: Scalars['String']['input'];
+}>;
+
+
+export type FygaroTopupStatusQuery = { readonly __typename: 'Query', readonly fygaroTopupStatus?: { readonly __typename: 'FygaroTopupStatus', readonly state: FygaroTopupState, readonly netAmount?: number | null, readonly reason?: string | null } | null };
 
 export type CaptchaCreateChallengeMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -6778,6 +6875,43 @@ export function useAccountStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOpti
 export type AccountStatusQueryHookResult = ReturnType<typeof useAccountStatusQuery>;
 export type AccountStatusLazyQueryHookResult = ReturnType<typeof useAccountStatusLazyQuery>;
 export type AccountStatusQueryResult = Apollo.QueryResult<AccountStatusQuery, AccountStatusQueryVariables>;
+export const FygaroTopupAllowanceDocument = gql`
+    query fygaroTopupAllowance {
+  fygaroTopupAllowance {
+    limit
+    held
+    remaining
+    holdsExpireAt
+  }
+}
+    `;
+
+/**
+ * __useFygaroTopupAllowanceQuery__
+ *
+ * To run a query within a React component, call `useFygaroTopupAllowanceQuery` and pass it any options that fit your needs.
+ * When your component renders, `useFygaroTopupAllowanceQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useFygaroTopupAllowanceQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useFygaroTopupAllowanceQuery(baseOptions?: Apollo.QueryHookOptions<FygaroTopupAllowanceQuery, FygaroTopupAllowanceQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<FygaroTopupAllowanceQuery, FygaroTopupAllowanceQueryVariables>(FygaroTopupAllowanceDocument, options);
+      }
+export function useFygaroTopupAllowanceLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<FygaroTopupAllowanceQuery, FygaroTopupAllowanceQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<FygaroTopupAllowanceQuery, FygaroTopupAllowanceQueryVariables>(FygaroTopupAllowanceDocument, options);
+        }
+export type FygaroTopupAllowanceQueryHookResult = ReturnType<typeof useFygaroTopupAllowanceQuery>;
+export type FygaroTopupAllowanceLazyQueryHookResult = ReturnType<typeof useFygaroTopupAllowanceLazyQuery>;
+export type FygaroTopupAllowanceQueryResult = Apollo.QueryResult<FygaroTopupAllowanceQuery, FygaroTopupAllowanceQueryVariables>;
 export const CardTopupLimitsDocument = gql`
     query cardTopupLimits {
   globals {
@@ -6893,6 +7027,83 @@ export function useCurrencyListLazyQuery(baseOptions?: Apollo.LazyQueryHookOptio
 export type CurrencyListQueryHookResult = ReturnType<typeof useCurrencyListQuery>;
 export type CurrencyListLazyQueryHookResult = ReturnType<typeof useCurrencyListLazyQuery>;
 export type CurrencyListQueryResult = Apollo.QueryResult<CurrencyListQuery, CurrencyListQueryVariables>;
+export const FygaroCheckoutCreateDocument = gql`
+    mutation fygaroCheckoutCreate($input: FygaroCheckoutCreateInput!) {
+  fygaroCheckoutCreate(input: $input) {
+    errors {
+      message
+      code
+    }
+    checkout {
+      url
+      checkoutId
+    }
+  }
+}
+    `;
+export type FygaroCheckoutCreateMutationFn = Apollo.MutationFunction<FygaroCheckoutCreateMutation, FygaroCheckoutCreateMutationVariables>;
+
+/**
+ * __useFygaroCheckoutCreateMutation__
+ *
+ * To run a mutation, you first call `useFygaroCheckoutCreateMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useFygaroCheckoutCreateMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [fygaroCheckoutCreateMutation, { data, loading, error }] = useFygaroCheckoutCreateMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useFygaroCheckoutCreateMutation(baseOptions?: Apollo.MutationHookOptions<FygaroCheckoutCreateMutation, FygaroCheckoutCreateMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<FygaroCheckoutCreateMutation, FygaroCheckoutCreateMutationVariables>(FygaroCheckoutCreateDocument, options);
+      }
+export type FygaroCheckoutCreateMutationHookResult = ReturnType<typeof useFygaroCheckoutCreateMutation>;
+export type FygaroCheckoutCreateMutationResult = Apollo.MutationResult<FygaroCheckoutCreateMutation>;
+export type FygaroCheckoutCreateMutationOptions = Apollo.BaseMutationOptions<FygaroCheckoutCreateMutation, FygaroCheckoutCreateMutationVariables>;
+export const FygaroTopupStatusDocument = gql`
+    query fygaroTopupStatus($checkoutId: String!) {
+  fygaroTopupStatus(checkoutId: $checkoutId) {
+    state
+    netAmount
+    reason
+  }
+}
+    `;
+
+/**
+ * __useFygaroTopupStatusQuery__
+ *
+ * To run a query within a React component, call `useFygaroTopupStatusQuery` and pass it any options that fit your needs.
+ * When your component renders, `useFygaroTopupStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useFygaroTopupStatusQuery({
+ *   variables: {
+ *      checkoutId: // value for 'checkoutId'
+ *   },
+ * });
+ */
+export function useFygaroTopupStatusQuery(baseOptions: Apollo.QueryHookOptions<FygaroTopupStatusQuery, FygaroTopupStatusQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<FygaroTopupStatusQuery, FygaroTopupStatusQueryVariables>(FygaroTopupStatusDocument, options);
+      }
+export function useFygaroTopupStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<FygaroTopupStatusQuery, FygaroTopupStatusQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<FygaroTopupStatusQuery, FygaroTopupStatusQueryVariables>(FygaroTopupStatusDocument, options);
+        }
+export type FygaroTopupStatusQueryHookResult = ReturnType<typeof useFygaroTopupStatusQuery>;
+export type FygaroTopupStatusLazyQueryHookResult = ReturnType<typeof useFygaroTopupStatusLazyQuery>;
+export type FygaroTopupStatusQueryResult = Apollo.QueryResult<FygaroTopupStatusQuery, FygaroTopupStatusQueryVariables>;
 export const CaptchaCreateChallengeDocument = gql`
     mutation captchaCreateChallenge {
   captchaCreateChallenge {
