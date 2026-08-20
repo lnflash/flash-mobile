@@ -2,6 +2,7 @@ import { decodeInvoiceString } from "@galoymoney/client"
 
 import {
   CLOCK_SKEW_GRACE_SECONDS,
+  MAX_TRACKED_INVOICES,
   isHeldInvoiceExpired,
   isInvoiceExpired,
   networkForPaymentRequest,
@@ -306,6 +307,93 @@ describe("isInvoiceExpired with a first-seen reading", () => {
       ).toBe(true)
     }
   })
+
+  it("does not refuse on elapsed time the clock manufactured mid-flow", () => {
+    // Elapsed time cancels a constant OFFSET, but not a clock that MOVES
+    // between the two samples. A handset five minutes slow (cold boot on a
+    // dead RTC, airplane mode off after a flight) scans a live 60-second
+    // invoice — firstSeen reads 300s before the real instant — the OS resyncs
+    // while the user types an amount, and 25 seconds later they tap Confirm.
+    //
+    // The subtraction now reads 325s on an invoice with 35 seconds of life
+    // left. Refusing here would tell the user to fetch a new invoice for a
+    // payment that works, and disable Confirm permanently — the one failure
+    // this guard must not introduce. The raw expiry is the tiebreak: it still
+    // says alive, and it and the elapsed reading cannot both be right.
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: ISSUED,
+        firstSeenSeconds: ISSUED - 300,
+        nowSeconds: ISSUED + 25,
+      }),
+    ).toBe(false)
+
+    // The corroboration only ever holds the guard back — it never fires on its
+    // own. Same invoice, same clock jump, but the user genuinely sits past the
+    // stated expiry: both readings agree and the send is refused.
+    expect(
+      isInvoiceExpired({
+        timeExpireDate: EXPIRES,
+        timestamp: ISSUED,
+        firstSeenSeconds: ISSUED - 300,
+        nowSeconds: EXPIRES + 1,
+      }),
+    ).toBe(true)
+  })
+})
+
+// The map behind noteInvoiceFirstSight is the guard's only memory. If the
+// entry for the invoice in flight is dropped, the elapsed reading collapses to
+// 0 and the guard silently reverts to fail-open — with every other test in
+// this file still green. That makes the eviction rule worth pinning down.
+describe("noteInvoiceFirstSight (module state)", () => {
+  beforeEach(resetInvoiceFirstSight)
+  afterEach(resetInvoiceFirstSight)
+
+  const fakeInvoice = (n: number) => `lnbc1fakeinvoice${n}`
+
+  it("keeps the first sighting and ignores later ones", () => {
+    expect(noteInvoiceFirstSight(fakeInvoice(0), 1000)).toBe(1000)
+    expect(noteInvoiceFirstSight(fakeInvoice(0), 9999)).toBe(1000)
+  })
+
+  it("evicts the oldest entry, never the newest, when the cap is reached", () => {
+    // Fill the map exactly to the cap.
+    for (let i = 0; i < MAX_TRACKED_INVOICES; i += 1) {
+      expect(noteInvoiceFirstSight(fakeInvoice(i), 1000)).toBe(1000)
+    }
+
+    // One more than it holds. Something has to go, and it must be the oldest
+    // insertion — the entry least likely to be the invoice in flight.
+    expect(noteInvoiceFirstSight(fakeInvoice(MAX_TRACKED_INVOICES), 2000)).toBe(2000)
+
+    // The newest entry — the one a user could be mid-send on — survives.
+    expect(noteInvoiceFirstSight(fakeInvoice(MAX_TRACKED_INVOICES), 9999)).toBe(2000)
+
+    // So does the second-oldest. Probed BEFORE the evicted one below: a miss
+    // inserts, which at a full map evicts again, so asking about #0 first
+    // would take #1 out and make this assertion lie.
+    expect(noteInvoiceFirstSight(fakeInvoice(1), 9999)).toBe(1000)
+
+    // ...and the oldest is gone: no sighting on record, so this call installs
+    // a fresh one rather than reporting t=1000.
+    expect(noteInvoiceFirstSight(fakeInvoice(0), 9999)).toBe(9999)
+  })
+
+  it("does not let a repeat sighting reshuffle the eviction order", () => {
+    for (let i = 0; i < MAX_TRACKED_INVOICES; i += 1) {
+      noteInvoiceFirstSight(fakeInvoice(i), 1000)
+    }
+
+    // Re-seeing the oldest invoice is a read, not a write: it must not move
+    // that entry to the back of the queue, or the eviction below takes #1.
+    expect(noteInvoiceFirstSight(fakeInvoice(0), 1500)).toBe(1000)
+    noteInvoiceFirstSight(fakeInvoice(MAX_TRACKED_INVOICES), 2000)
+
+    expect(noteInvoiceFirstSight(fakeInvoice(1), 9999)).toBe(1000)
+    expect(noteInvoiceFirstSight(fakeInvoice(0), 9999)).toBe(9999)
+  })
 })
 
 // The BTC (Breez/Spark) wallet does not transmit the held bolt11 on every
@@ -410,9 +498,9 @@ describe("isHeldInvoiceExpired (the decision the send flow makes)", () => {
     // would have worked is the one failure this guard must not introduce, so
     // the elapsed term stays in charge and the backend does the rejecting.
     //
-    // This is not the ENG-555 path being waved through: there, the amount
-    // screen registers first sight when the invoice is scanned (see
-    // send-bitcoin-details-screen.tsx), so by the time confirm asks, a prior
+    // This is not the ENG-555 path being waved through: there, first sight is
+    // registered the instant the bolt11 parses valid (see
+    // payment-destination/lightning.ts), so by the time confirm asks, a prior
     // reading exists and the case above applies. Change that registration and
     // this expectation is the one that should be revisited.
     expect(
@@ -424,11 +512,12 @@ describe("isHeldInvoiceExpired (the decision the send flow makes)", () => {
     ).toBe(false)
   })
 
-  it("catches the amount-screen pause once first sight is registered there", () => {
-    // The production sequence ENG-555 describes: the invoice is scanned while
-    // alive, the user spends two minutes on the amount screen choosing a
-    // wallet and typing a number, then taps Next. Confirm's own reading would
-    // start here and see nothing; the amount screen's reading spans the pause.
+  it("catches the pre-confirm pause once first sight is registered at parse", () => {
+    // The production sequence ENG-555 describes: the invoice parses valid
+    // while alive, the user spends two minutes getting to Confirm — the
+    // destination modal, picking a wallet, typing a number — then taps Next.
+    // Confirm's own reading would start at its mount and see nothing; the
+    // reading taken at parse spans the whole pause.
     noteInvoiceFirstSight(INCIDENT_INVOICE, ISSUED + 4)
 
     expect(

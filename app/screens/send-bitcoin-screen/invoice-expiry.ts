@@ -63,15 +63,18 @@ export const CLOCK_SKEW_GRACE_SECONDS = 120
 // keyed by the invoice, the original sighting is still on record and the guard
 // can see that a full lifetime has passed under the user.
 //
-// Keying by the invoice is also what lets the reading START on the amount
-// screen, which is where a scanned bolt11 actually enters the flow and where
-// the user's pause is unbounded. Both screens register unconditionally; the
-// first sighting wins, so the later call is a no-op.
+// Keying by the invoice is also what lets the reading START where the bolt11
+// is first proved alive — `createLightningDestination`, one instant after
+// `parsePaymentDestination` certified it (payment-destination/lightning.ts) —
+// rather than at some later screen mount. Everything downstream (the amount
+// screen, the confirm screen) registers unconditionally too; the first
+// sighting wins, so those calls are no-ops.
 const firstSightByInvoice = new Map<string, number>()
 
 // A send flow visits a handful of invoices; this cap only stops a very long
-// session from growing the map without bound.
-const MAX_TRACKED_INVOICES = 50
+// session from growing the map without bound. Exported so the eviction test
+// tracks the real cap instead of a copy of it.
+export const MAX_TRACKED_INVOICES = 50
 
 /**
  * Record (once) when this device first saw `paymentRequest`, and return that
@@ -108,9 +111,9 @@ export type InvoiceExpiryArgs = {
   nowSeconds: number
   /**
    * The device clock's reading when the send flow first saw this bolt11, in
-   * epoch SECONDS — the amount screen for a scanned/pasted invoice, the
-   * confirm screen for one LNURL minted on the way in. Either way, before the
-   * user could have paused on it.
+   * epoch SECONDS — destination parse for a scanned/pasted/deep-linked
+   * invoice, the confirm screen for one LNURL minted on the way in. Either
+   * way, before the user could have paused on it.
    *
    * Read off the same clock as `nowSeconds`, so `nowSeconds - firstSeenSeconds`
    * is an elapsed *duration*, not a comparison against someone else's clock:
@@ -134,16 +137,19 @@ const isFiniteNumber = (value: unknown): value is number =>
  *     age. Once that exceeds the invoice's whole stated lifetime, the invoice
  *     is dead whatever the handset thinks the wall-clock time is. This is what
  *     catches the ordinary pause on a 60-second invoice, which the absolute
- *     comparison below cannot see until the invoice is 180s old.
+ *     comparison below cannot see until the invoice is 180s old. It refuses
+ *     only with the raw expiry corroborating, so a clock that JUMPS between
+ *     the two readings cannot manufacture elapsed time — see the branch below.
  *  2. Absolute expiry + grace (backstop) — reached ONLY when the invoice
  *     states no usable issue time, or when no first-sight reading exists. An
  *     invoice already dead at its first sighting is deliberately NOT caught:
  *     that reading is indistinguishable from a fast handset clock, so the
  *     elapsed term wins and the backend does the rejecting. See the tradeoff
  *     note at the elapsed branch below. What keeps this from mattering in
- *     practice is registering first sight where the invoice ENTERS the flow
- *     (send-bitcoin-details-screen.tsx) rather than at confirm-mount, so the
- *     elapsed reading spans the whole time the invoice was under the user.
+ *     practice is registering first sight at the moment the bolt11 is proved
+ *     alive (payment-destination/lightning.ts) rather than at confirm-mount,
+ *     so the elapsed reading spans the whole time the invoice was under the
+ *     user.
  *
  * Fails open on every unknown, and on a device clock that is provably wrong:
  *
@@ -154,6 +160,8 @@ const isFiniteNumber = (value: unknown): value is number =>
  *  - `nowSeconds` before the invoice's own issue time — the device clock is
  *    behind the issuer's, so nothing derived from it can be trusted.
  *  - A first sighting that already read as long dead — see below.
+ *  - An elapsed reading the raw expiry contradicts — the clock moved between
+ *    the two samples, so the duration between them is not elapsed time.
  *  - Inside CLOCK_SKEW_GRACE_SECONDS past the expiry — plausible drift rather
  *    than a genuinely dead invoice.
  */
@@ -179,17 +187,36 @@ export const isInvoiceExpired = ({
     // Flash receive invoice, per IBEX's cap.
     const lifetimeSeconds = timeExpireDate - timestamp
 
-    // Sole signal when it is available. Both readings come from the device
-    // clock, so this is a true elapsed duration: a handset ten minutes fast
-    // reads zero on a fresh invoice, exactly like a correct one. It fires
-    // only once the invoice's whole lifetime has passed under the user.
+    // Primary signal. Both readings come from the device clock, so this is a
+    // true elapsed duration: a handset ten minutes fast reads zero on a fresh
+    // invoice, exactly like a correct one. It fires only once the invoice's
+    // whole lifetime has passed under the user.
     //
-    // The absolute comparison below is deliberately NOT consulted as a
-    // second opinion here. It cannot tell a stale invoice from a fast clock,
-    // so letting it override this would block good payments on skewed
-    // handsets — and blocking a send that would have worked is the one
-    // failure this guard must not introduce.
-    return nowSeconds - firstSeenSeconds > lifetimeSeconds
+    // Elapsed time is immune to a clock with a constant OFFSET — but not to a
+    // clock that MOVES between the two readings. `Date.now()` is sampled once
+    // at first sight and again at the tap, so an OS time resync in between
+    // lands entirely in this term. A handset five minutes slow when it scans a
+    // live 60-second invoice, resynced while the user types an amount, reads
+    // 320s elapsed on an invoice with 40 seconds of life left — and refusing
+    // there is a blocked good payment, the one failure this guard must not
+    // introduce.
+    //
+    // So the absolute reading has to corroborate before we refuse. On any
+    // STABLE clock this second term is implied and changes nothing: the flow
+    // cannot have seen the invoice before it was minted, so with a constant
+    // offset d we have firstSeen >= timestamp + d, hence
+    // now > firstSeen + lifetime >= timeExpireDate + d — which for a fast or
+    // correct clock is already past timeExpireDate. (Verified against every
+    // elapsed-branch case in __tests__/utils/invoice-expiry.spec.ts and
+    // __tests__/screens/send-confirmation.spec.tsx.) It only bites when the
+    // clock jumped, and on a slow clock the `nowSeconds < timestamp` detector
+    // above has usually already muted the guard anyway.
+    //
+    // Note it is a corroboration, not a second opinion: the absolute term can
+    // only ever HOLD THE GUARD BACK here, never fire it on its own. It cannot
+    // tell a stale invoice from a fast clock, so letting it refuse a send by
+    // itself would block good payments on skewed handsets.
+    return nowSeconds - firstSeenSeconds > lifetimeSeconds && nowSeconds > timeExpireDate
   }
 
   // Fallback for invoices with no usable issue time, where no elapsed

@@ -24,12 +24,14 @@ it("SendScreen Details", async () => {
   await act(async () => {})
 })
 
-// ENG-555. A scanned bolt11 enters the send flow HERE, and nothing on this
-// screen re-mints a `lightning` detail — the user's time choosing a wallet and
-// typing an amount is unbounded, and a Flash receive invoice dies after 60
-// seconds. If the expiry clock only starts on the confirm screen, that whole
-// pause is invisible: confirm's first reading is its own mount, elapsed is 0 by
-// construction, and the corpse is waved through to the backend.
+// ENG-555. The clock on a held bolt11 starts at parse time (see
+// __tests__/payment-destination/lightning.spec.ts); this screen keeps a
+// backstop reading for anything holding an invoice that arrived another way.
+// Nothing here re-mints a `lightning` detail, the user's time choosing a wallet
+// and typing an amount is unbounded, and a Flash receive invoice dies after 60
+// seconds — so if the clock only started on the confirm screen, that whole
+// pause would be invisible: confirm's first reading is its own mount, elapsed
+// is 0 by construction, and the corpse is waved through to the backend.
 describe("first sight of a held invoice", () => {
   // The real invoice from the incident: issued 1787243982, expires 1787244042.
   const INCIDENT_INVOICE =
