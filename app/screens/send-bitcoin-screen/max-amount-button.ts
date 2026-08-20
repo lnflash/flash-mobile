@@ -29,6 +29,8 @@ export type MaxAmountButtonStrings = {
   feeReserved: (fee: string) => string
   /** maxNoteRecipientCap: "Recipient can receive at most {max}." */
   recipientCap: (max: string) => string
+  /** maxNoteFeeUnknown — shown when the destination cannot be priced. */
+  feeUnknown: () => string
 }
 
 export type BuildMaxAmountButtonArgs<M extends MoneyAmountShape, F, P> = {
@@ -65,6 +67,18 @@ export type BuildMaxAmountButtonArgs<M extends MoneyAmountShape, F, P> = {
   setAmount?: (amount: M) => { getFee?: F }
   /** IBEX fee probe (USD wallet) over a probe detail's getFee. */
   getIbexFee: (getFee: F | undefined) => Promise<MoneyAmountShape | undefined>
+  /**
+   * Price an LNURL send of `probeAmount` (wallet minor units).
+   *
+   * An LNURL detail only gains a `getFee` once an invoice is attached
+   * (payment-details/lightning.ts sets canGetFee false until then), so the
+   * plain IBEX probe cannot price this destination at all — that gap is what
+   * made MAX offer an unsendable amount. Implementations mint a throwaway
+   * invoice at the probe amount purely to price it; it is never paid, and the
+   * send flow mints its own on Next. Resolve null when the destination cannot
+   * be priced.
+   */
+  probeLnurlFee?: (probeAmount: number) => Promise<number | null>
   /** moneyAmountToDisplayCurrencyString — undefined when no rate is known. */
   formatDisplayAmount: (moneyAmount: M) => string | undefined
   strings: MaxAmountButtonStrings
@@ -73,7 +87,7 @@ export type BuildMaxAmountButtonArgs<M extends MoneyAmountShape, F, P> = {
 /** Structurally matches the amount screen's MaxAmountButton prop. */
 export type BuiltMaxAmountButton<M extends MoneyAmountShape> = {
   disabled: boolean
-  compute: () => Promise<{ amount: M; note?: string } | null>
+  compute: () => Promise<{ amount?: M; note?: string } | null>
 }
 
 export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
@@ -91,6 +105,7 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
   fetchBreezFee,
   setAmount,
   getIbexFee,
+  probeLnurlFee,
   formatDisplayAmount,
   strings,
 }: BuildMaxAmountButtonArgs<M, F, P>): BuiltMaxAmountButton<M> | undefined => {
@@ -128,10 +143,12 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
       })
       return err ? null : fee
     }
-    // USD wallet: probe through the same fee probes the send flow already
-    // uses. LNURL destinations have no probe before an invoice exists —
-    // getIbexFee resolves undefined and the computation falls back to the
-    // full balance.
+    // USD wallet. An LNURL destination has no invoice yet, so there is
+    // nothing for the plain IBEX probe to price — mint one at the probe
+    // amount and price that instead.
+    if (paymentType === "lnurl") {
+      return probeLnurlFee ? probeLnurlFee(probeAmount) : null
+    }
     const fee = await getIbexFee(setAmount(withAmount(probeAmount)).getFee)
     return fee?.amount ?? null
   }
@@ -161,6 +178,8 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
         recipientCap,
       })
 
+      const noteDecision = noteForResult(result)
+
       // Nothing spendable: leave the pad untouched rather than filling an
       // empty amount under a solid MAX chip. A zero max arrives on several
       // routes, not just "zero-balance" — a fee estimate that meets or
@@ -168,10 +187,12 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
       // and a receiver advertising maxSendable 0 yields a zero cap — so
       // gate on the amount itself.
       if (result.amount <= 0) {
-        return null
+        // An unpriceable destination is the one zero case the user can act
+        // on (enter an amount by hand), so it explains itself instead of
+        // making the tap look broken.
+        return noteDecision.kind === "fee-unknown" ? { note: strings.feeUnknown() } : null
       }
 
-      const noteDecision = noteForResult(result)
       let note: string | undefined
       if (noteDecision.kind === "intraledger") {
         note = strings.intraledger()

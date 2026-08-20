@@ -25,6 +25,7 @@ const strings = {
   intraledger: () => "intraledger note",
   feeReserved: (fee: string) => `fee note: ${fee}`,
   recipientCap: (max: string) => `cap note: ${max}`,
+  feeUnknown: () => "fee unknown note",
 }
 
 type TestArgs = BuildMaxAmountButtonArgs<TestMoneyAmount, TestGetFee, TestPayRequest>
@@ -241,10 +242,10 @@ describe("buildMaxAmountButton", () => {
 
       const result = await button?.compute()
 
-      // No usable estimate, so the backend's fee cap is reserved instead of
-      // offering the whole balance (which the send flow would refuse).
-      expect(result?.amount).toEqual({ ...btcBalance, amount: 99_503 })
-      expect(result?.note).toEqual("fee note: $4.97")
+      // Nothing could price it, so nothing is proposed — the note is the
+      // whole result, and the pad is left for the user to fill.
+      expect(result?.amount).toBeUndefined()
+      expect(result?.note).toEqual("fee unknown note")
     })
 
     it("routes BTC-wallet intraledger through the fee path (not the no-fee arm)", async () => {
@@ -302,13 +303,14 @@ describe("buildMaxAmountButton", () => {
     })
 
     it("probes at the cap-clamped amount when the LNURL cap binds", async () => {
-      const setAmount = jest.fn((amount: TestMoneyAmount) => ({
-        getFee: { probeAmount: amount.amount },
-      }))
+      // Probing at the raw balance trips the receiver's LUD-06 bounds check
+      // whenever the cap binds, losing the estimate exactly where the fee
+      // headroom matters most.
+      const probeLnurlFee = jest.fn(async () => 10)
       const button = buildMaxAmountButton(
         makeArgs({
           paymentType: "lnurl",
-          setAmount,
+          probeLnurlFee,
           // 2 wallet minor units per sat.
           convertSatsToWallet: (sats: number) => sats * 2,
           lnurlParamsMaxSats: 2_000,
@@ -317,21 +319,20 @@ describe("buildMaxAmountButton", () => {
 
       await button?.compute()
 
-      expect(setAmount).toHaveBeenCalledWith({ ...usdBalance, amount: 4_000 })
+      expect(probeLnurlFee).toHaveBeenCalledWith(4_000)
     })
 
-    it("reserves the fee cap when no IBEX estimate is available", async () => {
-      // The LNURL case from ENG-554: no invoice exists yet, so getIbexFee
-      // resolves undefined. Offering the full balance here is what made the
-      // send fail with a generic error.
+    it("proposes nothing when no IBEX estimate is available", async () => {
+      // Offering the full balance here is what made the send fail with a
+      // generic error (ENG-554); a guessed reserve would be no more honest.
       const button = buildMaxAmountButton(
         makeArgs({ getIbexFee: jest.fn(async () => undefined) }),
       )
 
       const result = await button?.compute()
 
-      expect(result?.amount).toEqual({ ...usdBalance, amount: 9_951 })
-      expect(result?.note).toEqual("fee note: $0.49")
+      expect(result?.amount).toBeUndefined()
+      expect(result?.note).toEqual("fee unknown note")
     })
 
     it("never calls the Breez probe for a USD wallet", async () => {
@@ -399,7 +400,7 @@ describe("buildMaxAmountButton", () => {
           paymentType: "lnurl",
           convertSatsToWallet: (sats: number) => sats * 2,
           lnurlParamsMaxSats: 2_000,
-          getIbexFee: jest.fn(async () => ({ amount: 0 })),
+          probeLnurlFee: jest.fn(async () => 0),
         }),
       )
 
@@ -408,5 +409,60 @@ describe("buildMaxAmountButton", () => {
       expect(result?.amount).toEqual({ ...usdBalance, amount: 4_000 })
       expect(result?.note).toBe("cap note: $40.00")
     })
+  })
+})
+
+describe("LNURL destinations are priced, not guessed (ENG-554)", () => {
+  // An LNURL payment detail has no getFee until an invoice is attached, so
+  // the plain IBEX probe cannot price it at all. probeLnurlFee mints a
+  // throwaway invoice purely to price the send.
+  it("prices an LNURL destination through probeLnurlFee", async () => {
+    const probeLnurlFee = jest.fn(async () => 37)
+    const getIbexFee = jest.fn(async () => ({ amount: 999 }))
+    const button = buildMaxAmountButton(
+      makeArgs({ paymentType: "lnurl", probeLnurlFee, getIbexFee }),
+    )
+
+    const result = await button?.compute()
+
+    expect(probeLnurlFee).toHaveBeenCalledWith(usdBalance.amount)
+    // The invoice-less IBEX probe must not be consulted for LNURL — it is
+    // the path that silently returned nothing and started all this.
+    expect(getIbexFee).not.toHaveBeenCalled()
+    expect(result?.amount).toEqual({ ...usdBalance, amount: 10_000 - 37 })
+    expect(result?.note).toEqual("fee note: $0.37")
+  })
+
+  it("declines to propose an amount when the LNURL probe cannot price it", async () => {
+    const button = buildMaxAmountButton(
+      makeArgs({ paymentType: "lnurl", probeLnurlFee: jest.fn(async () => null) }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toEqual("fee unknown note")
+  })
+
+  it("declines when no LNURL probe is wired at all", async () => {
+    const button = buildMaxAmountButton(makeArgs({ paymentType: "lnurl" }))
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toEqual("fee unknown note")
+  })
+
+  it("leaves non-LNURL USD sends on the ordinary IBEX probe", async () => {
+    const probeLnurlFee = jest.fn(async () => 37)
+    const getIbexFee = jest.fn(async () => ({ amount: 12 }))
+    const button = buildMaxAmountButton(
+      makeArgs({ paymentType: "lightning", probeLnurlFee, getIbexFee }),
+    )
+
+    const result = await button?.compute()
+
+    expect(probeLnurlFee).not.toHaveBeenCalled()
+    expect(result?.amount).toEqual({ ...usdBalance, amount: 10_000 - 12 })
   })
 })

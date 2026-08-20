@@ -64,6 +64,11 @@ type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
 
 const network = "mainnet" // data?.globals?.network
 
+// The MAX chip's LNURL price check hits the receiver's LNURL service; keep it
+// well under the chip's own 10s fee budget so a slow receiver degrades to
+// "couldn't estimate" instead of holding the tap.
+const LNURL_PROBE_TIMEOUT_MS = 7000
+
 const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
@@ -410,7 +415,7 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
           navigation.navigate("sendBitcoinConfirmation", {
             paymentDetail: paymentDetailForConfirmation,
             flashUserAddress,
-            selectedFeeType: selectedFeeType,
+            selectedFeeType,
             invoiceAmount,
           })
         }
@@ -436,6 +441,44 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     const walletCurrency = pd.sendingWalletDescriptor.currency
     const isBtcWallet = walletCurrency === WalletCurrency.Btc
 
+    // Price an LNURL destination by minting a throwaway invoice for the probe
+    // amount. An LNURL payment detail has no `getFee` until an invoice is
+    // attached, so without this the IBEX probe returns nothing and MAX has no
+    // basis for a number (ENG-554). This invoice is only ever priced, never
+    // paid — pressing Next mints a fresh one for the actual send, which
+    // matters because these expire in 60s.
+    const probeLnurlFee = async (probeAmount: number): Promise<number | null> => {
+      if (pd.paymentType !== "lnurl" || !pd.setAmount) return null
+      try {
+        const probeDetail = pd.setAmount({
+          ...(isBtcWallet ? btcBalanceMoneyAmount : usdBalanceMoneyAmount),
+          amount: probeAmount,
+        })
+        const btcProbeAmount = probeDetail.convertMoneyAmount(
+          probeDetail.unitOfAccountAmount,
+          "BTC",
+        )
+        const { invoice } = await withTimeout(
+          requestInvoice({
+            lnUrlOrAddress: pd.destination,
+            tokens: utils.toSats(btcProbeAmount.amount),
+          }),
+          LNURL_PROBE_TIMEOUT_MS,
+        )
+        if (probeDetail.paymentType !== "lnurl") return null
+        const pricedDetail = probeDetail.setInvoice({
+          paymentRequest: invoice,
+          paymentRequestAmount: btcProbeAmount,
+        })
+        const fee = await getIbexFee(pricedDetail.getFee)
+        return fee?.amount ?? null
+      } catch {
+        // Unpriceable — the computation declines to propose an amount rather
+        // than guessing one the send would refuse.
+        return null
+      }
+    }
+
     return buildMaxAmountButton({
       canSetAmount: pd.canSetAmount,
       paymentType: pd.paymentType,
@@ -452,12 +495,14 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
       fetchBreezFee,
       setAmount: pd.setAmount,
       getIbexFee,
+      probeLnurlFee,
       formatDisplayAmount: (moneyAmount) =>
         moneyAmountToDisplayCurrencyString({ moneyAmount }),
       strings: {
         intraledger: () => LL.AmountInputScreen.maxNoteIntraledger(),
         feeReserved: (fee) => LL.AmountInputScreen.maxNoteFeeReserved({ fee }),
         recipientCap: (max) => LL.AmountInputScreen.maxNoteRecipientCap({ max }),
+        feeUnknown: () => LL.AmountInputScreen.maxNoteFeeUnknown(),
       },
     })
   }
@@ -532,9 +577,8 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
       </Screen>
     )
-  } else {
-    return null
   }
+  return null
 }
 export default SendBitcoinDetailsScreen
 

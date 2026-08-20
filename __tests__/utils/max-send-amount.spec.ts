@@ -1,10 +1,8 @@
 import {
   computeMaxSendAmount,
   effectiveMaxPaymentType,
-  maxAmountWithinFeeCap,
   maxChipSupportsPaymentType,
   noteForResult,
-  reservedFeeCapFor,
   resolveRecipientCap,
 } from "../../app/screens/send-bitcoin-screen/max-send-amount"
 
@@ -50,25 +48,21 @@ describe("computeMaxSendAmount", () => {
     })
   })
 
-  it("reserves the backend fee cap when no fee estimate is available", async () => {
-    // The LNURL case: no invoice exists yet, so there is nothing to probe.
-    // Offering the full 100_000 would be rejected by the backend, which adds
-    // its own cap on top and checks balance >= amount + fee.
+  it("proposes nothing when no fee estimate is available", async () => {
+    // The LNURL case before #702's probe: nothing can price the send. The
+    // old behaviour offered the full 100_000, which the send then refused
+    // because the fee lands on top (ENG-554). Guessing a reserve would be no
+    // better — nothing in this app knows what IBEX charges — so it declines.
     const result = await computeMaxSendAmount({
       paymentType: "lnurl",
       balance: 100_000,
       fetchFee: async () => null,
     })
 
-    expect(result).toEqual({
-      amount: 99_503,
-      reason: "fee-unavailable",
-      feeReserved: 497,
-    })
-    expect(result.amount + reservedFeeCapFor(result.amount)).toBeLessThanOrEqual(100_000)
+    expect(result).toEqual({ amount: 0, reason: "fee-unavailable" })
   })
 
-  it("reserves the fee cap when the fee fetch throws", async () => {
+  it("proposes nothing when the fee fetch throws", async () => {
     const result = await computeMaxSendAmount({
       paymentType: "lightning",
       balance: 100_000,
@@ -77,14 +71,10 @@ describe("computeMaxSendAmount", () => {
       },
     })
 
-    expect(result).toEqual({
-      amount: 99_503,
-      reason: "fee-unavailable",
-      feeReserved: 497,
-    })
+    expect(result).toEqual({ amount: 0, reason: "fee-unavailable" })
   })
 
-  it("reserves the fee cap when the fee fetch hangs past the timeout", async () => {
+  it("proposes nothing when the fee fetch hangs past the timeout", async () => {
     const result = await computeMaxSendAmount({
       paymentType: "lightning",
       balance: 100_000,
@@ -93,11 +83,7 @@ describe("computeMaxSendAmount", () => {
       timeoutMs: 20,
     })
 
-    expect(result).toEqual({
-      amount: 99_503,
-      reason: "fee-unavailable",
-      feeReserved: 497,
-    })
+    expect(result).toEqual({ amount: 0, reason: "fee-unavailable" })
   })
 
   it("clamps to the recipient's LNURL maxSendable when it is the binding limit", async () => {
@@ -187,7 +173,9 @@ describe("computeMaxSendAmount", () => {
     expect(result).toEqual({ amount: 150_000, reason: "recipient-cap" })
   })
 
-  it("applies the cap on the fee-unavailable fallback as well", async () => {
+  it("offers nothing when unpriceable, even where a recipient cap would bind", async () => {
+    // The cap is not a safe fallback: sending exactly the cap still needs a
+    // fee on top, and that fee is the thing we could not determine.
     const result = await computeMaxSendAmount({
       paymentType: "lnurl",
       balance: 1_000_000,
@@ -195,7 +183,7 @@ describe("computeMaxSendAmount", () => {
       recipientCap: 150_000,
     })
 
-    expect(result).toEqual({ amount: 150_000, reason: "recipient-cap" })
+    expect(result).toEqual({ amount: 0, reason: "fee-unavailable" })
   })
 
   it("returns zero for a zero balance", async () => {
@@ -256,18 +244,9 @@ describe("computeMaxSendAmount", () => {
       fetchFee: async () => Number.NaN,
     })
 
-    // Both take the no-estimate path, which reserves the backend fee cap
-    // rather than offering the full balance.
-    expect(negative).toEqual({
-      amount: 99_503,
-      reason: "fee-unavailable",
-      feeReserved: 497,
-    })
-    expect(nan).toEqual({
-      amount: 99_503,
-      reason: "fee-unavailable",
-      feeReserved: 497,
-    })
+    // Both take the no-estimate path: no number is proposed at all.
+    expect(negative).toEqual({ amount: 0, reason: "fee-unavailable" })
+    expect(nan).toEqual({ amount: 0, reason: "fee-unavailable" })
   })
 
   // On-device repro (2026-08-13): USD cash balance arrives as FRACTIONAL
@@ -441,80 +420,57 @@ describe("noteForResult", () => {
     })
   })
 
-  it("fee-unavailable and zero-balance get no note", () => {
-    expect(noteForResult({ amount: 100_000, reason: "fee-unavailable" })).toEqual({
-      kind: "none",
-    })
+  it("zero-balance gets no note; fee-unavailable explains itself", () => {
     expect(noteForResult({ amount: 0, reason: "zero-balance" })).toEqual({
       kind: "none",
+    })
+    expect(noteForResult({ amount: 0, reason: "fee-unavailable" })).toEqual({
+      kind: "fee-unknown",
     })
   })
 })
 
-describe("fee-cap reserve (ENG-554)", () => {
-  // The reported failure: balance $4.42, MAX filled the full 442 cents, the
-  // backend added its cap on top and refused the send. $4.00 went through
-  // because it happened to leave enough headroom.
-  it("leaves headroom for the reported 442-cent balance", async () => {
+describe("an unpriceable destination is never guessed at (ENG-554)", () => {
+  // The bug: MAX filled the full $4.42 balance for an LNURL destination, the
+  // fee landed on top, and the send was refused. The first fix reserved a
+  // constant borrowed from flash's FEECAP_BASIS_POINTS — but that governs
+  // galoy's payment flow, and lnNoAmountUsdInvoicePaymentSend bypasses it
+  // entirely to call Ibex.payInvoice, so the number bounded nothing real.
+  it("does not offer the reported 442-cent balance when it cannot be priced", async () => {
     const result = await computeMaxSendAmount({
       paymentType: "lnurl",
       balance: 442,
       fetchFee: async () => null,
     })
 
-    expect(result.amount).toBeLessThan(442)
-    expect(result.amount + reservedFeeCapFor(result.amount)).toBeLessThanOrEqual(442)
+    expect(result).toEqual({ amount: 0, reason: "fee-unavailable" })
   })
 
-  it("never proposes an amount the backend balance check would refuse", () => {
-    // Exhaustive over the range a cash wallet actually lives in, plus the
-    // boundaries where the one-unit fee floor dominates the percentage.
-    for (let balance = 1; balance <= 5_000; balance += 1) {
-      const amount = maxAmountWithinFeeCap(balance)
-      expect(amount + reservedFeeCapFor(amount)).toBeLessThanOrEqual(balance)
-    }
-  })
-
-  it("offers the largest amount that fits — not a needlessly conservative one", () => {
-    for (let balance = 2; balance <= 5_000; balance += 1) {
-      const amount = maxAmountWithinFeeCap(balance)
-      const nextUp = amount + 1
-      expect(nextUp + reservedFeeCapFor(nextUp)).toBeGreaterThan(balance)
-    }
-  })
-
-  it("yields nothing spendable when the balance cannot cover the minimum fee", () => {
-    // One minor unit: any send needs at least a 1-unit fee on top, so there
-    // is no amount that fits. The chip greys out rather than filling a 1.
-    expect(maxAmountWithinFeeCap(1)).toBe(0)
-    expect(maxAmountWithinFeeCap(0)).toBe(0)
-    expect(maxAmountWithinFeeCap(-5)).toBe(0)
-    expect(maxAmountWithinFeeCap(NaN)).toBe(0)
-  })
-
-  it("mirrors the backend cap: 50 bps with a one-unit floor", () => {
-    expect(reservedFeeCapFor(10_000)).toBe(50)
-    expect(reservedFeeCapFor(1_000)).toBe(5)
-    // Below 200 the percentage floors to zero, so the one-unit floor applies.
-    expect(reservedFeeCapFor(100)).toBe(1)
-    expect(reservedFeeCapFor(1)).toBe(1)
-  })
-
-  it("still explains the shortfall to the user", () => {
-    // Without a note the amount screen would silently show less than the
-    // balance the user can see on the home screen.
-    expect(
-      noteForResult({ amount: 439, reason: "fee-unavailable", feeReserved: 3 }),
-    ).toEqual({ kind: "fee-reserved", feeReserved: 3 })
-  })
-
-  it("intraledger is untouched — genuinely fee-free, so MAX stays the full balance", async () => {
+  it("uses the real fee once the destination can be priced", async () => {
+    // With #702's probe the LNURL path gets a genuine IBEX estimate, so the
+    // max is balance minus that fee — no invented constant anywhere.
     const result = await computeMaxSendAmount({
-      paymentType: "intraledger",
+      paymentType: "lnurl",
       balance: 442,
-      fetchFee: async () => null,
+      fetchFee: async () => 2,
     })
 
-    expect(result).toEqual({ amount: 442, reason: "intraledger-full-balance" })
+    expect(result).toEqual({ amount: 440, reason: "fee-reserved", feeReserved: 2 })
+  })
+
+  it("probes at the amount it is about to offer, not some other one", async () => {
+    // Fees are monotone in amount, so probing above the final amount is safe
+    // and probing below is not. Pin which amount reaches the probe.
+    const fetchFee = jest.fn(async () => 5)
+
+    await computeMaxSendAmount({ paymentType: "lnurl", balance: 1_000, fetchFee })
+
+    expect(fetchFee).toHaveBeenCalledWith(1_000)
+  })
+
+  it("explains itself rather than looking like a broken tap", () => {
+    expect(noteForResult({ amount: 0, reason: "fee-unavailable" })).toEqual({
+      kind: "fee-unknown",
+    })
   })
 })

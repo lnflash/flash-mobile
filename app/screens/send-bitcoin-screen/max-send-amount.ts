@@ -88,11 +88,7 @@ export type MaxSendResult = {
   /** Max sendable amount, in the sending wallet's minor units. */
   amount: number
   reason: MaxSendReason
-  /**
-   * The amount held back for fees. On "fee-reserved" that is the estimate
-   * returned by the probe; on "fee-unavailable" it is the backend's fee cap,
-   * reserved because no estimate could be obtained.
-   */
+  /** Set when reason is "fee-reserved" — the estimated fee held back. */
   feeReserved?: number
 }
 
@@ -101,6 +97,7 @@ export type MaxSendNote =
   | { kind: "none" }
   | { kind: "intraledger" }
   | { kind: "fee-reserved"; feeReserved: number }
+  | { kind: "fee-unknown" }
   | { kind: "recipient-cap"; cap: number }
 
 /**
@@ -115,15 +112,14 @@ export const noteForResult = (result: MaxSendResult): MaxSendNote => {
   switch (result.reason) {
     case "intraledger-full-balance":
       return { kind: "intraledger" }
-    // Both reserve something, so both owe the user an explanation for why
-    // MAX is short of the balance they can see. They differ only in where
-    // the number came from — a probe estimate vs the backend's fee cap —
-    // which is not a distinction worth surfacing on the amount screen.
     case "fee-reserved":
-    case "fee-unavailable":
       return result.feeReserved
         ? { kind: "fee-reserved", feeReserved: result.feeReserved }
         : { kind: "none" }
+    // No amount was proposed, so the user is owed the reason — otherwise the
+    // tap looks broken.
+    case "fee-unavailable":
+      return { kind: "fee-unknown" }
     case "recipient-cap":
       return { kind: "recipient-cap", cap: result.amount }
     default:
@@ -141,9 +137,8 @@ export type ComputeMaxSendAmountArgs = {
    * amount matters: LNURL fee probes bounds-validate against the receiver's
    * LUD-06 limits, so a full-balance probe is guaranteed to fail whenever
    * the cap binds. Resolve null when no estimate is available — the
-   * computation then reserves the backend's own fee cap rather than
-   * offering the full balance, so the tap is never blocked but the amount
-   * it fills in is one the send flow will actually accept.
+   * computation then proposes nothing at all, because an unpriced send is
+   * one it cannot promise will be accepted.
    */
   fetchFee: (probeAmount: number) => Promise<number | null>
   /** Receiver's LNURL maxSendable converted to wallet minor units, if known. */
@@ -153,45 +148,6 @@ export type ComputeMaxSendAmountArgs = {
 }
 
 const FEE_ESTIMATE_TIMEOUT_MS = 10_000
-
-/**
- * The backend's own fee cap, mirrored here: `FEECAP_BASIS_POINTS = 50n` in
- * flash `src/domain/bitcoin/index.ts`, with a one-minor-unit floor from
- * `LnFees().maxProtocolAndBankFee`.
- *
- * This is not a guess at the fee. When the backend has no probed fee of its
- * own it reserves exactly this much — `payment-flow-builder.ts` uses
- * `state.usdProtocolAndBankFee || LnFees().maxProtocolAndBankFee(amount)` —
- * and then `checkBalanceForSend` rejects the payment unless
- * `balance >= amount + thatFee`. So an amount that ignores this cap is one
- * the backend is guaranteed to refuse.
- */
-const FEE_CAP_BASIS_POINTS = 50
-const BASIS_POINTS_PER_UNIT = 10_000
-
-/** What the backend will hold back for `amount`, in the same minor units. */
-export const reservedFeeCapFor = (amount: number): number =>
-  Math.max(Math.floor((amount * FEE_CAP_BASIS_POINTS) / BASIS_POINTS_PER_UNIT), 1)
-
-/**
- * Largest amount that still fits under `balance` once the backend's fee cap
- * is added to it — i.e. the largest `a` satisfying
- * `a + reservedFeeCapFor(a) <= balance`.
- *
- * Solved from the closed form and then corrected, because integer flooring
- * and the one-unit fee floor both perturb it by a unit or two; the loops
- * settle in at most a couple of steps rather than scanning.
- */
-export const maxAmountWithinFeeCap = (balance: number): number => {
-  if (!Number.isFinite(balance) || balance <= 0) return 0
-
-  let amount = Math.floor(balance / (1 + FEE_CAP_BASIS_POINTS / BASIS_POINTS_PER_UNIT))
-
-  while (amount > 0 && amount + reservedFeeCapFor(amount) > balance) amount -= 1
-  while (amount + 1 + reservedFeeCapFor(amount + 1) <= balance) amount += 1
-
-  return Math.max(amount, 0)
-}
 
 const feeOrNull = async (
   fetchFee: (probeAmount: number) => Promise<number | null>,
@@ -265,18 +221,16 @@ export const computeMaxSendAmount = async ({
       flooredCap === null ? spendableBalance : Math.min(spendableBalance, flooredCap)
     const fee = await feeOrNull(fetchFee, probeAmount, timeoutMs)
     if (fee === null) {
-      // No estimate available — the common case for LNURL destinations,
-      // where no invoice exists yet to probe against. Offering the full
-      // balance here used to guarantee failure: the backend adds its own
-      // fee cap on top and rejects anything over the balance, so MAX
-      // proposed an amount the send flow could never accept, and the user
-      // got a generic error. Reserve what the backend reserves instead.
-      const amount = maxAmountWithinFeeCap(spendableBalance)
-      result = {
-        amount,
-        reason: "fee-unavailable",
-        feeReserved: spendableBalance - amount,
-      }
+      // No estimate, so no honest maximum. Offering the full balance is what
+      // caused ENG-554 — the fee lands on top and the send is refused — but
+      // guessing a reserve is no better: nothing in this app knows what IBEX
+      // charges. There is no published bound in the flash config or the IBEX
+      // client, and the galoy fee cap (FEECAP_BASIS_POINTS) governs a code
+      // path this send never takes: lnNoAmountUsdInvoicePaymentSend calls
+      // Ibex.payInvoice directly, with the Payments layer commented out.
+      // Decline to propose a number rather than invent one; the caller
+      // explains why instead of filling the pad with something doomed.
+      result = { amount: 0, reason: "fee-unavailable" }
     } else {
       result = {
         amount: Math.max(Math.floor(spendableBalance - fee), 0),

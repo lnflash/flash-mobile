@@ -663,6 +663,7 @@
         "paymentSetupFailed": "Failed to initiate payment. Please try again.",
         "changeAmount": "Change amount",
         "allowanceRemaining": "{remaining} of {limit} left today",
+        "allowanceExhausted": "You've used today's {limit} top-up limit",
         "allowanceHeld": "{held} is held by a payment link you haven't completed",
         "allowanceResets": "More becomes available at {when: string}",
         "bankTransfer": "Bank Transfer",
@@ -1604,7 +1605,8 @@
         "max": "MAX",
         "maxNoteIntraledger": "Full balance — no fee between Flash accounts",
         "maxNoteFeeReserved": "~{fee: string} reserved for the network fee — final fee shown on confirm",
-        "maxNoteRecipientCap": "Capped at {max: string} — the most this recipient can receive per payment"
+        "maxNoteRecipientCap": "Capped at {max: string} — the most this recipient can receive per payment",
+        "maxNoteFeeUnknown": "Couldn't estimate the network fee for this destination — enter an amount to continue"
     },
     "AmountInputButton": {
         "tapToSetAmount": "Add an amount",

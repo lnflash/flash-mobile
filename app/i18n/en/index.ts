@@ -1760,6 +1760,8 @@ const en: BaseTranslation = {
       "~{fee: string} reserved for the network fee — final fee shown on confirm",
     maxNoteRecipientCap:
       "Capped at {max: string} — the most this recipient can receive per payment",
+    maxNoteFeeUnknown:
+      "Couldn't estimate the network fee for this destination — enter an amount to continue",
   },
   AmountInputButton: {
     tapToSetAmount: "Add an amount",

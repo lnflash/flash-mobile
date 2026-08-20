@@ -5733,6 +5733,10 @@ type RootTranslation = {
 		 * @param {string} max
 		 */
 		maxNoteRecipientCap: RequiredParams<'max'>
+		/**
+		 * C​o​u​l​d​n​'​t​ ​e​s​t​i​m​a​t​e​ ​t​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​f​o​r​ ​t​h​i​s​ ​d​e​s​t​i​n​a​t​i​o​n​ ​—​ ​e​n​t​e​r​ ​a​n​ ​a​m​o​u​n​t​ ​t​o​ ​c​o​n​t​i​n​u​e
+		 */
+		maxNoteFeeUnknown: string
 	}
 	AmountInputButton: {
 		/**
@@ -11967,6 +11971,10 @@ export type TranslationFunctions = {
 		 * Capped at {max} — the most this recipient can receive per payment
 		 */
 		maxNoteRecipientCap: (arg: { max: string }) => LocalizedString
+		/**
+		 * Couldn't estimate the network fee for this destination — enter an amount to continue
+		 */
+		maxNoteFeeUnknown: () => LocalizedString
 	}
 	AmountInputButton: {
 		/**

@@ -23,8 +23,12 @@ import {
 } from "./number-pad-reducer"
 
 export type MaxAmountButtonResult = {
-  /** The computed max, in the sending wallet's currency. */
-  amount: MoneyAmount<WalletOrDisplayCurrency>
+  /**
+   * The computed max, in the sending wallet's currency. Absent when the
+   * computation declined to propose one — an unpriceable destination, say —
+   * in which case `note` carries the reason and the pad is left alone.
+   */
+  amount?: MoneyAmount<WalletOrDisplayCurrency>
   /** Info-row note explaining the computation (fee reserved, no fee, cap). */
   note?: string
 }
@@ -271,12 +275,21 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
               if (!result) {
                 return
               }
+              // Explained-but-empty: nothing to fill, but the user still
+              // needs to know why the chip did nothing.
+              if (!result.amount) {
+                if (editGeneration.current === generationAtTap) {
+                  setAppliedMax({ note: result.note })
+                }
+                return
+              }
+              const resultAmount = result.amount
               // The user typed, cleared, or toggled currency while the fee
               // fetch was in flight — their edit wins; drop the stale max.
               if (editGeneration.current !== generationAtTap) {
                 return
               }
-              const converted = convertMoneyAmount(result.amount, currencyRef.current)
+              const converted = convertMoneyAmount(resultAmount, currencyRef.current)
               // The pad may hold a DIFFERENT currency than the wallet (e.g.
               // JMD display over a USD wallet). The send path converts the
               // pad amount BACK to wallet units and rounds, so a display
@@ -287,9 +300,9 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
               let fillAmount = Math.floor(converted.amount)
               const roundTripsAboveMax = (amount: number) =>
                 Math.round(
-                  convertMoneyAmount({ ...converted, amount }, result.amount.currency)
+                  convertMoneyAmount({ ...converted, amount }, resultAmount.currency)
                     .amount,
-                ) > result.amount.amount
+                ) > resultAmount.amount
               while (fillAmount > 0 && roundTripsAboveMax(fillAmount)) {
                 fillAmount -= 1
               }
@@ -301,8 +314,8 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
               // toggle does) and shows the true max, which needs no display
               // round-trip — the computation already floors it to whole
               // wallet minor units.
-              if (fillAmount === 0 && result.amount.amount > 0) {
-                setNumberPadAmount(result.amount)
+              if (fillAmount === 0 && resultAmount.amount > 0) {
+                setNumberPadAmount(resultAmount)
               } else {
                 setNumberPadAmount({
                   ...converted,
