@@ -663,5 +663,47 @@ CASH_WALLETS.forEach((walletCurrency) => {
       await waitFor(() => expect(setAsyncErrorMessage).toHaveBeenCalled())
       expect(setAsyncErrorMessage).toHaveBeenLastCalledWith("")
     })
+
+    // The amount toggle (amount-input-screen) flips the pad into the wallet's
+    // own minor units while the display currency stays JMD. That is the only
+    // combination where describeBound hands formatDisplayAndWalletAmount a
+    // WALLET-currency primaryAmount, selecting the other formatting branch —
+    // and for a JMD-display Flash user, flipping the pad is routine.
+    it("names a typeable floor when the pad is toggled into wallet units", async () => {
+      const paymentDetail = makeCashLnurlDetail({
+        walletCurrency,
+        centsPerSat: JMD_CENTS_PER_SAT,
+        // 6c is under the 100-sat floor (~6.5c), so this refuses and names it.
+        cents: 6,
+        displayMinorPerCent: JMD_MINOR_PER_CENT,
+        displayCode: "JMD",
+      })
+      const { setAsyncErrorMessage } = renderComponent(paymentDetail, null)
+
+      await waitFor(() =>
+        expect(setAsyncErrorMessage).toHaveBeenLastCalledWith(
+          expect.stringContaining("less than minimum amount"),
+        ),
+      )
+      const message = setAsyncErrorMessage.mock.calls.at(-1)?.[0] as string
+      expect(message).not.toMatch(/NaN/)
+      expect(message).not.toMatch(/undefined/)
+    })
+
+    it("accepts the wallet-unit floor it named when the user re-enters it", async () => {
+      // The round-trip that matters: whatever the message quotes must itself
+      // be accepted, or the user is sent back and forth with no way through.
+      const paymentDetail = makeCashLnurlDetail({
+        walletCurrency,
+        centsPerSat: JMD_CENTS_PER_SAT,
+        cents: 7,
+        displayMinorPerCent: JMD_MINOR_PER_CENT,
+        displayCode: "JMD",
+      })
+      const { setAsyncErrorMessage } = renderComponent(paymentDetail, null)
+
+      await waitFor(() => expect(setAsyncErrorMessage).toHaveBeenCalled())
+      expect(setAsyncErrorMessage).toHaveBeenLastCalledWith("")
+    })
   })
 })
