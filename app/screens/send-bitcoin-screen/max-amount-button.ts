@@ -67,6 +67,10 @@ export type BuildMaxAmountButtonArgs<M extends MoneyAmountShape, F, P> = {
    * same null as a network blip and produces "couldn't estimate the fee — tap
    * MAX again" — a retry loop that cannot succeed. Checking here is what turns
    * that into the receiver's actual minimum.
+   *
+   * It bounds two things, on every wallet: the amount probed (above) and the
+   * amount proposed (in `compute`). The fee is subtracted between them, so
+   * clearing the first says nothing about clearing the second.
    */
   receiverMinSats: number | null
   /** Convert sats into the sending wallet's minor units. */
@@ -149,6 +153,16 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
 
   const withAmount = (amount: number): M => ({ ...balanceMoneyAmount, amount })
 
+  // The receiver's LUD-06 floor, carried in both units: sats for the message
+  // (the receiver advertises it in sats, and that is what their error will say)
+  // and wallet minor units for every comparison against an amount. Resolved
+  // once so the probe guard and the result guard can never drift apart —
+  // they are the two halves of one bound.
+  const recipientMin =
+    receiverMinSats !== null && Number.isFinite(receiverMinSats)
+      ? { sats: receiverMinSats, wallet: convertSatsToWallet(receiverMinSats) }
+      : null
+
   // The Breez probe returns a TYPED reason (below the receiver's minimum,
   // above their maximum, offline...). Collapsing it into the same null as a
   // network blip costs the user the only actionable half of the message: on
@@ -213,12 +227,8 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
       // minSendable. Report the bound instead — the only half of this the
       // user can act on. (The recipient cap handles the other end: it clamps
       // the probe, so a probe amount can only ever be too small here.)
-      if (
-        receiverMinSats !== null &&
-        Number.isFinite(receiverMinSats) &&
-        convertSatsToWallet(receiverMinSats) > probeAmount
-      ) {
-        lastFeeError = { kind: "amount-below-min", minSats: receiverMinSats }
+      if (recipientMin !== null && recipientMin.wallet > probeAmount) {
+        lastFeeError = { kind: "amount-below-min", minSats: recipientMin.sats }
         return null
       }
       // Clear a minimum recorded by an earlier tap: a later generic failure
@@ -254,6 +264,30 @@ export const buildMaxAmountButton = <M extends MoneyAmountShape, F, P>({
         fetchFee,
         recipientCap,
       })
+
+      // The receiver's floor guards the probe INPUT; this guards the number
+      // the chip actually puts in the pad — the other half of the same bound,
+      // and the half the user sees. They are not the same check: the fee is
+      // subtracted between them, so any balance in [min, min + fee + slack)
+      // clears the probe and still lands below the floor. On the BTC wallet
+      // that shows as a chip filling 499 sats under "~2,500 sats reserved for
+      // the network fee" with "the minimum this recipient can receive is
+      // 1,000 sats" painted directly beneath it; on the USD wallet, where no
+      // local check compares like units, it shows as the LNURL mint throwing
+      // Error("Invalid amount") on Next and the screen blaming the fetch —
+      // ENG-554's own symptom, reproduced by the chip meant to end it.
+      //
+      // The cap is applied to the result (max-send-amount.ts), so the floor
+      // must be too. Propose nothing and name the bound: no amount over this
+      // balance is sendable to this receiver, so the tap has no number to
+      // offer — only the reason.
+      if (
+        recipientMin !== null &&
+        result.amount > 0 &&
+        result.amount < recipientMin.wallet
+      ) {
+        return { note: strings.recipientMin(recipientMin.sats) }
+      }
 
       const note = noteFor(noteForResult(result))
 

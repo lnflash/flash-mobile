@@ -53,6 +53,7 @@ import {
 } from "@app/types/amounts"
 import { isValidAmount } from "./payment-details"
 import { buildMaxAmountButton } from "./max-amount-button"
+import { maxAmountButtonStrings } from "./max-amount-button-strings"
 import {
   makeLnurlFeeProbe,
   makeLnurlProbeCache,
@@ -491,17 +492,9 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
       probeLnurlFee,
       formatDisplayAmount: (moneyAmount) =>
         moneyAmountToDisplayCurrencyString({ moneyAmount }),
-      strings: {
-        intraledger: () => LL.AmountInputScreen.maxNoteIntraledger(),
-        feeReserved: (fee) => LL.AmountInputScreen.maxNoteFeeReserved({ fee }),
-        recipientCap: (max) => LL.AmountInputScreen.maxNoteRecipientCap({ max }),
-        feeUnknown: () => LL.AmountInputScreen.maxNoteFeeUnknown(),
-        recipientMin: (minSats) =>
-          LL.SendBitcoinScreen.minReceiveAmountError({
-            amount: `${minSats} sats`,
-          }),
-        feeTooLarge: () => LL.AmountInputScreen.maxNoteFeeTooLarge(),
-      },
+      // Bound to the same formatSats the fee-error banner uses, so the
+      // receiver's minimum reads identically wherever it surfaces.
+      strings: maxAmountButtonStrings(LL, formatSats),
     })
   }
   const maxAmountButton = buildMaxButtonForPaymentDetail()

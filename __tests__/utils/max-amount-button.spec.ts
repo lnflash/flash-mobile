@@ -555,6 +555,101 @@ describe("LNURL destinations are priced, not guessed (ENG-554)", () => {
     expect(probeLnurlFee).toHaveBeenCalledWith(442)
   })
 
+  // The probe guard checks the amount going IN; the fee is subtracted after
+  // it. Every balance in [min, min + fee + slack) therefore clears the probe
+  // and still leaves the chip proposing less than the receiver will accept —
+  // the cap is applied to the result, so the floor has to be too.
+  it("proposes nothing when the fee drops a cleared balance back under the minimum", async () => {
+    // BTC wallet, 3_000 sats, LNURL receiver with minSendable 1_000, Breez
+    // channel-open fee 2_500. The probe at 3_000 clears the floor, the
+    // computation returns 3_000 − 2_500 − 1 = 499, and the chip used to fill
+    // 499 sats under "~2,500 sats reserved for the network fee" — with "the
+    // minimum this recipient can receive is 1,000 sats" painted directly
+    // beneath it by DetailAmountNote.
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        paymentType: "lnurl",
+        balanceMoneyAmount: { ...btcBalance, amount: 3_000 },
+        receiverMinSats: 1_000,
+        fetchBreezFee: jest.fn(async () => ({ fee: 2_500, err: null })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("min note: 1000 sats")
+  })
+
+  it("proposes nothing on the USD path when the fee drops the amount under the minimum", async () => {
+    // USD wallet at 2¢/sat holding 2_010¢ (1_005 sats) against the same
+    // 1_000-sat floor: the probe guard passes (2_000 ≤ 2_010), the 20¢ fee
+    // leaves 1_989¢ = 994 sats, and nothing downstream catches it — the USD
+    // path has no working local min check, so Next asks the LNURL mint for an
+    // impossible invoice, lnurl-pay throws Error("Invalid amount"), and the
+    // screen blames the fetch. ENG-554's own symptom, out of the chip written
+    // to prevent it.
+    const probeLnurlFee = jest.fn(async () => 20)
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        balanceMoneyAmount: { ...usdBalance, amount: 2_010 },
+        receiverMinSats: 1_000,
+        convertSatsToWallet: (sats: number) => sats * 2,
+        probeLnurlFee,
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(probeLnurlFee).toHaveBeenCalledWith(2_010)
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("min note: 1000 sats")
+  })
+
+  it("still proposes an amount that lands exactly on the receiver's minimum", async () => {
+    // The floor is inclusive: 2_020¢ (1_010 sats) less a 19¢ fee and 1¢ of
+    // slack is 2_000¢ — exactly 1_000 sats. Rejecting this would make the
+    // guard eat sends the receiver would have accepted.
+    const button = buildMaxAmountButton(
+      makeArgs({
+        paymentType: "lnurl",
+        balanceMoneyAmount: { ...usdBalance, amount: 2_020 },
+        receiverMinSats: 1_000,
+        convertSatsToWallet: (sats: number) => sats * 2,
+        probeLnurlFee: jest.fn(async () => 19),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toEqual({ ...usdBalance, amount: 2_000 })
+    expect(result?.note).toBe("fee note: $0.19")
+  })
+
+  it("names the minimum, not the cap, when the cap clamps beneath the floor", async () => {
+    // A receiver advertising maxSendable 900 against minSendable 1_000 — a
+    // window nothing fits through. The cap wins the clamp and the result is
+    // 900 sats, which the floor then rejects: "recipient can receive at most
+    // 900" would be true and useless, because 900 is also unsendable.
+    const button = buildMaxAmountButton(
+      makeArgs({
+        walletCurrency: "BTC",
+        paymentType: "lnurl",
+        balanceMoneyAmount: btcBalance,
+        receiverMinSats: 1_000,
+        receiverMaxSats: 900,
+        fetchBreezFee: jest.fn(async () => ({ fee: 250, err: null })),
+      }),
+    )
+
+    const result = await button?.compute()
+
+    expect(result?.amount).toBeUndefined()
+    expect(result?.note).toBe("min note: 1000 sats")
+  })
+
   it("leaves non-LNURL USD sends on the ordinary IBEX probe", async () => {
     const probeLnurlFee = jest.fn(async () => 37)
     const getIbexFee = jest.fn(async () => ({ amount: 12 }))
