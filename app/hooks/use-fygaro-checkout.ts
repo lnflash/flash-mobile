@@ -208,11 +208,39 @@ export const useFygaroCheckout = () => {
         // and the customer is charged for an over-limit top-up the webhook then
         // parks in HELD_FOR_REVIEW. The 2026-08-16 incident, through whichever
         // non-5xx door happens to be open.
-        if (typeof status === "number" && !httpSchemaReject) {
-          return { kind: "serverError" }
+        // REFUSING is the residual, and degrading is what has to be earned.
+        //
+        // The previous shape had these the other way round: three positive
+        // tests for `serverError` and `unavailable` as the fall-through. That
+        // reads fine until a throw arrives carrying neither a statusCode nor
+        // graphQLErrors — an Apollo invariant, a cache error, a link bug, or an
+        // @apollo/client upgrade moving the error shapes this file reads
+        // (`networkError.statusCode`, `networkError.result.errors`) — and every
+        // one of those landed on the editable legacy link with no pre-charge
+        // check. A residual that fails OPEN into the capture-without-credit
+        // class this whole change exists to end is the wrong residual,
+        // regardless of how many doors are individually bolted.
+        //
+        // The tests cannot catch that either: they hand this catch block
+        // hand-built error objects, so they assert what we BELIEVE Apollo
+        // throws, not what it throws. A shape change keeps them green while the
+        // residual silently widens. So the unknown shape has to land on the
+        // safe side by construction.
+        //
+        // Two things earn a degrade, both positively identified:
+        if (schemaReject || httpSchemaReject) {
+          // The server rejected our DOCUMENT — an older backend without this
+          // mutation, or a rollback. Ours, and the reason the legacy link is
+          // still here.
+          return { kind: "unavailable" }
         }
-        if (graphQLErrors.length > 0 && !schemaReject) return { kind: "serverError" }
-        return { kind: "unavailable" }
+        if (err?.networkError && status === undefined) {
+          // A transport failure that never reached a server: no status, so no
+          // server ever formed an opinion to overrule. Offline, DNS, a dropped
+          // socket before the response line.
+          return { kind: "unavailable" }
+        }
+        return { kind: "serverError" }
       }
 
       /**

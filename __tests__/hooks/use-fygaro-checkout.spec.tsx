@@ -185,10 +185,34 @@ describe("useFygaroCheckout", () => {
     expect(await ask()).toEqual({ kind: "unavailable" })
   })
 
-  it("treats a backend without the mutation as unavailable, not an error", async () => {
-    // An older backend rejects the document outright. The app must degrade,
-    // because this ships before the backend everywhere except our own cluster.
+  it("REFUSES on a rejection whose shape it does not recognise", async () => {
+    // A bare Error with no `networkError` and no `graphQLErrors` is not a shape
+    // Apollo produces for an old backend — the two realistic ones are covered
+    // below (GRAPHQL_VALIDATION_FAILED, and the HTTP 400 whose body says so).
+    // It IS the shape of everything else that can throw here: an Apollo
+    // invariant, a cache error, a link bug, or an @apollo/client upgrade moving
+    // the fields this hook reads off `networkError`.
+    //
+    // Those must refuse. Degrading hands the customer the editable legacy link
+    // with no pre-charge allowance check, which is the capture-without-credit
+    // failure the whole change exists to end — and the classification tests
+    // cannot protect against it, because they assert what we BELIEVE Apollo
+    // throws. So the unrecognised shape lands on the safe side by construction.
     mockCreateCheckout.mockRejectedValue(new Error("Cannot query field"))
+
+    expect(await ask()).toEqual({ kind: "serverError" })
+  })
+
+  it("degrades on a transport failure that never reached a server", async () => {
+    // No status, so no server ever formed an opinion to overrule: offline,
+    // DNS, a socket dropped before the response line. This is the one throw
+    // where the legacy link is still the right answer.
+    mockCreateCheckout.mockRejectedValue(
+      Object.assign(new Error("Network request failed"), {
+        networkError: new Error("Network request failed"),
+        graphQLErrors: [],
+      }),
+    )
 
     expect(await ask()).toEqual({ kind: "unavailable" })
   })

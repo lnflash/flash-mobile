@@ -345,7 +345,20 @@ describe("CardPayment signed checkout", () => {
   })
 
   it("falls back to the legacy link when the checkout mutation throws (old backend)", async () => {
-    mockCreateCheckout.mockRejectedValueOnce(new Error("Cannot query field"))
+    // The shape Apollo ACTUALLY delivers for a backend that does not know this
+    // mutation: a top-level GraphQL error carrying GRAPHQL_VALIDATION_FAILED.
+    // A bare Error stood in for it here until the hook stopped degrading on
+    // shapes it cannot identify — and a stand-in that no longer resembles the
+    // real thing tests nothing but itself.
+    mockCreateCheckout.mockRejectedValueOnce({
+      graphQLErrors: [
+        {
+          message: 'Cannot query field "fygaroCheckoutCreate" on type "Mutation".',
+          extensions: { code: "GRAPHQL_VALIDATION_FAILED" },
+        },
+      ],
+      networkError: null,
+    })
 
     await renderAndSettle()
 
@@ -444,7 +457,7 @@ describe("CardPayment signed checkout", () => {
     alertSpy.mockRestore()
   })
 
-  it("falls back to the legacy link when the request never settles AT ALL", async () => {
+  it("refuses past the deadline when the request never settles — never the editable legacy link", async () => {
     // A hang is not an error, and nothing under this mutation will ever turn it
     // into one: Apollo's HttpLink is constructed bare (no fetchOptions, no
     // AbortController) and RetryLink only retries on an `error`, which a hang
