@@ -684,7 +684,8 @@
     "totalExceed": "El total excede su saldo de {balance: string}",
     "maxFeeSelected": "Tarifa máxima que se cobrará por esta transacción. Podría ser menor una vez se realice el pago.",
     "feeError": "Error al calcular la tarifa",
-    "breezFeeText": "There may be a small fee for routing"
+    "breezFeeText": "There may be a small fee for routing",
+    "invoiceExpired": "This invoice expired before the payment was sent. Go back and enter the amount again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "Los nombres de usuario de {bankName} ahora son direcciones de {bankName}.",
@@ -1582,6 +1583,7 @@
     "checkoutProblemTitle": "Couldn't start your payment",
     "changeAmount": "Change amount",
     "allowanceRemaining": "{remaining} of {limit} left today",
+    "allowanceExhausted": "You've used today's {limit} top-up limit",
     "allowanceHeld": "{held} is held by a payment link you haven't completed",
     "allowanceResets": "More becomes available at {when: string}",
     "checkoutTimedOut": "We couldn't reach Flash to set up your payment. Nothing has been charged — please check your connection and try again.",
