@@ -747,8 +747,8 @@
     "lnurlInvoiceIncorrectDescription": "lnurl-serveren svarede med en faktura med en forkert beskrivelse hash.",
     "noAmountInvoiceError": "Intet fakturabeløb understøttes ikke i BTC-plånbogen.Vær venlig at gå tilbage og scanne eller indtaste en faktura med et tilføjet beløb.",
     "onchainMinAmountInvoiceError": "Det beløb, du har indtastet, er mindre end det minimumsbeløb, der kræves for at sende en transaktion på kæden {amount: number}. Vær venlig at overveje at sende dette beløb via Lightning!",
-    "minAmountInvoiceError": "Beløbet på fakturaen er mindre end minimumsbeløbet {amount: number}",
-    "maxAmountInvoiceError": "Beløbet på fakturaen er større end det maksimale beløb {amount: number}",
+    "minAmountInvoiceError": "Beløbet på fakturaen er mindre end minimumsbeløbet {amount: string}",
+    "maxAmountInvoiceError": "Beløbet på fakturaen er større end det maksimale beløb {amount: string}",
     "minAmountConvertError": "Konverteringsbeløbet er mindre end det mindste krævede beløb {amount: number}",
     "maxAmountConvertError": "Konverteringsbeløbet er større end det maksimale beløb {amount: number}",
     "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
@@ -1595,7 +1595,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "USD-konto",

@@ -747,8 +747,8 @@
     "lnurlInvoiceIncorrectDescription": "De ln-url server reageerde met een factuur met een onjuiste hash-beschrijving.",
     "noAmountInvoiceError": "Geen enkele factuur wordt ondersteund in de BTC-portemonnee, dus ga terug en scan of voer een factuur in met een toegevoegd bedrag.",
     "onchainMinAmountInvoiceError": "Het door u ingevoerde bedrag is minder dan het minimumbedrag dat nodig is om een transactie op de keten {amount: number} te verzenden.",
-    "minAmountInvoiceError": "Het bedrag op de factuur is minder dan het minimum bedrag {amount: number}",
-    "maxAmountInvoiceError": "Het bedrag op de factuur is groter dan het maximale bedrag {amount: number}",
+    "minAmountInvoiceError": "Het bedrag op de factuur is minder dan het minimum bedrag {amount: string}",
+    "maxAmountInvoiceError": "Het bedrag op de factuur is groter dan het maximale bedrag {amount: string}",
     "minAmountConvertError": "Het conversiebedrag is minder dan het minimale vereiste bedrag {amount: number}.",
     "maxAmountConvertError": "Het conversiebedrag is groter dan het maximale bedrag {amount: number}",
     "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
@@ -1595,7 +1595,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "USD-rekening",

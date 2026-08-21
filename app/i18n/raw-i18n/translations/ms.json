@@ -747,8 +747,8 @@
     "lnurlInvoiceIncorrectDescription": "Server lnurl telah respon terhadap invois tersebut dengan kesalahan pada perincian hash",
     "noAmountInvoiceError": "Tiada jumlah invois yang disokong dalam dompet BTC. Sila pergi semula dan meminda atau memasukkan invois dengan jumlah yang ditambah.",
     "onchainMinAmountInvoiceError": "Jumlah yang anda masukkan adalah kurang daripada jumlah minimum yang diperlukan untuk menghantar transaksi dalam rantaian {amount: number}. Sila pertimbangkan untuk menghantar jumlah ini melalui Lightning!",
-    "minAmountInvoiceError": "Jumlah di invois adalah kurang daripada jumlah minimum {amount: number}",
-    "maxAmountInvoiceError": "Jumlah di invois lebih besar daripada jumlah maksimum {amount: number}",
+    "minAmountInvoiceError": "Jumlah di invois adalah kurang daripada jumlah minimum {amount: string}",
+    "maxAmountInvoiceError": "Jumlah di invois lebih besar daripada jumlah maksimum {amount: string}",
     "minAmountConvertError": "Jumlah penukaran adalah kurang daripada jumlah minimum yang diperlukan {amount: number}",
     "maxAmountConvertError": "Jumlah penukaran lebih besar daripada jumlah maksimum {amount: number}",
     "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
@@ -1595,7 +1595,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "Akaun USD",

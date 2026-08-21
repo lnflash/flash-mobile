@@ -1,6 +1,7 @@
 import {
   computeMaxSendAmount,
   effectiveMaxPaymentType,
+  lnurlBoundInWalletUnits,
   maxChipSupportsPaymentType,
   noteForResult,
   resolveRecipientCap,
@@ -337,6 +338,78 @@ describe("maxChipSupportsPaymentType", () => {
   })
 })
 
+// Amounts are entered and sent in whole minor units, so a bound left
+// fractional is a bound the user can never type — and the message that names
+// it rounds to an amount the validator then refuses (ENG-556).
+describe("lnurlBoundInWalletUnits", () => {
+  // 100 sats at $64,000/BTC = 6.4c.
+  const at64k = (sats: number) => sats * 0.064
+
+  it("rounds a minimum UP to the smallest typeable amount that clears it", () => {
+    expect(
+      lnurlBoundInWalletUnits({
+        sats: 100,
+        convertSatsToWallet: at64k,
+        rounding: "ceil",
+      }),
+    ).toBe(7)
+  })
+
+  it("rounds a maximum DOWN to the largest typeable amount the receiver accepts", () => {
+    expect(
+      lnurlBoundInWalletUnits({
+        sats: 16_000_000,
+        convertSatsToWallet: (sats) => sats * 0.0650001,
+        rounding: "floor",
+      }),
+    ).toBe(1_040_001)
+  })
+
+  it("leaves an already-whole bound alone", () => {
+    expect(
+      lnurlBoundInWalletUnits({
+        sats: 100,
+        convertSatsToWallet: (sats) => sats * 0.05,
+        rounding: "ceil",
+      }),
+    ).toBe(5)
+  })
+
+  it("does not inflate a whole bound that float arithmetic overshoots", () => {
+    // 100 * 0.07 is 7.000000000000001 in IEEE-754. A naive ceil names 8c as
+    // the floor of a bound the receiver already accepts at 7c.
+    expect(
+      lnurlBoundInWalletUnits({
+        sats: 100,
+        convertSatsToWallet: (sats) => sats * 0.07,
+        rounding: "ceil",
+      }),
+    ).toBe(7)
+  })
+
+  it("does not deflate a whole bound that float arithmetic undershoots", () => {
+    // 100 * 0.29 is 28.999999999999996 in IEEE-754. A naive floor throws away
+    // a whole cent of a ceiling that is really 29c.
+    expect(
+      lnurlBoundInWalletUnits({
+        sats: 100,
+        convertSatsToWallet: (sats) => sats * 0.29,
+        rounding: "floor",
+      }),
+    ).toBe(29)
+  })
+
+  it("passes NaN through so a missing price keeps its existing handling", () => {
+    expect(
+      lnurlBoundInWalletUnits({
+        sats: 100,
+        convertSatsToWallet: () => NaN,
+        rounding: "ceil",
+      }),
+    ).toBeNaN()
+  })
+})
+
 describe("resolveRecipientCap", () => {
   const convertSatsToWallet = (sats: number) => sats * 2
 
@@ -374,6 +447,22 @@ describe("resolveRecipientCap", () => {
         convertSatsToWallet,
       }),
     ).toBe(300_000)
+  })
+
+  // The doubling rate above is integral, so every case around it stays green
+  // whether or not the cap is quantized. This one pins the quantization
+  // itself: without the "floor" wiring the cap comes back as 6.5 cents, which
+  // the number pad cannot hold.
+  it("USD wallet: floors a fractional converted cap to a whole cent", () => {
+    expect(
+      resolveRecipientCap({
+        walletCurrency: "USD",
+        paymentType: "lnurl",
+        receiverMaxSats: null,
+        lnurlParamsMaxSats: 100,
+        convertSatsToWallet: (sats) => sats * 0.065,
+      }),
+    ).toBe(6)
   })
 
   it("USD wallet: no cap for non-LNURL payment types", () => {

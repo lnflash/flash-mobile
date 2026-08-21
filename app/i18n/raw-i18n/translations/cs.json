@@ -747,8 +747,8 @@
     "lnurlInvoiceIncorrectDescription": "Server lnurl odpověděl fakturou s nesprávným hashem popisu.",
     "noAmountInvoiceError": "V peněžence BTC není podpořena žádná faktura o částce.Prosíme, abyste se vrátili a prozkoumali nebo zadaly fakturu s přidanou částkou.",
     "onchainMinAmountInvoiceError": "Množství, které jste zadal, je nižší než minimální částka potřebná k zasílání transakce {amount: number} na řetězci. Prosím, zvážíte možnost poslat tuto částku prostřednictvím Lightning!",
-    "minAmountInvoiceError": "Výše na fakturě je menší než minimální částka {amount: number}",
-    "maxAmountInvoiceError": "Výše na fakturě je větší než maximální částka {amount: number}",
+    "minAmountInvoiceError": "Výše na fakturě je menší než minimální částka {amount: string}",
+    "maxAmountInvoiceError": "Výše na fakturě je větší než maximální částka {amount: string}",
     "minAmountConvertError": "Výše konverze je menší než minimální požadovaná částka {amount: number}",
     "maxAmountConvertError": "Výše konverze je větší než maximální částka {amount: number}",
     "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
@@ -1595,7 +1595,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "USD účet",

@@ -747,8 +747,8 @@
     "lnurlInvoiceIncorrectDescription": "lnurl poslužitelj je odgovorio fakturom s netočnim hashom opisa.",
     "noAmountInvoiceError": "U novčaniku BTC nije podržan nijedan iznos fakture.Prosimo, vratite se i skenirate ili unesite fakturu s dodatnim iznosom.",
     "onchainMinAmountInvoiceError": "Iznos koji ste ušli je manji od minimalnog iznosa koji je potreban za slanje transakcije na lancu {amount: number}. Molimo razmislite o slanju tog iznosa putem Lightning!",
-    "minAmountInvoiceError": "Iznos na računu je manji od minimalnog iznosa {amount: number}",
-    "maxAmountInvoiceError": "Iznos na računu je veći od maksimalnog iznosa {amount: number}",
+    "minAmountInvoiceError": "Iznos na računu je manji od minimalnog iznosa {amount: string}",
+    "maxAmountInvoiceError": "Iznos na računu je veći od maksimalnog iznosa {amount: string}",
     "minAmountConvertError": "Iznos konverzije je manji od minimalnog potrebnog iznosa {amount: number}",
     "maxAmountConvertError": "Iznos konverzije je veći od maksimalnog iznosa {amount: number}",
     "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
@@ -1595,7 +1595,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "USD račun",

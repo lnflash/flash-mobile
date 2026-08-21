@@ -747,8 +747,8 @@
     "lnurlInvoiceIncorrectDescription": "Le serveur lnurl a répondu avec une facture contenant un hachage de description incorrect.",
     "noAmountInvoiceError": "Aucun montant de facture n'est pris en charge dans le portefeuille BTC. Veuillez revenir en arrière et numériser ou saisir une facture avec un montant ajouté.",
     "onchainMinAmountInvoiceError": "Le montant que vous avez entré est inférieur au montant minimum requis pour envoyer une transaction en chaîne {amount: number}. Veuillez envisager d'envoyer ce montant via Lightning!",
-    "minAmountInvoiceError": "Le montant de la facture est inférieur au montant minimum {amount: number}",
-    "maxAmountInvoiceError": "Le montant de la facture est supérieur au montant maximal {amount: number}",
+    "minAmountInvoiceError": "Le montant de la facture est inférieur au montant minimum {amount: string}",
+    "maxAmountInvoiceError": "Le montant de la facture est supérieur au montant maximal {amount: string}",
     "minAmountConvertError": "Le montant de conversion est inférieur au montant minimum requis {amount: number}",
     "maxAmountConvertError": "Le montant de conversion est supérieur au montant maximal {amount: number}",
     "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
@@ -1595,7 +1595,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "Compte en USD",

@@ -703,9 +703,9 @@
     "MinOnChainLimit": "Minimum amount for this transaction is US$2.00",
     "MinOnChainSatLimit": "Minimum amount for this transaction is 5,500 sats",
     "maxAmountConvertError": "The conversion amount is greater than maximum amount {amount: number}",
-    "maxAmountInvoiceError": "The amount on the invoice is greater than maximum amount {amount: number}",
+    "maxAmountInvoiceError": "The amount on the invoice is greater than maximum amount {amount: string}",
     "minAmountConvertError": "The conversion amount is less than minimum required amount {amount: number}",
-    "minAmountInvoiceError": "The amount on the invoice is less than minimum amount {amount: number}",
+    "minAmountInvoiceError": "The amount on the invoice is less than minimum amount {amount: string}",
     "noAmountInvoiceError": "No amount invoice is not supported in BTC wallet. Please go back and scan or enter an invoice with an amount added.",
     "onchainMinAmountInvoiceError": "The amount you entered is less than the minimum amount required to send an on-chain transaction {amount: number}. Please consider sending this amount via Lightning!",
     "send": "Send",
@@ -1596,7 +1596,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "USD-rekening",

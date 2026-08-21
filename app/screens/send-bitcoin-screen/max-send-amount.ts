@@ -41,6 +41,61 @@ export const effectiveMaxPaymentType = (
   return paymentType
 }
 
+/**
+ * Which way to quantize a converted bound.
+ *
+ * "ceil" for a MINIMUM and "floor" for a MAXIMUM — always inward, so the
+ * quantized bound is one the receiver definitely accepts.
+ */
+export type LnurlBoundRounding = "floor" | "ceil"
+
+export type LnurlBoundInWalletUnitsArgs = {
+  /** The receiver's advertised LUD-06 bound, in sats. */
+  sats: number
+  /**
+   * Convert sats into whole minor units of the target unit — the sending
+   * wallet's currency for the MAX chip's cap, the number pad's own currency
+   * when quoting a bound back to the user.
+   */
+  convertSatsToWallet: (sats: number) => number
+  rounding: LnurlBoundRounding
+}
+
+/**
+ * An LNURL (LUD-06) bound — advertised in sats — as a WHOLE minor unit of
+ * whichever currency `convertSatsToWallet` targets.
+ *
+ * Amounts are entered in whole minor units, so a fractional bound is a bound
+ * the user can never type. Left fractional, a 100-sat floor at $64,000/BTC
+ * becomes 6.4 cents: quote "$0.06" and the user types an amount the receiver
+ * refuses; quote "$0.064" and the number pad cannot produce it. Rounding
+ * inward (ceil a minimum, floor a maximum) makes the quoted amount both
+ * typeable and accepted.
+ *
+ * Note the asymmetry with enforcement: bounds are ENFORCED in sats, against
+ * the sat amount the request is actually built with. This quantization is for
+ * the amount a message quotes and for the MAX chip's cap — the two places
+ * where the number has to survive a trip through the number pad.
+ *
+ * The `toPrecision` pass strips float noise before quantizing: 100 sats at
+ * exactly $70,000/BTC converts to 7.000000000000001 cents, and a naive ceil
+ * would name 8c as the floor of a bound that is really 7c. Twelve significant
+ * digits is far finer than any real rate difference and far coarser than the
+ * ~1e-16 relative noise of IEEE-754 arithmetic.
+ */
+export const lnurlBoundInWalletUnits = ({
+  sats,
+  convertSatsToWallet,
+  rounding,
+}: LnurlBoundInWalletUnitsArgs): number => {
+  const converted = convertSatsToWallet(sats)
+  if (!Number.isFinite(converted)) {
+    return converted
+  }
+  const denoised = Number(converted.toPrecision(12))
+  return rounding === "ceil" ? Math.ceil(denoised) : Math.floor(denoised)
+}
+
 export type ResolveRecipientCapArgs = {
   walletCurrency: MaxSendWalletCurrency
   paymentType: MaxSendPaymentType
@@ -53,13 +108,16 @@ export type ResolveRecipientCapArgs = {
 }
 
 /**
- * Receiver's LNURL maxSendable bound in the sending wallet's minor units,
- * or null when no cap applies.
+ * Receiver's LNURL maxSendable bound in WHOLE minor units of the sending
+ * wallet (sats or cents), or null when no cap applies.
  *
  * The BTC wallet pays Flash addresses and LNURL destinations through
  * LNURL-pay, so its cap comes from the resolved pay request (already in
- * sats — the wallet's minor unit). The USD wallet only has a cap for
- * explicit LNURL destinations, advertised in sats and converted here.
+ * sats — the wallet's minor unit, and already whole). The USD wallet only has
+ * a cap for explicit LNURL destinations, advertised in sats and converted
+ * here; that conversion is fractional, so it is floored to a whole cent — the
+ * MAX chip pre-fills the number pad with this value and the pad cannot hold a
+ * fraction of a cent.
  */
 export const resolveRecipientCap = ({
   walletCurrency,
@@ -72,7 +130,11 @@ export const resolveRecipientCap = ({
     return receiverMaxSats ?? null
   }
   if (paymentType === "lnurl" && lnurlParamsMaxSats) {
-    return convertSatsToWallet(lnurlParamsMaxSats)
+    return lnurlBoundInWalletUnits({
+      sats: lnurlParamsMaxSats,
+      convertSatsToWallet,
+      rounding: "floor",
+    })
   }
   return null
 }

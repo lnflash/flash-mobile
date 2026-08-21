@@ -3417,12 +3417,12 @@ type RootTranslation = {
 		onchainMinAmountInvoiceError: RequiredParams<'amount'>
 		/**
 		 * T​h​e​ ​a​m​o​u​n​t​ ​o​n​ ​t​h​e​ ​i​n​v​o​i​c​e​ ​i​s​ ​l​e​s​s​ ​t​h​a​n​ ​m​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​{​a​m​o​u​n​t​}
-		 * @param {number} amount
+		 * @param {string} amount
 		 */
 		minAmountInvoiceError: RequiredParams<'amount'>
 		/**
 		 * T​h​e​ ​a​m​o​u​n​t​ ​o​n​ ​t​h​e​ ​i​n​v​o​i​c​e​ ​i​s​ ​g​r​e​a​t​e​r​ ​t​h​a​n​ ​m​a​x​i​m​u​m​ ​a​m​o​u​n​t​ ​{​a​m​o​u​n​t​}
-		 * @param {number} amount
+		 * @param {string} amount
 		 */
 		maxAmountInvoiceError: RequiredParams<'amount'>
 		/**
@@ -9724,11 +9724,11 @@ export type TranslationFunctions = {
 		/**
 		 * The amount on the invoice is less than minimum amount {amount}
 		 */
-		minAmountInvoiceError: (arg: { amount: number }) => LocalizedString
+		minAmountInvoiceError: (arg: { amount: string }) => LocalizedString
 		/**
 		 * The amount on the invoice is greater than maximum amount {amount}
 		 */
-		maxAmountInvoiceError: (arg: { amount: number }) => LocalizedString
+		maxAmountInvoiceError: (arg: { amount: string }) => LocalizedString
 		/**
 		 * The conversion amount is less than minimum required amount {amount}
 		 */

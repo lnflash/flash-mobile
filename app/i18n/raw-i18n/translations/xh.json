@@ -747,8 +747,8 @@
     "lnurlInvoiceIncorrectDescription": "Iseva ye-lnurl iphendule nge-invoyisi enenkcazo engachanekanga i-hash.",
     "noAmountInvoiceError": "Akukho mali ye-invoyisi exhaswayo kwi-BTC wallet.Nceda ubuyele uze ukhangele okanye ufake i-invoyisi enexabiso elongeziweyo.",
     "onchainMinAmountInvoiceError": "Imali oyifakileyo ingaphantsi kwemali encinci efunekayo ukuthumela intengiselwano ekwi-chain {amount: number}. Nceda uqwalasele ukuthumela le mali nge-Lightning!",
-    "minAmountInvoiceError": "Isixa esikwi-invoyisi singaphantsi kwesixa esisezantsi se-{amount: number}",
-    "maxAmountInvoiceError": "Isixa esikwi-invoyisi sikhulu kunesixa esiphezulu se-{amount: number}",
+    "minAmountInvoiceError": "Isixa esikwi-invoyisi singaphantsi kwesixa esisezantsi se-{amount: string}",
+    "maxAmountInvoiceError": "Isixa esikwi-invoyisi sikhulu kunesixa esiphezulu se-{amount: string}",
     "minAmountConvertError": "Isixa sokuguqulwa singaphantsi kwesibalo esisezantsi esifunekayo se-{amount: number}",
     "maxAmountConvertError": "Isixa sokuguqulwa sikhulu kunesixa esiphezulu se-{amount: number}",
     "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
@@ -1595,7 +1595,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "I-akhawunti ye-USD",

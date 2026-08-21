@@ -747,8 +747,8 @@
     "lnurlInvoiceIncorrectDescription": "Lnurl sunucusu yanlış bir açıklama karmasına sahip bir fatura ile yanıt verdi.",
     "noAmountInvoiceError": "BTC cüzdanında herhangi bir fatura miktarı desteklenmiyor. Lütfen geri dönüp tarayın veya eklenen bir miktarla bir fatura girin.",
     "onchainMinAmountInvoiceError": "Girdiğiniz miktar, zincir üzerindeki bir işlem {amount: number} göndermek için gerekli olan minimum miktardan daha azdır. Lütfen bu miktarı Lightning üzerinden göndermeyi düşünün!",
-    "minAmountInvoiceError": "Faturadaki miktar en az {amount: number}'den daha azdır.",
-    "maxAmountInvoiceError": "Faturadaki miktar, maksimum {amount: number}'den büyüktür.",
+    "minAmountInvoiceError": "Faturadaki miktar en az {amount: string}'den daha azdır.",
+    "maxAmountInvoiceError": "Faturadaki miktar, maksimum {amount: string}'den büyüktür.",
     "minAmountConvertError": "Değişiklik miktarı en az gerekli miktardan daha azdır {amount: number}",
     "maxAmountConvertError": "Değişiklik miktarı maksimum miktarı {amount: number}'den büyüktür.",
     "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
@@ -1595,7 +1595,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "USD hesabı",

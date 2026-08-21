@@ -747,8 +747,8 @@
     "lnurlInvoiceIncorrectDescription": "Lnurl serverpi kawsayniyta qillqata sutichinaqinmi, ñuqaqa ch'usaqiy kawsayniyta qillqata sutichinaqinmi kaniyta rikuyta munanpi, chaynamanta hashpi mana kaniyta rikuchiy.",
     "noAmountInvoiceError": "Qhapaq qollqeta BTC qollqetaqa manam qolqeta qollqeta qowankuchu, chayrayku kutimuy, ukhunchayniykita rikch'ay, otaq qollqeta qospa qollqeta qollqeta qollqeta qollqeta qollq.",
     "onchainMinAmountInvoiceError": "Qawasqaykimantaqa aswan pisqallaraqmi kanqa chain-transakcionta apaykachananpaqqa, {amount: number}. Qawasqaykimantaqmi kay sumaqta apaykachananpaqqa, Lightning nisqawan.",
-    "minAmountInvoiceError": "Invoicupi qollqeqa, {amount: number} qollqenmanta pisimmi.",
-    "maxAmountInvoiceError": "Invoicupi qollqeqa {amount: number} qollqenmanta aswan hatunmi.",
+    "minAmountInvoiceError": "Invoicupi qollqeqa, {amount: string} qollqenmanta pisimmi.",
+    "maxAmountInvoiceError": "Invoicupi qollqeqa {amount: string} qollqenmanta aswan hatunmi.",
     "minAmountConvertError": "Qhapaq kaqmanta kutimuyqa aswan pisi kanqa {amount: number}.",
     "maxAmountConvertError": "Qhapaq kaqmanta kutimuyqa aswan hatunmi {amount: number}.",
     "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
@@ -1595,7 +1595,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "USD cuenta",

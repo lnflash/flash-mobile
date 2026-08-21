@@ -747,8 +747,8 @@
     "lnurlInvoiceIncorrectDescription": "Az lnurl szerver egy számlával válaszolt, amely helytelen leírást tartalmazott.",
     "noAmountInvoiceError": "A BTC pénztárcában nem támogatott számlázási összeg. Kérjük, menjen vissza és szkenneljen vagy írjon be egy számlát egy hozzáadott összeggel.",
     "onchainMinAmountInvoiceError": "A bejegyzett összeg kevesebb, mint a {amount: number} láncokon lévő tranzakció elküldéséhez szükséges minimális összeg. Kérjük, fontolja meg, hogy ezt az összeget Lightning-en keresztül küldje!",
-    "minAmountInvoiceError": "A számlán szereplő összeg kevesebb, mint a minimális {amount: number} összeg.",
-    "maxAmountInvoiceError": "A számlán szereplő összeg nagyobb, mint a maximális {amount: number} összeg.",
+    "minAmountInvoiceError": "A számlán szereplő összeg kevesebb, mint a minimális {amount: string} összeg.",
+    "maxAmountInvoiceError": "A számlán szereplő összeg nagyobb, mint a maximális {amount: string} összeg.",
     "minAmountConvertError": "A konverziós összeg kevesebb, mint a minimális összeg {amount: number}",
     "maxAmountConvertError": "A konverziós összeg nagyobb, mint a maximális {amount: number} összeg.",
     "minReceiveAmountError": "The minimum this recipient can receive is {amount: string}",
@@ -1595,7 +1595,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "USD-számla",
