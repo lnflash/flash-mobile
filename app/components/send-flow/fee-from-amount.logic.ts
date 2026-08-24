@@ -124,3 +124,21 @@ export const shouldDiscloseFeeFromAmount = ({
   (sendingWalletCurrency === WalletCurrency.Usd ||
     sendingWalletCurrency === WalletCurrency.Usdt) &&
   !isFlashNodePayee(destinationPayeePubkey, flashNodePubkeys)
+
+/**
+ * Whether the fee row may CELEBRATE — "Flash fee: $0.00" in brand green with
+ * the remittance-cost comparison underneath (#561).
+ *
+ * The celebration is the PMF moment: a transfer that would cost J$1,500–2,000
+ * through a typical remittance service costs nothing here. But a zero is only
+ * worth celebrating when it is TRUE. The same probed-zero that triggers the
+ * fee-from-amount disclosure (#694) must never be dressed in green — a row
+ * that says "$0.00, we're proud of it" directly above "the fee is deducted
+ * from the amount" would be the app contradicting itself on a money screen.
+ * So: celebrate exactly when the fee is a settled zero AND the disclosure has
+ * nothing to say.
+ */
+export const shouldCelebrateZeroFee = (
+  args: Parameters<typeof shouldDiscloseFeeFromAmount>[0],
+): boolean =>
+  args.feeStatus === "set" && args.feeAmount === 0 && !shouldDiscloseFeeFromAmount(args)

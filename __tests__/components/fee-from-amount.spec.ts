@@ -3,6 +3,7 @@ import { PaymentType } from "@galoymoney/client"
 import { GALOY_INSTANCES } from "@app/config"
 import { WalletCurrency } from "../../app/graphql/generated"
 import {
+  shouldCelebrateZeroFee,
   payeeNodePubkey,
   shouldDiscloseFeeFromAmount,
 } from "../../app/components/send-flow/fee-from-amount.logic"
@@ -177,5 +178,43 @@ describe("payeeNodePubkey", () => {
     expect(payeeNodePubkey("")).toBeUndefined()
     expect(payeeNodePubkey("bc1qexampledestination")).toBeUndefined()
     expect(payeeNodePubkey("lnbc-not-an-invoice")).toBeUndefined()
+  })
+})
+
+describe("shouldCelebrateZeroFee (#561)", () => {
+  it("celebrates a genuinely free send — intraledger, settled zero", () => {
+    expect(shouldCelebrateZeroFee({ ...base, paymentType: "intraledger" })).toBe(true)
+  })
+
+  it("never celebrates the probed zero that carries the disclosure", () => {
+    // The exact contradiction this predicate exists to prevent: "Flash fee
+    // $0.00, we're proud of it" rendered directly above "the network fee is
+    // deducted from the amount". If both fire, the app argues with itself on
+    // a money screen.
+    const args = { ...base } // external USD send, probed zero -> discloses
+    expect(shouldCelebrateZeroFee(args)).toBe(false)
+  })
+
+  it("celebration and disclosure are mutually exclusive for every input", () => {
+    const paymentTypes = ["intraledger", "lightning", "lnurl", "onchain"] as const
+    const currencies = [
+      WalletCurrency.Usd,
+      WalletCurrency.Usdt,
+      WalletCurrency.Btc,
+    ] as const
+    for (const paymentType of paymentTypes) {
+      for (const sendingWalletCurrency of currencies) {
+        const args = { ...base, paymentType, sendingWalletCurrency }
+        const both = shouldCelebrateZeroFee(args) && shouldDiscloseFeeFromAmount(args)
+        expect(both).toBe(false)
+      }
+    }
+  })
+
+  it("does not celebrate a nonzero fee or an unsettled state", () => {
+    expect(shouldCelebrateZeroFee({ ...base, feeAmount: 3 })).toBe(false)
+    for (const feeStatus of ["loading", "error", "unset"] as const) {
+      expect(shouldCelebrateZeroFee({ ...base, feeStatus })).toBe(false)
+    }
   })
 })

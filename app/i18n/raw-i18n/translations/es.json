@@ -671,6 +671,8 @@
     "backupDescription": "Para configurar un código PIN, haga una copia de seguridad de su cuenta añadiendo un número de teléfono."
   },
   "SendBitcoinConfirmationScreen": {
+    "flashFeeLabel": "Comisión Flash",
+    "typicalRemittanceComparison": "Los servicios de remesas típicos cobran J$1,500–2,000 por esto.",
     "feeDeductedFromAmount": "La comisión de red se deduce del monto — el destinatario puede recibir un poco menos.",
     "amountLabel": "Cantidad:",
     "confirmPayment": "Confirmar y pagar",

@@ -985,6 +985,9 @@ const en: BaseTranslation = {
     feeLabel: "Fee",
     feeDeductedFromAmount:
       "The network fee is deducted from the amount — the recipient may receive slightly less.",
+    flashFeeLabel: "Flash fee",
+    typicalRemittanceComparison:
+      "Typical remittance services charge J$1,500–2,000 for this.",
     memoLabel: "Note:",
     paymentFinal: "Payments are final.",
     stalePrice:

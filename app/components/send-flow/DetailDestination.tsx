@@ -18,7 +18,8 @@ const DetailDestination: React.FC<Props> = ({ flashUserAddress, paymentDetail })
 
   if (
     paymentDetail.paymentType === "intraledger" ||
-    (paymentDetail.paymentType === "lnurl" && !!paymentDetail.lnurlParams.identifier)
+    (paymentDetail.paymentType === "lnurl" &&
+      Boolean(paymentDetail.lnurlParams.identifier))
   ) {
     return (
       <View style={styles.fieldContainer}>
@@ -35,9 +36,8 @@ const DetailDestination: React.FC<Props> = ({ flashUserAddress, paymentDetail })
         </View>
       </View>
     )
-  } else {
-    return null
   }
+  return null
 }
 
 export default DetailDestination

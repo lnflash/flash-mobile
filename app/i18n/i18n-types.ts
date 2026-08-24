@@ -3124,6 +3124,14 @@ type RootTranslation = {
 		 */
 		feeDeductedFromAmount: string
 		/**
+		 * F​l​a​s​h​ ​f​e​e
+		 */
+		flashFeeLabel: string
+		/**
+		 * T​y​p​i​c​a​l​ ​r​e​m​i​t​t​a​n​c​e​ ​s​e​r​v​i​c​e​s​ ​c​h​a​r​g​e​ ​J​$​1​,​5​0​0​–​2​,​0​0​0​ ​f​o​r​ ​t​h​i​s​.
+		 */
+		typicalRemittanceComparison: string
+		/**
 		 * N​o​t​e​:
 		 */
 		memoLabel: string
@@ -9460,6 +9468,14 @@ export type TranslationFunctions = {
 		 * The network fee is deducted from the amount — the recipient may receive slightly less.
 		 */
 		feeDeductedFromAmount: () => LocalizedString
+		/**
+		 * Flash fee
+		 */
+		flashFeeLabel: () => LocalizedString
+		/**
+		 * Typical remittance services charge J$1,500–2,000 for this.
+		 */
+		typicalRemittanceComparison: () => LocalizedString
 		/**
 		 * Note:
 		 */

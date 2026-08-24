@@ -671,6 +671,8 @@
     "backupDescription": "Para definir um código PIN, faça backup da sua conta adicionando um número de telefone."
   },
   "SendBitcoinConfirmationScreen": {
+    "flashFeeLabel": "Flash fee",
+    "typicalRemittanceComparison": "Typical remittance services charge J$1,500–2,000 for this.",
     "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Quantidade:",
     "confirmPayment": "Confirmar pagamento",
