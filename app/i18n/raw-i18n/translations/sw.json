@@ -621,6 +621,7 @@
     "backupDescription": "To set a PIN code, please back up your account by adding a phone number."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Kiasi",
     "confirmPayment": "Thibithisha malipo",
     "confirmPaymentQuestion": "Je, unataka kuthibitisha malipo haya?",
@@ -635,8 +636,7 @@
     "maxFeeSelected": "Hii ndio ada ya juu zaidi ambayo unawezalipishwa kwa malipo haya. Inaweza kuishia kuwa kidogo malipo yatakapofanyika.",
     "feeError": "Imeshindwa kuhesabu ada",
     "breezFeeText": "There may be a small fee for routing",
-    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one.",
-    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "{bankName: string} majina ya watumiaji sasa ni anwani za {bankName: string} ",
@@ -1602,7 +1602,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "Akaunti ya USD",

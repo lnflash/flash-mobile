@@ -671,6 +671,7 @@
     "backupDescription": "Als u een PIN-code hebt ingesteld, moet u uw account back-up maken door een telefoonnummer toe te voegen."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Bedrag:",
     "confirmPayment": "Bevestig betaling",
     "confirmPaymentQuestion": "Wil je deze betaling bevestigen?",
@@ -685,8 +686,7 @@
     "maxFeeSelected": "Dit zijn de maximale kosten die voor deze transactie in rekening worden gebracht. Het kan uiteindelijk minder zijn zodra de betaling is gedaan.",
     "feeError": "Het berekenen van de kosten is mislukt",
     "breezFeeText": "There may be a small fee for routing",
-    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one.",
-    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "{bankName: string} gebruikersnamen zijn nu {bankName: string} adressen.",
@@ -1596,7 +1596,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "USD-rekening",

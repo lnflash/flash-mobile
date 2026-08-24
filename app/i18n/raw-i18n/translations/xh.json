@@ -671,6 +671,7 @@
     "backupDescription": "Ukuseta ikhowudi ye-PIN, nceda wenze isipele kwiakhawunti yakho ngokongeza inombolo yefowuni."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Isixa",
     "confirmPayment": "Qinisekisa intlawulo",
     "confirmPaymentQuestion": "Ngaba uyafuna ukuqinisekisa le ntlawulo?",
@@ -685,8 +686,7 @@
     "maxFeeSelected": "Lo ngowona mrhumo uphezulu oza kubizwa ngawo kule ntengiselwano. Inokuphela incinci xa intlawulo yenziwe.",
     "feeError": "Ayiphumelelanga ukubala umrhumo",
     "breezFeeText": "There may be a small fee for routing",
-    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one.",
-    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "bankName:} amagama abasebenzisi ngoku {bankName: string} iidilesi.",
@@ -1596,7 +1596,8 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again."
+    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
+    "allowanceExhausted": "You've used today's {limit} top-up limit"
   },
   "BridgeKyc": {
     "title": "I-akhawunti ye-USD",
