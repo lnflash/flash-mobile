@@ -1,4 +1,4 @@
-import { CONTACT_EMAIL_ADDRESS, WHATSAPP_CONTACT_NUMBER } from "@app/config"
+import { CONTACT_EMAIL_ADDRESS, WHATSAPP_SUPPORT_URL } from "@app/config"
 import { openWhatsAppUrl } from "@app/utils/external"
 import { toastShow } from "@app/utils/toast"
 import type { TranslationFunctions } from "@app/i18n/i18n-types"
@@ -13,16 +13,17 @@ import type { TranslationFunctions } from "@app/i18n/i18n-types"
  * placeholder page, so the button delivered neither the chat nor the context
  * (#703).
  *
- * `wa.me` rather than the `whatsapp://` scheme deliberately: the scheme
- * rejects when WhatsApp is not installed (an unhandled rejection out of a
- * button handler), while the universal link opens the app when present and
- * falls back to a browser page that offers the chat. wa.me requires the number
- * digits-only — a literal `+` in the path 404s.
+ * Built on WHATSAPP_SUPPORT_URL — the same constant the three direct support
+ * buttons (Bank Accounts, Need Help, Bank Transfer) open — so there is exactly
+ * one derivation of the wa.me target. That constant already encodes the two
+ * load-bearing choices: `wa.me` rather than the `whatsapp://` scheme (the
+ * scheme rejects when WhatsApp is not installed — an unhandled rejection out
+ * of a button handler — while the universal link opens the app when present
+ * and falls back to a browser page that offers the chat), and the number
+ * digits-only (a literal `+` in the wa.me path 404s).
  */
-export const buildWhatsAppSupportUrl = (message: string): string => {
-  const number = WHATSAPP_CONTACT_NUMBER.replace(/[^0-9]/g, "")
-  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`
-}
+export const buildWhatsAppSupportUrl = (message: string): string =>
+  `${WHATSAPP_SUPPORT_URL}?text=${encodeURIComponent(message)}`
 
 // Even a universal link can fail to open — an Android device with no browser
 // and no WhatsApp (managed/kiosk builds exist) rejects with no activity to
