@@ -3,6 +3,7 @@ import RNFS from "react-native-fs"
 import { PaymentType } from "@galoymoney/client"
 import * as Keychain from "react-native-keychain"
 import {
+  PaymentRequest,
   defaultConfig,
   Network,
   ReceivePaymentMethod,
@@ -245,7 +246,9 @@ export const fetchBreezFee = async ({
 
     if (paymentType === "lightning") {
       const prepareResponse = await sdk.prepareSendPayment({
-        paymentRequest,
+        // 0.22.x: paymentRequest is a tagged union; Input wraps the raw string
+        // (bolt11 / address / BIP-21) exactly as the SDK parsed it before.
+        paymentRequest: new PaymentRequest.Input({ input: paymentRequest }),
         amount: BigInt(amountSats),
         tokenIdentifier: undefined,
         conversionOptions: undefined,
@@ -257,7 +260,9 @@ export const fetchBreezFee = async ({
 
     if (paymentType === "onchain") {
       const prepareResponse = await sdk.prepareSendPayment({
-        paymentRequest,
+        // 0.22.x: paymentRequest is a tagged union; Input wraps the raw string
+        // (bolt11 / address / BIP-21) exactly as the SDK parsed it before.
+        paymentRequest: new PaymentRequest.Input({ input: paymentRequest }),
         amount: BigInt(amountSats),
         tokenIdentifier: undefined,
         conversionOptions: undefined,
@@ -389,7 +394,9 @@ export const payLightningBreez = async (
     const sdk = getSDKInstance()
 
     const prepareResponse = await sdk.prepareSendPayment({
-      paymentRequest,
+      // 0.22.x: paymentRequest is a tagged union; Input wraps the raw string
+      // (bolt11 / address / BIP-21) exactly as the SDK parsed it before.
+      paymentRequest: new PaymentRequest.Input({ input: paymentRequest }),
       amount: amountSats !== undefined ? BigInt(amountSats) : undefined,
       tokenIdentifier: undefined,
       conversionOptions: undefined,
@@ -424,7 +431,9 @@ export const payOnchainBreez = async (
     const sdk = getSDKInstance()
 
     const prepareResponse = await sdk.prepareSendPayment({
-      paymentRequest,
+      // 0.22.x: paymentRequest is a tagged union; Input wraps the raw string
+      // (bolt11 / address / BIP-21) exactly as the SDK parsed it before.
+      paymentRequest: new PaymentRequest.Input({ input: paymentRequest }),
       amount: BigInt(amountSats),
       tokenIdentifier: undefined,
       conversionOptions: undefined,

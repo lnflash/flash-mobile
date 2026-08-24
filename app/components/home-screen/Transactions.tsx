@@ -84,7 +84,8 @@ const Transactions: React.FC<Props> = ({
 
   const addBreezEventListener = async () => {
     const listenerId = await addEventListener((e: SdkEvent) => {
-      if (e.tag !== SdkEvent_Tags.Synced && e.tag !== SdkEvent_Tags.Optimization) {
+      // eslint-disable-next-line camelcase -- mirrors the SDK's generated enum name
+      if (e.tag !== SdkEvent_Tags.Synced && e.tag !== SdkEvent_Tags.AutoOptimization) {
         fetchPaymentsBreez()
       }
     })

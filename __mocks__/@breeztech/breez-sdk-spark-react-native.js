@@ -1,9 +1,13 @@
+/* eslint-disable camelcase */
+// The *_Tags identifiers mirror the SDK's generated enum names verbatim.
 const SdkEvent_Tags = {
   PaymentPending: "PaymentPending",
   PaymentSucceeded: "PaymentSucceeded",
   PaymentFailed: "PaymentFailed",
   Synced: "Synced",
-  Optimization: "Optimization",
+  // 0.17.0 renamed the variant (OptimizationEvent -> AutoOptimizationEvent);
+  // verified against the 0.22.3 generated d.ts.
+  AutoOptimization: "AutoOptimization",
 }
 
 // Every enum below must mirror the real SDK's generated numbering
@@ -18,6 +22,23 @@ const SdkEvent_Tags = {
 // values under a "Complete" key); PaymentType did too. Copy the generated
 // values when adding a new enum here — do not invent readable strings.
 //
+// 0.22.x: prepareSendPayment takes a tagged-union PaymentRequest; app code
+// constructs `new PaymentRequest.Input({ input })`. Mirror of the generated
+// class shape — tests only ever read `.tag` and `.inner.input`.
+const PaymentRequest_Tags = {
+  Input: "Input",
+  CrossChain: "CrossChain",
+}
+const PaymentRequest = {
+  Input: class {
+    constructor(inner) {
+      this.tag = PaymentRequest_Tags.Input
+      this.inner = Object.freeze({ ...inner })
+    }
+  },
+  instanceOf: (obj) => Boolean(obj && obj.tag && obj.inner),
+}
+
 // generated: PaymentType   — Send = 0, Receive = 1
 const PaymentType = {
   Send: 0,
@@ -44,6 +65,8 @@ class BitcoinAddress {
 }
 
 module.exports = {
+  PaymentRequest,
+  PaymentRequest_Tags,
   __esModule: true,
   BitcoinAddress,
   Bolt11Invoice,

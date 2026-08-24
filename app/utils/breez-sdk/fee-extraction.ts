@@ -13,17 +13,22 @@ type SpeedFee = {
 }
 
 // Structural view of the SDK's SendPaymentMethod union — only the fields fee
-// extraction reads. Optional everywhere so any variant assigns to it.
+// extraction reads. `inner` is opaque at the type level because 0.22.x added
+// variants (CrossChainAddress) whose inner shares NO properties with the fee
+// fields, which breaks structural assignability of the union as a whole; each
+// tag branch below narrows to exactly the fields that variant carries.
 export type SendPaymentMethodLike = {
   tag: string
-  inner?: {
-    lightningFeeSats?: bigint
-    fee?: bigint
-    feeQuote?: {
-      speedFast: SpeedFee
-      speedMedium: SpeedFee
-      speedSlow: SpeedFee
-    }
+  inner?: object
+}
+
+type FeeFields = {
+  lightningFeeSats?: bigint
+  fee?: bigint
+  feeQuote?: {
+    speedFast: SpeedFee
+    speedMedium: SpeedFee
+    speedSlow: SpeedFee
   }
 }
 
@@ -31,11 +36,12 @@ export const extractFeeFromPaymentMethod = (
   paymentMethod: SendPaymentMethodLike | undefined,
   selectedFeeType?: OnchainFeeSpeed,
 ): bigint => {
+  const inner = paymentMethod?.inner as FeeFields | undefined
   if (paymentMethod?.tag === "Bolt11Invoice") {
-    return paymentMethod.inner?.lightningFeeSats ?? BigInt(0)
+    return inner?.lightningFeeSats ?? BigInt(0)
   }
   if (paymentMethod?.tag === "BitcoinAddress") {
-    const feeQuote = paymentMethod.inner?.feeQuote
+    const feeQuote = inner?.feeQuote
     if (!feeQuote) {
       // No quote means no knowable fee. Throwing (classified upstream as an
       // "sdk" fee error) beats the old fall-through to 0, which displayed a
@@ -54,7 +60,7 @@ export const extractFeeFromPaymentMethod = (
     return feeQuote.speedMedium.userFeeSat + feeQuote.speedMedium.l1BroadcastFeeSat
   }
   if (paymentMethod?.tag === "SparkAddress" || paymentMethod?.tag === "SparkInvoice") {
-    return paymentMethod.inner?.fee ?? BigInt(0)
+    return inner?.fee ?? BigInt(0)
   }
   return BigInt(0)
 }
