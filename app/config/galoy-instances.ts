@@ -68,6 +68,22 @@ export type GaloyInstance = {
   lnAddressHostname: string
   blockExplorer: string
   relayUrl: string
+  /**
+   * The lightning node pubkeys this instance mints bolt11 invoices from.
+   *
+   * Consumed by the fee-from-amount disclosure (#694): an invoice whose payee
+   * is one of these nodes settles inside the custodian, so a probed $0.00 fee
+   * is genuine and the "deducted from the amount" caveat must stay silent.
+   * `globals.nodesIds` would be the natural source, but it is empty on prod
+   * and test (verified live 2026-08-24), so the ids live here.
+   *
+   * To populate or verify an entry: mint any receive invoice on the instance
+   * (the app's receive screen works), then decode it —
+   *   `require("bolt11").decode(paymentRequest).payeeNodeKey`
+   * — and pin that pubkey. An empty list only disables the suppression; the
+   * disclosure itself still shows.
+   */
+  lnNodePubkeys?: readonly string[]
 }
 
 export const resolveGaloyInstanceOrDefault = (
@@ -99,6 +115,11 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
     lnAddressHostname: "flashapp.me",
     relayUrl: "wss://relay.flashapp.me",
     blockExplorer: "https://mempool.space/tx/",
+    // UNVERIFIED as of 2026-08-24 — deliberately empty. Until someone with a
+    // prod account decodes a prod receive invoice (recipe on the type field)
+    // and pins the pubkey here, Flash-to-Flash invoice payments on prod show
+    // the fee-from-amount caveat even though delivery is full-amount there.
+    lnNodePubkeys: [],
   },
   {
     id: "Staging",
@@ -121,6 +142,10 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
     lnAddressHostname: "test.flashapp.me",
     blockExplorer: "https://mempool.space/signet/tx/",
     relayUrl: "wss://relay.test.flashapp.me",
+    // Verified 2026-08-24: a freshly minted Test-instance USD invoice decodes
+    // to this payee (IBEX_SB on mempool.space), and probing it via
+    // lnUsdInvoiceFeeProbe returned a set fee of 0.
+    lnNodePubkeys: ["02004d8933df4f002fa95d8c37ca43eb9c175d310aad55cc6d442e4accc3740029"],
   },
   {
     id: "Sandbox",

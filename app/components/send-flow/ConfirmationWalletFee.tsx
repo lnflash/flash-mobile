@@ -6,7 +6,8 @@ import { makeStyles, Text } from "@rneui/themed"
 // hooks
 import useFee, { FeeType } from "@app/screens/send-bitcoin-screen/use-fee"
 
-import { shouldDiscloseFeeFromAmount } from "./fee-from-amount.logic"
+import { payeeNodePubkey, shouldDiscloseFeeFromAmount } from "./fee-from-amount.logic"
+import { useAppConfig } from "@app/hooks/use-app-config"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useFormatSats } from "@app/hooks/use-format-sats"
 
@@ -57,6 +58,9 @@ const ConfirmationWalletFee: React.FC<Props> = ({
   // overlapping fetches whose transient failure left a stale, sticky
   // paymentError that kept Confirm disabled under a successfully loaded fee.
   const getLightningFee = useFee(isGaloyWalletSend && getFee ? getFee : null)
+  const {
+    appConfig: { galoyInstance },
+  } = useAppConfig()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
   const formatSats = useFormatSats()
   const breezFeeRequestId = useRef(0)
@@ -194,6 +198,8 @@ const ConfirmationWalletFee: React.FC<Props> = ({
           sendingWalletCurrency: sendingWalletDescriptor.currency,
           feeStatus: fee.status,
           feeAmount: fee.amount?.amount,
+          destinationPayeePubkey: payeeNodePubkey(paymentDetail.paymentRequest),
+          flashNodePubkeys: galoyInstance.lnNodePubkeys,
         }) && (
           <Text
             {...testProps("Fee From Amount Disclosure")}

@@ -1,8 +1,21 @@
+import { PaymentType } from "@galoymoney/client"
+
 import { WalletCurrency } from "../../app/graphql/generated"
-import { shouldDiscloseFeeFromAmount } from "../../app/components/send-flow/fee-from-amount.logic"
+import {
+  payeeNodePubkey,
+  shouldDiscloseFeeFromAmount,
+} from "../../app/components/send-flow/fee-from-amount.logic"
+
+// A real bolt11 minted by the Test instance (2026-08-24, $1.10 USD receive
+// invoice, long expired — expiry is irrelevant to decoding). Its payee is the
+// instance's node (IBEX_SB), the pubkey pinned in galoy-instances.ts.
+const FLASH_TEST_INVOICE =
+  "lnbc14060n1p4gclcjpp555k59jc4xn0x3mej3gzmuj7lg66u0rtkq73vtvwqtrmd8luemprqdpvvejk2ttswfhkyefqwejhy6txd93kzarfdahzqgek8y6qcqzzsxqzpusp5rprrqnqhclwmc7au9vqf306mg6wndelar076yu6f8nr7md6kzv9q9qxpqysgqnpc09nfh90rew3z7d06pu3056nu24e809j5sj6qn0ytquu252h0sp2dkd6gc3qudwduecfvxw7m6vlt6mc0s3seqv0nvet4u9xpq6wsqfhuttw"
+const FLASH_TEST_NODE_PUBKEY =
+  "02004d8933df4f002fa95d8c37ca43eb9c175d310aad55cc6d442e4accc3740029"
 
 const base = {
-  paymentType: "lightning",
+  paymentType: PaymentType.Lightning,
   sendingWalletCurrency: WalletCurrency.Usd,
   feeStatus: "set" as const,
   feeAmount: 0,
@@ -28,9 +41,9 @@ describe("shouldDiscloseFeeFromAmount", () => {
   })
 
   it("stays silent on intraledger — free is TRUE there, and crying wolf teaches users to ignore the caveat", () => {
-    expect(shouldDiscloseFeeFromAmount({ ...base, paymentType: "intraledger" })).toBe(
-      false,
-    )
+    expect(
+      shouldDiscloseFeeFromAmount({ ...base, paymentType: PaymentType.Intraledger }),
+    ).toBe(false)
   })
 
   it("stays silent for BTC-wallet sends — their probes price the actual route", () => {
@@ -52,5 +65,78 @@ describe("shouldDiscloseFeeFromAmount", () => {
 
   it("stays silent when the amount is undefined — that is the error path, not a probed zero", () => {
     expect(shouldDiscloseFeeFromAmount({ ...base, feeAmount: undefined })).toBe(false)
+  })
+
+  it("stays silent when the invoice pays this instance's own node — Flash-to-Flash delivery is full-amount", () => {
+    // Verified 2026-08-24: probing a Flash-internal invoice returns a SET
+    // zero, so without this exclusion the caveat would fire on every
+    // Flash-to-Flash invoice payment — crying wolf on the most common send.
+    expect(
+      shouldDiscloseFeeFromAmount({
+        ...base,
+        destinationPayeePubkey: FLASH_TEST_NODE_PUBKEY,
+        flashNodePubkeys: [FLASH_TEST_NODE_PUBKEY],
+      }),
+    ).toBe(false)
+  })
+
+  it("matches node pubkeys case-insensitively", () => {
+    expect(
+      shouldDiscloseFeeFromAmount({
+        ...base,
+        destinationPayeePubkey: FLASH_TEST_NODE_PUBKEY.toUpperCase(),
+        flashNodePubkeys: [FLASH_TEST_NODE_PUBKEY],
+      }),
+    ).toBe(false)
+  })
+
+  it("still discloses when the payee is some other node", () => {
+    expect(
+      shouldDiscloseFeeFromAmount({
+        ...base,
+        destinationPayeePubkey:
+          "03501a74753e0f6ae270a1e4e2ffbbc37f7a796360e650c1121c18e116b22ac106",
+        flashNodePubkeys: [FLASH_TEST_NODE_PUBKEY],
+      }),
+    ).toBe(true)
+  })
+
+  it("still discloses when the payee is unknown or the node list is empty — suppression must fail open", () => {
+    // No decoded payee (onchain, undecodable invoice) or an unpopulated
+    // lnNodePubkeys (prod today) must never swallow the #694 warning.
+    expect(
+      shouldDiscloseFeeFromAmount({
+        ...base,
+        destinationPayeePubkey: undefined,
+        flashNodePubkeys: [FLASH_TEST_NODE_PUBKEY],
+      }),
+    ).toBe(true)
+    expect(
+      shouldDiscloseFeeFromAmount({
+        ...base,
+        destinationPayeePubkey: FLASH_TEST_NODE_PUBKEY,
+        flashNodePubkeys: [],
+      }),
+    ).toBe(true)
+    expect(
+      shouldDiscloseFeeFromAmount({
+        ...base,
+        destinationPayeePubkey: FLASH_TEST_NODE_PUBKEY,
+        flashNodePubkeys: undefined,
+      }),
+    ).toBe(true)
+  })
+})
+
+describe("payeeNodePubkey", () => {
+  it("decodes the payee node from a real Flash invoice", () => {
+    expect(payeeNodePubkey(FLASH_TEST_INVOICE)).toBe(FLASH_TEST_NODE_PUBKEY)
+  })
+
+  it("returns undefined when there is no invoice or it cannot be decoded", () => {
+    expect(payeeNodePubkey(undefined)).toBeUndefined()
+    expect(payeeNodePubkey("")).toBeUndefined()
+    expect(payeeNodePubkey("bc1qexampledestination")).toBeUndefined()
+    expect(payeeNodePubkey("lnbc-not-an-invoice")).toBeUndefined()
   })
 })

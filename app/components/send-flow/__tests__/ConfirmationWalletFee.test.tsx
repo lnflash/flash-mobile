@@ -24,6 +24,16 @@ jest.mock("@app/screens/send-bitcoin-screen/use-fee", () => ({
   default: (...args: unknown[]) => mockUseFee(...args),
 }))
 
+// The instance's own lightning node ids consumed by the fee-from-amount
+// disclosure. Mutable so individual cases can pin a node and exercise the
+// Flash-to-Flash suppression; reset in beforeEach.
+let mockLnNodePubkeys: string[] = []
+jest.mock("@app/hooks/use-app-config", () => ({
+  useAppConfig: () => ({
+    appConfig: { galoyInstance: { lnNodePubkeys: mockLnNodePubkeys } },
+  }),
+}))
+
 jest.mock("@app/hooks/use-display-currency", () => ({
   useDisplayCurrency: () => ({
     formatDisplayAndWalletAmount: ({
@@ -95,6 +105,7 @@ const renderFee = (overrides: Overrides = {}) => {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockLnNodePubkeys = []
   mockUseFee.mockReturnValue({ status: "unset" })
 })
 
@@ -223,5 +234,57 @@ describe("ConfirmationWalletFee — galoy USD sends", () => {
     await waitFor(() => expect(setFee).toHaveBeenCalledWith(probeFee))
     expect(mockFetchBreezFee).not.toHaveBeenCalled()
     expect(mockUseFee).toHaveBeenCalledWith(basePaymentDetail.getFee)
+  })
+
+  // Render-level coverage for the fee-from-amount disclosure (#694). The
+  // predicate is unit-tested in __tests__/components/fee-from-amount.spec.ts;
+  // these cases pin the component wiring — e.g. passing `fee.amount` (the
+  // object) instead of `fee.amount?.amount` would make `feeAmount === 0`
+  // always false, silently killing the feature while the predicate's own
+  // tests stay green.
+  const usdLightningDetail = {
+    ...basePaymentDetail,
+    sendingWalletDescriptor: { currency: "USD" },
+    paymentType: "lightning",
+  }
+  const probedZeroFee = {
+    status: "set",
+    amount: { amount: 0, currency: "USD", currencyCode: "USD" },
+  } as const
+
+  it("renders the fee-from-amount disclosure under a probed-zero fee", () => {
+    const { getByTestId } = renderFee({
+      paymentDetail: usdLightningDetail,
+      fee: probedZeroFee,
+    })
+    expect(getByTestId("Fee From Amount Disclosure")).toBeTruthy()
+  })
+
+  it("keeps the disclosure absent when the probe priced a real fee", () => {
+    const { queryByTestId } = renderFee({
+      paymentDetail: usdLightningDetail,
+      fee: {
+        status: "set",
+        amount: { amount: 5, currency: "USD", currencyCode: "USD" },
+      } as const,
+    })
+    expect(queryByTestId("Fee From Amount Disclosure")).toBeNull()
+  })
+
+  it("suppresses the disclosure when the held invoice pays the instance's own node", () => {
+    // A real bolt11 minted by the Test instance (2026-08-24, long expired —
+    // expiry is irrelevant to decoding); its payee is the pinned Test node.
+    // Exercises the full wiring: paymentRequest → payeeNodePubkey →
+    // lnNodePubkeys from useAppConfig → predicate suppression.
+    const flashTestInvoice =
+      "lnbc14060n1p4gclcjpp555k59jc4xn0x3mej3gzmuj7lg66u0rtkq73vtvwqtrmd8luemprqdpvvejk2ttswfhkyefqwejhy6txd93kzarfdahzqgek8y6qcqzzsxqzpusp5rprrqnqhclwmc7au9vqf306mg6wndelar076yu6f8nr7md6kzv9q9qxpqysgqnpc09nfh90rew3z7d06pu3056nu24e809j5sj6qn0ytquu252h0sp2dkd6gc3qudwduecfvxw7m6vlt6mc0s3seqv0nvet4u9xpq6wsqfhuttw"
+    mockLnNodePubkeys = [
+      "02004d8933df4f002fa95d8c37ca43eb9c175d310aad55cc6d442e4accc3740029",
+    ]
+    const { queryByTestId } = renderFee({
+      paymentDetail: { ...usdLightningDetail, paymentRequest: flashTestInvoice },
+      fee: probedZeroFee,
+    })
+    expect(queryByTestId("Fee From Amount Disclosure")).toBeNull()
   })
 })
