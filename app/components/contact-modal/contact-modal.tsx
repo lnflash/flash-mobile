@@ -92,7 +92,7 @@ const ContactModal: React.FC<Props> = ({
       name: LL.support.whatsapp(),
       icon: <Icon name={"logo-whatsapp"} type="ionicon" color={colors.black} />,
       action: () => {
-        openWhatsAppAction(messageBody)
+        openWhatsAppAction(messageBody, LL)
         toggleModal()
       },
       hidden: supportChannelsToHide?.includes(SupportChannels.WhatsApp),

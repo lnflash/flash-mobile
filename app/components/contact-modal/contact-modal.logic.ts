@@ -1,6 +1,7 @@
 import { CONTACT_EMAIL_ADDRESS, WHATSAPP_CONTACT_NUMBER } from "@app/config"
 import { openWhatsAppUrl } from "@app/utils/external"
 import { toastShow } from "@app/utils/toast"
+import type { TranslationFunctions } from "@app/i18n/i18n-types"
 
 /**
  * The support chat URL with the message prefilled.
@@ -27,10 +28,19 @@ export const buildWhatsAppSupportUrl = (message: string): string => {
 // and no WhatsApp (managed/kiosk builds exist) rejects with no activity to
 // handle the intent. Catch it so a button tap never becomes an unhandled
 // rejection, and point the user at the email channel that still works.
-export const openWhatsAppAction = (message: string) =>
+//
+// `currentTranslation` follows the repo convention (near-universal at
+// toastShow call sites): without it the toast falls back to English for
+// every locale — and this one fires precisely for a user whose support
+// attempt just failed, the worst moment to switch languages on them.
+export const openWhatsAppAction = (
+  message: string,
+  currentTranslation?: TranslationFunctions,
+) =>
   openWhatsAppUrl(buildWhatsAppSupportUrl(message)).catch(() =>
     toastShow({
       message: (translations) =>
         translations.support.whatsappOpenFailed({ email: CONTACT_EMAIL_ADDRESS }),
+      currentTranslation,
     }),
   )
