@@ -982,7 +982,6 @@ const en: BaseTranslation = {
     confirmPayment: "Confirm payment",
     confirmPaymentQuestion: "Do you want to confirm this payment?",
     destinationLabel: "To:",
-    feeLabel: "Fee",
     feeDeductedFromAmount:
       "The network fee is deducted from the amount — the recipient may receive slightly less.",
     flashFeeLabel: "Flash fee",

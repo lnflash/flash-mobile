@@ -3116,10 +3116,6 @@ type RootTranslation = {
 		 */
 		destinationLabel: string
 		/**
-		 * F​e​e
-		 */
-		feeLabel: string
-		/**
 		 * T​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​i​s​ ​d​e​d​u​c​t​e​d​ ​f​r​o​m​ ​t​h​e​ ​a​m​o​u​n​t​ ​—​ ​t​h​e​ ​r​e​c​i​p​i​e​n​t​ ​m​a​y​ ​r​e​c​e​i​v​e​ ​s​l​i​g​h​t​l​y​ ​l​e​s​s​.
 		 */
 		feeDeductedFromAmount: string
@@ -9460,10 +9456,6 @@ export type TranslationFunctions = {
 		 * To:
 		 */
 		destinationLabel: () => LocalizedString
-		/**
-		 * Fee
-		 */
-		feeLabel: () => LocalizedString
 		/**
 		 * The network fee is deducted from the amount — the recipient may receive slightly less.
 		 */

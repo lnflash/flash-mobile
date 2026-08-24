@@ -15,14 +15,15 @@ const ConfirmationError: React.FC<Props> = ({
 
   const errorMessage = paymentError || invalidAmountErrorMessage
 
-  if (errorMessage) {
+  if (!!errorMessage) {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>{errorMessage}</Text>
       </View>
     )
+  } else {
+    return null
   }
-  return null
 }
 
 export default ConfirmationError
