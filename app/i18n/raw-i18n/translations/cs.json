@@ -671,6 +671,7 @@
     "backupDescription": "Pokud chcete nastavit kód PIN, zálohte si svůj účet přidáním telefonního čísla."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Částka:",
     "confirmPayment": "Potvrďte platbu",
     "confirmPaymentQuestion": "Chcete tuto platbu potvrdit?",

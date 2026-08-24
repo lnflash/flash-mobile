@@ -671,6 +671,7 @@
     "backupDescription": "Per a configurar un codi PIN, si us plau, fer una copia de seguretat del vostre compte afegint un número de telèfon."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Import:",
     "confirmPayment": "Confirma el pagament",
     "confirmPaymentQuestion": "Vols confirmar aquest pagament?",

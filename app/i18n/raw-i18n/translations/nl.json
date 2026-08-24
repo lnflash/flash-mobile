@@ -671,6 +671,7 @@
     "backupDescription": "Als u een PIN-code hebt ingesteld, moet u uw account back-up maken door een telefoonnummer toe te voegen."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Bedrag:",
     "confirmPayment": "Bevestig betaling",
     "confirmPaymentQuestion": "Wil je deze betaling bevestigen?",

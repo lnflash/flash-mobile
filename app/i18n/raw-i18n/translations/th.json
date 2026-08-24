@@ -671,6 +671,7 @@
     "backupDescription": "สําหรับการตั้งรหัส PIN กรุณาทําสํารองบัญชีของคุณโดยการเพิ่มเบอร์โทรศัพท์"
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "จำนวน:",
     "confirmPayment": "ยืนยันการชำระเงิน",
     "confirmPaymentQuestion": "ยืนยันการทำธุรกรรมนี้หรือไม่?",

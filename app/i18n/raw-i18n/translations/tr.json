@@ -671,6 +671,7 @@
     "backupDescription": "Bir PIN kodu ayarlamak için, lütfen bir telefon numarası ekleyerek hesabınızı yedekleyin."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Miktar:",
     "confirmPayment": "Ödemeyi onayla",
     "confirmPaymentQuestion": "Bu ödemeyi onaylıyor musunuz?",

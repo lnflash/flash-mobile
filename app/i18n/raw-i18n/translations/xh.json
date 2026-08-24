@@ -671,6 +671,7 @@
     "backupDescription": "Ukuseta ikhowudi ye-PIN, nceda wenze isipele kwiakhawunti yakho ngokongeza inombolo yefowuni."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Isixa",
     "confirmPayment": "Qinisekisa intlawulo",
     "confirmPaymentQuestion": "Ngaba uyafuna ukuqinisekisa le ntlawulo?",

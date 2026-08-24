@@ -1,10 +1,13 @@
-import React, { useEffect, useRef } from "react"
+import React, { useEffect, useMemo, useRef } from "react"
 import { ActivityIndicator, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles, Text } from "@rneui/themed"
 
 // hooks
 import useFee, { FeeType } from "@app/screens/send-bitcoin-screen/use-fee"
+
+import { payeeNodePubkey, shouldDiscloseFeeFromAmount } from "./fee-from-amount.logic"
+import { useAppConfig } from "@app/hooks/use-app-config"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useFormatSats } from "@app/hooks/use-format-sats"
 
@@ -55,6 +58,9 @@ const ConfirmationWalletFee: React.FC<Props> = ({
   // overlapping fetches whose transient failure left a stale, sticky
   // paymentError that kept Confirm disabled under a successfully loaded fee.
   const getLightningFee = useFee(isGaloyWalletSend && getFee ? getFee : null)
+  const {
+    appConfig: { galoyInstance },
+  } = useAppConfig()
   const { formatDisplayAndWalletAmount } = useDisplayCurrency()
   const formatSats = useFormatSats()
   const breezFeeRequestId = useRef(0)
@@ -123,6 +129,15 @@ const ConfirmationWalletFee: React.FC<Props> = ({
     selectedFeeType,
   ])
 
+  // decodeInvoiceString performs sync ECDSA pubkey recovery when the invoice
+  // carries no `n` tag — milliseconds of crypto that must not re-run on every
+  // fee/quote state transition of this frequently re-rendering screen. The
+  // invoice is immutable for a given paymentRequest, so decode it once.
+  const destinationPayeePubkey = useMemo(
+    () => payeeNodePubkey(paymentDetail.paymentRequest),
+    [paymentDetail.paymentRequest],
+  )
+
   let feeDisplayText = ""
   if (fee.amount) {
     const feeDisplayAmount = paymentDetail.convertMoneyAmount(fee.amount, DisplayCurrency)
@@ -185,6 +200,21 @@ const ConfirmationWalletFee: React.FC<Props> = ({
         {fee.status === "error" && Boolean(fee.amount) && (
           <Text style={styles.maxFeeWarningText}>
             {"*" + LL.SendBitcoinConfirmationScreen.maxFeeSelected()}
+          </Text>
+        )}
+        {shouldDiscloseFeeFromAmount({
+          paymentType,
+          sendingWalletCurrency: sendingWalletDescriptor.currency,
+          feeStatus: fee.status,
+          feeAmount: fee.amount?.amount,
+          destinationPayeePubkey,
+          flashNodePubkeys: galoyInstance.lnNodePubkeys,
+        }) && (
+          <Text
+            {...testProps("Fee From Amount Disclosure")}
+            style={styles.maxFeeWarningText}
+          >
+            {LL.SendBitcoinConfirmationScreen.feeDeductedFromAmount()}
           </Text>
         )}
       </View>

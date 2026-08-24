@@ -671,6 +671,7 @@
     "backupDescription": "Pour définir un code PIN, veuillez sauvegarder votre compte en ajoutant un numéro de téléphone."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Montant :",
     "confirmPayment": "Confirmer le paiement",
     "confirmPaymentQuestion": "Voulez-vous confirmer le paiement ?",

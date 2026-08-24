@@ -671,6 +671,7 @@
     "backupDescription": "Um einen PIN-Code einzurichten, unterstützen Sie bitte Ihr Konto, indem Sie eine Telefonnummer hinzufügen."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Betrag:",
     "confirmPayment": "Zahlung bestätigen",
     "confirmPaymentQuestion": "Möchtest Du diese Zahlung bestätigen?",

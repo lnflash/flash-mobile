@@ -671,6 +671,7 @@
     "backupDescription": "Za postavljanje PIN koda, molimo vas da se zauzmete pomoću dodavanja telefonskog broja."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Iznos:",
     "confirmPayment": "Potvrdi plaćanje",
     "confirmPaymentQuestion": "Želite li potvrditi ovo plaćanje?",

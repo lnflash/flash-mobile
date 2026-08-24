@@ -629,6 +629,7 @@
     "backupDescription": "To set a PIN code, please back up your account by adding a phone number."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Bedrag:",
     "confirmPayment": "Bevestig betaling",
     "confirmPaymentQuestion": "Wil jy hierdie betaling bevestig?",

@@ -68,6 +68,22 @@ export type GaloyInstance = {
   lnAddressHostname: string
   blockExplorer: string
   relayUrl: string
+  /**
+   * The lightning node pubkeys this instance mints bolt11 invoices from.
+   *
+   * Consumed by the fee-from-amount disclosure (#694): an invoice whose payee
+   * is one of these nodes settles inside the custodian, so a probed $0.00 fee
+   * is genuine and the "deducted from the amount" caveat must stay silent.
+   * `globals.nodesIds` would be the natural source, but it is empty on prod
+   * and test (verified live 2026-08-24), so the ids live here.
+   *
+   * To populate or verify an entry: mint any receive invoice on the instance
+   * (the app's receive screen works), then decode it —
+   *   `require("bolt11").decode(paymentRequest).payeeNodeKey`
+   * — and pin that pubkey. An empty list only disables the suppression; the
+   * disclosure itself still shows.
+   */
+  lnNodePubkeys?: readonly string[]
 }
 
 export const resolveGaloyInstanceOrDefault = (
@@ -99,6 +115,14 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
     lnAddressHostname: "flashapp.me",
     relayUrl: "wss://relay.flashapp.me",
     blockExplorer: "https://mempool.space/tx/",
+    // Verified 2026-08-24: five receive invoices minted live on prod via the
+    // LNURL-pay callback (`https://ibex.flashapp.me/pay/lnurl/<user>`) across
+    // two different accounts and amounts from 1 to 50,000 sats ALL decode to
+    // this payee — alias IBEX_Ops1 on mempool.space. If IBEX ever mints prod
+    // invoices from an additional node, append it here (recipe on the type
+    // field); a missing node only re-shows the caveat on Flash-to-Flash
+    // sends, it never hides a real fee.
+    lnNodePubkeys: ["03501a74753e0f6ae270a1e4e2ffbbc37f7a796360e650c1121c18e116b22ac106"],
   },
   {
     id: "Staging",
@@ -121,6 +145,10 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
     lnAddressHostname: "test.flashapp.me",
     blockExplorer: "https://mempool.space/signet/tx/",
     relayUrl: "wss://relay.test.flashapp.me",
+    // Verified 2026-08-24: a freshly minted Test-instance USD invoice decodes
+    // to this payee (IBEX_SB on mempool.space), and probing it via
+    // lnUsdInvoiceFeeProbe returned a set fee of 0.
+    lnNodePubkeys: ["02004d8933df4f002fa95d8c37ca43eb9c175d310aad55cc6d442e4accc3740029"],
   },
   {
     id: "Sandbox",

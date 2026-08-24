@@ -671,6 +671,7 @@
     "backupDescription": "Para configurar un código PIN, haga una copia de seguridad de su cuenta añadiendo un número de teléfono."
   },
   "SendBitcoinConfirmationScreen": {
+    "feeDeductedFromAmount": "La comisión de red se deduce del monto — el destinatario puede recibir un poco menos.",
     "amountLabel": "Cantidad:",
     "confirmPayment": "Confirmar y pagar",
     "confirmPaymentQuestion": "¿Desea confirmar este pago?",
