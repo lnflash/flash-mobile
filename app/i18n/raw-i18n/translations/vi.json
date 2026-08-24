@@ -678,7 +678,6 @@
     "confirmPayment": "Xác nhận thanh toán",
     "confirmPaymentQuestion": "Bạn có muốn xác nhận thanh toán này?",
     "destinationLabel": "Tới:",
-    "feeLabel": "Phí",
     "memoLabel": "Ghi chú:",
     "paymentFinal": "Thanh toán không thể sửa đổi khi đã hoàn tất.",
     "stalePrice": "Giá bitcoin của bạn đã cũ và được cập nhật lần cuối vào {timePeriod} trước. Vui lòng khởi động lại ứng dụng trước khi thanh toán.",
@@ -1599,8 +1598,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "Tài khoản USD",

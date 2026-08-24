@@ -678,7 +678,6 @@
     "confirmPayment": "Qinisekisa intlawulo",
     "confirmPaymentQuestion": "Ngaba uyafuna ukuqinisekisa le ntlawulo?",
     "destinationLabel": "ukuya:",
-    "feeLabel": "Umrhumo",
     "memoLabel": "Phawula:",
     "paymentFinal": "Iintlawulo zokugqibela.",
     "stalePrice": "Ixabiso lakho le-bitcoin lidala kwaye ligqibele ukuhlaziywa {timePeriod} eyadlulayo. Nceda uqalise kwakhona i-app phambi kokuba wenze intlawulo.",
@@ -1599,8 +1598,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "I-akhawunti ye-USD",

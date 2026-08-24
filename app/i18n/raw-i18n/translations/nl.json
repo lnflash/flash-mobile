@@ -678,7 +678,6 @@
     "confirmPayment": "Bevestig betaling",
     "confirmPaymentQuestion": "Wil je deze betaling bevestigen?",
     "destinationLabel": "Naar:",
-    "feeLabel": "Kosten",
     "memoLabel": "Noot:",
     "paymentFinal": "Betalingen zijn definitief.",
     "stalePrice": "Je bitcoin-prijs is oud en is {timePeriod} geleden voor het laatst bijgewerkt. Start de app opnieuw voordat u een betaling uitvoert.",
@@ -1599,8 +1598,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "USD-rekening",

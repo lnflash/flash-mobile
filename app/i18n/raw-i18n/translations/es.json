@@ -678,7 +678,6 @@
     "confirmPayment": "Confirmar y pagar",
     "confirmPaymentQuestion": "¿Desea confirmar este pago?",
     "destinationLabel": "Para:",
-    "feeLabel": "Tarifa de red",
     "memoLabel": "Nota:",
     "paymentFinal": "Recuerde que los pagos son definitivos y una vez realizados son irreversibles.",
     "stalePrice": "El precio de bitcoin está desactualizado, se actualizó por última vez hace {timePeriod}. Por favor reinicie la aplicación antes de realizar el pago.",
@@ -1599,8 +1598,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "Cuenta en USD",

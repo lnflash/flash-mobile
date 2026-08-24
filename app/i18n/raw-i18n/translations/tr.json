@@ -678,7 +678,6 @@
     "confirmPayment": "Ödemeyi onayla",
     "confirmPaymentQuestion": "Bu ödemeyi onaylıyor musunuz?",
     "destinationLabel": "Şuna:",
-    "feeLabel": "Ücret:",
     "memoLabel": "Not:",
     "paymentFinal": "Ödemeler iptal edilemez.",
     "stalePrice": "Bitcoin fiyatınız eski ve en son {timePeriod} önce güncellendi. Lütfen ödeme yapmadan önce uygulamayı yeniden başlatın.",
@@ -1599,8 +1598,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "USD hesabı",
