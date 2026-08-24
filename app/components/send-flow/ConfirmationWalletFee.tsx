@@ -5,6 +5,8 @@ import { makeStyles, Text } from "@rneui/themed"
 
 // hooks
 import useFee, { FeeType } from "@app/screens/send-bitcoin-screen/use-fee"
+
+import { shouldDiscloseFeeFromAmount } from "./fee-from-amount.logic"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useFormatSats } from "@app/hooks/use-format-sats"
 
@@ -185,6 +187,19 @@ const ConfirmationWalletFee: React.FC<Props> = ({
         {fee.status === "error" && Boolean(fee.amount) && (
           <Text style={styles.maxFeeWarningText}>
             {"*" + LL.SendBitcoinConfirmationScreen.maxFeeSelected()}
+          </Text>
+        )}
+        {shouldDiscloseFeeFromAmount({
+          paymentType,
+          sendingWalletCurrency: sendingWalletDescriptor.currency,
+          feeStatus: fee.status,
+          feeAmount: fee.amount?.amount,
+        }) && (
+          <Text
+            {...testProps("Fee From Amount Disclosure")}
+            style={styles.maxFeeWarningText}
+          >
+            {LL.SendBitcoinConfirmationScreen.feeDeductedFromAmount()}
           </Text>
         )}
       </View>
