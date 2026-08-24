@@ -2,15 +2,14 @@ import React from "react"
 import { Linking } from "react-native"
 import ReactNativeModal from "react-native-modal"
 
-import { CONTACT_EMAIL_ADDRESS, WHATSAPP_SUPPORT_URL } from "@app/config"
+import { CONTACT_EMAIL_ADDRESS } from "@app/config"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { openWhatsApp, openWhatsAppUrl } from "@app/utils/external"
+import { openWhatsAppAction } from "./contact-modal.logic"
 import { Icon, ListItem, makeStyles, useTheme } from "@rneui/themed"
-
 
 export const SupportChannels = {
   Email: "email",
- // Telegram: "telegram",
+  // Telegram: "telegram",
   Discord: "discord",
   WhatsApp: "whatsapp",
   StatusPage: "statusPage",
@@ -68,9 +67,9 @@ const ContactModal: React.FC<Props> = ({
       },
       hidden: supportChannelsToHide?.includes(SupportChannels.StatusPage),
     },
-    //name: LL.support.telegram(),
-    //icon: <TelegramOutline width={24} height={24} fill={colors.black} />,
-    //name: LL.support.Discord(),
+    // name: LL.support.telegram(),
+    // icon: <TelegramOutline width={24} height={24} fill={colors.black} />,
+    // name: LL.support.Discord(),
     {
       name: LL.support.discord(),
       icon: <Icon name={"logo-discord"} type="ionicon" color={colors.black} />,
@@ -143,9 +142,7 @@ const ContactModal: React.FC<Props> = ({
 
 export default ContactModal
 
-export const openWhatsAppAction = (message: string) => {
-  openWhatsAppUrl(WHATSAPP_SUPPORT_URL)
-}
+export { openWhatsAppAction } from "./contact-modal.logic"
 
 const useStyles = makeStyles(({ colors }) => ({
   modal: {
