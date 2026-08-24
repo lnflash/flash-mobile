@@ -5586,6 +5586,11 @@ type RootTranslation = {
 		 */
 		whatsapp: string
 		/**
+		 * C​o​u​l​d​n​'​t​ ​o​p​e​n​ ​W​h​a​t​s​A​p​p​.​ ​P​l​e​a​s​e​ ​e​m​a​i​l​ ​{​e​m​a​i​l​}​ ​i​n​s​t​e​a​d​.
+		 * @param {string} email
+		 */
+		whatsappOpenFailed: RequiredParams<'email'>
+		/**
 		 * E​m​a​i​l
 		 */
 		email: string
@@ -11856,6 +11861,10 @@ export type TranslationFunctions = {
 		 * WhatsApp
 		 */
 		whatsapp: () => LocalizedString
+		/**
+		 * Couldn't open WhatsApp. Please email {email} instead.
+		 */
+		whatsappOpenFailed: (arg: { email: string }) => LocalizedString
 		/**
 		 * Email
 		 */

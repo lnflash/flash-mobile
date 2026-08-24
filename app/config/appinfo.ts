@@ -32,7 +32,14 @@ export const normalizeSupportChatPubkey = (raw: string | undefined): string => {
 export const SUPPORT_CHAT_PUBKEY = normalizeSupportChatPubkey(Config.SUPPORT_CHAT_PUBKEY)
 
 export const WHATSAPP_CONTACT_NUMBER = "+18762909250"
-export const WHATSAPP_SUPPORT_URL = "https://wa.flashapp.me"
+// Derived from the support number, not wa.flashapp.me: that host has served a
+// static "WhatsApp support is temporarily unavailable" placeholder since the
+// 2026-08 account suspension (#703), dead-ending every button that opened it.
+// wa.me requires the number digits-only — a literal "+" in the path 404s.
+export const WHATSAPP_SUPPORT_URL = `https://wa.me/${WHATSAPP_CONTACT_NUMBER.replace(
+  /\D/g,
+  "",
+)}`
 export const CONTACT_EMAIL_ADDRESS = "support@getflash.io"
 export const APP_STORE_LINK =
   "https://apps.apple.com/jm/app/flash-send-spend-and-save/id6451129095"

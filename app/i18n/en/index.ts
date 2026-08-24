@@ -1714,6 +1714,7 @@ const en: BaseTranslation = {
       "In-app chat isn't available on this device yet. You can reach support by email instead.",
     joinTheCommunity: "Join the community",
     whatsapp: "WhatsApp",
+    whatsappOpenFailed: "Couldn't open WhatsApp. Please email {email: string} instead.",
     email: "Email",
     enjoyingApp: "Enjoying the app?",
     statusPage: "Status Page",

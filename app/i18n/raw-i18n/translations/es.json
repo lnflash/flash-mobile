@@ -1334,6 +1334,7 @@
     "chatUnavailableMessage": "In-app chat isn't available on this device yet. You can reach support by email instead.",
     "joinTheCommunity": "Unete a la comunidad",
     "whatsapp": "WhatsApp",
+    "whatsappOpenFailed": "Couldn't open WhatsApp. Please email {email} instead.",
     "email": "Correo electrónico",
     "enjoyingApp": "¿Disfrutas de la aplicación?",
     "statusPage": "Página de Estado",

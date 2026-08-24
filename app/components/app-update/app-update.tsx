@@ -51,13 +51,10 @@ const useStyles = makeStyles(({ colors }) => ({
 
 const storeLink = () => (isIos ? APP_STORE_LINK : PLAY_STORE_LINK)
 
-// Local on purpose. The gate's other escape is Contact Support, and the shared
-// contact-modal helper points at wa.flashapp.me — which, verified 2026-08-19,
-// returns 200 with zero redirects and no wa.me anywhere: a static "WhatsApp
-// support is temporarily unavailable" page that discards `?text=`. A hard-
-// blocked user needs a channel that works and keeps the build number they
-// cannot look up themselves, so this one composes mail directly rather than
-// changing behavior for every other caller of the shared helper.
+// Local on purpose. Email is the right channel for the hard-block gate: the
+// message carries the build number the user cannot look up themselves, and
+// mail keeps it in a durable medium support can quote back, so this composes
+// mail directly instead of routing through the shared WhatsApp helper.
 const openSupportEmail = (subject: string, body: string) =>
   Linking.openURL(
     `mailto:${CONTACT_EMAIL_ADDRESS}?subject=${encodeURIComponent(

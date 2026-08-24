@@ -1170,6 +1170,7 @@
     "chatUnavailableMessage": "In-app chat isn't available on this device yet. You can reach support by email instead.",
     "joinTheCommunity": "Sluit aan by die gemeenskap",
     "whatsapp": "WhatsApp",
+    "whatsappOpenFailed": "Couldn't open WhatsApp. Please email {email} instead.",
     "email": "E-pos",
     "enjoyingApp": "Geniet jy die toep?",
     "statusPage": "Statusbladsy",
