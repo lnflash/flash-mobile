@@ -62,5 +62,17 @@ export const extractFeeFromPaymentMethod = (
   if (paymentMethod?.tag === "SparkAddress" || paymentMethod?.tag === "SparkInvoice") {
     return inner?.fee ?? BigInt(0)
   }
-  return BigInt(0)
+  if (paymentMethod === undefined) {
+    // Defensive only: the SDK types paymentMethod as required on the prepare
+    // response, so callers never actually hit this. Kept as 0 for direct
+    // callers passing nothing.
+    return BigInt(0)
+  }
+  // Any other tag is a variant this module doesn't understand — 0.22.x added
+  // SendPaymentMethod.CrossChainAddress to the union, and future SDK versions
+  // may add more. Rendering an unknown variant as a 0-sat fee would display a
+  // free send and skip the amount+fee balance check (the same failure mode the
+  // BitcoinAddress no-quote branch above throws on). Throwing is classified
+  // upstream as an "sdk" fee error via classifyBreezSdkError.
+  throw new Error(`Unrecognized payment method in prepare response: ${paymentMethod.tag}`)
 }
