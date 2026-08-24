@@ -142,8 +142,6 @@ const ContactModal: React.FC<Props> = ({
 
 export default ContactModal
 
-export { openWhatsAppAction } from "./contact-modal.logic"
-
 const useStyles = makeStyles(({ colors }) => ({
   modal: {
     justifyContent: "flex-end",
