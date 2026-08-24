@@ -1,5 +1,6 @@
 import { PaymentType } from "@galoymoney/client"
 
+import { GALOY_INSTANCES } from "@app/config"
 import { WalletCurrency } from "../../app/graphql/generated"
 import {
   payeeNodePubkey,
@@ -13,6 +14,15 @@ const FLASH_TEST_INVOICE =
   "lnbc14060n1p4gclcjpp555k59jc4xn0x3mej3gzmuj7lg66u0rtkq73vtvwqtrmd8luemprqdpvvejk2ttswfhkyefqwejhy6txd93kzarfdahzqgek8y6qcqzzsxqzpusp5rprrqnqhclwmc7au9vqf306mg6wndelar076yu6f8nr7md6kzv9q9qxpqysgqnpc09nfh90rew3z7d06pu3056nu24e809j5sj6qn0ytquu252h0sp2dkd6gc3qudwduecfvxw7m6vlt6mc0s3seqv0nvet4u9xpq6wsqfhuttw"
 const FLASH_TEST_NODE_PUBKEY =
   "02004d8933df4f002fa95d8c37ca43eb9c175d310aad55cc6d442e4accc3740029"
+
+// A real bolt11 minted live on PROD (Main) 2026-08-24 via the LNURL-pay
+// callback (21-sat receive invoice, long expired — expiry is irrelevant to
+// decoding). Its payee is IBEX_Ops1, the node prod mints from. Five prod
+// invoices across two accounts and four amounts all decoded to this one node.
+const FLASH_MAIN_INVOICE =
+  "lnbc210n1p4gepdqpp55t3rkvgg6ng47c0dn0qkfscld09y36fa5khnmntclu227t542u4shp5lg2dp2w8957pyf6p38kufsyjxclwzc9kyg5ysp68er2fc4rpmpwqcqzzsxqzpusp5958p7zlqhexkeh0326fr3rjtahg5a3ffzeszk93yku6x6smq6r0s9qxpqysgq89pkzd8c94jv9sckdwjce78q0qzdlgnukljkpq8pptruexhhwl8ndypwde5k87zummne4ze7pcvug2ampawzzpajsmsdhsw5t0ztnyspvlk2w2"
+const FLASH_MAIN_NODE_PUBKEY =
+  "03501a74753e0f6ae270a1e4e2ffbbc37f7a796360e650c1121c18e116b22ac106"
 
 const base = {
   paymentType: PaymentType.Lightning,
@@ -90,12 +100,11 @@ describe("shouldDiscloseFeeFromAmount", () => {
     ).toBe(false)
   })
 
-  it("still discloses when the payee is some other node", () => {
+  it("still discloses when the payee is some other node (another instance's, even)", () => {
     expect(
       shouldDiscloseFeeFromAmount({
         ...base,
-        destinationPayeePubkey:
-          "03501a74753e0f6ae270a1e4e2ffbbc37f7a796360e650c1121c18e116b22ac106",
+        destinationPayeePubkey: FLASH_MAIN_NODE_PUBKEY,
         flashNodePubkeys: [FLASH_TEST_NODE_PUBKEY],
       }),
     ).toBe(true)
@@ -125,6 +134,36 @@ describe("shouldDiscloseFeeFromAmount", () => {
         flashNodePubkeys: undefined,
       }),
     ).toBe(true)
+  })
+})
+
+describe("Main instance suppression — live on prod, not just in test config", () => {
+  // Round-2 review finding: Main shipped with lnNodePubkeys: [], which made
+  // the Flash-to-Flash suppression inert on the only instance users run —
+  // every prod Flash-to-Flash payment showed the caveat on a full-amount
+  // transfer. This suite fails if Main's pin ever regresses to empty or
+  // drifts from what prod invoices actually decode to.
+  const mainInstance = GALOY_INSTANCES.find((instance) => instance.id === "Main")
+
+  it("decodes the real prod invoice to the pinned Main node", () => {
+    expect(payeeNodePubkey(FLASH_MAIN_INVOICE)).toBe(FLASH_MAIN_NODE_PUBKEY)
+  })
+
+  it("Main pins a non-empty lnNodePubkeys list containing the prod node", () => {
+    expect(mainInstance?.lnNodePubkeys).toContain(FLASH_MAIN_NODE_PUBKEY)
+    mainInstance?.lnNodePubkeys?.forEach((pubkey) =>
+      expect(pubkey).toMatch(/^0[23][0-9a-f]{64}$/),
+    )
+  })
+
+  it("suppresses the caveat for a prod Flash-to-Flash invoice end to end", () => {
+    expect(
+      shouldDiscloseFeeFromAmount({
+        ...base,
+        destinationPayeePubkey: payeeNodePubkey(FLASH_MAIN_INVOICE),
+        flashNodePubkeys: mainInstance?.lnNodePubkeys,
+      }),
+    ).toBe(false)
   })
 })
 

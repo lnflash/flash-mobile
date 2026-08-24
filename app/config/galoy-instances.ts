@@ -115,11 +115,14 @@ export const GALOY_INSTANCES: readonly GaloyInstance[] = [
     lnAddressHostname: "flashapp.me",
     relayUrl: "wss://relay.flashapp.me",
     blockExplorer: "https://mempool.space/tx/",
-    // UNVERIFIED as of 2026-08-24 — deliberately empty. Until someone with a
-    // prod account decodes a prod receive invoice (recipe on the type field)
-    // and pins the pubkey here, Flash-to-Flash invoice payments on prod show
-    // the fee-from-amount caveat even though delivery is full-amount there.
-    lnNodePubkeys: [],
+    // Verified 2026-08-24: five receive invoices minted live on prod via the
+    // LNURL-pay callback (`https://ibex.flashapp.me/pay/lnurl/<user>`) across
+    // two different accounts and amounts from 1 to 50,000 sats ALL decode to
+    // this payee — alias IBEX_Ops1 on mempool.space. If IBEX ever mints prod
+    // invoices from an additional node, append it here (recipe on the type
+    // field); a missing node only re-shows the caveat on Flash-to-Flash
+    // sends, it never hides a real fee.
+    lnNodePubkeys: ["03501a74753e0f6ae270a1e4e2ffbbc37f7a796360e650c1121c18e116b22ac106"],
   },
   {
     id: "Staging",

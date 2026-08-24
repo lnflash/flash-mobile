@@ -92,10 +92,10 @@ const isFlashNodePayee = (
  * The payee check compares the invoice's payee node pubkey against the
  * instance's `lnNodePubkeys` (galoy-instances.ts). `globals.nodesIds` was
  * the natural source, but it is empty on prod and test (verified live), so
- * the ids ship as per-instance config. The Test entry is verified; Main's
- * list is still empty, which means prod keeps the false positive on
- * Flash-to-Flash sends until someone with a prod account pins the prod node
- * id — the recipe is in galoy-instances.ts next to the field.
+ * the ids ship as per-instance config. Both the Test and Main entries are
+ * pinned from freshly minted invoices decoded live (Main: five prod invoices
+ * across two accounts, 2026-08-24, all paying IBEX_Ops1) — the re-verify
+ * recipe is in galoy-instances.ts next to the field.
  *
  * A rare genuinely-free external route reads the soft copy ("may receive
  * slightly less") — a mild false positive, priced against the current false

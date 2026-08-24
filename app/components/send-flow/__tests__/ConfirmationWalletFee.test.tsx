@@ -34,6 +34,18 @@ jest.mock("@app/hooks/use-app-config", () => ({
   }),
 }))
 
+// Spy on the invoice decode so the memoization test below can count calls.
+// It delegates to the real implementation, so the suppression test still
+// exercises genuine bolt11 decoding end to end.
+const mockPayeeNodePubkey = jest.fn((paymentRequest: string | undefined) =>
+  jest.requireActual("../fee-from-amount.logic").payeeNodePubkey(paymentRequest),
+)
+jest.mock("../fee-from-amount.logic", () => ({
+  ...jest.requireActual("../fee-from-amount.logic"),
+  payeeNodePubkey: (paymentRequest: string | undefined) =>
+    mockPayeeNodePubkey(paymentRequest),
+}))
+
 jest.mock("@app/hooks/use-display-currency", () => ({
   useDisplayCurrency: () => ({
     formatDisplayAndWalletAmount: ({
@@ -251,6 +263,10 @@ describe("ConfirmationWalletFee — galoy USD sends", () => {
     status: "set",
     amount: { amount: 0, currency: "USD", currencyCode: "USD" },
   } as const
+  // A real bolt11 minted by the Test instance (2026-08-24, long expired —
+  // expiry is irrelevant to decoding); its payee is the pinned Test node.
+  const flashTestInvoice =
+    "lnbc14060n1p4gclcjpp555k59jc4xn0x3mej3gzmuj7lg66u0rtkq73vtvwqtrmd8luemprqdpvvejk2ttswfhkyefqwejhy6txd93kzarfdahzqgek8y6qcqzzsxqzpusp5rprrqnqhclwmc7au9vqf306mg6wndelar076yu6f8nr7md6kzv9q9qxpqysgqnpc09nfh90rew3z7d06pu3056nu24e809j5sj6qn0ytquu252h0sp2dkd6gc3qudwduecfvxw7m6vlt6mc0s3seqv0nvet4u9xpq6wsqfhuttw"
 
   it("renders the fee-from-amount disclosure under a probed-zero fee", () => {
     const { getByTestId } = renderFee({
@@ -272,12 +288,8 @@ describe("ConfirmationWalletFee — galoy USD sends", () => {
   })
 
   it("suppresses the disclosure when the held invoice pays the instance's own node", () => {
-    // A real bolt11 minted by the Test instance (2026-08-24, long expired —
-    // expiry is irrelevant to decoding); its payee is the pinned Test node.
     // Exercises the full wiring: paymentRequest → payeeNodePubkey →
     // lnNodePubkeys from useAppConfig → predicate suppression.
-    const flashTestInvoice =
-      "lnbc14060n1p4gclcjpp555k59jc4xn0x3mej3gzmuj7lg66u0rtkq73vtvwqtrmd8luemprqdpvvejk2ttswfhkyefqwejhy6txd93kzarfdahzqgek8y6qcqzzsxqzpusp5rprrqnqhclwmc7au9vqf306mg6wndelar076yu6f8nr7md6kzv9q9qxpqysgqnpc09nfh90rew3z7d06pu3056nu24e809j5sj6qn0ytquu252h0sp2dkd6gc3qudwduecfvxw7m6vlt6mc0s3seqv0nvet4u9xpq6wsqfhuttw"
     mockLnNodePubkeys = [
       "02004d8933df4f002fa95d8c37ca43eb9c175d310aad55cc6d442e4accc3740029",
     ]
@@ -286,5 +298,29 @@ describe("ConfirmationWalletFee — galoy USD sends", () => {
       fee: probedZeroFee,
     })
     expect(queryByTestId("Fee From Amount Disclosure")).toBeNull()
+  })
+
+  it("decodes the held invoice once, not on every render", () => {
+    // decodeInvoiceString does sync ECDSA pubkey recovery for invoices
+    // without an `n` tag, and this screen re-renders several times per fee
+    // fetch. Round-2 review finding: the decode ran eagerly on every render.
+    const { rerenderWith } = renderFee({
+      paymentDetail: { ...usdLightningDetail, paymentRequest: flashTestInvoice },
+      fee: { status: "loading" },
+    })
+    expect(mockPayeeNodePubkey).toHaveBeenCalledTimes(1)
+
+    // Fee state transitions (loading → set) re-render with the same invoice;
+    // the memoized decode must not re-run — even though each rerender passes
+    // a fresh paymentDetail object, the paymentRequest string is unchanged.
+    rerenderWith({
+      paymentDetail: { ...usdLightningDetail, paymentRequest: flashTestInvoice },
+      fee: probedZeroFee,
+    })
+    rerenderWith({
+      paymentDetail: { ...usdLightningDetail, paymentRequest: flashTestInvoice },
+      fee: { status: "loading" },
+    })
+    expect(mockPayeeNodePubkey).toHaveBeenCalledTimes(1)
   })
 })

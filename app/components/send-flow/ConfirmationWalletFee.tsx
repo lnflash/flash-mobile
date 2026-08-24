@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react"
+import React, { useEffect, useMemo, useRef } from "react"
 import { ActivityIndicator, View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { makeStyles, Text } from "@rneui/themed"
@@ -129,6 +129,15 @@ const ConfirmationWalletFee: React.FC<Props> = ({
     selectedFeeType,
   ])
 
+  // decodeInvoiceString performs sync ECDSA pubkey recovery when the invoice
+  // carries no `n` tag — milliseconds of crypto that must not re-run on every
+  // fee/quote state transition of this frequently re-rendering screen. The
+  // invoice is immutable for a given paymentRequest, so decode it once.
+  const destinationPayeePubkey = useMemo(
+    () => payeeNodePubkey(paymentDetail.paymentRequest),
+    [paymentDetail.paymentRequest],
+  )
+
   let feeDisplayText = ""
   if (fee.amount) {
     const feeDisplayAmount = paymentDetail.convertMoneyAmount(fee.amount, DisplayCurrency)
@@ -198,7 +207,7 @@ const ConfirmationWalletFee: React.FC<Props> = ({
           sendingWalletCurrency: sendingWalletDescriptor.currency,
           feeStatus: fee.status,
           feeAmount: fee.amount?.amount,
-          destinationPayeePubkey: payeeNodePubkey(paymentDetail.paymentRequest),
+          destinationPayeePubkey,
           flashNodePubkeys: galoyInstance.lnNodePubkeys,
         }) && (
           <Text
