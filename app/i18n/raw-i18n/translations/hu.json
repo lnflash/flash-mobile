@@ -671,12 +671,13 @@
     "backupDescription": "Ha egy PIN kódot állítanak be, kérjük, biztonsági mentse a fiókját egy telefonszám hozzáadásával."
   },
   "SendBitcoinConfirmationScreen": {
+    "flashFeeLabel": "Flash fee",
+    "typicalRemittanceComparison": "Typical remittance services charge J$1,500–2,000 for this.",
     "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Összeg:",
     "confirmPayment": "Fizetés megerősítése",
     "confirmPaymentQuestion": "Megerősíted ezt a fizetést?",
     "destinationLabel": "Címzett:",
-    "feeLabel": "Díj",
     "memoLabel": "Megjegyzés:",
     "paymentFinal": "A fizetések véglegesek.",
     "stalePrice": "A Bitcoin ár elavult. Az utolsó frissítés óta eltelt idő: {timePeriod}. Kérjük, indítsd újra az alkalmazást, mielőtt fizetést hajtanál végre.",
@@ -1597,8 +1598,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "USD-számla",

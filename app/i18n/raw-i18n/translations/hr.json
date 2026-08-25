@@ -671,12 +671,13 @@
     "backupDescription": "Za postavljanje PIN koda, molimo vas da se zauzmete pomoću dodavanja telefonskog broja."
   },
   "SendBitcoinConfirmationScreen": {
+    "flashFeeLabel": "Flash fee",
+    "typicalRemittanceComparison": "Typical remittance services charge J$1,500–2,000 for this.",
     "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Iznos:",
     "confirmPayment": "Potvrdi plaćanje",
     "confirmPaymentQuestion": "Želite li potvrditi ovo plaćanje?",
     "destinationLabel": "Za:",
-    "feeLabel": "Naknada",
     "memoLabel": "Bilješka:",
     "paymentFinal": "Plaćanja su konačna.",
     "stalePrice": "Vaša cijena bitcoina je stara i zadnji put je ažurirana prije {timePeriod}. Ponovno pokrenite aplikaciju prije plaćanja.",
@@ -1597,8 +1598,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "USD račun",

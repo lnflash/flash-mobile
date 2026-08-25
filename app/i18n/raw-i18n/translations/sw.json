@@ -621,12 +621,13 @@
     "backupDescription": "To set a PIN code, please back up your account by adding a phone number."
   },
   "SendBitcoinConfirmationScreen": {
+    "flashFeeLabel": "Flash fee",
+    "typicalRemittanceComparison": "Typical remittance services charge J$1,500–2,000 for this.",
     "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Kiasi",
     "confirmPayment": "Thibithisha malipo",
     "confirmPaymentQuestion": "Je, unataka kuthibitisha malipo haya?",
     "destinationLabel": "Kwa:",
-    "feeLabel": "Ada:",
     "memoLabel": "Kidokezo:",
     "paymentFinal": "Malipo hayawezi kubadilishwa",
     "stalePrice": "Bei yako ya Bitcoin ni zee na ilisasishwa mwisho {timePeriod} iliopita. Tafadhali anzisha upya programu yako kabla ya kufanya malipo.",
@@ -1603,8 +1604,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "Akaunti ya USD",

@@ -1,5 +1,6 @@
 import React, { PropsWithChildren } from "react"
 
+import { StyleSheet } from "react-native"
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native"
 import { Intraledger } from "../../app/screens/send-bitcoin-screen/send-bitcoin-confirmation-screen.stories"
 import { ContextForScreen } from "./helper"
@@ -16,7 +17,8 @@ import {
 import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
 import { BreezContext } from "@app/contexts/BreezContext"
 import { WalletCurrency } from "@app/graphql/generated"
-import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
+import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import { light as lightColors } from "@app/rne-theme/colors"
 import { payLightningBreez, payLnurlBreez } from "@app/utils/breez-sdk"
 import { getAnalytics } from "@react-native-firebase/analytics"
 import baseTranslation from "@app/i18n/en"
@@ -35,6 +37,19 @@ loadLocale("en")
 // against these rather than string literals means renaming a key or editing
 // the copy cannot leave a test quietly asserting the wrong sentence.
 const en = baseTranslation as Translation
+
+// The real invoice from the ENG-555 incident: issued 1787243982, expires
+// 1787244042. Its payee is the PROD Flash node (03501a…) — the same node the
+// StoryScreen-pinned "Main" instance lists in lnNodePubkeys — so for the
+// fee-from-amount disclosure it reads as a Flash-internal destination.
+const INCIDENT_INVOICE =
+  "lnbc1p4gwtwwpp5wwulk8jw0llvgjadwzuen6nxh7hgmddplj3evpgjc7n8l5kzqvmqdph2pshjgr5dusyvmrpwd5zq4mpd3kx2apq24ek2u36ypj8yetpv3kkz7qcqzzsxqzpusp5wane88x5twmdlpnu4cqrk4wd6g3tks7xgq798nt9zt68vmcnnp6q9qxpqysgqnszg0ycjk4255es2hdd3ajep3yquuvra6jn4k8shskhpzg80mrl9m9pgylahzq80aw9ekz6e47ycpcf558080xrxn6uljn54lc447rqpn9u06u"
+
+const convertMoneyAmount: ConvertMoneyAmount = (moneyAmount, currency) => ({
+  amount: moneyAmount.amount,
+  currency,
+  currencyCode: currency === DisplayCurrency ? "NGN" : currency,
+})
 
 it("SendScreen Confirmation", async () => {
   const { findByLabelText } = render(
@@ -61,9 +76,7 @@ it("SendScreen Confirmation", async () => {
 // reach the user instead of a doomed round trip — while the one path that
 // re-mints at send time is left alone.
 describe("expired held invoice", () => {
-  // The real invoice from the incident: issued 1787243982, expires 1787244042.
-  const INCIDENT_INVOICE =
-    "lnbc1p4gwtwwpp5wwulk8jw0llvgjadwzuen6nxh7hgmddplj3evpgjc7n8l5kzqvmqdph2pshjgr5dusyvmrpwd5zq4mpd3kx2apq24ek2u36ypj8yetpv3kkz7qcqzzsxqzpusp5wane88x5twmdlpnu4cqrk4wd6g3tks7xgq798nt9zt68vmcnnp6q9qxpqysgqnszg0ycjk4255es2hdd3ajep3yquuvra6jn4k8shskhpzg80mrl9m9pgylahzq80aw9ekz6e47ycpcf558080xrxn6uljn54lc447rqpn9u06u"
+  // INCIDENT_INVOICE's timestamps: issued 1787243982, expires 1787244042.
   const ISSUED = 1787243982
   const EXPIRES = 1787244042
   // This screen can perfectly well open on a dead invoice. parsePaymentDestination
@@ -84,12 +97,6 @@ describe("expired held invoice", () => {
   // 60-second Flash invoice but leaves it younger than expiry + the 120s
   // clock-skew grace. Only the elapsed-since-first-sight reading can see this one.
   const AFTER_ORDINARY_PAUSE_MS = MOUNTED_MS + 90 * 1000
-
-  const convertMoneyAmount: ConvertMoneyAmount = (moneyAmount, currency) => ({
-    amount: moneyAmount.amount,
-    currency,
-    currencyCode: currency === DisplayCurrency ? "NGN" : currency,
-  })
 
   const btcSendingWalletDescriptor = {
     currency: WalletCurrency.Btc,
@@ -366,5 +373,107 @@ describe("expired held invoice", () => {
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith("sendBitcoinSuccess", expect.anything()),
     )
+  })
+})
+
+// #561 — the zero-fee celebration asserted at the rendered screen, not the
+// predicate. shouldCelebrateZeroFee is unit-tested in
+// __tests__/components/fee-from-amount.spec.ts, but only a render can catch
+// the wiring in ConfirmationWalletFee: `fee.amount?.amount` (not the object)
+// into the predicate, the ternary picking the celebration styles, the
+// comparison line mounting under the row. These pin both directions — a TRUE
+// zero celebrates with no caveat, and the probed zero that owes the
+// fee-from-amount disclosure (#694) gets the caveat and never the green.
+describe("zero-fee prominence (#561)", () => {
+  // A real bolt11 minted by the Test instance (2026-08-24, long expired —
+  // expiry is irrelevant here; nothing presses Send). Its payee is the Test
+  // node (02004d…, IBEX_SB), NOT the "Main" node the StoryScreen test tree
+  // pins — so the disclosure logic reads it as an external destination.
+  // INCIDENT_INVOICE would not do: it pays Main's own node, which correctly
+  // suppresses the caveat.
+  const EXTERNAL_INVOICE =
+    "lnbc14060n1p4gclcjpp555k59jc4xn0x3mej3gzmuj7lg66u0rtkq73vtvwqtrmd8luemprqdpvvejk2ttswfhkyefqwejhy6txd93kzarfdahzqgek8y6qcqzzsxqzpusp5rprrqnqhclwmc7au9vqf306mg6wndelar076yu6f8nr7md6kzv9q9qxpqysgqnpc09nfh90rew3z7d06pu3056nu24e809j5sj6qn0ytquu252h0sp2dkd6gc3qudwduecfvxw7m6vlt6mc0s3seqv0nvet4u9xpq6wsqfhuttw"
+
+  it("celebrates the intraledger zero: green fee, remittance comparison, no caveat", async () => {
+    const { findByLabelText, queryByLabelText } = render(
+      <ContextForScreen>
+        <Intraledger />
+      </ContextForScreen>,
+    )
+
+    await act(async () => {})
+    await act(async () => {})
+
+    // The comparison line renders with the real copy — not just the predicate
+    // returning true somewhere off-screen.
+    const comparison = await findByLabelText("Zero Fee Comparison")
+    expect(comparison.children).toEqual([
+      en.SendBitcoinConfirmationScreen.typicalRemittanceComparison,
+    ])
+
+    // The fee itself wears the celebration styles. An inverted ternary at the
+    // style prop would ship a plain row past every predicate test.
+    const feeText = await findByLabelText("Successful Fee")
+    expect(StyleSheet.flatten(feeText.props.style)).toMatchObject({
+      color: lightColors.green,
+      fontWeight: "bold",
+    })
+
+    // An intraledger zero is TRUE — the fee-from-amount caveat must stay silent.
+    expect(queryByLabelText("Fee From Amount Disclosure")).toBeNull()
+  })
+
+  it("never celebrates a probed zero — the caveat renders instead", async () => {
+    // The #694 shape: an external lightning send from the cash wallet whose
+    // fee probe returns a set 0. The zero is not a promise, so the disclosure
+    // must render and the celebration must not — green above a caveat would be
+    // the app contradicting itself on a money screen.
+    const usdDetail = createAmountLightningPaymentDetails({
+      paymentRequest: EXTERNAL_INVOICE,
+      paymentRequestAmount: toBtcMoneyAmount(100),
+      convertMoneyAmount,
+      sendingWalletDescriptor: { currency: WalletCurrency.Usd, id: "testwallet" },
+    })
+    const paymentDetail = {
+      ...usdDetail,
+      // Stands in for the galoy probe resolving `{ amount: 0 }` — the exact
+      // response a Test-instance probe returned live (see
+      // fee-from-amount.logic.ts). useFee reads this as status "set", amount 0.
+      getFee: async () => ({ amount: toUsdMoneyAmount(0) }),
+    }
+
+    const route = {
+      key: "sendBitcoinConfirmationScreen",
+      name: "sendBitcoinConfirmation",
+      params: { paymentDetail },
+    } as const
+
+    const { findByLabelText, queryByLabelText } = render(
+      <ContextForScreen>
+        <SendBitcoinConfirmationScreen
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          route={route as any}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          navigation={{ navigate: jest.fn() } as any}
+        />
+      </ContextForScreen>,
+    )
+
+    await act(async () => {})
+    await act(async () => {})
+
+    const disclosure = await findByLabelText("Fee From Amount Disclosure")
+    expect(disclosure.children).toEqual([
+      en.SendBitcoinConfirmationScreen.feeDeductedFromAmount,
+    ])
+
+    // No celebration anywhere on the screen: no comparison line, and the fee
+    // row keeps the theme's plain text styling (RNEUI merges a base style, so
+    // assert the celebration attributes specifically).
+    expect(queryByLabelText("Zero Fee Comparison")).toBeNull()
+    const feeText = await findByLabelText("Successful Fee")
+    const feeStyle = StyleSheet.flatten(feeText.props.style)
+    expect(feeStyle?.color).not.toBe(lightColors.green)
+    expect(feeStyle?.fontWeight).not.toBe("bold")
   })
 })

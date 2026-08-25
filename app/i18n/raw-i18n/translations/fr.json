@@ -671,12 +671,13 @@
     "backupDescription": "Pour définir un code PIN, veuillez sauvegarder votre compte en ajoutant un numéro de téléphone."
   },
   "SendBitcoinConfirmationScreen": {
+    "flashFeeLabel": "Flash fee",
+    "typicalRemittanceComparison": "Typical remittance services charge J$1,500–2,000 for this.",
     "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Montant :",
     "confirmPayment": "Confirmer le paiement",
     "confirmPaymentQuestion": "Voulez-vous confirmer le paiement ?",
     "destinationLabel": "À :",
-    "feeLabel": "Frais",
     "memoLabel": "Note :",
     "paymentFinal": "Les paiements sont définitifs.",
     "stalePrice": "Votre prix pour un bitcoin n’est plus valable et a été mis-à-jour il y a {timePeriod}. Veuillez redémarrer l’application avant d’effectuer un paiement.",
@@ -1597,8 +1598,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "Compte en USD",

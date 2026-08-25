@@ -671,12 +671,13 @@
     "backupDescription": "Til at indstille en PIN-kode, skal du sikkerhedskopiere din konto ved at tilføje et telefonnummer."
   },
   "SendBitcoinConfirmationScreen": {
+    "flashFeeLabel": "Flash fee",
+    "typicalRemittanceComparison": "Typical remittance services charge J$1,500–2,000 for this.",
     "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Beløb:",
     "confirmPayment": "Bekræft betaling",
     "confirmPaymentQuestion": "Vil du bekræfte denne betaling?",
     "destinationLabel": "Til:",
-    "feeLabel": "Gebyr",
     "memoLabel": "Note:",
     "paymentFinal": "Betalinger er endelige.",
     "stalePrice": "Din bitcoin-pris er gammel og blev sidst opdateret for {timePeriod} siden. Genstart appen, inden du foretager en betaling.",
@@ -1597,8 +1598,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "USD-konto",

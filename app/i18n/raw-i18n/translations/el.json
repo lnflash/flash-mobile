@@ -671,12 +671,13 @@
     "backupDescription": "Για να ορίσετε έναν κωδικό PIN, παρακαλούμε κάντε αντίγραφο ασφαλείας του λογαριασμού σας προσθέτοντας έναν αριθμό τηλεφώνου."
   },
   "SendBitcoinConfirmationScreen": {
+    "flashFeeLabel": "Flash fee",
+    "typicalRemittanceComparison": "Typical remittance services charge J$1,500–2,000 for this.",
     "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Ποσό:",
     "confirmPayment": "Επιβεβαίωση πληρωμής",
     "confirmPaymentQuestion": "Θέλετε να επιβεβαιώσετε αυτή την πληρωμή;",
     "destinationLabel": "Προς:",
-    "feeLabel": "Τέλη ",
     "memoLabel": "Σημείωση:",
     "paymentFinal": "Οι πληρωμές είναι οριστικές.",
     "stalePrice": "Η τιμή του bitcoin σας είναι παλιά και ενημερώθηκε για τελευταία φορά πριν από {timePeriod}. Παρακαλούμε κάντε επανεκκίνηση της εφαρμογής πριν πραγματοποιήσετε μια πληρωμή.",
@@ -1597,8 +1598,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "Λογαριασμός USD",

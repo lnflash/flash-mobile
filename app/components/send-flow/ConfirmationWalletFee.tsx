@@ -6,7 +6,11 @@ import { makeStyles, Text } from "@rneui/themed"
 // hooks
 import useFee, { FeeType } from "@app/screens/send-bitcoin-screen/use-fee"
 
-import { payeeNodePubkey, shouldDiscloseFeeFromAmount } from "./fee-from-amount.logic"
+import {
+  payeeNodePubkey,
+  shouldCelebrateZeroFee,
+  shouldDiscloseFeeFromAmount,
+} from "./fee-from-amount.logic"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useFormatSats } from "@app/hooks/use-format-sats"
@@ -149,6 +153,18 @@ const ConfirmationWalletFee: React.FC<Props> = ({
     feeDisplayText = "Unable to calculate fee"
   }
 
+  // #561: celebrate a TRUE zero — never the probed zero that carries the
+  // fee-from-amount disclosure (#694); green above a caveat would be the app
+  // contradicting itself on a money screen.
+  const celebrateZeroFee = shouldCelebrateZeroFee({
+    paymentType,
+    sendingWalletCurrency: sendingWalletDescriptor.currency,
+    feeStatus: fee.status,
+    feeAmount: fee.amount?.amount,
+    destinationPayeePubkey,
+    flashNodePubkeys: galoyInstance.lnNodePubkeys,
+  })
+
   const CurrencyIcon =
     sendingWalletDescriptor.currency === WalletCurrency.Btc ? Bitcoin : Cash
   return (
@@ -180,12 +196,17 @@ const ConfirmationWalletFee: React.FC<Props> = ({
       </View>
       <View style={styles.fieldContainer}>
         <Text style={styles.fieldTitleText}>
-          {LL.SendBitcoinConfirmationScreen.feeLabel()}
+          {LL.SendBitcoinConfirmationScreen.flashFeeLabel()}
         </Text>
         <View style={styles.fieldBackground}>
           {fee.status === "loading" && <ActivityIndicator />}
           {fee.status === "set" && (
-            <Text {...testProps("Successful Fee")}>{feeDisplayText}</Text>
+            <Text
+              {...testProps("Successful Fee")}
+              style={celebrateZeroFee ? styles.zeroFeeText : undefined}
+            >
+              {feeDisplayText}
+            </Text>
           )}
           {fee.status === "error" && Boolean(fee.amount) && (
             <Text>{feeDisplayText} *</Text>
@@ -200,6 +221,11 @@ const ConfirmationWalletFee: React.FC<Props> = ({
         {fee.status === "error" && Boolean(fee.amount) && (
           <Text style={styles.maxFeeWarningText}>
             {"*" + LL.SendBitcoinConfirmationScreen.maxFeeSelected()}
+          </Text>
+        )}
+        {celebrateZeroFee && (
+          <Text {...testProps("Zero Fee Comparison")} style={styles.feeComparisonText}>
+            {LL.SendBitcoinConfirmationScreen.typicalRemittanceComparison()}
           </Text>
         )}
         {shouldDiscloseFeeFromAmount({
@@ -260,6 +286,15 @@ const useStyles = makeStyles(({ colors }) => ({
   walletSelectorBalanceContainer: {
     flex: 1,
     flexDirection: "row",
+  },
+  zeroFeeText: {
+    color: colors.green,
+    fontWeight: "bold",
+  },
+  feeComparisonText: {
+    color: colors.grey3,
+    fontSize: 12,
+    marginTop: 4,
   },
   maxFeeWarningText: {
     color: colors.warning,

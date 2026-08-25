@@ -671,12 +671,13 @@
     "backupDescription": "Per a configurar un codi PIN, si us plau, fer una copia de seguretat del vostre compte afegint un número de telèfon."
   },
   "SendBitcoinConfirmationScreen": {
+    "flashFeeLabel": "Flash fee",
+    "typicalRemittanceComparison": "Typical remittance services charge J$1,500–2,000 for this.",
     "feeDeductedFromAmount": "The network fee is deducted from the amount — the recipient may receive slightly less.",
     "amountLabel": "Import:",
     "confirmPayment": "Confirma el pagament",
     "confirmPaymentQuestion": "Vols confirmar aquest pagament?",
     "destinationLabel": "A:",
-    "feeLabel": "Comissió",
     "memoLabel": "Nota:",
     "paymentFinal": "Els pagaments són definitius.",
     "stalePrice": "El preu de bitcoin és antic i es va actualitzar per última vegada fa {timePeriod}. Si us plau, reinicia l'aplicació abans de fer un pagament.",
@@ -1597,8 +1598,7 @@
     "checkoutFailed": "We couldn't set up your payment. Nothing has been charged — please try again.",
     "upgradeRequiredTitle": "Upgrade required",
     "invalidAmountTitle": "Invalid amount",
-    "paymentSetupFailed": "Failed to initiate payment. Please try again.",
-    "allowanceExhausted": "You've used today's {limit} top-up limit"
+    "paymentSetupFailed": "Failed to initiate payment. Please try again."
   },
   "BridgeKyc": {
     "title": "Compte en USD",
