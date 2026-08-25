@@ -30,9 +30,23 @@ describe("selectUsdtBalance", () => {
     expect(result).toEqual({
       identifier: "tok:usdt",
       issuerPublicKey: "02abc",
+      issuerVerified: false,
       balanceMinor: BigInt("12345678"),
       decimals: 6,
     })
+  })
+
+  it("marks the result unverified — a lone ticker match proves nothing", () => {
+    // The ambiguity check only fires for a user who already holds the real
+    // token. Airdrop a spoofed USDT to a user holding none and it is the only
+    // match, so it is what comes back. Nothing about a single match is trusted,
+    // and the result has to say so.
+    const spoofOnly = selectUsdtBalance(
+      map(token({ identifier: "tok:spoof", issuerPublicKey: "02spoof" })),
+    )
+
+    expect(spoofOnly?.issuerVerified).toBe(false)
+    expect(spoofOnly?.issuerPublicKey).toBe("02spoof")
   })
 
   it("carries decimals from metadata rather than assuming 6", () => {
@@ -94,6 +108,10 @@ describe("selectUsdtBalance", () => {
   })
 
   it("returns undefined for an empty, missing, or non-Map balance set", () => {
+    // Silenced, not asserted — the warning itself is covered by its own case
+    // below.
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+
     expect(selectUsdtBalance(new Map())).toBeUndefined()
     expect(selectUsdtBalance(undefined)).toBeUndefined()
     expect(selectUsdtBalance(null)).toBeUndefined()
@@ -101,6 +119,42 @@ describe("selectUsdtBalance", () => {
     expect(
       selectUsdtBalance({} as unknown as Map<string, SparkTokenBalanceLike>),
     ).toBeUndefined()
+
+    warn.mockRestore()
+  })
+
+  it("warns when tokenBalances is present but not Map-shaped", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+
+    // Absent is normal and stays quiet; present-but-wrong-shape is the SDK
+    // drifting under us, and a silently missing balance with nothing in the
+    // logs is how that goes unnoticed for a release.
+    selectUsdtBalance(undefined)
+    selectUsdtBalance(null)
+    expect(warn).not.toHaveBeenCalled()
+
+    expect(
+      selectUsdtBalance({} as unknown as Map<string, SparkTokenBalanceLike>),
+    ).toBeUndefined()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("not a Map"))
+
+    warn.mockRestore()
+  })
+
+  it("refuses a balance the SDK did not hand over as a bigint", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+
+    // A future Spark bump lowering u128 as a string or a number would leave
+    // balanceMinor typed bigint without being one, and the first consumer doing
+    // `balanceMinor / 10n ** BigInt(decimals)` throws. Missing beats lying.
+    const withBalance = (balance: unknown): SparkTokenBalanceLike =>
+      ({ ...token(), balance } as unknown as SparkTokenBalanceLike)
+
+    expect(selectUsdtBalance(map(withBalance("12345678")))).toBeUndefined()
+    expect(selectUsdtBalance(map(withBalance(12345678)))).toBeUndefined()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("not bigint"))
+
+    warn.mockRestore()
   })
 
   it("does not throw on a malformed entry with no metadata", () => {

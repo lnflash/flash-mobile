@@ -16,17 +16,22 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import SparkMigrationModal from "@app/components/spark-migration-modal"
 import {
   selectUsdtBalance,
-  type SparkUsdtWallet,
+  type UnverifiedSparkUsdtWallet,
 } from "@app/utils/breez-sdk/token-balances"
 
-type BtcWallet = {
+export type BtcWallet = {
   id: string
   walletCurrency: WalletCurrency
   balance: number
   isExternal: boolean
 }
 
-interface BreezInterface {
+/**
+ * Exported and consumed directly by `useBreez()`. Do not re-declare this shape
+ * at the hook: a hand-copied duplicate silently erases every field it forgets,
+ * which is how `sparkUsdtWallet` shipped provided-but-unreachable.
+ */
+export interface BreezInterface {
   refreshBreez: () => void
   retryExternalWalletRegistration: () => Promise<void>
   loading: boolean
@@ -40,7 +45,7 @@ interface BreezInterface {
    * find it with a `walletCurrency === "USDT"` lookup and spend or display the
    * wrong balance. `undefined` means no such token is held (ENG-473).
    */
-  sparkUsdtWallet?: SparkUsdtWallet
+  sparkUsdtWallet?: UnverifiedSparkUsdtWallet
 }
 
 export const BreezContext = createContext<BreezInterface>({
@@ -83,7 +88,9 @@ export const BreezProvider = ({ children }: Props) => {
   // state, so it is absent until the first getInfo() rather than showing a
   // stale figure on cold start. Persisting it means a bigint-safe
   // persistent-state schema change, which is its own PR.
-  const [sparkUsdtWallet, setSparkUsdtWallet] = useState<SparkUsdtWallet | undefined>()
+  const [sparkUsdtWallet, setSparkUsdtWallet] = useState<
+    UnverifiedSparkUsdtWallet | undefined
+  >()
   const initializingRef = useRef(false)
   const updatingBalanceRef = useRef(false)
   const registeringExternalWalletRef = useRef(false)
