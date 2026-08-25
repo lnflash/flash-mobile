@@ -64,10 +64,18 @@ describe("extractFeeFromPaymentMethod", () => {
     ).toEqual(BigInt(4))
   })
 
-  it("returns 0 for unknown methods", () => {
-    expect(extractFeeFromPaymentMethod({ tag: "SomethingNew" }, "fast")).toEqual(
-      BigInt(0),
+  it("throws on unrecognized payment method tags — never a silent 0-sat fee", () => {
+    // 0.22.x added CrossChainAddress to the SendPaymentMethod union; any tag
+    // this module doesn't understand must not render as a free send.
+    expect(() =>
+      extractFeeFromPaymentMethod({ tag: "CrossChainAddress", inner: {} }, "fast"),
+    ).toThrow(/unrecognized payment method.*CrossChainAddress/i)
+    expect(() => extractFeeFromPaymentMethod({ tag: "SomethingNew" }, "fast")).toThrow(
+      /unrecognized payment method.*SomethingNew/i,
     )
+  })
+
+  it("returns 0 when no payment method is passed at all", () => {
     expect(extractFeeFromPaymentMethod(undefined, "fast")).toEqual(BigInt(0))
   })
 })

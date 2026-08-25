@@ -1347,10 +1347,10 @@
   dependencies:
     "@noble/curves" "^1.7.0"
 
-"@breeztech/breez-sdk-spark-react-native@^0.13.4":
-  version "0.13.6"
-  resolved "https://registry.yarnpkg.com/@breeztech/breez-sdk-spark-react-native/-/breez-sdk-spark-react-native-0.13.6.tgz#5f4d9ab71826a277c406250a2aac3ad1304b4dd4"
-  integrity sha512-HFGN+AFuLnt02JdW+7/6LfhWZPeUB2lnEQHqm0xJCSGh/kqsUxFX+7O8OdQtFOGx9bbTAX8WK1JsUQLoxnEgww==
+"@breeztech/breez-sdk-spark-react-native@0.22.3":
+  version "0.22.3"
+  resolved "https://registry.yarnpkg.com/@breeztech/breez-sdk-spark-react-native/-/breez-sdk-spark-react-native-0.22.3.tgz#37a8efe6296501355361029ce856d1bb52fdae35"
+  integrity sha512-QqOfzs5BeI+JbP/vp6+B51LnSwT465unXwrlT+xB+DzU6/gkZTK+KWOMKKJ58TjTDPB92GDVSOm3ts+BKZfJhA==
   dependencies:
     uniffi-bindgen-react-native "^0.29.3-1"
 
