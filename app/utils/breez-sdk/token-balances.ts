@@ -89,7 +89,15 @@ export const selectUsdtBalance = (
   }
 
   const matches = Array.from(tokenBalances.values()).filter(
-    (entry) => entry?.tokenMetadata?.ticker?.toUpperCase() === USDT_TICKER,
+    // typeof, not optional chaining: `?.` short-circuits on null/undefined
+    // only, so a bridge that lowers the ticker as a number or a wrapper object
+    // makes `.toUpperCase` undefined and this throws inside `filter` — before
+    // either guard below can turn it into a clean `undefined`. Same reasoning
+    // as the balance/decimals checks; the ticker is read off the same
+    // FFI-lowered struct and deserves the same distrust.
+    (entry) =>
+      typeof entry?.tokenMetadata?.ticker === "string" &&
+      entry.tokenMetadata.ticker.toUpperCase() === USDT_TICKER,
   )
 
   if (matches.length === 0) return undefined

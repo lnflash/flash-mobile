@@ -190,6 +190,16 @@ describe("selectUsdtBalance", () => {
     expect(result?.balanceMinor).toBe(BigInt("42"))
   })
 
+  it("returns undefined rather than throwing when the ticker is not a string", () => {
+    // A bridge that lowers the ticker as a number makes `.toUpperCase`
+    // undefined; optional chaining would not save it, and the throw would
+    // escape through Array.filter into updateBalance().
+    const numericTicker = token({ ticker: 1 as unknown as string })
+
+    expect(() => selectUsdtBalance(map(numericTicker))).not.toThrow()
+    expect(selectUsdtBalance(map(numericTicker))).toBeUndefined()
+  })
+
   it("does not throw on a malformed entry with no metadata", () => {
     const malformed = { balance: BigInt("1") } as unknown as SparkTokenBalanceLike
 

@@ -157,9 +157,6 @@ export const BreezProvider = ({ children }: Props) => {
         ...prev,
         balance: Number(walletInfo.balanceSats),
       }))
-      // Same round-trip as the sat balance, so it refreshes on the same cadence
-      // at no extra call.
-      setSparkUsdtWallet(selectUsdtBalance(walletInfo.tokenBalances))
       updateState((state: any) => {
         if (state)
           return {
@@ -168,6 +165,22 @@ export const BreezProvider = ({ children }: Props) => {
           }
         return undefined
       })
+      // Same round-trip as the sat balance, so it refreshes on the same cadence
+      // at no extra call — but LAST, and caught.
+      //
+      // This runs inside a try/finally with no catch: a throw here would
+      // reject updateBalance(), which on the init path lands in getBreezInfo's
+      // catch and leaves `loading` true for the whole session with the
+      // Lightning-address registration skipped, and on refresh is an uncaught
+      // rejection on every pull-to-refresh. An additive, best-effort,
+      // not-yet-consumed balance must never be able to take the sat wallet
+      // down with it.
+      try {
+        setSparkUsdtWallet(selectUsdtBalance(walletInfo.tokenBalances))
+      } catch (err) {
+        console.warn("[breez] USDT selection failed", err)
+        setSparkUsdtWallet(undefined)
+      }
     } finally {
       updatingBalanceRef.current = false
     }
