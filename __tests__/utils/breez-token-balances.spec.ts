@@ -157,6 +157,39 @@ describe("selectUsdtBalance", () => {
     warn.mockRestore()
   })
 
+  it("refuses a decimals the SDK did not hand over as a non-negative integer", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+
+    // Same failure class as the balance guard, one field over. Nothing upstream
+    // vouches for decimals — the ticker filter only reads tokenMetadata.ticker
+    // — so an FFI bridge that stops lowering it as a number lands here, and the
+    // documented consumer expression `balanceMinor / 10n ** BigInt(decimals)`
+    // throws "Cannot convert undefined to a BigInt".
+    const withDecimals = (decimals: unknown): SparkTokenBalanceLike =>
+      token({ decimals: decimals as number })
+
+    expect(selectUsdtBalance(map(withDecimals(undefined)))).toBeUndefined()
+    expect(selectUsdtBalance(map(withDecimals(null)))).toBeUndefined()
+    expect(selectUsdtBalance(map(withDecimals("6")))).toBeUndefined()
+    expect(selectUsdtBalance(map(withDecimals(6.5)))).toBeUndefined()
+    expect(selectUsdtBalance(map(withDecimals(NaN)))).toBeUndefined()
+    // BigInt(-2) is fine; 10n ** -2n is a RangeError, so it fails the same way.
+    expect(selectUsdtBalance(map(withDecimals(-2)))).toBeUndefined()
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("not a non-negative integer"),
+    )
+
+    warn.mockRestore()
+  })
+
+  it("accepts 0 decimals — an integer token is not a missing one", () => {
+    const result = selectUsdtBalance(map(token({ decimals: 0, balance: BigInt("42") })))
+
+    expect(result?.decimals).toBe(0)
+    expect(result?.balanceMinor).toBe(BigInt("42"))
+  })
+
   it("does not throw on a malformed entry with no metadata", () => {
     const malformed = { balance: BigInt("1") } as unknown as SparkTokenBalanceLike
 

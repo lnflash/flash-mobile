@@ -46,7 +46,13 @@ export type UnverifiedSparkUsdtWallet = {
    * overdraw in flash#480 — the display layer can format, the source must not.
    */
   balanceMinor: bigint
-  /** From TokenMetadata. Never assume 6. */
+  /**
+   * From TokenMetadata. Never assume 6.
+   *
+   * Guaranteed a non-negative integer: the selector drops the balance entirely
+   * rather than hand back a `decimals` that makes `10n ** BigInt(decimals)`
+   * throw.
+   */
   decimals: number
 }
 
@@ -97,16 +103,22 @@ export const selectUsdtBalance = (
 
   const { balance, tokenMetadata } = matches[0]
 
-  // The SDK lifts u128 through `BigInt(...)` today, but this module exists to
-  // hold the bigint invariant and the Spark dep moves fast. If a bump ever
-  // lowers the balance as a string or a number, `balanceMinor` would be typed
-  // `bigint` without being one, and the first consumer dividing by
-  // `10n ** BigInt(decimals)` throws "Cannot mix BigInt and other types".
-  // Missing beats lying.
-  if (typeof balance !== "bigint") {
-    console.warn(
-      `[breez] ${USDT_TICKER} balance is ${typeof balance}, not bigint; refusing to surface it`,
-    )
+  // Both halves of the documented consumer expression
+  // `balanceMinor / 10n ** BigInt(decimals)` are checked here, because both are
+  // typed from a .d.ts the FFI bridge is free to disagree with, and the Spark
+  // dep moves fast. A bump that lowers the u128 balance as a string or a number
+  // leaves `balanceMinor` typed `bigint` without being one and that division
+  // throws "Cannot mix BigInt and other types"; an absent or non-integer
+  // `decimals` (nothing above vouches for it — the ticker filter only reads
+  // `tokenMetadata.ticker`) throws "Cannot convert undefined to a BigInt" one
+  // field over. Missing beats lying, in both cases.
+  const { decimals } = tokenMetadata
+  if (typeof balance !== "bigint" || !Number.isInteger(decimals) || decimals < 0) {
+    const problem =
+      typeof balance === "bigint"
+        ? `decimals is ${String(decimals)}, not a non-negative integer`
+        : `balance is ${typeof balance}, not bigint`
+    console.warn(`[breez] ${USDT_TICKER} ${problem}; refusing to surface it`)
     return undefined
   }
 
@@ -115,6 +127,6 @@ export const selectUsdtBalance = (
     issuerPublicKey: tokenMetadata.issuerPublicKey,
     issuerVerified: false,
     balanceMinor: balance,
-    decimals: tokenMetadata.decimals,
+    decimals,
   }
 }
