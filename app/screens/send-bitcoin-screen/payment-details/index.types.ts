@@ -75,9 +75,15 @@ export type SendPaymentMutationParams = {
    * (flash#494) recognise the repeat and return the original outcome instead
    * of paying a second time.
    *
-   * Only the mutations whose inputs accept it can use it — today that is
-   * lnNoAmountUsdInvoicePaymentSend. Builders that cannot pass it simply
-   * ignore this field.
+   * FIVE send inputs accept it, and every one this app calls passes it:
+   * intraLedgerPaymentSend, intraLedgerUsdPaymentSend,
+   * lnNoAmountInvoicePaymentSend and lnInvoicePaymentSend have carried the
+   * field since ENG-530 and pass it unconditionally;
+   * lnNoAmountUsdInvoicePaymentSend only gained it in flash#494, so it goes
+   * through the runtime gate in idempotency-support.ts. The sixth,
+   * lnurlPaymentSend, accepts it server-side but is never called from here —
+   * LNURL sends go through Breez. Onchain sends likewise: those resolvers are
+   * stubbed and the money moves client-side through Breez.
    */
   idempotencyKey: string
   lnInvoicePaymentSend: LnInvoicePaymentSendMutationHookResult["0"]

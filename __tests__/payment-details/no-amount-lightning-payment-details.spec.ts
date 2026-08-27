@@ -112,6 +112,9 @@ describe("no amount lightning payment details", () => {
             paymentRequest: defaultParams.paymentRequest,
             amount: settlementAmount.amount,
             walletId: btcSendingWalletParams.sendingWalletDescriptor.id,
+            // ENG-533. Accepted here since ENG-530; omitting it left the
+            // backend's exactly-once wrapper in passthrough on a live path.
+            idempotencyKey: sendPaymentMocks.idempotencyKey,
           },
         },
       })

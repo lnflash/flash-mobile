@@ -1,7 +1,7 @@
 import React, { PropsWithChildren } from "react"
 
-import { StyleSheet } from "react-native"
-import { act, fireEvent, render, waitFor } from "@testing-library/react-native"
+import { StyleSheet, TouchableOpacity } from "react-native"
+import { act, fireEvent, render, waitFor, within } from "@testing-library/react-native"
 import { Intraledger } from "../../app/screens/send-bitcoin-screen/send-bitcoin-confirmation-screen.stories"
 import { ContextForScreen } from "./helper"
 
@@ -13,7 +13,9 @@ import {
 import {
   createAmountLightningPaymentDetails,
   createLnurlPaymentDetails,
+  createNoAmountLightningPaymentDetails,
 } from "@app/screens/send-bitcoin-screen/payment-details/lightning"
+import { resetSendAttemptKeys } from "@app/screens/send-bitcoin-screen/send-attempt-key"
 import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
 import { BreezContext } from "@app/contexts/BreezContext"
 import { WalletCurrency } from "@app/graphql/generated"
@@ -475,5 +477,268 @@ describe("zero-fee prominence (#561)", () => {
     const feeStyle = StyleSheet.flatten(feeText.props.style)
     expect(feeStyle?.color).not.toBe(lightColors.green)
     expect(feeStyle?.fontWeight).not.toBe("bold")
+  })
+})
+
+// ENG-533, app half — driven through the real screen, the real hook and the
+// real payment-detail builder. Only the mutation boundary is a double, so the
+// key the hook derives is observable and the double-send is countable.
+//
+// Two protections, easy to conflate and separately testable here:
+//
+//  - the in-flight guard stops a double TAP producing two requests;
+//  - the idempotency key stops a repeated REQUEST producing two payments.
+//
+// The second is the dangerous one. A send whose response was lost (dropped
+// socket, gateway 502, app backgrounded mid-flight) has already moved the
+// money, and the client cannot tell. Only a key that survives the retry — and
+// on this flow the retry is a back-navigation, which unmounts everything —
+// lets the backend recognise the repeat.
+describe("a repeated USD send must settle once", () => {
+  // Inside INCIDENT_INVOICE's 60-second window (issued 1787243982), so the
+  // ENG-555 expiry guard lets these sends through and the assertions here are
+  // about idempotency and nothing else.
+  const ALIVE_MS = (1787243982 + 4) * 1000
+
+  // Small enough to sit under the 158-cent USD balance the mocked
+  // SendBitcoinConfirmationScreen query returns, so Confirm is never disabled
+  // for balance reasons and no case can pass vacuously.
+  const amount = toBtcMoneyAmount(100)
+
+  // A USD no-amount lightning send: the GraphQL branch of useSendPayment, and
+  // the exact path flash#494 added the key for.
+  const usdLightningDetail = () => {
+    const detail = createNoAmountLightningPaymentDetails({
+      paymentRequest: INCIDENT_INVOICE,
+      unitOfAccountAmount: amount,
+      convertMoneyAmount,
+      sendingWalletDescriptor: { currency: WalletCurrency.Usd, id: "testwallet" },
+    })
+    const sendPaymentMutation = jest.fn()
+    return { paymentDetail: { ...detail, sendPaymentMutation }, sendPaymentMutation }
+  }
+
+  const keysSent = (mutation: jest.Mock): (string | undefined)[] =>
+    mutation.mock.calls.map(([params]) => params.idempotencyKey)
+
+  const paymentResults = () =>
+    (getAnalytics().logEvent as jest.Mock).mock.calls.filter(
+      ([event]) => event === "payment_result",
+    )
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderScreen = async (paymentDetail: any) => {
+    const navigate = jest.fn()
+    const screen = render(
+      <ContextForScreen>
+        <SendBitcoinConfirmationScreen
+          route={
+            {
+              key: "sendBitcoinConfirmationScreen",
+              name: "sendBitcoinConfirmation",
+              params: { paymentDetail },
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any
+          }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          navigation={{ navigate } as any}
+        />
+      </ContextForScreen>,
+    )
+
+    await act(async () => {})
+    await act(async () => {})
+
+    const confirmButton = () => {
+      const button = screen
+        .UNSAFE_getAllByType(TouchableOpacity)
+        .find((node) => within(node).queryByText(en.SendBitcoinConfirmationScreen.title))
+      if (!button) throw new Error("Confirm button is not on screen")
+      return button
+    }
+
+    const tapConfirm = () =>
+      act(async () => {
+        fireEvent.press(confirmButton())
+      })
+
+    // The production race, which pressing twice in sequence cannot reproduce:
+    // two taps in one frame both capture the closure from the render where
+    // `sendPayment` was still defined, and both run before React re-renders
+    // with `hasAttemptedSend` set. Re-reading the button between them would
+    // test the render gate instead of the synchronous ref that actually stops
+    // the second request.
+    const doubleTapInOneFrame = async () => {
+      const onPress = confirmButton().props.onPress as () => Promise<void>
+      let taps: Promise<void>[] = []
+      await act(async () => {
+        taps = [onPress(), onPress()]
+        // Let the suppressed tap run to completion WITHOUT waiting on the
+        // first, which is still on the wire — that overlap is the whole point.
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+      return taps
+    }
+
+    return { ...screen, navigate, tapConfirm, doubleTapInOneFrame }
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    jest.spyOn(Date, "now").mockReturnValue(ALIVE_MS)
+    resetInvoiceFirstSight()
+    // Keys are keyed by the attempt in module state so they survive a remount
+    // in production. Clear them between cases, or one case's retired key
+    // decides the next case's.
+    resetSendAttemptKeys()
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it("lets only the first of two taps in one frame reach the server", async () => {
+    const { paymentDetail, sendPaymentMutation } = usdLightningDetail()
+    let release: (value: unknown) => void = () => {}
+    sendPaymentMutation.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve
+        }),
+    )
+
+    const screen = await renderScreen(paymentDetail)
+    const taps = await screen.doubleTapInOneFrame()
+
+    expect(sendPaymentMutation).toHaveBeenCalledTimes(1)
+
+    // The suppressed tap must leave no trace. Before it was distinguishable
+    // from a real result it stopped the spinner while the first send was still
+    // on the wire, recorded a payment_result with an undefined status into the
+    // analytics ENG-533 is measured on, and showed a failure toast plus an
+    // error haptic over a payment that was about to succeed.
+    expect(paymentResults()).toHaveLength(0)
+    expect(screen.queryByText("Something went wrong")).toBeNull()
+
+    await act(async () => {
+      release({ status: "SUCCESS", errors: [] })
+      await Promise.all(taps)
+    })
+
+    // The one send that did go out still owns the outcome. Firebase event
+    // params are snake_case by convention — as elsewhere in this file.
+    expect(paymentResults()).toHaveLength(1)
+    /* eslint-disable camelcase */
+    expect(paymentResults()[0][1]).toMatchObject({ payment_status: "SUCCESS" })
+    /* eslint-enable camelcase */
+  })
+
+  it("frees the button after a definitive failure, and the retry carries a NEW key", async () => {
+    const { paymentDetail, sendPaymentMutation } = usdLightningDetail()
+    sendPaymentMutation.mockResolvedValue({ status: "FAILURE", errors: [] })
+
+    const screen = await renderScreen(paymentDetail)
+    await screen.tapConfirm()
+
+    expect(screen.getByText("Something went wrong")).toBeTruthy()
+
+    await screen.tapConfirm()
+
+    expect(sendPaymentMutation).toHaveBeenCalledTimes(2)
+    const [first, second] = keysSent(sendPaymentMutation)
+    // The server said nothing settled. Reusing the key would make the backend
+    // replay the recorded failure and the customer could never succeed.
+    expect(second).not.toBe(first)
+  })
+
+  it("stays retryable when the response is lost, and the retry carries the SAME key", async () => {
+    // The case the whole design is justified by: the mutation throws, so the
+    // client has no idea whether the money moved. Before this, the thrown path
+    // left the screen wedged — in-flight, attempted and errored — so the
+    // retained key could never be resent by anyone.
+    const { paymentDetail, sendPaymentMutation } = usdLightningDetail()
+    sendPaymentMutation
+      .mockRejectedValueOnce(new Error("Network request failed"))
+      .mockResolvedValueOnce({ status: "SUCCESS", errors: [] })
+
+    const screen = await renderScreen(paymentDetail)
+    await screen.tapConfirm()
+
+    expect(screen.getByText("Network request failed")).toBeTruthy()
+
+    await screen.tapConfirm()
+
+    expect(sendPaymentMutation).toHaveBeenCalledTimes(2)
+    const [first, second] = keysSent(sendPaymentMutation)
+    expect(second).toBe(first)
+    await waitFor(() =>
+      expect(screen.navigate).toHaveBeenCalledWith(
+        "sendBitcoinSuccess",
+        expect.anything(),
+      ),
+    )
+  })
+
+  it("carries the same key across the back-navigation that IS the retry", async () => {
+    // A key held in a ref cannot do this, and back-navigation is the only
+    // retry this flow offers: it unmounts the confirm screen, so a per-mount
+    // uuid is minted afresh for exactly the repeat it is supposed to make
+    // recognisable, and the backend books a second payment.
+    const first = usdLightningDetail()
+    first.sendPaymentMutation.mockRejectedValue(new Error("Network request failed"))
+
+    const firstScreen = await renderScreen(first.paymentDetail)
+    await firstScreen.tapConfirm()
+    firstScreen.unmount()
+
+    // Back and forward: the details screen rebuilds the payment detail from
+    // scratch, so nothing but the attempt itself carries over.
+    const second = usdLightningDetail()
+    second.sendPaymentMutation.mockResolvedValue({ status: "SUCCESS", errors: [] })
+
+    const secondScreen = await renderScreen(second.paymentDetail)
+    await secondScreen.tapConfirm()
+
+    expect(keysSent(second.sendPaymentMutation)[0]).toBe(
+      keysSent(first.sendPaymentMutation)[0],
+    )
+  })
+
+  it("mints a different key once the user changes the amount", async () => {
+    // A different amount is a different payment. Sharing the key would have
+    // the backend answer it with the previous send's outcome.
+    const first = usdLightningDetail()
+    first.sendPaymentMutation.mockRejectedValue(new Error("Network request failed"))
+    const firstScreen = await renderScreen(first.paymentDetail)
+    await firstScreen.tapConfirm()
+    firstScreen.unmount()
+
+    const changed = createNoAmountLightningPaymentDetails({
+      paymentRequest: INCIDENT_INVOICE,
+      unitOfAccountAmount: toBtcMoneyAmount(101),
+      convertMoneyAmount,
+      sendingWalletDescriptor: { currency: WalletCurrency.Usd, id: "testwallet" },
+    })
+    const sendPaymentMutation = jest.fn().mockResolvedValue({ status: "SUCCESS" })
+    const secondScreen = await renderScreen({ ...changed, sendPaymentMutation })
+    await secondScreen.tapConfirm()
+
+    expect(keysSent(sendPaymentMutation)[0]).not.toBe(
+      keysSent(first.sendPaymentMutation)[0],
+    )
+  })
+
+  it("locks the button once the server owns the outcome", async () => {
+    // The other way the reset policy can be wrong. SUCCESS, PENDING and
+    // ALREADY_PAID all mean another tap would be a second payment.
+    const { paymentDetail, sendPaymentMutation } = usdLightningDetail()
+    sendPaymentMutation.mockResolvedValue({ status: "SUCCESS", errors: [] })
+
+    const screen = await renderScreen(paymentDetail)
+    await screen.tapConfirm()
+    await screen.tapConfirm()
+
+    expect(sendPaymentMutation).toHaveBeenCalledTimes(1)
   })
 })

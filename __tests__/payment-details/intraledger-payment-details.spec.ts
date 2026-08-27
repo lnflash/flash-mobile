@@ -84,6 +84,11 @@ describe("intraledger payment details", () => {
             recipientWalletId: defaultParams.recipientWalletId,
             amount: settlementAmount.amount,
             walletId: btcSendingWalletParams.sendingWalletDescriptor.id,
+            // ENG-533. This input has accepted the key since ENG-530 and runs
+            // through the backend's withPaymentIdempotency wrapper, whose
+            // contract is "no key = passthrough" — so omitting it left the
+            // exactly-once machinery switched off on a live send path.
+            idempotencyKey: sendPaymentMocks.idempotencyKey,
           },
         },
       })
@@ -120,6 +125,9 @@ describe("intraledger payment details", () => {
             recipientWalletId: defaultParams.recipientWalletId,
             amount: settlementAmount.amount,
             walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
+            // USD/USDT Flash-to-Flash: the same double-debit class the PR
+            // title claims to close, and the path a repeated tap hits most.
+            idempotencyKey: sendPaymentMocks.idempotencyKey,
           },
         },
       })

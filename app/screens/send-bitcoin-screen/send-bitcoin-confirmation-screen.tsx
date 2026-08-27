@@ -88,6 +88,18 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   const [btcWalletText, setBtcWalletText] = useState("")
   const [isValidAmount, setIsValidAmount] = useState(true)
   const [paymentError, setPaymentError] = useState<string>()
+  // Whether the error on screen is one the user may act on by simply tapping
+  // Confirm again.
+  //
+  // `paymentError` alone disables the button, which is right for a fee error or
+  // a dead invoice — nothing changes by re-tapping — but wrong for the two
+  // outcomes the idempotency work exists to make survivable: a definitive
+  // FAILURE (nothing settled; the hook has already retired the key, so the next
+  // tap is a genuinely new attempt) and a THROWN mutation (the response was
+  // lost; the hook has kept the key, so the backend recognises the repeat
+  // instead of paying twice). Without this both left the screen dead, and the
+  // retained key could never be resent by anyone.
+  const [sendIsRetryable, setSendIsRetryable] = useState(false)
   const [invalidAmountErr, setInvalidAmountErr] = useState<string>()
   const [fee, setFee] = useState<FeeType>({ status: "loading" })
   const { contactsEvent } = useChatContext()
@@ -175,6 +187,14 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
       setIsValidAmount(validAmount)
     }
   }
+
+  // Errors raised by anything other than a send (a fee probe, the expiry
+  // guard) are never fixed by tapping Confirm again, so they keep the button
+  // disabled exactly as before.
+  const setBlockingPaymentError = useCallback((val: string) => {
+    setPaymentError(val)
+    setSendIsRetryable(false)
+  }, [])
 
   const autoAddContact = useCallback(async () => {
     if (!flashUserAddress) return
@@ -270,7 +290,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         // A payee-minted bolt11 (scanned or pasted) is fixed: going back and
         // forward returns the *same* invoice. Those users need a new invoice
         // from whoever they are paying.
-        setPaymentError(
+        setBlockingPaymentError(
           paymentDetail.paymentType === PaymentType.Lnurl
             ? LL.SendBitcoinConfirmationScreen.heldInvoiceExpired()
             : LL.SendBitcoinDestinationScreen.expiredInvoice(),
@@ -286,8 +306,19 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           paymentType: paymentDetail.paymentType,
           sendingWallet: sendingWalletDescriptor.currency,
         })
+        // Clear the previous attempt's error before the retry, or the message
+        // from the send that just failed sits over the one now in flight.
+        setPaymentError(undefined)
+        setSendIsRetryable(false)
         toggleActivityIndicator(true)
-        const { status, errorsMessage } = await sendPayment()
+        const result = await sendPayment()
+        // The in-flight guard swallowed this tap: the FIRST send is still on
+        // the wire and owns the spinner, the analytics event and the outcome.
+        // Falling through here would stop the spinner mid-payment, record a
+        // `payment_result` with an undefined status, and show a failure toast
+        // and error haptic over a payment that is about to succeed.
+        if (result.ignored) return
+        const { status, errorsMessage } = result
         toggleActivityIndicator(false)
         logPaymentResult({
           paymentType: paymentDetail.paymentType,
@@ -316,15 +347,29 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           })
         } else {
           setPaymentError(errorsMessage || "Something went wrong")
+          // A definitive FAILURE settled nothing, and the hook has retired the
+          // key, so tapping again is a fresh attempt rather than a replay.
+          setSendIsRetryable(true)
           ReactNativeHapticFeedback.trigger("notificationError", {
             ignoreAndroidSystemSettings: true,
           })
         }
       } catch (err) {
+        // The response was lost. The payment may well have settled, which is
+        // exactly why the hook keeps the key: the repeat carries the same one
+        // and the backend returns the original outcome. Leaving the button dead
+        // here is what made the whole idempotency design unreachable.
+        toggleActivityIndicator(false)
         if (err instanceof Error) {
           getCrashlytics().recordError(err)
           setPaymentError(err.message || err.toString())
+        } else {
+          setPaymentError("Something went wrong")
         }
+        setSendIsRetryable(true)
+        ReactNativeHapticFeedback.trigger("notificationError", {
+          ignoreAndroidSystemSettings: true,
+        })
       }
     } else {
       return null
@@ -334,6 +379,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     sendPayment,
     sendingWalletDescriptor?.currency,
     heldInvoiceHasExpired,
+    setBlockingPaymentError,
     LL,
   ])
 
@@ -351,7 +397,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         selectedFeeType={selectedFeeType}
         fee={fee}
         setFee={setFee}
-        setPaymentError={setPaymentError}
+        setPaymentError={setBlockingPaymentError}
       />
       <ConfirmationError
         paymentError={paymentError}
@@ -361,7 +407,11 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         <PrimaryBtn
           loading={sendPaymentLoading}
           label={LL.SendBitcoinConfirmationScreen.title()}
-          disabled={!isValidAmount || hasAttemptedSend || Boolean(paymentError)}
+          disabled={
+            !isValidAmount ||
+            hasAttemptedSend ||
+            (Boolean(paymentError) && !sendIsRetryable)
+          }
           onPress={handleSendPayment}
         />
       </View>

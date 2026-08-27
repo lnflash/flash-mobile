@@ -63,6 +63,9 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
             recipientWalletId,
             amount: settlementAmount.amount,
             memo,
+            // Long-deployed on this input (ENG-530), so it goes out
+            // unconditionally — see SendPaymentMutationParams.
+            idempotencyKey: paymentMutations.idempotencyKey,
           },
         },
       })
@@ -92,6 +95,9 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
             recipientWalletId,
             amount: settlementAmount.amount,
             memo,
+            // USD/USDT Flash-to-Flash — the same double-debit class ENG-533
+            // exists to close. Long-deployed on this input (ENG-530).
+            idempotencyKey: paymentMutations.idempotencyKey,
           },
         },
       })

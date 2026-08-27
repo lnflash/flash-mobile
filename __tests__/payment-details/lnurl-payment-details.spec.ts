@@ -177,6 +177,9 @@ describe("lnurl payment details", () => {
           input: {
             paymentRequest: btcSendingWalletParams.paymentRequest,
             walletId: btcSendingWalletParams.sendingWalletDescriptor.id,
+            // An LNURL detail that has been given an invoice delegates to the
+            // amount-lightning builder, so it carries the key too.
+            idempotencyKey: sendPaymentMocks.idempotencyKey,
           },
         },
       })
@@ -229,6 +232,7 @@ describe("lnurl payment details", () => {
           input: {
             paymentRequest: usdSendingWalletParams.paymentRequest,
             walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
+            idempotencyKey: sendPaymentMocks.idempotencyKey,
           },
         },
       })
