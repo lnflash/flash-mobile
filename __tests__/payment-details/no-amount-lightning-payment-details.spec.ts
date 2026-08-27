@@ -171,6 +171,11 @@ describe("no amount lightning payment details", () => {
             paymentRequest: defaultParams.paymentRequest,
             amount: settlementAmount.amount,
             walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
+            memo: undefined,
+            // The whole point of ENG-533's app half: a send repeated after a
+            // lost response has to carry the caller's key so the backend can
+            // recognise it instead of paying again.
+            idempotencyKey: sendPaymentMocks.idempotencyKey,
           },
         },
       })

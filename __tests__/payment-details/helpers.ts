@@ -127,6 +127,9 @@ export const createGetFeeMocks = (): GetFeeParams => {
 
 export const createSendPaymentMocks = (): SendPaymentMutationParams => {
   return {
+    // Fixed rather than random so a spec can assert the exact value reaches
+    // the mutation input.
+    idempotencyKey: "test-idempotency-key",
     lnInvoicePaymentSend: jest.fn(),
     lnNoAmountInvoicePaymentSend: jest.fn(),
     lnNoAmountUsdInvoicePaymentSend: jest.fn(),

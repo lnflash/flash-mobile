@@ -151,6 +151,9 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
             paymentRequest,
             amount: settlementAmount.amount,
             memo,
+            // Same key for every repeat of this attempt, so a send whose
+            // response was lost settles once. See SendPaymentMutationParams.
+            idempotencyKey: paymentMutations.idempotencyKey,
           },
         },
       })

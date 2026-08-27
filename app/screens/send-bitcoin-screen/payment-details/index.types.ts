@@ -65,6 +65,21 @@ export type GetFee<T extends WalletCurrency> = (getFeeFns: GetFeeParams) => Prom
 }>
 
 export type SendPaymentMutationParams = {
+  /**
+   * Stable per-attempt key so a send that is repeated cannot settle twice.
+   *
+   * The dangerous case is not a double tap (guarded separately) but a send
+   * whose RESPONSE was lost — a dropped socket, a gateway 502, the app
+   * backgrounded mid-flight. The server has already moved the money; the
+   * client has no way to know. Sending the same key again lets the backend
+   * (flash#494) recognise the repeat and return the original outcome instead
+   * of paying a second time.
+   *
+   * Only the mutations whose inputs accept it can use it — today that is
+   * lnNoAmountUsdInvoicePaymentSend. Builders that cannot pass it simply
+   * ignore this field.
+   */
+  idempotencyKey: string
   lnInvoicePaymentSend: LnInvoicePaymentSendMutationHookResult["0"]
   lnNoAmountInvoicePaymentSend: LnNoAmountInvoicePaymentSendMutationHookResult["0"]
   lnNoAmountUsdInvoicePaymentSend: LnNoAmountUsdInvoicePaymentSendMutationHookResult["0"]

@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
+import { v4 as uuidv4 } from "uuid"
 
 // gql
 import {
@@ -74,6 +75,19 @@ export const useSendPayment = (
 
   const [hasAttemptedSend, setHasAttemptedSend] = useState(false)
 
+  // `hasAttemptedSend` alone does not stop a double send. It gates whether
+  // `sendPayment` is defined, but that is decided at RENDER time: two taps in
+  // the same frame both capture the closure from the render where it was still
+  // defined, and both run before React re-renders with the flag set. A ref is
+  // written synchronously, so the second tap sees it immediately.
+  const inFlightRef = useRef(false)
+
+  // One key per ATTEMPT, deliberately outliving a single call. If a send is
+  // repeated because its response was lost, the repeat must carry the SAME key
+  // or the backend cannot tell it from a genuine second payment. Cleared only
+  // when the server has told us the payment definitively did not happen.
+  const idempotencyKeyRef = useRef<string | undefined>(undefined)
+
   const loading =
     intraLedgerPaymentSendLoading ||
     intraLedgerUsdPaymentSendLoading ||
@@ -88,6 +102,11 @@ export const useSendPayment = (
   const sendPayment = useMemo(() => {
     return sendPaymentMutation && !hasAttemptedSend
       ? async () => {
+          // Synchronous, before any await — see inFlightRef.
+          if (inFlightRef.current) {
+            return { status: undefined, errorsMessage: undefined }
+          }
+          inFlightRef.current = true
           setHasAttemptedSend(true)
 
           if (paymentDetail && paymentDetail.sendingWalletDescriptor.currency === "BTC") {
@@ -152,7 +171,11 @@ export const useSendPayment = (
             }
           } else {
             console.log("Starting sendPaymentMutation using GraphQL")
+            if (!idempotencyKeyRef.current) {
+              idempotencyKeyRef.current = uuidv4()
+            }
             const response = await sendPaymentMutation({
+              idempotencyKey: idempotencyKeyRef.current,
               intraLedgerPaymentSend,
               intraLedgerUsdPaymentSend,
               lnInvoicePaymentSend,
@@ -168,6 +191,14 @@ export const useSendPayment = (
               errorsMessage = getErrorMessages(response.errors)
             }
             if (response.status === PaymentSendResult.Failure) {
+              // The server answered, and the answer is that nothing settled.
+              // Only here is a fresh key correct: reusing this one would make
+              // the backend replay the recorded failure and the customer could
+              // never succeed. Every other exit keeps the key, which is the
+              // conservative side — a repeat that the server already committed
+              // returns the original result instead of paying twice.
+              idempotencyKeyRef.current = undefined
+              inFlightRef.current = false
               setHasAttemptedSend(false)
             }
             return { status: response.status, errorsMessage }
