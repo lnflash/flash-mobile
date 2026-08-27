@@ -187,6 +187,39 @@ describe("the fingerprint of a payment detail", () => {
     )
   })
 
+  it("gives a deliberate repeat of an identical send a fresh key once the first one resolved", () => {
+    // The fingerprint is purely content-derived, so a Flashcard reload of the
+    // same amount to the same LNURL re-derives the SAME string every time.
+    // That is correct while an attempt is unresolved — it is what makes a lost
+    // response recognisable — and catastrophic afterwards: the backend would
+    // return the first payment's success and the second reload would never
+    // leave the wallet, with the screen showing success either way.
+    //
+    // retireAttemptKey is what separates them, and the hook calls it on ANY
+    // server-supplied status, not only Failure.
+    const reload = () =>
+      createLnurlPaymentDetails({
+        lnurl: "flashcard@flashapp.me",
+        lnurlParams,
+        paymentRequest: "lnbc1firstmint",
+        paymentRequestAmount: toBtcMoneyAmount(2000),
+        unitOfAccountAmount: toBtcMoneyAmount(2000),
+        convertMoneyAmount: priceOf(0.1),
+        sendingWalletDescriptor: usdWallet,
+      })
+
+    const fingerprint = attemptFingerprintOf(reload())
+    const first = attemptKey(fingerprint)
+
+    // Unresolved: a repeat must carry the same key.
+    expect(attemptKey(attemptFingerprintOf(reload()))).toBe(first)
+
+    // Server answered — whatever it said, the outcome is known.
+    retireAttemptKey(fingerprint)
+
+    expect(attemptKey(attemptFingerprintOf(reload()))).not.toBe(first)
+  })
+
   it("still separates two different sends to the same lightning address", () => {
     // The other half of the LNURL rule: dropping the bolt11 from the identity
     // must not make a second, genuinely different payment share the first's

@@ -241,13 +241,22 @@ export const useSendPayment = (
           if (response.errors) {
             errorsMessage = getErrorMessages(response.errors)
           }
-          if (response.status === PaymentSendResult.Failure) {
-            // The server answered, and the answer is that nothing settled.
-            // Only here is a fresh key correct: reusing this one would make
-            // the backend replay the recorded failure and the customer could
-            // never succeed. Every other exit keeps the key, which is the
-            // conservative side — a repeat that the server already committed
-            // returns the original result instead of paying twice.
+          if (response.status) {
+            // Retire on ANY server-supplied status, not just Failure.
+            //
+            // A status came back at all means the client KNOWS the outcome, so
+            // the next time this same content is authored it is a deliberate
+            // second payment, not a repeat — and the fingerprint is purely
+            // content-derived, so it would otherwise reproduce the same key.
+            // Retiring only on Failure meant a Flashcard reload of J$2,000,
+            // then the same reload later that day, re-derived the first
+            // payment's key: the backend returns the ORIGINAL success, the
+            // screen navigates to sendBitcoinSuccess, and the second J$2,000
+            // never leaves the wallet.
+            //
+            // The case this design exists for is the opposite one and is
+            // unaffected: a LOST response yields no status, throws, and leaves
+            // the key intact, so the repeat carries it and settles once.
             retireAttemptKey(sendFingerprint)
           }
           return { status: response.status, errorsMessage }
