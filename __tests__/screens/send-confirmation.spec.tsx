@@ -505,13 +505,23 @@ describe("a repeated USD send must settle once", () => {
   // for balance reasons and no case can pass vacuously.
   const amount = toBtcMoneyAmount(100)
 
+  // The same conversion one realtime-price tick later. The details screen sits
+  // mounted underneath this one and re-derives the payment detail whenever the
+  // price subscription fires, so this is what the back-navigation retry hands
+  // back — a settlement amount a cent away from the one that was sent.
+  const priceTicked: ConvertMoneyAmount = (moneyAmount, currency) => ({
+    amount: currency === DisplayCurrency ? moneyAmount.amount : moneyAmount.amount + 1,
+    currency,
+    currencyCode: currency === DisplayCurrency ? "NGN" : currency,
+  })
+
   // A USD no-amount lightning send: the GraphQL branch of useSendPayment, and
   // the exact path flash#494 added the key for.
-  const usdLightningDetail = () => {
+  const usdLightningDetail = (convert: ConvertMoneyAmount = convertMoneyAmount) => {
     const detail = createNoAmountLightningPaymentDetails({
       paymentRequest: INCIDENT_INVOICE,
       unitOfAccountAmount: amount,
-      convertMoneyAmount,
+      convertMoneyAmount: convert,
       sendingWalletDescriptor: { currency: WalletCurrency.Usd, id: "testwallet" },
     })
     const sendPaymentMutation = jest.fn()
@@ -524,6 +534,11 @@ describe("a repeated USD send must settle once", () => {
   const paymentResults = () =>
     (getAnalytics().logEvent as jest.Mock).mock.calls.filter(
       ([event]) => event === "payment_result",
+    )
+
+  const paymentAttempts = () =>
+    (getAnalytics().logEvent as jest.Mock).mock.calls.filter(
+      ([event]) => event === "payment_attempt",
     )
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -621,6 +636,12 @@ describe("a repeated USD send must settle once", () => {
     expect(paymentResults()).toHaveLength(0)
     expect(screen.queryByText("Something went wrong")).toBeNull()
 
+    // ...including in the attempt count. `payment_attempt` fired before the
+    // suppression was known, so a double tap recorded TWO attempts against one
+    // result and skewed the attempt→result ratio ENG-533 is measured on by
+    // exactly the double-taps ENG-533 counts.
+    expect(paymentAttempts()).toHaveLength(1)
+
     await act(async () => {
       release({ status: "SUCCESS", errors: [] })
       await Promise.all(taps)
@@ -629,6 +650,7 @@ describe("a repeated USD send must settle once", () => {
     // The one send that did go out still owns the outcome. Firebase event
     // params are snake_case by convention — as elsewhere in this file.
     expect(paymentResults()).toHaveLength(1)
+    expect(paymentAttempts()).toHaveLength(1)
     /* eslint-disable camelcase */
     expect(paymentResults()[0][1]).toMatchObject({ payment_status: "SUCCESS" })
     /* eslint-enable camelcase */
@@ -670,6 +692,11 @@ describe("a repeated USD send must settle once", () => {
     await screen.tapConfirm()
 
     expect(sendPaymentMutation).toHaveBeenCalledTimes(2)
+    // Both taps really became requests, so both are attempts. Moving
+    // `logPaymentAttempt` below the awaited send — one way to stop the
+    // suppressed tap counting — would lose the first one entirely, since the
+    // thrown mutation never returns to that line.
+    expect(paymentAttempts()).toHaveLength(2)
     const [first, second] = keysSent(sendPaymentMutation)
     expect(second).toBe(first)
     await waitFor(() =>
@@ -700,6 +727,36 @@ describe("a repeated USD send must settle once", () => {
     const secondScreen = await renderScreen(second.paymentDetail)
     await secondScreen.tapConfirm()
 
+    expect(keysSent(second.sendPaymentMutation)[0]).toBe(
+      keysSent(first.sendPaymentMutation)[0],
+    )
+  })
+
+  it("carries the same key when the price ticked under the back-navigation", async () => {
+    // The back-navigation retry does not hand back the detail that was sent:
+    // the details screen stays mounted underneath this one and rebuilds it on
+    // every realtime-price tick, so a USD/USDT send comes back with a
+    // settlement amount a cent away — the amount is a price-derived estimate
+    // (`settlementAmountIsEstimated`), not something the user authored. Keyed
+    // on it, the very retry this design exists for gets a different uuid and
+    // the backend books a second payment.
+    const first = usdLightningDetail()
+    first.sendPaymentMutation.mockRejectedValue(new Error("Network request failed"))
+
+    const firstScreen = await renderScreen(first.paymentDetail)
+    await firstScreen.tapConfirm()
+    firstScreen.unmount()
+
+    const second = usdLightningDetail(priceTicked)
+    second.sendPaymentMutation.mockResolvedValue({ status: "SUCCESS", errors: [] })
+
+    const secondScreen = await renderScreen(second.paymentDetail)
+    await secondScreen.tapConfirm()
+
+    // The estimate really did move, so this cannot pass vacuously.
+    expect(second.paymentDetail.settlementAmount.amount).not.toBe(
+      first.paymentDetail.settlementAmount.amount,
+    )
     expect(keysSent(second.sendPaymentMutation)[0]).toBe(
       keysSent(first.sendPaymentMutation)[0],
     )

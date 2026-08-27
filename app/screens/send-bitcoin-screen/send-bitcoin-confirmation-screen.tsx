@@ -114,6 +114,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     loading: sendPaymentLoading,
     sendPayment,
     hasAttemptedSend,
+    sendIsInFlight,
   } = useSendPayment(sendPaymentMutation, paymentDetail, selectedFeeType)
 
   useEffect(() => {
@@ -273,6 +274,14 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
 
   const handleSendPayment = useCallback(async () => {
     if (sendPayment && sendingWalletDescriptor?.currency) {
+      // The suppressed tap, recognised BEFORE anything is recorded. `sendPayment`
+      // reports the same thing through `ignored`, but only once its promise
+      // resolves — which is after the first send's round trip, so logging the
+      // attempt above it would put two `payment_attempt` events and one
+      // `payment_result` into the analytics ENG-533 is measured on, skewed by
+      // precisely the double-taps ENG-533 counts. Read synchronously here, the
+      // second tap in a frame leaves no trace at all.
+      if (sendIsInFlight()) return
       if (heldInvoiceHasExpired()) {
         // A refusal here is the whole point of ENG-555, so it has to be
         // countable: without an event the failure just changes shape from
@@ -377,6 +386,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   }, [
     paymentType,
     sendPayment,
+    sendIsInFlight,
     sendingWalletDescriptor?.currency,
     heldInvoiceHasExpired,
     setBlockingPaymentError,

@@ -32,13 +32,20 @@ export const resetIdempotencyKeySupport = (): void => {
 /** Whether the field is still believed to be accepted. Exposed for tests. */
 export const idempotencyKeySupported = (): boolean => serverAcceptsIdempotencyKey
 
-// Coercion failures name the offending field. Both halves are required: a
-// message merely mentioning the key (a backend error text, say) must not be
-// read as "the field does not exist", or a real failure would be retried
-// WITHOUT the key — which is the double-pay this whole mechanism prevents.
-const NAMES_THE_FIELD = /idempotencyKey/
-const REJECTS_THE_FIELD =
-  /(is not defined by type|unknown field|field .* is not defined|got invalid value)/i
+// The ONE sentence graphql-js emits for an unknown input-object field, matched
+// whole. Anchoring on the sentence rather than on loose halves is the whole
+// point: `coerceVariableValues` writes EVERY input-coercion error as
+// `Variable "$input" got invalid value ${inspect(invalidValue)}...; <reason>`,
+// and for an input-object error `invalidValue` is the entire input object —
+// which contains `idempotencyKey` whenever we sent it. A pair of tests like
+// "mentions the field" AND "says got invalid value" therefore matches any
+// coercion error at all: the server adds an unrelated required field, answers
+// `...; Field "x" of required type "Y!" was not provided.`, and the gate reads
+// that as "the server lacks idempotencyKey", disarms itself for the process
+// lifetime, and every later no-amount USD send goes out bare — so a lost
+// response plus a retry double-pays, silently, on the path this exists to
+// protect.
+const REJECTS_THE_FIELD = /Field "idempotencyKey" is not defined by type/
 
 const messagesOf = (err: unknown): string[] => {
   const candidate = err as {
@@ -62,9 +69,7 @@ const messagesOf = (err: unknown): string[] => {
  * as opposed to any other failure, which must propagate untouched.
  */
 export const isUnsupportedIdempotencyKeyError = (err: unknown): boolean =>
-  messagesOf(err).some(
-    (message) => NAMES_THE_FIELD.test(message) && REJECTS_THE_FIELD.test(message),
-  )
+  messagesOf(err).some((message) => REJECTS_THE_FIELD.test(message))
 
 /**
  * Run `send` with the idempotency key when the server is known to accept it,
