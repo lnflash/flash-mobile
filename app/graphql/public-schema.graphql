@@ -705,7 +705,7 @@ type CashoutRate {
   exchangeRate: JMDCents!
 
   """
-  Flash cashout service fee in basis points, deducted from the USD amount before conversion.
+  Flash cashout service fee in basis points for the calling account, deducted from the USD amount before conversion. Already net of any Fee Discount the account is whitelisted for. The offer may still charge more than quoted: up to 1 bip from rounding when the discount is a fraction of a percent, or the full standard fee if the Fee Discount list is unreadable at the moment the offer is built.
   """
   feeBasisPoints: Int!
 }
@@ -781,6 +781,16 @@ type Country {
 """A CCA2 country code (ex US, FR, etc)"""
 scalar CountryCode
 
+input CreateInviteInput {
+  contact: String!
+  method: InviteMethod!
+}
+
+type CreateInvitePayload {
+  errors: [String!]!
+  invite: Invite
+}
+
 type Currency {
   flag: String!
   fractionDigits: Int!
@@ -852,9 +862,7 @@ Cent amount (1/100 of a dollar) as a float, can be positive or negative
 scalar FractionalCentAmount
 
 """
-Fee and minimum-amount parameters for Fygaro card top-ups. Percentages are
-whole-number percents (e.g. 2.99 means 2.99%); fixed amounts and the minimum
-are in USD. Null when the instance's Fygaro settings are unavailable.
+A server-authorised card top-up. The amount is signed into the URL, so it is the only amount that can be paid through it.
 """
 type FygaroCheckout {
   """
@@ -892,6 +900,9 @@ type FygaroCheckoutCreatePayload {
   remainingAllowance: CentAmount
 }
 
+"""
+How much of today's card top-up allowance this account has left. Does not authorise anything, so it is safe to call while the customer is still choosing an amount. Render all of them: `remaining` is the cap less BOTH `spent` and `held`, so without those two the gap cannot be explained. Floored at zero, so it can be LARGER than `limit - spent - held` when the cap has been exceeded — via a hand-credit, or via spend recorded before a limit change. The largest amount that would actually go through is `min(remaining, singlePaymentLimit)`, and anything below `minimum` is refused.
+"""
 type FygaroTopupAllowance {
   """
   Card top-up links this account has open but has not paid. NOT spent — nothing has been charged — but not available either, because paying one would charge it. The common case is a customer who minted a link and closed the page, so this is usually the whole difference between `limit - spent` and `remaining`.
@@ -907,7 +918,12 @@ type FygaroTopupAllowance {
   limit: CentAmount!
 
   """
-  What would still be accepted right now: the cap less BOTH `spent` and `held`. Unpaid checkout links are already subtracted, exactly as the pre-charge check subtracts them, so this is what a new top-up would be measured against — not `limit - spent`. Never negative.
+  The smallest top-up that will be accepted. Enforced before the charge, so a client that does not render it can only discover it by being refused.
+  """
+  minimum: CentAmount!
+
+  """
+  What would still be accepted right now AGAINST THE DAILY CAP: the cap less BOTH `spent` and `held`. Unpaid checkout links are already subtracted, exactly as the pre-charge check subtracts them, so this is what a new top-up is measured against — not `limit - spent`. Never negative. NOT the largest payable amount on its own: `singlePaymentLimit` is a separate ceiling and is deliberately not folded in here, or this number would stop meaning 'daily headroom' and `resetsAt` would stop describing it.
   """
   remaining: CentAmount!
 
@@ -917,9 +933,103 @@ type FygaroTopupAllowance {
   resetsAt: Timestamp
 
   """
+  The most that can be charged in ONE top-up, whatever the daily headroom. A separate gate from the cap, so an account with $500 remaining and a $200 single-payment limit can only pay $200 at a time — offering the $500 gets the charge refused. Take `min(remaining, singlePaymentLimit)` as the maximum.
+  """
+  singlePaymentLimit: CentAmount!
+
+  """
   Gross charged in the trailing 24 hours. Payments we captured but did not credit are excluded — they delivered nothing, so they do not spend the allowance.
   """
   spent: CentAmount!
+}
+
+"""
+The allowance, or why there isn't one. Exactly one of the two fields is ever set. `unavailableReason` exists so the client can tell a state that will never resolve on its own (hide the card top-up option) from a momentary read failure (show the flat limit, retry) — collapsing both into a missing allowance is what invites a top-up the pre-charge check then refuses.
+"""
+type FygaroTopupAllowancePayload {
+  """Null whenever `unavailableReason` is set, and only then."""
+  allowance: FygaroTopupAllowance
+
+  """
+  Always empty. Refusals are reported as `unavailableReason`, not as errors — the field is decoration on a screen the customer is still filling in, so a read failure must not surface as one. Present for consistency with every other payload type.
+  """
+  errors: [Error!]!
+  held: CentAmount! @deprecated(reason: "Use `allowance.held`. Present only for flash-mobile v0.6.7.")
+  holdsExpireAt: Timestamp @deprecated(reason: "Use `allowance.holdsExpireAt`. Present only for flash-mobile v0.6.7.")
+  limit: CentAmount! @deprecated(reason: "Use `allowance.limit`. Present only for flash-mobile v0.6.7.")
+  remaining: CentAmount! @deprecated(reason: "Use `allowance.remaining`. Present only for flash-mobile v0.6.7.")
+
+  """Null whenever `allowance` is present, and only then."""
+  unavailableReason: FygaroTopupAllowanceUnavailableReason
+}
+
+enum FygaroTopupAllowanceUnavailableReason {
+  """
+  PERMANENT until an operator acts: card top-ups are switched off. Every fygaroCheckoutCreate is refused in this state, so hide the card top-up option rather than polling.
+  """
+  CHECKOUT_DISABLED
+
+  """
+  TRANSIENT: the trailing-24h top-up history could not be read. We refuse to guess rather than show a full allowance we would then refuse to honour.
+  """
+  HISTORY_UNAVAILABLE
+
+  """
+  PERMANENT until the account is upgraded: this account level has no card top-up allowance at all. Hide the option and point at verification; retrying changes nothing.
+  """
+  LEVEL_NOT_ELIGIBLE
+
+  """
+  TRANSIENT: too many allowance checks from this account too quickly. Back off and reuse the last answer; nothing here is authorised, so no charge was lost.
+  """
+  RATE_LIMITED
+
+  """
+  TRANSIENT: this account's open checkout links could not be read, so the allowance cannot be known. Unknown holds are not zero holds.
+  """
+  RESERVATIONS_UNAVAILABLE
+
+  """
+  TRANSIENT: the operator settings could not be read. Retry — nothing about the account has changed.
+  """
+  SETTINGS_UNAVAILABLE
+}
+
+"""
+Fee parameters for Fygaro card top-ups, so the client can
+compute the net amount a user will receive. Null when the operator settings
+are unavailable — clients should degrade gracefully (hide the estimate).
+"""
+type FygaroTopupInfo {
+  """Flash margin fixed fee, in USD."""
+  flashFeeFixed: Float!
+
+  """Flash margin percentage fee (e.g. 2.0 = 2.0%)."""
+  flashFeePercent: Float!
+
+  """
+  Maximum gross card top-up per rolling 24h for level-1 accounts, in USD.
+  """
+  l1DailyLimit: Float!
+
+  """
+  Maximum gross card top-up per rolling 24h for level-2 accounts, in USD.
+  """
+  l2DailyLimit: Float!
+
+  """
+  Maximum gross card top-up per rolling 24h for level-3 (Business) accounts, in USD.
+  """
+  l3DailyLimit: Float!
+
+  """Minimum top-up amount, in USD."""
+  minimumAmount: Float!
+
+  """Payment-processor fixed fee, in USD."""
+  processorFeeFixed: Float!
+
+  """Payment-processor percentage fee (e.g. 2.99 = 2.99%)."""
+  processorFeePercent: Float!
 }
 
 enum FygaroTopupState {
@@ -947,6 +1057,9 @@ enum FygaroTopupState {
   UNCONFIRMED
 }
 
+"""
+What actually happened to a card top-up. The card charge succeeding and Flash crediting the wallet are different events; only this reports the second.
+"""
 type FygaroTopupStatus {
   """
   The amount this checkout was authorised for. Null ONLY when the checkout record could not be read (state UNCONFIRMED, transient): the amount lives on that record. The client already knows what it asked for, so this is an echo, never the source of truth for what was charged.
@@ -961,34 +1074,6 @@ type FygaroTopupStatus {
   """
   reason: String
   state: FygaroTopupState!
-}
-
-type FygaroTopupInfo {
-  """Minimum top-up amount, in USD."""
-  minimumAmount: Float!
-
-  """Payment-processor percentage fee (e.g. 2.99 for 2.99%)."""
-  processorFeePercent: Float!
-
-  """Payment-processor fixed fee, in USD (e.g. 0.49)."""
-  processorFeeFixed: Float!
-
-  """Flash percentage fee (e.g. 2.0 for 2%)."""
-  flashFeePercent: Float!
-
-  """Flash fixed fee, in USD."""
-  flashFeeFixed: Float!
-
-  """Maximum gross card top-up per rolling 24h for level-1 accounts, in USD."""
-  l1DailyLimit: Float!
-
-  """Maximum gross card top-up per rolling 24h for level-2 accounts, in USD."""
-  l2DailyLimit: Float!
-
-  """
-  Maximum gross card top-up per rolling 24h for level-3 (Business) accounts, in USD.
-  """
-  l3DailyLimit: Float!
 }
 
 """
@@ -1010,9 +1095,9 @@ type Globals {
   feesInformation: FeesInformation!
 
   """
-  Fee and minimum-amount parameters for Fygaro card top-ups, used to preview
-  the net amount the user will receive and to enforce the minimum. Null when
-  the instance's Fygaro settings are unavailable.
+  Fee parameters for Fygaro card top-ups so the app can
+  preview the net amount a user will receive. Null when operator settings
+  are unavailable — the app should hide the estimate and fall back gracefully.
   """
   fygaroTopup: FygaroTopupInfo
 
@@ -1109,6 +1194,11 @@ input IntraLedgerPaymentSendInput {
   """Amount in satoshis."""
   amount: SatAmount!
 
+  """
+  Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again.
+  """
+  idempotencyKey: String
+
   """Optional memo to be attached to the payment."""
   memo: Memo
   recipientWalletId: WalletId!
@@ -1129,12 +1219,47 @@ input IntraLedgerUsdPaymentSendInput {
   """Amount in cents."""
   amount: FractionalCentAmount!
 
+  """
+  Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again.
+  """
+  idempotencyKey: String
+
   """Optional memo to be attached to the payment."""
   memo: Memo
   recipientWalletId: WalletId!
 
   """The wallet ID of the sender."""
   walletId: WalletId!
+}
+
+type Invite {
+  contact: String!
+  createdAt: String!
+  expiresAt: String!
+  id: ID!
+  method: InviteMethod!
+  status: InviteStatus!
+}
+
+enum InviteMethod {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+type InvitePreview {
+  contact: String!
+  expiresAt: String!
+  inviterUsername: String
+  isValid: Boolean!
+  method: String!
+}
+
+enum InviteStatus {
+  ACCEPTED
+  EXPIRED
+  PENDING
+  SENT
 }
 
 enum InvoicePaymentStatus {
@@ -1204,6 +1329,11 @@ type LnInvoicePayload {
 }
 
 input LnInvoicePaymentInput {
+  """
+  Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again.
+  """
+  idempotencyKey: String
+
   """Optional memo to associate with the lightning invoice."""
   memo: Memo
 
@@ -1272,6 +1402,11 @@ input LnNoAmountInvoicePaymentInput {
   """Amount to pay in satoshis."""
   amount: SatAmount!
 
+  """
+  Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again.
+  """
+  idempotencyKey: String
+
   """Optional memo to associate with the lightning invoice."""
   memo: Memo
 
@@ -1293,6 +1428,11 @@ input LnNoAmountUsdInvoiceFeeProbeInput {
 input LnNoAmountUsdInvoicePaymentInput {
   """Amount to pay in USD cents."""
   amount: FractionalCentAmount!
+
+  """
+  Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again.
+  """
+  idempotencyKey: String
 
   """Optional memo to associate with the lightning invoice."""
   memo: Memo
@@ -1364,6 +1504,11 @@ input LnurlPaymentSendInput {
   """Amount to spend from the USD/USDT wallet, in USD cents."""
   amount: FractionalCentAmount!
 
+  """
+  Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again.
+  """
+  idempotencyKey: String
+
   """LNURL-pay value to decode and pay."""
   lnurl: Lnurl!
 
@@ -1424,27 +1569,7 @@ type MobileVersions {
   platform: String!
 }
 
-type MyReferralInvite {
-  contact: String!
-  createdAt: String!
-  id: ID!
-  method: InviteMethod!
-  myRewardCents: Int
-  redeemedAt: String
-  rewardPending: Boolean!
-  status: InviteStatus!
-}
-
-type MyReferrals {
-  acceptedCount: Int!
-  invites: [MyReferralInvite!]!
-  pendingRewardCount: Int!
-  totalEarnedCents: Int!
-  totalInvites: Int!
-}
-
 type Mutation {
-  fygaroCheckoutCreate(input: FygaroCheckoutCreateInput!): FygaroCheckoutCreatePayload!
   accountCapabilityUpgradeRequest(input: AccountCapabilityUpgradeRequestInput!): AccountCapabilityUpgradeRequestPayload!
   accountDelete: AccountDeletePayload!
   accountDisableNotificationCategory(input: AccountDisableNotificationCategoryInput!): AccountUpdateNotificationSettingsPayload!
@@ -1483,11 +1608,11 @@ type Mutation {
   callbackEndpointAdd(input: CallbackEndpointAddInput!): CallbackEndpointAddPayload!
   callbackEndpointDelete(input: CallbackEndpointDeleteInput!): SuccessPayload!
   captchaCreateChallenge: CaptchaCreateChallengePayload!
-  createInvite(input: CreateInviteInput!): CreateInvitePayload!
-  redeemInvite(input: RedeemInviteInput!): RedeemInvitePayload!
   captchaRequestAuthCode(input: CaptchaRequestAuthCodeInput!): SuccessPayload!
+  createInvite(input: CreateInviteInput!): CreateInvitePayload!
   deviceNotificationTokenCreate(input: DeviceNotificationTokenCreateInput!): SuccessPayload!
   feedbackSubmit(input: FeedbackSubmitInput!): SuccessPayload!
+  fygaroCheckoutCreate(input: FygaroCheckoutCreateInput!): FygaroCheckoutCreatePayload!
   idDocumentUploadUrlGenerate(input: IdDocumentUploadUrlGenerateInput!): IdDocumentUploadUrlPayload!
 
   """
@@ -1594,6 +1719,7 @@ type Mutation {
   onChainUsdPaymentSend(input: OnChainUsdPaymentSendInput!): PaymentSendPayload!
   onChainUsdPaymentSendAsBtcDenominated(input: OnChainUsdPaymentSendAsBtcDenominatedInput!): PaymentSendPayload!
   quizCompleted(input: QuizCompletedInput!): QuizCompletedPayload!
+  redeemInvite(input: RedeemInviteInput!): RedeemInvitePayload!
 
   """
   Returns an offer from Flash for a user to withdraw from their USD wallet (denominated in cents).
@@ -1618,6 +1744,25 @@ type Mutation {
   userUpdateLanguage(input: UserUpdateLanguageInput!): UserUpdateLanguagePayload!
   userUpdateNpub(input: UserUpdateNpubInput!): UserUpdateNpubPayload!
   userUpdateUsername(input: UserUpdateUsernameInput!): UserUpdateUsernamePayload! @deprecated(reason: "Username will be moved to @Handle in Accounts. Also SetUsername naming should be used instead of UpdateUsername to reflect the idempotency of Handles")
+}
+
+type MyReferralInvite {
+  contact: String!
+  createdAt: String!
+  id: ID!
+  method: InviteMethod!
+  myRewardCents: Int
+  redeemedAt: String
+  rewardPending: Boolean!
+  status: InviteStatus!
+}
+
+type MyReferrals {
+  acceptedCount: Int!
+  invites: [MyReferralInvite!]!
+  pendingRewardCount: Int!
+  totalEarnedCents: Int!
+  totalInvites: Int!
 }
 
 type MyUpdatesPayload {
@@ -1854,8 +1999,6 @@ type PublicWallet {
 }
 
 type Query {
-  fygaroTopupAllowance: FygaroTopupAllowance
-  fygaroTopupStatus(checkoutId: String!): FygaroTopupStatus
   accountDefaultWallet(username: Username!, walletCurrency: WalletCurrency): PublicWallet!
 
   """
@@ -1869,12 +2012,22 @@ type Query {
   bridgeWithdrawals: [BridgeWithdrawal]
   btcPrice(currency: DisplayCurrency! = "USD"): Price @deprecated(reason: "Deprecated in favor of realtimePrice")
   btcPriceList(range: PriceGraphRange!): [PricePoint]
-  invitePreview(token: String!): InvitePreview
   businessMapMarkers: [MapMarker!]!
   cashWalletCutover: CashWalletCutover!
   cashoutRate: CashoutRate!
   currencyList: [Currency!]!
+
+  """
+  How much card top-up allowance this account has left today. When the allowance cannot be established, `unavailableReason` says why: hide the card top-up option for the reasons that will not resolve on their own (CHECKOUT_DISABLED, LEVEL_NOT_ELIGIBLE), and for the transient ones show the flat limit and let the pre-charge check decide, rather than inventing a number.
+  """
+  fygaroTopupAllowance: FygaroTopupAllowancePayload!
+
+  """
+  The outcome of a card top-up, by the checkout id returned from fygaroCheckoutCreate. Null when the checkout is unknown, expired, or not this account's — never as a way of saying 'not yet': a checkout we simply cannot read right now comes back as UNCONFIRMED so a transient fault is not reported to the customer as a payment that never existed.
+  """
+  fygaroTopupStatus(checkoutId: String!): FygaroTopupStatus
   globals: Globals
+  invitePreview(token: String!): InvitePreview
   isFlashNpub(input: IsFlashNpubInput!): IsFlashNpubPayload
   latestAccountUpgradeRequest: AccountUpgradeRequestPayload!
   lnInvoicePaymentStatus(input: LnInvoicePaymentStatusInput!): LnInvoicePaymentStatusPayload!
@@ -1936,6 +2089,15 @@ input RealtimePriceInput {
 type RealtimePricePayload {
   errors: [Error!]!
   realtimePrice: RealtimePrice
+}
+
+input RedeemInviteInput {
+  token: String!
+}
+
+type RedeemInvitePayload {
+  errors: [String!]!
+  success: Boolean!
 }
 
 input RequestCashoutInput {
@@ -2558,52 +2720,4 @@ type npubByUsername {
 
   """Optional immutable user friendly identifier."""
   username: Username
-}
-input CreateInviteInput {
-  contact: String!
-  method: InviteMethod!
-}
-
-type CreateInvitePayload {
-  errors: [String!]!
-  invite: Invite
-}
-
-type Invite {
-  contact: String!
-  createdAt: String!
-  expiresAt: String!
-  id: ID!
-  method: InviteMethod!
-  status: InviteStatus!
-}
-
-enum InviteMethod {
-  EMAIL
-  SMS
-  WHATSAPP
-}
-
-type InvitePreview {
-  contact: String!
-  expiresAt: String!
-  inviterUsername: String
-  isValid: Boolean!
-  method: String!
-}
-
-enum InviteStatus {
-  ACCEPTED
-  EXPIRED
-  PENDING
-  SENT
-}
-
-input RedeemInviteInput {
-  token: String!
-}
-
-type RedeemInvitePayload {
-  errors: [String!]!
-  success: Boolean!
 }
