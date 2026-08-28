@@ -766,7 +766,7 @@ export type CashoutRate = {
   readonly __typename: 'CashoutRate';
   /** JMD cents per 1 USD at which a JMD cashout would settle right now — the same rate a cashout offer locks in. */
   readonly exchangeRate: Scalars['JMDCents']['output'];
-  /** Flash cashout service fee in basis points, deducted from the USD amount before conversion. */
+  /** Flash cashout service fee in basis points for the calling account, deducted from the USD amount before conversion. Already net of any Fee Discount the account is whitelisted for. The offer may still charge more than quoted: up to 1 bip from rounding when the discount is a fraction of a percent, or the full standard fee if the Fee Discount list is unreadable at the moment the offer is built. */
   readonly feeBasisPoints: Scalars['Int']['output'];
 };
 
@@ -893,11 +893,7 @@ export type FeesInformation = {
   readonly deposit: DepositFeesInformation;
 };
 
-/**
- * Fee and minimum-amount parameters for Fygaro card top-ups. Percentages are
- * whole-number percents (e.g. 2.99 means 2.99%); fixed amounts and the minimum
- * are in USD. Null when the instance's Fygaro settings are unavailable.
- */
+/** A server-authorised card top-up. The amount is signed into the URL, so it is the only amount that can be paid through it. */
 export type FygaroCheckout = {
   readonly __typename: 'FygaroCheckout';
   /** The authorised amount, echoed back so the client can display what was signed. */
@@ -922,6 +918,7 @@ export type FygaroCheckoutCreatePayload = {
   readonly remainingAllowance?: Maybe<Scalars['CentAmount']['output']>;
 };
 
+/** How much of today's card top-up allowance this account has left. Does not authorise anything, so it is safe to call while the customer is still choosing an amount. Render all of them: `remaining` is the cap less BOTH `spent` and `held`, so without those two the gap cannot be explained. Floored at zero, so it can be LARGER than `limit - spent - held` when the cap has been exceeded — via a hand-credit, or via spend recorded before a limit change. The largest amount that would actually go through is `min(remaining, singlePaymentLimit)`, and anything below `minimum` is refused. */
 export type FygaroTopupAllowance = {
   readonly __typename: 'FygaroTopupAllowance';
   /** Card top-up links this account has open but has not paid. NOT spent — nothing has been charged — but not available either, because paying one would charge it. The common case is a customer who minted a link and closed the page, so this is usually the whole difference between `limit - spent` and `remaining`. */
@@ -930,19 +927,63 @@ export type FygaroTopupAllowance = {
   readonly holdsExpireAt?: Maybe<Scalars['Timestamp']['output']>;
   /** The account level's rolling 24-hour cap. */
   readonly limit: Scalars['CentAmount']['output'];
-  /** What would still be accepted right now: the cap less BOTH `spent` and `held`. Unpaid checkout links are already subtracted, exactly as the pre-charge check subtracts them, so this is what a new top-up would be measured against — not `limit - spent`. Never negative. */
+  /** The smallest top-up that will be accepted. Enforced before the charge, so a client that does not render it can only discover it by being refused. */
+  readonly minimum: Scalars['CentAmount']['output'];
+  /** What would still be accepted right now AGAINST THE DAILY CAP: the cap less BOTH `spent` and `held`. Unpaid checkout links are already subtracted, exactly as the pre-charge check subtracts them, so this is what a new top-up is measured against — not `limit - spent`. Never negative. NOT the largest payable amount on its own: `singlePaymentLimit` is a separate ceiling and is deliberately not folded in here, or this number would stop meaning 'daily headroom' and `resetsAt` would stop describing it. */
   readonly remaining: Scalars['CentAmount']['output'];
   /** When the oldest counted PAYMENT ages out and the allowance it spent returns. Covers settled spend only — a hold is not a payment and never moves this. Null when no payment is counted, even if `held` is non-zero; see `holdsExpireAt`. */
   readonly resetsAt?: Maybe<Scalars['Timestamp']['output']>;
+  /** The most that can be charged in ONE top-up, whatever the daily headroom. A separate gate from the cap, so an account with $500 remaining and a $200 single-payment limit can only pay $200 at a time — offering the $500 gets the charge refused. Take `min(remaining, singlePaymentLimit)` as the maximum. */
+  readonly singlePaymentLimit: Scalars['CentAmount']['output'];
   /** Gross charged in the trailing 24 hours. Payments we captured but did not credit are excluded — they delivered nothing, so they do not spend the allowance. */
   readonly spent: Scalars['CentAmount']['output'];
 };
 
+/** The allowance, or why there isn't one. Exactly one of the two fields is ever set. `unavailableReason` exists so the client can tell a state that will never resolve on its own (hide the card top-up option) from a momentary read failure (show the flat limit, retry) — collapsing both into a missing allowance is what invites a top-up the pre-charge check then refuses. */
+export type FygaroTopupAllowancePayload = {
+  readonly __typename: 'FygaroTopupAllowancePayload';
+  /** Null whenever `unavailableReason` is set, and only then. */
+  readonly allowance?: Maybe<FygaroTopupAllowance>;
+  /** Always empty. Refusals are reported as `unavailableReason`, not as errors — the field is decoration on a screen the customer is still filling in, so a read failure must not surface as one. Present for consistency with every other payload type. */
+  readonly errors: ReadonlyArray<Error>;
+  /** @deprecated Use `allowance.held`. Present only for flash-mobile v0.6.7. */
+  readonly held: Scalars['CentAmount']['output'];
+  /** @deprecated Use `allowance.holdsExpireAt`. Present only for flash-mobile v0.6.7. */
+  readonly holdsExpireAt?: Maybe<Scalars['Timestamp']['output']>;
+  /** @deprecated Use `allowance.limit`. Present only for flash-mobile v0.6.7. */
+  readonly limit: Scalars['CentAmount']['output'];
+  /** @deprecated Use `allowance.remaining`. Present only for flash-mobile v0.6.7. */
+  readonly remaining: Scalars['CentAmount']['output'];
+  /** Null whenever `allowance` is present, and only then. */
+  readonly unavailableReason?: Maybe<FygaroTopupAllowanceUnavailableReason>;
+};
+
+export const FygaroTopupAllowanceUnavailableReason = {
+  /** PERMANENT until an operator acts: card top-ups are switched off. Every fygaroCheckoutCreate is refused in this state, so hide the card top-up option rather than polling. */
+  CheckoutDisabled: 'CHECKOUT_DISABLED',
+  /** TRANSIENT: the trailing-24h top-up history could not be read. We refuse to guess rather than show a full allowance we would then refuse to honour. */
+  HistoryUnavailable: 'HISTORY_UNAVAILABLE',
+  /** PERMANENT until the account is upgraded: this account level has no card top-up allowance at all. Hide the option and point at verification; retrying changes nothing. */
+  LevelNotEligible: 'LEVEL_NOT_ELIGIBLE',
+  /** TRANSIENT: too many allowance checks from this account too quickly. Back off and reuse the last answer; nothing here is authorised, so no charge was lost. */
+  RateLimited: 'RATE_LIMITED',
+  /** TRANSIENT: this account's open checkout links could not be read, so the allowance cannot be known. Unknown holds are not zero holds. */
+  ReservationsUnavailable: 'RESERVATIONS_UNAVAILABLE',
+  /** TRANSIENT: the operator settings could not be read. Retry — nothing about the account has changed. */
+  SettingsUnavailable: 'SETTINGS_UNAVAILABLE'
+} as const;
+
+export type FygaroTopupAllowanceUnavailableReason = typeof FygaroTopupAllowanceUnavailableReason[keyof typeof FygaroTopupAllowanceUnavailableReason];
+/**
+ * Fee parameters for Fygaro card top-ups, so the client can
+ * compute the net amount a user will receive. Null when the operator settings
+ * are unavailable — clients should degrade gracefully (hide the estimate).
+ */
 export type FygaroTopupInfo = {
   readonly __typename: 'FygaroTopupInfo';
-  /** Flash fixed fee, in USD. */
+  /** Flash margin fixed fee, in USD. */
   readonly flashFeeFixed: Scalars['Float']['output'];
-  /** Flash percentage fee (e.g. 2.0 for 2%). */
+  /** Flash margin percentage fee (e.g. 2.0 = 2.0%). */
   readonly flashFeePercent: Scalars['Float']['output'];
   /** Maximum gross card top-up per rolling 24h for level-1 accounts, in USD. */
   readonly l1DailyLimit: Scalars['Float']['output'];
@@ -952,9 +993,9 @@ export type FygaroTopupInfo = {
   readonly l3DailyLimit: Scalars['Float']['output'];
   /** Minimum top-up amount, in USD. */
   readonly minimumAmount: Scalars['Float']['output'];
-  /** Payment-processor fixed fee, in USD (e.g. 0.49). */
+  /** Payment-processor fixed fee, in USD. */
   readonly processorFeeFixed: Scalars['Float']['output'];
-  /** Payment-processor percentage fee (e.g. 2.99 for 2.99%). */
+  /** Payment-processor percentage fee (e.g. 2.99 = 2.99%). */
   readonly processorFeePercent: Scalars['Float']['output'];
 };
 
@@ -972,6 +1013,7 @@ export const FygaroTopupState = {
 } as const;
 
 export type FygaroTopupState = typeof FygaroTopupState[keyof typeof FygaroTopupState];
+/** What actually happened to a card top-up. The card charge succeeding and Flash crediting the wallet are different events; only this reports the second. */
 export type FygaroTopupStatus = {
   readonly __typename: 'FygaroTopupStatus';
   /** The amount this checkout was authorised for. Null ONLY when the checkout record could not be read (state UNCONFIRMED, transient): the amount lives on that record. The client already knows what it asked for, so this is an echo, never the source of truth for what was charged. */
@@ -999,9 +1041,9 @@ export type Globals = {
   readonly cashoutEnabled: Scalars['Boolean']['output'];
   readonly feesInformation: FeesInformation;
   /**
-   * Fee and minimum-amount parameters for Fygaro card top-ups, used to preview
-   * the net amount the user will receive and to enforce the minimum. Null when
-   * the instance's Fygaro settings are unavailable.
+   * Fee parameters for Fygaro card top-ups so the app can
+   * preview the net amount a user will receive. Null when operator settings
+   * are unavailable — the app should hide the estimate and fall back gracefully.
    */
   readonly fygaroTopup?: Maybe<FygaroTopupInfo>;
   /** The domain name for lightning addresses accepted by this Galoy instance */
@@ -1087,6 +1129,8 @@ export type InitiationViaOnChain = {
 export type IntraLedgerPaymentSendInput = {
   /** Amount in satoshis. */
   readonly amount: Scalars['SatAmount']['input'];
+  /** Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again. */
+  readonly idempotencyKey?: InputMaybe<Scalars['String']['input']>;
   /** Optional memo to be attached to the payment. */
   readonly memo?: InputMaybe<Scalars['Memo']['input']>;
   readonly recipientWalletId: Scalars['WalletId']['input'];
@@ -1107,6 +1151,8 @@ export type IntraLedgerUpdate = {
 export type IntraLedgerUsdPaymentSendInput = {
   /** Amount in cents. */
   readonly amount: Scalars['FractionalCentAmount']['input'];
+  /** Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again. */
+  readonly idempotencyKey?: InputMaybe<Scalars['String']['input']>;
   /** Optional memo to be attached to the payment. */
   readonly memo?: InputMaybe<Scalars['Memo']['input']>;
   readonly recipientWalletId: Scalars['WalletId']['input'];
@@ -1208,6 +1254,8 @@ export type LnInvoicePayload = {
 };
 
 export type LnInvoicePaymentInput = {
+  /** Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again. */
+  readonly idempotencyKey?: InputMaybe<Scalars['String']['input']>;
   /** Optional memo to associate with the lightning invoice. */
   readonly memo?: InputMaybe<Scalars['Memo']['input']>;
   /** Payment request representing the invoice which is being paid. */
@@ -1266,6 +1314,8 @@ export type LnNoAmountInvoicePayload = {
 export type LnNoAmountInvoicePaymentInput = {
   /** Amount to pay in satoshis. */
   readonly amount: Scalars['SatAmount']['input'];
+  /** Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again. */
+  readonly idempotencyKey?: InputMaybe<Scalars['String']['input']>;
   /** Optional memo to associate with the lightning invoice. */
   readonly memo?: InputMaybe<Scalars['Memo']['input']>;
   /** Payment request representing the invoice which is being paid. */
@@ -1283,6 +1333,8 @@ export type LnNoAmountUsdInvoiceFeeProbeInput = {
 export type LnNoAmountUsdInvoicePaymentInput = {
   /** Amount to pay in USD cents. */
   readonly amount: Scalars['FractionalCentAmount']['input'];
+  /** Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again. */
+  readonly idempotencyKey?: InputMaybe<Scalars['String']['input']>;
   /** Optional memo to associate with the lightning invoice. */
   readonly memo?: InputMaybe<Scalars['Memo']['input']>;
   /** Payment request representing the invoice which is being paid. */
@@ -1329,6 +1381,8 @@ export type LnUsdInvoiceFeeProbeInput = {
 export type LnurlPaymentSendInput = {
   /** Amount to spend from the USD/USDT wallet, in USD cents. */
   readonly amount: Scalars['FractionalCentAmount']['input'];
+  /** Optional client-supplied key; a repeated send with the same key returns the original result instead of paying again. */
+  readonly idempotencyKey?: InputMaybe<Scalars['String']['input']>;
   /** LNURL-pay value to decode and pay. */
   readonly lnurl: Scalars['Lnurl']['input'];
   /** Optional memo for the Lightning payment. */
@@ -2163,7 +2217,9 @@ export type Query = {
   readonly colorScheme: Scalars['String']['output'];
   readonly currencyList: ReadonlyArray<Currency>;
   readonly feedbackModalShown: Scalars['Boolean']['output'];
-  readonly fygaroTopupAllowance?: Maybe<FygaroTopupAllowance>;
+  /** How much card top-up allowance this account has left today. When the allowance cannot be established, `unavailableReason` says why: hide the card top-up option for the reasons that will not resolve on their own (CHECKOUT_DISABLED, LEVEL_NOT_ELIGIBLE), and for the transient ones show the flat limit and let the pre-charge check decide, rather than inventing a number. */
+  readonly fygaroTopupAllowance: FygaroTopupAllowancePayload;
+  /** The outcome of a card top-up, by the checkout id returned from fygaroCheckoutCreate. Null when the checkout is unknown, expired, or not this account's — never as a way of saying 'not yet': a checkout we simply cannot read right now comes back as UNCONFIRMED so a transient fault is not reported to the customer as a payment that never existed. */
   readonly fygaroTopupStatus?: Maybe<FygaroTopupStatus>;
   readonly globals?: Maybe<Globals>;
   readonly hasPromptedSetDefaultAccount: Scalars['Boolean']['output'];
@@ -3380,7 +3436,7 @@ export type AccountStatusQuery = { readonly __typename: 'Query', readonly me?: {
 export type FygaroTopupAllowanceQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type FygaroTopupAllowanceQuery = { readonly __typename: 'Query', readonly fygaroTopupAllowance?: { readonly __typename: 'FygaroTopupAllowance', readonly limit: number, readonly held: number, readonly remaining: number, readonly holdsExpireAt?: number | null } | null };
+export type FygaroTopupAllowanceQuery = { readonly __typename: 'Query', readonly fygaroTopupAllowance: { readonly __typename: 'FygaroTopupAllowancePayload', readonly limit: number, readonly held: number, readonly remaining: number, readonly holdsExpireAt?: number | null } };
 
 export type CardTopupLimitsQueryVariables = Exact<{ [key: string]: never; }>;
 
