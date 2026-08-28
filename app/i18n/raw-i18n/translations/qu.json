@@ -687,7 +687,8 @@
     "maxFeeSelected": "Chaynamanta kaniyta rikuyta munanpi, kaniyta rikuyta munanpi ch'usaq kayniyta rikuy munanpi kawsayniyta qillqata sutichinaqinmi. Kaniytaikuyta munanpi kawsayniyta qillqata sutichinaqinmi chaypi ch'usaq kayniyta rikuy munanpi ch'usaqta munanpi kawsayniyta qillqata sutichinaqinmi.",
     "feeError": "Chaynamanta kaniyta rikuyta munanpi, ch'usaq kayniyta rikuyta munanpi ch'usaqta munanpi kawsayniyta qillqata sutichinaqin.",
     "breezFeeText": "There may be a small fee for routing",
-    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one.",
+    "keyAlreadyUsed": "This payment was already submitted. Check your transaction history before sending it again."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "{bankName: string} kaniyta yachanakuyta sutichinaqinmi, {bankName: string} kawsayniyta qillqata sutichinaqinmi kaniyta rikuyta munanpi.",

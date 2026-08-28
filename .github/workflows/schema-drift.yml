@@ -23,6 +23,13 @@ name: schema-drift-check
 #     PR can fix; failing on those would turn every PR touching app/graphql red
 #     the first time lnflash/flash merges anything, and a red X that everyone
 #     knows to ignore is worse protection than no check at all.
+#
+# The scheduled run does NOT stop at going red. A failing scheduled workflow
+# notifies whoever last committed to this file and nobody else — no assignee,
+# no issue, nothing in anyone's queue. That is the same unowned-signal failure
+# mode that let the snapshot sit 224 lines behind in the first place, so the
+# strict run opens (and thereafter updates) a labelled tracking issue carrying
+# the diff, and closes it again when the drift clears.
 
 on:
   pull_request:
@@ -33,6 +40,21 @@ on:
     # Mondays 13:00 UTC — start of the week, before release planning.
     - cron: "0 13 * * 1"
   workflow_dispatch:
+
+# Needed by the tracking-issue steps below; everything else here only reads.
+permissions:
+  contents: read
+  issues: write
+
+env:
+  # The label the tracking issue is found by. Owned by a team rather than a
+  # person: a scheduled check assigned to an individual goes stale the week
+  # they are on leave.
+  DRIFT_LABEL: schema-drift
+  # Optional team handle (e.g. "@lnflash/mobile") pinged in the issue body.
+  # GitHub cannot assign an issue to a team, so a mention is the closest thing;
+  # set the repository variable to route it, leave it unset to route by label.
+  DRIFT_TEAM: ${{ vars.SCHEMA_DRIFT_TEAM }}
 
 jobs:
   schema-drift:
@@ -66,13 +88,19 @@ jobs:
           fi
 
       - name: Compare against the checked-in snapshot
+        id: compare
         env:
           # Pure additions are advisory on a PR and fatal on the schedule; a
           # removal is fatal either way.
           STRICT: ${{ github.event_name != 'pull_request' }}
         run: |
+          # This step decides the verdict and never exits non-zero on drift:
+          # the tracking-issue step has to run BEFORE the job goes red, and a
+          # step that has already failed cannot hand it anything. "Fail on
+          # drift", last in the job, is what turns the verdict into a red X.
           if diff -u app/graphql/public-schema.graphql /tmp/server-schema.graphql > /tmp/schema.diff; then
             echo "public-schema.graphql matches the server SDL."
+            echo "verdict=clean" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -98,17 +126,115 @@ jobs:
           if [ "$REMOVALS" = "1" ]; then
             echo "::error::app/graphql/public-schema.graphql declares things lnflash/flash main no longer does. An operation this app sends may now be invalid."
             report
-            exit 1
+            echo "verdict=removals" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
           if [ "$STRICT" = "true" ]; then
             echo "::error::app/graphql/public-schema.graphql has drifted behind lnflash/flash main."
             report
-            exit 1
+            echo "verdict=additions" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
           # PR, additions only: say so and get out of the way. This drift was
           # not caused by this PR and cannot be fixed by it.
           echo "::warning::the server SDL has fields our snapshot lacks. Not caused by this PR and not blocking it — the weekly schema-drift run tracks it."
           report
+          echo "verdict=advisory" >> "$GITHUB_OUTPUT"
           exit 0
+
+      # A red workflow run is not an owner. On the strict (scheduled / manual)
+      # triggers the drift gets a tracking issue with the diff in it, reopened
+      # and updated rather than duplicated, so it lands in a queue somebody
+      # actually reads.
+      - name: Open or update the drift tracking issue
+        if: >-
+          github.event_name != 'pull_request' &&
+          steps.compare.outputs.verdict != 'clean'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERDICT: ${{ steps.compare.outputs.verdict }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          gh label create "$DRIFT_LABEL" \
+            --description "app/graphql/public-schema.graphql has drifted from the lnflash/flash SDL" \
+            --color B60205 2>/dev/null || true
+
+          {
+            if [ "$VERDICT" = "removals" ]; then
+              echo "\`app/graphql/public-schema.graphql\` declares things \`lnflash/flash\` \`main\` no longer does."
+              echo "**An operation this app sends may now be invalid.**"
+            else
+              echo "\`app/graphql/public-schema.graphql\` has drifted behind \`lnflash/flash\` \`main\`."
+              echo "Fields the server has are invisible to codegen, so the app cannot ask for them"
+              echo "and the failure looks like \"the backend never shipped it\"."
+            fi
+            echo
+            if [ -n "${DRIFT_TEAM:-}" ]; then
+              echo "cc ${DRIFT_TEAM}"
+              echo
+            fi
+            echo "To refresh:"
+            echo
+            echo '```sh'
+            echo "curl -fsSL https://raw.githubusercontent.com/lnflash/flash/main/src/graphql/public/schema.graphql -o app/graphql/public-schema.graphql"
+            echo "yarn dev:codegen"
+            echo "yarn graphql-check"
+            echo '```'
+            echo
+            echo "A field REMOVED server-side surfaces in \`graphql-check\` as an invalid operation,"
+            echo "which is the case worth reading carefully rather than just committing the refresh."
+            echo
+            echo "Run: ${RUN_URL}"
+            echo
+            echo "<details><summary>diff (ours vs server)</summary>"
+            echo
+            echo '```diff'
+            head -200 /tmp/schema.diff
+            echo '```'
+            echo
+            echo "</details>"
+          } > /tmp/issue-body.md
+
+          EXISTING=$(gh issue list --state open --label "$DRIFT_LABEL" \
+            --json number --jq '.[0].number // empty')
+
+          if [ -n "$EXISTING" ]; then
+            # One issue, updated — a new one per week would be its own kind of
+            # noise to ignore.
+            gh issue comment "$EXISTING" --body-file /tmp/issue-body.md
+            echo "updated tracking issue #${EXISTING}"
+          else
+            gh issue create \
+              --title "GraphQL schema snapshot has drifted from lnflash/flash" \
+              --label "$DRIFT_LABEL" \
+              --body-file /tmp/issue-body.md
+          fi
+
+      # Drift that has been fixed must not leave a stale issue open, or the
+      # label stops meaning anything.
+      - name: Close the tracking issue once the snapshot matches
+        if: >-
+          github.event_name != 'pull_request' &&
+          steps.compare.outputs.verdict == 'clean'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          EXISTING=$(gh issue list --state open --label "$DRIFT_LABEL" \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue close "$EXISTING" \
+              --comment "\`app/graphql/public-schema.graphql\` now matches the \`lnflash/flash\` SDL. Closed by the schema-drift check."
+          fi
+
+      - name: Fail on drift
+        if: >-
+          steps.compare.outputs.verdict == 'removals' ||
+          steps.compare.outputs.verdict == 'additions'
+        run: |
+          echo "See the 'Compare against the checked-in snapshot' step for the diff."
+          exit 1

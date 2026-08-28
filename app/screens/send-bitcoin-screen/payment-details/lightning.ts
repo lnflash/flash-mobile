@@ -9,7 +9,7 @@ import {
 } from "@app/types/amounts"
 import { PaymentType } from "@galoymoney/client"
 import { LnUrlPayServiceResponse } from "lnurl-pay/dist/types/types"
-import { withIdempotencyKey } from "./idempotency-support"
+import { IDEMPOTENT_SEND_INPUTS, withIdempotencyKey } from "./idempotency-support"
 import {
   ConvertMoneyAmount,
   SetInvoice,
@@ -89,26 +89,37 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
       }
     }
 
-    const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) => {
-      const { data } = await paymentMutations.lnNoAmountInvoicePaymentSend({
-        variables: {
-          input: {
-            walletId: sendingWalletDescriptor.id,
-            paymentRequest,
-            amount: settlementAmount.amount,
-            memo,
-            // Long-deployed on this input (ENG-530), so it goes out
-            // unconditionally — see SendPaymentMutationParams.
-            idempotencyKey: paymentMutations.idempotencyKey,
-          },
+    const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
+      // Gated like every other send input: nothing in this repo measures which
+      // environments carry the field, and an ungated refusal takes the whole
+      // path down rather than degrading. See idempotency-support.ts.
+      withIdempotencyKey(
+        paymentMutations.idempotencyKey,
+        {
+          apiEndpoint: paymentMutations.apiEndpoint,
+          inputType: IDEMPOTENT_SEND_INPUTS.lnNoAmountInvoice,
         },
-      })
+        async (keyField) => {
+          const { data } = await paymentMutations.lnNoAmountInvoicePaymentSend({
+            variables: {
+              input: {
+                walletId: sendingWalletDescriptor.id,
+                paymentRequest,
+                amount: settlementAmount.amount,
+                memo,
+                // Same key for every repeat of this attempt, so a send whose
+                // response was lost settles once. See SendPaymentMutationParams.
+                ...keyField,
+              },
+            },
+          })
 
-      return {
-        status: data?.lnNoAmountInvoicePaymentSend.status,
-        errors: data?.lnNoAmountInvoicePaymentSend.errors,
-      }
-    }
+          return {
+            status: data?.lnNoAmountInvoicePaymentSend.status,
+            errors: data?.lnNoAmountInvoicePaymentSend.errors,
+          }
+        },
+      )
 
     sendPaymentAndGetFee = {
       canSendPayment: true,
@@ -148,30 +159,38 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
     }
 
     const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
-      // The one input the app sends that only gained `idempotencyKey` in
-      // flash#494. An older API rejects the whole mutation during input
-      // coercion rather than ignoring the field, so it is gated: see
-      // idempotency-support.ts.
-      withIdempotencyKey(paymentMutations.idempotencyKey, async (keyField) => {
-        const { data } = await paymentMutations.lnNoAmountUsdInvoicePaymentSend({
-          variables: {
-            input: {
-              walletId: sendingWalletDescriptor.id,
-              paymentRequest,
-              amount: settlementAmount.amount,
-              memo,
-              // Same key for every repeat of this attempt, so a send whose
-              // response was lost settles once. See SendPaymentMutationParams.
-              ...keyField,
+      // The input that most obviously needs the gate — it only gained
+      // `idempotencyKey` in flash#494 — but the gate is not special-cased to
+      // it: an older API rejects the whole mutation during input coercion
+      // rather than ignoring the field, and that is true of all five inputs.
+      // See idempotency-support.ts.
+      withIdempotencyKey(
+        paymentMutations.idempotencyKey,
+        {
+          apiEndpoint: paymentMutations.apiEndpoint,
+          inputType: IDEMPOTENT_SEND_INPUTS.lnNoAmountUsdInvoice,
+        },
+        async (keyField) => {
+          const { data } = await paymentMutations.lnNoAmountUsdInvoicePaymentSend({
+            variables: {
+              input: {
+                walletId: sendingWalletDescriptor.id,
+                paymentRequest,
+                amount: settlementAmount.amount,
+                memo,
+                // Same key for every repeat of this attempt, so a send whose
+                // response was lost settles once. See SendPaymentMutationParams.
+                ...keyField,
+              },
             },
-          },
-        })
+          })
 
-        return {
-          status: data?.lnNoAmountUsdInvoicePaymentSend.status,
-          errors: data?.lnNoAmountUsdInvoicePaymentSend.errors,
-        }
-      })
+          return {
+            status: data?.lnNoAmountUsdInvoicePaymentSend.status,
+            errors: data?.lnNoAmountUsdInvoicePaymentSend.errors,
+          }
+        },
+      )
 
     sendPaymentAndGetFee = {
       canSendPayment: true,
@@ -256,25 +275,34 @@ export const createAmountLightningPaymentDetails = <T extends WalletCurrency>(
   )
   const unitOfAccountAmount = paymentRequestAmount
 
-  const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) => {
-    const { data } = await paymentMutations.lnInvoicePaymentSend({
-      variables: {
-        input: {
-          walletId: sendingWalletDescriptor.id,
-          paymentRequest,
-          memo,
-          // Long-deployed on this input (ENG-530), so it goes out
-          // unconditionally — see SendPaymentMutationParams.
-          idempotencyKey: paymentMutations.idempotencyKey,
-        },
+  const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
+    // Gated like every other send input — see idempotency-support.ts.
+    withIdempotencyKey(
+      paymentMutations.idempotencyKey,
+      {
+        apiEndpoint: paymentMutations.apiEndpoint,
+        inputType: IDEMPOTENT_SEND_INPUTS.lnInvoice,
       },
-    })
+      async (keyField) => {
+        const { data } = await paymentMutations.lnInvoicePaymentSend({
+          variables: {
+            input: {
+              walletId: sendingWalletDescriptor.id,
+              paymentRequest,
+              memo,
+              // Same key for every repeat of this attempt, so a send whose
+              // response was lost settles once. See SendPaymentMutationParams.
+              ...keyField,
+            },
+          },
+        })
 
-    return {
-      status: data?.lnInvoicePaymentSend.status,
-      errors: data?.lnInvoicePaymentSend.errors,
-    }
-  }
+        return {
+          status: data?.lnInvoicePaymentSend.status,
+          errors: data?.lnInvoicePaymentSend.errors,
+        }
+      },
+    )
 
   let getFee: GetFee<T>
 

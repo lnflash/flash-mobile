@@ -999,7 +999,9 @@ const en: BaseTranslation = {
     feeError: "Failed to calculate fee",
     breezFeeText: "There may be a small fee for routing",
     heldInvoiceExpired:
-      "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
+      "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one.",
+    keyAlreadyUsed:
+      "This payment was already submitted. Check your transaction history before sending it again."
   },
   SendBitcoinDestinationScreen: {
     usernameNowAddress:

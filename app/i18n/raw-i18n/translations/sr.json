@@ -687,7 +687,8 @@
     "maxFeeSelected": "Ово је максимална накнада која ће вам бити наплаћена за ову трансакцију. Може се испоставити да је мања након што је плаћање извршено.",
     "feeError": "Неуспешно рачунање накнаде",
     "breezFeeText": "There may be a small fee for routing",
-    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one.",
+    "keyAlreadyUsed": "This payment was already submitted. Check your transaction history before sending it again."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "{bankName: string} корисничка имена су сада {bankName: string} адресе.",

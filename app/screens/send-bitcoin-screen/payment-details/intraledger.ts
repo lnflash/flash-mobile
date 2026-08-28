@@ -1,6 +1,7 @@
 import { WalletCurrency } from "@app/graphql/generated"
 import { MoneyAmount, WalletOrDisplayCurrency, toWalletAmount } from "@app/types/amounts"
 import { PaymentType } from "@galoymoney/client"
+import { IDEMPOTENT_SEND_INPUTS, withIdempotencyKey } from "./idempotency-support"
 import {
   BaseCreatePaymentDetailsParams,
   ConvertMoneyAmount,
@@ -55,26 +56,35 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
     settlementAmount.amount &&
     sendingWalletDescriptor.currency === WalletCurrency.Btc
   ) {
-    const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) => {
-      const { data } = await paymentMutations.intraLedgerPaymentSend({
-        variables: {
-          input: {
-            walletId: sendingWalletDescriptor.id,
-            recipientWalletId,
-            amount: settlementAmount.amount,
-            memo,
-            // Long-deployed on this input (ENG-530), so it goes out
-            // unconditionally — see SendPaymentMutationParams.
-            idempotencyKey: paymentMutations.idempotencyKey,
-          },
+    const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
+      // Gated like every other send input — see idempotency-support.ts.
+      withIdempotencyKey(
+        paymentMutations.idempotencyKey,
+        {
+          apiEndpoint: paymentMutations.apiEndpoint,
+          inputType: IDEMPOTENT_SEND_INPUTS.intraLedger,
         },
-      })
+        async (keyField) => {
+          const { data } = await paymentMutations.intraLedgerPaymentSend({
+            variables: {
+              input: {
+                walletId: sendingWalletDescriptor.id,
+                recipientWalletId,
+                amount: settlementAmount.amount,
+                memo,
+                // Same key for every repeat of this attempt, so a send whose
+                // response was lost settles once. See SendPaymentMutationParams.
+                ...keyField,
+              },
+            },
+          })
 
-      return {
-        status: data?.intraLedgerPaymentSend.status,
-        errors: data?.intraLedgerPaymentSend.errors,
-      }
-    }
+          return {
+            status: data?.intraLedgerPaymentSend.status,
+            errors: data?.intraLedgerPaymentSend.errors,
+          }
+        },
+      )
 
     sendPaymentAndGetFee = {
       canSendPayment: true,
@@ -87,26 +97,36 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
     (sendingWalletDescriptor.currency === WalletCurrency.Usd ||
       sendingWalletDescriptor.currency === WalletCurrency.Usdt)
   ) {
-    const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) => {
-      const { data } = await paymentMutations.intraLedgerUsdPaymentSend({
-        variables: {
-          input: {
-            walletId: sendingWalletDescriptor.id,
-            recipientWalletId,
-            amount: settlementAmount.amount,
-            memo,
-            // USD/USDT Flash-to-Flash — the same double-debit class ENG-533
-            // exists to close. Long-deployed on this input (ENG-530).
-            idempotencyKey: paymentMutations.idempotencyKey,
-          },
+    const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
+      // USD/USDT Flash-to-Flash — the same double-debit class ENG-533 exists to
+      // close, and gated like every other send input.
+      withIdempotencyKey(
+        paymentMutations.idempotencyKey,
+        {
+          apiEndpoint: paymentMutations.apiEndpoint,
+          inputType: IDEMPOTENT_SEND_INPUTS.intraLedgerUsd,
         },
-      })
+        async (keyField) => {
+          const { data } = await paymentMutations.intraLedgerUsdPaymentSend({
+            variables: {
+              input: {
+                walletId: sendingWalletDescriptor.id,
+                recipientWalletId,
+                amount: settlementAmount.amount,
+                memo,
+                // Same key for every repeat of this attempt, so a send whose
+                // response was lost settles once. See SendPaymentMutationParams.
+                ...keyField,
+              },
+            },
+          })
 
-      return {
-        status: data?.intraLedgerUsdPaymentSend.status,
-        errors: data?.intraLedgerUsdPaymentSend.errors,
-      }
-    }
+          return {
+            status: data?.intraLedgerUsdPaymentSend.status,
+            errors: data?.intraLedgerUsdPaymentSend.errors,
+          }
+        },
+      )
 
     sendPaymentAndGetFee = {
       canSendPayment: true,

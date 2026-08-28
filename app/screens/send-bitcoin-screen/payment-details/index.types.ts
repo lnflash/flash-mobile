@@ -75,17 +75,28 @@ export type SendPaymentMutationParams = {
    * (flash#494) recognise the repeat and return the original outcome instead
    * of paying a second time.
    *
-   * FIVE send inputs accept it, and every one this app calls passes it:
+   * FIVE send inputs accept it, and every one this app calls passes it
+   * through the SAME runtime gate in idempotency-support.ts:
    * intraLedgerPaymentSend, intraLedgerUsdPaymentSend,
-   * lnNoAmountInvoicePaymentSend and lnInvoicePaymentSend have carried the
-   * field since ENG-530 and pass it unconditionally;
-   * lnNoAmountUsdInvoicePaymentSend only gained it in flash#494, so it goes
-   * through the runtime gate in idempotency-support.ts. The sixth,
-   * lnurlPaymentSend, accepts it server-side but is never called from here —
-   * LNURL sends go through Breez. Onchain sends likewise: those resolvers are
-   * stubbed and the money moves client-side through Breez.
+   * lnInvoicePaymentSend, lnNoAmountInvoicePaymentSend and
+   * lnNoAmountUsdInvoicePaymentSend. Four of them have carried the field since
+   * ENG-530 and one only since flash#494, but nothing in this repo measures
+   * which environments are on which release — and an unknown input field is
+   * rejected during coercion, taking the whole send path down rather than
+   * degrading — so none of them is exempt. The sixth, lnurlPaymentSend,
+   * accepts it server-side but is never called from here — LNURL sends go
+   * through Breez. Onchain sends likewise: those resolvers are stubbed and the
+   * money moves client-side through Breez.
    */
   idempotencyKey: string
+  /**
+   * The GraphQL endpoint this send is going to (`galoyInstance.graphqlUri`).
+   *
+   * Scopes the idempotency-support gate. The app can switch instance at
+   * runtime, so a refusal learned from staging — or from one stale pod mid
+   * rolling deploy — must not disarm the key for prod.
+   */
+  apiEndpoint: string
   lnInvoicePaymentSend: LnInvoicePaymentSendMutationHookResult["0"]
   lnNoAmountInvoicePaymentSend: LnNoAmountInvoicePaymentSendMutationHookResult["0"]
   lnNoAmountUsdInvoicePaymentSend: LnNoAmountUsdInvoicePaymentSendMutationHookResult["0"]

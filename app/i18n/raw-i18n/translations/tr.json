@@ -687,7 +687,8 @@
     "maxFeeSelected": "Bu, bu işlem için sizden tahsil edilecek maksimum ücrettir. Ödeme yapıldıktan sonra daha az olabilir.",
     "feeError": "Gönderi ücreti hesaplanamadı",
     "breezFeeText": "There may be a small fee for routing",
-    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one.",
+    "keyAlreadyUsed": "This payment was already submitted. Check your transaction history before sending it again."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "{BankName: string} kullanıcı adları artık {bankName: string} adresleridir.",

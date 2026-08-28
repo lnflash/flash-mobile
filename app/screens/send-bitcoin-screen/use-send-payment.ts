@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 // gql
 import {
@@ -29,7 +29,13 @@ import { PaymentDetail, SendPaymentMutation } from "./payment-details/index.type
 import { payLightningBreez, payOnchainBreez, payLnurlBreez } from "@app/utils/breez-sdk"
 
 // idempotency
-import { attemptFingerprintOf, attemptKey, retireAttemptKey } from "./send-attempt-key"
+import {
+  attemptFingerprintOf,
+  freezeAttempt,
+  hydrateSendAttemptKeys,
+  retireAttemptKey,
+} from "./send-attempt-key"
+import { isIdempotencyKeyReuseError } from "./payment-details/idempotency-support"
 
 export type SendPaymentResult = {
   status: PaymentSendResult | null | undefined
@@ -45,6 +51,19 @@ export type SendPaymentResult = {
    * failure toast plus an error haptic over a payment that is about to succeed.
    */
   ignored?: boolean
+  /**
+   * The backend refused to replay: it holds a result for this key against
+   * DIFFERENT payment parameters (`IdempotencyKeyReuseError`).
+   *
+   * Distinguishable on purpose, and the most dangerous status in this file to
+   * get wrong. It arrives as an ordinary `{ status: "failed" }`, and a failure
+   * is what retires the key and re-enables Confirm — so read as one it hands
+   * the user a FRESH key for a payment the server has already settled, and the
+   * money leaves twice. The server owns an outcome here and the client cannot
+   * see which; the only safe move is to stop and send the user to their
+   * history.
+   */
+  keyReused?: boolean
 }
 
 type UseSendPaymentResult = {
@@ -68,7 +87,7 @@ export const useSendPayment = (
   paymentDetail?: PaymentDetail<WalletCurrency>,
   selectedFeeType?: "fast" | "medium" | "slow",
 ): UseSendPaymentResult => {
-  const { lnAddressHostname } = useAppConfig().appConfig.galoyInstance
+  const { lnAddressHostname, graphqlUri } = useAppConfig().appConfig.galoyInstance
 
   const [intraLedgerPaymentSend, { loading: intraLedgerPaymentSendLoading }] =
     useIntraLedgerPaymentSendMutation({ refetchQueries: [HomeAuthedDocument] })
@@ -116,6 +135,13 @@ export const useSendPayment = (
     () => (paymentDetail ? attemptFingerprintOf(paymentDetail) : undefined),
     [paymentDetail],
   )
+
+  // Warm the persisted generations while the user is still reading the confirm
+  // screen, so the send itself never waits on a disk read. Idempotent — the
+  // send path awaits the same memoised promise before deriving a key.
+  useEffect(() => {
+    hydrateSendAttemptKeys().catch(() => {})
+  }, [])
 
   // The same reading `ignored` reports, but available BEFORE the request — see
   // UseSendPaymentResult.
@@ -225,8 +251,25 @@ export const useSendPayment = (
           }
         } else {
           console.log("Starting sendPaymentMutation using GraphQL")
-          const response = await sendPaymentMutation({
-            idempotencyKey: attemptKey(sendFingerprint),
+          // Retired generations outlive the process, because the server's
+          // 24h idempotency window does. Without this a force-quit — the
+          // normal reaction to a failed payment — re-derives the generation-0
+          // key the server already answered with FAILURE, and the identical
+          // retry replays that failure for the rest of the day.
+          await hydrateSendAttemptKeys()
+
+          // Freeze, don't just key. The server binds its cached result to a
+          // fingerprint of the WIRE input (`ln|${paymentRequest}`,
+          // `ln-noamount-usd|${paymentRequest}|${amount}`, …), while ours is
+          // built from what survives the retry — which deliberately excludes a
+          // re-minted LNURL bolt11 and a price-derived settlement amount.
+          // Resending the same key with the REBUILT detail therefore lands on
+          // IdempotencyKeyReuseError instead of a replay. Resending the
+          // closure captured on the first Confirm keeps the two in lockstep.
+          const attempt = freezeAttempt(sendFingerprint, sendPaymentMutation)
+          const response = await attempt.send({
+            idempotencyKey: attempt.idempotencyKey,
+            apiEndpoint: graphqlUri,
             intraLedgerPaymentSend,
             intraLedgerUsdPaymentSend,
             lnInvoicePaymentSend,
@@ -241,6 +284,18 @@ export const useSendPayment = (
           if (response.errors) {
             errorsMessage = getErrorMessages(response.errors)
           }
+
+          // Checked BEFORE the retire below, and it must stay that way. The
+          // backend is telling us it already holds a result for this key under
+          // different parameters, i.e. an earlier send of this attempt may well
+          // have settled. Falling through would retire the key, free the
+          // button, and let the next tap pay a second time with a fresh key —
+          // the exact double-debit this file exists to prevent, reached
+          // through the mechanism meant to prevent it.
+          if (isIdempotencyKeyReuseError(response.errors)) {
+            return { status: response.status, errorsMessage, keyReused: true }
+          }
+
           if (response.status) {
             // Retire on ANY server-supplied status, not just Failure.
             //
@@ -271,7 +326,12 @@ export const useSendPayment = (
         const settled =
           result?.status === PaymentSendResult.Success ||
           result?.status === PaymentSendResult.Pending ||
-          result?.status === PaymentSendResult.AlreadyPaid
+          result?.status === PaymentSendResult.AlreadyPaid ||
+          // A reuse rejection is `{ status: "failed" }` on the wire, but the
+          // server is telling us it holds an outcome for this attempt. Another
+          // tap would be a second payment, so the button stays locked exactly
+          // as it does for SUCCESS.
+          result?.keyReused === true
         if (!settled) {
           // A ref used as a mutex is the point here, not an accident: it is
           // written synchronously so a second tap in the same frame observes
@@ -289,6 +349,7 @@ export const useSendPayment = (
     hasAttemptedSend,
     paymentDetail,
     fingerprint,
+    graphqlUri,
     selectedFeeType,
     intraLedgerPaymentSend,
     intraLedgerUsdPaymentSend,

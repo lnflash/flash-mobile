@@ -713,7 +713,9 @@ describe("a repeated USD send must settle once", () => {
     // uuid is minted afresh for exactly the repeat it is supposed to make
     // recognisable, and the backend books a second payment.
     const first = usdLightningDetail()
-    first.sendPaymentMutation.mockRejectedValue(new Error("Network request failed"))
+    first.sendPaymentMutation
+      .mockRejectedValueOnce(new Error("Network request failed"))
+      .mockResolvedValueOnce({ status: "SUCCESS", errors: [] })
 
     const firstScreen = await renderScreen(first.paymentDetail)
     await firstScreen.tapConfirm()
@@ -727,12 +729,18 @@ describe("a repeated USD send must settle once", () => {
     const secondScreen = await renderScreen(second.paymentDetail)
     await secondScreen.tapConfirm()
 
-    expect(keysSent(second.sendPaymentMutation)[0]).toBe(
-      keysSent(first.sendPaymentMutation)[0],
-    )
+    // The retry resends the FROZEN send, not the rebuilt one. That is what
+    // keeps our key and the server's `requestFingerprint` — built from the
+    // wire input — agreeing across the retry; resending the rebuilt detail
+    // under the same key is answered with IdempotencyKeyReuseError, which the
+    // screen reads as a failure and the customer then pays twice.
+    expect(second.sendPaymentMutation).not.toHaveBeenCalled()
+    const [firstKey, retryKey] = keysSent(first.sendPaymentMutation)
+    expect(first.sendPaymentMutation).toHaveBeenCalledTimes(2)
+    expect(retryKey).toBe(firstKey)
   })
 
-  it("carries the same key when the price ticked under the back-navigation", async () => {
+  it("carries the same key AND the same input when the price ticked under the back-navigation", async () => {
     // The back-navigation retry does not hand back the detail that was sent:
     // the details screen stays mounted underneath this one and rebuilds it on
     // every realtime-price tick, so a USD/USDT send comes back with a
@@ -740,8 +748,15 @@ describe("a repeated USD send must settle once", () => {
     // (`settlementAmountIsEstimated`), not something the user authored. Keyed
     // on it, the very retry this design exists for gets a different uuid and
     // the backend books a second payment.
+    //
+    // Excluding it from the key is only half the fix: the server's own
+    // fingerprint for this path is `ln-noamount-usd|${paymentRequest}|${amount}`,
+    // so the repeat has to carry the ORIGINAL amount as well or the backend
+    // refuses to replay.
     const first = usdLightningDetail()
-    first.sendPaymentMutation.mockRejectedValue(new Error("Network request failed"))
+    first.sendPaymentMutation
+      .mockRejectedValueOnce(new Error("Network request failed"))
+      .mockResolvedValueOnce({ status: "SUCCESS", errors: [] })
 
     const firstScreen = await renderScreen(first.paymentDetail)
     await firstScreen.tapConfirm()
@@ -757,8 +772,41 @@ describe("a repeated USD send must settle once", () => {
     expect(second.paymentDetail.settlementAmount.amount).not.toBe(
       first.paymentDetail.settlementAmount.amount,
     )
-    expect(keysSent(second.sendPaymentMutation)[0]).toBe(
-      keysSent(first.sendPaymentMutation)[0],
+    // The repriced detail's send is never called — the frozen one is.
+    expect(second.sendPaymentMutation).not.toHaveBeenCalled()
+    const [firstKey, retryKey] = keysSent(first.sendPaymentMutation)
+    expect(retryKey).toBe(firstKey)
+  })
+
+  it("refuses to pay again when the backend will not replay the key", async () => {
+    // IdempotencyKeyReuseError arrives as an ordinary `{ status: "failed" }`.
+    // Read as one it retires the key, frees the button, and the next tap goes
+    // out with a FRESH key for a payment the server has already settled — the
+    // double-debit this whole mechanism exists to prevent, reached through the
+    // mechanism itself.
+    const { paymentDetail, sendPaymentMutation } = usdLightningDetail()
+    sendPaymentMutation.mockResolvedValue({
+      status: "FAILURE",
+      errors: [
+        {
+          message:
+            "This idempotency key was already used for a different payment. Use a new key for a new payment.",
+        },
+      ],
+    })
+
+    const screen = await renderScreen(paymentDetail)
+    await screen.tapConfirm()
+
+    expect(screen.getByText(en.SendBitcoinConfirmationScreen.keyAlreadyUsed)).toBeTruthy()
+
+    await screen.tapConfirm()
+
+    // One request, and only one. The user is sent to their history instead.
+    expect(sendPaymentMutation).toHaveBeenCalledTimes(1)
+    expect(screen.navigate).not.toHaveBeenCalledWith(
+      "sendBitcoinSuccess",
+      expect.anything(),
     )
   })
 

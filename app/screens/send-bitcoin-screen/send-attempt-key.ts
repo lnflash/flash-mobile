@@ -1,5 +1,6 @@
 // The idempotency key for a send, derived from the ATTEMPT rather than minted
-// per hook instance.
+// per hook instance — and, with it, the FROZEN send that key was first paired
+// with.
 //
 // Why not a ref in useSendPayment: the retry this key exists to protect is the
 // one the user actually performs, and on this flow that retry is a
@@ -17,6 +18,7 @@
 // Module state, keyed by the attempt, mirrors invoice-expiry.ts's
 // first-sight map for the same reason: a per-mount store cannot see a
 // back-and-forward.
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { WalletCurrency } from "@app/graphql/generated"
 import { PaymentType } from "@galoymoney/client"
 import { v5 as uuidv5 } from "uuid"
@@ -31,20 +33,79 @@ import { PaymentDetail } from "./payment-details/index.types"
  */
 const SEND_ATTEMPT_NAMESPACE = "3a1f4f8c-1c22-4b3e-9c1a-5d2b7e6f8a90"
 
-// Attempts whose key has been spent by a DEFINITIVE, server-confirmed failure,
-// and how many times. Absent means generation 0 — the common case, so an
-// untouched attempt costs no entry at all.
+/**
+ * How long the server will answer for a key, and therefore how long anything
+ * we remember about that key is worth remembering.
+ *
+ * Mirrors `IDEMPOTENCY_TTL_SECS` in lnflash/flash `src/app/payments/idempotency.ts`
+ * (24h). Past it the backend has forgotten the key entirely, so a retired
+ * generation is no longer protecting anyone and a frozen input is no longer
+ * replayable — expiring both here keeps the two sides from disagreeing, and
+ * bounds these maps for free.
+ */
+export const ATTEMPT_MEMORY_TTL_MS = 24 * 60 * 60 * 1000
+
+/**
+ * Where the retired generations live across a process restart.
+ *
+ * Versioned: a build that changes the entry shape must not read the old one.
+ */
+const GENERATIONS_STORAGE_KEY = "send-attempt-generations.v1"
+
+type Generation = {
+  /** How many times this attempt's key has been spent. */
+  generation: number
+  /** Wall-clock ms after which the server has forgotten the key anyway. */
+  expiresAt: number
+}
+
+// Attempts whose key has been spent by a server-supplied outcome, and how many
+// times. Absent means generation 0 — the common case, so an untouched attempt
+// costs no entry at all.
+//
+// Keyed by a DIGEST of the fingerprint rather than the fingerprint itself: the
+// fingerprint concatenates a wallet id, a bolt11 or lightning address and the
+// user's memo, and this map is mirrored to disk. The digest is a v5 uuid over
+// the same namespace, so it is stable across launches without putting any of
+// that on the filesystem in readable form.
 //
 // Deliberately NOT bounded by an eviction cap. Absence has to mean "generation
 // 0" for a never-seen attempt — that is what lets a key be re-derived after a
-// remount, or after the process itself was killed mid-flight — so evicting an
-// entry hands the forgotten attempt back the exact uuid the server already
-// answered with FAILURE, and the backend then replays that failure forever:
-// the customer could never succeed. There is no reading of "safe to forget"
-// available here, so the map does not forget. It only ever gains an entry on a
-// definitive, server-confirmed failure (a few dozen bytes, human-paced), and
-// the whole thing is discarded with the process.
-const generationByAttempt = new Map<string, number>()
+// remount — so evicting a live entry hands the forgotten attempt back the exact
+// uuid the server already answered with FAILURE, and the backend then replays
+// that failure until its own TTL runs out: the customer could never succeed.
+// The ONLY safe eviction is the one the server itself performs, which is why
+// entries carry `expiresAt` and are dropped on exactly that clock and no other.
+const generationByAttempt = new Map<string, Generation>()
+
+type FrozenSend = {
+  /** The key this attempt was first sent with. */
+  key: string
+  /**
+   * The send closure captured on the first Confirm — and with it the exact
+   * mutation input: this bolt11, this settlement amount, this memo.
+   */
+  send: unknown
+  expiresAt: number
+}
+
+// The frozen half of an unresolved attempt.
+//
+// The key alone is not enough, because the client and the server do not agree
+// on what identifies a payment. The server binds the cached result to a
+// `requestFingerprint` built from the WIRE input — `ln|${paymentRequest}`,
+// `ln-noamount-usd|${paymentRequest}|${amount}`,
+// `intraledger|${recipientWalletId}|${amount}` (lnflash/flash
+// `src/app/payments/`) — while our fingerprint is deliberately built from what
+// SURVIVES the retry, which excludes both a re-minted LNURL bolt11 and a
+// price-derived settlement amount. Resending the same key with a rebuilt input
+// therefore lands on `IdempotencyKeyReuseError`, not on a replay.
+//
+// So the repeat resends the frozen closure rather than the rebuilt payment
+// detail, and client key and server fingerprint move in lockstep. Dropped the
+// moment the attempt resolves (see `retireAttemptKey`), so at most one closure
+// per in-flight send is retained.
+const frozenByAttempt = new Map<string, FrozenSend>()
 
 export type SendAttempt = {
   /** The wallet that will be debited. */
@@ -106,6 +167,11 @@ export const attemptFingerprint = (attempt: SendAttempt): string =>
  *    guarantee a different key for every retry. Its `destination` — the
  *    lightning address — is what persists, and the amount and memo above
  *    distinguish two different sends to it.
+ *
+ * Both exclusions are only SAFE because the send itself is frozen alongside
+ * the key (`freezeAttempt`): what the fingerprint drops from the identity is
+ * exactly what the frozen closure holds fixed, so the server still sees the
+ * byte-identical input its own `requestFingerprint` is built from.
  */
 export const attemptFingerprintOf = <T extends WalletCurrency>(
   paymentDetail: PaymentDetail<T>,
@@ -123,33 +189,173 @@ export const attemptFingerprintOf = <T extends WalletCurrency>(
   })
 
 /**
+ * The storage/lookup handle for a fingerprint. See `generationByAttempt`.
+ */
+const digestOf = (fingerprint: string): string =>
+  uuidv5(fingerprint, SEND_ATTEMPT_NAMESPACE)
+
+/** The generation in force right now, ignoring anything the server has forgotten. */
+const liveGeneration = (digest: string): number => {
+  const entry = generationByAttempt.get(digest)
+  if (!entry) return 0
+  if (entry.expiresAt <= Date.now()) {
+    generationByAttempt.delete(digest)
+    return 0
+  }
+  return entry.generation
+}
+
+// A store we cannot write is a store that behaves like today's build: it must
+// never be the reason a payment fails, and never something a caller has to
+// await.
+const ignoreStorageFailure = (): void => {}
+
+const persistGenerations = (): void => {
+  const now = Date.now()
+  const live: Record<string, Generation> = {}
+  for (const [digest, entry] of generationByAttempt) {
+    if (entry.expiresAt > now) live[digest] = entry
+  }
+  AsyncStorage.setItem(GENERATIONS_STORAGE_KEY, JSON.stringify(live)).catch(
+    ignoreStorageFailure,
+  )
+}
+
+const readGenerations = async (): Promise<void> => {
+  try {
+    const raw = await AsyncStorage.getItem(GENERATIONS_STORAGE_KEY)
+    if (!raw) return
+    const stored: unknown = JSON.parse(raw)
+    if (!stored || typeof stored !== "object") return
+    const now = Date.now()
+    const isLiveGeneration = (value: unknown): value is Generation => {
+      const entry = value as Partial<Generation> | null
+      return Boolean(
+        entry &&
+          typeof entry.generation === "number" &&
+          typeof entry.expiresAt === "number" &&
+          entry.expiresAt > now,
+      )
+    }
+
+    for (const [digest, value] of Object.entries(stored as Record<string, unknown>)) {
+      if (isLiveGeneration(value)) {
+        const inMemory = generationByAttempt.get(digest)
+        // A retirement recorded since this process started must not be undone
+        // by a stale stored one, and vice versa: the HIGHER generation is the
+        // one the server has already answered, so it wins either way.
+        if (!inMemory || inMemory.generation < value.generation) {
+          generationByAttempt.set(digest, {
+            generation: value.generation,
+            expiresAt: value.expiresAt,
+          })
+        }
+      }
+    }
+  } catch {
+    // Unreadable or corrupt: fall back to "nothing retired", i.e. today's
+    // behaviour before this file persisted anything.
+  }
+}
+
+let hydration: Promise<void> | undefined
+
+/**
+ * Load the retired generations written by previous runs.
+ *
+ * MUST be awaited before the first `attemptKey` of a process, and is a no-op
+ * afterwards. Without it a force-quit — the normal reaction to a failed
+ * payment — resets every attempt to generation 0 while the server still holds
+ * its cached FAILURE for 24h, so the user's identical retry replays that
+ * failure and they are locked out of that exact payment with nothing on screen
+ * that explains why.
+ */
+export const hydrateSendAttemptKeys = (): Promise<void> => {
+  if (!hydration) hydration = readGenerations()
+  return hydration
+}
+
+/**
  * The key to send for `fingerprint` right now.
  *
  * Pure: called twice for the same attempt it returns the same uuid, which is
  * what makes a repeat recognisable. It changes only when `retireAttemptKey`
- * has been called for that attempt.
+ * has been called for that attempt, or when the server's own 24h window on the
+ * retired key has run out.
  */
 export const attemptKey = (fingerprint: string): string =>
   uuidv5(
-    `${fingerprint}\u0000#${generationByAttempt.get(fingerprint) ?? 0}`,
+    `${fingerprint}\u0000#${liveGeneration(digestOf(fingerprint))}`,
     SEND_ATTEMPT_NAMESPACE,
   )
 
 /**
- * Spend this attempt's key, so the next send for the same attempt carries a
- * fresh one.
+ * The key AND the send to use for this attempt.
  *
- * Called on exactly one exit: a definitive, server-confirmed `FAILURE`. There
- * we know nothing settled, and reusing the key would make the backend replay
- * the recorded failure — the customer could never succeed. Every other exit,
- * including a thrown mutation, deliberately keeps the key: a repeat the server
- * already committed must return the original result rather than pay twice.
+ * On the first Confirm the given `send` is frozen alongside the key; every
+ * repeat of the same attempt gets that same pair back, so the mutation input
+ * the server fingerprints is byte-identical to the one it fingerprinted the
+ * first time. Handing it the rebuilt payment detail instead — a re-minted
+ * LNURL bolt11, a settlement amount one price tick along — makes the backend
+ * answer `IdempotencyKeyReuseError` on precisely the retry this design exists
+ * for.
+ *
+ * Callers must have awaited `hydrateSendAttemptKeys` first.
  */
-export const retireAttemptKey = (fingerprint: string): void => {
-  generationByAttempt.set(fingerprint, (generationByAttempt.get(fingerprint) ?? 0) + 1)
+export const freezeAttempt = <S>(
+  fingerprint: string,
+  send: S,
+): { idempotencyKey: string; send: S } => {
+  const digest = digestOf(fingerprint)
+  const frozen = frozenByAttempt.get(digest)
+  if (frozen && frozen.expiresAt > Date.now()) {
+    return { idempotencyKey: frozen.key, send: frozen.send as S }
+  }
+
+  const key = attemptKey(fingerprint)
+  frozenByAttempt.set(digest, {
+    key,
+    send,
+    expiresAt: Date.now() + ATTEMPT_MEMORY_TTL_MS,
+  })
+  return { idempotencyKey: key, send }
 }
 
-/** Test seam — module state would otherwise leak between cases. */
+/**
+ * Spend this attempt's key, so the next send for the same attempt carries a
+ * fresh one — and forget the input that key was frozen against.
+ *
+ * Called on any server-supplied status: the outcome is then KNOWN to the
+ * client, so the next time this same content is authored it is a deliberate
+ * second payment rather than a repeat. Every other exit — a thrown mutation,
+ * an unreadable response, an `IdempotencyKeyReuseError` — deliberately keeps
+ * both, because a repeat the server may already have committed must return the
+ * original result rather than pay twice.
+ *
+ * Written through to storage so a force-quit cannot resurrect a spent key.
+ */
+export const retireAttemptKey = (fingerprint: string): void => {
+  const digest = digestOf(fingerprint)
+  generationByAttempt.set(digest, {
+    generation: liveGeneration(digest) + 1,
+    expiresAt: Date.now() + ATTEMPT_MEMORY_TTL_MS,
+  })
+  frozenByAttempt.delete(digest)
+  persistGenerations()
+}
+
+/**
+ * Test seam — module state would otherwise leak between cases.
+ *
+ * Marks the module as already hydrated rather than un-hydrated: a reset that
+ * left `hydration` unset would send the next case racing the fire-and-forget
+ * `removeItem` below, and it would sometimes read the previous case's retired
+ * generations back out of the store. Hydration itself is covered by cases that
+ * load the module cold, which is the situation it actually exists for.
+ */
 export const resetSendAttemptKeys = (): void => {
   generationByAttempt.clear()
+  frozenByAttempt.clear()
+  hydration = Promise.resolve()
+  AsyncStorage.removeItem(GENERATIONS_STORAGE_KEY).catch(ignoreStorageFailure)
 }

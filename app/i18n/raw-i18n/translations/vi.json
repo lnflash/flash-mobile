@@ -687,7 +687,8 @@
     "maxFeeSelected": "Đây là mức phí tối đa bạn sẽ phải trả cho giao dịch này. Nó có thể sẽ ít hơn sau khi thanh toán được thực hiện.",
     "feeError": "Không thể tính phí",
     "breezFeeText": "There may be a small fee for routing",
-    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one."
+    "heldInvoiceExpired": "This invoice expired before the payment was sent. Go back and confirm again to get a fresh one.",
+    "keyAlreadyUsed": "This payment was already submitted. Check your transaction history before sending it again."
   },
   "SendBitcoinDestinationScreen": {
     "usernameNowAddress": "Tên người dùng {bankName: string} hiện là địa chỉ {bankName: string}.",

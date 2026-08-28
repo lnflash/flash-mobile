@@ -354,6 +354,19 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           ReactNativeHapticFeedback.trigger("notificationError", {
             ignoreAndroidSystemSettings: true,
           })
+        } else if (result.keyReused) {
+          // The backend holds an outcome for this attempt already and will not
+          // replay it, because our parameters no longer match the ones it
+          // cached. It arrives as `{ status: "failed" }`, so the branch below
+          // would call this a definitive failure, free the button, and let the
+          // next tap pay a SECOND time under a fresh key.
+          //
+          // `setBlockingPaymentError` is the point: nothing the user can do on
+          // this screen resolves it, and their money may already have moved.
+          setBlockingPaymentError(LL.SendBitcoinConfirmationScreen.keyAlreadyUsed())
+          ReactNativeHapticFeedback.trigger("notificationError", {
+            ignoreAndroidSystemSettings: true,
+          })
         } else {
           setPaymentError(errorsMessage || "Something went wrong")
           // A definitive FAILURE settled nothing, and the hook has retired the

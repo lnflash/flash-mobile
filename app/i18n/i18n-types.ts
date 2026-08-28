@@ -3169,6 +3169,10 @@ type RootTranslation = {
 		 * T​h​i​s​ ​i​n​v​o​i​c​e​ ​e​x​p​i​r​e​d​ ​b​e​f​o​r​e​ ​t​h​e​ ​p​a​y​m​e​n​t​ ​w​a​s​ ​s​e​n​t​.​ ​G​o​ ​b​a​c​k​ ​a​n​d​ ​c​o​n​f​i​r​m​ ​a​g​a​i​n​ ​t​o​ ​g​e​t​ ​a​ ​f​r​e​s​h​ ​o​n​e​.
 		 */
 		heldInvoiceExpired: string
+		/**
+		 * T​h​i​s​ ​p​a​y​m​e​n​t​ ​w​a​s​ ​a​l​r​e​a​d​y​ ​s​u​b​m​i​t​t​e​d​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​ ​b​e​f​o​r​e​ ​s​e​n​d​i​n​g​ ​i​t​ ​a​g​a​i​n​.
+		 */
+		keyAlreadyUsed: string
 	}
 	SendBitcoinDestinationScreen: {
 		/**
@@ -9508,6 +9512,10 @@ export type TranslationFunctions = {
 		 * This invoice expired before the payment was sent. Go back and confirm again to get a fresh one.
 		 */
 		heldInvoiceExpired: () => LocalizedString
+		/**
+		 * This payment was already submitted. Check your transaction history before sending it again.
+		 */
+		keyAlreadyUsed: () => LocalizedString
 	}
 	SendBitcoinDestinationScreen: {
 		/**
