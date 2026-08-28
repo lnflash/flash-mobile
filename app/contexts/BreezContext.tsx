@@ -14,21 +14,38 @@ import { useAppConfig } from "@app/hooks/use-app-config"
 import { useAddressScreenQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import SparkMigrationModal from "@app/components/spark-migration-modal"
+import {
+  selectUsdtBalance,
+  type UnverifiedSparkUsdtWallet,
+} from "@app/utils/breez-sdk/token-balances"
 
-type BtcWallet = {
+export type BtcWallet = {
   id: string
   walletCurrency: WalletCurrency
   balance: number
   isExternal: boolean
 }
 
-interface BreezInterface {
+/**
+ * Exported and consumed directly by `useBreez()`. Do not re-declare this shape
+ * at the hook: a hand-copied duplicate silently erases every field it forgets,
+ * which is how `sparkUsdtWallet` shipped provided-but-unreachable.
+ */
+export interface BreezInterface {
   refreshBreez: () => void
   retryExternalWalletRegistration: () => Promise<void>
   loading: boolean
   externalWalletLoading: boolean
   externalWalletError?: string
   btcWallet: BtcWallet
+  /**
+   * USDT held as a token on Spark — self-custodial, and a different thing from
+   * the account's custodial `WalletCurrency.Usdt` wallet on the Flash backend.
+   * Deliberately kept out of the `WalletCurrency` vocabulary so nothing can
+   * find it with a `walletCurrency === "USDT"` lookup and spend or display the
+   * wrong balance. `undefined` means no such token is held (ENG-473).
+   */
+  sparkUsdtWallet?: UnverifiedSparkUsdtWallet
 }
 
 export const BreezContext = createContext<BreezInterface>({
@@ -43,6 +60,7 @@ export const BreezContext = createContext<BreezInterface>({
     balance: 0,
     isExternal: true,
   },
+  sparkUsdtWallet: undefined,
 })
 
 type Props = {
@@ -66,6 +84,13 @@ export const BreezProvider = ({ children }: Props) => {
     balance: persistentState.breezBalance || 0,
     isExternal: true,
   })
+  // In-memory only: unlike breezBalance this is not mirrored into persistent
+  // state, so it is absent until the first getInfo() rather than showing a
+  // stale figure on cold start. Persisting it means a bigint-safe
+  // persistent-state schema change, which is its own PR.
+  const [sparkUsdtWallet, setSparkUsdtWallet] = useState<
+    UnverifiedSparkUsdtWallet | undefined
+  >()
   const initializingRef = useRef(false)
   const updatingBalanceRef = useRef(false)
   const registeringExternalWalletRef = useRef(false)
@@ -117,6 +142,7 @@ export const BreezProvider = ({ children }: Props) => {
           balance: 0,
           isExternal: true,
         })
+        setSparkUsdtWallet(undefined)
         setExternalWalletError(undefined)
       }
     }
@@ -139,6 +165,22 @@ export const BreezProvider = ({ children }: Props) => {
           }
         return undefined
       })
+      // Same round-trip as the sat balance, so it refreshes on the same cadence
+      // at no extra call — but LAST, and caught.
+      //
+      // This runs inside a try/finally with no catch: a throw here would
+      // reject updateBalance(), which on the init path lands in getBreezInfo's
+      // catch and leaves `loading` true for the whole session with the
+      // Lightning-address registration skipped, and on refresh is an uncaught
+      // rejection on every pull-to-refresh. An additive, best-effort,
+      // not-yet-consumed balance must never be able to take the sat wallet
+      // down with it.
+      try {
+        setSparkUsdtWallet(selectUsdtBalance(walletInfo.tokenBalances))
+      } catch (err) {
+        console.warn("[breez] USDT selection failed", err)
+        setSparkUsdtWallet(undefined)
+      }
     } finally {
       updatingBalanceRef.current = false
     }
@@ -258,6 +300,7 @@ export const BreezProvider = ({ children }: Props) => {
     <BreezContext.Provider
       value={{
         btcWallet,
+        sparkUsdtWallet,
         loading,
         externalWalletLoading,
         externalWalletError,

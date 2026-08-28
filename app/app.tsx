@@ -105,8 +105,11 @@ export const App = () => {
                                   {/* One version check for the whole tree — the
                                       home-screen banner inside RootStack reads
                                       it too — and the blocking gate, which the
-                                      boundary pins as the last sibling so paint
-                                      order cannot be broken from here. */}
+                                      boundary pins as the last sibling of its
+                                      own subtree. Note this provider's own
+                                      modal is natively hosted and can still
+                                      paint above the gate; see the boundary's
+                                      docblock. */}
                                   <AppUpdateBoundary>
                                     <AppStateWrapper />
                                     <PushNotificationComponent />
