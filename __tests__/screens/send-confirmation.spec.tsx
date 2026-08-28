@@ -47,6 +47,16 @@ const en = baseTranslation as Translation
 const INCIDENT_INVOICE =
   "lnbc1p4gwtwwpp5wwulk8jw0llvgjadwzuen6nxh7hgmddplj3evpgjc7n8l5kzqvmqdph2pshjgr5dusyvmrpwd5zq4mpd3kx2apq24ek2u36ypj8yetpv3kkz7qcqzzsxqzpusp5wane88x5twmdlpnu4cqrk4wd6g3tks7xgq798nt9zt68vmcnnp6q9qxpqysgqnszg0ycjk4255es2hdd3ajep3yquuvra6jn4k8shskhpzg80mrl9m9pgylahzq80aw9ekz6e47ycpcf558080xrxn6uljn54lc447rqpn9u06u"
 
+// A real bolt11 minted by the Test instance (2026-08-24, long expired — the
+// expiry guard's primary reading is time elapsed since the flow FIRST SAW the
+// invoice, so an invoice first sighted now reads alive whatever its absolute
+// timestamps say). Its payee is the Test node (02004d…, IBEX_SB), NOT the
+// "Main" node the StoryScreen test tree pins — so the fee-from-amount logic
+// reads it as an external destination. INCIDENT_INVOICE would not do there: it
+// pays Main's own node, which correctly suppresses the caveat.
+const EXTERNAL_INVOICE =
+  "lnbc14060n1p4gclcjpp555k59jc4xn0x3mej3gzmuj7lg66u0rtkq73vtvwqtrmd8luemprqdpvvejk2ttswfhkyefqwejhy6txd93kzarfdahzqgek8y6qcqzzsxqzpusp5rprrqnqhclwmc7au9vqf306mg6wndelar076yu6f8nr7md6kzv9q9qxpqysgqnpc09nfh90rew3z7d06pu3056nu24e809j5sj6qn0ytquu252h0sp2dkd6gc3qudwduecfvxw7m6vlt6mc0s3seqv0nvet4u9xpq6wsqfhuttw"
+
 const convertMoneyAmount: ConvertMoneyAmount = (moneyAmount, currency) => ({
   amount: moneyAmount.amount,
   currency,
@@ -387,15 +397,6 @@ describe("expired held invoice", () => {
 // zero celebrates with no caveat, and the probed zero that owes the
 // fee-from-amount disclosure (#694) gets the caveat and never the green.
 describe("zero-fee prominence (#561)", () => {
-  // A real bolt11 minted by the Test instance (2026-08-24, long expired —
-  // expiry is irrelevant here; nothing presses Send). Its payee is the Test
-  // node (02004d…, IBEX_SB), NOT the "Main" node the StoryScreen test tree
-  // pins — so the disclosure logic reads it as an external destination.
-  // INCIDENT_INVOICE would not do: it pays Main's own node, which correctly
-  // suppresses the caveat.
-  const EXTERNAL_INVOICE =
-    "lnbc14060n1p4gclcjpp555k59jc4xn0x3mej3gzmuj7lg66u0rtkq73vtvwqtrmd8luemprqdpvvejk2ttswfhkyefqwejhy6txd93kzarfdahzqgek8y6qcqzzsxqzpusp5rprrqnqhclwmc7au9vqf306mg6wndelar076yu6f8nr7md6kzv9q9qxpqysgqnpc09nfh90rew3z7d06pu3056nu24e809j5sj6qn0ytquu252h0sp2dkd6gc3qudwduecfvxw7m6vlt6mc0s3seqv0nvet4u9xpq6wsqfhuttw"
-
   it("celebrates the intraledger zero: green fee, remittance comparison, no caveat", async () => {
     const { findByLabelText, queryByLabelText } = render(
       <ContextForScreen>
@@ -530,6 +531,14 @@ describe("a repeated USD send must settle once", () => {
 
   const keysSent = (mutation: jest.Mock): (string | undefined)[] =>
     mutation.mock.calls.map(([params]) => params.idempotencyKey)
+
+  // What a repeat actually puts on the wire. The key alone is not enough: the
+  // server fingerprints the INPUT, so a repeat that carries the key against a
+  // rebuilt input is refused rather than replayed.
+  const frozenInputsSent = (
+    mutation: jest.Mock,
+  ): (Record<string, string | number | undefined> | undefined)[] =>
+    mutation.mock.calls.map(([params]) => params.frozenInput?.input)
 
   const paymentResults = () =>
     (getAnalytics().logEvent as jest.Mock).mock.calls.filter(
@@ -729,15 +738,23 @@ describe("a repeated USD send must settle once", () => {
     const secondScreen = await renderScreen(second.paymentDetail)
     await secondScreen.tapConfirm()
 
-    // The retry resends the FROZEN send, not the rebuilt one. That is what
+    // The retry resends the FROZEN INPUT, not the rebuilt one. That is what
     // keeps our key and the server's `requestFingerprint` — built from the
     // wire input — agreeing across the retry; resending the rebuilt detail
     // under the same key is answered with IdempotencyKeyReuseError, which the
     // screen reads as a failure and the customer then pays twice.
-    expect(second.sendPaymentMutation).not.toHaveBeenCalled()
-    const [firstKey, retryKey] = keysSent(first.sendPaymentMutation)
-    expect(first.sendPaymentMutation).toHaveBeenCalledTimes(2)
+    //
+    // The rebuilt detail's own mutation is what carries it, because the frozen
+    // half is data: a closure would not survive the force-quit that a payment
+    // which appears to have failed routinely provokes.
+    expect(second.sendPaymentMutation).toHaveBeenCalledTimes(1)
+    const [firstKey] = keysSent(first.sendPaymentMutation)
+    const [retryKey] = keysSent(second.sendPaymentMutation)
     expect(retryKey).toBe(firstKey)
+    expect(frozenInputsSent(second.sendPaymentMutation)[0]).toMatchObject({
+      paymentRequest: INCIDENT_INVOICE,
+      amount: first.paymentDetail.settlementAmount.amount,
+    })
   })
 
   it("carries the same key AND the same input when the price ticked under the back-navigation", async () => {
@@ -772,10 +789,18 @@ describe("a repeated USD send must settle once", () => {
     expect(second.paymentDetail.settlementAmount.amount).not.toBe(
       first.paymentDetail.settlementAmount.amount,
     )
-    // The repriced detail's send is never called — the frozen one is.
-    expect(second.sendPaymentMutation).not.toHaveBeenCalled()
-    const [firstKey, retryKey] = keysSent(first.sendPaymentMutation)
+    // The repriced detail's own input is never what goes out — the frozen one
+    // is, carried into the rebuilt detail's mutation.
+    expect(second.sendPaymentMutation).toHaveBeenCalledTimes(1)
+    const [firstKey] = keysSent(first.sendPaymentMutation)
+    const [retryKey] = keysSent(second.sendPaymentMutation)
     expect(retryKey).toBe(firstKey)
+    expect(frozenInputsSent(second.sendPaymentMutation)[0]?.amount).toBe(
+      first.paymentDetail.settlementAmount.amount,
+    )
+    expect(frozenInputsSent(second.sendPaymentMutation)[0]?.amount).not.toBe(
+      second.paymentDetail.settlementAmount.amount,
+    )
   })
 
   it("refuses to pay again when the backend will not replay the key", async () => {
@@ -845,5 +870,152 @@ describe("a repeated USD send must settle once", () => {
     await screen.tapConfirm()
 
     expect(sendPaymentMutation).toHaveBeenCalledTimes(1)
+  })
+
+  it("counts a replay refusal as its own outcome, not as a failed payment", async () => {
+    // IdempotencyKeyReuseError is the one outcome that proves this mechanism
+    // fired: the server is telling us it already holds a result for this
+    // attempt, which in the dangerous case is a SUCCESS whose response was
+    // lost. It arrives as `{ status: "failed" }`, so logging the raw status
+    // files it under FAILURE — in the very attempt→result ratio ENG-533 is
+    // measured on, which would read as the fix making things worse.
+    const { paymentDetail, sendPaymentMutation } = usdLightningDetail()
+    sendPaymentMutation.mockResolvedValue({
+      status: "FAILURE",
+      errors: [
+        {
+          message:
+            "This idempotency key was already used for a different payment. Use a new key for a new payment.",
+        },
+      ],
+    })
+
+    const screen = await renderScreen(paymentDetail)
+    await screen.tapConfirm()
+
+    expect(paymentResults()).toHaveLength(1)
+    /* eslint-disable camelcase */
+    expect(paymentResults()[0][1]).toMatchObject({ payment_status: "KEY_REUSED" })
+    expect(paymentResults()[0][1]).not.toMatchObject({ payment_status: "FAILURE" })
+    /* eslint-enable camelcase */
+  })
+
+  // ENG-555 meets ENG-533. On the LNURL path the invoice this screen HOLDS is
+  // not the invoice a repeat TRANSMITS: the details screen mints a fresh
+  // bolt11 on every pass forward, while the freeze holds the one that actually
+  // went out. A guard that judges the held invoice therefore judges the wrong
+  // one on exactly the path the freeze exists for.
+  describe("a repeat whose frozen invoice has died", () => {
+    // ~18 minutes past INCIDENT_INVOICE's expiry (issued 1787243982, expires
+    // 1787244042) — the retry from the ENG-555 report.
+    const LONG_AFTER_EXPIRY_MS = (1787244042 + 18 * 60) * 1000
+
+    const usdLnurlDetail = (paymentRequest: string) => {
+      const detail = createLnurlPaymentDetails({
+        lnurl: "flashcard@flashapp.me",
+        lnurlParams: createMock<LnUrlPayServiceResponse>({
+          min: 1 as Satoshis,
+          max: 100000 as Satoshis,
+        }),
+        paymentRequest,
+        paymentRequestAmount: amount,
+        unitOfAccountAmount: amount,
+        convertMoneyAmount,
+        sendingWalletDescriptor: { currency: WalletCurrency.Usd, id: "testwallet" },
+      })
+      const sendPaymentMutation = jest.fn()
+      return { paymentDetail: { ...detail, sendPaymentMutation }, sendPaymentMutation }
+    }
+
+    // The flashcard reload from the report: the first Confirm's request dies in
+    // the client's network stack, so the key and the freeze are both retained;
+    // the user goes back, the details screen mints a live invoice, and by the
+    // time they confirm again the frozen one has been dead for minutes.
+    const strandedAttempt = async () => {
+      const first = usdLnurlDetail(INCIDENT_INVOICE)
+      first.sendPaymentMutation.mockRejectedValue(new Error("Network request failed"))
+      const firstScreen = await renderScreen(first.paymentDetail)
+      await firstScreen.tapConfirm()
+      firstScreen.unmount()
+
+      jest.spyOn(Date, "now").mockReturnValue(LONG_AFTER_EXPIRY_MS)
+      const retry = usdLnurlDetail(EXTERNAL_INVOICE)
+      return { first, retry }
+    }
+
+    it("transmits the frozen bolt11 and names its death instead of failing generically", async () => {
+      const { retry } = await strandedAttempt()
+      // Whatever the server holds for this key, it holds against bolt11-A. A
+      // definitive rejection is the answer when it holds nothing.
+      retry.sendPaymentMutation.mockResolvedValue({ status: "FAILURE", errors: [] })
+
+      const retryScreen = await renderScreen(retry.paymentDetail)
+      await retryScreen.tapConfirm()
+
+      // The replay carries the ORIGINAL invoice — that is what lets the
+      // backend recognise it. The screen is showing bolt11-B; the guard must
+      // not be reading that one.
+      expect(frozenInputsSent(retry.sendPaymentMutation)[0]?.paymentRequest).toBe(
+        INCIDENT_INVOICE,
+      )
+      // ...and the user is told what actually happened. "Something went wrong"
+      // over a dead invoice is the ENG-555 complaint verbatim.
+      expect(
+        retryScreen.getByText(en.SendBitcoinConfirmationScreen.heldInvoiceExpired),
+      ).toBeTruthy()
+      expect(retryScreen.queryByText("Something went wrong")).toBeNull()
+    })
+
+    it("leaves the remedy it names actually reachable", async () => {
+      // The reason the replay is not refused client-side. Refusing it would
+      // leave the attempt stranded: going back and forward reproduces the same
+      // fingerprint, which finds the same dead frozen invoice, for the whole
+      // 24h the server remembers the key — a payment the user simply cannot
+      // make. Letting it go out gets a definitive answer, which retires the key
+      // and drops the freeze, so the next pass forward is a clean attempt.
+      const { retry } = await strandedAttempt()
+      retry.sendPaymentMutation.mockResolvedValue({ status: "FAILURE", errors: [] })
+      const retryScreen = await renderScreen(retry.paymentDetail)
+      await retryScreen.tapConfirm()
+      expect(
+        retryScreen.getByText(en.SendBitcoinConfirmationScreen.heldInvoiceExpired),
+      ).toBeTruthy()
+      retryScreen.unmount()
+
+      const afterRemedy = usdLnurlDetail(EXTERNAL_INVOICE)
+      afterRemedy.sendPaymentMutation.mockResolvedValue({ status: "SUCCESS", errors: [] })
+      const afterScreen = await renderScreen(afterRemedy.paymentDetail)
+      await afterScreen.tapConfirm()
+
+      // A live invoice under a fresh key, and it settles.
+      expect(frozenInputsSent(afterRemedy.sendPaymentMutation)[0]?.paymentRequest).toBe(
+        EXTERNAL_INVOICE,
+      )
+      expect(keysSent(afterRemedy.sendPaymentMutation)[0]).not.toBe(
+        keysSent(retry.sendPaymentMutation)[0],
+      )
+      await waitFor(() =>
+        expect(afterScreen.navigate).toHaveBeenCalledWith(
+          "sendBitcoinSuccess",
+          expect.anything(),
+        ),
+      )
+    })
+
+    it("still refuses a FIRST send of an invoice it can see is dead", async () => {
+      // The exemption is for replays only. With nothing frozen there is no
+      // cached outcome to recover, so a dead invoice is just a doomed round
+      // trip — ENG-555's original case, and it must still be refused.
+      const { paymentDetail, sendPaymentMutation } = usdLnurlDetail(INCIDENT_INVOICE)
+
+      const screen = await renderScreen(paymentDetail)
+      jest.spyOn(Date, "now").mockReturnValue(LONG_AFTER_EXPIRY_MS)
+      await screen.tapConfirm()
+
+      expect(sendPaymentMutation).not.toHaveBeenCalled()
+      expect(
+        screen.getByText(en.SendBitcoinConfirmationScreen.heldInvoiceExpired),
+      ).toBeTruthy()
+    })
   })
 })

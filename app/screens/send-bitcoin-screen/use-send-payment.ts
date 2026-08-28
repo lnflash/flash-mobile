@@ -264,11 +264,20 @@ export const useSendPayment = (
           // built from what survives the retry — which deliberately excludes a
           // re-minted LNURL bolt11 and a price-derived settlement amount.
           // Resending the same key with the REBUILT detail therefore lands on
-          // IdempotencyKeyReuseError instead of a replay. Resending the
-          // closure captured on the first Confirm keeps the two in lockstep.
-          const attempt = freezeAttempt(sendFingerprint, sendPaymentMutation)
-          const response = await attempt.send({
+          // IdempotencyKeyReuseError instead of a replay.
+          //
+          // The frozen half is DATA, not the closure that sent it: the repeat
+          // can happen in a different process (a force-quit is the normal
+          // reaction to a payment that looks failed) while the server
+          // remembers the key for 24h either way. The current detail's
+          // mutation is what sends it — the attempt fingerprint pins the
+          // wallet, payment type, destination, authored amount and memo, so
+          // the rebuilt detail targets the same mutation — and the frozen
+          // input is what it puts on the wire. See send-wire-input.ts.
+          const attempt = freezeAttempt(sendFingerprint, detail.sendPaymentWireInput)
+          const response = await sendPaymentMutation({
             idempotencyKey: attempt.idempotencyKey,
+            frozenInput: attempt.frozenInput,
             apiEndpoint: graphqlUri,
             intraLedgerPaymentSend,
             intraLedgerUsdPaymentSend,

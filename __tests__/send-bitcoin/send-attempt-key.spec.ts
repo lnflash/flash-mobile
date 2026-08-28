@@ -38,15 +38,19 @@ import {
   createLnurlPaymentDetails,
   createNoAmountLightningPaymentDetails,
 } from "@app/screens/send-bitcoin-screen/payment-details/lightning"
+import { createIntraledgerPaymentDetails } from "@app/screens/send-bitcoin-screen/payment-details/intraledger"
 import {
   ConvertMoneyAmount,
   SendPaymentMutationParams,
 } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
+import { IDEMPOTENT_SEND_INPUTS } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
+import { SendWireInput } from "@app/screens/send-bitcoin-screen/payment-details/send-wire-input"
 import {
   attemptFingerprint,
   attemptFingerprintOf,
   attemptKey,
   freezeAttempt,
+  frozenSendInvoice,
   resetSendAttemptKeys,
   retireAttemptKey,
 } from "@app/screens/send-bitcoin-screen/send-attempt-key"
@@ -64,6 +68,14 @@ const attempt = {
   unitOfAccountCurrency: "USD",
   memo: "rent",
 }
+
+// A minimal stand-in for what a payment detail hands `freezeAttempt` — the
+// mutation input as data. The cases that care about the input reaching the
+// server build it from the real detail factories instead.
+const wireInputFor = (paymentRequest: string): SendWireInput => ({
+  inputType: IDEMPOTENT_SEND_INPUTS.lnInvoice,
+  input: { walletId: attempt.walletId, paymentRequest, memo: attempt.memo },
+})
 
 beforeEach(() => {
   mockAsyncStorageStore.clear()
@@ -401,14 +413,23 @@ describe("the send is frozen with the key", () => {
       sendingWalletDescriptor: usdWallet,
     })
 
+  // One Confirm, driven exactly as useSendPayment drives it: freeze the
+  // detail's wire input against the attempt, then send THIS detail's mutation
+  // with whatever came back frozen. The mutation is always the rebuilt one —
+  // it is the input, not the closure, that has to survive the retry, because a
+  // closure cannot survive a force-quit.
   const sendOnce = async (
     detail: ReturnType<typeof flashcardReload>,
     mocks: SendPaymentMutationParams,
   ) => {
     if (!detail.canSendPayment) throw new Error("Cannot send payment")
     const fingerprint = attemptFingerprintOf(detail)
-    const frozen = freezeAttempt(fingerprint, detail.sendPaymentMutation)
-    await frozen.send({ ...mocks, idempotencyKey: frozen.idempotencyKey })
+    const frozen = freezeAttempt(fingerprint, detail.sendPaymentWireInput)
+    await detail.sendPaymentMutation({
+      ...mocks,
+      idempotencyKey: frozen.idempotencyKey,
+      frozenInput: frozen.frozenInput,
+    })
     return frozen.idempotencyKey
   }
 
@@ -496,22 +517,37 @@ describe("the send is frozen with the key", () => {
     expect(later.paymentRequest).toBe("lnbc1secondmint")
   })
 
-  it("does not hand one attempt another attempt's frozen send", () => {
+  it("does not hand one attempt another attempt's frozen input", () => {
     const one = attemptFingerprint(attempt)
     const other = attemptFingerprint({ ...attempt, unitOfAccountAmount: 999 })
-    const sendOne = jest.fn()
-    const sendOther = jest.fn()
+    const inputOne = wireInputFor("lnbc1one")
+    const inputOther = wireInputFor("lnbc1other")
 
-    expect(freezeAttempt(one, sendOne).send).toBe(sendOne)
-    expect(freezeAttempt(other, sendOther).send).toBe(sendOther)
-    expect(freezeAttempt(one, jest.fn()).send).toBe(sendOne)
+    expect(freezeAttempt(one, inputOne).frozenInput).toBe(inputOne)
+    expect(freezeAttempt(other, inputOther).frozenInput).toBe(inputOther)
+    expect(freezeAttempt(one, wireInputFor("lnbc1reminted")).frozenInput).toBe(inputOne)
   })
 
-  it("pairs the frozen send with the key attemptKey would derive", () => {
+  it("pairs the frozen input with the key attemptKey would derive", () => {
     const fingerprint = attemptFingerprint(attempt)
-    expect(freezeAttempt(fingerprint, jest.fn()).idempotencyKey).toBe(
+    expect(freezeAttempt(fingerprint, wireInputFor("lnbc1one")).idempotencyKey).toBe(
       attemptKey(fingerprint),
     )
+  })
+
+  it("keys an attempt with nothing to freeze, and freezes nothing", () => {
+    // The onchain sends: their resolvers do not accept an idempotency key at
+    // all, so there is no input to freeze. They must still get a key rather
+    // than throwing on the way to a send that works today.
+    const fingerprint = attemptFingerprint({ ...attempt, paymentType: "onchain" })
+
+    const frozen = freezeAttempt(fingerprint, undefined)
+
+    expect(frozen.idempotencyKey).toBe(attemptKey(fingerprint))
+    expect(frozen.frozenInput).toBeUndefined()
+    // ...and nothing was frozen, so a later attempt with a real input still can be.
+    const input = wireInputFor("lnbc1later")
+    expect(freezeAttempt(fingerprint, input).frozenInput).toBe(input)
   })
 })
 
@@ -585,6 +621,263 @@ describe("retired keys outlive the process", () => {
     const relaunched = coldModule()
     await expect(relaunched.hydrateSendAttemptKeys()).resolves.toBeUndefined()
     expect(relaunched.attemptKey(fingerprint)).toBe(attemptKey(fingerprint))
+  })
+
+  // The other half of the attempt, and the half a closure could never carry.
+  // A generation that survives a force-quit while the frozen INPUT does not is
+  // the single worst combination available: the same key is re-derived for a
+  // REBUILT input, which is exactly what the backend answers with
+  // IdempotencyKeyReuseError — nothing settles, the history shows a failure,
+  // and that exact payment is impossible for 24h.
+  describe("the frozen input outlives the process too", () => {
+    const usdWallet = { currency: WalletCurrency.Usd, id: "usd-wallet" } as const
+
+    const priceOf =
+      (centsPerSat: number): ConvertMoneyAmount =>
+      (moneyAmount, currency) => ({
+        amount:
+          currency === WalletCurrency.Btc
+            ? moneyAmount.amount
+            : Math.round(moneyAmount.amount * centsPerSat),
+        currency,
+        currencyCode: currency,
+      })
+
+    const lnurlParams = { min: 1, max: 100000 } as unknown as LnUrlPayServiceResponse
+
+    it("replays the ORIGINAL bolt11 after a force-quit", async () => {
+      // A flashcard reload: LNURL, USD wallet, and a bolt11 the details screen
+      // re-mints on every pass forward (IBEX caps these at 60s). The server
+      // keys this one on `ln|${paymentRequest}` alone, so sending the re-minted
+      // invoice under the re-derived key is answered with
+      // IdempotencyKeyReuseError rather than the original outcome.
+      const reload = (paymentRequest: string) =>
+        createLnurlPaymentDetails({
+          lnurl: "flashcard@flashapp.me",
+          lnurlParams,
+          paymentRequest,
+          paymentRequestAmount: toBtcMoneyAmount(2000),
+          unitOfAccountAmount: toBtcMoneyAmount(2000),
+          convertMoneyAmount: priceOf(0.1),
+          sendingWalletDescriptor: usdWallet,
+        })
+
+      const sent = reload("lnbc1firstmint")
+      const fingerprint = attemptFingerprintOf(sent)
+      const firstKey = freezeAttempt(
+        fingerprint,
+        sent.sendPaymentWireInput,
+      ).idempotencyKey
+      // The response never arrives, so nothing is retired — then the user
+      // force-quits, which is the normal reaction to a payment that looks
+      // failed.
+      await flushWrites()
+
+      const relaunched = coldModule()
+      await relaunched.hydrateSendAttemptKeys()
+
+      // Back on the send screen: a freshly minted invoice for what the user
+      // means as the same payment.
+      const rebuilt = reload("lnbc1secondmint")
+      expect(rebuilt.paymentRequest).not.toBe(sent.paymentRequest)
+      expect(attemptFingerprintOf(rebuilt)).toBe(fingerprint)
+
+      const replay = relaunched.freezeAttempt(
+        attemptFingerprintOf(rebuilt),
+        rebuilt.sendPaymentWireInput,
+      )
+
+      expect(replay.idempotencyKey).toBe(firstKey)
+      // The rebuilt detail's input is NOT what goes out.
+      expect(replay.frozenInput?.input.paymentRequest).toBe("lnbc1firstmint")
+
+      // ...and driven through the rebuilt detail's own mutation — the only one
+      // a relaunched process has — that is what reaches the wire.
+      const mocks = createSendPaymentMocks()
+      const mutation = mocks.lnInvoicePaymentSend as jest.Mock
+      mutation.mockResolvedValue({
+        data: { lnInvoicePaymentSend: { status: "SUCCESS", errors: [] } },
+      })
+      if (!rebuilt.canSendPayment) throw new Error("Cannot send payment")
+      await rebuilt.sendPaymentMutation({
+        ...mocks,
+        idempotencyKey: replay.idempotencyKey,
+        frozenInput: replay.frozenInput,
+      })
+
+      const [input] = mutation.mock.calls.map(([args]) => args.variables.input)
+      expect(input.paymentRequest).toBe("lnbc1firstmint")
+      expect(input.idempotencyKey).toBe(firstKey)
+    })
+
+    it("replays the ORIGINAL settlement amount after a force-quit", async () => {
+      // The finding's own case: a JMD amount authored to a Flash handle from a
+      // USD wallet. The server keys it on
+      // `intraledger|${recipientWalletId}|${amount}`, and that amount is
+      // price-derived — so a relaunch that remembered the key but not the
+      // amount sends a repriced input under it and is refused.
+      const send = (convert: ConvertMoneyAmount) =>
+        createIntraledgerPaymentDetails({
+          handle: "someone",
+          recipientWalletId: "recipient-wallet",
+          unitOfAccountAmount: toBtcMoneyAmount(1000),
+          convertMoneyAmount: convert,
+          sendingWalletDescriptor: usdWallet,
+        })
+
+      const sent = send(priceOf(0.1))
+      const fingerprint = attemptFingerprintOf(sent)
+      const firstKey = freezeAttempt(
+        fingerprint,
+        sent.sendPaymentWireInput,
+      ).idempotencyKey
+      await flushWrites()
+
+      const relaunched = coldModule()
+      await relaunched.hydrateSendAttemptKeys()
+
+      const rebuilt = send(priceOf(0.099))
+      // The estimate really did move, so this cannot pass vacuously.
+      expect(rebuilt.settlementAmount.amount).not.toBe(sent.settlementAmount.amount)
+      expect(attemptFingerprintOf(rebuilt)).toBe(fingerprint)
+
+      const replay = relaunched.freezeAttempt(
+        attemptFingerprintOf(rebuilt),
+        rebuilt.sendPaymentWireInput,
+      )
+
+      expect(replay.idempotencyKey).toBe(firstKey)
+
+      const mocks = createSendPaymentMocks()
+      const mutation = mocks.intraLedgerUsdPaymentSend as jest.Mock
+      mutation.mockResolvedValue({
+        data: { intraLedgerUsdPaymentSend: { status: "SUCCESS", errors: [] } },
+      })
+      if (!rebuilt.canSendPayment) throw new Error("Cannot send payment")
+      await rebuilt.sendPaymentMutation({
+        ...mocks,
+        idempotencyKey: replay.idempotencyKey,
+        frozenInput: replay.frozenInput,
+      })
+
+      const [input] = mutation.mock.calls.map(([args]) => args.variables.input)
+      expect(input.amount).toBe(sent.settlementAmount.amount)
+      expect(input.idempotencyKey).toBe(firstKey)
+    })
+
+    it("forgets the frozen input once the attempt resolved", async () => {
+      // A resolved attempt is over: the next identical send is a deliberate
+      // second payment, and replaying the first one's bolt11 would ask the
+      // backend to return the first payment's outcome for it.
+      const fingerprint = attemptFingerprint(attempt)
+      freezeAttempt(fingerprint, wireInputFor("lnbc1firstmint"))
+      retireAttemptKey(fingerprint)
+      await flushWrites()
+
+      const relaunched = coldModule()
+      await relaunched.hydrateSendAttemptKeys()
+
+      const later = wireInputFor("lnbc1secondmint")
+      expect(relaunched.freezeAttempt(fingerprint, later).frozenInput).toBe(later)
+    })
+
+    it("does not honour a frozen input that outlived its retirement", async () => {
+      // The two stores are written through separately and neither write is
+      // awaited, so a process can die between them and come back with a frozen
+      // input whose key the generation has already spent. Replaying that pair
+      // asks the server to answer with an outcome the client has already seen
+      // — the failure `retireAttemptKey` exists to prevent — so the generation
+      // is the authority and the orphan is dropped.
+      const fingerprint = attemptFingerprint(attempt)
+      const spent = attemptKey(fingerprint)
+      freezeAttempt(fingerprint, wireInputFor("lnbc1firstmint"))
+      await flushWrites()
+      const beforeRetirement = mockAsyncStorageStore.get("send-attempt-frozen.v1") ?? ""
+      expect(beforeRetirement).toContain(spent)
+
+      retireAttemptKey(fingerprint)
+      await flushWrites()
+      // The torn write: the generation landed, the frozen deletion did not.
+      mockAsyncStorageStore.set("send-attempt-frozen.v1", beforeRetirement)
+
+      const relaunched = coldModule()
+      await relaunched.hydrateSendAttemptKeys()
+
+      const fresh = wireInputFor("lnbc1secondmint")
+      const next = relaunched.freezeAttempt(fingerprint, fresh)
+      expect(next.idempotencyKey).not.toBe(spent)
+      expect(next.frozenInput).toBe(fresh)
+    })
+
+    it("does not replay an input the server has already forgotten", async () => {
+      // Past the backend's 24h window there is no cached result to match, so a
+      // frozen input is no longer replayable — it is just a stale invoice.
+      const fingerprint = attemptFingerprint(attempt)
+      freezeAttempt(fingerprint, wireInputFor("lnbc1firstmint"))
+      await flushWrites()
+
+      jest.spyOn(Date, "now").mockReturnValue(Date.now() + 24 * 60 * 60 * 1000 + 1000)
+
+      const relaunched = coldModule()
+      await relaunched.hydrateSendAttemptKeys()
+
+      const fresh = wireInputFor("lnbc1secondmint")
+      expect(relaunched.freezeAttempt(fingerprint, fresh).frozenInput).toBe(fresh)
+      jest.restoreAllMocks()
+    })
+
+    it("ignores a frozen entry it cannot vouch for", async () => {
+      // Written by a build that shaped the entry differently, or corrupted
+      // outright. Degrading to "nothing frozen" is today's behaviour; putting
+      // a malformed input on the wire is a send the server can only reject.
+      mockAsyncStorageStore.set(
+        "send-attempt-frozen.v1",
+        JSON.stringify({
+          "some-digest": {
+            key: "a-key",
+            input: { inputType: "NotARealInput", input: { walletId: "usd-wallet" } },
+            expiresAt: Date.now() + 60_000,
+          },
+        }),
+      )
+
+      const relaunched = coldModule()
+      await relaunched.hydrateSendAttemptKeys()
+
+      const fingerprint = attemptFingerprint(attempt)
+      const fresh = wireInputFor("lnbc1freshmint")
+      expect(relaunched.freezeAttempt(fingerprint, fresh).frozenInput).toBe(fresh)
+    })
+
+    it("still restores the retirements when the frozen store is corrupt", async () => {
+      // The two stores must fail independently: a frozen entry we cannot read
+      // is a lost replay, but a retirement we do not read back is a spent key
+      // handed out again, and the backend replays its recorded failure until
+      // its own TTL runs out.
+      const fingerprint = attemptFingerprint(attempt)
+      const spent = attemptKey(fingerprint)
+      retireAttemptKey(fingerprint)
+      await flushWrites()
+      mockAsyncStorageStore.set("send-attempt-frozen.v1", "{not json")
+
+      const relaunched = coldModule()
+      await relaunched.hydrateSendAttemptKeys()
+
+      expect(relaunched.attemptKey(fingerprint)).not.toBe(spent)
+    })
+
+    it("surfaces the frozen bolt11 to the expiry guard", async () => {
+      // What the confirm screen reads to judge the invoice that will actually
+      // be transmitted rather than the one it is holding (ENG-555).
+      const fingerprint = attemptFingerprint(attempt)
+      expect(frozenSendInvoice(fingerprint)).toBeUndefined()
+
+      freezeAttempt(fingerprint, wireInputFor("lnbc1firstmint"))
+      expect(frozenSendInvoice(fingerprint)).toBe("lnbc1firstmint")
+
+      retireAttemptKey(fingerprint)
+      expect(frozenSendInvoice(fingerprint)).toBeUndefined()
+    })
   })
 
   it("keeps the fingerprint itself off the filesystem", async () => {

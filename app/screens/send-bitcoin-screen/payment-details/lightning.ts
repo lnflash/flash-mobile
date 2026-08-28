@@ -10,6 +10,7 @@ import {
 import { PaymentType } from "@galoymoney/client"
 import { LnUrlPayServiceResponse } from "lnurl-pay/dist/types/types"
 import { IDEMPOTENT_SEND_INPUTS, withIdempotencyKey } from "./idempotency-support"
+import { replayableInput, SendWireInput } from "./send-wire-input"
 import {
   ConvertMoneyAmount,
   SetInvoice,
@@ -58,6 +59,10 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
     canSendPayment: false,
     canGetFee: false,
   }
+  // The wire input of whichever branch below can actually send — the data half
+  // of the freeze (send-wire-input.ts). Left undefined when nothing can send,
+  // in which case there is no attempt to freeze either.
+  let sendPaymentWireInput: SendWireInput | undefined
 
   if (
     settlementAmount?.amount &&
@@ -89,6 +94,13 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
       }
     }
 
+    const wireInput = {
+      walletId: sendingWalletDescriptor.id,
+      paymentRequest,
+      amount: settlementAmount.amount,
+      memo,
+    }
+
     const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
       // Gated like every other send input: nothing in this repo measures which
       // environments carry the field, and an ungated refusal takes the whole
@@ -103,10 +115,14 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
           const { data } = await paymentMutations.lnNoAmountInvoicePaymentSend({
             variables: {
               input: {
-                walletId: sendingWalletDescriptor.id,
-                paymentRequest,
-                amount: settlementAmount.amount,
-                memo,
+                // The frozen input when this is a repeat, so the server's own
+                // `requestFingerprint` matches the one it cached the key
+                // against. See send-wire-input.ts.
+                ...replayableInput(
+                  IDEMPOTENT_SEND_INPUTS.lnNoAmountInvoice,
+                  wireInput,
+                  paymentMutations.frozenInput,
+                ),
                 // Same key for every repeat of this attempt, so a send whose
                 // response was lost settles once. See SendPaymentMutationParams.
                 ...keyField,
@@ -126,6 +142,10 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
       canGetFee: true,
       getFee,
       sendPaymentMutation,
+    }
+    sendPaymentWireInput = {
+      inputType: IDEMPOTENT_SEND_INPUTS.lnNoAmountInvoice,
+      input: wireInput,
     }
   } else if (
     settlementAmount?.amount &&
@@ -158,6 +178,13 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
       }
     }
 
+    const wireInput = {
+      walletId: sendingWalletDescriptor.id,
+      paymentRequest,
+      amount: settlementAmount.amount,
+      memo,
+    }
+
     const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
       // The input that most obviously needs the gate — it only gained
       // `idempotencyKey` in flash#494 — but the gate is not special-cased to
@@ -174,10 +201,16 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
           const { data } = await paymentMutations.lnNoAmountUsdInvoicePaymentSend({
             variables: {
               input: {
-                walletId: sendingWalletDescriptor.id,
-                paymentRequest,
-                amount: settlementAmount.amount,
-                memo,
+                // The frozen input when this is a repeat. This path's server
+                // fingerprint is `ln-noamount-usd|${paymentRequest}|${amount}`,
+                // and BOTH halves move on their own here — the amount is a
+                // price-derived estimate — so a rebuilt input under the same
+                // key is answered with IdempotencyKeyReuseError.
+                ...replayableInput(
+                  IDEMPOTENT_SEND_INPUTS.lnNoAmountUsdInvoice,
+                  wireInput,
+                  paymentMutations.frozenInput,
+                ),
                 // Same key for every repeat of this attempt, so a send whose
                 // response was lost settles once. See SendPaymentMutationParams.
                 ...keyField,
@@ -197,6 +230,10 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
       canGetFee: true,
       getFee,
       sendPaymentMutation,
+    }
+    sendPaymentWireInput = {
+      inputType: IDEMPOTENT_SEND_INPUTS.lnNoAmountUsdInvoice,
+      input: wireInput,
     }
   }
 
@@ -247,6 +284,7 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
     canSetAmount: true,
     ...setMemo,
     ...sendPaymentAndGetFee,
+    sendPaymentWireInput,
     setSendingWalletDescriptor,
   } as const
 }
@@ -275,6 +313,17 @@ export const createAmountLightningPaymentDetails = <T extends WalletCurrency>(
   )
   const unitOfAccountAmount = paymentRequestAmount
 
+  const wireInput = {
+    walletId: sendingWalletDescriptor.id,
+    paymentRequest,
+    memo,
+  }
+
+  const sendPaymentWireInput: SendWireInput = {
+    inputType: IDEMPOTENT_SEND_INPUTS.lnInvoice,
+    input: wireInput,
+  }
+
   const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
     // Gated like every other send input — see idempotency-support.ts.
     withIdempotencyKey(
@@ -287,9 +336,15 @@ export const createAmountLightningPaymentDetails = <T extends WalletCurrency>(
         const { data } = await paymentMutations.lnInvoicePaymentSend({
           variables: {
             input: {
-              walletId: sendingWalletDescriptor.id,
-              paymentRequest,
-              memo,
+              // The frozen input when this is a repeat. An LNURL send reaches
+              // this builder with a bolt11 that the details screen re-mints on
+              // every pass forward, and the server keys on `ln|${paymentRequest}`
+              // — so the rebuilt input would not match the cached one.
+              ...replayableInput(
+                IDEMPOTENT_SEND_INPUTS.lnInvoice,
+                wireInput,
+                paymentMutations.frozenInput,
+              ),
               // Same key for every repeat of this attempt, so a send whose
               // response was lost settles once. See SendPaymentMutationParams.
               ...keyField,
@@ -408,6 +463,7 @@ export const createAmountLightningPaymentDetails = <T extends WalletCurrency>(
     setSendingWalletDescriptor,
     setConvertMoneyAmount,
     sendPaymentMutation,
+    sendPaymentWireInput,
     canSendPayment: true,
     getFee,
     canGetFee: true,
@@ -449,6 +505,9 @@ export const createLnurlPaymentDetails = <T extends WalletCurrency>(
     canGetFee: false,
     canSendPayment: false,
   }
+  // Carried over from the delegate below along with its send — the freeze is
+  // only sound if the data half describes the very input that mutation sends.
+  let sendPaymentWireInput: SendWireInput | undefined
 
   if (paymentRequest && paymentRequestAmount) {
     const amountLightningPaymentDetails = createAmountLightningPaymentDetails({
@@ -467,6 +526,7 @@ export const createLnurlPaymentDetails = <T extends WalletCurrency>(
         canGetFee: true,
         getFee: amountLightningPaymentDetails.getFee,
       }
+      sendPaymentWireInput = amountLightningPaymentDetails.sendPaymentWireInput
     }
   } else {
     settlementAmount = convertMoneyAmount(
@@ -550,5 +610,6 @@ export const createLnurlPaymentDetails = <T extends WalletCurrency>(
     ...setAmount,
     ...setMemo,
     ...sendPaymentAndGetFee,
+    sendPaymentWireInput,
   } as const
 }

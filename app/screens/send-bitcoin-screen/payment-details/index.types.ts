@@ -29,6 +29,8 @@ import { WalletDescriptor } from "@app/types/wallets"
 import { PaymentType } from "@galoymoney/client"
 import { LnUrlPayServiceResponse } from "lnurl-pay/dist/types/types"
 
+import { SendWireInput } from "./send-wire-input"
+
 export type ConvertMoneyAmount = <W extends WalletOrDisplayCurrency>(
   moneyAmount: MoneyAmount<WalletOrDisplayCurrency>,
   toCurrency: W,
@@ -97,6 +99,22 @@ export type SendPaymentMutationParams = {
    * rolling deploy — must not disarm the key for prod.
    */
   apiEndpoint: string
+  /**
+   * The input a previous send of this same attempt already put on the wire,
+   * when there is one — see send-wire-input.ts and `freezeAttempt`.
+   *
+   * Present only on a REPEAT, and then it, not the rebuilt detail, is what
+   * goes out. The key and the server's `requestFingerprint` are built from
+   * different things (ours from what survives the retry, the server's from the
+   * wire input), so a repeat that carries the key without the original input —
+   * a re-minted LNURL bolt11, a settlement amount one price tick along — is
+   * answered with `IdempotencyKeyReuseError` rather than the original outcome.
+   *
+   * Data rather than a captured closure because the repeat can happen in a
+   * different process: a force-quit is the normal reaction to a payment that
+   * looks failed, and the server remembers the key for 24h either way.
+   */
+  frozenInput?: SendWireInput
   lnInvoicePaymentSend: LnInvoicePaymentSendMutationHookResult["0"]
   lnNoAmountInvoicePaymentSend: LnNoAmountInvoicePaymentSendMutationHookResult["0"]
   lnNoAmountUsdInvoicePaymentSend: LnNoAmountUsdInvoicePaymentSendMutationHookResult["0"]
@@ -155,6 +173,17 @@ type BasePaymentDetail<T extends WalletCurrency> = {
   getFee?: GetFee<T>
   canGetFee: boolean
   sendPaymentMutation?: SendPaymentMutation
+  /**
+   * The exact mutation input `sendPaymentMutation` would put on the wire right
+   * now, as data — what gets frozen against this attempt's idempotency key so
+   * a repeat is byte-identical (send-wire-input.ts).
+   *
+   * Absent on the paths that have no idempotent input to freeze: the onchain
+   * sends (whose resolvers do not accept a key) and any detail that cannot
+   * send at all. Those keep today's behaviour — nothing is frozen, and the
+   * rebuilt detail is what goes out.
+   */
+  sendPaymentWireInput?: SendWireInput
   canSendPayment: boolean
   destinationSpecifiedAmount?: BtcMoneyAmount
   unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency> // destinationSpecifiedAmount if the invoice has an amount, otherwise the amount that the user is denominating the payment in

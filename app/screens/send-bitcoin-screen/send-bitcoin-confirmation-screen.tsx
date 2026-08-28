@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { View } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -28,6 +28,7 @@ import {
   noteInvoiceFirstSight,
   willTransmitHeldInvoice,
 } from "./invoice-expiry"
+import { attemptFingerprintOf, frozenSendInvoice } from "./send-attempt-key"
 import { useActivityIndicator, useBreez } from "@app/hooks"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 
@@ -56,6 +57,7 @@ import {
   logPaymentAttempt,
   logPaymentBlockedExpiredInvoice,
   logPaymentResult,
+  PAYMENT_RESULT_KEY_REUSED,
 } from "@app/utils/analytics"
 import { getCashWallet } from "@app/graphql/wallets-utils"
 import { useChatContext } from "../chat/chatContext"
@@ -246,30 +248,50 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   // anyway spends a round trip to come back as the generic "Something went
   // wrong", which sends the user (and support) after the wrong cause.
   //
-  // Only checked when the held bolt11 is the one that will actually go out:
+  // Takes the invoice to judge rather than reading the detail's, because the
+  // two are not always the same one: a frozen repeat transmits the bolt11 it
+  // first sent, not the one this screen is holding. The caller decides which.
+  //
+  // Answers false outright when the held bolt11 is not what goes out at all:
   // the Breez BTC wallet re-mints at send time on the LNURL/intraledger paths,
   // where a stale held invoice is irrelevant. The lifetime is read off the
   // invoice, which removes any dependence on when we *recorded* minting it,
   // and the elapsed-since-first-sight reading (registered when the destination is
   // parsed — payment-destination/lightning.ts) removes any dependence on the device
   // clock agreeing with the issuer's.
-  const heldInvoiceHasExpired = useCallback(
-    () =>
+  const invoiceHasExpired = useCallback(
+    (paymentRequest?: string) =>
       willTransmitHeldInvoice({
         sendingWalletCurrency: sendingWalletDescriptor?.currency,
         paymentType: paymentDetail.paymentType,
       }) &&
       isHeldInvoiceExpired({
-        paymentRequest: paymentDetail.paymentRequest,
+        paymentRequest,
         nowSeconds: Math.floor(Date.now() / 1000),
-        decode: (paymentRequest, network) =>
-          decodeInvoiceString(paymentRequest, network as NetworkLibGaloy),
+        decode: (invoice, network) =>
+          decodeInvoiceString(invoice, network as NetworkLibGaloy),
       }),
-    [
-      paymentDetail.paymentRequest,
-      paymentDetail.paymentType,
-      sendingWalletDescriptor?.currency,
-    ],
+    [paymentDetail.paymentType, sendingWalletDescriptor?.currency],
+  )
+
+  // The attempt this screen is confirming — the same identity useSendPayment
+  // derives, so this screen can ask what a repeat of it would put on the wire.
+  const fingerprint = useMemo(() => attemptFingerprintOf(paymentDetail), [paymentDetail])
+
+  // Which remedy an expired invoice leaves this user.
+  //
+  // Only an LNURL send can honour "go back and confirm again" — the details
+  // screen re-mints on every pass forward, no edit required (which matters for
+  // a fixed-amount LNURL such as a flashcard reload, where the amount field is
+  // disabled and there is nothing to change). A payee-minted bolt11 (scanned or
+  // pasted) is fixed: going back and forward returns the *same* invoice. Those
+  // users need a new invoice from whoever they are paying.
+  const expiredInvoiceRemedy = useCallback(
+    () =>
+      paymentDetail.paymentType === PaymentType.Lnurl
+        ? LL.SendBitcoinConfirmationScreen.heldInvoiceExpired()
+        : LL.SendBitcoinDestinationScreen.expiredInvoice(),
+    [paymentDetail.paymentType, LL],
   )
 
   const handleSendPayment = useCallback(async () => {
@@ -282,7 +304,38 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
       // precisely the double-taps ENG-533 counts. Read synchronously here, the
       // second tap in a frame leaves no trace at all.
       if (sendIsInFlight()) return
-      if (heldInvoiceHasExpired()) {
+
+      // The bolt11 this tap will actually put on the wire, which is not always
+      // the one on screen. Once an attempt is frozen (send-attempt-key.ts)
+      // every repeat transmits the FROZEN input, and on the LNURL path the
+      // detail in hand routinely holds a newer invoice — the details screen
+      // re-mints on every pass forward. Judging the invoice this screen is
+      // holding would therefore validate one invoice and send another on
+      // exactly the path the freeze exists for.
+      //
+      // Read synchronously, and deliberately not awaited: `useSendPayment`
+      // starts hydrating the persisted freezes when this screen mounts, and a
+      // tap that beat that disk read would have to be awaited HERE — above the
+      // `payment_attempt` log and below the in-flight guard, which is where a
+      // second tap in the same frame would slip past both. A freeze this read
+      // misses costs one generic error before the failure retires the key,
+      // i.e. exactly today's behaviour; two counted attempts for one request
+      // would corrupt the measure ENG-533 is judged by.
+      const frozenInvoice = frozenSendInvoice(fingerprint)
+      const transmittedInvoice = frozenInvoice ?? paymentDetail.paymentRequest
+      // Read once, BEFORE the request, so the reading describes what went out
+      // rather than how long the round trip took.
+      const transmittingDeadInvoice = invoiceHasExpired(transmittedInvoice)
+
+      // Refuse only when the dead invoice is a FIRST send. A frozen one is a
+      // repeat of a payment the server may already have settled, and its
+      // replay is how that outcome is recovered: same key, same input, so the
+      // backend either returns the original result or — having never seen the
+      // key — executes and answers with a definitive failure that retires the
+      // key and frees the next attempt. Refusing it instead would strand the
+      // attempt, because going back and forward reproduces the same
+      // fingerprint and hits the same frozen invoice for the next 24h.
+      if (!frozenInvoice && transmittingDeadInvoice) {
         // A refusal here is the whole point of ENG-555, so it has to be
         // countable: without an event the failure just changes shape from
         // "Something went wrong" to "Confirm did nothing", and support is
@@ -292,18 +345,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           paymentType: paymentDetail.paymentType,
           sendingWallet: sendingWalletDescriptor.currency,
         })
-        // Only an LNURL send can honour "go back and confirm again" — the
-        // details screen re-mints on every pass forward, no edit required
-        // (which matters for a fixed-amount LNURL such as a flashcard reload,
-        // where the amount field is disabled and there is nothing to change).
-        // A payee-minted bolt11 (scanned or pasted) is fixed: going back and
-        // forward returns the *same* invoice. Those users need a new invoice
-        // from whoever they are paying.
-        setBlockingPaymentError(
-          paymentDetail.paymentType === PaymentType.Lnurl
-            ? LL.SendBitcoinConfirmationScreen.heldInvoiceExpired()
-            : LL.SendBitcoinDestinationScreen.expiredInvoice(),
-        )
+        setBlockingPaymentError(expiredInvoiceRemedy())
         ReactNativeHapticFeedback.trigger("notificationError", {
           ignoreAndroidSystemSettings: true,
         })
@@ -331,7 +373,13 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         toggleActivityIndicator(false)
         logPaymentResult({
           paymentType: paymentDetail.paymentType,
-          paymentStatus: status,
+          // A reuse rejection arrives as `{ status: "failed" }`, but it is the
+          // one outcome that proves the idempotency work FIRED — the server is
+          // telling us it already holds a result for this attempt, which in the
+          // dangerous case is a success whose response was lost. Counted as a
+          // FAILURE it would read as this feature making ENG-533's own
+          // attempt→result ratio worse, exactly where that ratio is measured.
+          paymentStatus: result.keyReused ? PAYMENT_RESULT_KEY_REUSED : status,
           sendingWallet: sendingWalletDescriptor.currency,
         })
 
@@ -364,6 +412,18 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           // `setBlockingPaymentError` is the point: nothing the user can do on
           // this screen resolves it, and their money may already have moved.
           setBlockingPaymentError(LL.SendBitcoinConfirmationScreen.keyAlreadyUsed())
+          ReactNativeHapticFeedback.trigger("notificationError", {
+            ignoreAndroidSystemSettings: true,
+          })
+        } else if (transmittingDeadInvoice) {
+          // The only way to reach here: the frozen replay above went out
+          // carrying an invoice that had already died, and the server rejected
+          // it. Naming the cause is the whole of ENG-555 — "Something went
+          // wrong" is precisely the message that sent the user, and support,
+          // after the wrong cause. The failure retired the key and dropped the
+          // freeze, so the remedy this copy names now actually works: the next
+          // pass forward mints a live invoice and freezes THAT.
+          setBlockingPaymentError(expiredInvoiceRemedy())
           ReactNativeHapticFeedback.trigger("notificationError", {
             ignoreAndroidSystemSettings: true,
           })
@@ -401,7 +461,9 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     sendPayment,
     sendIsInFlight,
     sendingWalletDescriptor?.currency,
-    heldInvoiceHasExpired,
+    fingerprint,
+    invoiceHasExpired,
+    expiredInvoiceRemedy,
     setBlockingPaymentError,
     LL,
   ])

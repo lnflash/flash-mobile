@@ -119,10 +119,23 @@ export const logPaymentBlockedExpiredInvoice = (
   })
 }
 
+/**
+ * The backend refused to replay an idempotency key it already holds a result
+ * for (`IdempotencyKeyReuseError`) — see use-send-payment.ts.
+ *
+ * Not a `PaymentSendResult`: it arrives on the wire as an ordinary
+ * `{ status: "failed" }`, but it is the server telling us it owns an outcome
+ * for this attempt, which in the dangerous case is a SUCCESS whose response
+ * was lost. Counting it as a failure would put the one event that proves
+ * ENG-533's idempotency work fired into the failure column of the very ratio
+ * ENG-533 is measured on.
+ */
+export const PAYMENT_RESULT_KEY_REUSED = "KEY_REUSED"
+
 type LogPaymentResultParams = {
   paymentType: ParsedPaymentType
   sendingWallet: WalletCurrency
-  paymentStatus: PaymentSendResult | null | undefined
+  paymentStatus: PaymentSendResult | typeof PAYMENT_RESULT_KEY_REUSED | null | undefined
 }
 
 export const logPaymentResult = (params: LogPaymentResultParams) => {

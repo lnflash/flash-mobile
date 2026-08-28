@@ -2,6 +2,7 @@ import { WalletCurrency } from "@app/graphql/generated"
 import { MoneyAmount, WalletOrDisplayCurrency, toWalletAmount } from "@app/types/amounts"
 import { PaymentType } from "@galoymoney/client"
 import { IDEMPOTENT_SEND_INPUTS, withIdempotencyKey } from "./idempotency-support"
+import { replayableInput, SendWireInput } from "./send-wire-input"
 import {
   BaseCreatePaymentDetailsParams,
   ConvertMoneyAmount,
@@ -52,10 +53,21 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
     canSendPayment: false,
     canGetFee: false,
   }
+  // The data half of the freeze for whichever branch can send — see
+  // send-wire-input.ts.
+  let sendPaymentWireInput: SendWireInput | undefined
+
   if (
     settlementAmount.amount &&
     sendingWalletDescriptor.currency === WalletCurrency.Btc
   ) {
+    const wireInput = {
+      walletId: sendingWalletDescriptor.id,
+      recipientWalletId,
+      amount: settlementAmount.amount,
+      memo,
+    }
+
     const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
       // Gated like every other send input — see idempotency-support.ts.
       withIdempotencyKey(
@@ -68,10 +80,13 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
           const { data } = await paymentMutations.intraLedgerPaymentSend({
             variables: {
               input: {
-                walletId: sendingWalletDescriptor.id,
-                recipientWalletId,
-                amount: settlementAmount.amount,
-                memo,
+                // The frozen input when this is a repeat — see
+                // send-wire-input.ts.
+                ...replayableInput(
+                  IDEMPOTENT_SEND_INPUTS.intraLedger,
+                  wireInput,
+                  paymentMutations.frozenInput,
+                ),
                 // Same key for every repeat of this attempt, so a send whose
                 // response was lost settles once. See SendPaymentMutationParams.
                 ...keyField,
@@ -92,11 +107,22 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
       canGetFee: true,
       getFee,
     }
+    sendPaymentWireInput = {
+      inputType: IDEMPOTENT_SEND_INPUTS.intraLedger,
+      input: wireInput,
+    }
   } else if (
     settlementAmount.amount &&
     (sendingWalletDescriptor.currency === WalletCurrency.Usd ||
       sendingWalletDescriptor.currency === WalletCurrency.Usdt)
   ) {
+    const wireInput = {
+      walletId: sendingWalletDescriptor.id,
+      recipientWalletId,
+      amount: settlementAmount.amount,
+      memo,
+    }
+
     const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
       // USD/USDT Flash-to-Flash — the same double-debit class ENG-533 exists to
       // close, and gated like every other send input.
@@ -110,10 +136,15 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
           const { data } = await paymentMutations.intraLedgerUsdPaymentSend({
             variables: {
               input: {
-                walletId: sendingWalletDescriptor.id,
-                recipientWalletId,
-                amount: settlementAmount.amount,
-                memo,
+                // The frozen input when this is a repeat. The server keys on
+                // `intraledger|${recipientWalletId}|${amount}`, and a USD/USDT
+                // amount is price-derived — so the rebuilt input drifts by a
+                // cent and the backend refuses to replay.
+                ...replayableInput(
+                  IDEMPOTENT_SEND_INPUTS.intraLedgerUsd,
+                  wireInput,
+                  paymentMutations.frozenInput,
+                ),
                 // Same key for every repeat of this attempt, so a send whose
                 // response was lost settles once. See SendPaymentMutationParams.
                 ...keyField,
@@ -133,6 +164,10 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
       sendPaymentMutation,
       canGetFee: true,
       getFee,
+    }
+    sendPaymentWireInput = {
+      inputType: IDEMPOTENT_SEND_INPUTS.intraLedgerUsd,
+      input: wireInput,
     }
   }
 
@@ -185,5 +220,6 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
     canSetAmount: true,
     ...setMemo,
     ...sendPaymentAndGetFee,
+    sendPaymentWireInput,
   } as const
 }

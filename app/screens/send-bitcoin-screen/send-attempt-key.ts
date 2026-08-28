@@ -1,6 +1,6 @@
 // The idempotency key for a send, derived from the ATTEMPT rather than minted
-// per hook instance — and, with it, the FROZEN send that key was first paired
-// with.
+// per hook instance — and, with it, the FROZEN mutation input that key was
+// first paired with.
 //
 // Why not a ref in useSendPayment: the retry this key exists to protect is the
 // one the user actually performs, and on this flow that retry is a
@@ -24,6 +24,7 @@ import { PaymentType } from "@galoymoney/client"
 import { v5 as uuidv5 } from "uuid"
 
 import { PaymentDetail } from "./payment-details/index.types"
+import { isSendWireInput, SendWireInput } from "./payment-details/send-wire-input"
 
 /**
  * Namespace for send-attempt keys. Fixed and arbitrary — its only job is to
@@ -51,6 +52,24 @@ export const ATTEMPT_MEMORY_TTL_MS = 24 * 60 * 60 * 1000
  * Versioned: a build that changes the entry shape must not read the old one.
  */
 const GENERATIONS_STORAGE_KEY = "send-attempt-generations.v1"
+
+/**
+ * Where the frozen inputs of UNRESOLVED attempts live across a process restart.
+ *
+ * Separate from the generations store because the two have opposite lifetimes:
+ * a generation is written when an attempt RESOLVES and a frozen input is
+ * deleted at that same moment, so keeping them apart means the common case
+ * (nothing in flight) leaves this store empty.
+ *
+ * Unlike the generations store this one does hold payment content — a bolt11,
+ * a recipient wallet id, an amount, the user's memo — because replaying the
+ * byte-identical input is the entire point and none of it can be re-derived
+ * once the process is gone. Bounded the same way the server bounds its own
+ * memory of the key (24h) and deleted the instant the attempt resolves, so at
+ * most one unresolved send is on disk at a time. AsyncStorage already carries
+ * heavier material in this app (decrypted chat rumors, `app/utils/nostr.ts`).
+ */
+const FROZEN_STORAGE_KEY = "send-attempt-frozen.v1"
 
 type Generation = {
   /** How many times this attempt's key has been spent. */
@@ -82,10 +101,11 @@ type FrozenSend = {
   /** The key this attempt was first sent with. */
   key: string
   /**
-   * The send closure captured on the first Confirm — and with it the exact
-   * mutation input: this bolt11, this settlement amount, this memo.
+   * The exact mutation input the first Confirm put on the wire: this bolt11,
+   * this settlement amount, this memo — as DATA, not as the closure that sent
+   * it. See send-wire-input.ts.
    */
-  send: unknown
+  input: SendWireInput
   expiresAt: number
 }
 
@@ -101,10 +121,18 @@ type FrozenSend = {
 // price-derived settlement amount. Resending the same key with a rebuilt input
 // therefore lands on `IdempotencyKeyReuseError`, not on a replay.
 //
-// So the repeat resends the frozen closure rather than the rebuilt payment
+// So the repeat resends the frozen INPUT rather than the rebuilt payment
 // detail, and client key and server fingerprint move in lockstep. Dropped the
-// moment the attempt resolves (see `retireAttemptKey`), so at most one closure
-// per in-flight send is retained.
+// moment the attempt resolves (see `retireAttemptKey`), so at most one frozen
+// input per in-flight send is retained.
+//
+// Written through to storage for the same reason the generations are: half an
+// attempt surviving a force-quit is worse than none of it. A closure cannot be
+// written through — which is exactly why this is data — and without it the
+// user who force-quits after a payment that appeared to fail comes back, sends
+// the identical payment, re-derives the same key against a rebuilt input, and
+// is answered with IdempotencyKeyReuseError: nothing settled, and that exact
+// payment is impossible for the next 24h.
 const frozenByAttempt = new Map<string, FrozenSend>()
 
 export type SendAttempt = {
@@ -221,57 +249,123 @@ const persistGenerations = (): void => {
   )
 }
 
-const readGenerations = async (): Promise<void> => {
-  try {
-    const raw = await AsyncStorage.getItem(GENERATIONS_STORAGE_KEY)
-    if (!raw) return
-    const stored: unknown = JSON.parse(raw)
-    if (!stored || typeof stored !== "object") return
-    const now = Date.now()
-    const isLiveGeneration = (value: unknown): value is Generation => {
-      const entry = value as Partial<Generation> | null
-      return Boolean(
-        entry &&
-          typeof entry.generation === "number" &&
-          typeof entry.expiresAt === "number" &&
-          entry.expiresAt > now,
-      )
-    }
+const persistFrozen = (): void => {
+  const now = Date.now()
+  const live: Record<string, FrozenSend> = {}
+  for (const [digest, entry] of frozenByAttempt) {
+    if (entry.expiresAt > now) live[digest] = entry
+  }
+  AsyncStorage.setItem(FROZEN_STORAGE_KEY, JSON.stringify(live)).catch(
+    ignoreStorageFailure,
+  )
+}
 
-    for (const [digest, value] of Object.entries(stored as Record<string, unknown>)) {
-      if (isLiveGeneration(value)) {
-        const inMemory = generationByAttempt.get(digest)
-        // A retirement recorded since this process started must not be undone
-        // by a stale stored one, and vice versa: the HIGHER generation is the
-        // one the server has already answered, so it wins either way.
-        if (!inMemory || inMemory.generation < value.generation) {
-          generationByAttempt.set(digest, {
-            generation: value.generation,
-            expiresAt: value.expiresAt,
-          })
-        }
+const readStoredRecord = async (
+  storageKey: string,
+): Promise<Record<string, unknown> | undefined> => {
+  const raw = await AsyncStorage.getItem(storageKey)
+  if (!raw) return undefined
+  const stored: unknown = JSON.parse(raw)
+  if (!stored || typeof stored !== "object") return undefined
+  return stored as Record<string, unknown>
+}
+
+const readGenerations = async (): Promise<void> => {
+  const stored = await readStoredRecord(GENERATIONS_STORAGE_KEY)
+  if (!stored) return
+
+  const now = Date.now()
+  const isLiveGeneration = (value: unknown): value is Generation => {
+    const entry = value as Partial<Generation> | null
+    return Boolean(
+      entry &&
+        typeof entry.generation === "number" &&
+        typeof entry.expiresAt === "number" &&
+        entry.expiresAt > now,
+    )
+  }
+
+  for (const [digest, value] of Object.entries(stored)) {
+    if (isLiveGeneration(value)) {
+      const inMemory = generationByAttempt.get(digest)
+      // A retirement recorded since this process started must not be undone
+      // by a stale stored one, and vice versa: the HIGHER generation is the
+      // one the server has already answered, so it wins either way.
+      if (!inMemory || inMemory.generation < value.generation) {
+        generationByAttempt.set(digest, {
+          generation: value.generation,
+          expiresAt: value.expiresAt,
+        })
       }
     }
+  }
+}
+
+const readFrozen = async (): Promise<void> => {
+  const stored = await readStoredRecord(FROZEN_STORAGE_KEY)
+  if (!stored) return
+
+  const now = Date.now()
+  const isLiveFrozenSend = (value: unknown): value is FrozenSend => {
+    const entry = value as Partial<FrozenSend> | null
+    return Boolean(
+      entry &&
+        typeof entry.key === "string" &&
+        typeof entry.expiresAt === "number" &&
+        entry.expiresAt > now &&
+        // Storage is the one place the compiler cannot vouch for the shape,
+        // and a malformed input is one the server can only reject.
+        isSendWireInput(entry.input),
+    )
+  }
+
+  for (const [digest, value] of Object.entries(stored)) {
+    // Anything frozen since this process started describes a send this process
+    // made, so it wins over the stored copy of an earlier one.
+    if (isLiveFrozenSend(value) && !frozenByAttempt.has(digest)) {
+      frozenByAttempt.set(digest, {
+        key: value.key,
+        input: value.input,
+        expiresAt: value.expiresAt,
+      })
+    }
+  }
+}
+
+const readAttemptMemory = async (): Promise<void> => {
+  try {
+    await readGenerations()
   } catch {
     // Unreadable or corrupt: fall back to "nothing retired", i.e. today's
     // behaviour before this file persisted anything.
+  }
+  try {
+    await readFrozen()
+  } catch {
+    // Same policy, and independently: a corrupt frozen store must not cost us
+    // the retirements, which are what stop a spent key being handed back.
   }
 }
 
 let hydration: Promise<void> | undefined
 
 /**
- * Load the retired generations written by previous runs.
+ * Load the retired generations AND the frozen inputs written by previous runs.
  *
- * MUST be awaited before the first `attemptKey` of a process, and is a no-op
- * afterwards. Without it a force-quit — the normal reaction to a failed
- * payment — resets every attempt to generation 0 while the server still holds
- * its cached FAILURE for 24h, so the user's identical retry replays that
- * failure and they are locked out of that exact payment with nothing on screen
- * that explains why.
+ * MUST be awaited before the first `attemptKey` or `freezeAttempt` of a
+ * process, and is a no-op afterwards. Without it a force-quit — the normal
+ * reaction to a failed payment — resets every attempt to generation 0 while
+ * the server still holds its cached FAILURE for 24h, so the user's identical
+ * retry replays that failure and they are locked out of that exact payment
+ * with nothing on screen that explains why.
+ *
+ * Both halves, for one reason: an attempt that survives only half-way is worse
+ * than one that does not survive at all. A restored generation with no
+ * restored input re-derives the same key for a REBUILT input, which is the one
+ * combination the backend answers with IdempotencyKeyReuseError.
  */
 export const hydrateSendAttemptKeys = (): Promise<void> => {
-  if (!hydration) hydration = readGenerations()
+  if (!hydration) hydration = readAttemptMemory()
   return hydration
 }
 
@@ -289,10 +383,21 @@ export const attemptKey = (fingerprint: string): string =>
     SEND_ATTEMPT_NAMESPACE,
   )
 
+/** The live frozen entry for an attempt, if it has one. */
+const liveFrozen = (digest: string): FrozenSend | undefined => {
+  const frozen = frozenByAttempt.get(digest)
+  if (!frozen) return undefined
+  if (frozen.expiresAt <= Date.now()) {
+    frozenByAttempt.delete(digest)
+    return undefined
+  }
+  return frozen
+}
+
 /**
- * The key AND the send to use for this attempt.
+ * The key AND the input to send for this attempt.
  *
- * On the first Confirm the given `send` is frozen alongside the key; every
+ * On the first Confirm the given input is frozen alongside the key; every
  * repeat of the same attempt gets that same pair back, so the mutation input
  * the server fingerprints is byte-identical to the one it fingerprinted the
  * first time. Handing it the rebuilt payment detail instead — a re-minted
@@ -300,25 +405,56 @@ export const attemptKey = (fingerprint: string): string =>
  * answer `IdempotencyKeyReuseError` on precisely the retry this design exists
  * for.
  *
+ * `input` is optional because not every send has one to freeze: the onchain
+ * resolvers do not accept an idempotency key at all, so those attempts keep
+ * today's behaviour — a key, and whatever the current detail builds.
+ *
  * Callers must have awaited `hydrateSendAttemptKeys` first.
  */
-export const freezeAttempt = <S>(
+export const freezeAttempt = (
   fingerprint: string,
-  send: S,
-): { idempotencyKey: string; send: S } => {
+  input: SendWireInput | undefined,
+): { idempotencyKey: string; frozenInput: SendWireInput | undefined } => {
   const digest = digestOf(fingerprint)
-  const frozen = frozenByAttempt.get(digest)
-  if (frozen && frozen.expiresAt > Date.now()) {
-    return { idempotencyKey: frozen.key, send: frozen.send as S }
-  }
-
   const key = attemptKey(fingerprint)
+  const frozen = liveFrozen(digest)
+  // The generation is the authority on whether an attempt is still open, so a
+  // frozen input is honoured only while it still belongs to the key in force.
+  // The two are written through separately and a process can die between the
+  // two writes; a frozen entry that outlived its retirement would otherwise
+  // resend a SPENT key and have the server replay an outcome the client
+  // already saw — the failure `retireAttemptKey` exists to prevent.
+  if (frozen && frozen.key === key) {
+    return { idempotencyKey: frozen.key, frozenInput: frozen.input }
+  }
+  if (frozen) frozenByAttempt.delete(digest)
+
+  if (!input) return { idempotencyKey: key, frozenInput: undefined }
+
   frozenByAttempt.set(digest, {
     key,
-    send,
+    input,
     expiresAt: Date.now() + ATTEMPT_MEMORY_TTL_MS,
   })
-  return { idempotencyKey: key, send }
+  persistFrozen()
+  return { idempotencyKey: key, frozenInput: input }
+}
+
+/**
+ * The bolt11 a repeat of this attempt would actually transmit, if one is
+ * frozen.
+ *
+ * Read by the confirm screen's expiry guard (ENG-555), which would otherwise
+ * judge the invoice it is HOLDING rather than the one that goes out — and on
+ * the LNURL path those are routinely different invoices, because the details
+ * screen re-mints on every pass forward while the freeze holds the original.
+ *
+ * A peek: it neither creates nor extends a freeze.
+ */
+export const frozenSendInvoice = (fingerprint: string): string | undefined => {
+  const frozen = liveFrozen(digestOf(fingerprint))
+  const paymentRequest = frozen?.input.input.paymentRequest
+  return typeof paymentRequest === "string" ? paymentRequest : undefined
 }
 
 /**
@@ -342,6 +478,7 @@ export const retireAttemptKey = (fingerprint: string): void => {
   })
   frozenByAttempt.delete(digest)
   persistGenerations()
+  persistFrozen()
 }
 
 /**
@@ -358,4 +495,5 @@ export const resetSendAttemptKeys = (): void => {
   frozenByAttempt.clear()
   hydration = Promise.resolve()
   AsyncStorage.removeItem(GENERATIONS_STORAGE_KEY).catch(ignoreStorageFailure)
+  AsyncStorage.removeItem(FROZEN_STORAGE_KEY).catch(ignoreStorageFailure)
 }
