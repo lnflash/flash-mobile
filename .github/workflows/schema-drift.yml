@@ -16,12 +16,18 @@ name: schema-drift-check
 # two triggers deliberately do NOT judge alike:
 #
 #   * schedule / manual — strict. Any difference is drift somebody must go and
-#     look at, and nobody's PR is blocked while they do.
-#   * pull_request — only REMOVALS fail. A removal can invalidate an operation
-#     this app actually sends, so it is worth stopping a merge for. Additions
-#     are the server shipping something new, which no app PR caused and no app
-#     PR can fix; failing on those would turn every PR touching app/graphql red
-#     the first time lnflash/flash merges anything, and a red X that everyone
+#     look at, and nobody's PR is blocked while they do. A strict failure also
+#     files/updates a tracking issue: the drift this workflow exists to catch
+#     sat unnoticed precisely because its only witness would have been a red X
+#     in the Actions tab that GitHub shows to the workflow file's last
+#     committer and nobody else.
+#   * pull_request — only BREAKING changes fail, as judged by
+#     graphql-inspector, not by textual diff. A removal can invalidate an
+#     operation this app actually sends, so it is worth stopping a merge.
+#     Additions — and docstring rewording, which a textual diff misreads as a
+#     removal — are the server moving, which no app PR caused and none can
+#     fix; failing on those would turn every PR touching app/graphql red the
+#     first time lnflash/flash merges anything, and a red X that everyone
 #     knows to ignore is worse protection than no check at all.
 
 on:
@@ -34,6 +40,11 @@ on:
     - cron: "0 13 * * 1"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  # The strict run files a tracking issue on drift.
+  issues: write
+
 jobs:
   schema-drift:
     runs-on: ubuntu-latest
@@ -41,6 +52,17 @@ jobs:
     steps:
       - name: Checkout app
         uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - name: Install dependencies
+        # Needed for graphql-inspector, which is already a repo dependency
+        # (it backs `yarn graphql-check`) — no new supply-chain surface.
+        run: yarn install --frozen-lockfile
 
       - name: Fetch the server's public SDL
         run: |
@@ -67,48 +89,79 @@ jobs:
 
       - name: Compare against the checked-in snapshot
         env:
-          # Pure additions are advisory on a PR and fatal on the schedule; a
-          # removal is fatal either way.
           STRICT: ${{ github.event_name != 'pull_request' }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           if diff -u app/graphql/public-schema.graphql /tmp/server-schema.graphql > /tmp/schema.diff; then
             echo "public-schema.graphql matches the server SDL."
             exit 0
           fi
 
-          # A line only in OUR snapshot is something the server no longer
-          # declares — the case that can break an operation we send.
-          if grep -q '^-[^-]' /tmp/schema.diff; then
-            REMOVALS=1
-          else
-            REMOVALS=0
-          fi
+          # Semantic judgement, not textual. `graphql-inspector diff old new`
+          # exits 1 only on BREAKING changes (verified empirically: identical
+          # and additions exit 0, a field removal exits 1, and a docstring
+          # rewording — which `diff` renders as a -/+ pair — exits 0). The
+          # textual diff above is kept for display only.
+          set +e
+          yarn --silent graphql-inspector diff \
+            app/graphql/public-schema.graphql /tmp/server-schema.graphql \
+            > /tmp/inspector.out 2>&1
+          INSPECTOR_EXIT=$?
+          set -e
+          cat /tmp/inspector.out
 
           report() {
-            echo "Refresh it and regenerate:"
+            echo "Refresh the snapshot and regenerate:"
             echo "  curl -fsSL https://raw.githubusercontent.com/lnflash/flash/main/src/graphql/public/schema.graphql -o app/graphql/public-schema.graphql"
             echo "  yarn dev:codegen"
+            echo "COMMIT the regenerated app/graphql/generated.ts (and generated.gql if it"
+            echo "changed) along with the snapshot — check:codegen fails until you do."
             echo "Then re-run 'yarn graphql-check' — a field REMOVED server-side surfaces"
             echo "there as an invalid operation, which is the case worth reading carefully"
             echo "rather than just committing the refresh."
-            echo "--- diff (ours vs server) ---"
+            echo "--- textual diff (ours vs server), display only ---"
             head -200 /tmp/schema.diff
           }
 
-          if [ "$REMOVALS" = "1" ]; then
-            echo "::error::app/graphql/public-schema.graphql declares things lnflash/flash main no longer does. An operation this app sends may now be invalid."
+          file_tracking_issue() {
+            TITLE="public-schema.graphql has drifted behind lnflash/flash"
+            BODY_FILE=/tmp/issue-body.md
+            {
+              echo "The weekly schema-drift run found the checked-in snapshot behind the server SDL."
+              echo
+              echo '```'
+              cat /tmp/inspector.out
+              echo '```'
+              echo
+              echo "Refresh: fetch the SDL, run \`yarn dev:codegen\`, commit the snapshot AND the regenerated outputs, then read \`yarn graphql-check\` for invalidated operations."
+              echo
+              echo "_Filed automatically by schema-drift-check; run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}_"
+            } > "$BODY_FILE"
+            EXISTING=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
+            if [ -n "$EXISTING" ]; then
+              gh issue comment "$EXISTING" --body-file "$BODY_FILE"
+              echo "updated tracking issue #$EXISTING"
+            else
+              gh issue create --title "$TITLE" --body-file "$BODY_FILE"
+            fi
+          }
+
+          if [ "$INSPECTOR_EXIT" -ne 0 ]; then
+            echo "::error::the server SDL has BREAKING changes relative to our snapshot — an operation this app sends may now be invalid."
             report
+            [ "$STRICT" = "true" ] && file_tracking_issue || true
             exit 1
           fi
 
           if [ "$STRICT" = "true" ]; then
-            echo "::error::app/graphql/public-schema.graphql has drifted behind lnflash/flash main."
+            echo "::error::app/graphql/public-schema.graphql has drifted behind lnflash/flash main (non-breaking, but codegen cannot see the new fields until refreshed)."
             report
+            file_tracking_issue
             exit 1
           fi
 
-          # PR, additions only: say so and get out of the way. This drift was
-          # not caused by this PR and cannot be fixed by it.
-          echo "::warning::the server SDL has fields our snapshot lacks. Not caused by this PR and not blocking it — the weekly schema-drift run tracks it."
+          # PR, non-breaking drift only: say so and get out of the way. This
+          # drift was not caused by this PR and cannot be fixed by it.
+          echo "::warning::the server SDL differs from our snapshot (non-breaking). Not caused by this PR and not blocking it — the weekly schema-drift run tracks it."
           report
           exit 0
