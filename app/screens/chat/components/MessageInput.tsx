@@ -1,15 +1,17 @@
 import React, { useState } from "react"
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  Text,
-} from "react-native"
+import { View, TextInput, TouchableOpacity, Text } from "react-native"
 import Icon from "react-native-vector-icons/Ionicons"
 import ReactNativeHapticFeedback from "react-native-haptic-feedback"
 import { nip19 } from "nostr-tools"
 import { Rumor } from "@app/utils/nostr"
 import { makeStyles, useTheme } from "@rneui/themed"
+
+import {
+  computeComposerHeight,
+  INPUT_PADDING_V,
+  MAX_BOX_HEIGHT,
+  MIN_BOX_HEIGHT,
+} from "./composer-height"
 
 type Props = {
   onSend: (text: string, replyToId?: string) => void
@@ -18,15 +20,6 @@ type Props = {
   profileMap: Map<string, any>
 }
 
-const MIN_HEIGHT = 40
-const MAX_HEIGHT = 120
-// onContentSizeChange reports the CONTENT height only. The box height must
-// also hold the input's vertical padding, or the measured height of two lines
-// clamps back to MIN_HEIGHT and the second line renders underneath the
-// padding — you type it but never see it (#715). Keep in sync with
-// styles.textInput paddingVertical.
-const VERTICAL_PADDING = 8 * 2
-
 export const MessageInput: React.FC<Props> = ({
   onSend,
   replyTo,
@@ -34,8 +27,10 @@ export const MessageInput: React.FC<Props> = ({
   profileMap,
 }) => {
   const [text, setText] = useState("")
-  const [inputHeight, setInputHeight] = useState(MIN_HEIGHT)
-  const { theme: { colors } } = useTheme()
+  const [inputHeight, setInputHeight] = useState(MIN_BOX_HEIGHT)
+  const {
+    theme: { colors },
+  } = useTheme()
   const styles = useStyles()
 
   const handleSend = () => {
@@ -44,7 +39,7 @@ export const MessageInput: React.FC<Props> = ({
     ReactNativeHapticFeedback.trigger("impactMedium", { enableVibrateFallback: true })
     onSend(trimmed, replyTo?.id)
     setText("")
-    setInputHeight(MIN_HEIGHT)
+    setInputHeight(MIN_BOX_HEIGHT)
     onCancelReply()
   }
 
@@ -77,17 +72,19 @@ export const MessageInput: React.FC<Props> = ({
           value={text}
           onChangeText={setText}
           onContentSizeChange={(e) => {
-            const h = e.nativeEvent.contentSize.height + VERTICAL_PADDING
-            setInputHeight(Math.min(Math.max(h, MIN_HEIGHT), MAX_HEIGHT))
+            setInputHeight(computeComposerHeight(e.nativeEvent.contentSize.height))
           }}
           placeholder="Message"
           placeholderTextColor={colors.grey3}
           multiline
-          scrollEnabled={inputHeight >= MAX_HEIGHT}
+          scrollEnabled={inputHeight >= MAX_BOX_HEIGHT}
           maxLength={2000}
         />
         <TouchableOpacity
-          style={[styles.sendButton, { backgroundColor: text.trim() ? colors.primary : colors.grey3 }]}
+          style={[
+            styles.sendButton,
+            { backgroundColor: text.trim() ? colors.primary : colors.grey3 },
+          ]}
           onPress={handleSend}
           disabled={!text.trim()}
         >
@@ -139,7 +136,7 @@ const useStyles = makeStyles(({ colors }) => ({
     fontSize: 15,
     color: colors.primary3,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: INPUT_PADDING_V,
     borderRadius: 20,
     backgroundColor: colors.grey4,
     marginRight: 8,
