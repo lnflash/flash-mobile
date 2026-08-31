@@ -20,6 +20,12 @@ type Props = {
 
 const MIN_HEIGHT = 40
 const MAX_HEIGHT = 120
+// onContentSizeChange reports the CONTENT height only. The box height must
+// also hold the input's vertical padding, or the measured height of two lines
+// clamps back to MIN_HEIGHT and the second line renders underneath the
+// padding — you type it but never see it (#715). Keep in sync with
+// styles.textInput paddingVertical.
+const VERTICAL_PADDING = 8 * 2
 
 export const MessageInput: React.FC<Props> = ({
   onSend,
@@ -71,7 +77,7 @@ export const MessageInput: React.FC<Props> = ({
           value={text}
           onChangeText={setText}
           onContentSizeChange={(e) => {
-            const h = e.nativeEvent.contentSize.height
+            const h = e.nativeEvent.contentSize.height + VERTICAL_PADDING
             setInputHeight(Math.min(Math.max(h, MIN_HEIGHT), MAX_HEIGHT))
           }}
           placeholder="Message"
