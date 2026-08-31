@@ -14,6 +14,7 @@ import { NIP29_DEFAULT_GROUP_ID, NIP29_DEFAULT_RELAY_URL } from "./constants"
 import { useChatContext } from "../chatContext"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { MessageInput } from "../components/MessageInput"
+import { Animated, useKeyboardPaddingStyle } from "../components/use-keyboard-padding"
 import { MessageBubble } from "../components/MessageBubble"
 import { GroupInfoModal } from "./GroupInfoModal"
 import { Rumor } from "@app/utils/nostr"
@@ -54,6 +55,8 @@ const InnerGroupChat: React.FC = () => {
   const styles = useStyles()
   const { theme: { colors, mode } } = useTheme()
   const insets = useSafeAreaInsets()
+  // Android 15+ edge-to-edge ignores adjustResize; see use-keyboard-padding.ts.
+  const composerPaddingStyle = useKeyboardPaddingStyle(insets.bottom)
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { messages, isMember, isAdmin, canModerate, isKing, adminList, roleMap, knownMembers, sendMessage, requestJoin, removeMessage, removeMember, setRole, groupMetadata } = useNostrGroupChat()
   const { userPublicKey } = useChatContext()
@@ -232,7 +235,7 @@ const InnerGroupChat: React.FC = () => {
       />
 
       {/* Input or Join button */}
-      <View style={{ paddingBottom: Platform.OS === "android" ? insets.bottom : 0 }}>
+      <Animated.View style={composerPaddingStyle}>
         {isMember ? (
           <MessageInput
             replyTo={replyTo}
@@ -245,7 +248,7 @@ const InnerGroupChat: React.FC = () => {
             <Button title="Request to Join" onPress={requestJoin} />
           </View>
         )}
-      </View>
+      </Animated.View>
 
       <GroupInfoModal
         visible={infoVisible}

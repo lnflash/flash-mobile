@@ -27,6 +27,7 @@ import { getSigner } from "@app/nostr/signer"
 import { FlatList } from "react-native-gesture-handler"
 import { MessageBubble } from "./components/MessageBubble"
 import { MessageInput } from "./components/MessageInput"
+import { Animated, useKeyboardPaddingStyle } from "./components/use-keyboard-padding"
 import { QuickZapModal } from "@app/components/zaps/quick-zap-modal"
 import { sendZap } from "@app/utils/nostr/zap"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -84,6 +85,8 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   const { rumors, setRumors, reactions, addOptimisticReaction } = useChatContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
   const insets = useSafeAreaInsets()
+  // Android 15+ edge-to-edge ignores adjustResize; see use-keyboard-padding.ts.
+  const composerPaddingStyle = useKeyboardPaddingStyle(insets.bottom)
   const { appConfig } = useAppConfig()
   const lnAddressHostname = appConfig.galoyInstance.lnAddressHostname
 
@@ -370,14 +373,14 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
       />
 
       {/* Input */}
-      <View style={{ paddingBottom: Platform.OS === "android" ? insets.bottom : 0 }}>
+      <Animated.View style={composerPaddingStyle}>
         <MessageInput
           replyTo={replyTo}
           profileMap={profileMap}
           onCancelReply={() => setReplyTo(null)}
           onSend={handleSend}
         />
-      </View>
+      </Animated.View>
       <QuickZapModal
         visible={quickZapVisible}
         initialAmount={savedQuickZapAmount}
