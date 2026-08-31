@@ -6,12 +6,7 @@ import { nip19 } from "nostr-tools"
 import { Rumor } from "@app/utils/nostr"
 import { makeStyles, useTheme } from "@rneui/themed"
 
-import {
-  computeComposerHeight,
-  INPUT_PADDING_V,
-  MAX_BOX_HEIGHT,
-  MIN_BOX_HEIGHT,
-} from "./composer-height"
+import { INPUT_PADDING_V, MAX_BOX_HEIGHT, MIN_BOX_HEIGHT } from "./composer-height"
 
 type Props = {
   onSend: (text: string, replyToId?: string) => void
@@ -27,7 +22,6 @@ export const MessageInput: React.FC<Props> = ({
   profileMap,
 }) => {
   const [text, setText] = useState("")
-  const [inputHeight, setInputHeight] = useState(MIN_BOX_HEIGHT)
   const {
     theme: { colors },
   } = useTheme()
@@ -39,7 +33,6 @@ export const MessageInput: React.FC<Props> = ({
     ReactNativeHapticFeedback.trigger("impactMedium", { enableVibrateFallback: true })
     onSend(trimmed, replyTo?.id)
     setText("")
-    setInputHeight(MIN_BOX_HEIGHT)
     onCancelReply()
   }
 
@@ -67,17 +60,17 @@ export const MessageInput: React.FC<Props> = ({
       )}
 
       <View style={styles.inputRow}>
+        {/* No controlled height: Fabric auto-sizes multiline inputs, and a
+            state-driven height fights it (visible oscillation on iOS — see
+            composer-height.ts). minHeight/maxHeight in the stylesheet bound
+            the growth; content scrolls internally past the max. */}
         <TextInput
-          style={[styles.textInput, { height: inputHeight }]}
+          style={styles.textInput}
           value={text}
           onChangeText={setText}
-          onContentSizeChange={(e) => {
-            setInputHeight(computeComposerHeight(e.nativeEvent.contentSize.height))
-          }}
           placeholder="Message"
           placeholderTextColor={colors.grey3}
           multiline
-          scrollEnabled={inputHeight >= MAX_BOX_HEIGHT}
           maxLength={2000}
         />
         <TouchableOpacity
@@ -133,6 +126,8 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   textInput: {
     flex: 1,
+    minHeight: MIN_BOX_HEIGHT,
+    maxHeight: MAX_BOX_HEIGHT,
     fontSize: 15,
     color: colors.primary3,
     paddingHorizontal: 12,
