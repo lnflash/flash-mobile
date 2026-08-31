@@ -1,33 +1,38 @@
-import { useEffect, useState } from "react"
-import { Keyboard, Platform } from "react-native"
+import { Platform } from "react-native"
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated"
 
 /**
- * Bottom padding that keeps the chat composer above the Android keyboard.
+ * Animated bottom padding that keeps the chat composer above the Android
+ * keyboard — including Gboard's suggestion strip.
  *
- * This app targets SDK 35, so Android 15+ enforces edge-to-edge and IGNORES
- * the manifest's `adjustResize` — the window no longer shrinks when the
- * keyboard opens. The `Screen` wrapper's KeyboardAvoidingView only sets a
- * `behavior` on iOS (Android historically relied on adjustResize), so on
- * modern Android the keyboard simply covers the composer.
+ * Why not Keyboard.addListener: this app targets SDK 35, so Android 15+
+ * enforces edge-to-edge and ignores the manifest's `adjustResize`. The first
+ * attempt padded by `keyboardDidShow`'s endCoordinates.height, which was
+ * close but wrong twice over — the suggestion strip appears AFTER the show
+ * event without firing another one, so the IME grows ~50px and the composer
+ * ends up underneath the strip (found on a Pixel during #716 device testing).
  *
- * iOS is untouched on purpose: Screen's `behavior="padding"` already moves
- * the content there, and adding this padding on top would double-shift it.
+ * Reanimated's useAnimatedKeyboard reads the IME window insets continuously
+ * on the UI thread, so the padding tracks every keyboard height change,
+ * suggestion strip included. The translucent flags match the app's
+ * edge-to-edge window; without them the inset math is offset by the bars.
+ *
+ * iOS deliberately contributes nothing: the Screen wrapper's
+ * KeyboardAvoidingView behavior="padding" already moves content there, and
+ * stacking both would double-shift.
  */
-export const useKeyboardPadding = (fallback: number): number => {
-  const [keyboardHeight, setKeyboardHeight] = useState(0)
+export const useKeyboardPaddingStyle = (fallback: number) => {
+  const keyboard = useAnimatedKeyboard({
+    isStatusBarTranslucentAndroid: true,
+    isNavigationBarTranslucentAndroid: true,
+  })
 
-  useEffect(() => {
-    if (Platform.OS !== "android") return undefined
-    const show = Keyboard.addListener("keyboardDidShow", (e) =>
-      setKeyboardHeight(e.endCoordinates?.height ?? 0),
-    )
-    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0))
-    return () => {
-      show.remove()
-      hide.remove()
+  return useAnimatedStyle(() => {
+    if (Platform.OS !== "android") return { paddingBottom: 0 }
+    return {
+      paddingBottom: Math.max(keyboard.height.value, fallback),
     }
-  }, [])
-
-  if (Platform.OS !== "android") return 0
-  return keyboardHeight > 0 ? keyboardHeight : fallback
+  })
 }
+
+export { Animated }
