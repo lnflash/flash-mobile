@@ -286,9 +286,17 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           paymentType: paymentDetail.paymentType,
           sendingWallet: sendingWalletDescriptor.currency,
         })
+        // A previous Failure/throw left an error on screen; this tap is the
+        // retry, so clear it before the attempt runs.
+        setPaymentError(undefined)
         toggleActivityIndicator(true)
-        const { status, errorsMessage } = await sendPayment()
+        const { status, errorsMessage, ignored } = await sendPayment()
         toggleActivityIndicator(false)
+        if (ignored) {
+          // A duplicate tap while the real attempt is still in flight.
+          // Nothing happened; log nothing, navigate nowhere.
+          return
+        }
         logPaymentResult({
           paymentType: paymentDetail.paymentType,
           paymentStatus: status,
@@ -321,6 +329,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           })
         }
       } catch (err) {
+        toggleActivityIndicator(false)
         if (err instanceof Error) {
           getCrashlytics().recordError(err)
           setPaymentError(err.message || err.toString())
@@ -361,7 +370,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         <PrimaryBtn
           loading={sendPaymentLoading}
           label={LL.SendBitcoinConfirmationScreen.title()}
-          disabled={!isValidAmount || hasAttemptedSend || Boolean(paymentError)}
+          disabled={!isValidAmount || hasAttemptedSend}
           onPress={handleSendPayment}
         />
       </View>

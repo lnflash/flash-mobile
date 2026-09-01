@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
+import { v4 as uuidv4 } from "uuid"
 
 // gql
 import {
@@ -23,7 +24,11 @@ import { useAppConfig } from "@app/hooks"
 import { getErrorMessages } from "@app/graphql/utils"
 
 // types
-import { PaymentDetail, SendPaymentMutation } from "./payment-details/index.types"
+import {
+  PaymentDetail,
+  SendPaymentMutation,
+  SendPaymentMutationParams,
+} from "./payment-details/index.types"
 
 // Breez SDK
 import { payLightningBreez, payOnchainBreez, payLnurlBreez } from "@app/utils/breez-sdk"
@@ -35,6 +40,14 @@ type UseSendPaymentResult = {
     | (() => Promise<{
         status: PaymentSendResult | null | undefined
         errorsMessage?: string
+        /**
+         * True when this call was suppressed by the in-flight guard: a second
+         * tap that landed while the first send was still on the wire. The
+         * caller must return immediately — no spinner toggle, no analytics,
+         * no error toast — or a double-tap on a SUCCESSFUL payment shows a
+         * failure toast and logs a phantom undefined-status result.
+         */
+        ignored?: boolean
       }>)
     | undefined
     | null
@@ -45,7 +58,7 @@ export const useSendPayment = (
   paymentDetail?: PaymentDetail<WalletCurrency>,
   selectedFeeType?: "fast" | "medium" | "slow",
 ): UseSendPaymentResult => {
-  const { lnAddressHostname } = useAppConfig().appConfig.galoyInstance
+  const { lnAddressHostname, graphqlUri } = useAppConfig().appConfig.galoyInstance
 
   const [intraLedgerPaymentSend, { loading: intraLedgerPaymentSendLoading }] =
     useIntraLedgerPaymentSendMutation({ refetchQueries: [HomeAuthedDocument] })
@@ -74,6 +87,48 @@ export const useSendPayment = (
 
   const [hasAttemptedSend, setHasAttemptedSend] = useState(false)
 
+  // ── The retained attempt: freeze-the-attempt, in one object ──
+  //
+  // ENG-533's history is six review rounds of trying to RECOGNISE a repeated
+  // send from its content — and every fingerprint that ignored a re-minted
+  // LNURL invoice or a price-ticked amount either collided two deliberate
+  // payments or mismatched the server's own fingerprint and turned the one
+  // retry this feature exists for into IdempotencyKeyReuseError → "failed" →
+  // a fresh key → a double pay.
+  //
+  // So nothing here recognises anything. An attempt IS this object: the send
+  // closure captured at the first tap (whose wire input is therefore frozen —
+  // a later re-render may rebuild the payment detail, re-mint the invoice,
+  // re-derive the amount, and none of it matters because we never call the
+  // new closure) plus one random key. Lifecycle:
+  //
+  //   created   at the first tap
+  //   retained  when the send THROWS (dropped socket, 502, backgrounded) —
+  //             the outcome is unknown, so the retry re-runs the same closure
+  //             with the same key and the backend replays the original result
+  //             if it had committed
+  //   cleared   on ANY server-supplied status — the outcome is known, so the
+  //             next tap is a new payment with a fresh key by construction.
+  //             This also kills both residual bugs of the fingerprint design:
+  //             no deliberate repeat can collide (fresh uuid every attempt),
+  //             and no 24h cached FAILURE can lock anyone out (its key is
+  //             never reused).
+  //
+  // Deliberately NOT persisted. A force-quit mid-send discards the attempt,
+  // which leaves exactly today's pre-existing risk — no worse — and avoids
+  // guessing across sessions with content fingerprints. Cross-session
+  // recovery wants a server-side lookup, not client heuristics.
+  const attemptRef = useRef<{
+    key: string
+    run: (params: SendPaymentMutationParams) => ReturnType<SendPaymentMutation>
+  } | null>(null)
+
+  // Synchronous double-tap guard. `hasAttemptedSend` gates whether
+  // `sendPayment` is DEFINED, but that is decided at render time: two taps in
+  // one frame both capture the closure from the render where it was still
+  // defined. A ref is written synchronously, so the second tap sees it.
+  const inFlightRef = useRef(false)
+
   const loading =
     intraLedgerPaymentSendLoading ||
     intraLedgerUsdPaymentSendLoading ||
@@ -88,7 +143,26 @@ export const useSendPayment = (
   const sendPayment = useMemo(() => {
     return sendPaymentMutation && !hasAttemptedSend
       ? async () => {
+          if (inFlightRef.current) {
+            return { status: undefined, errorsMessage: undefined, ignored: true }
+          }
+          inFlightRef.current = true
           setHasAttemptedSend(true)
+
+          // Shared failure epilogue for the Breez branch: a Failure is a KNOWN
+          // outcome, so re-arm the button for a fresh attempt — same semantics
+          // as the GraphQL branch below. (Breez sends are local SDK calls with
+          // no idempotency key; a retry is simply a new attempt.)
+          const finish = (result: {
+            status: PaymentSendResult
+            errorsMessage?: string
+          }) => {
+            if (result.status === PaymentSendResult.Failure) {
+              inFlightRef.current = false
+              setHasAttemptedSend(false)
+            }
+            return result
+          }
 
           if (paymentDetail && paymentDetail.sendingWalletDescriptor.currency === "BTC") {
             const { settlementAmount, memo, destination, paymentType } = paymentDetail
@@ -101,12 +175,12 @@ export const useSendPayment = (
                   settlementAmount.amount,
                 )
                 console.log("Response payLightningBreez: ", response)
-                return {
+                return finish({
                   status: response.success
                     ? PaymentSendResult.Success
                     : PaymentSendResult.Failure,
                   errorsMessage: response.error,
-                }
+                })
               } else if (paymentType === "lnurl" || paymentType === "intraledger") {
                 console.log("Starting payLnurlBreez", memo)
                 const updatedDestination =
@@ -132,42 +206,72 @@ export const useSendPayment = (
                 )
                 console.log("Response payOnchainBreez: ", response)
 
-                return {
+                return finish({
                   status: response.success
                     ? PaymentSendResult.Success
                     : PaymentSendResult.Failure,
                   errorsMessage: response.error,
-                }
+                })
               } else {
-                return {
+                return finish({
                   status: PaymentSendResult.Failure,
                   errorsMessage: "Wrong invoice type",
-                }
+                })
               }
             } catch (err: any) {
-              return {
+              return finish({
                 status: PaymentSendResult.Failure,
                 errorsMessage: err.message,
-              }
+              })
             }
           } else {
             console.log("Starting sendPaymentMutation using GraphQL")
-            const response = await sendPaymentMutation({
-              intraLedgerPaymentSend,
-              intraLedgerUsdPaymentSend,
-              lnInvoicePaymentSend,
-              lnNoAmountInvoicePaymentSend,
-              lnNoAmountUsdInvoicePaymentSend,
-              onChainPaymentSend,
-              onChainPaymentSendAll,
-              onChainUsdPaymentSend,
-              onChainUsdPaymentSendAsBtcDenominated,
-            })
+            // Repeat of an unresolved attempt → the retained closure and key.
+            // First tap of a new attempt → freeze the CURRENT closure with a
+            // fresh key. See attemptRef above for why this is the whole design.
+            if (!attemptRef.current) {
+              attemptRef.current = { key: uuidv4(), run: sendPaymentMutation }
+            }
+            const attempt = attemptRef.current
+
+            let response
+            try {
+              response = await attempt.run({
+                idempotencyKey: attempt.key,
+                apiEndpoint: graphqlUri,
+                intraLedgerPaymentSend,
+                intraLedgerUsdPaymentSend,
+                lnInvoicePaymentSend,
+                lnNoAmountInvoicePaymentSend,
+                lnNoAmountUsdInvoicePaymentSend,
+                onChainPaymentSend,
+                onChainPaymentSendAll,
+                onChainUsdPaymentSend,
+                onChainUsdPaymentSendAsBtcDenominated,
+              })
+            } catch (err) {
+              // Outcome unknown — the case this design exists for. Keep the
+              // attempt so the retry re-runs the same input under the same
+              // key, and re-arm the button.
+              // eslint-disable-next-line require-atomic-updates -- ref as a synchronous flag; the write-after-await IS the design
+              inFlightRef.current = false
+              setHasAttemptedSend(false)
+              throw err
+            }
+
+            // A status came back at all → the outcome is known and this
+            // attempt is finished, whatever the answer was.
+            if (response.status) {
+              // eslint-disable-next-line require-atomic-updates -- ref as a synchronous flag; the write-after-await IS the design
+              attemptRef.current = null
+            }
             let errorsMessage = undefined
             if (response.errors) {
               errorsMessage = getErrorMessages(response.errors)
             }
             if (response.status === PaymentSendResult.Failure) {
+              // eslint-disable-next-line require-atomic-updates -- ref as a synchronous flag; the write-after-await IS the design
+              inFlightRef.current = false
               setHasAttemptedSend(false)
             }
             return { status: response.status, errorsMessage }
@@ -177,6 +281,7 @@ export const useSendPayment = (
   }, [
     sendPaymentMutation,
     hasAttemptedSend,
+    graphqlUri,
     paymentDetail,
     selectedFeeType,
     intraLedgerPaymentSend,

@@ -101,6 +101,9 @@ describe("amount lightning payment details", () => {
           input: {
             paymentRequest: defaultParams.paymentRequest,
             walletId: btcSendingWalletParams.sendingWalletDescriptor.id,
+            // ENG-533. Accepted here since ENG-530; omitting it left the
+            // backend's exactly-once wrapper in passthrough on a live path.
+            idempotencyKey: sendPaymentMocks.idempotencyKey,
           },
         },
       })
@@ -153,6 +156,7 @@ describe("amount lightning payment details", () => {
           input: {
             paymentRequest: defaultParams.paymentRequest,
             walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
+            idempotencyKey: sendPaymentMocks.idempotencyKey,
           },
         },
       })
