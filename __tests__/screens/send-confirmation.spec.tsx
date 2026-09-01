@@ -15,6 +15,7 @@ import {
   createLnurlPaymentDetails,
 } from "@app/screens/send-bitcoin-screen/payment-details/lightning"
 import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
+import { ActivityIndicatorContext } from "@app/contexts/ActivityIndicatorContext"
 import { BreezContext } from "@app/contexts/BreezContext"
 import { WalletCurrency } from "@app/graphql/generated"
 import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
@@ -475,5 +476,100 @@ describe("zero-fee prominence (#561)", () => {
     const feeStyle = StyleSheet.flatten(feeText.props.style)
     expect(feeStyle?.color).not.toBe(lightColors.green)
     expect(feeStyle?.fontWeight).not.toBe("bold")
+  })
+})
+
+// The in-flight guard's screen-side contract: an ignored duplicate tap must
+// not touch the activity indicator. The indicator is a plain boolean, not a
+// counter, so a `toggleActivityIndicator(false)` from the ignored tap would
+// clobber the owning tap's `true` and hide the spinner for the entire
+// in-flight send — the user watches a multi-second lightning payment with no
+// feedback and concludes nothing happened. The hook suite structurally cannot
+// catch this: the toggle lives in this screen's handler.
+describe("duplicate-tap spinner contract", () => {
+  // INCIDENT_INVOICE's issue time; mount four seconds into its 60s window so
+  // the ENG-555 expiry guard stays out of the way.
+  const ISSUED = 1787243982
+  const MOUNTED_MS = (ISSUED + 4) * 1000
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    jest.spyOn(Date, "now").mockReturnValue(MOUNTED_MS)
+    resetInvoiceFirstSight()
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it("an ignored same-frame duplicate tap leaves the spinner to the owning tap", async () => {
+    const usdDetail = createAmountLightningPaymentDetails({
+      paymentRequest: INCIDENT_INVOICE,
+      paymentRequestAmount: toBtcMoneyAmount(100),
+      convertMoneyAmount,
+      sendingWalletDescriptor: { currency: WalletCurrency.Usd, id: "testwallet" },
+    })
+    let resolveSend: (value: unknown) => void = () => {}
+    const sendPaymentMutation = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveSend = resolve
+        }),
+    )
+    const paymentDetail = { ...usdDetail, sendPaymentMutation }
+
+    const toggleActivityIndicator = jest.fn()
+    const route = {
+      key: "sendBitcoinConfirmationScreen",
+      name: "sendBitcoinConfirmation",
+      params: { paymentDetail },
+    } as const
+
+    const screen = render(
+      <ContextForScreen>
+        <ActivityIndicatorContext.Provider
+          value={{ toggleActivityIndicator, loadableVisible: false }}
+        >
+          <SendBitcoinConfirmationScreen
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            route={route as any}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            navigation={{ navigate: jest.fn() } as any}
+          />
+        </ActivityIndicatorContext.Provider>
+      </ContextForScreen>,
+    )
+    await act(async () => {})
+    await act(async () => {})
+
+    // Two taps in the same frame invoke the handler captured from the SAME
+    // render — before hasAttemptedSend can re-render the button disabled.
+    // fireEvent would flush between presses, so take the handler directly.
+    const { onPress } = screen.UNSAFE_getByProps({
+      label: en.SendBitcoinConfirmationScreen.title,
+    }).props
+
+    let owningTap: Promise<unknown> = Promise.resolve()
+    await act(async () => {
+      owningTap = onPress()
+      // The duplicate resolves (ignored) while the real send is still on the
+      // wire.
+      await onPress()
+    })
+
+    expect(sendPaymentMutation).toHaveBeenCalledTimes(1)
+    expect(toggleActivityIndicator).toHaveBeenCalledWith(true)
+    // The contract under test: the ignored tap never hides the spinner.
+    expect(toggleActivityIndicator).not.toHaveBeenCalledWith(false)
+
+    await act(async () => {
+      resolveSend({ status: "SUCCESS", errors: [] })
+      await owningTap
+    })
+
+    // The owning tap turns it off exactly once, when its own send resolves.
+    expect(
+      toggleActivityIndicator.mock.calls.filter(([visible]) => visible === false),
+    ).toHaveLength(1)
   })
 })

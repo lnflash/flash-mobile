@@ -368,6 +368,60 @@ describe("an API that does not have the field on this input", () => {
   })
 })
 
+// The keyless fallback is only sound on an attempt's FIRST dispatch, where a
+// coercion refusal proves nothing executed. On a RETRY an earlier keyed
+// dispatch with an UNKNOWN outcome exists by definition — the mixed-fleet
+// shape: tap 1 commits on a new pod, the response is lost (502), the retry
+// hits a stale pod that refuses the field. Falling back keyless there would
+// silently execute a second payment on exactly the path ENG-533 protects.
+describe("a retry of a dispatched attempt", () => {
+  const retryMocks = () => ({ ...createSendPaymentMocks(), attemptIsRetry: true })
+
+  it("never falls back keyless on a coercion refusal — the error surfaces instead", async () => {
+    const mocks = retryMocks()
+    const mutation = mocks.lnNoAmountUsdInvoicePaymentSend as jest.Mock
+    mutation.mockRejectedValue(new Error(COERCION_REFUSAL))
+
+    await expect(send(mocks)).rejects.toThrow(
+      /may have already been sent.*transaction history/i,
+    )
+    // Exactly one dispatch, and it carried the key: no silent keyless re-send.
+    expect(mutation).toHaveBeenCalledTimes(1)
+    expect(keysSent(mutation)).toEqual([mocks.idempotencyKey])
+    // The refusal is still recorded, so a NEW attempt degrades as usual.
+    expect(
+      idempotencyKeySupported(gate(IDEMPOTENT_SEND_INPUTS.lnNoAmountUsdInvoice)),
+    ).toBe(false)
+  })
+
+  it("dispatches keyed even when the gate is already latched", async () => {
+    // Latch the gate the ordinary way: a first-dispatch refusal.
+    const first = createSendPaymentMocks()
+    const firstMutation = first.lnNoAmountUsdInvoicePaymentSend as jest.Mock
+    firstMutation.mockRejectedValueOnce(new Error(COERCION_REFUSAL)).mockResolvedValue({
+      data: { lnNoAmountUsdInvoicePaymentSend: { status: "SUCCESS", errors: [] } },
+    })
+    await send(first)
+    expect(
+      idempotencyKeySupported(gate(IDEMPOTENT_SEND_INPUTS.lnNoAmountUsdInvoice)),
+    ).toBe(false)
+
+    // A retry must not read the latch as licence to go keyless: the key is the
+    // one spelling the server can recognise as a repeat. If the fleet finished
+    // deploying, the keyed retry succeeds; if not, the refusal surfaces.
+    const retry = retryMocks()
+    const retryMutation = retry.lnNoAmountUsdInvoicePaymentSend as jest.Mock
+    retryMutation.mockResolvedValue({
+      data: { lnNoAmountUsdInvoicePaymentSend: { status: "SUCCESS", errors: [] } },
+    })
+
+    const result = await send(retry)
+
+    expect(keysSent(retryMutation)).toEqual([retry.idempotencyKey])
+    expect(result.status).toBe("SUCCESS")
+  })
+})
+
 // Every send input the app calls, driven through its real builder. The claim
 // this replaced — "four of these are long deployed, so they can pass the field
 // unconditionally" — was never measured anywhere in this repo, and being wrong

@@ -29,7 +29,6 @@ import { WalletDescriptor } from "@app/types/wallets"
 import { PaymentType } from "@galoymoney/client"
 import { LnUrlPayServiceResponse } from "lnurl-pay/dist/types/types"
 
-
 export type ConvertMoneyAmount = <W extends WalletOrDisplayCurrency>(
   moneyAmount: MoneyAmount<WalletOrDisplayCurrency>,
   toCurrency: W,
@@ -90,6 +89,17 @@ export type SendPaymentMutationParams = {
    * money moves client-side through Breez.
    */
   idempotencyKey: string
+  /**
+   * Whether this dispatch is a RETRY of an attempt that has already been
+   * dispatched once (set from `attempt.dispatched` in use-send-payment.ts).
+   *
+   * The idempotency-support gate needs the distinction: its keyless fallback
+   * on a coercion refusal is only sound on an attempt's FIRST dispatch, where
+   * the refusal proves nothing executed. On a retry, an earlier keyed dispatch
+   * with an unknown outcome exists by definition, so a keyless re-send could
+   * execute a second payment — the gate errors out instead.
+   */
+  attemptIsRetry: boolean
   /**
    * The GraphQL endpoint this send is going to (`galoyInstance.graphqlUri`).
    *

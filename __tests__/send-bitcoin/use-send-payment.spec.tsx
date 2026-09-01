@@ -147,6 +147,57 @@ describe("useSendPayment — freeze-the-attempt", () => {
     expect(reRendered).not.toHaveBeenCalled()
     expect(original.mock.calls[0][0].idempotencyKey).toBe("uuid-1")
     expect(original.mock.calls[1][0].idempotencyKey).toBe("uuid-1")
+    // The gate's keyless fallback is only sound on a first dispatch, so the
+    // hook must tell it which is which: first dispatch false, retry true.
+    expect(original.mock.calls[0][0].attemptIsRetry).toBe(false)
+    expect(original.mock.calls[1][0].attemptIsRetry).toBe(true)
+  })
+
+  it("a fresh attempt after a FAILURE dispatches as a first attempt, not a retry", async () => {
+    const first = jest.fn().mockResolvedValue({ status: "FAILURE", errors: [] })
+    const { result, swapMutation } = render(first)
+
+    await act(async () => {
+      await result.current.sendPayment?.()
+    })
+
+    const second = jest.fn().mockResolvedValue({ status: "SUCCESS" })
+    swapMutation(second)
+
+    await act(async () => {
+      await result.current.sendPayment?.()
+    })
+
+    expect(second.mock.calls[0][0].attemptIsRetry).toBe(false)
+  })
+
+  it("an IdempotencyKeyReuseError failure does NOT re-arm the button — the user is sent to history", async () => {
+    // The server holding a result for this key against different parameters is
+    // never an ordinary failure: re-arming hands the next tap a FRESH key for
+    // a payment that may already have settled, and the money leaves twice.
+    const mutation = jest.fn().mockResolvedValue({
+      status: "FAILURE",
+      errors: [
+        {
+          message:
+            "This idempotency key was already used for a different payment. Use a new key for a new payment.",
+        },
+      ],
+    })
+    const { result } = render(mutation)
+
+    let outcome:
+      | Awaited<ReturnType<NonNullable<typeof result.current.sendPayment>>>
+      | undefined
+    await act(async () => {
+      outcome = await result.current.sendPayment?.()
+    })
+
+    expect(outcome?.status).toBe("FAILURE")
+    expect(outcome?.errorsMessage).toMatch(/transaction history/i)
+    // Button stays disarmed: no fresh-key tap is reachable.
+    expect(result.current.hasAttemptedSend).toBe(true)
+    expect(result.current.sendPayment).toBeUndefined()
   })
 
   it("on FAILURE, the attempt is finished: next tap gets a FRESH key and the CURRENT closure", async () => {

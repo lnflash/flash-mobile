@@ -22,6 +22,7 @@ import { useAppConfig } from "@app/hooks"
 
 // utils
 import { getErrorMessages } from "@app/graphql/utils"
+import { isIdempotencyKeyReuseError } from "./payment-details/idempotency-support"
 
 // types
 import {
@@ -120,6 +121,12 @@ export const useSendPayment = (
   // recovery wants a server-side lookup, not client heuristics.
   const attemptRef = useRef<{
     key: string
+    // Flipped on the attempt's first dispatch. A later run of the same
+    // attempt is therefore a RETRY — an earlier dispatch with an unknown
+    // outcome exists — which the idempotency-support gate must know: its
+    // keyless fallback on a coercion refusal is only safe on a first
+    // dispatch, where the refusal proves nothing executed.
+    dispatched: boolean
     run: (params: SendPaymentMutationParams) => ReturnType<SendPaymentMutation>
   } | null>(null)
 
@@ -230,14 +237,21 @@ export const useSendPayment = (
             // First tap of a new attempt → freeze the CURRENT closure with a
             // fresh key. See attemptRef above for why this is the whole design.
             if (!attemptRef.current) {
-              attemptRef.current = { key: uuidv4(), run: sendPaymentMutation }
+              attemptRef.current = {
+                key: uuidv4(),
+                dispatched: false,
+                run: sendPaymentMutation,
+              }
             }
             const attempt = attemptRef.current
+            const attemptIsRetry = attempt.dispatched
+            attempt.dispatched = true
 
             let response
             try {
               response = await attempt.run({
                 idempotencyKey: attempt.key,
+                attemptIsRetry,
                 apiEndpoint: graphqlUri,
                 intraLedgerPaymentSend,
                 intraLedgerUsdPaymentSend,
@@ -268,6 +282,25 @@ export const useSendPayment = (
             let errorsMessage = undefined
             if (response.errors) {
               errorsMessage = getErrorMessages(response.errors)
+            }
+            // Defense in depth: the frozen-closure design should make key
+            // reuse unreachable (a key is only ever re-sent with the same
+            // frozen input), but if the server ever answers with
+            // IdempotencyKeyReuseError it is telling us it HOLDS an outcome
+            // for this key. Treating that as an ordinary Failure would retire
+            // the key and re-arm the button — the next tap gets a fresh key
+            // for a payment that may already have settled, and the money
+            // leaves twice. So: keep the button disarmed and send the user to
+            // their history instead.
+            if (
+              response.status === PaymentSendResult.Failure &&
+              isIdempotencyKeyReuseError(response.errors)
+            ) {
+              return {
+                status: response.status,
+                errorsMessage:
+                  "This payment may have already been sent. Check your transaction history before trying again.",
+              }
             }
             if (response.status === PaymentSendResult.Failure) {
               // eslint-disable-next-line require-atomic-updates -- ref as a synchronous flag; the write-after-await IS the design

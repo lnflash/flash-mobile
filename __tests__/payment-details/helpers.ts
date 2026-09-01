@@ -130,6 +130,9 @@ export const createSendPaymentMocks = (): SendPaymentMutationParams => {
     // Fixed rather than random so a spec can assert the exact value reaches
     // the mutation input.
     idempotencyKey: "test-idempotency-key",
+    // First dispatch of an attempt by default; a spec exercising the retry
+    // path overrides this to true.
+    attemptIsRetry: false,
     // The gate is scoped per (endpoint, input type), so a spec that wants two
     // backends can vary this one field.
     apiEndpoint: "https://api.test.flashapp.me/graphql",

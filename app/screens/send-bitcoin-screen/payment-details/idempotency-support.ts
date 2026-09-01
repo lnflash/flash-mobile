@@ -156,27 +156,63 @@ export const isUnsupportedIdempotencyKeyError = (
   messagesOf(err).some((message) => message.includes(refusalSentence(inputType)))
 
 /**
+ * Thrown in place of a keyless fallback when the key is refused on a RETRY of
+ * an attempt that has already been dispatched once. The earlier dispatch's
+ * outcome is unknown — that is what makes it a retry — so re-sending without
+ * the key would re-execute a payment the server may have already settled. The
+ * only safe move is to surface an error and send the user to their history.
+ */
+export class UnresolvedAttemptKeyRefusedError extends Error {
+  constructor() {
+    super(
+      "This payment may have already been sent. Check your transaction history before trying again.",
+    )
+    this.name = "UnresolvedAttemptKeyRefusedError"
+  }
+}
+
+/**
+ * The attempt half of a keyed dispatch: the key itself, plus whether this is
+ * a RETRY of an attempt that has already been dispatched once (see
+ * `attemptRef` in use-send-payment.ts — a retry exists precisely because the
+ * earlier dispatch's outcome is unknown).
+ */
+export type IdempotentAttempt = {
+  idempotencyKey: string
+  isRetry: boolean
+}
+
+/**
  * Run `send` with the idempotency key when the gate is known to accept it, and
  * fall back to today's un-keyed input when it turns out not to.
  *
- * The fallback fires only on a coercion refusal for this input, and a coercion
- * refusal means the mutation never executed, so the retry is not a second
- * payment attempt.
+ * The keyless fallback fires only on the FIRST dispatch of an attempt: there a
+ * coercion refusal means the mutation never executed, so the un-keyed retry is
+ * not a second payment attempt. On a RETRY of a dispatched attempt that
+ * reasoning covers only the dispatch that was just refused — it says nothing
+ * about the earlier keyed dispatch whose outcome is unknown (the exact
+ * mixed-fleet scenario the re-arm logic above defends against: tap 1 commits
+ * on a new pod, the response is lost, the retry hits a stale pod that refuses
+ * the field). A keyless send there could execute a second payment, so a retry
+ * NEVER goes out keyless: it is always dispatched with the key — the one
+ * spelling the server can recognise as a repeat — and a refusal surfaces as
+ * `UnresolvedAttemptKeyRefusedError` instead of a silent re-execution.
  */
 export const withIdempotencyKey = async <T>(
-  idempotencyKey: string,
+  attempt: IdempotentAttempt,
   gate: IdempotencyGate,
   send: (keyField: { idempotencyKey?: string }) => Promise<T>,
 ): Promise<T> => {
   watchForeground()
 
-  if (!idempotencyKeySupported(gate)) return send({})
+  if (!idempotencyKeySupported(gate) && !attempt.isRetry) return send({})
 
   try {
-    return await send({ idempotencyKey })
+    return await send({ idempotencyKey: attempt.idempotencyKey })
   } catch (err) {
     if (!isUnsupportedIdempotencyKeyError(err, gate.inputType)) throw err
     refusedGates.add(gateId(gate))
+    if (attempt.isRetry) throw new UnresolvedAttemptKeyRefusedError()
     return send({})
   }
 }

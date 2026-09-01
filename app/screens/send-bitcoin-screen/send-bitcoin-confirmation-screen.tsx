@@ -291,12 +291,16 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         setPaymentError(undefined)
         toggleActivityIndicator(true)
         const { status, errorsMessage, ignored } = await sendPayment()
-        toggleActivityIndicator(false)
         if (ignored) {
           // A duplicate tap while the real attempt is still in flight.
-          // Nothing happened; log nothing, navigate nowhere.
+          // Nothing happened; log nothing, navigate nowhere — and do NOT
+          // touch the activity indicator: it is a plain boolean, not a
+          // counter, so this tap's `false` would clobber the owning tap's
+          // `true` and hide the spinner for the whole in-flight send. The
+          // first tap turns it off when its own send resolves.
           return
         }
+        toggleActivityIndicator(false)
         logPaymentResult({
           paymentType: paymentDetail.paymentType,
           paymentStatus: status,

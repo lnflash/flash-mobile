@@ -52,7 +52,8 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
     canSendPayment: false,
     canGetFee: false,
   }
-  // The data half of the freeze for whichever branch can send — see
+  // The data half of the freeze for whichever branch can send — see the
+  // attemptRef comment in use-send-payment.ts for the closure half.
 
   if (
     settlementAmount.amount &&
@@ -68,7 +69,10 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
     const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
       // Gated like every other send input — see idempotency-support.ts.
       withIdempotencyKey(
-        paymentMutations.idempotencyKey,
+        {
+          idempotencyKey: paymentMutations.idempotencyKey,
+          isRetry: paymentMutations.attemptIsRetry,
+        },
         {
           apiEndpoint: paymentMutations.apiEndpoint,
           inputType: IDEMPOTENT_SEND_INPUTS.intraLedger,
@@ -114,7 +118,10 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
       // USD/USDT Flash-to-Flash — the same double-debit class ENG-533 exists to
       // close, and gated like every other send input.
       withIdempotencyKey(
-        paymentMutations.idempotencyKey,
+        {
+          idempotencyKey: paymentMutations.idempotencyKey,
+          isRetry: paymentMutations.attemptIsRetry,
+        },
         {
           apiEndpoint: paymentMutations.apiEndpoint,
           inputType: IDEMPOTENT_SEND_INPUTS.intraLedgerUsd,

@@ -58,8 +58,10 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
     canSendPayment: false,
     canGetFee: false,
   }
-  // The wire input of whichever branch below can actually send — the data half
-  // in which case there is no attempt to freeze either.
+  // Populated by whichever branch below can actually send. Each branch
+  // closure-captures its wire input alongside its mutation, so the attempt
+  // frozen in use-send-payment.ts carries both; when neither branch can send
+  // there is no mutation and nothing to freeze.
 
   if (
     settlementAmount?.amount &&
@@ -103,7 +105,10 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
       // environments carry the field, and an ungated refusal takes the whole
       // path down rather than degrading. See idempotency-support.ts.
       withIdempotencyKey(
-        paymentMutations.idempotencyKey,
+        {
+          idempotencyKey: paymentMutations.idempotencyKey,
+          isRetry: paymentMutations.attemptIsRetry,
+        },
         {
           apiEndpoint: paymentMutations.apiEndpoint,
           inputType: IDEMPOTENT_SEND_INPUTS.lnNoAmountInvoice,
@@ -112,7 +117,9 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
           const { data } = await paymentMutations.lnNoAmountInvoicePaymentSend({
             variables: {
               input: {
-                // `requestFingerprint` matches the one it cached the key
+                // Spread from the closure-captured wireInput so a repeat sends
+                // identical parameters — the server only replays when the
+                // request fingerprint matches the one it cached the key under.
                 ...wireInput,
                 // Same key for every repeat of this attempt, so a send whose
                 // response was lost settles once. See SendPaymentMutationParams.
@@ -179,7 +186,10 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
       // rather than ignoring the field, and that is true of all five inputs.
       // See idempotency-support.ts.
       withIdempotencyKey(
-        paymentMutations.idempotencyKey,
+        {
+          idempotencyKey: paymentMutations.idempotencyKey,
+          isRetry: paymentMutations.attemptIsRetry,
+        },
         {
           apiEndpoint: paymentMutations.apiEndpoint,
           inputType: IDEMPOTENT_SEND_INPUTS.lnNoAmountUsdInvoice,
@@ -296,11 +306,13 @@ export const createAmountLightningPaymentDetails = <T extends WalletCurrency>(
     memo,
   }
 
-
   const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
     // Gated like every other send input — see idempotency-support.ts.
     withIdempotencyKey(
-      paymentMutations.idempotencyKey,
+      {
+        idempotencyKey: paymentMutations.idempotencyKey,
+        isRetry: paymentMutations.attemptIsRetry,
+      },
       {
         apiEndpoint: paymentMutations.apiEndpoint,
         inputType: IDEMPOTENT_SEND_INPUTS.lnInvoice,
@@ -309,9 +321,12 @@ export const createAmountLightningPaymentDetails = <T extends WalletCurrency>(
         const { data } = await paymentMutations.lnInvoicePaymentSend({
           variables: {
             input: {
-              // this builder with a bolt11 that the details screen re-mints on
-              // every pass forward, and the server keys on `ln|${paymentRequest}`
-              // — so the rebuilt input would not match the cached one.
+              // Spread from the closure-captured wireInput: an LNURL flow
+              // re-enters this builder with a bolt11 that the details screen
+              // re-mints on every pass forward, and the server keys on
+              // `ln|${paymentRequest}` — so a rebuilt input would not match
+              // the cached one. The frozen closure keeps the original bolt11
+              // for any repeat of this attempt.
               ...wireInput,
               // Same key for every repeat of this attempt, so a send whose
               // response was lost settles once. See SendPaymentMutationParams.
