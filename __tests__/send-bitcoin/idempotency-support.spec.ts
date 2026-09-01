@@ -422,6 +422,67 @@ describe("a retry of a dispatched attempt", () => {
   })
 })
 
+// The gate must CONFESS every dispatch that goes out without the key. The
+// hook records it on the attempt: once an attempt has gone keyless, a later
+// retry has no key the server could replay — re-dispatching could execute a
+// second payment — so the hook refuses to auto-retry it. That refusal is only
+// possible if neither keyless path here goes unreported.
+describe("reporting keyless dispatches", () => {
+  it("reports the keyless fallback after a first-dispatch refusal", async () => {
+    const mocks = createSendPaymentMocks()
+    const mutation = mocks.lnNoAmountUsdInvoicePaymentSend as jest.Mock
+    mutation.mockRejectedValueOnce(new Error(COERCION_REFUSAL)).mockResolvedValueOnce({
+      data: { lnNoAmountUsdInvoicePaymentSend: { status: "SUCCESS", errors: [] } },
+    })
+
+    await send(mocks)
+
+    expect(mocks.onKeylessDispatch).toHaveBeenCalledTimes(1)
+  })
+
+  it("reports a latched-gate first dispatch, which goes keyless from the start", async () => {
+    const first = createSendPaymentMocks()
+    const firstMutation = first.lnNoAmountUsdInvoicePaymentSend as jest.Mock
+    firstMutation.mockRejectedValueOnce(new Error(COERCION_REFUSAL)).mockResolvedValue({
+      data: { lnNoAmountUsdInvoicePaymentSend: { status: "SUCCESS", errors: [] } },
+    })
+    await send(first)
+
+    const latched = createSendPaymentMocks()
+    const latchedMutation = latched.lnNoAmountUsdInvoicePaymentSend as jest.Mock
+    latchedMutation.mockResolvedValue({
+      data: { lnNoAmountUsdInvoicePaymentSend: { status: "SUCCESS", errors: [] } },
+    })
+
+    await send(latched)
+
+    expect(keysSent(latchedMutation)).toEqual([undefined])
+    expect(latched.onKeylessDispatch).toHaveBeenCalledTimes(1)
+  })
+
+  it("does not report a keyed dispatch", async () => {
+    const mocks = createSendPaymentMocks()
+    const mutation = mocks.lnNoAmountUsdInvoicePaymentSend as jest.Mock
+    mutation.mockResolvedValue({
+      data: { lnNoAmountUsdInvoicePaymentSend: { status: "SUCCESS", errors: [] } },
+    })
+
+    await send(mocks)
+
+    expect(mocks.onKeylessDispatch).not.toHaveBeenCalled()
+  })
+
+  it("does not report a retry's refusal — nothing keyless was dispatched", async () => {
+    const mocks = { ...createSendPaymentMocks(), attemptIsRetry: true }
+    const mutation = mocks.lnNoAmountUsdInvoicePaymentSend as jest.Mock
+    mutation.mockRejectedValue(new Error(COERCION_REFUSAL))
+
+    await expect(send(mocks)).rejects.toThrow(/transaction history/i)
+
+    expect(mocks.onKeylessDispatch).not.toHaveBeenCalled()
+  })
+})
+
 // Every send input the app calls, driven through its real builder. The claim
 // this replaced — "four of these are long deployed, so they can pass the field
 // unconditionally" — was never measured anywhere in this repo, and being wrong

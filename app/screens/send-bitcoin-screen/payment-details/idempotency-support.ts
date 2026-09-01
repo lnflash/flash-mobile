@@ -156,6 +156,16 @@ export const isUnsupportedIdempotencyKeyError = (
   messagesOf(err).some((message) => message.includes(refusalSentence(inputType)))
 
 /**
+ * The one sentence shown whenever the client cannot prove an earlier dispatch
+ * of this payment did NOT settle — an idempotency-key reuse answer, a key
+ * refused on a retry, or a retry of an attempt that once went out keyless.
+ * Shared so the copy cannot drift between the modules that surface it
+ * (use-send-payment.ts is the other one).
+ */
+export const CHECK_TRANSACTION_HISTORY_MESSAGE =
+  "This payment may have already been sent. Check your transaction history before trying again."
+
+/**
  * Thrown in place of a keyless fallback when the key is refused on a RETRY of
  * an attempt that has already been dispatched once. The earlier dispatch's
  * outcome is unknown — that is what makes it a retry — so re-sending without
@@ -164,9 +174,7 @@ export const isUnsupportedIdempotencyKeyError = (
  */
 export class UnresolvedAttemptKeyRefusedError extends Error {
   constructor() {
-    super(
-      "This payment may have already been sent. Check your transaction history before trying again.",
-    )
+    super(CHECK_TRANSACTION_HISTORY_MESSAGE)
     this.name = "UnresolvedAttemptKeyRefusedError"
   }
 }
@@ -180,6 +188,15 @@ export class UnresolvedAttemptKeyRefusedError extends Error {
 export type IdempotentAttempt = {
   idempotencyKey: string
   isRetry: boolean
+  /**
+   * Called synchronously, immediately before any dispatch that goes out
+   * WITHOUT the key. The caller owns the attempt's lifecycle and must know:
+   * once an attempt has gone out keyless, a later retry of it cannot lean on
+   * the server replaying the key — the server never saw one — so re-dispatching
+   * could execute a second payment. use-send-payment.ts records the flag and
+   * refuses to auto-retry such an attempt.
+   */
+  onKeylessDispatch?: () => void
 }
 
 /**
@@ -205,7 +222,10 @@ export const withIdempotencyKey = async <T>(
 ): Promise<T> => {
   watchForeground()
 
-  if (!idempotencyKeySupported(gate) && !attempt.isRetry) return send({})
+  if (!idempotencyKeySupported(gate) && !attempt.isRetry) {
+    attempt.onKeylessDispatch?.()
+    return send({})
+  }
 
   try {
     return await send({ idempotencyKey: attempt.idempotencyKey })
@@ -213,6 +233,7 @@ export const withIdempotencyKey = async <T>(
     if (!isUnsupportedIdempotencyKeyError(err, gate.inputType)) throw err
     refusedGates.add(gateId(gate))
     if (attempt.isRetry) throw new UnresolvedAttemptKeyRefusedError()
+    attempt.onKeylessDispatch?.()
     return send({})
   }
 }

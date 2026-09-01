@@ -153,6 +153,46 @@ describe("useSendPayment — freeze-the-attempt", () => {
     expect(original.mock.calls[1][0].attemptIsRetry).toBe(true)
   })
 
+  it("refuses to auto-retry an attempt whose earlier dispatch went out KEYLESS", async () => {
+    // The mixed-fleet window: the gate is latched (a stale pod refused
+    // earlier), so the attempt's first dispatch goes out keyless — reported
+    // via onKeylessDispatch — and then throws with the outcome unknown. The
+    // server has never seen this attempt's key, so a retry has nothing to
+    // replay: dispatching it (the closure would now send KEYED against a pod
+    // that accepts the field) could execute a second payment while the
+    // keyless one may have committed. The retry must not dispatch at all.
+    const mutation = jest.fn(async (params: { onKeylessDispatch?: () => void }) => {
+      params.onKeylessDispatch?.()
+      throw new Error("socket dropped")
+    })
+    const { result } = render(mutation)
+
+    await act(async () => {
+      await expect(result.current.sendPayment?.()).rejects.toThrow("socket dropped")
+    })
+    // The throw re-armed the button, so the retry tap is reachable...
+    expect(result.current.sendPayment).toBeTruthy()
+
+    let outcome:
+      | Awaited<ReturnType<NonNullable<typeof result.current.sendPayment>>>
+      | undefined
+    await act(async () => {
+      outcome = await result.current.sendPayment?.()
+    })
+
+    // ...but it surfaces the check-your-history failure WITHOUT dispatching:
+    // the mutation ran exactly once, on the keyless first dispatch.
+    expect(mutation).toHaveBeenCalledTimes(1)
+    expect(outcome?.status).toBe("FAILURE")
+    expect(outcome?.errorsMessage).toMatch(
+      /may have already been sent.*transaction history/i,
+    )
+    // Same as the reuse-error branch: the button stays disarmed, so no
+    // fresh-key tap is offered for a payment that may already have settled.
+    expect(result.current.hasAttemptedSend).toBe(true)
+    expect(result.current.sendPayment).toBeUndefined()
+  })
+
   it("a fresh attempt after a FAILURE dispatches as a first attempt, not a retry", async () => {
     const first = jest.fn().mockResolvedValue({ status: "FAILURE", errors: [] })
     const { result, swapMutation } = render(first)

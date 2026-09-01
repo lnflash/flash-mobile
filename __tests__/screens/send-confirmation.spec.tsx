@@ -561,6 +561,15 @@ describe("duplicate-tap spinner contract", () => {
     expect(toggleActivityIndicator).toHaveBeenCalledWith(true)
     // The contract under test: the ignored tap never hides the spinner.
     expect(toggleActivityIndicator).not.toHaveBeenCalledWith(false)
+    // ...and never logs. An ignored tap attempted nothing, so a second
+    // `payment_attempt` here would count two attempts for one result and
+    // skew failure-rate metrics on every double tap. The screen must decide
+    // "ignored" BEFORE its analytics side effect, not after the hook answers.
+    expect(
+      (getAnalytics().logEvent as jest.Mock).mock.calls.filter(
+        ([eventName]) => eventName === "payment_attempt",
+      ),
+    ).toHaveLength(1)
 
     await act(async () => {
       resolveSend({ status: "SUCCESS", errors: [] })

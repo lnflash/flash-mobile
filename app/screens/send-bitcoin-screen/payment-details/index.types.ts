@@ -101,6 +101,15 @@ export type SendPaymentMutationParams = {
    */
   attemptIsRetry: boolean
   /**
+   * Invoked synchronously, immediately before any dispatch that goes out
+   * WITHOUT `idempotencyKey` (the idempotency-support gate's keyless
+   * fallback / latched-gate path). use-send-payment.ts records it on the
+   * attempt: an attempt that has gone out keyless must never be auto-retried,
+   * because the server has no key to replay and a re-dispatch could execute a
+   * second payment.
+   */
+  onKeylessDispatch?: () => void
+  /**
    * The GraphQL endpoint this send is going to (`galoyInstance.graphqlUri`).
    *
    * Scopes the idempotency-support gate. The app can switch instance at

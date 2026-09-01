@@ -72,6 +72,7 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
         {
           idempotencyKey: paymentMutations.idempotencyKey,
           isRetry: paymentMutations.attemptIsRetry,
+          onKeylessDispatch: paymentMutations.onKeylessDispatch,
         },
         {
           apiEndpoint: paymentMutations.apiEndpoint,
@@ -121,6 +122,7 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
         {
           idempotencyKey: paymentMutations.idempotencyKey,
           isRetry: paymentMutations.attemptIsRetry,
+          onKeylessDispatch: paymentMutations.onKeylessDispatch,
         },
         {
           apiEndpoint: paymentMutations.apiEndpoint,

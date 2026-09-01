@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 
 // gql
@@ -22,7 +22,10 @@ import { useAppConfig } from "@app/hooks"
 
 // utils
 import { getErrorMessages } from "@app/graphql/utils"
-import { isIdempotencyKeyReuseError } from "./payment-details/idempotency-support"
+import {
+  CHECK_TRANSACTION_HISTORY_MESSAGE,
+  isIdempotencyKeyReuseError,
+} from "./payment-details/idempotency-support"
 
 // types
 import {
@@ -37,6 +40,15 @@ import { payLightningBreez, payOnchainBreez, payLnurlBreez } from "@app/utils/br
 type UseSendPaymentResult = {
   loading: boolean
   hasAttemptedSend: boolean
+  /**
+   * Synchronous read of the in-flight guard. The screen's handler must decide
+   * BEFORE its side effects (analytics, spinner) whether this tap is a
+   * duplicate: `sendPayment`'s own `ignored` answer only arrives after the
+   * call, by which point `logPaymentAttempt` would already have fired and
+   * inflated attempt counts against results. A ref-backed getter (not state)
+   * so two taps in one frame see the truth.
+   */
+  isInFlight: () => boolean
   sendPayment:
     | (() => Promise<{
         status: PaymentSendResult | null | undefined
@@ -127,6 +139,15 @@ export const useSendPayment = (
     // keyless fallback on a coercion refusal is only safe on a first
     // dispatch, where the refusal proves nothing executed.
     dispatched: boolean
+    // Flipped (via onKeylessDispatch) when any dispatch of this attempt went
+    // out WITHOUT the key — the gate's keyless fallback. The design contract
+    // "a retry re-runs identical input under the same key and the backend
+    // replays" only holds when the earlier dispatch actually CARRIED the key.
+    // If a keyless dispatch throws with its outcome unknown, a keyed retry is
+    // not a replay — the server never saw the key — so it could execute a
+    // second payment. Such an attempt must never be auto-retried; the user is
+    // sent to their history instead.
+    wentKeyless: boolean
     run: (params: SendPaymentMutationParams) => ReturnType<SendPaymentMutation>
   } | null>(null)
 
@@ -240,11 +261,25 @@ export const useSendPayment = (
               attemptRef.current = {
                 key: uuidv4(),
                 dispatched: false,
+                wentKeyless: false,
                 run: sendPaymentMutation,
               }
             }
             const attempt = attemptRef.current
             const attemptIsRetry = attempt.dispatched
+
+            // A retry of an attempt whose earlier dispatch went out KEYLESS:
+            // the server has never seen this key, so there is nothing for it
+            // to replay — re-dispatching (keyed or not) could execute a second
+            // payment while the keyless one may have committed. Same answer as
+            // the IdempotencyKeyReuseError branch below: keep the button
+            // disarmed and send the user to their history.
+            if (attemptIsRetry && attempt.wentKeyless) {
+              return {
+                status: PaymentSendResult.Failure,
+                errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+              }
+            }
             attempt.dispatched = true
 
             let response
@@ -252,6 +287,9 @@ export const useSendPayment = (
               response = await attempt.run({
                 idempotencyKey: attempt.key,
                 attemptIsRetry,
+                onKeylessDispatch: () => {
+                  attempt.wentKeyless = true
+                },
                 apiEndpoint: graphqlUri,
                 intraLedgerPaymentSend,
                 intraLedgerUsdPaymentSend,
@@ -298,8 +336,7 @@ export const useSendPayment = (
             ) {
               return {
                 status: response.status,
-                errorsMessage:
-                  "This payment may have already been sent. Check your transaction history before trying again.",
+                errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
               }
             }
             if (response.status === PaymentSendResult.Failure) {
@@ -328,9 +365,12 @@ export const useSendPayment = (
     onChainUsdPaymentSendAsBtcDenominated,
   ])
 
+  const isInFlight = useCallback(() => inFlightRef.current, [])
+
   return {
     hasAttemptedSend,
     loading,
     sendPayment,
+    isInFlight,
   }
 }

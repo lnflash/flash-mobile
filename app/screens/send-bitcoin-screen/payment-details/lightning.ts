@@ -108,6 +108,7 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
         {
           idempotencyKey: paymentMutations.idempotencyKey,
           isRetry: paymentMutations.attemptIsRetry,
+          onKeylessDispatch: paymentMutations.onKeylessDispatch,
         },
         {
           apiEndpoint: paymentMutations.apiEndpoint,
@@ -189,6 +190,7 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
         {
           idempotencyKey: paymentMutations.idempotencyKey,
           isRetry: paymentMutations.attemptIsRetry,
+          onKeylessDispatch: paymentMutations.onKeylessDispatch,
         },
         {
           apiEndpoint: paymentMutations.apiEndpoint,
@@ -312,6 +314,7 @@ export const createAmountLightningPaymentDetails = <T extends WalletCurrency>(
       {
         idempotencyKey: paymentMutations.idempotencyKey,
         isRetry: paymentMutations.attemptIsRetry,
+        onKeylessDispatch: paymentMutations.onKeylessDispatch,
       },
       {
         apiEndpoint: paymentMutations.apiEndpoint,

@@ -136,6 +136,10 @@ export const createSendPaymentMocks = (): SendPaymentMutationParams => {
     // The gate is scoped per (endpoint, input type), so a spec that wants two
     // backends can vary this one field.
     apiEndpoint: "https://api.test.flashapp.me/graphql",
+    // Observed by specs asserting WHICH dispatches went out keyless — the
+    // gate must report every un-keyed send so the hook can refuse to
+    // auto-retry an attempt the server has no key to replay for.
+    onKeylessDispatch: jest.fn(),
     lnInvoicePaymentSend: jest.fn(),
     lnNoAmountInvoicePaymentSend: jest.fn(),
     lnNoAmountUsdInvoicePaymentSend: jest.fn(),
