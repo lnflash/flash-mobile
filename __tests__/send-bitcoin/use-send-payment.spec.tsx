@@ -53,7 +53,10 @@ jest.mock("@app/utils/breez-sdk", () => ({
 
 let uuidCounter = 0
 jest.mock("uuid", () => ({
-  v4: () => `uuid-${++uuidCounter}`,
+  v4: () => {
+    uuidCounter += 1
+    return `uuid-${uuidCounter}`
+  },
 }))
 
 import { useSendPayment } from "@app/screens/send-bitcoin-screen/use-send-payment"
@@ -102,7 +105,12 @@ describe("useSendPayment — freeze-the-attempt", () => {
 
   it("suppresses a double tap: second call returns ignored, one mutation fires", async () => {
     let resolveSend: (v: unknown) => void = () => {}
-    const mutation = jest.fn(() => new Promise((resolve) => (resolveSend = resolve)))
+    const mutation = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveSend = resolve
+        }),
+    )
     const { result } = render(mutation)
 
     await act(async () => {
