@@ -1,6 +1,7 @@
 import { WalletCurrency } from "@app/graphql/generated"
 import { MoneyAmount, WalletOrDisplayCurrency, toWalletAmount } from "@app/types/amounts"
 import { PaymentType } from "@galoymoney/client"
+import { IDEMPOTENT_SEND_INPUTS, withIdempotencyKey } from "./idempotency-support"
 import {
   BaseCreatePaymentDetailsParams,
   ConvertMoneyAmount,
@@ -51,27 +52,50 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
     canSendPayment: false,
     canGetFee: false,
   }
+  // The data half of the freeze for whichever branch can send — see the
+  // attemptRef comment in use-send-payment.ts for the closure half.
+
   if (
     settlementAmount.amount &&
     sendingWalletDescriptor.currency === WalletCurrency.Btc
   ) {
-    const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) => {
-      const { data } = await paymentMutations.intraLedgerPaymentSend({
-        variables: {
-          input: {
-            walletId: sendingWalletDescriptor.id,
-            recipientWalletId,
-            amount: settlementAmount.amount,
-            memo,
-          },
-        },
-      })
-
-      return {
-        status: data?.intraLedgerPaymentSend.status,
-        errors: data?.intraLedgerPaymentSend.errors,
-      }
+    const wireInput = {
+      walletId: sendingWalletDescriptor.id,
+      recipientWalletId,
+      amount: settlementAmount.amount,
+      memo,
     }
+
+    const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
+      // Gated like every other send input — see idempotency-support.ts.
+      withIdempotencyKey(
+        {
+          idempotencyKey: paymentMutations.idempotencyKey,
+          isRetry: paymentMutations.attemptIsRetry,
+          onKeylessDispatch: paymentMutations.onKeylessDispatch,
+        },
+        {
+          apiEndpoint: paymentMutations.apiEndpoint,
+          inputType: IDEMPOTENT_SEND_INPUTS.intraLedger,
+        },
+        async (keyField) => {
+          const { data } = await paymentMutations.intraLedgerPaymentSend({
+            variables: {
+              input: {
+                ...wireInput,
+                // Same key for every repeat of this attempt, so a send whose
+                // response was lost settles once. See SendPaymentMutationParams.
+                ...keyField,
+              },
+            },
+          })
+
+          return {
+            status: data?.intraLedgerPaymentSend.status,
+            errors: data?.intraLedgerPaymentSend.errors,
+          }
+        },
+      )
 
     sendPaymentAndGetFee = {
       canSendPayment: true,
@@ -84,23 +108,47 @@ export const createIntraledgerPaymentDetails = <T extends WalletCurrency>(
     (sendingWalletDescriptor.currency === WalletCurrency.Usd ||
       sendingWalletDescriptor.currency === WalletCurrency.Usdt)
   ) {
-    const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) => {
-      const { data } = await paymentMutations.intraLedgerUsdPaymentSend({
-        variables: {
-          input: {
-            walletId: sendingWalletDescriptor.id,
-            recipientWalletId,
-            amount: settlementAmount.amount,
-            memo,
-          },
-        },
-      })
-
-      return {
-        status: data?.intraLedgerUsdPaymentSend.status,
-        errors: data?.intraLedgerUsdPaymentSend.errors,
-      }
+    const wireInput = {
+      walletId: sendingWalletDescriptor.id,
+      recipientWalletId,
+      amount: settlementAmount.amount,
+      memo,
     }
+
+    const sendPaymentMutation: SendPaymentMutation = async (paymentMutations) =>
+      // USD/USDT Flash-to-Flash — the same double-debit class ENG-533 exists to
+      // close, and gated like every other send input.
+      withIdempotencyKey(
+        {
+          idempotencyKey: paymentMutations.idempotencyKey,
+          isRetry: paymentMutations.attemptIsRetry,
+          onKeylessDispatch: paymentMutations.onKeylessDispatch,
+        },
+        {
+          apiEndpoint: paymentMutations.apiEndpoint,
+          inputType: IDEMPOTENT_SEND_INPUTS.intraLedgerUsd,
+        },
+        async (keyField) => {
+          const { data } = await paymentMutations.intraLedgerUsdPaymentSend({
+            variables: {
+              input: {
+                // `intraledger|${recipientWalletId}|${amount}`, and a USD/USDT
+                // amount is price-derived — so the rebuilt input drifts by a
+                // cent and the backend refuses to replay.
+                ...wireInput,
+                // Same key for every repeat of this attempt, so a send whose
+                // response was lost settles once. See SendPaymentMutationParams.
+                ...keyField,
+              },
+            },
+          })
+
+          return {
+            status: data?.intraLedgerUsdPaymentSend.status,
+            errors: data?.intraLedgerUsdPaymentSend.errors,
+          }
+        },
+      )
 
     sendPaymentAndGetFee = {
       canSendPayment: true,

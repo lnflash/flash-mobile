@@ -127,6 +127,19 @@ export const createGetFeeMocks = (): GetFeeParams => {
 
 export const createSendPaymentMocks = (): SendPaymentMutationParams => {
   return {
+    // Fixed rather than random so a spec can assert the exact value reaches
+    // the mutation input.
+    idempotencyKey: "test-idempotency-key",
+    // First dispatch of an attempt by default; a spec exercising the retry
+    // path overrides this to true.
+    attemptIsRetry: false,
+    // The gate is scoped per (endpoint, input type), so a spec that wants two
+    // backends can vary this one field.
+    apiEndpoint: "https://api.test.flashapp.me/graphql",
+    // Observed by specs asserting WHICH dispatches went out keyless — the
+    // gate must report every un-keyed send so the hook can refuse to
+    // auto-retry an attempt the server has no key to replay for.
+    onKeylessDispatch: jest.fn(),
     lnInvoicePaymentSend: jest.fn(),
     lnNoAmountInvoicePaymentSend: jest.fn(),
     lnNoAmountUsdInvoicePaymentSend: jest.fn(),

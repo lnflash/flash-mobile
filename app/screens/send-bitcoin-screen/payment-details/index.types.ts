@@ -65,6 +65,58 @@ export type GetFee<T extends WalletCurrency> = (getFeeFns: GetFeeParams) => Prom
 }>
 
 export type SendPaymentMutationParams = {
+  /**
+   * Stable per-attempt key so a send that is repeated cannot settle twice.
+   *
+   * The dangerous case is not a double tap (guarded separately) but a send
+   * whose RESPONSE was lost — a dropped socket, a gateway 502, the app
+   * backgrounded mid-flight. The server has already moved the money; the
+   * client has no way to know. Sending the same key again lets the backend
+   * (flash#494) recognise the repeat and return the original outcome instead
+   * of paying a second time.
+   *
+   * FIVE send inputs accept it, and every one this app calls passes it
+   * through the SAME runtime gate in idempotency-support.ts:
+   * intraLedgerPaymentSend, intraLedgerUsdPaymentSend,
+   * lnInvoicePaymentSend, lnNoAmountInvoicePaymentSend and
+   * lnNoAmountUsdInvoicePaymentSend. Four of them have carried the field since
+   * ENG-530 and one only since flash#494, but nothing in this repo measures
+   * which environments are on which release — and an unknown input field is
+   * rejected during coercion, taking the whole send path down rather than
+   * degrading — so none of them is exempt. The sixth, lnurlPaymentSend,
+   * accepts it server-side but is never called from here — LNURL sends go
+   * through Breez. Onchain sends likewise: those resolvers are stubbed and the
+   * money moves client-side through Breez.
+   */
+  idempotencyKey: string
+  /**
+   * Whether this dispatch is a RETRY of an attempt that has already been
+   * dispatched once (set from `attempt.dispatched` in use-send-payment.ts).
+   *
+   * The idempotency-support gate needs the distinction: its keyless fallback
+   * on a coercion refusal is only sound on an attempt's FIRST dispatch, where
+   * the refusal proves nothing executed. On a retry, an earlier keyed dispatch
+   * with an unknown outcome exists by definition, so a keyless re-send could
+   * execute a second payment — the gate errors out instead.
+   */
+  attemptIsRetry: boolean
+  /**
+   * Invoked synchronously, immediately before any dispatch that goes out
+   * WITHOUT `idempotencyKey` (the idempotency-support gate's keyless
+   * fallback / latched-gate path). use-send-payment.ts records it on the
+   * attempt: an attempt that has gone out keyless must never be auto-retried,
+   * because the server has no key to replay and a re-dispatch could execute a
+   * second payment.
+   */
+  onKeylessDispatch?: () => void
+  /**
+   * The GraphQL endpoint this send is going to (`galoyInstance.graphqlUri`).
+   *
+   * Scopes the idempotency-support gate. The app can switch instance at
+   * runtime, so a refusal learned from staging — or from one stale pod mid
+   * rolling deploy — must not disarm the key for prod.
+   */
+  apiEndpoint: string
   lnInvoicePaymentSend: LnInvoicePaymentSendMutationHookResult["0"]
   lnNoAmountInvoicePaymentSend: LnNoAmountInvoicePaymentSendMutationHookResult["0"]
   lnNoAmountUsdInvoicePaymentSend: LnNoAmountUsdInvoicePaymentSendMutationHookResult["0"]

@@ -102,6 +102,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
     loading: sendPaymentLoading,
     sendPayment,
     hasAttemptedSend,
+    isInFlight,
   } = useSendPayment(sendPaymentMutation, paymentDetail, selectedFeeType)
 
   useEffect(() => {
@@ -253,6 +254,16 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
 
   const handleSendPayment = useCallback(async () => {
     if (sendPayment && sendingWalletDescriptor?.currency) {
+      // A duplicate tap while the real attempt is still on the wire. Decide
+      // BEFORE any side effect: the contract for an ignored tap is no
+      // analytics, no spinner toggle, no error toast — logging
+      // `payment_attempt` here would count two attempts for one result and
+      // skew failure-rate metrics on every double tap. The hook's own
+      // in-flight guard (the `ignored` return below) stays as defense in
+      // depth; this synchronous read is what keeps the log honest.
+      if (isInFlight()) {
+        return
+      }
       if (heldInvoiceHasExpired()) {
         // A refusal here is the whole point of ENG-555, so it has to be
         // countable: without an event the failure just changes shape from
@@ -286,8 +297,20 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           paymentType: paymentDetail.paymentType,
           sendingWallet: sendingWalletDescriptor.currency,
         })
+        // A previous Failure/throw left an error on screen; this tap is the
+        // retry, so clear it before the attempt runs.
+        setPaymentError(undefined)
         toggleActivityIndicator(true)
-        const { status, errorsMessage } = await sendPayment()
+        const { status, errorsMessage, ignored } = await sendPayment()
+        if (ignored) {
+          // A duplicate tap while the real attempt is still in flight.
+          // Nothing happened; log nothing, navigate nowhere — and do NOT
+          // touch the activity indicator: it is a plain boolean, not a
+          // counter, so this tap's `false` would clobber the owning tap's
+          // `true` and hide the spinner for the whole in-flight send. The
+          // first tap turns it off when its own send resolves.
+          return
+        }
         toggleActivityIndicator(false)
         logPaymentResult({
           paymentType: paymentDetail.paymentType,
@@ -321,6 +344,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
           })
         }
       } catch (err) {
+        toggleActivityIndicator(false)
         if (err instanceof Error) {
           getCrashlytics().recordError(err)
           setPaymentError(err.message || err.toString())
@@ -332,6 +356,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   }, [
     paymentType,
     sendPayment,
+    isInFlight,
     sendingWalletDescriptor?.currency,
     heldInvoiceHasExpired,
     LL,
@@ -361,7 +386,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         <PrimaryBtn
           loading={sendPaymentLoading}
           label={LL.SendBitcoinConfirmationScreen.title()}
-          disabled={!isValidAmount || hasAttemptedSend || Boolean(paymentError)}
+          disabled={!isValidAmount || hasAttemptedSend}
           onPress={handleSendPayment}
         />
       </View>
