@@ -7,11 +7,6 @@ import {
 } from "@app/utils/nostr"
 import { npubLinkState } from "@app/nostr/npub-link"
 import {
-  clearNostrKeyOwners,
-  getNostrKeyOwner,
-  setNostrKeyOwner,
-} from "@app/nostr/key-owner"
-import {
   getSigner,
   createSignerFromKey,
   clearSigner,
@@ -73,7 +68,6 @@ const useNostrProfile = () => {
 
   const deleteNostrKeys = async () => {
     await Keychain.resetInternetCredentials({ server: KEYCHAIN_NOSTRCREDS_KEY })
-    await clearNostrKeyOwners()
   }
 
   const deleteNostrData = async () => {
@@ -106,26 +100,17 @@ const useNostrProfile = () => {
       // user's call (the NostrKeyEnsurer prompt, or Reconnect in advanced
       // settings). `me` must be loaded first — while the network-only query
       // is in flight an undefined backend npub reads as unregistered and
-      // would relink against unknown state. A key another account on this
-      // device generated is also left alone: the keychain survives logout,
-      // so registering it here would strand that account (see key-owner.ts).
+      // would relink against unknown state.
       try {
         const localNpub = nip19.npubEncode(await existingSigner.getPublicKey())
         const me = dataAuthed?.me
         if (me && npubLinkState(localNpub, me.npub) === "unregistered") {
-          const owner = await getNostrKeyOwner(localNpub)
-          if (owner && owner !== me.id) {
-            console.warn("Local nostr key belongs to another account; not relinking")
-          } else {
-            const { data } = await userUpdateNpubMutation({
-              variables: { input: { npub: localNpub } },
-            })
-            const errors = data?.userUpdateNpub?.errors ?? []
-            if (errors.length > 0) {
-              console.warn("Backend refused to relink local npub:", errors[0]?.code)
-            } else {
-              await setNostrKeyOwner(localNpub, me.id)
-            }
+          const { data } = await userUpdateNpubMutation({
+            variables: { input: { npub: localNpub } },
+          })
+          const errors = data?.userUpdateNpub?.errors ?? []
+          if (errors.length > 0) {
+            console.warn("Backend refused to relink local npub:", errors[0]?.code)
           }
         }
       } catch (e) {
@@ -162,7 +147,6 @@ const useNostrProfile = () => {
       KEYCHAIN_NOSTRCREDS_KEY,
       nostrSecret,
     )
-    if (dataAuthed?.me?.id) await setNostrKeyOwner(newNpub, dataAuthed.me.id)
     // Clear the signer singleton so it reloads the newly stored key
     clearSigner()
     const signer = createSignerFromKey(secretKey)

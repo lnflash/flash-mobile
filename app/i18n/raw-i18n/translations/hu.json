@@ -1476,8 +1476,6 @@
     "keyMismatchUseThisDevice": "Ezt az eszközt használom",
     "keyMismatchRelinkFailed": "Ezt az eszközt nem sikerült beállítani csevegőeszközként. Ellenőrizd a kapcsolatot, és próbáld újra a Beállítások › Nostr › Haladó › Profil újracsatlakoztatása menüpontban.",
     "keyMismatchRelinkRefused": "Ez a chatkulcs egy másik fiókhoz van regisztrálva. Törölje a chatkulcsokat a Beállítások › Nostr › Haladó menüben egy új létrehozásához.",
-    "keyForeignMessage": "Az eszközön lévő chatkulcsot egy másik fiók hozta létre ezen a telefonon. Használja ehhez a fiókhoz?",
-    "keyForeignRelinkRefused": "Ez a chatkulcs egy másik, ezen a telefonon lévő fiókhoz tartozik. Mentsd el annak a fióknak a kulcsát a Beállítások › Nostr › Haladó menüben, mielőtt törlöd, hogy újat hozz létre.",
     "creatingProfile": "Profil létrehozása...",
     "createNewProfile": "Új profilot hozz létre",
     "generateProfile": "Generálj profilot",

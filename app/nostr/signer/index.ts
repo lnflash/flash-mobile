@@ -1,7 +1,6 @@
 import { nip19, generateSecretKey, getPublicKey } from "nostr-tools"
 import * as Keychain from "react-native-keychain"
 import { fetchSecretFromLocalStorage } from "@app/utils/nostr"
-import { setNostrKeyOwner } from "@app/nostr/key-owner"
 import { LocalSigner } from "./localSigner"
 import { NostrSigner } from "./types"
 
@@ -40,12 +39,7 @@ export function clearSigner() {
   initializing = null
 }
 
-/**
- * Generates a fresh key and stores it in the keychain. `ownerAccountId` is
- * recorded next to it (see `key-owner.ts`) so a later login as a different
- * account on this device cannot silently register the key as its own.
- */
-export async function generateAndStoreKey(ownerAccountId?: string): Promise<string> {
+export async function generateAndStoreKey(): Promise<string> {
   const secretKey = generateSecretKey()
   const nsec = nip19.nsecEncode(secretKey)
   await Keychain.setInternetCredentials(
@@ -54,9 +48,7 @@ export async function generateAndStoreKey(ownerAccountId?: string): Promise<stri
     nsec,
   )
   clearSigner()
-  const npub = nip19.npubEncode(getPublicKey(secretKey))
-  if (ownerAccountId) await setNostrKeyOwner(npub, ownerAccountId)
-  return npub
+  return nip19.npubEncode(getPublicKey(secretKey))
 }
 
 export type { NostrSigner } from "./types"

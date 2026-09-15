@@ -10,15 +10,12 @@
  * once `me` has loaded. `mismatch` is never repaired here: replacing a
  * registered npub is the user's decision (ensurer prompt / Reconnect), and
  * this path runs right after a username is set — seconds after they may have
- * declined. A key another account on this device generated (the keychain
- * survives logout) is never registered here either: that is the ensurer's
- * prompt, not a silent default.
+ * declined.
  */
 import { renderHook, act } from "@testing-library/react-hooks"
 import * as Keychain from "react-native-keychain"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { nip19, getPublicKey } from "nostr-tools"
-import { getNostrKeyOwner, setNostrKeyOwner } from "@app/nostr/key-owner"
 
 const LOCAL_HEX = "a".repeat(64)
 const LOCAL_NPUB = nip19.npubEncode(LOCAL_HEX)
@@ -27,7 +24,6 @@ const FRESH_SK = new Uint8Array(32).fill(7)
 const FRESH_NPUB = nip19.npubEncode(getPublicKey(FRESH_SK))
 const KEYCHAIN_KEY = "nostr_creds_key"
 const ACCOUNT_A = "account-a"
-const ACCOUNT_B = "account-b"
 
 const mockGetSigner = jest.fn()
 const mockUserUpdateNpubMutation = jest.fn()
@@ -131,47 +127,6 @@ describe("useNostrProfile.saveNewNostrKey with an existing local key", () => {
     expect(mockGenerateSecretKey).not.toHaveBeenCalled()
     expect(Keychain.setInternetCredentials).not.toHaveBeenCalled()
     expect(mockEnsureContactListExists).toHaveBeenCalledWith(existingSigner)
-    // The key is now this account's.
-    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_A)
-  })
-
-  it("registers a key it generated for this same account", async () => {
-    await setNostrKeyOwner(LOCAL_NPUB, ACCOUNT_A)
-    loaded({ id: ACCOUNT_A, npub: null })
-    mockUserUpdateNpubMutation.mockResolvedValue({
-      data: { userUpdateNpub: { errors: [] } },
-    })
-
-    await saveNewNostrKey()
-
-    expect(mockUserUpdateNpubMutation).toHaveBeenCalledTimes(1)
-    expect(Keychain.setInternetCredentials).not.toHaveBeenCalled()
-  })
-
-  it("never registers a key another account on this device generated", async () => {
-    // Shared phone: A generated the key and logged out (keychain kept); B
-    // signs up and sets a username. Registering A's key on B strands A.
-    await setNostrKeyOwner(LOCAL_NPUB, ACCOUNT_A)
-    loaded({ id: ACCOUNT_B, npub: null, username: "bob" })
-
-    await saveNewNostrKey()
-
-    expect(mockUserUpdateNpubMutation).not.toHaveBeenCalled()
-    expect(mockGenerateSecretKey).not.toHaveBeenCalled()
-    expect(Keychain.setInternetCredentials).not.toHaveBeenCalled()
-    expect(mockEnsureContactListExists).toHaveBeenCalledWith(existingSigner)
-    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_A)
-  })
-
-  it("leaves the owner record alone when the backend refuses the relink", async () => {
-    loaded({ id: ACCOUNT_A, npub: null })
-    mockUserUpdateNpubMutation.mockResolvedValue({
-      data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
-    })
-
-    await saveNewNostrKey()
-
-    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBeNull()
   })
 
   it("does not write to the backend when the local key is already linked", async () => {
@@ -267,7 +222,7 @@ describe("useNostrProfile.saveNewNostrKey with no local key (fresh path)", () =>
     jest.spyOn(console, "error").mockImplementation(() => {})
   })
 
-  it("generates a key, stores it, registers it and records the account as owner", async () => {
+  it("generates a key, stores it and registers it", async () => {
     loaded({ id: ACCOUNT_A, npub: null, username: "alice" })
 
     await saveNewNostrKey()
@@ -281,45 +236,5 @@ describe("useNostrProfile.saveNewNostrKey with no local key (fresh path)", () =>
     expect(mockUserUpdateNpubMutation).toHaveBeenCalledWith({
       variables: { input: { npub: FRESH_NPUB } },
     })
-    // The stamp the shared-phone guard depends on: without it the next
-    // account to log in on this device registers this key as its own.
-    expect(await getNostrKeyOwner(FRESH_NPUB)).toBe(ACCOUNT_A)
-  })
-
-  it("leaves the key ownerless when the account id is not loaded", async () => {
-    loaded({ npub: null })
-
-    await saveNewNostrKey()
-
-    expect(Keychain.setInternetCredentials).toHaveBeenCalledTimes(1)
-    expect(await getNostrKeyOwner(FRESH_NPUB)).toBeNull()
-  })
-})
-
-describe("useNostrProfile.deleteNostrKeys", () => {
-  beforeEach(async () => {
-    jest.clearAllMocks()
-    await AsyncStorage.clear()
-    mockData = undefined
-  })
-
-  it("removes the keychain entry and every owner record, nothing else", async () => {
-    await setNostrKeyOwner(LOCAL_NPUB, ACCOUNT_A)
-    await setNostrKeyOwner(OTHER_NPUB, ACCOUNT_B)
-    await AsyncStorage.setItem("lastSeen_x", "1")
-    const { result } = renderHook(() => useNostrProfile())
-
-    await act(async () => {
-      await result.current.deleteNostrKeys()
-    })
-
-    expect(Keychain.resetInternetCredentials).toHaveBeenCalledWith({
-      server: KEYCHAIN_KEY,
-    })
-    // A stale owner record would make the next generated key look foreign
-    // to the very account that deleted it.
-    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBeNull()
-    expect(await getNostrKeyOwner(OTHER_NPUB)).toBeNull()
-    expect(await AsyncStorage.getItem("lastSeen_x")).toBe("1")
   })
 })

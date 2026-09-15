@@ -1476,8 +1476,6 @@
     "keyMismatchUseThisDevice": "Gunakan peranti ini",
     "keyMismatchRelinkFailed": "Peranti ini tidak dapat ditetapkan sebagai peranti sembang anda. Semak sambungan anda dan cuba lagi daripada Tetapan › Nostr › Lanjutan › Sambung semula profil.",
     "keyMismatchRelinkRefused": "Kunci sembang ini didaftarkan kepada akaun lain. Padam kunci sembang di Tetapan › Nostr › Lanjutan untuk mencipta yang baharu.",
-    "keyForeignMessage": "Kunci sembang pada peranti ini dicipta oleh akaun lain pada telefon ini. Gunakannya untuk akaun ini?",
-    "keyForeignRelinkRefused": "Kunci sembang ini adalah milik akaun lain pada telefon ini. Sandarkan kunci akaun itu daripada Tetapan › Nostr › Lanjutan sebelum memadamkannya untuk mencipta yang baharu.",
     "creatingProfile": "Menciptakan Profil...",
     "createNewProfile": "Buat Profil Baru",
     "generateProfile": "Generate Profile",

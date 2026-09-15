@@ -1476,8 +1476,6 @@
     "keyMismatchUseThisDevice": "Dùng thiết bị này",
     "keyMismatchRelinkFailed": "Không thể đặt thiết bị này làm thiết bị trò chuyện của bạn. Kiểm tra kết nối của bạn và thử lại từ Cài đặt › Nostr › Nâng cao › Kết nối lại hồ sơ.",
     "keyMismatchRelinkRefused": "Khóa trò chuyện này đã được đăng ký cho tài khoản khác. Xóa các khóa trò chuyện trong Cài đặt › Nostr › Nâng cao để tạo khóa mới.",
-    "keyForeignMessage": "Khóa trò chuyện trên thiết bị này được tạo bởi tài khoản khác trên điện thoại này. Dùng nó cho tài khoản này?",
-    "keyForeignRelinkRefused": "Khóa trò chuyện này thuộc về một tài khoản khác trên điện thoại này. Sao lưu khóa của tài khoản đó từ Cài đặt › Nostr › Nâng cao trước khi xóa để tạo khóa mới.",
     "creatingProfile": "Tạo hồ sơ...",
     "createNewProfile": "Tạo hồ sơ mới",
     "generateProfile": "Generate Profile",
