@@ -15,6 +15,7 @@ import theme from "@app/rne-theme/theme"
 jest.mock("js-lnurl", () => ({ getParams: jest.fn() }))
 jest.mock("axios", () => ({ get: jest.fn() }))
 jest.mock("@app/utils/toast", () => ({ toastShow: jest.fn() }))
+import { toastShow } from "@app/utils/toast"
 
 // Placeholder values only. Real cards carry a per-tap p/c pair and a k1 that
 // together authorise a withdrawal, which is exactly why none of these may be
@@ -196,6 +197,52 @@ describe("FlashcardProvider withdraw parameters", () => {
     )
     for (const secret of SECRETS) {
       expect(consoleOutput(spies).some((line) => line.includes(secret))).toBe(false)
+    }
+  })
+
+  it("shows fixed text when the tag is not a withdraw request", async () => {
+    ;(getParams as jest.Mock).mockResolvedValue({
+      tag: "payRequest",
+      callback: CALLBACK,
+      reason: `not a withdraw tag: ${CARD_PAYLOAD}`,
+    })
+
+    renderProvider()
+    await waitFor(() => expect(readFlashcard).toBeDefined())
+    await act(async () => {
+      await readFlashcard?.(true)
+    })
+
+    expect(toastShow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "error",
+        message: "This card is not set up as a Flashcard. Please tap a Flashcard.",
+      }),
+    )
+    const shown = (toastShow as jest.Mock).mock.calls.map((c) => JSON.stringify(c[0]))
+    for (const secret of SECRETS) {
+      expect(shown.some((m) => m.includes(secret))).toBe(false)
+      expect(consoleOutput(spies).some((line) => line.includes(secret))).toBe(false)
+    }
+    expect(latest?.k1).toBeUndefined()
+  })
+
+  it("shows fixed text when the lnurl lookup returns an error object", async () => {
+    ;(getParams as jest.Mock).mockResolvedValue({
+      status: "ERROR",
+      reason: `Failed to fetch ${CARD_PAYLOAD} ${CALLBACK}`,
+    })
+
+    renderProvider()
+    await waitFor(() => expect(readFlashcard).toBeDefined())
+    await act(async () => {
+      await readFlashcard?.(true)
+    })
+
+    const shown = (toastShow as jest.Mock).mock.calls.map((c) => JSON.stringify(c[0]))
+    expect(shown.length).toBeGreaterThan(0)
+    for (const secret of SECRETS) {
+      expect(shown.some((m) => m.includes(secret))).toBe(false)
     }
   })
 })
