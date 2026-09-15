@@ -63,7 +63,7 @@ If you wish to contribute, please see [CONTRIBUTING.MD](./CONTRIBUTING.MD)
 
 1. Clone the repository
    ```
-   git clone https://github.com/YourOrganization/flash-mobile.git
+   git clone https://github.com/lnflash/flash-mobile.git
    ```
 
 2. Navigate to the project directory
@@ -73,8 +73,10 @@ If you wish to contribute, please see [CONTRIBUTING.MD](./CONTRIBUTING.MD)
 
 3. Install dependencies
    ```
+   export LANG=en_US.UTF-8
    yarn install
    ```
+   `yarn install` runs `pod install` as a postinstall step, and CocoaPods needs a UTF-8 locale; in a non-UTF-8 shell it fails with `Unicode Normalization not appropriate for ASCII-8BIT (Encoding::CompatibilityError)`.
 
 4. Start the Metro bundler
    ```
@@ -83,26 +85,35 @@ If you wish to contribute, please see [CONTRIBUTING.MD](./CONTRIBUTING.MD)
 
 5. In another terminal window, run the app on iOS or Android
    ```
-   yarn ios
+   yarn ios --simulator "iPhone 17 Pro"
    ```
    or
    ```
    yarn android
    ```
+   Name the simulator (`xcrun simctl list devices available` lists them). Without `--simulator`, React Native builds for every connected destination, including any iPhone plugged in over USB, and then fails on that device unless `ios-deploy` is installed.
 
-The app is built and pushed to the App Store and Play Store on demand with CircleCI.
+### Releases
+
+Store builds are produced by GitHub Actions, not from a developer machine:
+
+- `.github/workflows/ios-deploy.yml` and `android-deploy.yml` run on a pushed tag matching `ios/v*` or `android/v*`, which runs the fastlane **beta** lane (TestFlight / Play internal track).
+- A store **release** is started from the Actions tab with **Run workflow** and the `release` lane selected. `ios-alt-deploy.yml` does the same for the alternate iOS app with `beta_alt` / `release_alt` and `ios-alt/v*` tags.
+- The per-release steps (version bump, reading the uploaded build numbers, the deployments PR for the version gate, verification) are in the ops-handbook `mobile/release-checklist.md`.
+
+`.circleci/config.yml` is still in the repo and defines its own jobs (BrowserStack device tests); store releases are not among them.
 
 ### Development with Backend
 
 To run the app fully locally, you'll need to set up the backend by following the instructions at https://github.com/LNFlash/flash.
 
-## Notes for Running on M1 Mac
+## Notes for Running on Apple silicon
 
-The app currently only builds for x86_64 simulators. Simulators prior to iOS 13.7 are x86_64 by default, however starting with 13.7 they become platform specific. To get an x86_64 simulator of a newer iOS version, set XCode to open in [emulation using Rosetta](https://www.macworld.com/article/338843/how-to-force-a-native-m1-mac-app-to-run-as-an-intel-app-instead.html). 
+The app builds and runs natively on Apple silicon simulators; no Rosetta is needed (verified on an arm64 Mac with an iOS 26.5 iPhone 17 Pro simulator).
 
-To run the project:
-1. Open [LNFlash.xcworkspace](./ios/LNFlash.xcworkspace/) in XCode
-2. Choose an x86_64 simulator
+To run the project from Xcode:
+1. Open [LNFlash.xcworkspace](./ios/LNFlash.xcworkspace/) in Xcode
+2. Choose a simulator
 3. Click the play button
 
 This should start the Metro bundler in a new terminal and launch the simulator with the app.
