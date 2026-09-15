@@ -18,7 +18,9 @@
  *  - conflict        → never auto-generate over a registered npub.
  *  - fresh           → generate, register, init chat.
  *  - logout          → a prompt still held behind the lock screen is dropped,
- *                      never shown to whoever signs in next.
+ *                      never shown to whoever signs in next; a check still in
+ *                      flight at logout (relink, storage read) or a button
+ *                      pressed afterwards acts on nothing.
  *  - locked          → the silent write still happens, but no Alert is shown
  *                      while the PIN/biometric gate is up; it appears once
  *                      the app unlocks.
@@ -291,6 +293,115 @@ describe("NostrKeyEnsurer", () => {
     rerender(<NostrKeyEnsurer />)
     await flush()
     expect(alertSpy).not.toHaveBeenCalled()
+  })
+
+  describe("logout while the check is still in flight", () => {
+    const refused = {
+      data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
+    }
+    const deferred = () => {
+      let resolve: (v: unknown) => void = () => {}
+      const promise = new Promise((r) => {
+        resolve = r
+      })
+      return { promise, resolve }
+    }
+
+    it("never shows a refused-relink notice that resolves after logout", async () => {
+      mockIsAppLocked = true
+      withLocalKey()
+      mockMe = { id: ACCOUNT_A, npub: null }
+      const pending = deferred()
+      mockUserUpdateNpub.mockReturnValue(pending.promise)
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(mockUserUpdateNpub).toHaveBeenCalledTimes(1))
+
+      mockIsAuthed = false
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      pending.resolve(refused)
+      await flush()
+      await flush()
+
+      mockIsAuthed = true
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      mockIsAppLocked = false
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      await flush()
+      expect(alertSpy).not.toHaveBeenCalled()
+    })
+
+    it("never shows a notice that resolves after logout and a new sign-in", async () => {
+      withLocalKey()
+      mockMe = { id: ACCOUNT_A, npub: null }
+      const pending = deferred()
+      mockUserUpdateNpub.mockReturnValue(pending.promise)
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(mockUserUpdateNpub).toHaveBeenCalledTimes(1))
+
+      mockIsAuthed = false
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      mockIsAuthed = true
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      pending.resolve(refused)
+      await flush()
+      await flush()
+      expect(alertSpy).not.toHaveBeenCalled()
+    })
+
+    it("never holds a mismatch prompt whose storage read resolves after logout", async () => {
+      mockIsAppLocked = true
+      withLocalKey()
+      okMutation()
+      mockMe = { id: ACCOUNT_A, npub: OTHER_NPUB }
+      const pending = deferred()
+      // The async-storage jest mock is itself a jest.fn: queue one held read
+      // rather than spying, which would wipe its implementation on restore.
+      const getItemSpy = AsyncStorage.getItem as jest.Mock
+      getItemSpy.mockImplementationOnce(() => pending.promise)
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(getItemSpy).toHaveBeenCalled())
+
+      mockIsAuthed = false
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      pending.resolve(null)
+      await flush()
+      await flush()
+
+      mockIsAuthed = true
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      mockIsAppLocked = false
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      await flush()
+      expect(alertSpy).not.toHaveBeenCalled()
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+    })
+
+    it("ignores 'Use this device' pressed after the account logged out", async () => {
+      withLocalKey()
+      okMutation()
+      mockMe = { id: ACCOUNT_A, npub: OTHER_NPUB }
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+
+      mockIsAuthed = false
+      rerender(<NostrKeyEnsurer />)
+      mockIsAuthed = true
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      alertButton(alertSpy, LL.Nostr.keyMismatchUseThisDevice()).onPress?.()
+      await flush()
+      await flush()
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+      expect(alertSpy).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe("mismatch (backend advertises a key this device does not hold)", () => {

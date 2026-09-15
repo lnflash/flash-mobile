@@ -47,6 +47,13 @@ type PendingPrompt = { show: () => void }
  * to (or answered by) whoever signs in next. A second account is checked on
  * the next cold start.
  *
+ * The check's async work (a network relink, keychain and storage reads) can
+ * outlive the session that started it. Every auth transition bumps
+ * `authSession`; the check captures it at the start and drops any result
+ * (a held prompt, a relink from a button) once it no longer matches, so a
+ * logout, or a logout followed by another sign-in, never inherits a decision
+ * made against the previous account's backend state.
+ *
  * The check itself runs as soon as the live account data arrives, which is
  * before the PIN/biometric gate has been passed (`authenticationCheck` is the
  * initial route while `isAuthed` is already true). Anything that asks the
@@ -75,6 +82,16 @@ const NostrKeyEnsurer: React.FC = () => {
   const hasRun = useRef(false)
   const [pendingPrompt, setPendingPrompt] = useState<PendingPrompt | null>(null)
 
+  // Bumped synchronously on every auth transition (logout or sign-in), so an
+  // async continuation resolving before the effects below run already sees
+  // the new session.
+  const authSession = useRef(0)
+  const lastAuthed = useRef(isAuthed)
+  if (lastAuthed.current !== isAuthed) {
+    lastAuthed.current = isAuthed
+    authSession.current += 1
+  }
+
   useEffect(() => {
     // A prompt decided for the previous account must not survive its logout.
     if (!isAuthed) setPendingPrompt(null)
@@ -90,6 +107,8 @@ const NostrKeyEnsurer: React.FC = () => {
     // Wait until both auth state and backend data are ready
     if (!isAuthed || !dataAuthed || hasRun.current) return
     hasRun.current = true
+    const session = authSession.current
+    const isCurrentSession = () => authSession.current === session
 
     const backendNpub = dataAuthed.me?.npub ?? null
 
@@ -152,11 +171,15 @@ const NostrKeyEnsurer: React.FC = () => {
         {
           text: LL.Nostr.keyMismatchUseThisDevice(),
           onPress: async () => {
+            // Signed out (or into another account) while the alert was up:
+            // this answer was about the previous account's backend state.
+            if (!isCurrentSession()) return
             const result = await relinkLocalNpub(state, localNpub)
             // A transient failure leaves no marker so the question is
             // asked again next launch; a deterministic refusal (another
             // account holds this key) is remembered. Either way the user
             // chose and nothing happened, so say so.
+            if (!isCurrentSession()) return
             if (result !== "failed") remember()
             if (result !== "ok") showRelinkFailed(result)
           },
@@ -184,7 +207,7 @@ const NostrKeyEnsurer: React.FC = () => {
           // another account already registered it, which the user can only
           // resolve by hand — so say so rather than staying silent.
           const result = await relinkLocalNpub(state, localNpub)
-          if (result === "refused") {
+          if (result === "refused" && isCurrentSession()) {
             setPendingPrompt({ show: () => showRelinkFailed(result) })
           }
           return
@@ -195,6 +218,7 @@ const NostrKeyEnsurer: React.FC = () => {
           // and let the user decide which device owns chat.
           const marker = npubMismatchPromptedKey(backendNpub)
           if (await AsyncStorage.getItem(marker)) return
+          if (!isCurrentSession()) return
           setPendingPrompt({
             show: () => askToUseThisDevice({ marker, state, localNpub }),
           })
@@ -213,6 +237,7 @@ const NostrKeyEnsurer: React.FC = () => {
 
       try {
         const npub = await generateAndStoreKey()
+        if (!isCurrentSession()) return
         await userUpdateNpub({ variables: { input: { npub } } })
         await initializeChat()
         console.log("[NostrKeyEnsurer] auto-generated key and registered npub")
