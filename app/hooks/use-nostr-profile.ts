@@ -1,5 +1,5 @@
 import * as Keychain from "react-native-keychain"
-import { nip19, generateSecretKey, getPublicKey, SimplePool } from "nostr-tools"
+import { nip19, generateSecretKey, getPublicKey } from "nostr-tools"
 import {
   createContactListEvent,
   ensureContactListExists,
@@ -199,9 +199,11 @@ const useNostrProfile = () => {
       const baseProfileContent = username
         ? {
             name: username,
-            username: username,
+            username,
+            // Nostr profile field name, read by other clients; must stay snake_case.
+            // eslint-disable-next-line camelcase
             flash_username: username,
-            lud16: lud16,
+            lud16,
             nip05: `${username}@${lnDomain}`,
             ...(pictureUrl && { picture: pictureUrl }),
             ...(bannerUrl && { banner: bannerUrl }),
