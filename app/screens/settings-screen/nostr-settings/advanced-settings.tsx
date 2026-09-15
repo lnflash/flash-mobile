@@ -63,15 +63,20 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
         Alert.alert(LL.Nostr.noProfileIdExists())
         return
       }
-      await onReconnect()
+      // Report the write's outcome before refreshing. The refresh is a
+      // separate network call; if it rejects after the mutation succeeded,
+      // it must not turn a done relink into a "try again" error.
       if (result.status === "refused") {
         // Typically NPUB_NOT_AVAILABLE: another account holds this key.
         // Retrying gives the same answer, so do not report success.
         console.warn("Backend refused to reconnect local npub:", result.code)
         Alert.alert(LL.common.error(), LL.Nostr.keyMismatchRelinkRefused())
-        return
+      } else {
+        Alert.alert(LL.common.success(), LL.Nostr.profileReconnected())
       }
-      Alert.alert(LL.common.success(), LL.Nostr.profileReconnected())
+      onReconnect().catch((e) => {
+        console.warn("Refreshing Nostr settings after reconnect failed:", e)
+      })
     } catch (e) {
       // `reconnectLocalNpub` propagates a rejected mutation (offline is the
       // very state `keyMismatchRelinkFailed` sends people here from) and a

@@ -25,7 +25,8 @@ export const npubMismatchPromptedKey = (backendNpub: string): string =>
 type PendingPrompt = { show: () => void }
 
 /**
- * Runs once per authenticated session and makes sure the npub the backend
+ * Runs once per app process (the first time an authenticated account's live
+ * data arrives) and makes sure the npub the backend
  * advertises for this account (what senders encrypt DMs to) is the key this
  * device can actually decrypt with. See `npubLinkState` for the state table.
  *
@@ -37,6 +38,14 @@ type PendingPrompt = { show: () => void }
  * installs auto-relinking on every launch would flip the account back and
  * forth and leave both with holes in the same conversation, so that one asks
  * the user once and never rewrites a registered npub without their choice.
+ *
+ * `hasRun` is deliberately not reset on logout: GaloyClient swaps the Apollo
+ * client on a token change without unmounting this component, so a reset
+ * would run the check for a second account in the same process, which is the
+ * unsupported shared-phone case above (ENG-601). Logging out therefore only
+ * drops a prompt still waiting for the lock screen, so it can never be shown
+ * to (or answered by) whoever signs in next. A second account is checked on
+ * the next cold start.
  *
  * The check itself runs as soon as the live account data arrives, which is
  * before the PIN/biometric gate has been passed (`authenticationCheck` is the
@@ -67,10 +76,15 @@ const NostrKeyEnsurer: React.FC = () => {
   const [pendingPrompt, setPendingPrompt] = useState<PendingPrompt | null>(null)
 
   useEffect(() => {
-    if (isAppLocked || !pendingPrompt) return
+    // A prompt decided for the previous account must not survive its logout.
+    if (!isAuthed) setPendingPrompt(null)
+  }, [isAuthed])
+
+  useEffect(() => {
+    if (!isAuthed || isAppLocked || !pendingPrompt) return
     setPendingPrompt(null)
     pendingPrompt.show()
-  }, [isAppLocked, pendingPrompt])
+  }, [isAuthed, isAppLocked, pendingPrompt])
 
   useEffect(() => {
     // Wait until both auth state and backend data are ready

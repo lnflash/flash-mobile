@@ -17,6 +17,8 @@
  *                      refused silent relink is told to the user.
  *  - conflict        → never auto-generate over a registered npub.
  *  - fresh           → generate, register, init chat.
+ *  - logout          → a prompt still held behind the lock screen is dropped,
+ *                      never shown to whoever signs in next.
  *  - locked          → the silent write still happens, but no Alert is shown
  *                      while the PIN/biometric gate is up; it appears once
  *                      the app unlocks.
@@ -37,9 +39,10 @@ const mockGetSigner = jest.fn()
 const mockGenerateAndStoreKey = jest.fn()
 let mockMe: { id?: string; npub?: string | null } | null = null
 let mockIsAppLocked = false
+let mockIsAuthed = true
 
 jest.mock("@app/graphql/is-authed-context", () => ({
-  useIsAuthed: () => true,
+  useIsAuthed: () => mockIsAuthed,
 }))
 
 jest.mock("@app/graphql/generated", () => ({
@@ -117,6 +120,7 @@ describe("NostrKeyEnsurer", () => {
     jest.clearAllMocks()
     await AsyncStorage.clear()
     mockIsAppLocked = false
+    mockIsAuthed = true
     mockInitializeChat.mockResolvedValue(undefined)
     alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
     jest.spyOn(console, "log").mockImplementation(() => {})
@@ -240,6 +244,53 @@ describe("NostrKeyEnsurer", () => {
         LL.Nostr.keyMismatchRelinkRefused(),
       )
     })
+  })
+
+  it("drops a prompt still held behind the lock screen when the account logs out", async () => {
+    // GaloyClient keeps this component mounted across a logout, so a prompt
+    // decided for the first account must not appear once the app unlocks
+    // for the next one.
+    mockIsAppLocked = true
+    withLocalKey()
+    okMutation()
+    mockMe = { id: ACCOUNT_A, npub: OTHER_NPUB }
+    const { rerender } = render(<NostrKeyEnsurer />)
+    await waitFor(() => expect(mockGetSigner).toHaveBeenCalled())
+    await flush()
+    await flush()
+    expect(alertSpy).not.toHaveBeenCalled()
+
+    mockIsAuthed = false
+    rerender(<NostrKeyEnsurer />)
+    await flush()
+    mockIsAppLocked = false
+    rerender(<NostrKeyEnsurer />)
+    await flush()
+    mockIsAuthed = true
+    rerender(<NostrKeyEnsurer />)
+    await flush()
+    await flush()
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+  })
+
+  it("drops a held prompt when logout and unlock land in the same render", async () => {
+    mockIsAppLocked = true
+    withLocalKey()
+    mockMe = { id: ACCOUNT_A, npub: OTHER_NPUB }
+    const { rerender } = render(<NostrKeyEnsurer />)
+    await waitFor(() => expect(mockGetSigner).toHaveBeenCalled())
+    await flush()
+    await flush()
+
+    mockIsAuthed = false
+    mockIsAppLocked = false
+    rerender(<NostrKeyEnsurer />)
+    await flush()
+    mockIsAuthed = true
+    rerender(<NostrKeyEnsurer />)
+    await flush()
+    expect(alertSpy).not.toHaveBeenCalled()
   })
 
   describe("mismatch (backend advertises a key this device does not hold)", () => {
