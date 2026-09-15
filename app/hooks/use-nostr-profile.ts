@@ -1,11 +1,11 @@
 import * as Keychain from "react-native-keychain"
+import { nip19, generateSecretKey, getPublicKey, SimplePool } from "nostr-tools"
 import {
-  nip19,
-  generateSecretKey,
-  getPublicKey,
-  SimplePool,
-} from "nostr-tools"
-import { createContactListEvent, ensureContactListExists, setPreferredRelay } from "@app/utils/nostr"
+  createContactListEvent,
+  ensureContactListExists,
+  setPreferredRelay,
+} from "@app/utils/nostr"
+import { needsRelink, npubLinkState } from "@app/nostr/npub-link"
 import { getSigner, createSignerFromKey, clearSigner } from "@app/nostr/signer"
 import {
   publishEventToRelays,
@@ -80,6 +80,19 @@ const useNostrProfile = () => {
     try {
       const existingSigner = await getSigner()
       if (existingSigner) {
+        // A local key already exists. Make sure the backend advertises it —
+        // otherwise DMs to this username are encrypted to a key this device
+        // cannot decrypt (or to nothing, if the account has no npub yet).
+        const localNpub = nip19.npubEncode(await existingSigner.getPublicKey())
+        if (needsRelink(npubLinkState(localNpub, dataAuthed?.me?.npub))) {
+          const { data } = await userUpdateNpubMutation({
+            variables: { input: { npub: localNpub } },
+          })
+          const errors = data?.userUpdateNpub?.errors ?? []
+          if (errors.length > 0) {
+            console.warn("Backend refused to relink local npub:", errors[0]?.code)
+          }
+        }
         await ensureContactListExists(existingSigner)
         return
       }
@@ -163,20 +176,20 @@ const useNostrProfile = () => {
     try {
       const baseProfileContent = username
         ? {
-          name: username,
-          username: username,
-          flash_username: username,
-          lud16: lud16,
-          nip05: `${username}@${lnDomain}`,
-          ...(pictureUrl && { picture: pictureUrl }),
-          ...(bannerUrl && { banner: bannerUrl }),
-        }
+            name: username,
+            username: username,
+            flash_username: username,
+            lud16: lud16,
+            nip05: `${username}@${lnDomain}`,
+            ...(pictureUrl && { picture: pictureUrl }),
+            ...(bannerUrl && { banner: bannerUrl }),
+          }
         : {
-          name: "Flash User",
-          about: "Flash wallet user",
-          ...(pictureUrl && { picture: pictureUrl }),
-          ...(bannerUrl && { banner: bannerUrl }),
-        }
+            name: "Flash User",
+            about: "Flash wallet user",
+            ...(pictureUrl && { picture: pictureUrl }),
+            ...(bannerUrl && { banner: bannerUrl }),
+          }
 
       // Merge with any additional content passed in (e.g., from username screen)
       const profileContent = {
@@ -428,9 +441,10 @@ const useNostrProfile = () => {
     const coreRelays = ["wss://relay.flashapp.me", "wss://relay.islandbitcoin.com"]
     const coreSuccess = successfulRelays.some((relay) => coreRelays.includes(relay))
     console.log(
-      `\n🎯 Core relay status: ${coreSuccess
-        ? "✅ At least one core relay succeeded"
-        : "⚠️ No core relays succeeded"
+      `\n🎯 Core relay status: ${
+        coreSuccess
+          ? "✅ At least one core relay succeeded"
+          : "⚠️ No core relays succeeded"
       }`,
     )
 
