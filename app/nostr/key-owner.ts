@@ -33,16 +33,25 @@ export const clearNostrKeyOwner = async (localNpub: string): Promise<void> =>
   AsyncStorage.removeItem(nostrKeyOwnerKey(localNpub))
 
 /**
- * Whether a backend refusal (`NPUB_NOT_AVAILABLE`) of this key may be answered
- * with "delete the chat keys". Only when this account is the recorded owner:
- * with another owner, or no record at all (every key from before the record
- * existed), the refusal itself says some other account holds the key, and the
- * local copy may be that account's only one.
+ * Who a local key belongs to, from this account's point of view. Decides how a
+ * backend refusal (`NPUB_NOT_AVAILABLE`) is explained:
+ *  - `self`: this account is the recorded owner, so "delete the chat keys" is
+ *    safe advice.
+ *  - `other`: another account on this phone generated the key; its copy here
+ *    may be that account's only one.
+ *  - `unknown`: no record (every key from before the record existed). The
+ *    refusal only says some account holds the key, possibly on another phone,
+ *    so the copy must not claim a second account on this phone.
  */
-export const mayAdviseDeletingKey = (
+export type KeyOwnerState = "self" | "other" | "unknown"
+
+export const keyOwnerState = (
   owner: string | null,
   accountId: string | null | undefined,
-): boolean => Boolean(owner && accountId && owner === accountId)
+): KeyOwnerState => {
+  if (!owner) return "unknown"
+  return accountId && owner === accountId ? "self" : "other"
+}
 
 /** Drop every owner record — used when the local key material is deleted. */
 export const clearNostrKeyOwners = async (): Promise<void> => {

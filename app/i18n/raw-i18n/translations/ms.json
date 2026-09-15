@@ -1478,6 +1478,7 @@
     "keyMismatchRelinkRefused": "Kunci sembang ini didaftarkan kepada akaun lain. Padam kunci sembang di Tetapan › Nostr › Lanjutan untuk mencipta yang baharu.",
     "keyForeignMessage": "Kunci sembang pada peranti ini dicipta oleh akaun lain pada telefon ini. Gunakannya untuk akaun ini?",
     "keyForeignRelinkRefused": "Kunci sembang ini adalah milik akaun lain pada telefon ini. Sandarkan kunci akaun itu daripada Tetapan › Nostr › Lanjutan sebelum memadamkannya untuk mencipta yang baharu.",
+    "keyUnownedRelinkRefused": "Kunci sembang ini didaftarkan kepada akaun lain. Sandarkan kunci itu daripada Tetapan › Nostr › Lanjutan sebelum memadamkannya untuk mencipta yang baharu.",
     "creatingProfile": "Menciptakan Profil...",
     "createNewProfile": "Buat Profil Baru",
     "generateProfile": "Generate Profile",

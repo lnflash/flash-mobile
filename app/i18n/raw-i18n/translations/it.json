@@ -1478,6 +1478,7 @@
     "keyMismatchRelinkRefused": "Questa chiave di chat è registrata a un altro account. Elimina le chiavi di chat in Impostazioni › Nostr › Avanzate per crearne una nuova.",
     "keyForeignMessage": "La chiave di chat su questo dispositivo è stata creata da un altro account su questo telefono. Usarla per questo account?",
     "keyForeignRelinkRefused": "Questa chiave di chat appartiene a un altro account su questo telefono. Esegui il backup della chiave di quell'account da Impostazioni › Nostr › Avanzate prima di eliminarla per crearne una nuova.",
+    "keyUnownedRelinkRefused": "Questa chiave di chat è registrata a un altro account. Esegui il backup della chiave da Impostazioni › Nostr › Avanzate prima di eliminarla per crearne una nuova.",
     "creatingProfile": "Creando un profilo...",
     "createNewProfile": "Crea un nuovo profilo",
     "generateProfile": "Generare un profilo",

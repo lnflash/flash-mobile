@@ -1478,6 +1478,7 @@
     "keyMismatchRelinkRefused": "Dieser Chat-Schlüssel ist bei einem anderen Konto registriert. Löschen Sie die Chat-Schlüssel unter Einstellungen › Nostr › Erweitert, um einen neuen zu erstellen.",
     "keyForeignMessage": "Der Chat-Schlüssel auf diesem Gerät wurde von einem anderen Konto auf diesem Telefon erstellt. Für dieses Konto verwenden?",
     "keyForeignRelinkRefused": "Dieser Chat-Schlüssel gehört zu einem anderen Konto auf diesem Telefon. Sichern Sie den Schlüssel dieses Kontos unter Einstellungen › Nostr › Erweitert, bevor Sie ihn löschen, um einen neuen zu erstellen.",
+    "keyUnownedRelinkRefused": "Dieser Chat-Schlüssel ist bei einem anderen Konto registriert. Sichern Sie den Schlüssel unter Einstellungen › Nostr › Erweitert, bevor Sie ihn löschen, um einen neuen zu erstellen.",
     "creatingProfile": "Erstellen Sie ein Profil...",
     "createNewProfile": "Erstellen Sie ein neues Profil",
     "generateProfile": "Erstellen Sie ein Profil",

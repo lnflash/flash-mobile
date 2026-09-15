@@ -1423,6 +1423,7 @@
     "keyMismatchRelinkRefused": "مفتاح الدردشة هذا مسجّل لحساب آخر. احذف مفاتيح الدردشة من الإعدادات › Nostr › متقدم لإنشاء مفتاح جديد.",
     "keyForeignMessage": "تم إنشاء مفتاح الدردشة على هذا الجهاز بواسطة حساب آخر على هذا الهاتف. هل تريد استخدامه لهذا الحساب؟",
     "keyForeignRelinkRefused": "مفتاح الدردشة هذا يخص حسابًا آخر على هذا الهاتف. انسخ مفتاح ذلك الحساب احتياطيًا من الإعدادات › Nostr › متقدم قبل حذفه لإنشاء مفتاح جديد.",
+    "keyUnownedRelinkRefused": "مفتاح الدردشة هذا مسجّل لحساب آخر. انسخ المفتاح احتياطيًا من الإعدادات › Nostr › متقدم قبل حذفه لإنشاء مفتاح جديد.",
     "keyConflictTitle": "Nostr Key Not Found on Device",
     "learnAboutNostr": "Learn about Nostr",
     "learnAboutNostrSubtext": "Explore this guide to get the most out of nostr chat",

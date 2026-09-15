@@ -1478,6 +1478,7 @@
     "keyMismatchRelinkRefused": "Bu sohbet anahtarı başka bir hesaba kayıtlı. Yeni bir tane oluşturmak için Ayarlar › Nostr › Gelişmiş altından sohbet anahtarlarını silin.",
     "keyForeignMessage": "Bu cihazdaki sohbet anahtarı bu telefondaki başka bir hesap tarafından oluşturuldu. Bu hesap için kullanılsın mı?",
     "keyForeignRelinkRefused": "Bu sohbet anahtarı bu telefondaki başka bir hesaba ait. Yeni bir tane oluşturmak için silmeden önce o hesabın anahtarını Ayarlar › Nostr › Gelişmiş bölümünden yedekleyin.",
+    "keyUnownedRelinkRefused": "Bu sohbet anahtarı başka bir hesaba kayıtlı. Yeni bir tane oluşturmak için silmeden önce anahtarı Ayarlar › Nostr › Gelişmiş bölümünden yedekleyin.",
     "creatingProfile": "Profil Oluşturma...",
     "createNewProfile": "Yeni Bir Profil Oluşturun",
     "generateProfile": "Profil Oluştur  Profil Oluştur ",

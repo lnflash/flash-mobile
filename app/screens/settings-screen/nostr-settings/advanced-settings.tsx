@@ -16,6 +16,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { createContactListEvent } from "@app/utils/nostr"
 import { getSigner } from "@app/nostr/signer"
 import { reconnectLocalNpub } from "@app/nostr/reconnect-npub"
+import { relinkRefusedMessage } from "@app/nostr/relink-refused-message"
 
 interface AdvancedSettingsProps {
   expandAdvanced: boolean
@@ -76,14 +77,10 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
         // Typically NPUB_NOT_AVAILABLE: another account holds this key.
         // Retrying gives the same answer, so do not report success. Unless
         // this account owns the key, it may be another account's only copy:
-        // never advise deleting it then.
+        // never advise deleting it then. Without an owner record, do not
+        // claim the holder is on this phone either.
         console.warn("Backend refused to reconnect local npub:", result.code)
-        Alert.alert(
-          LL.common.error(),
-          result.mayAdviseDelete
-            ? LL.Nostr.keyMismatchRelinkRefused()
-            : LL.Nostr.keyForeignRelinkRefused(),
-        )
+        Alert.alert(LL.common.error(), relinkRefusedMessage(LL, result.keyOwner))
         return
       }
       Alert.alert(LL.common.success(), LL.Nostr.profileReconnected())

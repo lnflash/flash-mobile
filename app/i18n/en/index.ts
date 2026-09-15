@@ -1883,6 +1883,8 @@ const en: BaseTranslation = {
       "The chat key on this device was created by another account on this phone. Use it for this account?",
     keyForeignRelinkRefused:
       "This chat key belongs to another account on this phone. Back up that account's key from Settings › Nostr › Advanced before deleting it to create a new one.",
+    keyUnownedRelinkRefused:
+      "This chat key is registered to another account. Back up the key from Settings › Nostr › Advanced before deleting it to create a new one.",
     creatingProfile: "Creating Profile...",
     createNewProfile: "Create New Profile",
     generateProfile: "Generate Profile",

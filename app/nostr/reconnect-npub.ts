@@ -2,7 +2,8 @@ import { nip19 } from "nostr-tools"
 import { getSigner } from "@app/nostr/signer"
 import {
   getNostrKeyOwner,
-  mayAdviseDeletingKey,
+  keyOwnerState,
+  KeyOwnerState,
   setNostrKeyOwner,
 } from "@app/nostr/key-owner"
 
@@ -12,10 +13,10 @@ export type ReconnectNpubResult =
       status: "refused"
       npub: string
       code: string | null
-      // True only when this account is the key's recorded owner. Otherwise
-      // the key may be another account's only copy, so the caller must not
-      // advise deleting it.
-      mayAdviseDelete: boolean
+      // Whether this account, another account on this phone, or nobody on
+      // record owns the key. Only `self` may be told to delete it; `unknown`
+      // must not be told another account on this phone holds it.
+      keyOwner: KeyOwnerState
     }
   | { status: "no-key" }
 
@@ -33,7 +34,7 @@ type UpdateNpub = (npub: string) => Promise<{
  * leave the account undeliverable while telling the user it is fixed.
  *
  * With `accountId`, a successful registration records the account as the
- * key's owner, and a refusal reports whether deleting the key is safe advice.
+ * key's owner, and a refusal reports who owns the key on record.
  */
 export const reconnectLocalNpub = async (
   updateNpub: UpdateNpub,
@@ -59,7 +60,7 @@ export const reconnectLocalNpub = async (
       status: "refused",
       npub,
       code: errors[0]?.code ?? null,
-      mayAdviseDelete: mayAdviseDeletingKey(owner, accountId),
+      keyOwner: keyOwnerState(owner, accountId),
     }
   }
   if (accountId) {

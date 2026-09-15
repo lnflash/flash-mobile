@@ -10,11 +10,8 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { fetchSecretFromLocalStorage } from "@app/utils/nostr"
 import { generateAndStoreKey, getSigner } from "@app/nostr/signer"
 import { npubLinkState } from "@app/nostr/npub-link"
-import {
-  getNostrKeyOwner,
-  mayAdviseDeletingKey,
-  setNostrKeyOwner,
-} from "@app/nostr/key-owner"
+import { getNostrKeyOwner, keyOwnerState, setNostrKeyOwner } from "@app/nostr/key-owner"
+import { relinkRefusedMessage } from "@app/nostr/relink-refused-message"
 
 /**
  * Per-device marker: the user has already been asked whether this device
@@ -178,9 +175,10 @@ const NostrKeyEnsurer: React.FC = () => {
     // retrying a refused key from Reconnect gives the same answer, so that
     // one points at deleting the keys instead, but only when this account is
     // the key's recorded owner. A refusal means some other account holds the
-    // key; without an owner record (every key from before the record) the
-    // local copy may be that account's only one, so the advice is to back it
-    // up first.
+    // key. With another owner on record, that account is on this phone and
+    // the local copy may be its only one. Without an owner record (every key
+    // from before the record) the holder may well be on another phone, so
+    // the copy advises a back-up without claiming a second account here.
     const showRelinkFailed = (
       result: Exclude<RelinkResult, "ok">,
       owner: string | null,
@@ -189,10 +187,7 @@ const NostrKeyEnsurer: React.FC = () => {
       Alert.alert(
         LL.Nostr.keyMismatchTitle(),
         result === "refused"
-          ? refusedMessage ??
-              (mayAdviseDeletingKey(owner, accountId)
-                ? LL.Nostr.keyMismatchRelinkRefused()
-                : LL.Nostr.keyForeignRelinkRefused())
+          ? refusedMessage ?? relinkRefusedMessage(LL, keyOwnerState(owner, accountId))
           : LL.Nostr.keyMismatchRelinkFailed(),
       )
 

@@ -621,9 +621,15 @@ describe("NostrKeyEnsurer", () => {
         expect.anything(),
         LL.Nostr.keyMismatchRelinkRefused(),
       )
+      // Nor told the key belongs to another account on this phone: the
+      // refusal only says some account holds it, possibly on another phone.
+      expect(alertSpy).not.toHaveBeenCalledWith(
+        expect.anything(),
+        LL.Nostr.keyForeignRelinkRefused(),
+      )
       expect(alertSpy).toHaveBeenCalledWith(
         LL.Nostr.keyMismatchTitle(),
-        LL.Nostr.keyForeignRelinkRefused(),
+        LL.Nostr.keyUnownedRelinkRefused(),
       )
       // Not this account's key after all.
       expect(await getNostrKeyOwner(LOCAL_NPUB)).toBeNull()
@@ -637,7 +643,7 @@ describe("NostrKeyEnsurer", () => {
       await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
       expect(alertSpy).toHaveBeenLastCalledWith(
         LL.Nostr.keyMismatchTitle(),
-        LL.Nostr.keyForeignRelinkRefused(),
+        LL.Nostr.keyUnownedRelinkRefused(),
       )
     })
   })
@@ -683,7 +689,10 @@ describe("NostrKeyEnsurer", () => {
     it("stops a check still running for A once B is signed in", async () => {
       // A's check is waiting on the keychain when A logs out and B logs in.
       // Resuming would register A's key through the mutation, which now
-      // authenticates as B.
+      // authenticates as B. B's own check must leave nothing behind that
+      // would stop A's by accident: B has a mismatch it already answered
+      // (no prompt, no owner record, no write), and the local key has no
+      // owner, so a resumed A would reach the silent `unregistered` relink.
       mockFetchSecret.mockResolvedValue("nsec1local")
       let resolveA: (signer: unknown) => void = () => {}
       mockGetSigner.mockImplementationOnce(
@@ -694,6 +703,7 @@ describe("NostrKeyEnsurer", () => {
       )
       mockGetSigner.mockResolvedValue({ getPublicKey: async () => LOCAL_HEX })
       okMutation()
+      await AsyncStorage.setItem(npubMismatchPromptedKey(OTHER_NPUB), "1")
       mockMe = { id: ACCOUNT_A, npub: null }
       const { rerender } = render(<NostrKeyEnsurer />)
       await waitFor(() => expect(mockGetSigner).toHaveBeenCalledTimes(1))
@@ -703,10 +713,13 @@ describe("NostrKeyEnsurer", () => {
       rerender(<NostrKeyEnsurer />)
       await flush()
       mockIsAuthed = true
-      mockMe = { id: ACCOUNT_B, npub: LOCAL_NPUB }
+      mockMe = { id: ACCOUNT_B, npub: OTHER_NPUB }
       rerender(<NostrKeyEnsurer />)
       await waitFor(() => expect(mockGetSigner).toHaveBeenCalledTimes(2))
       await flush()
+      await flush()
+      // B's check finished without recording an owner.
+      expect(await getNostrKeyOwner(LOCAL_NPUB)).toBeNull()
 
       resolveA({ getPublicKey: async () => LOCAL_HEX })
       await flush()
@@ -715,7 +728,7 @@ describe("NostrKeyEnsurer", () => {
 
       expect(mockUserUpdateNpub).not.toHaveBeenCalled()
       expect(alertSpy).not.toHaveBeenCalled()
-      expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_B)
+      expect(await getNostrKeyOwner(LOCAL_NPUB)).toBeNull()
     })
 
     it("checks the same account again after it logs out and back in", async () => {

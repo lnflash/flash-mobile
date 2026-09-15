@@ -1478,6 +1478,7 @@
     "keyMismatchRelinkRefused": "Cette clé de chat est enregistrée sur un autre compte. Supprimez les clés de chat dans Paramètres › Nostr › Avancé pour en créer une nouvelle.",
     "keyForeignMessage": "La clé de chat de cet appareil a été créée par un autre compte sur ce téléphone. L'utiliser pour ce compte ?",
     "keyForeignRelinkRefused": "Cette clé de chat appartient à un autre compte sur ce téléphone. Sauvegardez la clé de ce compte depuis Paramètres › Nostr › Avancé avant de la supprimer pour en créer une nouvelle.",
+    "keyUnownedRelinkRefused": "Cette clé de chat est enregistrée sur un autre compte. Sauvegardez la clé depuis Paramètres › Nostr › Avancé avant de la supprimer pour en créer une nouvelle.",
     "creatingProfile": "Créer un profil...",
     "createNewProfile": "Créez un nouveau profil",
     "generateProfile": "Générer un profil",

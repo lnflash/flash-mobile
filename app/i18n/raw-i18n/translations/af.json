@@ -1455,6 +1455,7 @@
     "keyMismatchRelinkRefused": "Hierdie kletssleutel is by 'n ander rekening geregistreer. Vee die kletssleutels uit onder Instellings › Nostr › Gevorderd om 'n nuwe een te skep.",
     "keyForeignMessage": "Die kletssleutel op hierdie toestel is deur 'n ander rekening op hierdie foon geskep. Gebruik dit vir hierdie rekening?",
     "keyForeignRelinkRefused": "Hierdie kletssleutel behoort aan 'n ander rekening op hierdie foon. Maak 'n rugsteun van daardie rekening se sleutel vanaf Instellings › Nostr › Gevorderd voordat jy dit uitvee om 'n nuwe een te skep.",
+    "keyUnownedRelinkRefused": "Hierdie kletssleutel is by 'n ander rekening geregistreer. Maak 'n rugsteun van die sleutel vanaf Instellings › Nostr › Gevorderd voordat jy dit uitvee om 'n nuwe een te skep.",
     "keyConflictTitle": "Nostr Key Not Found on Device",
     "learnAboutNostr": "Learn about Nostr",
     "learnAboutNostrSubtext": "Explore this guide to get the most out of nostr chat",

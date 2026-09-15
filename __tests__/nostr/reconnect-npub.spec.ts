@@ -52,7 +52,7 @@ describe("reconnectLocalNpub", () => {
       status: "refused",
       npub: LOCAL_NPUB,
       code: "NPUB_NOT_AVAILABLE",
-      mayAdviseDelete: false,
+      keyOwner: "unknown",
     })
   })
 
@@ -81,20 +81,20 @@ describe("reconnectLocalNpub", () => {
       // only copy of the key must not be called disposable.
       await setNostrKeyOwner(LOCAL_NPUB, "account-a")
       const result = await reconnectLocalNpub(refuse(), "account-b")
-      expect(result).toMatchObject({ status: "refused", mayAdviseDelete: false })
+      expect(result).toMatchObject({ status: "refused", keyOwner: "other" })
     })
 
     it("never advises deleting a key with no owner record", async () => {
       // Every key from before the owner record: the refusal alone says some
-      // other account holds it.
+      // other account holds it, not that the account is on this phone.
       const result = await reconnectLocalNpub(refuse(), "account-b")
-      expect(result).toMatchObject({ status: "refused", mayAdviseDelete: false })
+      expect(result).toMatchObject({ status: "refused", keyOwner: "unknown" })
     })
 
     it("allows the delete advice only for a key this account owns", async () => {
       await setNostrKeyOwner(LOCAL_NPUB, "account-b")
       const result = await reconnectLocalNpub(refuse(), "account-b")
-      expect(result).toMatchObject({ status: "refused", mayAdviseDelete: true })
+      expect(result).toMatchObject({ status: "refused", keyOwner: "self" })
     })
   })
 

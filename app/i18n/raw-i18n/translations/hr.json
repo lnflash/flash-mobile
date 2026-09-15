@@ -1478,6 +1478,7 @@
     "keyMismatchRelinkRefused": "Ovaj ključ za chat registriran je na drugi račun. Izbrišite ključeve za chat u Postavke › Nostr › Napredno da biste stvorili novi.",
     "keyForeignMessage": "Ključ za chat na ovom uređaju stvorio je drugi račun na ovom telefonu. Koristiti ga za ovaj račun?",
     "keyForeignRelinkRefused": "Ovaj ključ za chat pripada drugom računu na ovom telefonu. Napravite sigurnosnu kopiju ključa tog računa u Postavke › Nostr › Napredno prije nego što ga izbrišete kako biste stvorili novi.",
+    "keyUnownedRelinkRefused": "Ovaj ključ za chat registriran je na drugi račun. Napravite sigurnosnu kopiju ključa u Postavke › Nostr › Napredno prije nego što ga izbrišete kako biste stvorili novi.",
     "creatingProfile": "Stvaranje profila...",
     "createNewProfile": "Stvorite novi profil",
     "generateProfile": "Generirajte profil",
