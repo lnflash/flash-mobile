@@ -43,8 +43,8 @@ export const foreignKeyPromptedKey = (accountId: string, localNpub: string): str
 type PendingPrompt = { accountId: string; show: () => void }
 
 /**
- * Runs once per authenticated session and makes sure the npub the backend
- * advertises for this account (what senders encrypt DMs to) is the key this
+ * Runs once per signed-in account (and again if that account logs out and back
+ * in) and makes sure the npub the backend advertises for this account (what senders encrypt DMs to) is the key this
  * device can actually decrypt with. See `npubLinkState` for the state table.
  *
  * Only `unregistered` is fixed silently — there is nothing on the account to
@@ -54,6 +54,21 @@ type PendingPrompt = { accountId: string; show: () => void }
  * installs auto-relinking on every launch would flip the account back and
  * forth and leave both with holes in the same conversation, so that one asks
  * the user once and never rewrites a registered npub without their choice.
+ *
+ * The check is keyed on the account, not on the mount: GaloyClient swaps the
+ * Apollo client on a token change without unmounting this component, so a
+ * mount-scoped flag would leave a second account on a shared phone
+ * unchecked. Logging out resets it and drops any prompt still waiting for
+ * the lock screen, and a held prompt remembers its account, so it is never
+ * shown to (or answered by) whoever signs in next.
+ *
+ * The check's async work (a network relink, keychain and storage reads) can
+ * outlive the session that started it. Every auth transition bumps
+ * `authSession` during render; the check captures it with its run token and
+ * drops any result (a held prompt, a relink from a button) once either no
+ * longer matches, so a
+ * logout, or a logout followed by another sign-in, never inherits a decision
+ * made against the previous account's backend state.
  *
  * The check itself runs as soon as the live account data arrives, which is
  * before the PIN/biometric gate has been passed (`authenticationCheck` is the
@@ -68,7 +83,7 @@ const NostrKeyEnsurer: React.FC = () => {
   const { isAppLocked } = useAuthenticationContext()
   // network-only: the Apollo cache is persisted across launches, so a
   // cache-first read hands us last session's npub synchronously on cold start
-  // and `hasRun` would lock that stale snapshot in. Deciding a backend write
+  // and the once-per-account guard would lock that stale snapshot in. Deciding a backend write
   // off a stale null would register this device's key over one another
   // install registered since — the silent overwrite this component exists to
   // avoid. With network-only, `data` stays undefined until the live answer
@@ -89,6 +104,16 @@ const NostrKeyEnsurer: React.FC = () => {
   // async check still running for account A stops before it writes anything
   // (with B's token) or queues a prompt once A is gone.
   const runToken = useRef(0)
+  // Bumped synchronously on every auth transition (logout or sign-in), so an
+  // async continuation resolving before the effects below run already sees
+  // the new session.
+  const authSession = useRef(0)
+  const lastAuthed = useRef(isAuthed)
+  if (lastAuthed.current !== isAuthed) {
+    lastAuthed.current = isAuthed
+    authSession.current += 1
+  }
+
   const [pendingPrompt, setPendingPrompt] = useState<PendingPrompt | null>(null)
   const currentAccountId = isAuthed ? dataAuthed?.me?.id ?? null : null
 
@@ -109,13 +134,13 @@ const NostrKeyEnsurer: React.FC = () => {
   }, [currentAccountId])
 
   useEffect(() => {
-    if (isAppLocked || !pendingPrompt) return
+    if (!isAuthed || isAppLocked || !pendingPrompt) return
     setPendingPrompt(null)
     // Never show one account's prompt in another account's session: its
     // "Use this device" would write the key onto the account now signed in.
     if (pendingPrompt.accountId !== currentAccountId) return
     pendingPrompt.show()
-  }, [isAppLocked, pendingPrompt, currentAccountId])
+  }, [isAuthed, isAppLocked, pendingPrompt, currentAccountId])
 
   useEffect(() => {
     // Wait until both auth state and backend data are ready
@@ -125,7 +150,13 @@ const NostrKeyEnsurer: React.FC = () => {
     ranFor.current = accountId
     runToken.current += 1
     const token = runToken.current
-    const isCurrent = () => runToken.current === token && ranFor.current === accountId
+    const session = authSession.current
+    // `authSession` moves during render, before the logout effect bumps
+    // `runToken`, so a continuation resolving in between is already stale.
+    const isCurrent = () =>
+      authSession.current === session &&
+      runToken.current === token &&
+      ranFor.current === accountId
 
     const backendNpub = dataAuthed.me?.npub ?? null
 
@@ -226,11 +257,15 @@ const NostrKeyEnsurer: React.FC = () => {
         {
           text: LL.Nostr.keyMismatchUseThisDevice(),
           onPress: async () => {
+            // Signed out (or into another account) while the alert was up:
+            // this answer was about the previous account's backend state.
+            if (!isCurrent()) return
             const result = await relinkLocalNpub(state, localNpub)
             // A transient failure leaves no marker so the question is
             // asked again next launch; a deterministic refusal (another
             // account holds this key) is remembered. Either way the user
             // chose and nothing happened, so say so.
+            if (!isCurrent()) return
             if (result !== "failed") remember()
             if (result !== "ok") showRelinkFailed(result, owner, refusedMessage)
           },

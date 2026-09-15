@@ -21,6 +21,10 @@
  *                      refused silent relink is told to the user.
  *  - conflict        → never auto-generate over a registered npub.
  *  - fresh           → generate, register, init chat, record the owner.
+ *  - logout          → a prompt still held behind the lock screen is dropped,
+ *                      never shown to whoever signs in next; a check still in
+ *                      flight at logout (relink, storage read) or a button
+ *                      pressed afterwards acts on nothing.
  *  - locked          → the silent write still happens, but no Alert is shown
  *                      while the PIN/biometric gate is up; it appears once
  *                      the app unlocks.
@@ -465,6 +469,186 @@ describe("NostrKeyEnsurer", () => {
         LL.Nostr.keyForeignRelinkRefused(),
       )
       expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_A)
+    })
+  })
+
+  it("drops a prompt still held behind the lock screen when the account logs out", async () => {
+    // GaloyClient keeps this component mounted across a logout, so a prompt
+    // decided for the first account must not appear once the app unlocks
+    // for the next one.
+    mockIsAppLocked = true
+    withLocalKey()
+    okMutation()
+    mockMe = { id: ACCOUNT_A, npub: OTHER_NPUB }
+    const { rerender } = render(<NostrKeyEnsurer />)
+    await waitFor(() => expect(mockGetSigner).toHaveBeenCalled())
+    await flush()
+    await flush()
+    expect(alertSpy).not.toHaveBeenCalled()
+
+    mockIsAuthed = false
+    rerender(<NostrKeyEnsurer />)
+    await flush()
+    mockIsAppLocked = false
+    rerender(<NostrKeyEnsurer />)
+    await flush()
+    // Signing back in re-checks the account (once per account). Make that
+    // fresh check a no-op (linked), so any alert or write below can only
+    // come from the stale check that started before logout.
+    mockMe = { id: ACCOUNT_A, npub: LOCAL_NPUB }
+    mockIsAuthed = true
+    rerender(<NostrKeyEnsurer />)
+    await flush()
+    await flush()
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+  })
+
+  it("drops a held prompt when logout and unlock land in the same render", async () => {
+    mockIsAppLocked = true
+    withLocalKey()
+    mockMe = { id: ACCOUNT_A, npub: OTHER_NPUB }
+    const { rerender } = render(<NostrKeyEnsurer />)
+    await waitFor(() => expect(mockGetSigner).toHaveBeenCalled())
+    await flush()
+    await flush()
+
+    mockIsAuthed = false
+    mockIsAppLocked = false
+    rerender(<NostrKeyEnsurer />)
+    await flush()
+    // Signing back in re-checks the account (once per account). Make that
+    // fresh check a no-op (linked), so any alert or write below can only
+    // come from the stale check that started before logout.
+    mockMe = { id: ACCOUNT_A, npub: LOCAL_NPUB }
+    mockIsAuthed = true
+    rerender(<NostrKeyEnsurer />)
+    await flush()
+    expect(alertSpy).not.toHaveBeenCalled()
+  })
+
+  describe("logout while the check is still in flight", () => {
+    const refused = {
+      data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
+    }
+    const deferred = () => {
+      let resolve: (v: unknown) => void = () => {}
+      const promise = new Promise((r) => {
+        resolve = r
+      })
+      return { promise, resolve }
+    }
+
+    it("never shows a refused-relink notice that resolves after logout", async () => {
+      mockIsAppLocked = true
+      withLocalKey()
+      mockMe = { id: ACCOUNT_A, npub: null }
+      const pending = deferred()
+      mockUserUpdateNpub.mockReturnValue(pending.promise)
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(mockUserUpdateNpub).toHaveBeenCalledTimes(1))
+
+      mockIsAuthed = false
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      pending.resolve(refused)
+      await flush()
+      await flush()
+
+      // Signing back in re-checks the account (once per account). Make that
+      // fresh check a no-op (linked), so any alert or write below can only
+      // come from the stale check that started before logout.
+      mockMe = { id: ACCOUNT_A, npub: LOCAL_NPUB }
+      mockIsAuthed = true
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      mockIsAppLocked = false
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      await flush()
+      expect(alertSpy).not.toHaveBeenCalled()
+    })
+
+    it("never shows a notice that resolves after logout and a new sign-in", async () => {
+      withLocalKey()
+      mockMe = { id: ACCOUNT_A, npub: null }
+      const pending = deferred()
+      mockUserUpdateNpub.mockReturnValue(pending.promise)
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(mockUserUpdateNpub).toHaveBeenCalledTimes(1))
+
+      mockIsAuthed = false
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      // Signing back in re-checks the account (once per account). Make that
+      // fresh check a no-op (linked), so any alert or write below can only
+      // come from the stale check that started before logout.
+      mockMe = { id: ACCOUNT_A, npub: LOCAL_NPUB }
+      mockIsAuthed = true
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      pending.resolve(refused)
+      await flush()
+      await flush()
+      expect(alertSpy).not.toHaveBeenCalled()
+    })
+
+    it("never holds a mismatch prompt whose storage read resolves after logout", async () => {
+      mockIsAppLocked = true
+      withLocalKey()
+      okMutation()
+      mockMe = { id: ACCOUNT_A, npub: OTHER_NPUB }
+      const pending = deferred()
+      // The async-storage jest mock is itself a jest.fn: queue one held read
+      // rather than spying, which would wipe its implementation on restore.
+      const getItemSpy = AsyncStorage.getItem as jest.Mock
+      getItemSpy.mockImplementationOnce(() => pending.promise)
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(getItemSpy).toHaveBeenCalled())
+
+      mockIsAuthed = false
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      pending.resolve(null)
+      await flush()
+      await flush()
+
+      // Signing back in re-checks the account (once per account). Make that
+      // fresh check a no-op (linked), so any alert or write below can only
+      // come from the stale check that started before logout.
+      mockMe = { id: ACCOUNT_A, npub: LOCAL_NPUB }
+      mockIsAuthed = true
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      mockIsAppLocked = false
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      await flush()
+      expect(alertSpy).not.toHaveBeenCalled()
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+    })
+
+    it("ignores 'Use this device' pressed after the account logged out", async () => {
+      withLocalKey()
+      okMutation()
+      mockMe = { id: ACCOUNT_A, npub: OTHER_NPUB }
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+
+      mockIsAuthed = false
+      rerender(<NostrKeyEnsurer />)
+      // Signing back in re-checks the account (once per account). Make that
+      // fresh check a no-op (linked), so any alert or write below can only
+      // come from the stale check that started before logout.
+      mockMe = { id: ACCOUNT_A, npub: LOCAL_NPUB }
+      mockIsAuthed = true
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      alertButton(alertSpy, LL.Nostr.keyMismatchUseThisDevice()).onPress?.()
+      await flush()
+      await flush()
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+      expect(alertSpy).toHaveBeenCalledTimes(1)
     })
   })
 
