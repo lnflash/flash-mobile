@@ -1875,6 +1875,8 @@ const en: BaseTranslation = {
     keyMismatchMessage:
       "This device's chat key differs from the one on your account. Use this device for chat?",
     keyMismatchUseThisDevice: "Use this device",
+    keyMismatchRelinkFailed:
+      "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
     creatingProfile: "Creating Profile...",
     createNewProfile: "Create New Profile",
     generateProfile: "Generate Profile",

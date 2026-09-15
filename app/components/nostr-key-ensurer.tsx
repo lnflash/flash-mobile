@@ -33,9 +33,16 @@ export const npubMismatchPromptedKey = (backendNpub: string): string =>
  */
 const NostrKeyEnsurer: React.FC = () => {
   const isAuthed = useIsAuthed()
+  // network-only: the Apollo cache is persisted across launches, so a
+  // cache-first read hands us last session's npub synchronously on cold start
+  // and `hasRun` would lock that stale snapshot in. Deciding a backend write
+  // off a stale null would register this device's key over one another
+  // install registered since — the silent overwrite this component exists to
+  // avoid. With network-only, `data` stays undefined until the live answer
+  // arrives; an offline cold start simply does nothing.
   const { data: dataAuthed } = useHomeAuthedQuery({
     skip: !isAuthed,
-    fetchPolicy: "cache-first",
+    fetchPolicy: "network-only",
   })
   const [userUpdateNpub] = useUserUpdateNpubMutation()
   const { initializeChat } = useChatContext()
@@ -50,7 +57,11 @@ const NostrKeyEnsurer: React.FC = () => {
     // Register the local key with the backend. The local signer does not
     // change, and ChatContextProvider already subscribed with it on mount, so
     // nothing on-device needs re-initialising — this is backend state only.
-    const relinkLocalNpub = async (state: string, localNpub: string) => {
+    type RelinkResult = "ok" | "refused" | "failed"
+    const relinkLocalNpub = async (
+      state: string,
+      localNpub: string,
+    ): Promise<RelinkResult> => {
       try {
         const { data } = await userUpdateNpub({
           variables: { input: { npub: localNpub } },
@@ -63,11 +74,13 @@ const NostrKeyEnsurer: React.FC = () => {
             `[NostrKeyEnsurer] ${state}: backend refused relink`,
             errors[0]?.code,
           )
-          return
+          return "refused"
         }
         console.log(`[NostrKeyEnsurer] ${state}: relinked local npub with backend`)
+        return "ok"
       } catch (e) {
         console.error(`[NostrKeyEnsurer] ${state}: relink failed:`, e)
+        return "failed"
       }
     }
 
@@ -113,9 +126,19 @@ const NostrKeyEnsurer: React.FC = () => {
             { text: LL.common.cancel(), style: "cancel", onPress: remember },
             {
               text: LL.Nostr.keyMismatchUseThisDevice(),
-              onPress: () => {
-                remember()
-                relinkLocalNpub(state, localNpub)
+              onPress: async () => {
+                const result = await relinkLocalNpub(state, localNpub)
+                // A transient failure leaves no marker so the question is
+                // asked again next launch; a deterministic refusal (another
+                // account holds this key) is remembered. Either way the user
+                // chose and nothing happened, so say so.
+                if (result !== "failed") remember()
+                if (result !== "ok") {
+                  Alert.alert(
+                    LL.Nostr.keyMismatchTitle(),
+                    LL.Nostr.keyMismatchRelinkFailed(),
+                  )
+                }
               },
             },
           ])

@@ -6125,6 +6125,10 @@ type RootTranslation = {
 		 */
 		keyMismatchUseThisDevice: string
 		/**
+		 * T​h​i​s​ ​d​e​v​i​c​e​ ​c​o​u​l​d​ ​n​o​t​ ​b​e​ ​s​e​t​ ​a​s​ ​y​o​u​r​ ​c​h​a​t​ ​d​e​v​i​c​e​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​ ​f​r​o​m​ ​S​e​t​t​i​n​g​s​ ​›​ ​N​o​s​t​r​ ​›​ ​A​d​v​a​n​c​e​d​ ​›​ ​R​e​c​o​n​n​e​c​t​ ​p​r​o​f​i​l​e​.
+		 */
+		keyMismatchRelinkFailed: string
+		/**
 		 * C​r​e​a​t​i​n​g​ ​P​r​o​f​i​l​e​.​.​.
 		 */
 		creatingProfile: string
@@ -12402,6 +12406,10 @@ export type TranslationFunctions = {
 		 * Use this device
 		 */
 		keyMismatchUseThisDevice: () => LocalizedString
+		/**
+		 * This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.
+		 */
+		keyMismatchRelinkFailed: () => LocalizedString
 		/**
 		 * Creating Profile...
 		 */

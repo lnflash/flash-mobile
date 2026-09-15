@@ -27,6 +27,7 @@ import { loadLocale } from "@app/i18n/i18n-util.sync"
 
 const mockUserUpdateNpub = jest.fn()
 const mockInitializeChat = jest.fn()
+const mockUseHomeAuthedQuery = jest.fn()
 const mockFetchSecret = jest.fn()
 const mockGetSigner = jest.fn()
 const mockGenerateAndStoreKey = jest.fn()
@@ -37,7 +38,10 @@ jest.mock("@app/graphql/is-authed-context", () => ({
 }))
 
 jest.mock("@app/graphql/generated", () => ({
-  useHomeAuthedQuery: () => ({ data: { me: mockMe } }),
+  useHomeAuthedQuery: (options: unknown) => {
+    mockUseHomeAuthedQuery(options)
+    return { data: { me: mockMe } }
+  },
   useUserUpdateNpubMutation: () => [mockUserUpdateNpub],
 }))
 
@@ -103,6 +107,17 @@ describe("NostrKeyEnsurer", () => {
     jest.spyOn(console, "log").mockImplementation(() => {})
     jest.spyOn(console, "warn").mockImplementation(() => {})
     jest.spyOn(console, "error").mockImplementation(() => {})
+  })
+
+  it("reads the account npub from the network, never the persisted cache", async () => {
+    // The Apollo cache survives launches; a cache-first read would decide a
+    // backend write off last session's npub.
+    withLocalKey()
+    mockMe = { npub: LOCAL_NPUB }
+    render(<NostrKeyEnsurer />)
+    expect(mockUseHomeAuthedQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ fetchPolicy: "network-only" }),
+    )
   })
 
   it("does nothing when the local key matches the backend npub", async () => {
@@ -177,6 +192,38 @@ describe("NostrKeyEnsurer", () => {
       expect(mockInitializeChat).not.toHaveBeenCalled()
       // Remembered per backend npub so the next cold start does not nag.
       expect(await AsyncStorage.getItem(npubMismatchPromptedKey(OTHER_NPUB))).toBe("1")
+    })
+
+    it("asks again next launch when the chosen relink fails in transit", async () => {
+      mockUserUpdateNpub.mockRejectedValue(new Error("network"))
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      alertButton(alertSpy, LL.Nostr.keyMismatchUseThisDevice()).onPress?.()
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
+      await flush()
+      // No marker: the user's answer was lost, so the question must come back.
+      expect(await AsyncStorage.getItem(npubMismatchPromptedKey(OTHER_NPUB))).toBeNull()
+      expect(alertSpy).toHaveBeenLastCalledWith(
+        LL.Nostr.keyMismatchTitle(),
+        LL.Nostr.keyMismatchRelinkFailed(),
+      )
+    })
+
+    it("tells the user and remembers when the backend refuses the chosen relink", async () => {
+      mockUserUpdateNpub.mockResolvedValue({
+        data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
+      })
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      alertButton(alertSpy, LL.Nostr.keyMismatchUseThisDevice()).onPress?.()
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
+      await flush()
+      // Deterministic refusal: asking again would give the same answer.
+      expect(await AsyncStorage.getItem(npubMismatchPromptedKey(OTHER_NPUB))).toBe("1")
+      expect(alertSpy).toHaveBeenLastCalledWith(
+        LL.Nostr.keyMismatchTitle(),
+        LL.Nostr.keyMismatchRelinkFailed(),
+      )
     })
 
     it("leaves the registered npub alone when the user declines", async () => {
