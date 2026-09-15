@@ -304,7 +304,8 @@ describe("NostrKeyEnsurer", () => {
     it("tells the original owner when the backend now refuses its own key", async () => {
       // B took the key over. A comes back: the key's owner is B, so A is
       // asked; A chooses this device; the backend refuses (B holds it). A
-      // must hear about it rather than stay silently undeliverable.
+      // must hear about it rather than stay silently undeliverable, and must
+      // not be told to delete the key, which is B's only copy.
       await setNostrKeyOwner(LOCAL_NPUB, ACCOUNT_B)
       mockMe = { id: ACCOUNT_A, npub: null }
       mockUserUpdateNpub.mockResolvedValue({
@@ -316,7 +317,7 @@ describe("NostrKeyEnsurer", () => {
       await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
       expect(alertSpy).toHaveBeenLastCalledWith(
         LL.Nostr.keyMismatchTitle(),
-        LL.Nostr.keyMismatchRelinkRefused(),
+        LL.Nostr.keyForeignRelinkRefused(),
       )
       expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_B)
     })
@@ -381,6 +382,86 @@ describe("NostrKeyEnsurer", () => {
         LL.Nostr.keyMismatchTitle(),
         LL.Nostr.keyMismatchRelinkRefused(),
       )
+    })
+  })
+
+  describe("once per account, not once per mount", () => {
+    it("checks a second account that logs in during the same process", async () => {
+      // Logout does not remount anything above the ensurer, so a mount-scoped
+      // guard would leave account B unchecked after A on a shared phone.
+      withLocalKey()
+      okMutation()
+      mockMe = { id: ACCOUNT_A, npub: LOCAL_NPUB }
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(async () =>
+        expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_A),
+      )
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+
+      // Same account re-rendering: no second run.
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      expect(mockGetSigner).toHaveBeenCalledTimes(1)
+
+      // Account B, no npub, key owned by A → the foreign-key question is
+      // asked, which proves the check ran again for B.
+      mockMe = { id: ACCOUNT_B, npub: null }
+      rerender(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      expect(alertSpy).toHaveBeenCalledWith(
+        LL.Nostr.keyMismatchTitle(),
+        LL.Nostr.keyForeignMessage(),
+        expect.any(Array),
+      )
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+    })
+
+    it("does not run for an account payload without an id", async () => {
+      withLocalKey()
+      mockMe = { npub: null }
+      render(<NostrKeyEnsurer />)
+      await flush()
+      await flush()
+      expect(mockGetSigner).not.toHaveBeenCalled()
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("mismatch while the local key belongs to another account on this phone", () => {
+    // A is linked here with the local key; B logs in with a backend npub from
+    // B's other phone. B must be told the key is A's, and a refusal must never
+    // advise deleting it.
+    beforeEach(async () => {
+      withLocalKey()
+      await setNostrKeyOwner(LOCAL_NPUB, ACCOUNT_A)
+      mockMe = { id: ACCOUNT_B, npub: OTHER_NPUB }
+    })
+
+    it("names the other account in the prompt", async () => {
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      expect(alertSpy).toHaveBeenCalledWith(
+        LL.Nostr.keyMismatchTitle(),
+        LL.Nostr.keyForeignMessage(),
+        expect.any(Array),
+      )
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+    })
+
+    it("does not tell the user to delete the other account's key on refusal", async () => {
+      mockUserUpdateNpub.mockResolvedValue({
+        data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
+      })
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      alertButton(alertSpy, LL.Nostr.keyMismatchUseThisDevice()).onPress?.()
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
+      await flush()
+      expect(alertSpy).toHaveBeenLastCalledWith(
+        LL.Nostr.keyMismatchTitle(),
+        LL.Nostr.keyForeignRelinkRefused(),
+      )
+      expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_A)
     })
   })
 

@@ -72,6 +72,12 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
         return
       }
       Alert.alert(LL.common.success(), LL.Nostr.profileReconnected())
+    } catch (e) {
+      // `reconnectLocalNpub` propagates a rejected mutation (offline is the
+      // very state `keyMismatchRelinkFailed` sends people here from) and a
+      // throwing signer; the screen owns the alert.
+      console.error("Reconnect npub failed:", e)
+      Alert.alert(LL.common.error(), LL.Nostr.keyMismatchRelinkFailed())
     } finally {
       setUpdatingNpub(false)
     }
