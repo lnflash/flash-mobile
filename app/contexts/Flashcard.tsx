@@ -20,8 +20,14 @@ import { toastShow } from "../utils/toast"
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
 
-const errorMessage = (err: unknown): string =>
-  err instanceof Error ? err.message : String(err)
+// Only an error class name and an HTTP status ever reach the console. The
+// message text of these errors (and a thrown string) can contain the card's
+// withdraw URL, which together with k1 authorises a withdrawal.
+const describeError = (err: unknown): string => {
+  const name = err instanceof Error ? err.name : typeof err
+  const status = (err as { response?: { status?: unknown } } | null)?.response?.status
+  return typeof status === "number" ? `${name} status=${status}` : name
+}
 
 const width = Dimensions.get("screen").width
 
@@ -172,8 +178,7 @@ export const FlashcardProvider = ({ children }: Props) => {
         })
       }
     } catch (err) {
-      // Log the message only; the raw error can carry the card's withdraw URL.
-      console.warn("NFC withdraw params lookup failed:", errorMessage(err))
+      console.warn("NFC withdraw params lookup failed:", describeError(err))
       toastShow({
         position: "top",
         message: "Unsupported NFC card. Please ensure you are using a flashcard.",
@@ -215,8 +220,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       getBalance(html)
       getTransactions(html)
     } catch (err) {
-      // Log the message only; an axios error embeds the request URL with card parameters.
-      console.warn("NFC balance page fetch failed:", errorMessage(err))
+      console.warn("NFC balance page fetch failed:", describeError(err))
       toastShow({
         position: "top",
         message:

@@ -132,12 +132,18 @@ describe("FlashcardProvider withdraw parameters", () => {
     }
   })
 
-  it("does not echo the card URL when the balance page fetch fails", async () => {
-    const failure = Object.assign(new Error("Request failed with status code 500"), {
-      config: {
-        url: `https://card.test.flashapp.me/boltcards/balance?p=PARAM_P&c=PARAM_C`,
+  it("logs only a class name and status when the balance page fetch fails", async () => {
+    // Synthetic axios-style failure whose message AND config carry the card URL.
+    const failure = Object.assign(
+      new Error(`Request to ${CARD_PAYLOAD} failed: ${CALLBACK}`),
+      {
+        name: "AxiosError",
+        config: {
+          url: "https://card.test.flashapp.me/boltcards/balance?p=PARAM_P&c=PARAM_C",
+        },
+        response: { status: 500 },
       },
-    })
+    )
     ;(axios.get as jest.Mock).mockRejectedValue(failure)
 
     renderProvider()
@@ -146,12 +152,50 @@ describe("FlashcardProvider withdraw parameters", () => {
       await readFlashcard?.(false)
     })
 
-    const output = consoleOutput(spies)
-    expect(output.some((line) => line.includes("NFC balance page fetch failed"))).toBe(
-      true,
+    expect(console.warn).toHaveBeenCalledWith(
+      "NFC balance page fetch failed:",
+      "AxiosError status=500",
     )
     for (const secret of SECRETS) {
-      expect(output.some((line) => line.includes(secret))).toBe(false)
+      expect(consoleOutput(spies).some((line) => line.includes(secret))).toBe(false)
+    }
+  })
+
+  it("logs only a class name when the withdraw params lookup throws an Error", async () => {
+    ;(getParams as jest.Mock).mockRejectedValue(
+      new Error(`Failed to fetch ${CARD_PAYLOAD} (k1=${K1}, callback=${CALLBACK})`),
+    )
+
+    renderProvider()
+    await waitFor(() => expect(readFlashcard).toBeDefined())
+    await act(async () => {
+      await readFlashcard?.(true)
+    })
+
+    expect(console.warn).toHaveBeenCalledWith(
+      "NFC withdraw params lookup failed:",
+      "Error",
+    )
+    for (const secret of SECRETS) {
+      expect(consoleOutput(spies).some((line) => line.includes(secret))).toBe(false)
+    }
+  })
+
+  it("logs only a type name when the withdraw params lookup throws a string", async () => {
+    ;(getParams as jest.Mock).mockRejectedValue(`${CARD_PAYLOAD} ${K1} ${CALLBACK}`)
+
+    renderProvider()
+    await waitFor(() => expect(readFlashcard).toBeDefined())
+    await act(async () => {
+      await readFlashcard?.(true)
+    })
+
+    expect(console.warn).toHaveBeenCalledWith(
+      "NFC withdraw params lookup failed:",
+      "string",
+    )
+    for (const secret of SECRETS) {
+      expect(consoleOutput(spies).some((line) => line.includes(secret))).toBe(false)
     }
   })
 })
