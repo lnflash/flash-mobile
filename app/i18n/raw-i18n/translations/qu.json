@@ -1476,6 +1476,8 @@
     "keyMismatchUseThisDevice": "Kay aparatuta llamkachiy",
     "keyMismatchRelinkFailed": "Kay aparatuta manam chat aparatuykiman churay atirqanchu. Conexiónniykita qhaway, hinaspa Configuración › Nostr › Avanzado › Reconnect profile nisqapi kaqmanta yapamanta ruway.",
     "keyMismatchRelinkRefused": "Kay chat llavega huk cuentapim qillqasqa kachkan. Chat llavekunata Configuración › Nostr › Avanzado nisqapi chinkachiy musuqta ruwanaykipaq.",
+    "keyForeignMessage": "Kay aparatupi chat llaveta huk cuentam kay telefonopi ruwarqa. ¿Kay cuentapaq chayta llamkachiyta munankichu?",
+    "keyForeignRelinkRefused": "Kay chat llaveqa kay telefonopi huk cuentapaqmi. Chay cuentaq llaventa Configuración › Nostr › Avanzado nisqapi backup-ta ruway, chinkachiyta manaraq ruwaspa, musuq huk llaveta ruwanaykipaq.",
     "creatingProfile": "Creating Profile... Profile nisqapaq musuqchasqapura wakin kaynin",
     "createNewProfile": "Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles",
     "generateProfile": "Profilta hap'ichiy",
