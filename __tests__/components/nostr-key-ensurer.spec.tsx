@@ -125,20 +125,24 @@ const alertButton = (alertSpy: jest.SpyInstance, text: string): AlertButton => {
   return button
 }
 
-describe("NostrKeyEnsurer", () => {
-  let alertSpy: jest.SpyInstance
+// Shared by both top-level describes below; the file is split in two only to
+// keep each describe under the max-lines-per-function lint limit.
+let alertSpy: jest.SpyInstance
 
-  beforeEach(async () => {
-    jest.clearAllMocks()
-    await AsyncStorage.clear()
-    mockIsAppLocked = false
-    mockIsAuthed = true
-    mockInitializeChat.mockResolvedValue(undefined)
-    alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
-    jest.spyOn(console, "log").mockImplementation(() => {})
-    jest.spyOn(console, "warn").mockImplementation(() => {})
-    jest.spyOn(console, "error").mockImplementation(() => {})
-  })
+const resetEnsurerMocks = async () => {
+  jest.clearAllMocks()
+  await AsyncStorage.clear()
+  mockIsAppLocked = false
+  mockIsAuthed = true
+  mockInitializeChat.mockResolvedValue(undefined)
+  alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
+  jest.spyOn(console, "log").mockImplementation(() => {})
+  jest.spyOn(console, "warn").mockImplementation(() => {})
+  jest.spyOn(console, "error").mockImplementation(() => {})
+}
+
+describe("NostrKeyEnsurer", () => {
+  beforeEach(resetEnsurerMocks)
 
   it("reads the account npub from the network, never the persisted cache", async () => {
     // The Apollo cache survives launches; a cache-first read would decide a
@@ -651,6 +655,10 @@ describe("NostrKeyEnsurer", () => {
       expect(alertSpy).toHaveBeenCalledTimes(1)
     })
   })
+})
+
+describe("NostrKeyEnsurer: mismatch, refusals and key generation", () => {
+  beforeEach(resetEnsurerMocks)
 
   describe("mismatch (backend advertises a key this device does not hold)", () => {
     beforeEach(() => {
