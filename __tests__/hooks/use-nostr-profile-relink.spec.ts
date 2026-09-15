@@ -17,12 +17,15 @@
 import { renderHook, act } from "@testing-library/react-hooks"
 import * as Keychain from "react-native-keychain"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { nip19 } from "nostr-tools"
+import { nip19, getPublicKey } from "nostr-tools"
 import { getNostrKeyOwner, setNostrKeyOwner } from "@app/nostr/key-owner"
 
 const LOCAL_HEX = "a".repeat(64)
 const LOCAL_NPUB = nip19.npubEncode(LOCAL_HEX)
 const OTHER_NPUB = nip19.npubEncode("b".repeat(64))
+const FRESH_SK = new Uint8Array(32).fill(7)
+const FRESH_NPUB = nip19.npubEncode(getPublicKey(FRESH_SK))
+const KEYCHAIN_KEY = "nostr_creds_key"
 const ACCOUNT_A = "account-a"
 const ACCOUNT_B = "account-b"
 
@@ -246,5 +249,77 @@ describe("useNostrProfile.saveNewNostrKey with an existing local key", () => {
     expect(mockUserUpdateNpubMutation).not.toHaveBeenCalled()
     expect(mockGenerateSecretKey).not.toHaveBeenCalled()
     expect(Keychain.setInternetCredentials).not.toHaveBeenCalled()
+  })
+})
+
+describe("useNostrProfile.saveNewNostrKey with no local key (fresh path)", () => {
+  beforeEach(async () => {
+    jest.clearAllMocks()
+    await AsyncStorage.clear()
+    mockData = undefined
+    mockGetSigner.mockRejectedValue(new Error("No signer available"))
+    mockGenerateSecretKey.mockReturnValue(FRESH_SK)
+    mockUserUpdateNpubMutation.mockResolvedValue({
+      data: { userUpdateNpub: { errors: [] } },
+    })
+    jest.spyOn(console, "log").mockImplementation(() => {})
+    jest.spyOn(console, "warn").mockImplementation(() => {})
+    jest.spyOn(console, "error").mockImplementation(() => {})
+  })
+
+  it("generates a key, stores it, registers it and records the account as owner", async () => {
+    loaded({ id: ACCOUNT_A, npub: null, username: "alice" })
+
+    await saveNewNostrKey()
+
+    expect(mockGenerateSecretKey).toHaveBeenCalledTimes(1)
+    expect(Keychain.setInternetCredentials).toHaveBeenCalledWith(
+      KEYCHAIN_KEY,
+      KEYCHAIN_KEY,
+      nip19.nsecEncode(FRESH_SK),
+    )
+    expect(mockUserUpdateNpubMutation).toHaveBeenCalledWith({
+      variables: { input: { npub: FRESH_NPUB } },
+    })
+    // The stamp the shared-phone guard depends on: without it the next
+    // account to log in on this device registers this key as its own.
+    expect(await getNostrKeyOwner(FRESH_NPUB)).toBe(ACCOUNT_A)
+  })
+
+  it("leaves the key ownerless when the account id is not loaded", async () => {
+    loaded({ npub: null })
+
+    await saveNewNostrKey()
+
+    expect(Keychain.setInternetCredentials).toHaveBeenCalledTimes(1)
+    expect(await getNostrKeyOwner(FRESH_NPUB)).toBeNull()
+  })
+})
+
+describe("useNostrProfile.deleteNostrKeys", () => {
+  beforeEach(async () => {
+    jest.clearAllMocks()
+    await AsyncStorage.clear()
+    mockData = undefined
+  })
+
+  it("removes the keychain entry and every owner record, nothing else", async () => {
+    await setNostrKeyOwner(LOCAL_NPUB, ACCOUNT_A)
+    await setNostrKeyOwner(OTHER_NPUB, ACCOUNT_B)
+    await AsyncStorage.setItem("lastSeen_x", "1")
+    const { result } = renderHook(() => useNostrProfile())
+
+    await act(async () => {
+      await result.current.deleteNostrKeys()
+    })
+
+    expect(Keychain.resetInternetCredentials).toHaveBeenCalledWith({
+      server: KEYCHAIN_KEY,
+    })
+    // A stale owner record would make the next generated key look foreign
+    // to the very account that deleted it.
+    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBeNull()
+    expect(await getNostrKeyOwner(OTHER_NPUB)).toBeNull()
+    expect(await AsyncStorage.getItem("lastSeen_x")).toBe("1")
   })
 })

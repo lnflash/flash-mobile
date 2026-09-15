@@ -1475,6 +1475,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "Bu sohbet anahtarı başka bir hesaba kayıtlı. Yeni bir tane oluşturmak için Ayarlar › Nostr › Gelişmiş altından sohbet anahtarlarını silin.",
+    "keyForeignMessage": "Bu cihazdaki sohbet anahtarı bu telefondaki başka bir hesap tarafından oluşturuldu. Bu hesap için kullanılsın mı?",
     "creatingProfile": "Profil Oluşturma...",
     "createNewProfile": "Yeni Bir Profil Oluşturun",
     "generateProfile": "Profil Oluştur  Profil Oluştur ",

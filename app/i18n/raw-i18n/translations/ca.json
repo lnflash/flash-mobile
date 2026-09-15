@@ -1475,6 +1475,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "Aquesta clau de xat està registrada a un altre compte. Suprimeix les claus de xat a Configuració › Nostr › Avançat per crear-ne una de nova.",
+    "keyForeignMessage": "La clau de xat d'aquest dispositiu la va crear un altre compte en aquest telèfon. Vols fer-la servir per a aquest compte?",
     "creatingProfile": "Creant un perfil...",
     "createNewProfile": "Crear un nou perfil",
     "generateProfile": "Generar perfil",

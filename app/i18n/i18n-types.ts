@@ -6129,6 +6129,14 @@ type RootTranslation = {
 		 */
 		keyMismatchRelinkFailed: string
 		/**
+		 * T​h​i​s​ ​c​h​a​t​ ​k​e​y​ ​i​s​ ​r​e​g​i​s​t​e​r​e​d​ ​t​o​ ​a​n​o​t​h​e​r​ ​a​c​c​o​u​n​t​.​ ​D​e​l​e​t​e​ ​t​h​e​ ​c​h​a​t​ ​k​e​y​s​ ​u​n​d​e​r​ ​S​e​t​t​i​n​g​s​ ​›​ ​N​o​s​t​r​ ​›​ ​A​d​v​a​n​c​e​d​ ​t​o​ ​c​r​e​a​t​e​ ​a​ ​n​e​w​ ​o​n​e​.
+		 */
+		keyMismatchRelinkRefused: string
+		/**
+		 * T​h​e​ ​c​h​a​t​ ​k​e​y​ ​o​n​ ​t​h​i​s​ ​d​e​v​i​c​e​ ​w​a​s​ ​c​r​e​a​t​e​d​ ​b​y​ ​a​n​o​t​h​e​r​ ​a​c​c​o​u​n​t​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​.​ ​U​s​e​ ​i​t​ ​f​o​r​ ​t​h​i​s​ ​a​c​c​o​u​n​t​?
+		 */
+		keyForeignMessage: string
+		/**
 		 * C​r​e​a​t​i​n​g​ ​P​r​o​f​i​l​e​.​.​.
 		 */
 		creatingProfile: string
@@ -12410,6 +12418,14 @@ export type TranslationFunctions = {
 		 * This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.
 		 */
 		keyMismatchRelinkFailed: () => LocalizedString
+		/**
+		 * This chat key is registered to another account. Delete the chat keys under Settings › Nostr › Advanced to create a new one.
+		 */
+		keyMismatchRelinkRefused: () => LocalizedString
+		/**
+		 * The chat key on this device was created by another account on this phone. Use it for this account?
+		 */
+		keyForeignMessage: () => LocalizedString
 		/**
 		 * Creating Profile...
 		 */

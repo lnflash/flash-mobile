@@ -84,7 +84,7 @@ const ensurerModule = require("@app/components/nostr-key-ensurer")
 const NostrKeyEnsurer = ensurerModule.default
 const npubMismatchPromptedKey: (backendNpub: string) => string =
   ensurerModule.npubMismatchPromptedKey
-const foreignKeyPromptedKey: (accountId: string) => string =
+const foreignKeyPromptedKey: (accountId: string, localNpub: string) => string =
   ensurerModule.foreignKeyPromptedKey
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { getNostrKeyOwner, setNostrKeyOwner } = require("@app/nostr/key-owner")
@@ -97,6 +97,7 @@ const LOCAL_NPUB = nip19.npubEncode(LOCAL_HEX)
 const OTHER_NPUB = nip19.npubEncode("b".repeat(64))
 const ACCOUNT_A = "account-a"
 const ACCOUNT_B = "account-b"
+const ACCOUNT_C = "account-c"
 
 const flush = () =>
   new Promise<void>((resolve) => {
@@ -228,9 +229,11 @@ describe("NostrKeyEnsurer", () => {
       render(<NostrKeyEnsurer />)
       await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
       await flush()
+      // The account has no key of its own here, so "your keys differ" would
+      // be false; the question is whether to take over another account's key.
       expect(alertSpy).toHaveBeenCalledWith(
         LL.Nostr.keyMismatchTitle(),
-        LL.Nostr.keyMismatchMessage(),
+        LL.Nostr.keyForeignMessage(),
         expect.any(Array),
       )
       expect(mockUserUpdateNpub).not.toHaveBeenCalled()
@@ -248,7 +251,9 @@ describe("NostrKeyEnsurer", () => {
         variables: { input: { npub: LOCAL_NPUB } },
       })
       expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_B)
-      expect(await AsyncStorage.getItem(foreignKeyPromptedKey(ACCOUNT_B))).toBe("1")
+      expect(
+        await AsyncStorage.getItem(foreignKeyPromptedKey(ACCOUNT_B, LOCAL_NPUB)),
+      ).toBe("1")
     })
 
     it("leaves the key with its owner when the user declines, and does not nag", async () => {
@@ -258,16 +263,42 @@ describe("NostrKeyEnsurer", () => {
       await flush()
       expect(mockUserUpdateNpub).not.toHaveBeenCalled()
       expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_A)
-      expect(await AsyncStorage.getItem(foreignKeyPromptedKey(ACCOUNT_B))).toBe("1")
+      expect(
+        await AsyncStorage.getItem(foreignKeyPromptedKey(ACCOUNT_B, LOCAL_NPUB)),
+      ).toBe("1")
     })
 
-    it("does not ask an account it already asked", async () => {
-      await AsyncStorage.setItem(foreignKeyPromptedKey(ACCOUNT_B), "1")
+    it("does not ask an account it already asked about this key", async () => {
+      await AsyncStorage.setItem(foreignKeyPromptedKey(ACCOUNT_B, LOCAL_NPUB), "1")
       render(<NostrKeyEnsurer />)
       await waitFor(() => expect(mockGetSigner).toHaveBeenCalled())
       await flush()
       expect(alertSpy).not.toHaveBeenCalled()
       expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+    })
+
+    it("asks again when the local key is a different one than it declined", async () => {
+      // B declined A's key K1. Later C's phone login hands K2 to the
+      // keychain and C becomes its owner. B logs in again: K2 is foreign
+      // too, but B was never asked about it — a marker keyed on the
+      // account alone would swallow the prompt and leave B undeliverable
+      // on this device for good.
+      const K1 = LOCAL_NPUB
+      const K2_HEX = "c".repeat(64)
+      const K2 = nip19.npubEncode(K2_HEX)
+      await AsyncStorage.setItem(foreignKeyPromptedKey(ACCOUNT_B, K1), "1")
+      mockGetSigner.mockResolvedValue({ getPublicKey: async () => K2_HEX })
+      await setNostrKeyOwner(K2, ACCOUNT_C)
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      await flush()
+      expect(alertSpy).toHaveBeenCalledWith(
+        LL.Nostr.keyMismatchTitle(),
+        LL.Nostr.keyForeignMessage(),
+        expect.any(Array),
+      )
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+      expect(await getNostrKeyOwner(K2)).toBe(ACCOUNT_C)
     })
 
     it("tells the original owner when the backend now refuses its own key", async () => {
@@ -285,7 +316,7 @@ describe("NostrKeyEnsurer", () => {
       await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
       expect(alertSpy).toHaveBeenLastCalledWith(
         LL.Nostr.keyMismatchTitle(),
-        LL.Nostr.keyMismatchRelinkFailed(),
+        LL.Nostr.keyMismatchRelinkRefused(),
       )
       expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_B)
     })
@@ -348,7 +379,7 @@ describe("NostrKeyEnsurer", () => {
       await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
       expect(alertSpy).toHaveBeenCalledWith(
         LL.Nostr.keyMismatchTitle(),
-        LL.Nostr.keyMismatchRelinkFailed(),
+        LL.Nostr.keyMismatchRelinkRefused(),
       )
     })
   })
@@ -424,11 +455,13 @@ describe("NostrKeyEnsurer", () => {
       alertButton(alertSpy, LL.Nostr.keyMismatchUseThisDevice()).onPress?.()
       await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
       await flush()
-      // Deterministic refusal: asking again would give the same answer.
+      // Deterministic refusal: asking again would give the same answer, and
+      // "check your connection" would send the user to a Reconnect that
+      // refuses the same way — so the copy points at deleting the keys.
       expect(await AsyncStorage.getItem(npubMismatchPromptedKey(OTHER_NPUB))).toBe("1")
       expect(alertSpy).toHaveBeenLastCalledWith(
         LL.Nostr.keyMismatchTitle(),
-        LL.Nostr.keyMismatchRelinkFailed(),
+        LL.Nostr.keyMismatchRelinkRefused(),
       )
     })
 
@@ -476,7 +509,7 @@ describe("NostrKeyEnsurer", () => {
     await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
     expect(alertSpy).toHaveBeenCalledWith(
       LL.Nostr.keyMismatchTitle(),
-      LL.Nostr.keyMismatchRelinkFailed(),
+      LL.Nostr.keyMismatchRelinkRefused(),
     )
     expect(mockInitializeChat).not.toHaveBeenCalled()
     expect(mockGenerateAndStoreKey).not.toHaveBeenCalled()

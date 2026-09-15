@@ -1475,6 +1475,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "Deze chatsleutel is geregistreerd op een ander account. Verwijder de chatsleutels onder Instellingen › Nostr › Geavanceerd om een nieuwe aan te maken.",
+    "keyForeignMessage": "De chatsleutel op dit apparaat is aangemaakt door een ander account op deze telefoon. Gebruiken voor dit account?",
     "creatingProfile": "Creating Profile...",
     "createNewProfile": "Creëer een nieuw profiel",
     "generateProfile": "Genereren van een profiel",

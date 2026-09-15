@@ -1475,6 +1475,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "Khóa trò chuyện này đã được đăng ký cho tài khoản khác. Xóa các khóa trò chuyện trong Cài đặt › Nostr › Nâng cao để tạo khóa mới.",
+    "keyForeignMessage": "Khóa trò chuyện trên thiết bị này được tạo bởi tài khoản khác trên điện thoại này. Dùng nó cho tài khoản này?",
     "creatingProfile": "Tạo hồ sơ...",
     "createNewProfile": "Tạo hồ sơ mới",
     "generateProfile": "Generate Profile",

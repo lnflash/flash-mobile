@@ -1475,6 +1475,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "คีย์แชทนี้ลงทะเบียนกับบัญชีอื่นแล้ว ลบคีย์แชทใน การตั้งค่า › Nostr › ขั้นสูง เพื่อสร้างคีย์ใหม่",
+    "keyForeignMessage": "คีย์แชทบนอุปกรณ์นี้ถูกสร้างโดยบัญชีอื่นบนโทรศัพท์เครื่องนี้ ต้องการใช้กับบัญชีนี้หรือไม่?",
     "creatingProfile": "การสร้างโปรไฟล์...",
     "createNewProfile": "สร้างโปรไฟล์ใหม่",
     "generateProfile": "Generate Profile ครับ",

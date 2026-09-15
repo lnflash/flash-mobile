@@ -1475,6 +1475,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "Kay chat llavega huk cuentapim qillqasqa kachkan. Chat llavekunata Configuración › Nostr › Avanzado nisqapi chinkachiy musuqta ruwanaykipaq.",
+    "keyForeignMessage": "Kay aparatupi chat llaveta huk cuentam kay telefonopi ruwarqa. ¿Kay cuentapaq chayta llamkachiyta munankichu?",
     "creatingProfile": "Creating Profile... Profile nisqapaq musuqchasqapura wakin kaynin",
     "createNewProfile": "Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles Crear Nuevo Perfiles",
     "generateProfile": "Profilta hap'ichiy",

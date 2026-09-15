@@ -1420,6 +1420,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "مفتاح الدردشة هذا مسجّل لحساب آخر. احذف مفاتيح الدردشة من الإعدادات › Nostr › متقدم لإنشاء مفتاح جديد.",
+    "keyForeignMessage": "تم إنشاء مفتاح الدردشة على هذا الجهاز بواسطة حساب آخر على هذا الهاتف. هل تريد استخدامه لهذا الحساب؟",
     "keyConflictTitle": "Nostr Key Not Found on Device",
     "learnAboutNostr": "Learn about Nostr",
     "learnAboutNostrSubtext": "Explore this guide to get the most out of nostr chat",

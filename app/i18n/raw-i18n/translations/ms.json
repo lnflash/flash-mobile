@@ -1475,6 +1475,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "Kunci sembang ini didaftarkan kepada akaun lain. Padam kunci sembang di Tetapan › Nostr › Lanjutan untuk mencipta yang baharu.",
+    "keyForeignMessage": "Kunci sembang pada peranti ini dicipta oleh akaun lain pada telefon ini. Gunakannya untuk akaun ini?",
     "creatingProfile": "Menciptakan Profil...",
     "createNewProfile": "Buat Profil Baru",
     "generateProfile": "Generate Profile",

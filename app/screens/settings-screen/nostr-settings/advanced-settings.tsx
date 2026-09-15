@@ -3,7 +3,6 @@ import { Text, useTheme } from "@rneui/themed"
 import { useStyles } from "./styles"
 import Ionicons from "react-native-vector-icons/Ionicons"
 import { useState } from "react"
-import { nip19 } from "nostr-tools"
 import { useUserUpdateNpubMutation } from "@app/graphql/generated"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { ImportNsecModal } from "@app/components/import-nsec/import-nsec-modal"
@@ -15,6 +14,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { createContactListEvent } from "@app/utils/nostr"
 import { getSigner } from "@app/nostr/signer"
+import { reconnectLocalNpub } from "@app/nostr/reconnect-npub"
 
 interface AdvancedSettingsProps {
   expandAdvanced: boolean
@@ -54,25 +54,27 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   }
 
   const handleReconnectNostr = async () => {
-    let signer
-    try {
-      signer = await getSigner()
-    } catch {
-      Alert.alert(LL.Nostr.noProfileIdExists())
-      return
-    }
     setUpdatingNpub(true)
-    const pubKey = await signer.getPublicKey()
-    await userUpdateNpub({
-      variables: {
-        input: {
-          npub: nip19.npubEncode(pubKey),
-        },
-      },
-    })
-    await onReconnect()
-    setUpdatingNpub(false)
-    Alert.alert(LL.common.success(), LL.Nostr.profileReconnected())
+    try {
+      const result = await reconnectLocalNpub((npub) =>
+        userUpdateNpub({ variables: { input: { npub } } }),
+      )
+      if (result.status === "no-key") {
+        Alert.alert(LL.Nostr.noProfileIdExists())
+        return
+      }
+      await onReconnect()
+      if (result.status === "refused") {
+        // Typically NPUB_NOT_AVAILABLE: another account holds this key.
+        // Retrying gives the same answer, so do not report success.
+        console.warn("Backend refused to reconnect local npub:", result.code)
+        Alert.alert(LL.common.error(), LL.Nostr.keyMismatchRelinkRefused())
+        return
+      }
+      Alert.alert(LL.common.success(), LL.Nostr.profileReconnected())
+    } finally {
+      setUpdatingNpub(false)
+    }
   }
 
   const handleDeleteNostr = () => {

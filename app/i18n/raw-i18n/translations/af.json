@@ -1452,6 +1452,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "Hierdie kletssleutel is by 'n ander rekening geregistreer. Vee die kletssleutels uit onder Instellings › Nostr › Gevorderd om 'n nuwe een te skep.",
+    "keyForeignMessage": "Die kletssleutel op hierdie toestel is deur 'n ander rekening op hierdie foon geskep. Gebruik dit vir hierdie rekening?",
     "keyConflictTitle": "Nostr Key Not Found on Device",
     "learnAboutNostr": "Learn about Nostr",
     "learnAboutNostrSubtext": "Explore this guide to get the most out of nostr chat",

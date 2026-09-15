@@ -1475,6 +1475,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "Ez a chatkulcs egy másik fiókhoz van regisztrálva. Törölje a chatkulcsokat a Beállítások › Nostr › Haladó menüben egy új létrehozásához.",
+    "keyForeignMessage": "Az eszközön lévő chatkulcsot egy másik fiók hozta létre ezen a telefonon. Használja ehhez a fiókhoz?",
     "creatingProfile": "Profil létrehozása...",
     "createNewProfile": "Új profilot hozz létre",
     "generateProfile": "Generálj profilot",

@@ -1475,6 +1475,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "Ovaj ključ za chat registriran je na drugi račun. Izbrišite ključeve za chat u Postavke › Nostr › Napredno da biste stvorili novi.",
+    "keyForeignMessage": "Ključ za chat na ovom uređaju stvorio je drugi račun na ovom telefonu. Koristiti ga za ovaj račun?",
     "creatingProfile": "Stvaranje profila...",
     "createNewProfile": "Stvorite novi profil",
     "generateProfile": "Generirajte profil",

@@ -1475,6 +1475,8 @@
     "keyMismatchMessage": "This device's chat key differs from the one on your account. Use this device for chat?",
     "keyMismatchUseThisDevice": "Use this device",
     "keyMismatchRelinkFailed": "This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.",
+    "keyMismatchRelinkRefused": "Dieser Chat-Schlüssel ist bei einem anderen Konto registriert. Löschen Sie die Chat-Schlüssel unter Einstellungen › Nostr › Erweitert, um einen neuen zu erstellen.",
+    "keyForeignMessage": "Der Chat-Schlüssel auf diesem Gerät wurde von einem anderen Konto auf diesem Telefon erstellt. Für dieses Konto verwenden?",
     "creatingProfile": "Erstellen Sie ein Profil...",
     "createNewProfile": "Erstellen Sie ein neues Profil",
     "generateProfile": "Erstellen Sie ein Profil",
