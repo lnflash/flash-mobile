@@ -5,7 +5,7 @@ import {
   ensureContactListExists,
   setPreferredRelay,
 } from "@app/utils/nostr"
-import { needsRelink, npubLinkState } from "@app/nostr/npub-link"
+import { npubLinkState } from "@app/nostr/npub-link"
 import {
   getSigner,
   createSignerFromKey,
@@ -93,12 +93,18 @@ const useNostrProfile = () => {
     }
 
     if (existingSigner) {
-      // A local key already exists. Make sure the backend advertises it —
-      // otherwise DMs to this username are encrypted to a key this device
-      // cannot decrypt (or to nothing, if the account has no npub yet).
+      // A local key already exists. If the account advertises no npub at all,
+      // register this one — otherwise DMs to this username are encrypted to
+      // nothing. Only `unregistered` is repaired here: `mismatch` means
+      // another install holds the registered key, and replacing it is the
+      // user's call (the NostrKeyEnsurer prompt, or Reconnect in advanced
+      // settings). `me` must be loaded first — while the network-only query
+      // is in flight an undefined backend npub reads as unregistered and
+      // would relink against unknown state.
       try {
         const localNpub = nip19.npubEncode(await existingSigner.getPublicKey())
-        if (needsRelink(npubLinkState(localNpub, dataAuthed?.me?.npub))) {
+        const me = dataAuthed?.me
+        if (me && npubLinkState(localNpub, me.npub) === "unregistered") {
           const { data } = await userUpdateNpubMutation({
             variables: { input: { npub: localNpub } },
           })

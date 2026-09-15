@@ -14,7 +14,8 @@ import { npubLinkState } from "@app/nostr/npub-link"
  * Per-device marker: the user has already been asked whether this device
  * should replace the given backend npub. Keyed on the backend npub so a
  * later change on the account (another device relinking) asks again, while a
- * declined prompt never nags on every cold start.
+ * declined prompt never nags on every cold start. Written only once a button
+ * is pressed: a prompt dismissed without an answer is asked again.
  */
 export const npubMismatchPromptedKey = (backendNpub: string): string =>
   `npubMismatchPrompted:${backendNpub}`
@@ -98,12 +99,22 @@ const NostrKeyEnsurer: React.FC = () => {
           // and let the user decide which device owns chat.
           const marker = npubMismatchPromptedKey(backendNpub)
           if (await AsyncStorage.getItem(marker)) return
-          await AsyncStorage.setItem(marker, "1")
+          // The marker is written only from a button handler. An alert that
+          // is dismissed without an answer (Android replaces it with any
+          // later alert, or the back button closes it) leaves no marker, so
+          // the question is asked again on the next launch instead of the
+          // device silently staying undeliverable.
+          const remember = () => {
+            AsyncStorage.setItem(marker, "1").catch((e) => {
+              console.warn("[NostrKeyEnsurer] could not persist prompt marker:", e)
+            })
+          }
           Alert.alert(LL.Nostr.keyMismatchTitle(), LL.Nostr.keyMismatchMessage(), [
-            { text: LL.common.cancel(), style: "cancel" },
+            { text: LL.common.cancel(), style: "cancel", onPress: remember },
             {
               text: LL.Nostr.keyMismatchUseThisDevice(),
               onPress: () => {
+                remember()
                 relinkLocalNpub(state, localNpub)
               },
             },

@@ -5,6 +5,12 @@
  * unreachable. Whatever happens to the backend relink (success, refusal, a
  * rejected mutation), the keychain is never overwritten — every DM ever
  * encrypted to the existing key would otherwise become unreadable.
+ *
+ * The relink itself fires only for `unregistered` (backend npub null) and only
+ * once `me` has loaded. `mismatch` is never repaired here: replacing a
+ * registered npub is the user's decision (ensurer prompt / Reconnect), and
+ * this path runs right after a username is set — seconds after they may have
+ * declined.
  */
 import { renderHook, act } from "@testing-library/react-hooks"
 import * as Keychain from "react-native-keychain"
@@ -18,7 +24,9 @@ const mockGetSigner = jest.fn()
 const mockUserUpdateNpubMutation = jest.fn()
 const mockEnsureContactListExists = jest.fn()
 const mockGenerateSecretKey = jest.fn()
-let mockMe: { npub?: string | null; username?: string | null } | null = null
+type MockMe = { npub?: string | null; username?: string | null } | null
+// `undefined` = the network-only query has not returned yet.
+let mockData: { me: MockMe } | undefined
 
 jest.mock("nostr-tools", () => {
   const actual = jest.requireActual("nostr-tools")
@@ -33,7 +41,7 @@ jest.mock("@app/graphql/is-authed-context", () => ({
 }))
 
 jest.mock("@app/graphql/generated", () => ({
-  useHomeAuthedQuery: () => ({ data: { me: mockMe } }),
+  useHomeAuthedQuery: () => ({ data: mockData }),
   useUserUpdateNpubMutation: () => [mockUserUpdateNpubMutation],
 }))
 
@@ -73,6 +81,11 @@ const useNostrProfile = require("@app/hooks/use-nostr-profile").default
 
 const existingSigner = { getPublicKey: async () => LOCAL_HEX }
 
+/** The HomeAuthed query has returned with this `me`. */
+const loaded = (me: MockMe) => {
+  mockData = { me }
+}
+
 const saveNewNostrKey = async () => {
   const { result } = renderHook(() => useNostrProfile())
   let returned: unknown
@@ -85,6 +98,7 @@ const saveNewNostrKey = async () => {
 describe("useNostrProfile.saveNewNostrKey with an existing local key", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockData = undefined
     mockGetSigner.mockResolvedValue(existingSigner)
     mockEnsureContactListExists.mockResolvedValue(undefined)
     jest.spyOn(console, "log").mockImplementation(() => {})
@@ -93,7 +107,7 @@ describe("useNostrProfile.saveNewNostrKey with an existing local key", () => {
   })
 
   it("registers the local key when the backend has none, without touching the keychain", async () => {
-    mockMe = { npub: null }
+    loaded({ npub: null })
     mockUserUpdateNpubMutation.mockResolvedValue({
       data: { userUpdateNpub: { errors: [] } },
     })
@@ -110,7 +124,7 @@ describe("useNostrProfile.saveNewNostrKey with an existing local key", () => {
   })
 
   it("does not write to the backend when the local key is already linked", async () => {
-    mockMe = { npub: LOCAL_NPUB }
+    loaded({ npub: LOCAL_NPUB })
 
     await saveNewNostrKey()
 
@@ -121,18 +135,45 @@ describe("useNostrProfile.saveNewNostrKey with an existing local key", () => {
   })
 
   it("never regenerates when the relink mutation rejects", async () => {
-    mockMe = { npub: OTHER_NPUB }
+    loaded({ npub: null })
     mockUserUpdateNpubMutation.mockRejectedValue(new Error("timeout"))
 
     await expect(saveNewNostrKey()).resolves.toBeUndefined()
 
+    expect(mockUserUpdateNpubMutation).toHaveBeenCalledTimes(1)
+    expect(mockGenerateSecretKey).not.toHaveBeenCalled()
+    expect(Keychain.setInternetCredentials).not.toHaveBeenCalled()
+    expect(mockEnsureContactListExists).toHaveBeenCalledWith(existingSigner)
+  })
+
+  it("never overwrites a registered npub that differs from the local key (mismatch)", async () => {
+    // Phone registered K1; this device holds K2 and the user just declined
+    // the ensurer prompt. Setting a username must not flip the account.
+    loaded({ npub: OTHER_NPUB, username: "alice" })
+
+    await saveNewNostrKey()
+
+    expect(mockUserUpdateNpubMutation).not.toHaveBeenCalled()
+    expect(mockGenerateSecretKey).not.toHaveBeenCalled()
+    expect(Keychain.setInternetCredentials).not.toHaveBeenCalled()
+    expect(mockEnsureContactListExists).toHaveBeenCalledWith(existingSigner)
+  })
+
+  it("does not relink while the backend query has not returned (me undefined)", async () => {
+    // network-only query still in flight: an undefined backend npub is
+    // unknown state, not "unregistered".
+    mockData = undefined
+
+    await saveNewNostrKey()
+
+    expect(mockUserUpdateNpubMutation).not.toHaveBeenCalled()
     expect(mockGenerateSecretKey).not.toHaveBeenCalled()
     expect(Keychain.setInternetCredentials).not.toHaveBeenCalled()
     expect(mockEnsureContactListExists).toHaveBeenCalledWith(existingSigner)
   })
 
   it("never regenerates when the backend refuses the relink", async () => {
-    mockMe = { npub: null }
+    loaded({ npub: null })
     mockUserUpdateNpubMutation.mockResolvedValue({
       data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
     })
@@ -145,7 +186,7 @@ describe("useNostrProfile.saveNewNostrKey with an existing local key", () => {
   })
 
   it("never regenerates when reading the existing key's pubkey fails", async () => {
-    mockMe = { npub: null }
+    loaded({ npub: null })
     mockGetSigner.mockResolvedValue({
       getPublicKey: async () => {
         throw new Error("keychain locked")

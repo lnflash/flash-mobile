@@ -10,7 +10,9 @@
  *                      re-initialised.
  *  - mismatch        → never rewrite a registered npub silently. Ask once per
  *                      backend npub; relink only on confirmation; remember
- *                      the prompt so it does not nag on every cold start.
+ *                      the prompt only once a button was pressed, so a
+ *                      dismissed prompt re-asks and an answered one does not
+ *                      nag on every cold start.
  *  - backend refuses → no chat re-init, no crash (NPUB_NOT_AVAILABLE).
  *  - conflict        → never auto-generate over a registered npub.
  *  - fresh           → generate, register, init chat.
@@ -150,8 +152,16 @@ describe("NostrKeyEnsurer", () => {
       expect(mockUserUpdateNpub).not.toHaveBeenCalled()
       expect(mockGenerateAndStoreKey).not.toHaveBeenCalled()
       expect(mockInitializeChat).not.toHaveBeenCalled()
-      // Remembered per backend npub so the next cold start does not nag.
-      expect(await AsyncStorage.getItem(npubMismatchPromptedKey(OTHER_NPUB))).toBe("1")
+    })
+
+    it("asks again next launch when the prompt is dismissed without an answer", async () => {
+      // Android replaces a showing alert with any later one (no button
+      // pressed) and the back button dismisses it. Neither may count as an
+      // answer, so no marker is persisted until a button handler runs.
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      await flush()
+      expect(await AsyncStorage.getItem(npubMismatchPromptedKey(OTHER_NPUB))).toBeNull()
     })
 
     it("relinks the local key only after the user chooses this device", async () => {
@@ -165,6 +175,8 @@ describe("NostrKeyEnsurer", () => {
       })
       expect(mockGenerateAndStoreKey).not.toHaveBeenCalled()
       expect(mockInitializeChat).not.toHaveBeenCalled()
+      // Remembered per backend npub so the next cold start does not nag.
+      expect(await AsyncStorage.getItem(npubMismatchPromptedKey(OTHER_NPUB))).toBe("1")
     })
 
     it("leaves the registered npub alone when the user declines", async () => {
@@ -173,6 +185,8 @@ describe("NostrKeyEnsurer", () => {
       alertButton(alertSpy, LL.common.cancel()).onPress?.()
       await flush()
       expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+      // A decline is an answer: remembered so it does not nag on every launch.
+      expect(await AsyncStorage.getItem(npubMismatchPromptedKey(OTHER_NPUB))).toBe("1")
     })
 
     it("does not ask again for a backend npub it already prompted about", async () => {

@@ -26,7 +26,3 @@ export const npubLinkState = (
   }
   return backendNpub ? "conflict" : "fresh"
 }
-
-/** States where the fix is simply registering the local key with the backend. */
-export const needsRelink = (state: NpubLinkState): boolean =>
-  state === "unregistered" || state === "mismatch"
