@@ -6,7 +6,12 @@ import {
   setPreferredRelay,
 } from "@app/utils/nostr"
 import { needsRelink, npubLinkState } from "@app/nostr/npub-link"
-import { getSigner, createSignerFromKey, clearSigner } from "@app/nostr/signer"
+import {
+  getSigner,
+  createSignerFromKey,
+  clearSigner,
+  NostrSigner,
+} from "@app/nostr/signer"
 import {
   publishEventToRelays,
   verifyEventOnRelays,
@@ -77,12 +82,21 @@ const useNostrProfile = () => {
     progressCallback?: (message: string) => void,
     additionalContent?: any,
   ) => {
+    // Only the signer lookup may fall through to generation. Anything that
+    // fails *after* a local key is known to exist must never regenerate over
+    // it: every DM ever encrypted to that key would become unreadable.
+    let existingSigner: NostrSigner | null = null
     try {
-      const existingSigner = await getSigner()
-      if (existingSigner) {
-        // A local key already exists. Make sure the backend advertises it —
-        // otherwise DMs to this username are encrypted to a key this device
-        // cannot decrypt (or to nothing, if the account has no npub yet).
+      existingSigner = await getSigner()
+    } catch {
+      // No local key — proceed with generation below.
+    }
+
+    if (existingSigner) {
+      // A local key already exists. Make sure the backend advertises it —
+      // otherwise DMs to this username are encrypted to a key this device
+      // cannot decrypt (or to nothing, if the account has no npub yet).
+      try {
         const localNpub = nip19.npubEncode(await existingSigner.getPublicKey())
         if (needsRelink(npubLinkState(localNpub, dataAuthed?.me?.npub))) {
           const { data } = await userUpdateNpubMutation({
@@ -93,11 +107,13 @@ const useNostrProfile = () => {
             console.warn("Backend refused to relink local npub:", errors[0]?.code)
           }
         }
-        await ensureContactListExists(existingSigner)
-        return
+      } catch (e) {
+        // Network/GraphQL failure. The key on this device is still the right
+        // one; the ensurer retries the relink on the next session start.
+        console.error("Failed to relink local npub with backend:", e)
       }
-    } catch {
-      // No existing key — proceed with generation
+      await ensureContactListExists(existingSigner)
+      return
     }
 
     const username = dataAuthed?.me?.username || undefined

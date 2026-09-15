@@ -1871,6 +1871,10 @@ const en: BaseTranslation = {
     keyConflictTitle: "Nostr Key Not Found on Device",
     keyConflictDescription:
       "Your account has a registered Nostr key but it was not found on this device. This can happen after reinstalling the app or switching devices. To restore access, import your nsec backup from Advanced Settings.",
+    keyMismatchTitle: "Chat key mismatch",
+    keyMismatchMessage:
+      "This device's chat key differs from the one on your account. Use this device for chat?",
+    keyMismatchUseThisDevice: "Use this device",
     creatingProfile: "Creating Profile...",
     createNewProfile: "Create New Profile",
     generateProfile: "Generate Profile",

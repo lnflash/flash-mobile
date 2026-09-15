@@ -4,17 +4,24 @@
  *
  * Contract under test:
  *  - linked          → no backend write.
- *  - unregistered    → register the local key (the "flash" account case:
- *                      local key, backend npub null, so nobody can DM it).
- *  - mismatch        → re-register the local key (stale/duplicate-key case:
- *                      DMs were going to a key this device does not hold).
+ *  - unregistered    → register the local key silently (the "flash" account
+ *                      case: local key, backend npub null, so nobody can DM
+ *                      it). The local signer is unchanged, so chat is NOT
+ *                      re-initialised.
+ *  - mismatch        → never rewrite a registered npub silently. Ask once per
+ *                      backend npub; relink only on confirmation; remember
+ *                      the prompt so it does not nag on every cold start.
  *  - backend refuses → no chat re-init, no crash (NPUB_NOT_AVAILABLE).
  *  - conflict        → never auto-generate over a registered npub.
  *  - fresh           → generate, register, init chat.
  */
 import React from "react"
+import { Alert } from "react-native"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { render, waitFor } from "@testing-library/react-native"
 import { nip19 } from "nostr-tools"
+import { i18nObject } from "@app/i18n/i18n-util"
+import { loadLocale } from "@app/i18n/i18n-util.sync"
 
 const mockUserUpdateNpub = jest.fn()
 const mockInitializeChat = jest.fn()
@@ -36,6 +43,10 @@ jest.mock("@app/screens/chat/chatContext", () => ({
   useChatContext: () => ({ initializeChat: mockInitializeChat }),
 }))
 
+jest.mock("@app/i18n/i18n-react", () => ({
+  useI18nContext: () => ({ LL: i18nObject("en") }),
+}))
+
 jest.mock("@app/utils/nostr", () => ({
   fetchSecretFromLocalStorage: () => mockFetchSecret(),
 }))
@@ -46,7 +57,13 @@ jest.mock("@app/nostr/signer", () => ({
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const NostrKeyEnsurer = require("@app/components/nostr-key-ensurer").default
+const ensurerModule = require("@app/components/nostr-key-ensurer")
+const NostrKeyEnsurer = ensurerModule.default
+const npubMismatchPromptedKey: (backendNpub: string) => string =
+  ensurerModule.npubMismatchPromptedKey
+
+loadLocale("en")
+const LL = i18nObject("en")
 
 const LOCAL_HEX = "a".repeat(64)
 const LOCAL_NPUB = nip19.npubEncode(LOCAL_HEX)
@@ -65,10 +82,22 @@ const withLocalKey = () => {
 const okMutation = () =>
   mockUserUpdateNpub.mockResolvedValue({ data: { userUpdateNpub: { errors: [] } } })
 
+type AlertButton = { text?: string; onPress?: () => void }
+const alertButton = (alertSpy: jest.SpyInstance, text: string): AlertButton => {
+  const buttons = alertSpy.mock.calls[0][2] as AlertButton[]
+  const button = buttons.find((b) => b.text === text)
+  if (!button) throw new Error(`no alert button "${text}"`)
+  return button
+}
+
 describe("NostrKeyEnsurer", () => {
-  beforeEach(() => {
+  let alertSpy: jest.SpyInstance
+
+  beforeEach(async () => {
     jest.clearAllMocks()
+    await AsyncStorage.clear()
     mockInitializeChat.mockResolvedValue(undefined)
+    alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
     jest.spyOn(console, "log").mockImplementation(() => {})
     jest.spyOn(console, "warn").mockImplementation(() => {})
     jest.spyOn(console, "error").mockImplementation(() => {})
@@ -79,34 +108,91 @@ describe("NostrKeyEnsurer", () => {
     mockMe = { npub: LOCAL_NPUB }
     render(<NostrKeyEnsurer />)
     await waitFor(() => expect(mockGetSigner).toHaveBeenCalled())
+    await flush()
     expect(mockUserUpdateNpub).not.toHaveBeenCalled()
     expect(mockGenerateAndStoreKey).not.toHaveBeenCalled()
     expect(mockInitializeChat).not.toHaveBeenCalled()
+    expect(alertSpy).not.toHaveBeenCalled()
   })
 
-  it("registers the local key when the backend has no npub", async () => {
+  it("registers the local key silently when the backend has no npub", async () => {
     withLocalKey()
     okMutation()
     mockMe = { npub: null }
     render(<NostrKeyEnsurer />)
-    await waitFor(() => expect(mockInitializeChat).toHaveBeenCalled())
+    await waitFor(() => expect(mockUserUpdateNpub).toHaveBeenCalled())
+    await flush()
     expect(mockUserUpdateNpub).toHaveBeenCalledWith({
       variables: { input: { npub: LOCAL_NPUB } },
     })
+    expect(alertSpy).not.toHaveBeenCalled()
     expect(mockGenerateAndStoreKey).not.toHaveBeenCalled()
+    // The local signer did not change; chat already subscribed with it.
+    expect(mockInitializeChat).not.toHaveBeenCalled()
   })
 
-  it("re-registers the local key when the backend advertises a different one", async () => {
-    withLocalKey()
-    okMutation()
-    mockMe = { npub: OTHER_NPUB }
-    render(<NostrKeyEnsurer />)
-    await waitFor(() => expect(mockInitializeChat).toHaveBeenCalled())
-    expect(mockUserUpdateNpub).toHaveBeenCalledTimes(1)
-    expect(mockUserUpdateNpub).toHaveBeenCalledWith({
-      variables: { input: { npub: LOCAL_NPUB } },
+  describe("mismatch (backend advertises a key this device does not hold)", () => {
+    beforeEach(() => {
+      withLocalKey()
+      okMutation()
+      mockMe = { npub: OTHER_NPUB }
     })
-    expect(mockGenerateAndStoreKey).not.toHaveBeenCalled()
+
+    it("asks before touching the registered npub and never relinks on its own", async () => {
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      await flush()
+      expect(alertSpy).toHaveBeenCalledWith(
+        LL.Nostr.keyMismatchTitle(),
+        LL.Nostr.keyMismatchMessage(),
+        expect.any(Array),
+      )
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+      expect(mockGenerateAndStoreKey).not.toHaveBeenCalled()
+      expect(mockInitializeChat).not.toHaveBeenCalled()
+      // Remembered per backend npub so the next cold start does not nag.
+      expect(await AsyncStorage.getItem(npubMismatchPromptedKey(OTHER_NPUB))).toBe("1")
+    })
+
+    it("relinks the local key only after the user chooses this device", async () => {
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      alertButton(alertSpy, LL.Nostr.keyMismatchUseThisDevice()).onPress?.()
+      await waitFor(() => expect(mockUserUpdateNpub).toHaveBeenCalledTimes(1))
+      await flush()
+      expect(mockUserUpdateNpub).toHaveBeenCalledWith({
+        variables: { input: { npub: LOCAL_NPUB } },
+      })
+      expect(mockGenerateAndStoreKey).not.toHaveBeenCalled()
+      expect(mockInitializeChat).not.toHaveBeenCalled()
+    })
+
+    it("leaves the registered npub alone when the user declines", async () => {
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      alertButton(alertSpy, LL.common.cancel()).onPress?.()
+      await flush()
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+    })
+
+    it("does not ask again for a backend npub it already prompted about", async () => {
+      await AsyncStorage.setItem(npubMismatchPromptedKey(OTHER_NPUB), "1")
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(mockGetSigner).toHaveBeenCalled())
+      await flush()
+      expect(alertSpy).not.toHaveBeenCalled()
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+    })
+
+    it("asks again when the account's npub changed since the last prompt", async () => {
+      await AsyncStorage.setItem(
+        npubMismatchPromptedKey(nip19.npubEncode("c".repeat(64))),
+        "1",
+      )
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+    })
   })
 
   it("leaves things alone when the backend refuses the relink", async () => {
@@ -114,7 +200,7 @@ describe("NostrKeyEnsurer", () => {
     mockUserUpdateNpub.mockResolvedValue({
       data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
     })
-    mockMe = { npub: OTHER_NPUB }
+    mockMe = { npub: null }
     render(<NostrKeyEnsurer />)
     await waitFor(() => expect(mockUserUpdateNpub).toHaveBeenCalled())
     await flush()
@@ -125,11 +211,12 @@ describe("NostrKeyEnsurer", () => {
   it("survives a rejected relink mutation", async () => {
     withLocalKey()
     mockUserUpdateNpub.mockRejectedValue(new Error("network"))
-    mockMe = { npub: OTHER_NPUB }
+    mockMe = { npub: null }
     render(<NostrKeyEnsurer />)
     await waitFor(() => expect(mockUserUpdateNpub).toHaveBeenCalled())
     await flush()
     expect(mockInitializeChat).not.toHaveBeenCalled()
+    expect(mockGenerateAndStoreKey).not.toHaveBeenCalled()
   })
 
   it("never auto-generates over a registered npub when the device has no key", async () => {
@@ -140,6 +227,7 @@ describe("NostrKeyEnsurer", () => {
     await flush()
     expect(mockGenerateAndStoreKey).not.toHaveBeenCalled()
     expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+    expect(alertSpy).not.toHaveBeenCalled()
   })
 
   it("generates and registers a key when neither side has one", async () => {

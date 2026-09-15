@@ -6113,6 +6113,18 @@ type RootTranslation = {
 		 */
 		keyConflictDescription: string
 		/**
+		 * C​h​a​t​ ​k​e​y​ ​m​i​s​m​a​t​c​h
+		 */
+		keyMismatchTitle: string
+		/**
+		 * T​h​i​s​ ​d​e​v​i​c​e​'​s​ ​c​h​a​t​ ​k​e​y​ ​d​i​f​f​e​r​s​ ​f​r​o​m​ ​t​h​e​ ​o​n​e​ ​o​n​ ​y​o​u​r​ ​a​c​c​o​u​n​t​.​ ​U​s​e​ ​t​h​i​s​ ​d​e​v​i​c​e​ ​f​o​r​ ​c​h​a​t​?
+		 */
+		keyMismatchMessage: string
+		/**
+		 * U​s​e​ ​t​h​i​s​ ​d​e​v​i​c​e
+		 */
+		keyMismatchUseThisDevice: string
+		/**
 		 * C​r​e​a​t​i​n​g​ ​P​r​o​f​i​l​e​.​.​.
 		 */
 		creatingProfile: string
@@ -12378,6 +12390,18 @@ export type TranslationFunctions = {
 		 * Your account has a registered Nostr key but it was not found on this device. This can happen after reinstalling the app or switching devices. To restore access, import your nsec backup from Advanced Settings.
 		 */
 		keyConflictDescription: () => LocalizedString
+		/**
+		 * Chat key mismatch
+		 */
+		keyMismatchTitle: () => LocalizedString
+		/**
+		 * This device's chat key differs from the one on your account. Use this device for chat?
+		 */
+		keyMismatchMessage: () => LocalizedString
+		/**
+		 * Use this device
+		 */
+		keyMismatchUseThisDevice: () => LocalizedString
 		/**
 		 * Creating Profile...
 		 */
