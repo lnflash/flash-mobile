@@ -109,10 +109,14 @@ This should start the Metro bundler in a new terminal and launch the simulator w
 
 ## Running Storybook
 
-1. From the command line in your app's root directory, enter `yarn storybook`
-2. In `index.js`, change `SHOW_STORYBOOK` to `true` and reload the app
+Storybook runs on-device (`@storybook/react-native` 6.5): the app renders the Storybook UI in place of the normal app when a flag in `index.js` is set. There is no separate web Storybook to start.
 
-For Visual Studio Code users, install the `React Native Storybook` extension by `Orta`, press `cmd + shift + P`, and select "Reconnect Storybook to VSCode". Expand the STORYBOOK section in the sidebar to see all use cases for components that have `.story.tsx` files in their directories.
+1. In `index.js`, change `SHOW_STORYBOOK` to `true`
+2. From the command line in your app's root directory, run `yarn storybook`. This regenerates `.storybook/storybook.requires.js` from every `*.stories.tsx` under `app/` and starts Metro
+3. Launch the app on a simulator or device (`yarn ios` / `yarn android`), or reload it if it is already running. The app opens on the Storybook UI with the "Get started screen" story selected
+4. While adding or renaming stories, run `yarn storybook-watcher` in another terminal to keep the story index current
+
+Set `SHOW_STORYBOOK` back to `false` before committing; it is checked in as `false`.
 
 ## E2E Testing
 
