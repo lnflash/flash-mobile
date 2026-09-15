@@ -20,6 +20,9 @@ import { toastShow } from "../utils/toast"
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
 
+const errorMessage = (err: unknown): string =>
+  err instanceof Error ? err.message : String(err)
+
 const width = Dimensions.get("screen").width
 
 type TransactionItem = {
@@ -156,9 +159,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       const lnurlParams = await getParams(payload)
       if ("tag" in lnurlParams && lnurlParams.tag === "withdrawRequest") {
         const { k1, callback } = lnurlParams
-
-        console.log("K1>>>>>>>>>>>>>>", k1)
-        console.log("CALLBACK>>>>>>>>>>>>>", callback)
+        // Never log k1 or callback: together they authorise a withdrawal from the card.
         setK1(k1)
         setCallback(callback)
       } else {
@@ -171,7 +172,8 @@ export const FlashcardProvider = ({ children }: Props) => {
         })
       }
     } catch (err) {
-      console.log("NFC ERROR:", err)
+      // Log the message only; the raw error can carry the card's withdraw URL.
+      console.warn("NFC withdraw params lookup failed:", errorMessage(err))
       toastShow({
         position: "top",
         message: "Unsupported NFC card. Please ensure you are using a flashcard.",
@@ -213,7 +215,8 @@ export const FlashcardProvider = ({ children }: Props) => {
       getBalance(html)
       getTransactions(html)
     } catch (err) {
-      console.log("NFC ERROR:", err)
+      // Log the message only; an axios error embeds the request URL with card parameters.
+      console.warn("NFC balance page fetch failed:", errorMessage(err))
       toastShow({
         position: "top",
         message:
@@ -226,7 +229,6 @@ export const FlashcardProvider = ({ children }: Props) => {
   const getLnurl = (html: string) => {
     const lnurlMatch = html.match(/href="lightning:(lnurl\w+)"/)
     if (lnurlMatch) {
-      console.log("LNURL MATCH>>>>>>>>>>", lnurlMatch[1])
       setLnurl(lnurlMatch[1])
     }
   }
@@ -236,8 +238,6 @@ export const FlashcardProvider = ({ children }: Props) => {
     if (balanceMatch) {
       const parsedBalance = balanceMatch[1].replace(/,/g, "") // Remove commas
       const satoshiAmount = parseInt(parsedBalance, 10)
-
-      console.log("SATOSHI AMOUNT>>>>>>>>>>>>>>>", satoshiAmount)
       setBalanceInSats(satoshiAmount)
     }
   }
