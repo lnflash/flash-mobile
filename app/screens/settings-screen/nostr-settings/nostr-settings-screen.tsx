@@ -489,7 +489,7 @@ export const NostrSettingsScreen = () => {
             <View style={styles.menuIconContainer}>
               <Ionicons name="chatbubbles-outline" size={24} color={colors.black} />
             </View>
-            <Text style={styles.menuText}>Enable Chat</Text>
+            <Text style={styles.menuText}>{LL.SettingsScreen.enableChat()}</Text>
             <Switch
               value={!!persistentState.chatEnabled}
               onValueChange={(enabled) => {

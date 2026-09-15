@@ -35,11 +35,15 @@ const EmptyCard = () => {
         <EmptyFlashcard height={width / 1.2} width={width / 1.2} style={styles.card} />
       </View>
       <PrimaryBtn
-        label="Read NFC card"
+        label={LL.CardScreen.readNfcCard()}
         onPress={() => readFlashcard(false)}
         btnStyle={{ marginBottom: 10 }}
       />
-      <PrimaryBtn type="outline" label="Find a Flashpoint" onPress={findFlashpoint} />
+      <PrimaryBtn
+        type="outline"
+        label={LL.CardScreen.findFlashpoint()}
+        onPress={findFlashpoint}
+      />
     </View>
   )
 }
