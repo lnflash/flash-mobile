@@ -10,21 +10,27 @@
  * once `me` has loaded. `mismatch` is never repaired here: replacing a
  * registered npub is the user's decision (ensurer prompt / Reconnect), and
  * this path runs right after a username is set — seconds after they may have
- * declined.
+ * declined. A key another account on this device generated (the keychain
+ * survives logout) is never registered here either: that is the ensurer's
+ * prompt, not a silent default.
  */
 import { renderHook, act } from "@testing-library/react-hooks"
 import * as Keychain from "react-native-keychain"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { nip19 } from "nostr-tools"
+import { getNostrKeyOwner, setNostrKeyOwner } from "@app/nostr/key-owner"
 
 const LOCAL_HEX = "a".repeat(64)
 const LOCAL_NPUB = nip19.npubEncode(LOCAL_HEX)
 const OTHER_NPUB = nip19.npubEncode("b".repeat(64))
+const ACCOUNT_A = "account-a"
+const ACCOUNT_B = "account-b"
 
 const mockGetSigner = jest.fn()
 const mockUserUpdateNpubMutation = jest.fn()
 const mockEnsureContactListExists = jest.fn()
 const mockGenerateSecretKey = jest.fn()
-type MockMe = { npub?: string | null; username?: string | null } | null
+type MockMe = { id?: string; npub?: string | null; username?: string | null } | null
 // `undefined` = the network-only query has not returned yet.
 let mockData: { me: MockMe } | undefined
 
@@ -96,8 +102,9 @@ const saveNewNostrKey = async () => {
 }
 
 describe("useNostrProfile.saveNewNostrKey with an existing local key", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks()
+    await AsyncStorage.clear()
     mockData = undefined
     mockGetSigner.mockResolvedValue(existingSigner)
     mockEnsureContactListExists.mockResolvedValue(undefined)
@@ -107,7 +114,7 @@ describe("useNostrProfile.saveNewNostrKey with an existing local key", () => {
   })
 
   it("registers the local key when the backend has none, without touching the keychain", async () => {
-    loaded({ npub: null })
+    loaded({ id: ACCOUNT_A, npub: null })
     mockUserUpdateNpubMutation.mockResolvedValue({
       data: { userUpdateNpub: { errors: [] } },
     })
@@ -121,6 +128,47 @@ describe("useNostrProfile.saveNewNostrKey with an existing local key", () => {
     expect(mockGenerateSecretKey).not.toHaveBeenCalled()
     expect(Keychain.setInternetCredentials).not.toHaveBeenCalled()
     expect(mockEnsureContactListExists).toHaveBeenCalledWith(existingSigner)
+    // The key is now this account's.
+    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_A)
+  })
+
+  it("registers a key it generated for this same account", async () => {
+    await setNostrKeyOwner(LOCAL_NPUB, ACCOUNT_A)
+    loaded({ id: ACCOUNT_A, npub: null })
+    mockUserUpdateNpubMutation.mockResolvedValue({
+      data: { userUpdateNpub: { errors: [] } },
+    })
+
+    await saveNewNostrKey()
+
+    expect(mockUserUpdateNpubMutation).toHaveBeenCalledTimes(1)
+    expect(Keychain.setInternetCredentials).not.toHaveBeenCalled()
+  })
+
+  it("never registers a key another account on this device generated", async () => {
+    // Shared phone: A generated the key and logged out (keychain kept); B
+    // signs up and sets a username. Registering A's key on B strands A.
+    await setNostrKeyOwner(LOCAL_NPUB, ACCOUNT_A)
+    loaded({ id: ACCOUNT_B, npub: null, username: "bob" })
+
+    await saveNewNostrKey()
+
+    expect(mockUserUpdateNpubMutation).not.toHaveBeenCalled()
+    expect(mockGenerateSecretKey).not.toHaveBeenCalled()
+    expect(Keychain.setInternetCredentials).not.toHaveBeenCalled()
+    expect(mockEnsureContactListExists).toHaveBeenCalledWith(existingSigner)
+    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_A)
+  })
+
+  it("leaves the owner record alone when the backend refuses the relink", async () => {
+    loaded({ id: ACCOUNT_A, npub: null })
+    mockUserUpdateNpubMutation.mockResolvedValue({
+      data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
+    })
+
+    await saveNewNostrKey()
+
+    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBeNull()
   })
 
   it("does not write to the backend when the local key is already linked", async () => {

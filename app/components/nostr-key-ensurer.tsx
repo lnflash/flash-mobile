@@ -1,14 +1,16 @@
-import React, { useEffect, useRef } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { Alert } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { nip19 } from "nostr-tools"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useHomeAuthedQuery, useUserUpdateNpubMutation } from "@app/graphql/generated"
+import { useAuthenticationContext } from "@app/navigation/navigation-container-wrapper"
 import { useChatContext } from "@app/screens/chat/chatContext"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { fetchSecretFromLocalStorage } from "@app/utils/nostr"
 import { generateAndStoreKey, getSigner } from "@app/nostr/signer"
 import { npubLinkState } from "@app/nostr/npub-link"
+import { getNostrKeyOwner, setNostrKeyOwner } from "@app/nostr/key-owner"
 
 /**
  * Per-device marker: the user has already been asked whether this device
@@ -21,18 +23,41 @@ export const npubMismatchPromptedKey = (backendNpub: string): string =>
   `npubMismatchPrompted:${backendNpub}`
 
 /**
+ * Per-device marker: this account has already been asked whether it should
+ * take over a local key that another account on the device generated. The
+ * account has no backend npub in that state, so the marker is keyed on the
+ * account instead. Same write rule as above: only once a button is pressed.
+ */
+export const foreignKeyPromptedKey = (accountId: string): string =>
+  `npubForeignKeyPrompted:${accountId}`
+
+/** A user-facing alert decided by the check, shown once the lock screen is gone. */
+type PendingPrompt = { show: () => void }
+
+/**
  * Runs once per authenticated session and makes sure the npub the backend
  * advertises for this account (what senders encrypt DMs to) is the key this
  * device can actually decrypt with. See `npubLinkState` for the state table.
  *
  * Only `unregistered` is fixed silently — there is nothing on the account to
- * steal. `mismatch` means another install holds the registered key; two live
+ * steal — and only when the local key is not known to belong to another
+ * account on this device (the keychain survives logout, see `key-owner.ts`).
+ * `mismatch` means another install holds the registered key; two live
  * installs auto-relinking on every launch would flip the account back and
  * forth and leave both with holes in the same conversation, so that one asks
  * the user once and never rewrites a registered npub without their choice.
+ *
+ * The check itself runs as soon as the live account data arrives, which is
+ * before the PIN/biometric gate has been passed (`authenticationCheck` is the
+ * initial route while `isAuthed` is already true). Anything that asks the
+ * user a question is therefore held until `isAppLocked` drops: an alert over
+ * the lock screen would let one tap rewrite the account's npub without
+ * unlocking. This component must be mounted inside `NavigationContainerWrapper`
+ * to see that state.
  */
 const NostrKeyEnsurer: React.FC = () => {
   const isAuthed = useIsAuthed()
+  const { isAppLocked } = useAuthenticationContext()
   // network-only: the Apollo cache is persisted across launches, so a
   // cache-first read hands us last session's npub synchronously on cold start
   // and `hasRun` would lock that stale snapshot in. Deciding a backend write
@@ -48,11 +73,30 @@ const NostrKeyEnsurer: React.FC = () => {
   const { initializeChat } = useChatContext()
   const { LL } = useI18nContext()
   const hasRun = useRef(false)
+  const [pendingPrompt, setPendingPrompt] = useState<PendingPrompt | null>(null)
+
+  useEffect(() => {
+    if (isAppLocked || !pendingPrompt) return
+    setPendingPrompt(null)
+    pendingPrompt.show()
+  }, [isAppLocked, pendingPrompt])
 
   useEffect(() => {
     // Wait until both auth state and backend data are ready
     if (!isAuthed || !dataAuthed || hasRun.current) return
     hasRun.current = true
+
+    const accountId = dataAuthed.me?.id
+    const backendNpub = dataAuthed.me?.npub ?? null
+
+    const rememberOwner = async (localNpub: string) => {
+      if (!accountId) return
+      try {
+        await setNostrKeyOwner(localNpub, accountId)
+      } catch (e) {
+        console.warn("[NostrKeyEnsurer] could not record key owner:", e)
+      }
+    }
 
     // Register the local key with the backend. The local signer does not
     // change, and ChatContextProvider already subscribed with it on mount, so
@@ -69,7 +113,7 @@ const NostrKeyEnsurer: React.FC = () => {
         const errors = data?.userUpdateNpub?.errors ?? []
         if (errors.length > 0) {
           // Typically NPUB_NOT_AVAILABLE: another account holds this key.
-          // Leave it for the settings screen; nothing safe to do here.
+          // Nothing safe to do here; the caller tells the user.
           console.warn(
             `[NostrKeyEnsurer] ${state}: backend refused relink`,
             errors[0]?.code,
@@ -77,6 +121,7 @@ const NostrKeyEnsurer: React.FC = () => {
           return "refused"
         }
         console.log(`[NostrKeyEnsurer] ${state}: relinked local npub with backend`)
+        await rememberOwner(localNpub)
         return "ok"
       } catch (e) {
         console.error(`[NostrKeyEnsurer] ${state}: relink failed:`, e)
@@ -84,9 +129,39 @@ const NostrKeyEnsurer: React.FC = () => {
       }
     }
 
-    ;(async () => {
-      const backendNpub = dataAuthed?.me?.npub ?? null
+    const showRelinkFailed = () =>
+      Alert.alert(LL.Nostr.keyMismatchTitle(), LL.Nostr.keyMismatchRelinkFailed())
 
+    // Ask once (per `marker`) and let the user decide which device owns chat.
+    // The marker is written only from a button handler. An alert that is
+    // dismissed without an answer (Android replaces it with any later alert,
+    // or the back button closes it) leaves no marker, so the question is
+    // asked again on the next launch instead of the device silently staying
+    // undeliverable.
+    const askToUseThisDevice = (marker: string, state: string, localNpub: string) => {
+      const remember = () => {
+        AsyncStorage.setItem(marker, "1").catch((e) => {
+          console.warn("[NostrKeyEnsurer] could not persist prompt marker:", e)
+        })
+      }
+      Alert.alert(LL.Nostr.keyMismatchTitle(), LL.Nostr.keyMismatchMessage(), [
+        { text: LL.common.cancel(), style: "cancel", onPress: remember },
+        {
+          text: LL.Nostr.keyMismatchUseThisDevice(),
+          onPress: async () => {
+            const result = await relinkLocalNpub(state, localNpub)
+            // A transient failure leaves no marker so the question is
+            // asked again next launch; a deterministic refusal (another
+            // account holds this key) is remembered. Either way the user
+            // chose and nothing happened, so say so.
+            if (result !== "failed") remember()
+            if (result !== "ok") showRelinkFailed()
+          },
+        },
+      ])
+    }
+
+    ;(async () => {
       const existing = await fetchSecretFromLocalStorage()
       if (existing) {
         let localNpub: string
@@ -100,10 +175,33 @@ const NostrKeyEnsurer: React.FC = () => {
 
         const state = npubLinkState(localNpub, backendNpub)
 
+        if (state === "linked") {
+          // The account advertises this key, so it owns it whoever generated
+          // it (keys from before the owner record, imported nsecs, the nsec
+          // handed back at phone login).
+          await rememberOwner(localNpub)
+          return
+        }
+
         if (state === "unregistered") {
+          const owner = await getNostrKeyOwner(localNpub)
+          if (owner && accountId && owner !== accountId) {
+            // Another account on this device generated the key and may still
+            // depend on it. Taking it over is the user's call, not a silent
+            // default.
+            const marker = foreignKeyPromptedKey(accountId)
+            if (await AsyncStorage.getItem(marker)) return
+            setPendingPrompt({
+              show: () => askToUseThisDevice(marker, state, localNpub),
+            })
+            return
+          }
           // The account advertises no key at all, so nobody can DM it. Nothing
-          // to lose by registering the one this device holds.
-          await relinkLocalNpub(state, localNpub)
+          // to lose by registering the one this device holds. A refusal means
+          // another account already registered it, which the user can only
+          // resolve by hand — so say so rather than staying silent.
+          const result = await relinkLocalNpub(state, localNpub)
+          if (result === "refused") setPendingPrompt({ show: showRelinkFailed })
           return
         }
 
@@ -112,36 +210,9 @@ const NostrKeyEnsurer: React.FC = () => {
           // and let the user decide which device owns chat.
           const marker = npubMismatchPromptedKey(backendNpub)
           if (await AsyncStorage.getItem(marker)) return
-          // The marker is written only from a button handler. An alert that
-          // is dismissed without an answer (Android replaces it with any
-          // later alert, or the back button closes it) leaves no marker, so
-          // the question is asked again on the next launch instead of the
-          // device silently staying undeliverable.
-          const remember = () => {
-            AsyncStorage.setItem(marker, "1").catch((e) => {
-              console.warn("[NostrKeyEnsurer] could not persist prompt marker:", e)
-            })
-          }
-          Alert.alert(LL.Nostr.keyMismatchTitle(), LL.Nostr.keyMismatchMessage(), [
-            { text: LL.common.cancel(), style: "cancel", onPress: remember },
-            {
-              text: LL.Nostr.keyMismatchUseThisDevice(),
-              onPress: async () => {
-                const result = await relinkLocalNpub(state, localNpub)
-                // A transient failure leaves no marker so the question is
-                // asked again next launch; a deterministic refusal (another
-                // account holds this key) is remembered. Either way the user
-                // chose and nothing happened, so say so.
-                if (result !== "failed") remember()
-                if (result !== "ok") {
-                  Alert.alert(
-                    LL.Nostr.keyMismatchTitle(),
-                    LL.Nostr.keyMismatchRelinkFailed(),
-                  )
-                }
-              },
-            },
-          ])
+          setPendingPrompt({
+            show: () => askToUseThisDevice(marker, state, localNpub),
+          })
         }
         return
       }
@@ -156,7 +227,7 @@ const NostrKeyEnsurer: React.FC = () => {
       }
 
       try {
-        const npub = await generateAndStoreKey()
+        const npub = await generateAndStoreKey(accountId)
         await userUpdateNpub({ variables: { input: { npub } } })
         await initializeChat()
         console.log("[NostrKeyEnsurer] auto-generated key and registered npub")

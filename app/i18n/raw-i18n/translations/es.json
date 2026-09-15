@@ -1474,6 +1474,7 @@
     "keyMismatchTitle": "Llave de chat no coincide",
     "keyMismatchMessage": "La llave de chat de este dispositivo es distinta a la registrada en su cuenta. ¿Usar este dispositivo para el chat?",
     "keyMismatchUseThisDevice": "Usar este dispositivo",
+    "keyMismatchRelinkFailed": "No se pudo establecer este dispositivo como su dispositivo de chat. Revise su conexión e inténtelo de nuevo desde Configuración › Nostr › Avanzado › Reconectar perfil.",
     "creatingProfile": "Creando un perfil...",
     "createNewProfile": "Crear un nuevo perfil",
     "generateProfile": "Generar un perfil",
