@@ -3,7 +3,8 @@ import { Text, useTheme } from "@rneui/themed"
 import { useStyles } from "./styles"
 import Ionicons from "react-native-vector-icons/Ionicons"
 import { useState } from "react"
-import { useUserUpdateNpubMutation } from "@app/graphql/generated"
+import { useHomeAuthedQuery, useUserUpdateNpubMutation } from "@app/graphql/generated"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
 import useNostrProfile from "@app/hooks/use-nostr-profile"
 import { ImportNsecModal } from "@app/components/import-nsec/import-nsec-modal"
 import { useChatContext } from "@app/screens/chat/chatContext"
@@ -44,6 +45,12 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   const [importModalVisible, setImportModalVisible] = useState(false)
 
   const [userUpdateNpub] = useUserUpdateNpubMutation()
+  const isAuthed = useIsAuthed()
+  const { data: dataAuthed } = useHomeAuthedQuery({
+    skip: !isAuthed,
+    fetchPolicy: "cache-first",
+    errorPolicy: "all",
+  })
   const { deleteNostrKeys } = useNostrProfile()
   const navigation =
     useNavigation<StackNavigationProp<RootStackParamList, "NostrSettingsScreen">>()
@@ -56,8 +63,9 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   const handleReconnectNostr = async () => {
     setUpdatingNpub(true)
     try {
-      const result = await reconnectLocalNpub((npub) =>
-        userUpdateNpub({ variables: { input: { npub } } }),
+      const result = await reconnectLocalNpub(
+        (npub) => userUpdateNpub({ variables: { input: { npub } } }),
+        dataAuthed?.me?.id,
       )
       if (result.status === "no-key") {
         Alert.alert(LL.Nostr.noProfileIdExists())
@@ -66,9 +74,16 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
       await onReconnect()
       if (result.status === "refused") {
         // Typically NPUB_NOT_AVAILABLE: another account holds this key.
-        // Retrying gives the same answer, so do not report success.
+        // Retrying gives the same answer, so do not report success. Unless
+        // this account owns the key, it may be another account's only copy:
+        // never advise deleting it then.
         console.warn("Backend refused to reconnect local npub:", result.code)
-        Alert.alert(LL.common.error(), LL.Nostr.keyMismatchRelinkRefused())
+        Alert.alert(
+          LL.common.error(),
+          result.mayAdviseDelete
+            ? LL.Nostr.keyMismatchRelinkRefused()
+            : LL.Nostr.keyForeignRelinkRefused(),
+        )
         return
       }
       Alert.alert(LL.common.success(), LL.Nostr.profileReconnected())

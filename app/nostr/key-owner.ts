@@ -28,6 +28,22 @@ export const setNostrKeyOwner = async (
   accountId: string,
 ): Promise<void> => AsyncStorage.setItem(nostrKeyOwnerKey(localNpub), accountId)
 
+/** Drop the owner record of one key — used when that key leaves the keychain. */
+export const clearNostrKeyOwner = async (localNpub: string): Promise<void> =>
+  AsyncStorage.removeItem(nostrKeyOwnerKey(localNpub))
+
+/**
+ * Whether a backend refusal (`NPUB_NOT_AVAILABLE`) of this key may be answered
+ * with "delete the chat keys". Only when this account is the recorded owner:
+ * with another owner, or no record at all (every key from before the record
+ * existed), the refusal itself says some other account holds the key, and the
+ * local copy may be that account's only one.
+ */
+export const mayAdviseDeletingKey = (
+  owner: string | null,
+  accountId: string | null | undefined,
+): boolean => Boolean(owner && accountId && owner === accountId)
+
 /** Drop every owner record — used when the local key material is deleted. */
 export const clearNostrKeyOwners = async (): Promise<void> => {
   const keys = await AsyncStorage.getAllKeys()

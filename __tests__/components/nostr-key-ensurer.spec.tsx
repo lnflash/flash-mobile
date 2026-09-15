@@ -41,15 +41,16 @@ const mockGetSigner = jest.fn()
 const mockGenerateAndStoreKey = jest.fn()
 let mockMe: { id?: string; npub?: string | null } | null = null
 let mockIsAppLocked = false
+let mockIsAuthed = true
 
 jest.mock("@app/graphql/is-authed-context", () => ({
-  useIsAuthed: () => true,
+  useIsAuthed: () => mockIsAuthed,
 }))
 
 jest.mock("@app/graphql/generated", () => ({
-  useHomeAuthedQuery: (options: unknown) => {
+  useHomeAuthedQuery: (options: { skip?: boolean }) => {
     mockUseHomeAuthedQuery(options)
-    return { data: { me: mockMe } }
+    return { data: options?.skip ? undefined : { me: mockMe } }
   },
   useUserUpdateNpubMutation: () => [mockUserUpdateNpub],
 }))
@@ -127,6 +128,7 @@ describe("NostrKeyEnsurer", () => {
     jest.clearAllMocks()
     await AsyncStorage.clear()
     mockIsAppLocked = false
+    mockIsAuthed = true
     mockInitializeChat.mockResolvedValue(undefined)
     alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
     jest.spyOn(console, "log").mockImplementation(() => {})
@@ -365,6 +367,7 @@ describe("NostrKeyEnsurer", () => {
     })
 
     it("holds the refused-relink notice until the app unlocks", async () => {
+      await setNostrKeyOwner(LOCAL_NPUB, ACCOUNT_A)
       mockMe = { id: ACCOUNT_A, npub: null }
       mockUserUpdateNpub.mockResolvedValue({
         data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
@@ -528,6 +531,7 @@ describe("NostrKeyEnsurer", () => {
     })
 
     it("tells the user and remembers when the backend refuses the chosen relink", async () => {
+      await setNostrKeyOwner(LOCAL_NPUB, ACCOUNT_A)
       mockUserUpdateNpub.mockResolvedValue({
         data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
       })
@@ -581,6 +585,7 @@ describe("NostrKeyEnsurer", () => {
     // stays undeliverable and only the user can fix it, so a log line is not
     // enough.
     withLocalKey()
+    await setNostrKeyOwner(LOCAL_NPUB, ACCOUNT_A)
     mockUserUpdateNpub.mockResolvedValue({
       data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
     })
@@ -594,8 +599,141 @@ describe("NostrKeyEnsurer", () => {
     )
     expect(mockInitializeChat).not.toHaveBeenCalled()
     expect(mockGenerateAndStoreKey).not.toHaveBeenCalled()
-    // Not this account's key after all.
-    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBeNull()
+  })
+
+  describe("key with no owner record (installed before the record existed)", () => {
+    // Shared phone, first launch of the upgraded build: A generated the key
+    // long ago, B is the first to launch. No owner, so B registers silently
+    // and the backend refuses because A holds it. B must not be told to
+    // delete the chat keys: that is A's only copy.
+    beforeEach(() => {
+      withLocalKey()
+      mockUserUpdateNpub.mockResolvedValue({
+        data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
+      })
+    })
+
+    it("answers a refused silent relink with back-up advice, not delete advice", async () => {
+      mockMe = { id: ACCOUNT_B, npub: null }
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      expect(alertSpy).not.toHaveBeenCalledWith(
+        expect.anything(),
+        LL.Nostr.keyMismatchRelinkRefused(),
+      )
+      expect(alertSpy).toHaveBeenCalledWith(
+        LL.Nostr.keyMismatchTitle(),
+        LL.Nostr.keyForeignRelinkRefused(),
+      )
+      // Not this account's key after all.
+      expect(await getNostrKeyOwner(LOCAL_NPUB)).toBeNull()
+    })
+
+    it("answers a refused chosen mismatch relink with back-up advice", async () => {
+      mockMe = { id: ACCOUNT_B, npub: OTHER_NPUB }
+      render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      alertButton(alertSpy, LL.Nostr.keyMismatchUseThisDevice()).onPress?.()
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
+      expect(alertSpy).toHaveBeenLastCalledWith(
+        LL.Nostr.keyMismatchTitle(),
+        LL.Nostr.keyForeignRelinkRefused(),
+      )
+    })
+  })
+
+  describe("a prompt belongs to the account whose check produced it", () => {
+    it("drops A's parked prompt when A logs out at the lock screen and B unlocks", async () => {
+      // A's mismatch prompt waits behind the PIN gate. The lock screen has a
+      // Logout button; B logs in and unlocks. A's alert must not appear in
+      // B's session, where "Use this device" would write the key onto B.
+      withLocalKey()
+      okMutation()
+      mockIsAppLocked = true
+      mockMe = { id: ACCOUNT_A, npub: OTHER_NPUB }
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(mockGetSigner).toHaveBeenCalledTimes(1))
+      await flush()
+      await flush()
+      expect(alertSpy).not.toHaveBeenCalled()
+
+      // Logout.
+      mockIsAuthed = false
+      mockMe = null
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+
+      // B logs in (B is linked to the local key, so B's own check is quiet)
+      // and unlocks.
+      mockIsAuthed = true
+      mockMe = { id: ACCOUNT_B, npub: LOCAL_NPUB }
+      rerender(<NostrKeyEnsurer />)
+      await waitFor(() => expect(mockGetSigner).toHaveBeenCalledTimes(2))
+      mockIsAppLocked = false
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      await flush()
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+
+      expect(alertSpy).not.toHaveBeenCalled()
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+    })
+
+    it("stops a check still running for A once B is signed in", async () => {
+      // A's check is waiting on the keychain when A logs out and B logs in.
+      // Resuming would register A's key through the mutation, which now
+      // authenticates as B.
+      mockFetchSecret.mockResolvedValue("nsec1local")
+      let resolveA: (signer: unknown) => void = () => {}
+      mockGetSigner.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveA = resolve
+          }),
+      )
+      mockGetSigner.mockResolvedValue({ getPublicKey: async () => LOCAL_HEX })
+      okMutation()
+      mockMe = { id: ACCOUNT_A, npub: null }
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(mockGetSigner).toHaveBeenCalledTimes(1))
+
+      mockIsAuthed = false
+      mockMe = null
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      mockIsAuthed = true
+      mockMe = { id: ACCOUNT_B, npub: LOCAL_NPUB }
+      rerender(<NostrKeyEnsurer />)
+      await waitFor(() => expect(mockGetSigner).toHaveBeenCalledTimes(2))
+      await flush()
+
+      resolveA({ getPublicKey: async () => LOCAL_HEX })
+      await flush()
+      await flush()
+      await flush()
+
+      expect(mockUserUpdateNpub).not.toHaveBeenCalled()
+      expect(alertSpy).not.toHaveBeenCalled()
+      expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe(ACCOUNT_B)
+    })
+
+    it("checks the same account again after it logs out and back in", async () => {
+      withLocalKey()
+      okMutation()
+      mockMe = { id: ACCOUNT_A, npub: LOCAL_NPUB }
+      const { rerender } = render(<NostrKeyEnsurer />)
+      await waitFor(() => expect(mockGetSigner).toHaveBeenCalledTimes(1))
+      await flush()
+      mockIsAuthed = false
+      mockMe = null
+      rerender(<NostrKeyEnsurer />)
+      await flush()
+      mockIsAuthed = true
+      mockMe = { id: ACCOUNT_A, npub: LOCAL_NPUB }
+      rerender(<NostrKeyEnsurer />)
+      await waitFor(() => expect(mockGetSigner).toHaveBeenCalledTimes(2))
+    })
   })
 
   it("survives a rejected relink mutation", async () => {
