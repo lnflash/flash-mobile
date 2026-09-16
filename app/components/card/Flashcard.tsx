@@ -17,6 +17,7 @@ import {
 } from "@app/hooks"
 import { useHideBalanceQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 // assets
 import FlashcardImage from "@app/assets/images/flashcard.png"
@@ -34,6 +35,7 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
   const isAuthed = useIsAuthed()
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
   const { balanceInSats, transactions, readFlashcard, resetFlashcard } = useFlashcard()
   const { formatMoneyAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = isAuthed
@@ -70,21 +72,31 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
       </View>
       {isAuthed && (
         <View style={styles.btns}>
-          <IconBtn type="clear" icon="down" label={`Reload\nCard`} onPress={onReload} />
-          <IconBtn type="clear" icon="qr" label={`Topup via\nQR`} onPress={onTopup} />
+          <IconBtn
+            type="clear"
+            icon="down"
+            label={LL.CardScreen.reloadCard()}
+            onPress={onReload}
+          />
+          <IconBtn
+            type="clear"
+            icon="qr"
+            label={LL.CardScreen.topupViaQr()}
+            onPress={onTopup}
+          />
           <IconBtn
             type="clear"
             icon={"cardRemove"}
-            label={`Remove\nCard`}
+            label={LL.CardScreen.removeCard()}
             onPress={resetFlashcard}
           />
         </View>
       )}
       <View style={styles.caption}>
         <Text type="bl" bold>
-          Do not throw away your card!
+          {LL.CardScreen.keepYourCard()}
         </Text>
-        <Text type="caption">If your card is lost, the funds are not recoverable</Text>
+        <Text type="caption">{LL.CardScreen.lostCardWarning()}</Text>
       </View>
       <RecentActivity
         transactions={transactions}

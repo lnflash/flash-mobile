@@ -31,9 +31,19 @@ const ReceiveTypeBottomSheet: React.FC<Props> = ({
   }
 
   let receivingTypes = [
-    { key: "Lightning", title: "Lightning", icon: "flash", color: "#F0C243" },
-    { key: "PayCode", title: "Paycode", icon: "at", color: "#E8D315" },
-    { key: "OnChain", title: "Onchain ", icon: "logo-bitcoin", color: "#41AC48" },
+    {
+      key: "Lightning",
+      title: LL.ReceiveScreen.lightning(),
+      icon: "flash",
+      color: "#F0C243",
+    },
+    { key: "PayCode", title: LL.ReceiveScreen.paycode(), icon: "at", color: "#E8D315" },
+    {
+      key: "OnChain",
+      title: LL.ReceiveScreen.onchain(),
+      icon: "logo-bitcoin",
+      color: "#41AC48",
+    },
   ]
 
   if (currency === "BTC") {
