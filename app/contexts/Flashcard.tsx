@@ -20,6 +20,15 @@ import { toastShow } from "../utils/toast"
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
 
+// Only an error class name and an HTTP status ever reach the console. The
+// message text of these errors (and a thrown string) can contain the card's
+// withdraw URL, which together with k1 authorises a withdrawal.
+const describeError = (err: unknown): string => {
+  const name = err instanceof Error ? err.name : typeof err
+  const status = (err as { response?: { status?: unknown } } | null)?.response?.status
+  return typeof status === "number" ? `${name} status=${status}` : name
+}
+
 const width = Dimensions.get("screen").width
 
 type TransactionItem = {
@@ -156,9 +165,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       const lnurlParams = await getParams(payload)
       if ("tag" in lnurlParams && lnurlParams.tag === "withdrawRequest") {
         const { k1, callback } = lnurlParams
-
-        console.log("K1>>>>>>>>>>>>>>", k1)
-        console.log("CALLBACK>>>>>>>>>>>>>", callback)
+        // Never log k1 or callback: together they authorise a withdrawal from the card.
         setK1(k1)
         setCallback(callback)
       } else {
@@ -171,7 +178,7 @@ export const FlashcardProvider = ({ children }: Props) => {
         })
       }
     } catch (err) {
-      console.log("NFC ERROR:", err)
+      console.warn("NFC withdraw params lookup failed:", describeError(err))
       toastShow({
         position: "top",
         message: "Unsupported NFC card. Please ensure you are using a flashcard.",
@@ -213,7 +220,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       getBalance(html)
       getTransactions(html)
     } catch (err) {
-      console.log("NFC ERROR:", err)
+      console.warn("NFC balance page fetch failed:", describeError(err))
       toastShow({
         position: "top",
         message:
@@ -226,7 +233,6 @@ export const FlashcardProvider = ({ children }: Props) => {
   const getLnurl = (html: string) => {
     const lnurlMatch = html.match(/href="lightning:(lnurl\w+)"/)
     if (lnurlMatch) {
-      console.log("LNURL MATCH>>>>>>>>>>", lnurlMatch[1])
       setLnurl(lnurlMatch[1])
     }
   }
@@ -236,8 +242,6 @@ export const FlashcardProvider = ({ children }: Props) => {
     if (balanceMatch) {
       const parsedBalance = balanceMatch[1].replace(/,/g, "") // Remove commas
       const satoshiAmount = parseInt(parsedBalance, 10)
-
-      console.log("SATOSHI AMOUNT>>>>>>>>>>>>>>>", satoshiAmount)
       setBalanceInSats(satoshiAmount)
     }
   }
