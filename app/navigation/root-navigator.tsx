@@ -892,8 +892,8 @@ export const PrimaryNavigator = () => {
           headerShown: true,
           headerShadowVisible: false,
           headerStyle: { backgroundColor: "#000" },
-          tabBarAccessibilityLabel: LL.MapScreen.title(),
-          tabBarTestID: LL.MapScreen.title(),
+          tabBarAccessibilityLabel: LL.ScanningQRCodeScreen.title(),
+          tabBarTestID: LL.ScanningQRCodeScreen.title(),
           tabBarIcon: () => <ScanQR />,
           tabBarStyle: { display: "none" },
         }}
