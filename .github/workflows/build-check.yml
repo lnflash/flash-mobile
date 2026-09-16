@@ -136,8 +136,16 @@ jobs:
       - name: Install JS dependencies
         run: yarn install --frozen-lockfile
 
+      # The action's default package list is `tools platform-tools`. `tools`
+      # is the long-obsolete SDK Tools package; the newer sdkmanager the
+      # ubuntu image ships since 2026-09 no longer knows it and exits 1,
+      # which killed this job on every branch. Gradle fetches the platforms
+      # and build-tools the project pins on its own (licences are accepted
+      # by the action), so platform-tools is all the setup step must install.
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Setup gradle.properties
         run: cp android/gradle.properties.example android/gradle.properties
