@@ -1,12 +1,17 @@
 import * as Keychain from "react-native-keychain"
+import { nip19, generateSecretKey, getPublicKey } from "nostr-tools"
 import {
-  nip19,
-  generateSecretKey,
-  getPublicKey,
-  SimplePool,
-} from "nostr-tools"
-import { createContactListEvent, ensureContactListExists, setPreferredRelay } from "@app/utils/nostr"
-import { getSigner, createSignerFromKey, clearSigner } from "@app/nostr/signer"
+  createContactListEvent,
+  ensureContactListExists,
+  setPreferredRelay,
+} from "@app/utils/nostr"
+import { npubLinkState } from "@app/nostr/npub-link"
+import {
+  getSigner,
+  createSignerFromKey,
+  clearSigner,
+  NostrSigner,
+} from "@app/nostr/signer"
 import {
   publishEventToRelays,
   verifyEventOnRelays,
@@ -77,14 +82,44 @@ const useNostrProfile = () => {
     progressCallback?: (message: string) => void,
     additionalContent?: any,
   ) => {
+    // Only the signer lookup may fall through to generation. Anything that
+    // fails *after* a local key is known to exist must never regenerate over
+    // it: every DM ever encrypted to that key would become unreadable.
+    let existingSigner: NostrSigner | null = null
     try {
-      const existingSigner = await getSigner()
-      if (existingSigner) {
-        await ensureContactListExists(existingSigner)
-        return
-      }
+      existingSigner = await getSigner()
     } catch {
-      // No existing key — proceed with generation
+      // No local key — proceed with generation below.
+    }
+
+    if (existingSigner) {
+      // A local key already exists. If the account advertises no npub at all,
+      // register this one — otherwise DMs to this username are encrypted to
+      // nothing. Only `unregistered` is repaired here: `mismatch` means
+      // another install holds the registered key, and replacing it is the
+      // user's call (the NostrKeyEnsurer prompt, or Reconnect in advanced
+      // settings). `me` must be loaded first — while the network-only query
+      // is in flight an undefined backend npub reads as unregistered and
+      // would relink against unknown state.
+      try {
+        const localNpub = nip19.npubEncode(await existingSigner.getPublicKey())
+        const me = dataAuthed?.me
+        if (me && npubLinkState(localNpub, me.npub) === "unregistered") {
+          const { data } = await userUpdateNpubMutation({
+            variables: { input: { npub: localNpub } },
+          })
+          const errors = data?.userUpdateNpub?.errors ?? []
+          if (errors.length > 0) {
+            console.warn("Backend refused to relink local npub:", errors[0]?.code)
+          }
+        }
+      } catch (e) {
+        // Network/GraphQL failure. The key on this device is still the right
+        // one; the ensurer retries the relink on the next session start.
+        console.error("Failed to relink local npub with backend:", e)
+      }
+      await ensureContactListExists(existingSigner)
+      return
     }
 
     const username = dataAuthed?.me?.username || undefined
@@ -163,20 +198,22 @@ const useNostrProfile = () => {
     try {
       const baseProfileContent = username
         ? {
-          name: username,
-          username: username,
-          flash_username: username,
-          lud16: lud16,
-          nip05: `${username}@${lnDomain}`,
-          ...(pictureUrl && { picture: pictureUrl }),
-          ...(bannerUrl && { banner: bannerUrl }),
-        }
+            name: username,
+            username,
+            // Nostr profile field name, read by other clients; must stay snake_case.
+            // eslint-disable-next-line camelcase
+            flash_username: username,
+            lud16,
+            nip05: `${username}@${lnDomain}`,
+            ...(pictureUrl && { picture: pictureUrl }),
+            ...(bannerUrl && { banner: bannerUrl }),
+          }
         : {
-          name: "Flash User",
-          about: "Flash wallet user",
-          ...(pictureUrl && { picture: pictureUrl }),
-          ...(bannerUrl && { banner: bannerUrl }),
-        }
+            name: "Flash User",
+            about: "Flash wallet user",
+            ...(pictureUrl && { picture: pictureUrl }),
+            ...(bannerUrl && { banner: bannerUrl }),
+          }
 
       // Merge with any additional content passed in (e.g., from username screen)
       const profileContent = {
@@ -428,9 +465,10 @@ const useNostrProfile = () => {
     const coreRelays = ["wss://relay.flashapp.me", "wss://relay.islandbitcoin.com"]
     const coreSuccess = successfulRelays.some((relay) => coreRelays.includes(relay))
     console.log(
-      `\n🎯 Core relay status: ${coreSuccess
-        ? "✅ At least one core relay succeeded"
-        : "⚠️ No core relays succeeded"
+      `\n🎯 Core relay status: ${
+        coreSuccess
+          ? "✅ At least one core relay succeeded"
+          : "⚠️ No core relays succeeded"
       }`,
     )
 
