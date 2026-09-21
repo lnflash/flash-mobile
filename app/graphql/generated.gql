@@ -82,6 +82,84 @@ fragment TransactionList on TransactionConnection {
   __typename
 }
 
+mutation BankAccountAdd($input: BankAccountAddInput!) {
+  bankAccountAdd(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    bankAccount {
+      accountName
+      accountNumber
+      accountType
+      bankBranch
+      bankName
+      currency
+      id
+      isDefault
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BankAccountDelete($input: BankAccountDeleteInput!) {
+  bankAccountDelete(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    success
+    __typename
+  }
+}
+
+mutation BankAccountSetDefault($input: BankAccountSetDefaultInput!) {
+  bankAccountSetDefault(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    bankAccount {
+      accountName
+      accountNumber
+      accountType
+      bankBranch
+      bankName
+      currency
+      id
+      isDefault
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BankAccountUpdate($input: BankAccountUpdateInput!) {
+  bankAccountUpdate(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    bankAccount {
+      accountName
+      accountNumber
+      accountType
+      bankBranch
+      bankName
+      currency
+      id
+      isDefault
+      __typename
+    }
+    __typename
+  }
+}
+
 mutation BridgeAddExternalAccount {
   bridgeAddExternalAccount {
     externalAccount {
@@ -131,6 +209,22 @@ mutation BridgeCreateExternalAccount($input: BridgeCreateExternalAccountInput!) 
     errors {
       code
       message
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BridgeDeleteExternalAccount($input: BridgeDeleteExternalAccountInput!) {
+  bridgeDeleteExternalAccount(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    externalAccount {
+      id
+      isDefault
       __typename
     }
     __typename
@@ -203,6 +297,22 @@ mutation BridgeRequestWithdrawal($input: BridgeRequestWithdrawalInput!) {
     errors {
       code
       message
+      __typename
+    }
+    __typename
+  }
+}
+
+mutation BridgeSetDefaultExternalAccount($input: BridgeSetDefaultExternalAccountInput!) {
+  bridgeSetDefaultExternalAccount(input: $input) {
+    errors {
+      message
+      code
+      __typename
+    }
+    externalAccount {
+      id
+      isDefault
       __typename
     }
     __typename
@@ -418,18 +528,6 @@ mutation accountUpdateDisplayCurrency($input: AccountUpdateDisplayCurrencyInput!
       displayCurrency
       __typename
     }
-    __typename
-  }
-}
-
-mutation bankAccountUpdateRequest($input: BankAccountUpdateRequestInput!) {
-  bankAccountUpdateRequest(input: $input) {
-    errors {
-      message
-      code
-      __typename
-    }
-    status
     __typename
   }
 }
@@ -1087,6 +1185,7 @@ query BridgeExternalAccounts {
     accountNumberLast4
     bankName
     id
+    isDefault
     status
     __typename
   }

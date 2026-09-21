@@ -200,13 +200,98 @@ gql`
     }
   }
 
-  mutation bankAccountUpdateRequest($input: BankAccountUpdateRequestInput!) {
-    bankAccountUpdateRequest(input: $input) {
+  mutation BankAccountAdd($input: BankAccountAddInput!) {
+    bankAccountAdd(input: $input) {
       errors {
         message
         code
       }
-      status
+      bankAccount {
+        accountName
+        accountNumber
+        accountType
+        bankBranch
+        bankName
+        currency
+        id
+        isDefault
+      }
+    }
+  }
+
+  mutation BankAccountUpdate($input: BankAccountUpdateInput!) {
+    bankAccountUpdate(input: $input) {
+      errors {
+        message
+        code
+      }
+      bankAccount {
+        accountName
+        accountNumber
+        accountType
+        bankBranch
+        bankName
+        currency
+        id
+        isDefault
+      }
+    }
+  }
+
+  mutation BankAccountSetDefault($input: BankAccountSetDefaultInput!) {
+    bankAccountSetDefault(input: $input) {
+      errors {
+        message
+        code
+      }
+      bankAccount {
+        accountName
+        accountNumber
+        accountType
+        bankBranch
+        bankName
+        currency
+        id
+        isDefault
+      }
+    }
+  }
+
+  mutation BankAccountDelete($input: BankAccountDeleteInput!) {
+    bankAccountDelete(input: $input) {
+      errors {
+        message
+        code
+      }
+      success
+    }
+  }
+
+  mutation BridgeDeleteExternalAccount($input: BridgeDeleteExternalAccountInput!) {
+    bridgeDeleteExternalAccount(input: $input) {
+      errors {
+        message
+        code
+      }
+      externalAccount {
+        id
+        isDefault
+      }
+    }
+  }
+
+  mutation BridgeSetDefaultExternalAccount(
+    $input: BridgeSetDefaultExternalAccountInput!
+  ) {
+    bridgeSetDefaultExternalAccount(input: $input) {
+      errors {
+        message
+        code
+      }
+      externalAccount {
+        id
+        isDefault
+      }
     }
   }
 

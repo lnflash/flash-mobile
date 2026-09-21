@@ -414,6 +414,7 @@ gql`
       accountNumberLast4
       bankName
       id
+      isDefault
       status
     }
   }

@@ -7,7 +7,11 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 // components
 import { Screen } from "@app/components/screen"
 import { AmountInput } from "@app/components/amount-input"
-import { CashoutFromWallet, CashoutPercentage } from "@app/components/topup-cashout-flow"
+import {
+  CashoutFromWallet,
+  CashoutPercentage,
+  CashoutWithdrawTo,
+} from "@app/components/topup-cashout-flow"
 
 // hooks
 import {
@@ -34,10 +38,10 @@ import { getCashWallet } from "@app/graphql/wallets-utils"
 import { View } from "react-native"
 import { PrimaryBtn } from "@app/components/buttons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { loadDefaultWithdrawAccountId } from "@app/screens/settings-screen/bank-accounts/default-account-store"
 import {
   estimateJmdReceiveCents,
   pickDefaultBankAccount,
+  pickDefaultExternalAccount,
   selectsJmdPayout,
 } from "./cashout-estimate"
 
@@ -60,6 +64,9 @@ const CashoutDetails = ({ navigation, route }: Props) => {
   const isBridge = type === "bridge"
 
   const [errorMsg, setErrorMsg] = useState<string>()
+  // The account picked in "Withdraw to" for this cashout. Unset means the
+  // server default (Settings → Bank accounts) applies.
+  const [selectedAccountId, setSelectedAccountId] = useState<string>()
   const [moneyAmount, setMoneyAmount] =
     useState<MoneyAmount<WalletOrDisplayCurrency>>(zeroDisplayAmount)
 
@@ -99,7 +106,10 @@ const CashoutDetails = ({ navigation, route }: Props) => {
   const cashoutRate = rateData?.cashoutRate
   // Only preview JMD when the payout will actually settle in JMD — a user
   // whose only cashout account is USD gets a USD payout with no conversion.
-  const jmdPayout = selectsJmdPayout(bankAccountsData?.me?.bankAccounts ?? [])
+  const jmdPayout = selectsJmdPayout(
+    bankAccountsData?.me?.bankAccounts ?? [],
+    selectedAccountId,
+  )
   const estimatedJmdCents =
     !isBridge && jmdPayout && cashoutRate && settlementSendAmount.amount > 0
       ? estimateJmdReceiveCents(
@@ -128,8 +138,9 @@ const CashoutDetails = ({ navigation, route }: Props) => {
     }
 
     const localBankAccounts = bankAccountsData?.me?.bankAccounts ?? []
-    const storedDefaultId = await loadDefaultWithdrawAccountId("JMD")
-    const defaultBankAccount = pickDefaultBankAccount(localBankAccounts, storedDefaultId)
+    const defaultBankAccount = pickDefaultBankAccount(localBankAccounts, {
+      selectedId: selectedAccountId,
+    })
 
     if (!defaultBankAccount?.id) {
       setErrorMsg(LL.Cashout.noBankAccountFound())
@@ -150,6 +161,7 @@ const CashoutDetails = ({ navigation, route }: Props) => {
       if (res.data?.requestCashout.offer) {
         navigation.navigate("CashoutConfirmation", {
           offer: res.data.requestCashout.offer,
+          bankAccountId: defaultBankAccount.id,
         })
       } else {
         setErrorMsg(res.data?.requestCashout.errors[0]?.message ?? LL.common.error())
@@ -160,14 +172,14 @@ const CashoutDetails = ({ navigation, route }: Props) => {
   }
 
   const onBridgeWithdraw = async () => {
-    const storedDefaultId = await loadDefaultWithdrawAccountId("USD")
     const externalAccounts =
       externalAccountsData?.bridgeExternalAccounts?.flatMap((account) =>
         account ? [account] : [],
       ) ?? []
-    const externalAccount =
-      externalAccounts.find((account) => account.id === storedDefaultId) ||
-      externalAccounts[0]
+    const externalAccount = pickDefaultExternalAccount(
+      externalAccounts,
+      selectedAccountId,
+    )
 
     if (!externalAccount?.id) {
       setErrorMsg(LL.Cashout.noExternalAccountFound())
@@ -237,6 +249,14 @@ const CashoutDetails = ({ navigation, route }: Props) => {
           />
         </View>
         <CashoutPercentage setAmountToBalancePercentage={setAmountToBalancePercentage} />
+        <View style={styles.withdrawTo}>
+          <CashoutWithdrawTo
+            source={isBridge ? "bridge" : "local"}
+            selectedAccountId={selectedAccountId}
+            onSelectAccount={setSelectedAccountId}
+            onManageAccounts={() => navigation.navigate("BankAccounts")}
+          />
+        </View>
         {estimatedJmdCents !== null && cashoutRate && (
           <View style={styles.rateInfo}>
             <Text type="bm" bold>
@@ -281,8 +301,10 @@ const useStyles = makeStyles(() => ({
   amountLabel: {
     marginBottom: 5,
   },
-  rateInfo: {
+  withdrawTo: {
     marginTop: 16,
+  },
+  rateInfo: {
     gap: 2,
   },
   nextButton: {
