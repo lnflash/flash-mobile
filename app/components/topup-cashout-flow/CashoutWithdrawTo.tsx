@@ -1,112 +1,47 @@
 import React, { useState } from "react"
-import { Pressable, TouchableOpacity, View } from "react-native"
-import Modal from "react-native-modal"
+import { TouchableOpacity, View } from "react-native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
-import {
-  useBankAccountsQuery,
-  useBridgeExternalAccountsQuery,
-} from "@app/graphql/generated"
-import {
-  pickDefaultBankAccount,
-  pickDefaultExternalAccount,
-} from "@app/screens/topup-cashout-flow/cashout-estimate"
 import { displayCurrencyCode } from "@app/utils/currency-display"
 import { testProps } from "@app/utils/testProps"
 
+import { CashoutAccountSource, last4Of, useCashoutAccounts } from "./use-cashout-accounts"
+
 type Props = {
   /** Which rail's accounts to show: local (ERPNext) or Bridge external (US). */
-  source?: "local" | "bridge"
+  source?: CashoutAccountSource
   /** Payout currency already fixed by an offer; narrows the local selection. */
   preferredCurrency?: string
   /** The account chosen for this cashout; falls back to the server default. */
   selectedAccountId?: string
   /**
-   * Makes the card a picker: tapping it lists the eligible accounts. Without
-   * it the card is display-only (the confirmation screen, where the offer is
-   * already locked to an account) and tapping expands the account details.
+   * Makes the card a picker trigger: tapping it asks the screen to open its
+   * CashoutAccountPicker (the sheet lives at the screen root, not in this
+   * card — see CashoutAccountPicker). Without it the card is display-only (the
+   * confirmation screen, where the offer is already locked to an account) and
+   * tapping expands the account details.
    */
-  onSelectAccount?: (accountId: string) => void
-  /** Shown as a link at the bottom of the picker. */
-  onManageAccounts?: () => void
+  onOpenPicker?: () => void
 }
-
-type Option = {
-  id: string
-  bankName: string
-  last4: string
-  currency: string
-  isDefault: boolean
-}
-
-const last4Of = (value: string) => String(value).slice(-4)
 
 const CashoutWithdrawTo: React.FC<Props> = ({
   source = "local",
   preferredCurrency,
   selectedAccountId,
-  onSelectAccount,
-  onManageAccounts,
+  onOpenPicker,
 }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const [expanded, setExpanded] = useState(false)
-  const [pickerVisible, setPickerVisible] = useState(false)
 
-  const isBridge = source === "bridge"
-  const isPicker = Boolean(onSelectAccount)
-
-  // cache-first: the cash-out screen's own query (or a Settings mutation's
-  // refetch) fills the cache, and a cold cache still loads from the network.
-  const { data: bankData } = useBankAccountsQuery({
-    fetchPolicy: "cache-first",
-    skip: isBridge,
+  const isPicker = Boolean(onOpenPicker)
+  const { isBridge, bankAccount, externalAccount } = useCashoutAccounts({
+    source,
+    selectedAccountId,
+    preferredCurrency,
   })
-  const { data: externalData } = useBridgeExternalAccountsQuery({
-    fetchPolicy: "cache-first",
-    skip: !isBridge,
-  })
-
-  const bankAccounts = bankData?.me?.bankAccounts ?? []
-  const externalAccounts =
-    externalData?.bridgeExternalAccounts?.flatMap((account) =>
-      account ? [account] : [],
-    ) ?? []
-
-  // Same selection functions the cash-out screen sends with — never re-derive.
-  const bankAccount = isBridge
-    ? undefined
-    : pickDefaultBankAccount(bankAccounts, {
-        selectedId: selectedAccountId,
-        preferredCurrency,
-      })
-  const externalAccount = isBridge
-    ? pickDefaultExternalAccount(externalAccounts, selectedAccountId)
-    : undefined
-
-  const options: Option[] = isBridge
-    ? externalAccounts.map((account) => ({
-        id: account.id,
-        bankName: account.bankName,
-        last4: last4Of(account.accountNumberLast4),
-        currency: "USD",
-        isDefault: account.isDefault,
-      }))
-    : bankAccounts.flatMap((account) =>
-        account.id
-          ? [
-              {
-                id: account.id,
-                bankName: account.bankName,
-                last4: last4Of(account.accountNumber),
-                currency: displayCurrencyCode(account.currency),
-                isDefault: account.isDefault,
-              },
-            ]
-          : [],
-      )
 
   const current = bankAccount ?? externalAccount
   // Display-only mode has nothing to show without an account; the picker still
@@ -122,21 +57,11 @@ const CashoutWithdrawTo: React.FC<Props> = ({
     : LL.Cashout.noBankAccountFound()
 
   const onPressCard = () => {
-    if (isPicker) {
-      setPickerVisible(true)
+    if (onOpenPicker) {
+      onOpenPicker()
       return
     }
     setExpanded(!expanded)
-  }
-
-  const onPressOption = (id: string) => {
-    setPickerVisible(false)
-    onSelectAccount?.(id)
-  }
-
-  const onPressManage = () => {
-    setPickerVisible(false)
-    onManageAccounts?.()
   }
 
   return (
@@ -182,74 +107,6 @@ const CashoutWithdrawTo: React.FC<Props> = ({
           </View>
         )}
       </TouchableOpacity>
-
-      {isPicker && (
-        <Modal
-          isVisible={pickerVisible}
-          onBackdropPress={() => setPickerVisible(false)}
-          onBackButtonPress={() => setPickerVisible(false)}
-          backdropOpacity={0.3}
-          backdropColor={colors.grey3}
-          style={styles.modal}
-        >
-          <View style={styles.sheet}>
-            <Text type="h2" bold style={styles.sheetTitle}>
-              {LL.Cashout.chooseAccount()}
-            </Text>
-            {options.map((option) => {
-              const isSelected = option.id === current?.id
-              return (
-                <Pressable
-                  key={option.id}
-                  style={styles.option}
-                  onPress={() => onPressOption(option.id)}
-                  accessibilityState={{ selected: isSelected }}
-                  {...testProps(`cashout-account-${option.id}`)}
-                >
-                  <Icon
-                    name={isSelected ? "radio-button-on" : "radio-button-off"}
-                    type="ionicon"
-                    size={22}
-                    color={isSelected ? colors.primary : colors.grey3}
-                  />
-                  <View style={styles.optionText}>
-                    <Text type="p1" bold>
-                      {option.bankName}
-                    </Text>
-                    <Text type="p3" color={colors.grey1}>
-                      ••••{option.last4} · {option.currency}
-                    </Text>
-                  </View>
-                  {option.isDefault && (
-                    <View style={styles.defaultBadge}>
-                      <Text type="p4" bold color={colors.white}>
-                        {LL.Cashout.defaultAccount()}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-              )
-            })}
-            {onManageAccounts && (
-              <Pressable
-                style={styles.manageLink}
-                onPress={onPressManage}
-                {...testProps("cashout-manage-bank-accounts")}
-              >
-                <Icon
-                  name="settings-outline"
-                  type="ionicon"
-                  size={18}
-                  color={colors.primary}
-                />
-                <Text type="p2" bold color={colors.primary}>
-                  {LL.Cashout.manageBankAccounts()}
-                </Text>
-              </Pressable>
-            )}
-          </View>
-        </Modal>
-      )}
     </View>
   )
 }
@@ -296,46 +153,5 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   detailLabel: {
     color: colors.grey3,
-  },
-  modal: {
-    justifyContent: "flex-end",
-    margin: 0,
-  },
-  sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 32,
-    backgroundColor: colors.white,
-  },
-  sheetTitle: {
-    marginBottom: 8,
-  },
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    columnGap: 12,
-    minHeight: 64,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.grey4,
-  },
-  optionText: {
-    flex: 1,
-    rowGap: 4,
-  },
-  defaultBadge: {
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: colors.primary,
-  },
-  manageLink: {
-    minHeight: 48,
-    marginTop: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    columnGap: 8,
   },
 }))

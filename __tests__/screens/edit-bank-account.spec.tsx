@@ -4,6 +4,10 @@
  * Contract under test:
  *  - Validation blocks the mutation: bank must come from SupportedBanks, branch
  *    and a digits-only account number are required, type is Chequing/Savings.
+ *  - "Not in the list" is only judged against a list that LOADED: while the
+ *    SupportedBanks query is in flight submit waits, and when it failed the
+ *    screen shows a retryable load error — never "select your bank" for a bank
+ *    that is perfectly valid (the backend re-validates).
  *  - Add sends bankAccountAdd with currency fixed to JMD and the "set as
  *    default" choice; edit confirms first, then sends bankAccountUpdate with
  *    the account id and NO currency (locked server-side).
@@ -141,14 +145,23 @@ const editParams = {
 
 type Params = { mode: "add" } | typeof editParams
 
-const renderScreen = (params: Params, mocks: MockedResponse[]) => {
+const supportedBanksFailure: MockedResponse = {
+  request: { query: SupportedBanksDocument },
+  error: new Error("ERPNext unreachable"),
+}
+
+const renderScreen = (
+  params: Params,
+  mocks: MockedResponse[],
+  banksMocks: MockedResponse[] = [supportedBanksMock],
+) => {
   const props = {
     navigation,
     route: { key: "EditBankAccount", name: "EditBankAccount", params },
   } as unknown as React.ComponentProps<typeof EditBankAccountScreen>
   return render(
     <ThemeProvider theme={createTheme({})}>
-      <MockedProvider mocks={[supportedBanksMock, ...mocks]}>
+      <MockedProvider mocks={[...banksMocks, ...mocks]}>
         <EditBankAccountScreen {...props} />
       </MockedProvider>
     </ThemeProvider>,
@@ -563,5 +576,105 @@ describe("EditBankAccountScreen — edit", () => {
       ),
     )
     expect(navigation.goBack).not.toHaveBeenCalled()
+  })
+})
+
+describe("EditBankAccountScreen — supported banks unavailable", () => {
+  const updateInput = {
+    bankAccountId: "acc-1",
+    bankName: "NCB",
+    bankBranch: "New Kingston",
+    accountType: "Savings",
+    accountNumber: "12345678",
+  }
+  const updateMock = () => {
+    const result = jest.fn(() => ({
+      data: {
+        bankAccountUpdate: {
+          __typename: "BankAccountPayload",
+          errors: [],
+          bankAccount: { ...storedAccount, ...updateInput, id: "acc-1" },
+        },
+      },
+    }))
+    return {
+      result,
+      mock: {
+        request: { query: BankAccountUpdateDocument, variables: { input: updateInput } },
+        result,
+      },
+    }
+  }
+
+  it("edit: a failed bank list shows a load error, not 'select your bank', and still saves", async () => {
+    const { result: update, mock } = updateMock()
+    const screen = renderScreen(
+      editParams,
+      [mock, refetchMock()],
+      [supportedBanksFailure],
+    )
+    expect(await screen.findByText(en.BankAccountsScreen.banksLoadError())).toBeTruthy()
+
+    fireEvent.changeText(screen.getByDisplayValue("Half Way Tree"), "New Kingston")
+    fireEvent.press(screen.getByText(en.BankAccountsScreen.saveChanges()))
+
+    // The stored bank is not blamed for a list that never arrived.
+    expect(screen.queryByText(en.BankAccountsScreen.bankRequired())).toBeNull()
+    expect(alertSpy).toHaveBeenCalledWith(
+      en.BankAccountsScreen.confirmTitle(),
+      en.BankAccountsScreen.confirmMessage(),
+      expect.any(Array),
+    )
+
+    await pressAlertButton(alertSpy, en.BankAccountsScreen.saveChanges())
+
+    await waitFor(() => expect(navigation.goBack).toHaveBeenCalledTimes(1))
+    expect(update).toHaveBeenCalledTimes(1)
+  })
+
+  it("retry reloads the list and clears the load error", async () => {
+    const screen = renderScreen(
+      editParams,
+      [],
+      [supportedBanksFailure, supportedBanksMock],
+    )
+    await screen.findByText(en.BankAccountsScreen.banksLoadError())
+    expect(screen.queryByText("option:NCB")).toBeNull()
+
+    fireEvent.press(screen.getByTestId("supported-banks-retry"))
+
+    expect(await screen.findByText("option:NCB")).toBeTruthy()
+    expect(screen.queryByText(en.BankAccountsScreen.banksLoadError())).toBeNull()
+  })
+
+  it("add: a failed bank list blocks submit without blaming the bank field", async () => {
+    const add = jest.fn()
+    const screen = renderScreen(
+      { mode: "add" },
+      [{ request: { query: BankAccountAddDocument }, result: add }],
+      [supportedBanksFailure],
+    )
+    await screen.findByText(en.BankAccountsScreen.banksLoadError())
+
+    fireEvent.press(screen.getByText(en.BankAccountsScreen.addAccount()))
+
+    expect(screen.queryByText(en.BankAccountsScreen.bankRequired())).toBeNull()
+    expect(add).not.toHaveBeenCalled()
+    expect(screen.getByTestId("supported-banks-retry")).toBeTruthy()
+  })
+
+  it("edit: submit waits while the bank list is still loading", async () => {
+    const screen = renderScreen(editParams, [], [{ ...supportedBanksMock, delay: 50 }])
+
+    fireEvent.press(screen.getByText(en.BankAccountsScreen.saveChanges()))
+
+    expect(screen.queryByText(en.BankAccountsScreen.bankRequired())).toBeNull()
+    expect(screen.queryByText(en.BankAccountsScreen.banksLoadError())).toBeNull()
+    expect(alertSpy).not.toHaveBeenCalled()
+
+    // Once the list is in, the same press goes through.
+    await screen.findByText("option:NCB")
+    fireEvent.press(screen.getByText(en.BankAccountsScreen.saveChanges()))
+    expect(alertSpy).toHaveBeenCalledTimes(1)
   })
 })

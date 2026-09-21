@@ -8,6 +8,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Screen } from "@app/components/screen"
 import { AmountInput } from "@app/components/amount-input"
 import {
+  CashoutAccountPicker,
   CashoutFromWallet,
   CashoutPercentage,
   CashoutWithdrawTo,
@@ -67,6 +68,9 @@ const CashoutDetails = ({ navigation, route }: Props) => {
   // The account picked in "Withdraw to" for this cashout. Unset means the
   // server default (Settings → Bank accounts) applies.
   const [selectedAccountId, setSelectedAccountId] = useState<string>()
+  // The picker sheet is rendered at the screen root (see below), so its
+  // visibility lives here rather than in the "Withdraw to" card.
+  const [pickerVisible, setPickerVisible] = useState(false)
   const [moneyAmount, setMoneyAmount] =
     useState<MoneyAmount<WalletOrDisplayCurrency>>(zeroDisplayAmount)
 
@@ -253,8 +257,7 @@ const CashoutDetails = ({ navigation, route }: Props) => {
           <CashoutWithdrawTo
             source={isBridge ? "bridge" : "local"}
             selectedAccountId={selectedAccountId}
-            onSelectAccount={setSelectedAccountId}
-            onManageAccounts={() => navigation.navigate("BankAccounts")}
+            onOpenPicker={() => setPickerVisible(true)}
           />
         </View>
         {estimatedJmdCents !== null && cashoutRate && (
@@ -285,6 +288,17 @@ const CashoutDetails = ({ navigation, route }: Props) => {
         btnStyle={nextButtonStyle}
         disabled={!isValidAmount}
         onPress={onNext}
+      />
+      {/* Sibling of the ScrollView, directly under <Screen>: the sheet renders
+          inline (coverScreen={false}, Fabric/Android freeze — #545) as an
+          absoluteFill of its parent, so it must fill the screen, not the card. */}
+      <CashoutAccountPicker
+        visible={pickerVisible}
+        source={isBridge ? "bridge" : "local"}
+        selectedAccountId={selectedAccountId}
+        onSelectAccount={setSelectedAccountId}
+        onManageAccounts={() => navigation.navigate("BankAccounts")}
+        onClose={() => setPickerVisible(false)}
       />
     </Screen>
   )

@@ -420,6 +420,14 @@ type RootTranslation = {
 		 */
 		noWithdrawalAccounts: string
 		/**
+		 * U​S​ ​b​a​n​k​ ​a​c​c​o​u​n​t​s
+		 */
+		usBankAccounts: string
+		/**
+		 * L​o​c​a​l​ ​b​a​n​k​ ​a​c​c​o​u​n​t​s
+		 */
+		localBankAccounts: string
+		/**
 		 * A​d​d​ ​U​S​ ​b​a​n​k​ ​a​c​c​o​u​n​t
 		 */
 		addBankAccount: string
@@ -598,6 +606,14 @@ type RootTranslation = {
 		 * S​e​l​e​c​t​ ​y​o​u​r​ ​b​a​n​k​ ​f​r​o​m​ ​t​h​e​ ​l​i​s​t
 		 */
 		bankRequired: string
+		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​l​o​a​d​ ​t​h​e​ ​l​i​s​t​ ​o​f​ ​b​a​n​k​s​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		banksLoadError: string
+		/**
+		 * T​r​y​ ​a​g​a​i​n
+		 */
+		banksLoadRetry: string
 		/**
 		 * B​r​a​n​c​h​ ​i​s​ ​r​e​q​u​i​r​e​d
 		 */
@@ -6890,6 +6906,14 @@ export type TranslationFunctions = {
 		 */
 		noWithdrawalAccounts: () => LocalizedString
 		/**
+		 * US bank accounts
+		 */
+		usBankAccounts: () => LocalizedString
+		/**
+		 * Local bank accounts
+		 */
+		localBankAccounts: () => LocalizedString
+		/**
 		 * Add US bank account
 		 */
 		addBankAccount: () => LocalizedString
@@ -7065,6 +7089,14 @@ export type TranslationFunctions = {
 		 * Select your bank from the list
 		 */
 		bankRequired: () => LocalizedString
+		/**
+		 * We couldn't load the list of banks. Check your connection and try again.
+		 */
+		banksLoadError: () => LocalizedString
+		/**
+		 * Try again
+		 */
+		banksLoadRetry: () => LocalizedString
 		/**
 		 * Branch is required
 		 */

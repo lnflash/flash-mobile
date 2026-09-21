@@ -4,8 +4,12 @@
  * Contract under test:
  *  - "Add Jamaican bank account" is available with the Bridge flag on OR off;
  *    the Bridge sections (receive card, Plaid CTA) only render with it on.
- *  - Action sheet: Set as default (non-default only) / Edit details (erpnext
- *    only, Bridge has no edit API) / Remove (erpnext + bridge-external).
+ *  - An account without the bankPayout capability (no ERPNext customer yet) is
+ *    sent to the upgrade BEFORE the add form, not after submitting it.
+ *  - Withdrawal accounts are grouped by rail (one server default each).
+ *  - Set as default is the radio tap. The action sheet is at most Edit details
+ *    (erpnext only, Bridge has no edit API) / Remove / Cancel — Android's Alert
+ *    drops everything past three buttons — and is dismissable.
  *  - Remove asks for a destructive confirmation before calling the hook.
  *  - Success and mapped error toasts for set-default and remove.
  */
@@ -33,8 +37,9 @@ jest.mock("@app/components/screen", () => {
   return { Screen: View }
 })
 jest.mock("@app/components/topup-cashout-flow", () => ({ BridgeKycModal: () => null }))
+let mockCapabilities = { verified: true, bankPayout: true }
 jest.mock("@app/hooks/use-account-status", () => ({
-  useAccountStatus: () => ({ capabilities: { verified: true } }),
+  useAccountStatus: () => ({ capabilities: mockCapabilities }),
 }))
 jest.mock("@app/hooks/use-bridge-kyc", () => ({
   useBridgeKyc: () => ({
@@ -119,6 +124,10 @@ const renderHub = () =>
 type AlertButton = { text: string; style?: string; onPress?: () => void }
 const lastAlertButtons = (alertSpy: jest.SpyInstance): AlertButton[] =>
   alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2]
+const lastAlertOptions = (alertSpy: jest.SpyInstance) =>
+  alertSpy.mock.calls[alertSpy.mock.calls.length - 1][3]
+// RN's Android Alert renders only the first three buttons.
+const ANDROID_MAX_ALERT_BUTTONS = 3
 const pressAlertButton = async (alertSpy: jest.SpyInstance, text: string) => {
   const button = lastAlertButtons(alertSpy).find((b) => b.text === text)
   if (!button?.onPress) throw new Error(`alert has no "${text}" button`)
@@ -132,6 +141,7 @@ let alertSpy: jest.SpyInstance
 beforeEach(() => {
   jest.clearAllMocks()
   mockBridgeTopupEnabled = true
+  mockCapabilities = { verified: true, bankPayout: true }
   mockSetDefault.mockResolvedValue({ ok: true })
   mockRemove.mockResolvedValue({ ok: true })
   mockHookState = {
@@ -139,8 +149,8 @@ beforeEach(() => {
     kycApproved: true,
     receiveAccount: null,
     withdrawGroups: [
-      { currency: "USD", accounts: [bridgeOther] },
-      { currency: "JMD", accounts: [jmDefault, jmOther] },
+      { rail: "us", accounts: [bridgeOther] },
+      { rail: "local", accounts: [jmDefault, jmOther] },
     ],
     setDefault: mockSetDefault,
     remove: mockRemove,
@@ -164,12 +174,44 @@ describe("BankAccountsScreen — add CTAs", () => {
     expect(mockNavigate).toHaveBeenCalledWith("EditBankAccount", { mode: "add" })
   })
 
+  it("no bankPayout capability: offers the upgrade instead of the add form", async () => {
+    mockCapabilities = { verified: true, bankPayout: false }
+    mockHookState = {
+      ...mockHookState,
+      withdrawGroups: [{ rail: "us", accounts: [bridgeOther] }],
+    }
+    const screen = renderHub()
+
+    fireEvent.press(screen.getByTestId("add-jamaican-bank-account"))
+
+    expect(mockNavigate).not.toHaveBeenCalled()
+    const [title, message] = alertSpy.mock.calls[alertSpy.mock.calls.length - 1]
+    expect(title).toBe(en.BankAccountsScreen.upgradeRequiredTitle())
+    expect(message).toBe(en.BankAccountsScreen.errorUpgradeRequired())
+    expect(lastAlertOptions(alertSpy)).toEqual({ cancelable: true })
+
+    await pressAlertButton(alertSpy, en.BankAccountsScreen.upgradeYourAccount())
+    expect(mockNavigate).toHaveBeenCalledTimes(1)
+    expect(mockNavigate).toHaveBeenCalledWith("AccountType")
+  })
+
+  it("a local account on file proves the ERPNext customer: add form opens", () => {
+    // Stale / fallback capability read must not lock out an existing customer.
+    mockCapabilities = { verified: true, bankPayout: false }
+    const screen = renderHub()
+
+    fireEvent.press(screen.getByTestId("add-jamaican-bank-account"))
+
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(mockNavigate).toHaveBeenCalledWith("EditBankAccount", { mode: "add" })
+  })
+
   it("keeps the Jamaican CTA and hides the Bridge sections when the flag is off", () => {
     mockBridgeTopupEnabled = false
     mockHookState = {
       ...mockHookState,
       kycApproved: false,
-      withdrawGroups: [{ currency: "JMD", accounts: [jmDefault] }],
+      withdrawGroups: [{ rail: "local", accounts: [jmDefault] }],
     }
     const screen = renderHub()
 
@@ -192,19 +234,38 @@ describe("BankAccountsScreen — action sheet", () => {
   const openActions = (screen: ReturnType<typeof renderHub>, key: string) =>
     fireEvent.press(screen.getByTestId(`bank-account-actions-${key}`))
 
-  it("erpnext non-default: Set as default, Edit details, Remove, Cancel", () => {
+  const pressRadio = async (screen: ReturnType<typeof renderHub>, key: string) => {
+    await act(async () => {
+      fireEvent.press(screen.getByTestId(`bank-account-radio-${key}`))
+    })
+  }
+
+  it("erpnext non-default: Edit details, Remove, Cancel — Cancel survives Android", () => {
     const screen = renderHub()
     openActions(screen, jmOther.key)
 
     expect(lastAlertButtons(alertSpy).map((b) => b.text)).toEqual([
-      en.BankAccountsScreen.setAsDefault(),
       en.BankAccountsScreen.updateDetails(),
       en.BankAccountsScreen.remove(),
       en.common.cancel(),
     ])
   })
 
-  it("the default account has no 'Set as default'", () => {
+  it("every action sheet fits Android's three buttons, keeps Cancel, and is dismissable", () => {
+    const screen = renderHub()
+    for (const acc of [jmOther, jmDefault, bridgeOther]) {
+      openActions(screen, acc.key)
+
+      const buttons = lastAlertButtons(alertSpy)
+      expect(buttons.length).toBeLessThanOrEqual(ANDROID_MAX_ALERT_BUTTONS)
+      expect(
+        buttons.slice(0, ANDROID_MAX_ALERT_BUTTONS).some((b) => b.style === "cancel"),
+      ).toBe(true)
+      expect(lastAlertOptions(alertSpy)).toEqual({ cancelable: true })
+    }
+  })
+
+  it("the default account: Edit details, Remove, Cancel", () => {
     const screen = renderHub()
     openActions(screen, jmDefault.key)
 
@@ -220,12 +281,43 @@ describe("BankAccountsScreen — action sheet", () => {
     openActions(screen, bridgeOther.key)
 
     const texts = lastAlertButtons(alertSpy).map((b) => b.text)
-    expect(texts).toEqual([
-      en.BankAccountsScreen.setAsDefault(),
-      en.BankAccountsScreen.remove(),
-      en.common.cancel(),
-    ])
+    expect(texts).toEqual([en.BankAccountsScreen.remove(), en.common.cancel()])
     expect(texts.join(" ")).not.toMatch(/coming soon/i)
+  })
+
+  it("tapping the radio of the current default does nothing", async () => {
+    const screen = renderHub()
+    await pressRadio(screen, jmDefault.key)
+
+    expect(mockSetDefault).not.toHaveBeenCalled()
+  })
+
+  it("titles each group by rail and shows the currency on the row", () => {
+    mockHookState = {
+      ...mockHookState,
+      withdrawGroups: [
+        { rail: "us", accounts: [bridgeOther] },
+        {
+          rail: "local",
+          accounts: [
+            jmDefault,
+            account({
+              key: "erpnext-us-local",
+              id: "us-local",
+              last4: "0003",
+              currency: "USD",
+            }),
+          ],
+        },
+      ],
+    }
+    const screen = renderHub()
+
+    expect(screen.getByText(en.BankAccountsScreen.usBankAccounts())).toBeTruthy()
+    expect(screen.getByText(en.BankAccountsScreen.localBankAccounts())).toBeTruthy()
+    expect(screen.getByText("••••0002 · JMD")).toBeTruthy()
+    expect(screen.getByText("••••0003 · USD")).toBeTruthy()
+    expect(screen.getByText("••••1111 · USD")).toBeTruthy()
   })
 
   it("Edit details opens the form prefilled in edit mode", async () => {
@@ -244,10 +336,9 @@ describe("BankAccountsScreen — action sheet", () => {
     })
   })
 
-  it("Set as default calls the hook and toasts success", async () => {
+  it("tapping the radio sets the default and toasts success", async () => {
     const screen = renderHub()
-    openActions(screen, bridgeOther.key)
-    await pressAlertButton(alertSpy, en.BankAccountsScreen.setAsDefault())
+    await pressRadio(screen, bridgeOther.key)
 
     expect(mockSetDefault).toHaveBeenCalledWith(bridgeOther)
     expect(mockToastShow).toHaveBeenCalledWith({
@@ -259,9 +350,9 @@ describe("BankAccountsScreen — action sheet", () => {
   it("Set as default failure toasts the mapped error", async () => {
     mockSetDefault.mockResolvedValue({ ok: false, code: "BANK_ACCOUNT_NOT_FOUND" })
     const screen = renderHub()
-    openActions(screen, jmOther.key)
-    await pressAlertButton(alertSpy, en.BankAccountsScreen.setAsDefault())
+    await pressRadio(screen, jmOther.key)
 
+    expect(mockSetDefault).toHaveBeenCalledWith(jmOther)
     expect(mockToastShow).toHaveBeenCalledWith({
       type: "error",
       message: en.BankAccountsScreen.errorNotFound(),

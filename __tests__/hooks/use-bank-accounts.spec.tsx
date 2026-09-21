@@ -2,8 +2,9 @@
  * useBankAccounts — the Settings → Bank accounts hub model.
  *
  * Contract under test:
- *  - ERPNext (local) and Bridge external accounts merge into currency groups,
- *    default-first; the Bridge virtual account is the single receive account.
+ *  - ERPNext (local) and Bridge external accounts are grouped by RAIL (the
+ *    server keeps one default per rail, not per currency), default-first; the
+ *    Bridge virtual account is the single receive account.
  *  - The SERVER owns the default (`isDefault` on both rails) — there is no
  *    client-side default store.
  *  - setDefault / remove call the mutation that matches the account's source
@@ -139,7 +140,7 @@ const findAccount = (
 }
 
 // Both rails load independently; wait on the merged account count rather than
-// on the group count (the local USD account alone already makes a USD group).
+// on the group count.
 const accountCount = (result: { current: ReturnType<typeof useBankAccounts> }) =>
   result.current.withdrawGroups.flatMap((group) => group.accounts).length
 const ALL_ACCOUNTS = 5
@@ -149,19 +150,21 @@ beforeEach(() => {
 })
 
 describe("useBankAccounts — merge", () => {
-  it("merges both rails into currency groups, USD first, default first", async () => {
+  it("groups by rail, US first, default first", async () => {
     const { result, waitFor } = renderBankAccounts(baseMocks())
     await waitFor(() => {
       expect(accountCount(result)).toBe(ALL_ACCOUNTS)
     })
 
-    const [usdGroup, jmdGroup] = result.current.withdrawGroups
-    expect(usdGroup.currency).toBe("USD")
-    // Bridge default first; the local USD account (lower-case "usd" server
-    // value) lands in the same group.
-    expect(usdGroup.accounts.map((a) => a.id)).toEqual(["ext-2", "ext-1", "us-local"])
-    expect(jmdGroup.currency).toBe("JMD")
-    expect(jmdGroup.accounts.map((a) => a.id)).toEqual(["jm-2", "jm-1"])
+    expect(result.current.withdrawGroups).toHaveLength(2)
+    const [usGroup, localGroup] = result.current.withdrawGroups
+    expect(usGroup.rail).toBe("us")
+    expect(usGroup.accounts.map((a) => a.id)).toEqual(["ext-2", "ext-1"])
+    // The local USD account shares the ERPNext default with the JMD accounts,
+    // so it belongs with them — not with the Bridge USD accounts.
+    expect(localGroup.rail).toBe("local")
+    expect(localGroup.accounts.map((a) => a.id)).toEqual(["jm-2", "jm-1", "us-local"])
+    expect(findAccount(result, "us-local").currency).toBe("USD")
 
     expect(findAccount(result, "jm-1")).toMatchObject({
       key: "erpnext-jm-1",
@@ -191,6 +194,38 @@ describe("useBankAccounts — merge", () => {
     expect(findAccount(result, "us-local").isDefault).toBe(false)
     expect(findAccount(result, "ext-2").isDefault).toBe(true)
     expect(findAccount(result, "ext-1").isDefault).toBe(false)
+  })
+
+  it("never shows two defaults in one group: Bridge default + ERPNext USD default", async () => {
+    // Both rails pay out in USD and both have a server default. Grouped by
+    // currency they collided into one radio group with two radios on.
+    const { result, waitFor } = renderBankAccounts([
+      kycMock(),
+      virtualAccountMock,
+      externalAccountsMock(initialExternals),
+      bankAccountsMock([
+        bank({ id: "jm-1", accountNumber: "11110001" }),
+        bank({
+          id: "us-local",
+          accountNumber: "22220003",
+          currency: "USD",
+          isDefault: true,
+        }),
+      ]),
+    ])
+    await waitFor(() => {
+      expect(accountCount(result)).toBe(4)
+    })
+
+    expect(findAccount(result, "ext-2").isDefault).toBe(true)
+    expect(findAccount(result, "us-local").isDefault).toBe(true)
+    for (const group of result.current.withdrawGroups) {
+      expect(group.accounts.filter((a) => a.isDefault)).toHaveLength(1)
+      // One rail per group, so a set-default never reaches into another group.
+      expect(new Set(group.accounts.map((a) => a.source)).size).toBe(1)
+    }
+    const local = result.current.withdrawGroups.find((g) => g.rail === "local")
+    expect(local?.accounts.map((a) => a.id)).toEqual(["us-local", "jm-1"])
   })
 
   it("marks nothing default when the server flags nothing (no client fallback)", async () => {
@@ -324,7 +359,7 @@ describe("useBankAccounts — setDefault", () => {
     expect(outcome).toEqual({ ok: true })
     expect(mutation).toHaveBeenCalledTimes(1)
     // Fresh list from the refetch: new default, reordered, us-local gone.
-    const jmd = result.current.withdrawGroups.find((g) => g.currency === "JMD")
+    const jmd = result.current.withdrawGroups.find((g) => g.rail === "local")
     expect(jmd?.accounts.map((a) => [a.id, a.isDefault])).toEqual([
       ["jm-1", true],
       ["jm-2", false],
@@ -539,7 +574,7 @@ describe("useBankAccounts — remove", () => {
 
     expect(outcome).toEqual({ ok: true })
     expect(mutation).toHaveBeenCalledTimes(1)
-    const jmd = result.current.withdrawGroups.find((g) => g.currency === "JMD")
+    const jmd = result.current.withdrawGroups.find((g) => g.rail === "local")
     expect(jmd?.accounts.map((a) => [a.id, a.isDefault])).toEqual([["jm-1", true]])
     expect(result.current.removeState).toEqual({
       loading: false,
@@ -611,8 +646,8 @@ describe("useBankAccounts — remove", () => {
 
     expect(outcome).toEqual({ ok: true })
     expect(mutation).toHaveBeenCalledTimes(1)
-    const usd = result.current.withdrawGroups.find((g) => g.currency === "USD")
-    expect(usd?.accounts.map((a) => a.id)).toEqual(["ext-2", "us-local"])
+    const us = result.current.withdrawGroups.find((g) => g.rail === "us")
+    expect(us?.accounts.map((a) => a.id)).toEqual(["ext-2"])
   })
 
   it("bridge-external: returns the payload error and keeps the account", async () => {

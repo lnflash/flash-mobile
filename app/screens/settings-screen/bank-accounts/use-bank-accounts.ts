@@ -12,7 +12,7 @@ import {
   useBridgeVirtualAccountQuery,
 } from "@app/graphql/generated"
 
-import { BankAccountStatus, BankAccountVM, WithdrawGroup } from "./types"
+import { BankAccountStatus, BankAccountVM, WithdrawGroup, WithdrawRail } from "./types"
 
 const currencyKey = (currency?: string | null) => (currency ?? "").toUpperCase()
 
@@ -54,7 +54,7 @@ export type UseBankAccounts = {
   kycApproved: boolean
   /** The single Flash receiving (virtual) account, or null when unavailable. */
   receiveAccount: BankAccountVM | null
-  /** Withdrawal accounts grouped by currency, default-first within each group. */
+  /** Withdrawal accounts grouped by rail (one server default each), default-first. */
   withdrawGroups: WithdrawGroup[]
   /** Make the account the server-side default for its rail, then refetch. */
   setDefault: (account: BankAccountVM) => Promise<BankAccountActionResult>
@@ -282,29 +282,23 @@ export const useBankAccounts = (): UseBankAccounts => {
       })
     })
 
-    // Group by currency
-    const byCurrency = new Map<string, BankAccountVM[]>()
-    for (const acc of all) {
-      const list = byCurrency.get(acc.currency) ?? []
-      list.push(acc)
-      byCurrency.set(acc.currency, list)
-    }
+    // Group by rail, not currency: the server keeps one default per rail, so a
+    // rail is the only grouping where "one radio on" is true. Bridge first.
+    const rails: { rail: WithdrawRail; source: BankAccountVM["source"] }[] = [
+      { rail: "us", source: "bridge-external" },
+      { rail: "local", source: "erpnext" },
+    ]
 
-    const groups: WithdrawGroup[] = []
-    for (const [currency, accounts] of byCurrency.entries()) {
-      // default-first ordering for a clean read (sort is stable)
-      const marked = [...accounts].sort(
-        (a, b) => Number(b.isDefault) - Number(a.isDefault),
-      )
-      groups.push({ currency, accounts: marked })
-    }
+    const byDefaultFirst = (x: BankAccountVM, y: BankAccountVM) =>
+      Number(y.isDefault) - Number(x.isDefault)
 
-    // Stable currency ordering: USD first, then alpha
-    groups.sort((a, b) => {
-      if (a.currency === "USD") return -1
-      if (b.currency === "USD") return 1
-      return a.currency.localeCompare(b.currency)
-    })
+    // default-first ordering for a clean read (sort is stable)
+    const groups: WithdrawGroup[] = rails
+      .map(({ rail, source }) => ({
+        rail,
+        accounts: all.filter((acc) => acc.source === source).sort(byDefaultFirst),
+      }))
+      .filter((group) => group.accounts.length > 0)
 
     return groups
   }, [externalData, bankData])

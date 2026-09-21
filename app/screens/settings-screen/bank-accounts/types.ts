@@ -59,7 +59,15 @@ export type BankAccountVM = {
   } | null
 }
 
+/**
+ * The payout rail a withdrawal account belongs to. The server keeps exactly one
+ * default per rail, so the hub groups by rail (NOT by currency: a legacy USD
+ * ERPNext account shares its default with the JMD ones, not with Bridge).
+ */
+export type WithdrawRail = "us" | "local"
+
 export type WithdrawGroup = {
-  currency: string
+  rail: WithdrawRail
+  /** Default-first. At most one account in a group is the default. */
   accounts: BankAccountVM[]
 }

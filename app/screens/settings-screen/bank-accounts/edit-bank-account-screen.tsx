@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react"
-import { Alert, ScrollView, Switch, View } from "react-native"
+import { Alert, Pressable, ScrollView, Switch, View } from "react-native"
 import { useApolloClient } from "@apollo/client"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -60,7 +60,16 @@ export const EditBankAccountScreen: React.FC<Props> = ({ route, navigation }) =>
   const [accountTypeErr, setAccountTypeErr] = useState<string>()
   const [accountNumErr, setAccountNumErr] = useState<string>()
 
-  const { data } = useSupportedBanksQuery()
+  const {
+    data,
+    loading: banksLoading,
+    error: banksError,
+    refetch: refetchBanks,
+  } = useSupportedBanksQuery({ notifyOnNetworkStatusChange: true })
+  // Three states, not two: an empty list because the request is in flight or
+  // failed is NOT "your bank is unsupported".
+  const banksLoaded = Boolean(data)
+  const banksFailed = !banksLoaded && !banksLoading && Boolean(banksError)
   const supportedBanks = useMemo(
     () => data?.supportedBanks.map((el) => ({ label: el.name, value: el.name })) ?? [],
     [data?.supportedBanks],
@@ -82,9 +91,14 @@ export const EditBankAccountScreen: React.FC<Props> = ({ route, navigation }) =>
   const validate = () => {
     let ok = true
     // The backend only accepts a bank from supportedBanks. An edited account
-    // whose stored bank is no longer supported must pick a current one.
-    if (!bankName || !supportedBanks.some((bank) => bank.value === bankName)) {
-      setNameErr(LL.BankAccountsScreen.bankRequired())
+    // whose stored bank is no longer supported must pick a current one — but
+    // membership is only judged against a list that actually loaded. Without
+    // one the backend (which re-validates) is the judge, and the screen shows
+    // the load error instead of blaming the user's bank.
+    const unsupported =
+      banksLoaded && !supportedBanks.some((bank) => bank.value === bankName)
+    if (!bankName || unsupported) {
+      if (banksLoaded) setNameErr(LL.BankAccountsScreen.bankRequired())
       ok = false
     }
     if (bankBranch.trim().length < 2) {
@@ -167,8 +181,17 @@ export const EditBankAccountScreen: React.FC<Props> = ({ route, navigation }) =>
     }
   }
 
+  const retryBanks = () => {
+    // The outcome lands in the query's own loading / error state.
+    refetchBanks().catch(() => undefined)
+  }
+
+  // No list yet: wait for it. No list and no bank to submit (add mode after a
+  // failed load): nothing to send — the retry link is the way forward.
+  const submitDisabled = !banksLoaded && (banksLoading || !bankName)
+
   const onPressSubmit = () => {
-    if (loading) return
+    if (loading || submitDisabled) return
     if (!validate()) return
     if (isAdd) {
       onSubmit()
@@ -203,6 +226,22 @@ export const EditBankAccountScreen: React.FC<Props> = ({ route, navigation }) =>
             setBankName(val)
           }}
         />
+        {banksFailed && (
+          <View style={styles.banksError}>
+            <Text type="caption" color={colors.error} style={styles.banksErrorText}>
+              {LL.BankAccountsScreen.banksLoadError()}
+            </Text>
+            <Pressable
+              hitSlop={12}
+              onPress={retryBanks}
+              {...testProps("supported-banks-retry")}
+            >
+              <Text type="caption" bold color={colors.primary}>
+                {LL.BankAccountsScreen.banksLoadRetry()}
+              </Text>
+            </Pressable>
+          </View>
+        )}
         <InputField
           label={LL.AccountUpgrade.bankBranch()}
           placeholder={LL.AccountUpgrade.bankBranchPlaceholder()}
@@ -270,6 +309,7 @@ export const EditBankAccountScreen: React.FC<Props> = ({ route, navigation }) =>
         }
         btnStyle={styles.btn}
         loading={loading}
+        disabled={submitDisabled}
         onPress={onPressSubmit}
       />
     </Screen>
@@ -286,6 +326,16 @@ const useStyles = makeStyles(() => ({
   },
   subtitle: {
     marginBottom: 16,
+  },
+  banksError: {
+    flexDirection: "row",
+    alignItems: "center",
+    columnGap: 12,
+    marginTop: -8,
+    marginBottom: 15,
+  },
+  banksErrorText: {
+    flex: 1,
   },
   lockNote: {
     marginTop: -8,

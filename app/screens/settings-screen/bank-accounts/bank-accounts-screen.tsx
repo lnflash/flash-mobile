@@ -18,6 +18,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useAppDispatch } from "@app/store/redux"
 import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
+import { displayCurrencyCode } from "@app/utils/currency-display"
 import { openWhatsAppUrl } from "@app/utils/external"
 import { testProps } from "@app/utils/testProps"
 import { toastShow } from "@app/utils/toast"
@@ -186,7 +187,9 @@ const StatusPill = ({ status }: { status: BankAccountStatus }) => {
 }
 
 // ---------------------------------------------------------------------------
-// Withdraw (money-out) — grouped by currency, one default per currency.
+// Withdraw (money-out) — grouped by rail, because the server keeps ONE default
+// per rail (Bridge external accounts / ERPNext local accounts), not one per
+// currency. Each group is therefore a true radio group: exactly one default.
 // ---------------------------------------------------------------------------
 
 type WithdrawRowProps = {
@@ -222,15 +225,15 @@ const WithdrawRow = ({
       ],
     )
 
+  // At most Edit / Remove / Cancel. Android's Alert keeps only the first
+  // three buttons, so a fourth would silently drop Cancel and leave nothing but
+  // live mutations to pick from. "Set as default" lives on the radio tap.
   const openActions = () => {
     const options: {
       text: string
       style?: "cancel" | "destructive"
       onPress?: () => void
     }[] = []
-    if (account.canSetDefault && !account.isDefault) {
-      options.push({ text: LL.BankAccountsScreen.setAsDefault(), onPress: onSetDefault })
-    }
     // Bridge has no edit API: removing and re-adding is the pattern there.
     if (account.source === "erpnext") {
       options.push({ text: LL.BankAccountsScreen.updateDetails(), onPress: onEdit })
@@ -247,6 +250,8 @@ const WithdrawRow = ({
       account.bankName,
       LL.BankAccountsScreen.accountEnding({ last4: account.last4 }),
       options,
+      // Android defaults to cancelable: false — back / tap-outside must dismiss.
+      { cancelable: true },
     )
   }
 
@@ -256,6 +261,9 @@ const WithdrawRow = ({
         style={styles.radioTap}
         disabled={busy}
         onPress={account.canSetDefault ? onSetDefault : undefined}
+        accessibilityRole="radio"
+        accessibilityState={{ checked: account.isDefault, disabled: busy }}
+        {...testProps(`bank-account-radio-${account.key}`)}
       >
         <Icon
           name={account.isDefault ? "radio-button-on" : "radio-button-off"}
@@ -278,7 +286,7 @@ const WithdrawRow = ({
           </View>
           <View style={styles.sideToSide}>
             <Text type="p3" color={colors.grey1}>
-              ••••{account.last4}
+              ••••{account.last4} · {displayCurrencyCode(account.currency)}
             </Text>
             <StatusPill status={account.status} />
           </View>
@@ -383,6 +391,32 @@ export const BankAccountsScreen: React.FC = () => {
       navigation.navigate("BridgeAddExternalAccount", { returnTo: "BankAccounts" }),
   })
 
+  // Every ERPNext bank-account mutation needs an ERPNext customer, which the
+  // account upgrade creates (server: BANK_ACCOUNT_UPGRADE_REQUIRED). Say so
+  // before the user fills in the form, not after. An account already on file
+  // proves the customer exists, whatever the capability read says. The edit
+  // screen still handles the server error as the backstop.
+  const hasLocalAccount = withdrawGroups.some((group) => group.rail === "local")
+  const canAddLocalAccount = capabilities.bankPayout || hasLocalAccount
+  const onAddLocalAccount = () => {
+    if (canAddLocalAccount) {
+      navigation.navigate("EditBankAccount", { mode: "add" })
+      return
+    }
+    Alert.alert(
+      LL.BankAccountsScreen.upgradeRequiredTitle(),
+      LL.BankAccountsScreen.errorUpgradeRequired(),
+      [
+        { text: LL.common.cancel(), style: "cancel" },
+        {
+          text: LL.BankAccountsScreen.upgradeYourAccount(),
+          onPress: () => navigation.navigate("AccountType"),
+        },
+      ],
+      { cancelable: true },
+    )
+  }
+
   useFocusEffect(
     React.useCallback(() => {
       refetch()
@@ -480,9 +514,11 @@ export const BankAccountsScreen: React.FC = () => {
         </View>
       ) : (
         withdrawGroups.map((group) => (
-          <View key={group.currency} style={styles.group}>
+          <View key={group.rail} style={styles.group}>
             <Text type="p3" bold color={colors.grey2} style={styles.groupTitle}>
-              {group.currency}
+              {group.rail === "us"
+                ? LL.BankAccountsScreen.usBankAccounts()
+                : LL.BankAccountsScreen.localBankAccounts()}
             </Text>
             <View style={styles.groupBody}>
               {group.accounts.map((account) => (
@@ -517,7 +553,7 @@ export const BankAccountsScreen: React.FC = () => {
           bridgeTopupEnabled ? styles.outlineButton : styles.primaryButton,
           !bridgeTopupEnabled && styles.primaryButtonNoManual,
         ]}
-        onPress={() => navigation.navigate("EditBankAccount", { mode: "add" })}
+        onPress={onAddLocalAccount}
         {...testProps("add-jamaican-bank-account")}
       >
         <Icon

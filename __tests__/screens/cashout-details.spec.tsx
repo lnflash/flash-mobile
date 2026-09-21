@@ -6,6 +6,10 @@
  *    AsyncStorage default any more).
  *  - A selection made in the picker flows into requestCashout.bankAccountId
  *    and on to the confirmation screen.
+ *  - The account sheet is owned by THIS screen and rendered at the screen
+ *    root, outside the ScrollView: it renders inline (coverScreen={false},
+ *    Fabric/Android freeze #545) as an absoluteFill of its parent, so inside
+ *    the card or the scroller it would be clipped. The card only opens it.
  *  - The JMD estimate follows the picked account's currency.
  *  - Bridge: default from `isDefault`, selection wins, label follows.
  */
@@ -22,11 +26,24 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ bottom: 0 }),
 }))
 jest.mock("@app/components/screen", () => {
+  const ReactActual = jest.requireActual("react")
   const { View } = jest.requireActual("react-native")
-  return { Screen: View }
+  return {
+    Screen: ({ children }: { children: React.ReactNode }) =>
+      ReactActual.createElement(View, { testID: "screen-root" }, children),
+  }
 })
-// Stubs: "amount" sets a valid $10.00, and the Withdraw-to card exposes its
-// picker callbacks as buttons (the card itself is covered by its own spec).
+jest.mock("react-native-gesture-handler", () => {
+  const ReactActual = jest.requireActual("react")
+  const { View } = jest.requireActual("react-native")
+  return {
+    ScrollView: ({ children }: { children: React.ReactNode }) =>
+      ReactActual.createElement(View, { testID: "details-scroll" }, children),
+  }
+})
+// Stubs: "amount" sets a valid $10.00; the Withdraw-to card exposes its
+// open-picker callback and the sheet its callbacks as buttons (both are covered
+// by their own specs).
 jest.mock("@app/components/amount-input", () => {
   const ReactActual = jest.requireActual("react")
   const { Pressable, Text } = jest.requireActual("react-native")
@@ -43,33 +60,40 @@ jest.mock("@app/components/amount-input", () => {
   }
 })
 const mockWithdrawToProps = jest.fn()
+const mockPickerProps = jest.fn()
 jest.mock("@app/components/topup-cashout-flow", () => {
   const ReactActual = jest.requireActual("react")
-  const { Pressable, Text } = jest.requireActual("react-native")
-  type Props = {
+  const { Pressable, Text, View } = jest.requireActual("react-native")
+  type CardProps = { onOpenPicker: () => void }
+  type PickerProps = {
+    visible: boolean
     onSelectAccount: (id: string) => void
     onManageAccounts: () => void
+    onClose: () => void
   }
+  const button = (label: string, onPress: () => void) =>
+    ReactActual.createElement(
+      Pressable,
+      { key: label, onPress },
+      ReactActual.createElement(Text, null, label),
+    )
   return {
     CashoutFromWallet: () => null,
     CashoutPercentage: () => null,
-    CashoutWithdrawTo: (props: Props) => {
+    CashoutWithdrawTo: (props: CardProps) => {
       mockWithdrawToProps(props)
+      return button("open-picker", props.onOpenPicker)
+    },
+    CashoutAccountPicker: (props: PickerProps) => {
+      mockPickerProps(props)
       return ReactActual.createElement(
-        ReactActual.Fragment,
-        null,
+        View,
+        { testID: "account-picker" },
         ...["us-1", "jm-1", "ext-1"].map((id) =>
-          ReactActual.createElement(
-            Pressable,
-            { key: id, onPress: () => props.onSelectAccount(id) },
-            ReactActual.createElement(Text, null, `select-${id}`),
-          ),
+          button(`select-${id}`, () => props.onSelectAccount(id)),
         ),
-        ReactActual.createElement(
-          Pressable,
-          { onPress: props.onManageAccounts },
-          ReactActual.createElement(Text, null, "manage"),
-        ),
+        button("manage", props.onManageAccounts),
+        button("close-picker", props.onClose),
       )
     },
   }
@@ -217,8 +241,51 @@ describe("CashoutDetails — local", () => {
       offer,
       bankAccountId: "jm-1",
     })
+    // Card and sheet are driven by the same selection.
     expect(mockWithdrawToProps).toHaveBeenLastCalledWith(
       expect.objectContaining({ source: "local", selectedAccountId: "jm-1" }),
+    )
+    expect(mockPickerProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({ source: "local", selectedAccountId: "jm-1" }),
+    )
+  })
+
+  it("renders the account sheet at the screen root, outside the ScrollView", () => {
+    const screen = renderDetails("local")
+
+    // Host-element ancestry, nearest first (booleans/strings only: a failed
+    // toBe on a test instance would serialise the whole tree).
+    const ancestorIds = (testID: string, text?: string): string[] => {
+      const ids: string[] = []
+      const start = text ? screen.getByText(text) : screen.getByTestId(testID)
+      for (let at = start.parent; at; at = at.parent) {
+        const id = typeof at.type === "string" ? at.props.testID : undefined
+        if (id && ids[ids.length - 1] !== id) ids.push(id)
+      }
+      return ids
+    }
+
+    // Inline (coverScreen={false}) sheets fill their parent: that parent must
+    // be the screen, not the card or the scroller.
+    expect(ancestorIds("account-picker")).toEqual(["screen-root"])
+    // The card that opens it does live in the scroller.
+    expect(ancestorIds("", "open-picker")).toEqual(["details-scroll", "screen-root"])
+  })
+
+  it("owns the sheet's visibility: the card opens it, the sheet closes it", () => {
+    const screen = renderDetails("local")
+    expect(mockPickerProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({ visible: false }),
+    )
+
+    fireEvent.press(screen.getByText("open-picker"))
+    expect(mockPickerProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({ visible: true }),
+    )
+
+    fireEvent.press(screen.getByText("close-picker"))
+    expect(mockPickerProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({ visible: false }),
     )
   })
 
