@@ -66,7 +66,15 @@
     "noNDEFMessage": "Не пронађена порука НДЕФ-а, уверите се да користите флешкарду.",
     "notSupported": "NFC није подржаван на овом уређају.",
     "notEnabled": "NFC није укључен на овом уређају.",
-    "noTag": "Ниједна тега није пронађена.Молимо, уверите се да користите флешкарду."
+    "noTag": "Ниједна тега није пронађена.Молимо, уверите се да користите флешкарду.",
+    "reloadCard": "Reload\nCard",
+    "topupViaQr": "Topup via\nQR",
+    "removeCard": "Remove\nCard",
+    "keepYourCard": "Do not throw away your card!",
+    "lostCardWarning": "If your card is lost, the funds are not recoverable",
+    "recentActivity": "Recent activity",
+    "readNfcCard": "Read NFC card",
+    "findFlashpoint": "Find a Flashpoint"
   },
   "Cashout": {
     "title": "Сетл ",
@@ -509,7 +517,14 @@
     "addPin": "Кликните било где да бисте додали пин",
     "selectedCoordinates": "Ваш Flashpoint координати: ",
     "viewInGoogleMaps": "Погледај у Гугле мапи",
-    "getDirections": "Упутства Добијте услове"
+    "getDirections": "Упутства Добијте услове",
+    "directions": "Directions",
+    "chat": "Chat",
+    "payFlashpoint": "Pay Flashpoint",
+    "availableServices": "Available Services",
+    "serviceFlashPay": "Flash Pay",
+    "serviceCash": "Cash",
+    "serviceRewards": "Rewards"
   },
   "HomeScreen": {
     "cashout": "Кашови из ",
@@ -799,7 +814,8 @@
     "showBtcAccount": "Показати Bitcoin рачун",
     "hideBtcAccount": "Скријте рачун Bitcoin",
     "flashcard": "Flashcard",
-    "inviteFriend": "Invite a friend"
+    "inviteFriend": "Invite a friend",
+    "enableChat": "Enable Chat"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",

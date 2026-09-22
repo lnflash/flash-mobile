@@ -459,7 +459,14 @@
     "addPin": "Click anywhere to add a pin",
     "getDirections": "Get Directions",
     "selectedCoordinates": "Your Flashpoint Coordinates: \n",
-    "viewInGoogleMaps": "View in Google Maps"
+    "viewInGoogleMaps": "View in Google Maps",
+    "directions": "Directions",
+    "chat": "Chat",
+    "payFlashpoint": "Pay Flashpoint",
+    "availableServices": "Available Services",
+    "serviceFlashPay": "Flash Pay",
+    "serviceCash": "Cash",
+    "serviceRewards": "Rewards"
   },
   "HomeScreen": {
     "receive": "Pokea",
@@ -751,7 +758,8 @@
     "staticQr": "Printable Static QR Code",
     "staticQrCopied": "Your static QR code link has been copied",
     "flashcard": "Flashcard",
-    "inviteFriend": "Invite a friend"
+    "inviteFriend": "Invite a friend",
+    "enableChat": "Enable Chat"
   },
   "NotificationSettingsScreen": {
     "title": "Mipangilio ya Arifa",
@@ -1289,7 +1297,15 @@
     "notEnabled": "NFC is not enabled on this device.",
     "notFlashcard": "Unsupported NFC card. Please ensure you are using a flashcard.",
     "notSupported": "NFC is not supported on this device.",
-    "title": "Flashcard"
+    "title": "Flashcard",
+    "reloadCard": "Reload\nCard",
+    "topupViaQr": "Topup via\nQR",
+    "removeCard": "Remove\nCard",
+    "keepYourCard": "Do not throw away your card!",
+    "lostCardWarning": "If your card is lost, the funds are not recoverable",
+    "recentActivity": "Recent activity",
+    "readNfcCard": "Read NFC card",
+    "findFlashpoint": "Find a Flashpoint"
   },
   "Cashout": {
     "disclaimer": "Please Note: Bank transfers are usually confirmed on the same-day, but may take longer if submitted during the following times:\n\n- Weekdays after 2:00pm\n- Fridays & weekends\n\nTransactions completed  after 2:00 pm on weekdays are not confirmed by the bank until the following business day. Please contact us if you do not see your funds within 2-3 business days.\n",

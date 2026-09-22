@@ -66,7 +66,15 @@
     "noNDEFMessage": "ข้อความ NDEF ไม่พบ ขอให้แน่ใจว่าคุณกําลังใช้ฟันช์การ์ด",
     "notSupported": "NFC ไม่สนับสนุนในอุปกรณ์นี้",
     "notEnabled": "NFC ไม่เปิดให้ใช้ในอุปกรณ์นี้",
-    "noTag": "ไม่มีแท็กพบ ขอให้แน่ใจว่าคุณกําลังใช้ฟันช์การ์ด"
+    "noTag": "ไม่มีแท็กพบ ขอให้แน่ใจว่าคุณกําลังใช้ฟันช์การ์ด",
+    "reloadCard": "Reload\nCard",
+    "topupViaQr": "Topup via\nQR",
+    "removeCard": "Remove\nCard",
+    "keepYourCard": "Do not throw away your card!",
+    "lostCardWarning": "If your card is lost, the funds are not recoverable",
+    "recentActivity": "Recent activity",
+    "readNfcCard": "Read NFC card",
+    "findFlashpoint": "Find a Flashpoint"
   },
   "Cashout": {
     "title": "Settle ครับ",
@@ -509,7 +517,14 @@
     "addPin": "คลิกที่ไหนก็ได้ เพิ่มปิน",
     "selectedCoordinates": "Your Flashpoint Coordinates: ",
     "viewInGoogleMaps": "ดูใน Google Maps ",
-    "getDirections": "แนวทาง Get Directions"
+    "getDirections": "แนวทาง Get Directions",
+    "directions": "Directions",
+    "chat": "Chat",
+    "payFlashpoint": "Pay Flashpoint",
+    "availableServices": "Available Services",
+    "serviceFlashPay": "Flash Pay",
+    "serviceCash": "Cash",
+    "serviceRewards": "Rewards"
   },
   "HomeScreen": {
     "cashout": "เก็บเงินปลายทาง",
@@ -799,7 +814,8 @@
     "showBtcAccount": "แสดงบัญชี Bitcoin",
     "hideBtcAccount": "ซ่อนบัญชี Bitcoin",
     "flashcard": "Flashcard",
-    "inviteFriend": "Invite a friend"
+    "inviteFriend": "Invite a friend",
+    "enableChat": "Enable Chat"
   },
   "NotificationSettingsScreen": {
     "title": "Notification Settings",

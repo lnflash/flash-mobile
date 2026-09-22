@@ -66,7 +66,15 @@
     "noNDEFMessage": "Το μήνυμα NDEF δεν βρέθηκε. Παρακαλούμε βεβαιωθείτε ότι χρησιμοποιείτε μια καρτέλα.",
     "notSupported": "Το NFC δεν υποστηρίζεται σε αυτή τη συσκευή.",
     "notEnabled": "Το NFC δεν έχει ενεργοποιηθεί σε αυτή τη συσκευή.",
-    "noTag": "Παρακαλούμε βεβαιωθείτε ότι χρησιμοποιείτε μια καρτέλα."
+    "noTag": "Παρακαλούμε βεβαιωθείτε ότι χρησιμοποιείτε μια καρτέλα.",
+    "reloadCard": "Reload\nCard",
+    "topupViaQr": "Topup via\nQR",
+    "removeCard": "Remove\nCard",
+    "keepYourCard": "Do not throw away your card!",
+    "lostCardWarning": "If your card is lost, the funds are not recoverable",
+    "recentActivity": "Recent activity",
+    "readNfcCard": "Read NFC card",
+    "findFlashpoint": "Find a Flashpoint"
   },
   "Cashout": {
     "title": "Settle Settle",
@@ -509,7 +517,14 @@
     "addPin": "Κάντε κλικ οπουδήποτε για να προσθέσετε ένα καρφί",
     "selectedCoordinates": "Τα συντεταγμένα του Flashpoint σας: ",
     "viewInGoogleMaps": "Δείτε στο Google Maps",
-    "getDirections": "Οι κατευθύνσεις Get Directions"
+    "getDirections": "Οι κατευθύνσεις Get Directions",
+    "directions": "Directions",
+    "chat": "Chat",
+    "payFlashpoint": "Pay Flashpoint",
+    "availableServices": "Available Services",
+    "serviceFlashPay": "Flash Pay",
+    "serviceCash": "Cash",
+    "serviceRewards": "Rewards"
   },
   "HomeScreen": {
     "cashout": "Χρηματοπιστωτικά έξοδα",
@@ -799,7 +814,8 @@
     "showBtcAccount": "Δείξτε λογαριασμό Bitcoin",
     "hideBtcAccount": "Κρύψτε το λογαριασμό Bitcoin",
     "flashcard": "Flashcard",
-    "inviteFriend": "Invite a friend"
+    "inviteFriend": "Invite a friend",
+    "enableChat": "Enable Chat"
   },
   "NotificationSettingsScreen": {
     "title": "Ρυθμίσεις ειδοποιήσεων",
