@@ -1,5 +1,7 @@
 const path = require("path")
 const { getDefaultConfig, mergeConfig } = require("@react-native/metro-config")
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const fs = require("fs")
 
 const defaultConfig = getDefaultConfig(__dirname)
 
@@ -10,7 +12,6 @@ const defaultConfig = getDefaultConfig(__dirname)
 // itself ("Maximum call stack size exceeded" on boot with SHOW_STORYBOOK).
 // Keep core-js out of inlining; everything else stays inlined.
 const coreJsFiles = () => {
-  const fs = require("fs")
   const root = path.dirname(require.resolve("core-js/package.json"))
   const files = {}
   const walk = (dir) => {
