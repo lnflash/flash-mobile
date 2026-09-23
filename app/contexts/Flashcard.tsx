@@ -169,11 +169,11 @@ export const FlashcardProvider = ({ children }: Props) => {
         setK1(k1)
         setCallback(callback)
       } else {
+        // Fixed text only: the payload and the server's reason string can both
+        // carry the card's withdraw URL, which must never be shown or logged.
         toastShow({
           position: "top",
-          message: `not a properly configured lnurl withdraw tag\n\n${payload}\n\n${
-            "reason" in lnurlParams && lnurlParams.reason
-          }`,
+          message: "This card is not set up as a Flashcard. Please tap a Flashcard.",
           type: "error",
         })
       }
