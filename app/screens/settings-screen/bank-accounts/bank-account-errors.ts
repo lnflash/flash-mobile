@@ -20,9 +20,12 @@ export const bankAccountErrorMessage = (
       return LL.BankAccountsScreen.errorNotFound()
     case "BANK_ACCOUNT_DUPLICATE_NUMBER":
       return LL.BankAccountsScreen.errorDuplicateNumber()
+    // The server sends an allowlisted, customer-safe reason ("Bank is not
+    // supported.", "This account number cannot be used..."). Show it; the
+    // generic line only covers an empty message.
     case "BANK_ACCOUNT_INVALID":
     case "INVALID_INPUT":
-      return LL.BankAccountsScreen.errorInvalid()
+      return error?.message || LL.BankAccountsScreen.errorInvalid()
     case "TOO_MANY_REQUEST":
       return LL.BankAccountsScreen.errorTooManyRequests()
     default:
