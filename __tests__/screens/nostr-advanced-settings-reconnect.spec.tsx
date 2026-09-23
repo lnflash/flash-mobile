@@ -10,6 +10,7 @@
  *    success into a "try again" error.
  */
 import React from "react"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { Alert } from "react-native"
 import { fireEvent, render, waitFor } from "@testing-library/react-native"
 import { nip19 } from "nostr-tools"
@@ -33,6 +34,11 @@ jest.mock("react-native-vector-icons/Ionicons", () => () => null)
 
 jest.mock("@app/graphql/generated", () => ({
   useUserUpdateNpubMutation: () => [mockUserUpdateNpub],
+  useHomeAuthedQuery: () => ({ data: { me: { id: "account-a", npub: null } } }),
+}))
+
+jest.mock("@app/graphql/is-authed-context", () => ({
+  useIsAuthed: () => true,
 }))
 
 jest.mock("@app/hooks/use-nostr-profile", () => () => ({
@@ -98,7 +104,12 @@ describe("AdvancedSettings › Reconnect profile", () => {
     return screen
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Owner records live in AsyncStorage; a successful reconnect in one test
+
+    // must not make the key look owned in the next.
+
+    await AsyncStorage.clear()
     jest.clearAllMocks()
     alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
     jest.spyOn(console, "warn").mockImplementation(() => {})
@@ -127,9 +138,11 @@ describe("AdvancedSettings › Reconnect profile", () => {
     })
     pressReconnect()
     await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    // No owner record for this key, so the copy must not advise deleting it
+    // (key ownership, #727): the holder may be another account.
     expect(alertSpy).toHaveBeenCalledWith(
       LL.common.error(),
-      LL.Nostr.keyMismatchRelinkRefused(),
+      LL.Nostr.keyUnownedRelinkRefused(),
     )
     expect(onReconnect).toHaveBeenCalledTimes(1)
   })

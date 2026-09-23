@@ -6,8 +6,10 @@
  * relink-failed copy sends users here, and telling them "Success" while the
  * account is still undeliverable would close the only path they were given.
  */
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { nip19 } from "nostr-tools"
 import { reconnectLocalNpub } from "@app/nostr/reconnect-npub"
+import { getNostrKeyOwner, setNostrKeyOwner } from "@app/nostr/key-owner"
 
 const LOCAL_HEX = "a".repeat(64)
 const LOCAL_NPUB = nip19.npubEncode(LOCAL_HEX)
@@ -18,8 +20,9 @@ jest.mock("@app/nostr/signer", () => ({
 }))
 
 describe("reconnectLocalNpub", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks()
+    await AsyncStorage.clear()
     mockGetSigner.mockResolvedValue({ getPublicKey: async () => LOCAL_HEX })
   })
 
@@ -49,6 +52,49 @@ describe("reconnectLocalNpub", () => {
       status: "refused",
       npub: LOCAL_NPUB,
       code: "NPUB_NOT_AVAILABLE",
+      keyOwner: "unknown",
+    })
+  })
+
+  describe("key ownership", () => {
+    const refuse = () =>
+      jest.fn().mockResolvedValue({
+        data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
+      })
+
+    it("records the account as the key's owner on success", async () => {
+      const update = jest.fn().mockResolvedValue({
+        data: { userUpdateNpub: { errors: [] } },
+      })
+      await setNostrKeyOwner(LOCAL_NPUB, "account-a")
+      await reconnectLocalNpub(update, "account-b")
+      expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe("account-b")
+    })
+
+    it("does not record an owner on refusal", async () => {
+      await reconnectLocalNpub(refuse(), "account-b")
+      expect(await getNostrKeyOwner(LOCAL_NPUB)).toBeNull()
+    })
+
+    it("never advises deleting a key another account on this phone owns", async () => {
+      // B declined or failed the foreign prompt, then tapped Reconnect: A's
+      // only copy of the key must not be called disposable.
+      await setNostrKeyOwner(LOCAL_NPUB, "account-a")
+      const result = await reconnectLocalNpub(refuse(), "account-b")
+      expect(result).toMatchObject({ status: "refused", keyOwner: "other" })
+    })
+
+    it("never advises deleting a key with no owner record", async () => {
+      // Every key from before the owner record: the refusal alone says some
+      // other account holds it, not that the account is on this phone.
+      const result = await reconnectLocalNpub(refuse(), "account-b")
+      expect(result).toMatchObject({ status: "refused", keyOwner: "unknown" })
+    })
+
+    it("allows the delete advice only for a key this account owns", async () => {
+      await setNostrKeyOwner(LOCAL_NPUB, "account-b")
+      const result = await reconnectLocalNpub(refuse(), "account-b")
+      expect(result).toMatchObject({ status: "refused", keyOwner: "self" })
     })
   })
 
