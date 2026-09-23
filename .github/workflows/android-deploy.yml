@@ -76,6 +76,12 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        # Same fix as build-check.yml (#728): the action's default package
+        # list includes the obsolete `tools`, which the newer sdkmanager
+        # rejects and kills the job. Gradle fetches the pinned platforms and
+        # build-tools itself; platform-tools is all this step must install.
+        with:
+          packages: platform-tools
 
       - name: Decode keystore
         run: |
