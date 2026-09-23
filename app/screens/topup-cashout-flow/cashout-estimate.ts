@@ -6,35 +6,74 @@ type SelectableBankAccount = {
   isDefault?: boolean | null
 }
 
+type PickOptions = {
+  /** Account the user explicitly chose for this cashout ("Withdraw to" picker). */
+  selectedId?: string | null
+  /**
+   * Payout currency already fixed by an offer (the confirmation screen passes
+   * "JMD" when the offer settles in JMD). Accounts in this currency win.
+   */
+  preferredCurrency?: string | null
+}
+
+const isCurrency = (account: SelectableBankAccount, currency: string) =>
+  account.currency.toUpperCase() === currency.toUpperCase()
+
 /**
- * The single source of truth for which bank account a cashout will pay to:
- * stored default among JMD accounts → default-flagged JMD → first JMD →
- * stored default among all → default-flagged → first. Used by onNext (to
- * pick the account) AND by the settlement preview (to decide the payout
- * currency) — keep them on this one function so they can never disagree.
+ * The single source of truth for which bank account a cashout will pay to.
+ * Within the preferred currency (when one is given), then among all accounts:
+ * the user's selection for this cashout → the server default (set in
+ * Settings → Bank accounts) → first JMD → first. Used by onNext (to pick the
+ * account), by the settlement preview (to decide the payout currency) AND by
+ * the "Withdraw to" card — keep them on this one function so they can never
+ * disagree.
  */
 export const pickDefaultBankAccount = <T extends SelectableBankAccount>(
   accounts: readonly T[],
-  storedDefaultId?: string | null,
+  { selectedId, preferredCurrency }: PickOptions = {},
 ): T | undefined => {
-  const jmdAccounts = accounts.filter((a) => a.currency.toUpperCase() === "JMD")
+  const preferred = preferredCurrency
+    ? accounts.filter((a) => isCurrency(a, preferredCurrency))
+    : []
+  const pickFrom = (pool: readonly T[]) =>
+    (selectedId ? pool.find((a) => a.id === selectedId) : undefined) ||
+    pool.find((a) => a.isDefault)
   return (
-    jmdAccounts.find((a) => a.id === storedDefaultId) ||
-    jmdAccounts.find((a) => a.isDefault) ||
-    jmdAccounts[0] ||
-    accounts.find((a) => a.id === storedDefaultId) ||
-    accounts.find((a) => a.isDefault) ||
+    pickFrom(preferred) ||
+    preferred[0] ||
+    pickFrom(accounts) ||
+    accounts.find((a) => isCurrency(a, "JMD")) ||
     accounts[0]
   )
 }
 
 /**
- * Whether the cashout will settle in JMD. The stored default id cannot change
- * the outcome (JMD accounts always win the selection when any exist), so the
- * preview can decide before the async stored id loads.
+ * Whether the cashout will settle in JMD: the picked account's currency
+ * decides the payout rail, so the preview must follow the same selection
+ * (including the user's pick for this cashout) that onNext sends.
  */
-export const selectsJmdPayout = (accounts: readonly SelectableBankAccount[]): boolean =>
-  pickDefaultBankAccount(accounts)?.currency.toUpperCase() === "JMD"
+export const selectsJmdPayout = (
+  accounts: readonly SelectableBankAccount[],
+  selectedId?: string | null,
+): boolean =>
+  pickDefaultBankAccount(accounts, { selectedId })?.currency.toUpperCase() === "JMD"
+
+type SelectableExternalAccount = {
+  id: string
+  isDefault?: boolean | null
+}
+
+/**
+ * Bridge (US) withdrawal destination: the user's selection for this
+ * withdrawal → the server default → first.
+ */
+export const pickDefaultExternalAccount = <T extends SelectableExternalAccount>(
+  accounts: readonly T[],
+  selectedId?: string | null,
+): T | undefined =>
+  (selectedId ? accounts.find((a) => a.id === selectedId) : undefined) ||
+  accounts.find((a) => a.isDefault) ||
+  accounts[0]
 
 /**
  * Mirrors the backend cashout quote math (flash CashoutManager.createOffer):

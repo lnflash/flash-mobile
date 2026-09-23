@@ -1,58 +1,68 @@
-import React, { useCallback, useState } from "react"
+import React, { useState } from "react"
 import { TouchableOpacity, View } from "react-native"
-import { useFocusEffect } from "@react-navigation/native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useBankAccountsQuery } from "@app/graphql/generated"
 import { displayCurrencyCode } from "@app/utils/currency-display"
-import { loadDefaultWithdrawAccountId } from "@app/screens/settings-screen/bank-accounts/default-account-store"
+import { testProps } from "@app/utils/testProps"
+
+import { CashoutAccountSource, last4Of, useCashoutAccounts } from "./use-cashout-accounts"
 
 type Props = {
+  /** Which rail's accounts to show: local (ERPNext) or Bridge external (US). */
+  source?: CashoutAccountSource
+  /** Payout currency already fixed by an offer; narrows the local selection. */
   preferredCurrency?: string
+  /** The account chosen for this cashout; falls back to the server default. */
+  selectedAccountId?: string
+  /**
+   * Makes the card a picker trigger: tapping it asks the screen to open its
+   * CashoutAccountPicker (the sheet lives at the screen root, not in this
+   * card — see CashoutAccountPicker). Without it the card is display-only (the
+   * confirmation screen, where the offer is already locked to an account) and
+   * tapping expands the account details.
+   */
+  onOpenPicker?: () => void
 }
 
-const CashoutWithdrawTo: React.FC<Props> = ({ preferredCurrency }) => {
+const CashoutWithdrawTo: React.FC<Props> = ({
+  source = "local",
+  preferredCurrency,
+  selectedAccountId,
+  onOpenPicker,
+}) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const [expanded, setExpanded] = useState(false)
-  const [storedDefaultId, setStoredDefaultId] = useState<string>()
 
-  const { data } = useBankAccountsQuery({ fetchPolicy: "cache-only" })
+  const isPicker = Boolean(onOpenPicker)
+  const { isBridge, bankAccount, externalAccount } = useCashoutAccounts({
+    source,
+    selectedAccountId,
+    preferredCurrency,
+  })
 
-  // Reload on focus (not just mount) so a default changed in Settings is
-  // picked up when the user returns to an already-mounted cash-out screen.
-  useFocusEffect(
-    useCallback(() => {
-      let active = true
-      ;(async () => {
-        const id = await loadDefaultWithdrawAccountId(preferredCurrency)
-        if (active) {
-          setStoredDefaultId(id)
-        }
-      })()
-      return () => {
-        active = false
-      }
-    }, [preferredCurrency]),
-  )
+  const current = bankAccount ?? externalAccount
+  // Display-only mode has nothing to show without an account; the picker still
+  // renders so the user can reach "Manage bank accounts" and add one.
+  if (!current && !isPicker) return null
 
-  const bankAccounts = data?.me?.bankAccounts ?? []
-  const preferredCurrencyCode = preferredCurrency?.toUpperCase()
-  const preferredBankAccounts = preferredCurrencyCode
-    ? bankAccounts.filter((el) => el.currency.toUpperCase() === preferredCurrencyCode)
-    : bankAccounts
-  const bankAccount =
-    preferredBankAccounts.find((el) => el.id === storedDefaultId) ||
-    preferredBankAccounts.find((el) => el.isDefault) ||
-    preferredBankAccounts[0] ||
-    bankAccounts.find((el) => el.isDefault) ||
-    bankAccounts[0]
+  const maskedAccount = bankAccount
+    ? `**********${last4Of(bankAccount.accountNumber)}`
+    : externalAccount
+    ? `${externalAccount.bankName} ••${externalAccount.accountNumberLast4}`
+    : isBridge
+    ? LL.Cashout.noExternalAccountFound()
+    : LL.Cashout.noBankAccountFound()
 
-  if (!bankAccount) return null
-
-  const maskedAccount = `**********${String(bankAccount.accountNumber).slice(-4)}`
+  const onPressCard = () => {
+    if (onOpenPicker) {
+      onOpenPicker()
+      return
+    }
+    setExpanded(!expanded)
+  }
 
   return (
     <View>
@@ -61,11 +71,19 @@ const CashoutWithdrawTo: React.FC<Props> = ({ preferredCurrency }) => {
       </Text>
       <TouchableOpacity
         style={styles.card}
-        onPress={() => setExpanded(!expanded)}
+        onPress={onPressCard}
         activeOpacity={0.7}
+        {...testProps("cashout-withdraw-to")}
       >
         <View style={styles.header}>
-          <Text type="bl">{maskedAccount}</Text>
+          <View style={styles.headerText}>
+            <Text type="bl">{maskedAccount}</Text>
+            {isPicker && bankAccount && (
+              <Text type="caption" color={colors.grey3}>
+                {bankAccount.bankName} · {displayCurrencyCode(bankAccount.currency)}
+              </Text>
+            )}
+          </View>
           <Icon
             name={expanded ? "chevron-down" : "chevron-forward"}
             type="ionicon"
@@ -73,7 +91,7 @@ const CashoutWithdrawTo: React.FC<Props> = ({ preferredCurrency }) => {
             color={colors.grey3}
           />
         </View>
-        {expanded && (
+        {expanded && bankAccount && (
           <View style={styles.details}>
             <DetailRow label={LL.Cashout.bankName()} value={bankAccount.bankName} />
             <DetailRow label={LL.Cashout.bankBranch()} value={bankAccount.bankBranch} />
@@ -119,6 +137,11 @@ const useStyles = makeStyles(({ colors }) => ({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  headerText: {
+    flex: 1,
+    rowGap: 2,
+    paddingRight: 12,
   },
   details: {
     marginTop: 12,

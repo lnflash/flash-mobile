@@ -9,6 +9,7 @@ import { Icon, Text, makeStyles, useTheme } from "@rneui/themed"
 import { Screen } from "@app/components/screen"
 import { BridgeKycModal } from "@app/components/topup-cashout-flow"
 import { WHATSAPP_SUPPORT_URL } from "@app/config"
+import { useFeatureFlags } from "@app/config/feature-flags-context"
 import { AccountLevel } from "@app/graphql/generated"
 import { useAccountStatus } from "@app/hooks/use-account-status"
 import { useBridgeKyc } from "@app/hooks/use-bridge-kyc"
@@ -17,9 +18,12 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useAppDispatch } from "@app/store/redux"
 import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
+import { displayCurrencyCode } from "@app/utils/currency-display"
 import { openWhatsAppUrl } from "@app/utils/external"
+import { testProps } from "@app/utils/testProps"
 import { toastShow } from "@app/utils/toast"
 
+import { bankAccountErrorMessage } from "./bank-account-errors"
 import { BankAccountStatus, BankAccountVM } from "./types"
 import { useBankAccounts } from "./use-bank-accounts"
 
@@ -183,50 +187,71 @@ const StatusPill = ({ status }: { status: BankAccountStatus }) => {
 }
 
 // ---------------------------------------------------------------------------
-// Withdraw (money-out) — grouped by currency, one default per currency.
+// Withdraw (money-out) — grouped by rail, because the server keeps ONE default
+// per rail (Bridge external accounts / ERPNext local accounts), not one per
+// currency. Each group is therefore a true radio group: exactly one default.
 // ---------------------------------------------------------------------------
 
 type WithdrawRowProps = {
   account: BankAccountVM
+  /** A set-default / remove call is in flight for this account. */
+  busy: boolean
   onSetDefault: () => void
   onEdit: () => void
+  onRemove: () => void
 }
 
-const WithdrawRow = ({ account, onSetDefault, onEdit }: WithdrawRowProps) => {
+const WithdrawRow = ({
+  account,
+  busy,
+  onSetDefault,
+  onEdit,
+  onRemove,
+}: WithdrawRowProps) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
 
+  const confirmRemove = () =>
+    Alert.alert(
+      LL.BankAccountsScreen.removeConfirmTitle(),
+      LL.BankAccountsScreen.removeConfirmMessage({
+        bankName: account.bankName,
+        last4: account.last4,
+      }),
+      [
+        { text: LL.common.cancel(), style: "cancel" },
+        { text: LL.BankAccountsScreen.remove(), style: "destructive", onPress: onRemove },
+      ],
+    )
+
+  // At most Edit / Remove / Cancel. Android's Alert keeps only the first
+  // three buttons, so a fourth would silently drop Cancel and leave nothing but
+  // live mutations to pick from. "Set as default" lives on the radio tap.
   const openActions = () => {
     const options: {
       text: string
       style?: "cancel" | "destructive"
       onPress?: () => void
     }[] = []
-    if (account.canSetDefault && !account.isDefault) {
-      options.push({ text: LL.BankAccountsScreen.setAsDefault(), onPress: onSetDefault })
-    }
+    // Bridge has no edit API: removing and re-adding is the pattern there.
     if (account.source === "erpnext") {
       options.push({ text: LL.BankAccountsScreen.updateDetails(), onPress: onEdit })
     }
-    options.push({
-      text: account.canRemove
-        ? LL.BankAccountsScreen.remove()
-        : LL.BankAccountsScreen.removeComingSoon(),
-      style: "destructive",
-      onPress: () =>
-        account.canRemove
-          ? undefined // TODO: wire bridgeDeleteExternalAccount
-          : toastShow({
-              type: "warning",
-              message: LL.BankAccountsScreen.removingAccountsComingSoon(),
-            }),
-    })
+    if (account.canRemove) {
+      options.push({
+        text: LL.BankAccountsScreen.remove(),
+        style: "destructive",
+        onPress: confirmRemove,
+      })
+    }
     options.push({ text: LL.common.cancel(), style: "cancel" })
     Alert.alert(
       account.bankName,
       LL.BankAccountsScreen.accountEnding({ last4: account.last4 }),
       options,
+      // Android defaults to cancelable: false — back / tap-outside must dismiss.
+      { cancelable: true },
     )
   }
 
@@ -234,7 +259,11 @@ const WithdrawRow = ({ account, onSetDefault, onEdit }: WithdrawRowProps) => {
     <View style={styles.detailRow}>
       <Pressable
         style={styles.radioTap}
+        disabled={busy}
         onPress={account.canSetDefault ? onSetDefault : undefined}
+        accessibilityRole="radio"
+        accessibilityState={{ checked: account.isDefault, disabled: busy }}
+        {...testProps(`bank-account-radio-${account.key}`)}
       >
         <Icon
           name={account.isDefault ? "radio-button-on" : "radio-button-off"}
@@ -257,15 +286,30 @@ const WithdrawRow = ({ account, onSetDefault, onEdit }: WithdrawRowProps) => {
           </View>
           <View style={styles.sideToSide}>
             <Text type="p3" color={colors.grey1}>
-              ••••{account.last4}
+              ••••{account.last4} · {displayCurrencyCode(account.currency)}
             </Text>
             <StatusPill status={account.status} />
           </View>
         </View>
       </Pressable>
-      <Pressable style={styles.iconButton} onPress={openActions}>
-        <Icon name="ellipsis-horizontal" type="ionicon" size={20} color={colors.grey2} />
-      </Pressable>
+      {busy ? (
+        <View style={styles.iconButton}>
+          <ActivityIndicator />
+        </View>
+      ) : (
+        <Pressable
+          style={styles.iconButton}
+          onPress={openActions}
+          {...testProps(`bank-account-actions-${account.key}`)}
+        >
+          <Icon
+            name="ellipsis-horizontal"
+            type="ionicon"
+            size={20}
+            color={colors.grey2}
+          />
+        </Pressable>
+      )}
     </View>
   )
 }
@@ -280,8 +324,46 @@ export const BankAccountsScreen: React.FC = () => {
   const { LL } = useI18nContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
-  const { loading, kycApproved, receiveAccount, withdrawGroups, setDefault, refetch } =
-    useBankAccounts()
+  // ENG-465 kill switch: with Bridge remotely disabled only the local
+  // (Jamaican) accounts are managed here; every Bridge section is hidden.
+  const { bridgeTopupEnabled } = useFeatureFlags()
+
+  const {
+    loading,
+    kycApproved,
+    receiveAccount,
+    withdrawGroups,
+    setDefault,
+    remove,
+    setDefaultState,
+    removeState,
+    refetch,
+  } = useBankAccounts()
+
+  const busyKey =
+    (setDefaultState.loading && setDefaultState.accountKey) ||
+    (removeState.loading && removeState.accountKey) ||
+    undefined
+
+  const onSetDefault = async (account: BankAccountVM) => {
+    if (account.isDefault || busyKey) return
+    const result = await setDefault(account)
+    toastShow(
+      result.ok
+        ? { type: "success", message: LL.BankAccountsScreen.defaultUpdated() }
+        : { type: "error", message: bankAccountErrorMessage(LL, result) },
+    )
+  }
+
+  const onRemove = async (account: BankAccountVM) => {
+    if (busyKey) return
+    const result = await remove(account)
+    toastShow(
+      result.ok
+        ? { type: "success", message: LL.BankAccountsScreen.accountRemoved() }
+        : { type: "error", message: bankAccountErrorMessage(LL, result) },
+    )
+  }
 
   // The locked card gates on the usdAccount capability (Bridge KYC), so its
   // CTA launches the KYC flow directly (ENG-516). Bridge has an L1 floor:
@@ -309,6 +391,32 @@ export const BankAccountsScreen: React.FC = () => {
       navigation.navigate("BridgeAddExternalAccount", { returnTo: "BankAccounts" }),
   })
 
+  // Every ERPNext bank-account mutation needs an ERPNext customer, which the
+  // account upgrade creates (server: BANK_ACCOUNT_UPGRADE_REQUIRED). Say so
+  // before the user fills in the form, not after. An account already on file
+  // proves the customer exists, whatever the capability read says. The edit
+  // screen still handles the server error as the backstop.
+  const hasLocalAccount = withdrawGroups.some((group) => group.rail === "local")
+  const canAddLocalAccount = capabilities.bankPayout || hasLocalAccount
+  const onAddLocalAccount = () => {
+    if (canAddLocalAccount) {
+      navigation.navigate("EditBankAccount", { mode: "add" })
+      return
+    }
+    Alert.alert(
+      LL.BankAccountsScreen.upgradeRequiredTitle(),
+      LL.BankAccountsScreen.errorUpgradeRequired(),
+      [
+        { text: LL.common.cancel(), style: "cancel" },
+        {
+          text: LL.BankAccountsScreen.upgradeYourAccount(),
+          onPress: () => navigation.navigate("AccountType"),
+        },
+      ],
+      { cancelable: true },
+    )
+  }
+
   useFocusEffect(
     React.useCallback(() => {
       refetch()
@@ -326,51 +434,60 @@ export const BankAccountsScreen: React.FC = () => {
   return (
     <Screen preset="scroll" style={styles.container}>
       {/* RECEIVE */}
-      <View style={styles.sectionHeader}>
-        <Text type="p2" bold color={colors.grey1}>
-          {LL.BankAccountsScreen.receiveMoney()}
-        </Text>
-        <View style={styles.direction}>
-          <Icon name="arrow-down" type="ionicon" size={14} color={colors.grey2} />
-          <Text type="p4" color={colors.grey2}>
-            {LL.BankAccountsScreen.intoFlash()}
-          </Text>
-        </View>
-      </View>
+      {bridgeTopupEnabled && (
+        <>
+          <View style={styles.sectionHeader}>
+            <Text type="p2" bold color={colors.grey1}>
+              {LL.BankAccountsScreen.receiveMoney()}
+            </Text>
+            <View style={styles.direction}>
+              <Icon name="arrow-down" type="ionicon" size={14} color={colors.grey2} />
+              <Text type="p4" color={colors.grey2}>
+                {LL.BankAccountsScreen.intoFlash()}
+              </Text>
+            </View>
+          </View>
 
-      {kycApproved ? (
-        receiveAccount ? (
-          <ReceiveCard account={receiveAccount} />
-        ) : (
-          <View style={styles.card}>
-            <Text type="p3" color={colors.grey1}>
-              {LL.BankAccountsScreen.receivingNotReady()}
-            </Text>
-          </View>
-        )
-      ) : (
-        <View style={styles.lockedCard}>
-          <View style={styles.lockedIconRow}>
-            <Icon name="lock-closed" type="ionicon" size={32} color={colors.primary} />
-          </View>
-          <Text type="p1" bold style={styles.lockedTitle}>
-            {LL.BankAccountsScreen.verifyIdentityTitle()}
-          </Text>
-          <Text type="p3" color={colors.grey1} style={styles.lockedDesc}>
-            {LL.BankAccountsScreen.verifyIdentityDescription()}
-          </Text>
-          <Pressable style={styles.upgradeButton} onPress={onVerifyIdentity}>
-            <Icon
-              name="shield-checkmark-outline"
-              type="ionicon"
-              size={20}
-              color={colors.white}
-            />
-            <Text type="p1" bold color={colors.white}>
-              {LL.BankAccountsScreen.upgradeYourAccount()}
-            </Text>
-          </Pressable>
-        </View>
+          {kycApproved ? (
+            receiveAccount ? (
+              <ReceiveCard account={receiveAccount} />
+            ) : (
+              <View style={styles.card}>
+                <Text type="p3" color={colors.grey1}>
+                  {LL.BankAccountsScreen.receivingNotReady()}
+                </Text>
+              </View>
+            )
+          ) : (
+            <View style={styles.lockedCard}>
+              <View style={styles.lockedIconRow}>
+                <Icon
+                  name="lock-closed"
+                  type="ionicon"
+                  size={32}
+                  color={colors.primary}
+                />
+              </View>
+              <Text type="p1" bold style={styles.lockedTitle}>
+                {LL.BankAccountsScreen.verifyIdentityTitle()}
+              </Text>
+              <Text type="p3" color={colors.grey1} style={styles.lockedDesc}>
+                {LL.BankAccountsScreen.verifyIdentityDescription()}
+              </Text>
+              <Pressable style={styles.upgradeButton} onPress={onVerifyIdentity}>
+                <Icon
+                  name="shield-checkmark-outline"
+                  type="ionicon"
+                  size={20}
+                  color={colors.white}
+                />
+                <Text type="p1" bold color={colors.white}>
+                  {LL.BankAccountsScreen.upgradeYourAccount()}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </>
       )}
 
       {/* WITHDRAW */}
@@ -397,33 +514,29 @@ export const BankAccountsScreen: React.FC = () => {
         </View>
       ) : (
         withdrawGroups.map((group) => (
-          <View key={group.currency} style={styles.group}>
+          <View key={group.rail} style={styles.group}>
             <Text type="p3" bold color={colors.grey2} style={styles.groupTitle}>
-              {group.currency}
+              {group.rail === "us"
+                ? LL.BankAccountsScreen.usBankAccounts()
+                : LL.BankAccountsScreen.localBankAccounts()}
             </Text>
             <View style={styles.groupBody}>
               {group.accounts.map((account) => (
                 <WithdrawRow
                   key={account.key}
                   account={account}
-                  onSetDefault={() => {
-                    if (account.isDefault) return
-                    setDefault(account)
-                    toastShow({
-                      type: "success",
-                      message: LL.BankAccountsScreen.defaultUpdated(),
-                    })
-                  }}
+                  busy={busyKey === account.key}
+                  onSetDefault={() => onSetDefault(account)}
+                  onRemove={() => onRemove(account)}
                   onEdit={() =>
                     navigation.navigate("EditBankAccount", {
+                      mode: "edit",
                       accountId: account.id,
                       bankName: account.bankName,
                       bankBranch: account.bankBranch ?? "",
                       accountType: account.accountType ?? "",
                       accountNumber: account.accountNumber ?? "",
                       currency: account.currencyRaw ?? account.currency,
-                      rejectionReason:
-                        account.pendingUpdate?.rejectionReason ?? undefined,
                     })
                   }
                 />
@@ -433,22 +546,45 @@ export const BankAccountsScreen: React.FC = () => {
         ))
       )}
 
+      {/* Local (Jamaican) accounts are ERPNext-backed and independent of
+          Bridge, so this CTA stays available when the Bridge flag is off. */}
       <Pressable
         style={[
-          styles.primaryButton,
-          // The manual-entry button below (kycApproved-gated) carries the 24px
-          // bottom spacing; when it's hidden, restore it here.
-          !kycApproved && styles.primaryButtonNoManual,
-          !kycApproved && styles.disabled,
+          bridgeTopupEnabled ? styles.outlineButton : styles.primaryButton,
+          !bridgeTopupEnabled && styles.primaryButtonNoManual,
         ]}
-        disabled={!kycApproved}
-        onPress={linkBankAccount}
+        onPress={onAddLocalAccount}
+        {...testProps("add-jamaican-bank-account")}
       >
-        <Icon name="add" type="ionicon" size={20} color={colors.white} />
-        <Text type="p1" bold color={colors.white}>
-          {LL.BankAccountsScreen.addBankAccount()}
+        <Icon
+          name="add"
+          type="ionicon"
+          size={20}
+          color={bridgeTopupEnabled ? colors.primary : colors.white}
+        />
+        <Text type="p1" bold color={bridgeTopupEnabled ? colors.primary : colors.white}>
+          {LL.BankAccountsScreen.addJamaicanAccount()}
         </Text>
       </Pressable>
+
+      {bridgeTopupEnabled && (
+        <Pressable
+          style={[
+            styles.primaryButton,
+            // The manual-entry button below (kycApproved-gated) carries the 24px
+            // bottom spacing; when it's hidden, restore it here.
+            !kycApproved && styles.primaryButtonNoManual,
+            !kycApproved && styles.disabled,
+          ]}
+          disabled={!kycApproved}
+          onPress={linkBankAccount}
+        >
+          <Icon name="add" type="ionicon" size={20} color={colors.white} />
+          <Text type="p1" bold color={colors.white}>
+            {LL.BankAccountsScreen.addBankAccount()}
+          </Text>
+        </Pressable>
+      )}
 
       {/* Manual entry: bypasses Plaid Link (and its phone/OTP step) entirely,
           routing straight to bridgeCreateExternalAccount. Always available so a
@@ -647,6 +783,17 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   primaryButtonNoManual: {
     marginBottom: 24,
+  },
+  outlineButton: {
+    minHeight: 56,
+    borderRadius: 12,
+    marginTop: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    columnGap: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   manualEntryButton: {
     minHeight: 44,

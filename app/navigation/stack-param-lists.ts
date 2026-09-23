@@ -40,15 +40,18 @@ export type RootStackParamList = {
   settings: undefined
   addressScreen: undefined
   BankAccounts: undefined
-  EditBankAccount: {
-    accountId: string
-    bankName: string
-    bankBranch: string
-    accountType: string
-    accountNumber: string
-    currency: string
-    rejectionReason?: string
-  }
+  // One form, two modes: add a Jamaican (JMD) account, or edit an existing one.
+  EditBankAccount:
+    | { mode: "add" }
+    | {
+        mode?: "edit"
+        accountId: string
+        bankName: string
+        bankBranch: string
+        accountType: string
+        accountNumber: string
+        currency: string
+      }
   defaultWallet: undefined
   theme: undefined
   sendBitcoinDestination: {
@@ -155,8 +158,8 @@ export type RootStackParamList = {
   UnclaimedDepositDetails: { deposit: DepositInfo }
   RefundDeposit: { deposit: DepositInfo }
   CashoutDetails: { type: "local" | "bridge" }
-  CashoutConfirmation:
-    | { offer: CashoutOffer }
+  CashoutConfirmation: // bankAccountId: the account the offer was requested for ("Withdraw to").
+  | { offer: CashoutOffer; bankAccountId?: string }
     | {
         bridgeWithdrawalId: string
         bridgeAccountLabel?: string

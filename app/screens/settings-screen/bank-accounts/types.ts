@@ -23,17 +23,15 @@ export type BankAccountVM = {
   /** ISO-ish currency code, upper-cased (e.g. "USD", "JMD"). */
   currency: string
   status: BankAccountStatus
-  /** True when this is the default withdrawal account for its currency. */
-  isDefault: boolean
   /**
-   * Whether the user can change the default from the app. USD/Bridge: yes.
-   * Local/ERPNext: interim client-side only until a backend mutation exists.
+   * Server-side default for the account's rail: ERPNext keeps one default
+   * across the customer's local accounts, Bridge one across external accounts.
    */
+  isDefault: boolean
+  /** Whether the default can be changed from the app (withdrawal accounts: yes). */
   canSetDefault: boolean
-  /** Whether the account can be removed in-app (needs a backend delete mutation). */
+  /** Whether the account can be removed in-app (ERPNext + Bridge external). */
   canRemove: boolean
-  /** Server-side default flag, when the rail provides one (used as a fallback). */
-  serverDefault?: boolean
 
   // Receive-role extras (virtual account) — undefined for withdrawal accounts.
   accountNumber?: string | null
@@ -41,13 +39,15 @@ export type BankAccountVM = {
   /** Provisioning still in flight (receive account not ready yet). */
   pending?: boolean
 
-  // Withdraw (ERPNext) extras — prefill the "update details" screen and surface
-  // an in-review change. Undefined for other rails.
+  // Withdraw (ERPNext) extras — prefill the edit screen. Undefined for other rails.
   bankBranch?: string
   accountType?: string
   /** Raw currency value as stored server-side (echoed back on update; currency is locked). */
   currencyRaw?: string
-  /** Open request to change this account's details, awaiting review (null when none). */
+  /**
+   * Legacy review-gated change request. Edits are instant now, so the server
+   * normally returns null; still rendered if one is in flight.
+   */
   pendingUpdate?: {
     status: string
     bankName: string
@@ -59,7 +59,15 @@ export type BankAccountVM = {
   } | null
 }
 
+/**
+ * The payout rail a withdrawal account belongs to. The server keeps exactly one
+ * default per rail, so the hub groups by rail (NOT by currency: a legacy USD
+ * ERPNext account shares its default with the JMD ones, not with Bridge).
+ */
+export type WithdrawRail = "us" | "local"
+
 export type WithdrawGroup = {
-  currency: string
+  rail: WithdrawRail
+  /** Default-first. At most one account in a group is the default. */
   accounts: BankAccountVM[]
 }

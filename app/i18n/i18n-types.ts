@@ -385,6 +385,18 @@ type RootTranslation = {
 		 */
 		currency: string
 		/**
+		 * C​h​o​o​s​e​ ​a​n​ ​a​c​c​o​u​n​t
+		 */
+		chooseAccount: string
+		/**
+		 * M​a​n​a​g​e​ ​b​a​n​k​ ​a​c​c​o​u​n​t​s
+		 */
+		manageBankAccounts: string
+		/**
+		 * D​e​f​a​u​l​t
+		 */
+		defaultAccount: string
+		/**
 		 * N​o​ ​b​a​n​k​ ​a​c​c​o​u​n​t​ ​f​o​u​n​d​.​ ​P​l​e​a​s​e​ ​a​d​d​ ​a​ ​b​a​n​k​ ​a​c​c​o​u​n​t​ ​f​i​r​s​t​.
 		 */
 		noBankAccountFound: string
@@ -443,7 +455,15 @@ type RootTranslation = {
 		 */
 		noWithdrawalAccounts: string
 		/**
-		 * A​d​d​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 * U​S​ ​b​a​n​k​ ​a​c​c​o​u​n​t​s
+		 */
+		usBankAccounts: string
+		/**
+		 * L​o​c​a​l​ ​b​a​n​k​ ​a​c​c​o​u​n​t​s
+		 */
+		localBankAccounts: string
+		/**
+		 * A​d​d​ ​U​S​ ​b​a​n​k​ ​a​c​c​o​u​n​t
 		 */
 		addBankAccount: string
 		/**
@@ -527,14 +547,6 @@ type RootTranslation = {
 		 */
 		remove: string
 		/**
-		 * R​e​m​o​v​e​ ​(​c​o​m​i​n​g​ ​s​o​o​n​)
-		 */
-		removeComingSoon: string
-		/**
-		 * R​e​m​o​v​i​n​g​ ​a​c​c​o​u​n​t​s​ ​i​s​ ​c​o​m​i​n​g​ ​s​o​o​n
-		 */
-		removingAccountsComingSoon: string
-		/**
 		 * A​c​c​o​u​n​t​ ​e​n​d​i​n​g​ ​{​l​a​s​t​4​}
 		 * @param {string} last4
 		 */
@@ -544,15 +556,41 @@ type RootTranslation = {
 		 */
 		defaultUpdated: string
 		/**
-		 * U​p​d​a​t​e​ ​d​e​t​a​i​l​s
+		 * E​d​i​t​ ​d​e​t​a​i​l​s
 		 */
 		updateDetails: string
 		/**
-		 * U​p​d​a​t​e​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 * A​d​d​ ​J​a​m​a​i​c​a​n​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 */
+		addJamaicanAccount: string
+		/**
+		 * R​e​m​o​v​e​ ​t​h​i​s​ ​a​c​c​o​u​n​t​?
+		 */
+		removeConfirmTitle: string
+		/**
+		 * {​b​a​n​k​N​a​m​e​}​ ​e​n​d​i​n​g​ ​{​l​a​s​t​4​}​ ​w​i​l​l​ ​b​e​ ​r​e​m​o​v​e​d​.​ ​Y​o​u​ ​c​a​n​ ​n​o​ ​l​o​n​g​e​r​ ​c​a​s​h​ ​o​u​t​ ​t​o​ ​i​t​.
+		 * @param {string} bankName
+		 * @param {string} last4
+		 */
+		removeConfirmMessage: RequiredParams<'bankName' | 'last4'>
+		/**
+		 * B​a​n​k​ ​a​c​c​o​u​n​t​ ​r​e​m​o​v​e​d
+		 */
+		accountRemoved: string
+		/**
+		 * A​d​d​ ​b​a​n​k​ ​a​c​c​o​u​n​t
+		 */
+		addTitle: string
+		/**
+		 * A​d​d​ ​a​ ​J​a​m​a​i​c​a​n​ ​b​a​n​k​ ​a​c​c​o​u​n​t​ ​t​o​ ​c​a​s​h​ ​o​u​t​ ​t​o​.​ ​I​t​ ​i​s​ ​r​e​a​d​y​ ​t​o​ ​u​s​e​ ​r​i​g​h​t​ ​a​w​a​y​.
+		 */
+		addSubtitle: string
+		/**
+		 * E​d​i​t​ ​b​a​n​k​ ​a​c​c​o​u​n​t
 		 */
 		editTitle: string
 		/**
-		 * C​h​a​n​g​e​s​ ​a​r​e​ ​r​e​v​i​e​w​e​d​ ​b​e​f​o​r​e​ ​t​h​e​y​ ​t​a​k​e​ ​e​f​f​e​c​t​.​ ​C​a​s​h​-​o​u​t​s​ ​k​e​e​p​ ​g​o​i​n​g​ ​t​o​ ​y​o​u​r​ ​c​u​r​r​e​n​t​ ​d​e​t​a​i​l​s​ ​u​n​t​i​l​ ​t​h​e​n​.
+		 * C​h​a​n​g​e​s​ ​t​a​k​e​ ​e​f​f​e​c​t​ ​r​i​g​h​t​ ​a​w​a​y​.​ ​Y​o​u​r​ ​n​e​x​t​ ​c​a​s​h​-​o​u​t​ ​u​s​e​s​ ​t​h​e​ ​n​e​w​ ​d​e​t​a​i​l​s​.
 		 */
 		editSubtitle: string
 		/**
@@ -560,26 +598,97 @@ type RootTranslation = {
 		 */
 		currencyLocked: string
 		/**
-		 * S​u​b​m​i​t​ ​f​o​r​ ​r​e​v​i​e​w
+		 * A​c​c​o​u​n​t​s​ ​a​d​d​e​d​ ​h​e​r​e​ ​a​r​e​ ​p​a​i​d​ ​o​u​t​ ​i​n​ ​J​M​D​.
 		 */
-		submitUpdate: string
+		currencyFixedOnAdd: string
 		/**
-		 * S​u​b​m​i​t​ ​c​h​a​n​g​e​s​?
+		 * C​h​e​q​u​i​n​g
+		 */
+		chequing: string
+		/**
+		 * S​a​v​i​n​g​s
+		 */
+		savings: string
+		/**
+		 * U​s​e​ ​t​h​i​s​ ​a​c​c​o​u​n​t​ ​f​o​r​ ​c​a​s​h​-​o​u​t​s​ ​u​n​l​e​s​s​ ​y​o​u​ ​p​i​c​k​ ​a​n​o​t​h​e​r​.
+		 */
+		setAsDefaultHint: string
+		/**
+		 * A​d​d​ ​a​c​c​o​u​n​t
+		 */
+		addAccount: string
+		/**
+		 * S​a​v​e​ ​c​h​a​n​g​e​s
+		 */
+		saveChanges: string
+		/**
+		 * S​a​v​e​ ​c​h​a​n​g​e​s​?
 		 */
 		confirmTitle: string
 		/**
-		 * C​a​s​h​-​o​u​t​s​ ​k​e​e​p​ ​g​o​i​n​g​ ​t​o​ ​y​o​u​r​ ​c​u​r​r​e​n​t​ ​a​c​c​o​u​n​t​ ​u​n​t​i​l​ ​t​h​e​ ​n​e​w​ ​d​e​t​a​i​l​s​ ​a​r​e​ ​a​p​p​r​o​v​e​d​.
+		 * Y​o​u​r​ ​n​e​x​t​ ​c​a​s​h​-​o​u​t​ ​w​i​l​l​ ​g​o​ ​t​o​ ​t​h​e​ ​n​e​w​ ​a​c​c​o​u​n​t​ ​d​e​t​a​i​l​s​.
 		 */
 		confirmMessage: string
 		/**
-		 * U​p​d​a​t​e​ ​s​u​b​m​i​t​t​e​d​ ​f​o​r​ ​r​e​v​i​e​w
+		 * B​a​n​k​ ​a​c​c​o​u​n​t​ ​a​d​d​e​d
 		 */
-		updateSubmitted: string
+		accountAdded: string
 		/**
-		 * Y​o​u​r​ ​l​a​s​t​ ​r​e​q​u​e​s​t​ ​w​a​s​ ​d​e​c​l​i​n​e​d​:​ ​{​r​e​a​s​o​n​}
-		 * @param {string} reason
+		 * B​a​n​k​ ​a​c​c​o​u​n​t​ ​u​p​d​a​t​e​d
 		 */
-		lastRequestDeclined: RequiredParams<'reason'>
+		accountUpdated: string
+		/**
+		 * S​e​l​e​c​t​ ​y​o​u​r​ ​b​a​n​k​ ​f​r​o​m​ ​t​h​e​ ​l​i​s​t
+		 */
+		bankRequired: string
+		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​l​o​a​d​ ​t​h​e​ ​l​i​s​t​ ​o​f​ ​b​a​n​k​s​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		banksLoadError: string
+		/**
+		 * T​r​y​ ​a​g​a​i​n
+		 */
+		banksLoadRetry: string
+		/**
+		 * B​r​a​n​c​h​ ​i​s​ ​r​e​q​u​i​r​e​d
+		 */
+		branchRequired: string
+		/**
+		 * S​e​l​e​c​t​ ​C​h​e​q​u​i​n​g​ ​o​r​ ​S​a​v​i​n​g​s
+		 */
+		accountTypeRequired: string
+		/**
+		 * E​n​t​e​r​ ​a​ ​v​a​l​i​d​ ​a​c​c​o​u​n​t​ ​n​u​m​b​e​r​ ​(​d​i​g​i​t​s​ ​o​n​l​y​)
+		 */
+		accountNumberRequired: string
+		/**
+		 * F​i​n​i​s​h​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​u​p​g​r​a​d​e
+		 */
+		upgradeRequiredTitle: string
+		/**
+		 * Y​o​u​ ​n​e​e​d​ ​t​o​ ​f​i​n​i​s​h​ ​u​p​g​r​a​d​i​n​g​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​b​e​f​o​r​e​ ​y​o​u​ ​c​a​n​ ​a​d​d​ ​a​ ​b​a​n​k​ ​a​c​c​o​u​n​t​.
+		 */
+		errorUpgradeRequired: string
+		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​f​i​n​d​ ​t​h​a​t​ ​b​a​n​k​ ​a​c​c​o​u​n​t​.​ ​R​e​f​r​e​s​h​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		errorNotFound: string
+		/**
+		 * Y​o​u​ ​a​l​r​e​a​d​y​ ​h​a​v​e​ ​a​ ​b​a​n​k​ ​a​c​c​o​u​n​t​ ​w​i​t​h​ ​t​h​i​s​ ​n​u​m​b​e​r​.
+		 */
+		errorDuplicateNumber: string
+		/**
+		 * S​o​m​e​ ​o​f​ ​t​h​e​s​e​ ​d​e​t​a​i​l​s​ ​a​r​e​n​'​t​ ​v​a​l​i​d​.​ ​C​h​e​c​k​ ​t​h​e​m​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		errorInvalid: string
+		/**
+		 * T​o​o​ ​m​a​n​y​ ​a​t​t​e​m​p​t​s​.​ ​W​a​i​t​ ​a​ ​m​o​m​e​n​t​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		errorTooManyRequests: string
+		/**
+		 * S​o​m​e​t​h​i​n​g​ ​w​e​n​t​ ​w​r​o​n​g​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		errorGeneric: string
 	}
 	BridgeAddExternalAccount: {
 		/**
@@ -6849,6 +6958,18 @@ export type TranslationFunctions = {
 		 */
 		currency: () => LocalizedString
 		/**
+		 * Choose an account
+		 */
+		chooseAccount: () => LocalizedString
+		/**
+		 * Manage bank accounts
+		 */
+		manageBankAccounts: () => LocalizedString
+		/**
+		 * Default
+		 */
+		defaultAccount: () => LocalizedString
+		/**
 		 * No bank account found. Please add a bank account first.
 		 */
 		noBankAccountFound: () => LocalizedString
@@ -6907,7 +7028,15 @@ export type TranslationFunctions = {
 		 */
 		noWithdrawalAccounts: () => LocalizedString
 		/**
-		 * Add bank account
+		 * US bank accounts
+		 */
+		usBankAccounts: () => LocalizedString
+		/**
+		 * Local bank accounts
+		 */
+		localBankAccounts: () => LocalizedString
+		/**
+		 * Add US bank account
 		 */
 		addBankAccount: () => LocalizedString
 		/**
@@ -6991,14 +7120,6 @@ export type TranslationFunctions = {
 		 */
 		remove: () => LocalizedString
 		/**
-		 * Remove (coming soon)
-		 */
-		removeComingSoon: () => LocalizedString
-		/**
-		 * Removing accounts is coming soon
-		 */
-		removingAccountsComingSoon: () => LocalizedString
-		/**
 		 * Account ending {last4}
 		 */
 		accountEnding: (arg: { last4: string }) => LocalizedString
@@ -7007,15 +7128,39 @@ export type TranslationFunctions = {
 		 */
 		defaultUpdated: () => LocalizedString
 		/**
-		 * Update details
+		 * Edit details
 		 */
 		updateDetails: () => LocalizedString
 		/**
-		 * Update bank account
+		 * Add Jamaican bank account
+		 */
+		addJamaicanAccount: () => LocalizedString
+		/**
+		 * Remove this account?
+		 */
+		removeConfirmTitle: () => LocalizedString
+		/**
+		 * {bankName} ending {last4} will be removed. You can no longer cash out to it.
+		 */
+		removeConfirmMessage: (arg: { bankName: string, last4: string }) => LocalizedString
+		/**
+		 * Bank account removed
+		 */
+		accountRemoved: () => LocalizedString
+		/**
+		 * Add bank account
+		 */
+		addTitle: () => LocalizedString
+		/**
+		 * Add a Jamaican bank account to cash out to. It is ready to use right away.
+		 */
+		addSubtitle: () => LocalizedString
+		/**
+		 * Edit bank account
 		 */
 		editTitle: () => LocalizedString
 		/**
-		 * Changes are reviewed before they take effect. Cash-outs keep going to your current details until then.
+		 * Changes take effect right away. Your next cash-out uses the new details.
 		 */
 		editSubtitle: () => LocalizedString
 		/**
@@ -7023,25 +7168,97 @@ export type TranslationFunctions = {
 		 */
 		currencyLocked: () => LocalizedString
 		/**
-		 * Submit for review
+		 * Accounts added here are paid out in JMD.
 		 */
-		submitUpdate: () => LocalizedString
+		currencyFixedOnAdd: () => LocalizedString
 		/**
-		 * Submit changes?
+		 * Chequing
+		 */
+		chequing: () => LocalizedString
+		/**
+		 * Savings
+		 */
+		savings: () => LocalizedString
+		/**
+		 * Use this account for cash-outs unless you pick another.
+		 */
+		setAsDefaultHint: () => LocalizedString
+		/**
+		 * Add account
+		 */
+		addAccount: () => LocalizedString
+		/**
+		 * Save changes
+		 */
+		saveChanges: () => LocalizedString
+		/**
+		 * Save changes?
 		 */
 		confirmTitle: () => LocalizedString
 		/**
-		 * Cash-outs keep going to your current account until the new details are approved.
+		 * Your next cash-out will go to the new account details.
 		 */
 		confirmMessage: () => LocalizedString
 		/**
-		 * Update submitted for review
+		 * Bank account added
 		 */
-		updateSubmitted: () => LocalizedString
+		accountAdded: () => LocalizedString
 		/**
-		 * Your last request was declined: {reason}
+		 * Bank account updated
 		 */
-		lastRequestDeclined: (arg: { reason: string }) => LocalizedString
+		accountUpdated: () => LocalizedString
+		/**
+		 * Select your bank from the list
+		 */
+		bankRequired: () => LocalizedString
+		/**
+		 * We couldn't load the list of banks. Check your connection and try again.
+		 */
+		banksLoadError: () => LocalizedString
+		/**
+		 * Try again
+		 */
+		banksLoadRetry: () => LocalizedString
+		/**
+		 * Branch is required
+		 */
+		branchRequired: () => LocalizedString
+		/**
+		 * Select Chequing or Savings
+		 */
+		accountTypeRequired: () => LocalizedString
+		/**
+		 * Enter a valid account number (digits only)
+		 */
+		accountNumberRequired: () => LocalizedString
+		/**
+		 * Finish your account upgrade
+		 */
+		upgradeRequiredTitle: () => LocalizedString
+		/**
+		 * You need to finish upgrading your account before you can add a bank account.
+		 */
+		errorUpgradeRequired: () => LocalizedString
+		/**
+		 * We couldn't find that bank account. Refresh and try again.
+		 */
+		errorNotFound: () => LocalizedString
+		/**
+		 * You already have a bank account with this number.
+		 */
+		errorDuplicateNumber: () => LocalizedString
+		/**
+		 * Some of these details aren't valid. Check them and try again.
+		 */
+		errorInvalid: () => LocalizedString
+		/**
+		 * Too many attempts. Wait a moment and try again.
+		 */
+		errorTooManyRequests: () => LocalizedString
+		/**
+		 * Something went wrong. Please try again.
+		 */
+		errorGeneric: () => LocalizedString
 	}
 	BridgeAddExternalAccount: {
 		/**

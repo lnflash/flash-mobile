@@ -2,6 +2,7 @@ import CashoutFromWallet from "./CashoutFromWallet"
 import CashoutPercentage from "./CashoutPercentage"
 import CashoutCard from "./CashoutCard"
 import CashoutWithdrawTo from "./CashoutWithdrawTo"
+import CashoutAccountPicker from "./CashoutAccountPicker"
 import CashWalletCutoverModal from "./CashWalletCutoverModal"
 
 export {
@@ -9,6 +10,7 @@ export {
   CashoutPercentage,
   CashoutCard,
   CashoutWithdrawTo,
+  CashoutAccountPicker,
   CashWalletCutoverModal,
 }
 

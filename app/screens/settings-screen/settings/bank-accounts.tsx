@@ -2,6 +2,7 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { useNavigation } from "@react-navigation/native"
 
 import { useFeatureFlags } from "@app/config/feature-flags-context"
+import { useAccountStatus } from "@app/hooks/use-account-status"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
@@ -12,9 +13,12 @@ export const BankAccountsSetting: React.FC = () => {
   const { LL } = useI18nContext()
   const { bridgeTopupEnabled } = useFeatureFlags()
 
-  // ENG-465 kill switch: while Bridge is remotely disabled, don't advertise a
-  // bank-transfer hub whose Receive card and Add-bank flow are all Bridge.
-  if (!bridgeTopupEnabled) return null
+  const { capabilities } = useAccountStatus()
+
+  // Shown when the user can hold local (Jamaican) bank accounts OR Bridge is
+  // on. ENG-465 kill switch: with Bridge remotely disabled the hub still opens
+  // for local accounts; its Bridge sections are gated by the flag inside.
+  if (!bridgeTopupEnabled && !capabilities.bankPayout) return null
 
   return (
     <SettingsRow

@@ -376,7 +376,12 @@ export const RootStack = () => {
       <RootNavigator.Screen
         name="EditBankAccount"
         component={EditBankAccountScreen}
-        options={{ title: LL.BankAccountsScreen.editTitle() }}
+        options={({ route }) => ({
+          title:
+            route.params.mode === "add"
+              ? LL.BankAccountsScreen.addTitle()
+              : LL.BankAccountsScreen.editTitle(),
+        })}
       />
       <RootNavigator.Screen
         name="defaultWallet"
