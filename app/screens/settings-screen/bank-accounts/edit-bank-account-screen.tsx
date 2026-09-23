@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react"
-import { Alert, Pressable, ScrollView, Switch, View } from "react-native"
+import { Alert, Pressable, Switch, View } from "react-native"
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view"
 import { useApolloClient } from "@apollo/client"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -209,7 +210,16 @@ export const EditBankAccountScreen: React.FC<Props> = ({ route, navigation }) =>
 
   return (
     <Screen>
-      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+      {/* The account number is the last field; with a plain ScrollView the
+          keyboard covered it and the button. Scroll the focused field clear
+          of the keyboard and leave room under the last row. */}
+      <KeyboardAwareScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid
+        extraScrollHeight={80}
+      >
         <Text type="p3" color={colors.grey2} style={styles.subtitle}>
           {isAdd
             ? LL.BankAccountsScreen.addSubtitle()
@@ -302,7 +312,7 @@ export const EditBankAccountScreen: React.FC<Props> = ({ route, navigation }) =>
             />
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
       <PrimaryBtn
         label={
           isAdd ? LL.BankAccountsScreen.addAccount() : LL.BankAccountsScreen.saveChanges()
@@ -323,6 +333,9 @@ const useStyles = makeStyles(() => ({
     flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 20,
+  },
+  content: {
+    paddingBottom: 32,
   },
   subtitle: {
     marginBottom: 16,
