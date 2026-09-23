@@ -112,6 +112,11 @@ export const App = () => {
                                       docblock. */}
                                   <AppUpdateBoundary>
                                     <AppStateWrapper />
+                                    {/* Inside NavigationContainerWrapper on
+                                        purpose: it reads isAppLocked so its
+                                        prompts wait for the PIN/biometric
+                                        gate. */}
+                                    <NostrKeyEnsurer />
                                     <PushNotificationComponent />
                                     <BreezProvider>
                                       <FlashcardProvider>
@@ -128,7 +133,6 @@ export const App = () => {
                             </NavigationContainerWrapper>
                           </ErrorBoundary>
                           <ThemeSyncGraphql />
-                          <NostrKeyEnsurer />
                         </FeatureFlagContextProvider>
                       </GaloyClient>
                     </ThemeProvider>

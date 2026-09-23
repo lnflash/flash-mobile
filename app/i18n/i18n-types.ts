@@ -6113,6 +6113,26 @@ type RootTranslation = {
 		 */
 		keyConflictDescription: string
 		/**
+		 * C​h​a​t​ ​k​e​y​ ​m​i​s​m​a​t​c​h
+		 */
+		keyMismatchTitle: string
+		/**
+		 * T​h​i​s​ ​d​e​v​i​c​e​'​s​ ​c​h​a​t​ ​k​e​y​ ​d​i​f​f​e​r​s​ ​f​r​o​m​ ​t​h​e​ ​o​n​e​ ​o​n​ ​y​o​u​r​ ​a​c​c​o​u​n​t​.​ ​U​s​e​ ​t​h​i​s​ ​d​e​v​i​c​e​ ​f​o​r​ ​c​h​a​t​?
+		 */
+		keyMismatchMessage: string
+		/**
+		 * U​s​e​ ​t​h​i​s​ ​d​e​v​i​c​e
+		 */
+		keyMismatchUseThisDevice: string
+		/**
+		 * T​h​i​s​ ​d​e​v​i​c​e​ ​c​o​u​l​d​ ​n​o​t​ ​b​e​ ​s​e​t​ ​a​s​ ​y​o​u​r​ ​c​h​a​t​ ​d​e​v​i​c​e​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​ ​f​r​o​m​ ​S​e​t​t​i​n​g​s​ ​›​ ​N​o​s​t​r​ ​›​ ​A​d​v​a​n​c​e​d​ ​›​ ​R​e​c​o​n​n​e​c​t​ ​p​r​o​f​i​l​e​.
+		 */
+		keyMismatchRelinkFailed: string
+		/**
+		 * T​h​i​s​ ​c​h​a​t​ ​k​e​y​ ​i​s​ ​r​e​g​i​s​t​e​r​e​d​ ​t​o​ ​a​n​o​t​h​e​r​ ​a​c​c​o​u​n​t​.​ ​D​e​l​e​t​e​ ​t​h​e​ ​c​h​a​t​ ​k​e​y​s​ ​u​n​d​e​r​ ​S​e​t​t​i​n​g​s​ ​›​ ​N​o​s​t​r​ ​›​ ​A​d​v​a​n​c​e​d​ ​t​o​ ​c​r​e​a​t​e​ ​a​ ​n​e​w​ ​o​n​e​.
+		 */
+		keyMismatchRelinkRefused: string
+		/**
 		 * C​r​e​a​t​i​n​g​ ​P​r​o​f​i​l​e​.​.​.
 		 */
 		creatingProfile: string
@@ -12378,6 +12398,26 @@ export type TranslationFunctions = {
 		 * Your account has a registered Nostr key but it was not found on this device. This can happen after reinstalling the app or switching devices. To restore access, import your nsec backup from Advanced Settings.
 		 */
 		keyConflictDescription: () => LocalizedString
+		/**
+		 * Chat key mismatch
+		 */
+		keyMismatchTitle: () => LocalizedString
+		/**
+		 * This device's chat key differs from the one on your account. Use this device for chat?
+		 */
+		keyMismatchMessage: () => LocalizedString
+		/**
+		 * Use this device
+		 */
+		keyMismatchUseThisDevice: () => LocalizedString
+		/**
+		 * This device could not be set as your chat device. Check your connection and try again from Settings › Nostr › Advanced › Reconnect profile.
+		 */
+		keyMismatchRelinkFailed: () => LocalizedString
+		/**
+		 * This chat key is registered to another account. Delete the chat keys under Settings › Nostr › Advanced to create a new one.
+		 */
+		keyMismatchRelinkRefused: () => LocalizedString
 		/**
 		 * Creating Profile...
 		 */
