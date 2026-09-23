@@ -239,10 +239,17 @@ describe("FlashcardProvider withdraw parameters", () => {
       await readFlashcard?.(true)
     })
 
+    expect(toastShow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "error",
+        message: "This card is not set up as a Flashcard. Please tap a Flashcard.",
+      }),
+    )
     const shown = (toastShow as jest.Mock).mock.calls.map((c) => JSON.stringify(c[0]))
-    expect(shown.length).toBeGreaterThan(0)
     for (const secret of SECRETS) {
       expect(shown.some((m) => m.includes(secret))).toBe(false)
+      expect(consoleOutput(spies).some((line) => line.includes(secret))).toBe(false)
     }
+    expect(latest?.k1).toBeUndefined()
   })
 })
