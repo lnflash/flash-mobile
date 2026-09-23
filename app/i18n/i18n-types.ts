@@ -266,6 +266,41 @@ type RootTranslation = {
 		 * N​o​ ​t​a​g​ ​f​o​u​n​d​.​ ​P​l​e​a​s​e​ ​e​n​s​u​r​e​ ​y​o​u​ ​a​r​e​ ​u​s​i​n​g​ ​a​ ​f​l​a​s​h​c​a​r​d​.
 		 */
 		noTag: string
+		/**
+		 * R​e​l​o​a​d​
+	​C​a​r​d
+		 */
+		reloadCard: string
+		/**
+		 * T​o​p​u​p​ ​v​i​a​
+	​Q​R
+		 */
+		topupViaQr: string
+		/**
+		 * R​e​m​o​v​e​
+	​C​a​r​d
+		 */
+		removeCard: string
+		/**
+		 * D​o​ ​n​o​t​ ​t​h​r​o​w​ ​a​w​a​y​ ​y​o​u​r​ ​c​a​r​d​!
+		 */
+		keepYourCard: string
+		/**
+		 * I​f​ ​y​o​u​r​ ​c​a​r​d​ ​i​s​ ​l​o​s​t​,​ ​t​h​e​ ​f​u​n​d​s​ ​a​r​e​ ​n​o​t​ ​r​e​c​o​v​e​r​a​b​l​e
+		 */
+		lostCardWarning: string
+		/**
+		 * R​e​c​e​n​t​ ​a​c​t​i​v​i​t​y
+		 */
+		recentActivity: string
+		/**
+		 * R​e​a​d​ ​N​F​C​ ​c​a​r​d
+		 */
+		readNfcCard: string
+		/**
+		 * F​i​n​d​ ​a​ ​F​l​a​s​h​p​o​i​n​t
+		 */
+		findFlashpoint: string
 	}
 	Cashout: {
 		/**
@@ -2034,6 +2069,34 @@ type RootTranslation = {
 		 * G​e​t​ ​D​i​r​e​c​t​i​o​n​s
 		 */
 		getDirections: string
+		/**
+		 * D​i​r​e​c​t​i​o​n​s
+		 */
+		directions: string
+		/**
+		 * C​h​a​t
+		 */
+		chat: string
+		/**
+		 * P​a​y​ ​F​l​a​s​h​p​o​i​n​t
+		 */
+		payFlashpoint: string
+		/**
+		 * A​v​a​i​l​a​b​l​e​ ​S​e​r​v​i​c​e​s
+		 */
+		availableServices: string
+		/**
+		 * F​l​a​s​h​ ​P​a​y
+		 */
+		serviceFlashPay: string
+		/**
+		 * C​a​s​h
+		 */
+		serviceCash: string
+		/**
+		 * R​e​w​a​r​d​s
+		 */
+		serviceRewards: string
 	}
 	PlaidLink: {
 		/**
@@ -3628,6 +3691,10 @@ type RootTranslation = {
 		 * I​n​v​i​t​e​ ​a​ ​f​r​i​e​n​d
 		 */
 		inviteFriend: string
+		/**
+		 * E​n​a​b​l​e​ ​C​h​a​t
+		 */
+		enableChat: string
 	}
 	InviteFriend: {
 		/**
@@ -4138,7 +4205,7 @@ type RootTranslation = {
 		 */
 		title: string
 		/**
-		 * Y​o​u​ ​s​h​o​u​l​d​ ​n​o​w​ ​h​a​v​e​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​a​n​d​ ​p​a​s​s​w​o​r​d​ ​w​r​i​t​t​e​n​ ​d​o​w​n​ ​f​o​r​ ​f​u​t​u​r​e​ ​r​e​f​e​r​e​n​c​e​.
+		 * Y​o​u​ ​s​h​o​u​l​d​ ​n​o​w​ ​h​a​v​e​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​w​r​i​t​t​e​n​ ​d​o​w​n​ ​f​o​r​ ​f​u​t​u​r​e​ ​r​e​f​e​r​e​n​c​e​.
 		 */
 		description: string
 		/**
@@ -6666,6 +6733,41 @@ export type TranslationFunctions = {
 		 * No tag found. Please ensure you are using a flashcard.
 		 */
 		noTag: () => LocalizedString
+		/**
+		 * Reload
+	Card
+		 */
+		reloadCard: () => LocalizedString
+		/**
+		 * Topup via
+	QR
+		 */
+		topupViaQr: () => LocalizedString
+		/**
+		 * Remove
+	Card
+		 */
+		removeCard: () => LocalizedString
+		/**
+		 * Do not throw away your card!
+		 */
+		keepYourCard: () => LocalizedString
+		/**
+		 * If your card is lost, the funds are not recoverable
+		 */
+		lostCardWarning: () => LocalizedString
+		/**
+		 * Recent activity
+		 */
+		recentActivity: () => LocalizedString
+		/**
+		 * Read NFC card
+		 */
+		readNfcCard: () => LocalizedString
+		/**
+		 * Find a Flashpoint
+		 */
+		findFlashpoint: () => LocalizedString
 	}
 	Cashout: {
 		/**
@@ -8423,6 +8525,34 @@ export type TranslationFunctions = {
 		 * Get Directions
 		 */
 		getDirections: () => LocalizedString
+		/**
+		 * Directions
+		 */
+		directions: () => LocalizedString
+		/**
+		 * Chat
+		 */
+		chat: () => LocalizedString
+		/**
+		 * Pay Flashpoint
+		 */
+		payFlashpoint: () => LocalizedString
+		/**
+		 * Available Services
+		 */
+		availableServices: () => LocalizedString
+		/**
+		 * Flash Pay
+		 */
+		serviceFlashPay: () => LocalizedString
+		/**
+		 * Cash
+		 */
+		serviceCash: () => LocalizedString
+		/**
+		 * Rewards
+		 */
+		serviceRewards: () => LocalizedString
 	}
 	PlaidLink: {
 		/**
@@ -9960,6 +10090,10 @@ export type TranslationFunctions = {
 		 * Invite a friend
 		 */
 		inviteFriend: () => LocalizedString
+		/**
+		 * Enable Chat
+		 */
+		enableChat: () => LocalizedString
 	}
 	InviteFriend: {
 		/**
@@ -10460,7 +10594,7 @@ export type TranslationFunctions = {
 		 */
 		title: () => LocalizedString
 		/**
-		 * You should now have your recovery phrase and password written down for future reference.
+		 * You should now have your recovery phrase written down for future reference.
 		 */
 		description: () => LocalizedString
 		/**

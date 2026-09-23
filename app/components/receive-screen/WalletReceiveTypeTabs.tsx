@@ -8,6 +8,7 @@ import ReceiveTypeBottomSheet from "./ReceiveTypeBottomSheet"
 
 // store
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 // types
 import {
@@ -23,6 +24,7 @@ type Props = {
 const WalletReceiveTypeTabs: React.FC<Props> = ({ request }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
   const { persistentState } = usePersistentStateContext()
 
   const onChangeWallet = (id: WalletCurrency) => {
@@ -68,7 +70,7 @@ const WalletReceiveTypeTabs: React.FC<Props> = ({ request }) => {
             type="bl"
             style={request.type === "Lightning" ? { color: colors.accent02 } : {}}
           >
-            Lightning
+            {LL.ReceiveScreen.lightning()}
           </Text>
         </TouchableOpacity>
         <View style={{ width: 10 }} />
@@ -84,7 +86,7 @@ const WalletReceiveTypeTabs: React.FC<Props> = ({ request }) => {
             type="bl"
             style={request.type === "OnChain" ? { color: colors.accent02 } : {}}
           >
-            Onchain
+            {LL.ReceiveScreen.onchain()}
           </Text>
         </TouchableOpacity>
       </View>

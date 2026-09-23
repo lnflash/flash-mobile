@@ -9,6 +9,7 @@ import HideableArea from "../hideable-area/hideable-area"
 // hooks
 import { useDisplayCurrency } from "@app/hooks"
 import { useHideBalanceQuery } from "@app/graphql/generated"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 // types
 import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details"
@@ -27,6 +28,7 @@ type Props = {
 const RecentActivity: React.FC<Props> = ({ transactions, convertMoneyAmount }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
   const { formatMoneyAmount } = useDisplayCurrency()
 
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
@@ -65,7 +67,7 @@ const RecentActivity: React.FC<Props> = ({ transactions, convertMoneyAmount }) =
   return (
     <View style={styles.container}>
       <Text type="bl" bold style={styles.title}>
-        Recent activity
+        {LL.CardScreen.recentActivity()}
       </Text>
       {transactions?.map((el) => renderItem(el))}
     </View>

@@ -8,6 +8,7 @@ import {
 } from "react-native"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 const COLORS = {
   orange: "#F39C12",
@@ -48,14 +49,30 @@ type Props = {
 }
 
 const SERVICE_BADGES = [
-  { key: "acceptsFlash", icon: "card-outline", label: "Flash Pay", color: COLORS.orange },
-  { key: "redeemTopup", icon: "cash-outline", label: "Cash", color: COLORS.blue },
-  { key: "hasRewards", icon: "gift-outline", label: "Rewards", color: COLORS.red },
+  {
+    key: "acceptsFlash",
+    icon: "card-outline",
+    labelKey: "serviceFlashPay",
+    color: COLORS.orange,
+  },
+  {
+    key: "redeemTopup",
+    icon: "cash-outline",
+    labelKey: "serviceCash",
+    color: COLORS.blue,
+  },
+  {
+    key: "hasRewards",
+    icon: "gift-outline",
+    labelKey: "serviceRewards",
+    color: COLORS.red,
+  },
 ] as const
 
 export const BusinessCardModal: React.FC<Props> = memo(
   ({ visible, item, chatEnabled, currentUsername, onClose, onPayBusiness, onGetDirections, onChat }) => {
     const styles = useStyles()
+    const { LL } = useI18nContext()
 
     if (!item) return null
 
@@ -94,7 +111,7 @@ export const BusinessCardModal: React.FC<Props> = memo(
             </View>
 
             <View style={styles.servicesSection}>
-              <Text style={styles.servicesLabel}>Available Services</Text>
+              <Text style={styles.servicesLabel}>{LL.MapScreen.availableServices()}</Text>
               <View style={styles.badgesContainer}>
                 {SERVICE_BADGES.map((badge) => {
                   const isActive = (item as Record<string, unknown>)[badge.key] !== false
@@ -111,7 +128,7 @@ export const BusinessCardModal: React.FC<Props> = memo(
                           { color: isActive ? badge.color : COLORS.mutedText },
                         ]}
                       >
-                        {badge.label}
+                        {LL.MapScreen[badge.labelKey]()}
                       </Text>
                     </View>
                   )
@@ -132,18 +149,22 @@ export const BusinessCardModal: React.FC<Props> = memo(
                   }}
                 >
                   <Icon name="navigate-outline" size={14} color={COLORS.buttonText} />
-                  <Text style={styles.secondaryButtonText}>Directions</Text>
+                  <Text style={styles.secondaryButtonText}>
+                    {LL.MapScreen.directions()}
+                  </Text>
                 </TouchableOpacity>
                 {chatAvailable && (
                   <TouchableOpacity style={styles.secondaryButton} onPress={onChat}>
                     <Icon name="chatbubble-outline" size={14} color={COLORS.buttonText} />
-                    <Text style={styles.secondaryButtonText}>Chat</Text>
+                    <Text style={styles.secondaryButtonText}>{LL.MapScreen.chat()}</Text>
                   </TouchableOpacity>
                 )}
               </View>
               <TouchableOpacity style={styles.primaryButton} onPress={onPayBusiness}>
                 <Icon name="flash-outline" size={14} color="white" />
-                <Text style={styles.primaryButtonText}>Pay Flashpoint</Text>
+                <Text style={styles.primaryButtonText}>
+                  {LL.MapScreen.payFlashpoint()}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -66,7 +66,15 @@
     "noNDEFMessage": "NDEF-meddelelsen blev ikke fundet, så sørg for, at du bruger et flashkort.",
     "notSupported": "NFC understøttes ikke på denne enhed.",
     "notEnabled": "NFC er ikke aktiveret på denne enhed.",
-    "noTag": "Ingen tag fundet. Sørg for, at du bruger et flashkort."
+    "noTag": "Ingen tag fundet. Sørg for, at du bruger et flashkort.",
+    "reloadCard": "Reload\nCard",
+    "topupViaQr": "Topup via\nQR",
+    "removeCard": "Remove\nCard",
+    "keepYourCard": "Do not throw away your card!",
+    "lostCardWarning": "If your card is lost, the funds are not recoverable",
+    "recentActivity": "Recent activity",
+    "readNfcCard": "Read NFC card",
+    "findFlashpoint": "Find a Flashpoint"
   },
   "Cashout": {
     "title": "Settle Settle",
@@ -509,7 +517,14 @@
     "addPin": "Klik hvor som helst for at tilføje en pin",
     "selectedCoordinates": "Din Flashpoint koordinater: ",
     "viewInGoogleMaps": "Se i Google Maps",
-    "getDirections": "Direktioner Få retninger"
+    "getDirections": "Direktioner Få retninger",
+    "directions": "Directions",
+    "chat": "Chat",
+    "payFlashpoint": "Pay Flashpoint",
+    "availableServices": "Available Services",
+    "serviceFlashPay": "Flash Pay",
+    "serviceCash": "Cash",
+    "serviceRewards": "Rewards"
   },
   "HomeScreen": {
     "cashout": "Cash Out",
@@ -799,7 +814,8 @@
     "showBtcAccount": "Vis Bitcoin konto",
     "hideBtcAccount": "Hide Bitcoin konto",
     "flashcard": "Flashcard",
-    "inviteFriend": "Invite a friend"
+    "inviteFriend": "Invite a friend",
+    "enableChat": "Enable Chat"
   },
   "NotificationSettingsScreen": {
     "title": "Notifikationsindstillinger",

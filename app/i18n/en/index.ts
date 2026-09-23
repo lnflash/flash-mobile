@@ -78,7 +78,15 @@ const en: BaseTranslation = {
     noNDEFMessage: "NDEF message not found. Please ensure you are using a flashcard.",
     notSupported: "NFC is not supported on this device.",
     notEnabled: "NFC is not enabled on this device.",
-    noTag: "No tag found. Please ensure you are using a flashcard."
+    noTag: "No tag found. Please ensure you are using a flashcard.",
+    reloadCard: "Reload\nCard",
+    topupViaQr: "Topup via\nQR",
+    removeCard: "Remove\nCard",
+    keepYourCard: "Do not throw away your card!",
+    lostCardWarning: "If your card is lost, the funds are not recoverable",
+    recentActivity: "Recent activity",
+    readNfcCard: "Read NFC card",
+    findFlashpoint: "Find a Flashpoint",
   },
   Cashout: {
     title: "Settle",
@@ -639,6 +647,13 @@ const en: BaseTranslation = {
     selectedCoordinates: "Your Flashpoint Coordinates: \n",
     viewInGoogleMaps: "View in Google Maps",
     getDirections: "Get Directions",
+    directions: "Directions",
+    chat: "Chat",
+    payFlashpoint: "Pay Flashpoint",
+    availableServices: "Available Services",
+    serviceFlashPay: "Flash Pay",
+    serviceCash: "Cash",
+    serviceRewards: "Rewards",
   },
   PlaidLink: {
     connectedTitle: "Bank connected",
@@ -1131,7 +1146,8 @@ const en: BaseTranslation = {
     keysManagement: "Wallet backup",
 		showBtcAccount: "Show Bitcoin account",
 		hideBtcAccount: "Hide Bitcoin account",
-    inviteFriend: "Invite a friend"
+    inviteFriend: "Invite a friend",
+    enableChat: "Enable Chat"
   },
   InviteFriend: {
     invitation: "Invitation",
@@ -1282,7 +1298,7 @@ const en: BaseTranslation = {
 	},
   BackupComplete: {
 		title: "Your backup is complete",
-		description: "You should now have your recovery phrase and password written down for future reference.",
+		description: "You should now have your recovery phrase written down for future reference.",
 		complete: "Complete"
 	},
   BackupShowSeedPhrase: {
