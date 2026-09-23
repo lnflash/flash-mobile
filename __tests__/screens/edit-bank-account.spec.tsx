@@ -31,6 +31,13 @@ import {
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 
+// The repo-wide mock renders nothing, which hides every field. Render the
+// children in a plain ScrollView so the form is testable.
+jest.mock("react-native-keyboard-aware-scroll-view", () => {
+  const { ScrollView } = jest.requireActual("react-native")
+  return { KeyboardAwareScrollView: ScrollView }
+})
+
 jest.mock("@app/i18n/i18n-react", () => {
   const { i18nObject: i18n } = jest.requireActual("@app/i18n/i18n-util")
   return { useI18nContext: () => ({ LL: i18n("en") }) }
@@ -353,8 +360,10 @@ describe("EditBankAccountScreen — add", () => {
 
   const errorCases: [string, string][] = [
     ["BANK_ACCOUNT_DUPLICATE_NUMBER", en.BankAccountsScreen.errorDuplicateNumber()],
-    ["BANK_ACCOUNT_INVALID", en.BankAccountsScreen.errorInvalid()],
-    ["INVALID_INPUT", en.BankAccountsScreen.errorInvalid()],
+    // The server names the problem; the app shows it as-is.
+    ["BANK_ACCOUNT_INVALID", "server message"],
+    // The server names the problem; the app shows it as-is.
+    ["INVALID_INPUT", "server message"],
     ["TOO_MANY_REQUEST", en.BankAccountsScreen.errorTooManyRequests()],
     ["BANK_ACCOUNT_NOT_FOUND", en.BankAccountsScreen.errorNotFound()],
     // Unknown codes show the server's own message.
