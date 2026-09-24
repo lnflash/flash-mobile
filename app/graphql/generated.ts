@@ -402,7 +402,7 @@ export type AuthTokenPayload = {
 export type BtcWallet = Wallet & {
   readonly __typename: 'BTCWallet';
   readonly accountId: Scalars['ID']['output'];
-  /** A balance stored in BTC. */
+  /** Not denominated in sats. Null for external BTC wallets; no value shape is guaranteed for other BTC wallets. */
   readonly balance?: Maybe<Scalars['FractionalCentAmount']['output']>;
   readonly id: Scalars['ID']['output'];
   readonly isExternal: Scalars['Boolean']['output'];
@@ -2729,6 +2729,7 @@ export type UpgradePayload = {
 export type UsdWallet = Wallet & {
   readonly __typename: 'UsdWallet';
   readonly accountId: Scalars['ID']['output'];
+  /** Balance in US cents as a float (up to 8 decimal places). Null for external wallets. */
   readonly balance?: Maybe<Scalars['FractionalCentAmount']['output']>;
   readonly id: Scalars['ID']['output'];
   readonly isExternal: Scalars['Boolean']['output'];
@@ -2763,6 +2764,7 @@ export type UsdWalletTransactionsByAddressArgs = {
 export type UsdtWallet = Wallet & {
   readonly __typename: 'UsdtWallet';
   readonly accountId: Scalars['ID']['output'];
+  /** USDT balance in US cents as a float (1 USDT = 100 cents). Up to 4 decimal places when backed by USDT; up to 8 if the balance is reported in USD. */
   readonly balance?: Maybe<Scalars['FractionalCentAmount']['output']>;
   readonly id: Scalars['ID']['output'];
   readonly isExternal: Scalars['Boolean']['output'];
@@ -3024,6 +3026,7 @@ export type UserUpdateUsernamePayload = {
 /** A generic wallet which stores value in one of our supported currencies. */
 export type Wallet = {
   readonly accountId: Scalars['ID']['output'];
+  /** For USD and USDT wallets, the balance in US cents as a float. See the concrete wallet type for units, nullability and exceptions. */
   readonly balance?: Maybe<Scalars['FractionalCentAmount']['output']>;
   readonly id: Scalars['ID']['output'];
   readonly isExternal: Scalars['Boolean']['output'];
