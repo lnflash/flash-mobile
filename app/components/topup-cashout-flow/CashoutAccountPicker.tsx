@@ -42,7 +42,7 @@ const CashoutAccountPicker: React.FC<Props> = ({
   onClose,
 }) => {
   const styles = useStyles()
-  const sheetInsetStyle = useModalInsetStyle("sheet", styles.sheet)
+  const sheetInsetStyle = useModalInsetStyle(styles.sheet)
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { height } = useWindowDimensions()

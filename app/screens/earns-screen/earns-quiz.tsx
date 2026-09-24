@@ -181,7 +181,7 @@ export const EarnQuiz = ({ route }: Props) => {
     theme: { colors },
   } = useTheme()
   const styles = useStyles()
-  const sheetInsetStyle = useModalInsetStyle("sheet", styles.modalBackground)
+  const sheetInsetStyle = useModalInsetStyle(styles.modalBackground)
 
   const { LL } = useI18nContext()
   const quizQuestionsContent = getQuizQuestionsContent({ LL })

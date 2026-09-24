@@ -45,15 +45,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
  * `use-keyboard-padding.ts`) the result equals the base padding and the
  * layout is unchanged.
  */
-/**
- * Which window edge the modal content touches. Only bottom-anchored sheets
- * exist today (the audit found no full-screen `margin: 0` react-native-modal
- * content); add a kind here when a consumer needs another edge.
- */
-export type ModalInsetKind =
-  /** Anchored to the bottom edge: pad the bottom inset only. */
-  "sheet"
-
 const numberOr = (value: unknown, fallback: number): number =>
   typeof value === "number" ? value : fallback
 
@@ -71,17 +62,11 @@ export const basePaddingBottom = (base: StyleProp<ViewStyle>): number => {
 }
 
 /**
- * @param kind Which window edge the modal content touches.
  * @param base The content container's own style; its padding on the padded
  *   edge is preserved and the inset added on top. Place the result AFTER
  *   `base` in the style array: `style={[styles.sheet, insetStyle]}`.
  */
-export const useModalInsetStyle = (
-  // Only "sheet" exists; the parameter names the edge at every call site and
-  // is the extension point should a top-anchored consumer appear.
-  kind: ModalInsetKind,
-  base?: StyleProp<ViewStyle>,
-): ViewStyle => {
+export const useModalInsetStyle = (base?: StyleProp<ViewStyle>): ViewStyle => {
   const { bottom } = useSafeAreaInsets()
   const baseBottom = basePaddingBottom(base)
   return useMemo(() => ({ paddingBottom: baseBottom + bottom }), [bottom, baseBottom])

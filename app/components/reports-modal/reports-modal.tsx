@@ -36,7 +36,7 @@ const ReportModal: React.FC<Props> = ({
 }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
-  const sheetInsetStyle = useModalInsetStyle("sheet", styles.modalContent)
+  const sheetInsetStyle = useModalInsetStyle(styles.modalContent)
   const {
     theme: { colors },
   } = useTheme()

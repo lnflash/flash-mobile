@@ -35,7 +35,7 @@ export const ModalTooltip: React.FC<ModalTooltipProps> = ({
   const [isVisible, setIsVisible] = React.useState(false)
   const toggleModal = () => setIsVisible(!isVisible)
   const styles = useStyles()
-  const sheetInsetStyle = useModalInsetStyle("sheet", styles.modalCard)
+  const sheetInsetStyle = useModalInsetStyle(styles.modalCard)
 
   let iconParams: { name: string; type: string }
   let defaultTitle: LocalizedString

@@ -40,7 +40,7 @@ const NOT_EDGE_TO_EDGE = { top: 0, bottom: 0, left: 0, right: 0 }
 describe("useModalInsetStyle", () => {
   it("sheet: adds the bottom inset to the base paddingBottom", () => {
     const { result } = renderHook(
-      () => useModalInsetStyle("sheet", { paddingTop: 20, paddingBottom: 32 }),
+      () => useModalInsetStyle({ paddingTop: 20, paddingBottom: 32 }),
       { wrapper: withInsets(THREE_BUTTON_NAV) },
     )
 
@@ -48,7 +48,7 @@ describe("useModalInsetStyle", () => {
   })
 
   it("sheet: with no base style the padding is the inset alone", () => {
-    const { result } = renderHook(() => useModalInsetStyle("sheet"), {
+    const { result } = renderHook(() => useModalInsetStyle(), {
       wrapper: withInsets(THREE_BUTTON_NAV),
     })
 
@@ -56,7 +56,7 @@ describe("useModalInsetStyle", () => {
   })
 
   it("sheet: folds in the `padding` shorthand (a specific edge beats it in Yoga)", () => {
-    const { result } = renderHook(() => useModalInsetStyle("sheet", { padding: 24 }), {
+    const { result } = renderHook(() => useModalInsetStyle({ padding: 24 }), {
       wrapper: withInsets(THREE_BUTTON_NAV),
     })
 
@@ -65,13 +65,13 @@ describe("useModalInsetStyle", () => {
 
   it("sheet: paddingVertical counts, and paddingBottom wins over it", () => {
     const { result: vertical } = renderHook(
-      () => useModalInsetStyle("sheet", { padding: 8, paddingVertical: 16 }),
+      () => useModalInsetStyle({ padding: 8, paddingVertical: 16 }),
       { wrapper: withInsets(THREE_BUTTON_NAV) },
     )
     expect(vertical.current).toEqual({ paddingBottom: 16 + 48 })
 
     const { result: specific } = renderHook(
-      () => useModalInsetStyle("sheet", { paddingVertical: 16, paddingBottom: 4 }),
+      () => useModalInsetStyle({ paddingVertical: 16, paddingBottom: 4 }),
       { wrapper: withInsets(THREE_BUTTON_NAV) },
     )
     expect(specific.current).toEqual({ paddingBottom: 4 + 48 })
@@ -79,7 +79,7 @@ describe("useModalInsetStyle", () => {
 
   it("sheet: accepts a style array, as consumers compose them", () => {
     const { result } = renderHook(
-      () => useModalInsetStyle("sheet", [{ padding: 24 }, { paddingBottom: 40 }]),
+      () => useModalInsetStyle([{ padding: 24 }, { paddingBottom: 40 }]),
       { wrapper: withInsets(THREE_BUTTON_NAV) },
     )
 
@@ -89,19 +89,16 @@ describe("useModalInsetStyle", () => {
   it("keeps the base padding intact when the window is not edge-to-edge", () => {
     // Android 14 and older at target 35: every inset is 0, so the sheet must
     // keep exactly the padding it was designed with, not lose it to a 0.
-    const { result } = renderHook(
-      () => useModalInsetStyle("sheet", { paddingBottom: 32 }),
-      {
-        wrapper: withInsets(NOT_EDGE_TO_EDGE),
-      },
-    )
+    const { result } = renderHook(() => useModalInsetStyle({ paddingBottom: 32 }), {
+      wrapper: withInsets(NOT_EDGE_TO_EDGE),
+    })
 
     expect(result.current).toEqual({ paddingBottom: 32 })
   })
 
   it("returns a stable object across re-renders with unchanged insets", () => {
     const base = { paddingBottom: 32 }
-    const { result, rerender } = renderHook(() => useModalInsetStyle("sheet", base), {
+    const { result, rerender } = renderHook(() => useModalInsetStyle(base), {
       wrapper: withInsets(THREE_BUTTON_NAV),
     })
     const first = result.current

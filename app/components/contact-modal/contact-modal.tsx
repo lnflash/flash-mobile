@@ -41,7 +41,7 @@ const ContactModal: React.FC<Props> = ({
 }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
-  const sheetInsetStyle = useModalInsetStyle("sheet")
+  const sheetInsetStyle = useModalInsetStyle()
   const {
     theme: { colors },
   } = useTheme()
