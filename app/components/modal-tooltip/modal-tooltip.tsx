@@ -35,7 +35,7 @@ export const ModalTooltip: React.FC<ModalTooltipProps> = ({
   const [isVisible, setIsVisible] = React.useState(false)
   const toggleModal = () => setIsVisible(!isVisible)
   const styles = useStyles()
-  const sheetInsetStyle = useModalInsetStyle("sheet")
+  const sheetInsetStyle = useModalInsetStyle("sheet", styles.modalCard)
 
   let iconParams: { name: string; type: string }
   let defaultTitle: LocalizedString
@@ -77,7 +77,7 @@ export const ModalTooltip: React.FC<ModalTooltipProps> = ({
         backdropColor={colors.grey3}
       >
         <TouchableOpacity style={styles.fillerOpacity} onPress={toggleModal} />
-        <View style={[styles.modalCard, sheetInsetStyle]}>
+        <View style={[styles.modalCard, sheetInsetStyle]} testID="modal-tooltip-sheet">
           <View style={styles.modalTitleContainer}>
             <Icon size={24} {...iconParams} style={styles.iconContainer} />
             <Text type={"h1"}>{modalTitle}</Text>

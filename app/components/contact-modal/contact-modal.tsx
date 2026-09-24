@@ -123,7 +123,7 @@ const ContactModal: React.FC<Props> = ({
     >
       {/* Wrapper carries the bottom safe-area inset; the sheet has no
           content container of its own. */}
-      <View style={sheetInsetStyle}>
+      <View style={sheetInsetStyle} testID="contact-modal-sheet">
         {contactOptionList.map((item) => {
           if (item.hidden) return null
           return (

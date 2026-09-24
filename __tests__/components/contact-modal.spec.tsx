@@ -1,5 +1,6 @@
 import React from "react"
-import { Linking } from "react-native"
+import { Linking, StyleSheet } from "react-native"
+import { SafeAreaProvider } from "react-native-safe-area-context"
 
 import { act, fireEvent, render, screen } from "@testing-library/react-native"
 import { ContextForScreen } from "../screens/helper"
@@ -8,6 +9,41 @@ import ContactModal from "../../app/components/contact-modal/contact-modal"
 import { buildWhatsAppSupportUrl } from "../../app/components/contact-modal/contact-modal.logic"
 import { loadAllLocales } from "../../app/i18n/i18n-util.sync"
 
+// The sheet pads by the safe-area inset (ENG-605). The provider mock feeds
+// `useSafeAreaInsets` from context so a test can pin that the sheet applies it.
+jest.mock("react-native-safe-area-context", () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const ReactActual = require("react")
+  const actual = jest.requireActual("react-native-safe-area-context")
+  const ZERO = { top: 0, bottom: 0, left: 0, right: 0 }
+  const NO_FRAME = { x: 0, y: 0, width: 0, height: 0 }
+  return {
+    ...actual,
+    useSafeAreaInsets: () => ReactActual.useContext(actual.SafeAreaInsetsContext) ?? ZERO,
+    // Provides the frame context too: react-navigation's header (inside
+    // ContextForScreen) reads `useSafeAreaFrame` and throws without it.
+    SafeAreaProvider: ({
+      children,
+      initialMetrics,
+    }: {
+      children: React.ReactNode
+      initialMetrics?: { insets: typeof ZERO; frame?: typeof NO_FRAME }
+    }) =>
+      ReactActual.createElement(
+        actual.SafeAreaFrameContext.Provider,
+        { value: initialMetrics?.frame ?? NO_FRAME },
+        ReactActual.createElement(
+          actual.SafeAreaInsetsContext.Provider,
+          { value: initialMetrics?.insets ?? ZERO },
+          children,
+        ),
+      ),
+  }
+})
+
+// Android 15 3-button nav under edge-to-edge.
+const THREE_BUTTON_NAV = { top: 24, bottom: 48, left: 0, right: 0 }
+
 // TypesafeI18n renders nothing until translations are loaded; the app does
 // this at startup in app.tsx, so tests that assert on copy must do it too.
 beforeAll(() => {
@@ -15,6 +51,35 @@ beforeAll(() => {
 })
 
 describe("ContactModal", () => {
+  it("pads the sheet by the bottom safe-area inset (ENG-605)", async () => {
+    // Inline (coverScreen={false}) means the list reaches the physical window
+    // edge, so the wrapper must clear the nav bar itself. It has no padding of
+    // its own, so the inset is the whole value.
+    render(
+      <SafeAreaProvider
+        initialMetrics={{
+          insets: THREE_BUTTON_NAV,
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+        }}
+      >
+        <ContextForScreen>
+          <ContactModal
+            isVisible={true}
+            toggleModal={jest.fn()}
+            messageBody="body"
+            messageSubject="subject"
+          />
+        </ContextForScreen>
+      </SafeAreaProvider>,
+    )
+    await act(async () => {})
+
+    const sheet = screen.getByTestId("contact-modal-sheet")
+    expect(StyleSheet.flatten(sheet.props.style).paddingBottom).toBe(
+      THREE_BUTTON_NAV.bottom,
+    )
+  })
+
   it("pressing WhatsApp opens the support chat with the messageBody prefilled", async () => {
     // Pins the component call site, not just the exported helper. #703's
     // failure shape — the button handler and the message parting ways — can

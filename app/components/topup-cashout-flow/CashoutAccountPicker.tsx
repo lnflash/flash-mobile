@@ -42,7 +42,7 @@ const CashoutAccountPicker: React.FC<Props> = ({
   onClose,
 }) => {
   const styles = useStyles()
-  const sheetInsetStyle = useModalInsetStyle("sheet")
+  const sheetInsetStyle = useModalInsetStyle("sheet", styles.sheet)
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { height } = useWindowDimensions()
@@ -90,7 +90,10 @@ const CashoutAccountPicker: React.FC<Props> = ({
        */
       coverScreen={false}
     >
-      <View style={[styles.sheet, sheetInsetStyle]}>
+      <View
+        style={[styles.sheet, sheetInsetStyle]}
+        {...testProps("cashout-account-sheet")}
+      >
         <Text type="h2" bold style={styles.sheetTitle}>
           {LL.Cashout.chooseAccount()}
         </Text>

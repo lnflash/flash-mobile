@@ -36,9 +36,21 @@ export const keyboardPaddingFor = (
  * on the UI thread, so the padding tracks every keyboard height change,
  * suggestion strip included. The translucent flags match the app's
  * edge-to-edge window; without them the inset math is offset by the bars.
- * (On Android 14 and older reanimated flips the window to edge-to-edge while
- * a subscriber is mounted, and restores it on unmount, so the math is the
- * same on every Android version.)
+ *
+ * Android 14 and older side effect: reanimated flips the window to
+ * edge-to-edge (`setDecorFitsSystemWindows(false)`) when the first subscriber
+ * mounts, and does NOT restore it on unmount -- reanimated 3.18.2's
+ * `WindowsInsetsManager.stopObservingChanges` calls
+ * `setDecorFitsSystemWindows(!statusTranslucent && !navTranslucent)`, which
+ * is `false` again with both translucent flags set. So after the first visit
+ * to any screen using this hook (`messages`, `SupportGroupChat`,
+ * `BridgeAddExternalAccount`) the whole app stays edge-to-edge for the rest
+ * of the process, on every Android version. Every screen, sheet and
+ * `useSafeAreaInsets` consumer then runs the edge-to-edge path; that is why
+ * `Screen` and the sheets pad by the inset unconditionally rather than only
+ * at targetSdk 36. (It is also why, before ENG-605, content sat under the
+ * status bar on Android 14 after visiting chat once.) The IME math here is
+ * the same either way.
  *
  * iOS deliberately contributes nothing: the Screen wrapper's
  * KeyboardAvoidingView behavior="padding" already moves content there, and
