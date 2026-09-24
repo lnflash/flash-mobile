@@ -3,6 +3,7 @@ import { TouchableWithoutFeedback, View } from "react-native"
 import Modal from "react-native-modal"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import Icon from "react-native-vector-icons/Ionicons"
+import { useModalInsetStyle } from "@app/hooks/use-modal-insets"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
@@ -19,6 +20,7 @@ type Props = {
 const AccountCreateModal: React.FC<Props> = ({ modalVisible, setModalVisible }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
+  const sheetInsetStyle = useModalInsetStyle("sheet")
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
 
@@ -48,7 +50,7 @@ const AccountCreateModal: React.FC<Props> = ({ modalVisible, setModalVisible }) 
             <View style={styles.cover} />
           </TouchableWithoutFeedback>
         </View>
-        <View style={styles.viewModal}>
+        <View style={[styles.viewModal, sheetInsetStyle]}>
           <Icon name="remove" size={64} color={colors.grey3} style={styles.icon} />
           <Text type="h1">{LL.common.needWallet()}</Text>
           <View style={styles.openWalletContainer}>

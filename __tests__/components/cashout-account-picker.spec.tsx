@@ -23,6 +23,12 @@ import { ReactTestInstance } from "react-test-renderer"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 
+// The sheet pads by the safe-area inset (ENG-605); no provider in this tree.
+jest.mock("react-native-safe-area-context", () => ({
+  ...jest.requireActual("react-native-safe-area-context"),
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}))
+
 jest.mock("@app/i18n/i18n-react", () => {
   const { i18nObject: i18n } = jest.requireActual("@app/i18n/i18n-util")
   return { useI18nContext: () => ({ LL: i18n("en") }) }

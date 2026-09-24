@@ -2,6 +2,7 @@ import React from "react"
 import { useWindowDimensions, View } from "react-native"
 import Modal from "react-native-modal"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { useModalInsetStyle } from "@app/hooks/use-modal-insets"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { PrimaryBtn } from "@app/components/buttons"
 import DollarIllustration from "@app/assets/illustrations/dollar.svg"
@@ -15,6 +16,7 @@ import {
 const CashWalletCutoverModal = () => {
   const { LL } = useI18nContext()
   const styles = useStyles()
+  const sheetInsetStyle = useModalInsetStyle("sheet")
   const { width } = useWindowDimensions()
   const { colors } = useTheme().theme
   const { persistentState, updateState } = usePersistentStateContext()
@@ -65,7 +67,7 @@ const CashWalletCutoverModal = () => {
        */
       coverScreen={false}
     >
-      <View style={styles.sheet}>
+      <View style={[styles.sheet, sheetInsetStyle]}>
         <View style={styles.handle} />
 
         <View style={styles.illustrationContainer}>

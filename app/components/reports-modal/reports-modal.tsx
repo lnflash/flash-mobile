@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import { View } from "react-native"
 import ReactNativeModal from "react-native-modal"
+import { useModalInsetStyle } from "@app/hooks/use-modal-insets"
 import DatePicker from "react-native-date-picker"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { ListItem, makeStyles, useTheme, Button } from "@rneui/themed"
@@ -35,6 +36,7 @@ const ReportModal: React.FC<Props> = ({
 }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
+  const sheetInsetStyle = useModalInsetStyle("sheet")
   const {
     theme: { colors },
   } = useTheme()
@@ -93,7 +95,7 @@ const ReportModal: React.FC<Props> = ({
       // host on Android (see #545), which would push it off-screen.
       coverScreen={false}
     >
-      <View style={styles.modalContent}>
+      <View style={[styles.modalContent, sheetInsetStyle]}>
         <View style={styles.datePickersContainer}>
           <Button
             title={
