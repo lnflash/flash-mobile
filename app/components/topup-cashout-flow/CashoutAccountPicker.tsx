@@ -90,10 +90,10 @@ const CashoutAccountPicker: React.FC<Props> = ({
        */
       coverScreen={false}
     >
-      <View
-        style={[styles.sheet, sheetInsetStyle]}
-        {...testProps("cashout-account-sheet")}
-      >
+      {/* Plain testID: `testProps` sets `accessible`, which on iOS collapses
+          the whole sheet (title, options, manage link) into one VoiceOver
+          stop labelled with the id. */}
+      <View style={[styles.sheet, sheetInsetStyle]} testID="cashout-account-sheet">
         <Text type="h2" bold style={styles.sheetTitle}>
           {LL.Cashout.chooseAccount()}
         </Text>

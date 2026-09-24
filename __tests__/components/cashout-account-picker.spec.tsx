@@ -28,28 +28,10 @@ import { loadLocale } from "@app/i18n/i18n-util.sync"
 // The sheet pads by the safe-area inset (ENG-605). The provider mock feeds
 // `useSafeAreaInsets` from context so a test can render under a 3-button-nav
 // inset and pin that the sheet actually applies it on top of its own padding.
-jest.mock("react-native-safe-area-context", () => {
+jest.mock("react-native-safe-area-context", () =>
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const ReactActual = require("react")
-  const actual = jest.requireActual("react-native-safe-area-context")
-  const ZERO = { top: 0, bottom: 0, left: 0, right: 0 }
-  return {
-    ...actual,
-    useSafeAreaInsets: () => ReactActual.useContext(actual.SafeAreaInsetsContext) ?? ZERO,
-    SafeAreaProvider: ({
-      children,
-      initialMetrics,
-    }: {
-      children: React.ReactNode
-      initialMetrics?: { insets: typeof ZERO }
-    }) =>
-      ReactActual.createElement(
-        actual.SafeAreaInsetsContext.Provider,
-        { value: initialMetrics?.insets ?? ZERO },
-        children,
-      ),
-  }
-})
+  require("../helpers/safe-area-context-mock").build(),
+)
 
 // Android 15 3-button nav under edge-to-edge.
 const THREE_BUTTON_NAV = { top: 24, bottom: 48, left: 0, right: 0 }

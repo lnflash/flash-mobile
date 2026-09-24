@@ -12,28 +12,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context"
 
 import { useModalInsetStyle } from "@app/hooks/use-modal-insets"
 
-jest.mock("react-native-safe-area-context", () => {
+jest.mock("react-native-safe-area-context", () =>
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const ReactActual = require("react")
-  const actual = jest.requireActual("react-native-safe-area-context")
-  const ZERO = { top: 0, bottom: 0, left: 0, right: 0 }
-  return {
-    ...actual,
-    useSafeAreaInsets: () => ReactActual.useContext(actual.SafeAreaInsetsContext) ?? ZERO,
-    SafeAreaProvider: ({
-      children,
-      initialMetrics,
-    }: {
-      children: React.ReactNode
-      initialMetrics?: { insets: typeof ZERO }
-    }) =>
-      ReactActual.createElement(
-        actual.SafeAreaInsetsContext.Provider,
-        { value: initialMetrics?.insets ?? ZERO },
-        children,
-      ),
-  }
-})
+  require("../../../__tests__/helpers/safe-area-context-mock").build(),
+)
 
 const withInsets = (insets: {
   top: number
@@ -102,15 +84,6 @@ describe("useModalInsetStyle", () => {
     )
 
     expect(result.current).toEqual({ paddingBottom: 40 + 48 })
-  })
-
-  it("fullScreen: adds top and bottom insets to the base padding", () => {
-    const { result } = renderHook(
-      () => useModalInsetStyle("fullScreen", { paddingTop: 10, paddingBottom: 12 }),
-      { wrapper: withInsets(THREE_BUTTON_NAV) },
-    )
-
-    expect(result.current).toEqual({ paddingTop: 10 + 24, paddingBottom: 12 + 48 })
   })
 
   it("keeps the base padding intact when the window is not edge-to-edge", () => {

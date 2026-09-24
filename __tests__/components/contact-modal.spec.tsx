@@ -9,37 +9,14 @@ import ContactModal from "../../app/components/contact-modal/contact-modal"
 import { buildWhatsAppSupportUrl } from "../../app/components/contact-modal/contact-modal.logic"
 import { loadAllLocales } from "../../app/i18n/i18n-util.sync"
 
-// The sheet pads by the safe-area inset (ENG-605). The provider mock feeds
-// `useSafeAreaInsets` from context so a test can pin that the sheet applies it.
-jest.mock("react-native-safe-area-context", () => {
+// The sheet pads by the safe-area inset (ENG-605). The shared provider mock
+// feeds `useSafeAreaInsets` from context so a test can pin that the sheet
+// applies it; it provides the frame context too, which react-navigation's
+// header (inside ContextForScreen) needs.
+jest.mock("react-native-safe-area-context", () =>
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const ReactActual = require("react")
-  const actual = jest.requireActual("react-native-safe-area-context")
-  const ZERO = { top: 0, bottom: 0, left: 0, right: 0 }
-  const NO_FRAME = { x: 0, y: 0, width: 0, height: 0 }
-  return {
-    ...actual,
-    useSafeAreaInsets: () => ReactActual.useContext(actual.SafeAreaInsetsContext) ?? ZERO,
-    // Provides the frame context too: react-navigation's header (inside
-    // ContextForScreen) reads `useSafeAreaFrame` and throws without it.
-    SafeAreaProvider: ({
-      children,
-      initialMetrics,
-    }: {
-      children: React.ReactNode
-      initialMetrics?: { insets: typeof ZERO; frame?: typeof NO_FRAME }
-    }) =>
-      ReactActual.createElement(
-        actual.SafeAreaFrameContext.Provider,
-        { value: initialMetrics?.frame ?? NO_FRAME },
-        ReactActual.createElement(
-          actual.SafeAreaInsetsContext.Provider,
-          { value: initialMetrics?.insets ?? ZERO },
-          children,
-        ),
-      ),
-  }
-})
+  require("../helpers/safe-area-context-mock").build(),
+)
 
 // Android 15 3-button nav under edge-to-edge.
 const THREE_BUTTON_NAV = { top: 24, bottom: 48, left: 0, right: 0 }

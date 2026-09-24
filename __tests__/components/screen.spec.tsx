@@ -26,30 +26,12 @@ import { Screen } from "@app/components/screen"
 const SAFE_AREA_VIEW_TEST_ID = "context-safe-area-view"
 
 jest.mock("react-native-safe-area-context", () => {
-  // Plain require: `jest.requireActual("react")` inside a factory hands the
-  // mock a second React instance and every hook in the tree dies.
-  /* eslint-disable @typescript-eslint/no-var-requires */
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const ReactActual = require("react")
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { View: RNView } = require("react-native")
-  /* eslint-enable @typescript-eslint/no-var-requires */
-  const actual = jest.requireActual("react-native-safe-area-context")
-  const ZERO = { top: 0, bottom: 0, left: 0, right: 0 }
-
-  const useSafeAreaInsets = () =>
-    ReactActual.useContext(actual.SafeAreaInsetsContext) ?? ZERO
-
-  const SafeAreaProviderMock = ({
-    children,
-    initialMetrics,
-  }: {
-    children: React.ReactNode
-    initialMetrics?: { insets: typeof ZERO }
-  }) =>
-    ReactActual.createElement(
-      actual.SafeAreaInsetsContext.Provider,
-      { value: initialMetrics?.insets ?? ZERO },
-      children,
-    )
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const shared = require("../helpers/safe-area-context-mock").build()
 
   // Stand-in for the native view: pads by the provider insets on all edges.
   const SafeAreaViewMock = ({
@@ -59,7 +41,7 @@ jest.mock("react-native-safe-area-context", () => {
     children: React.ReactNode
     style?: unknown
   }) => {
-    const insets = useSafeAreaInsets()
+    const insets = shared.useSafeAreaInsets()
     return ReactActual.createElement(
       RNView,
       {
@@ -78,12 +60,7 @@ jest.mock("react-native-safe-area-context", () => {
     )
   }
 
-  return {
-    ...actual,
-    useSafeAreaInsets,
-    SafeAreaProvider: SafeAreaProviderMock,
-    SafeAreaView: SafeAreaViewMock,
-  }
+  return { ...shared, SafeAreaView: SafeAreaViewMock }
 })
 
 const flat = (node: { props: { style?: unknown } }): ViewStyle =>

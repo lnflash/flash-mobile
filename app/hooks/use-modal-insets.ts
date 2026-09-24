@@ -45,11 +45,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
  * `use-keyboard-padding.ts`) the result equals the base padding and the
  * layout is unchanged.
  */
+/**
+ * Which window edge the modal content touches. Only bottom-anchored sheets
+ * exist today (the audit found no full-screen `margin: 0` react-native-modal
+ * content); add a kind here when a consumer needs another edge.
+ */
 export type ModalInsetKind =
   /** Anchored to the bottom edge: pad the bottom inset only. */
-  | "sheet"
-  /** `margin: 0` content that fills the window: pad top and bottom. */
-  | "fullScreen"
+  "sheet"
 
 const numberOr = (value: unknown, fallback: number): number =>
   typeof value === "number" ? value : fallback
@@ -67,33 +70,19 @@ export const basePaddingBottom = (base: StyleProp<ViewStyle>): number => {
   )
 }
 
-/** Top counterpart of `basePaddingBottom`. */
-export const basePaddingTop = (base: StyleProp<ViewStyle>): number => {
-  const flat = StyleSheet.flatten(base) ?? {}
-  return numberOr(
-    flat.paddingTop,
-    numberOr(flat.paddingVertical, numberOr(flat.padding, 0)),
-  )
-}
-
 /**
- * @param kind Which window edges the modal content touches.
+ * @param kind Which window edge the modal content touches.
  * @param base The content container's own style; its padding on the padded
- *   edges is preserved and the inset added on top. Place the result AFTER
+ *   edge is preserved and the inset added on top. Place the result AFTER
  *   `base` in the style array: `style={[styles.sheet, insetStyle]}`.
  */
 export const useModalInsetStyle = (
+  // Only "sheet" exists; the parameter names the edge at every call site and
+  // is the extension point should a top-anchored consumer appear.
   kind: ModalInsetKind,
   base?: StyleProp<ViewStyle>,
 ): ViewStyle => {
-  const { top, bottom } = useSafeAreaInsets()
+  const { bottom } = useSafeAreaInsets()
   const baseBottom = basePaddingBottom(base)
-  const baseTop = basePaddingTop(base)
-  return useMemo(
-    () =>
-      kind === "sheet"
-        ? { paddingBottom: baseBottom + bottom }
-        : { paddingTop: baseTop + top, paddingBottom: baseBottom + bottom },
-    [kind, top, bottom, baseTop, baseBottom],
-  )
+  return useMemo(() => ({ paddingBottom: baseBottom + bottom }), [bottom, baseBottom])
 }
