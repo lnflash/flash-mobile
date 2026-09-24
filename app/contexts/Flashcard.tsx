@@ -16,6 +16,10 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // utils
 import { toastShow } from "../utils/toast"
+import {
+  readCashuCardBalance,
+  type CashuCardInfo,
+} from "../utils/cashu-card"
 
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
@@ -38,6 +42,8 @@ type TransactionItem = {
 
 interface FlashcardInterface {
   tag?: TagEvent
+  /** A tapped Cashu NFC card (lnflash/cashu-javacard) — read-only balance. */
+  cashuCard?: CashuCardInfo
   k1?: string
   callback?: string
   lnurl?: string
@@ -51,6 +57,7 @@ interface FlashcardInterface {
 
 export const FlashcardContext = createContext<FlashcardInterface>({
   tag: undefined,
+  cashuCard: undefined,
   k1: undefined,
   callback: undefined,
   lnurl: undefined,
@@ -78,6 +85,7 @@ export const FlashcardProvider = ({ children }: Props) => {
   const [callback, setCallback] = useState<string>()
   const [lnurl, setLnurl] = useState<string>()
   const [balanceInSats, setBalanceInSats] = useState<number>()
+  const [cashuCard, setCashuCard] = useState<CashuCardInfo>()
   const [transactions, setTransactions] = useState<TransactionItem[]>()
   const [loading, setLoading] = useState<boolean>()
   const [error, setError] = useState<string>()
@@ -121,6 +129,41 @@ export const FlashcardProvider = ({ children }: Props) => {
     try {
       setVisible(true)
       NfcManager.start()
+      // A Cashu card is an IsoDep JavaCard applet — a different physical card
+      // from the NDEF BoltCards. Try it first; anything else falls through to
+      // the NDEF flow below.
+      try {
+        await NfcManager.requestTechnology(NfcTech.IsoDep)
+        const isoTag = await NfcManager.getTag()
+        const isoDepHandler = isoTag?.isoDepHandler
+        if (isoDepHandler) {
+          const info = await readCashuCardBalance(bytes =>
+            isoDepHandler.transceive(bytes),
+          )
+          if (info) {
+            setCashuCard(info)
+            setLoading(false)
+            toastShow({
+              position: "top",
+              message: `Cashu card: ${info.balanceSat} sats (v${info.version})`,
+              type: "success",
+            })
+            return
+          }
+          // Not a Cashu card: release the channel before requesting Ndef.
+          await NfcManager.cancelTechnologyRequest()
+        } else {
+          await NfcManager.cancelTechnologyRequest()
+        }
+      } catch (isoDepError) {
+        console.warn(
+          "Cashu IsoDep read failed, falling back to NDEF:",
+          describeError(isoDepError),
+        )
+        try {
+          await NfcManager.cancelTechnologyRequest()
+        } catch {}
+      }
       await NfcManager.requestTechnology(NfcTech.Ndef)
       const tag = await NfcManager.getTag()
       if (tag && tag.id) {
@@ -289,6 +332,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     <FlashcardContext.Provider
       value={{
         tag,
+        cashuCard,
         k1,
         callback,
         lnurl,
