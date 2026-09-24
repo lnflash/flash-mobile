@@ -1,0 +1,26 @@
+diff --git a/node_modules/@notifee/react-native/android/build.gradle b/node_modules/@notifee/react-native/android/build.gradle
+index 7477b94..01433d2 100644
+--- a/node_modules/@notifee/react-native/android/build.gradle
++++ b/node_modules/@notifee/react-native/android/build.gradle
+@@ -50,9 +50,9 @@ project.ext {
+   set('react-native', [
+     versions: [
+       android: [
+-        minSdk    : 20,
+-        targetSdk : 33,
+-        compileSdk: 34,
++        minSdk    : rootProject.ext.has('minSdkVersion') ? rootProject.ext.minSdkVersion : 20,
++        targetSdk : rootProject.ext.has('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 33,
++        compileSdk: rootProject.ext.has('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 34,
+         // optional as gradle.buildTools comes with one by default
+         // overriding here though to match the version RN uses
+         // buildTools: "29.0.2"
+@@ -84,7 +84,7 @@ android {
+       consumerProguardFiles 'proguard-rules.pro'
+     }
+   }
+-  compileSdkVersion = 34
++  compileSdkVersion = rootProject.ext.has('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 34
+ }
+ 
+ repositories {

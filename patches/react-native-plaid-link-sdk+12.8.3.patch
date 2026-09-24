@@ -1,0 +1,18 @@
+diff --git a/node_modules/react-native-plaid-link-sdk/android/build.gradle b/node_modules/react-native-plaid-link-sdk/android/build.gradle
+index 015ed55..c4def99 100644
+--- a/node_modules/react-native-plaid-link-sdk/android/build.gradle
++++ b/node_modules/react-native-plaid-link-sdk/android/build.gradle
+@@ -60,11 +60,11 @@ android {
+     if (agpVersion >= 7) {
+       namespace 'com.plaid'
+     }
+-    compileSdkVersion 34
++    compileSdkVersion rootProject.ext.has('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 34
+ 
+     defaultConfig {
+         minSdkVersion rootProject.ext.has("minSdkVersion") ? rootProject.ext.minSdkVersion :  21
+-        targetSdkVersion 34
++        targetSdkVersion rootProject.ext.has('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 34
+         versionCode 1
+         versionName "0.0.1"
+         buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
