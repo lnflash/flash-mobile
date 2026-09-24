@@ -9,9 +9,7 @@ const ok = (data: number[]) => [...data, 0x90, 0x00]
 
 describe("cashu-card parser", () => {
   it("parses the GET_INFO body", () => {
-    expect(
-      parseInfo([0, 2, 32, 1, 7, 0x07, 1, 0]),
-    ).toEqual({
+    expect(parseInfo([0, 2, 32, 1, 7, 0x07, 1, 0])).toEqual({
       version: "0.2",
       maxSlots: 32,
       unspent: 1,
@@ -63,8 +61,6 @@ describe("readCashuCardBalance", () => {
   it("genuine status failures throw", async () => {
     const transceive = async (bytes: number[]) =>
       bytes[1] === 0xa4 ? [0x90, 0x00] : [0x6f, 0x00]
-    await expect(readCashuCardBalance(transceive)).rejects.toThrow(
-      /GET_INFO failed/,
-    )
+    await expect(readCashuCardBalance(transceive)).rejects.toThrow(/GET_INFO failed/)
   })
 })

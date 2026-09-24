@@ -16,10 +16,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // utils
 import { toastShow } from "../utils/toast"
-import {
-  readCashuCardBalance,
-  type CashuCardInfo,
-} from "../utils/cashu-card"
+import { readCashuCardBalance, type CashuCardInfo } from "../utils/cashu-card"
 
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
@@ -39,6 +36,9 @@ type TransactionItem = {
   date: string
   sats: string
 }
+
+// The persistent-store updater is untyped in this context; the flashcard
+// fields written below are the only ones this file touches.
 
 interface FlashcardInterface {
   tag?: TagEvent
@@ -114,14 +114,14 @@ export const FlashcardProvider = ({ children }: Props) => {
         message: "NFC is not supported on this device",
         type: "error",
       })
-    } else if (!isEnabled) {
+    } else if (isEnabled) {
+      handleTag(isPayment)
+    } else {
       toastShow({
         position: "top",
         message: "NFC is not enabled on this device.",
         type: "error",
       })
-    } else {
-      handleTag(isPayment)
     }
   }
 
@@ -135,9 +135,16 @@ export const FlashcardProvider = ({ children }: Props) => {
       try {
         await NfcManager.requestTechnology(NfcTech.IsoDep)
         const isoTag = await NfcManager.getTag()
-        const isoDepHandler = isoTag?.isoDepHandler
+        // This repo's react-native-nfc-manager typings predate isoDepHandler
+        // on TagEvent; the field exists at runtime (the library attaches it
+        // when the IsoDep tech is requested).
+        const isoDepHandler = (
+          isoTag as
+            | { isoDepHandler?: { transceive: (bytes: number[]) => Promise<number[]> } }
+            | undefined
+        )?.isoDepHandler
         if (isoDepHandler) {
-          const info = await readCashuCardBalance(bytes =>
+          const info = await readCashuCardBalance((bytes) =>
             isoDepHandler.transceive(bytes),
           )
           if (info) {
@@ -162,7 +169,9 @@ export const FlashcardProvider = ({ children }: Props) => {
         )
         try {
           await NfcManager.cancelTechnologyRequest()
-        } catch {}
+        } catch {
+          // Nothing to cancel — the request had already settled.
+        }
       }
       await NfcManager.requestTechnology(NfcTech.Ndef)
       const tag = await NfcManager.getTag()
@@ -247,6 +256,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       const response = await axios.get(url)
       const html = response.data
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       updateState((state: any) => {
         if (state)
           return {
@@ -317,6 +327,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     setTransactions(undefined)
     setLoading(undefined)
     setError(undefined)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateState((state: any) => {
       if (state)
         return {
@@ -364,11 +375,7 @@ export const FlashcardProvider = ({ children }: Props) => {
                 easing="ease-out"
                 iterationCount="infinite"
               >
-                <NfcScan
-                  width={width / 2}
-                  height={width / 2}
-                  style={{ marginVertical: 40 }}
-                />
+                <NfcScan width={width / 2} height={width / 2} style={styles.nfcScan} />
               </Animatable.View>
             </View>
             <PrimaryBtn type="clear" label="Cancel" onPress={cancelTechnologyRequest} />
@@ -380,6 +387,9 @@ export const FlashcardProvider = ({ children }: Props) => {
 }
 
 const useStyles = makeStyles(({ colors, mode }) => ({
+  nfcScan: {
+    marginVertical: 40,
+  },
   backdrop: {
     flex: 1,
     justifyContent: "flex-end",
