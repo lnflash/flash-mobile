@@ -60,10 +60,19 @@ describe("UpgradeTrialAccount button", () => {
     // Regression: the pending state used to reroute around the hub to
     // PersonalInformation, hiding the other capabilities (e.g. US virtual
     // account) that remain available.
-    mockUpgradeStatus = "Pending"
+    mockUpgradeStatus = "UNDER_REVIEW"
     const { getAllByText } = renderUpgrade()
 
     fireEvent.press(getAllByText(en.TransactionLimitsScreen.editRequest())[0])
+
+    expect(mockNavigate).toHaveBeenCalledWith("AccountType")
+  })
+
+  it("offers a resubmit when the reviewer asked for more information", () => {
+    mockUpgradeStatus = "MORE_INFO_NEEDED"
+    const { getAllByText } = renderUpgrade()
+
+    fireEvent.press(getAllByText(en.AccountUpgrade.resubmit())[0])
 
     expect(mockNavigate).toHaveBeenCalledWith("AccountType")
   })

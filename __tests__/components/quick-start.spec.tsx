@@ -10,10 +10,13 @@ const mockNavigate = jest.fn()
 
 // Driven per-test: the latestAccountUpgradeRequest status synced into redux.
 let mockUpgradeStatus: string | undefined
+let mockReasonMessage: string | undefined
 
 jest.mock("@app/store/redux", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
-    selector({ accountUpgrade: { status: mockUpgradeStatus } }),
+    selector({
+      accountUpgrade: { status: mockUpgradeStatus, reasonMessage: mockReasonMessage },
+    }),
 }))
 jest.mock("@app/hooks", () => ({
   useAccountUpgrade: jest.fn(),
@@ -93,11 +96,31 @@ describe("QuickStart upgrade card", () => {
     // Regression: the pending card used to set disabled, stranding the user
     // outside the hub where other capabilities (e.g. US virtual account)
     // remain available.
-    mockUpgradeStatus = "Pending"
+    mockUpgradeStatus = "UNDER_REVIEW"
     const { getAllByText } = renderQuickStart()
 
     fireEvent.press(getAllByText(en.HomeScreen.upgradeTitlePending())[0])
 
     expect(mockNavigate).toHaveBeenCalledWith("AccountType")
+  })
+
+  it("treats SUBMITTED as pending too", () => {
+    mockUpgradeStatus = "SUBMITTED"
+    const { getAllByText, queryByText } = renderQuickStart()
+
+    expect(getAllByText(en.HomeScreen.upgradeTitlePending()).length).toBeGreaterThan(0)
+    expect(queryByText(en.HomeScreen.upgradeTitle())).toBeNull()
+  })
+
+  it("shows the reviewer's message and routes to the hub when more info is needed", () => {
+    mockUpgradeStatus = "MORE_INFO_NEEDED"
+    mockReasonMessage = "The photo of your ID was blurry."
+    const { getAllByText } = renderQuickStart()
+
+    expect(getAllByText("The photo of your ID was blurry.").length).toBeGreaterThan(0)
+    fireEvent.press(getAllByText(en.AccountUpgrade.statusMoreInfoNeeded())[0])
+
+    expect(mockNavigate).toHaveBeenCalledWith("AccountType")
+    mockReasonMessage = undefined
   })
 })
