@@ -1,6 +1,7 @@
 import * as React from "react"
 import { makeStyles } from "@rneui/themed"
-import { Modal, SafeAreaView } from "react-native"
+import { Modal } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 
 // components
 import { AmountInputScreen, MaxAmountButton } from "../amount-input-screen"

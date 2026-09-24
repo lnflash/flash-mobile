@@ -1,12 +1,8 @@
 import React, { useRef, useState } from "react"
-import { View, ActivityIndicator, TouchableOpacity, SafeAreaView } from "react-native"
-import { WebView } from "react-native-webview"
-import { makeStyles, useTheme, Icon } from "@rneui/themed"
-import { StackNavigationProp } from "@react-navigation/stack"
-import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { useNavigation } from "@react-navigation/native"
-
-type IrisBrowserNavigationProp = StackNavigationProp<RootStackParamList, "irisBrowser">
+import { View, ActivityIndicator } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { WebView, WebViewNavigation } from "react-native-webview"
+import { makeStyles, useTheme } from "@rneui/themed"
 
 type IrisBrowserProps = {
   initialUrl?: string
@@ -14,36 +10,13 @@ type IrisBrowserProps = {
 
 const IrisBrowser = ({ initialUrl }: IrisBrowserProps) => {
   const styles = useStyles()
-  const navigation = useNavigation<IrisBrowserNavigationProp>()
   const { theme } = useTheme()
   const webViewRef = useRef<WebView>(null)
-  const [canGoBack, setCanGoBack] = useState(false)
-  const [canGoForward, setCanGoForward] = useState(false)
   const [currentUrl, setCurrentUrl] = useState(initialUrl || "https://iris.to")
   const [isLoading, setIsLoading] = useState(true)
 
-  const handleNavigationStateChange = (navState: any) => {
-    setCanGoBack(navState.canGoBack)
-    setCanGoForward(navState.canGoForward)
+  const handleNavigationStateChange = (navState: WebViewNavigation) => {
     setCurrentUrl(navState.url)
-  }
-
-  const goBack = () => {
-    if (webViewRef.current && canGoBack) {
-      webViewRef.current.goBack()
-    }
-  }
-
-  const goForward = () => {
-    if (webViewRef.current && canGoForward) {
-      webViewRef.current.goForward()
-    }
-  }
-
-  const reload = () => {
-    if (webViewRef.current) {
-      webViewRef.current.reload()
-    }
   }
 
   // CSS to customize iris.to to match Flash branding
@@ -146,7 +119,9 @@ const IrisBrowser = ({ initialUrl }: IrisBrowserProps) => {
   `
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       {/* WebView */}
       <WebView
         ref={webViewRef}

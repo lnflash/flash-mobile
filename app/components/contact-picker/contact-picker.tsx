@@ -8,8 +8,8 @@ import {
   AlertButton,
   Platform,
   ActivityIndicator,
-  SafeAreaView,
 } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { SearchBar, ListItem, Text, makeStyles, useTheme } from "@rneui/themed"
 import Contacts from "react-native-contacts"
 import {
