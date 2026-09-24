@@ -6628,6 +6628,246 @@ type RootTranslation = {
 		 * I​n​ ​r​e​v​i​e​w
 		 */
 		inReview: string
+		/**
+		 * I​d​e​n​t​i​t​y
+		 */
+		identityInfo: string
+		/**
+		 * W​h​i​c​h​ ​I​D​ ​w​i​l​l​ ​y​o​u​ ​u​s​e​?
+		 */
+		identityDocTitle: string
+		/**
+		 * T​a​k​e​ ​a​ ​p​h​o​t​o​ ​o​f​ ​a​ ​g​o​v​e​r​n​m​e​n​t​-​i​s​s​u​e​d​ ​I​D​ ​a​n​d​ ​a​ ​s​e​l​f​i​e​.​ ​W​e​ ​u​s​e​ ​t​h​e​m​ ​o​n​l​y​ ​t​o​ ​c​o​n​f​i​r​m​ ​i​t​ ​i​s​ ​y​o​u​.
+		 */
+		identityDocDesc: string
+		/**
+		 * P​a​s​s​p​o​r​t
+		 */
+		docPassport: string
+		/**
+		 * P​h​o​t​o​ ​p​a​g​e​ ​o​n​l​y
+		 */
+		docPassportDesc: string
+		/**
+		 * N​a​t​i​o​n​a​l​ ​I​D
+		 */
+		docNationalId: string
+		/**
+		 * D​r​i​v​e​r​'​s​ ​l​i​c​e​n​c​e
+		 */
+		docDriversLicence: string
+		/**
+		 * F​r​o​n​t​ ​a​n​d​ ​b​a​c​k
+		 */
+		docCardDesc: string
+		/**
+		 * F​r​o​n​t​ ​o​f​ ​y​o​u​r​ ​I​D
+		 */
+		captureFrontTitle: string
+		/**
+		 * L​i​n​e​ ​u​p​ ​t​h​e​ ​c​a​r​d​ ​i​n​s​i​d​e​ ​t​h​e​ ​f​r​a​m​e​ ​a​n​d​ ​h​o​l​d​ ​s​t​i​l​l
+		 */
+		captureFrontHint: string
+		/**
+		 * B​a​c​k​ ​o​f​ ​y​o​u​r​ ​I​D
+		 */
+		captureBackTitle: string
+		/**
+		 * T​u​r​n​ ​t​h​e​ ​c​a​r​d​ ​o​v​e​r​ ​a​n​d​ ​l​i​n​e​ ​i​t​ ​u​p​ ​i​n​s​i​d​e​ ​t​h​e​ ​f​r​a​m​e
+		 */
+		captureBackHint: string
+		/**
+		 * T​a​k​e​ ​a​ ​s​e​l​f​i​e
+		 */
+		captureSelfieTitle: string
+		/**
+		 * K​e​e​p​ ​y​o​u​r​ ​f​a​c​e​ ​i​n​s​i​d​e​ ​t​h​e​ ​o​v​a​l​ ​a​n​d​ ​l​o​o​k​ ​a​t​ ​t​h​e​ ​c​a​m​e​r​a
+		 */
+		captureSelfieHint: string
+		/**
+		 * T​h​a​t​ ​p​h​o​t​o​ ​i​s​ ​t​o​o​ ​s​m​a​l​l​ ​t​o​ ​r​e​a​d​.​ ​M​o​v​e​ ​c​l​o​s​e​r​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		captureTooSmall: string
+		/**
+		 * T​h​a​t​ ​p​h​o​t​o​ ​d​i​d​ ​n​o​t​ ​c​o​m​e​ ​o​u​t​ ​r​i​g​h​t​.​ ​L​i​n​e​ ​u​p​ ​w​i​t​h​ ​t​h​e​ ​g​u​i​d​e​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		captureBadShape: string
+		/**
+		 * C​o​u​l​d​ ​n​o​t​ ​t​a​k​e​ ​t​h​e​ ​p​h​o​t​o​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		captureFailed: string
+		/**
+		 * R​e​t​a​k​e
+		 */
+		retake: string
+		/**
+		 * U​s​e​ ​p​h​o​t​o
+		 */
+		usePhoto: string
+		/**
+		 * C​a​m​e​r​a​ ​a​c​c​e​s​s​ ​n​e​e​d​e​d
+		 */
+		cameraPermissionTitle: string
+		/**
+		 * F​l​a​s​h​ ​n​e​e​d​s​ ​t​h​e​ ​c​a​m​e​r​a​ ​t​o​ ​p​h​o​t​o​g​r​a​p​h​ ​y​o​u​r​ ​I​D​.​ ​A​l​l​o​w​ ​c​a​m​e​r​a​ ​a​c​c​e​s​s​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​t​o​ ​c​o​n​t​i​n​u​e​.
+		 */
+		cameraPermissionDesc: string
+		/**
+		 * O​p​e​n​ ​S​e​t​t​i​n​g​s
+		 */
+		openSettings: string
+		/**
+		 * C​h​e​c​k​ ​y​o​u​r​ ​p​h​o​t​o​s
+		 */
+		reviewTitle: string
+		/**
+		 * M​a​k​e​ ​s​u​r​e​ ​e​v​e​r​y​ ​p​h​o​t​o​ ​i​s​ ​s​h​a​r​p​ ​a​n​d​ ​a​l​l​ ​f​o​u​r​ ​c​o​r​n​e​r​s​ ​o​f​ ​y​o​u​r​ ​I​D​ ​a​r​e​ ​v​i​s​i​b​l​e​.
+		 */
+		reviewDesc: string
+		/**
+		 * F​r​o​n​t
+		 */
+		reviewFront: string
+		/**
+		 * B​a​c​k
+		 */
+		reviewBack: string
+		/**
+		 * S​e​l​f​i​e
+		 */
+		reviewSelfie: string
+		/**
+		 * N​o​t​ ​t​a​k​e​n​ ​y​e​t
+		 */
+		reviewMissing: string
+		/**
+		 * C​o​n​f​i​r​m​ ​a​n​d​ ​c​o​n​t​i​n​u​e
+		 */
+		confirmContinue: string
+		/**
+		 * C​o​n​f​i​r​m​ ​a​n​d​ ​s​u​b​m​i​t
+		 */
+		confirmSubmit: string
+		/**
+		 * O​n​e​ ​o​f​ ​y​o​u​r​ ​p​h​o​t​o​s​ ​d​i​d​ ​n​o​t​ ​u​p​l​o​a​d​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		uploadFailed: string
+		/**
+		 * T​r​y​ ​a​g​a​i​n
+		 */
+		uploadRetry: string
+		/**
+		 * A​d​d​r​e​s​s
+		 */
+		address: string
+		/**
+		 * S​e​a​r​c​h​ ​f​o​r​ ​y​o​u​r​ ​a​d​d​r​e​s​s
+		 */
+		addressSearch: string
+		/**
+		 * S​t​r​e​e​t​ ​a​d​d​r​e​s​s
+		 */
+		addressLine1: string
+		/**
+		 * 1​2​ ​H​o​p​e​ ​R​o​a​d
+		 */
+		addressLine1Placeholder: string
+		/**
+		 * A​p​a​r​t​m​e​n​t​,​ ​s​u​i​t​e​ ​o​r​ ​u​n​i​t
+		 */
+		addressLine2: string
+		/**
+		 * A​p​t​ ​4
+		 */
+		addressLine2Placeholder: string
+		/**
+		 * C​i​t​y​ ​o​r​ ​t​o​w​n
+		 */
+		city: string
+		/**
+		 * K​i​n​g​s​t​o​n
+		 */
+		cityPlaceholder: string
+		/**
+		 * P​a​r​i​s​h​ ​o​r​ ​s​t​a​t​e
+		 */
+		state: string
+		/**
+		 * S​t​.​ ​A​n​d​r​e​w
+		 */
+		statePlaceholder: string
+		/**
+		 * P​o​s​t​a​l​ ​c​o​d​e
+		 */
+		postalCode: string
+		/**
+		 * J​M​A​A​W​0​1
+		 */
+		postalCodePlaceholder: string
+		/**
+		 * C​o​u​n​t​r​y
+		 */
+		country: string
+		/**
+		 * J​a​m​a​i​c​a
+		 */
+		countryPlaceholder: string
+		/**
+		 * T​h​i​s​ ​f​i​e​l​d​ ​i​s​ ​r​e​q​u​i​r​e​d
+		 */
+		addressFieldRequired: string
+		/**
+		 * Y​o​u​r​ ​u​p​g​r​a​d​e​ ​r​e​q​u​e​s​t
+		 */
+		statusCardTitle: string
+		/**
+		 * S​u​b​m​i​t​t​e​d
+		 */
+		statusSubmitted: string
+		/**
+		 * W​e​ ​r​e​c​e​i​v​e​d​ ​y​o​u​r​ ​r​e​q​u​e​s​t​ ​a​n​d​ ​a​r​e​ ​r​u​n​n​i​n​g​ ​t​h​e​ ​f​i​r​s​t​ ​c​h​e​c​k​s​.
+		 */
+		statusSubmittedDesc: string
+		/**
+		 * U​n​d​e​r​ ​r​e​v​i​e​w
+		 */
+		statusUnderReview: string
+		/**
+		 * A​ ​m​e​m​b​e​r​ ​o​f​ ​o​u​r​ ​t​e​a​m​ ​i​s​ ​r​e​v​i​e​w​i​n​g​ ​y​o​u​r​ ​d​o​c​u​m​e​n​t​s​.
+		 */
+		statusUnderReviewDesc: string
+		/**
+		 * M​o​r​e​ ​i​n​f​o​r​m​a​t​i​o​n​ ​n​e​e​d​e​d
+		 */
+		statusMoreInfoNeeded: string
+		/**
+		 * P​l​e​a​s​e​ ​t​a​k​e​ ​n​e​w​ ​p​h​o​t​o​s​ ​s​o​ ​w​e​ ​c​a​n​ ​f​i​n​i​s​h​ ​y​o​u​r​ ​r​e​v​i​e​w​.
+		 */
+		statusMoreInfoNeededDesc: string
+		/**
+		 * A​p​p​r​o​v​e​d
+		 */
+		statusApproved: string
+		/**
+		 * Y​o​u​r​ ​u​p​g​r​a​d​e​ ​i​s​ ​c​o​m​p​l​e​t​e​.
+		 */
+		statusApprovedDesc: string
+		/**
+		 * N​o​t​ ​a​p​p​r​o​v​e​d
+		 */
+		statusRejected: string
+		/**
+		 * W​e​ ​c​o​u​l​d​ ​n​o​t​ ​a​p​p​r​o​v​e​ ​t​h​i​s​ ​r​e​q​u​e​s​t​.
+		 */
+		statusRejectedDesc: string
+		/**
+		 * R​e​s​u​b​m​i​t
+		 */
+		resubmit: string
+		/**
+		 * Y​o​u​r​ ​n​e​w​ ​p​h​o​t​o​s​ ​h​a​v​e​ ​b​e​e​n​ ​s​u​b​m​i​t​t​e​d​ ​f​o​r​ ​r​e​v​i​e​w
+		 */
+		successResubmitted: string
 	}
 }
 
@@ -13105,6 +13345,246 @@ export type TranslationFunctions = {
 		 * In review
 		 */
 		inReview: () => LocalizedString
+		/**
+		 * Identity
+		 */
+		identityInfo: () => LocalizedString
+		/**
+		 * Which ID will you use?
+		 */
+		identityDocTitle: () => LocalizedString
+		/**
+		 * Take a photo of a government-issued ID and a selfie. We use them only to confirm it is you.
+		 */
+		identityDocDesc: () => LocalizedString
+		/**
+		 * Passport
+		 */
+		docPassport: () => LocalizedString
+		/**
+		 * Photo page only
+		 */
+		docPassportDesc: () => LocalizedString
+		/**
+		 * National ID
+		 */
+		docNationalId: () => LocalizedString
+		/**
+		 * Driver's licence
+		 */
+		docDriversLicence: () => LocalizedString
+		/**
+		 * Front and back
+		 */
+		docCardDesc: () => LocalizedString
+		/**
+		 * Front of your ID
+		 */
+		captureFrontTitle: () => LocalizedString
+		/**
+		 * Line up the card inside the frame and hold still
+		 */
+		captureFrontHint: () => LocalizedString
+		/**
+		 * Back of your ID
+		 */
+		captureBackTitle: () => LocalizedString
+		/**
+		 * Turn the card over and line it up inside the frame
+		 */
+		captureBackHint: () => LocalizedString
+		/**
+		 * Take a selfie
+		 */
+		captureSelfieTitle: () => LocalizedString
+		/**
+		 * Keep your face inside the oval and look at the camera
+		 */
+		captureSelfieHint: () => LocalizedString
+		/**
+		 * That photo is too small to read. Move closer and try again.
+		 */
+		captureTooSmall: () => LocalizedString
+		/**
+		 * That photo did not come out right. Line up with the guide and try again.
+		 */
+		captureBadShape: () => LocalizedString
+		/**
+		 * Could not take the photo. Please try again.
+		 */
+		captureFailed: () => LocalizedString
+		/**
+		 * Retake
+		 */
+		retake: () => LocalizedString
+		/**
+		 * Use photo
+		 */
+		usePhoto: () => LocalizedString
+		/**
+		 * Camera access needed
+		 */
+		cameraPermissionTitle: () => LocalizedString
+		/**
+		 * Flash needs the camera to photograph your ID. Allow camera access in Settings to continue.
+		 */
+		cameraPermissionDesc: () => LocalizedString
+		/**
+		 * Open Settings
+		 */
+		openSettings: () => LocalizedString
+		/**
+		 * Check your photos
+		 */
+		reviewTitle: () => LocalizedString
+		/**
+		 * Make sure every photo is sharp and all four corners of your ID are visible.
+		 */
+		reviewDesc: () => LocalizedString
+		/**
+		 * Front
+		 */
+		reviewFront: () => LocalizedString
+		/**
+		 * Back
+		 */
+		reviewBack: () => LocalizedString
+		/**
+		 * Selfie
+		 */
+		reviewSelfie: () => LocalizedString
+		/**
+		 * Not taken yet
+		 */
+		reviewMissing: () => LocalizedString
+		/**
+		 * Confirm and continue
+		 */
+		confirmContinue: () => LocalizedString
+		/**
+		 * Confirm and submit
+		 */
+		confirmSubmit: () => LocalizedString
+		/**
+		 * One of your photos did not upload. Check your connection and try again.
+		 */
+		uploadFailed: () => LocalizedString
+		/**
+		 * Try again
+		 */
+		uploadRetry: () => LocalizedString
+		/**
+		 * Address
+		 */
+		address: () => LocalizedString
+		/**
+		 * Search for your address
+		 */
+		addressSearch: () => LocalizedString
+		/**
+		 * Street address
+		 */
+		addressLine1: () => LocalizedString
+		/**
+		 * 12 Hope Road
+		 */
+		addressLine1Placeholder: () => LocalizedString
+		/**
+		 * Apartment, suite or unit
+		 */
+		addressLine2: () => LocalizedString
+		/**
+		 * Apt 4
+		 */
+		addressLine2Placeholder: () => LocalizedString
+		/**
+		 * City or town
+		 */
+		city: () => LocalizedString
+		/**
+		 * Kingston
+		 */
+		cityPlaceholder: () => LocalizedString
+		/**
+		 * Parish or state
+		 */
+		state: () => LocalizedString
+		/**
+		 * St. Andrew
+		 */
+		statePlaceholder: () => LocalizedString
+		/**
+		 * Postal code
+		 */
+		postalCode: () => LocalizedString
+		/**
+		 * JMAAW01
+		 */
+		postalCodePlaceholder: () => LocalizedString
+		/**
+		 * Country
+		 */
+		country: () => LocalizedString
+		/**
+		 * Jamaica
+		 */
+		countryPlaceholder: () => LocalizedString
+		/**
+		 * This field is required
+		 */
+		addressFieldRequired: () => LocalizedString
+		/**
+		 * Your upgrade request
+		 */
+		statusCardTitle: () => LocalizedString
+		/**
+		 * Submitted
+		 */
+		statusSubmitted: () => LocalizedString
+		/**
+		 * We received your request and are running the first checks.
+		 */
+		statusSubmittedDesc: () => LocalizedString
+		/**
+		 * Under review
+		 */
+		statusUnderReview: () => LocalizedString
+		/**
+		 * A member of our team is reviewing your documents.
+		 */
+		statusUnderReviewDesc: () => LocalizedString
+		/**
+		 * More information needed
+		 */
+		statusMoreInfoNeeded: () => LocalizedString
+		/**
+		 * Please take new photos so we can finish your review.
+		 */
+		statusMoreInfoNeededDesc: () => LocalizedString
+		/**
+		 * Approved
+		 */
+		statusApproved: () => LocalizedString
+		/**
+		 * Your upgrade is complete.
+		 */
+		statusApprovedDesc: () => LocalizedString
+		/**
+		 * Not approved
+		 */
+		statusRejected: () => LocalizedString
+		/**
+		 * We could not approve this request.
+		 */
+		statusRejectedDesc: () => LocalizedString
+		/**
+		 * Resubmit
+		 */
+		resubmit: () => LocalizedString
+		/**
+		 * Your new photos have been submitted for review
+		 */
+		successResubmitted: () => LocalizedString
 	}
 }
 
