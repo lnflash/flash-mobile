@@ -7,7 +7,6 @@ import {
   View,
   TouchableOpacity,
   Image,
-  Platform,
   StatusBar,
 } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
@@ -140,8 +139,6 @@ export const NIP17Chat: React.FC = () => {
   // ------------------------
   // UI helpers
   // ------------------------
-  const statusBarHeight = Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0
-
   const SearchBarContent = <UserSearchBar setSearchedUsers={setSearchedUsers} />
 
   const ListEmptyContent = !initialized ? (
@@ -174,9 +171,12 @@ export const NIP17Chat: React.FC = () => {
   // ------------------------
   return (
     <Screen style={{ flex: 1 }}>
+      {/* `translucent` makes the window edge-to-edge at the top on Android 14
+          and older; Screen's SafeAreaView then pads by the status-bar inset on
+          every Android version, so no manual StatusBar.currentHeight here. */}
       <StatusBar translucent backgroundColor="transparent" />
       {userPublicKey && !showImportModal ? (
-        <View style={{ flex: 1, paddingTop: statusBarHeight }}>
+        <View style={{ flex: 1 }}>
           <Tab.Navigator
             tabBar={(props) => <MaterialTopTabBar {...props} />}
             screenOptions={({ route }) => {
