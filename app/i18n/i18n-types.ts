@@ -6309,6 +6309,22 @@ type RootTranslation = {
 		 */
 		keyMismatchRelinkRefused: string
 		/**
+		 * T​h​e​ ​c​h​a​t​ ​k​e​y​ ​o​n​ ​t​h​i​s​ ​d​e​v​i​c​e​ ​w​a​s​ ​c​r​e​a​t​e​d​ ​b​y​ ​a​n​o​t​h​e​r​ ​a​c​c​o​u​n​t​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​.​ ​U​s​e​ ​i​t​ ​f​o​r​ ​t​h​i​s​ ​a​c​c​o​u​n​t​?
+		 */
+		keyForeignMessage: string
+		/**
+		 * T​h​i​s​ ​d​e​v​i​c​e​'​s​ ​c​h​a​t​ ​k​e​y​ ​w​a​s​ ​c​r​e​a​t​e​d​ ​b​y​ ​a​n​o​t​h​e​r​ ​a​c​c​o​u​n​t​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​ ​a​n​d​ ​d​i​f​f​e​r​s​ ​f​r​o​m​ ​t​h​e​ ​o​n​e​ ​o​n​ ​y​o​u​r​ ​a​c​c​o​u​n​t​.​ ​U​s​e​ ​t​h​i​s​ ​d​e​v​i​c​e​ ​f​o​r​ ​c​h​a​t​?
+		 */
+		keyForeignMismatchMessage: string
+		/**
+		 * T​h​i​s​ ​c​h​a​t​ ​k​e​y​ ​b​e​l​o​n​g​s​ ​t​o​ ​a​n​o​t​h​e​r​ ​a​c​c​o​u​n​t​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​.​ ​B​a​c​k​ ​u​p​ ​t​h​a​t​ ​a​c​c​o​u​n​t​'​s​ ​k​e​y​ ​f​r​o​m​ ​S​e​t​t​i​n​g​s​ ​›​ ​N​o​s​t​r​ ​›​ ​A​d​v​a​n​c​e​d​ ​b​e​f​o​r​e​ ​d​e​l​e​t​i​n​g​ ​i​t​ ​t​o​ ​c​r​e​a​t​e​ ​a​ ​n​e​w​ ​o​n​e​.
+		 */
+		keyForeignRelinkRefused: string
+		/**
+		 * T​h​i​s​ ​c​h​a​t​ ​k​e​y​ ​i​s​ ​r​e​g​i​s​t​e​r​e​d​ ​t​o​ ​a​n​o​t​h​e​r​ ​a​c​c​o​u​n​t​.​ ​B​a​c​k​ ​u​p​ ​t​h​e​ ​k​e​y​ ​f​r​o​m​ ​S​e​t​t​i​n​g​s​ ​›​ ​N​o​s​t​r​ ​›​ ​A​d​v​a​n​c​e​d​ ​b​e​f​o​r​e​ ​d​e​l​e​t​i​n​g​ ​i​t​ ​t​o​ ​c​r​e​a​t​e​ ​a​ ​n​e​w​ ​o​n​e​.
+		 */
+		keyUnownedRelinkRefused: string
+		/**
 		 * C​r​e​a​t​i​n​g​ ​P​r​o​f​i​l​e​.​.​.
 		 */
 		creatingProfile: string
@@ -12769,6 +12785,22 @@ export type TranslationFunctions = {
 		 * This chat key is registered to another account. Delete the chat keys under Settings › Nostr › Advanced to create a new one.
 		 */
 		keyMismatchRelinkRefused: () => LocalizedString
+		/**
+		 * The chat key on this device was created by another account on this phone. Use it for this account?
+		 */
+		keyForeignMessage: () => LocalizedString
+		/**
+		 * This device's chat key was created by another account on this phone and differs from the one on your account. Use this device for chat?
+		 */
+		keyForeignMismatchMessage: () => LocalizedString
+		/**
+		 * This chat key belongs to another account on this phone. Back up that account's key from Settings › Nostr › Advanced before deleting it to create a new one.
+		 */
+		keyForeignRelinkRefused: () => LocalizedString
+		/**
+		 * This chat key is registered to another account. Back up the key from Settings › Nostr › Advanced before deleting it to create a new one.
+		 */
+		keyUnownedRelinkRefused: () => LocalizedString
 		/**
 		 * Creating Profile...
 		 */

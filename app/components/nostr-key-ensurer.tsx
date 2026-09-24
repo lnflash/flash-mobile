@@ -10,6 +10,8 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { fetchSecretFromLocalStorage } from "@app/utils/nostr"
 import { generateAndStoreKey, getSigner } from "@app/nostr/signer"
 import { npubLinkState } from "@app/nostr/npub-link"
+import { getNostrKeyOwner, keyOwnerState, setNostrKeyOwner } from "@app/nostr/key-owner"
+import { relinkRefusedMessage } from "@app/nostr/relink-refused-message"
 
 /**
  * Per-device marker: the user has already been asked whether this device
@@ -21,38 +23,52 @@ import { npubLinkState } from "@app/nostr/npub-link"
 export const npubMismatchPromptedKey = (backendNpub: string): string =>
   `npubMismatchPrompted:${backendNpub}`
 
-/** A user-facing alert decided by the check, shown once the lock screen is gone. */
-type PendingPrompt = { show: () => void }
+/**
+ * Per-device marker: this account has already been asked whether it should
+ * take over the given local key, which another account on the device
+ * generated. The account has no backend npub in that state, so the marker is
+ * keyed on the account and on the key it was asked about: a different key
+ * turning up later (an nsec handed back at another account's phone login,
+ * an import) is a new question, not a remembered decline. Same write rule as
+ * above: only once a button is pressed.
+ */
+export const foreignKeyPromptedKey = (accountId: string, localNpub: string): string =>
+  `npubForeignKeyPrompted:${accountId}:${localNpub}`
 
 /**
- * Runs once per app process (the first time an authenticated account's live
- * data arrives) and makes sure the npub the backend
- * advertises for this account (what senders encrypt DMs to) is the key this
- * device can actually decrypt with. See `npubLinkState` for the state table.
+ * A user-facing alert decided by the check, shown once the lock screen is gone.
+ * Tied to the account whose check produced it: the lock screen has a Logout
+ * button, so the account that unlocks may not be the one that was checked.
+ */
+type PendingPrompt = { accountId: string; show: () => void }
+
+/**
+ * Runs once per signed-in account (and again if that account logs out and back
+ * in) and makes sure the npub the backend advertises for this account (what
+ * senders encrypt DMs to) is the key this device can actually decrypt with.
+ * See `npubLinkState` for the state table.
  *
  * Only `unregistered` is fixed silently — there is nothing on the account to
- * steal. Two Flash accounts sharing one phone are not handled here: the
- * keychain survives logout, so a second account can start with the first
- * one's key. That is tracked separately as multi-account support.
+ * steal — and only when the local key is not known to belong to another
+ * account on this device (the keychain survives logout, see `key-owner.ts`).
  * `mismatch` means another install holds the registered key; two live
  * installs auto-relinking on every launch would flip the account back and
  * forth and leave both with holes in the same conversation, so that one asks
  * the user once and never rewrites a registered npub without their choice.
  *
- * `hasRun` is deliberately not reset on logout: GaloyClient swaps the Apollo
- * client on a token change without unmounting this component, so a reset
- * would run the check for a second account in the same process, which is the
- * unsupported shared-phone case above (ENG-601). Logging out therefore only
- * drops a prompt still waiting for the lock screen, so it can never be shown
- * to (or answered by) whoever signs in next. A second account is checked on
- * the next cold start.
+ * The check is keyed on the account, not on the mount: GaloyClient swaps the
+ * Apollo client on a token change without unmounting this component, so a
+ * mount-scoped flag would leave a second account on a shared phone
+ * unchecked. Logging out resets it and drops any prompt still waiting for
+ * the lock screen, and a held prompt remembers its account, so it is never
+ * shown to (or answered by) whoever signs in next.
  *
  * The check's async work (a network relink, keychain and storage reads) can
  * outlive the session that started it. Every auth transition bumps
- * `authSession`; the check captures it at the start and drops any result
- * (a held prompt, a relink from a button) once it no longer matches, so a
- * logout, or a logout followed by another sign-in, never inherits a decision
- * made against the previous account's backend state.
+ * `authSession` during render; the check captures it with its run token and
+ * drops any result (a held prompt, a relink from a button) once either no
+ * longer matches, so a logout, or a logout followed by another sign-in, never
+ * inherits a decision made against the previous account's backend state.
  *
  * The check itself runs as soon as the live account data arrives, which is
  * before the PIN/biometric gate has been passed (`authenticationCheck` is the
@@ -67,7 +83,7 @@ const NostrKeyEnsurer: React.FC = () => {
   const { isAppLocked } = useAuthenticationContext()
   // network-only: the Apollo cache is persisted across launches, so a
   // cache-first read hands us last session's npub synchronously on cold start
-  // and `hasRun` would lock that stale snapshot in. Deciding a backend write
+  // and the once-per-account guard would lock that stale snapshot in. Deciding a backend write
   // off a stale null would register this device's key over one another
   // install registered since — the silent overwrite this component exists to
   // avoid. With network-only, `data` stays undefined until the live answer
@@ -79,9 +95,15 @@ const NostrKeyEnsurer: React.FC = () => {
   const [userUpdateNpub] = useUserUpdateNpubMutation()
   const { initializeChat } = useChatContext()
   const { LL } = useI18nContext()
-  const hasRun = useRef(false)
-  const [pendingPrompt, setPendingPrompt] = useState<PendingPrompt | null>(null)
-
+  // Once per account, not once per mount: nothing above this component
+  // remounts on logout (`use-logout.ts` resets caches and state only), so a
+  // mount-scoped flag would let account B log in after A on the same phone
+  // and never be checked.
+  const ranFor = useRef<string | null>(null)
+  // Bumped whenever a check starts or the session it belongs to ends, so an
+  // async check still running for account A stops before it writes anything
+  // (with B's token) or queues a prompt once A is gone.
+  const runToken = useRef(0)
   // Bumped synchronously on every auth transition (logout or sign-in), so an
   // async continuation resolving before the effects below run already sees
   // the new session.
@@ -92,25 +114,59 @@ const NostrKeyEnsurer: React.FC = () => {
     authSession.current += 1
   }
 
+  const [pendingPrompt, setPendingPrompt] = useState<PendingPrompt | null>(null)
+  const currentAccountId = isAuthed ? dataAuthed?.me?.id ?? null : null
+
   useEffect(() => {
-    // A prompt decided for the previous account must not survive its logout.
-    if (!isAuthed) setPendingPrompt(null)
+    if (isAuthed) return
+    // Logged out: whatever the previous account's check decided no longer
+    // applies, and the same account logging back in is checked afresh.
+    ranFor.current = null
+    runToken.current += 1
+    setPendingPrompt(null)
   }, [isAuthed])
+
+  useEffect(() => {
+    if (!currentAccountId) return
+    setPendingPrompt((prompt) =>
+      prompt && prompt.accountId !== currentAccountId ? null : prompt,
+    )
+  }, [currentAccountId])
 
   useEffect(() => {
     if (!isAuthed || isAppLocked || !pendingPrompt) return
     setPendingPrompt(null)
+    // Never show one account's prompt in another account's session: its
+    // "Use this device" would write the key onto the account now signed in.
+    if (pendingPrompt.accountId !== currentAccountId) return
     pendingPrompt.show()
-  }, [isAuthed, isAppLocked, pendingPrompt])
+  }, [isAuthed, isAppLocked, pendingPrompt, currentAccountId])
 
   useEffect(() => {
     // Wait until both auth state and backend data are ready
-    if (!isAuthed || !dataAuthed || hasRun.current) return
-    hasRun.current = true
+    if (!isAuthed || !dataAuthed) return
+    const accountId = dataAuthed.me?.id
+    if (!accountId || ranFor.current === accountId) return
+    ranFor.current = accountId
+    runToken.current += 1
+    const token = runToken.current
     const session = authSession.current
-    const isCurrentSession = () => authSession.current === session
+    // `authSession` moves during render, before the logout effect bumps
+    // `runToken`, so a continuation resolving in between is already stale.
+    const isCurrent = () =>
+      authSession.current === session &&
+      runToken.current === token &&
+      ranFor.current === accountId
 
     const backendNpub = dataAuthed.me?.npub ?? null
+
+    const rememberOwner = async (localNpub: string) => {
+      try {
+        await setNostrKeyOwner(localNpub, accountId)
+      } catch (e) {
+        console.warn("[NostrKeyEnsurer] could not record key owner:", e)
+      }
+    }
 
     // Register the local key with the backend. The local signer does not
     // change, and ChatContextProvider already subscribed with it on mount, so
@@ -120,6 +176,8 @@ const NostrKeyEnsurer: React.FC = () => {
       state: string,
       localNpub: string,
     ): Promise<RelinkResult> => {
+      // The mutation authenticates as whoever is signed in now.
+      if (!isCurrent()) return "failed"
       try {
         const { data } = await userUpdateNpub({
           variables: { input: { npub: localNpub } },
@@ -135,6 +193,7 @@ const NostrKeyEnsurer: React.FC = () => {
           return "refused"
         }
         console.log(`[NostrKeyEnsurer] ${state}: relinked local npub with backend`)
+        await rememberOwner(localNpub)
         return "ok"
       } catch (e) {
         console.error(`[NostrKeyEnsurer] ${state}: relink failed:`, e)
@@ -144,12 +203,21 @@ const NostrKeyEnsurer: React.FC = () => {
 
     // A transient failure and a deterministic refusal need different advice:
     // retrying a refused key from Reconnect gives the same answer, so that
-    // one points at deleting the keys instead.
-    const showRelinkFailed = (result: Exclude<RelinkResult, "ok">) =>
+    // one points at deleting the keys instead, but only when this account is
+    // the key's recorded owner. A refusal means some other account holds the
+    // key. With another owner on record, that account is on this phone and
+    // the local copy may be its only one. Without an owner record (every key
+    // from before the record) the holder may well be on another phone, so
+    // the copy advises a back-up without claiming a second account here.
+    const showRelinkFailed = (
+      result: Exclude<RelinkResult, "ok">,
+      owner: string | null,
+      refusedMessage?: string,
+    ) =>
       Alert.alert(
         LL.Nostr.keyMismatchTitle(),
         result === "refused"
-          ? LL.Nostr.keyMismatchRelinkRefused()
+          ? refusedMessage ?? relinkRefusedMessage(LL, keyOwnerState(owner, accountId))
           : LL.Nostr.keyMismatchRelinkFailed(),
       )
 
@@ -159,29 +227,46 @@ const NostrKeyEnsurer: React.FC = () => {
     // or the back button closes it) leaves no marker, so the question is
     // asked again on the next launch instead of the device silently staying
     // undeliverable.
-    type Prompt = { marker: string; state: string; localNpub: string }
-    const askToUseThisDevice = ({ marker, state, localNpub }: Prompt) => {
+    type Prompt = {
+      marker: string
+      state: string
+      localNpub: string
+      owner: string | null
+      message: string
+      // What to tell the user when the backend refuses. A key another account
+      // on this phone generated must not be answered with "delete the chat
+      // keys": that would destroy the other account's only copy.
+      refusedMessage?: string
+    }
+    const askToUseThisDevice = ({
+      marker,
+      state,
+      localNpub,
+      owner,
+      message,
+      refusedMessage,
+    }: Prompt) => {
       const remember = () => {
         AsyncStorage.setItem(marker, "1").catch((e) => {
           console.warn("[NostrKeyEnsurer] could not persist prompt marker:", e)
         })
       }
-      Alert.alert(LL.Nostr.keyMismatchTitle(), LL.Nostr.keyMismatchMessage(), [
+      Alert.alert(LL.Nostr.keyMismatchTitle(), message, [
         { text: LL.common.cancel(), style: "cancel", onPress: remember },
         {
           text: LL.Nostr.keyMismatchUseThisDevice(),
           onPress: async () => {
             // Signed out (or into another account) while the alert was up:
             // this answer was about the previous account's backend state.
-            if (!isCurrentSession()) return
+            if (!isCurrent()) return
             const result = await relinkLocalNpub(state, localNpub)
             // A transient failure leaves no marker so the question is
             // asked again next launch; a deterministic refusal (another
             // account holds this key) is remembered. Either way the user
             // chose and nothing happened, so say so.
-            if (!isCurrentSession()) return
+            if (!isCurrent()) return
             if (result !== "failed") remember()
-            if (result !== "ok") showRelinkFailed(result)
+            if (result !== "ok") showRelinkFailed(result, owner, refusedMessage)
           },
         },
       ])
@@ -189,6 +274,7 @@ const NostrKeyEnsurer: React.FC = () => {
 
     ;(async () => {
       const existing = await fetchSecretFromLocalStorage()
+      if (!isCurrent()) return
       if (existing) {
         let localNpub: string
         try {
@@ -198,29 +284,81 @@ const NostrKeyEnsurer: React.FC = () => {
           console.error("[NostrKeyEnsurer] local key present but unreadable:", e)
           return
         }
+        if (!isCurrent()) return
 
         const state = npubLinkState(localNpub, backendNpub)
 
+        if (state === "linked") {
+          // The account advertises this key, so it owns it whoever generated
+          // it (keys from before the owner record, imported nsecs, the nsec
+          // handed back at phone login).
+          await rememberOwner(localNpub)
+          return
+        }
+
+        // Whether another account on this phone generated the local key.
+        // Decides both the wording of any prompt and what a refusal means.
+        const owner = await getNostrKeyOwner(localNpub)
+        if (!isCurrent()) return
+        const foreign = Boolean(owner && owner !== accountId)
+
         if (state === "unregistered") {
+          if (foreign) {
+            // Another account on this device generated the key and may still
+            // depend on it. Taking it over is the user's call, not a silent
+            // default.
+            const marker = foreignKeyPromptedKey(accountId, localNpub)
+            if (await AsyncStorage.getItem(marker)) return
+            if (!isCurrent()) return
+            setPendingPrompt({
+              accountId,
+              show: () =>
+                askToUseThisDevice({
+                  marker,
+                  state,
+                  localNpub,
+                  owner,
+                  message: LL.Nostr.keyForeignMessage(),
+                  refusedMessage: LL.Nostr.keyForeignRelinkRefused(),
+                }),
+            })
+            return
+          }
           // The account advertises no key at all, so nobody can DM it. Nothing
           // to lose by registering the one this device holds. A refusal means
           // another account already registered it, which the user can only
           // resolve by hand — so say so rather than staying silent.
           const result = await relinkLocalNpub(state, localNpub)
-          if (result === "refused" && isCurrentSession()) {
-            setPendingPrompt({ show: () => showRelinkFailed(result) })
+          if (result === "refused" && isCurrent()) {
+            setPendingPrompt({ accountId, show: () => showRelinkFailed(result, owner) })
           }
           return
         }
 
         if (state === "mismatch" && backendNpub) {
           // Another install registered its own key. Ask once per backend npub
-          // and let the user decide which device owns chat.
+          // and let the user decide which device owns chat. If the local key
+          // was generated by another account on this phone (A linked here, B
+          // logs in with a key from B's other phone), say so — and keep the
+          // warning that B's account already has a different key registered,
+          // since "Use this device" unlinks B's other phone. Never answer a
+          // refusal with advice to delete A's key.
           const marker = npubMismatchPromptedKey(backendNpub)
           if (await AsyncStorage.getItem(marker)) return
-          if (!isCurrentSession()) return
+          if (!isCurrent()) return
           setPendingPrompt({
-            show: () => askToUseThisDevice({ marker, state, localNpub }),
+            accountId,
+            show: () =>
+              askToUseThisDevice({
+                marker,
+                state,
+                localNpub,
+                owner,
+                message: foreign
+                  ? LL.Nostr.keyForeignMismatchMessage()
+                  : LL.Nostr.keyMismatchMessage(),
+                refusedMessage: foreign ? LL.Nostr.keyForeignRelinkRefused() : undefined,
+              }),
           })
         }
         return
@@ -236,8 +374,8 @@ const NostrKeyEnsurer: React.FC = () => {
       }
 
       try {
-        const npub = await generateAndStoreKey()
-        if (!isCurrentSession()) return
+        const npub = await generateAndStoreKey(accountId)
+        if (!isCurrent()) return
         await userUpdateNpub({ variables: { input: { npub } } })
         await initializeChat()
         console.log("[NostrKeyEnsurer] auto-generated key and registered npub")

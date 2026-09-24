@@ -10,11 +10,13 @@
  *    success into a "try again" error.
  */
 import React from "react"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { Alert } from "react-native"
 import { fireEvent, render, waitFor } from "@testing-library/react-native"
 import { nip19 } from "nostr-tools"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
+import { getNostrKeyOwner, setNostrKeyOwner } from "@app/nostr/key-owner"
 
 const mockUserUpdateNpub = jest.fn()
 const mockGetSigner = jest.fn()
@@ -33,6 +35,11 @@ jest.mock("react-native-vector-icons/Ionicons", () => () => null)
 
 jest.mock("@app/graphql/generated", () => ({
   useUserUpdateNpubMutation: () => [mockUserUpdateNpub],
+  useHomeAuthedQuery: () => ({ data: { me: { id: "account-a", npub: null } } }),
+}))
+
+jest.mock("@app/graphql/is-authed-context", () => ({
+  useIsAuthed: () => true,
 }))
 
 jest.mock("@app/hooks/use-nostr-profile", () => () => ({
@@ -98,7 +105,10 @@ describe("AdvancedSettings › Reconnect profile", () => {
     return screen
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Owner records live in AsyncStorage; a successful reconnect in one test
+    // must not make the key look owned in the next.
+    await AsyncStorage.clear()
     jest.clearAllMocks()
     alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
     jest.spyOn(console, "warn").mockImplementation(() => {})
@@ -119,6 +129,18 @@ describe("AdvancedSettings › Reconnect profile", () => {
       LL.Nostr.profileReconnected(),
     )
     expect(onReconnect).toHaveBeenCalledTimes(1)
+    // The screen must hand the signed-in account id to `reconnectLocalNpub`:
+    // a takeover via Reconnect (B claiming A's key) has to stamp B as the
+    // owner, or the next launch asks B about its own key.
+    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe("account-a")
+  })
+
+  it("stamps the signed-in account over a previous owner on Reconnect", async () => {
+    await setNostrKeyOwner(LOCAL_NPUB, "account-z")
+    mockUserUpdateNpub.mockResolvedValue({ data: { userUpdateNpub: { errors: [] } } })
+    pressReconnect()
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe("account-a")
   })
 
   it("reports the refusal, never success, when another account holds the key", async () => {
@@ -127,9 +149,11 @@ describe("AdvancedSettings › Reconnect profile", () => {
     })
     pressReconnect()
     await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    // No owner record for this key, so the copy must not advise deleting it
+    // (key ownership, #727): the holder may be another account.
     expect(alertSpy).toHaveBeenCalledWith(
       LL.common.error(),
-      LL.Nostr.keyMismatchRelinkRefused(),
+      LL.Nostr.keyUnownedRelinkRefused(),
     )
     expect(onReconnect).toHaveBeenCalledTimes(1)
   })

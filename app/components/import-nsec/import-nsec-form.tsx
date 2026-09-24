@@ -1,7 +1,8 @@
 import React, { useState } from "react"
 import { Input, makeStyles } from "@rneui/themed"
 import { View, Alert } from "react-native"
-import { useUserUpdateNpubMutation } from "@app/graphql/generated"
+import { useHomeAuthedQuery, useUserUpdateNpubMutation } from "@app/graphql/generated"
+import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { importNsec } from "./utils"
 import { getPublicKey, nip19 } from "nostr-tools"
 import { PrimaryBtn } from "../buttons"
@@ -14,6 +15,12 @@ export const NsecInputForm: React.FC<NsecInputFormProps> = ({ onSubmit }) => {
   const [nsec, setNsec] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
   const [userUpdateNpubMutation] = useUserUpdateNpubMutation()
+  const isAuthed = useIsAuthed()
+  const { data: dataAuthed } = useHomeAuthedQuery({
+    skip: !isAuthed,
+    fetchPolicy: "cache-first",
+    errorPolicy: "all",
+  })
   const styles = useStyles()
 
   const handleInputChange = (text: string) => {
@@ -22,14 +29,20 @@ export const NsecInputForm: React.FC<NsecInputFormProps> = ({ onSubmit }) => {
   }
 
   const handleSubmit = async () => {
-    let success = await importNsec(nsec, setError, async () => {
-      await userUpdateNpubMutation({
-        variables: {
-          input: {
-            npub: nip19.npubEncode(getPublicKey(nip19.decode(nsec).data as Uint8Array)),
+    const success = await importNsec(nsec, {
+      onError: setError,
+      updateFlashBackend: async () => {
+        const { data } = await userUpdateNpubMutation({
+          variables: {
+            input: {
+              npub: nip19.npubEncode(getPublicKey(nip19.decode(nsec).data as Uint8Array)),
+            },
           },
-        },
-      })
+        })
+        // A refused key (NPUB_NOT_AVAILABLE) is not this account's to own.
+        return (data?.userUpdateNpub?.errors ?? []).length === 0
+      },
+      accountId: dataAuthed?.me?.id,
     })
     if (success) {
       Alert.alert("Success", "nsec imported successfully!")

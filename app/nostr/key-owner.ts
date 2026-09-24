@@ -1,0 +1,63 @@
+import AsyncStorage from "@react-native-async-storage/async-storage"
+
+/**
+ * Which account a local Nostr key belongs to.
+ *
+ * The keychain entry holding the nsec survives logout (`use-logout.ts` never
+ * clears it), so on a shared phone account B can start with the key account A
+ * generated. Registering that key on B's account silently would strand A: the
+ * backend refuses a second owner (`NPUB_NOT_AVAILABLE`) and A's DMs go to a
+ * key B now advertises. The owner is therefore recorded next to the key and
+ * consulted before any silent backend write — a key owned by another account
+ * is prompt-class, never auto-registered.
+ *
+ * Keyed on the local npub so a key that changes underneath (nsec import, the
+ * nsec handed back at phone login) never inherits the previous key's owner.
+ * Keys that pre-date this record have no owner: they are adopted by the first
+ * account that either matches them (`linked`) or registers them.
+ */
+const PREFIX = "nostrKeyOwner:"
+
+export const nostrKeyOwnerKey = (localNpub: string): string => `${PREFIX}${localNpub}`
+
+export const getNostrKeyOwner = async (localNpub: string): Promise<string | null> =>
+  AsyncStorage.getItem(nostrKeyOwnerKey(localNpub))
+
+export const setNostrKeyOwner = async (
+  localNpub: string,
+  accountId: string,
+): Promise<void> => AsyncStorage.setItem(nostrKeyOwnerKey(localNpub), accountId)
+
+/** Drop the owner record of one key — used when that key leaves the keychain. */
+export const clearNostrKeyOwner = async (localNpub: string): Promise<void> =>
+  AsyncStorage.removeItem(nostrKeyOwnerKey(localNpub))
+
+/**
+ * Who a local key belongs to, from this account's point of view. Decides how a
+ * backend refusal (`NPUB_NOT_AVAILABLE`) is explained:
+ *  - `self`: this account is the recorded owner, so "delete the chat keys" is
+ *    safe advice.
+ *  - `other`: another account on this phone generated the key; its copy here
+ *    may be that account's only one.
+ *  - `unknown`: no record (every key from before the record existed), or no
+ *    account id to compare it with (a cache-first query still unloaded). The
+ *    refusal only says some account holds the key, possibly on another phone,
+ *    so the copy must not claim a second account on this phone — and never
+ *    call the account's own key another account's.
+ */
+export type KeyOwnerState = "self" | "other" | "unknown"
+
+export const keyOwnerState = (
+  owner: string | null,
+  accountId: string | null | undefined,
+): KeyOwnerState => {
+  if (!owner || !accountId) return "unknown"
+  return owner === accountId ? "self" : "other"
+}
+
+/** Drop every owner record — used when the local key material is deleted. */
+export const clearNostrKeyOwners = async (): Promise<void> => {
+  const keys = await AsyncStorage.getAllKeys()
+  const ownerKeys = keys.filter((key) => key.startsWith(PREFIX))
+  if (ownerKeys.length > 0) await AsyncStorage.multiRemove(ownerKeys)
+}
