@@ -12,18 +12,29 @@ export const validateNsec = (nsec: string) => {
 const npubOfNsec = (nsec: string): string =>
   nip19.npubEncode(getPublicKey(nip19.decode(nsec).data as Uint8Array))
 
+export const NSEC_REGISTERED_ELSEWHERE_ERROR = "This key is registered to another account"
+
+export type ImportNsecOptions = {
+  onError: (msg: string) => void
+  /**
+   * Registers the key on the account. Resolves `false` when the backend
+   * refused it (another account holds it); anything else counts as registered.
+   */
+  updateFlashBackend: () => Promise<unknown>
+  accountId?: string | null
+}
+
 /**
  * Stores an imported nsec as this device's key and registers it on the
- * account. `updateFlashBackend` resolves `false` when the backend refused the
- * key (another account holds it); anything else counts as registered. With
- * `accountId`, a registered key is recorded as that account's (see
- * `key-owner.ts`), and the owner record of the key it replaced is dropped.
+ * account. A key the backend refuses is reported as an error, not a success:
+ * the keychain would otherwise hold a key the account cannot advertise, and
+ * the next launch would surface an unexplained refusal. With `accountId`, a
+ * registered key is recorded as that account's (see `key-owner.ts`), and the
+ * owner record of the key it replaced is dropped.
  */
 export const importNsec = async (
   nsec: string,
-  onError: (msg: string) => void,
-  updateFlashBackend: () => Promise<unknown>,
-  { accountId }: { accountId?: string | null } = {},
+  { onError, updateFlashBackend, accountId }: ImportNsecOptions,
 ) => {
   if (!nsec) {
     onError("nsec cannot be empty")
@@ -56,7 +67,11 @@ export const importNsec = async (
       )
     }
     const registered = await updateFlashBackend()
-    if (accountId && registered !== false) {
+    if (registered === false) {
+      onError(NSEC_REGISTERED_ELSEWHERE_ERROR)
+      return false
+    }
+    if (accountId) {
       await setNostrKeyOwner(npub, accountId).catch((e) =>
         console.warn("[importNsec] could not record key owner:", e),
       )

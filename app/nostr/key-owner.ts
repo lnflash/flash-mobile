@@ -39,9 +39,11 @@ export const clearNostrKeyOwner = async (localNpub: string): Promise<void> =>
  *    safe advice.
  *  - `other`: another account on this phone generated the key; its copy here
  *    may be that account's only one.
- *  - `unknown`: no record (every key from before the record existed). The
+ *  - `unknown`: no record (every key from before the record existed), or no
+ *    account id to compare it with (a cache-first query still unloaded). The
  *    refusal only says some account holds the key, possibly on another phone,
- *    so the copy must not claim a second account on this phone.
+ *    so the copy must not claim a second account on this phone — and never
+ *    call the account's own key another account's.
  */
 export type KeyOwnerState = "self" | "other" | "unknown"
 
@@ -49,8 +51,8 @@ export const keyOwnerState = (
   owner: string | null,
   accountId: string | null | undefined,
 ): KeyOwnerState => {
-  if (!owner) return "unknown"
-  return accountId && owner === accountId ? "self" : "other"
+  if (!owner || !accountId) return "unknown"
+  return owner === accountId ? "self" : "other"
 }
 
 /** Drop every owner record — used when the local key material is deleted. */

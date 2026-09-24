@@ -1493,6 +1493,7 @@
     "keyMismatchRelinkFailed": "Esi sixhobo asikwazanga ukumiselwa njengesixhobo sakho sencoko. Jonga uxhumo lwakho uze uzame kwakhona kwiSetingi › Nostr › Ephambili › Qhagamshela kwakhona iprofayile.",
     "keyMismatchRelinkRefused": "Esi sitshixo sencoko sibhaliswe kwenye iakhawunti. Cima izitshixo zencoko phantsi kweSetingi › Nostr › Ephambili ukwenza esitsha.",
     "keyForeignMessage": "Isitshixo sencoko kwesi sixhobo senziwe yenye iakhawunti kule fowuni. Sisebenzise kule akhawunti?",
+    "keyForeignMismatchMessage": "Isitshixo sencoko kwesi sixhobo senziwe yenye iakhawunti kule fowuni kwaye sahlukile kweso sikwiakhawunti yakho. Sebenzisa esi sixhobo kwincoko?",
     "keyForeignRelinkRefused": "Esi sitshixo sencoko sesenye iakhawunti kule fowuni. Gcina ikopi yesitshixo saloo akhawunti kwiSetingi › Nostr › Ephambili ngaphambi kokuba usicime ukwenza esitsha.",
     "keyUnownedRelinkRefused": "Esi sitshixo sencoko sibhaliswe kwenye iakhawunti. Gcina ikopi yesitshixo kwiSetingi › Nostr › Ephambili ngaphambi kokuba usicime ukwenza esitsha.",
     "creatingProfile": "Ukudala iProfayili...",

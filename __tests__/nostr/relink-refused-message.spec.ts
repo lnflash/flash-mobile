@@ -28,9 +28,13 @@ describe("keyOwnerState", () => {
     expect(keyOwnerState("account-a", "account-b")).toBe("other")
   })
 
-  it("never treats a recorded owner as self when the account is unknown", () => {
-    expect(keyOwnerState("account-a", undefined)).toBe("other")
-    expect(keyOwnerState("account-a", null)).toBe("other")
+  it("is unknown, never other, when the account id is not loaded yet", () => {
+    // The account id can come from a cache-first query that is still
+    // unloaded. Without it the app cannot tell whether the recorded owner is
+    // this account, so it must not describe the key as another account's.
+    expect(keyOwnerState("account-a", undefined)).toBe("unknown")
+    expect(keyOwnerState("account-a", null)).toBe("unknown")
+    expect(keyOwnerState("account-a", "")).toBe("unknown")
   })
 })
 

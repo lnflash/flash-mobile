@@ -448,10 +448,18 @@ describe("NostrKeyEnsurer", () => {
       mockMe = { id: ACCOUNT_B, npub: OTHER_NPUB }
     })
 
-    it("names the other account in the prompt", async () => {
+    it("names the other account AND the mismatch in the prompt", async () => {
       render(<NostrKeyEnsurer />)
       await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+      // Both facts matter: the key is A's, and B already has a different key
+      // registered, so "Use this device" unlinks B's other phone. The
+      // foreign-only copy ("use it for this account?") would hide the second.
       expect(alertSpy).toHaveBeenCalledWith(
+        LL.Nostr.keyMismatchTitle(),
+        LL.Nostr.keyForeignMismatchMessage(),
+        expect.any(Array),
+      )
+      expect(alertSpy).not.toHaveBeenCalledWith(
         LL.Nostr.keyMismatchTitle(),
         LL.Nostr.keyForeignMessage(),
         expect.any(Array),

@@ -29,10 +29,9 @@ export const NsecInputForm: React.FC<NsecInputFormProps> = ({ onSubmit }) => {
   }
 
   const handleSubmit = async () => {
-    const success = await importNsec(
-      nsec,
-      setError,
-      async () => {
+    const success = await importNsec(nsec, {
+      onError: setError,
+      updateFlashBackend: async () => {
         const { data } = await userUpdateNpubMutation({
           variables: {
             input: {
@@ -43,8 +42,8 @@ export const NsecInputForm: React.FC<NsecInputFormProps> = ({ onSubmit }) => {
         // A refused key (NPUB_NOT_AVAILABLE) is not this account's to own.
         return (data?.userUpdateNpub?.errors ?? []).length === 0
       },
-      { accountId: dataAuthed?.me?.id },
-    )
+      accountId: dataAuthed?.me?.id,
+    })
     if (success) {
       Alert.alert("Success", "nsec imported successfully!")
     }

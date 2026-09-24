@@ -1493,6 +1493,7 @@
     "keyMismatchRelinkFailed": "Não foi possível definir este dispositivo como seu dispositivo de chat. Verifique sua conexão e tente novamente em Configurações › Nostr › Avançado › Reconectar perfil.",
     "keyMismatchRelinkRefused": "Esta chave de chat está registrada em outra conta. Exclua as chaves de chat em Configurações › Nostr › Avançado para criar uma nova.",
     "keyForeignMessage": "A chave de chat neste dispositivo foi criada por outra conta neste telefone. Usá-la para esta conta?",
+    "keyForeignMismatchMessage": "A chave de chat neste dispositivo foi criada por outra conta neste telefone e é diferente da que está na sua conta. Usar este dispositivo para o chat?",
     "keyForeignRelinkRefused": "Esta chave de chat pertence a outra conta neste telefone. Faça backup da chave dessa conta em Configurações › Nostr › Avançado antes de excluí-la para criar uma nova.",
     "keyUnownedRelinkRefused": "Esta chave de chat está registrada em outra conta. Faça backup da chave em Configurações › Nostr › Avançado antes de excluí-la para criar uma nova.",
     "creatingProfile": "Criando um perfil...",

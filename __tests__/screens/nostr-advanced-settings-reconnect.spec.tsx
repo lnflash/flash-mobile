@@ -16,6 +16,7 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native"
 import { nip19 } from "nostr-tools"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
+import { getNostrKeyOwner, setNostrKeyOwner } from "@app/nostr/key-owner"
 
 const mockUserUpdateNpub = jest.fn()
 const mockGetSigner = jest.fn()
@@ -106,9 +107,7 @@ describe("AdvancedSettings › Reconnect profile", () => {
 
   beforeEach(async () => {
     // Owner records live in AsyncStorage; a successful reconnect in one test
-
     // must not make the key look owned in the next.
-
     await AsyncStorage.clear()
     jest.clearAllMocks()
     alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {})
@@ -130,6 +129,18 @@ describe("AdvancedSettings › Reconnect profile", () => {
       LL.Nostr.profileReconnected(),
     )
     expect(onReconnect).toHaveBeenCalledTimes(1)
+    // The screen must hand the signed-in account id to `reconnectLocalNpub`:
+    // a takeover via Reconnect (B claiming A's key) has to stamp B as the
+    // owner, or the next launch asks B about its own key.
+    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe("account-a")
+  })
+
+  it("stamps the signed-in account over a previous owner on Reconnect", async () => {
+    await setNostrKeyOwner(LOCAL_NPUB, "account-z")
+    mockUserUpdateNpub.mockResolvedValue({ data: { userUpdateNpub: { errors: [] } } })
+    pressReconnect()
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    expect(await getNostrKeyOwner(LOCAL_NPUB)).toBe("account-a")
   })
 
   it("reports the refusal, never success, when another account holds the key", async () => {

@@ -1493,6 +1493,7 @@
     "keyMismatchRelinkFailed": "Cet appareil n'a pas pu être défini comme votre appareil de chat. Vérifiez votre connexion et réessayez depuis Paramètres › Nostr › Avancé › Reconnecter le profil.",
     "keyMismatchRelinkRefused": "Cette clé de chat est enregistrée sur un autre compte. Supprimez les clés de chat dans Paramètres › Nostr › Avancé pour en créer une nouvelle.",
     "keyForeignMessage": "La clé de chat de cet appareil a été créée par un autre compte sur ce téléphone. L'utiliser pour ce compte ?",
+    "keyForeignMismatchMessage": "La clé de chat de cet appareil a été créée par un autre compte sur ce téléphone et diffère de celle de votre compte. Utiliser cet appareil pour le chat ?",
     "keyForeignRelinkRefused": "Cette clé de chat appartient à un autre compte sur ce téléphone. Sauvegardez la clé de ce compte depuis Paramètres › Nostr › Avancé avant de la supprimer pour en créer une nouvelle.",
     "keyUnownedRelinkRefused": "Cette clé de chat est enregistrée sur un autre compte. Sauvegardez la clé depuis Paramètres › Nostr › Avancé avant de la supprimer pour en créer une nouvelle.",
     "creatingProfile": "Créer un profil...",

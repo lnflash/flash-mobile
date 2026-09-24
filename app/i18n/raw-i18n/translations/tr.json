@@ -1493,6 +1493,7 @@
     "keyMismatchRelinkFailed": "Bu cihaz sohbet cihazınız olarak ayarlanamadı. Bağlantınızı kontrol edin ve Ayarlar › Nostr › Gelişmiş › Profili yeniden bağla bölümünden tekrar deneyin.",
     "keyMismatchRelinkRefused": "Bu sohbet anahtarı başka bir hesaba kayıtlı. Yeni bir tane oluşturmak için Ayarlar › Nostr › Gelişmiş altından sohbet anahtarlarını silin.",
     "keyForeignMessage": "Bu cihazdaki sohbet anahtarı bu telefondaki başka bir hesap tarafından oluşturuldu. Bu hesap için kullanılsın mı?",
+    "keyForeignMismatchMessage": "Bu cihazdaki sohbet anahtarı bu telefondaki başka bir hesap tarafından oluşturuldu ve hesabınızdakinden farklı. Sohbet için bu cihaz kullanılsın mı?",
     "keyForeignRelinkRefused": "Bu sohbet anahtarı bu telefondaki başka bir hesaba ait. Yeni bir tane oluşturmak için silmeden önce o hesabın anahtarını Ayarlar › Nostr › Gelişmiş bölümünden yedekleyin.",
     "keyUnownedRelinkRefused": "Bu sohbet anahtarı başka bir hesaba kayıtlı. Yeni bir tane oluşturmak için silmeden önce anahtarı Ayarlar › Nostr › Gelişmiş bölümünden yedekleyin.",
     "creatingProfile": "Profil Oluşturma...",

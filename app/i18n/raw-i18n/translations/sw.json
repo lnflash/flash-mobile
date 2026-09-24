@@ -1438,6 +1438,7 @@
     "keyMismatchRelinkFailed": "Kifaa hiki hakikuweza kuwekwa kama kifaa chako cha gumzo. Angalia muunganisho wako na ujaribu tena kutoka Mipangilio › Nostr › Ya kina › Unganisha upya wasifu.",
     "keyMismatchRelinkRefused": "Ufunguo huu wa gumzo umesajiliwa kwa akaunti nyingine. Futa funguo za gumzo chini ya Mipangilio › Nostr › Ya kina ili kuunda mpya.",
     "keyForeignMessage": "Ufunguo wa gumzo kwenye kifaa hiki uliundwa na akaunti nyingine kwenye simu hii. Utumie kwa akaunti hii?",
+    "keyForeignMismatchMessage": "Ufunguo wa gumzo kwenye kifaa hiki uliundwa na akaunti nyingine kwenye simu hii na ni tofauti na ule kwenye akaunti yako. Utumie kifaa hiki kwa gumzo?",
     "keyForeignRelinkRefused": "Ufunguo huu wa gumzo ni wa akaunti nyingine kwenye simu hii. Hifadhi nakala ya ufunguo wa akaunti hiyo kutoka Mipangilio › Nostr › Ya kina kabla ya kuufuta ili kuunda mpya.",
     "keyUnownedRelinkRefused": "Ufunguo huu wa gumzo umesajiliwa kwa akaunti nyingine. Hifadhi nakala ya ufunguo kutoka Mipangilio › Nostr › Ya kina kabla ya kuufuta ili kuunda mpya.",
     "keyConflictTitle": "Nostr Key Not Found on Device",
