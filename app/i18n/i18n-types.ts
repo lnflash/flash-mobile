@@ -6689,10 +6689,6 @@ type RootTranslation = {
 		 */
 		captureTooSmall: string
 		/**
-		 * T​h​a​t​ ​p​h​o​t​o​ ​d​i​d​ ​n​o​t​ ​c​o​m​e​ ​o​u​t​ ​r​i​g​h​t​.​ ​L​i​n​e​ ​u​p​ ​w​i​t​h​ ​t​h​e​ ​g​u​i​d​e​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
-		 */
-		captureBadShape: string
-		/**
 		 * C​o​u​l​d​ ​n​o​t​ ​t​a​k​e​ ​t​h​e​ ​p​h​o​t​o​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
 		 */
 		captureFailed: string
@@ -13405,10 +13401,6 @@ export type TranslationFunctions = {
 		 * That photo is too small to read. Move closer and try again.
 		 */
 		captureTooSmall: () => LocalizedString
-		/**
-		 * That photo did not come out right. Line up with the guide and try again.
-		 */
-		captureBadShape: () => LocalizedString
 		/**
 		 * Could not take the photo. Please try again.
 		 */

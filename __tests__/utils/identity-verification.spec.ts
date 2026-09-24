@@ -22,7 +22,7 @@ import type {
 } from "@app/store/redux/slices/accountUpgradeSlice"
 
 const img = (side: string): CapturedImage => ({
-  uri: `file:///tmp/${side}.jpg`,
+  path: `idv/${side}-1.jpg`,
   width: 4032,
   height: 3024,
   fileName: `${side}.jpg`,
@@ -30,14 +30,13 @@ const img = (side: string): CapturedImage => ({
 })
 
 const up = (side: string): UploadedEvidence => ({
-  uri: `file:///tmp/${side}.jpg`,
+  path: `idv/${side}-1.jpg`,
   fileKey: `id-documents/${side}-key`,
   sha256: `${side}hash`,
 })
 
 const identity = (over: Partial<IdentityState> = {}): IdentityState => ({
   documentType: "national_id",
-  issuingCountry: "JM",
   front: img("front"),
   back: img("back"),
   selfie: img("selfie"),
@@ -98,15 +97,12 @@ describe("captureGate", () => {
     expect(captureGate({ width: MIN_LONG_EDGE_PX, height: 900 })).toEqual({ ok: true })
   })
 
-  it("rejects a square or panoramic frame", () => {
-    expect(captureGate({ width: 2000, height: 2000 })).toEqual({
-      ok: false,
-      reason: "aspect",
-    })
-    expect(captureGate({ width: 6000, height: 1500 })).toEqual({
-      ok: false,
-      reason: "aspect",
-    })
+  it("does not judge the frame's shape: takePhoto returns the full sensor frame", () => {
+    // An aspect gate on the sensor frame could never fire on hardware (every
+    // phone still is ~4:3 or ~16:9), so it was removed rather than shipped as
+    // dead code with a message nobody would ever see.
+    expect(captureGate({ width: 2000, height: 2000 })).toEqual({ ok: true })
+    expect(captureGate({ width: 6000, height: 1500 })).toEqual({ ok: true })
   })
 })
 
@@ -123,7 +119,7 @@ describe("planUploads", () => {
     const state = identity({
       uploaded: {
         front: up("front"),
-        back: { ...up("back"), uri: "file:///tmp/old.jpg" },
+        back: { ...up("back"), path: "idv/back-0.jpg" },
       },
     })
     expect(planUploads(state)).toEqual({
@@ -149,7 +145,7 @@ describe("buildEvidence", () => {
 
   it("emits ID_FRONT, ID_BACK, SELFIE in that order with document metadata on the ID sides", () => {
     const { evidence, legacyIdDocument } = buildEvidence(
-      { documentType: "drivers_licence", issuingCountry: "JM" },
+      { documentType: "drivers_licence" },
       uploaded,
     )
     expect(evidence).toEqual([
@@ -158,32 +154,36 @@ describe("buildEvidence", () => {
         fileKey: "id-documents/front-key",
         sha256: "fronthash",
         documentType: "drivers_licence",
-        issuingCountry: "JM",
       },
       {
         type: "ID_BACK",
         fileKey: "id-documents/back-key",
         sha256: "backhash",
         documentType: "drivers_licence",
-        issuingCountry: "JM",
       },
       { type: "SELFIE", fileKey: "id-documents/selfie-key", sha256: "selfiehash" },
     ])
     expect(legacyIdDocument).toBe("id-documents/front-key")
   })
 
+  it("never guesses an issuing country: the field is optional and there is no picker", () => {
+    // A hard-coded "JM" was stamped on every ID row, passports and foreign
+    // licences included. Absent beats confidently wrong.
+    const { evidence } = buildEvidence({ documentType: "passport" }, uploaded)
+    for (const row of evidence) {
+      expect(row).not.toHaveProperty("issuingCountry")
+    }
+  })
+
   it("has no ID_BACK row for a passport even if a stale back key exists", () => {
-    const { evidence } = buildEvidence(
-      { documentType: "passport", issuingCountry: "JM" },
-      uploaded,
-    )
+    const { evidence } = buildEvidence({ documentType: "passport" }, uploaded)
     expect(evidence.map((e) => e.type)).toEqual(["ID_FRONT", "SELFIE"])
   })
 
   it("throws when a required side was never uploaded", () => {
     expect(() =>
       buildEvidence(
-        { documentType: "national_id", issuingCountry: "JM" },
+        { documentType: "national_id" },
         { front: up("front"), selfie: up("selfie") },
       ),
     ).toThrow(/back/)

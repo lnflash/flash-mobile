@@ -6,17 +6,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { PrimaryBtn } from "../buttons"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { testProps } from "@app/utils/testProps"
-import type { CapturedImage } from "@app/store/redux/slices/accountUpgradeSlice"
 
 type Props = {
-  image: CapturedImage
+  /** `file://` URI of the still to show. */
+  uri: string
   title: string
   onRetake: () => void
   onAccept: () => void
+  /** Disables both buttons while the still is being moved into place. */
+  busy?: boolean
 }
 
 /** Full-screen look at the still just taken, with Retake / Use photo. */
-const CapturePreview: React.FC<Props> = ({ image, title, onRetake, onAccept }) => {
+const CapturePreview: React.FC<Props> = ({ uri, title, onRetake, onAccept, busy }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { top, bottom } = useSafeAreaInsets()
@@ -29,7 +31,7 @@ const CapturePreview: React.FC<Props> = ({ image, title, onRetake, onAccept }) =
         {title}
       </Text>
       <Image
-        source={{ uri: image.uri }}
+        source={{ uri }}
         style={styles.image}
         resizeMode="contain"
         {...testProps("capture-preview-image")}
@@ -39,11 +41,14 @@ const CapturePreview: React.FC<Props> = ({ image, title, onRetake, onAccept }) =
           type="outline"
           label={LL.AccountUpgrade.retake()}
           onPress={onRetake}
+          disabled={busy}
           btnStyle={styles.btn}
         />
         <PrimaryBtn
           label={LL.AccountUpgrade.usePhoto()}
           onPress={onAccept}
+          disabled={busy}
+          loading={busy}
           btnStyle={styles.btn}
         />
       </View>

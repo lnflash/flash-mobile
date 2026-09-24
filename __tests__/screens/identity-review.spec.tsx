@@ -8,6 +8,8 @@ import { act, fireEvent, render, waitFor } from "@testing-library/react-native"
 import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import IdentityReview from "../../app/screens/account-upgrade-flow/IdentityReview"
+
+type ScreenProps = React.ComponentProps<typeof IdentityReview>
 import type { IdentityState } from "@app/store/redux/slices/accountUpgradeSlice"
 
 const mockNavigate = jest.fn()
@@ -15,13 +17,19 @@ const mockPush = jest.fn()
 const mockReplace = jest.fn()
 const mockUploadEvidence = jest.fn()
 const mockSubmitAccountUpgrade = jest.fn()
+const mockDispatch = jest.fn()
+const mockFileExists = jest.fn()
 
 let mockIdentity: IdentityState
 
 jest.mock("@app/store/redux", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({ accountUpgrade: { numOfSteps: 5, identity: mockIdentity } }),
-  useAppDispatch: () => jest.fn(),
+  useAppDispatch: () => mockDispatch,
+}))
+jest.mock("@app/utils/identity-files", () => ({
+  identityFileExists: (path: string) => mockFileExists(path),
+  identityFileUri: (path: string) => `file:///documents/${path}`,
 }))
 jest.mock("@app/hooks", () => ({
   useAccountUpgrade: () => ({
@@ -37,7 +45,7 @@ loadLocale("en")
 const en = i18nObject("en")
 
 const img = (side: string) => ({
-  uri: `file:///tmp/${side}.jpg`,
+  path: `idv/${side}-1.jpg`,
   width: 4032,
   height: 3024,
   fileName: `${side}.jpg`,
@@ -46,7 +54,6 @@ const img = (side: string) => ({
 
 const full = (): IdentityState => ({
   documentType: "national_id",
-  issuingCountry: "JM",
   front: img("front"),
   back: img("back"),
   selfie: img("selfie"),
@@ -57,12 +64,16 @@ const renderReview = (params?: { resubmit?: boolean }) =>
   render(
     <ThemeProvider theme={createTheme({})}>
       <IdentityReview
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         navigation={
-          { navigate: mockNavigate, push: mockPush, replace: mockReplace } as any
+          {
+            navigate: mockNavigate,
+            push: mockPush,
+            replace: mockReplace,
+          } as unknown as ScreenProps["navigation"]
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        route={{ key: "r", name: "IdentityReview", params } as any}
+        route={
+          { key: "r", name: "IdentityReview", params } as unknown as ScreenProps["route"]
+        }
       />
     </ThemeProvider>,
   )
@@ -70,6 +81,7 @@ const renderReview = (params?: { resubmit?: boolean }) =>
 beforeEach(() => {
   jest.clearAllMocks()
   mockIdentity = full()
+  mockFileExists.mockResolvedValue(true)
 })
 
 describe("IdentityReview", () => {
@@ -78,6 +90,40 @@ describe("IdentityReview", () => {
     expect(getByTestId("identity-thumb-front")).toBeTruthy()
     expect(getByTestId("identity-thumb-back")).toBeTruthy()
     expect(getByTestId("identity-thumb-selfie")).toBeTruthy()
+  })
+
+  it("resolves thumbnails from the document directory, not a stored absolute path", () => {
+    // The slice holds `idv/<side>-<ts>.jpg`; the absolute container path is
+    // rebuilt at read time because iOS changes it on every app update.
+    const { getByTestId } = renderReview()
+    expect(getByTestId("identity-thumb-front").props.source).toEqual({
+      uri: "file:///documents/idv/front-1.jpg",
+    })
+  })
+
+  it("forgets a side whose file is gone from disk when the screen opens", async () => {
+    // The persisted state can outlive the file (temp purge, app update). With
+    // the path still in the slice the card looked complete, confirm enabled,
+    // and the upload failed on ENOENT every time.
+    mockFileExists.mockImplementation((path: string) =>
+      Promise.resolve(!path.startsWith("idv/back")),
+    )
+    renderReview()
+
+    await waitFor(() =>
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "accountUpgrade/clearIdentityCapture",
+        payload: { side: "back" },
+      }),
+    )
+    expect(mockDispatch).toHaveBeenCalledTimes(1)
+    expect(mockFileExists).toHaveBeenCalledTimes(3)
+  })
+
+  it("leaves the state alone when every file is present", async () => {
+    renderReview()
+    await waitFor(() => expect(mockFileExists).toHaveBeenCalledTimes(3))
+    expect(mockDispatch).not.toHaveBeenCalled()
   })
 
   it("shows only front and selfie for a passport", () => {
@@ -127,6 +173,7 @@ describe("IdentityReview", () => {
     mockUploadEvidence.mockResolvedValue({
       success: false,
       failedSide: "selfie",
+      reason: "network",
       error: "Network error during upload",
     })
     const { getAllByText, getByTestId } = renderReview()
@@ -138,6 +185,38 @@ describe("IdentityReview", () => {
     await waitFor(() => expect(getByTestId("identity-review-error")).toBeTruthy())
     expect(getAllByText(en.AccountUpgrade.uploadFailed()).length).toBeGreaterThan(0)
     expect(getAllByText(en.AccountUpgrade.uploadRetry()).length).toBeGreaterThan(0)
+    expect(mockNavigate).not.toHaveBeenCalled()
+    // A network blip is not the photo's fault: the capture is kept for retry.
+    expect(mockDispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "accountUpgrade/clearIdentityCapture" }),
+    )
+  })
+
+  it("a dead file says so and forgets that side instead of a generic retry loop", async () => {
+    // Before: `res.error` ("Could not read the photo. Please take it again.")
+    // was thrown away for the generic "did not upload" line, the capture stayed
+    // in the slice, and Try again failed identically forever.
+    mockUploadEvidence.mockResolvedValue({
+      success: false,
+      failedSide: "back",
+      reason: "file",
+      error: "Could not read the photo. Please take it again.",
+    })
+    const { getAllByText, getByTestId, queryAllByText } = renderReview()
+
+    await act(async () => {
+      fireEvent.press(getAllByText(en.AccountUpgrade.confirmContinue())[0])
+    })
+
+    await waitFor(() => expect(getByTestId("identity-review-error")).toBeTruthy())
+    expect(getAllByText("Could not read the photo. Please take it again.")).toHaveLength(
+      1,
+    )
+    expect(queryAllByText(en.AccountUpgrade.uploadFailed())).toHaveLength(0)
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: "accountUpgrade/clearIdentityCapture",
+      payload: { side: "back" },
+    })
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 

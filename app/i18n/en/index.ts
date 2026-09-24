@@ -2027,7 +2027,6 @@ const en: BaseTranslation = {
       captureSelfieTitle: "Take a selfie",
       captureSelfieHint: "Keep your face inside the oval and look at the camera",
       captureTooSmall: "That photo is too small to read. Move closer and try again.",
-      captureBadShape: "That photo did not come out right. Line up with the guide and try again.",
       captureFailed: "Could not take the photo. Please try again.",
       retake: "Retake",
       usePhoto: "Use photo",

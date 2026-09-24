@@ -34,18 +34,20 @@ export const nextSide = (
 
 /** True once every required side has a capture. */
 export const hasAllCaptures = (identity: IdentityState): boolean =>
-  requiredSides(identity.documentType).every((side) => Boolean(identity[side]?.uri))
+  requiredSides(identity.documentType).every((side) => Boolean(identity[side]?.path))
 
 // --- capture quality gate ---------------------------------------------------
 
 /** Long edge below this is too small for a reviewer to read an ID. */
 export const MIN_LONG_EDGE_PX = 1200
-/** A still that is nearly square or a panorama did not come from the guide. */
-export const MIN_ASPECT = 1.15
-export const MAX_ASPECT = 2.4
 
-export type CaptureGateResult = { ok: true } | { ok: false; reason: "small" | "aspect" }
+export type CaptureGateResult = { ok: true } | { ok: false; reason: "small" }
 
+/**
+ * `takePhoto` returns the full sensor frame, not the overlay window, so the
+ * only thing worth checking here is that a real still came back. An aspect
+ * check on the frame could never fire on hardware and was removed.
+ */
 export const captureGate = (dims: {
   width: number
   height: number
@@ -54,8 +56,6 @@ export const captureGate = (dims: {
   const short = Math.min(dims.width, dims.height)
   if (!long || !short) return { ok: false, reason: "small" }
   if (long < MIN_LONG_EDGE_PX) return { ok: false, reason: "small" }
-  const aspect = long / short
-  if (aspect < MIN_ASPECT || aspect > MAX_ASPECT) return { ok: false, reason: "aspect" }
   return { ok: true }
 }
 
@@ -81,9 +81,9 @@ export const planUploads = (identity: IdentityState): UploadPlan => {
   const plan: UploadPlan = { toUpload: [], reuse: [], missing: [] }
   for (const side of requiredSides(identity.documentType)) {
     const image = identity[side]
-    if (!image?.uri) {
+    if (!image?.path) {
       plan.missing.push(side)
-    } else if (identity.uploaded[side]?.uri === image.uri) {
+    } else if (identity.uploaded[side]?.path === image.path) {
       plan.reuse.push(side)
     } else {
       plan.toUpload.push(side)
@@ -101,20 +101,20 @@ export type EvidenceSet = {
 /**
  * Build the `evidence[]` input in front → back → selfie order. Document
  * metadata rides on the ID sides only; the selfie carries just its key.
- * Throws if a required side has not been uploaded.
+ * `issuingCountry` is deliberately not sent: it is optional in the schema
+ * and the app has no picker for it, so a guess would be wrong for every
+ * passport and foreign licence. Throws if a required side has not been
+ * uploaded.
  */
 export const buildEvidence = (
-  identity: Pick<IdentityState, "documentType" | "issuingCountry">,
+  identity: Pick<IdentityState, "documentType">,
   uploaded: Partial<Record<IdentitySide, UploadedEvidence>>,
 ): EvidenceSet => {
   const evidence: UpgradeEvidenceInput[] = []
   for (const side of requiredSides(identity.documentType)) {
     const item = uploaded[side]
     if (!item?.fileKey) throw new Error(`Missing upload for ${side}`)
-    const meta =
-      side === "selfie"
-        ? {}
-        : { documentType: identity.documentType, issuingCountry: identity.issuingCountry }
+    const meta = side === "selfie" ? {} : { documentType: identity.documentType }
     evidence.push({
       type: EVIDENCE_TYPE[side],
       fileKey: item.fileKey,

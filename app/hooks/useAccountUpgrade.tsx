@@ -6,6 +6,11 @@ import { useActivityIndicator } from "./useActivityIndicator"
 import { normalizeContentType } from "@app/utils/image-content-type"
 import { fileSha256Hex } from "@app/utils/file-sha256"
 import {
+  identityFileExists,
+  identityFileUri,
+  removeIdentityFiles,
+} from "@app/utils/identity-files"
+import {
   buildEvidence,
   isVerificationStatus,
   planUploads,
@@ -25,6 +30,7 @@ import {
 // store
 import {
   IdentitySide,
+  resetIdentity,
   setAccountUpgrade,
   setBankInfo,
   setBusinessInfo,
@@ -51,18 +57,34 @@ type UpgradeResult = {
   errors?: string[]
 }
 
+/**
+ * Why an upload stopped. `file` means the capture itself is the problem (gone
+ * from disk, unreadable, rejected type) and must be retaken; anything else is
+ * worth a plain retry.
+ */
+export type UploadFailureReason = "file" | "network"
+
 export type UploadEvidenceResult =
   | { success: true; uploaded: Record<IdentitySide, UploadedEvidence | undefined> }
-  | { success: false; failedSide?: IdentitySide; error: string }
+  | {
+      success: false
+      failedSide?: IdentitySide
+      reason: UploadFailureReason
+      error: string
+    }
 
 export class EvidenceUploadError extends Error {
   side: IdentitySide
-  constructor(side: IdentitySide, message: string) {
+  reason: UploadFailureReason
+  constructor(side: IdentitySide, reason: UploadFailureReason, message: string) {
     super(message)
     this.name = "EvidenceUploadError"
     this.side = side
+    this.reason = reason
   }
 }
+
+const GENERIC_UPLOAD_ERROR = "Failed to upload photo. Please try again."
 
 export const useAccountUpgrade = () => {
   const dispatch = useAppDispatch()
@@ -150,8 +172,22 @@ export const useAccountUpgrade = () => {
   /** Presigned PUT of one capture; returns its storage key and hash. */
   const uploadOne = async (side: IdentitySide): Promise<UploadedEvidence> => {
     const image = identity[side]
-    if (!image?.uri || !image.fileName || !image.type) {
-      throw new EvidenceUploadError(side, "Photo is missing. Please take it again.")
+    if (!image?.path || !image.fileName || !image.type) {
+      throw new EvidenceUploadError(
+        side,
+        "file",
+        "Photo is missing. Please take it again.",
+      )
+    }
+
+    // The OS can purge the file between capture and upload; say so before
+    // asking the server for a URL we could never use.
+    if (!(await identityFileExists(image.path))) {
+      throw new EvidenceUploadError(
+        side,
+        "file",
+        "Photo is missing. Please take it again.",
+      )
     }
 
     // Normalize content type: Android returns "image/jpg" for some JPEGs,
@@ -171,33 +207,37 @@ export const useAccountUpgrade = () => {
       if (message.includes("InvalidFileType")) {
         throw new EvidenceUploadError(
           side,
+          "file",
           "Unsupported file type. Please take the photo again.",
         )
       }
-      throw new EvidenceUploadError(side, "Failed to upload photo. Please try again.")
+      throw new EvidenceUploadError(side, "network", GENERIC_UPLOAD_ERROR)
     }
 
     if (!uploadUrl || !fileKey) {
-      throw new EvidenceUploadError(side, "Failed to upload photo. Please try again.")
+      throw new EvidenceUploadError(side, "network", GENERIC_UPLOAD_ERROR)
     }
+
+    const uri = identityFileUri(image.path)
 
     let sha256: string
     try {
-      sha256 = await fileSha256Hex(image.uri)
+      sha256 = await fileSha256Hex(uri)
     } catch {
       throw new EvidenceUploadError(
         side,
+        "file",
         "Could not read the photo. Please take it again.",
       )
     }
 
     try {
-      await uploadFileToS3(uploadUrl, image.uri, contentType)
+      await uploadFileToS3(uploadUrl, uri, contentType)
     } catch {
-      throw new EvidenceUploadError(side, "Failed to upload photo. Please try again.")
+      throw new EvidenceUploadError(side, "network", GENERIC_UPLOAD_ERROR)
     }
 
-    return { uri: image.uri, fileKey, sha256 }
+    return { path: image.path, fileKey, sha256 }
   }
 
   /**
@@ -211,6 +251,7 @@ export const useAccountUpgrade = () => {
       return {
         success: false,
         failedSide: plan.missing[0],
+        reason: "file",
         error: "Please take all the required photos before continuing.",
       }
     }
@@ -227,10 +268,14 @@ export const useAccountUpgrade = () => {
         uploaded[side] = evidence
         dispatch(setIdentityUploaded({ side, evidence }))
       } catch (err) {
-        const side_ = err instanceof EvidenceUploadError ? err.side : side
-        const message =
-          err instanceof Error ? err.message : "Failed to upload photo. Please try again."
-        return { success: false, failedSide: side_, error: sanitizeMessage(message) }
+        const known = err instanceof EvidenceUploadError ? err : undefined
+        const message = err instanceof Error ? err.message : GENERIC_UPLOAD_ERROR
+        return {
+          success: false,
+          failedSide: known?.side ?? side,
+          reason: known?.reason ?? "network",
+          error: sanitizeMessage(message),
+        }
       }
     }
 
@@ -334,8 +379,16 @@ export const useAccountUpgrade = () => {
       )
       refetchUpgradeRequest().catch(() => undefined)
 
+      if (upgradeResponse?.id) {
+        // The request is on file: nothing needs the ID stills any more, so
+        // stop keeping photos of a government ID in the document directory
+        // and AsyncStorage until logout.
+        dispatch(resetIdentity())
+        removeIdentityFiles(identity).catch(() => undefined)
+      }
+
       return {
-        success: !!upgradeResponse?.id,
+        success: Boolean(upgradeResponse?.id),
       }
     } catch (err) {
       console.error("Account upgrade failed:", err instanceof Error ? err.message : err)

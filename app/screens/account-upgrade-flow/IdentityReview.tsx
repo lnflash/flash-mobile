@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Image, TouchableOpacity, View } from "react-native"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -14,10 +14,14 @@ import { useAccountUpgrade } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 // store
-import { useAppSelector } from "@app/store/redux"
-import { IdentitySide } from "@app/store/redux/slices/accountUpgradeSlice"
+import { useAppDispatch, useAppSelector } from "@app/store/redux"
+import {
+  clearIdentityCapture,
+  IdentitySide,
+} from "@app/store/redux/slices/accountUpgradeSlice"
 
 // utils
+import { identityFileExists, identityFileUri } from "@app/utils/identity-files"
 import { hasAllCaptures, requiredSides } from "@app/utils/identity-verification"
 import { testProps } from "@app/utils/testProps"
 
@@ -31,6 +35,7 @@ type Props = StackScreenProps<RootStackParamList, "IdentityReview">
  */
 const IdentityReview: React.FC<Props> = ({ navigation, route }) => {
   const resubmit = route.params?.resubmit ?? false
+  const dispatch = useAppDispatch()
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
@@ -43,6 +48,27 @@ const IdentityReview: React.FC<Props> = ({ navigation, route }) => {
 
   const sides = requiredSides(identity.documentType)
   const complete = hasAllCaptures(identity)
+
+  // The persisted state can outlive the files (the app was updated, or the
+  // OS reclaimed space). Drop any side whose still is gone so the card reads
+  // "Not taken yet" and confirm stays disabled instead of failing on upload.
+  useEffect(() => {
+    let cancelled = false
+    sides.forEach((side) => {
+      const image = identity[side]
+      if (!image?.path) return
+      identityFileExists(image.path)
+        .then((exists) => {
+          if (!cancelled && !exists) dispatch(clearIdentityCapture({ side }))
+        })
+        .catch(() => undefined)
+    })
+    return () => {
+      cancelled = true
+    }
+    // Once per visit: a retake comes back through navigation, remounting.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const labels: Record<IdentitySide, string> = {
     front: LL.AccountUpgrade.reviewFront(),
@@ -74,6 +100,13 @@ const IdentityReview: React.FC<Props> = ({ navigation, route }) => {
       const res = await uploadEvidence()
       if (res.success) {
         navigation.navigate("BusinessInformation")
+      } else if (res.reason === "file") {
+        // The capture itself is the problem: say why (the hook's message
+        // tells them to take it again) and forget the side so the card shows
+        // Missing and confirm disables until it is retaken.
+        setFailedSide(res.failedSide)
+        setErrorMsg(res.error || LL.AccountUpgrade.uploadFailed())
+        if (res.failedSide) dispatch(clearIdentityCapture({ side: res.failedSide }))
       } else {
         setFailedSide(res.failedSide)
         setErrorMsg(LL.AccountUpgrade.uploadFailed())
@@ -84,7 +117,7 @@ const IdentityReview: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <Screen preset="scroll" style={{ flexGrow: 1 }}>
+    <Screen preset="scroll" style={styles.screen}>
       {!resubmit && (
         <ProgressSteps numOfSteps={numOfSteps} currentStep={numOfSteps - 2} />
       )}
@@ -107,7 +140,7 @@ const IdentityReview: React.FC<Props> = ({ navigation, route }) => {
               <View style={styles.thumbWrapper}>
                 {image ? (
                   <Image
-                    source={{ uri: image.uri }}
+                    source={{ uri: identityFileUri(image.path) }}
                     style={styles.thumb}
                     resizeMode="cover"
                     {...testProps(`identity-thumb-${side}`)}
@@ -142,7 +175,7 @@ const IdentityReview: React.FC<Props> = ({ navigation, route }) => {
             </View>
           )
         })}
-        {!!errorMsg && (
+        {Boolean(errorMsg) && (
           <Text type="bm" style={styles.error} {...testProps("identity-review-error")}>
             {errorMsg}
           </Text>
@@ -168,6 +201,9 @@ const IdentityReview: React.FC<Props> = ({ navigation, route }) => {
 export default IdentityReview
 
 const useStyles = makeStyles(({ colors }) => ({
+  screen: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     paddingVertical: 10,

@@ -22,21 +22,31 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 // store
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import {
-  CapturedImage,
   IdentitySide,
   setIdentityCapture,
 } from "@app/store/redux/slices/accountUpgradeSlice"
 
 // utils
+import { persistCapture } from "@app/utils/identity-files"
 import { captureGate, nextSide } from "@app/utils/identity-verification"
 import { testProps } from "@app/utils/testProps"
 
 type Props = StackScreenProps<RootStackParamList, "IdentityCapture">
 
+/** A still vision-camera just wrote to the temp directory, not yet accepted. */
+type PendingStill = {
+  tempPath: string
+  width: number
+  height: number
+}
+
 /**
  * ENG-608 step 2: one screen per side (front / back / selfie). Overlay guide,
- * still capture, a resolution/aspect gate, then a preview with Retake / Use
- * photo. Nothing leaves the device here — uploads happen on IdentityReview.
+ * still capture, a resolution gate, then a preview with Retake / Use photo.
+ * On accept the still is moved out of the temp directory into the document
+ * directory (the OS purges temp, and the iOS container path changes on every
+ * update) and only its document-relative path is persisted. Nothing leaves
+ * the device here — uploads happen on IdentityReview.
  */
 const IdentityCapture: React.FC<Props> = ({ navigation, route }) => {
   const { side, resubmit = false, returnToReview = false } = route.params
@@ -44,13 +54,15 @@ const IdentityCapture: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   const { top, bottom } = useSafeAreaInsets()
-  const { documentType } = useAppSelector((state) => state.accountUpgrade.identity)
+  const { documentType, [side]: existing } = useAppSelector(
+    (state) => state.accountUpgrade.identity,
+  )
 
   const { hasPermission, requestPermission } = useCameraPermission()
   const device = useCameraDevice(side === "selfie" ? "front" : "back")
   const camera = useRef<Camera>(null)
 
-  const [captured, setCaptured] = useState<CapturedImage>()
+  const [pending, setPending] = useState<PendingStill>()
   const [busy, setBusy] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string>()
   const [permissionAsked, setPermissionAsked] = useState(false)
@@ -102,20 +114,10 @@ const IdentityCapture: React.FC<Props> = ({ navigation, route }) => {
       const file = await camera.current.takePhoto({ enableShutterSound: false })
       const gate = captureGate({ width: file.width, height: file.height })
       if (!gate.ok) {
-        setErrorMsg(
-          gate.reason === "small"
-            ? LL.AccountUpgrade.captureTooSmall()
-            : LL.AccountUpgrade.captureBadShape(),
-        )
+        setErrorMsg(LL.AccountUpgrade.captureTooSmall())
         return
       }
-      setCaptured({
-        uri: `file://${file.path}`,
-        width: file.width,
-        height: file.height,
-        fileName: `${side}-${Date.now()}.jpg`,
-        type: "image/jpeg",
-      })
+      setPending({ tempPath: file.path, width: file.width, height: file.height })
     } catch {
       setErrorMsg(LL.AccountUpgrade.captureFailed())
     } finally {
@@ -123,9 +125,33 @@ const IdentityCapture: React.FC<Props> = ({ navigation, route }) => {
     }
   }
 
-  const onAccept = () => {
-    if (!captured) return
-    dispatch(setIdentityCapture({ side, image: captured }))
+  const onAccept = async () => {
+    if (!pending || busy) return
+    setBusy(true)
+    try {
+      const path = await persistCapture(side, pending.tempPath, {
+        previous: existing?.path,
+      })
+      dispatch(
+        setIdentityCapture({
+          side,
+          image: {
+            path,
+            width: pending.width,
+            height: pending.height,
+            fileName: `${side}-${Date.now()}.jpg`,
+            type: "image/jpeg",
+          },
+        }),
+      )
+    } catch {
+      // The still could not be moved out of temp; keep the user here.
+      setPending(undefined)
+      setErrorMsg(LL.AccountUpgrade.captureFailed())
+      return
+    } finally {
+      setBusy(false)
+    }
     const next = nextSide(side, documentType)
     if (returnToReview || !next) {
       navigation.navigate("IdentityReview", { resubmit })
@@ -134,13 +160,14 @@ const IdentityCapture: React.FC<Props> = ({ navigation, route }) => {
     }
   }
 
-  if (captured) {
+  if (pending) {
     return (
       <Screen unsafe backgroundColor="#000">
         <CapturePreview
-          image={captured}
+          uri={`file://${pending.tempPath}`}
           title={copy[side].title}
-          onRetake={() => setCaptured(undefined)}
+          busy={busy}
+          onRetake={() => setPending(undefined)}
           onAccept={onAccept}
         />
       </Screen>
@@ -150,14 +177,44 @@ const IdentityCapture: React.FC<Props> = ({ navigation, route }) => {
   return (
     <Screen unsafe backgroundColor="#000">
       <View style={[styles.header, { paddingTop: top + 8 }]}>
-        <Text type="h1" bold style={styles.headerText}>
-          {copy[side].title}
-        </Text>
+        <View style={styles.headerRow}>
+          <Text type="h1" bold style={styles.headerText}>
+            {copy[side].title}
+          </Text>
+          <TouchableOpacity
+            style={styles.close}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            {...testProps("capture-close")}
+          >
+            <Icon name="close" size={28} color="#fff" type="ionicon" />
+          </TouchableOpacity>
+        </View>
         <Text type="bm" style={styles.hintText}>
           {copy[side].hint}
         </Text>
       </View>
-      {!hasPermission ? (
+      {hasPermission && device ? (
+        <View style={styles.cameraWrapper} onLayout={onLayout}>
+          <Camera
+            ref={camera}
+            style={styles.camera}
+            device={device}
+            isActive={true}
+            photo={true}
+            photoQualityBalance="quality"
+            onError={onCameraError}
+          />
+          <CaptureOverlay side={side} width={viewSize.width} height={viewSize.height} />
+        </View>
+      ) : hasPermission ? (
+        <View style={styles.center} {...testProps("capture-no-camera")}>
+          <Text type="h1" style={styles.permissionTitle}>
+            {LL.ScanningQRCodeScreen.noCamera()}
+          </Text>
+        </View>
+      ) : (
         <View style={styles.center} {...testProps("capture-permission-denied")}>
           <Icon name="camera-outline" size={56} color="#fff" type="ionicon" />
           <Text type="h1" bold style={styles.permissionTitle}>
@@ -172,33 +229,14 @@ const IdentityCapture: React.FC<Props> = ({ navigation, route }) => {
             btnStyle={styles.permissionBtn}
           />
         </View>
-      ) : !device ? (
-        <View style={styles.center}>
-          <Text type="h1" style={styles.permissionTitle}>
-            {LL.ScanningQRCodeScreen.noCamera()}
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.cameraWrapper} onLayout={onLayout}>
-          <Camera
-            ref={camera}
-            style={styles.camera}
-            device={device}
-            isActive={true}
-            photo={true}
-            photoQualityBalance="quality"
-            onError={onCameraError}
-          />
-          <CaptureOverlay side={side} width={viewSize.width} height={viewSize.height} />
-        </View>
       )}
       <View style={[styles.footer, { paddingBottom: bottom + 16 }]}>
-        {!!errorMsg && (
+        {Boolean(errorMsg) && (
           <Text type="bm" style={styles.error} {...testProps("capture-error")}>
             {errorMsg}
           </Text>
         )}
-        {hasPermission && !!device && (
+        {hasPermission && Boolean(device) && (
           <TouchableOpacity
             style={[styles.captureOutline, busy && styles.captureBusy]}
             onPress={takePhoto}
@@ -221,8 +259,18 @@ const useStyles = makeStyles(({ colors }) => ({
     paddingBottom: 12,
     backgroundColor: "#000",
   },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   headerText: {
     color: "#fff",
+    flex: 1,
+    marginRight: 12,
+  },
+  close: {
+    padding: 4,
   },
   hintText: {
     color: colors.grey3,

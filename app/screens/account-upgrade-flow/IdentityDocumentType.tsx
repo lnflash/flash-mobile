@@ -20,6 +20,7 @@ import {
 } from "@app/store/redux/slices/accountUpgradeSlice"
 
 // utils
+import { removeIdentityFiles } from "@app/utils/identity-files"
 import { testProps } from "@app/utils/testProps"
 
 type Props = StackScreenProps<RootStackParamList, "IdentityDocumentType">
@@ -68,7 +69,9 @@ const IdentityDocumentType: React.FC<Props> = ({ navigation, route }) => {
 
   const onSelect = (value: DocumentType) => {
     if (value === selected) return
-    // Switching document kinds invalidates any captures taken for the old one.
+    // Switching document kinds invalidates any captures taken for the old one,
+    // in the slice and on disk.
+    removeIdentityFiles(identity).catch(() => undefined)
     dispatch(
       setIdentity({
         documentType: value,
@@ -86,7 +89,7 @@ const IdentityDocumentType: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <Screen preset="scroll" style={{ flexGrow: 1 }}>
+    <Screen preset="scroll" style={styles.screen}>
       {!resubmit && (
         <ProgressSteps numOfSteps={numOfSteps} currentStep={numOfSteps - 2} />
       )}
@@ -147,6 +150,9 @@ const IdentityDocumentType: React.FC<Props> = ({ navigation, route }) => {
 export default IdentityDocumentType
 
 const useStyles = makeStyles(({ colors }) => ({
+  screen: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     paddingVertical: 10,

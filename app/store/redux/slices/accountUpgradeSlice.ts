@@ -8,9 +8,16 @@ export type IdentityDocumentType = "passport" | "national_id" | "drivers_licence
 /** Which capture the user is on. Passports have no back side. */
 export type IdentitySide = "front" | "back" | "selfie"
 
-/** A still taken in IdentityCapture, kept on disk until it is uploaded. */
+/**
+ * A still taken in IdentityCapture, kept on disk until it is uploaded.
+ *
+ * `path` is relative to the app document directory (e.g. `idv/front-123.jpg`),
+ * never an absolute URI: the OS temp directory is purged and the iOS
+ * container path changes on every update. Resolve it with
+ * `identityFileUri` / `identityFilePath` from `@app/utils/identity-files`.
+ */
 export type CapturedImage = {
-  uri: string
+  path: string
   width: number
   height: number
   fileName: string
@@ -18,11 +25,11 @@ export type CapturedImage = {
 }
 
 /**
- * A capture that already made it to storage. Keyed by the local `uri` so a
+ * A capture that already made it to storage. Keyed by the local `path` so a
  * retake invalidates the key and a retry after a partial failure reuses it.
  */
 export type UploadedEvidence = {
-  uri: string
+  path: string
   fileKey: string
   sha256: string
 }
@@ -35,9 +42,12 @@ export type UpgradeVerificationStatus =
   | "APPROVED"
   | "REJECTED"
 
+/**
+ * No `issuingCountry`: the schema field is optional and there is no picker
+ * yet, so nothing is sent rather than a guessed country on every document.
+ */
 export type IdentityState = {
   documentType?: IdentityDocumentType
-  issuingCountry: string
   front?: CapturedImage
   back?: CapturedImage
   selfie?: CapturedImage
@@ -81,7 +91,6 @@ export interface AccountUpgradeSlice {
 
 export const initialIdentityState: IdentityState = {
   documentType: undefined,
-  issuingCountry: "JM",
   front: undefined,
   back: undefined,
   selfie: undefined,
@@ -163,6 +172,19 @@ export const accountUpgradeSlice = createSlice({
         identity: { ...state.identity, [side]: image, uploaded },
       }
     },
+    /**
+     * Forget one side's capture (its file is gone or unreadable) so the review
+     * card reads "Not taken yet" and confirm disables until it is retaken.
+     */
+    clearIdentityCapture: (state, action: PayloadAction<{ side: IdentitySide }>) => {
+      const { side } = action.payload
+      const uploaded = { ...state.identity.uploaded }
+      delete uploaded[side]
+      return {
+        ...state,
+        identity: { ...state.identity, [side]: undefined, uploaded },
+      }
+    },
     setIdentityUploaded: (
       state,
       action: PayloadAction<{ side: IdentitySide; evidence: UploadedEvidence }>,
@@ -201,6 +223,7 @@ export const {
   setBankInfo,
   setIdentity,
   setIdentityCapture,
+  clearIdentityCapture,
   setIdentityUploaded,
   resetIdentity,
   setLoading,
